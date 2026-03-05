@@ -178,7 +178,8 @@ async function loadCounts(){
 }
 function subRT(){sb.channel('tc').on('postgres_changes',{event:'*',schema:'public',table:'tribe_selections'},()=>loadCounts()).subscribe()}
 
-async function selTribe(id){if(!user){openAuth();return}if(!profile||profile.role==='guest'){toast('Apenas membros cadastrados.','error');return}if(new Date()>DL){toast('Seleção encerrada!','error');return}const cnt=tc[id]||0;if(cnt>=MX&&ut!==id){toast('Tribo lotada!','error');return}try{const{data}=await sb.rpc('select_tribe',{p_tribe_id:id});if(data?.success){ut=id;toast('Tribo '+id+' selecionada! ✓','success');await loadCounts()}else{toast(data?.error||'Erro','error')}}catch(e){toast('Erro: '+e.message,'error')}}
+async function selTribe(id){if(!user){openAuth();return}if(!profile||profile.role==='guest'){toast('Apenas membros cadastrados.','error');return}if(new Date()>DL){toast('Seleção encerrada!','error');return}const cnt=tc[id]||0;if(cnt>=MX&&ut!==id){toast('Tribo lotada!','error');return}try{const{data}=await sb.rpc('select_tribe',{p_tribe_id:id});if(data?.success){ut=id;toast('Tribo '+id+' selecionada! ✓','success');await loadCounts()}else{toast(data?.errortry{if(ut===id){const{data}=await sb.rpc('deselect_tribe');if(data?.success){ut=null;toast('Seleção removida','info');await loadCounts()}else{toast(data?.error||'Erro','error')}}else{const{data}=await sb.rpc('select_tribe',{p_tribe_id:id});if(data?.success){ut=id;toast('Tribo '+id+' selecionada! ✓','success');await loadCounts()}else{toast(data?.error||'Erro','error')}}}catch(e){toast('Erro: '+e.message,'error')}
+catch(e){toast('Erro: '+e.message,'error')}}
 
 
 function renderTribes(){
