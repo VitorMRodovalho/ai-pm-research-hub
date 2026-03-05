@@ -5,640 +5,89 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ciclo 03 — Kick-off | Núcleo IA & GP</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root {
-  --pmi-dark: #003B5C;
-  --pmi-navy: #200F3B;
-  --pmi-teal: #00799E;
-  --pmi-teal-light: #05BFE0;
-  --pmi-orange: #FF610F;
-  --pmi-orange-soft: #ED7D31;
-  --pmi-purple: #4F17A8;
-  --pmi-purple-light: #B465FF;
-  --pmi-red: #D5340B;
-  --pmi-green: #70AD47;
-  --pmi-beige: #F7F4EF;
-  --pmi-gray: #44546A;
-  --pmi-light: #f0f4f8;
-  --text: #1a1a2e;
-  --text-muted: #5a6072;
-  --white: #ffffff;
-  --font-display: 'Plus Jakarta Sans', sans-serif;
-  --font-body: 'Plus Jakarta Sans', sans-serif;
-}
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { font-family: var(--font-body); color: var(--text); background: var(--white); line-height: 1.6; -webkit-font-smoothing: antialiased; }
-
-/* NAV */
-.nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(0,59,92,0.95); backdrop-filter: blur(12px); border-bottom: 2px solid var(--pmi-orange); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; }
-.nav-brand { color: var(--white); font-weight: 700; font-size: 0.9rem; letter-spacing: 0.02em; }
-.nav-brand span { color: var(--pmi-orange); }
-.nav-links { display: flex; gap: 0.25rem; }
-.nav-links a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.75rem; font-weight: 500; padding: 0.4rem 0.7rem; border-radius: 6px; transition: all 0.2s; }
-.nav-links a:hover, .nav-links a.active { color: var(--white); background: rgba(255,255,255,0.1); }
-@media (max-width: 768px) { .nav-links { display: none; } }
-
-/* HERO */
-.hero { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--pmi-dark) 0%, var(--pmi-navy) 40%, #0a1628 100%); position: relative; overflow: hidden; padding-top: 56px; }
-.hero::before { content: ''; position: absolute; top: -50%; right: -30%; width: 80vw; height: 80vw; background: radial-gradient(circle, rgba(5,191,224,0.08) 0%, transparent 60%); }
-.hero::after { content: ''; position: absolute; bottom: -20%; left: -20%; width: 60vw; height: 60vw; background: radial-gradient(circle, rgba(255,97,15,0.06) 0%, transparent 50%); }
-.hero-content { position: relative; z-index: 2; text-align: center; max-width: 900px; padding: 2rem; }
-.hero-badge { display: inline-block; background: rgba(255,97,15,0.15); color: var(--pmi-orange); font-size: 0.8rem; font-weight: 600; padding: 0.4rem 1.2rem; border-radius: 100px; border: 1px solid rgba(255,97,15,0.3); margin-bottom: 1.5rem; letter-spacing: 0.05em; }
-.hero h1 { font-family: var(--font-display); font-size: clamp(2.2rem, 5vw, 3.8rem); font-weight: 800; color: var(--white); line-height: 1.15; margin-bottom: 0.5rem; }
-.hero h1 .accent { background: linear-gradient(135deg, var(--pmi-teal-light), var(--pmi-purple-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.hero h2 { font-size: clamp(1rem, 2.5vw, 1.4rem); color: rgba(255,255,255,0.6); font-weight: 400; margin-bottom: 2rem; }
-.hero-date { display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); padding: 0.7rem 1.5rem; border-radius: 12px; color: var(--white); font-size: 0.95rem; font-weight: 500; }
-.hero-chapters { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; margin-top: 2rem; }
-.hero-chapters span { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.8); padding: 0.3rem 0.8rem; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
-.scroll-cue { position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,0.3); font-size: 0.75rem; text-align: center; animation: bounce 2s infinite; }
-@keyframes bounce { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(8px)} }
-
-/* SECTIONS */
-section { padding: 5rem 2rem; }
-.section-dark { background: var(--pmi-dark); color: var(--white); }
-.section-beige { background: var(--pmi-beige); }
-.section-light { background: var(--pmi-light); }
-.container { max-width: 1200px; margin: 0 auto; }
-.section-label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: var(--pmi-orange); margin-bottom: 0.5rem; }
-.section-dark .section-label { color: var(--pmi-teal-light); }
-.section-title { font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 2.6rem); font-weight: 800; line-height: 1.2; margin-bottom: 1rem; }
-.section-subtitle { font-size: 1.05rem; color: var(--text-muted); max-width: 700px; margin-bottom: 3rem; }
-.section-dark .section-subtitle { color: rgba(255,255,255,0.6); }
-
-/* AGENDA */
-.agenda-grid { display: grid; gap: 1rem; }
-.agenda-item { display: grid; grid-template-columns: 80px 1fr; gap: 1.5rem; padding: 1.5rem; background: var(--white); border-radius: 16px; border: 1px solid rgba(0,0,0,0.06); transition: transform 0.2s, box-shadow 0.2s; }
-.agenda-item:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.08); }
-.agenda-time { font-family: var(--font-display); font-size: 0.85rem; font-weight: 700; color: var(--pmi-teal); background: rgba(0,121,158,0.08); padding: 0.5rem; border-radius: 10px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.agenda-time small { font-size: 0.65rem; color: var(--text-muted); font-weight: 500; }
-.agenda-title { font-weight: 700; font-size: 1.05rem; margin-bottom: 0.3rem; }
-.agenda-desc { font-size: 0.88rem; color: var(--text-muted); }
-
-/* QUADRANTS */
-.quadrants-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; }
-.quad-card { background: var(--white); border-radius: 20px; padding: 2rem; border: 1px solid rgba(0,0,0,0.06); position: relative; overflow: hidden; transition: transform 0.3s, box-shadow 0.3s; }
-.quad-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.1); }
-.quad-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; }
-.quad-card:nth-child(1)::before { background: var(--pmi-teal); }
-.quad-card:nth-child(2)::before { background: var(--pmi-orange); }
-.quad-card:nth-child(3)::before { background: var(--pmi-purple); }
-.quad-card:nth-child(4)::before { background: var(--pmi-green); }
-.quad-num { font-family: var(--font-display); font-size: 3rem; font-weight: 800; opacity: 0.08; position: absolute; top: 0.5rem; right: 1rem; }
-.quad-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.3rem; }
-.quad-card p { font-size: 0.85rem; color: var(--text-muted); }
-
-/* TRIBES */
-.tribes-section { padding: 5rem 2rem; }
-.tribe-card { background: var(--white); border-radius: 20px; overflow: hidden; border: 1px solid rgba(0,0,0,0.06); margin-bottom: 1.5rem; transition: all 0.3s; }
-.tribe-card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.08); }
-.tribe-header { display: flex; align-items: center; gap: 1rem; padding: 1.5rem 2rem; cursor: pointer; }
-.tribe-num { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.1rem; color: var(--white); flex-shrink: 0; }
-.tribe-q1 .tribe-num { background: var(--pmi-teal); }
-.tribe-q2 .tribe-num { background: var(--pmi-orange); }
-.tribe-q3 .tribe-num { background: var(--pmi-purple); }
-.tribe-q4 .tribe-num { background: var(--pmi-green); }
-.tribe-info { flex: 1; }
-.tribe-info h3 { font-size: 1rem; font-weight: 700; }
-.tribe-info .tribe-leader { font-size: 0.85rem; color: var(--text-muted); }
-.tribe-slots { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
-.tribe-slots .slot { width: 10px; height: 10px; border-radius: 50%; background: rgba(0,0,0,0.1); }
-.tribe-slots .slot.filled { background: var(--pmi-green); }
-.tribe-slots-text { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
-.tribe-body { display: none; padding: 0 2rem 1.5rem; border-top: 1px solid rgba(0,0,0,0.06); }
-.tribe-body.open { display: block; padding-top: 1.5rem; }
-.tribe-body p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem; }
-.tribe-video { display: inline-flex; align-items: center; gap: 0.5rem; background: var(--pmi-red); color: var(--white); padding: 0.5rem 1.2rem; border-radius: 10px; text-decoration: none; font-size: 0.85rem; font-weight: 600; transition: opacity 0.2s; }
-.tribe-video:hover { opacity: 0.85; }
-
-/* KPIs */
-.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; }
-.kpi-card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 2rem; text-align: center; }
-.kpi-value { font-family: var(--font-display); font-size: 2.8rem; font-weight: 800; background: linear-gradient(135deg, var(--pmi-teal-light), var(--pmi-orange-soft)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.kpi-label { font-size: 0.85rem; color: rgba(255,255,255,0.6); margin-top: 0.3rem; }
-
-/* BREAKOUT */
-.breakout-box { background: linear-gradient(135deg, var(--pmi-teal), var(--pmi-dark)); color: var(--white); border-radius: 24px; padding: 3rem; text-align: center; max-width: 700px; margin: 0 auto; }
-.breakout-box h3 { font-size: 1.5rem; font-weight: 800; margin-bottom: 1rem; }
-.breakout-question { font-size: 1.2rem; font-style: italic; color: rgba(255,255,255,0.85); background: rgba(0,0,0,0.15); padding: 1.5rem; border-radius: 16px; margin: 1.5rem 0; border-left: 4px solid var(--pmi-orange); }
-
-/* TIMELINE */
-.timeline { position: relative; padding-left: 2rem; }
-.timeline::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(to bottom, var(--pmi-teal), var(--pmi-purple), var(--pmi-orange)); border-radius: 3px; }
-.timeline-item { position: relative; padding-bottom: 2rem; padding-left: 1.5rem; }
-.timeline-item::before { content: ''; position: absolute; left: -2.35rem; top: 0.3rem; width: 14px; height: 14px; border-radius: 50%; background: var(--pmi-teal); border: 3px solid var(--white); }
-.timeline-item:nth-child(2)::before { background: var(--pmi-orange); }
-.timeline-item:nth-child(3)::before { background: var(--pmi-purple); }
-.timeline-item:nth-child(4)::before { background: var(--pmi-green); }
-.timeline-date { font-size: 0.75rem; font-weight: 700; color: var(--pmi-teal); letter-spacing: 0.05em; }
-.timeline-item h4 { font-size: 1rem; font-weight: 700; margin: 0.2rem 0; }
-.timeline-item p { font-size: 0.85rem; color: var(--text-muted); }
-
-/* RESOURCES */
-.resources-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
-.resource-card { background: var(--white); border-radius: 16px; padding: 1.5rem; border: 1px solid rgba(0,0,0,0.06); display: flex; align-items: flex-start; gap: 1rem; }
-.resource-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; }
-.resource-card h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.2rem; }
-.resource-card p { font-size: 0.8rem; color: var(--text-muted); }
-.resource-card a { color: var(--pmi-teal); font-size: 0.8rem; font-weight: 600; text-decoration: none; }
-.resource-card a:hover { text-decoration: underline; }
-
-/* FOOTER */
-.footer { background: var(--pmi-navy); color: rgba(255,255,255,0.4); padding: 3rem 2rem; text-align: center; font-size: 0.8rem; }
-.footer a { color: var(--pmi-teal-light); text-decoration: none; }
-
-/* UTILS */
-.text-center { text-align: center; }
-.mt-2 { margin-top: 2rem; }
-.mb-3 { margin-bottom: 3rem; }
-.badge { display: inline-block; padding: 0.2rem 0.7rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700; }
-.badge-open { background: rgba(112,173,71,0.15); color: var(--pmi-green); }
-.badge-deadline { background: rgba(213,52,11,0.1); color: var(--pmi-red); }
+:root{--pmi-dark:#003B5C;--pmi-navy:#200F3B;--pmi-teal:#00799E;--pmi-teal-light:#05BFE0;--pmi-orange:#FF610F;--pmi-orange-soft:#ED7D31;--pmi-purple:#4F17A8;--pmi-purple-light:#B465FF;--pmi-red:#D5340B;--pmi-green:#70AD47;--pmi-beige:#F7F4EF;--pmi-gray:#44546A;--pmi-light:#f0f4f8;--text:#1a1a2e;--text-muted:#5a6072;--white:#fff;--font:'Plus Jakarta Sans',sans-serif}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:var(--font);color:var(--text);background:var(--white);line-height:1.6;-webkit-font-smoothing:antialiased}
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(0,59,92,.97);backdrop-filter:blur(12px);border-bottom:2px solid var(--pmi-orange);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:56px}
+.nav-brand{color:var(--white);font-weight:700;font-size:.9rem}.nav-brand span{color:var(--pmi-orange)}.nav-links{display:flex;gap:.2rem}.nav-links a{color:rgba(255,255,255,.7);text-decoration:none;font-size:.73rem;font-weight:500;padding:.35rem .6rem;border-radius:6px;transition:.2s}.nav-links a:hover,.nav-links a.active{color:var(--white);background:rgba(255,255,255,.1)}
+.nav-auth{display:flex;align-items:center;gap:.5rem}.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem 1rem;border-radius:10px;font-size:.8rem;font-weight:600;border:none;cursor:pointer;transition:.2s;text-decoration:none;font-family:var(--font)}.btn-login{background:var(--pmi-orange);color:var(--white)}.btn-login:hover{opacity:.85}.btn-ghost{background:rgba(255,255,255,.1);color:var(--white);border:1px solid rgba(255,255,255,.2)}.btn-ghost:hover{background:rgba(255,255,255,.15)}.btn-select{background:var(--pmi-teal);color:var(--white);width:100%;justify-content:center;padding:.6rem}.btn-select:hover{background:#006280}.btn-select.selected{background:var(--pmi-green)}.btn-select:disabled{opacity:.5;cursor:not-allowed}.btn-sm{padding:.3rem .7rem;font-size:.72rem}
+.user-badge{display:flex;align-items:center;gap:.4rem;color:var(--white);font-size:.75rem;font-weight:500}.user-avatar{width:28px;height:28px;border-radius:50%;background:var(--pmi-teal);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.7rem;color:var(--white)}
+@media(max-width:900px){.nav-links{display:none}}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center}.modal-overlay.open{display:flex}.modal{background:var(--white);border-radius:20px;padding:2.5rem;max-width:420px;width:90%;position:relative}.modal h2{font-size:1.3rem;font-weight:800;margin-bottom:.3rem}.modal p{font-size:.88rem;color:var(--text-muted);margin-bottom:1.5rem}.modal-close{position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text-muted)}
+.form-group{margin-bottom:1rem}.form-group label{display:block;font-size:.8rem;font-weight:600;margin-bottom:.3rem}.form-group input,.form-group select{width:100%;padding:.6rem .8rem;border:1.5px solid #ddd;border-radius:10px;font-size:.88rem;font-family:var(--font);transition:.2s}.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--pmi-teal);box-shadow:0 0 0 3px rgba(0,121,158,.1)}
+.form-msg{font-size:.8rem;padding:.6rem;border-radius:8px;margin-top:.5rem;display:none}.form-msg.success{display:block;background:rgba(112,173,71,.1);color:var(--pmi-green)}.form-msg.error{display:block;background:rgba(213,52,11,.1);color:var(--pmi-red)}
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--pmi-dark) 0%,var(--pmi-navy) 40%,#0a1628 100%);position:relative;overflow:hidden;padding-top:56px}.hero::before{content:'';position:absolute;top:-50%;right:-30%;width:80vw;height:80vw;background:radial-gradient(circle,rgba(5,191,224,.08) 0%,transparent 60%)}.hero::after{content:'';position:absolute;bottom:-20%;left:-20%;width:60vw;height:60vw;background:radial-gradient(circle,rgba(255,97,15,.06) 0%,transparent 50%)}
+.hero-content{position:relative;z-index:2;text-align:center;max-width:900px;padding:2rem}.hero-badge{display:inline-block;background:rgba(255,97,15,.15);color:var(--pmi-orange);font-size:.78rem;font-weight:600;padding:.4rem 1.2rem;border-radius:100px;border:1px solid rgba(255,97,15,.3);margin-bottom:1.5rem;letter-spacing:.05em}
+.hero h1{font-size:clamp(2rem,5vw,3.5rem);font-weight:800;color:var(--white);line-height:1.15;margin-bottom:.5rem}.hero h1 .accent{background:linear-gradient(135deg,var(--pmi-teal-light),var(--pmi-purple-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero h2{font-size:clamp(.9rem,2.5vw,1.3rem);color:rgba(255,255,255,.6);font-weight:400;margin-bottom:1.5rem}.hero-date{display:inline-flex;align-items:center;gap:.5rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:.6rem 1.3rem;border-radius:12px;color:var(--white);font-size:.9rem;font-weight:500}
+.hero-chapters{display:flex;flex-wrap:wrap;justify-content:center;gap:.5rem;margin-top:1.5rem}.hero-chapters span{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.8);padding:.25rem .7rem;border-radius:8px;font-size:.78rem;font-weight:600}
+.countdown-bar{margin-top:2rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:1rem 1.5rem;display:inline-flex;align-items:center;gap:1.5rem;flex-wrap:wrap;justify-content:center}.countdown-item{text-align:center}.countdown-num{font-size:1.8rem;font-weight:800;color:var(--pmi-teal-light);line-height:1}.countdown-label{font-size:.65rem;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em}.countdown-sep{font-size:1.5rem;color:rgba(255,255,255,.2);font-weight:300}
+.scroll-cue{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.3);font-size:.75rem;animation:bounce 2s infinite}@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+section{padding:4.5rem 2rem}.section-dark{background:var(--pmi-dark);color:var(--white)}.section-beige{background:var(--pmi-beige)}.section-light{background:var(--pmi-light)}.container{max-width:1200px;margin:0 auto}.section-label{font-size:.73rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--pmi-orange);margin-bottom:.5rem}.section-dark .section-label{color:var(--pmi-teal-light)}.section-title{font-size:clamp(1.7rem,4vw,2.5rem);font-weight:800;line-height:1.2;margin-bottom:.8rem}.section-subtitle{font-size:1rem;color:var(--text-muted);max-width:700px;margin-bottom:2.5rem}.section-dark .section-subtitle{color:rgba(255,255,255,.6)}
+.agenda-grid{display:grid;gap:.8rem}.agenda-item{display:grid;grid-template-columns:75px 1fr;gap:1.2rem;padding:1.2rem;background:var(--white);border-radius:14px;border:1px solid rgba(0,0,0,.05);transition:.2s}.agenda-item:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,0,0,.06)}.agenda-time{font-size:.82rem;font-weight:700;color:var(--pmi-teal);background:rgba(0,121,158,.08);padding:.4rem;border-radius:10px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}.agenda-time small{font-size:.6rem;color:var(--text-muted);font-weight:500}.agenda-title{font-weight:700;font-size:1rem;margin-bottom:.2rem}.agenda-desc{font-size:.85rem;color:var(--text-muted)}
+.quadrants-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.2rem}.quad-card{background:var(--white);border-radius:18px;padding:1.8rem;border:1px solid rgba(0,0,0,.05);position:relative;overflow:hidden;transition:.3s}.quad-card:hover{transform:translateY(-3px);box-shadow:0 10px 35px rgba(0,0,0,.08)}.quad-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px}.quad-card:nth-child(1)::before{background:var(--pmi-teal)}.quad-card:nth-child(2)::before{background:var(--pmi-orange)}.quad-card:nth-child(3)::before{background:var(--pmi-purple)}.quad-card:nth-child(4)::before{background:var(--pmi-green)}.quad-num{font-size:2.8rem;font-weight:800;opacity:.07;position:absolute;top:.3rem;right:.8rem}.quad-card h3{font-size:1.05rem;font-weight:700;margin-bottom:.25rem}.quad-card p{font-size:.83rem;color:var(--text-muted)}
+.tribe-card{background:var(--white);border-radius:18px;overflow:hidden;border:1px solid rgba(0,0,0,.05);margin-bottom:1rem;transition:.3s}.tribe-card:hover{box-shadow:0 6px 24px rgba(0,0,0,.06)}.tribe-header{display:flex;align-items:center;gap:1rem;padding:1.2rem 1.5rem;cursor:pointer}.tribe-num{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem;color:var(--white);flex-shrink:0}.tribe-q1 .tribe-num{background:var(--pmi-teal)}.tribe-q2 .tribe-num{background:var(--pmi-orange)}.tribe-q3 .tribe-num{background:var(--pmi-purple)}.tribe-q4 .tribe-num{background:var(--pmi-green)}.tribe-info{flex:1}.tribe-info h3{font-size:.95rem;font-weight:700}.tribe-info .tribe-leader{font-size:.82rem;color:var(--text-muted)}
+.tribe-slots-wrap{flex-shrink:0;text-align:center}.slots-visual{display:flex;gap:3px;margin-bottom:2px}.slot-dot{width:14px;height:14px;border-radius:50%;border:2px solid #ddd;transition:.3s}.slot-dot.filled{background:var(--pmi-green);border-color:var(--pmi-green)}.slots-text{font-size:.68rem;color:var(--text-muted);font-weight:600}.slots-text .full{color:var(--pmi-red)}
+.tribe-body{max-height:0;overflow:hidden;transition:max-height .4s ease;padding:0 1.5rem}.tribe-body.open{max-height:600px;padding:0 1.5rem 1.5rem;border-top:1px solid rgba(0,0,0,.05)}.tribe-body p{font-size:.88rem;color:var(--text-muted);margin-bottom:.8rem;margin-top:.8rem}.tribe-actions{display:flex;gap:.8rem;flex-wrap:wrap;align-items:center;margin-top:1rem}.tribe-video{display:inline-flex;align-items:center;gap:.4rem;background:var(--pmi-red);color:var(--white);padding:.45rem 1rem;border-radius:10px;text-decoration:none;font-size:.82rem;font-weight:600;transition:.2s}.tribe-video:hover{opacity:.85}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1.2rem}.kpi-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:1.8rem;text-align:center}.kpi-value{font-size:2.5rem;font-weight:800;background:linear-gradient(135deg,var(--pmi-teal-light),var(--pmi-orange-soft));-webkit-background-clip:text;-webkit-text-fill-color:transparent}.kpi-label{font-size:.82rem;color:rgba(255,255,255,.6);margin-top:.2rem}
+.breakout-box{background:linear-gradient(135deg,var(--pmi-teal),var(--pmi-dark));color:var(--white);border-radius:22px;padding:2.5rem;text-align:center;max-width:700px;margin:0 auto}.breakout-box h3{font-size:1.4rem;font-weight:800;margin-bottom:.8rem}.breakout-question{font-size:1.15rem;font-style:italic;color:rgba(255,255,255,.85);background:rgba(0,0,0,.15);padding:1.3rem;border-radius:14px;margin:1.2rem 0;border-left:4px solid var(--pmi-orange)}
+.timeline{position:relative;padding-left:2rem}.timeline::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(to bottom,var(--pmi-teal),var(--pmi-purple),var(--pmi-orange));border-radius:3px}.timeline-item{position:relative;padding-bottom:1.8rem;padding-left:1.5rem}.timeline-item::before{content:'';position:absolute;left:-2.35rem;top:.3rem;width:13px;height:13px;border-radius:50%;border:3px solid var(--white)}.timeline-item:nth-child(1)::before{background:var(--pmi-teal)}.timeline-item:nth-child(2)::before{background:var(--pmi-orange)}.timeline-item:nth-child(3)::before{background:var(--pmi-purple)}.timeline-item:nth-child(4)::before{background:var(--pmi-green)}.timeline-date{font-size:.72rem;font-weight:700;color:var(--pmi-teal);letter-spacing:.05em}.timeline-item h4{font-size:.95rem;font-weight:700;margin:.15rem 0}.timeline-item p{font-size:.82rem;color:var(--text-muted)}
+.resources-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:1.2rem}.resource-card{background:var(--white);border-radius:14px;padding:1.3rem;border:1px solid rgba(0,0,0,.05);display:flex;align-items:flex-start;gap:.8rem}.resource-icon{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}.resource-card h4{font-size:.9rem;font-weight:700;margin-bottom:.15rem}.resource-card p{font-size:.78rem;color:var(--text-muted)}.resource-card a{color:var(--pmi-teal);font-size:.78rem;font-weight:600;text-decoration:none}.resource-card a:hover{text-decoration:underline}
+.footer{background:var(--pmi-navy);color:rgba(255,255,255,.4);padding:2.5rem 2rem;text-align:center;font-size:.78rem}.footer a{color:var(--pmi-teal-light);text-decoration:none}
+.text-center{text-align:center}.mt-2{margin-top:1.5rem}.badge{display:inline-block;padding:.2rem .65rem;border-radius:6px;font-size:.68rem;font-weight:700}.badge-open{background:rgba(112,173,71,.15);color:var(--pmi-green);animation:pulse 2s infinite}.badge-deadline{background:rgba(213,52,11,.1);color:var(--pmi-red)}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}.hidden{display:none!important}
+.toast{position:fixed;bottom:2rem;right:2rem;background:var(--pmi-dark);color:var(--white);padding:.8rem 1.5rem;border-radius:12px;font-size:.85rem;font-weight:500;z-index:300;transform:translateY(100px);opacity:0;transition:.4s}.toast.show{transform:translateY(0);opacity:1}.toast.success{border-left:4px solid var(--pmi-green)}.toast.error{border-left:4px solid var(--pmi-red)}
 </style>
 </head>
 <body>
-
-<!-- NAV -->
-<nav class="nav">
-  <div class="nav-brand">Núcleo <span>IA & GP</span> — Ciclo 03</div>
-  <div class="nav-links">
-    <a href="#agenda">Pauta</a>
-    <a href="#quadrants">Quadrantes</a>
-    <a href="#tribes">Tribos</a>
-    <a href="#kpis">KPIs</a>
-    <a href="#breakout">Networking</a>
-    <a href="#rules">Regras</a>
-    <a href="#resources">Recursos</a>
-  </div>
-</nav>
-
-<!-- HERO -->
-<section class="hero" id="hero">
-  <div class="hero-content">
-    <div class="hero-badge">KICK-OFF OFICIAL — CICLO 03 (2026/1)</div>
-    <h1>Núcleo de Estudos e Pesquisa em<br><span class="accent">Inteligência Artificial</span><br>e Gerenciamento de Projetos</h1>
-    <h2>The AI & PM Study and Research Hub — A Joint Initiative of the PMI Brazilian Chapters</h2>
-    <div class="hero-date">📅 5 de Março de 2026 · 19:30 BRT · Google Meet</div>
-    <div class="hero-chapters">
-      <span>PMI-GO</span><span>PMI-CE</span><span>PMI-DF</span><span>PMI-MG</span><span>PMI-RS</span>
-    </div>
-  </div>
-  <div class="scroll-cue">▼ Role para começar</div>
-</section>
-
-<!-- AGENDA -->
-<section class="section-beige" id="agenda">
-  <div class="container">
-    <div class="section-label">Pauta do Evento</div>
-    <div class="section-title">O que acontece hoje</div>
-    <div class="section-subtitle">1h30 de alinhamento, conhecimento e conexão. Cada minuto conta.</div>
-    <div class="agenda-grid">
-      <div class="agenda-item">
-        <div class="agenda-time">00–15<small>min</small></div>
-        <div><div class="agenda-title">Boas-vindas e Abertura Institucional</div><div class="agenda-desc">Celebração do crescimento do Núcleo. Palavra das diretorias dos 5 Capítulos patrocinadores. "Quem somos" — celebrando a equipe de 44 colaboradores.</div></div>
-      </div>
-      <div class="agenda-item">
-        <div class="agenda-time">15–30<small>min</small></div>
-        <div><div class="agenda-title">O Mapa Estratégico e Objetivos SMART</div><div class="agenda-desc">Estrutura em 4 Quadrantes. KPIs para 2026. Estrutura organizacional: Gestão, Embaixadores, Comunicação, Pesquisadores.</div></div>
-      </div>
-      <div class="agenda-item">
-        <div class="agenda-time">30–45<small>min</small></div>
-        <div><div class="agenda-title">Apresentação da Dinâmica das Tribos</div><div class="agenda-desc">8 vídeos disponíveis na playlist YouTube. Pesquisadores assistem e escolhem sua tribo até <strong>Sábado 12h BRT</strong>. Menu de Artefatos (artigos, guias, podcasts, bibliotecas de prompts).</div></div>
-      </div>
-      <div class="agenda-item">
-        <div class="agenda-time">45–60<small>min</small></div>
-        <div><div class="agenda-title">Networking — Breakout Rooms</div><div class="agenda-desc">Salas aleatórias de 4-5 pessoas por 10 minutos. Pergunta quebra-gelo + conexão genuína. Oportunidade de tirar dúvidas com líderes de tribo.</div></div>
-      </div>
-      <div class="agenda-item">
-        <div class="agenda-time">60–75<small>min</small></div>
-        <div><div class="agenda-title">Regras do Jogo e Ferramentas</div><div class="agenda-desc">Carga horária (4-6h/semana), rituais das tribos, dashboard semanal. Drive, Miro, WhatsApp. A primeira Quick Win do ciclo.</div></div>
-      </div>
-      <div class="agenda-item">
-        <div class="agenda-time">75–90<small>min</small></div>
-        <div><div class="agenda-title">Q&A, Recursos e Encerramento</div><div class="agenda-desc">Dúvidas gerais. Links: trilha de mini cursos gratuitos de IA do PMI, Manual de Governança, playlist YouTube. Foto oficial.</div></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- QUADRANTS -->
-<section id="quadrants">
-  <div class="container">
-    <div class="section-label">Estrutura de Conhecimento</div>
-    <div class="section-title">4 Quadrantes Estratégicos</div>
-    <div class="section-subtitle">Cada quadrante se conecta e alimenta os demais. Não são silos — são uma mandala de conhecimento integrado.</div>
-    <div class="quadrants-grid">
-      <div class="quad-card">
-        <div class="quad-num">Q1</div>
-        <h3>O Praticante Aumentado</h3>
-        <p>Ferramentas, Produtividade e Engenharia de Agentes. O radar tecnológico do GP.</p>
-      </div>
-      <div class="quad-card">
-        <div class="quad-num">Q2</div>
-        <h3>Gestão de Projetos de IA</h3>
-        <p>Metodologia GenAI/ML. Equipes híbridas humanos + agentes autônomos. Framework EAA.</p>
-      </div>
-      <div class="quad-card">
-        <div class="quad-num">Q3</div>
-        <h3>Liderança Organizacional</h3>
-        <p>Estratégia e Pessoas. TMO/PMO do Futuro, Cultura & Change, Talentos, ROI & Portfólio.</p>
-      </div>
-      <div class="quad-card">
-        <div class="quad-num">Q4</div>
-        <h3>Futuro e Responsabilidade</h3>
-        <p>Ética e Sociedade. Governança & Trustworthy AI. Inclusão, neurodiversidade e design inclusivo.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- TRIBES -->
-<section class="section-beige tribes-section" id="tribes">
-  <div class="container">
-    <div class="section-label">Dream Team — 8 Líderes de Pesquisa</div>
-    <div class="section-title">Escolha sua Tribo</div>
-    <div class="section-subtitle">
-      Assista ao vídeo de cada líder e escolha sua tribo. 
-      <span class="badge badge-open">SELEÇÃO ABERTA</span> 
-      <span class="badge badge-deadline">Encerra Sáb 08/Mar 12h BRT</span>
-      <br>Mín. 3 · Máx. 6 pesquisadores por tribo.
-    </div>
-
-    <!-- Tribe 1 -->
-    <div class="tribe-card tribe-q1" onclick="toggleTribe(this)">
-      <div class="tribe-header">
-        <div class="tribe-num">01</div>
-        <div class="tribe-info">
-          <h3>Radar Tecnológico do GP</h3>
-          <div class="tribe-leader">Hayala Curto, MSc, MBA, PMP® · Q1 — O Praticante Aumentado</div>
-        </div>
-        <div>
-          <div class="tribe-slots">
-            <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
-          </div>
-          <div class="tribe-slots-text">0/6 vagas</div>
-        </div>
-      </div>
-      <div class="tribe-body">
-        <p>Identificação de requisitos/escopo de projeto com LLMs, RAG em refinamentos sucessivos com participação humana. Apoiar gerentes de projeto a conduzir o planejamento mesmo com pouco conhecimento da área fim do projeto.</p>
-        <p><strong>Artefatos esperados:</strong> Matriz de Avaliação de Ferramentas · Guias de Implementação · Casos de Uso Práticos</p>
-        <a href="https://www.youtube.com/watch?v=XJLAvcHFKT8" target="_blank" class="tribe-video">▶ Assistir vídeo (7 min)</a>
-      </div>
-    </div>
-
-    <!-- Tribe 2 -->
-    <div class="tribe-card tribe-q2" onclick="toggleTribe(this)">
-      <div class="tribe-header">
-        <div class="tribe-num">02</div>
-        <div class="tribe-info">
-          <h3>Agentes Autônomos & Equipes Híbridas</h3>
-          <div class="tribe-leader">Débora Moura · Q2 — Gestão de Projetos de IA</div>
-        </div>
-        <div>
-          <div class="tribe-slots">
-            <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
-          </div>
-          <div class="tribe-slots-text">0/6 vagas</div>
-        </div>
-      </div>
-      <div class="tribe-body">
-        <p>Liderança de Equipes Híbridas (Humanos + Agentes de IA): transição de equipes puramente humanas para equipes mistas, onde Agentes de IA são tratados como parceiros. Criação do Framework EAA (Estrutura de Agentes Autônomos).</p>
-        <p><strong>Artefatos esperados:</strong> Guia EAA para GPs · Templates de Gestão Híbrida · Métricas de Performance</p>
-        <a href="https://www.youtube.com/watch?v=HwgjMalJXQE" target="_blank" class="tribe-video">▶ Assistir vídeo (8 min)</a>
-      </div>
-    </div>
-
-    <!-- Tribe 3 -->
-    <div class="tribe-card tribe-q3" onclick="toggleTribe(this)">
-      <div class="tribe-header">
-        <div class="tribe-num">03</div>
-        <div class="tribe-info">
-          <h3>TMO & PMO do Futuro</h3>
-          <div class="tribe-leader">Marcel Fleming · Q3 — Liderança Organizacional</div>
-        </div>
-        <div>
-          <div class="tribe-slots">
-            <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
-          </div>
-          <div class="tribe-slots-text">0/6 vagas</div>
-        </div>
-      </div>
-      <div class="tribe-body">
-        <p>IA como ferramenta para avaliação e evolução da maturidade em gerenciamento de projetos. Treinamento de LLM/SLM com dados de projetos e diretrizes do modelo Prado-MMGP para diagnóstico automatizado e sugestões de evolução.</p>
-        <p><strong>Artefatos esperados:</strong> Ferramenta IA de diagnóstico de maturidade · Modelo preditivo de estimativas · Framework PMO aumentado</p>
-        <a href="https://www.youtube.com/watch?v=vxQ4WLTyKpY" target="_blank" class="tribe-video">▶ Assistir vídeo (4 min)</a>
-      </div>
-    </div>
-
-    <!-- Tribe 4 -->
-    <div class="tribe-card tribe-q3" onclick="toggleTribe(this)">
-      <div class="tribe-header">
-        <div class="tribe-num">04</div>
-        <div class="tribe-info">
-          <h3>Cultura & Change</h3>
-          <div class="tribe-leader">Fernando Maquiaveli · Q3 — Liderança Organizacional</div>
-        </div>
-        <div>
-          <div class="tribe-slots">
-            <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
-          </div>
-          <div class="tribe-slots-text">0/6 vagas</div>
-        </div>
-      </div>
-      <div class="tribe-body">
-        <p>Inteligência Cultural, Microculturas Organizacionais e IA Generativa no GP. Como a inteligência cultural opera em nível micro e como pode ser potencializada pelo uso de IA. 25+ anos liderando projetos em ambientes multiculturais.</p>
-        <p><strong>Artefatos esperados:</strong> Framework de Inteligência Cultural + IA · Artigos acadêmicos · Ferramentas para comunidade de projetos</p>
-        <a href="https://www.youtube.com/watch?v=LZSk96EsepA" target="_blank" class="tribe-video">▶ Assistir vídeo (3 min)</a>
-      </div>
-    </div>
-
-    <!-- Tribe 5 -->
-    <div class="tribe-card tribe-q3" onclick="toggleTribe(this)">
-      <div class="tribe-header">
-        <div class="tribe-num">05</div>
-        <div class="tribe-info">
-          <h3>Talentos & Upskilling</h3>
-          <div class="tribe-leader">Jefferson Pinto · Q3 — Liderança Organizacional</div>
-        </div>
-        <div>
-          <div class="tribe-slots">
-            <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
-          </div>
-          <div class="tribe-slots-text">0/6 vagas</div>
-        </div>
-      </div>
-      <div class="tribe-body">
-        <p>Da Taxonomia à Prática: MVP de rubricas para mapear proficiência em IA em gestores de projetos. Matriz de competências com níveis (iniciante-intermediário-avançado) para seleção de ferramentas, avaliação de outputs, governança e comunicação.</p>
-        <p><strong>Artefatos esperados:</strong> Toolkit reutilizável (matriz + rubricas + checklist + exemplos) · Piloto exploratório via workshop</p>
-        <a href="https://www.youtube.com/watch?v=KbhnAJdSeDw" target="_blank" class="tribe-video">▶ Assistir vídeo (5 min)</a>
-      </div>
-    </div>
-
-    <!-- Tribe 6 -->
-    <div class="tribe-card tribe-q3" onclick="toggleTribe(this)">
-      <div class="tribe-header">
-        <div class="tribe-num">06</div>
-        <div class="tribe-info">
-          <h3>ROI & Portfólio</h3>
-          <div class="tribe-leader">Fabricio Costa, PMP · Q3 — Liderança Organizacional</div>
-        </div>
-        <div>
-          <div class="tribe-slots">
-            <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
-          </div>
-          <div class="tribe-slots-text">0/6 vagas</div>
-        </div>
-      </div>
-      <div class="tribe-body">
-        <p>Priorização e Seleção de Projetos com IA. Modelos de IA transparentes, auditáveis e alinhados à governança organizacional. Explainable AI para decisores, patrocinadores e PMOs. Modelos híbridos (IA + julgamento humano).</p>
-        <p><strong>Artefatos esperados:</strong> Framework de governança para IA em portfólios · Modelos preditivos de ROI · Artigos para ProjectManagement.com</p>
-        <a href="https://www.youtube.com/watch?v=R2fA7hVE1dc" target="_blank" class="tribe-video">▶ Assistir vídeo (11 min)</a>
-      </div>
-    </div>
-
-    <!-- Tribe 7 -->
-    <div class="tribe-card tribe-q4" onclick="toggleTribe(this)">
-      <div class="tribe-header">
-        <div class="tribe-num">07</div>
-        <div class="tribe-info">
-          <h3>Governança & Trustworthy AI</h3>
-          <div class="tribe-leader">Marcos Klemz · Q4 — Futuro e Responsabilidade</div>
-        </div>
-        <div>
-          <div class="tribe-slots">
-            <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
-          </div>
-          <div class="tribe-slots-text">0/6 vagas</div>
-        </div>
-      </div>
-      <div class="tribe-body">
-        <p>Governança e Assurance de IA em Projetos (GenAI/ML): do experimento ao uso produtivo com segurança, ética e mensuração de valor. Framework prático cobrindo risco, compliance, qualidade de dados, alucinações, métricas de valor e gestão de mudança.</p>
-        <p><strong>Artefatos esperados:</strong> Framework de Governança IA para GPs · Critérios de aceite para soluções GenAI · Guia de IA Responsável (RAI)</p>
-        <a href="https://www.youtube.com/watch?v=3su8GgtFzVY" target="_blank" class="tribe-video">▶ Assistir vídeo (3 min)</a>
-      </div>
-    </div>
-
-    <!-- Tribe 8 -->
-    <div class="tribe-card tribe-q4" onclick="toggleTribe(this)">
-      <div class="tribe-header">
-        <div class="tribe-num">08</div>
-        <div class="tribe-info">
-          <h3>Inclusão & Colaboração</h3>
-          <div class="tribe-leader">Ana Carla Cavalcante · Q4 — Futuro e Responsabilidade</div>
-        </div>
-        <div>
-          <div class="tribe-slots">
-            <div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div><div class="slot"></div>
-          </div>
-          <div class="tribe-slots-text">0/6 vagas</div>
-        </div>
-      </div>
-      <div class="tribe-body">
-        <p>IA e Inclusão: Potencializando Talentos e Neurodiversidade nas Organizações. IA como exoesqueleto cognitivo para acessibilidade. Design inclusivo em projetos. Perspectiva humana na adoção tecnológica.</p>
-        <p><strong>Artefatos esperados:</strong> Guia de Design Inclusivo em Projetos com IA · Framework de acessibilidade · Artigos e webinars</p>
-        <a href="https://www.youtube.com/watch?v=ghrgJ3_nk4k" target="_blank" class="tribe-video">▶ Assistir vídeo (14 min)</a>
-      </div>
-    </div>
-
-    <div class="text-center mt-2">
-      <a href="https://youtube.com/playlist?list=PLQJVKrw1fcrx3fD2ug1hnps6TklcMT1dc" target="_blank" style="color: var(--pmi-red); font-weight: 700; font-size: 1rem; text-decoration: none;">📋 Playlist completa no YouTube →</a>
-    </div>
-  </div>
-</section>
-
-<!-- KPIs -->
-<section class="section-dark" id="kpis">
-  <div class="container">
-    <div class="section-label">O Que é Sucesso para o Núcleo?</div>
-    <div class="section-title" style="color:var(--white)">Nossas Metas para 2026</div>
-    <div class="section-subtitle">Cada tribo contribui para a meta coletiva. Você não precisa entregar 10 artigos — precisa entregar 1 ou 2 de qualidade.</div>
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <div class="kpi-value">8</div>
-        <div class="kpi-label">Capítulos Participantes</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-value">+10</div>
-        <div class="kpi-label">Artigos Publicados</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-value">+6</div>
-        <div class="kpi-label">Webinars ou Talks</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-value">3</div>
-        <div class="kpi-label">Projetos Pilotos 100% IA</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-value">1.800h</div>
-        <div class="kpi-label">Horas de Impacto</div>
-      </div>
-      <div class="kpi-card">
-        <div class="kpi-value">70%</div>
-        <div class="kpi-label">GPs com mini cert. IA</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- BREAKOUT -->
-<section class="section-beige" id="breakout">
-  <div class="container">
-    <div class="section-label">Momento de Conexão</div>
-    <div class="section-title">Breakout Rooms — Networking</div>
-    <div class="section-subtitle">10 minutos em salas aleatórias de 4-5 pessoas. Conheça quem está construindo o futuro do GP com você.</div>
-    <div class="breakout-box">
-      <h3>🎯 Pergunta Quebra-Gelo</h3>
-      <div class="breakout-question">"Qual o maior impacto que a IA já causou no seu trabalho até hoje?"</div>
-      <p style="font-size:0.9rem; opacity:0.8;">Apresente-se (nome, de onde fala), responda a pergunta, e descubra com quem você quer trabalhar. Depois, retorno e partilha rápida de 5 minutos.</p>
-    </div>
-  </div>
-</section>
-
-<!-- RULES -->
-<section id="rules">
-  <div class="container">
-    <div class="section-label">Como Vamos Trabalhar</div>
-    <div class="section-title">Regras do Jogo</div>
-    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px,1fr)); gap:2rem;">
-      <div>
-        <h3 style="font-size:1.1rem; margin-bottom:1rem;">⏱ Carga Horária</h3>
-        <p style="font-size:0.9rem; color:var(--text-muted);">4 a 6 horas/semana incluindo reuniões + trabalho assíncrono. Reuniões gerais (semanal/quinzenal, 1h30). Reuniões de tribo (semanal, 1h-1h30).</p>
-      </div>
-      <div>
-        <h3 style="font-size:1.1rem; margin-bottom:1rem;">📊 Dashboard Semanal</h3>
-        <p style="font-size:0.9rem; color:var(--text-muted);">Google Sheets compartilhado. Atualização todo sábado até 17h pelos Líderes de Tribo. Segunda-feira: Gerente gera relatório e identifica KPIs em risco.</p>
-      </div>
-      <div>
-        <h3 style="font-size:1.1rem; margin-bottom:1rem;">📝 Curadoria em 7 Etapas</h3>
-        <p style="font-size:0.9rem; color:var(--text-muted);">Geração de ideias → Pesquisa → Redação → Revisão inicial → Peer Review → Revisão do Líder → Comitê de Curadoria → Publicação.</p>
-      </div>
-      <div>
-        <h3 style="font-size:1.1rem; margin-bottom:1rem;">🏆 Reconhecimento</h3>
-        <p style="font-size:0.9rem; color:var(--text-muted);">Declarações formais dos capítulos PMI. Atestados com detalhamento de atividades. Registro de horas. Comprovação acadêmica/profissional.</p>
-      </div>
-    </div>
-    <div class="mt-2">
-      <div class="section-label">Jornada de Valor 2026</div>
-      <div class="timeline" style="margin-top:1.5rem;">
-        <div class="timeline-item">
-          <div class="timeline-date">Marco 1</div>
-          <h4>Produção de Conhecimento</h4>
-          <p>10+ artigos publicados em plataformas internacionais e locais</p>
-        </div>
-        <div class="timeline-item">
-          <div class="timeline-date">Marco 2</div>
-          <h4>Aplicação Real</h4>
-          <p>3 Projetos Pilotos com IA como co-piloto estratégico em todas as fases</p>
-        </div>
-        <div class="timeline-item">
-          <div class="timeline-date">Marco 3</div>
-          <h4>Profissionalização</h4>
-          <p>Certificação PMI-CPMAI — preparação e conquista coletiva</p>
-        </div>
-        <div class="timeline-item">
-          <div class="timeline-date">Marco 4</div>
-          <h4>Impacto Global</h4>
-          <p>Embaixadores & Comunidade — posicionamento para AI Ambassadors do PMI</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- RESOURCES -->
-<section class="section-light" id="resources">
-  <div class="container">
-    <div class="section-label">Links e Recursos</div>
-    <div class="section-title">Próximos Passos</div>
-    <div class="section-subtitle">Tudo que você precisa para começar hoje. Sem desculpas.</div>
-    <div class="resources-grid">
-      <div class="resource-card">
-        <div class="resource-icon" style="background:rgba(213,52,11,0.1);">▶️</div>
-        <div>
-          <h4>Playlist YouTube — 8 Vídeos dos Líderes</h4>
-          <p>Assista, compare e escolha sua tribo até Sábado 12h BRT.</p>
-          <a href="https://youtube.com/playlist?list=PLQJVKrw1fcrx3fD2ug1hnps6TklcMT1dc" target="_blank">Abrir playlist →</a>
-        </div>
-      </div>
-      <div class="resource-card">
-        <div class="resource-icon" style="background:rgba(0,121,158,0.1);">📘</div>
-        <div>
-          <h4>Manual de Governança e Operações</h4>
-          <p>Leitura obrigatória para todos os colaboradores do Núcleo.</p>
-          <a href="#">Acessar no Drive →</a>
-        </div>
-      </div>
-      <div class="resource-card">
-        <div class="resource-icon" style="background:rgba(79,23,168,0.1);">🎓</div>
-        <div>
-          <h4>Mini Cursos Gratuitos de IA — PMI</h4>
-          <p>Trilha de capacitação em IA para gerentes de projetos.</p>
-          <a href="https://www.pmi.org/learning/ai-in-project-management" target="_blank">Acessar no PMI.org →</a>
-        </div>
-      </div>
-      <div class="resource-card">
-        <div class="resource-icon" style="background:rgba(112,173,71,0.1);">💻</div>
-        <div>
-          <h4>GitHub — AI & PM Research Hub</h4>
-          <p>Repositório do projeto com documentação trilíngue e Change Requests.</p>
-          <a href="https://github.com/VitorMRodovalho/ai-pm-research-hub" target="_blank">Abrir repositório →</a>
-        </div>
-      </div>
-      <div class="resource-card">
-        <div class="resource-icon" style="background:rgba(255,97,15,0.1);">📧</div>
-        <div>
-          <h4>Email Oficial do Núcleo</h4>
-          <p>Para comunicações formais e institucionais.</p>
-          <a href="mailto:nucleoia@pmigo.org.br">nucleoia@pmigo.org.br</a>
-        </div>
-      </div>
-      <div class="resource-card">
-        <div class="resource-icon" style="background:rgba(0,121,158,0.1);">✅</div>
-        <div>
-          <h4>Aceite Oficial — volunteer.pmi.org</h4>
-          <p>Aceite formalmente sua posição no portal de voluntários do PMI.</p>
-          <a href="https://volunteer.pmi.org" target="_blank">Acessar portal →</a>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- FOOTER -->
-<footer class="footer">
-  <p>Núcleo de Estudos e Pesquisa em Inteligência Artificial e Gerenciamento de Projetos</p>
-  <p>The AI & PM Study and Research Hub — A Joint Initiative of the PMI Brazilian Chapters</p>
-  <p style="margin-top:0.5rem;">PMI-GO · PMI-CE · PMI-DF · PMI-MG · PMI-RS</p>
-  <p style="margin-top:1rem; font-size:0.7rem;">PMI®, PMBOK®, PMP® e PMI-CPMAI™ são marcas registradas do Project Management Institute, Inc.</p>
-  <p style="margin-top:0.5rem;"><a href="https://github.com/VitorMRodovalho/ai-pm-research-hub">GitHub</a> · Gerente de Projeto: Vitor Maia Rodovalho</p>
-</footer>
+<div id="toast" class="toast"></div>
+<div id="authModal" class="modal-overlay"><div class="modal"><button class="modal-close" onclick="closeAuth()">&times;</button><h2>Entrar no Núcleo IA & GP</h2><p>Use seu email para registro. Você poderá escolher sua tribo.</p><div id="loginForm"><div class="form-group"><label>Nome completo</label><input type="text" id="authName" placeholder="Seu nome"></div><div class="form-group"><label>Email</label><input type="email" id="authEmail" placeholder="seu@email.com"></div><div class="form-group"><label>Capítulo PMI</label><select id="authChapter"><option value="">Selecione...</option><option value="PMI-GO">PMI-GO</option><option value="PMI-CE">PMI-CE</option><option value="PMI-DF">PMI-DF</option><option value="PMI-MG">PMI-MG</option><option value="PMI-RS">PMI-RS</option><option value="Outro">Outro / Convidado</option></select></div><button class="btn btn-login" style="width:100%;justify-content:center;padding:.7rem" onclick="handleLogin()">Registrar e Entrar ✉️</button><div id="authMsg" class="form-msg"></div></div><div id="magicLinkSent" class="hidden" style="text-align:center;padding:1rem 0"><div style="font-size:3rem;margin-bottom:.5rem">📩</div><h3 style="margin-bottom:.5rem">Verifique seu email!</h3><p style="font-size:.88rem;color:var(--text-muted)">Clique no link para confirmar.</p></div></div></div>
+<nav class="nav"><div class="nav-brand">Núcleo <span>IA & GP</span> — Ciclo 03</div><div class="nav-links"><a href="#agenda">Pauta</a><a href="#quadrants">Quadrantes</a><a href="#tribes">Tribos</a><a href="#kpis">KPIs</a><a href="#breakout">Networking</a><a href="#rules">Regras</a><a href="#resources">Recursos</a></div><div class="nav-auth" id="navAuth"><button class="btn btn-login" onclick="openAuth()">Entrar</button></div></nav>
+<section class="hero" id="hero"><div class="hero-content"><div class="hero-badge">KICK-OFF OFICIAL — CICLO 03 (2026/1)</div><h1>Núcleo de Estudos e Pesquisa em<br><span class="accent">Inteligência Artificial</span><br>e Gerenciamento de Projetos</h1><h2>The AI & PM Study and Research Hub — A Joint Initiative of the PMI Brazilian Chapters</h2><div class="hero-date">📅 5 de Março de 2026 · 19:30 BRT · Google Meet</div><div class="hero-chapters"><span>PMI-GO</span><span>PMI-CE</span><span>PMI-DF</span><span>PMI-MG</span><span>PMI-RS</span></div><div class="countdown-bar"><div class="countdown-item"><div class="countdown-num" id="cd-days">--</div><div class="countdown-label">Dias</div></div><div class="countdown-sep">:</div><div class="countdown-item"><div class="countdown-num" id="cd-hours">--</div><div class="countdown-label">Horas</div></div><div class="countdown-sep">:</div><div class="countdown-item"><div class="countdown-num" id="cd-mins">--</div><div class="countdown-label">Min</div></div><div class="countdown-sep">:</div><div class="countdown-item"><div class="countdown-num" id="cd-secs">--</div><div class="countdown-label">Seg</div></div><div style="font-size:.72rem;color:rgba(255,255,255,.5)">para escolher sua tribo</div></div></div><div class="scroll-cue">▼ Role para começar</div></section>
+<section class="section-beige" id="agenda"><div class="container"><div class="section-label">Pauta do Evento</div><div class="section-title">O que acontece hoje</div><div class="section-subtitle">1h30 de alinhamento, conhecimento e conexão.</div><div class="agenda-grid"><div class="agenda-item"><div class="agenda-time">00–15<small>min</small></div><div><div class="agenda-title">Boas-vindas e Abertura Institucional</div><div class="agenda-desc">Celebração do crescimento. Palavra das diretorias dos 5 Capítulos. 44 colaboradores.</div></div></div><div class="agenda-item"><div class="agenda-time">15–30<small>min</small></div><div><div class="agenda-title">Mapa Estratégico e Objetivos</div><div class="agenda-desc">4 Quadrantes. KPIs 2026. Estrutura do Núcleo.</div></div></div><div class="agenda-item"><div class="agenda-time">30–45<small>min</small></div><div><div class="agenda-title">Dinâmica das Tribos</div><div class="agenda-desc">8 vídeos. Escolha sua tribo até <strong>Sáb 08/Mar 12h BRT</strong>.</div></div></div><div class="agenda-item"><div class="agenda-time">45–60<small>min</small></div><div><div class="agenda-title">Networking — Breakout Rooms</div><div class="agenda-desc">Salas aleatórias 4-5 pessoas. Pergunta quebra-gelo.</div></div></div><div class="agenda-item"><div class="agenda-time">60–75<small>min</small></div><div><div class="agenda-title">Regras do Jogo e Ferramentas</div><div class="agenda-desc">Dashboard semanal. Drive, Miro, WhatsApp.</div></div></div><div class="agenda-item"><div class="agenda-time">75–90<small>min</small></div><div><div class="agenda-title">Q&A e Encerramento</div><div class="agenda-desc">Links, cursos PMI, Manual, foto oficial.</div></div></div></div></div></section>
+<section id="quadrants"><div class="container"><div class="section-label">Estrutura de Conhecimento</div><div class="section-title">4 Quadrantes Estratégicos</div><div class="section-subtitle">Cada quadrante se conecta e alimenta os demais.</div><div class="quadrants-grid"><div class="quad-card"><div class="quad-num">Q1</div><h3>O Praticante Aumentado</h3><p>Ferramentas, Produtividade e Engenharia de Agentes.</p></div><div class="quad-card"><div class="quad-num">Q2</div><h3>Gestão de Projetos de IA</h3><p>Metodologia GenAI/ML. Equipes híbridas. Framework EAA.</p></div><div class="quad-card"><div class="quad-num">Q3</div><h3>Liderança Organizacional</h3><p>TMO/PMO do Futuro, Cultura, Talentos, ROI & Portfólio.</p></div><div class="quad-card"><div class="quad-num">Q4</div><h3>Futuro e Responsabilidade</h3><p>Governança & Trustworthy AI. Inclusão e design inclusivo.</p></div></div></div></section>
+<section class="section-beige" id="tribes"><div class="container"><div class="section-label">Dream Team — 8 Líderes</div><div class="section-title">Escolha sua Tribo</div><div class="section-subtitle"><span class="badge badge-open">SELEÇÃO ABERTA</span> <span class="badge badge-deadline">Encerra Sáb 08/Mar 12h BRT</span><br>Mín. 3 · Máx. 6 pesquisadores por tribo. <span id="loginPrompt" style="display:block;margin-top:.5rem;font-weight:600;color:var(--pmi-orange)">⚡ Faça login para escolher</span></div><div id="tribesContainer"></div><div class="text-center mt-2"><a href="https://youtube.com/playlist?list=PLQJVKrw1fcrx3fD2ug1hnps6TklcMT1dc" target="_blank" style="color:var(--pmi-red);font-weight:700;font-size:.95rem;text-decoration:none">📋 Playlist completa →</a></div></div></section>
+<section class="section-dark" id="kpis"><div class="container"><div class="section-label">O Que é Sucesso?</div><div class="section-title" style="color:var(--white)">Metas 2026</div><div class="section-subtitle">1-2 artefatos de qualidade por tribo.</div><div class="kpi-grid"><div class="kpi-card"><div class="kpi-value">8</div><div class="kpi-label">Capítulos</div></div><div class="kpi-card"><div class="kpi-value">+10</div><div class="kpi-label">Artigos</div></div><div class="kpi-card"><div class="kpi-value">+6</div><div class="kpi-label">Webinars</div></div><div class="kpi-card"><div class="kpi-value">3</div><div class="kpi-label">Pilotos IA</div></div><div class="kpi-card"><div class="kpi-value">1.800h</div><div class="kpi-label">Impacto</div></div><div class="kpi-card"><div class="kpi-value">70%</div><div class="kpi-label">Mini cert. IA</div></div></div></div></section>
+<section class="section-beige" id="breakout"><div class="container"><div class="section-label">Momento de Conexão</div><div class="section-title">Breakout Rooms</div><div class="breakout-box"><h3>🎯 Pergunta Quebra-Gelo</h3><div class="breakout-question">"Qual o maior impacto que a IA já causou no seu trabalho até hoje?"</div><p style="font-size:.88rem;opacity:.8">Apresente-se, responda e descubra com quem quer trabalhar.</p></div></div></section>
+<section id="rules"><div class="container"><div class="section-label">Como Vamos Trabalhar</div><div class="section-title">Regras do Jogo</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem"><div><h3 style="font-size:1.05rem;margin-bottom:.8rem">⏱ Carga Horária</h3><p style="font-size:.88rem;color:var(--text-muted)">4-6h/semana. Reuniões gerais + tribos.</p></div><div><h3 style="font-size:1.05rem;margin-bottom:.8rem">📊 Dashboard</h3><p style="font-size:.88rem;color:var(--text-muted)">Google Sheets. Sábado até 17h. Segunda: relatório.</p></div><div><h3 style="font-size:1.05rem;margin-bottom:.8rem">📝 Curadoria</h3><p style="font-size:.88rem;color:var(--text-muted)">7 etapas até publicação. Peer review + Comitê.</p></div><div><h3 style="font-size:1.05rem;margin-bottom:.8rem">🏆 Reconhecimento</h3><p style="font-size:.88rem;color:var(--text-muted)">Declarações PMI. Atestados. Horas. Comprovação.</p></div></div><div class="mt-2"><div class="section-label">Jornada de Valor 2026</div><div class="timeline" style="margin-top:1.2rem"><div class="timeline-item"><div class="timeline-date">Marco 1</div><h4>Produção de Conhecimento</h4><p>10+ artigos internacionais</p></div><div class="timeline-item"><div class="timeline-date">Marco 2</div><h4>Aplicação Real</h4><p>3 Pilotos com IA co-piloto</p></div><div class="timeline-item"><div class="timeline-date">Marco 3</div><h4>Profissionalização</h4><p>Certificação PMI-CPMAI</p></div><div class="timeline-item"><div class="timeline-date">Marco 4</div><h4>Impacto Global</h4><p>AI Ambassadors & Comunidade</p></div></div></div></div></section>
+<section class="section-light" id="resources"><div class="container"><div class="section-label">Links e Recursos</div><div class="section-title">Próximos Passos</div><div class="resources-grid"><div class="resource-card"><div class="resource-icon" style="background:rgba(213,52,11,.1)">▶️</div><div><h4>Playlist YouTube</h4><p>8 vídeos. Escolha até Sáb 12h.</p><a href="https://youtube.com/playlist?list=PLQJVKrw1fcrx3fD2ug1hnps6TklcMT1dc" target="_blank">Abrir →</a></div></div><div class="resource-card"><div class="resource-icon" style="background:rgba(0,121,158,.1)">📘</div><div><h4>Manual de Governança</h4><p>Leitura obrigatória.</p><a href="#">Drive →</a></div></div><div class="resource-card"><div class="resource-icon" style="background:rgba(79,23,168,.1)">🎓</div><div><h4>Mini Cursos IA — PMI</h4><p>Trilha gratuita.</p><a href="https://www.pmi.org/learning/ai-in-project-management" target="_blank">PMI.org →</a></div></div><div class="resource-card"><div class="resource-icon" style="background:rgba(112,173,71,.1)">💻</div><div><h4>GitHub</h4><p>Repositório + CRs.</p><a href="https://github.com/VitorMRodovalho/ai-pm-research-hub" target="_blank">Abrir →</a></div></div><div class="resource-card"><div class="resource-icon" style="background:rgba(255,97,15,.1)">📧</div><div><h4>Email do Núcleo</h4><p>Comunicações oficiais.</p><a href="mailto:nucleoia@pmigo.org.br">nucleoia@pmigo.org.br</a></div></div><div class="resource-card"><div class="resource-icon" style="background:rgba(0,121,158,.1)">✅</div><div><h4>volunteer.pmi.org</h4><p>Aceite sua posição.</p><a href="https://volunteer.pmi.org" target="_blank">Portal →</a></div></div></div></div></section>
+<footer class="footer"><p>Núcleo de Estudos e Pesquisa em IA e GP · The AI & PM Study and Research Hub</p><p style="margin-top:.3rem">PMI-GO · PMI-CE · PMI-DF · PMI-MG · PMI-RS</p><p style="margin-top:.6rem;font-size:.68rem">PMI®, PMBOK®, PMP® e PMI-CPMAI™ são marcas registradas do PMI, Inc.</p><p style="margin-top:.3rem"><a href="https://github.com/VitorMRodovalho/ai-pm-research-hub">GitHub</a> · GP: Vitor Maia Rodovalho</p></footer>
 
 <script>
-function toggleTribe(card) {
-  const body = card.querySelector('.tribe-body');
-  const wasOpen = body.classList.contains('open');
-  // Close all
-  document.querySelectorAll('.tribe-body').forEach(b => b.classList.remove('open'));
-  // Toggle this one
-  if (!wasOpen) body.classList.add('open');
-}
-
-// Nav active state on scroll
-const sections = document.querySelectorAll('section[id]');
-const navLinks = document.querySelectorAll('.nav-links a');
-window.addEventListener('scroll', () => {
-  let current = '';
-  sections.forEach(section => {
-    const top = section.offsetTop - 100;
-    if (window.scrollY >= top) current = section.getAttribute('id');
-  });
-  navLinks.forEach(link => {
-    link.classList.remove('active');
-    if (link.getAttribute('href') === '#' + current) link.classList.add('active');
-  });
-});
+const SUPABASE_URL='https://ldrfrvwhxsmgaabwmaik.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkcmZydndoeHNtZ2FhYndtYWlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MjU5NDQsImV4cCI6MjA4ODMwMTk0NH0.gzibKd7Jyck3Ya61vzrloX1YZt-0pNReTuefdi4mAmw';
+const DEADLINE=new Date('2026-03-08T15:00:00Z');
+const MAX_M=6,MIN_M=3;
+const TRIBES=[
+{id:1,name:'Radar Tecnológico do GP',leader:'Hayala Curto, MSc, MBA, PMP®',quad:'q1',qn:'Q1 — Praticante Aumentado',desc:'Requisitos/escopo com LLMs e RAG. Apoiar GPs com IA.',art:'Matriz de Ferramentas · Guias · Casos de Uso',video:'https://www.youtube.com/watch?v=XJLAvcHFKT8',dur:'7min'},
+{id:2,name:'Agentes Autônomos & Equipes Híbridas',leader:'Débora Moura',quad:'q2',qn:'Q2 — Gestão de Projetos de IA',desc:'Equipes Híbridas Humanos+IA. Framework EAA.',art:'Guia EAA · Templates Gestão Híbrida · Métricas',video:'https://www.youtube.com/watch?v=HwgjMalJXQE',dur:'8min'},
+{id:3,name:'TMO & PMO do Futuro',leader:'Marcel Fleming',quad:'q3',qn:'Q3 — Liderança Organizacional',desc:'IA para maturidade em GP (Prado-MMGP). Diagnóstico automatizado.',art:'Ferramenta IA diagnóstico · Modelo preditivo · Framework PMO',video:'https://www.youtube.com/watch?v=vxQ4WLTyKpY',dur:'4min'},
+{id:4,name:'Cultura & Change',leader:'Fernando Maquiaveli',quad:'q3',qn:'Q3 — Liderança Organizacional',desc:'Inteligência Cultural + Microculturas + IA Generativa no GP.',art:'Framework Cultural+IA · Artigos · Ferramentas',video:'https://www.youtube.com/watch?v=LZSk96EsepA',dur:'3min'},
+{id:5,name:'Talentos & Upskilling',leader:'Jefferson Pinto',quad:'q3',qn:'Q3 — Liderança Organizacional',desc:'Rubricas de proficiência em IA para GPs. Matriz de competências.',art:'Toolkit (matriz+rubricas+checklist) · Piloto workshop',video:'https://www.youtube.com/watch?v=KbhnAJdSeDw',dur:'5min'},
+{id:6,name:'ROI & Portfólio',leader:'Fabricio Costa, PMP',quad:'q3',qn:'Q3 — Liderança Organizacional',desc:'Priorização com IA. Explainable AI para decisores e PMOs.',art:'Framework governança IA portfólios · Modelos ROI · Artigos',video:'https://www.youtube.com/watch?v=R2fA7hVE1dc',dur:'11min'},
+{id:7,name:'Governança & Trustworthy AI',leader:'Marcos Klemz',quad:'q4',qn:'Q4 — Futuro e Responsabilidade',desc:'Framework: risco, compliance, alucinações, métricas, gestão de mudança.',art:'Framework Governança IA · Critérios aceite GenAI · Guia RAI',video:'https://www.youtube.com/watch?v=3su8GgtFzVY',dur:'3min'},
+{id:8,name:'Inclusão & Colaboração',leader:'Ana Carla Cavalcante',quad:'q4',qn:'Q4 — Futuro e Responsabilidade',desc:'Neurodiversidade, acessibilidade. IA como exoesqueleto cognitivo.',art:'Guia Design Inclusivo · Framework acessibilidade · Artigos',video:'https://www.youtube.com/watch?v=ghrgJ3_nk4k',dur:'14min'}
+];
+let sb=null,curUser=null,profile=null,tribeCounts={},userTribe=null;
+function init(){renderTribes();startCD();initNav();if(SUPABASE_URL!=='https://ldrfrvwhxsmgaabwmaik.supabase.co'){sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);checkSess();loadSel();subRT()}else{const u=JSON.parse(localStorage.getItem('hub_user')||'null');if(u){curUser=u;profile=u;updateAuthUI();updateTribesUI()}}}
+function openAuth(){document.getElementById('authModal').classList.add('open')}
+function closeAuth(){document.getElementById('authModal').classList.remove('open')}
+async function handleLogin(){const n=document.getElementById('authName').value.trim(),e=document.getElementById('authEmail').value.trim(),c=document.getElementById('authChapter').value,m=document.getElementById('authMsg');if(!n||!e||!c){m.className='form-msg error';m.textContent='Preencha todos os campos.';return}if(!sb){const u={name:n,email:e,chapter:c};localStorage.setItem('hub_user',JSON.stringify(u));curUser=u;profile=u;closeAuth();updateAuthUI();updateTribesUI();toast('Bem-vindo(a), '+n+'!','success');return}try{localStorage.setItem('hub_pending',JSON.stringify({name:n,chapter:c}));const{error}=await sb.auth.signInWithOtp({email:e,options:{emailRedirectTo:location.origin+location.pathname}});if(error)throw error;document.getElementById('loginForm').classList.add('hidden');document.getElementById('magicLinkSent').classList.remove('hidden')}catch(err){m.className='form-msg error';m.textContent='Erro: '+err.message}}
+async function checkSess(){if(!sb)return;const{data:{session}}=await sb.auth.getSession();if(session){curUser=session.user;await loadProfile();updateAuthUI()}}
+async function loadProfile(){if(!sb||!curUser)return;let{data:p}=await sb.from('members').select('*').eq('auth_id',curUser.id).single();if(!p){const pend=JSON.parse(localStorage.getItem('hub_pending')||'{}');const{data:np}=await sb.from('members').insert({auth_id:curUser.id,email:curUser.email,name:pend.name||curUser.email.split('@')[0],chapter:pend.chapter||'Outro',role:'researcher'}).select().single();p=np;localStorage.removeItem('hub_pending')}profile=p;const{data:sel}=await sb.from('tribe_selections').select('tribe_id').eq('member_id',profile.id).single();if(sel)userTribe=sel.tribe_id;updateTribesUI()}
+function updateAuthUI(){const nav=document.getElementById('navAuth'),pr=document.getElementById('loginPrompt'),nm=profile?.name||curUser?.email?.split('@')[0]||'User',ini=nm.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();nav.innerHTML='<div class="user-badge"><div class="user-avatar">'+ini+'</div><span>'+nm.split(' ')[0]+'</span></div><button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>';if(pr)pr.style.display='none';updateTribesUI()}
+async function logout(){if(sb)await sb.auth.signOut();localStorage.removeItem('hub_user');curUser=null;profile=null;userTribe=null;document.getElementById('navAuth').innerHTML='<button class="btn btn-login" onclick="openAuth()">Entrar</button>';document.getElementById('loginPrompt').style.display='block';updateTribesUI()}
+async function loadSel(){if(!sb)return;const{data}=await sb.from('tribe_selections').select('tribe_id');tribeCounts={};if(data)data.forEach(s=>{tribeCounts[s.tribe_id]=(tribeCounts[s.tribe_id]||0)+1});updateTribesUI()}
+function subRT(){if(!sb)return;sb.channel('tc').on('postgres_changes',{event:'*',schema:'public',table:'tribe_selections'},()=>loadSel()).subscribe()}
+async function selTribe(id){if(!curUser&&!localStorage.getItem('hub_user')){openAuth();return}if(new Date()>DEADLINE){toast('Seleção encerrada!','error');return}const cnt=tribeCounts[id]||0;if(cnt>=MAX_M&&userTribe!==id){toast('Tribo lotada!','error');return}if(sb&&profile){try{if(userTribe){await sb.from('tribe_selections').update({tribe_id:id}).eq('member_id',profile.id)}else{await sb.from('tribe_selections').insert({member_id:profile.id,tribe_id:id})}userTribe=id;toast('Tribo '+id+' selecionada!','success');await loadSel()}catch(e){toast('Erro: '+e.message,'error')}}else{if(userTribe){const old=userTribe;tribeCounts[old]=Math.max(0,(tribeCounts[old]||1)-1)}userTribe=id;tribeCounts[id]=(tribeCounts[id]||0)+1;toast('Tribo '+id+' selecionada!','success');updateTribesUI()}}
+function renderTribes(){document.getElementById('tribesContainer').innerHTML=TRIBES.map(t=>'<div class="tribe-card tribe-'+t.quad+'" id="tribe-'+t.id+'"><div class="tribe-header" onclick="toggleT('+t.id+')"><div class="tribe-num">'+String(t.id).padStart(2,'0')+'</div><div class="tribe-info"><h3>'+t.name+'</h3><div class="tribe-leader">'+t.leader+' · '+t.qn+'</div></div><div class="tribe-slots-wrap"><div class="slots-visual" id="sl-'+t.id+'">'+Array(MAX_M).fill('<div class="slot-dot"></div>').join('')+'</div><div class="slots-text" id="st-'+t.id+'">0/'+MAX_M+'</div></div></div><div class="tribe-body" id="tb-'+t.id+'"><p>'+t.desc+'</p><p><strong>Artefatos:</strong> '+t.art+'</p><div class="tribe-actions"><a href="'+t.video+'" target="_blank" class="tribe-video">▶ Vídeo ('+t.dur+')</a><button class="btn btn-select" id="sb-'+t.id+'" onclick="event.stopPropagation();selTribe('+t.id+')">Escolher esta Tribo</button></div></div></div>').join('')}
+function updateTribesUI(){TRIBES.forEach(t=>{const c=tribeCounts[t.id]||0,dots=document.querySelectorAll('#sl-'+t.id+' .slot-dot'),tx=document.getElementById('st-'+t.id),bt=document.getElementById('sb-'+t.id);dots.forEach((d,i)=>{d.classList.toggle('filled',i<c)});if(c>=MAX_M)tx.innerHTML='<span class="full">LOTADA</span>';else if(c>=MIN_M){tx.innerHTML=c+'/'+MAX_M+' ✓';tx.style.color='var(--pmi-green)'}else{tx.innerHTML=c+'/'+MAX_M;tx.style.color=''}if(bt){const isSel=userTribe===t.id,isFull=c>=MAX_M&&!isSel;bt.textContent=isSel?'✓ Selecionada':isFull?'Lotada':'Escolher esta Tribo';bt.classList.toggle('selected',isSel);bt.disabled=isFull;bt.style.display=(curUser||localStorage.getItem('hub_user'))?'':'none'}})}
+function toggleT(id){const b=document.getElementById('tb-'+id),w=b.classList.contains('open');document.querySelectorAll('.tribe-body').forEach(x=>x.classList.remove('open'));if(!w)b.classList.add('open')}
+function startCD(){function u(){const d=DEADLINE-new Date();if(d<=0){['cd-days','cd-hours','cd-mins','cd-secs'].forEach(x=>document.getElementById(x).textContent='00');return}document.getElementById('cd-days').textContent=String(Math.floor(d/864e5)).padStart(2,'0');document.getElementById('cd-hours').textContent=String(Math.floor(d%864e5/36e5)).padStart(2,'0');document.getElementById('cd-mins').textContent=String(Math.floor(d%36e5/6e4)).padStart(2,'0');document.getElementById('cd-secs').textContent=String(Math.floor(d%6e4/1e3)).padStart(2,'0')}u();setInterval(u,1e3)}
+function toast(m,t){const e=document.getElementById('toast');e.textContent=m;e.className='toast '+t+' show';setTimeout(()=>e.classList.remove('show'),3e3)}
+function initNav(){const ss=document.querySelectorAll('section[id]'),ls=document.querySelectorAll('.nav-links a');window.addEventListener('scroll',()=>{let c='';ss.forEach(s=>{if(scrollY>=s.offsetTop-100)c=s.id});ls.forEach(l=>l.classList.toggle('active',l.getAttribute('href')==='#'+c))})}
+document.addEventListener('DOMContentLoaded',init);
 </script>
 </body>
 </html>
