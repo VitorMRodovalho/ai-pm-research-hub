@@ -178,18 +178,8 @@ async function loadCounts(){
 }
 function subRT(){sb.channel('tc').on('postgres_changes',{event:'*',schema:'public',table:'tribe_selections'},()=>loadCounts()).subscribe()}
 
-async function selTribe(id){
-  if(!user){openAuth();return}
-  if(!profile||profile.role==='guest'){toast('Apenas membros cadastrados podem escolher tribo.','error');return}
-  if(new Date()>DL){toast('Seleção encerrada!','error');return}
-  const cnt=tc[id]||0;
-  if(cnt>=MX&&ut!==id){toast('Tribo lotada!','error');return}
-  try{
-    if(ut){await sb.from('tribe_selections').update({tribe_id:id}).eq('member_id',profile.id)}
-    else{await sb.from('tribe_selections').insert({member_id:profile.id,tribe_id:id})}
-    ut=id;toast('Tribo '+id+' selecionada! ✓','success');await loadCounts();
-  }catch(e){toast('Erro: '+e.message,'error')}
-}
+async function selTribe(id){if(!user){openAuth();return}if(!profile||profile.role==='guest'){toast('Apenas membros cadastrados.','error');return}if(new Date()>DL){toast('Seleção encerrada!','error');return}const cnt=tc[id]||0;if(cnt>=MX&&ut!==id){toast('Tribo lotada!','error');return}try{const{data}=await sb.rpc('select_tribe',{p_tribe_id:id});if(data?.success){ut=id;toast('Tribo '+id+' selecionada! ✓','success');await loadCounts()}else{toast(data?.error||'Erro','error')}}catch(e){toast('Erro: '+e.message,'error')}}
+
 
 function renderTribes(){
   document.getElementById('tribesContainer').innerHTML=T.map(t=>'<div class="tribe-card tribe-'+t.q+'" id="t-'+t.id+'"><div class="tribe-header" onclick="togT('+t.id+')"><div class="tribe-num">'+String(t.id).padStart(2,'0')+'</div><div class="tribe-info"><h3>'+t.n+'</h3><div class="tribe-leader">'+t.l+' · '+t.qn+'</div></div><div class="tribe-slots-wrap"><div class="slots-visual" id="sl-'+t.id+'">'+Array(MX).fill('<div class="slot-dot"></div>').join('')+'</div><div class="slots-text" id="st-'+t.id+'">0/'+MX+'</div></div></div><div class="tribe-body" id="tb-'+t.id+'"><p>'+t.d+'</p><p><strong>Artefatos:</strong> '+t.a+'</p><div class="tribe-actions"><a href="'+t.v+'" target="_blank" class="tribe-video">▶ Vídeo ('+t.vd+')</a><button class="btn btn-select" id="sb-'+t.id+'" onclick="event.stopPropagation();selTribe('+t.id+')">Escolher esta Tribo</button></div></div></div>').join('')}
