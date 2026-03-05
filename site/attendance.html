@@ -15,166 +15,122 @@
     --green:      #10B981;
     --yellow:     #F59E0B;
     --red-soft:   #EF4444;
-    --white:      #FFFFFF;
     --radius:     10px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Inter', system-ui, sans-serif; background: var(--pmi-light); color: #1E293B; }
 
-  /* ── NAV ── */
-  nav {
-    background: var(--pmi-navy);
-    padding: 14px 24px;
-    display: flex; align-items: center; gap: 16px;
-  }
-  nav .logo { color: white; font-weight: 700; font-size: 16px; letter-spacing: .3px; }
+  nav { background: var(--pmi-navy); padding: 14px 24px; display: flex; align-items: center; gap: 16px; }
+  nav .logo { color: white; font-weight: 700; font-size: 16px; }
   nav .logo span { color: #93C5FD; }
-  nav a { color: #93C5FD; text-decoration: none; font-size: 13px; margin-left: auto; }
+  nav .nav-user { color: #94A3B8; font-size: 13px; margin-left: auto; }
+  nav a { color: #93C5FD; text-decoration: none; font-size: 13px; margin-left: 16px; }
 
-  /* ── KPI BAR ── */
-  .kpi-bar {
-    background: var(--pmi-navy);
-    padding: 0 24px 20px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 12px;
-  }
-  .kpi-card {
-    background: rgba(255,255,255,.08);
-    border-radius: var(--radius);
-    padding: 14px 18px;
-    border: 1px solid rgba(255,255,255,.12);
-  }
+  .kpi-bar { background: var(--pmi-navy); padding: 0 24px 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 12px; }
+  .kpi-card { background: rgba(255,255,255,.08); border-radius: var(--radius); padding: 14px 18px; border: 1px solid rgba(255,255,255,.12); }
   .kpi-card .label { color: #93C5FD; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .6px; }
   .kpi-card .value { color: white; font-size: 26px; font-weight: 700; margin: 4px 0 2px; }
   .kpi-card .sub   { color: #94A3B8; font-size: 12px; }
   .progress-wrap { margin-top: 8px; background: rgba(255,255,255,.15); border-radius: 99px; height: 6px; overflow: hidden; }
-  .progress-bar  { height: 100%; background: var(--green); border-radius: 99px; transition: width .6s ease; }
-  .progress-bar.warn  { background: var(--yellow); }
-  .progress-bar.low   { background: var(--red-soft); }
+  .progress-bar  { height: 100%; background: var(--green); border-radius: 99px; transition: width .6s; }
+  .progress-bar.warn { background: var(--yellow); }
+  .progress-bar.low  { background: var(--red-soft); }
 
-  /* ── MAIN ── */
   main { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
-  h2 { font-size: 18px; font-weight: 700; color: var(--pmi-navy); margin-bottom: 16px; }
 
-  /* ── SECTION TABS ── */
   .tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-  .tab {
-    padding: 8px 18px; border-radius: 99px; font-size: 13px; font-weight: 600;
-    cursor: pointer; border: 2px solid var(--pmi-border); background: white; color: var(--pmi-gray);
-    transition: all .15s;
-  }
+  .tab { padding: 8px 18px; border-radius: 99px; font-size: 13px; font-weight: 600; cursor: pointer; border: 2px solid var(--pmi-border); background: white; color: var(--pmi-gray); transition: all .15s; }
   .tab.active { border-color: var(--pmi-navy); background: var(--pmi-navy); color: white; }
 
-  /* ── CARDS ── */
   .card { background: white; border-radius: var(--radius); border: 1px solid var(--pmi-border); overflow: hidden; margin-bottom: 16px; }
-  .card-header {
-    padding: 14px 20px; border-bottom: 1px solid var(--pmi-border);
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  }
+  .card-header { padding: 14px 20px; border-bottom: 1px solid var(--pmi-border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .card-header h3 { font-size: 14px; font-weight: 700; color: var(--pmi-navy); }
   .card-body { padding: 20px; }
 
-  /* ── BUTTONS ── */
-  .btn {
-    padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
-    cursor: pointer; border: none; transition: all .15s;
-  }
-  .btn-primary   { background: var(--pmi-navy); color: white; }
+  .btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all .15s; }
+  .btn-primary { background: var(--pmi-navy); color: white; }
   .btn-primary:hover { background: #004d8f; }
-  .btn-red       { background: var(--pmi-red); color: white; }
-  .btn-red:hover { background: #9b1a20; }
-  .btn-ghost     { background: transparent; color: var(--pmi-navy); border: 1.5px solid var(--pmi-navy); }
+  .btn-red { background: var(--pmi-red); color: white; }
+  .btn-ghost { background: transparent; color: var(--pmi-navy); border: 1.5px solid var(--pmi-navy); }
   .btn-ghost:hover { background: var(--pmi-light); }
-  .btn-sm        { padding: 5px 12px; font-size: 12px; }
-  .btn:disabled  { opacity: .4; cursor: not-allowed; }
+  .btn-sm { padding: 5px 12px; font-size: 12px; }
+  .btn-icon { padding: 5px 8px; font-size: 14px; background: var(--pmi-light); border: 1px solid var(--pmi-border); border-radius: 6px; cursor: pointer; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
 
-  /* ── FORM ── */
-  .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
-  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--pmi-gray); margin-bottom: 5px; }
-  .field input, .field select {
-    width: 100%; padding: 9px 12px; border-radius: 8px;
-    border: 1.5px solid var(--pmi-border); font-size: 13px;
-    background: white; color: #1E293B;
-    transition: border-color .15s;
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 14px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 12px; font-weight: 600; color: var(--pmi-gray); }
+  .field input, .field select, .field textarea {
+    padding: 9px 12px; border-radius: 8px; border: 1.5px solid var(--pmi-border);
+    font-size: 13px; background: white; color: #1E293B; transition: border-color .15s;
+    font-family: inherit;
   }
-  .field input:focus, .field select:focus { outline: none; border-color: var(--pmi-navy); }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--pmi-navy); }
+  .field textarea { resize: vertical; min-height: 60px; }
+  .field .check-row { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; }
+  .field .check-row input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--pmi-navy); }
 
-  /* ── EVENT LIST ── */
-  .event-item {
-    display: flex; align-items: center; gap: 12px; padding: 12px 0;
-    border-bottom: 1px solid var(--pmi-border);
-  }
+  /* ── EVENT ITEM ── */
+  .event-item { padding: 14px 0; border-bottom: 1px solid var(--pmi-border); }
   .event-item:last-child { border-bottom: none; }
-  .event-badge {
-    padding: 3px 8px; border-radius: 99px; font-size: 11px; font-weight: 700;
-    white-space: nowrap;
-  }
-  .badge-tribe   { background: #EFF6FF; color: var(--pmi-navy); }
-  .badge-general { background: #F0FDF4; color: #065F46; }
-  .badge-webinar { background: #FFF7ED; color: #92400E; }
-  .event-info { flex: 1; min-width: 0; }
-  .event-info .title { font-size: 14px; font-weight: 600; }
-  .event-info .meta  { font-size: 12px; color: var(--pmi-gray); margin-top: 2px; }
-  .event-actions { display: flex; gap: 6px; flex-shrink: 0; }
-
-  /* ── ATTENDANCE BADGE ── */
-  .att-badge {
-    width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center;
-    justify-content: center; font-size: 13px; flex-shrink: 0;
-  }
+  .event-row { display: flex; align-items: center; gap: 10px; }
+  .att-badge { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
   .att-yes   { background: #D1FAE5; color: #065F46; }
   .att-no    { background: #FEE2E2; color: #991B1B; }
   .att-blank { background: #F1F5F9; color: var(--pmi-gray); }
+  .event-badge { padding: 3px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .badge-tribe   { background: #EFF6FF; color: var(--pmi-navy); }
+  .badge-general { background: #F0FDF4; color: #065F46; }
+  .badge-webinar { background: #FFF7ED; color: #92400E; }
+  .badge-recorded { background: #FFF0F0; color: var(--pmi-red); }
+  .event-info { flex: 1; min-width: 0; }
+  .event-title { font-size: 14px; font-weight: 600; }
+  .event-meta { font-size: 12px; color: var(--pmi-gray); margin-top: 3px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .event-meta a { color: var(--pmi-navy); font-weight: 600; text-decoration: none; }
+  .event-meta a:hover { text-decoration: underline; }
+  .event-actions { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
 
   /* ── ROSTER TABLE ── */
   .roster { width: 100%; border-collapse: collapse; font-size: 13px; }
   .roster th { text-align: left; padding: 8px 12px; background: var(--pmi-light); color: var(--pmi-gray); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
   .roster td { padding: 9px 12px; border-bottom: 1px solid var(--pmi-border); }
   .roster tr:last-child td { border-bottom: none; }
-  .roster .member-cell { display: flex; align-items: center; gap: 8px; }
-  .roster .avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: var(--pmi-light); }
-  .toggle-btn {
-    width: 44px; height: 24px; border-radius: 99px; border: none; cursor: pointer;
-    position: relative; transition: background .2s;
-  }
+  .member-cell { display: flex; align-items: center; gap: 8px; }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: var(--pmi-light); flex-shrink: 0; }
+  .toggle-btn { width: 44px; height: 24px; border-radius: 99px; border: none; cursor: pointer; position: relative; transition: background .2s; }
   .toggle-btn.on  { background: var(--green); }
   .toggle-btn.off { background: #CBD5E1; }
-  .toggle-btn::after {
-    content: ''; position: absolute; top: 3px; left: 3px;
-    width: 18px; height: 18px; border-radius: 50%; background: white;
-    transition: transform .2s;
-  }
+  .toggle-btn::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: white; transition: transform .2s; }
   .toggle-btn.on::after { transform: translateX(20px); }
 
-  /* ── RANKING TABLE ── */
+  /* ── RANKING ── */
   .rank-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--pmi-border); }
   .rank-row:last-child { border-bottom: none; }
-  .rank-num  { font-size: 13px; font-weight: 700; color: var(--pmi-gray); width: 22px; text-align: center; }
+  .rank-num  { font-size: 13px; font-weight: 700; color: var(--pmi-gray); width: 22px; text-align: center; flex-shrink: 0; }
   .rank-name { flex: 1; font-size: 13px; font-weight: 600; }
-  .rank-hrs  { font-size: 13px; color: var(--pmi-navy); font-weight: 700; }
-  .rank-bar-wrap { width: 80px; height: 6px; background: var(--pmi-border); border-radius: 99px; overflow: hidden; }
+  .rank-hrs  { font-size: 13px; color: var(--pmi-navy); font-weight: 700; flex-shrink: 0; }
+  .rank-bar-wrap { width: 80px; height: 6px; background: var(--pmi-border); border-radius: 99px; overflow: hidden; flex-shrink: 0; }
   .rank-bar-fill { height: 100%; background: var(--pmi-red); border-radius: 99px; }
 
-  /* ── MODAL ── */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5);
-    z-index: 100; align-items: center; justify-content: center; padding: 16px;
-  }
+  /* ── MODALS ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
   .modal-overlay.open { display: flex; }
-  .modal { background: white; border-radius: 14px; width: 100%; max-width: 560px; overflow: hidden; }
-  .modal-head { padding: 18px 20px; border-bottom: 1px solid var(--pmi-border); display: flex; justify-content: space-between; align-items: center; }
+  .modal { background: white; border-radius: 14px; width: 100%; max-width: 560px; overflow: hidden; max-height: 90vh; display: flex; flex-direction: column; }
+  .modal-wide { max-width: 680px; }
+  .modal-head { padding: 18px 20px; border-bottom: 1px solid var(--pmi-border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
   .modal-head h3 { font-size: 16px; font-weight: 700; color: var(--pmi-navy); }
   .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--pmi-gray); }
-  .modal-body { padding: 20px; max-height: 70vh; overflow-y: auto; }
-  .modal-foot { padding: 14px 20px; border-top: 1px solid var(--pmi-border); display: flex; justify-content: flex-end; gap: 8px; }
+  .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+  .modal-foot { padding: 14px 20px; border-top: 1px solid var(--pmi-border); display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0; }
+
+  /* ── SECTION INSIDE MODAL ── */
+  .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--pmi-gray); margin: 16px 0 10px; }
+  .section-label:first-child { margin-top: 0; }
+  .info-box { background: var(--pmi-light); border-radius: 8px; padding: 12px 14px; font-size: 13px; color: var(--pmi-navy); display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .info-box a { color: var(--pmi-red); font-weight: 600; word-break: break-all; }
 
   /* ── TOAST ── */
-  #toast {
-    position: fixed; bottom: 24px; right: 24px; background: #1E293B; color: white;
-    padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 600;
-    transform: translateY(80px); opacity: 0; transition: all .3s; z-index: 200;
-  }
+  #toast { position: fixed; bottom: 24px; right: 24px; background: #1E293B; color: white; padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; transform: translateY(80px); opacity: 0; transition: all .3s; z-index: 200; }
   #toast.show { transform: translateY(0); opacity: 1; }
   #toast.success { background: var(--green); }
   #toast.error   { background: var(--red-soft); }
@@ -207,11 +163,10 @@
 <div id="app">
   <nav>
     <div class="logo">Núcleo <span>IA & GP</span></div>
-    <span id="nav-user" style="color:#94A3B8;font-size:13px;"></span>
+    <span class="nav-user" id="nav-user"></span>
     <a href="#" onclick="logout()">Sair</a>
   </nav>
 
-  <!-- KPI BAR -->
   <div class="kpi-bar">
     <div class="kpi-card">
       <div class="label">Horas de Impacto</div>
@@ -238,37 +193,36 @@
 
   <main>
     <div class="tabs">
-      <div class="tab active" onclick="switchTab('events')">📅 Eventos</div>
-      <div class="tab" onclick="switchTab('ranking')">🏆 Ranking de Horas</div>
-      <div class="tab" id="tab-new-event" onclick="openNewEventModal()" style="display:none">➕ Novo Evento</div>
+      <div class="tab active" data-tab="events"   onclick="switchTab(this,'events')">📅 Eventos</div>
+      <div class="tab"        data-tab="ranking"  onclick="switchTab(this,'ranking')">🏆 Ranking de Horas</div>
+      <div class="tab hidden" data-tab="new-event" id="tab-new-event" onclick="openNewEventModal()">➕ Novo Evento</div>
+      <div class="tab hidden" data-tab="recurring" id="tab-recurring" onclick="openRecurringModal()">🔁 Criar Recorrente</div>
     </div>
 
-    <!-- EVENTS TAB -->
     <div id="tab-events">
       <div class="card">
         <div class="card-header">
-          <h3>Eventos Recentes</h3>
+          <h3>Eventos do Ciclo 3</h3>
           <button class="btn btn-ghost btn-sm" onclick="loadEvents()">↻ Atualizar</button>
         </div>
         <div class="card-body" id="events-list">
-          <p style="color:var(--pmi-gray);font-size:13px;">Carregando...</p>
+          <p style="color:var(--pmi-gray);font-size:13px">Carregando...</p>
         </div>
       </div>
     </div>
 
-    <!-- RANKING TAB -->
     <div id="tab-ranking" class="hidden">
       <div class="card">
         <div class="card-header"><h3>Ranking de Horas de Impacto — Ciclo 3</h3></div>
         <div class="card-body" id="ranking-list">
-          <p style="color:var(--pmi-gray);font-size:13px;">Carregando...</p>
+          <p style="color:var(--pmi-gray);font-size:13px">Carregando...</p>
         </div>
       </div>
     </div>
   </main>
 </div>
 
-<!-- MODAL: NEW EVENT -->
+<!-- ═══════════ MODAL: NEW EVENT ═══════════ -->
 <div class="modal-overlay" id="modal-new-event">
   <div class="modal">
     <div class="modal-head">
@@ -279,7 +233,7 @@
       <div class="form-grid">
         <div class="field" style="grid-column:1/-1">
           <label>Título</label>
-          <input type="text" id="ev-title" placeholder="Ex: Reunião semanal T1 — semana 10">
+          <input type="text" id="ev-title" placeholder="Ex: Reunião Geral — Semana 1">
         </div>
         <div class="field">
           <label>Tipo</label>
@@ -298,6 +252,16 @@
           <label>Duração (minutos)</label>
           <input type="number" id="ev-duration" value="90" min="15" max="480">
         </div>
+        <div class="field" style="grid-column:1/-1">
+          <label>Link da reunião (Google Meet, Zoom…)</label>
+          <input type="url" id="ev-link" placeholder="https://meet.google.com/...">
+        </div>
+        <div class="field">
+          <div class="check-row">
+            <input type="checkbox" id="ev-recorded">
+            <label for="ev-recorded">🔴 Reunião gravada</label>
+          </div>
+        </div>
       </div>
     </div>
     <div class="modal-foot">
@@ -307,21 +271,115 @@
   </div>
 </div>
 
-<!-- MODAL: ROSTER -->
+<!-- ═══════════ MODAL: RECURRING EVENTS ═══════════ -->
+<div class="modal-overlay" id="modal-recurring">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>🔁 Criar Série Recorrente Semanal</h3>
+      <button class="modal-close" onclick="closeModal('modal-recurring')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box">
+        💡 Gera N eventos semanais consecutivos. Use <code style="background:#E2E8F0;padding:1px 4px;border-radius:4px">{n}</code> para o número da semana e <code style="background:#E2E8F0;padding:1px 4px;border-radius:4px">{date}</code> para a data.
+      </div>
+      <div class="form-grid">
+        <div class="field" style="grid-column:1/-1">
+          <label>Template do título</label>
+          <input type="text" id="rec-title" value="Reunião Geral — Núcleo IA & GP | Semana {n} | Ciclo 3">
+        </div>
+        <div class="field">
+          <label>Tipo</label>
+          <select id="rec-type">
+            <option value="general_meeting">Reunião Geral</option>
+            <option value="tribe_meeting">Reunião de Tribo</option>
+            <option value="webinar">Webinar</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Data da 1ª semana</label>
+          <input type="date" id="rec-start">
+        </div>
+        <div class="field">
+          <label>Duração (min)</label>
+          <input type="number" id="rec-duration" value="90" min="15" max="480">
+        </div>
+        <div class="field">
+          <label>Número de semanas</label>
+          <input type="number" id="rec-weeks" value="12" min="1" max="52">
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label>Link recorrente (mesmo link para todas as semanas)</label>
+          <input type="url" id="rec-link" placeholder="https://meet.google.com/..." value="https://meet.google.com/dzo-phoj-tid">
+        </div>
+        <div class="field">
+          <div class="check-row">
+            <input type="checkbox" id="rec-recorded" checked>
+            <label for="rec-recorded">🔴 Reuniões gravadas</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-recurring')">Cancelar</button>
+      <button class="btn btn-primary" onclick="createRecurring()">Criar Série</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL: EDIT EVENT ═══════════ -->
+<div class="modal-overlay" id="modal-edit-event">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>✏️ Editar Evento</h3>
+      <button class="modal-close" onclick="closeModal('modal-edit-event')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-ev-id">
+      <div class="form-grid">
+        <div class="field" style="grid-column:1/-1">
+          <label>Título</label>
+          <input type="text" id="edit-ev-title">
+        </div>
+        <div class="field">
+          <label>Data</label>
+          <input type="date" id="edit-ev-date">
+        </div>
+        <div class="field">
+          <label>Duração (min)</label>
+          <input type="number" id="edit-ev-duration" min="15" max="480">
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label>Link da reunião</label>
+          <input type="url" id="edit-ev-link">
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label>Link do YouTube (após publicação)</label>
+          <input type="url" id="edit-ev-youtube" placeholder="https://youtu.be/...">
+        </div>
+        <div class="field">
+          <div class="check-row">
+            <input type="checkbox" id="edit-ev-recorded">
+            <label for="edit-ev-recorded">🔴 Reunião gravada</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-edit-event')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEventEdit()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MODAL: ROSTER ═══════════ -->
 <div class="modal-overlay" id="modal-roster">
-  <div class="modal" style="max-width:680px">
+  <div class="modal modal-wide">
     <div class="modal-head">
       <h3 id="roster-title">Lista de Presença</h3>
       <button class="modal-close" onclick="closeModal('modal-roster')">✕</button>
     </div>
     <div class="modal-body">
-      <!-- Duration edit for leaders/GP -->
-      <div id="duration-edit" class="hidden" style="margin-bottom:16px;padding:12px;background:var(--pmi-light);border-radius:8px;display:flex;align-items:center;gap:10px;">
-        <span style="font-size:13px;font-weight:600;color:var(--pmi-navy);">Duração:</span>
-        <input type="number" id="roster-duration" min="15" max="480" style="width:80px;padding:6px 10px;border-radius:6px;border:1.5px solid var(--pmi-border);font-size:13px;">
-        <span style="font-size:13px;color:var(--pmi-gray);">min</span>
-        <button class="btn btn-ghost btn-sm" onclick="saveDuration()">Salvar duração</button>
-      </div>
+      <div id="roster-info" style="margin-bottom:12px"></div>
       <table class="roster">
         <thead>
           <tr>
@@ -342,14 +400,13 @@
 <div id="toast"></div>
 
 <script>
-// ── CONFIG ──────────────────────────────────────────────────
 const SUPA_URL = 'https://ldrfrvwhxsmgaabwmaik.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkcmZydndoeHNtZ2FhYndtYWlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MjU5NDQsImV4cCI6MjA4ODMwMTk0NH0.gzibKd7Jyck3Ya61vzrloX1YZt-0pNReTuefdi4mAmw';
 const { createClient } = supabase;
 const sb = createClient(SUPA_URL, SUPA_KEY);
 
-let MEMBER = null;  // current member record
-let CAN_MANAGE = false;  // leader or GP
+let MEMBER = null;
+let CAN_MANAGE = false;
 let CURRENT_EVENT_ID = null;
 
 // ── AUTH ─────────────────────────────────────────────────────
@@ -371,7 +428,10 @@ async function onLogin() {
   }
   CAN_MANAGE = MEMBER.is_superadmin || MEMBER.role === 'tribe_leader';
   document.getElementById('nav-user').textContent = MEMBER.name;
-  if (CAN_MANAGE) document.getElementById('tab-new-event').style.display = 'block';
+  if (CAN_MANAGE) {
+    document.getElementById('tab-new-event').classList.remove('hidden');
+    document.getElementById('tab-recurring').classList.remove('hidden');
+  }
   document.getElementById('auth-gate').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   loadKPIs();
@@ -384,21 +444,15 @@ function showAuthGate() {
 }
 
 async function loginGoogle() {
-  await sb.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: window.location.href }
-  });
+  await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } });
 }
 
-async function logout() {
-  await sb.auth.signOut();
-  showAuthGate();
-}
+async function logout() { await sb.auth.signOut(); }
 
 // ── TABS ──────────────────────────────────────────────────────
-function switchTab(name) {
+function switchTab(el, name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  event.target.classList.add('active');
+  el.classList.add('active');
   document.getElementById('tab-events').classList.toggle('hidden', name !== 'events');
   document.getElementById('tab-ranking').classList.toggle('hidden', name !== 'ranking');
   if (name === 'ranking') loadRanking();
@@ -421,59 +475,110 @@ async function loadKPIs() {
 
 // ── EVENTS LIST ───────────────────────────────────────────────
 async function loadEvents() {
-  const { data } = await sb.rpc('get_events_with_attendance', { p_limit: 30, p_offset: 0 });
+  const { data } = await sb.rpc('get_events_with_attendance', { p_limit: 40, p_offset: 0 });
   const el = document.getElementById('events-list');
   if (!data || !data.length) {
     el.innerHTML = '<p style="color:var(--pmi-gray);font-size:13px;text-align:center;padding:20px 0">Nenhum evento registrado ainda.</p>';
     return;
   }
+  const typeLabel  = { tribe_meeting:'Tribo', general_meeting:'Geral', webinar:'Webinar', other:'Outro' };
+  const badgeClass = { tribe_meeting:'badge-tribe', general_meeting:'badge-general', webinar:'badge-webinar', other:'badge-tribe' };
+
   el.innerHTML = data.map(ev => {
-    const typeLabel = { tribe_meeting: 'Tribo', general_meeting: 'Geral', webinar: 'Webinar', other: 'Outro' }[ev.type] || ev.type;
-    const badgeClass = { tribe_meeting: 'badge-tribe', general_meeting: 'badge-general', webinar: 'badge-webinar', other: 'badge-tribe' }[ev.type];
-    const attIcon = ev.i_attended === true ? '✅' : ev.i_attended === false ? '❌' : '—';
+    const attIcon  = ev.i_attended === true ? '✅' : ev.i_attended === false ? '❌' : '—';
     const attClass = ev.i_attended === true ? 'att-yes' : ev.i_attended === false ? 'att-no' : 'att-blank';
-    const canSeeRoster = MEMBER.is_superadmin || MEMBER.role === 'tribe_leader';
+    const canEdit  = MEMBER.is_superadmin || MEMBER.role === 'tribe_leader' || ev.created_by === MEMBER.auth_id;
+    const canRoster = MEMBER.is_superadmin || MEMBER.role === 'tribe_leader';
+
+    const linkHtml = ev.meeting_link
+      ? `<a href="${ev.meeting_link}" target="_blank" rel="noopener">🎥 Entrar na reunião</a>`
+      : '';
+    const ytHtml = ev.youtube_url
+      ? `<a href="${ev.youtube_url}" target="_blank" rel="noopener" style="color:#FF0000">▶ YouTube</a>`
+      : '';
+    const recBadge = ev.is_recorded
+      ? `<span class="event-badge badge-recorded">● Gravada</span>` : '';
+
     return `
-      <div class="event-item">
+    <div class="event-item">
+      <div class="event-row">
         <div class="att-badge ${attClass}" title="Sua presença">${attIcon}</div>
         <div class="event-info">
-          <div class="title">${ev.title}</div>
-          <div class="meta">
-            ${fmtDate(ev.date)} · ${ev.duration_minutes}min · ${ev.attendee_count || 0} presentes
+          <div class="event-title">${ev.title}</div>
+          <div class="event-meta">
+            <span>${fmtDate(ev.date)}</span>
+            <span>·</span>
+            <span>${ev.duration_minutes}min</span>
+            <span>·</span>
+            <span>${ev.attendee_count || 0} presentes</span>
+            ${linkHtml ? '<span>·</span>' + linkHtml : ''}
+            ${ytHtml   ? '<span>·</span>' + ytHtml   : ''}
           </div>
         </div>
-        <span class="event-badge ${badgeClass}">${typeLabel}</span>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span class="event-badge ${badgeClass[ev.type]}">${typeLabel[ev.type]||ev.type}</span>
+          ${recBadge}
+        </div>
         <div class="event-actions">
           ${ev.i_attended !== true
             ? `<button class="btn btn-primary btn-sm" onclick="checkIn('${ev.id}')">Check-in</button>`
-            : `<button class="btn btn-ghost btn-sm" disabled>✓ Registrado</button>`
-          }
-          ${canSeeRoster ? `<button class="btn btn-ghost btn-sm" onclick="openRoster('${ev.id}','${ev.title}',${ev.duration_minutes})">Lista</button>` : ''}
+            : `<button class="btn btn-ghost btn-sm" disabled>✓</button>`}
+          ${canRoster ? `<button class="btn-icon" title="Lista de presença" onclick="openRoster('${ev.id}','${ev.title}')">📋</button>` : ''}
+          ${canEdit   ? `<button class="btn-icon" title="Editar evento" onclick="openEditEvent(${JSON.stringify(ev).replace(/"/g,'&quot;')})">✏️</button>` : ''}
         </div>
-      </div>`;
+      </div>
+    </div>`;
   }).join('');
 }
 
 // ── CHECK-IN ──────────────────────────────────────────────────
 async function checkIn(eventId) {
   const { data } = await sb.rpc('register_own_presence', { p_event_id: eventId });
+  if (data?.success) { showToast('Presença registrada! ✅', 'success'); loadEvents(); loadKPIs(); }
+  else showToast(data?.error || 'Erro ao registrar presença', 'error');
+}
+
+// ── EDIT EVENT ────────────────────────────────────────────────
+function openEditEvent(ev) {
+  document.getElementById('edit-ev-id').value       = ev.id;
+  document.getElementById('edit-ev-title').value    = ev.title || '';
+  document.getElementById('edit-ev-date').value     = ev.date  || '';
+  document.getElementById('edit-ev-duration').value = ev.duration_minutes || 90;
+  document.getElementById('edit-ev-link').value     = ev.meeting_link || '';
+  document.getElementById('edit-ev-youtube').value  = ev.youtube_url  || '';
+  document.getElementById('edit-ev-recorded').checked = ev.is_recorded || false;
+  document.getElementById('modal-edit-event').classList.add('open');
+}
+
+async function saveEventEdit() {
+  const id       = document.getElementById('edit-ev-id').value;
+  const title    = document.getElementById('edit-ev-title').value.trim();
+  const date     = document.getElementById('edit-ev-date').value;
+  const duration = parseInt(document.getElementById('edit-ev-duration').value);
+  const link     = document.getElementById('edit-ev-link').value.trim() || null;
+  const youtube  = document.getElementById('edit-ev-youtube').value.trim() || null;
+  const recorded = document.getElementById('edit-ev-recorded').checked;
+
+  const { data } = await sb.rpc('update_event', {
+    p_event_id: id, p_title: title, p_date: date,
+    p_duration_minutes: duration, p_meeting_link: link,
+    p_youtube_url: youtube, p_is_recorded: recorded
+  });
   if (data?.success) {
-    showToast('Presença registrada! ✅', 'success');
-    loadEvents();
-    loadKPIs();
+    closeModal('modal-edit-event');
+    showToast('Evento atualizado ✅', 'success');
+    loadEvents(); loadKPIs();
   } else {
-    showToast(data?.error || 'Erro ao registrar presença', 'error');
+    showToast(data?.error || 'Erro ao salvar', 'error');
   }
 }
 
-// ── ROSTER MODAL ─────────────────────────────────────────────
-async function openRoster(eventId, title, duration) {
+// ── ROSTER ────────────────────────────────────────────────────
+async function openRoster(eventId, title) {
   CURRENT_EVENT_ID = eventId;
   document.getElementById('roster-title').textContent = '📋 ' + title;
-  document.getElementById('roster-duration').value = duration;
-  // Show duration edit for managers
-  document.getElementById('duration-edit').classList.toggle('hidden', !CAN_MANAGE);
   document.getElementById('modal-roster').classList.add('open');
+  document.getElementById('roster-body').innerHTML = '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--pmi-gray)">Carregando...</td></tr>';
   const { data } = await sb.rpc('get_tribe_event_roster', { p_event_id: eventId });
   const tbody = document.getElementById('roster-body');
   if (!data || !data.length) {
@@ -482,18 +587,16 @@ async function openRoster(eventId, title, duration) {
   }
   tbody.innerHTML = data.map(m => `
     <tr>
-      <td>
-        <div class="member-cell">
-          <img class="avatar" src="${m.photo_url || ''}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22%3E%3Ccircle cx=%2220%22 cy=%2220%22 r=%2220%22 fill=%22%23E2E8F0%22/%3E%3C/svg%3E'">
-          ${m.name}
-        </div>
-      </td>
+      <td><div class="member-cell">
+        <img class="avatar" src="${m.photo_url||''}" onerror="this.style.visibility='hidden'">
+        ${m.name}
+      </div></td>
       <td style="color:var(--pmi-gray);font-size:12px">${roleLabel(m.role)}</td>
       <td style="text-align:center">
         ${CAN_MANAGE
-          ? `<button class="toggle-btn ${m.present ? 'on' : 'off'}" id="tog-${m.id}"
+          ? `<button class="toggle-btn ${m.present?'on':'off'}" id="tog-${m.id}"
                onclick="togglePresence('${eventId}','${m.id}',this)"></button>`
-          : `<span class="${m.present ? 'att-badge att-yes' : 'att-badge att-no'}">${m.present ? '✅' : '❌'}</span>`
+          : `<span class="att-badge ${m.present?'att-yes':'att-no'}">${m.present?'✅':'❌'}</span>`
         }
       </td>
     </tr>`).join('');
@@ -501,35 +604,15 @@ async function openRoster(eventId, title, duration) {
 
 async function togglePresence(eventId, memberId, btn) {
   const isOn = btn.classList.contains('on');
-  const { data } = await sb.rpc('mark_member_present', {
-    p_event_id: eventId, p_member_id: memberId, p_present: !isOn
-  });
-  if (data?.success) {
-    btn.classList.toggle('on', !isOn);
-    btn.classList.toggle('off', isOn);
-    loadKPIs();
-  } else {
-    showToast(data?.error || 'Erro', 'error');
-  }
+  const { data } = await sb.rpc('mark_member_present', { p_event_id: eventId, p_member_id: memberId, p_present: !isOn });
+  if (data?.success) { btn.classList.toggle('on', !isOn); btn.classList.toggle('off', isOn); loadKPIs(); }
+  else showToast(data?.error || 'Erro', 'error');
 }
 
-async function saveDuration() {
-  const mins = parseInt(document.getElementById('roster-duration').value);
-  if (!mins || mins < 15) return showToast('Duração mínima: 15min', 'error');
-  const { data } = await sb.rpc('update_event_duration', {
-    p_event_id: CURRENT_EVENT_ID, p_duration_minutes: mins
-  });
-  if (data?.success) {
-    showToast('Duração atualizada ✅', 'success');
-    loadKPIs(); loadEvents();
-  } else {
-    showToast(data?.error || 'Erro', 'error');
-  }
-}
-
-// ── NEW EVENT MODAL ───────────────────────────────────────────
+// ── NEW EVENT ─────────────────────────────────────────────────
 function openNewEventModal() {
-  document.getElementById('ev-date').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('ev-date').value = today();
+  document.getElementById('ev-link').value = '';
   document.getElementById('modal-new-event').classList.add('open');
 }
 
@@ -538,54 +621,87 @@ async function createEvent() {
   const type     = document.getElementById('ev-type').value;
   const date     = document.getElementById('ev-date').value;
   const duration = parseInt(document.getElementById('ev-duration').value);
+  const link     = document.getElementById('ev-link').value.trim() || null;
+  const recorded = document.getElementById('ev-recorded').checked;
   if (!title || !date) return showToast('Preencha título e data', 'error');
+
   const { data } = await sb.rpc('create_event', {
-    p_type: type, p_title: title, p_date: date, p_duration_minutes: duration,
-    p_tribe_id: type === 'tribe_meeting' ? MEMBER.tribe_id : null
+    p_type: type, p_title: title, p_date: date,
+    p_duration_minutes: duration, p_tribe_id: type === 'tribe_meeting' ? MEMBER.tribe_id : null
   });
   if (data?.success) {
+    // update meeting_link + recorded via update_event
+    if (link || recorded) {
+      await sb.rpc('update_event', { p_event_id: data.event_id, p_meeting_link: link, p_is_recorded: recorded });
+    }
     closeModal('modal-new-event');
     showToast('Evento criado ✅', 'success');
     loadEvents(); loadKPIs();
-  } else {
-    showToast(data?.error || 'Erro ao criar evento', 'error');
-  }
+  } else showToast(data?.error || 'Erro ao criar evento', 'error');
+}
+
+// ── RECURRING ─────────────────────────────────────────────────
+function openRecurringModal() {
+  document.getElementById('rec-start').value = today();
+  document.getElementById('modal-recurring').classList.add('open');
+}
+
+async function createRecurring() {
+  const titleTpl = document.getElementById('rec-title').value.trim();
+  const type     = document.getElementById('rec-type').value;
+  const start    = document.getElementById('rec-start').value;
+  const duration = parseInt(document.getElementById('rec-duration').value);
+  const weeks    = parseInt(document.getElementById('rec-weeks').value);
+  const link     = document.getElementById('rec-link').value.trim() || null;
+  const recorded = document.getElementById('rec-recorded').checked;
+  if (!titleTpl || !start) return showToast('Preencha template e data de início', 'error');
+
+  const { data } = await sb.rpc('create_recurring_weekly_events', {
+    p_type: type, p_title_template: titleTpl, p_start_date: start,
+    p_duration_minutes: duration, p_n_weeks: weeks,
+    p_meeting_link: link,
+    p_tribe_id: type === 'tribe_meeting' ? MEMBER.tribe_id : null,
+    p_is_recorded: recorded
+  });
+  if (data?.success) {
+    closeModal('modal-recurring');
+    showToast(`${data.events_created} eventos criados ✅`, 'success');
+    loadEvents(); loadKPIs();
+  } else showToast(data?.error || 'Erro ao criar série', 'error');
 }
 
 // ── RANKING ────────────────────────────────────────────────────
 async function loadRanking() {
   const { data } = await sb.from('member_attendance_summary').select('*').limit(50);
   const el = document.getElementById('ranking-list');
-  if (!data?.length) { el.innerHTML = '<p style="color:var(--pmi-gray)">Sem dados.</p>'; return; }
-  const max = Math.max(...data.map(m => parseFloat(m.hours_attended || 0)));
+  if (!data?.length) { el.innerHTML = '<p style="color:var(--pmi-gray)">Sem dados ainda.</p>'; return; }
+  const max = Math.max(...data.map(m => parseFloat(m.hours_attended || 0)), 1);
   el.innerHTML = data.map((m, i) => `
     <div class="rank-row">
-      <div class="rank-num">${i + 1}</div>
-      <img class="avatar" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0"
-        src="${m.photo_url || ''}" onerror="this.style.background='#E2E8F0'">
-      <div class="rank-name">${m.name}<br><span style="font-size:11px;color:var(--pmi-gray);font-weight:400">${roleLabel(m.role)}</span></div>
-      <div class="rank-bar-wrap"><div class="rank-bar-fill" style="width:${max > 0 ? (m.hours_attended/max*100) : 0}%"></div></div>
-      <div class="rank-hrs">${m.hours_attended || 0}h</div>
+      <div class="rank-num">${i+1}</div>
+      <img class="avatar" style="width:32px;height:32px" src="${m.photo_url||''}" onerror="this.style.visibility='hidden'">
+      <div class="rank-name">${m.name}<br>
+        <span style="font-size:11px;color:var(--pmi-gray);font-weight:400">${roleLabel(m.role)}</span>
+      </div>
+      <div class="rank-bar-wrap"><div class="rank-bar-fill" style="width:${(m.hours_attended/max*100).toFixed(1)}%"></div></div>
+      <div class="rank-hrs">${m.hours_attended||0}h</div>
     </div>`).join('');
 }
 
 // ── HELPERS ───────────────────────────────────────────────────
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-
+function today() { return new Date().toISOString().slice(0,10); }
 function fmtDate(d) {
   if (!d) return '';
-  return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' });
 }
-
-function roleLabel(role) {
+function roleLabel(r) {
   return { tribe_leader:'Líder de Tribo', researcher:'Pesquisador', manager:'Gerente de Projeto',
-    facilitator:'Facilitador', communicator:'Multiplicador', sponsor:'Patrocinador', guest:'Convidado' }[role] || role;
+    facilitator:'Facilitador', communicator:'Multiplicador', sponsor:'Patrocinador', guest:'Convidado' }[r] || r || '—';
 }
-
-function showToast(msg, type = '') {
+function showToast(msg, type='') {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'show ' + type;
+  t.textContent = msg; t.className = 'show ' + type;
   setTimeout(() => { t.className = ''; }, 3000);
 }
 
