@@ -139,7 +139,7 @@ async function loginMagic(){
 async function matchMember(){
   if(!user)return;
   // Try to find member by email
-let{data}=await sb.from('members').select('*').eq('auth_id',user.id).maybeSingle();if(!data){const r=await sb.from('members').select('*').eq('email',user.email).maybeSingle();data=r.data}if(!data){const r=await sb.from('members').select('*').contains('secondary_emails',[user.email]).maybeSingle();data=r.data}
+const{data}=await sb.rpc('get_member_by_auth');
   
   if(data){
     profile=data;
