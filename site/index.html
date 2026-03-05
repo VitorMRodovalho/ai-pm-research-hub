@@ -145,7 +145,7 @@ Entrar com LinkedIn
 <nav class="nav">
 <div class="nav-brand">Núcleo <span>IA & GP</span> — Ciclo 03</div>
 <div class="nav-links">
-<a href="#agenda">Pauta</a><a href="#quadrants">Quadrantes</a><a href="#tribes">Tribos</a><a href="#kpis">KPIs</a><a href="#breakout">Networking</a><a href="#rules">Regras</a><a href="#team">Time</a><a href="#vision">Visão</a><a href="#resources">Recursos</a>
+<a href="#agenda">Pauta</a><a href="#quadrants">Quadrantes</a><a href="#tribes">Tribos</a><a href="#kpis">KPIs</a><a href="#breakout">Networking</a><a href="#rules">Regras</a><a href="#trail">Trilha IA</a><a href="#team">Time</a><a href="#vision">Visão</a><a href="#resources">Recursos</a>
 </div>
 <div class="nav-auth" id="navAuth"><button class="btn btn-login" onclick="openAuth()">Entrar</button></div>
 </nav>
@@ -282,11 +282,47 @@ Mín. 3 · Máx. 6 pesquisadores por tribo.
 <div class="section-title">Próximos Passos</div>
 <div class="resources-grid">
 <div class="resource-card"><div class="resource-icon" style="background:rgba(213,52,11,.1)">▶️</div><div><h4>Playlist YouTube</h4><p>8 vídeos. Escolha até Sáb 12h.</p><a href="https://youtube.com/playlist?list=PLQJVKrw1fcrx3fD2ug1hnps6TklcMT1dc" target="_blank">Abrir →</a></div></div>
-<div class="resource-card"><div class="resource-icon" style="background:rgba(0,121,158,.1)">📘</div><div><h4>Manual de Governança</h4><p>Leitura obrigatória.</p><a href="#">Drive →</a></div></div>
+<div class="resource-card"><div class="resource-icon" style="background:rgba(0,121,158,.1)">📘</div><div><h4>Manual de Governança</h4><p>Leitura obrigatória (documento vivo).</p><a href="https://www.canva.com/design/DAG1Nc3jhC4/gWGhQCJyv7axeCbKozD1gg/view" target="_blank">Abrir Manual →</a></div></div>
 <div class="resource-card"><div class="resource-icon" style="background:rgba(79,23,168,.1)">🎓</div><div><h4>Mini Cursos IA — PMI</h4><p>Trilha gratuita.</p><a href="https://www.pmi.org/learning/ai-in-project-management" target="_blank">PMI.org →</a></div></div>
 <div class="resource-card"><div class="resource-icon" style="background:rgba(112,173,71,.1)">💻</div><div><h4>GitHub</h4><p>Repositório + CRs.</p><a href="https://github.com/VitorMRodovalho/ai-pm-research-hub" target="_blank">Abrir →</a></div></div>
 <div class="resource-card"><div class="resource-icon" style="background:rgba(255,97,15,.1)">📧</div><div><h4>Email do Núcleo</h4><p>Comunicações oficiais.</p><a href="mailto:nucleoia@pmigo.org.br">nucleoia@pmigo.org.br</a></div></div>
 <div class="resource-card"><div class="resource-icon" style="background:rgba(0,121,158,.1)">✅</div><div><h4>volunteer.pmi.org</h4><p>Aceite sua posição.</p><a href="https://volunteer.pmi.org" target="_blank">Portal →</a></div></div>
+</div>
+</div>
+</section>
+
+<!-- CERTIFICATION TRAIL -->
+<section id="trail">
+<div class="container">
+<div class="section-label">Meta 2026: 70% da Trilha Completa</div>
+<div class="section-title">Trilha de Certificação IA — PMI</div>
+<div class="section-subtitle">8 cursos gratuitos que todo GP do Núcleo deve completar. Seu progresso aparece ao vivo quando você faz login.</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;margin-bottom:2rem">
+<div style="background:var(--pmi-beige);border-radius:16px;padding:1.5rem;border-left:4px solid var(--pmi-teal)">
+<div style="font-size:.7rem;font-weight:700;color:var(--pmi-teal);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem">Trilha Principal (Core)</div>
+<div id="coreCoursesContainer"></div>
+</div>
+<div style="background:var(--pmi-beige);border-radius:16px;padding:1.5rem;border-left:4px solid var(--pmi-purple)">
+<div style="font-size:.7rem;font-weight:700;color:var(--pmi-purple);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem">Complementares & Opcionais</div>
+<div id="extraCoursesContainer"></div>
+</div>
+</div>
+
+<div style="background:var(--pmi-dark);border-radius:20px;padding:2rem;color:var(--white)">
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem">
+<div>
+<div style="font-size:1.1rem;font-weight:800">Ranking do Time</div>
+<div style="font-size:.82rem;color:rgba(255,255,255,.5)">Progresso dos membros ativos na trilha</div>
+</div>
+<div id="trailKPI" style="text-align:center">
+<div style="font-size:2rem;font-weight:800;color:var(--pmi-teal-light)">--</div>
+<div style="font-size:.7rem;color:rgba(255,255,255,.5)">Média geral</div>
+</div>
+</div>
+<div id="rankingContainer" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.8rem">
+<div style="color:rgba(255,255,255,.4);font-size:.85rem">Carregando...</div>
+</div>
 </div>
 </div>
 </section>
@@ -425,6 +461,7 @@ async function init() {
   await loadTribeCounts();
   await loadLeaderPhotos();
   await loadAllMembers();
+  await loadCertificationData();
   subscribeRealtime();
 }
 
@@ -438,6 +475,73 @@ async function loadLeaderPhotos() {
 async function loadAllMembers() {
   const { data } = await sb.from('members').select('name, chapter, role, photo_url, linkedin_url, tribe_id, current_cycle_active').eq('current_cycle_active', true).order('name');
   if (data) { allMembers = data; renderTeamGallery(); }
+}
+
+const COURSES = [
+  { code: 'GENAI_OVERVIEW', name: 'Generative AI Overview for Project Managers', cat: 'core', url: 'https://www.pmi.org/learning/courses/generative-ai-overview-for-project-managers' },
+  { code: 'DATA_LANDSCAPE', name: 'Data Landscape of GenAI for Project Managers', cat: 'core', url: 'https://www.pmi.org/learning/courses/data-landscape-of-genai-for-project-managers' },
+  { code: 'PROMPT_ENG', name: 'Talking to AI: Prompt Engineering for Project Managers', cat: 'core', url: 'https://www.pmi.org/learning/courses/talking-to-ai-prompt-engineering-for-project-managers' },
+  { code: 'PRACTICAL_GENAI', name: 'Practical Application of Generative AI for Project Managers', cat: 'core', url: 'https://www.pmi.org/learning/courses/practical-application-of-generative-ai-for-project-managers' },
+  { code: 'CDBA_INTRO', name: 'PMI Citizen Developer: CDBA Introduction', cat: 'extra', url: 'https://www.pmi.org/learning/courses/pmi-citizen-developer-business-architect-cdba-introduction' },
+  { code: 'CPMAI_INTRO', name: 'Introduction to Cognitive PM in AI (CPMAI)', cat: 'extra', url: 'https://www.pmi.org/learning/courses/free-introduction-to-cognitive-project-management-for-ai' },
+  { code: 'AI_INFRA', name: 'AI in Infrastructure and Construction Projects', cat: 'extra', url: 'https://www.pmi.org/learning/courses/ai-in-infrastructure-and-construction-projects' },
+  { code: 'AI_AGILE', name: 'AI in Agile Delivery', cat: 'extra', url: 'https://www.pmi.org/learning/courses/ai-in-agile-delivery' }
+];
+
+async function loadCertificationData() {
+  renderCourseList();
+  // Load progress data
+  const { data: progress } = await sb.from('course_progress').select('member_id, course_id, status');
+  const { data: courses } = await sb.from('courses').select('id, code');
+  const { data: members } = await sb.from('members').select('id, name, photo_url').eq('current_cycle_active', true).order('name');
+  if (!progress || !courses || !members) return;
+
+  // Build lookup
+  const codeById = {};
+  courses.forEach(c => codeById[c.id] = c.code);
+
+  // Calculate per-member progress
+  const memberProgress = {};
+  progress.forEach(p => {
+    if (!memberProgress[p.member_id]) memberProgress[p.member_id] = { completed: 0, in_progress: 0 };
+    if (p.status === 'completed') memberProgress[p.member_id].completed++;
+    else if (p.status === 'in_progress') memberProgress[p.member_id].in_progress++;
+  });
+
+  // Render ranking
+  const ranked = members.map(m => ({
+    name: m.name,
+    photo: m.photo_url,
+    completed: (memberProgress[m.id]?.completed || 0),
+    inProgress: (memberProgress[m.id]?.in_progress || 0),
+    pct: Math.round((memberProgress[m.id]?.completed || 0) / 8 * 100)
+  })).sort((a, b) => b.pct - a.pct || b.inProgress - a.inProgress);
+
+  const totalPct = ranked.length > 0 ? Math.round(ranked.reduce((s, r) => s + r.pct, 0) / ranked.length) : 0;
+  document.getElementById('trailKPI').innerHTML = '<div style="font-size:2rem;font-weight:800;color:' + (totalPct >= 70 ? 'var(--pmi-green)' : totalPct >= 30 ? 'var(--pmi-orange)' : 'var(--pmi-red)') + '">' + totalPct + '%</div><div style="font-size:.7rem;color:rgba(255,255,255,.5)">Média geral</div>';
+
+  const container = document.getElementById('rankingContainer');
+  container.innerHTML = ranked.map((r, i) => {
+    const initials = r.name.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
+    const photoEl = r.photo ? '<img src="' + r.photo + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover">' : '<div style="width:32px;height:32px;border-radius:50%;background:var(--pmi-teal);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.65rem;font-weight:700">' + initials + '</div>';
+    const barColor = r.pct >= 100 ? 'var(--pmi-green)' : r.pct >= 50 ? 'var(--pmi-teal-light)' : r.pct > 0 ? 'var(--pmi-orange)' : 'rgba(255,255,255,.1)';
+    const badge = r.pct >= 100 ? ' ⭐' : r.pct >= 50 ? ' 🔥' : '';
+    return '<div style="background:rgba(255,255,255,.06);border-radius:12px;padding:.8rem;display:flex;align-items:center;gap:.6rem">' +
+      photoEl +
+      '<div style="flex:1;min-width:0"><div style="font-size:.78rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + r.name.split(' ').slice(0,2).join(' ') + badge + '</div>' +
+      '<div style="background:rgba(255,255,255,.1);border-radius:4px;height:6px;margin-top:.3rem;overflow:hidden"><div style="height:100%;width:' + r.pct + '%;background:' + barColor + ';border-radius:4px;transition:width .5s"></div></div>' +
+      '<div style="font-size:.6rem;color:rgba(255,255,255,.4);margin-top:.15rem">' + r.completed + '/8 concluídos' + (r.inProgress > 0 ? ' · ' + r.inProgress + ' em andamento' : '') + '</div>' +
+      '</div><div style="font-size:1rem;font-weight:800;color:' + barColor + '">' + r.pct + '%</div></div>';
+  }).join('');
+}
+
+function renderCourseList() {
+  const core = COURSES.filter(c => c.cat === 'core');
+  const extra = COURSES.filter(c => c.cat === 'extra');
+  const coreEl = document.getElementById('coreCoursesContainer');
+  const extraEl = document.getElementById('extraCoursesContainer');
+  if (coreEl) coreEl.innerHTML = core.map((c, i) => '<a href="' + c.url + '" target="_blank" style="display:flex;align-items:center;gap:.5rem;padding:.5rem 0;border-bottom:1px solid rgba(0,0,0,.06);text-decoration:none;color:var(--text)"><span style="width:22px;height:22px;border-radius:6px;background:var(--pmi-teal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0">' + (i+1) + '</span><span style="font-size:.82rem;font-weight:500">' + c.name + '</span></a>').join('');
+  if (extraEl) extraEl.innerHTML = extra.map((c, i) => '<a href="' + c.url + '" target="_blank" style="display:flex;align-items:center;gap:.5rem;padding:.5rem 0;border-bottom:1px solid rgba(0,0,0,.06);text-decoration:none;color:var(--text)"><span style="width:22px;height:22px;border-radius:6px;background:var(--pmi-purple);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0">' + (i+5) + '</span><span style="font-size:.82rem;font-weight:500">' + c.name + '</span></a>').join('');
 }
 
 function renderTeamGallery() {
