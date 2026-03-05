@@ -310,14 +310,46 @@ const MAX_SLOTS = 6;
 const MIN_SLOTS = 3;
 
 const TRIBES = [
-  { id: 1, n: 'Radar Tecnológico do GP', l: 'Hayala Curto, MSc, MBA, PMP®', q: 'q1', qn: 'Q1 — Praticante Aumentado', d: 'Requisitos/escopo com LLMs e RAG. Apoiar GPs com IA.', a: 'Matriz de Ferramentas · Guias · Casos de Uso', v: 'https://www.youtube.com/watch?v=XJLAvcHFKT8', vd: '7min' },
-  { id: 2, n: 'Agentes Autônomos & Equipes Híbridas', l: 'Débora Moura', q: 'q2', qn: 'Q2 — Gestão de Projetos de IA', d: 'Equipes Híbridas Humanos+IA. Framework EAA.', a: 'Guia EAA · Templates · Métricas', v: 'https://www.youtube.com/watch?v=HwgjMalJXQE', vd: '8min' },
-  { id: 3, n: 'TMO & PMO do Futuro', l: 'Marcel Fleming', q: 'q3', qn: 'Q3 — Liderança Organizacional', d: 'IA para maturidade em GP (Prado-MMGP). Diagnóstico automatizado.', a: 'Ferramenta IA · Modelo preditivo · Framework PMO', v: 'https://www.youtube.com/watch?v=vxQ4WLTyKpY', vd: '4min' },
-  { id: 4, n: 'Cultura & Change', l: 'Fernando Maquiaveli', q: 'q3', qn: 'Q3 — Liderança Organizacional', d: 'Inteligência Cultural + Microculturas + IA Generativa.', a: 'Framework Cultural+IA · Artigos · Ferramentas', v: 'https://www.youtube.com/watch?v=LZSk96EsepA', vd: '3min' },
-  { id: 5, n: 'Talentos & Upskilling', l: 'Jefferson Pinto', q: 'q3', qn: 'Q3 — Liderança Organizacional', d: 'Rubricas de proficiência em IA para GPs.', a: 'Toolkit (matriz+rubricas+checklist) · Piloto', v: 'https://www.youtube.com/watch?v=KbhnAJdSeDw', vd: '5min' },
-  { id: 6, n: 'ROI & Portfólio', l: 'Fabricio Costa, PMP', q: 'q3', qn: 'Q3 — Liderança Organizacional', d: 'Priorização com IA. Explainable AI para PMOs.', a: 'Framework governança · Modelos ROI · Artigos', v: 'https://www.youtube.com/watch?v=R2fA7hVE1dc', vd: '11min' },
-  { id: 7, n: 'Governança & Trustworthy AI', l: 'Marcos Klemz', q: 'q4', qn: 'Q4 — Futuro e Responsabilidade', d: 'Framework: risco, compliance, alucinações, métricas.', a: 'Framework Governança · Critérios aceite · Guia RAI', v: 'https://www.youtube.com/watch?v=3su8GgtFzVY', vd: '3min' },
-  { id: 8, n: 'Inclusão & Colaboração', l: 'Ana Carla Cavalcante', q: 'q4', qn: 'Q4 — Futuro e Responsabilidade', d: 'Neurodiversidade, acessibilidade. IA como exoesqueleto.', a: 'Guia Design Inclusivo · Framework · Artigos', v: 'https://www.youtube.com/watch?v=ghrgJ3_nk4k', vd: '14min' }
+  { id: 1, n: 'Radar Tecnológico do GP', l: 'Hayala Curto, MSc, MBA, PMP®', q: 'q1', qn: 'Q1 — Praticante Aumentado',
+    d: 'Fazer um simples pedido para uma IA já não é suficiente para entregas de excelência. É hora de elevar o nível com a engenharia de agentes! O desafio não é buscar um "prompt mágico", mas organizar múltiplos prompts e modelos em uma arquitetura de agentes capaz de planejar, executar e se autocorrigir.',
+    a: 'Radar Tecnológico do GP (comparativo GPT vs Claude vs Gemini por artefato) · Padrões de Arquitetura de Agentes (com código Python) · 1-2 Artigos científicos',
+    meet: 'Segundas ou Quartas, 19h',
+    v: 'https://www.youtube.com/watch?v=XJLAvcHFKT8', vd: '7min' },
+  { id: 2, n: 'Agentes Autônomos & Equipes Híbridas', l: 'Débora Moura', q: 'q2', qn: 'Q2 — Gestão de Projetos de IA',
+    d: '72% dos GPs usam IA de forma ad-hoc, sem alinhamento estratégico. A criação de agentes é feita sem papéis definidos. Como criar um framework que guie os GPs na estruturação dos seus próprios agentes? Assim como a EAP guia o escopo, a EAA será o padrão para estruturar agentes!',
+    a: 'Framework EAA (Estrutura Analítica do Agente) · E-book / Guia Prático · Webinário focado · Artigo científico (previsão junho)',
+    meet: 'Quintas, 20h30',
+    v: 'https://www.youtube.com/watch?v=HwgjMalJXQE', vd: '8min' },
+  { id: 3, n: 'TMO & PMO do Futuro', l: 'Marcel Fleming', q: 'q3', qn: 'Q3 — Liderança Organizacional',
+    d: 'Organizações com maior maturidade em GP obtêm taxas muito maiores de sucesso. Qual a eficácia com que uma organização executa seus projetos? Vamos desenvolver uma POC de IA para diagnosticar maturidade (modelo Prado-MMGP), criar checklists e sugerir ações de melhoria.',
+    a: 'Assistente de IA para diagnóstico de maturidade · Plano de Ação Inteligente personalizado · Relatório técnico com resultados da POC',
+    meet: 'A definir com o time',
+    v: 'https://www.youtube.com/watch?v=vxQ4WLTyKpY', vd: '4min' },
+  { id: 4, n: 'Cultura & Change', l: 'Fernando Maquiaveli', q: 'q3', qn: 'Q3 — Liderança Organizacional',
+    d: 'Sem cultura, a IA escala o caos. Com 80%+ dos projetos em ambientes multiculturais, precisamos de Inteligência Cultural para não desperdiçar recursos. O "internal stickiness" bloqueia fluxo de informação e confiança — é o inimigo invisível dos projetos. 25+ anos liderando projetos complexos multiculturais.',
+    a: 'Entregas mensais práticas (ferramentas de uso imediato) · Framework Inteligência Cultural + IA · Pesquisa estruturada com metodologias mistas · Artigos acadêmicos',
+    meet: 'Cadência semanal, foco prático',
+    v: 'https://www.youtube.com/watch?v=LZSk96EsepA', vd: '3min' },
+  { id: 5, n: 'Talentos & Upskilling', l: 'Jefferson Pinto', q: 'q3', qn: 'Q3 — Liderança Organizacional',
+    d: 'Adoção de IA acelerou, mas há baixa consistência na avaliação de proficiência dos GPs — faltam critérios observáveis e evidências claras. Sem métricas, não há evolução estruturada! Vamos criar o MVP da Proficiência em IA. Doutorando no ISCTE com revisão sistemática consolidada.',
+    a: 'Taxonomia (estrutura hierárquica de competências) · Matriz de Competências + Rubricas (Iniciante/Intermediário/Avançado) · Toolkit v1.0 (checklist + evidências) · Artigo aplicado + Webinário',
+    meet: 'Segundas, 20h',
+    v: 'https://www.youtube.com/watch?v=KbhnAJdSeDw', vd: '5min' },
+  { id: 6, n: 'ROI & Portfólio', l: 'Fabricio Costa, PMP', q: 'q3', qn: 'Q3 — Liderança Organizacional',
+    d: 'Chega de decisões milionárias baseadas em intuição! A IA para priorização de portfólio ainda é uma "caixa preta". Vamos transformá-la em "caixa de vidro" — transparente, explicável e auditável. Fabricio é Gerente de Programas na AWS e Embaixador Global de Construção do PMI.',
+    a: 'Modelos Híbridos (IA + julgamento humano) · Métricas de valor além do ROI (riscos, reputação, aprendizado) · Artigos mensais no LinkedIn · Protótipo de plataforma IA para simulação de cenários e priorização de portfólios',
+    meet: 'A definir com o time',
+    v: 'https://www.youtube.com/watch?v=R2fA7hVE1dc', vd: '11min' },
+  { id: 7, n: 'Governança & Trustworthy AI', l: 'Marcos Klemz', q: 'q4', qn: 'Q4 — Futuro e Responsabilidade',
+    d: '83% das organizações planejam implantar IA, mas apenas 29% se sentem prontas. 46% das PoCs são descartadas antes da produção. Riscos silenciosos: alucinações, exposição de dados, vieses. É hora de decretar o fim das "Provas de Conceito Eternas"!',
+    a: 'Framework de Governança de IA (processos de compliance) · Matriz de Qualidade de Dados · Guia de Métricas de Valor (ROI real) · Checklist de Critérios de Aceite (GenAI/RAG) · Toolkit v1.0 de Governança',
+    meet: 'Terças, 20h (ou fins de semana)',
+    v: 'https://www.youtube.com/watch?v=3su8GgtFzVY', vd: '3min' },
+  { id: 8, n: 'Inclusão & Colaboração', l: 'Ana Carla Cavalcante', q: 'q4', qn: 'Q4 — Futuro e Responsabilidade',
+    d: '15-20% da população mundial é neurodivergente. Apenas 25% dos neuroatípicos empregados se sentem incluídos. Vamos desenvolver o Neuroadvantage Framework 1.0: um "exoesqueleto cognitivo" suportado por IA para apoiar profissionais neurodivergentes de forma individualizada.',
+    a: 'Neuroadvantage Framework 1.0 (5 pilares) · Artigo científico (pilar teórico) · Webinar prático (pilar tecnológico) · Testes práticos + versão 1.0 para o mercado',
+    meet: 'Terças e Quintas, 20h30',
+    v: 'https://www.youtube.com/watch?v=ghrgJ3_nk4k', vd: '14min' }
 ];
 
 // ============================================================================
@@ -513,33 +545,42 @@ async function selectTribe(id) {
 // ============================================================================
 function renderTribes() {
   const container = document.getElementById('tribesContainer');
-  container.innerHTML = TRIBES.map(t => `
-    <div class="tribe-card tribe-${t.q}" id="t-${t.id}">
-      <div class="tribe-header" onclick="toggleTribe(${t.id})">
-        <div class="tribe-num">${String(t.id).padStart(2, '0')}</div>
-        <div class="tribe-info">
-          <h3>${t.n}</h3>
-          <div class="tribe-leader">${t.l} · ${t.qn}</div>
-        </div>
-        <div class="tribe-slots-wrap">
-          <div class="slots-visual" id="sl-${t.id}">
-            ${Array(MAX_SLOTS).fill('<div class="slot-dot"></div>').join('')}
-          </div>
-          <div class="slots-text" id="st-${t.id}">0/${MAX_SLOTS}</div>
-        </div>
-      </div>
-      <div class="tribe-body" id="tb-${t.id}">
-        <p>${t.d}</p>
-        <p><strong>Artefatos:</strong> ${t.a}</p>
-        <div class="tribe-actions">
-          <a href="${t.v}" target="_blank" class="tribe-video">▶ Vídeo (${t.vd})</a>
-          <button class="btn btn-select" id="sb-${t.id}" onclick="event.stopPropagation();selectTribe(${t.id})">
-            Escolher esta Tribo
-          </button>
-        </div>
-      </div>
-    </div>
-  `).join('');
+  const quadrants = [
+    { key: 'q1', label: 'QUADRANTE 1', title: 'O Praticante Aumentado', sub: 'Ferramentas, Produtividade e Engenharia de Agentes', color: 'var(--pmi-teal)' },
+    { key: 'q2', label: 'QUADRANTE 2', title: 'Gestão de Projetos de IA', sub: 'Metodologia GenAI/ML e Equipes Híbridas', color: 'var(--pmi-orange)' },
+    { key: 'q3', label: 'QUADRANTE 3', title: 'Liderança Organizacional', sub: 'Estratégia, Pessoas, Cultura e Portfólio', color: 'var(--pmi-purple)' },
+    { key: 'q4', label: 'QUADRANTE 4', title: 'Futuro e Responsabilidade', sub: 'Ética, Governança e Sociedade', color: 'var(--pmi-green)' }
+  ];
+  let html = '';
+  quadrants.forEach(quad => {
+    const tribes = TRIBES.filter(t => t.q === quad.key);
+    if (tribes.length === 0) return;
+    html += '<div style="margin:2rem 0 1rem;padding-left:.5rem;border-left:4px solid ' + quad.color + '">';
+    html += '<div style="font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:' + quad.color + '">' + quad.label + '</div>';
+    html += '<div style="font-size:1.15rem;font-weight:800;margin:.1rem 0">' + quad.title + '</div>';
+    html += '<div style="font-size:.82rem;color:var(--text-muted)">' + quad.sub + '</div>';
+    html += '</div>';
+    tribes.forEach(t => {
+      html += '<div class="tribe-card tribe-' + t.q + '" id="t-' + t.id + '">';
+      html += '<div class="tribe-header" onclick="toggleTribe(' + t.id + ')">';
+      html += '<div class="tribe-num">' + String(t.id).padStart(2, '0') + '</div>';
+      html += '<div class="tribe-info"><h3>' + t.n + '</h3>';
+      html += '<div class="tribe-leader">' + t.l + '</div></div>';
+      html += '<div class="tribe-slots-wrap">';
+      html += '<div class="slots-visual" id="sl-' + t.id + '">' + Array(MAX_SLOTS).fill('<div class="slot-dot"></div>').join('') + '</div>';
+      html += '<div class="slots-text" id="st-' + t.id + '">0/' + MAX_SLOTS + '</div>';
+      html += '</div></div>';
+      html += '<div class="tribe-body" id="tb-' + t.id + '">';
+      html += '<p>' + t.d + '</p>';
+      html += '<p><strong>Entregáveis do Ciclo:</strong> ' + t.a + '</p>';
+      if (t.meet) html += '<p style="font-size:.82rem"><strong>📅 Encontros:</strong> ' + t.meet + '</p>';
+      html += '<div class="tribe-actions">';
+      html += '<a href="' + t.v + '" target="_blank" class="tribe-video">▶ Vídeo (' + t.vd + ')</a>';
+      html += '<button class="btn btn-select" id="sb-' + t.id + '" onclick="event.stopPropagation();selectTribe(' + t.id + ')">Escolher esta Tribo</button>';
+      html += '</div></div></div>';
+    });
+  });
+  container.innerHTML = html;
 }
 
 function updateTribesUI() {
