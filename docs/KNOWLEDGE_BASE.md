@@ -397,3 +397,156 @@ e72cfac feat: server-side tribe selection + deselect function
 - **Phone:** +1 267-874-8329
 - **LinkedIn:** https://www.linkedin.com/in/vitor-rodovalho-pmp/
 - **PMI ID:** 5975367
+
+---
+
+## 14. HISTORICAL CYCLES
+
+### Cycle 1 (2025/1) — 22 Members
+First operational cycle. PMI-GO + PMI-CE partnership only. No formal tribe numbering for this cycle — exploratory phase with thematic groups aligned to the original governance charter.
+
+| Name | Chapter | Email |
+|------|---------|-------|
+| Andressa Martins | PMI-GO | catoze@gmail.com |
+| Cristiano Oliveira | PMI-CE (President) | cristiano.oliveira@me.com |
+| Diego Menezes | PMI-CE | diego.msousa@hotmail.com |
+| Fabrício Costa | PMI-GO | fabriciorcc@gmail.com |
+| Gustavo Batista | PMI-CE | eng.gustavobatista@gmail.com |
+| Herlon Sousa | PMI-CE | saguaho@gmail.com |
+| Italo Nogueira | PMI-GO | italo.sn@hotmail.com |
+| Ivan Lourenço | PMI-GO (President) | ivan.lourenco@pmigo.org.br |
+| Lídia do Vale | PMI-GO | lidiadovalle@gmail.com |
+| Marcelo Ferreira | PMI-CE | marceloferreira617@outlook.com |
+| Márcio Miranda | PMI-CE | mmiranda.ce@gmail.com |
+| Marcos Moura | PMI-GO | marcosmouracosta@gmail.com |
+| Mayanna Duarte | PMI-CE | mayanna.aires@gmail.com |
+| Rafael Camilo | PMI-GO | rafael.kamilol@gmail.com |
+| Roberto Macêdo | PMI-CE | boblmacedo@gmail.com |
+| Rodrigo Grilo Gomes | PMI-GO | rodrigo_ggomes@hotmail.com |
+| Rodrigo Lima Dutra | PMI-GO | limadutra.r@gmail.com |
+| Rogério Côrtes | PMI-GO | rogercortess@gmail.com |
+| Sarah Faria Alcantara Macedo | PMI-GO | sarah.famr@gmail.com |
+| Vitória Araújo | PMI-CE | vitoriarwjo@gmail.com |
+| Vitor Lopes | PMI-CE | vgf.lopes@gmail.com |
+| Vitor Maia Rodovalho | PMI-GO (GP) | vitor.rodovalho@outlook.com |
+
+**Key Deliverables:** 7 articles submitted to ProjectManagement.com; 1 Webinar realizado.
+
+---
+
+### Cycle 2 (2025/2) — 31 Members
+Second operational cycle. PMI-GO + PMI-CE. Tribes were numbered 2–6 and had **different themes** than Cycle 3. Important: tribe numbering and themes were realigned in Cycle 3.
+
+#### Cycle 2 Tribe Structure (different from Cycle 3)
+| Tribe # | Theme (Cycle 2) | Leader |
+|---------|----------------|--------|
+| Tribo 02 | IA e Ética no Design de Projetos | Ivan Lourenço (PMI-GO) |
+| Tribo 03 | IA para Priorização e Seleção de Projetos | Fabrício Costa (PMI-GO) |
+| Tribo 04 | Ferramentas e Métodos / Liderança Futura | Lídia do Vale (PMI-GO) |
+| Tribo 05 | Previsão de Riscos em GP com IA | Roberto Macêdo (PMI-CE) |
+| Tribo 06 | Equipes Híbridas / Liderando o Futuro | Débora Moura (PMI-CE) |
+| GP | — | Vitor Maia Rodovalho (PMI-GO) |
+
+> ⚠️ **Note:** Cycle 2 tribe themes were aligned to the original Manual de Governança (5 tribes: Ética, Priorização, Riscos, Ferramentas, Equipes Híbridas). Cycle 3 expanded to 8 tribes across 4 quadrants — a completely new structure.
+
+#### Cycle 2 Full Member List
+| Name | Chapter | Tribo | Email |
+|------|---------|-------|-------|
+| Andressa Martins | PMI-GO | 03 | catoze@gmail.com |
+| Cíntia Simões de Oliveira | PMI-GO | 06 | cintia.simoes10@gmail.com |
+| Débora Moura | PMI-CE | 06 (Líder) | debi.moura@gmail.com |
+| Denis Vasconcelos | PMI-GO | 03 | queiroz_denis@hotmail.com |
+| Diego Menezes | PMI-CE | 05 | diego.msousa@hotmail.com |
+| Evilasio Lucena | PMI-CE | 05 | evilasiolucena@gmail.com |
+| Fabrício Costa | PMI-GO | 03 (Líder) | fabriciorcc@gmail.com |
+| Francisco José Nascimento de Oliveira | PMI-CE | 06 | franze.n.oliveira@gmail.com |
+| Gustavo Batista | PMI-CE | 04 | eng.gustavobatista@gmail.com |
+| Herlon Sousa | PMI-CE | Em licença / Embaixador | saguaho@gmail.com |
+| Italo Nogueira | PMI-GO | 03 | italo.sn@hotmail.com |
+| Ivan Lourenço | PMI-GO | 02 (Líder + Presidente) | ivan.lourenco@pmigo.org.br |
+| João Coelho Júnior | PMI-CE | 06 | j_coelho@id.uff.br |
+| Letícia Clemente | PMI-GO | 06 | clementeleticia.lc@gmail.com |
+| Lídia do Vale | PMI-GO | 04 (Líder) | lidiadovalle@gmail.com |
+| Lorena Almeida | PMI-GO | 04 | loryalmeida13@icloud.com |
+| Lucas de Moura Vasconcelos | PMI-CE | 06 | lucas.vasc100@gmail.com |
+| Luciana Dutra Martins | PMI-GO | 03 | lucianadutramartins@outlook.com |
+| Marcelo Ferreira | PMI-CE | 05 | marceloferreira617@outlook.com |
+| Márcio Miranda | PMI-CE | 04 | mmiranda.ce@gmail.com |
+| Marcos Moura | PMI-GO | 04 | marcosmouracosta@gmail.com |
+| Maria Luiza | PMI-CE | 02 | malusilveirab@gmail.com |
+| Maurício Abe Machado | PMI-CE | 05 | mauricio.abe.machado@gmail.com |
+| Mayanna Duarte | PMI-CE | 03 | mayanna.aires@gmail.com |
+| Roberto Macêdo | PMI-CE | 05 (Líder) | boblmacedo@gmail.com |
+| Rodrigo Grilo Gomes | PMI-GO | 02 | rodrigo_ggomes@hotmail.com |
+| Rogério Côrtes | PMI-GO | 05 | rogercortess@gmail.com |
+| Sarah Faria Alcantara Macedo | PMI-GO | 02 | sarah.famr@gmail.com |
+| Vitória Araújo | PMI-CE | 04 | vitoriarwjo@gmail.com |
+| Vitor Maia Rodovalho | PMI-GO | GP | vitor.rodovalho@outlook.com |
+| Werley Miranda | PMI-GO | 02 | wgmiranda.me@gmail.com |
+
+---
+
+## 15. GOVERNANCE ROLES (from Manual de Governança R2 — valid until next revision)
+
+### Equipe de Constituição Inicial (Founding Team)
+Permanent institutional recognition. Consultative role in strategic evolution.
+
+| Name | Role |
+|------|------|
+| Ivan Lourenço | Patrocinador e idealizador |
+| Vitor Maia Rodovalho | Gerente desde a fase piloto |
+| Andressa Martins | Colaboradora fundacional |
+| Carlos Magno | Colaborador fundacional |
+| Fabrício Rodrigues do Carmo Costa | Colaborador fundacional |
+| Giovanni Oliveira Baroni Brandão | Colaborador fundacional |
+| Marcos Moura Costa | Colaborador fundacional |
+| Sarah Faria Alcantara M Rodovalho | Colaboradora fundacional |
+
+### Embaixadores do Núcleo (Active until Manual revision)
+| Name | Accumulates with |
+|------|-----------------|
+| Ivan Lourenço | Nível 1 + Nível 2 |
+| Cristiano Oliveira | Nível 1 |
+| Vitor Maia Rodovalho | Nível 2 |
+| Antônio Roberto Lins de Macêdo | Nível 3 |
+| Fabrício Rodrigues do Carmo Costa | Nível 3 |
+| Herlon Souza | Standalone |
+| Lídia Rakel Alcântara Do Vale | Nível 3 |
+| Sarah Faria Alcantara M Rodovalho | Nível 4 |
+
+### Comitê de Curadoria (Active until Manual revision)
+| Name | Role |
+|------|------|
+| Antônio Roberto Lins de Macêdo | Membro |
+| Fabrício Rodrigues do Carmo Costa | Membro |
+| Sarah Faria Alcantara M Rodovalho | Membro |
+
+---
+
+## 16. COOPERATION AGREEMENTS (Acordos de Cooperação)
+
+> 🔒 **Access Control:** Documents themselves are restricted to **Nível 1, Nível 2, and Superadmin** only. Metadata below is for internal reference.
+
+All agreements: perpetual duration from Cycle 3 (2026-1), 30-day notice for termination, governed by PMI® guidelines and Manual de Governança. No financial investment required from either party. PMI-GO is the strategic lead on all agreements.
+
+| Chapter | Signed | PMI-GO Signatories | Partner Signatories | Notes |
+|---------|--------|--------------------|---------------------|-------|
+| PMI-CE | 2025-12-09 | Ivan Lourenço (Presidente) + Vitor Maia Rodovalho (GP) | Cristiano Teixeira de Oliveira (Pres. 2024-2025) + Francisca Jessica de Sousa de Alcântara (Pres. 2026-2027) | Includes **Ratificação da Parceria Anterior** clause — formalizes collaboration already active since Cycle 1 (2025/1) |
+| PMI-DF | 2025-12-09 | Ivan Lourenço (Presidente) + Vitor Maia Rodovalho (GP) | Matheus Frederico Rosa Rocha (Presidente) | New partner for Cycle 3 |
+| PMI-MG | 2025-12-08 | Ivan Lourenço (Presidente) + Vitor Maia Rodovalho (GP) | Felipe Moraes Borges (Presidente) + Rogério Peixoto (Dir. Certificação e Desenvolvimento Profissional) | New partner for Cycle 3; 2 signatories on MG side |
+| PMI-RS | 2025-12-10 | Ivan Lourenço (Presidente) + Vitor Maia Rodovalho (GP) | Márcio Silva dos Santos (Presidente) | New partner for Cycle 3 |
+
+**Growth timeline from agreements:**
+- 2025/1: 2 chapters (GO + CE)
+- 2025/2: 2 chapters (GO + CE, same)
+- 2026/1 Cycle 3: **5 chapters** (GO + CE + DF + MG + RS) — formalized Dec 2025
+
+---
+
+## 17. CHAPTER LOGOS
+
+- **Location in repo:** `/logos/` folder (created by Vitor, contains versions for layout decisions)
+- **Chapters:** PMI-GO, PMI-CE, PMI-DF, PMI-MG, PMI-RS
+- **Usage:** To be added to site header/footer and governance pages — Vitor to decide which logo variant per chapter based on layout context
+- **Guideline:** Must comply with PMI Global branding standards; use official chapter-provided versions where available
+
