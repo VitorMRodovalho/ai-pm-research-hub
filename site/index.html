@@ -638,15 +638,19 @@ function renderTeamGallery() {
 
   const has = (m,r) => (m.roles||[]).includes(r) || m.role===r;
 
-  const active     = allMembers.filter(m => m.current_cycle_active && !has(m,'sponsor'));
+  const isLeader   = m => ['tribe_leader','manager'].includes(m.role);
+  const isResearch = m => ['researcher','facilitator','communicator'].includes(m.role);
+  const leaders    = allMembers.filter(m => m.current_cycle_active && isLeader(m)   && !has(m,'sponsor'));
+  const researchers= allMembers.filter(m => m.current_cycle_active && isResearch(m) && !has(m,'sponsor'));
   const ambassadors= allMembers.filter(m => has(m,'ambassador'));
   const curators   = allMembers.filter(m => has(m,'curator'));
   const sponsors   = allMembers.filter(m => has(m,'sponsor'));
   const founders   = allMembers.filter(m => has(m,'founder'));
 
   el.innerHTML =
-    teamSection('team-active',     'Pesquisadores & Líderes', 'membros ativos · Ciclo 3',           'var(--pmi-teal)',   active,      null)
-   +teamSection('team-ambassadors','Embaixadores',             'representação & multiplicação',       '#10B981',          ambassadors, ['ambassador'])
+    teamSection('team-leaders',    'Líderes de Tribo & Gestão', 'coordenação e governança · Ciclo 3', '#4F17A8', leaders,     null)
+   +teamSection('team-researchers','Pesquisadores',              'membros ativos · Ciclo 3',           '#EC4899', researchers, null)
+   +teamSection('team-ambassadors','Embaixadores',              'representação & multiplicação',       '#10B981', ambassadors, ['ambassador'])
    +teamSection('team-curators',   'Comitê de Curadoria',     'peer review & qualidade',             '#D97706',          curators,    ['curator'])
    +sponsorsSection(sponsors)
    +teamSection('team-founders',   'Fundadores',               'a história que trouxe o Núcleo até aqui', '#7C3AED',     founders,    ['founder']);
