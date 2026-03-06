@@ -510,7 +510,18 @@ async function loadEvents() {
   }
   const typeLabel  = { tribe_meeting:'Tribo', general_meeting:'Geral', webinar:'Webinar', other:'Outro' };
   const badgeClass = { tribe_meeting:'badge-tribe', general_meeting:'badge-general', webinar:'badge-webinar', other:'badge-tribe' };
-  const audienceLabel = { all:'👥 Todos', leadership:'🏛️ Liderança', tribe:'🔷 Tribo', curators:'📋 Curadoria' };
+  const audienceLabel = { leadership:'🏛️ Liderança', tribe:'🔷 Tribo', curators:'📋 Curadoria' };
+  // When audience is specific, it replaces the generic type badge
+  function eventBadges(ev) {
+    const rec = ev.is_recorded
+      ? `<span class="event-badge badge-recorded">● Gravada</span>` : '';
+    if (ev.audience_level && audienceLabel[ev.audience_level]) {
+      // Show audience badge instead of generic type (e.g. "Liderança" instead of "Geral")
+      return `<span class="event-badge badge-general">${audienceLabel[ev.audience_level]}</span>${rec}`;
+    }
+    // Default: show type badge
+    return `<span class="event-badge ${badgeClass[ev.type]||'badge-tribe'}">${typeLabel[ev.type]||ev.type}</span>${rec}`;
+  }
 
   el.innerHTML = data.map(ev => {
     const attIcon  = ev.i_attended === true ? '✅' : ev.i_attended === false ? '❌' : '—';
@@ -524,8 +535,9 @@ async function loadEvents() {
     const ytHtml = ev.youtube_url
       ? `<a href="${ev.youtube_url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;color:#fff;font-weight:600;text-decoration:none;padding:3px 8px;background:#FF0000;border-radius:6px;font-size:12px">▶ YouTube</a>`
       : (ev.is_recorded ? `<span style="font-size:11px;color:var(--pmi-gray);font-style:italic">gravada · YouTube em breve</span>` : '');
-    const recBadge = ev.is_recorded
-      ? `<span class="event-badge badge-recorded">● Gravada</span>` : '';
+    const recBadge = ''; // handled inside eventBadges()
+
+
 
     return `
     <div class="event-item">
@@ -544,9 +556,7 @@ async function loadEvents() {
           </div>
         </div>
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-          <span class="event-badge ${badgeClass[ev.type]}">${typeLabel[ev.type]||ev.type}</span>
-          ${recBadge}
-          ${ev.audience_level && ev.audience_level !== 'all' ? `<span class="event-badge" style="background:#F0FDF4;color:#065F46">${audienceLabel[ev.audience_level]||ev.audience_level}</span>` : ''}
+          ${eventBadges(ev)}
         </div>
         <div class="event-actions">
           ${ev.i_attended !== true
