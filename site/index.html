@@ -712,31 +712,36 @@ async function matchMember() {
   updateTribesUI();
 }
 
+const _RL = {
+  manager:'Gerente', tribe_leader:'Líder de Tribo', researcher:'Pesquisador',
+  ambassador:'Embaixador', curator:'Curador', sponsor:'Patrocinador',
+  founder:'Fundador', facilitator:'Facilitador', communicator:'Multiplicador', guest:'Visitante'
+};
+const _RC = {
+  manager:'#FF610F', tribe_leader:'#4F17A8', researcher:'#EC4899',
+  ambassador:'#10B981', curator:'#D97706', sponsor:'#BE2027',
+  founder:'#7C3AED', facilitator:'#EC4899', communicator:'#EC4899'
+};
+
 function updateAuthUI() {
   const nav = document.getElementById('navAuth');
   const prompt = document.getElementById('loginPrompt');
   const name = profile?.name || 'Usuário';
   const initials = name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
   const pic = user?.user_metadata?.avatar_url;
-  const roleLabels = {
-    manager: 'Gerente', tribe_leader: 'Líder', researcher: 'Pesquisador',
-    guest: 'Visitante', ambassador: 'Embaixador', sponsor: 'Patrocinador',
-    facilitator: 'Facilitador', communicator: 'Comunicação', observer: 'Observador'
-  };
-  const roleLabel = roleLabels[profile?.role] || profile?.role || 'Visitante';
-  const roleCls = 'role-' + (profile?.role || 'guest');
-
+  const r = profile?.role || 'guest';
+  const roleLabel = _RL[r] || r;
+  const roleCls = 'role-' + r;
   nav.innerHTML = `
-    <div class="user-badge">
-      <div class="user-avatar">${pic ? '<img src="' + pic + '" alt="">' : initials}</div>
-      <span>${name.split(' ')[0]}</span>
+    <button onclick="togglePD()" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:.4rem;padding:.2rem .4rem;border-radius:8px;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background='none'">
+      <div class="user-avatar" style="cursor:pointer">${pic ? '<img src="' + pic + '" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover">' : initials}</div>
+      <span style="color:#fff;font-size:.8rem;font-weight:600">${name.split(' ')[0]}</span>
       <span class="role-badge ${roleCls}">${roleLabel}</span>
-    </div>
-    <button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>`;
-
+      <span style="color:rgba(255,255,255,.4);font-size:.6rem">▾</span>
+    </button>`;
   if (prompt) prompt.style.display = 'none';
   closeAuth();
-
+  buildPD();
   if (profile?.role === 'guest') {
     toast('Bem-vindo! Acesso de visitante. Solicite cadastro ao GP.', 'info');
   } else {
@@ -744,6 +749,45 @@ function updateAuthUI() {
   }
   updateTribesUI();
 }
+
+function buildPD() {
+  const el = document.getElementById('pd-inner');
+  if (!el) return;
+  const name = profile?.name || 'Usuário';
+  const initials = name.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
+  const pic = user?.user_metadata?.avatar_url;
+  const r = profile?.role || 'guest';
+  const color = _RC[r] || '#64748B';
+  const isAdmin = profile?.is_superadmin === true;
+  const av = pic
+    ? `<img class="pd-av" src="${pic}" alt="" onerror="this.style.display='none'">`
+    : `<div class="pd-av-init">${initials}</div>`;
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:.7rem;margin-bottom:.3rem">
+      ${av}
+      <div style="min-width:0;overflow:hidden">
+        <div class="pd-name">${name}</div>
+        <span class="pd-badge" style="background:${color}22;color:${color}">${_RL[r]||r}</span>
+        <div class="pd-email" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${profile?.email||''}</div>
+      </div>
+    </div>
+    <hr class="pd-hr">
+    <a class="pd-item" href="/admin#profile">👤 Meu Perfil</a>
+    <a class="pd-item" href="/attendance">⏱ Presenças & Horas</a>
+    ${isAdmin ? '<hr class="pd-hr"><a class="pd-item admin" href="/admin">⚙️ Painel Admin</a>' : ''}
+    <hr class="pd-hr">
+    <button class="pd-item danger" onclick="logout()">↩ Sair</button>`;
+}
+function togglePD() {
+  const on = !document.getElementById('pd-drawer').classList.contains('open');
+  document.getElementById('pd-drawer').classList.toggle('open', on);
+  document.getElementById('pd-overlay').classList.toggle('open', on);
+}
+function closePD() {
+  document.getElementById('pd-drawer')?.classList.remove('open');
+  document.getElementById('pd-overlay')?.classList.remove('open');
+}
+
 
 async function logout() {
   await sb.auth.signOut();
