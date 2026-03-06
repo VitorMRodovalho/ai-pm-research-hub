@@ -161,7 +161,13 @@ import Toast from '../components/ui/Toast.astro';
             <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Credly (perfil público)</label>
             <input type="url" id="self-credly" value="${m.credly_url || ''}" placeholder="https://www.credly.com/users/seu-nome"
               class="w-full px-3 py-2 border-[1.5px] border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
-            <p class="text-[.68rem] text-slate-400 mt-1">Usado para validar certificações PMI automaticamente. Opcional.</p>
+            <div class="flex items-center gap-2 mt-1">
+              <p class="text-[.68rem] text-slate-400 flex-1">Usado para validar certificações PMI automaticamente. Opcional.</p>
+              <button id="btn-credly-verify" onclick="verifyCredly()"
+                class="px-3 py-1.5 bg-teal text-white rounded-lg text-[.7rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all flex-shrink-0">
+                🔍 Verificar Credly
+              </button>
+            </div>
           </div>
         </div>
 
@@ -249,6 +255,38 @@ import Toast from '../components/ui/Toast.astro';
       currentMember.secondary_emails = newList;
       renderProfile(currentMember);
       (window as any).toast?.(`${removed} removido`, 'info');
+    }
+  };
+
+
+  // ── Credly verification ──
+  (window as any).verifyCredly = async () => {
+    const sb = (window as any).navGetSb?.();
+    if (!sb || !currentMember) return;
+    const btn = document.getElementById('btn-credly-verify') as HTMLButtonElement;
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Verificando...'; }
+
+    try {
+      const { data, error } = await sb.functions.invoke('verify-credly', {
+        body: { member_id: currentMember.id },
+      });
+
+      if (error) throw error;
+      if (data?.success) {
+        const msg = data.has_cpmai
+          ? `🎉 CPMAI verificada! ${data.matched_count} badge(s) encontrada(s).`
+          : `✅ ${data.matched_count} badge(s) verificada(s) de ${data.total_credly_badges} no Credly.`;
+        (window as any).toast?.(msg, 'success');
+        // Reload profile to show updated badges
+        const { data: updated } = await sb.rpc('get_member_by_auth');
+        if (updated) { currentMember = updated; renderProfile(updated); }
+      } else {
+        (window as any).toast?.(data?.error || 'Erro na verificação', 'error');
+      }
+    } catch (e: any) {
+      (window as any).toast?.(e.message || 'Erro ao conectar com Credly', 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '🔍 Verificar Credly'; }
     }
   };
 
