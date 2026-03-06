@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import Nav from '../components/nav/Nav.astro';
+import AuthModal from '../components/ui/AuthModal.astro';
 
 interface Props {
   title?: string;
@@ -28,6 +29,7 @@ const {
 </head>
 <body class="bg-slate-50 text-slate-900">
   <Nav activePage={activePage} />
+  <AuthModal />
   <slot />
   <!-- Profile drawer (populated by nav client script) -->
   <div id="pd-overlay" class="hidden fixed inset-0 z-[500]" onclick="closePD()"></div>

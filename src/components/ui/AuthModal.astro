@@ -36,6 +36,15 @@ const { redirectTo = '/' } = Astro.props;
 </div>
 
 <script define:vars={{ redirectTo }}>
+  // Open via CustomEvent (works regardless of script load order)
+  document.addEventListener('open-auth', () => {
+    document.getElementById('auth-modal')?.classList.remove('hidden');
+  });
+  // Also expose global for programmatic use
+  (window as any).openAuthModal = () => {
+    document.getElementById('auth-modal')?.classList.remove('hidden');
+  };
+
   const sb = (window as any).navGetSb?.();
 
   document.getElementById('btn-google')?.addEventListener('click', async () => {

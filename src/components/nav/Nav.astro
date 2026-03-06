@@ -49,7 +49,7 @@ const links = [
 
   <!-- Auth area: populated by client script -->
   <div id="nav-auth" class="flex items-center gap-2 flex-shrink-0">
-    <button onclick="openAuthModal()"
+    <button onclick="document.dispatchEvent(new CustomEvent('open-auth'))"
             class="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20
                    text-white text-[.78rem] font-semibold hover:bg-white/20 transition-all cursor-pointer"
             id="nav-login-btn">
@@ -125,7 +125,7 @@ const links = [
   function renderLoggedOut() {
     const el = document.getElementById('nav-auth');
     if (el) el.innerHTML = `
-      <button onclick="openAuthModal()"
+      <button onclick="document.dispatchEvent(new CustomEvent('open-auth'))"
         class="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-[.78rem] font-semibold hover:bg-white/20 transition-all cursor-pointer">
         Entrar
       </button>`;
