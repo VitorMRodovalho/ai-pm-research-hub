@@ -338,7 +338,7 @@ Mín. 3 · Máx. 6 pesquisadores por tribo.
 <p style="color:rgba(255,255,255,.5);font-size:.85rem">Carregando time...</p>
 </div>
 <div style="margin-top:1.5rem;display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;font-size:.7rem;color:rgba(255,255,255,.5)">
-<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:var(--pmi-orange);display:inline-block"></span>Gerente</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:var(--pmi-purple);display:inline-block"></span>Líder de Tribo</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:var(--pmi-teal);display:inline-block"></span>Pesquisador</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#10B981;display:inline-block"></span>Embaixador</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#D97706;display:inline-block"></span>Curador</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#BE2027;display:inline-block"></span>Patrocinador</span>
+<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#FF610F;display:inline-block"></span>Gerente</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#4F17A8;display:inline-block"></span>Líder de Tribo</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#EC4899;display:inline-block"></span>Pesquisador</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#10B981;display:inline-block"></span>Embaixador</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#D97706;display:inline-block"></span>Curador</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#BE2027;display:inline-block"></span>Patrocinador</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#7C3AED;display:inline-block"></span>Fundador</span>
 </div>
 </div>
 </section>
@@ -543,6 +543,50 @@ function renderCourseList() {
   const extraEl = document.getElementById('extraCoursesContainer');
   if (coreEl) coreEl.innerHTML = core.map((c, i) => '<a href="' + c.url + '" target="_blank" style="display:flex;align-items:center;gap:.5rem;padding:.5rem 0;border-bottom:1px solid rgba(0,0,0,.06);text-decoration:none;color:var(--text)"><span style="width:22px;height:22px;border-radius:6px;background:var(--pmi-teal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0">' + (i+1) + '</span><span style="font-size:.82rem;font-weight:500">' + c.name + '</span></a>').join('');
   if (extraEl) extraEl.innerHTML = extra.map((c, i) => '<a href="' + c.url + '" target="_blank" style="display:flex;align-items:center;gap:.5rem;padding:.5rem 0;border-bottom:1px solid rgba(0,0,0,.06);text-decoration:none;color:var(--text)"><span style="width:22px;height:22px;border-radius:6px;background:var(--pmi-purple);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0">' + (i+5) + '</span><span style="font-size:.82rem;font-weight:500">' + c.name + '</span></a>').join('');
+}
+
+
+// Chapter logo mapping — update paths once logos are in site/assets/logos/
+const CHAPTER_LOGOS = {
+  'PMI-GO': 'assets/logos/pmigo.png',
+  'PMI-CE': 'assets/logos/pmice.png',
+  'PMI-DF': 'assets/logos/pmidf.png',
+  'PMI-MG': 'assets/logos/pmimg.png',
+  'PMI-RS': 'assets/logos/pmirs.png',
+};
+
+function sponsorsSection(sponsors) {
+  if (!sponsors.length) return '';
+  // Group by chapter
+  const byChapter = {};
+  sponsors.forEach(m => {
+    const ch = m.chapter || 'Outros';
+    if (!byChapter[ch]) byChapter[ch] = [];
+    byChapter[ch].push(m);
+  });
+  const chapterOrder = ['PMI-GO','PMI-CE','PMI-DF','PMI-MG','PMI-RS'];
+  const sorted = [...chapterOrder.filter(c => byChapter[c]), ...Object.keys(byChapter).filter(c => !chapterOrder.includes(c))];
+
+  let inner = sorted.map(ch => {
+    const logo = CHAPTER_LOGOS[ch];
+    const logoEl = logo
+      ? '<img src="' + logo + '" style="height:32px;object-fit:contain;margin-bottom:.5rem" alt="' + ch + '" onerror="this.style.display='none';this.nextSibling.style.display='block'">'
+        + '<div style="display:none;font-size:.8rem;font-weight:800;color:#BE2027">' + ch + '</div>'
+      : '<div style="font-size:.8rem;font-weight:800;color:#BE2027;margin-bottom:.5rem">' + ch + '</div>';
+    const members = byChapter[ch].map(m => memberCard(m, ['sponsor'])).join('');
+    return '<div style="background:rgba(190,32,39,.05);border:1px solid rgba(190,32,39,.15);border-radius:14px;padding:1rem 1.2rem;min-width:160px">'
+      + '<div style="text-align:center;margin-bottom:.75rem">' + logoEl + '</div>'
+      + '<div style="display:flex;flex-wrap:wrap;gap:.8rem;justify-content:center">' + members + '</div>'
+      + '</div>';
+  }).join('');
+
+  return '<div id="team-sponsors" style="margin-top:2.5rem">'
+    + '<div style="display:flex;align-items:baseline;gap:.6rem;margin-bottom:.8rem">'
+    + '<h3 style="font-size:1.05rem;font-weight:800;color:#BE2027">Patrocinadores</h3>'
+    + '<span style="font-size:.75rem;color:var(--text-muted)">Liderança dos capítulos & pontos focais</span>'
+    + '</div>'
+    + '<div style="display:flex;flex-wrap:wrap;gap:1rem">' + inner + '</div>'
+    + '</div>';
 }
 
 function renderTeamGallery() {
@@ -856,15 +900,15 @@ document.addEventListener('DOMContentLoaded', init);
 // ── MULTI-ROLE SUPPORT (patched by patch_index.py) ──
 function getRoleDots(member) {
   const ROLE_COLORS = {
-    manager:      { color: '#F97316', label: 'Gerente' },
-    tribe_leader: { color: '#3B82F6', label: 'Líder de Tribo' },
-    researcher:   { color: '#EC4899', label: 'Pesquisador' },
+    manager:      { color: '#FF610F', label: 'Gerente' },        // laranja PMI
+    tribe_leader: { color: '#4F17A8', label: 'Líder de Tribo' }, // roxo PMI
+    researcher:   { color: '#EC4899', label: 'Pesquisador' },    // rosa
     communicator: { color: '#EC4899', label: 'Multiplicador' },
     facilitator:  { color: '#EC4899', label: 'Facilitador' },
-    ambassador:   { color: '#10B981', label: 'Embaixador' },
-    curator:      { color: '#D97706', label: 'Curador' },
-    sponsor:      { color: '#BE2027', label: 'Patrocinador' },
-    founder:      { color: '#7C3AED', label: 'Fundador' },
+    ambassador:   { color: '#10B981', label: 'Embaixador' },     // verde
+    curator:      { color: '#D97706', label: 'Curador' },        // âmbar
+    sponsor:      { color: '#BE2027', label: 'Patrocinador' },   // vermelho PMI
+    founder:      { color: '#7C3AED', label: 'Fundador' },       // índigo
   };
   const roles = (member.roles && member.roles.length > 0)
     ? member.roles
