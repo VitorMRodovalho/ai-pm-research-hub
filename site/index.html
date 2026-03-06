@@ -114,6 +114,25 @@ section{padding:4.5rem 2rem}.section-dark{background:var(--pmi-dark);color:var(-
 .hidden{display:none!important}
 .toast{position:fixed;bottom:2rem;right:2rem;background:var(--pmi-dark);color:var(--white);padding:.8rem 1.5rem;border-radius:12px;font-size:.85rem;font-weight:500;z-index:300;transform:translateY(100px);opacity:0;transition:.4s}
 .toast.show{transform:translateY(0);opacity:1}.toast.success{border-left:4px solid var(--pmi-green)}.toast.error{border-left:4px solid var(--pmi-red)}.toast.info{border-left:4px solid var(--pmi-teal)}
+
+/* ── Profile Drawer ── */
+.pd-overlay{display:none;position:fixed;inset:0;z-index:500}
+.pd-overlay.open{display:block}
+.pd-drawer{position:fixed;top:60px;right:1rem;z-index:501;background:#fff;border-radius:16px;
+  box-shadow:0 8px 40px rgba(0,0,0,.2);padding:1.2rem 1.1rem;min-width:240px;
+  transform:translateY(-8px) scale(.97);opacity:0;pointer-events:none;transition:.18s;border:1px solid #E2E8F0}
+.pd-drawer.open{transform:translateY(0) scale(1);opacity:1;pointer-events:all}
+.pd-av{width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.pd-av-init{width:48px;height:48px;border-radius:50%;background:var(--pmi-teal);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.85rem}
+.pd-name{font-weight:700;font-size:.9rem;color:#1a1a2e}
+.pd-badge{font-size:.65rem;font-weight:700;padding:.12rem .45rem;border-radius:5px;display:inline-block;margin-top:.2rem}
+.pd-email{font-size:.68rem;color:#64748B;margin-top:.1rem}
+.pd-hr{border:none;border-top:1px solid #F1F5F9;margin:.7rem 0}
+.pd-item{display:flex;align-items:center;gap:.5rem;width:100%;padding:.38rem .5rem;border-radius:8px;
+  font-size:.78rem;font-weight:600;text-decoration:none;color:#1a1a2e;border:none;background:none;cursor:pointer;text-align:left;transition:.12s}
+.pd-item:hover{background:#F8FAFC}
+.pd-item.admin{color:#4F17A8}.pd-item.admin:hover{background:#F5F3FF}
+.pd-item.danger{color:#BE2027}.pd-item.danger:hover{background:#FFF1F1}
 </style>
 </head>
 <body>

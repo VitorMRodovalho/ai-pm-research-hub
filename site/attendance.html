@@ -481,7 +481,17 @@ async function onLogin() {
   const { data } = await sb.rpc('get_member_by_auth');
   MEMBER = data;
   if (!MEMBER || MEMBER.role === 'guest') {
-    showToast('Conta não encontrada no cadastro.', 'error');
+    // Show auth gate with a helpful message — likely email mismatch
+    document.getElementById('auth-gate').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    const msg = document.getElementById('auth-not-found-msg');
+    if (msg) {
+      const userEmail = (await sb.auth.getUser()).data?.user?.email || '';
+      msg.textContent = userEmail
+        ? `Email ${userEmail} não encontrado no cadastro. Solicite ao GP que vincule seu email.`
+        : 'Conta não encontrada. Solicite cadastro ao GP.';
+      msg.style.display = 'block';
+    }
     return;
   }
   CAN_MANAGE = MEMBER.is_superadmin || MEMBER.role === 'tribe_leader';
