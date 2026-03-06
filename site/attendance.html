@@ -591,7 +591,7 @@ async function openRoster(eventId, title) {
         <img class="avatar" src="${m.photo_url||''}" onerror="this.style.visibility='hidden'">
         ${m.name}
       </div></td>
-      <td style="color:var(--pmi-gray);font-size:12px">${roleLabel(m.role)}</td>
+      <td>${roleBadges(m.roles && m.roles.length ? m.roles : [m.role])}</td>
       <td style="text-align:center">
         ${CAN_MANAGE
           ? `<button class="toggle-btn ${m.present?'on':'off'}" id="tog-${m.id}"
@@ -681,7 +681,7 @@ async function loadRanking() {
       <div class="rank-num">${i+1}</div>
       <img class="avatar" style="width:32px;height:32px" src="${m.photo_url||''}" onerror="this.style.visibility='hidden'">
       <div class="rank-name">${m.name}<br>
-        <span style="font-size:11px;color:var(--pmi-gray);font-weight:400">${roleLabel(m.role)}</span>
+        ${roleBadges(m.roles && m.roles.length ? m.roles : [m.role])}
       </div>
       <div class="rank-bar-wrap"><div class="rank-bar-fill" style="width:${(m.hours_attended/max*100).toFixed(1)}%"></div></div>
       <div class="rank-hrs">${m.hours_attended||0}h</div>
@@ -695,9 +695,30 @@ function fmtDate(d) {
   if (!d) return '';
   return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'short', year:'numeric' });
 }
+const ROLE_MAP = {
+  manager:      { label: 'Gerente de Projeto', color: '#003865', bg: '#EFF6FF' },
+  tribe_leader: { label: 'Líder de Tribo',     color: '#065F46', bg: '#F0FDF4' },
+  researcher:   { label: 'Pesquisador',         color: '#1E293B', bg: '#F1F5F9' },
+  facilitator:  { label: 'Facilitador',         color: '#92400E', bg: '#FFF7ED' },
+  communicator: { label: 'Multiplicador',       color: '#6B21A8', bg: '#FAF5FF' },
+  sponsor:      { label: 'Patrocinador',        color: '#BE2027', bg: '#FFF0F0' },
+  ambassador:   { label: 'Embaixador',          color: '#0369A1', bg: '#E0F2FE' },
+  curator:      { label: 'Curador',             color: '#78350F', bg: '#FEF3C7' },
+  founder:      { label: 'Fundador',            color: '#7C3AED', bg: '#EDE9FE' },
+  guest:        { label: 'Convidado',           color: '#6B7280', bg: '#F9FAFB' },
+};
+
 function roleLabel(r) {
-  return { tribe_leader:'Líder de Tribo', researcher:'Pesquisador', manager:'Gerente de Projeto',
-    facilitator:'Facilitador', communicator:'Multiplicador', sponsor:'Patrocinador', guest:'Convidado' }[r] || r || '—';
+  return ROLE_MAP[r]?.label || r || '—';
+}
+
+function roleBadges(roles) {
+  if (!roles || !roles.length) return '';
+  return roles.map(r => {
+    const m = ROLE_MAP[r] || { label: r, color: '#6B7280', bg: '#F1F5F9' };
+    return `<span style="display:inline-block;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700;
+      color:${m.color};background:${m.bg};border:1px solid ${m.color}22;margin:1px">${m.label}</span>`;
+  }).join('');
 }
 function showToast(msg, type='') {
   const t = document.getElementById('toast');
