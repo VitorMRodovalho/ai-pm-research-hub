@@ -25,7 +25,7 @@
 .user-avatar{width:28px;height:28px;border-radius:50%;background:var(--pmi-teal);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.7rem;color:var(--white)}
 .user-avatar img{width:28px;height:28px;border-radius:50%}
 .role-badge{font-size:.6rem;padding:.15rem .4rem;border-radius:4px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
-.role-manager{background:rgba(255,97,15,.2);color:var(--pmi-orange)}.role-tribe_leader{background:rgba(79,23,168,.2);color:var(--pmi-purple)}.role-researcher{background:rgba(0,121,158,.2);color:var(--pmi-teal)}.role-guest{background:rgba(0,0,0,.1);color:var(--text-muted)}
+.role-manager{background:rgba(255,97,15,.2);color:var(--pmi-orange)}.role-tribe_leader{background:rgba(79,23,168,.2);color:var(--pmi-purple)}.role-researcher{background:rgba(0,121,158,.2);color:var(--pmi-teal)}.role-guest{background:rgba(0,0,0,.1);color:var(--text-muted)}.role-ambassador{background:rgba(16,185,129,.15);color:#065F46}.role-curator{background:rgba(217,119,6,.15);color:#92400E}.role-sponsor{background:rgba(190,32,39,.15);color:#BE2027}.role-founder{background:rgba(124,58,237,.15);color:#6D28D9}
 @media(max-width:900px){.nav-links{display:none}}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center}.modal-overlay.open{display:flex}
 .modal{background:var(--white);border-radius:20px;padding:2.5rem;max-width:420px;width:90%;position:relative}
@@ -338,7 +338,7 @@ Mín. 3 · Máx. 6 pesquisadores por tribo.
 <p style="color:rgba(255,255,255,.5);font-size:.85rem">Carregando time...</p>
 </div>
 <div style="margin-top:1.5rem;display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;font-size:.7rem;color:rgba(255,255,255,.5)">
-<span>🟠 Gerente</span><span>🟣 Líder de Tribo</span><span>🔵 Pesquisador</span><span>🟢 Embaixador</span>
+<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:var(--pmi-orange);display:inline-block"></span>Gerente</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:var(--pmi-purple);display:inline-block"></span>Líder de Tribo</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:var(--pmi-teal);display:inline-block"></span>Pesquisador</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#10B981;display:inline-block"></span>Embaixador</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#D97706;display:inline-block"></span>Curador</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#BE2027;display:inline-block"></span>Patrocinador</span>
 </div>
 </div>
 </section>
@@ -474,7 +474,7 @@ async function loadLeaderPhotos() {
 }
 
 async function loadAllMembers() {
-  const { data } = await sb.from('members').select('name, chapter, role, photo_url, linkedin_url, tribe_id, current_cycle_active').eq('current_cycle_active', true).order('name');
+  const { data } = await sb.from('members').select('name, chapter, role, roles, photo_url, linkedin_url, tribe_id, current_cycle_active').eq('current_cycle_active', true).order('name');
   if (data) { allMembers = data; renderTeamGallery(); }
 }
 
@@ -553,13 +553,12 @@ function renderTeamGallery() {
     const photo = m.photo_url
       ? '<img src="' + m.photo_url + '" style="width:56px;height:56px;border-radius:50%;object-fit:cover" alt="">'
       : '<div style="width:56px;height:56px;border-radius:50%;background:var(--pmi-teal);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.8rem">' + initials + '</div>';
-    const roleColors = { manager: 'var(--pmi-orange)', tribe_leader: 'var(--pmi-purple)', researcher: 'var(--pmi-teal)', ambassador: 'var(--pmi-green)' };
-    const dotColor = roleColors[m.role] || 'var(--pmi-gray)';
+    // multi-role dots — uses getRoleDots()
     const liLink = m.linkedin_url ? '<a href="' + m.linkedin_url + '" target="_blank" style="color:var(--pmi-teal);font-size:.65rem;text-decoration:none">🔗</a>' : '';
     return '<div style="text-align:center;width:90px">' + photo +
       '<div style="font-size:.7rem;font-weight:600;margin-top:.3rem;line-height:1.2">' + m.name.split(' ').slice(0,2).join(' ') + ' ' + liLink + '</div>' +
       '<div style="font-size:.6rem;color:var(--text-muted)">' + m.chapter + '</div>' +
-      '<div style="width:6px;height:6px;border-radius:50%;background:' + dotColor + ';margin:.2rem auto 0"></div></div>';
+      '<div style="display:flex;justify-content:center;gap:3px;margin:.3rem auto 0">' + getRoleDots(m) + '</div></div>';
   }).join('');
 }
 
