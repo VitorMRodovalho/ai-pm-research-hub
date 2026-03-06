@@ -1,0 +1,209 @@
+---
+/**
+ * TeamSection.astro — Sprint 2
+ * Team gallery with 6 sub-sections loaded from Supabase.
+ * Uses LIGHT heading colors for contrast against dark navy background.
+ */
+
+const ROLE_COLORS: Record<string, string> = {
+  manager:      '#FF610F',
+  tribe_leader: '#4F17A8',
+  researcher:   '#EC4899',
+  facilitator:  '#EC4899',
+  communicator: '#EC4899',
+  ambassador:   '#10B981',
+  curator:      '#D97706',
+  sponsor:      '#BE2027',
+  founder:      '#7C3AED',
+};
+
+const ROLE_LABELS: Record<string, string> = {
+  manager:      'Gerente',
+  tribe_leader: 'Líder de Tribo',
+  researcher:   'Pesquisador',
+  facilitator:  'Facilitador',
+  communicator: 'Multiplicador',
+  ambassador:   'Embaixador',
+  curator:      'Curador',
+  sponsor:      'Patrocinador',
+  founder:      'Fundador',
+};
+---
+
+<section class="py-16 px-6 bg-[#003B5C] text-white" id="team">
+  <div class="max-w-[1200px] mx-auto">
+    <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-[#05BFE0] mb-2">
+      44 Colaboradores · 5 Capítulos · 1 Missão
+    </div>
+    <h2 class="text-[clamp(1.7rem,4vw,2.5rem)] font-extrabold leading-tight mb-3 text-white">
+      Nosso Time
+    </h2>
+    <p class="text-base text-white/60 max-w-[700px] mb-10">
+      Pesquisadores, líderes e gestores unidos pela interseção IA + GP.
+    </p>
+
+    <div id="teamGrid" class="flex flex-wrap gap-4 justify-center">
+      <p class="text-white/50 text-[.85rem]">Carregando time...</p>
+    </div>
+
+    <!-- Role legend -->
+    <div class="mt-6 flex gap-6 justify-center flex-wrap text-[.7rem] text-white/50">
+      {Object.entries(ROLE_COLORS).filter(([k]) =>
+        ['manager','tribe_leader','researcher','ambassador','curator','sponsor','founder'].includes(k)
+      ).map(([role, color]) => (
+        <span class="inline-flex items-center gap-1">
+          <span class="w-[9px] h-[9px] rounded-full inline-block" style={`background:${color}`}></span>
+          {ROLE_LABELS[role]}
+        </span>
+      ))}
+    </div>
+  </div>
+</section>
+
+<script>
+  // ── Dot colors (for role indicators on cards) — keep original saturated ──
+  const ROLE_COLORS: Record<string, string> = {
+    manager: '#FF610F', tribe_leader: '#4F17A8', researcher: '#EC4899',
+    facilitator: '#EC4899', communicator: '#EC4899', ambassador: '#10B981',
+    curator: '#D97706', sponsor: '#BE2027', founder: '#7C3AED',
+  };
+  const ROLE_LABELS: Record<string, string> = {
+    manager: 'Gerente', tribe_leader: 'Líder de Tribo', researcher: 'Pesquisador',
+    facilitator: 'Facilitador', communicator: 'Multiplicador', ambassador: 'Embaixador',
+    curator: 'Curador', sponsor: 'Patrocinador', founder: 'Fundador',
+  };
+
+  // ── LIGHT heading colors for dark background contrast ──
+  const HEADING_COLORS: Record<string, string> = {
+    purple:  '#B465FF',  // was #4F17A8
+    pink:    '#F9A8D4',  // was #EC4899
+    emerald: '#6EE7B7',  // was #10B981
+    amber:   '#FCD34D',  // was #D97706
+    crimson: '#FCA5A5',  // was #BE2027
+    violet:  '#C4B5FD',  // was #7C3AED
+  };
+
+  const CHAPTER_LOGOS: Record<string, string> = {
+    'PMI-GO': '/assets/logos/pmigo.png', 'PMI-CE': '/assets/logos/pmice.jpg',
+    'PMI-DF': '/assets/logos/pmidf.png', 'PMI-MG': '/assets/logos/pmimg.png',
+    'PMI-RS': '/assets/logos/pmirs.png',
+  };
+  const CHAPTER_ORDER = ['PMI-GO','PMI-CE','PMI-DF','PMI-MG','PMI-RS'];
+
+  interface Member {
+    name: string; chapter: string; role: string; roles: string[] | null;
+    photo_url: string | null; linkedin_url: string | null;
+    tribe_id: number | null; current_cycle_active: boolean;
+  }
+
+  function has(m: Member, r: string): boolean {
+    return (m.roles || []).includes(r) || m.role === r;
+  }
+
+  function getRoleDots(m: Member): string {
+    // Always show ALL roles the member has — never filter by section
+    const roles = m.roles?.length ? m.roles : (m.role ? [m.role] : []);
+    return roles
+      .filter(r => ROLE_COLORS[r])
+      .map(r => `<span title="${ROLE_LABELS[r] || r}" style="width:8px;height:8px;border-radius:50%;background:${ROLE_COLORS[r]};display:inline-block"></span>`)
+      .join('');
+  }
+
+  function memberCard(m: Member): string {
+    const initials = m.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+    const photo = m.photo_url
+      ? `<img src="${m.photo_url}" class="w-16 h-16 rounded-full object-cover border-2 border-white/10" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+        + `<div style="display:none" class="w-16 h-16 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.8rem]">${initials}</div>`
+      : `<div class="w-16 h-16 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.8rem]">${initials}</div>`;
+    const li = m.linkedin_url
+      ? `<a href="${m.linkedin_url}" target="_blank" class="text-teal text-[.65rem] no-underline">🔗</a>`
+      : '';
+    const dots = getRoleDots(m);
+    return `<div class="text-center w-[90px]">
+      ${photo}
+      <div class="text-[.7rem] font-semibold mt-1.5 leading-tight">${m.name.split(' ').slice(0, 2).join(' ')} ${li}</div>
+      <div class="text-[.6rem] text-slate-400">${m.chapter || ''}</div>
+      <div class="flex justify-center gap-[3px] mt-1">${dots}</div>
+    </div>`;
+  }
+
+  function teamSection(id: string, label: string, sublabel: string, headingColor: string, members: Member[]): string {
+    if (!members.length) return '';
+    return `<div id="${id}" class="mt-10 w-full">
+      <div class="flex items-baseline gap-2.5 mb-3">
+        <h3 class="text-[1.05rem] font-extrabold" style="color:${headingColor}">${label}</h3>
+        <span class="text-[.75rem] text-white/50">${sublabel}</span>
+      </div>
+      <div class="flex flex-wrap gap-4 justify-center">
+        ${members.map(m => memberCard(m)).join('')}
+      </div>
+    </div>`;
+  }
+
+  function sponsorsSection(sponsors: Member[]): string {
+    if (!sponsors.length) return '';
+    const byChapter: Record<string, Member[]> = {};
+    sponsors.forEach(m => {
+      const ch = m.chapter || 'Outros';
+      if (!byChapter[ch]) byChapter[ch] = [];
+      byChapter[ch].push(m);
+    });
+    const sorted = [...CHAPTER_ORDER.filter(c => byChapter[c]), ...Object.keys(byChapter).filter(c => !CHAPTER_ORDER.includes(c))];
+
+    const inner = sorted.map(ch => {
+      const logo = CHAPTER_LOGOS[ch];
+      const logoEl = logo
+        ? `<img src="${logo}" class="h-9 max-w-[120px] object-contain mb-2" alt="${ch}" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+           <div style="display:none" class="text-[.85rem] font-extrabold mb-2" style="color:${HEADING_COLORS.crimson}">${ch}</div>`
+        : `<div class="text-[.8rem] font-extrabold mb-2" style="color:${HEADING_COLORS.crimson}">${ch}</div>`;
+      return `<div class="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 min-w-[160px]">
+        <div class="text-center mb-3">${logoEl}</div>
+        <div class="flex flex-wrap gap-3 justify-center">${byChapter[ch].map(m => memberCard(m)).join('')}</div>
+      </div>`;
+    }).join('');
+
+    return `<div id="team-sponsors" class="mt-10 w-full">
+      <div class="flex items-baseline gap-2.5 mb-3">
+        <h3 class="text-[1.05rem] font-extrabold" style="color:${HEADING_COLORS.crimson}">Patrocinadores</h3>
+        <span class="text-[.75rem] text-white/50">Liderança dos capítulos & pontos focais</span>
+      </div>
+      <div class="flex flex-wrap gap-4">${inner}</div>
+    </div>`;
+  }
+
+  function renderTeam(allMembers: Member[]) {
+    const el = document.getElementById('teamGrid');
+    if (!el || !allMembers.length) return;
+
+    const isLeader = (m: Member) => ['tribe_leader', 'manager'].includes(m.role);
+    const isResearch = (m: Member) => ['researcher', 'facilitator', 'communicator'].includes(m.role);
+
+    const leaders     = allMembers.filter(m => m.current_cycle_active && isLeader(m) && !has(m, 'sponsor'));
+    const researchers = allMembers.filter(m => m.current_cycle_active && isResearch(m) && !has(m, 'sponsor'));
+    const ambassadors = allMembers.filter(m => has(m, 'ambassador'));
+    const curators    = allMembers.filter(m => has(m, 'curator'));
+    const sponsors    = allMembers.filter(m => has(m, 'sponsor'));
+    const founders    = allMembers.filter(m => has(m, 'founder'));
+
+    el.innerHTML =
+      teamSection('team-leaders',     'Líderes de Tribo & Gestão', 'coordenação e governança · Ciclo 3',      HEADING_COLORS.purple,  leaders)
+      + teamSection('team-researchers', 'Pesquisadores',             'participantes ativos · Ciclo 3',          HEADING_COLORS.pink,    researchers)
+      + teamSection('team-ambassadors', 'Embaixadores',              'representação & multiplicação',           HEADING_COLORS.emerald, ambassadors)
+      + teamSection('team-curators',    'Comitê de Curadoria',       'peer review & qualidade',                 HEADING_COLORS.amber,   curators)
+      + sponsorsSection(sponsors)
+      + teamSection('team-founders',    'Fundadores',                'a história que trouxe o Núcleo até aqui', HEADING_COLORS.violet,  founders);
+  }
+
+  // ── Boot ──
+  async function bootTeam() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(bootTeam, 200); return; }
+    const { data } = await sb.from('members')
+      .select('name, chapter, role, roles, photo_url, linkedin_url, tribe_id, current_cycle_active')
+      .neq('role', 'guest')
+      .order('name');
+    if (data) renderTeam(data);
+  }
+
+  bootTeam();
+</script>

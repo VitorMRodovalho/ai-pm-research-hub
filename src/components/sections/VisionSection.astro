@@ -1,0 +1,60 @@
+---
+/**
+ * VisionSection.astro — Sprint 2
+ * Strategic vision: benchmarking, bimodal model, CPMAI, roadmap.
+ */
+
+const cards = [
+  {
+    icon: '🌎',
+    title: 'Benchmarking Internacional',
+    text: 'Mapeamos iniciativas similares no PMI Ireland (AI Innovation Hub), PMI Germany (CoP AI) e PMI Sweden (Global Chapter Report com 27 capítulos e 129 nações). O Núcleo é a mais robusta entre elas.',
+    borderColor: '#00799E',
+  },
+  {
+    icon: '🏗️',
+    title: 'Modelo Bimodal',
+    html: '<strong>Eixo A (CoE):</strong> Núcleo fechado de pesquisa de elite com peer review e curadoria.<br><strong>Eixo B (CoP):</strong> Comunidade aberta de AI Ambassadors acessível a qualquer participante PMI globalmente.',
+    borderColor: '#FF610F',
+  },
+  {
+    icon: '🎓',
+    title: 'PMI-CPMAI',
+    text: 'O PMI lançou a certificação PMI-CPMAI (AI Project Management). Ainda não existe um programa de AI Ambassadors — esta é a janela. O Núcleo pode ser o blueprint global.',
+    borderColor: '#4F17A8',
+  },
+  {
+    icon: '🚀',
+    title: 'Roadmap 2026-2028',
+    html: '<strong>Fase 1:</strong> Consolidação Ciclo 3 + visibilidade internacional.<br><strong>Fase 2:</strong> Expansão transfronteiriça + coautoria global.<br><strong>Fase 3:</strong> Lançamento AI Ambassadors.<br><strong>Fase 4:</strong> Chancelamento PMI Global.',
+    borderColor: '#10B981',
+  },
+];
+---
+
+<section class="py-16 px-6 bg-[#F7F4EF]" id="vision">
+  <div class="max-w-[1200px] mx-auto">
+    <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-orange mb-2">
+      Visão de Futuro
+    </div>
+    <h2 class="text-[clamp(1.7rem,4vw,2.5rem)] font-extrabold leading-tight mb-3">
+      Para Onde Estamos Indo
+    </h2>
+    <p class="text-base text-slate-500 max-w-[700px] mb-10">
+      O Núcleo opera como um Center of Excellence híbrido — o mais estruturado no ecossistema PMI global para IA + GP.
+    </p>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      {cards.map((c) => (
+        <div class="bg-white rounded-2xl p-6"
+             style={`border-top: 4px solid ${c.borderColor}`}>
+          <h3 class="text-base font-bold mb-2">{c.icon} {c.title}</h3>
+          {c.html
+            ? <p class="text-[.85rem] text-slate-500" set:html={c.html} />
+            : <p class="text-[.85rem] text-slate-500">{c.text}</p>
+          }
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

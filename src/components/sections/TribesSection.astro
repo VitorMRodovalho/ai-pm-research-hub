@@ -1,0 +1,399 @@
+---
+/**
+ * TribesSection.astro — Sprint 2
+ * Gamified tribe selection with realtime slot tracking.
+ * Dynamic data (counts, leader photos, user selection) from Supabase via window.navGetSb().
+ * Static structure (tribe names, descriptions) from data/tribes.ts.
+ */
+import { TRIBES, MAX_SLOTS, MIN_SLOTS } from '../../data/tribes';
+import { QUADRANTS } from '../../data/quadrants';
+
+const QUAD_COLORS: Record<string, string> = {
+  q1: '#00799E',
+  q2: '#FF610F',
+  q3: '#4F17A8',
+  q4: '#10B981',
+};
+---
+
+<section class="py-16 px-6 bg-[#F7F4EF]" id="tribes">
+  <div class="max-w-[1200px] mx-auto">
+    <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-orange mb-2">
+      Dream Team — 8 Líderes
+    </div>
+    <h2 class="text-[clamp(1.7rem,4vw,2.5rem)] font-extrabold leading-tight mb-3">
+      Escolha sua Tribo
+    </h2>
+    <div class="text-base text-slate-500 max-w-[700px] mb-2">
+      <span class="inline-block px-2.5 py-0.5 rounded-md text-[.68rem] font-bold bg-green-100 text-green-700 animate-pulse">
+        SELEÇÃO ABERTA
+      </span>
+      <span class="inline-block px-2.5 py-0.5 rounded-md text-[.68rem] font-bold bg-red-50 text-red-600 ml-1">
+        Encerra Sáb 08/Mar 12h BRT
+      </span>
+      <br>
+      Mín. 3 · Máx. 6 pesquisadores por tribo.
+      <span id="loginPrompt" class="block mt-2 font-semibold text-orange">
+        ⚡ Faça login para escolher
+      </span>
+    </div>
+
+    <div id="tribesContainer">
+      {QUADRANTS.map((quad) => {
+        const tribes = TRIBES.filter((t) => t.quadrant === quad.key);
+        if (!tribes.length) return null;
+        return (
+          <>
+            {/* Quadrant header */}
+            <div class="mt-8 mb-4 pl-2" style={`border-left: 4px solid ${QUAD_COLORS[quad.key]}`}>
+              <div class="text-[.7rem] font-bold tracking-wider uppercase"
+                   style={`color: ${QUAD_COLORS[quad.key]}`}>
+                {quad.label}
+              </div>
+              <div class="text-[1.15rem] font-extrabold mt-0.5">{quad.title}</div>
+              <div class="text-[.82rem] text-slate-500">{quad.subtitle}</div>
+            </div>
+
+            {/* Tribe cards */}
+            {tribes.map((t) => (
+              <div class="bg-white rounded-2xl overflow-hidden border border-black/5 mb-4
+                          hover:shadow-md transition-all duration-300"
+                   id={`t-${t.id}`}
+                   data-quadrant={t.quadrant}>
+                {/* Header — always visible */}
+                <div class="flex items-center gap-4 px-5 py-4 cursor-pointer"
+                     data-tribe-header={t.id}>
+                  {/* Leader photo placeholder / number badge */}
+                  <div class="w-[42px] h-[42px] rounded-xl flex items-center justify-center
+                              text-white font-extrabold text-base flex-shrink-0"
+                       id={`tp-${t.id}`}
+                       style={`background: ${QUAD_COLORS[t.quadrant]}`}>
+                    {String(t.id).padStart(2, '0')}
+                  </div>
+
+                  <div class="flex-1 min-w-0">
+                    <h3 class="text-[.95rem] font-bold truncate">{t.name}</h3>
+                    <div class="text-[.82rem] text-slate-500">
+                      {t.leader}
+                      {t.leaderLinkedIn && (
+                        <a href={t.leaderLinkedIn} target="_blank" rel="noopener"
+                           class="text-teal no-underline text-[.75rem] ml-1"
+                           onclick="event.stopPropagation()">🔗</a>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Slot dots */}
+                  <div class="flex-shrink-0 text-center">
+                    <div class="flex gap-[3px] mb-0.5" id={`sl-${t.id}`}>
+                      {Array.from({ length: MAX_SLOTS }).map(() => (
+                        <div class="w-3.5 h-3.5 rounded-full border-2 border-gray-300 transition-all duration-300"></div>
+                      ))}
+                    </div>
+                    <div class="text-[.68rem] text-slate-500 font-semibold" id={`st-${t.id}`}>
+                      0/{MAX_SLOTS}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Body — collapsible */}
+                <div class="max-h-0 overflow-hidden transition-all duration-400 px-5"
+                     id={`tb-${t.id}`}>
+                  <div class="pb-5 pt-3 border-t border-black/5">
+                    <p class="text-[.88rem] text-slate-500 mb-3">{t.description}</p>
+
+                    <div class="mb-3">
+                      <strong class="text-[.85rem]">Entregáveis do Ciclo:</strong>
+                      <ul class="mt-1.5 ml-5 text-[.84rem] text-slate-500 list-disc">
+                        {t.deliverables.map((d) => <li class="mb-1">{d}</li>)}
+                      </ul>
+                    </div>
+
+                    {t.meetingSchedule && (
+                      <p class="text-[.82rem] mb-3">
+                        <strong>📅 Encontros:</strong> {t.meetingSchedule}
+                      </p>
+                    )}
+
+                    <div class="flex gap-3 flex-wrap items-center mt-4">
+                      <a href={t.videoUrl} target="_blank" rel="noopener"
+                         class="inline-flex items-center gap-1.5 bg-crimson text-white px-4 py-2
+                                rounded-xl no-underline text-[.82rem] font-semibold
+                                hover:opacity-85 transition-opacity"
+                         onclick="event.stopPropagation()">
+                        ▶ Vídeo ({t.videoDuration})
+                      </a>
+                      <button class="tribe-select-btn w-full sm:w-auto px-4 py-2.5 rounded-xl
+                                     text-[.82rem] font-semibold text-white bg-teal
+                                     hover:bg-teal/80 transition-all cursor-pointer border-0
+                                     disabled:opacity-50 disabled:cursor-not-allowed"
+                              id={`sb-${t.id}`}
+                              data-tribe-id={t.id}
+                              style="display:none">
+                        Escolher esta Tribo
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </>
+        );
+      })}
+    </div>
+
+    <div class="text-center mt-6">
+      <a href="https://youtube.com/playlist?list=PLQJVKrw1fcrx3fD2ug1hnps6TklcMT1dc"
+         target="_blank" rel="noopener"
+         class="text-crimson font-bold text-[.95rem] no-underline hover:underline">
+        📋 Playlist completa →
+      </a>
+    </div>
+  </div>
+</section>
+
+<script>
+  // ── Tribe selection logic ──
+  // Uses window.navGetSb() and nav:member event per established Astro patterns.
+
+  const MAX_SLOTS = 6;
+  const MIN_SLOTS = 3;
+  const DEADLINE = new Date('2026-03-08T15:00:00Z');
+
+  let tribeCounts: Record<number, number> = {};
+  let userTribe: number | null = null;
+  let member: any = null;
+
+  function getSb() {
+    return (window as any).navGetSb?.();
+  }
+
+  // ── Accordion toggle ──
+  document.querySelectorAll('[data-tribe-header]').forEach((el) => {
+    el.addEventListener('click', () => {
+      const id = el.getAttribute('data-tribe-header');
+      const body = document.getElementById(`tb-${id}`);
+      if (!body) return;
+      const wasOpen = body.style.maxHeight && body.style.maxHeight !== '0px';
+      // Close all
+      document.querySelectorAll('[id^="tb-"]').forEach((b) => {
+        (b as HTMLElement).style.maxHeight = '0px';
+      });
+      if (!wasOpen) {
+        body.style.maxHeight = body.scrollHeight + 'px';
+      }
+    });
+  });
+
+  // ── Load tribe selection counts ──
+  async function loadTribeCounts() {
+    const sb = getSb();
+    if (!sb) return;
+    const { data } = await sb.from('tribe_selections').select('tribe_id');
+    tribeCounts = {};
+    if (data) data.forEach((s: any) => {
+      tribeCounts[s.tribe_id] = (tribeCounts[s.tribe_id] || 0) + 1;
+    });
+    updateUI();
+  }
+
+  // ── Load leader photos ──
+  async function loadLeaderPhotos() {
+    const sb = getSb();
+    if (!sb) return;
+    const { data } = await sb.from('members')
+      .select('tribe_id, photo_url')
+      .eq('role', 'tribe_leader')
+      .not('photo_url', 'is', null);
+    if (!data) return;
+    data.forEach((m: any) => {
+      if (!m.tribe_id || !m.photo_url) return;
+      const el = document.getElementById(`tp-${m.tribe_id}`);
+      if (el) {
+        el.innerHTML = `<img src="${m.photo_url}" class="w-[42px] h-[42px] rounded-full object-cover" alt="">`;
+        el.className = 'flex-shrink-0';
+      }
+    });
+  }
+
+  // ── Select / deselect tribe ──
+  async function selectTribe(id: number) {
+    const sb = getSb();
+    if (!sb) return;
+    if (!member) {
+      document.dispatchEvent(new CustomEvent('open-auth'));
+      return;
+    }
+    if (member.role === 'guest') {
+      (window as any).toast?.('Apenas participantes cadastrados.', 'error');
+      return;
+    }
+    if (member.role === 'tribe_leader') {
+      (window as any).toast?.('Líderes já estão designados à sua tribo!', 'info');
+      return;
+    }
+    if (new Date() > DEADLINE) {
+      (window as any).toast?.('Seleção encerrada!', 'error');
+      return;
+    }
+
+    // Deselect if clicking current tribe
+    if (userTribe === id) {
+      try {
+        const { data } = await sb.rpc('deselect_tribe');
+        if (data?.success) {
+          userTribe = null;
+          (window as any).toast?.('Seleção removida', 'info');
+          await loadTribeCounts();
+        } else {
+          (window as any).toast?.(data?.error || 'Erro ao remover', 'error');
+        }
+      } catch (e: any) {
+        (window as any).toast?.('Erro: ' + e.message, 'error');
+      }
+      return;
+    }
+
+    // Select / switch
+    const count = tribeCounts[id] || 0;
+    if (count >= MAX_SLOTS) {
+      (window as any).toast?.('Tribo lotada!', 'error');
+      return;
+    }
+
+    try {
+      const { data } = await sb.rpc('select_tribe', { p_tribe_id: id });
+      if (data?.success) {
+        userTribe = id;
+        (window as any).toast?.(`Tribo ${id} selecionada! ✓`, 'success');
+        await loadTribeCounts();
+      } else {
+        (window as any).toast?.(data?.error || 'Erro ao selecionar', 'error');
+      }
+    } catch (e: any) {
+      (window as any).toast?.('Erro: ' + e.message, 'error');
+    }
+  }
+
+  // ── Bind select buttons ──
+  document.querySelectorAll('.tribe-select-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = Number((btn as HTMLElement).dataset.tribeId);
+      selectTribe(id);
+    });
+  });
+
+  // ── Update UI based on counts + auth ──
+  function updateUI() {
+    for (let tid = 1; tid <= 8; tid++) {
+      const count = tribeCounts[tid] || 0;
+      const dots = document.querySelectorAll(`#sl-${tid} > div`);
+      const text = document.getElementById(`st-${tid}`);
+      const btn = document.getElementById(`sb-${tid}`) as HTMLButtonElement | null;
+
+      // Dots
+      dots.forEach((d, i) => {
+        (d as HTMLElement).style.background = i < count ? '#70AD47' : '';
+        (d as HTMLElement).style.borderColor = i < count ? '#70AD47' : '';
+      });
+
+      // Text
+      if (text) {
+        if (count >= MAX_SLOTS) {
+          text.innerHTML = '<span class="text-red-600 font-bold">LOTADA</span>';
+        } else if (count >= MIN_SLOTS) {
+          text.innerHTML = `${count}/${MAX_SLOTS} ✓`;
+          text.style.color = '#70AD47';
+        } else {
+          text.textContent = `${count}/${MAX_SLOTS}`;
+          text.style.color = '';
+        }
+      }
+
+      // Button
+      if (btn) {
+        const isSelected = userTribe === tid;
+        const isFull = count >= MAX_SLOTS && !isSelected;
+        const canSelect = member
+          && member.role !== 'guest'
+          && member.role !== 'tribe_leader'
+          && member.is_active !== false;
+
+        if (isSelected) {
+          btn.textContent = '✓ Selecionada (clique para trocar)';
+          btn.style.background = '#70AD47';
+          btn.disabled = false;
+        } else if (isFull) {
+          btn.textContent = 'Lotada';
+          btn.style.background = '';
+          btn.disabled = true;
+        } else {
+          btn.textContent = 'Escolher esta Tribo';
+          btn.style.background = '';
+          btn.disabled = false;
+        }
+        btn.style.display = canSelect ? '' : 'none';
+      }
+    }
+
+    // Login prompt
+    const prompt = document.getElementById('loginPrompt');
+    if (prompt) prompt.style.display = member ? 'none' : 'block';
+  }
+
+  // ── Realtime subscription ──
+  function subscribeRealtime() {
+    const sb = getSb();
+    if (!sb) return;
+    sb.channel('tribe_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tribe_selections' },
+          () => loadTribeCounts())
+      .subscribe();
+  }
+
+  // ── Boot ──
+  async function bootTribes() {
+    // Wait for nav to initialize
+    const sb = getSb();
+    if (!sb) {
+      // Retry after a short delay (nav might not be ready yet)
+      setTimeout(bootTribes, 200);
+      return;
+    }
+    await loadTribeCounts();
+    await loadLeaderPhotos();
+    subscribeRealtime();
+
+    // Load user tribe selection if logged in
+    member = (window as any).navGetMember?.();
+    if (member?.id) {
+      const { data: sel } = await sb.from('tribe_selections')
+        .select('tribe_id')
+        .eq('member_id', member.id)
+        .maybeSingle();
+      if (sel) userTribe = sel.tribe_id;
+    }
+    updateUI();
+  }
+
+  // Listen for auth changes
+  window.addEventListener('nav:member', ((e: CustomEvent) => {
+    member = e.detail;
+    if (member?.id) {
+      getSb()?.from('tribe_selections')
+        .select('tribe_id')
+        .eq('member_id', member.id)
+        .maybeSingle()
+        .then(({ data }: any) => {
+          userTribe = data?.tribe_id ?? null;
+          updateUI();
+        });
+    } else {
+      userTribe = null;
+      updateUI();
+    }
+  }) as EventListener);
+
+  bootTribes();
+</script>

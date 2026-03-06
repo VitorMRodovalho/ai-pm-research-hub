@@ -1,0 +1,61 @@
+---
+/**
+ * RulesSection.astro — Sprint 2
+ * Rules of engagement + 2026 value journey timeline.
+ */
+
+const rules = [
+  { icon: '⏱', title: 'Carga Horária', text: '4-6h/semana. Reuniões gerais + tribos.' },
+  { icon: '📊', title: 'Dashboard', text: 'Google Sheets. Sábado até 17h. Segunda: relatório.' },
+  { icon: '📝', title: 'Curadoria', text: '7 etapas. Peer review + Comitê de Curadoria.' },
+  { icon: '🏆', title: 'Reconhecimento', text: 'Declarações PMI. Atestados. Horas. Comprovação.' },
+];
+
+const milestones = [
+  { label: 'Marco 1', title: 'Produção de Conhecimento', text: '10+ artigos internacionais', color: '#00799E' },
+  { label: 'Marco 2', title: 'Aplicação Real', text: '3 Pilotos com IA co-piloto', color: '#FF610F' },
+  { label: 'Marco 3', title: 'Profissionalização', text: 'Certificação PMI-CPMAI', color: '#4F17A8' },
+  { label: 'Marco 4', title: 'Impacto Global', text: 'AI Ambassadors & Comunidade', color: '#10B981' },
+];
+---
+
+<section class="py-16 px-6" id="rules">
+  <div class="max-w-[1200px] mx-auto">
+    <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-orange mb-2">
+      Como Vamos Trabalhar
+    </div>
+    <h2 class="text-[clamp(1.7rem,4vw,2.5rem)] font-extrabold leading-tight mb-10">
+      Regras do Jogo
+    </h2>
+
+    <!-- Rules grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      {rules.map((r) => (
+        <div>
+          <h3 class="text-[1.05rem] font-bold mb-3">{r.icon} {r.title}</h3>
+          <p class="text-[.88rem] text-slate-500">{r.text}</p>
+        </div>
+      ))}
+    </div>
+
+    <!-- Value journey -->
+    <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-orange mb-5">
+      Jornada de Valor 2026
+    </div>
+
+    <div class="relative pl-8 border-l-[3px] border-transparent"
+         style="border-image: linear-gradient(to bottom, #00799E, #4F17A8, #FF610F) 1;">
+      {milestones.map((m) => (
+        <div class="relative pb-7 pl-6">
+          <div class="absolute -left-[2.35rem] top-1 w-[13px] h-[13px] rounded-full border-[3px] border-white"
+               style={`background: ${m.color}`}></div>
+          <div class="text-[.72rem] font-bold tracking-wider" style={`color: ${m.color}`}>
+            {m.label}
+          </div>
+          <h4 class="text-[.95rem] font-bold mt-0.5 mb-0.5">{m.title}</h4>
+          <p class="text-[.82rem] text-slate-500">{m.text}</p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

@@ -1,24 +1,41 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Toast from '../components/ui/Toast.astro';
+import HeroSection from '../components/sections/HeroSection.astro';
+import AgendaSection from '../components/sections/AgendaSection.astro';
+import QuadrantsSection from '../components/sections/QuadrantsSection.astro';
+import TribesSection from '../components/sections/TribesSection.astro';
+import KpiSection from '../components/sections/KpiSection.astro';
+import NetworkingSection from '../components/sections/NetworkingSection.astro';
+import RulesSection from '../components/sections/RulesSection.astro';
+import TrailSection from '../components/sections/TrailSection.astro';
+import TeamSection from '../components/sections/TeamSection.astro';
+import VisionSection from '../components/sections/VisionSection.astro';
+import ResourcesSection from '../components/sections/ResourcesSection.astro';
 ---
-<BaseLayout title="Núcleo IA & GP — Ciclo 03" activePage="home">
+
+<BaseLayout title="Ciclo 03 — Kick-off | Núcleo IA & GP" activePage="home">
   <Toast />
-    <!-- Hero placeholder while full migration is built -->
-  <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-navy via-slate-900 to-purple/20">
-    <div class="text-center text-white px-4">
-      <div class="text-orange text-sm font-bold tracking-widest uppercase mb-4">KICK-OFF OFICIAL — CICLO 03 (2026/1)</div>
-      <h1 class="text-4xl md:text-6xl font-black leading-tight mb-4">
-        Núcleo de Estudos e Pesquisa em<br>
-        <span class="text-transparent bg-clip-text bg-gradient-to-r from-teal to-purple">Inteligência Artificial</span><br>
-        e Gerenciamento de Projetos
-      </h1>
-      <p class="text-white/60 text-lg mb-8">The AI & PM Study and Research Hub — A Joint Initiative of the PMI Brazilian Chapters</p>
-      <div class="flex gap-3 justify-center flex-wrap">
-        {['PMI-GO','PMI-CE','PMI-DF','PMI-MG','PMI-RS'].map(c => (
-          <span class="px-3 py-1.5 border border-white/20 rounded-full text-sm font-semibold text-white/80">{c}</span>
-        ))}
-      </div>
-    </div>
-  </div>
+
+  <HeroSection deadline="2026-03-08T15:00:00Z" />
+  <AgendaSection />
+  <QuadrantsSection />
+  <TribesSection />
+  <KpiSection />
+  <NetworkingSection />
+  <RulesSection />
+  <TrailSection />
+  <TeamSection />
+  <VisionSection />
+  <ResourcesSection />
+
+  <footer class="bg-[#200F3B] text-white/40 py-10 px-6 text-center text-[.78rem]">
+    <p>Núcleo de Estudos e Pesquisa em IA e GP · The AI & PM Study and Research Hub</p>
+    <p class="mt-1">PMI-GO · PMI-CE · PMI-DF · PMI-MG · PMI-RS</p>
+    <p class="mt-2 text-[.68rem]">PMI®, PMBOK®, PMP® e PMI-CPMAI™ são marcas registradas do PMI, Inc.</p>
+    <p class="mt-1">
+      <a href="https://github.com/VitorMRodovalho/ai-pm-research-hub" class="text-[#05BFE0] no-underline hover:underline">GitHub</a>
+      · GP: Vitor Maia Rodovalho
+    </p>
+  </footer>
 </BaseLayout>

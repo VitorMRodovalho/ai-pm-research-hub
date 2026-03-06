@@ -1,0 +1,87 @@
+---
+/**
+ * ResourcesSection.astro — Sprint 2
+ * Links and resources grid.
+ */
+
+const resources = [
+  {
+    icon: '▶️',
+    iconBg: 'rgba(213,52,11,.1)',
+    title: 'Playlist YouTube',
+    text: '8 vídeos. Escolha até Sáb 12h.',
+    url: 'https://youtube.com/playlist?list=PLQJVKrw1fcrx3fD2ug1hnps6TklcMT1dc',
+    linkText: 'Abrir →',
+  },
+  {
+    icon: '📘',
+    iconBg: 'rgba(0,121,158,.1)',
+    title: 'Manual de Governança',
+    text: 'Leitura obrigatória (documento vivo).',
+    url: 'https://www.canva.com/design/DAG1Nc3jhC4/gWGhQCJyv7axeCbKozD1gg/view',
+    linkText: 'Abrir Manual →',
+  },
+  {
+    icon: '🎓',
+    iconBg: 'rgba(79,23,168,.1)',
+    title: 'Mini Cursos IA — PMI',
+    text: 'Trilha gratuita.',
+    url: 'https://www.pmi.org/learning/ai-in-project-management',
+    linkText: 'PMI.org →',
+  },
+  {
+    icon: '💻',
+    iconBg: 'rgba(112,173,71,.1)',
+    title: 'GitHub',
+    text: 'Repositório + CRs.',
+    url: 'https://github.com/VitorMRodovalho/ai-pm-research-hub',
+    linkText: 'Abrir →',
+  },
+  {
+    icon: '📧',
+    iconBg: 'rgba(255,97,15,.1)',
+    title: 'Email do Núcleo',
+    text: 'Comunicações oficiais.',
+    url: 'mailto:nucleoiagp@gmail.com',
+    linkText: 'nucleoiagp@gmail.com',
+  },
+  {
+    icon: '✅',
+    iconBg: 'rgba(0,121,158,.1)',
+    title: 'volunteer.pmi.org',
+    text: 'Aceite sua posição.',
+    url: 'https://volunteer.pmi.org',
+    linkText: 'Portal →',
+  },
+];
+---
+
+<section class="py-16 px-6 bg-[#f0f4f8]" id="resources">
+  <div class="max-w-[1200px] mx-auto">
+    <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-orange mb-2">
+      Links e Recursos
+    </div>
+    <h2 class="text-[clamp(1.7rem,4vw,2.5rem)] font-extrabold leading-tight mb-10">
+      Próximos Passos
+    </h2>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      {resources.map((r) => (
+        <div class="bg-white rounded-2xl p-5 border border-black/5 flex items-start gap-3">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center text-[1.3rem] flex-shrink-0"
+               style={`background: ${r.iconBg}`}>
+            {r.icon}
+          </div>
+          <div>
+            <h4 class="text-[.9rem] font-bold mb-0.5">{r.title}</h4>
+            <p class="text-[.78rem] text-slate-500">{r.text}</p>
+            <a href={r.url} target="_blank" rel="noopener"
+               class="text-teal text-[.78rem] font-semibold no-underline hover:underline">
+              {r.linkText}
+            </a>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
