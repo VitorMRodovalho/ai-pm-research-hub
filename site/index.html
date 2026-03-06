@@ -474,7 +474,7 @@ async function loadLeaderPhotos() {
 }
 
 async function loadAllMembers() {
-  const { data } = await sb.from('members').select('name, chapter, role, roles, photo_url, linkedin_url, tribe_id, current_cycle_active').eq('current_cycle_active', true).order('name');
+  const { data } = await sb.from('members').select('name, chapter, role, roles, photo_url, linkedin_url, tribe_id, current_cycle_active').neq('role','guest').order('name');
   if (data) { allMembers = data; renderTeamGallery(); }
 }
 
@@ -549,7 +549,7 @@ function renderCourseList() {
 // Chapter logo mapping — update paths once logos are in site/assets/logos/
 const CHAPTER_LOGOS = {
   'PMI-GO': 'assets/logos/pmigo.png',
-  'PMI-CE': 'assets/logos/pmice.png',
+  'PMI-CE': 'assets/logos/pmice.jpg',
   'PMI-DF': 'assets/logos/pmidf.png',
   'PMI-MG': 'assets/logos/pmimg.png',
   'PMI-RS': 'assets/logos/pmirs.png',
@@ -570,8 +570,8 @@ function sponsorsSection(sponsors) {
   let inner = sorted.map(ch => {
     const logo = CHAPTER_LOGOS[ch];
     const logoEl = logo
-      ? '<img src="' + logo + '" style="height:32px;object-fit:contain;margin-bottom:.5rem" alt="' + ch + '" onerror="this.style.display='none';this.nextSibling.style.display='block'">'
-        + '<div style="display:none;font-size:.8rem;font-weight:800;color:#BE2027">' + ch + '</div>'
+      ? '<img src="' + logo + '" style="height:36px;max-width:120px;object-fit:contain;margin-bottom:.5rem" alt="' + ch + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'">'
+        + '<div style="display:none;font-size:.85rem;font-weight:800;color:#BE2027;margin-bottom:.5rem">' + ch + '</div>'
       : '<div style="font-size:.8rem;font-weight:800;color:#BE2027;margin-bottom:.5rem">' + ch + '</div>';
     const members = byChapter[ch].map(m => memberCard(m, ['sponsor'])).join('');
     return '<div style="background:rgba(190,32,39,.05);border:1px solid rgba(190,32,39,.15);border-radius:14px;padding:1rem 1.2rem;min-width:160px">'
@@ -589,21 +589,52 @@ function sponsorsSection(sponsors) {
     + '</div>';
 }
 
+function memberCard(m, forcedRoles) {
+  const initials = m.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  const photo = m.photo_url
+    ? '<img src="'+m.photo_url+'" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.12)" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
+      +'<div style="display:none;width:64px;height:64px;border-radius:50%;background:var(--pmi-teal);align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.8rem">'+initials+'</div>'
+    : '<div style="width:64px;height:64px;border-radius:50%;background:var(--pmi-teal);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.8rem">'+initials+'</div>';
+  const liLink = m.linkedin_url ? '<a href="'+m.linkedin_url+'" target="_blank" style="color:var(--pmi-teal);font-size:.65rem;text-decoration:none">🔗</a>' : '';
+  const dotMember = forcedRoles ? {role: forcedRoles[0], roles: forcedRoles} : m;
+  return '<div style="text-align:center;width:90px">'
+    +photo
+    +'<div style="font-size:.7rem;font-weight:600;margin-top:.35rem;line-height:1.2">'+m.name.split(' ').slice(0,2).join(' ')+' '+liLink+'</div>'
+    +'<div style="font-size:.6rem;color:var(--text-muted)">'+(m.chapter||'')+'</div>'
+    +'<div style="display:flex;justify-content:center;gap:3px;margin:.25rem auto 0">'+getRoleDots(dotMember)+'</div>'
+    +'</div>';
+}
+
+function teamSection(id, label, sublabel, color, members, forcedRoles) {
+  if (!members.length) return '';
+  return '<div id="'+id+'" style="margin-top:2.5rem">'
+    +'<div style="display:flex;align-items:baseline;gap:.6rem;margin-bottom:.6rem">'
+    +'<h3 style="font-size:1.05rem;font-weight:800;color:'+color+'">'+label+'</h3>'
+    +'<span style="font-size:.75rem;color:var(--text-muted)">'+sublabel+'</span>'
+    +'</div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:1.2rem 1rem;justify-content:center">'
+    +members.map(m=>memberCard(m,forcedRoles)).join('')
+    +'</div></div>';
+}
+
 function renderTeamGallery() {
   const el = document.getElementById('teamGrid');
   if (!el || !allMembers.length) return;
-  el.innerHTML = allMembers.map(m => {
-    const initials = m.name.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
-    const photo = m.photo_url
-      ? '<img src="' + m.photo_url + '" style="width:56px;height:56px;border-radius:50%;object-fit:cover" alt="">'
-      : '<div style="width:56px;height:56px;border-radius:50%;background:var(--pmi-teal);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.8rem">' + initials + '</div>';
-    // multi-role dots — uses getRoleDots()
-    const liLink = m.linkedin_url ? '<a href="' + m.linkedin_url + '" target="_blank" style="color:var(--pmi-teal);font-size:.65rem;text-decoration:none">🔗</a>' : '';
-    return '<div style="text-align:center;width:90px">' + photo +
-      '<div style="font-size:.7rem;font-weight:600;margin-top:.3rem;line-height:1.2">' + m.name.split(' ').slice(0,2).join(' ') + ' ' + liLink + '</div>' +
-      '<div style="font-size:.6rem;color:var(--text-muted)">' + m.chapter + '</div>' +
-      '<div style="display:flex;justify-content:center;gap:3px;margin:.3rem auto 0">' + getRoleDots(m) + '</div></div>';
-  }).join('');
+
+  const has = (m,r) => (m.roles||[]).includes(r) || m.role===r;
+
+  const active     = allMembers.filter(m => m.current_cycle_active && !has(m,'sponsor'));
+  const ambassadors= allMembers.filter(m => has(m,'ambassador'));
+  const curators   = allMembers.filter(m => has(m,'curator'));
+  const sponsors   = allMembers.filter(m => has(m,'sponsor'));
+  const founders   = allMembers.filter(m => has(m,'founder'));
+
+  el.innerHTML =
+    teamSection('team-active',     'Pesquisadores & Líderes', 'membros ativos · Ciclo 3',           'var(--pmi-teal)',   active,      null)
+   +teamSection('team-ambassadors','Embaixadores',             'representação & multiplicação',       '#10B981',          ambassadors, ['ambassador'])
+   +teamSection('team-curators',   'Comitê de Curadoria',     'peer review & qualidade',             '#D97706',          curators,    ['curator'])
+   +sponsorsSection(sponsors)
+   +teamSection('team-founders',   'Fundadores',               'a história que trouxe o Núcleo até aqui', '#7C3AED',     founders,    ['founder']);
 }
 
 // ============================================================================
