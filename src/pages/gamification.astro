@@ -237,12 +237,15 @@ import Toast from '../components/ui/Toast.astro';
       </div>
     ` + data.map((p: any) => {
       const cat = CATEGORY_META[p.category] || CATEGORY_META.bonus;
-      const date = new Date(p.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+      const date = new Date(p.created_at).toLocaleDateString('pt-BR', { year: 'numeric', month: 'short', day: '2-digit' });
       return `
       <div class="flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-b-0">
         <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style="background:${cat.bg}">${cat.icon}</div>
         <div class="flex-1 min-w-0">
           <div class="text-[13px] font-medium truncate">${p.reason}</div>
+          <div class="text-[10px] mt-0.5"><span style="background:${cat.bg};color:${cat.color};padding:1px 6px;border-radius:4px;font-weight:600">${
+            p.category === 'attendance' ? 'Presença' : p.category === 'course' ? (p.reason.startsWith('Credly:') ? 'Credly' : 'Curso') : p.category === 'artifact' ? 'Artefato' : 'Bônus'
+          }</span></div>
           <div class="text-[11px] text-slate-400">${date}</div>
         </div>
         <div class="font-bold text-sm" style="color:${cat.color}">+${p.points}</div>

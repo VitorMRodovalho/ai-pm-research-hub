@@ -157,6 +157,7 @@ Deno.serve(async (req) => {
         if (!existing) {
           await sb.from('gamification_points').insert({
             member_id, points, reason, category: 'course',
+            created_at: badge.issued_at || new Date().toISOString(),
           })
         }
       }
