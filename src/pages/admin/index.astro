@@ -12,67 +12,40 @@ import Toast from '../../components/ui/Toast.astro';
       </div>
     </div>
 
-    <!-- Non-admin -->
     <div id="not-admin-msg" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
       <div class="text-2xl mb-2">🔒</div>
       <p class="font-semibold text-amber-800">Acesso restrito ao Gerente do Projeto e Administradores.</p>
-      <a href="/profile" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
-        👤 Ver meu perfil
-      </a>
+      <a href="/profile" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">👤 Ver meu perfil</a>
     </div>
 
-    <!-- Admin panel -->
+    <div id="admin-loading" class="text-center py-10 text-slate-400">Verificando acesso...</div>
+
     <div id="admin-panel" class="hidden">
-      <!-- Stats bar -->
-      <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5" id="stats-bar">
-        <div class="bg-white border border-slate-200 rounded-xl p-4">
-          <div class="text-2xl font-black text-navy" id="stat-total">—</div>
-          <div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">Total</div>
-        </div>
-        <div class="bg-white border border-slate-200 rounded-xl p-4">
-          <div class="text-2xl font-black text-emerald-600" id="stat-active">—</div>
-          <div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">Ativos</div>
-        </div>
-        <div class="bg-white border border-slate-200 rounded-xl p-4">
-          <div class="text-2xl font-black text-amber-600" id="stat-pending">—</div>
-          <div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">Sem Tribo</div>
-        </div>
-        <div class="bg-white border border-slate-200 rounded-xl p-4">
-          <div class="text-2xl font-black text-crimson" id="stat-inactive">—</div>
-          <div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">Inativos</div>
-        </div>
-        <div class="bg-white border border-slate-200 rounded-xl p-4">
-          <div class="text-2xl font-black text-purple" id="stat-noauth">—</div>
-          <div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">Sem Login</div>
-        </div>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
+        <div class="bg-white border border-slate-200 rounded-xl p-4"><div class="text-2xl font-black text-navy" id="stat-total">—</div><div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">Total</div></div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4"><div class="text-2xl font-black text-emerald-600" id="stat-active">—</div><div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">Ativos</div></div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4"><div class="text-2xl font-black text-amber-600" id="stat-pending">—</div><div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">Sem Tribo</div></div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4"><div class="text-2xl font-black text-crimson" id="stat-inactive">—</div><div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">Inativos</div></div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4"><div class="text-2xl font-black text-purple" id="stat-noauth">—</div><div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">Sem Login</div></div>
       </div>
 
-      <!-- Tabs -->
       <div class="flex gap-2 mb-5 flex-wrap">
-        <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white"
-                data-tab="tribes" onclick="switchAdmTab(this,'tribes')">🏷️ Gestão de Tribos</button>
-        <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
-                data-tab="members" onclick="switchAdmTab(this,'members')">👥 Membros</button>
+        <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white" data-tab="tribes" onclick="switchAdmTab(this,'tribes')">🏷️ Gestão de Tribos</button>
+        <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500" data-tab="members" onclick="switchAdmTab(this,'members')">👥 Membros</button>
       </div>
 
-      <!-- Tab: Tribe Management -->
       <div id="panel-tribes">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6" id="tribe-cards"></div>
-        <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden" id="pending-section">
+        <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
           <div class="px-5 py-3.5 border-b border-slate-200 bg-amber-50">
             <h3 class="text-sm font-bold text-amber-800">⚠️ Pool de Pendentes — Ainda não escolheram tribo</h3>
           </div>
-          <div class="p-4" id="pending-list">
-            <p class="text-slate-400 text-sm text-center py-4">Carregando...</p>
-          </div>
+          <div class="p-4" id="pending-list"><p class="text-slate-400 text-sm text-center py-4">Carregando...</p></div>
         </div>
       </div>
 
-      <!-- Tab: Members -->
       <div id="panel-members" class="hidden">
-        <div id="members-area">
-          <div class="text-center py-10 text-slate-400">Carregando membros…</div>
-        </div>
+        <div id="members-area"><div class="text-center py-10 text-slate-400">Carregando membros…</div></div>
       </div>
     </div>
   </div>
@@ -225,7 +198,6 @@ import Toast from '../../components/ui/Toast.astro';
     if (!data || data.error) { toast(data?.error || 'Erro ao carregar', 'error'); return; }
     allMembers = data;
 
-    // Stats
     const active = data.filter((m: any) => m.current_cycle_active);
     const eligible = active.filter((m: any) => ELIGIBLE_ROLES.includes(m.role));
     const pending = eligible.filter((m: any) => !m.selected_tribe_id && !m.fixed_tribe_id);
@@ -234,7 +206,6 @@ import Toast from '../../components/ui/Toast.astro';
     document.getElementById('stat-active')!.textContent = String(active.length);
     document.getElementById('stat-pending')!.textContent = String(pending.length);
 
-    // Tribe cards
     const cardsEl = document.getElementById('tribe-cards')!;
     let cardsHtml = '';
 
@@ -253,7 +224,7 @@ import Toast from '../../components/ui/Toast.astro';
           <div>
             <div class="text-[.68rem] font-bold uppercase tracking-wider" style="color:${color}">Tribo ${String(t).padStart(2, '0')}</div>
             <div class="text-sm font-bold text-navy">${TRIBE_NAMES[t]}</div>
-            <div class="text-[.68rem] text-slate-400">👑 ${TRIBE_LEADERS[t]}</div>
+            <div class="text-[.68rem] text-slate-400">${TRIBE_LEADERS[t]}</div>
           </div>
           <div class="text-right">
             <div class="text-lg font-black ${full ? 'text-crimson' : 'text-navy'}">${count}/${MAX_SLOTS}</div>
@@ -265,10 +236,10 @@ import Toast from '../../components/ui/Toast.astro';
         </div>
         <div class="p-3 flex flex-wrap gap-2 min-h-[52px]">
           ${members.map((m: any) => `
-            <div class="flex items-center gap-1.5 bg-slate-50 rounded-lg px-2 py-1.5 text-[.72rem]" title="${m.name}\n${m.email}\n${m.chapter || ''}">
+            <div class="flex items-center gap-1.5 bg-slate-50 rounded-lg px-2 py-1.5 text-[.72rem]" title="${m.name}">
               ${avatar(m, 'w-6 h-6')}
               <span class="font-medium max-w-[90px] truncate">${m.name.split(' ').slice(0, 2).join(' ')}</span>
-              ${m.role === 'tribe_leader' ? '<span class="text-amber-500">👑</span>' : ''}
+              ${m.role === 'tribe_leader' ? '<span class="text-amber-500">&#x1F451;</span>' : ''}
             </div>
           `).join('')}
           ${members.length === 0 ? '<span class="text-[.72rem] text-slate-300 italic">Nenhum pesquisador</span>' : ''}
@@ -276,15 +247,13 @@ import Toast from '../../components/ui/Toast.astro';
       </div>`;
     }
     cardsEl.innerHTML = cardsHtml;
-
-    // Pending list
     renderPending(pending);
   }
 
   function renderPending(pending: any[]) {
     const el = document.getElementById('pending-list')!;
     if (!pending.length) {
-      el.innerHTML = '<p class="text-emerald-600 text-sm text-center py-4 font-semibold">🎉 Todos os elegíveis já escolheram suas tribos!</p>';
+      el.innerHTML = '<p class="text-emerald-600 text-sm text-center py-4 font-semibold">Todos os elegiveis ja escolheram suas tribos!</p>';
       return;
     }
 
@@ -292,22 +261,22 @@ import Toast from '../../components/ui/Toast.astro';
     <div class="text-[.72rem] text-slate-400 mb-2">${pending.length} pesquisadores pendentes</div>
     ${pending.map((m: any) => {
       const phone = m.phone ? m.phone.replace(/\D/g, '') : '';
-      const waLink = phone ? `https://wa.me/${phone}?text=${encodeURIComponent('Olá ' + m.name.split(' ')[0] + '! Lembrete: escolha sua tribo de pesquisa no Núcleo IA & GP → https://ai-pm-research-hub.pages.dev/#tribes')}` : '';
-      const mailLink = `mailto:${m.email}?subject=${encodeURIComponent('Núcleo IA & GP — Escolha sua Tribo')}&body=${encodeURIComponent('Olá ' + m.name.split(' ')[0] + ',\n\nLembrete amigável: o prazo para escolher sua tribo de pesquisa está se encerrando.\n\nAcesse: https://ai-pm-research-hub.pages.dev/#tribes\n\nAbraço!')}`;
+      const waLink = phone ? 'https://wa.me/' + phone + '?text=' + encodeURIComponent('Ola ' + m.name.split(' ')[0] + '! Lembrete: escolha sua tribo no Nucleo IA GP -> https://ai-pm-research-hub.pages.dev/#tribes') : '';
+      const mailLink = 'mailto:' + m.email + '?subject=' + encodeURIComponent('Nucleo IA GP - Escolha sua Tribo') + '&body=' + encodeURIComponent('Ola ' + m.name.split(' ')[0] + ', lembrete: escolha sua tribo em https://ai-pm-research-hub.pages.dev/#tribes');
 
       return `
       <div class="flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-b-0">
         ${avatar(m, 'w-9 h-9')}
         <div class="flex-1 min-w-0">
           <div class="text-[.82rem] font-semibold text-navy">${m.name}</div>
-          <div class="text-[.68rem] text-slate-400">${m.email} · ${m.chapter || '—'}</div>
+          <div class="text-[.68rem] text-slate-400">${m.email} - ${m.chapter || ''}</div>
         </div>
         <div class="flex gap-1.5 flex-shrink-0">
-          ${waLink ? `<a href="${waLink}" target="_blank" class="px-2 py-1 text-[.68rem] font-bold bg-green-50 text-green-700 border border-green-200 rounded-lg no-underline hover:bg-green-100 transition-all" title="WhatsApp">📱</a>` : ''}
-          <a href="${mailLink}" class="px-2 py-1 text-[.68rem] font-bold bg-blue-50 text-blue-700 border border-blue-200 rounded-lg no-underline hover:bg-blue-100 transition-all" title="Email">📧</a>
-          <button onclick="openAllocate('${m.member_id}','${m.name.replace(/'/g, "\\'")}','${m.email}','${m.chapter || ''}')"
+          ${waLink ? '<a href="' + waLink + '" target="_blank" class="px-2 py-1 text-[.68rem] font-bold bg-green-50 text-green-700 border border-green-200 rounded-lg no-underline hover:bg-green-100 transition-all" title="WhatsApp">&#x1F4F1;</a>' : ''}
+          <a href="${mailLink}" class="px-2 py-1 text-[.68rem] font-bold bg-blue-50 text-blue-700 border border-blue-200 rounded-lg no-underline hover:bg-blue-100 transition-all" title="Email">&#x1F4E7;</a>
+          <button onclick="openAllocate('${m.member_id}','${m.name.replace(/'/g, '')}','${m.email}','${m.chapter || ''}')"
             class="px-2.5 py-1 text-[.68rem] font-bold bg-navy text-white border-0 rounded-lg cursor-pointer hover:opacity-90 transition-all">
-            🏷️ Alocar
+            Alocar
           </button>
         </div>
       </div>`;
@@ -318,7 +287,7 @@ import Toast from '../../components/ui/Toast.astro';
   (window as any).openAllocate = (id: string, name: string, email: string, chapter: string) => {
     (document.getElementById('alloc-member-id') as HTMLInputElement).value = id;
     document.getElementById('alloc-member-name')!.textContent = name;
-    document.getElementById('alloc-member-info')!.textContent = `${email} · ${chapter}`;
+    document.getElementById('alloc-member-info')!.textContent = email + ' - ' + chapter;
     (document.getElementById('alloc-tribe') as HTMLSelectElement).value = '';
     const modal = document.getElementById('modal-allocate')!;
     modal.classList.remove('hidden'); modal.classList.add('flex');
@@ -339,7 +308,7 @@ import Toast from '../../components/ui/Toast.astro';
     });
     if (data?.success) {
       (window as any).closeAllocate();
-      toast(`Alocado na Tribo ${String(tribeId).padStart(2, '0')} ✅`, 'success');
+      toast('Alocado na Tribo ' + String(tribeId).padStart(2, '0') + ' !', 'success');
       loadTribes();
     } else {
       toast(data?.error || 'Erro ao alocar', 'error');
@@ -364,7 +333,7 @@ import Toast from '../../components/ui/Toast.astro';
       <div class="px-4 py-3 border-b border-slate-100 flex justify-between items-center">
         <div class="flex items-center gap-3">
           <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">${members.length} membros</span>
-          <input type="text" placeholder="🔍 Buscar..." oninput="filterMembers(this.value)"
+          <input type="text" placeholder="Buscar..." oninput="filterMembers(this.value)"
             class="px-3 py-1.5 border border-slate-200 rounded-lg text-[.78rem] focus:outline-none focus:border-teal w-48">
         </div>
       </div>
@@ -377,15 +346,15 @@ import Toast from '../../components/ui/Toast.astro';
         <div class="member-row flex items-center gap-3 px-4 py-2.5 border-b border-slate-50 hover:bg-slate-50 transition-all ${m.current_cycle_active ? '' : 'opacity-50'}" data-name="${m.name.toLowerCase()}">
           ${avatar(m, 'w-9 h-9')}
           <div class="flex-1 min-w-0">
-            <div class="font-semibold text-[.82rem] text-navy">${m.name} ${!m.auth_id ? '<span class="text-amber-500 text-[.68rem]">⚠ sem login</span>' : ''}</div>
+            <div class="font-semibold text-[.82rem] text-navy">${m.name} ${!m.auth_id ? '<span class="text-amber-500 text-[.68rem]">sem login</span>' : ''}</div>
             <div class="text-[.68rem] text-slate-400 truncate">${m.email}</div>
           </div>
-          <span class="text-[.68rem] font-bold px-2 py-0.5 rounded bg-blue-50 text-navy whitespace-nowrap hidden md:block">${m.chapter || '—'}</span>
+          <span class="text-[.68rem] font-bold px-2 py-0.5 rounded bg-blue-50 text-navy whitespace-nowrap hidden md:block">${m.chapter || ''}</span>
           <div class="flex gap-0.5 items-center">${roleDots(m)}</div>
           ${status}
-          <button onclick="openEditMember(${JSON.stringify(m).replace(/"/g, '&quot;')})"
+          <button onclick='openEditMember(${JSON.stringify(m).replace(/'/g, "&#39;")})'
             class="px-2 py-1 text-[.72rem] font-semibold text-slate-500 border border-slate-200 rounded-lg hover:border-teal hover:text-teal bg-transparent cursor-pointer transition-all whitespace-nowrap">
-            ✏️
+            Editar
           </button>
         </div>`;
       }).join('')}
@@ -393,7 +362,6 @@ import Toast from '../../components/ui/Toast.astro';
     </div>`;
   }
 
-  // ── FILTER MEMBERS ──
   (window as any).filterMembers = (q: string) => {
     const query = q.toLowerCase().trim();
     document.querySelectorAll('.member-row').forEach((row) => {
@@ -405,12 +373,9 @@ import Toast from '../../components/ui/Toast.astro';
   // ── EDIT MEMBER MODAL ──
   (window as any).openEditMember = (m: any) => {
     (document.getElementById('edit-m-id') as HTMLInputElement).value = m.id;
-    document.getElementById('edit-m-header')!.innerHTML = `
-      ${avatar(m, 'w-12 h-12')}
-      <div>
-        <div class="font-bold text-navy">${m.name}</div>
-        <div class="text-[.72rem] text-slate-400">${m.email} · ${m.chapter || '—'}</div>
-      </div>`;
+    document.getElementById('edit-m-header')!.innerHTML = avatar(m, 'w-12 h-12') +
+      '<div><div class="font-bold text-navy">' + m.name + '</div>' +
+      '<div class="text-[.72rem] text-slate-400">' + m.email + ' - ' + (m.chapter || '') + '</div></div>';
     (document.getElementById('edit-m-role') as HTMLSelectElement).value = m.role;
     (document.getElementById('edit-m-chapter') as HTMLSelectElement).value = m.chapter || 'PMI-GO';
     (document.getElementById('edit-m-active') as HTMLSelectElement).value = String(m.current_cycle_active);
@@ -434,7 +399,7 @@ import Toast from '../../components/ui/Toast.astro';
     });
     if (data?.success) {
       (window as any).closeEditMember();
-      toast('Membro atualizado ✅', 'success');
+      toast('Membro atualizado!', 'success');
       loadMembersList();
       loadTribes();
     } else {
@@ -443,46 +408,51 @@ import Toast from '../../components/ui/Toast.astro';
   };
 
   // ══════════════════════════════════════════
-  // BOOT
+  // BOOT — no redirects, just show/hide
   // ══════════════════════════════════════════
-  async function boot() {
-    sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(boot, 200); return; }
-
-    window.addEventListener('nav:member', ((e: CustomEvent) => {
-      if (e.detail && e.detail.role !== 'guest') {
-        MEMBER = e.detail;
-        setup();
-      }
-    }) as EventListener);
-
-    const m = (window as any).navGetMember?.();
-    if (m && m.role !== 'guest') { MEMBER = m; setup(); return; }
-    // Retry in case nav is still booting
-    setTimeout(() => {
-      const mm = (window as any).navGetMember?.();
-      if (mm && mm.role !== 'guest' && !MEMBER) { MEMBER = mm; setup(); }
-    }, 1500);
-
-    const { data: { session } } = await sb.auth.getSession();
-    if (session) {
-      const { data } = await sb.rpc('get_member_by_auth');
-      if (data && data.role !== 'guest') { MEMBER = data; setup(); return; }
-    }
-    // Wait a bit more for nav:member before giving up
-    setTimeout(() => {
-        document.getElementById('not-admin-msg')?.classList.remove('hidden');
-      }
-    }, 3000);
-  }
-
   function setup() {
+    document.getElementById('admin-loading')?.classList.add('hidden');
     if (!MEMBER.is_superadmin && MEMBER.role !== 'manager') {
       document.getElementById('not-admin-msg')?.classList.remove('hidden');
       return;
     }
     document.getElementById('admin-panel')?.classList.remove('hidden');
     loadTribes();
+  }
+
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    // Listen for future auth events
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail && e.detail.role !== 'guest' && !MEMBER) {
+        MEMBER = e.detail;
+        setup();
+      }
+    }) as EventListener);
+
+    // Check if nav already loaded
+    const m = (window as any).navGetMember?.();
+    if (m && m.role !== 'guest') { MEMBER = m; setup(); return; }
+
+    // Fallback: check session directly
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        const { data } = await sb.rpc('get_member_by_auth');
+        if (data && data.role !== 'guest') { MEMBER = data; setup(); return; }
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    // Final fallback: wait 2s for nav:member
+    setTimeout(() => {
+      if (MEMBER) return;
+      document.getElementById('admin-loading')?.classList.add('hidden');
+      document.getElementById('not-admin-msg')?.classList.remove('hidden');
+    }, 2000);
   }
 
   boot();
