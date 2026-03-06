@@ -405,9 +405,16 @@ async function logout() {
   await sb.auth.signOut(); location.reload();
 }
 
+// Load session immediately on page open (covers already-logged-in navigation)
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) { await matchMember(); }
+  else { showGate(); }
+})();
+
 sb.auth.onAuthStateChange(async (event, session) => {
-  if (!session) { showGate(); return; }
-  await matchMember();
+  if (event === 'SIGNED_IN')  await matchMember();
+  if (event === 'SIGNED_OUT') showGate();
 });
 
 async function matchMember() {
