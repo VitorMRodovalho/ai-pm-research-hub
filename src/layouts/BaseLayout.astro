@@ -1,0 +1,41 @@
+---
+import '../styles/global.css';
+import Nav from '../components/nav/Nav.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  activePage?: string;
+}
+
+const {
+  title = 'Núcleo IA & GP — Ciclo 03',
+  description = 'The AI & PM Study and Research Hub — A Joint Initiative of the PMI Brazilian Chapters',
+  activePage = '',
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <Nav activePage={activePage} />
+  <slot />
+  <!-- Profile drawer (populated by nav client script) -->
+  <div id="pd-overlay" class="hidden fixed inset-0 z-[500]" onclick="closePD()"></div>
+  <div id="pd-drawer"
+    class="fixed top-[60px] right-4 z-[501] bg-white rounded-2xl shadow-2xl border border-slate-100
+           p-4 min-w-[230px] opacity-0 pointer-events-none scale-95 transition-all duration-200
+           data-[open=true]:opacity-100 data-[open=true]:pointer-events-auto data-[open=true]:scale-100">
+    <div id="pd-inner"></div>
+  </div>
+</body>
+</html>

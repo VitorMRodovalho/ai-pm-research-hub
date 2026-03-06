@@ -1,0 +1,192 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Toast from '../../../components/ui/Toast.astro';
+
+const { id } = Astro.params;
+const isNew = id === 'new';
+---
+<BaseLayout title={isNew ? 'Novo Membro' : 'Editar Membro'} activePage="admin">
+  <Toast />
+  <div class="max-w-2xl mx-auto px-4 py-8">
+    <div class="flex items-center gap-3 mb-6">
+      <a href="/admin" class="text-slate-400 hover:text-navy transition-all text-sm no-underline">← Voltar</a>
+      <h1 class="text-xl font-extrabold text-navy" id="page-title">
+        {isNew ? '+ Novo Membro' : '✏️ Editar Membro'}
+      </h1>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-2xl p-6" id="member-form">
+      <div class="text-center py-8 text-slate-400">Carregando…</div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script define:vars={{ memberId: id, isNew }}>
+  import { ROLE_LABELS, ROLE_COLORS } from '../../../lib/supabase';
+  let _member: any = null;
+
+  window.addEventListener('nav:member', async (e: any) => {
+    const me = e.detail;
+    if (!me?.is_superadmin) { location.href = '/admin'; return; }
+    if (!isNew) await loadMember();
+    else renderForm(null);
+  });
+
+  async function loadMember() {
+    const sb = (window as any).navGetSb?.();
+    const { data } = await sb.from('members').select('*').eq('id', memberId).single();
+    _member = data;
+    renderForm(data);
+  }
+
+  function renderForm(m: any) {
+    const el = document.getElementById('member-form');
+    if (!el) return;
+    const CHAPTERS = ['PMI-GO','PMI-CE','PMI-DF','PMI-MG','PMI-RS'];
+    const ROLES_ALL = Object.keys(ROLE_COLORS);
+    const selectedRoles = m?.roles?.length ? m.roles : (m?.role ? [m.role] : ['researcher']);
+
+    el.innerHTML = `
+      <div class="grid grid-cols-2 gap-4">
+        <div class="col-span-2">
+          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Nome completo *</label>
+          <input id="f-name" type="text" value="${m?.name||''}" placeholder="Nome completo"
+            class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+        </div>
+        <div>
+          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Email principal *</label>
+          <input id="f-email" type="email" value="${m?.email||''}"
+            class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+          <div id="err-email" class="text-xs text-crimson mt-1 hidden"></div>
+        </div>
+        <div>
+          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Capítulo</label>
+          <select id="f-chapter" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+            <option value="">— Selecionar —</option>
+            ${CHAPTERS.map(c=>`<option ${m?.chapter===c?'selected':''}>${c}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Papel principal</label>
+          <select id="f-role" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+            ${Object.entries(ROLE_LABELS).filter(([k])=>k!=='guest').map(([k,v])=>
+              `<option value="${k}" ${m?.role===k?'selected':''}>${v}</option>`
+            ).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Tribo</label>
+          <select id="f-tribe" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+            <option value="">— Nenhuma —</option>
+            ${[1,2,3,4,5,6,7,8].map(n=>`<option value="${n}" ${m?.tribe_id===n?'selected':''}>Tribo ${n}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">PMI ID <span class="text-amber-500">único</span></label>
+          <input id="f-pmi" type="password" value="${m?.pmi_id||''}"
+            class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+          <div id="err-pmi" class="text-xs text-crimson mt-1 hidden"></div>
+        </div>
+        <div>
+          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Telefone <span class="text-amber-500">único</span></label>
+          <input id="f-phone" type="password" value="${m?.phone||''}"
+            class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+          <div id="err-phone" class="text-xs text-crimson mt-1 hidden"></div>
+        </div>
+        <div class="col-span-2">
+          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">LinkedIn URL</label>
+          <input id="f-li" type="url" value="${m?.linkedin_url||''}" placeholder="https://linkedin.com/in/…"
+            class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+        </div>
+        <div class="col-span-2">
+          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-2">Todos os papéis</label>
+          <div class="flex flex-wrap gap-2" id="roles-grid">
+            ${ROLES_ALL.map(r => {
+              const on = selectedRoles.includes(r);
+              const col = ROLE_COLORS[r];
+              return `<button type="button" onclick="toggleRole('${r}')" id="rc-${r}"
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold border-2 transition-all cursor-pointer"
+                style="${on ? `background:${col};border-color:${col};color:#fff` : `background:transparent;border-color:#e2e8f0;color:#64748b`}"
+                data-on="${on}">
+                ${ROLE_LABELS[r]||r}
+              </button>`;
+            }).join('')}
+          </div>
+        </div>
+        ${!isNew ? `<div class="col-span-2">
+          <label class="flex items-center gap-2 cursor-pointer text-sm font-semibold">
+            <input type="checkbox" id="f-active" ${m?.current_cycle_active?'checked':''} class="w-4 h-4">
+            Membro ativo no ciclo atual
+          </label>
+        </div>` : ''}
+      </div>
+      <div class="flex justify-between items-center mt-6 pt-4 border-t border-slate-100">
+        <div>
+          ${!isNew && m?.current_cycle_active ? `<button onclick="inactivateMember('${m.id}','${m.name.replace(/'/g,"&#39;")}'')" class="text-xs text-crimson font-semibold hover:underline cursor-pointer border-0 bg-transparent">🔴 Inativar membro</button>` : ''}
+          ${!isNew && !m?.current_cycle_active ? `<button onclick="reactivateMember('${m.id}')" class="text-xs text-emerald-600 font-semibold hover:underline cursor-pointer border-0 bg-transparent">🟢 Reativar membro</button>` : ''}
+        </div>
+        <button onclick="saveMember()" class="px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all cursor-pointer border-0">💾 Salvar</button>
+      </div>`;
+  }
+
+  (window as any).toggleRole = (r: string) => {
+    const el = document.getElementById('rc-'+r) as HTMLButtonElement;
+    if (!el) return;
+    const on = el.dataset.on !== 'true';
+    el.dataset.on = String(on);
+    const col = ROLE_COLORS[r];
+    el.style.cssText = on
+      ? `background:${col};border-color:${col};color:#fff`
+      : `background:transparent;border-color:#e2e8f0;color:#64748b`;
+  };
+
+  (window as any).saveMember = async () => {
+    const sb = (window as any).navGetSb?.();
+    const name  = (document.getElementById('f-name') as HTMLInputElement)?.value.trim();
+    const email = (document.getElementById('f-email') as HTMLInputElement)?.value.trim();
+    if (!name || !email) { (window as any).toast?.('Nome e email obrigatórios','error'); return; }
+    const roles = Object.keys(ROLE_COLORS).filter(r => document.getElementById('rc-'+r)?.dataset.on === 'true');
+    const params = {
+      p_member_id: isNew ? undefined : memberId,
+      p_name: name, p_email: email,
+      p_role:  (document.getElementById('f-role') as HTMLSelectElement)?.value,
+      p_roles: roles,
+      p_chapter: (document.getElementById('f-chapter') as HTMLSelectElement)?.value || null,
+      p_tribe_id: parseInt((document.getElementById('f-tribe') as HTMLSelectElement)?.value) || null,
+      p_pmi_id:  (document.getElementById('f-pmi') as HTMLInputElement)?.value.trim() || null,
+      p_phone:   (document.getElementById('f-phone') as HTMLInputElement)?.value.trim() || null,
+      p_linkedin_url: (document.getElementById('f-li') as HTMLInputElement)?.value.trim() || null,
+      p_current_cycle_active: isNew ? true : (document.getElementById('f-active') as HTMLInputElement)?.checked,
+    };
+    let result;
+    if (isNew) {
+      const { error } = await sb.from('members').insert({
+        name:params.p_name, email:params.p_email, role:params.p_role, roles:params.p_roles,
+        chapter:params.p_chapter, tribe_id:params.p_tribe_id, pmi_id:params.p_pmi_id,
+        phone:params.p_phone, linkedin_url:params.p_linkedin_url, current_cycle_active:true,
+      });
+      result = error ? { error: error.message } : { success: true };
+    } else {
+      const { data } = await sb.rpc('admin_update_member', params);
+      result = data;
+    }
+    if (result?.error) { (window as any).toast?.(result.error, 'error'); return; }
+    (window as any).toast?.('Salvo ✅','success');
+    setTimeout(() => location.href = '/admin', 1200);
+  };
+
+  (window as any).inactivateMember = async (id: string, name: string) => {
+    const reason = prompt(`Motivo da inativação de ${name} (opcional):`);
+    if (reason === null) return;
+    const sb = (window as any).navGetSb?.();
+    await sb.rpc('admin_inactivate_member', { p_member_id: id, p_reason: reason || null });
+    (window as any).toast?.('Membro inativado 🔴','info');
+    setTimeout(() => location.href = '/admin', 1200);
+  };
+
+  (window as any).reactivateMember = async (id: string) => {
+    const sb = (window as any).navGetSb?.();
+    await sb.rpc('admin_reactivate_member', { p_member_id: id });
+    (window as any).toast?.('Membro reativado 🟢','success');
+    setTimeout(() => location.href = '/admin', 1200);
+  };
+</script>

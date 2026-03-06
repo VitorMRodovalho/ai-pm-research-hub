@@ -1,0 +1,20 @@
+<!-- Toast component — call window.toast(msg, type) from any page -->
+<div id="toast"
+  class="fixed bottom-6 right-6 px-4 py-2.5 rounded-xl text-sm font-semibold
+         z-[999] shadow-lg transition-all duration-300 opacity-0 translate-y-8 pointer-events-none">
+</div>
+<script>
+  (window as any).toast = (msg: string, type: 'success'|'error'|'info' = 'info') => {
+    const el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = `fixed bottom-6 right-6 px-4 py-2.5 rounded-xl text-sm font-semibold z-[999] shadow-lg transition-all duration-300 ${
+      type === 'success' ? 'bg-emerald-600 text-white' :
+      type === 'error'   ? 'bg-crimson text-white' :
+                           'bg-navy text-white'
+    }`;
+    el.style.opacity = '1';
+    el.style.transform = 'translateY(0)';
+    setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(2rem)'; }, 4000);
+  };
+</script>

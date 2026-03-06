@@ -1,0 +1,189 @@
+---
+interface Props { activePage?: string; }
+const { activePage = '' } = Astro.props;
+
+const links = [
+  { href: '/#agenda',     label: 'Pauta' },
+  { href: '/#quadrants',  label: 'Quadrantes' },
+  { href: '/#tribes',     label: 'Tribos' },
+  { href: '/#kpis',       label: 'KPIs' },
+  { href: '/#breakout',   label: 'Networking' },
+  { href: '/#rules',      label: 'Regras' },
+  { href: '/#trail',      label: 'Trilha IA' },
+  { href: '/#team',       label: 'Time' },
+  { href: '/#vision',     label: 'Visão' },
+  { href: '/#resources',  label: 'Recursos' },
+];
+---
+
+<nav class="sticky top-0 z-[200] bg-navy/97 backdrop-blur-md border-b-2 border-orange
+            px-6 flex items-center justify-between h-14">
+  <a href="/" class="text-white font-bold text-sm no-underline">
+    Núcleo <span class="text-orange">IA & GP</span> — Ciclo 03
+  </a>
+
+  <div class="hidden lg:flex items-center gap-0.5" id="nav-links">
+    {links.map(l => (
+      <a href={l.href}
+         class="text-white/70 no-underline text-[.73rem] font-medium px-2 py-1.5 rounded-md
+                hover:text-white hover:bg-white/10 transition-all duration-150">
+        {l.label}
+      </a>
+    ))}
+    <a href="/attendance"
+       class:list={["text-[.73rem] font-semibold px-2 py-1.5 rounded-md no-underline transition-all",
+         activePage === 'attendance'
+           ? "bg-crimson/30 border border-crimson/50 text-white"
+           : "bg-crimson/20 border border-crimson/40 text-white hover:bg-crimson/30"]}>
+      ⏱ Presença
+    </a>
+    <!-- Admin link: injected by client script if superadmin -->
+    <a href="/admin" id="nav-admin-link" style="display:none"
+       class:list={["text-[.73rem] font-semibold px-2 py-1.5 rounded-md no-underline transition-all",
+         activePage === 'admin'
+           ? "bg-purple/30 border border-purple/50 text-white"
+           : "bg-purple/20 border border-purple/40 text-white hover:bg-purple/30"]}>
+      ⚙️ Admin
+    </a>
+  </div>
+
+  <!-- Auth area: populated by client script -->
+  <div id="nav-auth" class="flex items-center gap-2 flex-shrink-0">
+    <button onclick="openAuthModal()"
+            class="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20
+                   text-white text-[.78rem] font-semibold hover:bg-white/20 transition-all cursor-pointer"
+            id="nav-login-btn">
+      Entrar
+    </button>
+  </div>
+</nav>
+
+<script>
+  import { getSupabase, ROLE_LABELS, ROLE_COLORS } from '../../lib/supabase';
+
+  const sb = getSupabase();
+  let _member: any = null;
+  let _user: any = null;
+
+  async function bootNav() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      _user = session.user;
+      const { data } = await sb.rpc('get_member_by_auth');
+      _member = data;
+      renderAuth();
+      // Notify rest of page
+      window.dispatchEvent(new CustomEvent('nav:member', { detail: _member }));
+    }
+    sb.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN') {
+        _user = session?.user ?? null;
+        const { data } = await sb.rpc('get_member_by_auth');
+        _member = data;
+        renderAuth();
+        window.dispatchEvent(new CustomEvent('nav:member', { detail: _member }));
+      }
+      if (event === 'SIGNED_OUT') {
+        _member = null; _user = null;
+        renderLoggedOut();
+        window.dispatchEvent(new CustomEvent('nav:member', { detail: null }));
+      }
+    });
+  }
+
+  function renderAuth() {
+    if (!_member || _member.role === 'guest') { renderLoggedOut(); return; }
+    const name = _member.name || 'Usuário';
+    const first = name.split(' ')[0];
+    const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0,2).toUpperCase();
+    const pic = _user?.user_metadata?.avatar_url;
+    const r = _member.role || 'guest';
+    const color = ROLE_COLORS[r] || '#64748B';
+    const label = ROLE_LABELS[r] || r;
+
+    const el = document.getElementById('nav-auth');
+    if (!el) return;
+    el.innerHTML = `
+      <button onclick="togglePD()"
+        class="flex items-center gap-1.5 px-1.5 py-1 rounded-lg hover:bg-white/10 transition-all cursor-pointer border-0 bg-transparent">
+        ${pic
+          ? `<img src="${pic}" class="w-7 h-7 rounded-full object-cover" onerror="this.style.display='none'">`
+          : `<div class="w-7 h-7 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.65rem]">${initials}</div>`
+        }
+        <span class="text-white text-[.8rem] font-semibold">${first}</span>
+        <span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded uppercase" style="background:${color}33;color:${color}">${label}</span>
+        <span class="text-white/40 text-[.6rem]">▾</span>
+      </button>`;
+
+    if (_member.is_superadmin) {
+      const adminLink = document.getElementById('nav-admin-link');
+      if (adminLink) adminLink.style.display = 'inline-flex';
+    }
+    buildDrawer();
+  }
+
+  function renderLoggedOut() {
+    const el = document.getElementById('nav-auth');
+    if (el) el.innerHTML = `
+      <button onclick="openAuthModal()"
+        class="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-[.78rem] font-semibold hover:bg-white/20 transition-all cursor-pointer">
+        Entrar
+      </button>`;
+  }
+
+  function buildDrawer() {
+    const el = document.getElementById('pd-inner');
+    if (!el || !_member) return;
+    const name = _member.name || 'Usuário';
+    const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0,2).toUpperCase();
+    const pic = _user?.user_metadata?.avatar_url;
+    const r = _member.role || 'guest';
+    const color = ROLE_COLORS[r] || '#64748B';
+    const isAdmin = _member.is_superadmin === true;
+    el.innerHTML = `
+      <div class="flex items-center gap-3 mb-2">
+        ${pic
+          ? `<img src="${pic}" class="w-12 h-12 rounded-full object-cover flex-shrink-0">`
+          : `<div class="w-12 h-12 rounded-full bg-teal flex items-center justify-center text-white font-bold text-sm flex-shrink-0">${initials}</div>`
+        }
+        <div class="min-w-0">
+          <div class="font-bold text-[.9rem] text-navy">${name}</div>
+          <span class="text-[.62rem] font-bold px-1.5 py-0.5 rounded inline-block mt-0.5" style="background:${color}22;color:${color}">${ROLE_LABELS[r]||r}</span>
+          <div class="text-[.67rem] text-slate-500 truncate mt-0.5">${_member.email||''}</div>
+        </div>
+      </div>
+      <hr class="border-slate-100 my-2">
+      <a href="/profile" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-slate-800 hover:bg-slate-50 no-underline transition-all">👤 Meu Perfil</a>
+      <a href="/attendance" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-slate-800 hover:bg-slate-50 no-underline transition-all">⏱ Presenças & Horas</a>
+      ${isAdmin ? '<hr class="border-slate-100 my-2"><a href="/admin" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-purple hover:bg-purple/5 no-underline transition-all">⚙️ Painel Admin</a>' : ''}
+      <hr class="border-slate-100 my-2">
+      <button onclick="doLogout()" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-crimson hover:bg-red-50 cursor-pointer border-0 bg-transparent transition-all">↩ Sair</button>`;
+  }
+
+  // Globals
+  (window as any).togglePD = () => {
+    const d = document.getElementById('pd-drawer');
+    const o = document.getElementById('pd-overlay');
+    if (!d) return;
+    const on = d.dataset.open !== 'true';
+    d.dataset.open = String(on);
+    o?.classList.toggle('hidden', !on);
+  };
+  (window as any).closePD = () => {
+    const d = document.getElementById('pd-drawer');
+    const o = document.getElementById('pd-overlay');
+    if (d) d.dataset.open = 'false';
+    o?.classList.add('hidden');
+  };
+  (window as any).doLogout = async () => {
+    await sb.auth.signOut();
+    location.href = '/';
+  };
+  (window as any).openAuthModal = () => {
+    document.getElementById('auth-modal')?.classList.remove('hidden');
+  };
+  (window as any).navGetMember = () => _member;
+  (window as any).navGetSb = () => sb;
+
+  bootNav();
+</script>

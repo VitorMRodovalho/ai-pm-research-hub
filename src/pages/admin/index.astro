@@ -1,0 +1,109 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Toast from '../../components/ui/Toast.astro';
+// Middleware attaches member to locals; page renders server-side guard
+---
+<BaseLayout title="Admin — Núcleo IA & GP" activePage="admin">
+  <Toast />
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <div>
+        <h1 class="text-2xl font-extrabold text-navy" id="admin-title">⚙️ Administração</h1>
+        <p class="text-sm text-slate-500" id="admin-sub">Gerenciamento de membros e cadastros</p>
+      </div>
+    </div>
+
+    <!-- Non-admin sees only profile link -->
+    <div id="not-admin-msg" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
+      <div class="text-2xl mb-2">🔒</div>
+      <p class="font-semibold text-amber-800">Você não tem acesso ao painel administrativo.</p>
+      <a href="/profile" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
+        👤 Ver meu perfil
+      </a>
+    </div>
+
+    <!-- Admin panel (shown only to superadmin) -->
+    <div id="admin-panel" class="hidden">
+      <!-- Stats -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+        {[['stat-total','Total','text-navy'],['stat-active','Ativos','text-emerald-600'],
+          ['stat-inactive','Inativos','text-crimson'],['stat-noauth','Sem login','text-amber-600']].map(([id,lbl,cls]) => (
+          <div class="bg-white border border-slate-200 rounded-xl p-4">
+            <div class={`text-2xl font-black ${cls}`} id={id}>—</div>
+            <div class="text-xs text-slate-400 font-semibold mt-0.5">{lbl}</div>
+          </div>
+        ))}
+      </div>
+
+      <!-- Filters + table injected by client script -->
+      <div id="members-area">
+        <div class="text-center py-10 text-slate-400">Carregando membros…</div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { ROLE_COLORS, ROLE_LABELS } from '../../lib/supabase';
+
+  window.addEventListener('nav:member', async (e: any) => {
+    const m = e.detail;
+    if (!m || m.role === 'guest') { location.href = '/'; return; }
+    if (!m.is_superadmin) {
+      document.getElementById('not-admin-msg')?.classList.remove('hidden');
+      document.getElementById('admin-title')!.textContent = '👤 Meu Perfil';
+      document.getElementById('admin-sub')!.textContent = 'Você não tem acesso administrativo';
+      return;
+    }
+    document.getElementById('admin-panel')?.classList.remove('hidden');
+    loadMembers();
+  });
+
+  async function loadMembers() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    const { data } = await sb.rpc('admin_list_members', { p_limit: 200, p_offset: 0 });
+    const members = Array.isArray(data) ? data : [];
+    document.getElementById('stat-total')!.textContent    = String(members.length);
+    document.getElementById('stat-active')!.textContent   = String(members.filter((m:any) => m.current_cycle_active).length);
+    document.getElementById('stat-inactive')!.textContent = String(members.filter((m:any) => !m.current_cycle_active).length);
+    document.getElementById('stat-noauth')!.textContent   = String(members.filter((m:any) => !m.auth_id).length);
+    renderTable(members);
+  }
+
+  function renderTable(members: any[]) {
+    const area = document.getElementById('members-area');
+    if (!area) return;
+    area.innerHTML = `
+      <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-100 flex justify-between items-center">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">${members.length} membros</span>
+          <a href="/admin/member/new" class="px-3 py-1.5 bg-teal text-white rounded-lg text-xs font-semibold no-underline hover:opacity-90">+ Novo membro</a>
+        </div>
+        ${members.map(m => {
+          const initials = m.name.split(' ').map((w:string)=>w[0]).join('').substring(0,2).toUpperCase();
+          const roles = (m.roles?.length ? m.roles : [m.role]).filter((r:string) => ROLE_COLORS[r]);
+          const dots = roles.map((r:string) =>
+            `<span style="width:9px;height:9px;border-radius:50%;background:${ROLE_COLORS[r]};display:inline-block;flex-shrink:0" title="${ROLE_LABELS[r]||r}"></span>`
+          ).join('');
+          const status = m.current_cycle_active
+            ? '<span class="text-[.68rem] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">● Ativo</span>'
+            : `<span class="text-[.68rem] font-bold px-2 py-0.5 rounded-full bg-red-50 text-crimson">● Inativo${m.inactivated_at ? ' · '+new Date(m.inactivated_at).toLocaleDateString('pt-BR') : ''}</span>`;
+          return `<div class="flex items-center gap-3 px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-all ${m.current_cycle_active?'':'opacity-50'}">
+            ${m.photo_url
+              ? `<img src="${m.photo_url}" class="w-9 h-9 rounded-full object-cover flex-shrink-0">`
+              : `<div class="w-9 h-9 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.7rem] flex-shrink-0">${initials}</div>`
+            }
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold text-[.83rem] text-navy">${m.name} ${!m.auth_id?'<span class="text-amber-500 text-[.68rem]">⚠ sem login</span>':''}</div>
+              <div class="text-[.7rem] text-slate-400 truncate">${m.email}</div>
+            </div>
+            <span class="text-[.68rem] font-bold px-2 py-0.5 rounded bg-blue-50 text-navy whitespace-nowrap hidden md:block">${m.chapter||'—'}</span>
+            <div class="flex gap-1 items-center">${dots}</div>
+            ${status}
+            <a href="/admin/member/${m.id}" class="px-2 py-1 text-[.72rem] font-semibold text-slate-500 border border-slate-200 rounded-lg hover:border-teal hover:text-teal no-underline transition-all whitespace-nowrap">✏️ Editar</a>
+          </div>`;
+        }).join('')}
+      </div>`;
+  }
+</script>

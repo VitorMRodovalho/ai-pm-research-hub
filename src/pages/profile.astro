@@ -1,0 +1,73 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Toast from '../components/ui/Toast.astro';
+---
+<BaseLayout title="Meu Perfil — Núcleo IA & GP" activePage="profile">
+  <Toast />
+  <div class="max-w-xl mx-auto px-4 py-10">
+    <h1 class="text-2xl font-extrabold text-navy mb-6">👤 Meu Perfil</h1>
+    <div id="profile-content" class="bg-white rounded-2xl border border-slate-200 p-6">
+      <div class="text-center text-slate-400 py-8">Carregando perfil…</div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  window.addEventListener('nav:member', async (e: any) => {
+    const m = e.detail;
+    if (!m) { location.href = '/?auth=required'; return; }
+    renderProfile(m);
+  });
+
+  function renderProfile(m: any) {
+    const el = document.getElementById('profile-content');
+    if (!el) return;
+    const initials = m.name.split(' ').map((w:string)=>w[0]).join('').substring(0,2).toUpperCase();
+    el.innerHTML = `
+      <div class="flex items-center gap-4 mb-6">
+        ${m.photo_url
+          ? `<img src="${m.photo_url}" class="w-16 h-16 rounded-full object-cover">`
+          : `<div class="w-16 h-16 rounded-full bg-teal flex items-center justify-center text-white font-bold text-xl">${initials}</div>`
+        }
+        <div>
+          <div class="font-extrabold text-lg text-navy">${m.name}</div>
+          <div class="text-sm text-slate-500">${m.email} · ${m.chapter||'—'}</div>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">PMI ID</label>
+          <input type="password" id="self-pmi" value="${m.pmi_id||''}" placeholder="Ex: 5975367"
+            class="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+        </div>
+        <div>
+          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Telefone</label>
+          <input type="password" id="self-phone" value="${m.phone||''}" placeholder="+55 (00) 00000-0000"
+            class="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+        </div>
+        <div class="col-span-2">
+          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">LinkedIn</label>
+          <input type="url" id="self-li" value="${m.linkedin_url||''}" placeholder="https://linkedin.com/in/…"
+            class="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+        </div>
+      </div>
+      <div class="mt-5 flex justify-end">
+        <button onclick="saveSelf('${m.id}')"
+          class="px-5 py-2 bg-navy text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all cursor-pointer border-0">
+          💾 Salvar
+        </button>
+      </div>`;
+  }
+
+  (window as any).saveSelf = async (id: string) => {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    const { data } = await sb.rpc('member_self_update', {
+      p_pmi_id:       (document.getElementById('self-pmi') as HTMLInputElement)?.value.trim() || null,
+      p_phone:        (document.getElementById('self-phone') as HTMLInputElement)?.value.trim() || null,
+      p_linkedin_url: (document.getElementById('self-li') as HTMLInputElement)?.value.trim() || null,
+    });
+    if (data?.error) (window as any).toast?.(data.error, 'error');
+    else (window as any).toast?.('Dados salvos ✅', 'success');
+  };
+</script>
