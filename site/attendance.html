@@ -237,11 +237,20 @@
         </div>
         <div class="field">
           <label>Tipo</label>
-          <select id="ev-type">
+          <select id="ev-type" onchange="updateAudienceFromType('ev-audience','ev-type')">
             <option value="tribe_meeting">Reunião de Tribo</option>
             <option value="general_meeting">Reunião Geral</option>
             <option value="webinar">Webinar</option>
             <option value="other">Outro</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Público da lista de presença</label>
+          <select id="ev-audience">
+            <option value="all">Todos os membros ativos</option>
+            <option value="leadership">Liderança (Nível 1+2 + Embaixadores)</option>
+            <option value="tribe">Apenas a tribo</option>
+            <option value="curators">Comitê de Curadoria</option>
           </select>
         </div>
         <div class="field">
@@ -289,10 +298,19 @@
         </div>
         <div class="field">
           <label>Tipo</label>
-          <select id="rec-type">
+          <select id="rec-type" onchange="updateAudienceFromType('rec-audience','rec-type')">
             <option value="general_meeting">Reunião Geral</option>
             <option value="tribe_meeting">Reunião de Tribo</option>
             <option value="webinar">Webinar</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Público da lista de presença</label>
+          <select id="rec-audience">
+            <option value="all">Todos os membros ativos</option>
+            <option value="leadership">Liderança (Nível 1+2 + Embaixadores)</option>
+            <option value="tribe">Apenas a tribo</option>
+            <option value="curators">Comitê de Curadoria</option>
           </select>
         </div>
         <div class="field">
@@ -483,6 +501,7 @@ async function loadEvents() {
   }
   const typeLabel  = { tribe_meeting:'Tribo', general_meeting:'Geral', webinar:'Webinar', other:'Outro' };
   const badgeClass = { tribe_meeting:'badge-tribe', general_meeting:'badge-general', webinar:'badge-webinar', other:'badge-tribe' };
+  const audienceLabel = { all:'👥 Todos', leadership:'🏛️ Liderança', tribe:'🔷 Tribo', curators:'📋 Curadoria' };
 
   el.innerHTML = data.map(ev => {
     const attIcon  = ev.i_attended === true ? '✅' : ev.i_attended === false ? '❌' : '—';
@@ -518,6 +537,7 @@ async function loadEvents() {
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
           <span class="event-badge ${badgeClass[ev.type]}">${typeLabel[ev.type]||ev.type}</span>
           ${recBadge}
+          ${ev.audience_level && ev.audience_level !== 'all' ? `<span class="event-badge" style="background:#F0FDF4;color:#065F46">${audienceLabel[ev.audience_level]||ev.audience_level}</span>` : ''}
         </div>
         <div class="event-actions">
           ${ev.i_attended !== true
@@ -609,6 +629,13 @@ async function togglePresence(eventId, memberId, btn) {
   else showToast(data?.error || 'Erro', 'error');
 }
 
+// ── AUDIENCE HELPER ──────────────────────────────────────────
+function updateAudienceFromType(audienceId, typeId) {
+  const type = document.getElementById(typeId).value;
+  const map = { tribe_meeting:'tribe', general_meeting:'all', webinar:'all', other:'all' };
+  document.getElementById(audienceId).value = map[type] || 'all';
+}
+
 // ── NEW EVENT ─────────────────────────────────────────────────
 function openNewEventModal() {
   document.getElementById('ev-date').value = today();
@@ -623,11 +650,14 @@ async function createEvent() {
   const duration = parseInt(document.getElementById('ev-duration').value);
   const link     = document.getElementById('ev-link').value.trim() || null;
   const recorded = document.getElementById('ev-recorded').checked;
+  const audience = document.getElementById('ev-audience').value;
   if (!title || !date) return showToast('Preencha título e data', 'error');
 
   const { data } = await sb.rpc('create_event', {
     p_type: type, p_title: title, p_date: date,
-    p_duration_minutes: duration, p_tribe_id: type === 'tribe_meeting' ? MEMBER.tribe_id : null
+    p_duration_minutes: duration,
+    p_tribe_id: type === 'tribe_meeting' ? MEMBER.tribe_id : null,
+    p_audience_level: audience
   });
   if (data?.success) {
     // update meeting_link + recorded via update_event
@@ -654,6 +684,7 @@ async function createRecurring() {
   const weeks    = parseInt(document.getElementById('rec-weeks').value);
   const link     = document.getElementById('rec-link').value.trim() || null;
   const recorded = document.getElementById('rec-recorded').checked;
+  const audience = document.getElementById('rec-audience').value;
   if (!titleTpl || !start) return showToast('Preencha template e data de início', 'error');
 
   const { data } = await sb.rpc('create_recurring_weekly_events', {
@@ -661,7 +692,8 @@ async function createRecurring() {
     p_duration_minutes: duration, p_n_weeks: weeks,
     p_meeting_link: link,
     p_tribe_id: type === 'tribe_meeting' ? MEMBER.tribe_id : null,
-    p_is_recorded: recorded
+    p_is_recorded: recorded,
+    p_audience_level: audience
   });
   if (data?.success) {
     closeModal('modal-recurring');
