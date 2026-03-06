@@ -1,23 +1,22 @@
 ---
-/**
- * KpiSection.astro — Sprint 2
- * Static KPI cards on dark background.
- */
 import { KPIS } from '../../data/kpis';
+import { t, type Lang } from '../../i18n/utils';
+
+interface Props { lang?: Lang; }
+const { lang = 'pt-BR' } = Astro.props;
 ---
 
 <section class="py-16 px-6 bg-[#003B5C] text-white" id="kpis">
   <div class="max-w-[1200px] mx-auto">
     <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-[#05BFE0] mb-2">
-      O Que é Sucesso?
+      {t('kpis.label', lang)}
     </div>
     <h2 class="text-[clamp(1.7rem,4vw,2.5rem)] font-extrabold leading-tight mb-3 text-white">
-      Metas 2026
+      {t('kpis.title', lang)}
     </h2>
     <p class="text-base text-white/60 max-w-[700px] mb-10">
-      1-2 artefatos de qualidade por tribo.
+      {t('kpis.subtitle', lang)}
     </p>
-
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
       {KPIS.map((k) => (
         <div class="bg-white/6 border border-white/10 rounded-2xl p-7 text-center">

@@ -12,30 +12,30 @@ import TrailSection from '../components/sections/TrailSection.astro';
 import TeamSection from '../components/sections/TeamSection.astro';
 import VisionSection from '../components/sections/VisionSection.astro';
 import ResourcesSection from '../components/sections/ResourcesSection.astro';
+import { t } from '../i18n/utils';
+
+const lang = 'pt-BR' as const;
 ---
-
-<BaseLayout title="Ciclo 03 — Kick-off | Núcleo IA & GP" activePage="home">
+<BaseLayout title={t('meta.title', lang)} activePage="home" lang={lang}>
   <Toast />
-
-  <HeroSection deadline="2026-03-08T15:00:00Z" />
-  <AgendaSection />
-  <QuadrantsSection />
-  <TribesSection />
-  <KpiSection />
-  <NetworkingSection />
-  <RulesSection />
-  <TrailSection />
-  <TeamSection />
-  <VisionSection />
-  <ResourcesSection />
-
+  <HeroSection deadline="2026-03-08T15:00:00Z" lang={lang} />
+  <AgendaSection lang={lang} />
+  <QuadrantsSection lang={lang} />
+  <TribesSection lang={lang} />
+  <KpiSection lang={lang} />
+  <NetworkingSection lang={lang} />
+  <RulesSection lang={lang} />
+  <TrailSection lang={lang} />
+  <TeamSection lang={lang} />
+  <VisionSection lang={lang} />
+  <ResourcesSection lang={lang} />
   <footer class="bg-[#200F3B] text-white/40 py-10 px-6 text-center text-[.78rem]">
-    <p>Núcleo de Estudos e Pesquisa em IA e GP · The AI & PM Study and Research Hub</p>
-    <p class="mt-1">PMI-GO · PMI-CE · PMI-DF · PMI-MG · PMI-RS</p>
-    <p class="mt-2 text-[.68rem]">PMI®, PMBOK®, PMP® e PMI-CPMAI™ são marcas registradas do PMI, Inc.</p>
+    <p>{t('footer.line1', lang)}</p>
+    <p class="mt-1">{t('footer.chapters', lang)}</p>
+    <p class="mt-2 text-[.68rem]">{t('footer.trademarks', lang)}</p>
     <p class="mt-1">
       <a href="https://github.com/VitorMRodovalho/ai-pm-research-hub" class="text-[#05BFE0] no-underline hover:underline">GitHub</a>
-      · GP: Vitor Maia Rodovalho
+      · {t('footer.gp', lang)}
     </p>
   </footer>
 </BaseLayout>

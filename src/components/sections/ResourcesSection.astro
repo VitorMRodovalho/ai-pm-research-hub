@@ -1,8 +1,8 @@
 ---
-/**
- * ResourcesSection.astro — Sprint 2
- * Links and resources grid.
- */
+import { t, type Lang } from '../../i18n/utils';
+
+interface Props { lang?: Lang; }
+const { lang = 'pt-BR' } = Astro.props;
 
 const resources = [
   {

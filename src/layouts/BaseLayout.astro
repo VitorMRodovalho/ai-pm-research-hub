@@ -2,22 +2,25 @@
 import '../styles/global.css';
 import Nav from '../components/nav/Nav.astro';
 import AuthModal from '../components/ui/AuthModal.astro';
+import type { Lang } from '../i18n/utils';
 
 interface Props {
   title?: string;
   description?: string;
   activePage?: string;
+  lang?: Lang;
 }
 
 const {
   title = 'Núcleo IA & GP — Ciclo 03',
   description = 'The AI & PM Study and Research Hub — A Joint Initiative of the PMI Brazilian Chapters',
   activePage = '',
+  lang = 'pt-BR',
 } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="pt-BR">
+<html lang={lang === 'pt-BR' ? 'pt-BR' : lang === 'es-LATAM' ? 'es' : 'en'}>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -28,7 +31,7 @@ const {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 </head>
 <body class="bg-slate-50 text-slate-900">
-  <Nav activePage={activePage} />
+  <Nav activePage={activePage} lang={lang} />
   <AuthModal />
   <slot />
   <!-- Profile drawer (populated by nav client script) -->

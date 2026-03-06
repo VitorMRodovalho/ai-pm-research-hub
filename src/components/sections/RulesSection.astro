@@ -1,8 +1,8 @@
 ---
-/**
- * RulesSection.astro — Sprint 2
- * Rules of engagement + 2026 value journey timeline.
- */
+import { t, type Lang } from '../../i18n/utils';
+
+interface Props { lang?: Lang; }
+const { lang = 'pt-BR' } = Astro.props;
 
 const rules = [
   { icon: '⏱', title: 'Carga Horária', text: '4-6h/semana. Reuniões gerais + tribos.' },

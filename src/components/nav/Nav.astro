@@ -1,26 +1,31 @@
 ---
-interface Props { activePage?: string; }
-const { activePage = '' } = Astro.props;
+import { t, localePath, type Lang } from '../../i18n/utils';
+import LangSwitcher from './LangSwitcher.astro';
+
+interface Props { activePage?: string; lang?: Lang; }
+const { activePage = '', lang = 'pt-BR' } = Astro.props;
+
+const base = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
 const links = [
-  { href: '/#agenda',     label: 'Pauta' },
-  { href: '/#quadrants',  label: 'Quadrantes' },
-  { href: '/#tribes',     label: 'Tribos' },
-  { href: '/#kpis',       label: 'KPIs' },
-  { href: '/#breakout',   label: 'Networking' },
-  { href: '/#rules',      label: 'Regras' },
-  { href: '/#trail',      label: 'Trilha IA' },
-  { href: '/#team',       label: 'Time' },
-  { href: '/#vision',     label: 'Visão' },
-  { href: '/#resources',  label: 'Recursos' },
-  { href: '/artifacts',   label: 'Artefatos' },
+  { href: base + '/#agenda',     label: t('nav.agenda', lang) },
+  { href: base + '/#quadrants',  label: t('nav.quadrants', lang) },
+  { href: base + '/#tribes',     label: t('nav.tribes', lang) },
+  { href: base + '/#kpis',       label: t('nav.kpis', lang) },
+  { href: base + '/#breakout',   label: t('nav.networking', lang) },
+  { href: base + '/#rules',      label: t('nav.rules', lang) },
+  { href: base + '/#trail',      label: t('nav.trail', lang) },
+  { href: base + '/#team',       label: t('nav.team', lang) },
+  { href: base + '/#vision',     label: t('nav.vision', lang) },
+  { href: base + '/#resources',  label: t('nav.resources', lang) },
+  { href: '/artifacts',           label: t('nav.artifacts', lang) },
 ];
 ---
 
 <nav class="sticky top-0 z-[200] bg-navy/97 backdrop-blur-md border-b-2 border-orange
             px-6 flex items-center justify-between h-14">
   <a href="/" class="text-white font-bold text-sm no-underline">
-    Núcleo <span class="text-orange">IA & GP</span> — Ciclo 03
+    <Fragment set:html={t('nav.brand', lang).replace('IA & GP', '<span class="text-orange">IA & GP</span>')} />
   </a>
 
   <div class="hidden lg:flex items-center gap-0.5" id="nav-links">
@@ -48,6 +53,8 @@ const links = [
     </a>
   </div>
 
+  <LangSwitcher currentLang={lang} />
+  <LangSwitcher currentLang={lang} />
   <!-- Auth area: populated by client script -->
   <div id="nav-auth" class="flex items-center gap-2 flex-shrink-0">
     <button onclick="document.dispatchEvent(new CustomEvent('open-auth'))"
