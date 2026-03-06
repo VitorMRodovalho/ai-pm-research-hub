@@ -1,0 +1,73 @@
+---
+/**
+ * RosterModal.astro — Sprint 3 FINAL
+ */
+---
+
+<div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-roster">
+  <div class="bg-white rounded-2xl w-full max-w-[680px] flex flex-col overflow-hidden" style="max-height:85vh">
+    <!-- Header -->
+    <div class="px-5 py-4 border-b border-slate-200 flex-shrink-0">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-base font-bold text-navy" id="roster-title">Lista de Presença</h3>
+        <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" onclick="closeModal('modal-roster')">✕</button>
+      </div>
+      <div class="flex items-center gap-3">
+        <input type="text" id="roster-search" placeholder="🔍 Buscar por nome..."
+               class="flex-1 px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy"
+               oninput="rosterFilter(this.value)">
+        <div class="text-[12px] font-bold text-emerald-600 flex-shrink-0 whitespace-nowrap" id="roster-count"></div>
+      </div>
+    </div>
+    <!-- Scrollable table area -->
+    <div class="overflow-y-auto" style="max-height:calc(85vh - 150px)">
+      <table class="w-full border-collapse text-[13px]">
+        <thead class="sticky top-0 z-10 bg-slate-50">
+          <tr>
+            <th class="text-left px-3 py-2 text-slate-500 text-[11px] font-bold uppercase tracking-wider">Colaborador</th>
+            <th class="text-left px-3 py-2 text-slate-500 text-[11px] font-bold uppercase tracking-wider">Papel</th>
+            <th class="text-center px-3 py-2 text-slate-500 text-[11px] font-bold uppercase tracking-wider w-24">Presente</th>
+          </tr>
+        </thead>
+        <tbody id="roster-body"></tbody>
+      </table>
+    </div>
+    <!-- Footer -->
+    <div class="px-5 py-3 border-t border-slate-200 flex justify-end flex-shrink-0">
+      <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer" onclick="closeModal('modal-roster')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<style is:global>
+  .toggle-btn {
+    width: 44px; height: 24px; border-radius: 99px; border: none;
+    cursor: pointer; position: relative; transition: background .2s;
+  }
+  .toggle-btn.on  { background: #10B981; }
+  .toggle-btn.off { background: #CBD5E1; }
+  .toggle-btn::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 18px; height: 18px; border-radius: 50%; background: white;
+    transition: transform .2s;
+  }
+  .toggle-btn.on::after { transform: translateX(20px); }
+</style>
+
+<script>
+  (window as any).rosterFilter = (query: string) => {
+    const rows = document.querySelectorAll('#roster-body tr[data-name]') as NodeListOf<HTMLElement>;
+    const q = query.toLowerCase().trim();
+    let visible = 0;
+    rows.forEach(row => {
+      const name = row.dataset.name || '';
+      const match = !q || name.includes(q);
+      row.style.display = match ? '' : 'none';
+      if (match) visible++;
+    });
+    const countEl = document.getElementById('roster-count');
+    if (countEl) {
+      countEl.textContent = q ? `${visible}/${rows.length} visíveis` : (countEl.dataset.full || '');
+    }
+  };
+</script>

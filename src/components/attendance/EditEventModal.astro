@@ -1,0 +1,65 @@
+---
+/**
+ * EditEventModal.astro — Sprint 3
+ * Modal for editing an existing event.
+ */
+---
+
+<div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-edit-event">
+  <div class="bg-white rounded-2xl w-full max-w-[560px] overflow-hidden max-h-[90vh] flex flex-col">
+    <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center flex-shrink-0">
+      <h3 class="text-base font-bold text-navy">✏️ Editar Evento</h3>
+      <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" onclick="closeModal('modal-edit-event')">✕</button>
+    </div>
+    <div class="p-5 overflow-y-auto flex-1">
+      <input type="hidden" id="edit-ev-id">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <div class="flex flex-col gap-1.5 sm:col-span-2">
+          <label class="text-[12px] font-semibold text-slate-500">Título</label>
+          <input type="text" id="edit-ev-title"
+                 class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-semibold text-slate-500">Data</label>
+          <input type="date" id="edit-ev-date"
+                 class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-semibold text-slate-500">Duração (min)</label>
+          <input type="number" id="edit-ev-duration" min="15" max="480"
+                 class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+        </div>
+        <div class="flex flex-col gap-1.5 sm:col-span-2">
+          <label class="text-[12px] font-semibold text-slate-500">Link da reunião</label>
+          <input type="url" id="edit-ev-link"
+                 class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+        </div>
+        <div class="flex flex-col gap-1.5 sm:col-span-2">
+          <label class="text-[12px] font-semibold text-slate-500">Link do YouTube (após publicação)</label>
+          <input type="url" id="edit-ev-youtube" placeholder="https://youtu.be/..."
+                 class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-semibold text-slate-500">Público da lista de presença</label>
+          <select id="edit-ev-audience"
+                  class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
+            <option value="all">Todos os participantes ativos</option>
+            <option value="leadership">Liderança (Nível 1+2 + Embaixadores)</option>
+            <option value="tribe">Apenas a tribo</option>
+            <option value="curators">Comitê de Curadoria</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="flex items-center gap-2 text-[13px] font-medium cursor-pointer">
+            <input type="checkbox" id="edit-ev-recorded" class="w-4 h-4 accent-navy">
+            🔴 Reunião gravada
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2 flex-shrink-0">
+      <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer" onclick="closeModal('modal-edit-event')">Cancelar</button>
+      <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer" onclick="saveEventEdit()">Salvar</button>
+    </div>
+  </div>
+</div>

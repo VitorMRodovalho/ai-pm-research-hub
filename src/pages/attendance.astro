@@ -1,0 +1,503 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Toast from '../components/ui/Toast.astro';
+import KpiBar from '../components/attendance/KpiBar.astro';
+import NewEventModal from '../components/attendance/NewEventModal.astro';
+import RecurringModal from '../components/attendance/RecurringModal.astro';
+import EditEventModal from '../components/attendance/EditEventModal.astro';
+import RosterModal from '../components/attendance/RosterModal.astro';
+---
+
+<BaseLayout title="Presença & Horas de Impacto — Núcleo IA & GP" activePage="attendance">
+  <Toast />
+
+  <!-- AUTH GATE (hidden by default, shown only if no session) -->
+  <div id="auth-gate" class="hidden items-center justify-center min-h-screen bg-slate-50">
+    <div class="bg-white rounded-2xl p-9 max-w-[360px] w-full text-center border border-slate-200">
+      <div class="text-4xl mb-3">⏱️</div>
+      <h2 class="text-navy font-bold text-xl mb-2">Presença & Impacto</h2>
+      <p class="text-slate-500 text-sm mb-6">Faça login para registrar sua presença e acompanhar as horas de impacto do Ciclo 3.</p>
+      <button class="w-full py-3 rounded-lg bg-navy text-white font-semibold text-sm border-0 cursor-pointer hover:bg-navy/90 transition-colors"
+              onclick="document.dispatchEvent(new CustomEvent('open-auth'))">
+        Entrar
+      </button>
+      <p id="auth-not-found-msg" class="hidden mt-4 text-[13px] text-red-600"></p>
+    </div>
+  </div>
+
+  <!-- LOADING STATE -->
+  <div id="loading-gate" class="flex items-center justify-center min-h-[60vh]">
+    <p class="text-slate-400 text-sm">Carregando...</p>
+  </div>
+
+  <!-- APP (hidden until auth) -->
+  <div id="app" class="hidden">
+    <KpiBar />
+
+    <main class="max-w-[1100px] mx-auto px-4 py-6">
+      <!-- Tabs -->
+      <div class="flex gap-2 mb-5 flex-wrap">
+        <button class="tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white transition-all"
+                data-tab="events" onclick="switchTab(this,'events')">
+          📅 Eventos
+        </button>
+        <button class="tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+                data-tab="ranking" onclick="switchTab(this,'ranking')">
+          🏆 Ranking de Horas
+        </button>
+        <button class="hidden tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+                id="tab-new-event" onclick="openNewEventModal()">
+          ➕ Novo Evento
+        </button>
+        <button class="hidden tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+                id="tab-recurring" onclick="openRecurringModal()">
+          🔁 Criar Recorrente
+        </button>
+      </div>
+
+      <!-- Events tab -->
+      <div id="tab-events">
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+            <h3 class="text-sm font-bold text-navy">Eventos do Ciclo 3</h3>
+            <button class="px-3 py-1.5 rounded-lg text-[12px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer"
+                    onclick="loadEvents()">↻ Atualizar</button>
+          </div>
+          <div class="p-5" id="events-list">
+            <p class="text-slate-500 text-[13px]">Carregando...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ranking tab -->
+      <div id="tab-ranking" class="hidden">
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div class="px-5 py-3.5 border-b border-slate-200">
+            <h3 class="text-sm font-bold text-navy">Ranking de Horas de Impacto — Ciclo 3</h3>
+          </div>
+          <div class="p-5" id="ranking-list">
+            <p class="text-slate-500 text-[13px]">Carregando...</p>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modals -->
+  <NewEventModal />
+  <RecurringModal />
+  <EditEventModal />
+  <RosterModal />
+</BaseLayout>
+
+<script>
+  // ════════════════════════════════════════════════════════════════
+  // ATTENDANCE PAGE — Client-side logic
+  // Uses window.navGetSb() and nav:member event from Nav.astro
+  // ════════════════════════════════════════════════════════════════
+
+  import { ROLE_LABELS, ROLE_COLORS } from '../lib/supabase';
+
+  let sb: any = null;
+  let MEMBER: any = null;
+  let CAN_MANAGE = false;
+  let CURRENT_EVENT_ID: string | null = null;
+
+  const ROLE_MAP: Record<string, { label: string; color: string; bg: string }> = {
+    manager:      { label: 'Gerente de Projeto', color: '#003865', bg: '#EFF6FF' },
+    tribe_leader: { label: 'Líder de Tribo',     color: '#065F46', bg: '#F0FDF4' },
+    researcher:   { label: 'Pesquisador',         color: '#1E293B', bg: '#F1F5F9' },
+    facilitator:  { label: 'Facilitador',         color: '#92400E', bg: '#FFF7ED' },
+    communicator: { label: 'Multiplicador',       color: '#6B21A8', bg: '#FAF5FF' },
+    sponsor:      { label: 'Patrocinador',        color: '#BE2027', bg: '#FFF0F0' },
+    ambassador:   { label: 'Embaixador',          color: '#0369A1', bg: '#E0F2FE' },
+    curator:      { label: 'Curador',             color: '#78350F', bg: '#FEF3C7' },
+    founder:      { label: 'Fundador',            color: '#7C3AED', bg: '#EDE9FE' },
+    guest:        { label: 'Convidado',           color: '#6B7280', bg: '#F9FAFB' },
+  };
+
+  // ── HELPERS ──
+  function roleBadges(roles: string[]): string {
+    if (!roles?.length) return '';
+    return roles.map(r => {
+      const m = ROLE_MAP[r] || { label: r, color: '#6B7280', bg: '#F1F5F9' };
+      return `<span style="display:inline-block;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700;color:${m.color};background:${m.bg};border:1px solid ${m.color}22;margin:1px">${m.label}</span>`;
+    }).join('');
+  }
+
+  function toast(msg: string, type = '') {
+    (window as any).toast?.(msg, type);
+  }
+
+  function today(): string { return new Date().toISOString().slice(0, 10); }
+
+  function fmtDate(d: string): string {
+    if (!d) return '';
+    return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  // ── MODAL HELPERS ──
+  (window as any).closeModal = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
+  };
+
+  function openModal(id: string) {
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('hidden'); el.classList.add('flex'); }
+  }
+
+  // ── TABS ──
+  (window as any).switchTab = (el: HTMLElement, name: string) => {
+    document.querySelectorAll('.tab-btn').forEach(t => {
+      t.classList.remove('bg-navy', 'text-white', 'border-navy');
+      t.classList.add('bg-white', 'text-slate-500', 'border-slate-200');
+    });
+    el.classList.remove('bg-white', 'text-slate-500', 'border-slate-200');
+    el.classList.add('bg-navy', 'text-white', 'border-navy');
+    document.getElementById('tab-events')!.classList.toggle('hidden', name !== 'events');
+    document.getElementById('tab-ranking')!.classList.toggle('hidden', name !== 'ranking');
+    if (name === 'ranking') loadRanking();
+  };
+
+  // ── KPIs ──
+  async function loadKPIs() {
+    const { data } = await sb.from('impact_hours_total').select('*').single();
+    if (!data) return;
+    const hrs = parseFloat(data.total_impact_hours || 0).toFixed(1);
+    const pct = parseFloat(data.percent_of_target || 0);
+    const el = (id: string) => document.getElementById(id);
+    el('kpi-hours')!.textContent = hrs + 'h';
+    el('kpi-pct')!.textContent = pct + '%';
+    el('kpi-events')!.textContent = data.total_events || '0';
+    el('kpi-att')!.textContent = data.total_attendances || '0';
+    const bar = el('kpi-bar')!;
+    bar.style.width = Math.min(pct, 100) + '%';
+    bar.className = 'h-full rounded-full transition-all duration-600 ' +
+      (pct >= 70 ? 'bg-emerald-500' : pct >= 35 ? 'bg-yellow-500' : 'bg-red-500');
+  }
+
+  // ── EVENTS LIST ──
+  async function loadEvents() {
+    const { data } = await sb.rpc('get_events_with_attendance', { p_limit: 40, p_offset: 0 });
+    const el = document.getElementById('events-list')!;
+    if (!data?.length) {
+      el.innerHTML = '<p class="text-slate-500 text-[13px] text-center py-5">Nenhum evento registrado ainda.</p>';
+      return;
+    }
+
+    const typeLabel: Record<string, string> = { tribe_meeting: 'Tribo', general_meeting: 'Geral', webinar: 'Webinar', other: 'Outro' };
+    const badgeClass: Record<string, string> = {
+      tribe_meeting: 'bg-blue-50 text-navy',
+      general_meeting: 'bg-green-50 text-green-800',
+      webinar: 'bg-orange-50 text-amber-800',
+      other: 'bg-blue-50 text-navy',
+    };
+    const audienceLabel: Record<string, string> = { leadership: '🏛️ Liderança', tribe: '🔷 Tribo', curators: '📋 Curadoria' };
+
+    function eventBadges(ev: any): string {
+      const rec = ev.is_recorded ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-50 text-red-700">● Gravada</span>` : '';
+      if (ev.audience_level && audienceLabel[ev.audience_level]) {
+        return `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-green-50 text-green-800">${audienceLabel[ev.audience_level]}</span>${rec}`;
+      }
+      return `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${badgeClass[ev.type] || 'bg-blue-50 text-navy'}">${typeLabel[ev.type] || ev.type}</span>${rec}`;
+    }
+
+    el.innerHTML = data.map((ev: any) => {
+      const attIcon = ev.i_attended === true ? '✅' : ev.i_attended === false ? '❌' : '—';
+      const attBg = ev.i_attended === true ? 'bg-green-100 text-green-800' : ev.i_attended === false ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-500';
+      const canEdit = MEMBER.is_superadmin || MEMBER.role === 'tribe_leader' || ev.created_by === MEMBER.auth_id;
+      const canRoster = MEMBER.is_superadmin || MEMBER.role === 'tribe_leader';
+
+      const isPast = new Date(ev.date + 'T23:59:59') < new Date();
+      const linkHtml = ev.meeting_link && !isPast
+        ? `<a href="${ev.meeting_link}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-navy font-semibold no-underline px-2 py-0.5 bg-blue-50 rounded-md text-[12px]">🎥 Entrar</a>`
+        : '';
+      const ytHtml = ev.youtube_url
+        ? `<a href="${ev.youtube_url}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-white font-semibold no-underline px-2 py-0.5 bg-red-600 rounded-md text-[12px]">▶ YouTube</a>`
+        : (ev.is_recorded ? `<span class="text-[11px] text-slate-400 italic">gravada · YouTube em breve</span>` : '');
+
+      const evJson = JSON.stringify(ev).replace(/"/g, '&quot;');
+
+      return `
+      <div class="py-3.5 border-b border-slate-100 last:border-b-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center text-[13px] flex-shrink-0 ${attBg}">${attIcon}</div>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-semibold">${ev.title}</div>
+            <div class="text-[12px] text-slate-500 mt-0.5 flex items-center gap-2 flex-wrap">
+              <span>${fmtDate(ev.date)}</span><span>·</span>
+              <span>${ev.duration_minutes}min</span><span>·</span>
+              <span>${ev.attendee_count || 0} presentes</span>
+              ${linkHtml ? '<span>·</span>' + linkHtml : ''}
+              ${ytHtml ? '<span>·</span>' + ytHtml : ''}
+            </div>
+          </div>
+          <div class="flex gap-1.5 items-center flex-wrap">${eventBadges(ev)}</div>
+          <div class="flex gap-1.5 items-center flex-shrink-0">
+            ${ev.i_attended !== true
+              ? `<button class="px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-navy text-white border-0 cursor-pointer hover:bg-navy/90" onclick="checkIn('${ev.id}')">Check-in</button>`
+              : `<button class="px-3 py-1.5 rounded-lg text-[12px] font-semibold border-[1.5px] border-navy text-navy bg-transparent cursor-not-allowed opacity-40" disabled>✓</button>`}
+            ${canRoster ? `<button class="px-2 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-md cursor-pointer" title="Lista de presença" onclick="openRoster('${ev.id}','${ev.title.replace(/'/g, "\\'")}')">📋</button>` : ''}
+            ${canEdit ? `<button class="px-2 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-md cursor-pointer" title="Editar evento" onclick="openEditEvent(${evJson})">✏️</button>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── CHECK-IN ──
+  (window as any).checkIn = async (eventId: string) => {
+    const { data } = await sb.rpc('register_own_presence', { p_event_id: eventId });
+    if (data?.success) { toast('Presença registrada! ✅', 'success'); loadEvents(); loadKPIs(); }
+    else toast(data?.error || 'Erro ao registrar presença', 'error');
+  };
+
+  // ── AUDIENCE HELPER ──
+  (window as any).updateAudienceFromType = (audienceId: string, typeId: string) => {
+    const type = (document.getElementById(typeId) as HTMLSelectElement).value;
+    const map: Record<string, string> = { tribe_meeting: 'tribe', general_meeting: 'all', webinar: 'all', other: 'all' };
+    (document.getElementById(audienceId) as HTMLSelectElement).value = map[type] || 'all';
+  };
+
+  // ── NEW EVENT ──
+  (window as any).openNewEventModal = () => {
+    (document.getElementById('ev-date') as HTMLInputElement).value = today();
+    (document.getElementById('ev-link') as HTMLInputElement).value = '';
+    openModal('modal-new-event');
+  };
+
+  (window as any).createEvent = async () => {
+    const title = (document.getElementById('ev-title') as HTMLInputElement).value.trim();
+    const type = (document.getElementById('ev-type') as HTMLSelectElement).value;
+    const date = (document.getElementById('ev-date') as HTMLInputElement).value;
+    const duration = parseInt((document.getElementById('ev-duration') as HTMLInputElement).value);
+    const link = (document.getElementById('ev-link') as HTMLInputElement).value.trim() || null;
+    const recorded = (document.getElementById('ev-recorded') as HTMLInputElement).checked;
+    const audience = (document.getElementById('ev-audience') as HTMLSelectElement).value;
+    if (!title || !date) return toast('Preencha título e data', 'error');
+
+    const { data } = await sb.rpc('create_event', {
+      p_type: type, p_title: title, p_date: date,
+      p_duration_minutes: duration,
+      p_tribe_id: type === 'tribe_meeting' ? MEMBER.tribe_id : null,
+      p_audience_level: audience
+    });
+    if (data?.success) {
+      if (link || recorded) {
+        await sb.rpc('update_event', { p_event_id: data.event_id, p_meeting_link: link, p_is_recorded: recorded });
+      }
+      (window as any).closeModal('modal-new-event');
+      toast('Evento criado ✅', 'success');
+      loadEvents(); loadKPIs();
+    } else toast(data?.error || 'Erro ao criar evento', 'error');
+  };
+
+  // ── RECURRING ──
+  (window as any).openRecurringModal = () => {
+    (document.getElementById('rec-start') as HTMLInputElement).value = today();
+    openModal('modal-recurring');
+  };
+
+  (window as any).createRecurring = async () => {
+    const titleTpl = (document.getElementById('rec-title') as HTMLInputElement).value.trim();
+    const type = (document.getElementById('rec-type') as HTMLSelectElement).value;
+    const start = (document.getElementById('rec-start') as HTMLInputElement).value;
+    const duration = parseInt((document.getElementById('rec-duration') as HTMLInputElement).value);
+    const weeks = parseInt((document.getElementById('rec-weeks') as HTMLInputElement).value);
+    const link = (document.getElementById('rec-link') as HTMLInputElement).value.trim() || null;
+    const recorded = (document.getElementById('rec-recorded') as HTMLInputElement).checked;
+    const audience = (document.getElementById('rec-audience') as HTMLSelectElement).value;
+    if (!titleTpl || !start) return toast('Preencha template e data de início', 'error');
+
+    const { data } = await sb.rpc('create_recurring_weekly_events', {
+      p_type: type, p_title_template: titleTpl, p_start_date: start,
+      p_duration_minutes: duration, p_n_weeks: weeks,
+      p_meeting_link: link,
+      p_tribe_id: type === 'tribe_meeting' ? MEMBER.tribe_id : null,
+      p_is_recorded: recorded,
+      p_audience_level: audience
+    });
+    if (data?.success) {
+      (window as any).closeModal('modal-recurring');
+      toast(`${data.events_created} eventos criados ✅`, 'success');
+      loadEvents(); loadKPIs();
+    } else toast(data?.error || 'Erro ao criar série', 'error');
+  };
+
+  // ── EDIT EVENT ──
+  (window as any).openEditEvent = (ev: any) => {
+    (document.getElementById('edit-ev-id') as HTMLInputElement).value = ev.id;
+    (document.getElementById('edit-ev-title') as HTMLInputElement).value = ev.title || '';
+    (document.getElementById('edit-ev-date') as HTMLInputElement).value = ev.date || '';
+    (document.getElementById('edit-ev-duration') as HTMLInputElement).value = ev.duration_minutes || 90;
+    (document.getElementById('edit-ev-link') as HTMLInputElement).value = ev.meeting_link || '';
+    (document.getElementById('edit-ev-youtube') as HTMLInputElement).value = ev.youtube_url || '';
+    (document.getElementById('edit-ev-recorded') as HTMLInputElement).checked = ev.is_recorded || false;
+    (document.getElementById('edit-ev-audience') as HTMLSelectElement).value = ev.audience_level || 'all';
+    openModal('modal-edit-event');
+  };
+
+  (window as any).saveEventEdit = async () => {
+    const id = (document.getElementById('edit-ev-id') as HTMLInputElement).value;
+    const title = (document.getElementById('edit-ev-title') as HTMLInputElement).value.trim();
+    const date = (document.getElementById('edit-ev-date') as HTMLInputElement).value;
+    const duration = parseInt((document.getElementById('edit-ev-duration') as HTMLInputElement).value);
+    const link = (document.getElementById('edit-ev-link') as HTMLInputElement).value.trim() || null;
+    const youtube = (document.getElementById('edit-ev-youtube') as HTMLInputElement).value.trim() || null;
+    const recorded = (document.getElementById('edit-ev-recorded') as HTMLInputElement).checked;
+    const audience = (document.getElementById('edit-ev-audience') as HTMLSelectElement).value;
+
+    const { data } = await sb.rpc('update_event', {
+      p_event_id: id, p_title: title, p_date: date,
+      p_duration_minutes: duration, p_meeting_link: link,
+      p_youtube_url: youtube, p_is_recorded: recorded,
+      p_audience_level: audience
+    });
+    if (data?.success) {
+      (window as any).closeModal('modal-edit-event');
+      toast('Evento atualizado ✅', 'success');
+      loadEvents(); loadKPIs();
+    } else toast(data?.error || 'Erro ao salvar', 'error');
+  };
+
+  // ── ROSTER ──
+  (window as any).openRoster = async (eventId: string, title: string) => {
+    CURRENT_EVENT_ID = eventId;
+    document.getElementById('roster-title')!.textContent = '📋 ' + title;
+    // Reset search
+    const searchInput = document.getElementById('roster-search') as HTMLInputElement;
+    if (searchInput) searchInput.value = '';
+    openModal('modal-roster');
+    document.getElementById('roster-body')!.innerHTML = '<tr><td colspan="3" class="text-center py-5 text-slate-500">Carregando...</td></tr>';
+    const { data } = await sb.rpc('get_tribe_event_roster', { p_event_id: eventId });
+    const tbody = document.getElementById('roster-body')!;
+    if (!data?.length) {
+      tbody.innerHTML = '<tr><td colspan="3" class="text-center text-slate-500 py-5">Nenhum participante encontrado.</td></tr>';
+      return;
+    }
+    // Sort: present first, then alphabetically
+    const sorted = [...data].sort((a: any, b: any) => {
+      if (a.present !== b.present) return a.present ? -1 : 1;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+    const presentCount = sorted.filter((m: any) => m.present).length;
+    // Update counter
+    const countEl = document.getElementById('roster-count');
+    if (countEl) {
+      const text = `✅ ${presentCount}/${sorted.length} presentes`;
+      countEl.textContent = text;
+      countEl.dataset.full = text;
+    }
+    tbody.innerHTML = sorted.map((m: any) => `
+      <tr class="roster-row" data-name="${(m.name || '').toLowerCase()}">
+        <td class="px-3 py-2.5 border-b border-slate-100">
+          <div class="flex items-center gap-2">
+            <img class="w-7 h-7 rounded-full object-cover bg-slate-100 flex-shrink-0" src="${m.photo_url || ''}" onerror="this.style.visibility='hidden'" alt="">
+            <span class="${m.present ? 'font-semibold' : ''}">${m.name}</span>
+          </div>
+        </td>
+        <td class="px-3 py-2.5 border-b border-slate-100">${roleBadges(m.roles?.length ? m.roles : [m.role])}</td>
+        <td class="px-3 py-2.5 border-b border-slate-100 text-center">
+          ${CAN_MANAGE
+            ? `<button class="toggle-btn ${m.present ? 'on' : 'off'}" id="tog-${m.id}"
+                 onclick="togglePresence('${eventId}','${m.id}',this)"></button>`
+            : `<div class="w-7 h-7 rounded-full flex items-center justify-center text-[13px] mx-auto ${m.present ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${m.present ? '✅' : '❌'}</div>`
+          }
+        </td>
+      </tr>`).join('');
+  };
+
+  (window as any).togglePresence = async (eventId: string, memberId: string, btn: HTMLElement) => {
+    const isOn = btn.classList.contains('on');
+    const { data } = await sb.rpc('mark_member_present', { p_event_id: eventId, p_member_id: memberId, p_present: !isOn });
+    if (data?.success) { btn.classList.toggle('on', !isOn); btn.classList.toggle('off', isOn); loadKPIs(); }
+    else toast(data?.error || 'Erro', 'error');
+  };
+
+  // ── RANKING ──
+  async function loadRanking() {
+    const { data } = await sb.from('member_attendance_summary').select('*').limit(50);
+    const el = document.getElementById('ranking-list')!;
+    if (!data?.length) { el.innerHTML = '<p class="text-slate-500">Sem dados ainda.</p>'; return; }
+    const max = Math.max(...data.map((m: any) => parseFloat(m.hours_attended || 0)), 1);
+    el.innerHTML = data.map((m: any, i: number) => `
+      <div class="flex items-center gap-2.5 py-2 border-b border-slate-100 last:border-b-0">
+        <div class="text-[13px] font-bold text-slate-500 w-6 text-center flex-shrink-0">${i + 1}</div>
+        <img class="w-8 h-8 rounded-full object-cover bg-slate-100 flex-shrink-0" src="${m.photo_url || ''}" onerror="this.style.visibility='hidden'" alt="">
+        <div class="flex-1 min-w-0">
+          <div class="text-[13px] font-semibold truncate">${m.name}</div>
+          <div>${roleBadges(m.roles?.length ? m.roles : [m.role])}</div>
+        </div>
+        <div class="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden flex-shrink-0">
+          <div class="h-full bg-crimson rounded-full" style="width:${(m.hours_attended / max * 100).toFixed(1)}%"></div>
+        </div>
+        <div class="text-[13px] text-navy font-bold flex-shrink-0">${m.hours_attended || 0}h</div>
+      </div>`).join('');
+  }
+
+  // ── BOOT ──
+  function showApp() {
+    document.getElementById('loading-gate')?.classList.add('hidden');
+    document.getElementById('auth-gate')?.classList.add('hidden');
+    document.getElementById('auth-gate')?.classList.remove('flex');
+    document.getElementById('app')!.classList.remove('hidden');
+  }
+
+  function showAuthGate() {
+    document.getElementById('loading-gate')?.classList.add('hidden');
+    document.getElementById('auth-gate')?.classList.remove('hidden');
+    document.getElementById('auth-gate')?.classList.add('flex');
+    document.getElementById('app')!.classList.add('hidden');
+  }
+
+  async function onMemberReady() {
+    CAN_MANAGE = MEMBER.is_superadmin || MEMBER.role === 'tribe_leader';
+    if (CAN_MANAGE) {
+      document.getElementById('tab-new-event')?.classList.remove('hidden');
+      document.getElementById('tab-recurring')?.classList.remove('hidden');
+    }
+    showApp();
+    loadKPIs();
+    loadEvents();
+  }
+
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    // Listen for future auth changes
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail && e.detail.role !== 'guest') {
+        MEMBER = e.detail;
+        onMemberReady();
+      } else if (!e.detail) {
+        showAuthGate();
+      }
+    }) as EventListener);
+
+    // 1) Check if nav already has a member loaded
+    const m = (window as any).navGetMember?.();
+    if (m && m.role !== 'guest') {
+      MEMBER = m;
+      onMemberReady();
+      return;
+    }
+
+    // 2) Nav might not be ready yet — check session directly
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      const { data } = await sb.rpc('get_member_by_auth');
+      if (data && data.role !== 'guest') {
+        MEMBER = data;
+        onMemberReady();
+        return;
+      }
+    }
+
+    // 3) No session at all — show auth gate
+    showAuthGate();
+  }
+
+  boot();
+</script>

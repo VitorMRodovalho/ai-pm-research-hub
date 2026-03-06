@@ -1,0 +1,76 @@
+---
+/**
+ * RecurringModal.astro — Sprint 3
+ * Modal for creating recurring weekly events. CAN_MANAGE only.
+ */
+---
+
+<div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-recurring">
+  <div class="bg-white rounded-2xl w-full max-w-[560px] overflow-hidden max-h-[90vh] flex flex-col">
+    <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center flex-shrink-0">
+      <h3 class="text-base font-bold text-navy">🔁 Criar Série Recorrente Semanal</h3>
+      <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" onclick="closeModal('modal-recurring')">✕</button>
+    </div>
+    <div class="p-5 overflow-y-auto flex-1">
+      <div class="bg-slate-50 rounded-lg px-3.5 py-3 text-[13px] text-navy flex items-center gap-2 mb-4">
+        💡 Gera N eventos semanais consecutivos. Use <code class="bg-slate-200 px-1 rounded">&#123;n&#125;</code> para a semana e <code class="bg-slate-200 px-1 rounded">&#123;date&#125;</code> para a data.
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <div class="flex flex-col gap-1.5 sm:col-span-2">
+          <label class="text-[12px] font-semibold text-slate-500">Template do título</label>
+          <input type="text" id="rec-title" value="Reunião Geral — Núcleo IA & GP | Semana &#123;n&#125; | Ciclo 3"
+                 class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-semibold text-slate-500">Tipo</label>
+          <select id="rec-type" onchange="updateAudienceFromType('rec-audience','rec-type')"
+                  class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
+            <option value="general_meeting">Reunião Geral</option>
+            <option value="tribe_meeting">Reunião de Tribo</option>
+            <option value="webinar">Webinar</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-semibold text-slate-500">Público da lista de presença</label>
+          <select id="rec-audience"
+                  class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
+            <option value="all">Todos os participantes ativos</option>
+            <option value="leadership">Liderança (Nível 1+2 + Embaixadores)</option>
+            <option value="tribe">Apenas a tribo</option>
+            <option value="curators">Comitê de Curadoria</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-semibold text-slate-500">Data da 1ª semana</label>
+          <input type="date" id="rec-start"
+                 class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-semibold text-slate-500">Duração (min)</label>
+          <input type="number" id="rec-duration" value="90" min="15" max="480"
+                 class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-semibold text-slate-500">Número de semanas</label>
+          <input type="number" id="rec-weeks" value="12" min="1" max="52"
+                 class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+        </div>
+        <div class="flex flex-col gap-1.5 sm:col-span-2">
+          <label class="text-[12px] font-semibold text-slate-500">Link recorrente (mesmo link para todas)</label>
+          <input type="url" id="rec-link" placeholder="https://meet.google.com/..." value="https://meet.google.com/dzo-phoj-tid"
+                 class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="flex items-center gap-2 text-[13px] font-medium cursor-pointer">
+            <input type="checkbox" id="rec-recorded" checked class="w-4 h-4 accent-navy">
+            🔴 Reuniões gravadas
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2 flex-shrink-0">
+      <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer" onclick="closeModal('modal-recurring')">Cancelar</button>
+      <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer" onclick="createRecurring()">Criar Série</button>
+    </div>
+  </div>
+</div>
