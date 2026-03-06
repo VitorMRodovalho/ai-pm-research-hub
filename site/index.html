@@ -146,6 +146,7 @@ Entrar com LinkedIn
 <div class="nav-brand">Núcleo <span>IA & GP</span> — Ciclo 03</div>
 <div class="nav-links">
 <a href="#agenda">Pauta</a><a href="#quadrants">Quadrantes</a><a href="#tribes">Tribos</a><a href="#kpis">KPIs</a><a href="#breakout">Networking</a><a href="#rules">Regras</a><a href="#trail">Trilha IA</a><a href="#team">Time</a><a href="#vision">Visão</a><a href="#resources">Recursos</a>
+          <a href="/attendance" style="margin-left:8px;padding:6px 14px;background:rgba(190,32,39,.15);border:1px solid rgba(190,32,39,.4);border-radius:6px;color:#fff;font-weight:600;font-size:13px;text-decoration:none">⏱ Presença</a>
 </div>
 <div class="nav-auth" id="navAuth"><button class="btn btn-login" onclick="openAuth()">Entrar</button></div>
 </nav>
@@ -852,6 +853,29 @@ function initNavScroll() {
 // BOOT
 // ============================================================================
 document.addEventListener('DOMContentLoaded', init);
+
+// ── MULTI-ROLE SUPPORT (patched by patch_index.py) ──
+function getRoleDots(member) {
+  const ROLE_COLORS = {
+    manager:      { color: '#F97316', label: 'Gerente' },
+    tribe_leader: { color: '#3B82F6', label: 'Líder de Tribo' },
+    researcher:   { color: '#EC4899', label: 'Pesquisador' },
+    communicator: { color: '#EC4899', label: 'Multiplicador' },
+    facilitator:  { color: '#EC4899', label: 'Facilitador' },
+    ambassador:   { color: '#10B981', label: 'Embaixador' },
+    curator:      { color: '#D97706', label: 'Curador' },
+    sponsor:      { color: '#BE2027', label: 'Patrocinador' },
+    founder:      { color: '#7C3AED', label: 'Fundador' },
+  };
+  const roles = (member.roles && member.roles.length > 0)
+    ? member.roles
+    : (member.role ? [member.role] : []);
+  return roles
+    .filter(r => ROLE_COLORS[r])
+    .map(r => `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;
+      background:${ROLE_COLORS[r].color};margin:0 1px" title="${ROLE_COLORS[r].label}"></span>`)
+    .join('');
+}
 </script>
 </body>
 </html>
