@@ -1,0 +1,378 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Toast from '../components/ui/Toast.astro';
+---
+<BaseLayout title="Gamificação & Certificados — Núcleo IA & GP" activePage="gamification">
+  <Toast />
+  <div class="max-w-[1100px] mx-auto px-4 py-8">
+    <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <h1 class="text-2xl font-extrabold text-navy">🏆 Gamificação & Certificados</h1>
+      <button id="btn-sync" class="hidden px-4 py-2 bg-teal text-white rounded-xl font-semibold text-sm cursor-pointer border-0 hover:opacity-90 transition-all"
+              onclick="syncPoints()">
+        🔄 Sincronizar Pontos
+      </button>
+    </div>
+
+    <!-- Points legend -->
+    <div class="bg-white rounded-xl border border-slate-200 p-5 mb-6">
+      <h3 class="text-sm font-bold text-navy mb-3">Como ganhar pontos</h3>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[13px]">
+        <div class="flex items-center gap-2">
+          <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-[11px]">+10</span>
+          <span class="text-slate-600">Presença em evento</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-[11px]">+15</span>
+          <span class="text-slate-600">Curso concluído</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-[11px]">+30</span>
+          <span class="text-slate-600">Artefato publicado</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-[11px]">+?</span>
+          <span class="text-slate-600">Bônus especial</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-2 mb-6 flex-wrap">
+      <button class="gam-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white"
+              data-tab="leaderboard" onclick="switchGamTab(this,'leaderboard')">🏅 Ranking</button>
+      <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
+              id="tab-mypoints" data-tab="mypoints" onclick="switchGamTab(this,'mypoints')">📊 Meus Pontos</button>
+      <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
+              id="tab-mycerts" data-tab="mycerts" onclick="switchGamTab(this,'mycerts')">🎓 Meus Certificados</button>
+      <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
+              id="tab-admin-certs" data-tab="admin-certs" onclick="switchGamTab(this,'admin-certs')">📋 Emitir Certificado</button>
+    </div>
+
+    <!-- Leaderboard -->
+    <div id="panel-leaderboard">
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+          <h3 class="text-sm font-bold text-navy">Ranking de Pontos — Ciclo 3</h3>
+        </div>
+        <div class="p-5" id="leaderboard-list">
+          <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- My Points -->
+    <div id="panel-mypoints" class="hidden">
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-slate-200">
+          <h3 class="text-sm font-bold text-navy">Meu Histórico de Pontos</h3>
+        </div>
+        <div class="p-5" id="mypoints-list">
+          <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- My Certificates -->
+    <div id="panel-mycerts" class="hidden">
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-slate-200">
+          <h3 class="text-sm font-bold text-navy">Meus Certificados</h3>
+        </div>
+        <div class="p-5" id="mycerts-list">
+          <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin: Issue Certificate -->
+    <div id="panel-admin-certs" class="hidden">
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-slate-200">
+          <h3 class="text-sm font-bold text-navy">Emitir Certificado</h3>
+        </div>
+        <div class="p-5">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1.5 sm:col-span-2">
+              <label class="text-[12px] font-semibold text-slate-500">Participante</label>
+              <select id="cert-member" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
+                <option value="">Selecione...</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[12px] font-semibold text-slate-500">Tipo</label>
+              <select id="cert-type" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
+                <option value="participation">Participação</option>
+                <option value="completion">Conclusão de Trilha</option>
+                <option value="contribution">Contribuição</option>
+                <option value="excellence">Excelência</option>
+              </select>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[12px] font-semibold text-slate-500">Ciclo</label>
+              <input type="number" id="cert-cycle" value="3" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+            </div>
+            <div class="flex flex-col gap-1.5 sm:col-span-2">
+              <label class="text-[12px] font-semibold text-slate-500">Título do Certificado</label>
+              <input type="text" id="cert-title" placeholder="Ex: Certificado de Participação — Ciclo 3"
+                     class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+            </div>
+            <div class="flex flex-col gap-1.5 sm:col-span-2">
+              <label class="text-[12px] font-semibold text-slate-500">Descrição</label>
+              <textarea id="cert-desc" rows="2" placeholder="Descrição opcional..."
+                        class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy resize-y"></textarea>
+            </div>
+          </div>
+          <div class="mt-4 flex justify-end">
+            <button onclick="issueCertificate()" class="px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm cursor-pointer border-0 hover:opacity-90 transition-all">
+              🎓 Emitir Certificado
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  let sb: any = null;
+  let MEMBER: any = null;
+
+  const CATEGORY_META: Record<string, { icon: string; color: string; bg: string }> = {
+    attendance: { icon: '📅', color: '#2563EB', bg: '#EFF6FF' },
+    course:     { icon: '🎓', color: '#7C3AED', bg: '#F5F3FF' },
+    artifact:   { icon: '📄', color: '#059669', bg: '#ECFDF5' },
+    bonus:      { icon: '⭐', color: '#D97706', bg: '#FFFBEB' },
+  };
+
+  const TYPE_LABELS: Record<string, string> = {
+    participation: 'Participação',
+    completion: 'Conclusão de Trilha',
+    contribution: 'Contribuição',
+    excellence: 'Excelência',
+  };
+
+  function toast(msg: string, type = '') { (window as any).toast?.(msg, type); }
+
+  // ── TABS ──
+  (window as any).switchGamTab = (el: HTMLElement, tab: string) => {
+    document.querySelectorAll('.gam-tab').forEach(t => {
+      t.classList.remove('bg-navy', 'text-white', 'border-navy');
+      t.classList.add('bg-white', 'text-slate-500', 'border-slate-200');
+    });
+    el.classList.remove('bg-white', 'text-slate-500', 'border-slate-200');
+    el.classList.add('bg-navy', 'text-white', 'border-navy');
+    ['leaderboard', 'mypoints', 'mycerts', 'admin-certs'].forEach(p => {
+      document.getElementById(`panel-${p}`)?.classList.toggle('hidden', p !== tab);
+    });
+    if (tab === 'leaderboard') loadLeaderboard();
+    if (tab === 'mypoints') loadMyPoints();
+    if (tab === 'mycerts') loadMyCertificates();
+  };
+
+  // ── LEADERBOARD ──
+  async function loadLeaderboard() {
+    const { data } = await sb.from('gamification_leaderboard').select('*');
+    const el = document.getElementById('leaderboard-list')!;
+    if (!data?.length) {
+      el.innerHTML = '<p class="text-slate-400 text-sm text-center py-6">Nenhum ponto registrado ainda. Clique em "Sincronizar Pontos" para calcular a partir dos dados existentes.</p>';
+      return;
+    }
+
+    const maxPts = Math.max(...data.map((m: any) => m.total_points), 1);
+
+    el.innerHTML = data.map((m: any, i: number) => {
+      const initials = m.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+      const photo = m.photo_url
+        ? `<img src="${m.photo_url}" class="w-10 h-10 rounded-full object-cover flex-shrink-0" alt="">`
+        : `<div class="w-10 h-10 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.7rem] flex-shrink-0">${initials}</div>`;
+
+      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
+      const rank = i + 1;
+      const pct = (m.total_points / maxPts * 100).toFixed(0);
+
+      const breakdown = [
+        m.attendance_points > 0 ? `📅 ${m.attendance_points}` : '',
+        m.course_points > 0 ? `🎓 ${m.course_points}` : '',
+        m.artifact_points > 0 ? `📄 ${m.artifact_points}` : '',
+        m.bonus_points > 0 ? `⭐ ${m.bonus_points}` : '',
+      ].filter(Boolean).join(' · ');
+
+      return `
+      <div class="flex items-center gap-3 py-3 border-b border-slate-100 last:border-b-0 ${i < 3 ? 'bg-amber-50/30' : ''}">
+        <div class="w-8 text-center font-bold text-[13px] text-slate-400 flex-shrink-0">${medal || rank}</div>
+        ${photo}
+        <div class="flex-1 min-w-0">
+          <div class="text-[13px] font-semibold truncate">${m.name.split(' ').slice(0, 3).join(' ')}</div>
+          <div class="text-[11px] text-slate-400">${m.chapter || ''} ${breakdown ? '· ' + breakdown : ''}</div>
+          <div class="h-1.5 bg-slate-100 rounded-full mt-1 overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${m.total_points > 0 ? '#FF610F' : '#E2E8F0'}"></div>
+          </div>
+        </div>
+        <div class="text-lg font-extrabold text-navy flex-shrink-0">${m.total_points}</div>
+        <div class="text-[10px] text-slate-400 flex-shrink-0">pts</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── MY POINTS ──
+  async function loadMyPoints() {
+    if (!MEMBER) return;
+    const { data } = await sb.from('gamification_points')
+      .select('*')
+      .eq('member_id', MEMBER.id)
+      .order('created_at', { ascending: false });
+
+    const el = document.getElementById('mypoints-list')!;
+    if (!data?.length) {
+      el.innerHTML = '<p class="text-slate-400 text-sm text-center py-6">Nenhum ponto registrado ainda.</p>';
+      return;
+    }
+
+    const total = data.reduce((s: number, p: any) => s + p.points, 0);
+
+    el.innerHTML = `
+      <div class="text-center mb-6 py-4 bg-navy/5 rounded-xl">
+        <div class="text-3xl font-extrabold text-navy">${total}</div>
+        <div class="text-sm text-slate-500">pontos totais</div>
+      </div>
+    ` + data.map((p: any) => {
+      const cat = CATEGORY_META[p.category] || CATEGORY_META.bonus;
+      const date = new Date(p.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+      return `
+      <div class="flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-b-0">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style="background:${cat.bg}">${cat.icon}</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[13px] font-medium truncate">${p.reason}</div>
+          <div class="text-[11px] text-slate-400">${date}</div>
+        </div>
+        <div class="font-bold text-sm" style="color:${cat.color}">+${p.points}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── MY CERTIFICATES ──
+  async function loadMyCertificates() {
+    if (!MEMBER) return;
+    const { data } = await sb.from('certificates')
+      .select('*')
+      .eq('member_id', MEMBER.id)
+      .order('issued_at', { ascending: false });
+
+    const el = document.getElementById('mycerts-list')!;
+    if (!data?.length) {
+      el.innerHTML = '<p class="text-slate-400 text-sm text-center py-6">Nenhum certificado emitido ainda. Continue participando!</p>';
+      return;
+    }
+
+    el.innerHTML = data.map((c: any) => {
+      const date = new Date(c.issued_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+      return `
+      <div class="flex items-center gap-3 py-3 border-b border-slate-100 last:border-b-0">
+        <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-xl flex-shrink-0">🎓</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-[13px] font-semibold">${c.title}</div>
+          <div class="text-[11px] text-slate-400">${TYPE_LABELS[c.type] || c.type} · ${date}</div>
+          ${c.description ? `<div class="text-[12px] text-slate-500 mt-0.5">${c.description}</div>` : ''}
+          <div class="text-[10px] text-slate-400 mt-0.5 font-mono">Código: ${c.verification_code}</div>
+        </div>
+        ${c.pdf_url ? `<a href="${c.pdf_url}" target="_blank" class="px-3 py-1.5 bg-navy text-white rounded-lg text-[12px] font-semibold no-underline hover:opacity-90">📥 PDF</a>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  // ── SYNC POINTS (admin) ──
+  (window as any).syncPoints = async () => {
+    const { data } = await sb.rpc('sync_attendance_points');
+    if (data?.success) {
+      toast(`${data.points_created} pontos sincronizados ✅`, 'success');
+      loadLeaderboard();
+    } else {
+      toast(data?.error || 'Erro ao sincronizar', 'error');
+    }
+  };
+
+  // ── ISSUE CERTIFICATE (admin) ──
+  (window as any).issueCertificate = async () => {
+    const memberId = (document.getElementById('cert-member') as HTMLSelectElement).value;
+    const type = (document.getElementById('cert-type') as HTMLSelectElement).value;
+    const title = (document.getElementById('cert-title') as HTMLInputElement).value.trim();
+    const desc = (document.getElementById('cert-desc') as HTMLTextAreaElement).value.trim() || null;
+    const cycle = parseInt((document.getElementById('cert-cycle') as HTMLInputElement).value);
+
+    if (!memberId || !title) { toast('Selecione participante e preencha o título', 'error'); return; }
+
+    const { error } = await sb.from('certificates').insert({
+      member_id: memberId,
+      type,
+      title,
+      description: desc,
+      cycle,
+      issued_by: MEMBER.id,
+    });
+
+    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    toast('Certificado emitido ✅', 'success');
+    (document.getElementById('cert-title') as HTMLInputElement).value = '';
+    (document.getElementById('cert-desc') as HTMLTextAreaElement).value = '';
+  };
+
+  // ── LOAD MEMBERS FOR CERT DROPDOWN ──
+  async function loadMembersDropdown() {
+    const { data } = await sb.from('members')
+      .select('id, name')
+      .eq('current_cycle_active', true)
+      .order('name');
+    const sel = document.getElementById('cert-member') as HTMLSelectElement;
+    if (sel && data) {
+      sel.innerHTML = '<option value="">Selecione...</option>' +
+        data.map((m: any) => `<option value="${m.id}">${m.name}</option>`).join('');
+    }
+  }
+
+  // ── BOOT ──
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail && e.detail.role !== 'guest') {
+        MEMBER = e.detail;
+        setupUI();
+      }
+    }) as EventListener);
+
+    const m = (window as any).navGetMember?.();
+    if (m && m.role !== 'guest') {
+      MEMBER = m;
+      setupUI();
+      return;
+    }
+
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      const { data } = await sb.rpc('get_member_by_auth');
+      if (data && data.role !== 'guest') {
+        MEMBER = data;
+        setupUI();
+        return;
+      }
+    }
+
+    // Not logged in — show leaderboard only
+    loadLeaderboard();
+  }
+
+  function setupUI() {
+    const isAdmin = MEMBER.is_superadmin;
+    document.getElementById('tab-mypoints')?.classList.remove('hidden');
+    document.getElementById('tab-mycerts')?.classList.remove('hidden');
+    if (isAdmin) {
+      document.getElementById('btn-sync')?.classList.remove('hidden');
+      document.getElementById('tab-admin-certs')?.classList.remove('hidden');
+    }
+    loadLeaderboard();
+    loadMembersDropdown();
+  }
+
+  boot();
+</script>
