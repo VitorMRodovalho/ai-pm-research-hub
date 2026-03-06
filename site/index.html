@@ -162,14 +162,7 @@ Entrar com LinkedIn
 </div>
 
 <!-- NAV -->
-<nav class="nav">
-<div class="nav-brand">Núcleo <span>IA & GP</span> — Ciclo 03</div>
-<div class="nav-links">
-<a href="#agenda">Pauta</a><a href="#quadrants">Quadrantes</a><a href="#tribes">Tribos</a><a href="#kpis">KPIs</a><a href="#breakout">Networking</a><a href="#rules">Regras</a><a href="#trail">Trilha IA</a><a href="#team">Time</a><a href="#vision">Visão</a><a href="#resources">Recursos</a>
-          <a href="/attendance" style="margin-left:8px;padding:6px 14px;background:rgba(190,32,39,.15);border:1px solid rgba(190,32,39,.4);border-radius:6px;color:#fff;font-weight:600;font-size:13px;text-decoration:none">⏱ Presença</a>
-</div>
-<div class="nav-auth" id="navAuth"><button class="btn btn-login" onclick="openAuth()">Entrar</button></div>
-</nav>
+  <!-- nav injected by nav.js -->
 
 <!-- HERO -->
 <section class="hero" id="hero">
@@ -463,20 +456,22 @@ async function init() {
   initNavScroll();
 
   // Check existing session
-  const { data: { session } } = await sb.auth.getSession();
-  if (session) {
-    user = session.user;
-    await matchMember();
+  // ── Shared nav handles session, drawer and auth state ──
+  snavInit(sb);
+  window.addEventListener('snav:member', (e) => {
+    if (!e.detail) return;
+    profile = e.detail;
     updateAuthUI();
-  }
-
-  // Listen for auth changes (OAuth redirect)
+    updateTribesUI();
+    if (profile.role === 'guest') toast('Bem-vindo! Solicite cadastro ao GP.', 'info');
+    else toast('Bem-vindo(a), ' + profile.name.split(' ')[0] + '!', 'success');
+  });
+  // Keep local session for tribe UI
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) { user = session.user; await matchMember(); updateAuthUI(); }
   sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session) {
-      user = session.user;
-      await matchMember();
-      updateAuthUI();
-    }
+    if (event === 'SIGNED_IN') { user = session.user; await matchMember(); updateAuthUI(); }
+    if (event === 'SIGNED_OUT') { user = null; profile = null; updateTribesUI(); }
   });
 
   await loadTribeCounts();
@@ -725,6 +720,7 @@ const _RC = {
 };
 
 function updateAuthUI() {
+  if (typeof snavInit === 'function') return; // nav.js handles this
   const nav = document.getElementById('navAuth');
   const prompt = document.getElementById('loginPrompt');
   const name = profile?.name || 'Usuário';
