@@ -1,0 +1,424 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Toast from '../components/ui/Toast.astro';
+---
+<BaseLayout title="Artefatos — Núcleo IA & GP" activePage="artifacts">
+  <Toast />
+  <div class="max-w-[1100px] mx-auto px-4 py-8">
+    <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <h1 class="text-2xl font-extrabold text-navy">📄 Artefatos do Núcleo</h1>
+      <button id="btn-submit" class="hidden px-4 py-2 bg-teal text-white rounded-xl font-semibold text-sm cursor-pointer border-0 hover:opacity-90 transition-all"
+              onclick="openSubmitModal()">
+        + Submeter Artefato
+      </button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-2 mb-6 flex-wrap">
+      <button class="art-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white"
+              data-tab="catalog" onclick="switchArtTab(this,'catalog')">📚 Catálogo</button>
+      <button class="art-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
+              id="tab-my" data-tab="mine" onclick="switchArtTab(this,'mine')">📝 Meus Artefatos</button>
+      <button class="art-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
+              id="tab-review" data-tab="review" onclick="switchArtTab(this,'review')">🔍 Fila de Revisão</button>
+    </div>
+
+    <!-- Catalog tab -->
+    <div id="panel-catalog">
+      <div class="bg-white rounded-xl border border-slate-200 p-5" id="catalog-list">
+        <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
+      </div>
+    </div>
+
+    <!-- My artifacts tab -->
+    <div id="panel-mine" class="hidden">
+      <div class="bg-white rounded-xl border border-slate-200 p-5" id="mine-list">
+        <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
+      </div>
+    </div>
+
+    <!-- Review queue tab -->
+    <div id="panel-review" class="hidden">
+      <div class="bg-white rounded-xl border border-slate-200 p-5" id="review-list">
+        <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Submit / Edit Modal -->
+  <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-artifact">
+    <div class="bg-white rounded-2xl w-full max-w-[560px] overflow-hidden flex flex-col" style="max-height:85vh">
+      <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center flex-shrink-0">
+        <h3 class="text-base font-bold text-navy" id="modal-artifact-title">Submeter Artefato</h3>
+        <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" onclick="closeArtModal()">✕</button>
+      </div>
+      <div class="p-5 overflow-y-auto flex-1">
+        <input type="hidden" id="art-id">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div class="flex flex-col gap-1.5 sm:col-span-2">
+            <label class="text-[12px] font-semibold text-slate-500">Título do Artefato</label>
+            <input type="text" id="art-title" placeholder="Ex: Framework EAA — Estrutura Analítica do Agente"
+                   class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[12px] font-semibold text-slate-500">Tipo</label>
+            <select id="art-type" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
+              <option value="article">Artigo</option>
+              <option value="ebook">E-book / Guia</option>
+              <option value="framework">Framework</option>
+              <option value="presentation">Apresentação</option>
+              <option value="video">Vídeo / Webinar</option>
+              <option value="toolkit">Toolkit</option>
+              <option value="other">Outro</option>
+            </select>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[12px] font-semibold text-slate-500">Tribo</label>
+            <select id="art-tribe" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
+              <option value="">— Nenhuma —</option>
+              <option value="1">01 — Radar Tecnológico</option>
+              <option value="2">02 — Agentes Autônomos</option>
+              <option value="3">03 — TMO & PMO do Futuro</option>
+              <option value="4">04 — Cultura & Change</option>
+              <option value="5">05 — Talentos & Upskilling</option>
+              <option value="6">06 — ROI & Portfólio</option>
+              <option value="7">07 — Governança & Trustworthy AI</option>
+              <option value="8">08 — Inclusão & Colaboração</option>
+            </select>
+          </div>
+          <div class="flex flex-col gap-1.5 sm:col-span-2">
+            <label class="text-[12px] font-semibold text-slate-500">URL (Google Docs, PDF, YouTube…)</label>
+            <input type="url" id="art-url" placeholder="https://docs.google.com/..."
+                   class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+          </div>
+          <div class="flex flex-col gap-1.5 sm:col-span-2">
+            <label class="text-[12px] font-semibold text-slate-500">Descrição breve</label>
+            <textarea id="art-desc" rows="3" placeholder="Resumo do artefato…"
+                      class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy resize-y"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2 flex-shrink-0">
+        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer"
+                onclick="closeArtModal()">Cancelar</button>
+        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer"
+                onclick="saveArtifact()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Review Modal -->
+  <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-review">
+    <div class="bg-white rounded-2xl w-full max-w-[480px] overflow-hidden flex flex-col">
+      <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center">
+        <h3 class="text-base font-bold text-navy">Revisar Artefato</h3>
+        <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" onclick="closeReviewModal()">✕</button>
+      </div>
+      <div class="p-5">
+        <input type="hidden" id="rev-id">
+        <div class="text-sm font-bold mb-1" id="rev-title-display"></div>
+        <div class="text-[12px] text-slate-500 mb-4" id="rev-author-display"></div>
+        <div class="flex flex-col gap-1.5 mb-4">
+          <label class="text-[12px] font-semibold text-slate-500">Novo Status</label>
+          <select id="rev-status" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
+            <option value="review">Em Revisão</option>
+            <option value="approved">Aprovado</option>
+            <option value="published">Publicado</option>
+            <option value="draft">Devolver ao Autor (Rascunho)</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-semibold text-slate-500">Notas de revisão</label>
+          <textarea id="rev-notes" rows="3" placeholder="Feedback para o autor…"
+                    class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy resize-y"></textarea>
+        </div>
+      </div>
+      <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2">
+        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer"
+                onclick="closeReviewModal()">Cancelar</button>
+        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer"
+                onclick="submitReview()">Salvar Revisão</button>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  let sb: any = null;
+  let MEMBER: any = null;
+  let CAN_MANAGE = false;
+
+  const TYPE_LABELS: Record<string, string> = {
+    article: '📄 Artigo', ebook: '📖 E-book', framework: '🏗️ Framework',
+    presentation: '📊 Apresentação', video: '🎬 Vídeo', toolkit: '🧰 Toolkit', other: '📎 Outro'
+  };
+  const STATUS_LABELS: Record<string, { label: string; bg: string; color: string }> = {
+    draft:     { label: 'Rascunho',   bg: '#F1F5F9', color: '#475569' },
+    review:    { label: 'Em Revisão', bg: '#FEF3C7', color: '#92400E' },
+    approved:  { label: 'Aprovado',   bg: '#D1FAE5', color: '#065F46' },
+    published: { label: 'Publicado',  bg: '#DBEAFE', color: '#1E40AF' },
+  };
+  const TRIBE_NAMES: Record<number, string> = {
+    1: 'Radar Tecnológico', 2: 'Agentes Autônomos', 3: 'TMO & PMO do Futuro',
+    4: 'Cultura & Change', 5: 'Talentos & Upskilling', 6: 'ROI & Portfólio',
+    7: 'Governança & Trustworthy AI', 8: 'Inclusão & Colaboração'
+  };
+
+  function statusBadge(s: string): string {
+    const st = STATUS_LABELS[s] || STATUS_LABELS.draft;
+    return `<span class="inline-block px-2 py-0.5 rounded-md text-[11px] font-bold" style="background:${st.bg};color:${st.color}">${st.label}</span>`;
+  }
+
+  function toast(msg: string, type = '') { (window as any).toast?.(msg, type); }
+
+  function fmtDate(d: string): string {
+    if (!d) return '';
+    return new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  // ── TABS ──
+  (window as any).switchArtTab = (el: HTMLElement, tab: string) => {
+    document.querySelectorAll('.art-tab').forEach(t => {
+      t.classList.remove('bg-navy', 'text-white', 'border-navy');
+      t.classList.add('bg-white', 'text-slate-500', 'border-slate-200');
+    });
+    el.classList.remove('bg-white', 'text-slate-500', 'border-slate-200');
+    el.classList.add('bg-navy', 'text-white', 'border-navy');
+    ['catalog', 'mine', 'review'].forEach(p => {
+      document.getElementById(`panel-${p}`)?.classList.toggle('hidden', p !== tab);
+    });
+    if (tab === 'catalog') loadCatalog();
+    if (tab === 'mine') loadMyArtifacts();
+    if (tab === 'review') loadReviewQueue();
+  };
+
+  // ── CATALOG (published) ──
+  async function loadCatalog() {
+    const { data } = await sb.from('artifacts')
+      .select('*, members!artifacts_member_id_fkey(name, photo_url)')
+      .eq('status', 'published')
+      .order('published_at', { ascending: false });
+    const el = document.getElementById('catalog-list')!;
+    if (!data?.length) {
+      el.innerHTML = '<p class="text-slate-400 text-sm text-center py-6">Nenhum artefato publicado ainda. Os primeiros estão a caminho!</p>';
+      return;
+    }
+    el.innerHTML = data.map((a: any) => artifactCard(a, false)).join('');
+  }
+
+  // ── MY ARTIFACTS ──
+  async function loadMyArtifacts() {
+    if (!MEMBER) return;
+    const { data } = await sb.from('artifacts')
+      .select('*')
+      .eq('member_id', MEMBER.id)
+      .order('created_at', { ascending: false });
+    const el = document.getElementById('mine-list')!;
+    if (!data?.length) {
+      el.innerHTML = '<p class="text-slate-400 text-sm text-center py-6">Você ainda não submeteu nenhum artefato. Clique em "+ Submeter Artefato" para começar.</p>';
+      return;
+    }
+    el.innerHTML = data.map((a: any) => artifactCard(a, true)).join('');
+  }
+
+  // ── REVIEW QUEUE ──
+  async function loadReviewQueue() {
+    const { data } = await sb.from('artifacts')
+      .select('*, members!artifacts_member_id_fkey(name, photo_url)')
+      .in('status', ['draft', 'review'])
+      .order('submitted_at', { ascending: true });
+    const el = document.getElementById('review-list')!;
+    if (!data?.length) {
+      el.innerHTML = '<p class="text-slate-400 text-sm text-center py-6">Nenhum artefato pendente de revisão.</p>';
+      return;
+    }
+    el.innerHTML = data.map((a: any) => artifactCard(a, false, true)).join('');
+  }
+
+  function artifactCard(a: any, showEdit = false, showReview = false): string {
+    const author = a.members?.name || '—';
+    const tribe = a.tribe_id ? TRIBE_NAMES[a.tribe_id] || '' : '';
+    const typeLabel = TYPE_LABELS[a.type] || a.type;
+    const urlLink = a.url ? `<a href="${a.url}" target="_blank" rel="noopener" class="text-teal text-[12px] font-semibold no-underline hover:underline">🔗 Abrir</a>` : '';
+
+    return `
+    <div class="py-3.5 border-b border-slate-100 last:border-b-0">
+      <div class="flex items-start gap-3">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-sm font-semibold">${a.title}</span>
+            ${statusBadge(a.status)}
+            <span class="text-[11px] text-slate-400">${typeLabel}</span>
+          </div>
+          <div class="text-[12px] text-slate-500 mt-1">
+            ${author}${tribe ? ` · ${tribe}` : ''} · ${fmtDate(a.submitted_at)}
+            ${urlLink ? ` · ${urlLink}` : ''}
+          </div>
+          ${a.description ? `<div class="text-[12px] text-slate-500 mt-1">${a.description}</div>` : ''}
+          ${a.review_notes ? `<div class="text-[12px] text-amber-700 bg-amber-50 px-2 py-1 rounded mt-1">💬 ${a.review_notes}</div>` : ''}
+        </div>
+        <div class="flex gap-1.5 flex-shrink-0">
+          ${showEdit && a.status === 'draft' ? `<button class="px-2.5 py-1.5 text-[12px] bg-slate-50 border border-slate-200 rounded-md cursor-pointer font-semibold" onclick="editArtifact(${JSON.stringify(a).replace(/"/g, '&quot;')})">✏️</button>` : ''}
+          ${showReview ? `<button class="px-2.5 py-1.5 text-[12px] bg-amber-50 border border-amber-200 rounded-md cursor-pointer font-semibold text-amber-800" onclick="openReview(${JSON.stringify(a).replace(/"/g, '&quot;')})">🔍 Revisar</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── SUBMIT / EDIT MODAL ──
+  (window as any).openSubmitModal = () => {
+    (document.getElementById('art-id') as HTMLInputElement).value = '';
+    (document.getElementById('art-title') as HTMLInputElement).value = '';
+    (document.getElementById('art-type') as HTMLSelectElement).value = 'article';
+    (document.getElementById('art-tribe') as HTMLSelectElement).value = MEMBER?.tribe_id?.toString() || '';
+    (document.getElementById('art-url') as HTMLInputElement).value = '';
+    (document.getElementById('art-desc') as HTMLTextAreaElement).value = '';
+    document.getElementById('modal-artifact-title')!.textContent = 'Submeter Artefato';
+    const modal = document.getElementById('modal-artifact')!;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  };
+
+  (window as any).editArtifact = (a: any) => {
+    (document.getElementById('art-id') as HTMLInputElement).value = a.id;
+    (document.getElementById('art-title') as HTMLInputElement).value = a.title || '';
+    (document.getElementById('art-type') as HTMLSelectElement).value = a.type || 'article';
+    (document.getElementById('art-tribe') as HTMLSelectElement).value = a.tribe_id?.toString() || '';
+    (document.getElementById('art-url') as HTMLInputElement).value = a.url || '';
+    (document.getElementById('art-desc') as HTMLTextAreaElement).value = a.description || '';
+    document.getElementById('modal-artifact-title')!.textContent = 'Editar Artefato';
+    const modal = document.getElementById('modal-artifact')!;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  };
+
+  (window as any).closeArtModal = () => {
+    const modal = document.getElementById('modal-artifact')!;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  };
+
+  (window as any).saveArtifact = async () => {
+    const id = (document.getElementById('art-id') as HTMLInputElement).value;
+    const title = (document.getElementById('art-title') as HTMLInputElement).value.trim();
+    const type = (document.getElementById('art-type') as HTMLSelectElement).value;
+    const tribeVal = (document.getElementById('art-tribe') as HTMLSelectElement).value;
+    const url = (document.getElementById('art-url') as HTMLInputElement).value.trim() || null;
+    const desc = (document.getElementById('art-desc') as HTMLTextAreaElement).value.trim() || null;
+
+    if (!title) { toast('Título é obrigatório', 'error'); return; }
+
+    const payload = {
+      title, type, url, description: desc,
+      tribe_id: tribeVal ? parseInt(tribeVal) : null,
+      member_id: MEMBER.id,
+      status: 'draft',
+    };
+
+    let error;
+    if (id) {
+      // Update existing
+      const res = await sb.from('artifacts').update({
+        title, type, url, description: desc,
+        tribe_id: tribeVal ? parseInt(tribeVal) : null,
+        updated_at: new Date().toISOString(),
+      }).eq('id', id);
+      error = res.error;
+    } else {
+      // Insert new
+      const res = await sb.from('artifacts').insert(payload);
+      error = res.error;
+    }
+
+    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    (window as any).closeArtModal();
+    toast(id ? 'Artefato atualizado ✅' : 'Artefato submetido ✅', 'success');
+    loadMyArtifacts();
+  };
+
+  // ── REVIEW MODAL ──
+  (window as any).openReview = (a: any) => {
+    (document.getElementById('rev-id') as HTMLInputElement).value = a.id;
+    document.getElementById('rev-title-display')!.textContent = a.title;
+    document.getElementById('rev-author-display')!.textContent = a.members?.name || '—';
+    (document.getElementById('rev-status') as HTMLSelectElement).value = a.status === 'draft' ? 'review' : 'approved';
+    (document.getElementById('rev-notes') as HTMLTextAreaElement).value = '';
+    const modal = document.getElementById('modal-review')!;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  };
+
+  (window as any).closeReviewModal = () => {
+    const modal = document.getElementById('modal-review')!;
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  };
+
+  (window as any).submitReview = async () => {
+    const id = (document.getElementById('rev-id') as HTMLInputElement).value;
+    const status = (document.getElementById('rev-status') as HTMLSelectElement).value;
+    const notes = (document.getElementById('rev-notes') as HTMLTextAreaElement).value.trim() || null;
+
+    const updatePayload: any = {
+      status,
+      review_notes: notes,
+      reviewed_by: MEMBER.id,
+      reviewed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    if (status === 'published') {
+      updatePayload.published_at = new Date().toISOString();
+    }
+
+    const { error } = await sb.from('artifacts').update(updatePayload).eq('id', id);
+    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    (window as any).closeReviewModal();
+    toast('Revisão salva ✅', 'success');
+    loadReviewQueue();
+  };
+
+  // ── BOOT ──
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail && e.detail.role !== 'guest') {
+        MEMBER = e.detail;
+        setupUI();
+      }
+    }) as EventListener);
+
+    const m = (window as any).navGetMember?.();
+    if (m && m.role !== 'guest') {
+      MEMBER = m;
+      setupUI();
+      return;
+    }
+
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      const { data } = await sb.rpc('get_member_by_auth');
+      if (data && data.role !== 'guest') {
+        MEMBER = data;
+        setupUI();
+        return;
+      }
+    }
+    // Not logged in — catalog only
+    loadCatalog();
+  }
+
+  function setupUI() {
+    CAN_MANAGE = MEMBER.is_superadmin || MEMBER.role === 'tribe_leader' || MEMBER.role === 'curator';
+    // Show submit button for any logged-in member
+    document.getElementById('btn-submit')?.classList.remove('hidden');
+    document.getElementById('tab-my')?.classList.remove('hidden');
+    if (CAN_MANAGE) {
+      document.getElementById('tab-review')?.classList.remove('hidden');
+    }
+    loadCatalog();
+  }
+
+  boot();
+</script>

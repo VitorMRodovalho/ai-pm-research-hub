@@ -4,70 +4,253 @@ import Toast from '../components/ui/Toast.astro';
 ---
 <BaseLayout title="Meu Perfil — Núcleo IA & GP" activePage="profile">
   <Toast />
-  <div class="max-w-xl mx-auto px-4 py-10">
+  <div class="max-w-2xl mx-auto px-4 py-10">
     <h1 class="text-2xl font-extrabold text-navy mb-6">👤 Meu Perfil</h1>
-    <div id="profile-content" class="bg-white rounded-2xl border border-slate-200 p-6">
+    <div id="profile-content" class="space-y-5">
       <div class="text-center text-slate-400 py-8">Carregando perfil…</div>
     </div>
   </div>
 </BaseLayout>
 
 <script>
-  window.addEventListener('nav:member', async (e: any) => {
-    const m = e.detail;
-    if (!m) { location.href = '/?auth=required'; return; }
-    renderProfile(m);
-  });
+  import { ROLE_LABELS, ROLE_COLORS } from '../lib/supabase';
+
+  let currentMember: any = null;
+
+  // ── Wait for nav:member or check existing ──
+  async function boot() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail && e.detail.role !== 'guest') {
+        currentMember = e.detail;
+        renderProfile(currentMember);
+      } else if (!e.detail) {
+        location.href = '/?auth=required';
+      }
+    }) as EventListener);
+
+    const m = (window as any).navGetMember?.();
+    if (m && m.role !== 'guest') {
+      currentMember = m;
+      renderProfile(currentMember);
+      return;
+    }
+
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      const { data } = await sb.rpc('get_member_by_auth');
+      if (data && data.role !== 'guest') {
+        currentMember = data;
+        renderProfile(data);
+        return;
+      }
+    }
+    location.href = '/?auth=required';
+  }
 
   function renderProfile(m: any) {
     const el = document.getElementById('profile-content');
     if (!el) return;
-    const initials = m.name.split(' ').map((w:string)=>w[0]).join('').substring(0,2).toUpperCase();
+
+    const initials = m.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+    const roleColor = ROLE_COLORS[m.role] || '#64748B';
+    const roleLabel = ROLE_LABELS[m.role] || m.role;
+
+    // Build role badges for all roles
+    const allRoles = m.roles?.length ? m.roles : (m.role ? [m.role] : []);
+    const roleBadgesHtml = allRoles.map((r: string) => {
+      const c = ROLE_COLORS[r] || '#64748B';
+      const l = ROLE_LABELS[r] || r;
+      return `<span class="inline-block px-2 py-0.5 rounded-md text-[.62rem] font-bold uppercase" style="background:${c}22;color:${c}">${l}</span>`;
+    }).join(' ');
+
+    // Secondary emails
+    const secondaryEmails: string[] = m.secondary_emails || [];
+
     el.innerHTML = `
-      <div class="flex items-center gap-4 mb-6">
-        ${m.photo_url
-          ? `<img src="${m.photo_url}" class="w-16 h-16 rounded-full object-cover">`
-          : `<div class="w-16 h-16 rounded-full bg-teal flex items-center justify-center text-white font-bold text-xl">${initials}</div>`
-        }
-        <div>
-          <div class="font-extrabold text-lg text-navy">${m.name}</div>
-          <div class="text-sm text-slate-500">${m.email} · ${m.chapter||'—'}</div>
+      <!-- Card: Identity -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6">
+        <div class="flex items-center gap-4 mb-1">
+          ${m.photo_url
+            ? `<img src="${m.photo_url}" class="w-16 h-16 rounded-full object-cover border-2 border-slate-100">`
+            : `<div class="w-16 h-16 rounded-full bg-teal flex items-center justify-center text-white font-bold text-xl">${initials}</div>`
+          }
+          <div>
+            <div class="font-extrabold text-lg text-navy">${m.name}</div>
+            <div class="text-sm text-slate-500">${m.chapter || '—'}</div>
+            <div class="mt-1 flex flex-wrap gap-1">${roleBadgesHtml}</div>
+          </div>
         </div>
       </div>
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">PMI ID</label>
-          <input type="password" id="self-pmi" value="${m.pmi_id||''}" placeholder="Ex: 5975367"
-            class="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+
+      <!-- Card: Emails -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6">
+        <h2 class="text-sm font-bold text-navy mb-4">📧 Emails Cadastrados</h2>
+        <p class="text-[.75rem] text-slate-400 mb-3">
+          Usado para login, vinculação de certificações (Credly) e comunicações. Adicione emails alternativos para melhor matching.
+        </p>
+
+        <!-- Primary email -->
+        <div class="flex items-center gap-2 py-2 px-3 bg-slate-50 rounded-lg mb-2">
+          <span class="text-sm flex-1">${m.email}</span>
+          <span class="text-[.65rem] font-bold text-teal uppercase bg-teal/10 px-2 py-0.5 rounded">Principal</span>
         </div>
-        <div>
-          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Telefone</label>
-          <input type="password" id="self-phone" value="${m.phone||''}" placeholder="+55 (00) 00000-0000"
-            class="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+
+        <!-- Secondary emails -->
+        <div id="secondary-emails-list">
+          ${secondaryEmails.map((e: string, i: number) => `
+            <div class="flex items-center gap-2 py-2 px-3 bg-slate-50/50 rounded-lg mb-2" data-email-idx="${i}">
+              <span class="text-sm flex-1">${e}</span>
+              <button onclick="removeSecondaryEmail(${i})"
+                class="text-[.7rem] font-semibold text-red-500 hover:text-red-700 cursor-pointer bg-transparent border-0 px-2 py-0.5 rounded hover:bg-red-50 transition-all"
+                title="Remover este email">✕ Remover</button>
+            </div>
+          `).join('')}
         </div>
-        <div class="col-span-2">
-          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">LinkedIn</label>
-          <input type="url" id="self-li" value="${m.linkedin_url||''}" placeholder="https://linkedin.com/in/…"
-            class="w-full px-3 py-2 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+
+        <!-- Add email -->
+        <div class="flex gap-2 mt-2">
+          <input type="email" id="new-secondary-email" placeholder="outro@email.com"
+            class="flex-1 px-3 py-2 border-[1.5px] border-slate-200 rounded-lg text-sm focus:outline-none focus:border-teal">
+          <button onclick="addSecondaryEmail()"
+            class="px-3 py-2 bg-teal text-white rounded-lg text-sm font-semibold cursor-pointer border-0 hover:opacity-90 transition-all flex-shrink-0">
+            + Adicionar
+          </button>
         </div>
       </div>
-      <div class="mt-5 flex justify-end">
-        <button onclick="saveSelf('${m.id}')"
-          class="px-5 py-2 bg-navy text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all cursor-pointer border-0">
-          💾 Salvar
-        </button>
-      </div>`;
+
+      <!-- Card: Sensitive fields -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-6">
+        <h2 class="text-sm font-bold text-navy mb-4">🔒 Dados Pessoais</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- PMI ID -->
+          <div>
+            <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">PMI ID</label>
+            <div class="relative">
+              <input type="password" id="self-pmi" value="${m.pmi_id || ''}" placeholder="Ex: 5975367"
+                class="w-full px-3 py-2 pr-10 border-[1.5px] border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+              <button onclick="toggleField('self-pmi')" type="button"
+                class="absolute right-2 top-1/2 -translate-y-1/2 bg-transparent border-0 cursor-pointer text-slate-400 hover:text-slate-600 text-base p-1"
+                title="Mostrar/ocultar">👁</button>
+            </div>
+          </div>
+
+          <!-- Phone -->
+          <div>
+            <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Telefone</label>
+            <div class="relative">
+              <input type="password" id="self-phone" value="${m.phone || ''}" placeholder="+55 (00) 00000-0000"
+                class="w-full px-3 py-2 pr-10 border-[1.5px] border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+              <button onclick="toggleField('self-phone')" type="button"
+                class="absolute right-2 top-1/2 -translate-y-1/2 bg-transparent border-0 cursor-pointer text-slate-400 hover:text-slate-600 text-base p-1"
+                title="Mostrar/ocultar">👁</button>
+            </div>
+          </div>
+
+          <!-- LinkedIn -->
+          <div class="sm:col-span-2">
+            <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">LinkedIn</label>
+            <input type="url" id="self-li" value="${m.linkedin_url || ''}" placeholder="https://linkedin.com/in/…"
+              class="w-full px-3 py-2 border-[1.5px] border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+          </div>
+
+          <!-- Credly -->
+          <div class="sm:col-span-2">
+            <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Credly (perfil público)</label>
+            <input type="url" id="self-credly" value="${m.credly_url || ''}" placeholder="https://www.credly.com/users/seu-nome"
+              class="w-full px-3 py-2 border-[1.5px] border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+            <p class="text-[.68rem] text-slate-400 mt-1">Usado para validar certificações PMI automaticamente. Opcional.</p>
+          </div>
+        </div>
+
+        <div class="mt-5 flex justify-end">
+          <button onclick="saveSelf()"
+            class="px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all cursor-pointer border-0">
+            💾 Salvar Alterações
+          </button>
+        </div>
+      </div>
+    `;
   }
 
-  (window as any).saveSelf = async (id: string) => {
+  // ── Toggle password field visibility ──
+  (window as any).toggleField = (id: string) => {
+    const input = document.getElementById(id) as HTMLInputElement;
+    if (!input) return;
+    input.type = input.type === 'password' ? 'text' : 'password';
+  };
+
+  // ── Save profile ──
+  (window as any).saveSelf = async () => {
     const sb = (window as any).navGetSb?.();
-    if (!sb) return;
+    if (!sb || !currentMember) return;
     const { data } = await sb.rpc('member_self_update', {
-      p_pmi_id:       (document.getElementById('self-pmi') as HTMLInputElement)?.value.trim() || null,
-      p_phone:        (document.getElementById('self-phone') as HTMLInputElement)?.value.trim() || null,
+      p_pmi_id: (document.getElementById('self-pmi') as HTMLInputElement)?.value.trim() || null,
+      p_phone: (document.getElementById('self-phone') as HTMLInputElement)?.value.trim() || null,
       p_linkedin_url: (document.getElementById('self-li') as HTMLInputElement)?.value.trim() || null,
+      p_credly_url: (document.getElementById('self-credly') as HTMLInputElement)?.value.trim() || null,
     });
     if (data?.error) (window as any).toast?.(data.error, 'error');
     else (window as any).toast?.('Dados salvos ✅', 'success');
   };
+
+  // ── Secondary email management ──
+  (window as any).addSecondaryEmail = async () => {
+    const sb = (window as any).navGetSb?.();
+    if (!sb || !currentMember) return;
+    const input = document.getElementById('new-secondary-email') as HTMLInputElement;
+    const email = input?.value.trim().toLowerCase();
+    if (!email || !email.includes('@')) {
+      (window as any).toast?.('Digite um email válido', 'error');
+      return;
+    }
+
+    // Check if already exists
+    const existing = currentMember.secondary_emails || [];
+    if (email === currentMember.email || existing.includes(email)) {
+      (window as any).toast?.('Este email já está cadastrado', 'error');
+      return;
+    }
+
+    const newList = [...existing, email];
+    const { error } = await sb.from('members')
+      .update({ secondary_emails: newList })
+      .eq('id', currentMember.id);
+
+    if (error) {
+      (window as any).toast?.('Erro ao adicionar: ' + error.message, 'error');
+    } else {
+      currentMember.secondary_emails = newList;
+      input.value = '';
+      renderProfile(currentMember);
+      (window as any).toast?.('Email adicionado ✅', 'success');
+    }
+  };
+
+  (window as any).removeSecondaryEmail = async (idx: number) => {
+    const sb = (window as any).navGetSb?.();
+    if (!sb || !currentMember) return;
+    const existing: string[] = currentMember.secondary_emails || [];
+    const removed = existing[idx];
+    if (!removed) return;
+
+    if (!confirm(`Remover ${removed}?`)) return;
+
+    const newList = existing.filter((_: string, i: number) => i !== idx);
+    const { error } = await sb.from('members')
+      .update({ secondary_emails: newList })
+      .eq('id', currentMember.id);
+
+    if (error) {
+      (window as any).toast?.('Erro ao remover: ' + error.message, 'error');
+    } else {
+      currentMember.secondary_emails = newList;
+      renderProfile(currentMember);
+      (window as any).toast?.(`${removed} removido`, 'info');
+    }
+  };
+
+  boot();
 </script>
