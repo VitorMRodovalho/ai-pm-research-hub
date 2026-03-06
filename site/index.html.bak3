@@ -7,7 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/nav.js"></script>
 <style>
 :root{--pmi-dark:#003B5C;--pmi-navy:#200F3B;--pmi-teal:#00799E;--pmi-teal-light:#05BFE0;--pmi-orange:#FF610F;--pmi-orange-soft:#ED7D31;--pmi-purple:#4F17A8;--pmi-purple-light:#B465FF;--pmi-red:#D5340B;--pmi-green:#70AD47;--pmi-beige:#F7F4EF;--pmi-gray:#44546A;--pmi-light:#f0f4f8;--text:#1a1a2e;--text-muted:#5a6072;--white:#fff;--font:'Plus Jakarta Sans',sans-serif}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:var(--font);color:var(--text);background:var(--white);line-height:1.6;-webkit-font-smoothing:antialiased}
@@ -115,25 +114,6 @@ section{padding:4.5rem 2rem}.section-dark{background:var(--pmi-dark);color:var(-
 .hidden{display:none!important}
 .toast{position:fixed;bottom:2rem;right:2rem;background:var(--pmi-dark);color:var(--white);padding:.8rem 1.5rem;border-radius:12px;font-size:.85rem;font-weight:500;z-index:300;transform:translateY(100px);opacity:0;transition:.4s}
 .toast.show{transform:translateY(0);opacity:1}.toast.success{border-left:4px solid var(--pmi-green)}.toast.error{border-left:4px solid var(--pmi-red)}.toast.info{border-left:4px solid var(--pmi-teal)}
-
-/* ── Profile Drawer ── */
-.pd-overlay{display:none;position:fixed;inset:0;z-index:500}
-.pd-overlay.open{display:block}
-.pd-drawer{position:fixed;top:60px;right:1rem;z-index:501;background:#fff;border-radius:16px;
-  box-shadow:0 8px 40px rgba(0,0,0,.2);padding:1.2rem 1.1rem;min-width:240px;
-  transform:translateY(-8px) scale(.97);opacity:0;pointer-events:none;transition:.18s;border:1px solid #E2E8F0}
-.pd-drawer.open{transform:translateY(0) scale(1);opacity:1;pointer-events:all}
-.pd-av{width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0}
-.pd-av-init{width:48px;height:48px;border-radius:50%;background:var(--pmi-teal);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.85rem}
-.pd-name{font-weight:700;font-size:.9rem;color:#1a1a2e}
-.pd-badge{font-size:.65rem;font-weight:700;padding:.12rem .45rem;border-radius:5px;display:inline-block;margin-top:.2rem}
-.pd-email{font-size:.68rem;color:#64748B;margin-top:.1rem}
-.pd-hr{border:none;border-top:1px solid #F1F5F9;margin:.7rem 0}
-.pd-item{display:flex;align-items:center;gap:.5rem;width:100%;padding:.38rem .5rem;border-radius:8px;
-  font-size:.78rem;font-weight:600;text-decoration:none;color:#1a1a2e;border:none;background:none;cursor:pointer;text-align:left;transition:.12s}
-.pd-item:hover{background:#F8FAFC}
-.pd-item.admin{color:#4F17A8}.pd-item.admin:hover{background:#F5F3FF}
-.pd-item.danger{color:#BE2027}.pd-item.danger:hover{background:#FFF1F1}
 </style>
 </head>
 <body>
@@ -494,7 +474,7 @@ async function loadLeaderPhotos() {
 }
 
 async function loadAllMembers() {
-  const { data } = await sb.from('members').select('name, chapter, role, roles, photo_url, linkedin_url, tribe_id, current_cycle_active').neq('role','guest').order('name');
+  const { data } = await sb.from('members').select('name, chapter, role, roles, photo_url, linkedin_url, tribe_id, current_cycle_active').eq('current_cycle_active', true).order('name');
   if (data) { allMembers = data; renderTeamGallery(); }
 }
 
@@ -569,7 +549,7 @@ function renderCourseList() {
 // Chapter logo mapping — update paths once logos are in site/assets/logos/
 const CHAPTER_LOGOS = {
   'PMI-GO': 'assets/logos/pmigo.png',
-  'PMI-CE': 'assets/logos/pmice.jpg',
+  'PMI-CE': 'assets/logos/pmice.png',
   'PMI-DF': 'assets/logos/pmidf.png',
   'PMI-MG': 'assets/logos/pmimg.png',
   'PMI-RS': 'assets/logos/pmirs.png',
@@ -590,8 +570,8 @@ function sponsorsSection(sponsors) {
   let inner = sorted.map(ch => {
     const logo = CHAPTER_LOGOS[ch];
     const logoEl = logo
-      ? '<img src="' + logo + '" style="height:36px;max-width:120px;object-fit:contain;margin-bottom:.5rem" alt="' + ch + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'">'
-        + '<div style="display:none;font-size:.85rem;font-weight:800;color:#BE2027;margin-bottom:.5rem">' + ch + '</div>'
+      ? '<img src="' + logo + '" style="height:32px;object-fit:contain;margin-bottom:.5rem" alt="' + ch + '" onerror="this.style.display='none';this.nextSibling.style.display='block'">'
+        + '<div style="display:none;font-size:.8rem;font-weight:800;color:#BE2027">' + ch + '</div>'
       : '<div style="font-size:.8rem;font-weight:800;color:#BE2027;margin-bottom:.5rem">' + ch + '</div>';
     const members = byChapter[ch].map(m => memberCard(m, ['sponsor'])).join('');
     return '<div style="background:rgba(190,32,39,.05);border:1px solid rgba(190,32,39,.15);border-radius:14px;padding:1rem 1.2rem;min-width:160px">'
@@ -609,52 +589,21 @@ function sponsorsSection(sponsors) {
     + '</div>';
 }
 
-function memberCard(m, forcedRoles) {
-  const initials = m.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
-  const photo = m.photo_url
-    ? '<img src="'+m.photo_url+'" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.12)" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
-      +'<div style="display:none;width:64px;height:64px;border-radius:50%;background:var(--pmi-teal);align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.8rem">'+initials+'</div>'
-    : '<div style="width:64px;height:64px;border-radius:50%;background:var(--pmi-teal);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.8rem">'+initials+'</div>';
-  const liLink = m.linkedin_url ? '<a href="'+m.linkedin_url+'" target="_blank" style="color:var(--pmi-teal);font-size:.65rem;text-decoration:none">🔗</a>' : '';
-  const dotMember = forcedRoles ? {role: forcedRoles[0], roles: forcedRoles} : m;
-  return '<div style="text-align:center;width:90px">'
-    +photo
-    +'<div style="font-size:.7rem;font-weight:600;margin-top:.35rem;line-height:1.2">'+m.name.split(' ').slice(0,2).join(' ')+' '+liLink+'</div>'
-    +'<div style="font-size:.6rem;color:var(--text-muted)">'+(m.chapter||'')+'</div>'
-    +'<div style="display:flex;justify-content:center;gap:3px;margin:.25rem auto 0">'+getRoleDots(dotMember)+'</div>'
-    +'</div>';
-}
-
-function teamSection(id, label, sublabel, color, members, forcedRoles) {
-  if (!members.length) return '';
-  return '<div id="'+id+'" style="margin-top:2.5rem">'
-    +'<div style="display:flex;align-items:baseline;gap:.6rem;margin-bottom:.6rem">'
-    +'<h3 style="font-size:1.05rem;font-weight:800;color:'+color+'">'+label+'</h3>'
-    +'<span style="font-size:.75rem;color:var(--text-muted)">'+sublabel+'</span>'
-    +'</div>'
-    +'<div style="display:flex;flex-wrap:wrap;gap:1.2rem 1rem;justify-content:center">'
-    +members.map(m=>memberCard(m,forcedRoles)).join('')
-    +'</div></div>';
-}
-
 function renderTeamGallery() {
   const el = document.getElementById('teamGrid');
   if (!el || !allMembers.length) return;
-
-  const has = (m,r) => (m.roles||[]).includes(r) || m.role===r;
-
-  const active     = allMembers.filter(m => m.current_cycle_active && !has(m,'sponsor'));
-  const ambassadors= allMembers.filter(m => has(m,'ambassador'));
-  const curators   = allMembers.filter(m => has(m,'curator'));
-  const sponsors   = allMembers.filter(m => has(m,'sponsor'));
-  const founders   = allMembers.filter(m => has(m,'founder'));
-
-  el.innerHTML =
-    teamSection('team-active',     'Pesquisadores & Líderes', 'membros ativos · Ciclo 3',           'var(--pmi-teal)',   active,      null)
-   +teamSection('team-ambassadors','Embaixadores',             'representação & multiplicação',       '#10B981',          ambassadors, ['ambassador'])
-   +teamSection('team-curators',   'Comitê de Curadoria',     'peer review & qualidade',             '#D97706',          curators,    ['curator'])
-   +sponsorsSection(sponsors)
-   +teamSection('team-founders',   'Fundadores',               'a história que trouxe o Núcleo até aqui', '#7C3AED',     founders,    ['founder']);
+  el.innerHTML = allMembers.map(m => {
+    const initials = m.name.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
+    const photo = m.photo_url
+      ? '<img src="' + m.photo_url + '" style="width:56px;height:56px;border-radius:50%;object-fit:cover" alt="">'
+      : '<div style="width:56px;height:56px;border-radius:50%;background:var(--pmi-teal);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.8rem">' + initials + '</div>';
+    // multi-role dots — uses getRoleDots()
+    const liLink = m.linkedin_url ? '<a href="' + m.linkedin_url + '" target="_blank" style="color:var(--pmi-teal);font-size:.65rem;text-decoration:none">🔗</a>' : '';
+    return '<div style="text-align:center;width:90px">' + photo +
+      '<div style="font-size:.7rem;font-weight:600;margin-top:.3rem;line-height:1.2">' + m.name.split(' ').slice(0,2).join(' ') + ' ' + liLink + '</div>' +
+      '<div style="font-size:.6rem;color:var(--text-muted)">' + m.chapter + '</div>' +
+      '<div style="display:flex;justify-content:center;gap:3px;margin:.3rem auto 0">' + getRoleDots(m) + '</div></div>';
+  }).join('');
 }
 
 // ============================================================================
@@ -713,36 +662,31 @@ async function matchMember() {
   updateTribesUI();
 }
 
-const _RL = {
-  manager:'Gerente', tribe_leader:'Líder de Tribo', researcher:'Pesquisador',
-  ambassador:'Embaixador', curator:'Curador', sponsor:'Patrocinador',
-  founder:'Fundador', facilitator:'Facilitador', communicator:'Multiplicador', guest:'Visitante'
-};
-const _RC = {
-  manager:'#FF610F', tribe_leader:'#4F17A8', researcher:'#EC4899',
-  ambassador:'#10B981', curator:'#D97706', sponsor:'#BE2027',
-  founder:'#7C3AED', facilitator:'#EC4899', communicator:'#EC4899'
-};
-
 function updateAuthUI() {
   const nav = document.getElementById('navAuth');
   const prompt = document.getElementById('loginPrompt');
   const name = profile?.name || 'Usuário';
   const initials = name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
   const pic = user?.user_metadata?.avatar_url;
-  const r = profile?.role || 'guest';
-  const roleLabel = _RL[r] || r;
-  const roleCls = 'role-' + r;
+  const roleLabels = {
+    manager: 'Gerente', tribe_leader: 'Líder', researcher: 'Pesquisador',
+    guest: 'Visitante', ambassador: 'Embaixador', sponsor: 'Patrocinador',
+    facilitator: 'Facilitador', communicator: 'Comunicação', observer: 'Observador'
+  };
+  const roleLabel = roleLabels[profile?.role] || profile?.role || 'Visitante';
+  const roleCls = 'role-' + (profile?.role || 'guest');
+
   nav.innerHTML = `
-    <button onclick="togglePD()" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:.4rem;padding:.2rem .4rem;border-radius:8px;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background='none'">
-      <div class="user-avatar" style="cursor:pointer">${pic ? '<img src="' + pic + '" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover">' : initials}</div>
-      <span style="color:#fff;font-size:.8rem;font-weight:600">${name.split(' ')[0]}</span>
+    <div class="user-badge">
+      <div class="user-avatar">${pic ? '<img src="' + pic + '" alt="">' : initials}</div>
+      <span>${name.split(' ')[0]}</span>
       <span class="role-badge ${roleCls}">${roleLabel}</span>
-      <span style="color:rgba(255,255,255,.4);font-size:.6rem">▾</span>
-    </button>`;
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>`;
+
   if (prompt) prompt.style.display = 'none';
   closeAuth();
-  buildPD();
+
   if (profile?.role === 'guest') {
     toast('Bem-vindo! Acesso de visitante. Solicite cadastro ao GP.', 'info');
   } else {
@@ -750,45 +694,6 @@ function updateAuthUI() {
   }
   updateTribesUI();
 }
-
-function buildPD() {
-  const el = document.getElementById('pd-inner');
-  if (!el) return;
-  const name = profile?.name || 'Usuário';
-  const initials = name.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
-  const pic = user?.user_metadata?.avatar_url;
-  const r = profile?.role || 'guest';
-  const color = _RC[r] || '#64748B';
-  const isAdmin = profile?.is_superadmin === true;
-  const av = pic
-    ? `<img class="pd-av" src="${pic}" alt="" onerror="this.style.display='none'">`
-    : `<div class="pd-av-init">${initials}</div>`;
-  el.innerHTML = `
-    <div style="display:flex;align-items:center;gap:.7rem;margin-bottom:.3rem">
-      ${av}
-      <div style="min-width:0;overflow:hidden">
-        <div class="pd-name">${name}</div>
-        <span class="pd-badge" style="background:${color}22;color:${color}">${_RL[r]||r}</span>
-        <div class="pd-email" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${profile?.email||''}</div>
-      </div>
-    </div>
-    <hr class="pd-hr">
-    <a class="pd-item" href="/admin#profile">👤 Meu Perfil</a>
-    <a class="pd-item" href="/attendance">⏱ Presenças & Horas</a>
-    ${isAdmin ? '<hr class="pd-hr"><a class="pd-item admin" href="/admin">⚙️ Painel Admin</a>' : ''}
-    <hr class="pd-hr">
-    <button class="pd-item danger" onclick="logout()">↩ Sair</button>`;
-}
-function togglePD() {
-  const on = !document.getElementById('pd-drawer').classList.contains('open');
-  document.getElementById('pd-drawer').classList.toggle('open', on);
-  document.getElementById('pd-overlay').classList.toggle('open', on);
-}
-function closePD() {
-  document.getElementById('pd-drawer')?.classList.remove('open');
-  document.getElementById('pd-overlay')?.classList.remove('open');
-}
-
 
 async function logout() {
   await sb.auth.signOut();
@@ -991,7 +896,6 @@ function initNavScroll() {
 // BOOT
 // ============================================================================
 document.addEventListener('DOMContentLoaded', init);
-// Shared nav bootstrapped in init()
 
 // ── MULTI-ROLE SUPPORT (patched by patch_index.py) ──
 function getRoleDots(member) {

@@ -7,7 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/nav.js"></script>
 <style>
 :root{--pmi-dark:#003B5C;--pmi-navy:#200F3B;--pmi-teal:#00799E;--pmi-teal-light:#05BFE0;--pmi-orange:#FF610F;--pmi-orange-soft:#ED7D31;--pmi-purple:#4F17A8;--pmi-purple-light:#B465FF;--pmi-red:#D5340B;--pmi-green:#70AD47;--pmi-beige:#F7F4EF;--pmi-gray:#44546A;--pmi-light:#f0f4f8;--text:#1a1a2e;--text-muted:#5a6072;--white:#fff;--font:'Plus Jakarta Sans',sans-serif}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:var(--font);color:var(--text);background:var(--white);line-height:1.6;-webkit-font-smoothing:antialiased}
@@ -26,7 +25,7 @@
 .user-avatar{width:28px;height:28px;border-radius:50%;background:var(--pmi-teal);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.7rem;color:var(--white)}
 .user-avatar img{width:28px;height:28px;border-radius:50%}
 .role-badge{font-size:.6rem;padding:.15rem .4rem;border-radius:4px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
-.role-manager{background:rgba(255,97,15,.2);color:var(--pmi-orange)}.role-tribe_leader{background:rgba(79,23,168,.2);color:var(--pmi-purple)}.role-researcher{background:rgba(0,121,158,.2);color:var(--pmi-teal)}.role-guest{background:rgba(0,0,0,.1);color:var(--text-muted)}.role-ambassador{background:rgba(16,185,129,.15);color:#065F46}.role-curator{background:rgba(217,119,6,.15);color:#92400E}.role-sponsor{background:rgba(190,32,39,.15);color:#BE2027}.role-founder{background:rgba(124,58,237,.15);color:#6D28D9}
+.role-manager{background:rgba(255,97,15,.2);color:var(--pmi-orange)}.role-tribe_leader{background:rgba(79,23,168,.2);color:var(--pmi-purple)}.role-researcher{background:rgba(0,121,158,.2);color:var(--pmi-teal)}.role-guest{background:rgba(0,0,0,.1);color:var(--text-muted)}
 @media(max-width:900px){.nav-links{display:none}}
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center}.modal-overlay.open{display:flex}
 .modal{background:var(--white);border-radius:20px;padding:2.5rem;max-width:420px;width:90%;position:relative}
@@ -115,25 +114,6 @@ section{padding:4.5rem 2rem}.section-dark{background:var(--pmi-dark);color:var(-
 .hidden{display:none!important}
 .toast{position:fixed;bottom:2rem;right:2rem;background:var(--pmi-dark);color:var(--white);padding:.8rem 1.5rem;border-radius:12px;font-size:.85rem;font-weight:500;z-index:300;transform:translateY(100px);opacity:0;transition:.4s}
 .toast.show{transform:translateY(0);opacity:1}.toast.success{border-left:4px solid var(--pmi-green)}.toast.error{border-left:4px solid var(--pmi-red)}.toast.info{border-left:4px solid var(--pmi-teal)}
-
-/* ── Profile Drawer ── */
-.pd-overlay{display:none;position:fixed;inset:0;z-index:500}
-.pd-overlay.open{display:block}
-.pd-drawer{position:fixed;top:60px;right:1rem;z-index:501;background:#fff;border-radius:16px;
-  box-shadow:0 8px 40px rgba(0,0,0,.2);padding:1.2rem 1.1rem;min-width:240px;
-  transform:translateY(-8px) scale(.97);opacity:0;pointer-events:none;transition:.18s;border:1px solid #E2E8F0}
-.pd-drawer.open{transform:translateY(0) scale(1);opacity:1;pointer-events:all}
-.pd-av{width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0}
-.pd-av-init{width:48px;height:48px;border-radius:50%;background:var(--pmi-teal);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.85rem}
-.pd-name{font-weight:700;font-size:.9rem;color:#1a1a2e}
-.pd-badge{font-size:.65rem;font-weight:700;padding:.12rem .45rem;border-radius:5px;display:inline-block;margin-top:.2rem}
-.pd-email{font-size:.68rem;color:#64748B;margin-top:.1rem}
-.pd-hr{border:none;border-top:1px solid #F1F5F9;margin:.7rem 0}
-.pd-item{display:flex;align-items:center;gap:.5rem;width:100%;padding:.38rem .5rem;border-radius:8px;
-  font-size:.78rem;font-weight:600;text-decoration:none;color:#1a1a2e;border:none;background:none;cursor:pointer;text-align:left;transition:.12s}
-.pd-item:hover{background:#F8FAFC}
-.pd-item.admin{color:#4F17A8}.pd-item.admin:hover{background:#F5F3FF}
-.pd-item.danger{color:#BE2027}.pd-item.danger:hover{background:#FFF1F1}
 </style>
 </head>
 <body>
@@ -358,7 +338,7 @@ Mín. 3 · Máx. 6 pesquisadores por tribo.
 <p style="color:rgba(255,255,255,.5);font-size:.85rem">Carregando time...</p>
 </div>
 <div style="margin-top:1.5rem;display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;font-size:.7rem;color:rgba(255,255,255,.5)">
-<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#FF610F;display:inline-block"></span>Gerente</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#4F17A8;display:inline-block"></span>Líder de Tribo</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#EC4899;display:inline-block"></span>Pesquisador</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#10B981;display:inline-block"></span>Embaixador</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#D97706;display:inline-block"></span>Curador</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#BE2027;display:inline-block"></span>Patrocinador</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#7C3AED;display:inline-block"></span>Fundador</span>
+<span>🟠 Gerente</span><span>🟣 Líder de Tribo</span><span>🔵 Pesquisador</span><span>🟢 Embaixador</span>
 </div>
 </div>
 </section>
@@ -494,7 +474,7 @@ async function loadLeaderPhotos() {
 }
 
 async function loadAllMembers() {
-  const { data } = await sb.from('members').select('name, chapter, role, roles, photo_url, linkedin_url, tribe_id, current_cycle_active').neq('role','guest').order('name');
+  const { data } = await sb.from('members').select('name, chapter, role, photo_url, linkedin_url, tribe_id, current_cycle_active').eq('current_cycle_active', true).order('name');
   if (data) { allMembers = data; renderTeamGallery(); }
 }
 
@@ -565,96 +545,22 @@ function renderCourseList() {
   if (extraEl) extraEl.innerHTML = extra.map((c, i) => '<a href="' + c.url + '" target="_blank" style="display:flex;align-items:center;gap:.5rem;padding:.5rem 0;border-bottom:1px solid rgba(0,0,0,.06);text-decoration:none;color:var(--text)"><span style="width:22px;height:22px;border-radius:6px;background:var(--pmi-purple);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0">' + (i+5) + '</span><span style="font-size:.82rem;font-weight:500">' + c.name + '</span></a>').join('');
 }
 
-
-// Chapter logo mapping — update paths once logos are in site/assets/logos/
-const CHAPTER_LOGOS = {
-  'PMI-GO': 'assets/logos/pmigo.png',
-  'PMI-CE': 'assets/logos/pmice.jpg',
-  'PMI-DF': 'assets/logos/pmidf.png',
-  'PMI-MG': 'assets/logos/pmimg.png',
-  'PMI-RS': 'assets/logos/pmirs.png',
-};
-
-function sponsorsSection(sponsors) {
-  if (!sponsors.length) return '';
-  // Group by chapter
-  const byChapter = {};
-  sponsors.forEach(m => {
-    const ch = m.chapter || 'Outros';
-    if (!byChapter[ch]) byChapter[ch] = [];
-    byChapter[ch].push(m);
-  });
-  const chapterOrder = ['PMI-GO','PMI-CE','PMI-DF','PMI-MG','PMI-RS'];
-  const sorted = [...chapterOrder.filter(c => byChapter[c]), ...Object.keys(byChapter).filter(c => !chapterOrder.includes(c))];
-
-  let inner = sorted.map(ch => {
-    const logo = CHAPTER_LOGOS[ch];
-    const logoEl = logo
-      ? '<img src="' + logo + '" style="height:36px;max-width:120px;object-fit:contain;margin-bottom:.5rem" alt="' + ch + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'">'
-        + '<div style="display:none;font-size:.85rem;font-weight:800;color:#BE2027;margin-bottom:.5rem">' + ch + '</div>'
-      : '<div style="font-size:.8rem;font-weight:800;color:#BE2027;margin-bottom:.5rem">' + ch + '</div>';
-    const members = byChapter[ch].map(m => memberCard(m, ['sponsor'])).join('');
-    return '<div style="background:rgba(190,32,39,.05);border:1px solid rgba(190,32,39,.15);border-radius:14px;padding:1rem 1.2rem;min-width:160px">'
-      + '<div style="text-align:center;margin-bottom:.75rem">' + logoEl + '</div>'
-      + '<div style="display:flex;flex-wrap:wrap;gap:.8rem;justify-content:center">' + members + '</div>'
-      + '</div>';
-  }).join('');
-
-  return '<div id="team-sponsors" style="margin-top:2.5rem">'
-    + '<div style="display:flex;align-items:baseline;gap:.6rem;margin-bottom:.8rem">'
-    + '<h3 style="font-size:1.05rem;font-weight:800;color:#BE2027">Patrocinadores</h3>'
-    + '<span style="font-size:.75rem;color:var(--text-muted)">Liderança dos capítulos & pontos focais</span>'
-    + '</div>'
-    + '<div style="display:flex;flex-wrap:wrap;gap:1rem">' + inner + '</div>'
-    + '</div>';
-}
-
-function memberCard(m, forcedRoles) {
-  const initials = m.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
-  const photo = m.photo_url
-    ? '<img src="'+m.photo_url+'" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.12)" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
-      +'<div style="display:none;width:64px;height:64px;border-radius:50%;background:var(--pmi-teal);align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.8rem">'+initials+'</div>'
-    : '<div style="width:64px;height:64px;border-radius:50%;background:var(--pmi-teal);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.8rem">'+initials+'</div>';
-  const liLink = m.linkedin_url ? '<a href="'+m.linkedin_url+'" target="_blank" style="color:var(--pmi-teal);font-size:.65rem;text-decoration:none">🔗</a>' : '';
-  const dotMember = forcedRoles ? {role: forcedRoles[0], roles: forcedRoles} : m;
-  return '<div style="text-align:center;width:90px">'
-    +photo
-    +'<div style="font-size:.7rem;font-weight:600;margin-top:.35rem;line-height:1.2">'+m.name.split(' ').slice(0,2).join(' ')+' '+liLink+'</div>'
-    +'<div style="font-size:.6rem;color:var(--text-muted)">'+(m.chapter||'')+'</div>'
-    +'<div style="display:flex;justify-content:center;gap:3px;margin:.25rem auto 0">'+getRoleDots(dotMember)+'</div>'
-    +'</div>';
-}
-
-function teamSection(id, label, sublabel, color, members, forcedRoles) {
-  if (!members.length) return '';
-  return '<div id="'+id+'" style="margin-top:2.5rem">'
-    +'<div style="display:flex;align-items:baseline;gap:.6rem;margin-bottom:.6rem">'
-    +'<h3 style="font-size:1.05rem;font-weight:800;color:'+color+'">'+label+'</h3>'
-    +'<span style="font-size:.75rem;color:var(--text-muted)">'+sublabel+'</span>'
-    +'</div>'
-    +'<div style="display:flex;flex-wrap:wrap;gap:1.2rem 1rem;justify-content:center">'
-    +members.map(m=>memberCard(m,forcedRoles)).join('')
-    +'</div></div>';
-}
-
 function renderTeamGallery() {
   const el = document.getElementById('teamGrid');
   if (!el || !allMembers.length) return;
-
-  const has = (m,r) => (m.roles||[]).includes(r) || m.role===r;
-
-  const active     = allMembers.filter(m => m.current_cycle_active && !has(m,'sponsor'));
-  const ambassadors= allMembers.filter(m => has(m,'ambassador'));
-  const curators   = allMembers.filter(m => has(m,'curator'));
-  const sponsors   = allMembers.filter(m => has(m,'sponsor'));
-  const founders   = allMembers.filter(m => has(m,'founder'));
-
-  el.innerHTML =
-    teamSection('team-active',     'Pesquisadores & Líderes', 'membros ativos · Ciclo 3',           'var(--pmi-teal)',   active,      null)
-   +teamSection('team-ambassadors','Embaixadores',             'representação & multiplicação',       '#10B981',          ambassadors, ['ambassador'])
-   +teamSection('team-curators',   'Comitê de Curadoria',     'peer review & qualidade',             '#D97706',          curators,    ['curator'])
-   +sponsorsSection(sponsors)
-   +teamSection('team-founders',   'Fundadores',               'a história que trouxe o Núcleo até aqui', '#7C3AED',     founders,    ['founder']);
+  el.innerHTML = allMembers.map(m => {
+    const initials = m.name.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
+    const photo = m.photo_url
+      ? '<img src="' + m.photo_url + '" style="width:56px;height:56px;border-radius:50%;object-fit:cover" alt="">'
+      : '<div style="width:56px;height:56px;border-radius:50%;background:var(--pmi-teal);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.8rem">' + initials + '</div>';
+    const roleColors = { manager: 'var(--pmi-orange)', tribe_leader: 'var(--pmi-purple)', researcher: 'var(--pmi-teal)', ambassador: 'var(--pmi-green)' };
+    const dotColor = roleColors[m.role] || 'var(--pmi-gray)';
+    const liLink = m.linkedin_url ? '<a href="' + m.linkedin_url + '" target="_blank" style="color:var(--pmi-teal);font-size:.65rem;text-decoration:none">🔗</a>' : '';
+    return '<div style="text-align:center;width:90px">' + photo +
+      '<div style="font-size:.7rem;font-weight:600;margin-top:.3rem;line-height:1.2">' + m.name.split(' ').slice(0,2).join(' ') + ' ' + liLink + '</div>' +
+      '<div style="font-size:.6rem;color:var(--text-muted)">' + m.chapter + '</div>' +
+      '<div style="width:6px;height:6px;border-radius:50%;background:' + dotColor + ';margin:.2rem auto 0"></div></div>';
+  }).join('');
 }
 
 // ============================================================================
@@ -713,36 +619,31 @@ async function matchMember() {
   updateTribesUI();
 }
 
-const _RL = {
-  manager:'Gerente', tribe_leader:'Líder de Tribo', researcher:'Pesquisador',
-  ambassador:'Embaixador', curator:'Curador', sponsor:'Patrocinador',
-  founder:'Fundador', facilitator:'Facilitador', communicator:'Multiplicador', guest:'Visitante'
-};
-const _RC = {
-  manager:'#FF610F', tribe_leader:'#4F17A8', researcher:'#EC4899',
-  ambassador:'#10B981', curator:'#D97706', sponsor:'#BE2027',
-  founder:'#7C3AED', facilitator:'#EC4899', communicator:'#EC4899'
-};
-
 function updateAuthUI() {
   const nav = document.getElementById('navAuth');
   const prompt = document.getElementById('loginPrompt');
   const name = profile?.name || 'Usuário';
   const initials = name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
   const pic = user?.user_metadata?.avatar_url;
-  const r = profile?.role || 'guest';
-  const roleLabel = _RL[r] || r;
-  const roleCls = 'role-' + r;
+  const roleLabels = {
+    manager: 'Gerente', tribe_leader: 'Líder', researcher: 'Pesquisador',
+    guest: 'Visitante', ambassador: 'Embaixador', sponsor: 'Patrocinador',
+    facilitator: 'Facilitador', communicator: 'Comunicação', observer: 'Observador'
+  };
+  const roleLabel = roleLabels[profile?.role] || profile?.role || 'Visitante';
+  const roleCls = 'role-' + (profile?.role || 'guest');
+
   nav.innerHTML = `
-    <button onclick="togglePD()" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:.4rem;padding:.2rem .4rem;border-radius:8px;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background='none'">
-      <div class="user-avatar" style="cursor:pointer">${pic ? '<img src="' + pic + '" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover">' : initials}</div>
-      <span style="color:#fff;font-size:.8rem;font-weight:600">${name.split(' ')[0]}</span>
+    <div class="user-badge">
+      <div class="user-avatar">${pic ? '<img src="' + pic + '" alt="">' : initials}</div>
+      <span>${name.split(' ')[0]}</span>
       <span class="role-badge ${roleCls}">${roleLabel}</span>
-      <span style="color:rgba(255,255,255,.4);font-size:.6rem">▾</span>
-    </button>`;
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>`;
+
   if (prompt) prompt.style.display = 'none';
   closeAuth();
-  buildPD();
+
   if (profile?.role === 'guest') {
     toast('Bem-vindo! Acesso de visitante. Solicite cadastro ao GP.', 'info');
   } else {
@@ -750,45 +651,6 @@ function updateAuthUI() {
   }
   updateTribesUI();
 }
-
-function buildPD() {
-  const el = document.getElementById('pd-inner');
-  if (!el) return;
-  const name = profile?.name || 'Usuário';
-  const initials = name.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
-  const pic = user?.user_metadata?.avatar_url;
-  const r = profile?.role || 'guest';
-  const color = _RC[r] || '#64748B';
-  const isAdmin = profile?.is_superadmin === true;
-  const av = pic
-    ? `<img class="pd-av" src="${pic}" alt="" onerror="this.style.display='none'">`
-    : `<div class="pd-av-init">${initials}</div>`;
-  el.innerHTML = `
-    <div style="display:flex;align-items:center;gap:.7rem;margin-bottom:.3rem">
-      ${av}
-      <div style="min-width:0;overflow:hidden">
-        <div class="pd-name">${name}</div>
-        <span class="pd-badge" style="background:${color}22;color:${color}">${_RL[r]||r}</span>
-        <div class="pd-email" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${profile?.email||''}</div>
-      </div>
-    </div>
-    <hr class="pd-hr">
-    <a class="pd-item" href="/admin#profile">👤 Meu Perfil</a>
-    <a class="pd-item" href="/attendance">⏱ Presenças & Horas</a>
-    ${isAdmin ? '<hr class="pd-hr"><a class="pd-item admin" href="/admin">⚙️ Painel Admin</a>' : ''}
-    <hr class="pd-hr">
-    <button class="pd-item danger" onclick="logout()">↩ Sair</button>`;
-}
-function togglePD() {
-  const on = !document.getElementById('pd-drawer').classList.contains('open');
-  document.getElementById('pd-drawer').classList.toggle('open', on);
-  document.getElementById('pd-overlay').classList.toggle('open', on);
-}
-function closePD() {
-  document.getElementById('pd-drawer')?.classList.remove('open');
-  document.getElementById('pd-overlay')?.classList.remove('open');
-}
-
 
 async function logout() {
   await sb.auth.signOut();
@@ -991,20 +853,19 @@ function initNavScroll() {
 // BOOT
 // ============================================================================
 document.addEventListener('DOMContentLoaded', init);
-// Shared nav bootstrapped in init()
 
 // ── MULTI-ROLE SUPPORT (patched by patch_index.py) ──
 function getRoleDots(member) {
   const ROLE_COLORS = {
-    manager:      { color: '#FF610F', label: 'Gerente' },        // laranja PMI
-    tribe_leader: { color: '#4F17A8', label: 'Líder de Tribo' }, // roxo PMI
-    researcher:   { color: '#EC4899', label: 'Pesquisador' },    // rosa
+    manager:      { color: '#F97316', label: 'Gerente' },
+    tribe_leader: { color: '#3B82F6', label: 'Líder de Tribo' },
+    researcher:   { color: '#EC4899', label: 'Pesquisador' },
     communicator: { color: '#EC4899', label: 'Multiplicador' },
     facilitator:  { color: '#EC4899', label: 'Facilitador' },
-    ambassador:   { color: '#10B981', label: 'Embaixador' },     // verde
-    curator:      { color: '#D97706', label: 'Curador' },        // âmbar
-    sponsor:      { color: '#BE2027', label: 'Patrocinador' },   // vermelho PMI
-    founder:      { color: '#7C3AED', label: 'Fundador' },       // índigo
+    ambassador:   { color: '#10B981', label: 'Embaixador' },
+    curator:      { color: '#D97706', label: 'Curador' },
+    sponsor:      { color: '#BE2027', label: 'Patrocinador' },
+    founder:      { color: '#7C3AED', label: 'Fundador' },
   };
   const roles = (member.roles && member.roles.length > 0)
     ? member.roles

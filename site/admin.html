@@ -6,6 +6,7 @@
 <title>Admin — Núcleo IA & GP</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/nav.js"></script>
 <style>
 :root {
   --navy:#003B5C; --orange:#FF610F; --purple:#4F17A8; --teal:#00799E;
@@ -140,25 +141,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
 <body>
 
 <!-- NAV -->
-<nav class="nav">
-  <a href="/" class="nav-brand">Núcleo <span>IA & GP</span> — Ciclo 03</a>
-  <div class="nav-links">
-    <a href="/#agenda">Pauta</a>
-    <a href="/#quadrants">Quadrantes</a>
-    <a href="/#tribes">Tribos</a>
-    <a href="/#kpis">KPIs</a>
-    <a href="/#team">Time</a>
-    <a href="/#vision">Visão</a>
-    <a href="/#resources">Recursos</a>
-    <a href="/attendance" class="nav-presence">⏱ Presença</a>
-    <a href="/admin" class="nav-admin" id="nav-admin-link" style="display:none">⚙️ Admin</a>
-  </div>
-  <div class="nav-auth">
-    <span id="nav-user-name"></span>
-    <span id="nav-role-badge" class="role-badge" style="margin-left:4px"></span>
-    <button onclick="logout()" id="btn-logout" style="display:none;margin-left:.5rem;padding:.25rem .6rem;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:6px;cursor:pointer;font-size:.7rem;font-family:var(--font)">Sair</button>
-  </div>
-</nav>
+<!-- nav injected by nav.js -->
 
 <!-- AUTH GATE -->
 <div class="auth-gate" id="auth-gate">
@@ -405,13 +388,18 @@ async function logout() {
   await sb.auth.signOut(); location.reload();
 }
 
-// Load session immediately on page open (covers already-logged-in navigation)
+// Shared nav + auth bootstrap
+snavInit(sb);
+window.addEventListener('snav:member', (e) => {
+  if (e.detail) { MEMBER = e.detail; IS_ADMIN = e.detail.is_superadmin === true; showApp(); }
+  else { showGate(); }
+});
+// Fallback direct call
 (async () => {
   const { data: { session } } = await sb.auth.getSession();
-  if (session) { await matchMember(); }
-  else { showGate(); }
+  if (session) await matchMember();
+  else showGate();
 })();
-
 sb.auth.onAuthStateChange(async (event, session) => {
   if (event === 'SIGNED_IN')  await matchMember();
   if (event === 'SIGNED_OUT') showGate();
