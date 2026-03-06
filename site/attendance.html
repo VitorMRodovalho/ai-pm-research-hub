@@ -491,11 +491,11 @@ async function loadEvents() {
     const canRoster = MEMBER.is_superadmin || MEMBER.role === 'tribe_leader';
 
     const linkHtml = ev.meeting_link
-      ? `<a href="${ev.meeting_link}" target="_blank" rel="noopener">🎥 Entrar na reunião</a>`
+      ? `<a href="${ev.meeting_link}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;color:var(--pmi-navy);font-weight:600;text-decoration:none;padding:3px 8px;background:#EFF6FF;border-radius:6px;font-size:12px">🎥 Entrar</a>`
       : '';
     const ytHtml = ev.youtube_url
-      ? `<a href="${ev.youtube_url}" target="_blank" rel="noopener" style="color:#FF0000">▶ YouTube</a>`
-      : '';
+      ? `<a href="${ev.youtube_url}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:4px;color:#fff;font-weight:600;text-decoration:none;padding:3px 8px;background:#FF0000;border-radius:6px;font-size:12px">▶ YouTube</a>`
+      : (ev.is_recorded ? `<span style="font-size:11px;color:var(--pmi-gray);font-style:italic">gravada · YouTube em breve</span>` : '');
     const recBadge = ev.is_recorded
       ? `<span class="event-badge badge-recorded">● Gravada</span>` : '';
 
