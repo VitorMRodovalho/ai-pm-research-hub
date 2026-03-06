@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Presença & Horas de Impacto — Núcleo IA & GP</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/nav.js"></script>
 <style>
   :root {
     --pmi-red:    #BE2027;
@@ -174,29 +175,7 @@
 
 <!-- APP -->
 <div id="app">
-  <nav class="nav">
-    <a href="/" class="nav-brand">Núcleo <span>IA & GP</span> — Ciclo 03</a>
-    <div class="nav-links">
-      <a href="/#agenda">Pauta</a>
-      <a href="/#quadrants">Quadrantes</a>
-      <a href="/#tribes">Tribos</a>
-      <a href="/#kpis">KPIs</a>
-      <a href="/#breakout">Networking</a>
-      <a href="/#rules">Regras</a>
-      <a href="/#trail">Trilha IA</a>
-      <a href="/#team">Time</a>
-      <a href="/#vision">Visão</a>
-      <a href="/#resources">Recursos</a>
-      <a href="/attendance" class="nav-presence">⏱ Presença</a>
-    </div>
-    <div class="nav-auth">
-      <div class="nav-user" id="nav-user-wrap" style="display:none">
-        <span id="nav-user"></span>
-        <span id="nav-role-badge" class="role-badge" style="margin-left:4px"></span>
-      </div>
-      <button class="btn btn-ghost btn-sm" id="btn-logout" onclick="logout()" style="display:none;font-size:.7rem;padding:.25rem .6rem;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:6px;cursor:pointer">Sair</button>
-    </div>
-  </nav>
+  <!-- nav injected by nav.js -->
 
   <div class="kpi-bar">
     <div class="kpi-card">
@@ -469,6 +448,14 @@ let CURRENT_EVENT_ID = null;
 
 // ── AUTH ─────────────────────────────────────────────────────
 async function init() {
+  // Shared nav handles session display
+  snavInit(sb);
+  window.addEventListener('snav:member', (e) => {
+    if (e.detail && e.detail.role !== 'guest') {
+      MEMBER = e.detail;
+      onMemberReady();
+    }
+  });
   const { data: { session } } = await sb.auth.getSession();
   if (session) await onLogin();
   sb.auth.onAuthStateChange(async (event, session) => {
@@ -513,6 +500,18 @@ async function onLogin() {
   loadEvents();
 }
 
+
+function onMemberReady() {
+  CAN_MANAGE = MEMBER.is_superadmin || MEMBER.role === 'tribe_leader';
+  if (CAN_MANAGE) {
+    document.getElementById('tab-new-event')?.classList.remove('hidden');
+    document.getElementById('tab-recurring')?.classList.remove('hidden');
+  }
+  document.getElementById('auth-gate').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  loadKPIs();
+  loadEvents();
+}
 function showAuthGate() {
   document.getElementById('auth-gate').style.display = 'flex';
   document.getElementById('app').style.display = 'none';
