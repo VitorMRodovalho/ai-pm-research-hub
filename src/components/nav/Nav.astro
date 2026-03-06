@@ -18,17 +18,28 @@ const links = [
   { href: base + '/#team',       label: t('nav.team', lang) },
   { href: base + '/#vision',     label: t('nav.vision', lang) },
   { href: base + '/#resources',  label: t('nav.resources', lang) },
-  { href: '/artifacts',           label: t('nav.artifacts', lang) },
-  { href: '/gamification',        label: '🏆' },
+  { href: base + '/artifacts',   label: t('nav.artifacts', lang) },
+  { href: base + '/gamification', label: t('nav.gamification', lang) },
 ];
+
+// Pre-compute translated strings for client-side JS
+const jsI18n = JSON.stringify({
+  login: t('nav.login', lang),
+  profile: t('nav.profile', lang),
+  attendance: t('nav.attendanceLink', lang),
+  admin: t('nav.adminLink', lang),
+  logout: t('nav.logout', lang),
+  user: t('nav.user', lang),
+});
 ---
 
 <nav class="sticky top-0 z-[200] bg-navy/97 backdrop-blur-md border-b-2 border-orange
-            px-6 flex items-center justify-between h-14">
-  <a href={base + "/"} class="text-white font-bold text-sm no-underline">
+            px-4 sm:px-6 flex items-center justify-between h-14">
+  <a href={base + "/"} class="text-white font-bold text-sm no-underline flex-shrink-0">
     <Fragment set:html={t('nav.brand', lang).replace('IA & GP', '<span class="text-orange">IA & GP</span>')} />
   </a>
 
+  <!-- Desktop links -->
   <div class="hidden lg:flex items-center gap-0.5" id="nav-links">
     {links.map(l => (
       <a href={l.href}
@@ -54,24 +65,77 @@ const links = [
     </a>
   </div>
 
+  <div class="flex items-center gap-2">
     <LangSwitcher currentLang={lang} />
-  <!-- Auth area: populated by client script -->
-  <div id="nav-auth" class="flex items-center gap-2 flex-shrink-0">
-    <button onclick="document.dispatchEvent(new CustomEvent('open-auth'))"
-            class="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20
-                   text-white text-[.78rem] font-semibold hover:bg-white/20 transition-all cursor-pointer"
-            id="nav-login-btn">
-      Entrar
+
+    <!-- Auth area: populated by client script -->
+    <div id="nav-auth" class="flex items-center gap-2 flex-shrink-0">
+      <button onclick="document.dispatchEvent(new CustomEvent('open-auth'))"
+              class="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20
+                     text-white text-[.78rem] font-semibold hover:bg-white/20 transition-all cursor-pointer"
+              id="nav-login-btn">
+        {t('nav.login', lang)}
+      </button>
+    </div>
+
+    <!-- Mobile hamburger button -->
+    <button id="mobile-menu-btn"
+            class="lg:hidden flex items-center justify-center w-9 h-9 rounded-lg bg-white/10 border border-white/20
+                   text-white hover:bg-white/20 transition-all cursor-pointer"
+            onclick="toggleMobileMenu()"
+            aria-label={t('nav.menu', lang)}>
+      <svg id="hamburger-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+      <svg id="close-icon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
     </button>
   </div>
 </nav>
 
+<!-- Mobile menu overlay -->
+<div id="mobile-menu-overlay" class="hidden fixed inset-0 bg-black/50 z-[199] lg:hidden" onclick="closeMobileMenu()"></div>
+
+<!-- Mobile menu drawer -->
+<div id="mobile-menu" class="hidden fixed top-14 left-0 right-0 z-[199] bg-navy border-b-2 border-orange
+                              max-h-[calc(100vh-3.5rem)] overflow-y-auto lg:hidden">
+  <div class="p-4 flex flex-col gap-1">
+    {links.map(l => (
+      <a href={l.href}
+         onclick="closeMobileMenu()"
+         class="text-white/80 no-underline text-sm font-medium px-3 py-2.5 rounded-lg
+                hover:text-white hover:bg-white/10 transition-all">
+        {l.label}
+      </a>
+    ))}
+    <hr class="border-white/10 my-2">
+    <a href={base + "/attendance"}
+       onclick="closeMobileMenu()"
+       class="text-white no-underline text-sm font-semibold px-3 py-2.5 rounded-lg bg-crimson/20 border border-crimson/40 hover:bg-crimson/30 transition-all">
+      {t('nav.attendance', lang)}
+    </a>
+    <a href={base + "/admin"} id="mobile-admin-link" style="display:none"
+       onclick="closeMobileMenu()"
+       class="text-white no-underline text-sm font-semibold px-3 py-2.5 rounded-lg bg-purple/20 border border-purple/40 hover:bg-purple/30 transition-all">
+      {t('nav.admin', lang)}
+    </a>
+  </div>
+</div>
+
+<!-- Hidden element to pass i18n to client JS -->
+<script id="nav-i18n-data" type="application/json" set:html={jsI18n}></script>
+
 <script>
-  import { getSupabase, ROLE_LABELS, ROLE_COLORS } from '../../lib/supabase';
+  import { getSupabase, ROLE_COLORS } from '../../lib/supabase';
 
   const sb = getSupabase();
   let _member: any = null;
   let _user: any = null;
+
+  // Read i18n strings from hidden element
+  const i18nEl = document.getElementById('nav-i18n-data');
+  const i18n = i18nEl ? JSON.parse(i18nEl.textContent || '{}') : {};
 
   async function bootNav() {
     const { data: { session } } = await sb.auth.getSession();
@@ -80,7 +144,6 @@ const links = [
       const { data } = await sb.rpc('get_member_by_auth');
       _member = data;
       renderAuth();
-      // Notify rest of page
       window.dispatchEvent(new CustomEvent('nav:member', { detail: _member }));
     }
     sb.auth.onAuthStateChange(async (event, session) => {
@@ -99,15 +162,25 @@ const links = [
     });
   }
 
+  // Read role labels from i18n data attribute on body (set by BaseLayout)
+  function getRoleLabel(role: string): string {
+    const roleLabelsEl = document.getElementById('role-labels-data');
+    if (roleLabelsEl) {
+      const labels = JSON.parse(roleLabelsEl.textContent || '{}');
+      return labels[role] || role;
+    }
+    return role;
+  }
+
   function renderAuth() {
     if (!_member || _member.role === 'guest') { renderLoggedOut(); return; }
-    const name = _member.name || 'Usuário';
+    const name = _member.name || i18n.user || 'User';
     const first = name.split(' ')[0];
     const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0,2).toUpperCase();
     const pic = _user?.user_metadata?.avatar_url;
     const r = _member.role || 'guest';
     const color = ROLE_COLORS[r] || '#64748B';
-    const label = ROLE_LABELS[r] || r;
+    const label = getRoleLabel(r);
 
     const el = document.getElementById('nav-auth');
     if (!el) return;
@@ -118,14 +191,16 @@ const links = [
           ? `<img src="${pic}" class="w-7 h-7 rounded-full object-cover" onerror="this.style.display='none'">`
           : `<div class="w-7 h-7 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.65rem]">${initials}</div>`
         }
-        <span class="text-white text-[.8rem] font-semibold">${first}</span>
-        <span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded uppercase" style="background:${color}33;color:${color}">${label}</span>
+        <span class="text-white text-[.8rem] font-semibold hidden sm:inline">${first}</span>
+        <span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded uppercase hidden sm:inline" style="background:${color}33;color:${color}">${label}</span>
         <span class="text-white/40 text-[.6rem]">▾</span>
       </button>`;
 
     if (_member.is_superadmin) {
       const adminLink = document.getElementById('nav-admin-link');
       if (adminLink) adminLink.style.display = 'inline-flex';
+      const mobileAdmin = document.getElementById('mobile-admin-link');
+      if (mobileAdmin) mobileAdmin.style.display = 'block';
     }
     buildDrawer();
   }
@@ -135,19 +210,22 @@ const links = [
     if (el) el.innerHTML = `
       <button onclick="document.dispatchEvent(new CustomEvent('open-auth'))"
         class="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-[.78rem] font-semibold hover:bg-white/20 transition-all cursor-pointer">
-        Entrar
+        ${i18n.login || 'Sign In'}
       </button>`;
   }
 
   function buildDrawer() {
     const el = document.getElementById('pd-inner');
     if (!el || !_member) return;
-    const name = _member.name || 'Usuário';
+    const name = _member.name || i18n.user || 'User';
     const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0,2).toUpperCase();
     const pic = _user?.user_metadata?.avatar_url;
     const r = _member.role || 'guest';
     const color = ROLE_COLORS[r] || '#64748B';
     const isAdmin = _member.is_superadmin === true;
+    const base = document.documentElement.lang === 'pt-BR' || document.documentElement.lang === 'pt' ? '' :
+                 document.documentElement.lang === 'en' ? '/en' : '/es';
+
     el.innerHTML = `
       <div class="flex items-center gap-3 mb-2">
         ${pic
@@ -156,19 +234,39 @@ const links = [
         }
         <div class="min-w-0">
           <div class="font-bold text-[.9rem] text-navy">${name}</div>
-          <span class="text-[.62rem] font-bold px-1.5 py-0.5 rounded inline-block mt-0.5" style="background:${color}22;color:${color}">${ROLE_LABELS[r]||r}</span>
+          <span class="text-[.62rem] font-bold px-1.5 py-0.5 rounded inline-block mt-0.5" style="background:${color}22;color:${color}">${getRoleLabel(r)}</span>
           <div class="text-[.67rem] text-slate-500 truncate mt-0.5">${_member.email||''}</div>
         </div>
       </div>
       <hr class="border-slate-100 my-2">
-      <a href="/profile" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-slate-800 hover:bg-slate-50 no-underline transition-all">👤 Meu Perfil</a>
-      <a href={base + "/attendance"} class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-slate-800 hover:bg-slate-50 no-underline transition-all">⏱ Presenças & Horas</a>
-      ${isAdmin ? '<hr class="border-slate-100 my-2"><a href="/admin" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-purple hover:bg-purple/5 no-underline transition-all">⚙️ Painel Admin</a>' : ''}
+      <a href="${base}/profile" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-slate-800 hover:bg-slate-50 no-underline transition-all">${i18n.profile || '👤 Profile'}</a>
+      <a href="${base}/attendance" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-slate-800 hover:bg-slate-50 no-underline transition-all">${i18n.attendance || '⏱ Attendance'}</a>
+      ${isAdmin ? `<hr class="border-slate-100 my-2"><a href="${base}/admin" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-purple hover:bg-purple/5 no-underline transition-all">${i18n.admin || '⚙️ Admin'}</a>` : ''}
       <hr class="border-slate-100 my-2">
-      <button onclick="doLogout()" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-crimson hover:bg-red-50 cursor-pointer border-0 bg-transparent transition-all">↩ Sair</button>`;
+      <button onclick="doLogout()" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-crimson hover:bg-red-50 cursor-pointer border-0 bg-transparent transition-all">${i18n.logout || '↩ Sign Out'}</button>`;
   }
 
-  // Globals
+  // ── Mobile menu toggle ──
+  (window as any).toggleMobileMenu = () => {
+    const menu = document.getElementById('mobile-menu');
+    const overlay = document.getElementById('mobile-menu-overlay');
+    const hamburger = document.getElementById('hamburger-icon');
+    const closeIcon = document.getElementById('close-icon');
+    if (!menu) return;
+    const isOpen = !menu.classList.contains('hidden');
+    menu.classList.toggle('hidden', isOpen);
+    overlay?.classList.toggle('hidden', isOpen);
+    hamburger?.classList.toggle('hidden', !isOpen);
+    closeIcon?.classList.toggle('hidden', isOpen);
+  };
+  (window as any).closeMobileMenu = () => {
+    document.getElementById('mobile-menu')?.classList.add('hidden');
+    document.getElementById('mobile-menu-overlay')?.classList.add('hidden');
+    document.getElementById('hamburger-icon')?.classList.remove('hidden');
+    document.getElementById('close-icon')?.classList.add('hidden');
+  };
+
+  // ── Globals ──
   (window as any).togglePD = () => {
     const d = document.getElementById('pd-drawer');
     const o = document.getElementById('pd-overlay');

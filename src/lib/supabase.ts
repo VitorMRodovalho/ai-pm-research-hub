@@ -27,10 +27,14 @@ export interface Member {
   auth_id?: string;
   inactivated_at?: string;
   inactivation_reason?: string;
+  cpmai_certified?: boolean;
+  credly_badges?: any[];
+  credly_url?: string;
   created_at?: string;
   updated_at?: string;
 }
 
+// ── Role labels (PT-BR fallback, used when i18n not available) ──
 export const ROLE_LABELS: Record<string, string> = {
   manager:      'Gerente',
   tribe_leader: 'Líder de Tribo',
@@ -43,6 +47,21 @@ export const ROLE_LABELS: Record<string, string> = {
   communicator: 'Multiplicador',
   guest:        'Visitante',
 };
+
+/**
+ * Get localized role label. Reads from DOM i18n data if available,
+ * falls back to hardcoded PT-BR labels.
+ */
+export function getLocalizedRoleLabel(role: string): string {
+  try {
+    const el = document.getElementById('role-labels-data');
+    if (el) {
+      const labels = JSON.parse(el.textContent || '{}');
+      if (labels[role]) return labels[role];
+    }
+  } catch {}
+  return ROLE_LABELS[role] || role;
+}
 
 export const ROLE_COLORS: Record<string, string> = {
   manager:      '#FF610F',

@@ -2,7 +2,7 @@
 import '../styles/global.css';
 import Nav from '../components/nav/Nav.astro';
 import AuthModal from '../components/ui/AuthModal.astro';
-import type { Lang } from '../i18n/utils';
+import { t, getRoleLabelsMap, type Lang } from '../i18n/utils';
 
 interface Props {
   title?: string;
@@ -17,6 +17,8 @@ const {
   activePage = '',
   lang = 'pt-BR',
 } = Astro.props;
+
+const roleLabels = JSON.stringify(getRoleLabelsMap(lang));
 ---
 
 <!doctype html>
@@ -31,6 +33,9 @@ const {
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 </head>
 <body class="bg-slate-50 text-slate-900">
+  <!-- Role labels for client-side i18n -->
+  <script id="role-labels-data" type="application/json" set:html={roleLabels}></script>
+  
   <Nav activePage={activePage} lang={lang} />
   <AuthModal />
   <slot />

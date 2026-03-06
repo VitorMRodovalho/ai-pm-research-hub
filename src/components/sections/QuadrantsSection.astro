@@ -1,16 +1,18 @@
 ---
+import { QUADRANTS } from '../../data/quadrants';
 import { t, type Lang } from '../../i18n/utils';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
 
-const BORDER_COLORS = ['#00799E', '#FF610F', '#4F17A8', '#10B981'];
-const quads = ['q1', 'q2', 'q3', 'q4'] as const;
+const COLORS: Record<string, string> = {
+  teal: '#00799E', orange: '#FF610F', purple: '#4F17A8', emerald: '#10B981',
+};
 ---
 
-<section id="quadrants" class="py-16 px-6">
+<section class="py-16 px-6 bg-white" id="quadrants">
   <div class="max-w-[1200px] mx-auto">
-    <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-orange mb-2">
+    <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-teal mb-2">
       {t('quadrants.label', lang)}
     </div>
     <h2 class="text-[clamp(1.7rem,4vw,2.5rem)] font-extrabold leading-tight mb-3">
@@ -19,15 +21,17 @@ const quads = ['q1', 'q2', 'q3', 'q4'] as const;
     <p class="text-base text-slate-500 max-w-[700px] mb-10">
       {t('quadrants.subtitle', lang)}
     </p>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-      {quads.map((q, i) => (
-        <div class="bg-white rounded-2xl p-7 border border-black/5 relative overflow-hidden hover:-translate-y-1 hover:shadow-lg transition-all duration-300"
-             style={`border-top: 4px solid ${BORDER_COLORS[i]}`}>
-          <div class="absolute top-1 right-3 text-[2.8rem] font-extrabold opacity-[.07] select-none">
-            {q.toUpperCase()}
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+      {QUADRANTS.map((q) => (
+        <div class="relative p-7 rounded-2xl border border-black/5 bg-[#FAFAF8]
+                    hover:-translate-y-px hover:shadow-md transition-all duration-200"
+             style={`border-left: 4px solid ${COLORS[q.color]}`}>
+          <div class="text-[.65rem] font-extrabold tracking-[.2em] uppercase mb-1"
+               style={`color: ${COLORS[q.color]}`}>
+            {t(q.labelKey, lang)}
           </div>
-          <h3 class="text-[1.05rem] font-bold mb-1 relative z-10">{t(`quadrants.${q}.title`, lang)}</h3>
-          <p class="text-[.83rem] text-slate-500 relative z-10">{t(`quadrants.${q}.sub`, lang)}</p>
+          <div class="font-bold text-lg mb-1">{t(q.titleKey, lang)}</div>
+          <div class="text-[.85rem] text-slate-500">{t(q.subtitleKey, lang)}</div>
         </div>
       ))}
     </div>

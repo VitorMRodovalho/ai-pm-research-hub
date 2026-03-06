@@ -1,15 +1,15 @@
-// ─── KPI goals for 2026 ───
+// ─── KPI goals for 2026 — i18n via translation keys ───
 
 export interface Kpi {
   value: string;
-  label: string;
+  labelKey: string;  // i18n key like 'data.kpi.chapters'
 }
 
 export const KPIS: Kpi[] = [
-  { value: '8',     label: 'Capítulos' },
-  { value: '+10',   label: 'Artigos' },
-  { value: '+6',    label: 'Webinars' },
-  { value: '3',     label: 'Pilotos IA' },
-  { value: '1.800h', label: 'Impacto' },
-  { value: '70%',   label: 'Mini cert. IA' },
+  { value: '8',      labelKey: 'data.kpi.chapters' },
+  { value: '+10',    labelKey: 'data.kpi.articles' },
+  { value: '+6',     labelKey: 'data.kpi.webinars' },
+  { value: '3',      labelKey: 'data.kpi.pilots' },
+  { value: '1.800h', labelKey: 'data.kpi.impact' },
+  { value: '70%',    labelKey: 'data.kpi.cert' },
 ];

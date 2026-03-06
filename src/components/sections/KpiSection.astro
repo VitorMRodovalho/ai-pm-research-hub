@@ -23,7 +23,7 @@ const { lang = 'pt-BR' } = Astro.props;
           <div class="text-[2.5rem] font-extrabold leading-none bg-gradient-to-br from-[#05BFE0] to-[#ED7D31] bg-clip-text text-transparent">
             {k.value}
           </div>
-          <div class="text-[.82rem] text-white/60 mt-1">{k.label}</div>
+          <div class="text-[.82rem] text-white/60 mt-1">{t(k.labelKey, lang)}</div>
         </div>
       ))}
     </div>

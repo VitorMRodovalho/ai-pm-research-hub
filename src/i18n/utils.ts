@@ -69,3 +69,36 @@ export function getLanguageSwitcherLinks(currentPath: string, currentLang: Lang)
     active: l.code === currentLang,
   }));
 }
+
+/**
+ * Get localized role label. Uses 'role.<roleName>' translation keys.
+ */
+export function getRoleLabel(role: string, lang: Lang = DEFAULT_LANG): string {
+  return t(`role.${role}`, lang);
+}
+
+/**
+ * Get localized role labels map (for use in client-side JS).
+ */
+export function getRoleLabelsMap(lang: Lang = DEFAULT_LANG): Record<string, string> {
+  const roles = [
+    'manager', 'tribe_leader', 'researcher', 'ambassador',
+    'curator', 'sponsor', 'founder', 'facilitator', 'communicator', 'guest'
+  ];
+  const map: Record<string, string> = {};
+  for (const r of roles) {
+    map[r] = t(`role.${r}`, lang);
+  }
+  return map;
+}
+
+/**
+ * Detect lang from URL path (works for both index and internal pages).
+ * e.g. '/en/attendance' → 'en-US', '/attendance' → 'pt-BR', '/es/' → 'es-LATAM'
+ */
+export function getLangFromURL(pathname: string): Lang {
+  const segments = pathname.split('/').filter(Boolean);
+  if (segments[0] === 'en') return 'en-US';
+  if (segments[0] === 'es') return 'es-LATAM';
+  return 'pt-BR';
+}

@@ -1,8 +1,9 @@
 ---
 /**
- * TeamSection.astro — Sprint 2
+ * TeamSection.astro — Sprint 2 + S-RM1 update
  * Team gallery with 6 sub-sections loaded from Supabase.
- * Uses LIGHT heading colors for contrast against dark navy background.
+ * Uses operational_role + designations (3-axis model) for grouping.
+ * Falls back to role/roles for backward-compat.
  */
 
 import { t, type Lang } from '../../i18n/utils';
@@ -20,18 +21,6 @@ const ROLE_COLORS: Record<string, string> = {
   curator:      '#D97706',
   sponsor:      '#BE2027',
   founder:      '#7C3AED',
-};
-
-const ROLE_LABELS: Record<string, string> = {
-  manager:      'Gerente',
-  tribe_leader: 'Líder de Tribo',
-  researcher:   'Pesquisador',
-  facilitator:  'Facilitador',
-  communicator: 'Multiplicador',
-  ambassador:   'Embaixador',
-  curator:      'Curador',
-  sponsor:      'Patrocinador',
-  founder:      'Fundador',
 };
 ---
 
@@ -58,34 +47,39 @@ const ROLE_LABELS: Record<string, string> = {
       ).map(([role, color]) => (
         <span class="inline-flex items-center gap-1">
           <span class="w-[9px] h-[9px] rounded-full inline-block" style={`background:${color}`}></span>
-          {ROLE_LABELS[role]}
+          {t(`role.${role}`, lang)}
         </span>
       ))}
     </div>
   </div>
 </section>
 
+<!-- i18n for client JS -->
+<script id="team-i18n" type="application/json" set:html={JSON.stringify({
+  leaders: t('team.leaders', lang),
+  leadersSub: t('team.leaders.sub', lang),
+  researchers: t('team.researchers', lang),
+  researchersSub: t('team.researchers.sub', lang),
+  ambassadors: t('team.ambassadors', lang),
+  ambassadorsSub: t('team.ambassadors.sub', lang),
+  curators: t('team.curators', lang),
+  curatorsSub: t('team.curators.sub', lang),
+  sponsors: t('team.sponsors', lang),
+  sponsorsSub: t('team.sponsors.sub', lang),
+  founders: t('team.founders', lang),
+  foundersSub: t('team.founders.sub', lang),
+})}></script>
+
 <script>
-  // ── Dot colors (for role indicators on cards) — keep original saturated ──
   const ROLE_COLORS: Record<string, string> = {
     manager: '#FF610F', tribe_leader: '#4F17A8', researcher: '#EC4899',
     facilitator: '#EC4899', communicator: '#EC4899', ambassador: '#10B981',
     curator: '#D97706', sponsor: '#BE2027', founder: '#7C3AED',
   };
-  const ROLE_LABELS: Record<string, string> = {
-    manager: 'Gerente', tribe_leader: 'Líder de Tribo', researcher: 'Pesquisador',
-    facilitator: 'Facilitador', communicator: 'Multiplicador', ambassador: 'Embaixador',
-    curator: 'Curador', sponsor: 'Patrocinador', founder: 'Fundador',
-  };
 
-  // ── LIGHT heading colors for dark background contrast ──
   const HEADING_COLORS: Record<string, string> = {
-    purple:  '#B465FF',  // was #4F17A8
-    pink:    '#F9A8D4',  // was #EC4899
-    emerald: '#6EE7B7',  // was #10B981
-    amber:   '#FCD34D',  // was #D97706
-    crimson: '#FCA5A5',  // was #BE2027
-    violet:  '#C4B5FD',  // was #7C3AED
+    purple: '#B465FF', pink: '#F9A8D4', emerald: '#6EE7B7',
+    amber: '#FCD34D', crimson: '#FCA5A5', violet: '#C4B5FD',
   };
 
   const CHAPTER_LOGOS: Record<string, string> = {
@@ -95,22 +89,74 @@ const ROLE_LABELS: Record<string, string> = {
   };
   const CHAPTER_ORDER = ['PMI-GO','PMI-CE','PMI-DF','PMI-MG','PMI-RS'];
 
+  // Read i18n
+  const teamI18nEl = document.getElementById('team-i18n');
+  const i18n = teamI18nEl ? JSON.parse(teamI18nEl.textContent || '{}') : {};
+
+  // Read role labels from BaseLayout's role-labels-data
+  function getRoleLabel(role: string): string {
+    try {
+      const el = document.getElementById('role-labels-data');
+      if (el) {
+        const labels = JSON.parse(el.textContent || '{}');
+        if (labels[role]) return labels[role];
+      }
+    } catch {}
+    return role;
+  }
+
   interface Member {
-    name: string; chapter: string; role: string; roles: string[] | null;
-    photo_url: string | null; linkedin_url: string | null;
-    tribe_id: number | null; current_cycle_active: boolean;
+    name: string;
+    chapter: string;
+    role: string;
+    roles: string[] | null;
+    operational_role: string | null;
+    designations: string[] | null;
+    photo_url: string | null;
+    linkedin_url: string | null;
+    tribe_id: number | null;
+    current_cycle_active: boolean;
   }
 
-  function has(m: Member, r: string): boolean {
-    return (m.roles || []).includes(r) || m.role === r;
+  // ── 3-axis helpers ──
+
+  /** Get operational role (new field with fallback to legacy) */
+  function getOpRole(m: Member): string {
+    if (m.operational_role && m.operational_role !== 'guest') return m.operational_role;
+    // Fallback: derive from legacy role
+    if (['manager', 'tribe_leader', 'researcher', 'facilitator', 'communicator'].includes(m.role)) {
+      return m.role;
+    }
+    return 'none';
   }
 
+  /** Get designations (new field with fallback to legacy roles) */
+  function getDesigs(m: Member): string[] {
+    if (m.designations && m.designations.length > 0) return m.designations;
+    // Fallback: extract from legacy roles
+    const desigCodes = ['sponsor', 'ambassador', 'founder', 'curator'];
+    const allRoles = m.roles?.length ? m.roles : [m.role];
+    return allRoles.filter(r => desigCodes.includes(r));
+  }
+
+  /** Check if member has a specific designation */
+  function hasDesig(m: Member, d: string): boolean {
+    return getDesigs(m).includes(d);
+  }
+
+  /** Check if member has an operational role in the given list */
+  function hasOpRole(m: Member, roles: string[]): boolean {
+    return roles.includes(getOpRole(m));
+  }
+
+  /** Get all role dots (operational + designations) */
   function getRoleDots(m: Member): string {
-    // Always show ALL roles the member has — never filter by section
-    const roles = m.roles?.length ? m.roles : (m.role ? [m.role] : []);
-    return roles
+    const opRole = getOpRole(m);
+    const desigs = getDesigs(m);
+    const all = [...(opRole !== 'none' ? [opRole] : []), ...desigs];
+    return all
       .filter(r => ROLE_COLORS[r])
-      .map(r => `<span title="${ROLE_LABELS[r] || r}" style="width:8px;height:8px;border-radius:50%;background:${ROLE_COLORS[r]};display:inline-block"></span>`)
+      .map(r => `<span title="${getRoleLabel(r)}" style="width:8px;height:8px;border-radius:50%;background:${ROLE_COLORS[r]};display:inline-block"></span>`)
       .join('');
   }
 
@@ -169,8 +215,8 @@ const ROLE_LABELS: Record<string, string> = {
 
     return `<div id="team-sponsors" class="mt-10 w-full">
       <div class="flex items-baseline gap-2.5 mb-3">
-        <h3 class="text-[1.05rem] font-extrabold" style="color:${HEADING_COLORS.crimson}">Patrocinadores</h3>
-        <span class="text-[.75rem] text-white/50">Liderança dos capítulos & pontos focais</span>
+        <h3 class="text-[1.05rem] font-extrabold" style="color:${HEADING_COLORS.crimson}">${i18n.sponsors || 'Patrocinadores'}</h3>
+        <span class="text-[.75rem] text-white/50">${i18n.sponsorsSub || 'Liderança dos capítulos & pontos focais'}</span>
       </div>
       <div class="flex flex-wrap gap-4">${inner}</div>
     </div>`;
@@ -180,23 +226,41 @@ const ROLE_LABELS: Record<string, string> = {
     const el = document.getElementById('teamGrid');
     if (!el || !allMembers.length) return;
 
-    const isLeader = (m: Member) => ['tribe_leader', 'manager'].includes(m.role);
-    const isResearch = (m: Member) => ['researcher', 'facilitator', 'communicator'].includes(m.role);
+    // ── Grouping using 3-axis model ──
+    // Leaders: operational_role = manager or tribe_leader, active, not pure sponsor
+    const leaders = allMembers.filter(m =>
+      m.current_cycle_active &&
+      hasOpRole(m, ['manager', 'tribe_leader'])
+    );
 
-    const leaders     = allMembers.filter(m => m.current_cycle_active && isLeader(m) && !has(m, 'sponsor'));
-    const researchers = allMembers.filter(m => m.current_cycle_active && isResearch(m) && !has(m, 'sponsor'));
-    const ambassadors = allMembers.filter(m => has(m, 'ambassador'));
-    const curators    = allMembers.filter(m => has(m, 'curator'));
-    const sponsors    = allMembers.filter(m => has(m, 'sponsor'));
-    const founders    = allMembers.filter(m => has(m, 'founder'));
+    // Researchers: operational_role = researcher/facilitator/communicator, active
+    const researchers = allMembers.filter(m =>
+      m.current_cycle_active &&
+      hasOpRole(m, ['researcher', 'facilitator', 'communicator'])
+    );
+
+    // Ambassadors: designation includes ambassador (any status — ambassadors transcend cycles)
+    const ambassadors = allMembers.filter(m =>
+      hasDesig(m, 'ambassador') &&
+      !hasOpRole(m, ['manager', 'tribe_leader'])  // avoid duplicates with leaders
+    );
+
+    // Curators: designation includes curator
+    const curators = allMembers.filter(m => hasDesig(m, 'curator'));
+
+    // Sponsors: designation includes sponsor
+    const sponsors = allMembers.filter(m => hasDesig(m, 'sponsor'));
+
+    // Founders: designation includes founder
+    const founders = allMembers.filter(m => hasDesig(m, 'founder'));
 
     el.innerHTML =
-      teamSection('team-leaders',     'Líderes de Tribo & Gestão', 'coordenação e governança · Ciclo 3',      HEADING_COLORS.purple,  leaders)
-      + teamSection('team-researchers', 'Pesquisadores',             'participantes ativos · Ciclo 3',          HEADING_COLORS.pink,    researchers)
-      + teamSection('team-ambassadors', 'Embaixadores',              'representação & multiplicação',           HEADING_COLORS.emerald, ambassadors)
-      + teamSection('team-curators',    'Comitê de Curadoria',       'peer review & qualidade',                 HEADING_COLORS.amber,   curators)
+      teamSection('team-leaders', i18n.leaders || 'Líderes de Tribo & Gestão', i18n.leadersSub || 'coordenação e governança · Ciclo 3', HEADING_COLORS.purple, leaders)
+      + teamSection('team-researchers', i18n.researchers || 'Pesquisadores', i18n.researchersSub || 'participantes ativos · Ciclo 3', HEADING_COLORS.pink, researchers)
+      + teamSection('team-ambassadors', i18n.ambassadors || 'Embaixadores', i18n.ambassadorsSub || 'representação & multiplicação', HEADING_COLORS.emerald, ambassadors)
+      + teamSection('team-curators', i18n.curators || 'Comitê de Curadoria', i18n.curatorsSub || 'peer review & qualidade', HEADING_COLORS.amber, curators)
       + sponsorsSection(sponsors)
-      + teamSection('team-founders',    'Fundadores',                'a história que trouxe o Núcleo até aqui', HEADING_COLORS.violet,  founders);
+      + teamSection('team-founders', i18n.founders || 'Fundadores', i18n.foundersSub || 'a história que trouxe o Núcleo até aqui', HEADING_COLORS.violet, founders);
   }
 
   // ── Boot ──
@@ -204,7 +268,7 @@ const ROLE_LABELS: Record<string, string> = {
     const sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(bootTeam, 200); return; }
     const { data } = await sb.from('members')
-      .select('name, chapter, role, roles, photo_url, linkedin_url, tribe_id, current_cycle_active')
+      .select('name, chapter, role, roles, operational_role, designations, photo_url, linkedin_url, tribe_id, current_cycle_active')
       .neq('role', 'guest')
       .order('name');
     if (data) renderTeam(data);

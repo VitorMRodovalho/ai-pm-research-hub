@@ -45,6 +45,66 @@ import Toast from '../../components/ui/Toast.astro';
       </div>
 
       <div id="panel-members" class="hidden">
+        <!-- Filter bar -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 mb-4">
+          <div class="flex items-center gap-3 mb-3 flex-wrap">
+            <input type="text" id="f-search" placeholder="🔍 Buscar nome ou email..." oninput="applyFilters()"
+              class="px-3 py-2 border border-slate-200 rounded-lg text-[.78rem] focus:outline-none focus:border-teal flex-1 min-w-[200px]">
+            <span class="text-[.72rem] font-bold text-slate-400" id="f-count">—</span>
+          </div>
+          <div class="flex gap-2 flex-wrap">
+            <select id="f-chapter" onchange="applyFilters()" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-[.72rem] bg-white">
+              <option value="">Capítulo: Todos</option>
+              <option value="PMI-GO">PMI-GO</option>
+              <option value="PMI-CE">PMI-CE</option>
+              <option value="PMI-DF">PMI-DF</option>
+              <option value="PMI-MG">PMI-MG</option>
+              <option value="PMI-RS">PMI-RS</option>
+            </select>
+            <select id="f-oprole" onchange="applyFilters()" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-[.72rem] bg-white">
+              <option value="">Papel: Todos</option>
+              <option value="manager">Gerente</option>
+              <option value="tribe_leader">Líder de Tribo</option>
+              <option value="researcher">Pesquisador</option>
+              <option value="facilitator">Facilitador</option>
+              <option value="communicator">Multiplicador</option>
+              <option value="none">Sem papel operacional</option>
+              <option value="guest">Convidado</option>
+            </select>
+            <select id="f-desig" onchange="applyFilters()" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-[.72rem] bg-white">
+              <option value="">Designação: Todas</option>
+              <option value="sponsor">Patrocinador</option>
+              <option value="ambassador">Embaixador</option>
+              <option value="founder">Fundador</option>
+              <option value="curator">Curador</option>
+              <option value="has_any">✦ Com designação</option>
+              <option value="has_none">○ Sem designação</option>
+            </select>
+            <select id="f-status" onchange="applyFilters()" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-[.72rem] bg-white">
+              <option value="">Status: Todos</option>
+              <option value="active">✅ Ativos</option>
+              <option value="inactive">❌ Inativos</option>
+            </select>
+            <select id="f-auth" onchange="applyFilters()" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-[.72rem] bg-white">
+              <option value="">Login: Todos</option>
+              <option value="has">✅ Com login</option>
+              <option value="no">⚠️ Sem login</option>
+            </select>
+            <select id="f-tribe" onchange="applyFilters()" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-[.72rem] bg-white">
+              <option value="">Tribo: Todas</option>
+              <option value="1">01 — Radar Tecnológico</option>
+              <option value="2">02 — Agentes Autônomos</option>
+              <option value="3">03 — TMO & PMO</option>
+              <option value="4">04 — Cultura & Change</option>
+              <option value="5">05 — Talentos</option>
+              <option value="6">06 — ROI & Portfólio</option>
+              <option value="7">07 — Governança</option>
+              <option value="8">08 — Inclusão</option>
+              <option value="none">⚠️ Sem tribo</option>
+            </select>
+            <button onclick="clearFilters()" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-[.72rem] text-slate-400 hover:text-crimson hover:border-crimson bg-white cursor-pointer transition-all">✕ Limpar</button>
+          </div>
+        </div>
         <div id="members-area"><div class="text-center py-10 text-slate-400">Carregando membros…</div></div>
       </div>
     </div>
@@ -81,32 +141,72 @@ import Toast from '../../components/ui/Toast.astro';
     </div>
   </div>
 
-  <!-- Modal: Edit Member -->
+  <!-- Modal: Edit Member (3-Axis Model) -->
   <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-edit-member">
-    <div class="bg-white rounded-2xl w-full max-w-[480px] overflow-hidden flex flex-col" style="max-height:85vh">
+    <div class="bg-white rounded-2xl w-full max-w-[500px] overflow-hidden flex flex-col" style="max-height:90vh">
       <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center flex-shrink-0">
         <h3 class="text-base font-bold text-navy">Editar Membro</h3>
         <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" onclick="closeEditMember()">✕</button>
       </div>
       <div class="p-5 overflow-y-auto flex-1">
         <input type="hidden" id="edit-m-id">
-        <div class="flex items-center gap-3 mb-4" id="edit-m-header"></div>
-        <div class="grid grid-cols-2 gap-3">
-          <div class="flex flex-col gap-1.5">
-            <label class="text-[12px] font-semibold text-slate-500">Role Principal</label>
-            <select id="edit-m-role" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white">
-              <option value="manager">Gerente</option>
-              <option value="tribe_leader">Líder de Tribo</option>
-              <option value="researcher">Pesquisador</option>
-              <option value="facilitator">Facilitador</option>
-              <option value="communicator">Multiplicador</option>
-              <option value="sponsor">Patrocinador</option>
-              <option value="ambassador">Embaixador</option>
-              <option value="curator">Curador</option>
-              <option value="founder">Fundador</option>
-              <option value="guest">Convidado</option>
-            </select>
+        <div class="flex items-center gap-3 mb-5" id="edit-m-header"></div>
+
+        <!-- AXIS 1: Operational Role -->
+        <div class="mb-4 p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Eixo 1 — Papel Operacional</label>
+          <p class="text-[.68rem] text-slate-400 mb-2">O que essa pessoa FAZ no ciclo ativo. Apenas um.</p>
+          <select id="edit-m-oprole" class="w-full px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
+            <option value="manager">⚙️ Gerente de Projeto (Nível 2)</option>
+            <option value="tribe_leader">🏷️ Líder de Tribo (Nível 3)</option>
+            <option value="researcher">🔬 Pesquisador (Nível 4)</option>
+            <option value="facilitator">🤝 Facilitador (Nível 4)</option>
+            <option value="communicator">📢 Multiplicador (Nível 4)</option>
+            <option value="none">— Sem papel operacional (patrocinador/embaixador)</option>
+            <option value="guest">👤 Convidado / Visitante</option>
+          </select>
+        </div>
+
+        <!-- AXIS 2: Designations -->
+        <div class="mb-4 p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Eixo 2 — Designações Especiais</label>
+          <p class="text-[.68rem] text-slate-400 mb-2">Reconhecimentos que transcendem ciclos. Múltiplos possíveis.</p>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-all text-[.78rem]">
+              <input type="checkbox" value="sponsor" class="desig-cb accent-[#BE2027]"> <span style="color:#BE2027">●</span> Patrocinador
+            </label>
+            <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-all text-[.78rem]">
+              <input type="checkbox" value="ambassador" class="desig-cb accent-[#10B981]"> <span style="color:#10B981">●</span> Embaixador
+            </label>
+            <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-all text-[.78rem]">
+              <input type="checkbox" value="founder" class="desig-cb accent-[#7C3AED]"> <span style="color:#7C3AED">●</span> Fundador
+            </label>
+            <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-all text-[.78rem]">
+              <input type="checkbox" value="curator" class="desig-cb accent-[#D97706]"> <span style="color:#D97706">●</span> Curador
+            </label>
           </div>
+        </div>
+
+        <!-- AXIS 3: Platform Access -->
+        <div class="mb-4 p-3 rounded-xl bg-slate-50 border border-slate-200">
+          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Eixo 3 — Acesso à Plataforma</label>
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-[.78rem] font-semibold text-slate-700">🔧 Superadmin</p>
+              <p class="text-[.68rem] text-slate-400">CRUD total, configurações, integrações, segurança</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="edit-m-superadmin" class="sr-only peer">
+              <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange"></div>
+            </label>
+          </div>
+          <div class="mt-2 text-[.68rem] text-slate-400" id="edit-m-tier-hint">
+            Nível de acesso derivado: <strong id="edit-m-tier-display">—</strong>
+          </div>
+        </div>
+
+        <!-- Chapter + Status -->
+        <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1.5">
             <label class="text-[12px] font-semibold text-slate-500">Capítulo</label>
             <select id="edit-m-chapter" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white">
@@ -117,7 +217,7 @@ import Toast from '../../components/ui/Toast.astro';
               <option value="PMI-RS">PMI-RS</option>
             </select>
           </div>
-          <div class="flex flex-col gap-1.5 col-span-2">
+          <div class="flex flex-col gap-1.5">
             <label class="text-[12px] font-semibold text-slate-500">Status</label>
             <select id="edit-m-active" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white">
               <option value="true">✅ Ativo no Ciclo 3</option>
@@ -140,6 +240,37 @@ import Toast from '../../components/ui/Toast.astro';
   let sb: any = null;
   let MEMBER: any = null;
   let allMembers: any[] = [];
+
+  // ── Access tier labels ──
+  const TIER_LABELS: Record<string, string> = {
+    superadmin: '🔧 Superadmin (CRUD total)',
+    admin: '⚙️ Admin (gestão completa)',
+    leader: '🏷️ Líder (tribo read-only)',
+    observer: '👁️ Observador (KPIs agregados)',
+    member: '👤 Membro (perfil + participação)',
+    visitor: '🚫 Visitante (apenas página pública)',
+  };
+
+  function getAccessTier(isSuperadmin: boolean, opRole: string, desigs: string[]): string {
+    if (isSuperadmin) return 'superadmin';
+    if (opRole === 'manager') return 'admin';
+    if (opRole === 'tribe_leader') return 'leader';
+    if (desigs.includes('sponsor') || desigs.includes('curator')) return 'observer';
+    if (['researcher', 'facilitator', 'communicator'].includes(opRole)) return 'member';
+    if (desigs.length > 0) return 'member';
+    return 'visitor';
+  }
+
+  // ── Compute legacy role + roles for backward-compat ──
+  const OP_ROLE_HIERARCHY = ['manager', 'tribe_leader', 'researcher', 'facilitator', 'communicator'];
+
+  function computeLegacyFields(opRole: string, desigs: string[]): { role: string; roles: string[] } {
+    const allRoles = [...(opRole !== 'none' && opRole !== 'guest' ? [opRole] : []), ...desigs];
+    if (allRoles.length === 0) return { role: 'guest', roles: ['guest'] };
+    // Primary role: operational role if exists, else first designation
+    const role = opRole !== 'none' && opRole !== 'guest' ? opRole : desigs[0] || 'guest';
+    return { role, roles: allRoles };
+  }
 
   const TRIBE_NAMES: Record<number, string> = {
     1: 'Radar Tecnológico', 2: 'Agentes Autônomos', 3: 'TMO & PMO do Futuro',
@@ -171,10 +302,21 @@ import Toast from '../../components/ui/Toast.astro';
   }
 
   function roleDots(m: any): string {
-    const roles = m.roles?.length ? m.roles : [m.role];
-    return roles.filter((r: string) => ROLE_COLORS[r]).map((r: string) =>
+    const opRole = m.operational_role || m.role || 'guest';
+    const desigs = m.designations?.length ? m.designations : [];
+    const all = [...(opRole !== 'none' && opRole !== 'guest' ? [opRole] : []), ...desigs];
+    return all.filter((r: string) => ROLE_COLORS[r]).map((r: string) =>
       `<span style="width:8px;height:8px;border-radius:50%;background:${ROLE_COLORS[r]};display:inline-block" title="${ROLE_LABELS[r] || r}"></span>`
     ).join('');
+  }
+
+  function roleLabelsText(m: any): string {
+    const opRole = m.operational_role || m.role || 'guest';
+    const desigs = m.designations?.length ? m.designations : [];
+    const parts: string[] = [];
+    if (opRole !== 'none' && opRole !== 'guest') parts.push(ROLE_LABELS[opRole] || opRole);
+    desigs.forEach((d: string) => parts.push(ROLE_LABELS[d] || d));
+    return parts.length > 0 ? parts.join(', ') : 'Convidado';
   }
 
   // ── TABS ──
@@ -199,7 +341,7 @@ import Toast from '../../components/ui/Toast.astro';
     allMembers = data;
 
     const active = data.filter((m: any) => m.current_cycle_active);
-    const eligible = active.filter((m: any) => ELIGIBLE_ROLES.includes(m.role));
+    const eligible = active.filter((m: any) => ELIGIBLE_ROLES.includes(m.operational_role || m.role));
     const pending = eligible.filter((m: any) => !m.selected_tribe_id && !m.fixed_tribe_id);
 
     document.getElementById('stat-total')!.textContent = String(active.length);
@@ -211,9 +353,9 @@ import Toast from '../../components/ui/Toast.astro';
 
     for (let t = 1; t <= 8; t++) {
       const members = data.filter((m: any) =>
-        m.selected_tribe_id === t || (m.fixed_tribe_id === t && m.role === 'tribe_leader')
+        m.selected_tribe_id === t || (m.fixed_tribe_id === t && (m.role === 'tribe_leader' || m.operational_role === 'tribe_leader'))
       );
-      const count = members.filter((m: any) => m.role !== 'tribe_leader').length;
+      const count = members.filter((m: any) => m.role !== 'tribe_leader' && m.operational_role !== 'tribe_leader').length;
       const color = TRIBE_COLORS[t];
       const pct = Math.round((count / MAX_SLOTS) * 100);
       const full = count >= MAX_SLOTS;
@@ -239,7 +381,7 @@ import Toast from '../../components/ui/Toast.astro';
             <div class="flex items-center gap-1.5 bg-slate-50 rounded-lg px-2 py-1.5 text-[.72rem]" title="${m.name}">
               ${avatar(m, 'w-6 h-6')}
               <span class="font-medium max-w-[90px] truncate">${m.name.split(' ').slice(0, 2).join(' ')}</span>
-              ${m.role === 'tribe_leader' ? '<span class="text-amber-500">&#x1F451;</span>' : ''}
+              ${(m.role === 'tribe_leader' || m.operational_role === 'tribe_leader') ? '<span class="text-amber-500">&#x1F451;</span>' : ''}
             </div>
           `).join('')}
           ${members.length === 0 ? '<span class="text-[.72rem] text-slate-300 italic">Nenhum pesquisador</span>' : ''}
@@ -253,17 +395,15 @@ import Toast from '../../components/ui/Toast.astro';
   function renderPending(pending: any[]) {
     const el = document.getElementById('pending-list')!;
     if (!pending.length) {
-      el.innerHTML = '<p class="text-emerald-600 text-sm text-center py-4 font-semibold">Todos os elegiveis ja escolheram suas tribos!</p>';
+      el.innerHTML = '<p class="text-emerald-600 text-sm text-center py-4 font-semibold">Todos os elegíveis já escolheram suas tribos!</p>';
       return;
     }
-
     el.innerHTML = `
     <div class="text-[.72rem] text-slate-400 mb-2">${pending.length} pesquisadores pendentes</div>
     ${pending.map((m: any) => {
       const phone = m.phone ? m.phone.replace(/\D/g, '') : '';
       const waLink = phone ? 'https://wa.me/' + phone + '?text=' + encodeURIComponent('Ola ' + m.name.split(' ')[0] + '! Lembrete: escolha sua tribo no Nucleo IA GP -> https://ai-pm-research-hub.pages.dev/#tribes') : '';
       const mailLink = 'mailto:' + m.email + '?subject=' + encodeURIComponent('Nucleo IA GP - Escolha sua Tribo') + '&body=' + encodeURIComponent('Ola ' + m.name.split(' ')[0] + ', lembrete: escolha sua tribo em https://ai-pm-research-hub.pages.dev/#tribes');
-
       return `
       <div class="flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-b-0">
         ${avatar(m, 'w-9 h-9')}
@@ -292,23 +432,18 @@ import Toast from '../../components/ui/Toast.astro';
     const modal = document.getElementById('modal-allocate')!;
     modal.classList.remove('hidden'); modal.classList.add('flex');
   };
-
   (window as any).closeAllocate = () => {
     const modal = document.getElementById('modal-allocate')!;
     modal.classList.add('hidden'); modal.classList.remove('flex');
   };
-
   (window as any).confirmAllocate = async () => {
     const memberId = (document.getElementById('alloc-member-id') as HTMLInputElement).value;
     const tribeId = parseInt((document.getElementById('alloc-tribe') as HTMLSelectElement).value);
     if (!tribeId) { toast('Selecione uma tribo', 'error'); return; }
-
-    const { data } = await sb.rpc('admin_force_tribe_selection', {
-      p_member_id: memberId, p_tribe_id: tribeId
-    });
+    const { data } = await sb.rpc('admin_force_tribe_selection', { p_member_id: memberId, p_tribe_id: tribeId });
     if (data?.success) {
       (window as any).closeAllocate();
-      toast('Alocado na Tribo ' + String(tribeId).padStart(2, '0') + ' !', 'success');
+      toast('Alocado na Tribo ' + String(tribeId).padStart(2, '0') + '!', 'success');
       loadTribes();
     } else {
       toast(data?.error || 'Erro ao alocar', 'error');
@@ -316,8 +451,61 @@ import Toast from '../../components/ui/Toast.astro';
   };
 
   // ══════════════════════════════════════════
-  // MEMBERS LIST
+  // MEMBERS LIST (Enhanced with filters + tags)
   // ══════════════════════════════════════════
+
+  const OPROLE_LABELS: Record<string, string> = {
+    manager: 'Gerente', tribe_leader: 'Líder de Tribo', researcher: 'Pesquisador',
+    facilitator: 'Facilitador', communicator: 'Multiplicador', none: 'Sem papel', guest: 'Convidado'
+  };
+  const OPROLE_COLORS: Record<string, string> = {
+    manager: '#FF610F', tribe_leader: '#4F17A8', researcher: '#EC4899',
+    facilitator: '#06B6D4', communicator: '#8B5CF6', none: '#94A3B8', guest: '#94A3B8'
+  };
+  const DESIG_LABELS: Record<string, string> = {
+    sponsor: 'Patrocinador', ambassador: 'Embaixador', founder: 'Fundador', curator: 'Curador'
+  };
+  const DESIG_COLORS: Record<string, string> = {
+    sponsor: '#BE2027', ambassador: '#10B981', founder: '#7C3AED', curator: '#D97706'
+  };
+
+  function memberTags(m: any): string {
+    const opRole = m.operational_role || 'guest';
+    const desigs: string[] = m.designations?.length ? m.designations : [];
+    let html = '';
+
+    // Operational role tag
+    if (opRole !== 'none' && opRole !== 'guest') {
+      const c = OPROLE_COLORS[opRole] || '#94A3B8';
+      html += `<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded" style="background:${c}18;color:${c}">${OPROLE_LABELS[opRole] || opRole}</span>`;
+    }
+
+    // Designation tags
+    desigs.forEach(d => {
+      const c = DESIG_COLORS[d] || '#94A3B8';
+      html += `<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded" style="background:${c}18;color:${c}">${DESIG_LABELS[d] || d}</span>`;
+    });
+
+    // Superadmin badge
+    if (m.is_superadmin) {
+      html += `<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded bg-orange/10 text-orange">🔧 SA</span>`;
+    }
+
+    // No role at all
+    if (opRole === 'guest' && desigs.length === 0) {
+      html += `<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-400">Convidado</span>`;
+    }
+
+    return html;
+  }
+
+  function memberTribeTag(m: any): string {
+    const tid = m.selected_tribe_id || m.fixed_tribe_id || m.tribe_id;
+    if (!tid) return '<span class="text-[.6rem] text-slate-300">sem tribo</span>';
+    const color = TRIBE_COLORS[tid] || '#94A3B8';
+    return `<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded" style="background:${color}18;color:${color}">T${String(tid).padStart(2,'0')}</span>`;
+  }
+
   async function loadMembersList() {
     const { data } = await sb.rpc('admin_list_members', { p_limit: 200, p_offset: 0 });
     const members = Array.isArray(data) ? data : [];
@@ -330,55 +518,178 @@ import Toast from '../../components/ui/Toast.astro';
     const area = document.getElementById('members-area')!;
     area.innerHTML = `
     <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-      <div class="px-4 py-3 border-b border-slate-100 flex justify-between items-center">
-        <div class="flex items-center gap-3">
-          <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">${members.length} membros</span>
-          <input type="text" placeholder="Buscar..." oninput="filterMembers(this.value)"
-            class="px-3 py-1.5 border border-slate-200 rounded-lg text-[.78rem] focus:outline-none focus:border-teal w-48">
-        </div>
-      </div>
       <div id="members-rows">
       ${members.map((m: any) => {
-        const status = m.current_cycle_active
-          ? '<span class="text-[.68rem] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Ativo</span>'
-          : '<span class="text-[.68rem] font-bold px-2 py-0.5 rounded-full bg-red-50 text-crimson">Inativo</span>';
+        const opRole = m.operational_role || m.role || 'guest';
+        const desigs: string[] = m.designations?.length ? m.designations : [];
+        const tid = m.selected_tribe_id || m.fixed_tribe_id || m.tribe_id || '';
+        const isActive = m.current_cycle_active;
+        const hasAuth = !!m.auth_id;
+        const status = isActive
+          ? '<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Ativo</span>'
+          : '<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-crimson">Inativo</span>';
+
         return `
-        <div class="member-row flex items-center gap-3 px-4 py-2.5 border-b border-slate-50 hover:bg-slate-50 transition-all ${m.current_cycle_active ? '' : 'opacity-50'}" data-name="${m.name.toLowerCase()}">
+        <div class="member-row flex items-center gap-2 px-4 py-2.5 border-b border-slate-50 hover:bg-slate-50 transition-all ${isActive ? '' : 'opacity-50'}"
+             data-name="${m.name.toLowerCase()}"
+             data-email="${(m.email || '').toLowerCase()}"
+             data-chapter="${m.chapter || ''}"
+             data-oprole="${opRole}"
+             data-desigs="${desigs.join(',')}"
+             data-status="${isActive ? 'active' : 'inactive'}"
+             data-auth="${hasAuth ? 'has' : 'no'}"
+             data-tribe="${tid}"
+             data-superadmin="${m.is_superadmin ? 'yes' : 'no'}">
           ${avatar(m, 'w-9 h-9')}
           <div class="flex-1 min-w-0">
-            <div class="font-semibold text-[.82rem] text-navy">${m.name} ${!m.auth_id ? '<span class="text-amber-500 text-[.68rem]">sem login</span>' : ''}</div>
-            <div class="text-[.68rem] text-slate-400 truncate">${m.email}</div>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="font-semibold text-[.82rem] text-navy">${m.name}</span>
+              ${!hasAuth ? '<span class="text-[.58rem] font-bold px-1 py-0.5 rounded bg-amber-50 text-amber-600">SEM LOGIN</span>' : ''}
+            </div>
+            <div class="text-[.65rem] text-slate-400 truncate">${m.email}</div>
           </div>
-          <span class="text-[.68rem] font-bold px-2 py-0.5 rounded bg-blue-50 text-navy whitespace-nowrap hidden md:block">${m.chapter || ''}</span>
-          <div class="flex gap-0.5 items-center">${roleDots(m)}</div>
+          <div class="flex gap-1 items-center flex-wrap justify-end max-w-[280px]">
+            ${memberTags(m)}
+          </div>
+          <span class="text-[.65rem] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-navy whitespace-nowrap hidden lg:block">${m.chapter || '—'}</span>
+          ${memberTribeTag(m)}
           ${status}
           <button onclick='openEditMember(${JSON.stringify(m).replace(/'/g, "&#39;")})'
-            class="px-2 py-1 text-[.72rem] font-semibold text-slate-500 border border-slate-200 rounded-lg hover:border-teal hover:text-teal bg-transparent cursor-pointer transition-all whitespace-nowrap">
+            class="px-2 py-1 text-[.68rem] font-semibold text-slate-500 border border-slate-200 rounded-lg hover:border-teal hover:text-teal bg-transparent cursor-pointer transition-all whitespace-nowrap flex-shrink-0">
             Editar
           </button>
         </div>`;
       }).join('')}
       </div>
     </div>`;
+
+    applyFilters();
   }
 
-  (window as any).filterMembers = (q: string) => {
-    const query = q.toLowerCase().trim();
+  (window as any).applyFilters = () => {
+    const search = ((document.getElementById('f-search') as HTMLInputElement)?.value || '').toLowerCase().trim();
+    const fChapter = (document.getElementById('f-chapter') as HTMLSelectElement)?.value || '';
+    const fOpRole = (document.getElementById('f-oprole') as HTMLSelectElement)?.value || '';
+    const fDesig = (document.getElementById('f-desig') as HTMLSelectElement)?.value || '';
+    const fStatus = (document.getElementById('f-status') as HTMLSelectElement)?.value || '';
+    const fAuth = (document.getElementById('f-auth') as HTMLSelectElement)?.value || '';
+    const fTribe = (document.getElementById('f-tribe') as HTMLSelectElement)?.value || '';
+
+    let visible = 0;
+    let total = 0;
+
     document.querySelectorAll('.member-row').forEach((row) => {
-      const name = (row as HTMLElement).dataset.name || '';
-      (row as HTMLElement).style.display = (!query || name.includes(query)) ? '' : 'none';
+      const el = row as HTMLElement;
+      total++;
+      let show = true;
+
+      // Text search (name + email)
+      if (search && !el.dataset.name?.includes(search) && !el.dataset.email?.includes(search)) show = false;
+
+      // Chapter
+      if (fChapter && el.dataset.chapter !== fChapter) show = false;
+
+      // Operational role
+      if (fOpRole && el.dataset.oprole !== fOpRole) show = false;
+
+      // Designation
+      if (fDesig) {
+        const desigs = el.dataset.desigs || '';
+        if (fDesig === 'has_any' && desigs === '') show = false;
+        else if (fDesig === 'has_none' && desigs !== '') show = false;
+        else if (fDesig !== 'has_any' && fDesig !== 'has_none' && !desigs.includes(fDesig)) show = false;
+      }
+
+      // Status
+      if (fStatus && el.dataset.status !== fStatus) show = false;
+
+      // Auth
+      if (fAuth && el.dataset.auth !== fAuth) show = false;
+
+      // Tribe
+      if (fTribe) {
+        if (fTribe === 'none' && el.dataset.tribe !== '') show = false;
+        else if (fTribe !== 'none' && el.dataset.tribe !== fTribe) show = false;
+      }
+
+      el.style.display = show ? '' : 'none';
+      if (show) visible++;
     });
+
+    const countEl = document.getElementById('f-count');
+    if (countEl) {
+      countEl.textContent = visible === total
+        ? `${total} membros`
+        : `${visible} de ${total} membros`;
+    }
   };
 
-  // ── EDIT MEMBER MODAL ──
+  (window as any).clearFilters = () => {
+    (document.getElementById('f-search') as HTMLInputElement).value = '';
+    (document.getElementById('f-chapter') as HTMLSelectElement).value = '';
+    (document.getElementById('f-oprole') as HTMLSelectElement).value = '';
+    (document.getElementById('f-desig') as HTMLSelectElement).value = '';
+    (document.getElementById('f-status') as HTMLSelectElement).value = '';
+    (document.getElementById('f-auth') as HTMLSelectElement).value = '';
+    (document.getElementById('f-tribe') as HTMLSelectElement).value = '';
+    applyFilters();
+  };
+
+  // Keep old filterMembers as alias for backward-compat
+  (window as any).filterMembers = (q: string) => {
+    (document.getElementById('f-search') as HTMLInputElement).value = q;
+    applyFilters();
+  };
+
+  // ══════════════════════════════════════════
+  // EDIT MEMBER MODAL (3-Axis)
+  // ══════════════════════════════════════════
+
+  function updateTierHint() {
+    const opRole = (document.getElementById('edit-m-oprole') as HTMLSelectElement).value;
+    const desigs = Array.from(document.querySelectorAll('.desig-cb:checked')).map(cb => (cb as HTMLInputElement).value);
+    const isSuperadmin = (document.getElementById('edit-m-superadmin') as HTMLInputElement).checked;
+    const tier = getAccessTier(isSuperadmin, opRole, desigs);
+    const display = document.getElementById('edit-m-tier-display');
+    if (display) display.textContent = TIER_LABELS[tier] || tier;
+  }
+
+  // Bind change events for live tier preview
+  document.getElementById('edit-m-oprole')?.addEventListener('change', updateTierHint);
+  document.getElementById('edit-m-superadmin')?.addEventListener('change', updateTierHint);
+  document.querySelectorAll('.desig-cb').forEach(cb => cb.addEventListener('change', updateTierHint));
+
   (window as any).openEditMember = (m: any) => {
     (document.getElementById('edit-m-id') as HTMLInputElement).value = m.id;
+
+    // Header
+    const isSA = m.is_superadmin === true;
     document.getElementById('edit-m-header')!.innerHTML = avatar(m, 'w-12 h-12') +
-      '<div><div class="font-bold text-navy">' + m.name + '</div>' +
-      '<div class="text-[.72rem] text-slate-400">' + m.email + ' - ' + (m.chapter || '') + '</div></div>';
-    (document.getElementById('edit-m-role') as HTMLSelectElement).value = m.role;
+      `<div>
+        <div class="font-bold text-navy">${m.name}</div>
+        <div class="text-[.72rem] text-slate-400">${m.email} · ${m.chapter || ''}</div>
+        ${isSA ? '<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded bg-orange/10 text-orange">🔧 SUPERADMIN</span>' : ''}
+      </div>`;
+
+    // Axis 1: Operational Role
+    const opRole = m.operational_role || 'guest';
+    (document.getElementById('edit-m-oprole') as HTMLSelectElement).value = opRole;
+
+    // Axis 2: Designations
+    const desigs: string[] = m.designations?.length ? m.designations : [];
+    document.querySelectorAll('.desig-cb').forEach(cb => {
+      (cb as HTMLInputElement).checked = desigs.includes((cb as HTMLInputElement).value);
+    });
+
+    // Axis 3: Superadmin
+    (document.getElementById('edit-m-superadmin') as HTMLInputElement).checked = isSA;
+
+    // Chapter + Status
     (document.getElementById('edit-m-chapter') as HTMLSelectElement).value = m.chapter || 'PMI-GO';
     (document.getElementById('edit-m-active') as HTMLSelectElement).value = String(m.current_cycle_active);
+
+    updateTierHint();
+
     const modal = document.getElementById('modal-edit-member')!;
     modal.classList.remove('hidden'); modal.classList.add('flex');
   };
@@ -390,29 +701,59 @@ import Toast from '../../components/ui/Toast.astro';
 
   (window as any).saveEditMember = async () => {
     const id = (document.getElementById('edit-m-id') as HTMLInputElement).value;
-    const role = (document.getElementById('edit-m-role') as HTMLSelectElement).value;
+    const opRole = (document.getElementById('edit-m-oprole') as HTMLSelectElement).value;
+    const desigs = Array.from(document.querySelectorAll('.desig-cb:checked')).map(cb => (cb as HTMLInputElement).value);
+    const isSuperadmin = (document.getElementById('edit-m-superadmin') as HTMLInputElement).checked;
     const chapter = (document.getElementById('edit-m-chapter') as HTMLSelectElement).value;
     const active = (document.getElementById('edit-m-active') as HTMLSelectElement).value === 'true';
 
-    const { data } = await sb.rpc('admin_update_member', {
-      p_member_id: id, p_role: role, p_chapter: chapter, p_current_cycle_active: active
+    // Compute backward-compatible role/roles
+    const { role, roles } = computeLegacyFields(opRole, desigs);
+
+    // Save via RPC (handles role + roles)
+    const { data, error } = await sb.rpc('admin_update_member', {
+      p_member_id: id,
+      p_role: role,
+      p_roles: roles,
+      p_chapter: chapter,
+      p_current_cycle_active: active
     });
-    if (data?.success) {
-      (window as any).closeEditMember();
-      toast('Membro atualizado!', 'success');
-      loadMembersList();
-      loadTribes();
-    } else {
-      toast(data?.error || 'Erro ao salvar', 'error');
+
+    if (error) {
+      toast('Erro ao salvar: ' + error.message, 'error');
+      return;
     }
+
+    if (!data?.success) {
+      toast(data?.error || 'Erro ao salvar', 'error');
+      return;
+    }
+
+    // Also update the new 3-axis fields directly
+    // (RPC updates role/roles, we update operational_role/designations/is_superadmin)
+    const { error: e2 } = await sb.from('members').update({
+      operational_role: opRole,
+      designations: desigs,
+      is_superadmin: isSuperadmin
+    }).eq('id', id);
+
+    if (e2) {
+      console.warn('3-axis direct update warning:', e2.message);
+      // Non-fatal: RPC already saved role/roles
+    }
+
+    (window as any).closeEditMember();
+    toast('Membro atualizado!', 'success');
+    loadMembersList();
+    loadTribes();
   };
 
   // ══════════════════════════════════════════
-  // BOOT — no redirects, just show/hide
+  // BOOT
   // ══════════════════════════════════════════
   function setup() {
     document.getElementById('admin-loading')?.classList.add('hidden');
-    if (!MEMBER.is_superadmin && MEMBER.role !== 'manager') {
+    if (!MEMBER.is_superadmin && MEMBER.role !== 'manager' && MEMBER.operational_role !== 'manager') {
       document.getElementById('not-admin-msg')?.classList.remove('hidden');
       return;
     }
@@ -424,7 +765,6 @@ import Toast from '../../components/ui/Toast.astro';
     sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(boot, 200); return; }
 
-    // Listen for future auth events
     window.addEventListener('nav:member', ((e: CustomEvent) => {
       if (e.detail && e.detail.role !== 'guest' && !MEMBER) {
         MEMBER = e.detail;
@@ -432,22 +772,17 @@ import Toast from '../../components/ui/Toast.astro';
       }
     }) as EventListener);
 
-    // Check if nav already loaded
     const m = (window as any).navGetMember?.();
     if (m && m.role !== 'guest') { MEMBER = m; setup(); return; }
 
-    // Fallback: check session directly
     try {
       const { data: { session } } = await sb.auth.getSession();
       if (session) {
         const { data } = await sb.rpc('get_member_by_auth');
         if (data && data.role !== 'guest') { MEMBER = data; setup(); return; }
       }
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
 
-    // Final fallback: wait 2s for nav:member
     setTimeout(() => {
       if (MEMBER) return;
       document.getElementById('admin-loading')?.classList.add('hidden');

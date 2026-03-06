@@ -1,0 +1,121 @@
+---
+/**
+ * CpmaiSection.astro — Sprint 9 (Wave 2)
+ * Showcases CPMAI-certified members between Trail and Team sections.
+ * Loads certified members from Supabase at runtime via client script.
+ */
+import { t, type Lang } from '../../i18n/utils';
+
+interface Props { lang?: Lang; }
+const { lang = 'pt-BR' } = Astro.props;
+---
+
+<section class="py-16 px-6 bg-gradient-to-b from-[#F7F4EF] to-white" id="cpmai">
+  <div class="max-w-[1200px] mx-auto">
+    <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-amber mb-2">
+      {t('cpmai.label', lang)}
+    </div>
+    <h2 class="text-[clamp(1.7rem,4vw,2.5rem)] font-extrabold leading-tight mb-3">
+      {t('cpmai.title', lang)}
+    </h2>
+    <p class="text-base text-slate-500 max-w-[700px] mb-10">
+      {t('cpmai.subtitle', lang)}
+    </p>
+
+    <!-- Loading state -->
+    <div id="cpmai-loading" class="text-slate-400 text-sm py-8 text-center">
+      {t('common.loading', lang)}
+    </div>
+
+    <!-- Empty state -->
+    <div id="cpmai-empty" class="hidden">
+      <div class="bg-amber/5 border border-amber/20 rounded-2xl p-8 text-center max-w-[600px] mx-auto">
+        <div class="text-4xl mb-3">🎓</div>
+        <p class="text-slate-500 text-sm">
+          {t('cpmai.noCerts', lang)}
+        </p>
+      </div>
+    </div>
+
+    <!-- Certified members grid (populated by client script) -->
+    <div id="cpmai-grid" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+    </div>
+  </div>
+</section>
+
+<script>
+  // ── Load CPMAI-certified members from Supabase ──
+  async function loadCpmaiMembers() {
+    const loading = document.getElementById('cpmai-loading');
+    const empty = document.getElementById('cpmai-empty');
+    const grid = document.getElementById('cpmai-grid');
+    if (!loading || !empty || !grid) return;
+
+    try {
+      const sb = (window as any).navGetSb?.();
+      if (!sb) {
+        // Supabase not ready yet, wait for nav boot
+        window.addEventListener('nav:member', () => loadCpmaiMembers(), { once: true });
+        // Also try after a short delay as fallback
+        setTimeout(loadCpmaiMembers, 2000);
+        return;
+      }
+
+      // Query members with cpmai_certified = true OR who have CPMAI badges in credly_badges
+      const { data: members, error } = await sb
+        .from('members')
+        .select('id, name, photo_url, chapter, credly_badges, credly_url')
+        .eq('current_cycle_active', true)
+        .or('cpmai_certified.eq.true,credly_badges.cs.[{"category":"cpmai"}]')
+        .order('name');
+
+      loading.classList.add('hidden');
+
+      if (error || !members || members.length === 0) {
+        empty.classList.remove('hidden');
+        return;
+      }
+
+      // Build cards
+      grid.innerHTML = members.map((m: any) => {
+        const photoUrl = m.photo_url || '';
+        const initials = m.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+        const cpmaiBadge = m.credly_badges?.find?.((b: any) => b.category === 'cpmai');
+        const badgeUrl = cpmaiBadge?.badge_url || m.credly_url || '';
+        const certType = cpmaiBadge?.name || 'PMI-CPMAI';
+
+        return `
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 text-center hover:-translate-y-px hover:shadow-md transition-all duration-200">
+            ${photoUrl
+              ? `<img src="${photoUrl}" alt="${m.name}" class="w-16 h-16 rounded-full object-cover mx-auto mb-3 border-2 border-amber/30">`
+              : `<div class="w-16 h-16 rounded-full bg-amber/10 flex items-center justify-center text-amber font-bold text-lg mx-auto mb-3 border-2 border-amber/30">${initials}</div>`
+            }
+            <div class="font-bold text-sm text-navy">${m.name}</div>
+            <div class="text-[.68rem] text-slate-400 mt-0.5">${m.chapter || ''}</div>
+            <div class="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[.65rem] font-bold bg-amber/10 text-amber">
+              🎓 ${certType}
+            </div>
+            ${badgeUrl ? `<div class="mt-2"><a href="${badgeUrl}" target="_blank" rel="noopener" class="text-[.7rem] text-teal hover:underline no-underline">${document.getElementById('cpmai-view-text')?.textContent || 'View badge →'}</a></div>` : ''}
+          </div>
+        `;
+      }).join('');
+
+      grid.classList.remove('hidden');
+      grid.classList.add('grid');
+    } catch (err) {
+      console.warn('CPMAI section load error:', err);
+      loading.classList.add('hidden');
+      empty.classList.remove('hidden');
+    }
+  }
+
+  // Boot after DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(loadCpmaiMembers, 500));
+  } else {
+    setTimeout(loadCpmaiMembers, 500);
+  }
+</script>
+
+<!-- Hidden text for JS to read translated string -->
+<span id="cpmai-view-text" class="hidden">{t('cpmai.viewBadge', lang)}</span>
