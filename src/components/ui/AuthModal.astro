@@ -54,7 +54,7 @@ const { redirectTo = '/' } = Astro.props;
 
   document.getElementById('btn-linkedin').addEventListener('click', async function() {
     var sb = window.navGetSb && window.navGetSb();
-    if (sb = create_client('https://ldrfrvwhxsmgaabwmaik.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkcmZydndoeHNtZ2FhYndtYWlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MjU5NDQsImV4cCI6MjA4ODMwMTk0NH0.gzibKd7Jyck3Ya61vzrloX1YZt-0pNReTuefdi4mAmw')) return;
+    if (!sb) return;
     await sb.auth.signInWithOAuth({
       provider: 'linkedin_oidc',
       options: { redirectTo: location.origin + redirectTo }
