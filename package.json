@@ -10,9 +10,8 @@
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.12",
-    "@astrojs/tailwind": "^6.0.2",
     "@supabase/supabase-js": "^2.98.0",
-    "@tailwindcss/typography": "^0.5.19",
+    "@tailwindcss/vite": "^4.2.1",
     "astro": "^5.17.1",
     "tailwindcss": "^4.2.1"
   }

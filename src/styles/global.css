@@ -1,32 +1,24 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  :root {
-    --navy:   #003B5C;
-    --orange: #FF610F;
-    --purple: #4F17A8;
-    --teal:   #00799E;
-    --crimson:#BE2027;
-  }
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+@theme {
+  --color-navy:    #003B5C;
+  --color-orange:  #FF610F;
+  --color-purple:  #4F17A8;
+  --color-teal:    #00799E;
+  --color-crimson: #BE2027;
+  --color-pink:    #EC4899;
+  --color-emerald: #10B981;
+  --color-amber:   #D97706;
+  --color-violet:  #7C3AED;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
-@layer components {
-  .role-badge {
-    @apply text-[.6rem] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider;
-  }
-  .btn {
-    @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all duration-150 cursor-pointer border-0;
-  }
-  .btn-primary { @apply bg-navy text-white hover:opacity-90; }
-  .btn-ghost   { @apply bg-transparent text-slate-500 border border-slate-200 hover:border-teal hover:text-teal; }
-  .btn-danger  { @apply bg-red-50 text-crimson border border-red-200 hover:bg-red-100; }
-  .card { @apply bg-white border border-slate-200 rounded-2xl; }
-  .toast-base  { @apply fixed bottom-6 right-6 px-4 py-2.5 rounded-xl text-sm font-semibold z-50 shadow-lg transition-all duration-300; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  background: #F0F4F8;
+  color: #1a1a2e;
 }
