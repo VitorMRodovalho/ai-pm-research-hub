@@ -24,7 +24,7 @@ const links = [
 
 <nav class="sticky top-0 z-[200] bg-navy/97 backdrop-blur-md border-b-2 border-orange
             px-6 flex items-center justify-between h-14">
-  <a href="/" class="text-white font-bold text-sm no-underline">
+  <a href={base + "/"} class="text-white font-bold text-sm no-underline">
     <Fragment set:html={t('nav.brand', lang).replace('IA & GP', '<span class="text-orange">IA & GP</span>')} />
   </a>
 
@@ -36,24 +36,23 @@ const links = [
         {l.label}
       </a>
     ))}
-    <a href="/attendance"
+    <a href={base + "/attendance"}
        class:list={["text-[.73rem] font-semibold px-2 py-1.5 rounded-md no-underline transition-all",
          activePage === 'attendance'
            ? "bg-crimson/30 border border-crimson/50 text-white"
            : "bg-crimson/20 border border-crimson/40 text-white hover:bg-crimson/30"]}>
-      ⏱ Presença
+      {t('nav.attendance', lang)}
     </a>
     <!-- Admin link: injected by client script if superadmin -->
-    <a href="/admin" id="nav-admin-link" style="display:none"
+    <a href={base + "/admin"} id="nav-admin-link" style="display:none"
        class:list={["text-[.73rem] font-semibold px-2 py-1.5 rounded-md no-underline transition-all",
          activePage === 'admin'
            ? "bg-purple/30 border border-purple/50 text-white"
            : "bg-purple/20 border border-purple/40 text-white hover:bg-purple/30"]}>
-      ⚙️ Admin
+      {t('nav.admin', lang)}
     </a>
   </div>
 
-  <LangSwitcher currentLang={lang} />
   <LangSwitcher currentLang={lang} />
   <!-- Auth area: populated by client script -->
   <div id="nav-auth" class="flex items-center gap-2 flex-shrink-0">
@@ -162,7 +161,7 @@ const links = [
       </div>
       <hr class="border-slate-100 my-2">
       <a href="/profile" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-slate-800 hover:bg-slate-50 no-underline transition-all">👤 Meu Perfil</a>
-      <a href="/attendance" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-slate-800 hover:bg-slate-50 no-underline transition-all">⏱ Presenças & Horas</a>
+      <a href={base + "/attendance"} class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-slate-800 hover:bg-slate-50 no-underline transition-all">⏱ Presenças & Horas</a>
       ${isAdmin ? '<hr class="border-slate-100 my-2"><a href="/admin" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-purple hover:bg-purple/5 no-underline transition-all">⚙️ Painel Admin</a>' : ''}
       <hr class="border-slate-100 my-2">
       <button onclick="doLogout()" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-crimson hover:bg-red-50 cursor-pointer border-0 bg-transparent transition-all">↩ Sair</button>`;

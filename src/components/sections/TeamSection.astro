@@ -5,6 +5,11 @@
  * Uses LIGHT heading colors for contrast against dark navy background.
  */
 
+import { t, type Lang } from '../../i18n/utils';
+
+interface Props { lang?: Lang; }
+const { lang = 'pt-BR' } = Astro.props;
+
 const ROLE_COLORS: Record<string, string> = {
   manager:      '#FF610F',
   tribe_leader: '#4F17A8',
@@ -33,17 +38,17 @@ const ROLE_LABELS: Record<string, string> = {
 <section class="py-16 px-6 bg-[#003B5C] text-white" id="team">
   <div class="max-w-[1200px] mx-auto">
     <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-[#05BFE0] mb-2">
-      44 Colaboradores · 5 Capítulos · 1 Missão
+      {t('team.label', lang)}
     </div>
     <h2 class="text-[clamp(1.7rem,4vw,2.5rem)] font-extrabold leading-tight mb-3 text-white">
-      Nosso Time
+      {t('team.title', lang)}
     </h2>
     <p class="text-base text-white/60 max-w-[700px] mb-10">
-      Pesquisadores, líderes e gestores unidos pela interseção IA + GP.
+      {t('team.subtitle', lang)}
     </p>
 
     <div id="teamGrid" class="flex flex-wrap gap-4 justify-center">
-      <p class="text-white/50 text-[.85rem]">Carregando time...</p>
+      <p class="text-white/50 text-[.85rem]">{t('team.loading', lang)}</p>
     </div>
 
     <!-- Role legend -->

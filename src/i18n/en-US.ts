@@ -18,7 +18,7 @@ const enUS: Record<string, string> = {
   'nav.vision': 'Vision',
   'nav.resources': 'Resources',
   'nav.artifacts': 'Artifacts',
-  'nav.attendance': 'Attendance',
+  'nav.attendance': '⏱ Attendance',
   'nav.admin': 'Admin',
   'nav.login': 'Sign In',
 

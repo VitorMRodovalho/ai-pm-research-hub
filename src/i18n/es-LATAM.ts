@@ -18,7 +18,7 @@ const esLATAM: Record<string, string> = {
   'nav.vision': 'Visión',
   'nav.resources': 'Recursos',
   'nav.artifacts': 'Artefactos',
-  'nav.attendance': 'Asistencia',
+  'nav.attendance': '⏱ Asistencia',
   'nav.admin': 'Admin',
   'nav.login': 'Ingresar',
 
