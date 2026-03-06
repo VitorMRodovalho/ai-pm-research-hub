@@ -1,43 +1,161 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Toast from '../../components/ui/Toast.astro';
-// Middleware attaches member to locals; page renders server-side guard
 ---
 <BaseLayout title="Admin — Núcleo IA & GP" activePage="admin">
   <Toast />
-  <div class="max-w-6xl mx-auto px-4 py-8">
+  <div class="max-w-[1200px] mx-auto px-4 py-8">
     <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
       <div>
-        <h1 class="text-2xl font-extrabold text-navy" id="admin-title">⚙️ Administração</h1>
-        <p class="text-sm text-slate-500" id="admin-sub">Gerenciamento de membros e cadastros</p>
+        <h1 class="text-2xl font-extrabold text-navy">⚙️ Administração</h1>
+        <p class="text-sm text-slate-500">Gerenciamento de membros, tribos e operações do Ciclo 3</p>
       </div>
     </div>
 
-    <!-- Non-admin sees only profile link -->
+    <!-- Non-admin -->
     <div id="not-admin-msg" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
       <div class="text-2xl mb-2">🔒</div>
-      <p class="font-semibold text-amber-800">Você não tem acesso ao painel administrativo.</p>
+      <p class="font-semibold text-amber-800">Acesso restrito ao Gerente do Projeto e Administradores.</p>
       <a href="/profile" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
         👤 Ver meu perfil
       </a>
     </div>
 
-    <!-- Admin panel (shown only to superadmin) -->
+    <!-- Admin panel -->
     <div id="admin-panel" class="hidden">
-      <!-- Stats -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-        {[['stat-total','Total','text-navy'],['stat-active','Ativos','text-emerald-600'],
-          ['stat-inactive','Inativos','text-crimson'],['stat-noauth','Sem login','text-amber-600']].map(([id,lbl,cls]) => (
-          <div class="bg-white border border-slate-200 rounded-xl p-4">
-            <div class={`text-2xl font-black ${cls}`} id={id}>—</div>
-            <div class="text-xs text-slate-400 font-semibold mt-0.5">{lbl}</div>
-          </div>
-        ))}
+      <!-- Stats bar -->
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5" id="stats-bar">
+        <div class="bg-white border border-slate-200 rounded-xl p-4">
+          <div class="text-2xl font-black text-navy" id="stat-total">—</div>
+          <div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">Total</div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4">
+          <div class="text-2xl font-black text-emerald-600" id="stat-active">—</div>
+          <div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">Ativos</div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4">
+          <div class="text-2xl font-black text-amber-600" id="stat-pending">—</div>
+          <div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">Sem Tribo</div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4">
+          <div class="text-2xl font-black text-crimson" id="stat-inactive">—</div>
+          <div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">Inativos</div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4">
+          <div class="text-2xl font-black text-purple" id="stat-noauth">—</div>
+          <div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">Sem Login</div>
+        </div>
       </div>
 
-      <!-- Filters + table injected by client script -->
-      <div id="members-area">
-        <div class="text-center py-10 text-slate-400">Carregando membros…</div>
+      <!-- Tabs -->
+      <div class="flex gap-2 mb-5 flex-wrap">
+        <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white"
+                data-tab="tribes" onclick="switchAdmTab(this,'tribes')">🏷️ Gestão de Tribos</button>
+        <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
+                data-tab="members" onclick="switchAdmTab(this,'members')">👥 Membros</button>
+      </div>
+
+      <!-- Tab: Tribe Management -->
+      <div id="panel-tribes">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6" id="tribe-cards"></div>
+        <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden" id="pending-section">
+          <div class="px-5 py-3.5 border-b border-slate-200 bg-amber-50">
+            <h3 class="text-sm font-bold text-amber-800">⚠️ Pool de Pendentes — Ainda não escolheram tribo</h3>
+          </div>
+          <div class="p-4" id="pending-list">
+            <p class="text-slate-400 text-sm text-center py-4">Carregando...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Members -->
+      <div id="panel-members" class="hidden">
+        <div id="members-area">
+          <div class="text-center py-10 text-slate-400">Carregando membros…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Allocate Tribe -->
+  <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-allocate">
+    <div class="bg-white rounded-2xl w-full max-w-[400px] overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center">
+        <h3 class="text-base font-bold text-navy">Alocar em Tribo</h3>
+        <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" onclick="closeAllocate()">✕</button>
+      </div>
+      <div class="p-5">
+        <input type="hidden" id="alloc-member-id">
+        <div class="text-sm font-semibold mb-1" id="alloc-member-name"></div>
+        <div class="text-[12px] text-slate-500 mb-4" id="alloc-member-info"></div>
+        <label class="text-[12px] font-semibold text-slate-500 block mb-1.5">Selecione a Tribo</label>
+        <select id="alloc-tribe" class="w-full px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
+          <option value="">— Selecione —</option>
+          <option value="1">01 — Radar Tecnológico</option>
+          <option value="2">02 — Agentes Autônomos</option>
+          <option value="3">03 — TMO & PMO do Futuro</option>
+          <option value="4">04 — Cultura & Change</option>
+          <option value="5">05 — Talentos & Upskilling</option>
+          <option value="6">06 — ROI & Portfólio</option>
+          <option value="7">07 — Governança & Trustworthy AI</option>
+          <option value="8">08 — Inclusão & Colaboração</option>
+        </select>
+      </div>
+      <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2">
+        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer" onclick="closeAllocate()">Cancelar</button>
+        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer" onclick="confirmAllocate()">Alocar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Edit Member -->
+  <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-edit-member">
+    <div class="bg-white rounded-2xl w-full max-w-[480px] overflow-hidden flex flex-col" style="max-height:85vh">
+      <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center flex-shrink-0">
+        <h3 class="text-base font-bold text-navy">Editar Membro</h3>
+        <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" onclick="closeEditMember()">✕</button>
+      </div>
+      <div class="p-5 overflow-y-auto flex-1">
+        <input type="hidden" id="edit-m-id">
+        <div class="flex items-center gap-3 mb-4" id="edit-m-header"></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[12px] font-semibold text-slate-500">Role Principal</label>
+            <select id="edit-m-role" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white">
+              <option value="manager">Gerente</option>
+              <option value="tribe_leader">Líder de Tribo</option>
+              <option value="researcher">Pesquisador</option>
+              <option value="facilitator">Facilitador</option>
+              <option value="communicator">Multiplicador</option>
+              <option value="sponsor">Patrocinador</option>
+              <option value="ambassador">Embaixador</option>
+              <option value="curator">Curador</option>
+              <option value="founder">Fundador</option>
+              <option value="guest">Convidado</option>
+            </select>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[12px] font-semibold text-slate-500">Capítulo</label>
+            <select id="edit-m-chapter" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white">
+              <option value="PMI-GO">PMI-GO</option>
+              <option value="PMI-CE">PMI-CE</option>
+              <option value="PMI-DF">PMI-DF</option>
+              <option value="PMI-MG">PMI-MG</option>
+              <option value="PMI-RS">PMI-RS</option>
+            </select>
+          </div>
+          <div class="flex flex-col gap-1.5 col-span-2">
+            <label class="text-[12px] font-semibold text-slate-500">Status</label>
+            <select id="edit-m-active" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white">
+              <option value="true">✅ Ativo no Ciclo 3</option>
+              <option value="false">❌ Inativo</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2 flex-shrink-0">
+        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer" onclick="closeEditMember()">Cancelar</button>
+        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer" onclick="saveEditMember()">Salvar</button>
       </div>
     </div>
   </div>
@@ -46,64 +164,326 @@ import Toast from '../../components/ui/Toast.astro';
 <script>
   import { ROLE_COLORS, ROLE_LABELS } from '../../lib/supabase';
 
-  window.addEventListener('nav:member', async (e: any) => {
-    const m = e.detail;
-    if (!m || m.role === 'guest') { location.href = '/'; return; }
-    if (!m.is_superadmin) {
+  let sb: any = null;
+  let MEMBER: any = null;
+  let allMembers: any[] = [];
+
+  const TRIBE_NAMES: Record<number, string> = {
+    1: 'Radar Tecnológico', 2: 'Agentes Autônomos', 3: 'TMO & PMO do Futuro',
+    4: 'Cultura & Change', 5: 'Talentos & Upskilling', 6: 'ROI & Portfólio',
+    7: 'Governança & Trustworthy AI', 8: 'Inclusão & Colaboração'
+  };
+  const TRIBE_LEADERS: Record<number, string> = {
+    1: 'Hayala Curto', 2: 'Débora Moura', 3: 'Marcel Fleming',
+    4: 'Fernando Maquiaveli', 5: 'Jefferson Pinto', 6: 'Fabricio Costa',
+    7: 'Marcos Klemz', 8: 'Ana Carla Cavalcante'
+  };
+  const TRIBE_COLORS: Record<number, string> = {
+    1: '#00799E', 2: '#00799E', 3: '#FF610F', 4: '#FF610F',
+    5: '#4F17A8', 6: '#4F17A8', 7: '#10B981', 8: '#10B981'
+  };
+  const MAX_SLOTS = 6;
+  const ELIGIBLE_ROLES = ['researcher', 'facilitator', 'communicator'];
+
+  function toast(msg: string, type = '') { (window as any).toast?.(msg, type); }
+
+  function initials(name: string): string {
+    return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+  }
+
+  function avatar(m: any, size = 'w-8 h-8'): string {
+    return m.photo_url
+      ? `<img src="${m.photo_url}" class="${size} rounded-full object-cover flex-shrink-0" alt="">`
+      : `<div class="${size} rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.6rem] flex-shrink-0">${initials(m.name)}</div>`;
+  }
+
+  function roleDots(m: any): string {
+    const roles = m.roles?.length ? m.roles : [m.role];
+    return roles.filter((r: string) => ROLE_COLORS[r]).map((r: string) =>
+      `<span style="width:8px;height:8px;border-radius:50%;background:${ROLE_COLORS[r]};display:inline-block" title="${ROLE_LABELS[r] || r}"></span>`
+    ).join('');
+  }
+
+  // ── TABS ──
+  (window as any).switchAdmTab = (el: HTMLElement, tab: string) => {
+    document.querySelectorAll('.adm-tab').forEach(t => {
+      t.classList.remove('bg-navy', 'text-white', 'border-navy');
+      t.classList.add('bg-white', 'text-slate-500', 'border-slate-200');
+    });
+    el.classList.remove('bg-white', 'text-slate-500', 'border-slate-200');
+    el.classList.add('bg-navy', 'text-white', 'border-navy');
+    document.getElementById('panel-tribes')?.classList.toggle('hidden', tab !== 'tribes');
+    document.getElementById('panel-members')?.classList.toggle('hidden', tab !== 'members');
+    if (tab === 'members') loadMembersList();
+  };
+
+  // ══════════════════════════════════════════
+  // TRIBE MANAGEMENT
+  // ══════════════════════════════════════════
+  async function loadTribes() {
+    const { data } = await sb.rpc('admin_get_tribe_allocations');
+    if (!data || data.error) { toast(data?.error || 'Erro ao carregar', 'error'); return; }
+    allMembers = data;
+
+    // Stats
+    const active = data.filter((m: any) => m.current_cycle_active);
+    const eligible = active.filter((m: any) => ELIGIBLE_ROLES.includes(m.role));
+    const pending = eligible.filter((m: any) => !m.selected_tribe_id && !m.fixed_tribe_id);
+
+    document.getElementById('stat-total')!.textContent = String(active.length);
+    document.getElementById('stat-active')!.textContent = String(active.length);
+    document.getElementById('stat-pending')!.textContent = String(pending.length);
+
+    // Tribe cards
+    const cardsEl = document.getElementById('tribe-cards')!;
+    let cardsHtml = '';
+
+    for (let t = 1; t <= 8; t++) {
+      const members = data.filter((m: any) =>
+        m.selected_tribe_id === t || (m.fixed_tribe_id === t && m.role === 'tribe_leader')
+      );
+      const count = members.filter((m: any) => m.role !== 'tribe_leader').length;
+      const color = TRIBE_COLORS[t];
+      const pct = Math.round((count / MAX_SLOTS) * 100);
+      const full = count >= MAX_SLOTS;
+
+      cardsHtml += `
+      <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between" style="border-left:4px solid ${color}">
+          <div>
+            <div class="text-[.68rem] font-bold uppercase tracking-wider" style="color:${color}">Tribo ${String(t).padStart(2, '0')}</div>
+            <div class="text-sm font-bold text-navy">${TRIBE_NAMES[t]}</div>
+            <div class="text-[.68rem] text-slate-400">👑 ${TRIBE_LEADERS[t]}</div>
+          </div>
+          <div class="text-right">
+            <div class="text-lg font-black ${full ? 'text-crimson' : 'text-navy'}">${count}/${MAX_SLOTS}</div>
+            <div class="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden mt-1">
+              <div class="h-full rounded-full" style="width:${pct}%;background:${full ? '#BE2027' : color}"></div>
+            </div>
+            ${full ? '<div class="text-[.6rem] font-bold text-crimson mt-0.5">LOTADA</div>' : ''}
+          </div>
+        </div>
+        <div class="p-3 flex flex-wrap gap-2 min-h-[52px]">
+          ${members.map((m: any) => `
+            <div class="flex items-center gap-1.5 bg-slate-50 rounded-lg px-2 py-1.5 text-[.72rem]" title="${m.name}\n${m.email}\n${m.chapter || ''}">
+              ${avatar(m, 'w-6 h-6')}
+              <span class="font-medium max-w-[90px] truncate">${m.name.split(' ').slice(0, 2).join(' ')}</span>
+              ${m.role === 'tribe_leader' ? '<span class="text-amber-500">👑</span>' : ''}
+            </div>
+          `).join('')}
+          ${members.length === 0 ? '<span class="text-[.72rem] text-slate-300 italic">Nenhum pesquisador</span>' : ''}
+        </div>
+      </div>`;
+    }
+    cardsEl.innerHTML = cardsHtml;
+
+    // Pending list
+    renderPending(pending);
+  }
+
+  function renderPending(pending: any[]) {
+    const el = document.getElementById('pending-list')!;
+    if (!pending.length) {
+      el.innerHTML = '<p class="text-emerald-600 text-sm text-center py-4 font-semibold">🎉 Todos os elegíveis já escolheram suas tribos!</p>';
+      return;
+    }
+
+    el.innerHTML = `
+    <div class="text-[.72rem] text-slate-400 mb-2">${pending.length} pesquisadores pendentes</div>
+    ${pending.map((m: any) => {
+      const phone = m.phone ? m.phone.replace(/\D/g, '') : '';
+      const waLink = phone ? `https://wa.me/${phone}?text=${encodeURIComponent('Olá ' + m.name.split(' ')[0] + '! Lembrete: escolha sua tribo de pesquisa no Núcleo IA & GP → https://ai-pm-research-hub.pages.dev/#tribes')}` : '';
+      const mailLink = `mailto:${m.email}?subject=${encodeURIComponent('Núcleo IA & GP — Escolha sua Tribo')}&body=${encodeURIComponent('Olá ' + m.name.split(' ')[0] + ',\n\nLembrete amigável: o prazo para escolher sua tribo de pesquisa está se encerrando.\n\nAcesse: https://ai-pm-research-hub.pages.dev/#tribes\n\nAbraço!')}`;
+
+      return `
+      <div class="flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-b-0">
+        ${avatar(m, 'w-9 h-9')}
+        <div class="flex-1 min-w-0">
+          <div class="text-[.82rem] font-semibold text-navy">${m.name}</div>
+          <div class="text-[.68rem] text-slate-400">${m.email} · ${m.chapter || '—'}</div>
+        </div>
+        <div class="flex gap-1.5 flex-shrink-0">
+          ${waLink ? `<a href="${waLink}" target="_blank" class="px-2 py-1 text-[.68rem] font-bold bg-green-50 text-green-700 border border-green-200 rounded-lg no-underline hover:bg-green-100 transition-all" title="WhatsApp">📱</a>` : ''}
+          <a href="${mailLink}" class="px-2 py-1 text-[.68rem] font-bold bg-blue-50 text-blue-700 border border-blue-200 rounded-lg no-underline hover:bg-blue-100 transition-all" title="Email">📧</a>
+          <button onclick="openAllocate('${m.member_id}','${m.name.replace(/'/g, "\\'")}','${m.email}','${m.chapter || ''}')"
+            class="px-2.5 py-1 text-[.68rem] font-bold bg-navy text-white border-0 rounded-lg cursor-pointer hover:opacity-90 transition-all">
+            🏷️ Alocar
+          </button>
+        </div>
+      </div>`;
+    }).join('')}`;
+  }
+
+  // ── ALLOCATE MODAL ──
+  (window as any).openAllocate = (id: string, name: string, email: string, chapter: string) => {
+    (document.getElementById('alloc-member-id') as HTMLInputElement).value = id;
+    document.getElementById('alloc-member-name')!.textContent = name;
+    document.getElementById('alloc-member-info')!.textContent = `${email} · ${chapter}`;
+    (document.getElementById('alloc-tribe') as HTMLSelectElement).value = '';
+    const modal = document.getElementById('modal-allocate')!;
+    modal.classList.remove('hidden'); modal.classList.add('flex');
+  };
+
+  (window as any).closeAllocate = () => {
+    const modal = document.getElementById('modal-allocate')!;
+    modal.classList.add('hidden'); modal.classList.remove('flex');
+  };
+
+  (window as any).confirmAllocate = async () => {
+    const memberId = (document.getElementById('alloc-member-id') as HTMLInputElement).value;
+    const tribeId = parseInt((document.getElementById('alloc-tribe') as HTMLSelectElement).value);
+    if (!tribeId) { toast('Selecione uma tribo', 'error'); return; }
+
+    const { data } = await sb.rpc('admin_force_tribe_selection', {
+      p_member_id: memberId, p_tribe_id: tribeId
+    });
+    if (data?.success) {
+      (window as any).closeAllocate();
+      toast(`Alocado na Tribo ${String(tribeId).padStart(2, '0')} ✅`, 'success');
+      loadTribes();
+    } else {
+      toast(data?.error || 'Erro ao alocar', 'error');
+    }
+  };
+
+  // ══════════════════════════════════════════
+  // MEMBERS LIST
+  // ══════════════════════════════════════════
+  async function loadMembersList() {
+    const { data } = await sb.rpc('admin_list_members', { p_limit: 200, p_offset: 0 });
+    const members = Array.isArray(data) ? data : [];
+
+    const inactive = members.filter((m: any) => !m.current_cycle_active);
+    const noAuth = members.filter((m: any) => !m.auth_id);
+    document.getElementById('stat-inactive')!.textContent = String(inactive.length);
+    document.getElementById('stat-noauth')!.textContent = String(noAuth.length);
+
+    const area = document.getElementById('members-area')!;
+    area.innerHTML = `
+    <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-100 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">${members.length} membros</span>
+          <input type="text" placeholder="🔍 Buscar..." oninput="filterMembers(this.value)"
+            class="px-3 py-1.5 border border-slate-200 rounded-lg text-[.78rem] focus:outline-none focus:border-teal w-48">
+        </div>
+      </div>
+      <div id="members-rows">
+      ${members.map((m: any) => {
+        const status = m.current_cycle_active
+          ? '<span class="text-[.68rem] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Ativo</span>'
+          : '<span class="text-[.68rem] font-bold px-2 py-0.5 rounded-full bg-red-50 text-crimson">Inativo</span>';
+        return `
+        <div class="member-row flex items-center gap-3 px-4 py-2.5 border-b border-slate-50 hover:bg-slate-50 transition-all ${m.current_cycle_active ? '' : 'opacity-50'}" data-name="${m.name.toLowerCase()}">
+          ${avatar(m, 'w-9 h-9')}
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-[.82rem] text-navy">${m.name} ${!m.auth_id ? '<span class="text-amber-500 text-[.68rem]">⚠ sem login</span>' : ''}</div>
+            <div class="text-[.68rem] text-slate-400 truncate">${m.email}</div>
+          </div>
+          <span class="text-[.68rem] font-bold px-2 py-0.5 rounded bg-blue-50 text-navy whitespace-nowrap hidden md:block">${m.chapter || '—'}</span>
+          <div class="flex gap-0.5 items-center">${roleDots(m)}</div>
+          ${status}
+          <button onclick="openEditMember(${JSON.stringify(m).replace(/"/g, '&quot;')})"
+            class="px-2 py-1 text-[.72rem] font-semibold text-slate-500 border border-slate-200 rounded-lg hover:border-teal hover:text-teal bg-transparent cursor-pointer transition-all whitespace-nowrap">
+            ✏️
+          </button>
+        </div>`;
+      }).join('')}
+      </div>
+    </div>`;
+  }
+
+  // ── FILTER MEMBERS ──
+  (window as any).filterMembers = (q: string) => {
+    const query = q.toLowerCase().trim();
+    document.querySelectorAll('.member-row').forEach((row) => {
+      const name = (row as HTMLElement).dataset.name || '';
+      (row as HTMLElement).style.display = (!query || name.includes(query)) ? '' : 'none';
+    });
+  };
+
+  // ── EDIT MEMBER MODAL ──
+  (window as any).openEditMember = (m: any) => {
+    (document.getElementById('edit-m-id') as HTMLInputElement).value = m.id;
+    document.getElementById('edit-m-header')!.innerHTML = `
+      ${avatar(m, 'w-12 h-12')}
+      <div>
+        <div class="font-bold text-navy">${m.name}</div>
+        <div class="text-[.72rem] text-slate-400">${m.email} · ${m.chapter || '—'}</div>
+      </div>`;
+    (document.getElementById('edit-m-role') as HTMLSelectElement).value = m.role;
+    (document.getElementById('edit-m-chapter') as HTMLSelectElement).value = m.chapter || 'PMI-GO';
+    (document.getElementById('edit-m-active') as HTMLSelectElement).value = String(m.current_cycle_active);
+    const modal = document.getElementById('modal-edit-member')!;
+    modal.classList.remove('hidden'); modal.classList.add('flex');
+  };
+
+  (window as any).closeEditMember = () => {
+    const modal = document.getElementById('modal-edit-member')!;
+    modal.classList.add('hidden'); modal.classList.remove('flex');
+  };
+
+  (window as any).saveEditMember = async () => {
+    const id = (document.getElementById('edit-m-id') as HTMLInputElement).value;
+    const role = (document.getElementById('edit-m-role') as HTMLSelectElement).value;
+    const chapter = (document.getElementById('edit-m-chapter') as HTMLSelectElement).value;
+    const active = (document.getElementById('edit-m-active') as HTMLSelectElement).value === 'true';
+
+    const { data } = await sb.rpc('admin_update_member', {
+      p_member_id: id, p_role: role, p_chapter: chapter, p_current_cycle_active: active
+    });
+    if (data?.success) {
+      (window as any).closeEditMember();
+      toast('Membro atualizado ✅', 'success');
+      loadMembersList();
+      loadTribes();
+    } else {
+      toast(data?.error || 'Erro ao salvar', 'error');
+    }
+  };
+
+  // ══════════════════════════════════════════
+  // BOOT
+  // ══════════════════════════════════════════
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail && e.detail.role !== 'guest') {
+        MEMBER = e.detail;
+        setup();
+      }
+    }) as EventListener);
+
+    const m = (window as any).navGetMember?.();
+    if (m && m.role !== 'guest') { MEMBER = m; setup(); return; }
+    // Retry in case nav is still booting
+    setTimeout(() => {
+      const mm = (window as any).navGetMember?.();
+      if (mm && mm.role !== 'guest' && !MEMBER) { MEMBER = mm; setup(); }
+    }, 1500);
+
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      const { data } = await sb.rpc('get_member_by_auth');
+      if (data && data.role !== 'guest') { MEMBER = data; setup(); return; }
+    }
+    // Wait a bit more for nav:member before giving up
+    setTimeout(() => {
+        document.getElementById('not-admin-msg')?.classList.remove('hidden');
+      }
+    }, 3000);
+  }
+
+  function setup() {
+    if (!MEMBER.is_superadmin && MEMBER.role !== 'manager') {
       document.getElementById('not-admin-msg')?.classList.remove('hidden');
-      document.getElementById('admin-title')!.textContent = '👤 Meu Perfil';
-      document.getElementById('admin-sub')!.textContent = 'Você não tem acesso administrativo';
       return;
     }
     document.getElementById('admin-panel')?.classList.remove('hidden');
-    loadMembers();
-  });
-
-  async function loadMembers() {
-    const sb = (window as any).navGetSb?.();
-    if (!sb) return;
-    const { data } = await sb.rpc('admin_list_members', { p_limit: 200, p_offset: 0 });
-    const members = Array.isArray(data) ? data : [];
-    document.getElementById('stat-total')!.textContent    = String(members.length);
-    document.getElementById('stat-active')!.textContent   = String(members.filter((m:any) => m.current_cycle_active).length);
-    document.getElementById('stat-inactive')!.textContent = String(members.filter((m:any) => !m.current_cycle_active).length);
-    document.getElementById('stat-noauth')!.textContent   = String(members.filter((m:any) => !m.auth_id).length);
-    renderTable(members);
+    loadTribes();
   }
 
-  function renderTable(members: any[]) {
-    const area = document.getElementById('members-area');
-    if (!area) return;
-    area.innerHTML = `
-      <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-        <div class="px-4 py-3 border-b border-slate-100 flex justify-between items-center">
-          <span class="text-xs font-bold text-slate-400 uppercase tracking-wide">${members.length} membros</span>
-          <a href="/admin/member/new" class="px-3 py-1.5 bg-teal text-white rounded-lg text-xs font-semibold no-underline hover:opacity-90">+ Novo membro</a>
-        </div>
-        ${members.map(m => {
-          const initials = m.name.split(' ').map((w:string)=>w[0]).join('').substring(0,2).toUpperCase();
-          const roles = (m.roles?.length ? m.roles : [m.role]).filter((r:string) => ROLE_COLORS[r]);
-          const dots = roles.map((r:string) =>
-            `<span style="width:9px;height:9px;border-radius:50%;background:${ROLE_COLORS[r]};display:inline-block;flex-shrink:0" title="${ROLE_LABELS[r]||r}"></span>`
-          ).join('');
-          const status = m.current_cycle_active
-            ? '<span class="text-[.68rem] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">● Ativo</span>'
-            : `<span class="text-[.68rem] font-bold px-2 py-0.5 rounded-full bg-red-50 text-crimson">● Inativo${m.inactivated_at ? ' · '+new Date(m.inactivated_at).toLocaleDateString('pt-BR') : ''}</span>`;
-          return `<div class="flex items-center gap-3 px-4 py-3 border-b border-slate-50 hover:bg-slate-50 transition-all ${m.current_cycle_active?'':'opacity-50'}">
-            ${m.photo_url
-              ? `<img src="${m.photo_url}" class="w-9 h-9 rounded-full object-cover flex-shrink-0">`
-              : `<div class="w-9 h-9 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.7rem] flex-shrink-0">${initials}</div>`
-            }
-            <div class="flex-1 min-w-0">
-              <div class="font-semibold text-[.83rem] text-navy">${m.name} ${!m.auth_id?'<span class="text-amber-500 text-[.68rem]">⚠ sem login</span>':''}</div>
-              <div class="text-[.7rem] text-slate-400 truncate">${m.email}</div>
-            </div>
-            <span class="text-[.68rem] font-bold px-2 py-0.5 rounded bg-blue-50 text-navy whitespace-nowrap hidden md:block">${m.chapter||'—'}</span>
-            <div class="flex gap-1 items-center">${dots}</div>
-            ${status}
-            <a href="/admin/member/${m.id}" class="px-2 py-1 text-[.72rem] font-semibold text-slate-500 border border-slate-200 rounded-lg hover:border-teal hover:text-teal no-underline transition-all whitespace-nowrap">✏️ Editar</a>
-          </div>`;
-        }).join('')}
-      </div>`;
-  }
+  boot();
 </script>
