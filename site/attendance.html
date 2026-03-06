@@ -20,11 +20,24 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Inter', system-ui, sans-serif; background: var(--pmi-light); color: #1E293B; }
 
-  nav { background: var(--pmi-navy); padding: 14px 24px; display: flex; align-items: center; gap: 16px; }
-  nav .logo { color: white; font-weight: 700; font-size: 16px; }
-  nav .logo span { color: #93C5FD; }
-  nav .nav-user { color: #94A3B8; font-size: 13px; margin-left: auto; }
-  nav a { color: #93C5FD; text-decoration: none; font-size: 13px; margin-left: 16px; }
+  /* ── NAV (espelha index.html) ── */
+  .nav { position:sticky; top:0; z-index:100; background:rgba(0,59,92,.97); backdrop-filter:blur(12px); border-bottom:2px solid #FF610F; padding:0 1.5rem; display:flex; align-items:center; justify-content:space-between; height:56px; }
+  .nav-brand { color:#fff; font-weight:700; font-size:.9rem; text-decoration:none; }
+  .nav-brand span { color:#FF610F; }
+  .nav-links { display:flex; gap:.2rem; }
+  .nav-links a { color:rgba(255,255,255,.7); text-decoration:none; font-size:.73rem; font-weight:500; padding:.35rem .6rem; border-radius:6px; transition:.2s; }
+  .nav-links a:hover, .nav-links a.active { color:#fff; background:rgba(255,255,255,.1); }
+  .nav-links a.nav-presence { background:rgba(190,32,39,.2); border:1px solid rgba(190,32,39,.4); color:#fff; font-weight:600; }
+  .nav-auth { display:flex; align-items:center; gap:.5rem; }
+  .nav-user { color:#fff; font-size:.75rem; font-weight:500; }
+  .role-badge { font-size:.6rem; padding:.15rem .4rem; border-radius:4px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+  .role-manager { background:rgba(255,97,15,.2); color:#FF610F; }
+  .role-sponsor  { background:rgba(190,32,39,.2); color:#BE2027; }
+  .role-tribe_leader { background:rgba(79,23,168,.2); color:#7C3AED; }
+  .role-researcher { background:rgba(0,121,158,.2); color:#00799E; }
+  .role-ambassador { background:rgba(16,185,129,.2); color:#065F46; }
+  .role-curator { background:rgba(217,119,6,.2); color:#92400E; }
+  @media(max-width:900px){ .nav-links{ display:none; } }
 
   .kpi-bar { background: var(--pmi-navy); padding: 0 24px 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 12px; }
   .kpi-card { background: rgba(255,255,255,.08); border-radius: var(--radius); padding: 14px 18px; border: 1px solid rgba(255,255,255,.12); }
@@ -161,10 +174,28 @@
 
 <!-- APP -->
 <div id="app">
-  <nav>
-    <div class="logo">Núcleo <span>IA & GP</span></div>
-    <span class="nav-user" id="nav-user"></span>
-    <a href="#" onclick="logout()">Sair</a>
+  <nav class="nav">
+    <a href="/" class="nav-brand">Núcleo <span>IA & GP</span> — Ciclo 03</a>
+    <div class="nav-links">
+      <a href="/#agenda">Pauta</a>
+      <a href="/#quadrants">Quadrantes</a>
+      <a href="/#tribes">Tribos</a>
+      <a href="/#kpis">KPIs</a>
+      <a href="/#breakout">Networking</a>
+      <a href="/#rules">Regras</a>
+      <a href="/#trail">Trilha IA</a>
+      <a href="/#team">Time</a>
+      <a href="/#vision">Visão</a>
+      <a href="/#resources">Recursos</a>
+      <a href="/attendance" class="nav-presence">⏱ Presença</a>
+    </div>
+    <div class="nav-auth">
+      <div class="nav-user" id="nav-user-wrap" style="display:none">
+        <span id="nav-user"></span>
+        <span id="nav-role-badge" class="role-badge" style="margin-left:4px"></span>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="btn-logout" onclick="logout()" style="display:none;font-size:.7rem;padding:.25rem .6rem;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:6px;cursor:pointer">Sair</button>
+    </div>
   </nav>
 
   <div class="kpi-bar">
@@ -454,7 +485,14 @@ async function onLogin() {
     return;
   }
   CAN_MANAGE = MEMBER.is_superadmin || MEMBER.role === 'tribe_leader';
+  // Nav
   document.getElementById('nav-user').textContent = MEMBER.name;
+  const rb = document.getElementById('nav-role-badge');
+  rb.textContent = { manager:'Gerente', tribe_leader:'Líder', researcher:'Pesquisador', sponsor:'Patrocinador', ambassador:'Embaixador', curator:'Curador' }[MEMBER.role] || MEMBER.role;
+  rb.className = 'role-badge role-' + MEMBER.role;
+  document.getElementById('nav-user-wrap').style.display = 'flex';
+  document.getElementById('nav-user-wrap').style.alignItems = 'center';
+  document.getElementById('btn-logout').style.display = 'block';
   if (CAN_MANAGE) {
     document.getElementById('tab-new-event').classList.remove('hidden');
     document.getElementById('tab-recurring').classList.remove('hidden');
