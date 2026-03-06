@@ -13,21 +13,52 @@ import Toast from '../components/ui/Toast.astro';
       </button>
     </div>
 
+    <!-- XP Level Legend -->
+    <div class="bg-gradient-to-r from-navy/5 to-orange/5 rounded-xl border border-slate-200 p-5 mb-6">
+      <h3 class="text-sm font-bold text-navy mb-3">Níveis de Experiência</h3>
+      <div class="flex flex-wrap gap-3">
+        <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-white rounded-lg border border-slate-100">
+          <span class="text-lg">🌱</span>
+          <div><strong>Explorador</strong><span class="text-slate-400 ml-1">0–30 pts</span></div>
+        </div>
+        <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-white rounded-lg border border-slate-100">
+          <span class="text-lg">⚡</span>
+          <div><strong>Praticante</strong><span class="text-slate-400 ml-1">31–90 pts</span></div>
+        </div>
+        <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-white rounded-lg border border-slate-100">
+          <span class="text-lg">🔥</span>
+          <div><strong>Especialista</strong><span class="text-slate-400 ml-1">91–200 pts</span></div>
+        </div>
+        <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-white rounded-lg border border-slate-100">
+          <span class="text-lg">💎</span>
+          <div><strong>Mestre</strong><span class="text-slate-400 ml-1">201–400 pts</span></div>
+        </div>
+        <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-white rounded-lg border border-slate-100">
+          <span class="text-lg">🏆</span>
+          <div><strong>Lenda</strong><span class="text-slate-400 ml-1">401+ pts</span></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Points legend -->
     <div class="bg-white rounded-xl border border-slate-200 p-5 mb-6">
       <h3 class="text-sm font-bold text-navy mb-3">Como ganhar pontos</h3>
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[13px]">
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-[13px]">
         <div class="flex items-center gap-2">
           <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-[11px]">+10</span>
-          <span class="text-slate-600">Presença em evento</span>
+          <span class="text-slate-600">Presença</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-[11px]">+15</span>
-          <span class="text-slate-600">Curso concluído</span>
+          <span class="text-slate-600">Curso</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-[11px]">+30</span>
-          <span class="text-slate-600">Artefato publicado</span>
+          <span class="text-slate-600">Artefato</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-8 h-8 rounded-lg bg-pink-50 text-pink-600 flex items-center justify-center font-bold text-[11px]">+50</span>
+          <span class="text-slate-600">Perfil 100%</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-[11px]">+?</span>
@@ -39,22 +70,51 @@ import Toast from '../components/ui/Toast.astro';
     <!-- Tabs -->
     <div class="flex gap-2 mb-6 flex-wrap">
       <button class="gam-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white"
-              data-tab="leaderboard" onclick="switchGamTab(this,'leaderboard')">🏅 Ranking</button>
+              data-tab="leaderboard" onclick="switchGamTab(this,'leaderboard')">🏅 Ranking Individual</button>
+      <button class="gam-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
+              data-tab="tribes" onclick="switchGamTab(this,'tribes')">🏷️ Ranking de Tribos</button>
+      <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
+              id="tab-achievements" data-tab="achievements" onclick="switchGamTab(this,'achievements')">🎯 Conquistas</button>
       <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
               id="tab-mypoints" data-tab="mypoints" onclick="switchGamTab(this,'mypoints')">📊 Meus Pontos</button>
       <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
-              id="tab-mycerts" data-tab="mycerts" onclick="switchGamTab(this,'mycerts')">🎓 Meus Certificados</button>
+              id="tab-mycerts" data-tab="mycerts" onclick="switchGamTab(this,'mycerts')">🎓 Certificados</button>
       <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
-              id="tab-admin-certs" data-tab="admin-certs" onclick="switchGamTab(this,'admin-certs')">📋 Emitir Certificado</button>
+              id="tab-admin-certs" data-tab="admin-certs" onclick="switchGamTab(this,'admin-certs')">📋 Emitir</button>
     </div>
 
-    <!-- Leaderboard -->
+    <!-- Individual Leaderboard -->
     <div id="panel-leaderboard">
       <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
-          <h3 class="text-sm font-bold text-navy">Ranking de Pontos — Ciclo 3</h3>
+          <h3 class="text-sm font-bold text-navy">Ranking Individual — Ciclo 3</h3>
         </div>
         <div class="p-5" id="leaderboard-list">
+          <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tribe Ranking -->
+    <div id="panel-tribes" class="hidden">
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-slate-200">
+          <h3 class="text-sm font-bold text-navy">Ranking de Tribos — Ciclo 3</h3>
+          <p class="text-[.7rem] text-slate-400 mt-0.5">Score = (média pontos × 1) + (membros ativos × 10)</p>
+        </div>
+        <div class="p-5" id="tribes-ranking-list">
+          <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Achievements -->
+    <div id="panel-achievements" class="hidden">
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-slate-200">
+          <h3 class="text-sm font-bold text-navy">Minhas Conquistas</h3>
+        </div>
+        <div class="p-5" id="achievements-list">
           <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
         </div>
       </div>
@@ -100,7 +160,7 @@ import Toast from '../components/ui/Toast.astro';
             </div>
             <div class="flex flex-col gap-1.5">
               <label class="text-[12px] font-semibold text-slate-500">Tipo</label>
-              <select id="cert-type" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
+              <select id="cert-type" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white">
                 <option value="participation">Participação</option>
                 <option value="completion">Conclusão de Trilha</option>
                 <option value="contribution">Contribuição</option>
@@ -112,7 +172,7 @@ import Toast from '../components/ui/Toast.astro';
               <input type="number" id="cert-cycle" value="3" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
             </div>
             <div class="flex flex-col gap-1.5 sm:col-span-2">
-              <label class="text-[12px] font-semibold text-slate-500">Título do Certificado</label>
+              <label class="text-[12px] font-semibold text-slate-500">Título</label>
               <input type="text" id="cert-title" placeholder="Ex: Certificado de Participação — Ciclo 3"
                      class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
             </div>
@@ -136,6 +196,7 @@ import Toast from '../components/ui/Toast.astro';
 <script>
   let sb: any = null;
   let MEMBER: any = null;
+  let leaderboardData: any[] = [];
 
   const CATEGORY_META: Record<string, { icon: string; color: string; bg: string }> = {
     attendance: { icon: '📅', color: '#2563EB', bg: '#EFF6FF' },
@@ -145,13 +206,55 @@ import Toast from '../components/ui/Toast.astro';
   };
 
   const TYPE_LABELS: Record<string, string> = {
-    participation: 'Participação',
-    completion: 'Conclusão de Trilha',
-    contribution: 'Contribuição',
-    excellence: 'Excelência',
+    participation: 'Participação', completion: 'Conclusão de Trilha',
+    contribution: 'Contribuição', excellence: 'Excelência',
+  };
+
+  const TRIBE_NAMES: Record<number, string> = {
+    1: 'Radar Tecnológico', 2: 'Agentes Autônomos', 3: 'TMO & PMO do Futuro',
+    4: 'Cultura & Change', 5: 'Talentos & Upskilling', 6: 'ROI & Portfólio',
+    7: 'Governança & Trustworthy AI', 8: 'Inclusão & Colaboração'
+  };
+  const TRIBE_COLORS: Record<number, string> = {
+    1: '#00799E', 2: '#00799E', 3: '#FF610F', 4: '#FF610F',
+    5: '#4F17A8', 6: '#4F17A8', 7: '#10B981', 8: '#10B981'
   };
 
   function toast(msg: string, type = '') { (window as any).toast?.(msg, type); }
+
+  // ── XP LEVEL SYSTEM ──
+  function getLevel(pts: number): { name: string; emoji: string; next: string; ptsToNext: number; pctInLevel: number } {
+    const levels = [
+      { min: 0,   max: 30,  name: 'Explorador', emoji: '🌱', next: 'Praticante' },
+      { min: 31,  max: 90,  name: 'Praticante', emoji: '⚡', next: 'Especialista' },
+      { min: 91,  max: 200, name: 'Especialista', emoji: '🔥', next: 'Mestre' },
+      { min: 201, max: 400, name: 'Mestre', emoji: '💎', next: 'Lenda' },
+      { min: 401, max: 9999, name: 'Lenda', emoji: '🏆', next: '' },
+    ];
+    const lvl = levels.find(l => pts >= l.min && pts <= l.max) || levels[0];
+    const range = lvl.max - lvl.min;
+    const progress = pts - lvl.min;
+    return {
+      name: lvl.name, emoji: lvl.emoji, next: lvl.next,
+      ptsToNext: lvl.next ? (lvl.max + 1 - pts) : 0,
+      pctInLevel: range > 0 ? Math.min(Math.round((progress / range) * 100), 100) : 100,
+    };
+  }
+
+  // ── ACHIEVEMENTS (computed from existing data) ──
+  const ACHIEVEMENT_DEFS = [
+    { id: 'first_points', icon: '🎯', name: 'Primeira Pontuação', desc: 'Ganhou seus primeiros pontos', check: (pts: number, data: any) => pts > 0 },
+    { id: 'level_practitioner', icon: '⚡', name: 'Praticante IA', desc: 'Alcançou 31 pontos', check: (pts: number) => pts >= 31 },
+    { id: 'level_expert', icon: '🔥', name: 'Especialista IA', desc: 'Alcançou 91 pontos', check: (pts: number) => pts >= 91 },
+    { id: 'level_master', icon: '💎', name: 'Mestre IA', desc: 'Alcançou 201 pontos', check: (pts: number) => pts >= 201 },
+    { id: 'level_legend', icon: '🏆', name: 'Lenda IA', desc: 'Alcançou 401 pontos', check: (pts: number) => pts >= 401 },
+    { id: 'scholar', icon: '📚', name: 'Scholar', desc: 'Completou toda a trilha IA (8/8 cursos)', check: (_: number, d: any) => d.coursesCompleted >= 8 },
+    { id: 'publisher', icon: '📝', name: 'Publisher', desc: 'Publicou seu primeiro artefato', check: (_: number, d: any) => d.artifactsPublished > 0 },
+    { id: 'consistent', icon: '🔥', name: 'Consistente', desc: 'Participou de 5+ eventos', check: (_: number, d: any) => d.attendanceCount >= 5 },
+    { id: 'engaged', icon: '💪', name: 'Engajado', desc: 'Participou de 10+ eventos', check: (_: number, d: any) => d.attendanceCount >= 10 },
+    { id: 'veteran', icon: '🌟', name: 'Veterano', desc: 'Participou em 2+ ciclos do Núcleo', check: (_: number, d: any) => d.cycleCount >= 2 },
+    { id: 'profile_complete', icon: '✨', name: 'Perfil Completo', desc: 'Preencheu 100% do perfil', check: (_: number, d: any) => d.profileComplete },
+  ];
 
   // ── TABS ──
   (window as any).switchGamTab = (el: HTMLElement, tab: string) => {
@@ -161,20 +264,23 @@ import Toast from '../components/ui/Toast.astro';
     });
     el.classList.remove('bg-white', 'text-slate-500', 'border-slate-200');
     el.classList.add('bg-navy', 'text-white', 'border-navy');
-    ['leaderboard', 'mypoints', 'mycerts', 'admin-certs'].forEach(p => {
+    ['leaderboard', 'tribes', 'achievements', 'mypoints', 'mycerts', 'admin-certs'].forEach(p => {
       document.getElementById(`panel-${p}`)?.classList.toggle('hidden', p !== tab);
     });
     if (tab === 'leaderboard') loadLeaderboard();
+    if (tab === 'tribes') loadTribeRanking();
+    if (tab === 'achievements') loadAchievements();
     if (tab === 'mypoints') loadMyPoints();
     if (tab === 'mycerts') loadMyCertificates();
   };
 
-  // ── LEADERBOARD ──
+  // ── INDIVIDUAL LEADERBOARD (with XP levels) ──
   async function loadLeaderboard() {
     const { data } = await sb.from('gamification_leaderboard').select('*');
+    leaderboardData = data || [];
     const el = document.getElementById('leaderboard-list')!;
     if (!data?.length) {
-      el.innerHTML = '<p class="text-slate-400 text-sm text-center py-6">Nenhum ponto registrado ainda. Clique em "Sincronizar Pontos" para calcular a partir dos dados existentes.</p>';
+      el.innerHTML = '<p class="text-slate-400 text-sm text-center py-6">Nenhum ponto registrado. Clique em "Sincronizar Pontos" para calcular.</p>';
       return;
     }
 
@@ -189,6 +295,8 @@ import Toast from '../components/ui/Toast.astro';
       const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
       const rank = i + 1;
       const pct = (m.total_points / maxPts * 100).toFixed(0);
+      const level = getLevel(m.total_points);
+      const isMe = MEMBER && m.member_id === MEMBER.id;
 
       const breakdown = [
         m.attendance_points > 0 ? `📅 ${m.attendance_points}` : '',
@@ -198,20 +306,161 @@ import Toast from '../components/ui/Toast.astro';
       ].filter(Boolean).join(' · ');
 
       return `
-      <div class="flex items-center gap-3 py-3 border-b border-slate-100 last:border-b-0 ${i < 3 ? 'bg-amber-50/30' : ''}">
+      <div class="flex items-center gap-3 py-3 border-b border-slate-100 last:border-b-0 ${i < 3 ? 'bg-amber-50/30' : ''} ${isMe ? 'ring-2 ring-orange/30 rounded-lg' : ''}">
         <div class="w-8 text-center font-bold text-[13px] text-slate-400 flex-shrink-0">${medal || rank}</div>
         ${photo}
         <div class="flex-1 min-w-0">
-          <div class="text-[13px] font-semibold truncate">${m.name.split(' ').slice(0, 3).join(' ')}</div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-[13px] font-semibold truncate">${m.name.split(' ').slice(0, 3).join(' ')}</span>
+            <span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-slate-100">${level.emoji} ${level.name}</span>
+            ${isMe ? '<span class="text-[.55rem] font-bold px-1 py-0.5 rounded bg-orange/10 text-orange">VOCÊ</span>' : ''}
+          </div>
           <div class="text-[11px] text-slate-400">${m.chapter || ''} ${breakdown ? '· ' + breakdown : ''}</div>
           <div class="h-1.5 bg-slate-100 rounded-full mt-1 overflow-hidden">
             <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${m.total_points > 0 ? '#FF610F' : '#E2E8F0'}"></div>
           </div>
         </div>
-        <div class="text-lg font-extrabold text-navy flex-shrink-0">${m.total_points}</div>
-        <div class="text-[10px] text-slate-400 flex-shrink-0">pts</div>
+        <div class="text-right flex-shrink-0">
+          <div class="text-lg font-extrabold text-navy">${m.total_points}</div>
+          <div class="text-[10px] text-slate-400">pts</div>
+        </div>
       </div>`;
     }).join('');
+  }
+
+  // ── TRIBE RANKING ──
+  async function loadTribeRanking() {
+    // Get tribe selections + leaderboard data
+    const { data: selections } = await sb.from('tribe_selections').select('tribe_id, member_id');
+    const { data: leaders } = await sb.from('members')
+      .select('id, tribe_id')
+      .eq('operational_role', 'tribe_leader');
+
+    if (!leaderboardData.length) {
+      const { data } = await sb.from('gamification_leaderboard').select('*');
+      leaderboardData = data || [];
+    }
+
+    // Build tribe map: member_id → tribe_id
+    const memberTribe: Record<string, number> = {};
+    (selections || []).forEach((s: any) => { memberTribe[s.member_id] = s.tribe_id; });
+    (leaders || []).forEach((l: any) => { if (l.tribe_id) memberTribe[l.id] = l.tribe_id; });
+
+    // Aggregate by tribe
+    const tribeStats: Record<number, { points: number; members: number; names: string[] }> = {};
+    for (let t = 1; t <= 8; t++) tribeStats[t] = { points: 0, members: 0, names: [] };
+
+    leaderboardData.forEach((m: any) => {
+      const tid = memberTribe[m.member_id];
+      if (tid && tribeStats[tid]) {
+        tribeStats[tid].points += m.total_points;
+        tribeStats[tid].members++;
+        tribeStats[tid].names.push(m.name.split(' ')[0]);
+      }
+    });
+
+    // Score = avg points + (members × 10)
+    const ranked = Object.entries(tribeStats)
+      .map(([tid, s]) => {
+        const t = Number(tid);
+        const avg = s.members > 0 ? Math.round(s.points / s.members) : 0;
+        const score = avg + (s.members * 10);
+        return { tid: t, name: TRIBE_NAMES[t], color: TRIBE_COLORS[t], avg, total: s.points, members: s.members, score, names: s.names };
+      })
+      .filter(t => t.members > 0)
+      .sort((a, b) => b.score - a.score);
+
+    const el = document.getElementById('tribes-ranking-list')!;
+    if (!ranked.length) {
+      el.innerHTML = '<p class="text-slate-400 text-sm text-center py-6">Nenhum dado de tribo disponível.</p>';
+      return;
+    }
+
+    const maxScore = Math.max(...ranked.map(t => t.score), 1);
+
+    el.innerHTML = ranked.map((t, i) => {
+      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
+      const pct = Math.round((t.score / maxScore) * 100);
+      return `
+      <div class="py-4 border-b border-slate-100 last:border-b-0 ${i < 3 ? 'bg-amber-50/30 rounded-lg px-3 mb-2' : ''}">
+        <div class="flex items-center gap-3">
+          <div class="w-8 text-center font-bold text-[13px] text-slate-400 flex-shrink-0">${medal || (i + 1)}</div>
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style="background:${t.color}">
+            T${String(t.tid).padStart(2, '0')}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-[13px] font-bold">${t.name}</div>
+            <div class="text-[11px] text-slate-400">${t.members} membros · Média: ${t.avg} pts · Total: ${t.total} pts</div>
+            <div class="h-1.5 bg-slate-100 rounded-full mt-1.5 overflow-hidden">
+              <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${t.color}"></div>
+            </div>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <div class="text-xl font-extrabold text-navy">${t.score}</div>
+            <div class="text-[10px] text-slate-400">score</div>
+          </div>
+        </div>
+        <div class="ml-[76px] mt-2 flex flex-wrap gap-1">
+          ${t.names.map((n: string) => `<span class="text-[.6rem] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">${n}</span>`).join('')}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── ACHIEVEMENTS ──
+  async function loadAchievements() {
+    if (!MEMBER) return;
+    const el = document.getElementById('achievements-list')!;
+
+    // Gather data for achievement checks
+    const { count: attendanceCount } = await sb.from('attendance')
+      .select('*', { count: 'exact', head: true })
+      .eq('member_id', MEMBER.id);
+
+    const { data: courses } = await sb.from('course_progress')
+      .select('status')
+      .eq('member_id', MEMBER.id);
+
+    const { data: artifacts } = await sb.from('artifacts')
+      .select('status')
+      .eq('author_id', MEMBER.id);
+
+    const { data: cycles } = await sb.from('member_cycle_history')
+      .select('cycle_code')
+      .eq('member_id', MEMBER.id);
+
+    const myPoints = leaderboardData.find((m: any) => m.member_id === MEMBER.id)?.total_points || 0;
+    const coursesCompleted = (courses || []).filter((c: any) => c.status === 'completed').length;
+    const artifactsPublished = (artifacts || []).filter((a: any) => a.status === 'published').length;
+    const cycleCount = (cycles || []).length;
+
+    // Check profile completeness (simplified)
+    const profileComplete = !!(MEMBER.photo_url && MEMBER.pmi_id && MEMBER.linkedin_url && MEMBER.phone && MEMBER.credly_url);
+
+    const checkData = { attendanceCount: attendanceCount || 0, coursesCompleted, artifactsPublished, cycleCount, profileComplete };
+
+    let earned = 0;
+    const total = ACHIEVEMENT_DEFS.length;
+
+    el.innerHTML = `
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        ${ACHIEVEMENT_DEFS.map(a => {
+          const unlocked = a.check(myPoints, checkData);
+          if (unlocked) earned++;
+          return `
+          <div class="flex items-center gap-3 p-3 rounded-xl border ${unlocked ? 'border-amber-200 bg-amber-50/50' : 'border-slate-100 bg-slate-50/50 opacity-50'}">
+            <div class="text-2xl flex-shrink-0">${unlocked ? a.icon : '🔒'}</div>
+            <div class="flex-1 min-w-0">
+              <div class="text-[.78rem] font-bold ${unlocked ? 'text-navy' : 'text-slate-400'}">${a.name}</div>
+              <div class="text-[.65rem] text-slate-400">${a.desc}</div>
+            </div>
+            ${unlocked ? '<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 flex-shrink-0">✓</span>' : ''}
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="mt-4 text-center text-[.78rem] text-slate-500">
+        ${earned} de ${total} conquistas desbloqueadas
+      </div>`;
   }
 
   // ── MY POINTS ──
@@ -229,11 +478,17 @@ import Toast from '../components/ui/Toast.astro';
     }
 
     const total = data.reduce((s: number, p: any) => s + p.points, 0);
+    const level = getLevel(total);
 
     el.innerHTML = `
-      <div class="text-center mb-6 py-4 bg-navy/5 rounded-xl">
+      <div class="text-center mb-6 py-5 bg-gradient-to-br from-navy/5 to-orange/5 rounded-xl">
+        <div class="text-3xl mb-1">${level.emoji}</div>
         <div class="text-3xl font-extrabold text-navy">${total}</div>
-        <div class="text-sm text-slate-500">pontos totais</div>
+        <div class="text-sm text-slate-500">pontos · <strong>${level.name}</strong></div>
+        ${level.next ? `<div class="text-[.7rem] text-slate-400 mt-1">Faltam ${level.ptsToNext} pts para ${level.next}</div>` : '<div class="text-[.7rem] text-amber-600 mt-1 font-bold">Nível máximo alcançado!</div>'}
+        <div class="w-40 h-2 bg-slate-200 rounded-full mx-auto mt-2 overflow-hidden">
+          <div class="h-full bg-orange rounded-full" style="width:${level.pctInLevel}%"></div>
+        </div>
       </div>
     ` + data.map((p: any) => {
       const cat = CATEGORY_META[p.category] || CATEGORY_META.bonus;
@@ -243,9 +498,6 @@ import Toast from '../components/ui/Toast.astro';
         <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style="background:${cat.bg}">${cat.icon}</div>
         <div class="flex-1 min-w-0">
           <div class="text-[13px] font-medium truncate">${p.reason}</div>
-          <div class="text-[10px] mt-0.5"><span style="background:${cat.bg};color:${cat.color};padding:1px 6px;border-radius:4px;font-weight:600">${
-            p.category === 'attendance' ? 'Presença' : p.category === 'course' ? (p.reason.startsWith('Credly:') ? 'Credly' : 'Curso') : p.category === 'artifact' ? 'Artefato' : 'Bônus'
-          }</span></div>
           <div class="text-[11px] text-slate-400">${date}</div>
         </div>
         <div class="font-bold text-sm" style="color:${cat.color}">+${p.points}</div>
@@ -305,12 +557,7 @@ import Toast from '../components/ui/Toast.astro';
     if (!memberId || !title) { toast('Selecione participante e preencha o título', 'error'); return; }
 
     const { error } = await sb.from('certificates').insert({
-      member_id: memberId,
-      type,
-      title,
-      description: desc,
-      cycle,
-      issued_by: MEMBER.id,
+      member_id: memberId, type, title, description: desc, cycle, issued_by: MEMBER.id,
     });
 
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
@@ -367,6 +614,7 @@ import Toast from '../components/ui/Toast.astro';
 
   function setupUI() {
     const isAdmin = MEMBER.is_superadmin;
+    document.getElementById('tab-achievements')?.classList.remove('hidden');
     document.getElementById('tab-mypoints')?.classList.remove('hidden');
     document.getElementById('tab-mycerts')?.classList.remove('hidden');
     if (isAdmin) {
