@@ -1,10 +1,10 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { t } from '../../i18n/utils';
-const lang = 'en-US' as const;
+const lang = 'es-LATAM' as const;
 ---
-<BaseLayout title={t('attendance.title', lang)} activePage="attendance" lang={lang}>
-  <meta http-equiv="refresh" content="0;url=/attendance?lang=en-US">
+<BaseLayout title={t('profile.title', lang)} activePage="profile" lang={lang}>
+  <meta http-equiv="refresh" content="0;url=/profile?lang=es-LATAM">
   <div class="flex items-center justify-center min-h-[60vh]">
     <p class="text-slate-400 text-sm">{t('common.loading', lang)}</p>
   </div>

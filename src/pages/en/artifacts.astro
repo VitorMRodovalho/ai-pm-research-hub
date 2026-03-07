@@ -3,8 +3,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { t } from '../../i18n/utils';
 const lang = 'en-US' as const;
 ---
-<BaseLayout title={t('attendance.title', lang)} activePage="attendance" lang={lang}>
-  <meta http-equiv="refresh" content="0;url=/attendance?lang=en-US">
+<BaseLayout title={t('artifacts.title', lang)} activePage="artifacts" lang={lang}>
+  <meta http-equiv="refresh" content="0;url=/artifacts?lang=en-US">
   <div class="flex items-center justify-center min-h-[60vh]">
     <p class="text-slate-400 text-sm">{t('common.loading', lang)}</p>
   </div>

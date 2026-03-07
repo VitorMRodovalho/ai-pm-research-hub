@@ -1,18 +1,11 @@
 ---
-/**
- * Localized attendance page wrapper.
- * Reuses the same components as the root /attendance page.
- * The main page logic reads `document.documentElement.lang` for i18n.
- */
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Toast from '../../components/ui/Toast.astro';
 import { t } from '../../i18n/utils';
 const lang = 'es-LATAM' as const;
 ---
-<BaseLayout title={t('attendance.meta', lang)} activePage="attendance" lang={lang}>
-  <Toast />
-  <div id="attendance-root" data-lang="es-LATAM"></div>
-  <script>
-    window.location.href = '/attendance?lang=es-LATAM';
-  </script>
+<BaseLayout title={t('attendance.title', lang)} activePage="attendance" lang={lang}>
+  <meta http-equiv="refresh" content="0;url=/attendance?lang=es-LATAM">
+  <div class="flex items-center justify-center min-h-[60vh]">
+    <p class="text-slate-400 text-sm">{t('common.loading', lang)}</p>
+  </div>
 </BaseLayout>
