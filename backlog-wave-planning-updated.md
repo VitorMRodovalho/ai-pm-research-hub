@@ -98,7 +98,7 @@
 | Hardcoded strings | Medium | Open | Continue i18n first migration. |
 | Legacy role columns still alive | High | Partial | Finish frontend migration to `operational_role` and `designations`, then hard drop `role` and `roles`. |
 | Architectural guideline drift | High | Open | Enforce role model v3, cycle aware data, soft delete, and event driven integration discipline. |
-| Route compatibility not tested | High | Open | Add smoke tests and deploy checklist. |
+| Route compatibility not tested | High | Addressed | Smoke tests added and validated in deploy checklist. |
 
 ---
 
@@ -114,10 +114,10 @@
 
 ### Required next technical steps
 
-- [ ] Complete frontend reads from `operational_role` and `designations`.
-- [ ] Render cycle history timeline from `member_cycle_history`.
+- [x] Complete frontend reads from `operational_role` and `designations`.
+- [x] Render cycle history timeline from `member_cycle_history`.
 - [ ] Add and validate `deputy_manager` visual treatment and ordering rules.
-- [ ] Define hard drop window for `role` and `roles`.
+- [x] Define hard drop window for `role` and `roles`.
 - [ ] Add consent aware analytics instrumentation without leaking PII.
 
 ---

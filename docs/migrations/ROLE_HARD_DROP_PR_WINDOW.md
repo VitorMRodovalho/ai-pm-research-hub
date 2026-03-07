@@ -10,18 +10,18 @@ Finalize migration from legacy `role/roles` to `operational_role/designations` a
 - Route/build/test smoke checks green.
 
 ## Remaining Compatibility Scope (intentional)
-- `admin_update_member` RPC payload still sends `p_role` and `p_roles` for backward compatibility.
-- `admin/member/[id].astro` still sends `p_role` and `p_roles` while backend compatibility exists.
+- `admin_update_member` backend contract still needs native v2 deployment in Supabase.
+- Frontend now sends only v2 fields by default and uses `p_role`/`p_roles` only as automatic fallback if RPC v2 fails.
 
-These are the final backend-contract blockers before hard-drop.
+After backend v2 deployment is validated, legacy fallback can be removed.
 
 ## Proposed PR Sequence
 1. PR-A: Backend contract update
    - Remove requirement for `p_role` and `p_roles` in admin RPC contract.
    - Keep computed compatibility in responses only if needed temporarily.
 2. PR-B: Frontend contract cleanup
-   - Remove `p_role`/`p_roles` payload generation from admin pages.
-   - Remove any dead legacy helper code tied to those params.
+   - Status: done in app code (primary payload now sends only `operational_role`/`designations`).
+   - Legacy fields remain only in temporary fallback helper path.
 3. PR-C: DB hard-drop migration
    - Execute:
      - `ALTER TABLE public.members DROP COLUMN role;`

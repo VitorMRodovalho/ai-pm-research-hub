@@ -151,6 +151,21 @@ const isNew = id === 'new';
     };
   }
 
+  function buildLegacyRolePayload(baseParams, opRole, selectedRoles) {
+    const split = splitRoleSelection(opRole, selectedRoles);
+    const allRoles = Array.from(new Set([
+      ...(split.operationalRole !== 'none' && split.operationalRole !== 'guest' ? [split.operationalRole] : []),
+      ...split.designations,
+    ]));
+    return {
+      ...baseParams,
+      p_role: split.operationalRole !== 'none' && split.operationalRole !== 'guest'
+        ? split.operationalRole
+        : (split.designations[0] || 'guest'),
+      p_roles: allRoles.length ? allRoles : ['guest'],
+    };
+  }
+
   async function adminUpdateMemberCompat(sb, params, opRole, selectedRoles) {
     const split = splitRoleSelection(opRole, selectedRoles);
     const v2Payload = {
@@ -169,7 +184,8 @@ const isNew = id === 'new';
     const v2 = await sb.rpc('admin_update_member', v2Payload);
     if (!v2.error && v2.data?.success) return { mode: 'v2', data: v2.data, error: null };
 
-    const legacy = await sb.rpc('admin_update_member', params);
+    const legacyPayload = buildLegacyRolePayload(params, opRole, selectedRoles);
+    const legacy = await sb.rpc('admin_update_member', legacyPayload);
     return { mode: 'legacy', data: legacy.data, error: legacy.error || v2.error };
   }
 
@@ -183,8 +199,6 @@ const isNew = id === 'new';
     const params = {
       p_member_id: isNew ? undefined : memberId,
       p_name: name, p_email: email,
-      p_role:  opRole,
-      p_roles: roles,
       p_chapter: (document.getElementById('f-chapter') )?.value || null,
       p_tribe_id: parseInt((document.getElementById('f-tribe') )?.value) || null,
       p_pmi_id:  (document.getElementById('f-pmi') )?.value.trim() || null,

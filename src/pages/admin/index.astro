@@ -491,13 +491,10 @@ import Toast from '../../components/ui/Toast.astro';
     return 'visitor';
   }
 
-  // ── Compute legacy role + roles for backward-compat ──
-  const OP_ROLE_HIERARCHY = ['manager', 'tribe_leader', 'researcher', 'facilitator', 'communicator'];
-
+  // ── Compute legacy payload fields only for temporary RPC fallback ──
   function computeLegacyFields(opRole: string, desigs: string[]): { role: string; roles: string[] } {
     const allRoles = [...(opRole !== 'none' && opRole !== 'guest' ? [opRole] : []), ...desigs];
     if (allRoles.length === 0) return { role: 'guest', roles: ['guest'] };
-    // Primary role: operational role if exists, else first designation
     const role = opRole !== 'none' && opRole !== 'guest' ? opRole : desigs[0] || 'guest';
     return { role, roles: allRoles };
   }

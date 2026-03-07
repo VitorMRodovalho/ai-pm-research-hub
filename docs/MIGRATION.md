@@ -40,7 +40,7 @@ The current platform may still use fallback behavior in some places, but new wor
 
 ### Required next steps
 1. Frontend reads have been migrated in core and admin pages to consume `operational_role` and `designations`.
-2. Remaining compatibility is concentrated in admin RPC payload contracts (`p_role`, `p_roles`) during transition.
+2. Remaining compatibility is concentrated in admin RPC fallback logic (`p_role`, `p_roles`) during transition.
 3. After RPC contract cleanup and validation, hard drop `role` and `roles`.
 
 ### Final cleanup target
