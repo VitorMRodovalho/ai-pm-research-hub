@@ -9,7 +9,7 @@
 
 ## Overview
 
-The **AI & PM Research Hub** (originally *Núcleo de Estudos e Pesquisa em Inteligência Artificial e Gerenciamento de Projetos*) is a multi chapter research initiative under the PMI® Brazilian ecosystem, dedicated to advancing the intersection of Artificial Intelligence and Project Management.
+The **AI & PM Research Hub** (originally *Núcleo de Estudos e Pesquisa em Inteligência Artificial e Gerenciamento de Projetos*) is a multi-chapter research initiative under the PMI® Brazilian ecosystem, dedicated to advancing the intersection of Artificial Intelligence and Project Management.
 
 Founded in 2024 as a pilot within PMI Goiás (PMI GO), the initiative has grown into a structured alliance of five PMI chapters — **PMI GO, PMI CE, PMI DF, PMI MG, and PMI RS** — with active collaborators organized across 8 research streams and 4 strategic knowledge quadrants.
 
