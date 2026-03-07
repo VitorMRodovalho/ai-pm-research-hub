@@ -1,0 +1,67 @@
+<!-- AnnouncementBanner.astro — S-AN1
+     Shows active announcements from DB as dismissible banners at top of page.
+     Placed in BaseLayout, below Nav.
+     Types: info (blue), warning (amber), success (green), urgent (red/pulse)
+-->
+<div id="announcements-area"></div>
+
+<script>
+  const TYPE_STYLES: Record<string, { bg: string; text: string; border: string; icon: string }> = {
+    info:    { bg: 'bg-blue-50',    text: 'text-blue-800',    border: 'border-blue-200',   icon: 'ℹ️' },
+    warning: { bg: 'bg-amber-50',   text: 'text-amber-800',   border: 'border-amber-200',  icon: '⚠️' },
+    success: { bg: 'bg-emerald-50', text: 'text-emerald-800', border: 'border-emerald-200', icon: '✅' },
+    urgent:  { bg: 'bg-red-50',     text: 'text-red-800',     border: 'border-red-300',    icon: '🚨' },
+  };
+
+  async function loadAnnouncements() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(loadAnnouncements, 300); return; }
+
+    const now = new Date().toISOString();
+    const { data } = await sb.from('announcements')
+      .select('id, title, message, type, link_url, link_text, starts_at')
+      .eq('is_active', true)
+      .or(`ends_at.is.null,ends_at.gt.${now}`)
+      .lte('starts_at', now)
+      .order('created_at', { ascending: false })
+      .limit(3);
+
+    const area = document.getElementById('announcements-area');
+    if (!area || !data?.length) return;
+
+    // Check dismissed (session storage)
+    const dismissed: string[] = JSON.parse(sessionStorage.getItem('dismissed_announcements') || '[]');
+
+    const visible = data.filter((a: any) => !dismissed.includes(a.id));
+    if (!visible.length) return;
+
+    area.innerHTML = visible.map((a: any) => {
+      const s = TYPE_STYLES[a.type] || TYPE_STYLES.info;
+      const link = a.link_url && a.link_text
+        ? `<a href="${a.link_url}" class="font-bold underline ml-1 hover:opacity-80">${a.link_text}</a>`
+        : '';
+      const pulse = a.type === 'urgent' ? 'animate-pulse' : '';
+      return `
+      <div class="ann-banner ${s.bg} ${s.text} border-b ${s.border} px-4 py-2.5 text-[.78rem] flex items-center gap-2 ${pulse}" data-ann-id="${a.id}">
+        <span class="flex-shrink-0">${s.icon}</span>
+        <div class="flex-1 min-w-0">
+          <strong>${a.title}</strong>
+          ${a.message ? `<span class="ml-1 opacity-80">${a.message}</span>` : ''}
+          ${link}
+        </div>
+        <button onclick="dismissAnnouncement('${a.id}')"
+          class="flex-shrink-0 text-current opacity-40 hover:opacity-80 bg-transparent border-0 cursor-pointer text-base px-1"
+          title="Fechar">✕</button>
+      </div>`;
+    }).join('');
+  }
+
+  (window as any).dismissAnnouncement = (id: string) => {
+    const dismissed: string[] = JSON.parse(sessionStorage.getItem('dismissed_announcements') || '[]');
+    dismissed.push(id);
+    sessionStorage.setItem('dismissed_announcements', JSON.stringify(dismissed));
+    document.querySelector(`[data-ann-id="${id}"]`)?.remove();
+  };
+
+  loadAnnouncements();
+</script>

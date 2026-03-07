@@ -192,6 +192,53 @@ import Toast from '../../components/ui/Toast.astro';
             </table>
           </div>
         </div>
+
+        <!-- Announcements Management -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mt-5">
+          <div class="px-5 py-3.5 border-b border-slate-200">
+            <h3 class="text-sm font-bold text-navy">📢 Avisos Globais</h3>
+            <p class="text-[.68rem] text-slate-400 mt-0.5">Banners exibidos no topo do site para todos os visitantes</p>
+          </div>
+          <div class="p-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+              <div>
+                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Título</label>
+                <input type="text" id="ann-title" placeholder="Ex: Prazo de inscrição encerra amanhã!" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+              </div>
+              <div>
+                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Tipo</label>
+                <select id="ann-type" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem] bg-white">
+                  <option value="info">ℹ️ Informativo (azul)</option>
+                  <option value="warning">⚠️ Atenção (amarelo)</option>
+                  <option value="success">✅ Sucesso (verde)</option>
+                  <option value="urgent">🚨 Urgente (vermelho)</option>
+                </select>
+              </div>
+              <div class="sm:col-span-2">
+                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Mensagem (opcional)</label>
+                <input type="text" id="ann-message" placeholder="Detalhes adicionais..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+              </div>
+              <div>
+                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Link URL (opcional)</label>
+                <input type="url" id="ann-link-url" placeholder="https://..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+              </div>
+              <div>
+                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Texto do link</label>
+                <input type="text" id="ann-link-text" placeholder="Saiba mais" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+              </div>
+              <div>
+                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Expira em</label>
+                <input type="datetime-local" id="ann-ends" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+              </div>
+              <div class="flex items-end">
+                <button onclick="createAnnouncement()" class="w-full px-4 py-2 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
+                  📢 Publicar Aviso
+                </button>
+              </div>
+            </div>
+            <div id="ann-list"><p class="text-slate-400 text-[.72rem] text-center py-3">Carregando avisos...</p></div>
+          </div>
+        </div>
       </div>
 
       <!-- Leader Tier: My Tribe panel -->
@@ -957,6 +1004,86 @@ import Toast from '../../components/ui/Toast.astro';
   };
 
   // ══════════════════════════════════════════
+  // ANNOUNCEMENTS MANAGEMENT
+  // ══════════════════════════════════════════
+  async function loadAnnouncements() {
+    const { data } = await sb.from('announcements')
+      .select('id, title, message, type, link_url, link_text, starts_at, ends_at, is_active, created_at')
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    const el = document.getElementById('ann-list');
+    if (!el) return;
+    if (!data?.length) {
+      el.innerHTML = '<p class="text-slate-400 text-[.72rem] text-center py-3">Nenhum aviso cadastrado.</p>';
+      return;
+    }
+
+    const TYPE_ICONS: Record<string, string> = { info: 'ℹ️', warning: '⚠️', success: '✅', urgent: '🚨' };
+
+    el.innerHTML = data.map((a: any) => {
+      const isExpired = a.ends_at && new Date(a.ends_at) < new Date();
+      const statusBadge = !a.is_active
+        ? '<span class="text-[.58rem] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-400">Inativo</span>'
+        : isExpired
+          ? '<span class="text-[.58rem] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-crimson">Expirado</span>'
+          : '<span class="text-[.58rem] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Ativo</span>';
+      const date = new Date(a.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+      return `
+      <div class="flex items-center gap-2 py-2 border-b border-slate-100 last:border-b-0">
+        <span class="flex-shrink-0">${TYPE_ICONS[a.type] || 'ℹ️'}</span>
+        <div class="flex-1 min-w-0">
+          <div class="text-[.78rem] font-semibold truncate">${a.title}</div>
+          ${a.message ? `<div class="text-[.65rem] text-slate-400 truncate">${a.message}</div>` : ''}
+        </div>
+        ${statusBadge}
+        <span class="text-[.6rem] text-slate-300 flex-shrink-0">${date}</span>
+        <button onclick="toggleAnnouncement('${a.id}', ${!a.is_active})"
+          class="text-[.6rem] px-2 py-0.5 rounded border-0 cursor-pointer transition-all ${a.is_active ? 'bg-red-50 text-crimson hover:bg-red-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}">${a.is_active ? 'Desativar' : 'Ativar'}</button>
+        <button onclick="deleteAnnouncement('${a.id}')"
+          class="text-[.6rem] px-2 py-0.5 rounded bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-crimson border-0 cursor-pointer transition-all">🗑️</button>
+      </div>`;
+    }).join('');
+  }
+
+  (window as any).createAnnouncement = async () => {
+    const title = (document.getElementById('ann-title') as HTMLInputElement).value.trim();
+    if (!title) { toast('Preencha o título', 'error'); return; }
+
+    const { error } = await sb.from('announcements').insert({
+      title,
+      message: (document.getElementById('ann-message') as HTMLInputElement).value.trim() || null,
+      type: (document.getElementById('ann-type') as HTMLSelectElement).value,
+      link_url: (document.getElementById('ann-link-url') as HTMLInputElement).value.trim() || null,
+      link_text: (document.getElementById('ann-link-text') as HTMLInputElement).value.trim() || null,
+      ends_at: (document.getElementById('ann-ends') as HTMLInputElement).value || null,
+      created_by: MEMBER.id,
+    });
+
+    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    toast('Aviso publicado ✅', 'success');
+    (document.getElementById('ann-title') as HTMLInputElement).value = '';
+    (document.getElementById('ann-message') as HTMLInputElement).value = '';
+    (document.getElementById('ann-link-url') as HTMLInputElement).value = '';
+    (document.getElementById('ann-link-text') as HTMLInputElement).value = '';
+    (document.getElementById('ann-ends') as HTMLInputElement).value = '';
+    loadAnnouncements();
+  };
+
+  (window as any).toggleAnnouncement = async (id: string, active: boolean) => {
+    await sb.from('announcements').update({ is_active: active }).eq('id', id);
+    toast(active ? 'Aviso ativado' : 'Aviso desativado', 'info');
+    loadAnnouncements();
+  };
+
+  (window as any).deleteAnnouncement = async (id: string) => {
+    if (!confirm('Excluir este aviso permanentemente?')) return;
+    await sb.from('announcements').delete().eq('id', id);
+    toast('Aviso excluído', 'info');
+    loadAnnouncements();
+  };
+
+  // ══════════════════════════════════════════
   // REPORTS (VRMS CSV + Members Export)
   // ══════════════════════════════════════════
   let vrmsData: any[] = [];
@@ -967,6 +1094,7 @@ import Toast from '../../components/ui/Toast.astro';
     const toEl = document.getElementById('vrms-to') as HTMLInputElement;
     if (fromEl && !fromEl.value) fromEl.value = '2026-01-01';
     if (toEl && !toEl.value) toEl.value = new Date().toISOString().split('T')[0];
+    loadAnnouncements();
   }
 
   (window as any).previewVRMS = async () => {
