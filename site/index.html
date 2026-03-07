@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ciclo 03 — Kick-off | Núcleo IA & GP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/nav.js"></script>
+<style>
+:root{--pmi-dark:#003B5C;--pmi-navy:#200F3B;--pmi-teal:#00799E;--pmi-teal-light:#05BFE0;--pmi-orange:#FF610F;--pmi-orange-soft:#ED7D31;--pmi-purple:#4F17A8;--pmi-purple-light:#B465FF;--pmi-red:#D5340B;--pmi-green:#70AD47;--pmi-beige:#F7F4EF;--pmi-gray:#44546A;--pmi-light:#f0f4f8;--text:#1a1a2e;--text-muted:#5a6072;--white:#fff;--font:'Plus Jakarta Sans',sans-serif}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:var(--font);color:var(--text);background:var(--white);line-height:1.6;-webkit-font-smoothing:antialiased}
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(0,59,92,.97);backdrop-filter:blur(12px);border-bottom:2px solid var(--pmi-orange);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:56px}
+.nav-brand{color:var(--white);font-weight:700;font-size:.9rem}.nav-brand span{color:var(--pmi-orange)}.nav-links{display:flex;gap:.2rem}.nav-links a{color:rgba(255,255,255,.7);text-decoration:none;font-size:.73rem;font-weight:500;padding:.35rem .6rem;border-radius:6px;transition:.2s}.nav-links a:hover,.nav-links a.active{color:var(--white);background:rgba(255,255,255,.1)}
+.nav-auth{display:flex;align-items:center;gap:.5rem}
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem 1rem;border-radius:10px;font-size:.8rem;font-weight:600;border:none;cursor:pointer;transition:.2s;text-decoration:none;font-family:var(--font)}
+.btn-login{background:var(--pmi-orange);color:var(--white)}.btn-login:hover{opacity:.85}
+.btn-ghost{background:rgba(255,255,255,.1);color:var(--white);border:1px solid rgba(255,255,255,.2)}.btn-ghost:hover{background:rgba(255,255,255,.15)}
+.btn-select{background:var(--pmi-teal);color:var(--white);width:100%;justify-content:center;padding:.6rem}.btn-select:hover{background:#006280}.btn-select.selected{background:var(--pmi-green)}.btn-select:disabled{opacity:.5;cursor:not-allowed}
+.btn-sm{padding:.3rem .7rem;font-size:.72rem}
+.btn-google{background:var(--white);color:var(--text);border:1.5px solid #ddd;width:100%;justify-content:center;padding:.7rem;font-size:.88rem}.btn-google:hover{background:#f5f5f5;border-color:#bbb}
+.btn-linkedin{background:#0A66C2;color:#fff;border:none;width:100%;justify-content:center;padding:.7rem;font-size:.88rem;margin-top:.5rem}.btn-linkedin:hover{opacity:.85}
+.btn-magic{background:var(--pmi-teal);color:var(--white);width:100%;justify-content:center;padding:.7rem}
+.user-badge{display:flex;align-items:center;gap:.4rem;color:var(--white);font-size:.75rem;font-weight:500}
+.user-avatar{width:28px;height:28px;border-radius:50%;background:var(--pmi-teal);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.7rem;color:var(--white)}
+.user-avatar img{width:28px;height:28px;border-radius:50%}
+.role-badge{font-size:.6rem;padding:.15rem .4rem;border-radius:4px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.role-manager{background:rgba(255,97,15,.2);color:var(--pmi-orange)}.role-tribe_leader{background:rgba(79,23,168,.2);color:var(--pmi-purple)}.role-researcher{background:rgba(0,121,158,.2);color:var(--pmi-teal)}.role-guest{background:rgba(0,0,0,.1);color:var(--text-muted)}.role-ambassador{background:rgba(16,185,129,.15);color:#065F46}.role-curator{background:rgba(217,119,6,.15);color:#92400E}.role-sponsor{background:rgba(190,32,39,.15);color:#BE2027}.role-founder{background:rgba(124,58,237,.15);color:#6D28D9}
+@media(max-width:900px){.nav-links{display:none}}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center}.modal-overlay.open{display:flex}
+.modal{background:var(--white);border-radius:20px;padding:2.5rem;max-width:420px;width:90%;position:relative}
+.modal h2{font-size:1.3rem;font-weight:800;margin-bottom:.3rem}.modal p{font-size:.88rem;color:var(--text-muted);margin-bottom:1.5rem}
+.modal-close{position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--text-muted)}
+.divider{display:flex;align-items:center;gap:.8rem;margin:1.2rem 0;color:var(--text-muted);font-size:.78rem}.divider::before,.divider::after{content:'';flex:1;height:1px;background:#ddd}
+.form-group{margin-bottom:1rem}.form-group label{display:block;font-size:.8rem;font-weight:600;margin-bottom:.3rem}
+.form-group input{width:100%;padding:.6rem .8rem;border:1.5px solid #ddd;border-radius:10px;font-size:.88rem;font-family:var(--font);transition:.2s}
+.form-group input:focus{outline:none;border-color:var(--pmi-teal);box-shadow:0 0 0 3px rgba(0,121,158,.1)}
+.form-msg{font-size:.8rem;padding:.6rem;border-radius:8px;margin-top:.8rem;display:none}.form-msg.success{display:block;background:rgba(112,173,71,.1);color:var(--pmi-green)}.form-msg.error{display:block;background:rgba(213,52,11,.1);color:var(--pmi-red)}
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--pmi-dark) 0%,var(--pmi-navy) 40%,#0a1628 100%);position:relative;overflow:hidden;padding-top:56px}
+.hero::before{content:'';position:absolute;top:-50%;right:-30%;width:80vw;height:80vw;background:radial-gradient(circle,rgba(5,191,224,.08) 0%,transparent 60%)}
+.hero::after{content:'';position:absolute;bottom:-20%;left:-20%;width:60vw;height:60vw;background:radial-gradient(circle,rgba(255,97,15,.06) 0%,transparent 50%)}
+.hero-content{position:relative;z-index:2;text-align:center;max-width:900px;padding:2rem}
+.hero-badge{display:inline-block;background:rgba(255,97,15,.15);color:var(--pmi-orange);font-size:.78rem;font-weight:600;padding:.4rem 1.2rem;border-radius:100px;border:1px solid rgba(255,97,15,.3);margin-bottom:1.5rem;letter-spacing:.05em}
+.hero h1{font-size:clamp(2rem,5vw,3.5rem);font-weight:800;color:var(--white);line-height:1.15;margin-bottom:.5rem}
+.hero h1 .accent{background:linear-gradient(135deg,var(--pmi-teal-light),var(--pmi-purple-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero h2{font-size:clamp(.9rem,2.5vw,1.3rem);color:rgba(255,255,255,.6);font-weight:400;margin-bottom:1.5rem}
+.hero-date{display:inline-flex;align-items:center;gap:.5rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:.6rem 1.3rem;border-radius:12px;color:var(--white);font-size:.9rem;font-weight:500}
+.hero-chapters{display:flex;flex-wrap:wrap;justify-content:center;gap:.5rem;margin-top:1.5rem}
+.hero-chapters span{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.8);padding:.25rem .7rem;border-radius:8px;font-size:.78rem;font-weight:600}
+.countdown-bar{margin-top:2rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:1rem 1.5rem;display:inline-flex;align-items:center;gap:1.5rem;flex-wrap:wrap;justify-content:center}
+.countdown-item{text-align:center}.countdown-num{font-size:1.8rem;font-weight:800;color:var(--pmi-teal-light);line-height:1}
+.countdown-label{font-size:.65rem;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em}
+.countdown-sep{font-size:1.5rem;color:rgba(255,255,255,.2)}
+.scroll-cue{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.3);font-size:.75rem;animation:bounce 2s infinite}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(8px)}}
+section{padding:4.5rem 2rem}.section-dark{background:var(--pmi-dark);color:var(--white)}.section-beige{background:var(--pmi-beige)}.section-light{background:var(--pmi-light)}
+.container{max-width:1200px;margin:0 auto}
+.section-label{font-size:.73rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--pmi-orange);margin-bottom:.5rem}
+.section-dark .section-label{color:var(--pmi-teal-light)}
+.section-title{font-size:clamp(1.7rem,4vw,2.5rem);font-weight:800;line-height:1.2;margin-bottom:.8rem}
+.section-subtitle{font-size:1rem;color:var(--text-muted);max-width:700px;margin-bottom:2.5rem}
+.section-dark .section-subtitle{color:rgba(255,255,255,.6)}
+.agenda-grid{display:grid;gap:.8rem}
+.agenda-item{display:grid;grid-template-columns:75px 1fr;gap:1.2rem;padding:1.2rem;background:var(--white);border-radius:14px;border:1px solid rgba(0,0,0,.05);transition:.2s}
+.agenda-item:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,0,0,.06)}
+.agenda-time{font-size:.82rem;font-weight:700;color:var(--pmi-teal);background:rgba(0,121,158,.08);padding:.4rem;border-radius:10px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.agenda-time small{font-size:.6rem;color:var(--text-muted);font-weight:500}
+.agenda-title{font-weight:700;font-size:1rem;margin-bottom:.2rem}.agenda-desc{font-size:.85rem;color:var(--text-muted)}
+.quadrants-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.2rem}
+.quad-card{background:var(--white);border-radius:18px;padding:1.8rem;border:1px solid rgba(0,0,0,.05);position:relative;overflow:hidden;transition:.3s}
+.quad-card:hover{transform:translateY(-3px);box-shadow:0 10px 35px rgba(0,0,0,.08)}
+.quad-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px}
+.quad-card:nth-child(1)::before{background:var(--pmi-teal)}.quad-card:nth-child(2)::before{background:var(--pmi-orange)}.quad-card:nth-child(3)::before{background:var(--pmi-purple)}.quad-card:nth-child(4)::before{background:var(--pmi-green)}
+.quad-num{font-size:2.8rem;font-weight:800;opacity:.07;position:absolute;top:.3rem;right:.8rem}
+.quad-card h3{font-size:1.05rem;font-weight:700;margin-bottom:.25rem}.quad-card p{font-size:.83rem;color:var(--text-muted)}
+.tribe-card{background:var(--white);border-radius:18px;overflow:hidden;border:1px solid rgba(0,0,0,.05);margin-bottom:1rem;transition:.3s}
+.tribe-card:hover{box-shadow:0 6px 24px rgba(0,0,0,.06)}
+.tribe-header{display:flex;align-items:center;gap:1rem;padding:1.2rem 1.5rem;cursor:pointer}
+.tribe-num{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1rem;color:var(--white);flex-shrink:0}
+.tribe-q1 .tribe-num{background:var(--pmi-teal)}.tribe-q2 .tribe-num{background:var(--pmi-orange)}.tribe-q3 .tribe-num{background:var(--pmi-purple)}.tribe-q4 .tribe-num{background:var(--pmi-green)}
+.tribe-info{flex:1}.tribe-info h3{font-size:.95rem;font-weight:700}.tribe-info .tribe-leader{font-size:.82rem;color:var(--text-muted)}
+.tribe-slots-wrap{flex-shrink:0;text-align:center}.slots-visual{display:flex;gap:3px;margin-bottom:2px}
+.slot-dot{width:14px;height:14px;border-radius:50%;border:2px solid #ddd;transition:.3s}.slot-dot.filled{background:var(--pmi-green);border-color:var(--pmi-green)}
+.slots-text{font-size:.68rem;color:var(--text-muted);font-weight:600}.slots-text .full{color:var(--pmi-red)}
+.tribe-body{max-height:0;overflow:hidden;transition:max-height .4s ease;padding:0 1.5rem}
+.tribe-body.open{max-height:600px;padding:0 1.5rem 1.5rem;border-top:1px solid rgba(0,0,0,.05)}
+.tribe-body p{font-size:.88rem;color:var(--text-muted);margin-bottom:.8rem;margin-top:.8rem}
+.tribe-actions{display:flex;gap:.8rem;flex-wrap:wrap;align-items:center;margin-top:1rem}
+.tribe-video{display:inline-flex;align-items:center;gap:.4rem;background:var(--pmi-red);color:var(--white);padding:.45rem 1rem;border-radius:10px;text-decoration:none;font-size:.82rem;font-weight:600;transition:.2s}.tribe-video:hover{opacity:.85}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1.2rem}
+.kpi-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:1.8rem;text-align:center}
+.kpi-value{font-size:2.5rem;font-weight:800;background:linear-gradient(135deg,var(--pmi-teal-light),var(--pmi-orange-soft));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.kpi-label{font-size:.82rem;color:rgba(255,255,255,.6);margin-top:.2rem}
+.breakout-box{background:linear-gradient(135deg,var(--pmi-teal),var(--pmi-dark));color:var(--white);border-radius:22px;padding:2.5rem;text-align:center;max-width:700px;margin:0 auto}
+.breakout-box h3{font-size:1.4rem;font-weight:800;margin-bottom:.8rem}
+.breakout-question{font-size:1.15rem;font-style:italic;color:rgba(255,255,255,.85);background:rgba(0,0,0,.15);padding:1.3rem;border-radius:14px;margin:1.2rem 0;border-left:4px solid var(--pmi-orange)}
+.timeline{position:relative;padding-left:2rem}.timeline::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(to bottom,var(--pmi-teal),var(--pmi-purple),var(--pmi-orange));border-radius:3px}
+.timeline-item{position:relative;padding-bottom:1.8rem;padding-left:1.5rem}
+.timeline-item::before{content:'';position:absolute;left:-2.35rem;top:.3rem;width:13px;height:13px;border-radius:50%;border:3px solid var(--white)}
+.timeline-item:nth-child(1)::before{background:var(--pmi-teal)}.timeline-item:nth-child(2)::before{background:var(--pmi-orange)}.timeline-item:nth-child(3)::before{background:var(--pmi-purple)}.timeline-item:nth-child(4)::before{background:var(--pmi-green)}
+.timeline-date{font-size:.72rem;font-weight:700;color:var(--pmi-teal);letter-spacing:.05em}
+.timeline-item h4{font-size:.95rem;font-weight:700;margin:.15rem 0}.timeline-item p{font-size:.82rem;color:var(--text-muted)}
+.resources-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:1.2rem}
+.resource-card{background:var(--white);border-radius:14px;padding:1.3rem;border:1px solid rgba(0,0,0,.05);display:flex;align-items:flex-start;gap:.8rem}
+.resource-icon{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+.resource-card h4{font-size:.9rem;font-weight:700;margin-bottom:.15rem}.resource-card p{font-size:.78rem;color:var(--text-muted)}
+.resource-card a{color:var(--pmi-teal);font-size:.78rem;font-weight:600;text-decoration:none}.resource-card a:hover{text-decoration:underline}
+.footer{background:var(--pmi-navy);color:rgba(255,255,255,.4);padding:2.5rem 2rem;text-align:center;font-size:.78rem}.footer a{color:var(--pmi-teal-light);text-decoration:none}
+.text-center{text-align:center}.mt-2{margin-top:1.5rem}
+.badge{display:inline-block;padding:.2rem .65rem;border-radius:6px;font-size:.68rem;font-weight:700}
+.badge-open{background:rgba(112,173,71,.15);color:var(--pmi-green);animation:pulse 2s infinite}
+.badge-deadline{background:rgba(213,52,11,.1);color:var(--pmi-red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+.hidden{display:none!important}
+.toast{position:fixed;bottom:2rem;right:2rem;background:var(--pmi-dark);color:var(--white);padding:.8rem 1.5rem;border-radius:12px;font-size:.85rem;font-weight:500;z-index:300;transform:translateY(100px);opacity:0;transition:.4s}
+.toast.show{transform:translateY(0);opacity:1}.toast.success{border-left:4px solid var(--pmi-green)}.toast.error{border-left:4px solid var(--pmi-red)}.toast.info{border-left:4px solid var(--pmi-teal)}
+
+/* ── Profile Drawer ── */
+.pd-overlay{display:none;position:fixed;inset:0;z-index:500}
+.pd-overlay.open{display:block}
+.pd-drawer{position:fixed;top:60px;right:1rem;z-index:501;background:#fff;border-radius:16px;
+  box-shadow:0 8px 40px rgba(0,0,0,.2);padding:1.2rem 1.1rem;min-width:240px;
+  transform:translateY(-8px) scale(.97);opacity:0;pointer-events:none;transition:.18s;border:1px solid #E2E8F0}
+.pd-drawer.open{transform:translateY(0) scale(1);opacity:1;pointer-events:all}
+.pd-av{width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.pd-av-init{width:48px;height:48px;border-radius:50%;background:var(--pmi-teal);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.85rem}
+.pd-name{font-weight:700;font-size:.9rem;color:#1a1a2e}
+.pd-badge{font-size:.65rem;font-weight:700;padding:.12rem .45rem;border-radius:5px;display:inline-block;margin-top:.2rem}
+.pd-email{font-size:.68rem;color:#64748B;margin-top:.1rem}
+.pd-hr{border:none;border-top:1px solid #F1F5F9;margin:.7rem 0}
+.pd-item{display:flex;align-items:center;gap:.5rem;width:100%;padding:.38rem .5rem;border-radius:8px;
+  font-size:.78rem;font-weight:600;text-decoration:none;color:#1a1a2e;border:none;background:none;cursor:pointer;text-align:left;transition:.12s}
+.pd-item:hover{background:#F8FAFC}
+.pd-item.admin{color:#4F17A8}.pd-item.admin:hover{background:#F5F3FF}
+.pd-item.danger{color:#BE2027}.pd-item.danger:hover{background:#FFF1F1}
+</style>
+</head>
+<body>
+
+<div id="toast" class="toast"></div>
+
+<!-- AUTH MODAL -->
+<div id="authModal" class="modal-overlay">
+<div class="modal">
+<button class="modal-close" onclick="closeAuth()">&times;</button>
+<h2>Entrar no Núcleo IA & GP</h2>
+<p>Use sua conta Google, LinkedIn ou email cadastrado.</p>
+<button class="btn btn-google" onclick="loginGoogle()">
+<svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+Entrar com Google
+</button>
+<button class="btn btn-linkedin" onclick="loginLinkedIn()">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+Entrar com LinkedIn
+</button>
+<div class="divider">ou</div>
+<div class="form-group"><label>Email cadastrado</label><input type="email" id="authEmail" placeholder="seu@email.com"></div>
+<button class="btn btn-magic" onclick="loginMagic()">Entrar com Magic Link ✉️</button>
+<div id="authMsg" class="form-msg"></div>
+</div>
+</div>
+
+<!-- NAV -->
+  <!-- nav injected by nav.js -->
+
+<!-- HERO -->
+<section class="hero" id="hero">
+<div class="hero-content">
+<div class="hero-badge">KICK-OFF OFICIAL — CICLO 03 (2026/1)</div>
+<h1>Núcleo de Estudos e Pesquisa em<br><span class="accent">Inteligência Artificial</span><br>e Gerenciamento de Projetos</h1>
+<h2>The AI & PM Study and Research Hub — A Joint Initiative of the PMI Brazilian Chapters</h2>
+<div class="hero-date">📅 5 de Março de 2026 · 19:30 BRT · Google Meet</div>
+<div class="hero-chapters"><span>PMI-GO</span><span>PMI-CE</span><span>PMI-DF</span><span>PMI-MG</span><span>PMI-RS</span></div>
+<div class="countdown-bar">
+<div class="countdown-item"><div class="countdown-num" id="cd-d">--</div><div class="countdown-label">Dias</div></div>
+<div class="countdown-sep">:</div>
+<div class="countdown-item"><div class="countdown-num" id="cd-h">--</div><div class="countdown-label">Horas</div></div>
+<div class="countdown-sep">:</div>
+<div class="countdown-item"><div class="countdown-num" id="cd-m">--</div><div class="countdown-label">Min</div></div>
+<div class="countdown-sep">:</div>
+<div class="countdown-item"><div class="countdown-num" id="cd-s">--</div><div class="countdown-label">Seg</div></div>
+<div style="font-size:.72rem;color:rgba(255,255,255,.5)">para escolher sua tribo</div>
+</div>
+</div>
+<div class="scroll-cue">▼ Role para começar</div>
+</section>
+
+<!-- AGENDA -->
+<section class="section-beige" id="agenda">
+<div class="container">
+<div class="section-label">Pauta do Evento</div>
+<div class="section-title">O que acontece hoje</div>
+<div class="section-subtitle">1h30 de alinhamento, conhecimento e conexão.</div>
+<div class="agenda-grid">
+<div class="agenda-item"><div class="agenda-time">00–15<small>min</small></div><div><div class="agenda-title">Boas-vindas e Abertura Institucional</div><div class="agenda-desc">Celebração. Palavra dos 5 Capítulos. 44 colaboradores.</div></div></div>
+<div class="agenda-item"><div class="agenda-time">15–30<small>min</small></div><div><div class="agenda-title">Mapa Estratégico e Objetivos</div><div class="agenda-desc">4 Quadrantes. KPIs 2026. Estrutura do Núcleo.</div></div></div>
+<div class="agenda-item"><div class="agenda-time">30–45<small>min</small></div><div><div class="agenda-title">Dinâmica das Tribos</div><div class="agenda-desc">8 vídeos. Escolha sua tribo até <strong>Sáb 08/Mar 12h BRT</strong>.</div></div></div>
+<div class="agenda-item"><div class="agenda-time">45–60<small>min</small></div><div><div class="agenda-title">Networking — Breakout Rooms</div><div class="agenda-desc">Salas de 4-5 pessoas. Pergunta quebra-gelo.</div></div></div>
+<div class="agenda-item"><div class="agenda-time">60–75<small>min</small></div><div><div class="agenda-title">Regras do Jogo e Ferramentas</div><div class="agenda-desc">Dashboard. Drive, Miro, WhatsApp.</div></div></div>
+<div class="agenda-item"><div class="agenda-time">75–90<small>min</small></div><div><div class="agenda-title">Q&A e Encerramento</div><div class="agenda-desc">Links, cursos PMI, foto oficial.</div></div></div>
+</div>
+</div>
+</section>
+
+<!-- QUADRANTS -->
+<section id="quadrants">
+<div class="container">
+<div class="section-label">Estrutura de Conhecimento</div>
+<div class="section-title">4 Quadrantes Estratégicos</div>
+<div class="section-subtitle">Cada quadrante se conecta e alimenta os demais.</div>
+<div class="quadrants-grid">
+<div class="quad-card"><div class="quad-num">Q1</div><h3>O Praticante Aumentado</h3><p>Ferramentas, Produtividade e Engenharia de Agentes.</p></div>
+<div class="quad-card"><div class="quad-num">Q2</div><h3>Gestão de Projetos de IA</h3><p>Metodologia GenAI/ML. Equipes híbridas. Framework EAA.</p></div>
+<div class="quad-card"><div class="quad-num">Q3</div><h3>Liderança Organizacional</h3><p>TMO/PMO, Cultura, Talentos, ROI & Portfólio.</p></div>
+<div class="quad-card"><div class="quad-num">Q4</div><h3>Futuro e Responsabilidade</h3><p>Governança & Trustworthy AI. Inclusão.</p></div>
+</div>
+</div>
+</section>
+
+<!-- TRIBES -->
+<section class="section-beige" id="tribes">
+<div class="container">
+<div class="section-label">Dream Team — 8 Líderes</div>
+<div class="section-title">Escolha sua Tribo</div>
+<div class="section-subtitle">
+<span class="badge badge-open">SELEÇÃO ABERTA</span>
+<span class="badge badge-deadline">Encerra Sáb 08/Mar 12h BRT</span><br>
+Mín. 3 · Máx. 6 pesquisadores por tribo.
+<span id="loginPrompt" style="display:block;margin-top:.5rem;font-weight:600;color:var(--pmi-orange)">⚡ Faça login para escolher</span>
+</div>
+<div id="tribesContainer"></div>
+<div class="text-center mt-2">
+<a href="https://youtube.com/playlist?list=PLQJVKrw1fcrx3fD2ug1hnps6TklcMT1dc" target="_blank" style="color:var(--pmi-red);font-weight:700;font-size:.95rem;text-decoration:none">📋 Playlist completa →</a>
+</div>
+</div>
+</section>
+
+<!-- KPIs -->
+<section class="section-dark" id="kpis">
+<div class="container">
+<div class="section-label">O Que é Sucesso?</div>
+<div class="section-title" style="color:var(--white)">Metas 2026</div>
+<div class="section-subtitle">1-2 artefatos de qualidade por tribo.</div>
+<div class="kpi-grid">
+<div class="kpi-card"><div class="kpi-value">8</div><div class="kpi-label">Capítulos</div></div>
+<div class="kpi-card"><div class="kpi-value">+10</div><div class="kpi-label">Artigos</div></div>
+<div class="kpi-card"><div class="kpi-value">+6</div><div class="kpi-label">Webinars</div></div>
+<div class="kpi-card"><div class="kpi-value">3</div><div class="kpi-label">Pilotos IA</div></div>
+<div class="kpi-card"><div class="kpi-value">1.800h</div><div class="kpi-label">Impacto</div></div>
+<div class="kpi-card"><div class="kpi-value">70%</div><div class="kpi-label">Mini cert. IA</div></div>
+</div>
+</div>
+</section>
+
+<!-- BREAKOUT -->
+<section class="section-beige" id="breakout">
+<div class="container">
+<div class="section-label">Momento de Conexão</div>
+<div class="section-title">Breakout Rooms</div>
+<div class="breakout-box">
+<h3>🎯 Pergunta Quebra-Gelo</h3>
+<div class="breakout-question">"Qual o maior impacto que a IA já causou no seu trabalho até hoje?"</div>
+<p style="font-size:.88rem;opacity:.8">Apresente-se, responda e descubra com quem quer trabalhar.</p>
+</div>
+</div>
+</section>
+
+<!-- RULES -->
+<section id="rules">
+<div class="container">
+<div class="section-label">Como Vamos Trabalhar</div>
+<div class="section-title">Regras do Jogo</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem">
+<div><h3 style="font-size:1.05rem;margin-bottom:.8rem">⏱ Carga Horária</h3><p style="font-size:.88rem;color:var(--text-muted)">4-6h/semana. Reuniões gerais + tribos.</p></div>
+<div><h3 style="font-size:1.05rem;margin-bottom:.8rem">📊 Dashboard</h3><p style="font-size:.88rem;color:var(--text-muted)">Google Sheets. Sábado até 17h. Segunda: relatório.</p></div>
+<div><h3 style="font-size:1.05rem;margin-bottom:.8rem">📝 Curadoria</h3><p style="font-size:.88rem;color:var(--text-muted)">7 etapas. Peer review + Comitê de Curadoria.</p></div>
+<div><h3 style="font-size:1.05rem;margin-bottom:.8rem">🏆 Reconhecimento</h3><p style="font-size:.88rem;color:var(--text-muted)">Declarações PMI. Atestados. Horas. Comprovação.</p></div>
+</div>
+<div class="mt-2">
+<div class="section-label">Jornada de Valor 2026</div>
+<div class="timeline" style="margin-top:1.2rem">
+<div class="timeline-item"><div class="timeline-date">Marco 1</div><h4>Produção de Conhecimento</h4><p>10+ artigos internacionais</p></div>
+<div class="timeline-item"><div class="timeline-date">Marco 2</div><h4>Aplicação Real</h4><p>3 Pilotos com IA co-piloto</p></div>
+<div class="timeline-item"><div class="timeline-date">Marco 3</div><h4>Profissionalização</h4><p>Certificação PMI-CPMAI</p></div>
+<div class="timeline-item"><div class="timeline-date">Marco 4</div><h4>Impacto Global</h4><p>AI Ambassadors & Comunidade</p></div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- RESOURCES -->
+<section class="section-light" id="resources">
+<div class="container">
+<div class="section-label">Links e Recursos</div>
+<div class="section-title">Próximos Passos</div>
+<div class="resources-grid">
+<div class="resource-card"><div class="resource-icon" style="background:rgba(213,52,11,.1)">▶️</div><div><h4>Playlist YouTube</h4><p>8 vídeos. Escolha até Sáb 12h.</p><a href="https://youtube.com/playlist?list=PLQJVKrw1fcrx3fD2ug1hnps6TklcMT1dc" target="_blank">Abrir →</a></div></div>
+<div class="resource-card"><div class="resource-icon" style="background:rgba(0,121,158,.1)">📘</div><div><h4>Manual de Governança</h4><p>Leitura obrigatória (documento vivo).</p><a href="https://www.canva.com/design/DAG1Nc3jhC4/gWGhQCJyv7axeCbKozD1gg/view" target="_blank">Abrir Manual →</a></div></div>
+<div class="resource-card"><div class="resource-icon" style="background:rgba(79,23,168,.1)">🎓</div><div><h4>Mini Cursos IA — PMI</h4><p>Trilha gratuita.</p><a href="https://www.pmi.org/learning/ai-in-project-management" target="_blank">PMI.org →</a></div></div>
+<div class="resource-card"><div class="resource-icon" style="background:rgba(112,173,71,.1)">💻</div><div><h4>GitHub</h4><p>Repositório + CRs.</p><a href="https://github.com/VitorMRodovalho/ai-pm-research-hub" target="_blank">Abrir →</a></div></div>
+<div class="resource-card"><div class="resource-icon" style="background:rgba(255,97,15,.1)">📧</div><div><h4>Email do Núcleo</h4><p>Comunicações oficiais.</p><a href="mailto:nucleoia@pmigo.org.br">nucleoia@pmigo.org.br</a></div></div>
+<div class="resource-card"><div class="resource-icon" style="background:rgba(0,121,158,.1)">✅</div><div><h4>volunteer.pmi.org</h4><p>Aceite sua posição.</p><a href="https://volunteer.pmi.org" target="_blank">Portal →</a></div></div>
+</div>
+</div>
+</section>
+
+<!-- CERTIFICATION TRAIL -->
+<section id="trail">
+<div class="container">
+<div class="section-label">Meta 2026: 70% da Trilha Completa</div>
+<div class="section-title">Trilha de Certificação IA — PMI</div>
+<div class="section-subtitle">8 cursos gratuitos que todo GP do Núcleo deve completar. Seu progresso aparece ao vivo quando você faz login.</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;margin-bottom:2rem">
+<div style="background:var(--pmi-beige);border-radius:16px;padding:1.5rem;border-left:4px solid var(--pmi-teal)">
+<div style="font-size:.7rem;font-weight:700;color:var(--pmi-teal);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem">Trilha Principal (Core)</div>
+<div id="coreCoursesContainer"></div>
+</div>
+<div style="background:var(--pmi-beige);border-radius:16px;padding:1.5rem;border-left:4px solid var(--pmi-purple)">
+<div style="font-size:.7rem;font-weight:700;color:var(--pmi-purple);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem">Complementares & Opcionais</div>
+<div id="extraCoursesContainer"></div>
+</div>
+</div>
+
+<div style="background:var(--pmi-dark);border-radius:20px;padding:2rem;color:var(--white)">
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem">
+<div>
+<div style="font-size:1.1rem;font-weight:800">Ranking do Time</div>
+<div style="font-size:.82rem;color:rgba(255,255,255,.5)">Progresso dos membros ativos na trilha</div>
+</div>
+<div id="trailKPI" style="text-align:center">
+<div style="font-size:2rem;font-weight:800;color:var(--pmi-teal-light)">--</div>
+<div style="font-size:.7rem;color:rgba(255,255,255,.5)">Média geral</div>
+</div>
+</div>
+<div id="rankingContainer" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.8rem">
+<div style="color:rgba(255,255,255,.4);font-size:.85rem">Carregando...</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- TEAM GALLERY -->
+<section class="section-dark" id="team">
+<div class="container">
+<div class="section-label">44 Colaboradores · 5 Capítulos · 1 Missão</div>
+<div class="section-title" style="color:var(--white)">Nosso Time</div>
+<div class="section-subtitle">Pesquisadores, líderes e gestores unidos pela interseção IA + GP.</div>
+<div style="display:flex;flex-wrap:wrap;gap:1rem;justify-content:center" id="teamGrid">
+<p style="color:rgba(255,255,255,.5);font-size:.85rem">Carregando time...</p>
+</div>
+<div style="margin-top:1.5rem;display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;font-size:.7rem;color:rgba(255,255,255,.5)">
+<span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#FF610F;display:inline-block"></span>Gerente</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#4F17A8;display:inline-block"></span>Líder de Tribo</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#EC4899;display:inline-block"></span>Pesquisador</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#10B981;display:inline-block"></span>Embaixador</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#D97706;display:inline-block"></span>Curador</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#BE2027;display:inline-block"></span>Patrocinador</span> <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:9px;height:9px;border-radius:50%;background:#7C3AED;display:inline-block"></span>Fundador</span>
+</div>
+</div>
+</section>
+
+<!-- STRATEGIC VISION -->
+<section class="section-beige" id="vision">
+<div class="container">
+<div class="section-label">Visão de Futuro</div>
+<div class="section-title">Para Onde Estamos Indo</div>
+<div class="section-subtitle">O Núcleo opera como um Center of Excellence híbrido — o mais estruturado no ecossistema PMI global para IA + GP.</div>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem">
+<div style="background:var(--white);border-radius:16px;padding:1.5rem;border-top:4px solid var(--pmi-teal)">
+<h3 style="font-size:1rem;margin-bottom:.5rem">🌎 Benchmarking Internacional</h3>
+<p style="font-size:.85rem;color:var(--text-muted)">Mapeamos iniciativas similares no PMI Ireland (AI Innovation Hub), PMI Germany (CoP AI) e PMI Sweden (Global Chapter Report com 27 capítulos e 129 nações). O Núcleo é a mais robusta entre elas.</p>
+</div>
+<div style="background:var(--white);border-radius:16px;padding:1.5rem;border-top:4px solid var(--pmi-orange)">
+<h3 style="font-size:1rem;margin-bottom:.5rem">🏗️ Modelo Bimodal</h3>
+<p style="font-size:.85rem;color:var(--text-muted)"><strong>Eixo A (CoE):</strong> Núcleo fechado de pesquisa de elite com peer review e curadoria.<br><strong>Eixo B (CoP):</strong> Comunidade aberta de AI Ambassadors acessível a qualquer membro PMI globalmente.</p>
+</div>
+<div style="background:var(--white);border-radius:16px;padding:1.5rem;border-top:4px solid var(--pmi-purple)">
+<h3 style="font-size:1rem;margin-bottom:.5rem">🎓 PMI-CPMAI</h3>
+<p style="font-size:.85rem;color:var(--text-muted)">O PMI lançou a certificação PMI-CPMAI (AI Project Management). Ainda não existe um programa de AI Ambassadors — esta é a janela. O Núcleo pode ser o blueprint global.</p>
+</div>
+<div style="background:var(--white);border-radius:16px;padding:1.5rem;border-top:4px solid var(--pmi-green)">
+<h3 style="font-size:1rem;margin-bottom:.5rem">🚀 Roadmap 2026-2028</h3>
+<p style="font-size:.85rem;color:var(--text-muted)"><strong>Fase 1:</strong> Consolidação Ciclo 3 + visibilidade internacional.<br><strong>Fase 2:</strong> Expansão transfronteiriça + coautoria global.<br><strong>Fase 3:</strong> Lançamento AI Ambassadors.<br><strong>Fase 4:</strong> Chancelamento PMI Global.</p>
+</div>
+</div>
+</div>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+<p>Núcleo de Estudos e Pesquisa em IA e GP · The AI & PM Study and Research Hub</p>
+<p style="margin-top:.3rem">PMI-GO · PMI-CE · PMI-DF · PMI-MG · PMI-RS</p>
+<p style="margin-top:.6rem;font-size:.68rem">PMI®, PMBOK®, PMP® e PMI-CPMAI™ são marcas registradas do PMI, Inc.</p>
+<p style="margin-top:.3rem"><a href="https://github.com/VitorMRodovalho/ai-pm-research-hub">GitHub</a> · GP: Vitor Maia Rodovalho</p>
+</footer>
+
+<script>
+// ============================================================================
+// CONFIG
+// ============================================================================
+const SB_URL = 'https://ldrfrvwhxsmgaabwmaik.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkcmZydndoeHNtZ2FhYndtYWlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MjU5NDQsImV4cCI6MjA4ODMwMTk0NH0.gzibKd7Jyck3Ya61vzrloX1YZt-0pNReTuefdi4mAmw';
+const DEADLINE = new Date('2026-03-08T15:00:00Z');
+const MAX_SLOTS = 6;
+const MIN_SLOTS = 3;
+
+const TRIBES = [
+  { id: 1, n: 'Radar Tecnológico do GP', l: 'Hayala Curto, MSc, MBA, PMP®', li: 'https://www.linkedin.com/in/hayala/', q: 'q1', qn: 'Q1 — Praticante Aumentado',
+    d: 'Fazer um simples pedido para uma IA já não é suficiente para entregas de excelência. É hora de elevar o nível com a engenharia de agentes! O desafio não é buscar um "prompt mágico", mas organizar múltiplos prompts e modelos em uma arquitetura de agentes capaz de planejar, executar e se autocorrigir.',
+    a: ['Radar Tecnológico do GP (comparativo GPT vs Claude vs Gemini por artefato)', 'Padrões de Arquitetura de Agentes (com código Python)', '1-2 Artigos científicos'],
+    meet: 'Segundas ou Quartas, 19h', v: 'https://www.youtube.com/watch?v=XJLAvcHFKT8', vd: '7min' },
+  { id: 2, n: 'Agentes Autônomos & Equipes Híbridas', l: 'Débora Moura', li: 'https://www.linkedin.com/in/deboralmoura/', q: 'q2', qn: 'Q2 — Gestão de Projetos de IA',
+    d: '72% dos GPs usam IA de forma ad-hoc, sem alinhamento estratégico. Como criar um framework que guie os GPs na estruturação dos seus próprios agentes? Assim como a EAP guia o escopo, a EAA será o padrão para estruturar agentes!',
+    a: ['Framework EAA (Estrutura Analítica do Agente)', 'E-book / Guia Prático', 'Webinário focado', 'Artigo científico (previsão junho)'],
+    meet: 'Quintas, 20h30', v: 'https://www.youtube.com/watch?v=HwgjMalJXQE', vd: '8min' },
+  { id: 3, n: 'TMO & PMO do Futuro', l: 'Marcel Fleming', li: 'https://www.linkedin.com/in/marcelfleming/', q: 'q3', qn: 'Q3 — Liderança Organizacional',
+    d: 'Organizações com maior maturidade em GP obtêm taxas muito maiores de sucesso. Vamos desenvolver uma POC de IA para diagnosticar maturidade (modelo Prado-MMGP), criar checklists e sugerir ações de melhoria.',
+    a: ['Assistente de IA para diagnóstico de maturidade', 'Plano de Ação Inteligente personalizado', 'Relatório técnico com resultados da POC'],
+    meet: 'A definir com o time', v: 'https://www.youtube.com/watch?v=vxQ4WLTyKpY', vd: '4min' },
+  { id: 4, n: 'Cultura & Change', l: 'Fernando Maquiaveli', li: 'https://www.linkedin.com/in/fernandomaquiaveli/', q: 'q3', qn: 'Q3 — Liderança Organizacional',
+    d: 'Sem cultura, a IA escala o caos. Com 80%+ dos projetos em ambientes multiculturais, precisamos de Inteligência Cultural. O "internal stickiness" bloqueia fluxo de informação — é o inimigo invisível dos projetos.',
+    a: ['Entregas mensais práticas (ferramentas de uso imediato)', 'Framework Inteligência Cultural + IA', 'Pesquisa com metodologias mistas', 'Artigos acadêmicos'],
+    meet: 'Cadência semanal', v: 'https://www.youtube.com/watch?v=LZSk96EsepA', vd: '3min' },
+  { id: 5, n: 'Talentos & Upskilling', l: 'Jefferson Pinto', li: 'https://www.linkedin.com/in/jeffersonpp/', q: 'q3', qn: 'Q3 — Liderança Organizacional',
+    d: 'Adoção de IA acelerou, mas faltam critérios observáveis e evidências claras de proficiência. Sem métricas, não há evolução estruturada! Vamos criar o MVP da Proficiência em IA para GPs.',
+    a: ['Taxonomia (estrutura hierárquica de competências)', 'Matriz + Rubricas (Iniciante/Intermediário/Avançado)', 'Toolkit v1.0 (checklist + evidências)', 'Artigo + Webinário'],
+    meet: 'Segundas, 20h', v: 'https://www.youtube.com/watch?v=KbhnAJdSeDw', vd: '5min' },
+  { id: 6, n: 'ROI & Portfólio', l: 'Fabricio Costa, PMP', li: 'https://www.linkedin.com/in/fabriciorcc/', q: 'q3', qn: 'Q3 — Liderança Organizacional',
+    d: 'Chega de decisões milionárias baseadas em intuição! A IA para priorização ainda é uma "caixa preta". Vamos transformá-la em "caixa de vidro" — transparente, explicável e auditável.',
+    a: ['Modelos Híbridos (IA + julgamento humano)', 'Métricas além do ROI (riscos, reputação, aprendizado)', 'Artigos mensais no LinkedIn', 'Protótipo de plataforma IA para simulação e priorização'],
+    meet: 'A definir com o time', v: 'https://www.youtube.com/watch?v=R2fA7hVE1dc', vd: '11min' },
+  { id: 7, n: 'Governança & Trustworthy AI', l: 'Marcos Klemz', li: 'https://www.linkedin.com/in/maklemz/', q: 'q4', qn: 'Q4 — Futuro e Responsabilidade',
+    d: '83% das organizações planejam implantar IA, mas apenas 29% se sentem prontas. 46% das PoCs são descartadas. Riscos silenciosos: alucinações, dados, vieses. Fim das "PoCs Eternas"!',
+    a: ['Framework de Governança de IA', 'Matriz de Qualidade de Dados', 'Guia de Métricas de Valor (ROI real)', 'Checklist Critérios de Aceite (GenAI/RAG)', 'Toolkit v1.0 Governança'],
+    meet: 'Terças, 20h', v: 'https://www.youtube.com/watch?v=3su8GgtFzVY', vd: '3min' },
+  { id: 8, n: 'Inclusão & Colaboração', l: 'Ana Carla Cavalcante', li: 'https://www.linkedin.com/in/anacarlacavalcante/', q: 'q4', qn: 'Q4 — Futuro e Responsabilidade',
+    d: '15-20% da população mundial é neurodivergente. Apenas 25% dos neuroatípicos empregados se sentem incluídos. Vamos desenvolver o Neuroadvantage Framework 1.0: um "exoesqueleto cognitivo" suportado por IA.',
+    a: ['Neuroadvantage Framework 1.0 (5 pilares)', 'Artigo científico (pilar teórico)', 'Webinar prático (pilar tecnológico)', 'Testes práticos + versão 1.0 para o mercado'],
+    meet: 'Terças e Quintas, 20h30', v: 'https://www.youtube.com/watch?v=ghrgJ3_nk4k', vd: '14min' }
+];
+
+// ============================================================================
+// STATE
+// ============================================================================
+const sb = window.supabase.createClient(SB_URL, SB_KEY);
+let user = null;
+let profile = null;
+let tribeCounts = {};
+let userTribe = null;
+let leaderPhotos = {};
+let allMembers = [];
+
+// ============================================================================
+// INIT
+// ============================================================================
+async function init() {
+  renderTribes();
+  startCountdown();
+  initNavScroll();
+
+  // Check existing session
+  // ── Shared nav handles session, drawer and auth state ──
+  snavInit(sb);
+  window.addEventListener('snav:member', (e) => {
+    if (!e.detail) return;
+    profile = e.detail;
+    updateAuthUI();
+    updateTribesUI();
+    if (profile.role === 'guest') toast('Bem-vindo! Solicite cadastro ao GP.', 'info');
+    else toast('Bem-vindo(a), ' + profile.name.split(' ')[0] + '!', 'success');
+  });
+  // Keep local session for tribe UI
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) { user = session.user; await matchMember(); updateAuthUI(); }
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN') { user = session.user; await matchMember(); updateAuthUI(); }
+    if (event === 'SIGNED_OUT') { user = null; profile = null; updateTribesUI(); }
+  });
+
+  await loadTribeCounts();
+  await loadLeaderPhotos();
+  await loadAllMembers();
+  await loadCertificationData();
+  subscribeRealtime();
+}
+
+async function loadLeaderPhotos() {
+  const { data } = await sb.from('members').select('tribe_id, photo_url').eq('role', 'tribe_leader').not('photo_url', 'is', null);
+  if (data) data.forEach(m => { if (m.tribe_id) leaderPhotos[m.tribe_id] = m.photo_url; });
+  renderTribes();
+  updateTribesUI();
+}
+
+async function loadAllMembers() {
+  const { data } = await sb.from('members').select('name, chapter, role, roles, photo_url, linkedin_url, tribe_id, current_cycle_active').neq('role','guest').order('name');
+  if (data) { allMembers = data; renderTeamGallery(); }
+}
+
+const COURSES = [
+  { code: 'GENAI_OVERVIEW', name: 'Generative AI Overview for Project Managers', cat: 'core', url: 'https://www.pmi.org/learning/courses/generative-ai-overview-for-project-managers' },
+  { code: 'DATA_LANDSCAPE', name: 'Data Landscape of GenAI for Project Managers', cat: 'core', url: 'https://www.pmi.org/learning/courses/data-landscape-of-genai-for-project-managers' },
+  { code: 'PROMPT_ENG', name: 'Talking to AI: Prompt Engineering for Project Managers', cat: 'core', url: 'https://www.pmi.org/learning/courses/talking-to-ai-prompt-engineering-for-project-managers' },
+  { code: 'PRACTICAL_GENAI', name: 'Practical Application of Generative AI for Project Managers', cat: 'core', url: 'https://www.pmi.org/learning/courses/practical-application-of-generative-ai-for-project-managers' },
+  { code: 'CDBA_INTRO', name: 'PMI Citizen Developer: CDBA Introduction', cat: 'extra', url: 'https://www.pmi.org/learning/courses/pmi-citizen-developer-business-architect-cdba-introduction' },
+  { code: 'CPMAI_INTRO', name: 'Introduction to Cognitive PM in AI (CPMAI)', cat: 'extra', url: 'https://www.pmi.org/learning/courses/free-introduction-to-cognitive-project-management-for-ai' },
+  { code: 'AI_INFRA', name: 'AI in Infrastructure and Construction Projects', cat: 'extra', url: 'https://www.pmi.org/learning/courses/ai-in-infrastructure-and-construction-projects' },
+  { code: 'AI_AGILE', name: 'AI in Agile Delivery', cat: 'extra', url: 'https://www.pmi.org/learning/courses/ai-in-agile-delivery' }
+];
+
+async function loadCertificationData() {
+  renderCourseList();
+  // Load progress data
+  const { data: progress } = await sb.from('course_progress').select('member_id, course_id, status');
+  const { data: courses } = await sb.from('courses').select('id, code');
+  const { data: members } = await sb.from('members').select('id, name, photo_url').eq('current_cycle_active', true).order('name');
+  if (!progress || !courses || !members) return;
+
+  // Build lookup
+  const codeById = {};
+  courses.forEach(c => codeById[c.id] = c.code);
+
+  // Calculate per-member progress
+  const memberProgress = {};
+  progress.forEach(p => {
+    if (!memberProgress[p.member_id]) memberProgress[p.member_id] = { completed: 0, in_progress: 0 };
+    if (p.status === 'completed') memberProgress[p.member_id].completed++;
+    else if (p.status === 'in_progress') memberProgress[p.member_id].in_progress++;
+  });
+
+  // Render ranking
+  const ranked = members.map(m => ({
+    name: m.name,
+    photo: m.photo_url,
+    completed: (memberProgress[m.id]?.completed || 0),
+    inProgress: (memberProgress[m.id]?.in_progress || 0),
+    pct: Math.round((memberProgress[m.id]?.completed || 0) / 8 * 100)
+  })).sort((a, b) => b.pct - a.pct || b.inProgress - a.inProgress);
+
+  const totalPct = ranked.length > 0 ? Math.round(ranked.reduce((s, r) => s + r.pct, 0) / ranked.length) : 0;
+  document.getElementById('trailKPI').innerHTML = '<div style="font-size:2rem;font-weight:800;color:' + (totalPct >= 70 ? 'var(--pmi-green)' : totalPct >= 30 ? 'var(--pmi-orange)' : 'var(--pmi-red)') + '">' + totalPct + '%</div><div style="font-size:.7rem;color:rgba(255,255,255,.5)">Média geral</div>';
+
+  const container = document.getElementById('rankingContainer');
+  container.innerHTML = ranked.map((r, i) => {
+    const initials = r.name.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
+    const photoEl = r.photo ? '<img src="' + r.photo + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover">' : '<div style="width:32px;height:32px;border-radius:50%;background:var(--pmi-teal);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.65rem;font-weight:700">' + initials + '</div>';
+    const barColor = r.pct >= 100 ? 'var(--pmi-green)' : r.pct >= 50 ? 'var(--pmi-teal-light)' : r.pct > 0 ? 'var(--pmi-orange)' : 'rgba(255,255,255,.1)';
+    const badge = r.pct >= 100 ? ' ⭐' : r.pct >= 50 ? ' 🔥' : '';
+    return '<div style="background:rgba(255,255,255,.06);border-radius:12px;padding:.8rem;display:flex;align-items:center;gap:.6rem">' +
+      photoEl +
+      '<div style="flex:1;min-width:0"><div style="font-size:.78rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + r.name.split(' ').slice(0,2).join(' ') + badge + '</div>' +
+      '<div style="background:rgba(255,255,255,.1);border-radius:4px;height:6px;margin-top:.3rem;overflow:hidden"><div style="height:100%;width:' + r.pct + '%;background:' + barColor + ';border-radius:4px;transition:width .5s"></div></div>' +
+      '<div style="font-size:.6rem;color:rgba(255,255,255,.4);margin-top:.15rem">' + r.completed + '/8 concluídos' + (r.inProgress > 0 ? ' · ' + r.inProgress + ' em andamento' : '') + '</div>' +
+      '</div><div style="font-size:1rem;font-weight:800;color:' + barColor + '">' + r.pct + '%</div></div>';
+  }).join('');
+}
+
+function renderCourseList() {
+  const core = COURSES.filter(c => c.cat === 'core');
+  const extra = COURSES.filter(c => c.cat === 'extra');
+  const coreEl = document.getElementById('coreCoursesContainer');
+  const extraEl = document.getElementById('extraCoursesContainer');
+  if (coreEl) coreEl.innerHTML = core.map((c, i) => '<a href="' + c.url + '" target="_blank" style="display:flex;align-items:center;gap:.5rem;padding:.5rem 0;border-bottom:1px solid rgba(0,0,0,.06);text-decoration:none;color:var(--text)"><span style="width:22px;height:22px;border-radius:6px;background:var(--pmi-teal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0">' + (i+1) + '</span><span style="font-size:.82rem;font-weight:500">' + c.name + '</span></a>').join('');
+  if (extraEl) extraEl.innerHTML = extra.map((c, i) => '<a href="' + c.url + '" target="_blank" style="display:flex;align-items:center;gap:.5rem;padding:.5rem 0;border-bottom:1px solid rgba(0,0,0,.06);text-decoration:none;color:var(--text)"><span style="width:22px;height:22px;border-radius:6px;background:var(--pmi-purple);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;flex-shrink:0">' + (i+5) + '</span><span style="font-size:.82rem;font-weight:500">' + c.name + '</span></a>').join('');
+}
+
+
+// Chapter logo mapping — update paths once logos are in site/assets/logos/
+const CHAPTER_LOGOS = {
+  'PMI-GO': 'assets/logos/pmigo.png',
+  'PMI-CE': 'assets/logos/pmice.jpg',
+  'PMI-DF': 'assets/logos/pmidf.png',
+  'PMI-MG': 'assets/logos/pmimg.png',
+  'PMI-RS': 'assets/logos/pmirs.png',
+};
+
+function sponsorsSection(sponsors) {
+  if (!sponsors.length) return '';
+  // Group by chapter
+  const byChapter = {};
+  sponsors.forEach(m => {
+    const ch = m.chapter || 'Outros';
+    if (!byChapter[ch]) byChapter[ch] = [];
+    byChapter[ch].push(m);
+  });
+  const chapterOrder = ['PMI-GO','PMI-CE','PMI-DF','PMI-MG','PMI-RS'];
+  const sorted = [...chapterOrder.filter(c => byChapter[c]), ...Object.keys(byChapter).filter(c => !chapterOrder.includes(c))];
+
+  let inner = sorted.map(ch => {
+    const logo = CHAPTER_LOGOS[ch];
+    const logoEl = logo
+      ? '<img src="' + logo + '" style="height:36px;max-width:120px;object-fit:contain;margin-bottom:.5rem" alt="' + ch + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'">'
+        + '<div style="display:none;font-size:.85rem;font-weight:800;color:#BE2027;margin-bottom:.5rem">' + ch + '</div>'
+      : '<div style="font-size:.8rem;font-weight:800;color:#BE2027;margin-bottom:.5rem">' + ch + '</div>';
+    const members = byChapter[ch].map(m => memberCard(m, ['sponsor'])).join('');
+    return '<div style="background:rgba(190,32,39,.05);border:1px solid rgba(190,32,39,.15);border-radius:14px;padding:1rem 1.2rem;min-width:160px">'
+      + '<div style="text-align:center;margin-bottom:.75rem">' + logoEl + '</div>'
+      + '<div style="display:flex;flex-wrap:wrap;gap:.8rem;justify-content:center">' + members + '</div>'
+      + '</div>';
+  }).join('');
+
+  return '<div id="team-sponsors" style="margin-top:2.5rem">'
+    + '<div style="display:flex;align-items:baseline;gap:.6rem;margin-bottom:.8rem">'
+    + '<h3 style="font-size:1.05rem;font-weight:800;color:#BE2027">Patrocinadores</h3>'
+    + '<span style="font-size:.75rem;color:var(--text-muted)">Liderança dos capítulos & pontos focais</span>'
+    + '</div>'
+    + '<div style="display:flex;flex-wrap:wrap;gap:1rem">' + inner + '</div>'
+    + '</div>';
+}
+
+function memberCard(m, forcedRoles) {
+  const initials = m.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  const photo = m.photo_url
+    ? '<img src="'+m.photo_url+'" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.12)" alt="" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
+      +'<div style="display:none;width:64px;height:64px;border-radius:50%;background:var(--pmi-teal);align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.8rem">'+initials+'</div>'
+    : '<div style="width:64px;height:64px;border-radius:50%;background:var(--pmi-teal);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.8rem">'+initials+'</div>';
+  const liLink = m.linkedin_url ? '<a href="'+m.linkedin_url+'" target="_blank" style="color:var(--pmi-teal);font-size:.65rem;text-decoration:none">🔗</a>' : '';
+  const dotMember = forcedRoles ? {role: forcedRoles[0], roles: forcedRoles} : m;
+  return '<div style="text-align:center;width:90px">'
+    +photo
+    +'<div style="font-size:.7rem;font-weight:600;margin-top:.35rem;line-height:1.2">'+m.name.split(' ').slice(0,2).join(' ')+' '+liLink+'</div>'
+    +'<div style="font-size:.6rem;color:var(--text-muted)">'+(m.chapter||'')+'</div>'
+    +'<div style="display:flex;justify-content:center;gap:3px;margin:.25rem auto 0">'+getRoleDots(dotMember)+'</div>'
+    +'</div>';
+}
+
+function teamSection(id, label, sublabel, color, members, forcedRoles) {
+  if (!members.length) return '';
+  return '<div id="'+id+'" style="margin-top:2.5rem">'
+    +'<div style="display:flex;align-items:baseline;gap:.6rem;margin-bottom:.6rem">'
+    +'<h3 style="font-size:1.05rem;font-weight:800;color:'+color+'">'+label+'</h3>'
+    +'<span style="font-size:.75rem;color:var(--text-muted)">'+sublabel+'</span>'
+    +'</div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:1.2rem 1rem;justify-content:center">'
+    +members.map(m=>memberCard(m,forcedRoles)).join('')
+    +'</div></div>';
+}
+
+function renderTeamGallery() {
+  const el = document.getElementById('teamGrid');
+  if (!el || !allMembers.length) return;
+
+  const has = (m,r) => (m.roles||[]).includes(r) || m.role===r;
+
+  const isLeader   = m => ['tribe_leader','manager'].includes(m.role);
+  const isResearch = m => ['researcher','facilitator','communicator'].includes(m.role);
+  const leaders    = allMembers.filter(m => m.current_cycle_active && isLeader(m)   && !has(m,'sponsor'));
+  const researchers= allMembers.filter(m => m.current_cycle_active && isResearch(m) && !has(m,'sponsor'));
+  const ambassadors= allMembers.filter(m => has(m,'ambassador'));
+  const curators   = allMembers.filter(m => has(m,'curator'));
+  const sponsors   = allMembers.filter(m => has(m,'sponsor'));
+  const founders   = allMembers.filter(m => has(m,'founder'));
+
+  el.innerHTML =
+    teamSection('team-leaders',    'Líderes de Tribo & Gestão', 'coordenação e governança · Ciclo 3', '#4F17A8', leaders,     null)
+   +teamSection('team-researchers','Pesquisadores',              'membros ativos · Ciclo 3',           '#EC4899', researchers, null)
+   +teamSection('team-ambassadors','Embaixadores',              'representação & multiplicação',       '#10B981', ambassadors, ['ambassador'])
+   +teamSection('team-curators',   'Comitê de Curadoria',     'peer review & qualidade',             '#D97706',          curators,    ['curator'])
+   +sponsorsSection(sponsors)
+   +teamSection('team-founders',   'Fundadores',               'a história que trouxe o Núcleo até aqui', '#7C3AED',     founders,    ['founder']);
+}
+
+// ============================================================================
+// AUTH
+// ============================================================================
+function openAuth() { document.getElementById('authModal').classList.add('open'); }
+function closeAuth() { document.getElementById('authModal').classList.remove('open'); }
+
+async function loginGoogle() {
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: location.origin + location.pathname }
+  });
+  if (error) toast('Erro: ' + error.message, 'error');
+}
+
+async function loginLinkedIn() {
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'linkedin_oidc',
+    options: { redirectTo: location.origin + location.pathname }
+  });
+  if (error) toast('Erro: ' + error.message, 'error');
+}
+
+async function loginMagic() {
+  const email = document.getElementById('authEmail').value.trim();
+  const msg = document.getElementById('authMsg');
+  if (!email) { msg.className = 'form-msg error'; msg.textContent = 'Digite seu email.'; return; }
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: location.origin + location.pathname }
+  });
+  if (error) { msg.className = 'form-msg error'; msg.textContent = 'Erro: ' + error.message; }
+  else { msg.className = 'form-msg success'; msg.textContent = '📩 Link enviado! Verifique seu email.'; }
+}
+
+async function matchMember() {
+  if (!user) return;
+  try {
+    const { data } = await sb.rpc('get_member_by_auth');
+    if (data) {
+      profile = data;
+      // Load tribe selection if member has an id
+      if (profile.id) {
+        const { data: sel } = await sb.from('tribe_selections')
+          .select('tribe_id')
+          .eq('member_id', profile.id)
+          .maybeSingle();
+        if (sel) userTribe = sel.tribe_id;
+      }
+    }
+  } catch (err) {
+    console.error('matchMember error:', err);
+    profile = { name: user.email.split('@')[0], email: user.email, role: 'guest', is_active: false };
+  }
+  updateTribesUI();
+}
+
+const _RL = {
+  manager:'Gerente', tribe_leader:'Líder de Tribo', researcher:'Pesquisador',
+  ambassador:'Embaixador', curator:'Curador', sponsor:'Patrocinador',
+  founder:'Fundador', facilitator:'Facilitador', communicator:'Multiplicador', guest:'Visitante'
+};
+const _RC = {
+  manager:'#FF610F', tribe_leader:'#4F17A8', researcher:'#EC4899',
+  ambassador:'#10B981', curator:'#D97706', sponsor:'#BE2027',
+  founder:'#7C3AED', facilitator:'#EC4899', communicator:'#EC4899'
+};
+
+function updateAuthUI() {
+  if (typeof snavInit === 'function') return; // nav.js handles this
+  const nav = document.getElementById('navAuth');
+  const prompt = document.getElementById('loginPrompt');
+  const name = profile?.name || 'Usuário';
+  const initials = name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+  const pic = user?.user_metadata?.avatar_url;
+  const r = profile?.role || 'guest';
+  const roleLabel = _RL[r] || r;
+  const roleCls = 'role-' + r;
+  nav.innerHTML = `
+    <button onclick="togglePD()" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:.4rem;padding:.2rem .4rem;border-radius:8px;transition:.15s" onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background='none'">
+      <div class="user-avatar" style="cursor:pointer">${pic ? '<img src="' + pic + '" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover">' : initials}</div>
+      <span style="color:#fff;font-size:.8rem;font-weight:600">${name.split(' ')[0]}</span>
+      <span class="role-badge ${roleCls}">${roleLabel}</span>
+      <span style="color:rgba(255,255,255,.4);font-size:.6rem">▾</span>
+    </button>`;
+  if (prompt) prompt.style.display = 'none';
+  closeAuth();
+  buildPD();
+  if (profile?.role === 'guest') {
+    toast('Bem-vindo! Acesso de visitante. Solicite cadastro ao GP.', 'info');
+  } else {
+    toast('Bem-vindo(a), ' + name.split(' ')[0] + '!', 'success');
+  }
+  updateTribesUI();
+}
+
+function buildPD() {
+  const el = document.getElementById('pd-inner');
+  if (!el) return;
+  const name = profile?.name || 'Usuário';
+  const initials = name.split(' ').map(w => w[0]).join('').substring(0,2).toUpperCase();
+  const pic = user?.user_metadata?.avatar_url;
+  const r = profile?.role || 'guest';
+  const color = _RC[r] || '#64748B';
+  const isAdmin = profile?.is_superadmin === true;
+  const av = pic
+    ? `<img class="pd-av" src="${pic}" alt="" onerror="this.style.display='none'">`
+    : `<div class="pd-av-init">${initials}</div>`;
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:.7rem;margin-bottom:.3rem">
+      ${av}
+      <div style="min-width:0;overflow:hidden">
+        <div class="pd-name">${name}</div>
+        <span class="pd-badge" style="background:${color}22;color:${color}">${_RL[r]||r}</span>
+        <div class="pd-email" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${profile?.email||''}</div>
+      </div>
+    </div>
+    <hr class="pd-hr">
+    <a class="pd-item" href="/admin#profile">👤 Meu Perfil</a>
+    <a class="pd-item" href="/attendance">⏱ Presenças & Horas</a>
+    ${isAdmin ? '<hr class="pd-hr"><a class="pd-item admin" href="/admin">⚙️ Painel Admin</a>' : ''}
+    <hr class="pd-hr">
+    <button class="pd-item danger" onclick="logout()">↩ Sair</button>`;
+}
+function togglePD() {
+  const on = !document.getElementById('pd-drawer').classList.contains('open');
+  document.getElementById('pd-drawer').classList.toggle('open', on);
+  document.getElementById('pd-overlay').classList.toggle('open', on);
+}
+function closePD() {
+  document.getElementById('pd-drawer')?.classList.remove('open');
+  document.getElementById('pd-overlay')?.classList.remove('open');
+}
+
+
+async function logout() {
+  await sb.auth.signOut();
+  user = null; profile = null; userTribe = null;
+  document.getElementById('navAuth').innerHTML = '<button class="btn btn-login" onclick="openAuth()">Entrar</button>';
+  const prompt = document.getElementById('loginPrompt');
+  if (prompt) prompt.style.display = 'block';
+  updateTribesUI();
+}
+
+// ============================================================================
+// TRIBE SELECTION
+// ============================================================================
+async function loadTribeCounts() {
+  const { data } = await sb.from('tribe_selections').select('tribe_id');
+  tribeCounts = {};
+  if (data) data.forEach(s => { tribeCounts[s.tribe_id] = (tribeCounts[s.tribe_id] || 0) + 1; });
+  updateTribesUI();
+}
+
+function subscribeRealtime() {
+  sb.channel('tribe_changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'tribe_selections' }, () => loadTribeCounts())
+    .subscribe();
+}
+
+async function selectTribe(id) {
+  if (!user) { openAuth(); return; }
+  if (!profile || profile.role === 'guest') { toast('Apenas membros cadastrados.', 'error'); return; }
+  if (profile.role === 'tribe_leader') { toast('Líderes já estão designados à sua tribo!', 'info'); return; }
+  if (new Date() > DEADLINE) { toast('Seleção encerrada!', 'error'); return; }
+
+  // If clicking already selected tribe -> deselect
+  if (userTribe === id) {
+    try {
+      const { data } = await sb.rpc('deselect_tribe');
+      if (data?.success) {
+        userTribe = null;
+        toast('Seleção removida', 'info');
+        await loadTribeCounts();
+      } else {
+        toast(data?.error || 'Erro ao remover', 'error');
+      }
+    } catch (e) { toast('Erro: ' + e.message, 'error'); }
+    return;
+  }
+
+  // Select or switch tribe
+  const count = tribeCounts[id] || 0;
+  if (count >= MAX_SLOTS) { toast('Tribo lotada!', 'error'); return; }
+
+  try {
+    const { data } = await sb.rpc('select_tribe', { p_tribe_id: id });
+    if (data?.success) {
+      userTribe = id;
+      toast('Tribo ' + id + ' selecionada! ✓', 'success');
+      await loadTribeCounts();
+    } else {
+      toast(data?.error || 'Erro ao selecionar', 'error');
+    }
+  } catch (e) { toast('Erro: ' + e.message, 'error'); }
+}
+
+// ============================================================================
+// RENDER TRIBES
+// ============================================================================
+function renderTribes() {
+  const container = document.getElementById('tribesContainer');
+  const quadrants = [
+    { key: 'q1', label: 'QUADRANTE 1', title: 'O Praticante Aumentado', sub: 'Ferramentas, Produtividade e Engenharia de Agentes', color: 'var(--pmi-teal)' },
+    { key: 'q2', label: 'QUADRANTE 2', title: 'Gestão de Projetos de IA', sub: 'Metodologia GenAI/ML e Equipes Híbridas', color: 'var(--pmi-orange)' },
+    { key: 'q3', label: 'QUADRANTE 3', title: 'Liderança Organizacional', sub: 'Estratégia, Pessoas, Cultura e Portfólio', color: 'var(--pmi-purple)' },
+    { key: 'q4', label: 'QUADRANTE 4', title: 'Futuro e Responsabilidade', sub: 'Ética, Governança e Sociedade', color: 'var(--pmi-green)' }
+  ];
+  let html = '';
+  quadrants.forEach(quad => {
+    const tribes = TRIBES.filter(t => t.q === quad.key);
+    if (tribes.length === 0) return;
+    html += '<div style="margin:2rem 0 1rem;padding-left:.5rem;border-left:4px solid ' + quad.color + '">';
+    html += '<div style="font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:' + quad.color + '">' + quad.label + '</div>';
+    html += '<div style="font-size:1.15rem;font-weight:800;margin:.1rem 0">' + quad.title + '</div>';
+    html += '<div style="font-size:.82rem;color:var(--text-muted)">' + quad.sub + '</div>';
+    html += '</div>';
+    tribes.forEach(t => {
+      html += '<div class="tribe-card tribe-' + t.q + '" id="t-' + t.id + '">';
+      html += '<div class="tribe-header" onclick="toggleTribe(' + t.id + ')">';
+      const lPhoto = leaderPhotos[t.id] || '';
+      const photoEl = lPhoto ? '<img src="' + lPhoto + '" style="width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0" alt="">' : '<div class="tribe-num">' + String(t.id).padStart(2,'0') + '</div>';
+      html += photoEl;
+      html += '<div class="tribe-info"><h3>' + t.n + '</h3>';
+      const liLink = t.li ? ' <a href="' + t.li + '" target="_blank" style="color:var(--pmi-teal);text-decoration:none;font-size:.75rem" title="LinkedIn">🔗</a>' : '';
+      html += '<div class="tribe-leader">' + t.l + liLink + '</div></div>';
+      html += '<div class="tribe-slots-wrap">';
+      html += '<div class="slots-visual" id="sl-' + t.id + '">' + Array(MAX_SLOTS).fill('<div class="slot-dot"></div>').join('') + '</div>';
+      html += '<div class="slots-text" id="st-' + t.id + '">0/' + MAX_SLOTS + '</div>';
+      html += '</div></div>';
+      html += '<div class="tribe-body" id="tb-' + t.id + '">';
+      html += '<p>' + t.d + '</p>';
+      const artList = Array.isArray(t.a) ? t.a.map(a => '<li style="margin-bottom:.25rem">' + a + '</li>').join('') : '<li>' + t.a + '</li>';
+      html += '<div style="margin:.8rem 0"><strong style="font-size:.85rem">Entregáveis do Ciclo:</strong><ul style="margin:.4rem 0 0 1.2rem;font-size:.84rem;color:var(--text-muted)">' + artList + '</ul></div>';
+      if (t.meet) html += '<p style="font-size:.82rem"><strong>📅 Encontros:</strong> ' + t.meet + '</p>';
+      html += '<div class="tribe-actions">';
+      html += '<a href="' + t.v + '" target="_blank" class="tribe-video">▶ Vídeo (' + t.vd + ')</a>';
+      html += '<button class="btn btn-select" id="sb-' + t.id + '" onclick="event.stopPropagation();selectTribe(' + t.id + ')">Escolher esta Tribo</button>';
+      html += '</div></div></div>';
+    });
+  });
+  container.innerHTML = html;
+}
+
+function updateTribesUI() {
+  TRIBES.forEach(t => {
+    const count = tribeCounts[t.id] || 0;
+    const dots = document.querySelectorAll(`#sl-${t.id} .slot-dot`);
+    const text = document.getElementById(`st-${t.id}`);
+    const btn = document.getElementById(`sb-${t.id}`);
+
+    dots.forEach((d, i) => d.classList.toggle('filled', i < count));
+
+    if (count >= MAX_SLOTS) {
+      text.innerHTML = '<span class="full">LOTADA</span>';
+    } else if (count >= MIN_SLOTS) {
+      text.innerHTML = count + '/' + MAX_SLOTS + ' ✓';
+      text.style.color = 'var(--pmi-green)';
+    } else {
+      text.innerHTML = count + '/' + MAX_SLOTS;
+      text.style.color = '';
+    }
+
+    if (btn) {
+      const isSelected = userTribe === t.id;
+      const isFull = count >= MAX_SLOTS && !isSelected;
+      const canSelect = profile && profile.role !== 'guest' && profile.role !== 'tribe_leader' && profile.is_active !== false;
+
+      if (isSelected) {
+        btn.textContent = '✓ Selecionada (clique para trocar)';
+        btn.classList.add('selected');
+        btn.disabled = false;
+      } else if (isFull) {
+        btn.textContent = 'Lotada';
+        btn.classList.remove('selected');
+        btn.disabled = true;
+      } else {
+        btn.textContent = 'Escolher esta Tribo';
+        btn.classList.remove('selected');
+        btn.disabled = false;
+      }
+      btn.style.display = canSelect ? '' : 'none';
+    }
+  });
+}
+
+function toggleTribe(id) {
+  const body = document.getElementById(`tb-${id}`);
+  const wasOpen = body.classList.contains('open');
+  document.querySelectorAll('.tribe-body').forEach(b => b.classList.remove('open'));
+  if (!wasOpen) body.classList.add('open');
+}
+
+// ============================================================================
+// COUNTDOWN
+// ============================================================================
+function startCountdown() {
+  function update() {
+    const diff = DEADLINE - new Date();
+    if (diff <= 0) {
+      ['cd-d', 'cd-h', 'cd-m', 'cd-s'].forEach(id => document.getElementById(id).textContent = '00');
+      return;
+    }
+    document.getElementById('cd-d').textContent = String(Math.floor(diff / 86400000)).padStart(2, '0');
+    document.getElementById('cd-h').textContent = String(Math.floor((diff % 86400000) / 3600000)).padStart(2, '0');
+    document.getElementById('cd-m').textContent = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+    document.getElementById('cd-s').textContent = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+  }
+  update();
+  setInterval(update, 1000);
+}
+
+// ============================================================================
+// UTILS
+// ============================================================================
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast ' + type + ' show';
+  setTimeout(() => el.classList.remove('show'), 4000);
+}
+
+function initNavScroll() {
+  const sections = document.querySelectorAll('section[id]');
+  const links = document.querySelectorAll('.nav-links a');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => { if (scrollY >= s.offsetTop - 100) current = s.id; });
+    links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + current));
+  });
+}
+
+// ============================================================================
+// BOOT
+// ============================================================================
+document.addEventListener('DOMContentLoaded', init);
+// Shared nav bootstrapped in init()
+
+// ── MULTI-ROLE SUPPORT (patched by patch_index.py) ──
+function getRoleDots(member) {
+  const ROLE_COLORS = {
+    manager:      { color: '#FF610F', label: 'Gerente' },        // laranja PMI
+    tribe_leader: { color: '#4F17A8', label: 'Líder de Tribo' }, // roxo PMI
+    researcher:   { color: '#EC4899', label: 'Pesquisador' },    // rosa
+    communicator: { color: '#EC4899', label: 'Multiplicador' },
+    facilitator:  { color: '#EC4899', label: 'Facilitador' },
+    ambassador:   { color: '#10B981', label: 'Embaixador' },     // verde
+    curator:      { color: '#D97706', label: 'Curador' },        // âmbar
+    sponsor:      { color: '#BE2027', label: 'Patrocinador' },   // vermelho PMI
+    founder:      { color: '#7C3AED', label: 'Fundador' },       // índigo
+  };
+  const roles = (member.roles && member.roles.length > 0)
+    ? member.roles
+    : (member.role ? [member.role] : []);
+  return roles
+    .filter(r => ROLE_COLORS[r])
+    .map(r => `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;
+      background:${ROLE_COLORS[r].color};margin:0 1px" title="${ROLE_COLORS[r].label}"></span>`)
+    .join('');
+}
+</script>
+</body>
+</html>
