@@ -235,7 +235,7 @@ Deno.serve(async (req) => {
         other: result.tier4Count,
       },
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-  } catch (err) {
+  } catch (err: any) {
     return new Response(JSON.stringify({ success: false, error: err.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 })
   }
