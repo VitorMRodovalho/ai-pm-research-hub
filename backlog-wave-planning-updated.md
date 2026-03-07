@@ -28,10 +28,10 @@
 
 | ID | Feature | Priority | Status | Description |
 |----|---------|----------|--------|-------------|
-| S-HF1 | Credly Mobile Paste Fix | Critical | Open | Validate and fix Credly public URL paste behavior on iOS Safari and Chrome in `Profile.astro`. Must trim spaces and accept benign query params or trailing slash. |
-| S-HF2 | Rank UI Alignment with Credly Tiers | Critical | Partial | Backend tier scoring is live, but leaderboard and gamification surfaces do not yet fully reflect the new model end to end. |
-| S-HF3 | Post Deploy Smoke Test | High | Open | Create repeatable smoke checklist for `/`, `/attendance`, `/gamification`, `/artifacts`, `/profile`, `/admin`, `/teams`, `/rank`, `/ranks`. |
-| S-HF4 | SSR Safety Audit | High | Open | Review other server rendered sections for unsafe `.map()`, `.filter()`, and optional data assumptions. |
+| S-HF1 | Credly Mobile Paste Fix | Critical | ✅ Done | Credly URL now normalizes/validates paste input (trim/query/trailing slash) in profile and edge verification flow. |
+| S-HF2 | Rank UI Alignment with Credly Tiers | Critical | ✅ Done | Gamification UI now surfaces Credly tier totals and per-tier breakdowns aligned with backend scoring model. |
+| S-HF3 | Post Deploy Smoke Test | High | ✅ Done | Added repeatable route smoke script for `/`, `/attendance`, `/gamification`, `/artifacts`, `/profile`, `/admin`, `/teams`, `/rank`, `/ranks`. |
+| S-HF4 | SSR Safety Audit | High | ✅ Done | Added SSR-safe guards/fallbacks in high-risk sections for optional list data. |
 | S-HF5 | Data Patch Follow Through | High | Open | Apply and verify specific cleanup patches such as Sarah LinkedIn restoration, Roberto role correction, and Deputy PM hierarchy adjustment. |
 
 ---

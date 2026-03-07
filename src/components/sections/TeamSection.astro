@@ -3,7 +3,6 @@
  * TeamSection.astro — Sprint 2 + S-RM1 update
  * Team gallery with 6 sub-sections loaded from Supabase.
  * Uses operational_role + designations (3-axis model) for grouping.
- * Falls back to role/roles for backward-compat.
  */
 
 import { t, type Lang } from '../../i18n/utils';
@@ -111,8 +110,6 @@ const ROLE_COLORS: Record<string, string> = {
   interface Member {
     name: string;
     chapter: string;
-    role: string;
-    roles: string[] | null;
     operational_role: string | null;
     designations: string[] | null;
     photo_url: string | null;
@@ -123,23 +120,14 @@ const ROLE_COLORS: Record<string, string> = {
 
   // ── 3-axis helpers ──
 
-  /** Get operational role (new field with fallback to legacy) */
+  /** Get operational role (source of truth field) */
   function getOpRole(m: Member): string {
-    if (m.operational_role && m.operational_role !== 'guest') return m.operational_role;
-    // Fallback: derive from legacy role
-    if (['manager', 'tribe_leader', 'researcher', 'facilitator', 'communicator'].includes(m.role)) {
-      return m.role;
-    }
-    return 'none';
+    return m.operational_role && m.operational_role !== 'guest' ? m.operational_role : 'none';
   }
 
-  /** Get designations (new field with fallback to legacy roles) */
+  /** Get designations (source of truth field) */
   function getDesigs(m: Member): string[] {
-    if (m.designations && m.designations.length > 0) return m.designations;
-    // Fallback: extract from legacy roles
-    const desigCodes = ['sponsor', 'ambassador', 'founder', 'curator'];
-    const allRoles = m.roles?.length ? m.roles : [m.role];
-    return allRoles.filter(r => desigCodes.includes(r));
+    return m.designations && m.designations.length > 0 ? m.designations : [];
   }
 
   /** Check if member has a specific designation */
