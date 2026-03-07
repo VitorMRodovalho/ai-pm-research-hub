@@ -43,6 +43,7 @@ import Toast from '../../components/ui/Toast.astro';
       <div class="flex gap-2 mb-5 flex-wrap">
         <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white" data-tab="tribes" onclick="switchAdmTab(this,'tribes')">🏷️ Gestão de Tribos</button>
         <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500" data-tab="members" onclick="switchAdmTab(this,'members')">👥 Membros</button>
+        <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500" data-tab="reports" onclick="switchAdmTab(this,'reports')">📊 Relatórios</button>
       </div>
 
       <div id="panel-tribes">
@@ -119,6 +120,78 @@ import Toast from '../../components/ui/Toast.astro';
           </div>
         </div>
         <div id="members-area"><div class="text-center py-10 text-slate-400">Carregando membros…</div></div>
+      </div>
+
+      <!-- Reports panel -->
+      <div id="panel-reports" class="hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+          <!-- VRMS Export -->
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-slate-200">
+              <h3 class="text-sm font-bold text-navy">📋 Relatório VRMS (PMI)</h3>
+              <p class="text-[.68rem] text-slate-400 mt-0.5">Horas de Impacto para lançamento no sistema PMI</p>
+            </div>
+            <div class="p-5">
+              <div class="flex gap-3 mb-4">
+                <div class="flex-1">
+                  <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">De</label>
+                  <input type="date" id="vrms-from" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+                </div>
+                <div class="flex-1">
+                  <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Até</label>
+                  <input type="date" id="vrms-to" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+                </div>
+              </div>
+              <div class="flex gap-2 mb-3">
+                <button onclick="previewVRMS()" class="flex-1 px-4 py-2 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
+                  👁️ Pré-visualizar
+                </button>
+                <button onclick="downloadVRMS()" class="flex-1 px-4 py-2 bg-teal text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
+                  📥 Baixar CSV
+                </button>
+              </div>
+              <div id="vrms-preview" class="text-[.72rem] text-slate-400"></div>
+            </div>
+          </div>
+
+          <!-- Full Member Export -->
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-slate-200">
+              <h3 class="text-sm font-bold text-navy">👥 Export Completo de Membros</h3>
+              <p class="text-[.68rem] text-slate-400 mt-0.5">Dados cadastrais + papéis + designações + ciclos</p>
+            </div>
+            <div class="p-5">
+              <p class="text-[.72rem] text-slate-500 mb-4">Inclui: nome, email, PMI ID, capítulo, papel operacional, designações, tribo, status, superadmin, ciclos participados.</p>
+              <button onclick="downloadMembersCSV()" class="w-full px-4 py-2.5 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
+                📥 Baixar CSV de Membros
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- VRMS Preview Table -->
+        <div id="vrms-table-area" class="hidden bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+            <h3 class="text-sm font-bold text-navy">Pré-visualização VRMS</h3>
+            <span class="text-[.68rem] text-slate-400" id="vrms-table-count"></span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-[.72rem]">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-500">Nome</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-500">PMI ID</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-500">Email</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-500">Capítulo</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-500">Papel</th>
+                  <th class="px-3 py-2 text-right font-semibold text-slate-500">Eventos</th>
+                  <th class="px-3 py-2 text-right font-semibold text-slate-500">Horas</th>
+                </tr>
+              </thead>
+              <tbody id="vrms-table-body"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <!-- Leader Tier: My Tribe panel -->
@@ -419,7 +492,9 @@ import Toast from '../../components/ui/Toast.astro';
     el.classList.add('bg-navy', 'text-white', 'border-navy');
     document.getElementById('panel-tribes')?.classList.toggle('hidden', tab !== 'tribes');
     document.getElementById('panel-members')?.classList.toggle('hidden', tab !== 'members');
+    document.getElementById('panel-reports')?.classList.toggle('hidden', tab !== 'reports');
     if (tab === 'members') loadMembersList();
+    if (tab === 'reports') initReports();
   };
 
   // ══════════════════════════════════════════
@@ -882,6 +957,160 @@ import Toast from '../../components/ui/Toast.astro';
   };
 
   // ══════════════════════════════════════════
+  // REPORTS (VRMS CSV + Members Export)
+  // ══════════════════════════════════════════
+  let vrmsData: any[] = [];
+
+  function initReports() {
+    // Set default date range: current cycle start → today
+    const fromEl = document.getElementById('vrms-from') as HTMLInputElement;
+    const toEl = document.getElementById('vrms-to') as HTMLInputElement;
+    if (fromEl && !fromEl.value) fromEl.value = '2026-01-01';
+    if (toEl && !toEl.value) toEl.value = new Date().toISOString().split('T')[0];
+  }
+
+  (window as any).previewVRMS = async () => {
+    const fromDate = (document.getElementById('vrms-from') as HTMLInputElement).value;
+    const toDate = (document.getElementById('vrms-to') as HTMLInputElement).value;
+    if (!fromDate || !toDate) { toast('Selecione as datas', 'error'); return; }
+
+    // Get events in range
+    const { data: events } = await sb.from('events')
+      .select('id, title, event_date, duration_hours')
+      .gte('event_date', fromDate)
+      .lte('event_date', toDate)
+      .order('event_date');
+
+    if (!events?.length) {
+      document.getElementById('vrms-preview')!.textContent = 'Nenhum evento encontrado no período.';
+      document.getElementById('vrms-table-area')?.classList.add('hidden');
+      return;
+    }
+
+    const eventIds = events.map((e: any) => e.id);
+
+    // Get attendance for those events (only present)
+    const { data: attendance } = await sb.from('attendance')
+      .select('event_id, member_id, status')
+      .in('event_id', eventIds)
+      .eq('status', 'present');
+
+    // Get active members
+    const { data: members } = await sb.from('members')
+      .select('id, name, email, pmi_id, chapter, operational_role, designations')
+      .eq('current_cycle_active', true)
+      .order('name');
+
+    // Build hours map: member_id → { events: count, hours: sum }
+    const hoursMap: Record<string, { events: number; hours: number }> = {};
+    const eventHoursMap: Record<string, number> = {};
+    events.forEach((e: any) => { eventHoursMap[e.id] = e.duration_hours || 2; });
+
+    (attendance || []).forEach((a: any) => {
+      if (!hoursMap[a.member_id]) hoursMap[a.member_id] = { events: 0, hours: 0 };
+      hoursMap[a.member_id].events++;
+      hoursMap[a.member_id].hours += eventHoursMap[a.event_id] || 2;
+    });
+
+    // Build VRMS rows
+    vrmsData = (members || []).map((m: any) => {
+      const h = hoursMap[m.id] || { events: 0, hours: 0 };
+      const opLabel = OPROLE_LABELS[m.operational_role] || m.operational_role || '';
+      const desigLabels = (m.designations || []).map((d: string) => DESIG_LABELS[d] || d).join('; ');
+      return {
+        name: m.name,
+        pmi_id: m.pmi_id || '',
+        email: m.email,
+        chapter: m.chapter || '',
+        role: opLabel + (desigLabels ? ' + ' + desigLabels : ''),
+        events: h.events,
+        hours: h.hours,
+      };
+    }).filter((r: any) => r.hours > 0).sort((a: any, b: any) => b.hours - a.hours);
+
+    // Preview stats
+    const totalHours = vrmsData.reduce((s: number, r: any) => s + r.hours, 0);
+    const totalMembers = vrmsData.length;
+    document.getElementById('vrms-preview')!.innerHTML =
+      `<span class="text-emerald-600 font-bold">${totalMembers}</span> membros · <span class="text-navy font-bold">${totalHours}</span> horas de impacto · <span class="text-slate-400">${events.length} eventos no período</span>`;
+
+    // Render table
+    const tbody = document.getElementById('vrms-table-body')!;
+    tbody.innerHTML = vrmsData.map((r: any) => `
+      <tr class="border-b border-slate-50 hover:bg-slate-50">
+        <td class="px-3 py-2 font-medium">${r.name}</td>
+        <td class="px-3 py-2 font-mono text-slate-500">${r.pmi_id || '—'}</td>
+        <td class="px-3 py-2 text-slate-500">${r.email}</td>
+        <td class="px-3 py-2">${r.chapter}</td>
+        <td class="px-3 py-2 text-slate-500">${r.role}</td>
+        <td class="px-3 py-2 text-right">${r.events}</td>
+        <td class="px-3 py-2 text-right font-bold text-navy">${r.hours}</td>
+      </tr>`).join('');
+
+    document.getElementById('vrms-table-count')!.textContent = `${totalMembers} membros · ${totalHours}h`;
+    document.getElementById('vrms-table-area')?.classList.remove('hidden');
+  };
+
+  (window as any).downloadVRMS = async () => {
+    if (!vrmsData.length) {
+      await (window as any).previewVRMS();
+      if (!vrmsData.length) { toast('Nenhum dado para exportar', 'error'); return; }
+    }
+
+    const fromDate = (document.getElementById('vrms-from') as HTMLInputElement).value;
+    const toDate = (document.getElementById('vrms-to') as HTMLInputElement).value;
+
+    const header = 'Nome,PMI ID,Email,Capítulo,Papel,Eventos Presentes,Horas de Impacto';
+    const rows = vrmsData.map((r: any) =>
+      `"${r.name}","${r.pmi_id}","${r.email}","${r.chapter}","${r.role}",${r.events},${r.hours}`
+    );
+    const csv = '\uFEFF' + [header, ...rows].join('\n'); // BOM for Excel UTF-8
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `VRMS_Nucleo_IA_GP_${fromDate}_${toDate}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('CSV baixado ✅', 'success');
+  };
+
+  (window as any).downloadMembersCSV = async () => {
+    const { data: members } = await sb.rpc('admin_list_members', { p_limit: 500, p_offset: 0 });
+    if (!members?.length) { toast('Nenhum membro', 'error'); return; }
+
+    // Get cycle history
+    const { data: history } = await sb.from('member_cycle_history')
+      .select('member_id, cycle_code');
+
+    const cycleMap: Record<string, string[]> = {};
+    (history || []).forEach((h: any) => {
+      if (!cycleMap[h.member_id]) cycleMap[h.member_id] = [];
+      cycleMap[h.member_id].push(h.cycle_code);
+    });
+
+    const header = 'Nome,Email,PMI ID,Telefone,Capítulo,Papel Operacional,Designações,Tribo,Ativo,Superadmin,Ciclos Participados,LinkedIn,Credly';
+    const rows = members.map((m: any) => {
+      const opRole = OPROLE_LABELS[m.operational_role] || m.operational_role || '';
+      const desigs = (m.designations || []).map((d: string) => DESIG_LABELS[d] || d).join('; ');
+      const cycles = (cycleMap[m.id] || []).sort().join('; ');
+      const tid = m.tribe_id || '';
+      return `"${m.name}","${m.email}","${m.pmi_id || ''}","${m.phone || ''}","${m.chapter || ''}","${opRole}","${desigs}","${tid}","${m.current_cycle_active ? 'Sim' : 'Não'}","${m.is_superadmin ? 'Sim' : 'Não'}","${cycles}","${m.linkedin_url || ''}","${m.credly_url || ''}"`;
+    });
+
+    const csv = '\uFEFF' + [header, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Membros_Nucleo_IA_GP_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('CSV de membros baixado ✅', 'success');
+  };
+
+  // ══════════════════════════════════════════
   // CYCLE HISTORY MODAL (Superadmin only)
   // ══════════════════════════════════════════
   let chMemberId = '';
@@ -1250,6 +1479,7 @@ import Toast from '../../components/ui/Toast.astro';
       document.querySelectorAll('.adm-tab').forEach(t => (t as HTMLElement).style.display = 'none');
       document.getElementById('panel-tribes')?.classList.add('hidden');
       document.getElementById('panel-members')?.classList.add('hidden');
+      document.getElementById('panel-reports')?.classList.add('hidden');
 
       // Hide KPI bar (superadmin-only stats)
       document.querySelectorAll('#admin-panel > .grid.grid-cols-2')[0]?.classList.add('hidden');
@@ -1271,6 +1501,7 @@ import Toast from '../../components/ui/Toast.astro';
       document.querySelectorAll('.adm-tab').forEach(t => (t as HTMLElement).style.display = 'none');
       document.getElementById('panel-tribes')?.classList.add('hidden');
       document.getElementById('panel-members')?.classList.add('hidden');
+      document.getElementById('panel-reports')?.classList.add('hidden');
 
       document.getElementById('panel-executive')?.classList.remove('hidden');
       loadExecutiveOverview();
