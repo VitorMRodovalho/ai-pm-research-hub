@@ -135,7 +135,7 @@ export function getAccessTier(isSuperadmin: boolean, opRole: string, desigs: str
 
 export function getTier(m: any): string {
   if (m.is_superadmin) return 'superadmin';
-  const opRole = m.operational_role || m.role || 'guest';
+  const opRole = m.operational_role || 'guest';
   if (opRole === 'manager') return 'admin';
   if (opRole === 'deputy_manager') return 'admin';
   const desigs: string[] = m.designations || [];

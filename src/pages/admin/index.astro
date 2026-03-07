@@ -462,6 +462,7 @@ import Toast from '../../components/ui/Toast.astro';
 
 <script>
   import { ROLE_COLORS, ROLE_LABELS } from '../../lib/supabase';
+  import { getMemberRole } from '../../lib/routing';
 
   let sb: any = null;
   let MEMBER: any = null;
@@ -530,7 +531,7 @@ import Toast from '../../components/ui/Toast.astro';
   }
 
   function roleDots(m: any): string {
-    const opRole = m.operational_role || m.role || 'guest';
+    const opRole = getMemberRole(m);
     const desigs = m.designations?.length ? m.designations : [];
     const all = [...(opRole !== 'none' && opRole !== 'guest' ? [opRole] : []), ...desigs];
     return all.filter((r: string) => ROLE_COLORS[r]).map((r: string) =>
@@ -539,7 +540,7 @@ import Toast from '../../components/ui/Toast.astro';
   }
 
   function roleLabelsText(m: any): string {
-    const opRole = m.operational_role || m.role || 'guest';
+    const opRole = getMemberRole(m);
     const desigs = m.designations?.length ? m.designations : [];
     const parts: string[] = [];
     if (opRole !== 'none' && opRole !== 'guest') parts.push(ROLE_LABELS[opRole] || opRole);
@@ -571,7 +572,7 @@ import Toast from '../../components/ui/Toast.astro';
     allMembers = data;
 
     const active = data.filter((m: any) => m.current_cycle_active);
-    const eligible = active.filter((m: any) => ELIGIBLE_ROLES.includes(m.operational_role || m.role));
+    const eligible = active.filter((m: any) => ELIGIBLE_ROLES.includes(getMemberRole(m)));
     const pending = eligible.filter((m: any) => !m.selected_tribe_id && !m.fixed_tribe_id);
 
     document.getElementById('stat-total')!.textContent = String(active.length);
@@ -583,9 +584,9 @@ import Toast from '../../components/ui/Toast.astro';
 
     for (let t = 1; t <= 8; t++) {
       const members = data.filter((m: any) =>
-        m.selected_tribe_id === t || (m.fixed_tribe_id === t && (m.role === 'tribe_leader' || m.operational_role === 'tribe_leader'))
+        m.selected_tribe_id === t || (m.fixed_tribe_id === t && getMemberRole(m) === 'tribe_leader')
       );
-      const count = members.filter((m: any) => m.role !== 'tribe_leader' && m.operational_role !== 'tribe_leader').length;
+      const count = members.filter((m: any) => getMemberRole(m) !== 'tribe_leader').length;
       const color = TRIBE_COLORS[t];
       const pct = Math.round((count / MAX_SLOTS) * 100);
       const full = count >= MAX_SLOTS;
@@ -611,7 +612,7 @@ import Toast from '../../components/ui/Toast.astro';
             <div class="flex items-center gap-1.5 bg-slate-50 rounded-lg px-2 py-1.5 text-[.72rem]" title="${m.name}">
               ${avatar(m, 'w-6 h-6')}
               <span class="font-medium max-w-[90px] truncate">${m.name.split(' ').slice(0, 2).join(' ')}</span>
-              ${(m.role === 'tribe_leader' || m.operational_role === 'tribe_leader') ? '<span class="text-amber-500">&#x1F451;</span>' : ''}
+              ${getMemberRole(m) === 'tribe_leader' ? '<span class="text-amber-500">&#x1F451;</span>' : ''}
             </div>
           `).join('')}
           ${members.length === 0 ? '<span class="text-[.72rem] text-slate-300 italic">Nenhum pesquisador</span>' : ''}
@@ -782,7 +783,7 @@ import Toast from '../../components/ui/Toast.astro';
     <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
       <div id="members-rows">
       ${members.map((m: any) => {
-        const opRole = m.operational_role || m.role || 'guest';
+        const opRole = getMemberRole(m);
         const desigs: string[] = m.designations?.length ? m.designations : [];
         const tid = m.selected_tribe_id || m.fixed_tribe_id || m.tribe_id || '';
         const isActive = m.current_cycle_active;
@@ -1730,7 +1731,7 @@ import Toast from '../../components/ui/Toast.astro';
 
   function getTier(m: any): string {
     if (m.is_superadmin) return 'superadmin';
-    const opRole = m.operational_role || m.role || 'guest';
+    const opRole = getMemberRole(m);
     if (opRole === 'manager') return 'admin';
     if (opRole === 'deputy_manager') return 'admin';
     const desigs: string[] = m.designations || [];
@@ -1802,20 +1803,20 @@ import Toast from '../../components/ui/Toast.astro';
     if (!sb) { setTimeout(boot, 200); return; }
 
     window.addEventListener('nav:member', ((e: CustomEvent) => {
-      if (e.detail && e.detail.role !== 'guest' && !MEMBER) {
+      if (e.detail && getMemberRole(e.detail) !== 'guest' && !MEMBER) {
         MEMBER = e.detail;
         setup();
       }
     }) as EventListener);
 
     const m = (window as any).navGetMember?.();
-    if (m && m.role !== 'guest') { MEMBER = m; setup(); return; }
+    if (m && getMemberRole(m) !== 'guest') { MEMBER = m; setup(); return; }
 
     try {
       const { data: { session } } = await sb.auth.getSession();
       if (session) {
         const { data } = await sb.rpc('get_member_by_auth');
-        if (data && data.role !== 'guest') { MEMBER = data; setup(); return; }
+        if (data && getMemberRole(data) !== 'guest') { MEMBER = data; setup(); return; }
       }
     } catch (e) {}
 
