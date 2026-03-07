@@ -39,8 +39,8 @@ import Toast from '../components/ui/Toast.astro';
     const sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(boot, 200); return; }
 
-    window.addEventListener('nav:member', (async (evt: Event) => { const e = evt as CustomEvent;
-      if (e.detail && (e.detail.operational_role || e.detail.role) !== 'guest') {
+    window.addEventListener('nav:member', (async (e: CustomEvent) => {
+      if (e.detail && e.detail.role !== 'guest') {
         currentMember = e.detail;
         await loadExtras(sb);
         renderProfile(currentMember);
@@ -50,7 +50,7 @@ import Toast from '../components/ui/Toast.astro';
     }) as EventListener);
 
     const m = (window as any).navGetMember?.();
-    if (m && (m.operational_role || m.role) !== 'guest') {
+    if (m && m.role !== 'guest') {
       currentMember = m;
       await loadExtras(sb);
       renderProfile(m);
@@ -60,7 +60,7 @@ import Toast from '../components/ui/Toast.astro';
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
       const { data } = await sb.rpc('get_member_by_auth');
-      if (data && (data.operational_role || data.role) !== 'guest') {
+      if (data && data.role !== 'guest') {
         currentMember = data;
         await loadExtras(sb);
         renderProfile(data);
@@ -507,10 +507,14 @@ import Toast from '../components/ui/Toast.astro';
       });
       if (error) throw error;
       if (data?.success) {
+        const matched = data.all_matched || 0;
+        const total = data.total_badges || 0;
         const msg = data.has_cpmai
-          ? `🎉 CPMAI verificada! ${data.matched_count} badge(s) encontrada(s).`
-          : `✅ ${data.matched_count} badge(s) verificada(s) de ${data.total_credly_badges} no Credly.`;
-        (window as any).toast?.(msg, 'success');
+          ? `🎉 CPMAI verificada! ${matched} badge(s) encontrada(s) de ${total} no Credly.`
+          : matched > 0
+            ? `✅ ${matched} badge(s) verificada(s) de ${total} no Credly.`
+            : `ℹ️ ${total} badge(s) encontrada(s) no Credly, nenhuma da trilha PMI-AI.`;
+        (window as any).toast?.(msg, matched > 0 ? 'success' : 'info');
         const { data: updated } = await sb.rpc('get_member_by_auth');
         if (updated) { currentMember = updated; renderProfile(updated); }
       } else {
