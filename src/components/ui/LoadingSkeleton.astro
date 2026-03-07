@@ -1,0 +1,91 @@
+---
+/**
+ * LoadingSkeleton.astro — S11 UI Polish
+ * Reusable skeleton loader to replace "Carregando..." text.
+ * 
+ * Usage:
+ *   <LoadingSkeleton variant="card" count={3} />
+ *   <LoadingSkeleton variant="row" count={5} />
+ *   <LoadingSkeleton variant="profile" />
+ *   <LoadingSkeleton variant="text" />
+ */
+
+interface Props {
+  variant?: 'card' | 'row' | 'profile' | 'text' | 'kpi';
+  count?: number;
+}
+
+const { variant = 'text', count = 1 } = Astro.props;
+
+const pulse = 'animate-pulse bg-slate-200 rounded';
+---
+
+{variant === 'text' && (
+  <div class="space-y-2.5 py-4">
+    {Array.from({ length: count }).map(() => (
+      <div class="space-y-2">
+        <div class={`h-3 w-3/4 ${pulse}`}></div>
+        <div class={`h-3 w-1/2 ${pulse}`}></div>
+      </div>
+    ))}
+  </div>
+)}
+
+{variant === 'row' && (
+  <div class="space-y-0">
+    {Array.from({ length: count }).map(() => (
+      <div class="flex items-center gap-3 px-4 py-3 border-b border-slate-50">
+        <div class={`w-9 h-9 rounded-full flex-shrink-0 ${pulse}`}></div>
+        <div class="flex-1 space-y-1.5">
+          <div class={`h-3 w-40 ${pulse}`}></div>
+          <div class={`h-2.5 w-56 ${pulse}`}></div>
+        </div>
+        <div class={`h-6 w-16 rounded-full ${pulse}`}></div>
+      </div>
+    ))}
+  </div>
+)}
+
+{variant === 'card' && (
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    {Array.from({ length: count }).map(() => (
+      <div class="bg-white rounded-2xl border border-slate-100 p-5 space-y-3">
+        <div class={`h-4 w-24 ${pulse}`}></div>
+        <div class={`h-3 w-full ${pulse}`}></div>
+        <div class={`h-3 w-3/4 ${pulse}`}></div>
+        <div class="flex gap-2 mt-2">
+          <div class={`h-8 w-20 rounded-lg ${pulse}`}></div>
+          <div class={`h-8 w-20 rounded-lg ${pulse}`}></div>
+        </div>
+      </div>
+    ))}
+  </div>
+)}
+
+{variant === 'profile' && (
+  <div class="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
+    <div class="flex items-center gap-4">
+      <div class={`w-16 h-16 rounded-full flex-shrink-0 ${pulse}`}></div>
+      <div class="flex-1 space-y-2">
+        <div class={`h-4 w-40 ${pulse}`}></div>
+        <div class={`h-3 w-24 ${pulse}`}></div>
+        <div class="flex gap-1.5">
+          <div class={`h-5 w-16 rounded-md ${pulse}`}></div>
+          <div class={`h-5 w-20 rounded-md ${pulse}`}></div>
+        </div>
+      </div>
+    </div>
+    <div class={`h-2.5 w-full rounded-full ${pulse}`}></div>
+  </div>
+)}
+
+{variant === 'kpi' && (
+  <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+    {Array.from({ length: count }).map(() => (
+      <div class="bg-slate-50 rounded-xl p-4 text-center space-y-2">
+        <div class={`h-6 w-12 mx-auto ${pulse}`}></div>
+        <div class={`h-2.5 w-16 mx-auto ${pulse}`}></div>
+      </div>
+    ))}
+  </div>
+)}

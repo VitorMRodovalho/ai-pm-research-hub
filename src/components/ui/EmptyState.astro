@@ -1,0 +1,44 @@
+---
+/**
+ * EmptyState.astro — S11 UI Polish
+ * Contextual empty state with icon, message, and optional CTA.
+ * 
+ * Usage:
+ *   <EmptyState icon="📋" title="Nenhum artefato" message="Crie seu primeiro artefato." ctaText="+ Novo" ctaHref="/artifacts" />
+ *   <EmptyState icon="🏷️" title="Sem tribo" message="Escolha sua tribo para começar." />
+ */
+
+interface Props {
+  icon?: string;
+  title: string;
+  message?: string;
+  ctaText?: string;
+  ctaHref?: string;
+  ctaOnclick?: string;
+  compact?: boolean;
+}
+
+const { icon = '📋', title, message, ctaText, ctaHref, ctaOnclick, compact = false } = Astro.props;
+---
+
+<div class:list={["text-center", compact ? "py-6" : "py-10"]}>
+  <div class:list={["mb-2", compact ? "text-2xl" : "text-4xl"]}>{icon}</div>
+  <div class:list={["font-semibold text-slate-600", compact ? "text-[.82rem]" : "text-sm"]}>{title}</div>
+  {message && (
+    <p class:list={["text-slate-400 mt-1 max-w-[320px] mx-auto", compact ? "text-[.7rem]" : "text-[.78rem]"]}>
+      {message}
+    </p>
+  )}
+  {(ctaText && ctaHref) && (
+    <a href={ctaHref}
+       class="inline-block mt-4 px-4 py-2 bg-navy text-white rounded-xl text-[.78rem] font-semibold no-underline hover:opacity-90 transition-all">
+      {ctaText}
+    </a>
+  )}
+  {(ctaText && ctaOnclick && !ctaHref) && (
+    <button onclick={ctaOnclick}
+       class="mt-4 px-4 py-2 bg-navy text-white rounded-xl text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
+      {ctaText}
+    </button>
+  )}
+</div>

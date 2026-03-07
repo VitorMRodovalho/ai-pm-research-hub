@@ -1,0 +1,39 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+<BaseLayout title="404 — Página não encontrada | Núcleo IA & GP" activePage="">
+  <div class="min-h-[70vh] flex items-center justify-center px-4">
+    <div class="text-center max-w-[440px]">
+      <!-- Animated 404 -->
+      <div class="relative mb-6">
+        <div class="text-[8rem] font-black leading-none text-navy/5 select-none">404</div>
+        <div class="absolute inset-0 flex items-center justify-center">
+          <div class="text-6xl animate-bounce">🤖</div>
+        </div>
+      </div>
+
+      <h1 class="text-2xl font-extrabold text-navy mb-3">Página não encontrada</h1>
+      <p class="text-slate-500 text-sm mb-8 leading-relaxed">
+        Parece que o agente autônomo ainda não mapeou esta rota. 
+        Verifique o endereço ou volte para a página inicial.
+      </p>
+
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <a href="/" class="px-6 py-3 bg-navy text-white rounded-xl font-semibold text-sm no-underline hover:opacity-90 transition-all">
+          ← Voltar ao Início
+        </a>
+        <a href="/#tribes" class="px-6 py-3 bg-white border-2 border-navy text-navy rounded-xl font-semibold text-sm no-underline hover:bg-navy/5 transition-all">
+          🏷️ Ver Tribos
+        </a>
+      </div>
+
+      <div class="mt-10 text-[.7rem] text-slate-300">
+        Núcleo de Estudos e Pesquisa em IA e GP · 
+        <a href="https://github.com/VitorMRodovalho/ai-pm-research-hub/issues" 
+           target="_blank" rel="noopener" class="text-teal no-underline hover:underline">
+          Reportar problema
+        </a>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
