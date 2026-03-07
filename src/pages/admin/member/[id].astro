@@ -142,16 +142,48 @@ const isNew = id === 'new';
       : `background:transparent;border-color:#e2e8f0;color:#64748b`;
   };
 
+  function splitRoleSelection(opRole, selectedRoles) {
+    const operational = new Set(['manager', 'deputy_manager', 'tribe_leader', 'researcher', 'facilitator', 'communicator', 'guest', 'none']);
+    const designations = selectedRoles.filter((r) => !operational.has(r));
+    return {
+      operationalRole: opRole || 'guest',
+      designations
+    };
+  }
+
+  async function adminUpdateMemberCompat(sb, params, opRole, selectedRoles) {
+    const split = splitRoleSelection(opRole, selectedRoles);
+    const v2Payload = {
+      p_member_id: params.p_member_id,
+      p_name: params.p_name,
+      p_email: params.p_email,
+      p_operational_role: split.operationalRole,
+      p_designations: split.designations,
+      p_chapter: params.p_chapter,
+      p_tribe_id: params.p_tribe_id,
+      p_pmi_id: params.p_pmi_id,
+      p_phone: params.p_phone,
+      p_linkedin_url: params.p_linkedin_url,
+      p_current_cycle_active: params.p_current_cycle_active,
+    };
+    const v2 = await sb.rpc('admin_update_member', v2Payload);
+    if (!v2.error && v2.data?.success) return { mode: 'v2', data: v2.data, error: null };
+
+    const legacy = await sb.rpc('admin_update_member', params);
+    return { mode: 'legacy', data: legacy.data, error: legacy.error || v2.error };
+  }
+
   saveMember = async () => {
     const sb = navGetSb?.();
     const name  = (document.getElementById('f-name') )?.value.trim();
     const email = (document.getElementById('f-email') )?.value.trim();
     if (!name || !email) { toast?.('Nome e email obrigatórios','error'); return; }
     const roles = Object.keys(ROLE_COLORS).filter(r => document.getElementById('rc-'+r)?.dataset.on === 'true');
+    const opRole = (document.getElementById('f-role') )?.value;
     const params = {
       p_member_id: isNew ? undefined : memberId,
       p_name: name, p_email: email,
-      p_role:  (document.getElementById('f-role') )?.value,
+      p_role:  opRole,
       p_roles: roles,
       p_chapter: (document.getElementById('f-chapter') )?.value || null,
       p_tribe_id: parseInt((document.getElementById('f-tribe') )?.value) || null,
@@ -162,15 +194,26 @@ const isNew = id === 'new';
     };
     let result;
     if (isNew) {
+      const split = splitRoleSelection(opRole, roles);
       const { error } = await sb.from('members').insert({
-        name:params.p_name, email:params.p_email, operational_role:params.p_role || 'guest', designations:[],
+        name: params.p_name,
+        email: params.p_email,
+        operational_role: split.operationalRole,
+        designations: split.designations,
         chapter:params.p_chapter, tribe_id:params.p_tribe_id, pmi_id:params.p_pmi_id,
         phone:params.p_phone, linkedin_url:params.p_linkedin_url, current_cycle_active:true,
       });
       result = error ? { error: error.message } : { success: true };
     } else {
-      const { data } = await sb.rpc('admin_update_member', params);
-      result = data;
+      const compat = await adminUpdateMemberCompat(sb, params, opRole, roles);
+      if (compat.mode === 'legacy') {
+        const split = splitRoleSelection(opRole, roles);
+        await sb.from('members').update({
+          operational_role: split.operationalRole,
+          designations: split.designations
+        }).eq('id', memberId);
+      }
+      result = compat.data;
     }
     if (result?.error) { toast?.(result.error, 'error'); return; }
     toast?.('Salvo ✅','success');
