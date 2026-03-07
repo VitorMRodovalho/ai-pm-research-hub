@@ -206,8 +206,8 @@ import RosterModal from '../components/attendance/RosterModal.astro';
     el.innerHTML = data.map((ev: any) => {
       const attIcon = ev.i_attended === true ? '✅' : ev.i_attended === false ? '❌' : '—';
       const attBg = ev.i_attended === true ? 'bg-green-100 text-green-800' : ev.i_attended === false ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-500';
-      const canEdit = MEMBER.is_superadmin || MEMBER.role === 'tribe_leader' || ev.created_by === MEMBER.auth_id;
-      const canRoster = MEMBER.is_superadmin || MEMBER.role === 'tribe_leader';
+      const canEdit = MEMBER.is_superadmin || (MEMBER.operational_role || MEMBER.role) === 'tribe_leader' || ev.created_by === MEMBER.auth_id;
+      const canRoster = MEMBER.is_superadmin || (MEMBER.operational_role || MEMBER.role) === 'tribe_leader';
 
       const isPast = new Date(ev.date + 'T23:59:59') < new Date();
       const linkHtml = ev.meeting_link && !isPast
@@ -452,7 +452,7 @@ import RosterModal from '../components/attendance/RosterModal.astro';
   }
 
   async function onMemberReady() {
-    CAN_MANAGE = MEMBER.is_superadmin || MEMBER.role === 'tribe_leader';
+    CAN_MANAGE = MEMBER.is_superadmin || (MEMBER.operational_role || MEMBER.role) === 'tribe_leader';
     if (CAN_MANAGE) {
       document.getElementById('tab-new-event')?.classList.remove('hidden');
       document.getElementById('tab-recurring')?.classList.remove('hidden');
@@ -468,7 +468,7 @@ import RosterModal from '../components/attendance/RosterModal.astro';
 
     // Listen for future auth changes
     window.addEventListener('nav:member', ((e: CustomEvent) => {
-      if (e.detail && e.detail.role !== 'guest') {
+      if (e.detail && (e.detail.operational_role || e.detail.role) !== 'guest') {
         MEMBER = e.detail;
         onMemberReady();
       } else if (!e.detail) {
@@ -478,7 +478,7 @@ import RosterModal from '../components/attendance/RosterModal.astro';
 
     // 1) Check if nav already has a member loaded
     const m = (window as any).navGetMember?.();
-    if (m && m.role !== 'guest') {
+    if (m && (m.operational_role || m.role) !== 'guest') {
       MEMBER = m;
       onMemberReady();
       return;
@@ -488,7 +488,7 @@ import RosterModal from '../components/attendance/RosterModal.astro';
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
       const { data } = await sb.rpc('get_member_by_auth');
-      if (data && data.role !== 'guest') {
+      if (data && (data.operational_role || data.role) !== 'guest') {
         MEMBER = data;
         onMemberReady();
         return;

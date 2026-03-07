@@ -49,7 +49,8 @@
     btn.textContent = opts.confirmText || 'Confirmar';
     btn.className = `px-4 py-2 rounded-lg text-[13px] font-semibold text-white border-0 hover:opacity-90 cursor-pointer ${opts.confirmClass || 'bg-crimson'}`;
     _confirmCallback = opts.onConfirm;
-    btn.onclick = () => { closeConfirm(); _confirmCallback?.(); };
+    btn.onclick = () => { // @ts-ignore
+      closeConfirm(); _confirmCallback?.(); };
     dialog.classList.remove('hidden');
     dialog.classList.add('flex');
   };

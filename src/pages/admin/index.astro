@@ -825,7 +825,8 @@ import Toast from '../../components/ui/Toast.astro';
       </div>
     </div>`;
 
-    applyFilters();
+    // @ts-ignore
+      applyFilters();
   }
 
   (window as any).applyFilters = () => {
@@ -894,13 +895,15 @@ import Toast from '../../components/ui/Toast.astro';
     (document.getElementById('f-status') as HTMLSelectElement).value = '';
     (document.getElementById('f-auth') as HTMLSelectElement).value = '';
     (document.getElementById('f-tribe') as HTMLSelectElement).value = '';
-    applyFilters();
+    // @ts-ignore
+      applyFilters();
   };
 
   // Keep old filterMembers as alias for backward-compat
   (window as any).filterMembers = (q: string) => {
     (document.getElementById('f-search') as HTMLInputElement).value = q;
-    applyFilters();
+    // @ts-ignore
+      applyFilters();
   };
 
   // ══════════════════════════════════════════
@@ -1660,20 +1663,20 @@ import Toast from '../../components/ui/Toast.astro';
     if (!sb) { setTimeout(boot, 200); return; }
 
     window.addEventListener('nav:member', ((e: CustomEvent) => {
-      if (e.detail && e.detail.role !== 'guest' && !MEMBER) {
+      if (e.detail && (e.detail.operational_role || e.detail.role) !== 'guest' && !MEMBER) {
         MEMBER = e.detail;
         setup();
       }
     }) as EventListener);
 
     const m = (window as any).navGetMember?.();
-    if (m && m.role !== 'guest') { MEMBER = m; setup(); return; }
+    if (m && (m.operational_role || m.role) !== 'guest') { MEMBER = m; setup(); return; }
 
     try {
       const { data: { session } } = await sb.auth.getSession();
       if (session) {
         const { data } = await sb.rpc('get_member_by_auth');
-        if (data && data.role !== 'guest') { MEMBER = data; setup(); return; }
+        if (data && (data.operational_role || data.role) !== 'guest') { MEMBER = data; setup(); return; }
       }
     } catch (e) {}
 

@@ -22,9 +22,9 @@ const isNew = id === 'new';
 
 <script define:vars={{ memberId: id, isNew }}>
   import { ROLE_LABELS, ROLE_COLORS } from '../../../lib/supabase';
-  let _member: any = null;
+  let _member = null;
 
-  window.addEventListener('nav:member', async (e: any) => {
+  window.addEventListener('nav:member', async (e) => {
     const me = e.detail;
     if (!me?.is_superadmin) { location.href = '/admin'; return; }
     if (!isNew) await loadMember();
@@ -32,13 +32,13 @@ const isNew = id === 'new';
   });
 
   async function loadMember() {
-    const sb = (window as any).navGetSb?.();
+    const sb = navGetSb?.();
     const { data } = await sb.from('members').select('*').eq('id', memberId).single();
     _member = data;
     renderForm(data);
   }
 
-  function renderForm(m: any) {
+  function renderForm(m) {
     const el = document.getElementById('member-form');
     if (!el) return;
     const CHAPTERS = ['PMI-GO','PMI-CE','PMI-DF','PMI-MG','PMI-RS'];
@@ -69,7 +69,7 @@ const isNew = id === 'new';
           <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Papel principal</label>
           <select id="f-role" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
             ${Object.entries(ROLE_LABELS).filter(([k])=>k!=='guest').map(([k,v])=>
-              `<option value="${k}" ${m?.role===k?'selected':''}>${v}</option>`
+              `<option value="${k}" ${m?.operational_role===k?'selected':''}>${v}</option>`
             ).join('')}
           </select>
         </div>
@@ -128,8 +128,8 @@ const isNew = id === 'new';
       </div>`;
   }
 
-  (window as any).toggleRole = (r: string) => {
-    const el = document.getElementById('rc-'+r) as HTMLButtonElement;
+  toggleRole = (r) => {
+    const el = document.getElementById('rc-'+r) ;
     if (!el) return;
     const on = el.dataset.on !== 'true';
     el.dataset.on = String(on);
@@ -139,23 +139,23 @@ const isNew = id === 'new';
       : `background:transparent;border-color:#e2e8f0;color:#64748b`;
   };
 
-  (window as any).saveMember = async () => {
-    const sb = (window as any).navGetSb?.();
-    const name  = (document.getElementById('f-name') as HTMLInputElement)?.value.trim();
-    const email = (document.getElementById('f-email') as HTMLInputElement)?.value.trim();
-    if (!name || !email) { (window as any).toast?.('Nome e email obrigatórios','error'); return; }
+  saveMember = async () => {
+    const sb = navGetSb?.();
+    const name  = (document.getElementById('f-name') )?.value.trim();
+    const email = (document.getElementById('f-email') )?.value.trim();
+    if (!name || !email) { toast?.('Nome e email obrigatórios','error'); return; }
     const roles = Object.keys(ROLE_COLORS).filter(r => document.getElementById('rc-'+r)?.dataset.on === 'true');
     const params = {
       p_member_id: isNew ? undefined : memberId,
       p_name: name, p_email: email,
-      p_role:  (document.getElementById('f-role') as HTMLSelectElement)?.value,
+      p_role:  (document.getElementById('f-role') )?.value,
       p_roles: roles,
-      p_chapter: (document.getElementById('f-chapter') as HTMLSelectElement)?.value || null,
-      p_tribe_id: parseInt((document.getElementById('f-tribe') as HTMLSelectElement)?.value) || null,
-      p_pmi_id:  (document.getElementById('f-pmi') as HTMLInputElement)?.value.trim() || null,
-      p_phone:   (document.getElementById('f-phone') as HTMLInputElement)?.value.trim() || null,
-      p_linkedin_url: (document.getElementById('f-li') as HTMLInputElement)?.value.trim() || null,
-      p_current_cycle_active: isNew ? true : (document.getElementById('f-active') as HTMLInputElement)?.checked,
+      p_chapter: (document.getElementById('f-chapter') )?.value || null,
+      p_tribe_id: parseInt((document.getElementById('f-tribe') )?.value) || null,
+      p_pmi_id:  (document.getElementById('f-pmi') )?.value.trim() || null,
+      p_phone:   (document.getElementById('f-phone') )?.value.trim() || null,
+      p_linkedin_url: (document.getElementById('f-li') )?.value.trim() || null,
+      p_current_cycle_active: isNew ? true : (document.getElementById('f-active') )?.checked,
     };
     let result;
     if (isNew) {
@@ -169,24 +169,24 @@ const isNew = id === 'new';
       const { data } = await sb.rpc('admin_update_member', params);
       result = data;
     }
-    if (result?.error) { (window as any).toast?.(result.error, 'error'); return; }
-    (window as any).toast?.('Salvo ✅','success');
+    if (result?.error) { toast?.(result.error, 'error'); return; }
+    toast?.('Salvo ✅','success');
     setTimeout(() => location.href = '/admin', 1200);
   };
 
-  (window as any).inactivateMember = async (id: string, name: string) => {
+  inactivateMember = async (id, name) => {
     const reason = prompt(`Motivo da inativação de ${name} (opcional):`);
     if (reason === null) return;
-    const sb = (window as any).navGetSb?.();
+    const sb = navGetSb?.();
     await sb.rpc('admin_inactivate_member', { p_member_id: id, p_reason: reason || null });
-    (window as any).toast?.('Membro inativado 🔴','info');
+    toast?.('Membro inativado 🔴','info');
     setTimeout(() => location.href = '/admin', 1200);
   };
 
-  (window as any).reactivateMember = async (id: string) => {
-    const sb = (window as any).navGetSb?.();
+  reactivateMember = async (id) => {
+    const sb = navGetSb?.();
     await sb.rpc('admin_reactivate_member', { p_member_id: id });
-    (window as any).toast?.('Membro reativado 🟢','success');
+    toast?.('Membro reativado 🟢','success');
     setTimeout(() => location.href = '/admin', 1200);
   };
 </script>

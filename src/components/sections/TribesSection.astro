@@ -242,11 +242,11 @@ const QUAD_COLORS: Record<string, string> = {
       document.dispatchEvent(new CustomEvent('open-auth'));
       return;
     }
-    if (member.role === 'guest') {
+    if ((member.operational_role || member.role) === 'guest') {
       (window as any).toast?.('Apenas participantes cadastrados.', 'error');
       return;
     }
-    if (member.role === 'tribe_leader') {
+    if ((member.operational_role || member.role) === 'tribe_leader') {
       (window as any).toast?.('Líderes já estão designados à sua tribo!', 'info');
       return;
     }
@@ -334,8 +334,8 @@ const QUAD_COLORS: Record<string, string> = {
         const isSelected = userTribe === tid;
         const isFull = count >= MAX_SLOTS && !isSelected;
         const canSelect = member
-          && member.role !== 'guest'
-          && member.role !== 'tribe_leader'
+          && (member.operational_role || member.role) !== 'guest'
+          && (member.operational_role || member.role) !== 'tribe_leader'
           && member.is_active !== false;
 
         if (isSelected) {

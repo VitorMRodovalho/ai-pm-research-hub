@@ -173,12 +173,12 @@ const jsI18n = JSON.stringify({
   }
 
   function renderAuth() {
-    if (!_member || _member.role === 'guest') { renderLoggedOut(); return; }
+    if (!_member || (_member.operational_role || _member.role) === 'guest') { renderLoggedOut(); return; }
     const name = _member.name || i18n.user || 'User';
     const first = name.split(' ')[0];
     const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0,2).toUpperCase();
     const pic = _user?.user_metadata?.avatar_url;
-    const r = _member.role || 'guest';
+    const r = _member.operational_role || _member.role || 'guest';
     const color = ROLE_COLORS[r] || '#64748B';
     const label = getRoleLabel(r);
 
@@ -220,7 +220,7 @@ const jsI18n = JSON.stringify({
     const name = _member.name || i18n.user || 'User';
     const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0,2).toUpperCase();
     const pic = _user?.user_metadata?.avatar_url;
-    const r = _member.role || 'guest';
+    const r = _member.operational_role || _member.role || 'guest';
     const color = ROLE_COLORS[r] || '#64748B';
     const isAdmin = _member.is_superadmin === true;
     const base = document.documentElement.lang === 'pt-BR' || document.documentElement.lang === 'pt' ? '' :

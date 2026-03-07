@@ -585,14 +585,14 @@ import Toast from '../components/ui/Toast.astro';
     if (!sb) { setTimeout(boot, 200); return; }
 
     window.addEventListener('nav:member', ((e: CustomEvent) => {
-      if (e.detail && e.detail.role !== 'guest') {
+      if (e.detail && (e.detail.operational_role || e.detail.role) !== 'guest') {
         MEMBER = e.detail;
         setupUI();
       }
     }) as EventListener);
 
     const m = (window as any).navGetMember?.();
-    if (m && m.role !== 'guest') {
+    if (m && (m.operational_role || m.role) !== 'guest') {
       MEMBER = m;
       setupUI();
       return;
@@ -601,7 +601,7 @@ import Toast from '../components/ui/Toast.astro';
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
       const { data } = await sb.rpc('get_member_by_auth');
-      if (data && data.role !== 'guest') {
+      if (data && (data.operational_role || data.role) !== 'guest') {
         MEMBER = data;
         setupUI();
         return;
