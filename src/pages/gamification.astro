@@ -61,9 +61,12 @@ import Toast from '../components/ui/Toast.astro';
           <span class="text-slate-600">Perfil 100%</span>
         </div>
         <div class="flex items-center gap-2">
-          <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-[11px]">+?</span>
-          <span class="text-slate-600">Bônus especial</span>
+          <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-[11px]">+10-50</span>
+          <span class="text-slate-600">Credly (T1-4)</span>
         </div>
+      </div>
+      <div class="mt-3 text-[11px] text-slate-500">
+        Credly tiers: T1 Master +50, T2 Specialization +25, T3 Trail/Knowledge +15, T4 Other +10.
       </div>
     </div>
 
@@ -194,6 +197,8 @@ import Toast from '../components/ui/Toast.astro';
 </BaseLayout>
 
 <script>
+  import { aggregateCredlyByMember } from '../lib/gamification';
+
   let sb: any = null;
   let MEMBER: any = null;
   let leaderboardData: any[] = [];
@@ -277,7 +282,12 @@ import Toast from '../components/ui/Toast.astro';
   // ── INDIVIDUAL LEADERBOARD (with XP levels) ──
   async function loadLeaderboard() {
     const { data } = await sb.from('gamification_leaderboard').select('*');
+    const { data: credlyRows } = await sb.from('gamification_points')
+      .select('member_id, points, reason')
+      .like('reason', 'Credly:%');
+
     leaderboardData = data || [];
+    const credlyByMember = aggregateCredlyByMember(credlyRows || []);
     const el = document.getElementById('leaderboard-list')!;
     if (!data?.length) {
       el.innerHTML = '<p class="text-slate-400 text-sm text-center py-6">Nenhum ponto registrado. Clique em "Sincronizar Pontos" para calcular.</p>';
@@ -297,13 +307,24 @@ import Toast from '../components/ui/Toast.astro';
       const pct = (m.total_points / maxPts * 100).toFixed(0);
       const level = getLevel(m.total_points);
       const isMe = MEMBER && m.member_id === MEMBER.id;
+      const credly = credlyByMember[m.member_id] || { total: 0, badges: 0, t1: 0, t2: 0, t3: 0, t4: 0 };
 
       const breakdown = [
         m.attendance_points > 0 ? `📅 ${m.attendance_points}` : '',
         m.course_points > 0 ? `🎓 ${m.course_points}` : '',
         m.artifact_points > 0 ? `📄 ${m.artifact_points}` : '',
         m.bonus_points > 0 ? `⭐ ${m.bonus_points}` : '',
+        credly.total > 0 ? `🏅 ${credly.total}` : '',
       ].filter(Boolean).join(' · ');
+
+      const credlyTierTags = credly.total > 0
+        ? [
+          credly.t1 > 0 ? `T1×${credly.t1}` : '',
+          credly.t2 > 0 ? `T2×${credly.t2}` : '',
+          credly.t3 > 0 ? `T3×${credly.t3}` : '',
+          credly.t4 > 0 ? `T4×${credly.t4}` : '',
+        ].filter(Boolean).map((x: string) => `<span class="text-[.55rem] px-1 py-0.5 rounded bg-amber-50 text-amber-700">${x}</span>`).join(' ')
+        : '';
 
       return `
       <div class="flex items-center gap-3 py-3 border-b border-slate-100 last:border-b-0 ${i < 3 ? 'bg-amber-50/30' : ''} ${isMe ? 'ring-2 ring-orange/30 rounded-lg' : ''}">
@@ -316,6 +337,7 @@ import Toast from '../components/ui/Toast.astro';
             ${isMe ? '<span class="text-[.55rem] font-bold px-1 py-0.5 rounded bg-orange/10 text-orange">VOCÊ</span>' : ''}
           </div>
           <div class="text-[11px] text-slate-400">${m.chapter || ''} ${breakdown ? '· ' + breakdown : ''}</div>
+          ${credlyTierTags ? `<div class="mt-1 flex gap-1 flex-wrap">${credlyTierTags}</div>` : ''}
           <div class="h-1.5 bg-slate-100 rounded-full mt-1 overflow-hidden">
             <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${m.total_points > 0 ? '#FF610F' : '#E2E8F0'}"></div>
           </div>
@@ -479,6 +501,9 @@ import Toast from '../components/ui/Toast.astro';
 
     const total = data.reduce((s: number, p: any) => s + p.points, 0);
     const level = getLevel(total);
+    const myCredly = aggregateCredlyByMember(
+      (data || []).filter((p: any) => String(p.reason || '').startsWith('Credly:'))
+    )[MEMBER.id] || { total: 0, badges: 0, t1: 0, t2: 0, t3: 0, t4: 0 };
 
     el.innerHTML = `
       <div class="text-center mb-6 py-5 bg-gradient-to-br from-navy/5 to-orange/5 rounded-xl">
@@ -490,6 +515,17 @@ import Toast from '../components/ui/Toast.astro';
           <div class="h-full bg-orange rounded-full" style="width:${level.pctInLevel}%"></div>
         </div>
       </div>
+      ${myCredly.total > 0 ? `
+      <div class="mb-5 p-3 rounded-xl border border-amber-200 bg-amber-50/50">
+        <div class="text-[.78rem] font-bold text-navy mb-2">🏅 Credly por Tier</div>
+        <div class="flex flex-wrap gap-2 text-[.7rem]">
+          <span class="px-2 py-1 rounded bg-white border border-amber-200 text-amber-700">T1 Master: ${myCredly.t1}</span>
+          <span class="px-2 py-1 rounded bg-white border border-amber-200 text-amber-700">T2 Specialization: ${myCredly.t2}</span>
+          <span class="px-2 py-1 rounded bg-white border border-amber-200 text-amber-700">T3 Trail/Knowledge: ${myCredly.t3}</span>
+          <span class="px-2 py-1 rounded bg-white border border-amber-200 text-amber-700">T4 Other: ${myCredly.t4}</span>
+          <span class="px-2 py-1 rounded bg-navy text-white font-semibold">Total Credly: ${myCredly.total} pts</span>
+        </div>
+      </div>` : ''}
     ` + data.map((p: any) => {
       const cat = CATEGORY_META[p.category] || CATEGORY_META.bonus;
       const date = new Date(p.created_at).toLocaleDateString('pt-BR', { year: 'numeric', month: 'short', day: '2-digit' });
