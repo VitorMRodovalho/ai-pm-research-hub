@@ -14,11 +14,22 @@ import Toast from '../../components/ui/Toast.astro';
 
     <div id="not-admin-msg" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
       <div class="text-2xl mb-2">🔒</div>
-      <p class="font-semibold text-amber-800">Acesso restrito ao Gerente do Projeto e Administradores.</p>
+      <p class="font-semibold text-amber-800">Acesso restrito. Faça login com uma conta autorizada.</p>
       <a href="/profile" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">👤 Ver meu perfil</a>
     </div>
 
     <div id="admin-loading" class="text-center py-10 text-slate-400">Verificando acesso...</div>
+
+    <!-- Tier header (shown for non-superadmin tiers) -->
+    <div id="tier-header" class="hidden mb-5 p-4 rounded-xl border" style="border-color:#4F17A830;background:#4F17A808">
+      <div class="flex items-center gap-2">
+        <span class="text-lg" id="tier-icon"></span>
+        <div>
+          <div class="text-sm font-bold text-navy" id="tier-title"></div>
+          <div class="text-[.7rem] text-slate-400" id="tier-subtitle"></div>
+        </div>
+      </div>
+    </div>
 
     <div id="admin-panel" class="hidden">
       <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
@@ -107,6 +118,57 @@ import Toast from '../../components/ui/Toast.astro';
         </div>
         <div id="members-area"><div class="text-center py-10 text-slate-400">Carregando membros…</div></div>
       </div>
+
+      <!-- Leader Tier: My Tribe panel -->
+      <div id="panel-my-tribe" class="hidden">
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-5">
+          <div class="px-5 py-3.5 border-b border-slate-200">
+            <h3 class="text-sm font-bold text-navy">👥 Membros da Minha Tribo</h3>
+          </div>
+          <div class="p-5" id="my-tribe-members">
+            <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div class="px-5 py-3.5 border-b border-slate-200">
+            <h3 class="text-sm font-bold text-navy">📅 Presenças Recentes da Tribo</h3>
+          </div>
+          <div class="p-5" id="my-tribe-attendance">
+            <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sponsor Tier: Executive Overview panel -->
+      <div id="panel-executive" class="hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-slate-200">
+              <h3 class="text-sm font-bold text-navy">🏛️ Membros por Capítulo</h3>
+            </div>
+            <div class="p-5" id="exec-chapters">
+              <p class="text-slate-400 text-sm text-center py-4">Carregando...</p>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-slate-200">
+              <h3 class="text-sm font-bold text-navy">📊 Progresso Geral</h3>
+            </div>
+            <div class="p-5" id="exec-progress">
+              <p class="text-slate-400 text-sm text-center py-4">Carregando...</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div class="px-5 py-3.5 border-b border-slate-200">
+            <h3 class="text-sm font-bold text-navy">🏷️ Status das Tribos</h3>
+          </div>
+          <div class="p-5" id="exec-tribes">
+            <p class="text-slate-400 text-sm text-center py-4">Carregando...</p>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -749,16 +811,268 @@ import Toast from '../../components/ui/Toast.astro';
   };
 
   // ══════════════════════════════════════════
-  // BOOT
+  // LEADER TIER: My Tribe view
   // ══════════════════════════════════════════
+  async function loadMyTribe() {
+    const tribeId = MEMBER.tribe_id;
+    if (!tribeId) {
+      document.getElementById('my-tribe-members')!.innerHTML =
+        '<p class="text-slate-400 text-sm text-center py-6">Você não está alocado em uma tribo.</p>';
+      return;
+    }
+
+    // Load tribe members
+    const { data: selections } = await sb.from('tribe_selections')
+      .select('member_id')
+      .eq('tribe_id', tribeId);
+
+    const memberIds = (selections || []).map((s: any) => s.member_id);
+    // Include self (tribe leader)
+    if (!memberIds.includes(MEMBER.id)) memberIds.push(MEMBER.id);
+
+    const { data: members } = await sb.from('members')
+      .select('id, name, email, chapter, photo_url, operational_role, designations, current_cycle_active')
+      .in('id', memberIds)
+      .order('name');
+
+    const el = document.getElementById('my-tribe-members')!;
+    if (!members?.length) {
+      el.innerHTML = '<p class="text-slate-400 text-sm text-center py-6">Nenhum membro na tribo ainda.</p>';
+      return;
+    }
+
+    el.innerHTML = `
+      <div class="text-[.72rem] text-slate-400 mb-3">${members.length} membros na tribo</div>
+      ${members.map((m: any) => {
+        const isLeader = m.operational_role === 'tribe_leader';
+        const initials = m.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+        const photo = m.photo_url
+          ? `<img src="${m.photo_url}" class="w-10 h-10 rounded-full object-cover flex-shrink-0" alt="">`
+          : `<div class="w-10 h-10 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.7rem] flex-shrink-0">${initials}</div>`;
+        return `
+        <div class="flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-b-0">
+          ${photo}
+          <div class="flex-1 min-w-0">
+            <div class="text-[.82rem] font-semibold text-navy">${m.name} ${isLeader ? '👑' : ''}</div>
+            <div class="text-[.68rem] text-slate-400">${m.email} · ${m.chapter || ''}</div>
+          </div>
+          <span class="text-[.65rem] font-bold px-2 py-0.5 rounded-full ${m.current_cycle_active ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-crimson'}">
+            ${m.current_cycle_active ? 'Ativo' : 'Inativo'}
+          </span>
+        </div>`;
+      }).join('')}`;
+
+    // Load recent attendance
+    const { data: events } = await sb.from('events')
+      .select('id, title, event_date, duration_hours')
+      .order('event_date', { ascending: false })
+      .limit(5);
+
+    const attEl = document.getElementById('my-tribe-attendance')!;
+    if (!events?.length) {
+      attEl.innerHTML = '<p class="text-slate-400 text-sm text-center py-6">Nenhum evento recente.</p>';
+      return;
+    }
+
+    // Get attendance for these events
+    const eventIds = events.map((e: any) => e.id);
+    const { data: attendance } = await sb.from('attendance')
+      .select('event_id, member_id, status')
+      .in('event_id', eventIds)
+      .in('member_id', memberIds);
+
+    const attMap: Record<string, Record<string, string>> = {};
+    (attendance || []).forEach((a: any) => {
+      if (!attMap[a.event_id]) attMap[a.event_id] = {};
+      attMap[a.event_id][a.member_id] = a.status;
+    });
+
+    attEl.innerHTML = events.map((ev: any) => {
+      const date = new Date(ev.event_date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+      const evAtt = attMap[ev.id] || {};
+      const present = Object.values(evAtt).filter(s => s === 'present').length;
+      const total = members.length;
+      return `
+      <div class="flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-b-0">
+        <div class="text-[.72rem] font-bold text-slate-400 w-14 flex-shrink-0">${date}</div>
+        <div class="flex-1 min-w-0 text-[.82rem] truncate">${ev.title}</div>
+        <div class="text-[.72rem] font-bold ${present === total ? 'text-emerald-600' : present > 0 ? 'text-amber-600' : 'text-slate-400'}">
+          ${present}/${total}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ══════════════════════════════════════════
+  // SPONSOR TIER: Executive Overview
+  // ══════════════════════════════════════════
+  async function loadExecutiveOverview() {
+    // Members by chapter
+    const { data: members } = await sb.from('members')
+      .select('chapter, current_cycle_active, operational_role')
+      .neq('operational_role', 'guest');
+
+    const active = (members || []).filter((m: any) => m.current_cycle_active);
+    const byChapter: Record<string, { total: number; active: number }> = {};
+    (members || []).forEach((m: any) => {
+      const ch = m.chapter || 'Outros';
+      if (!byChapter[ch]) byChapter[ch] = { total: 0, active: 0 };
+      byChapter[ch].total++;
+      if (m.current_cycle_active) byChapter[ch].active++;
+    });
+
+    const CHAPTER_COLORS: Record<string, string> = {
+      'PMI-GO': '#FF610F', 'PMI-CE': '#4F17A8', 'PMI-DF': '#00799E',
+      'PMI-MG': '#10B981', 'PMI-RS': '#D97706'
+    };
+
+    document.getElementById('exec-chapters')!.innerHTML =
+      Object.entries(byChapter).sort((a, b) => b[1].active - a[1].active).map(([ch, s]) => {
+        const color = CHAPTER_COLORS[ch] || '#94A3B8';
+        const maxActive = Math.max(...Object.values(byChapter).map(v => v.active), 1);
+        const pct = Math.round((s.active / maxActive) * 100);
+        return `
+        <div class="flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-b-0">
+          <div class="text-[.82rem] font-bold w-16 flex-shrink-0" style="color:${color}">${ch}</div>
+          <div class="flex-1">
+            <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full rounded-full" style="width:${pct}%;background:${color}"></div>
+            </div>
+          </div>
+          <div class="text-[.78rem] font-bold text-navy flex-shrink-0">${s.active}</div>
+          <div class="text-[.65rem] text-slate-400 flex-shrink-0">ativos</div>
+        </div>`;
+      }).join('');
+
+    // General progress stats
+    const totalActive = active.length;
+    const researchers = active.filter((m: any) => m.operational_role === 'researcher').length;
+    const leaders = active.filter((m: any) => m.operational_role === 'tribe_leader').length;
+    const managers = active.filter((m: any) => m.operational_role === 'manager').length;
+
+    // Course progress aggregated
+    const { data: courseProgress } = await sb.from('course_progress')
+      .select('status');
+    const completed = (courseProgress || []).filter((c: any) => c.status === 'completed').length;
+    const totalCourseSlots = totalActive * 8;
+    const trailPct = totalCourseSlots > 0 ? Math.round((completed / totalCourseSlots) * 100) : 0;
+
+    // Artifacts
+    const { data: artifacts } = await sb.from('artifacts').select('status');
+    const published = (artifacts || []).filter((a: any) => a.status === 'published').length;
+    const inReview = (artifacts || []).filter((a: any) => a.status === 'review').length;
+
+    document.getElementById('exec-progress')!.innerHTML = `
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-slate-50 rounded-xl p-3 text-center">
+          <div class="text-xl font-black text-navy">${totalActive}</div>
+          <div class="text-[.65rem] text-slate-400 font-semibold">Ativos</div>
+        </div>
+        <div class="bg-slate-50 rounded-xl p-3 text-center">
+          <div class="text-xl font-black text-purple">${leaders + managers}</div>
+          <div class="text-[.65rem] text-slate-400 font-semibold">Liderança</div>
+        </div>
+        <div class="bg-slate-50 rounded-xl p-3 text-center">
+          <div class="text-xl font-black text-teal">${trailPct}%</div>
+          <div class="text-[.65rem] text-slate-400 font-semibold">Trilha IA</div>
+        </div>
+        <div class="bg-slate-50 rounded-xl p-3 text-center">
+          <div class="text-xl font-black text-emerald-600">${published}</div>
+          <div class="text-[.65rem] text-slate-400 font-semibold">Publicados</div>
+        </div>
+      </div>
+      <div class="mt-3 text-[.7rem] text-slate-400">
+        ${researchers} pesquisadores · ${inReview} artefatos em revisão · ${completed} cursos concluídos
+      </div>`;
+
+    // Tribe summary
+    const { data: tribeData } = await sb.from('tribe_selections').select('tribe_id');
+    const tribeCounts: Record<number, number> = {};
+    (tribeData || []).forEach((t: any) => { tribeCounts[t.tribe_id] = (tribeCounts[t.tribe_id] || 0) + 1; });
+
+    document.getElementById('exec-tribes')!.innerHTML = `
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        ${[1,2,3,4,5,6,7,8].map(tid => {
+          const count = tribeCounts[tid] || 0;
+          const color = TRIBE_COLORS[tid] || '#94A3B8';
+          return `
+          <div class="rounded-xl p-3 text-center border border-slate-100">
+            <div class="text-[.65rem] font-bold uppercase tracking-wider mb-1" style="color:${color}">T${String(tid).padStart(2,'0')}</div>
+            <div class="text-lg font-black text-navy">${count}/6</div>
+            <div class="text-[.6rem] text-slate-400">${TRIBE_NAMES[tid]?.split(' ').slice(0,2).join(' ')}</div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  }
+
+  // ══════════════════════════════════════════
+  // BOOT (Tier-aware)
+  // ══════════════════════════════════════════
+  let TIER = 'visitor';
+
+  function getTier(m: any): string {
+    if (m.is_superadmin) return 'superadmin';
+    const opRole = m.operational_role || m.role || 'guest';
+    if (opRole === 'manager') return 'admin';
+    if (opRole === 'tribe_leader') return 'leader';
+    const desigs: string[] = m.designations || [];
+    if (desigs.includes('sponsor') || desigs.includes('curator')) return 'observer';
+    return 'visitor';
+  }
+
   function setup() {
     document.getElementById('admin-loading')?.classList.add('hidden');
-    if (!MEMBER.is_superadmin && MEMBER.role !== 'manager' && MEMBER.operational_role !== 'manager') {
+    TIER = getTier(MEMBER);
+
+    if (TIER === 'visitor') {
       document.getElementById('not-admin-msg')?.classList.remove('hidden');
       return;
     }
+
     document.getElementById('admin-panel')?.classList.remove('hidden');
-    loadTribes();
+
+    // Configure UI based on tier
+    if (TIER === 'superadmin' || TIER === 'admin') {
+      // Full access: tribes tab + members tab + filters
+      loadTribes();
+
+    } else if (TIER === 'leader') {
+      // Show tier header
+      const header = document.getElementById('tier-header')!;
+      header.classList.remove('hidden');
+      document.getElementById('tier-icon')!.textContent = '🏷️';
+      document.getElementById('tier-title')!.textContent = 'Painel da Tribo — ' + (TRIBE_NAMES[MEMBER.tribe_id] || 'Sua Tribo');
+      document.getElementById('tier-subtitle')!.textContent = 'Visualização read-only · Pode registrar presença dos membros';
+
+      // Hide superadmin tabs, show my-tribe
+      document.querySelectorAll('.adm-tab').forEach(t => (t as HTMLElement).style.display = 'none');
+      document.getElementById('panel-tribes')?.classList.add('hidden');
+      document.getElementById('panel-members')?.classList.add('hidden');
+
+      // Hide KPI bar (superadmin-only stats)
+      document.querySelectorAll('#admin-panel > .grid.grid-cols-2')[0]?.classList.add('hidden');
+
+      document.getElementById('panel-my-tribe')?.classList.remove('hidden');
+      loadMyTribe();
+
+    } else if (TIER === 'observer') {
+      // Show tier header
+      const header = document.getElementById('tier-header')!;
+      header.classList.remove('hidden');
+      header.style.borderColor = '#BE202730';
+      header.style.background = '#BE202708';
+      document.getElementById('tier-icon')!.textContent = '📊';
+      document.getElementById('tier-title')!.textContent = 'Visão Executiva — Ciclo 3';
+      document.getElementById('tier-subtitle')!.textContent = 'Dados agregados · Sem acesso a informações individuais detalhadas';
+
+      // Hide superadmin tabs, show executive
+      document.querySelectorAll('.adm-tab').forEach(t => (t as HTMLElement).style.display = 'none');
+      document.getElementById('panel-tribes')?.classList.add('hidden');
+      document.getElementById('panel-members')?.classList.add('hidden');
+
+      document.getElementById('panel-executive')?.classList.remove('hidden');
+      loadExecutiveOverview();
+    }
   }
 
   async function boot() {
