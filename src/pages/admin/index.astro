@@ -76,6 +76,7 @@ import Toast from '../../components/ui/Toast.astro';
             <select id="f-oprole" onchange="applyFilters()" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-[.72rem] bg-white">
               <option value="">Papel: Todos</option>
               <option value="manager">Gerente</option>
+              <option value="deputy_manager">Deputy PM</option>
               <option value="tribe_leader">Líder de Tribo</option>
               <option value="researcher">Pesquisador</option>
               <option value="facilitator">Facilitador</option>
@@ -342,6 +343,7 @@ import Toast from '../../components/ui/Toast.astro';
           <p class="text-[.68rem] text-slate-400 mb-2">O que essa pessoa FAZ no ciclo ativo. Apenas um.</p>
           <select id="edit-m-oprole" class="w-full px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
             <option value="manager">⚙️ Gerente de Projeto (Nível 2)</option>
+            <option value="deputy_manager">⚙️ Deputy PM (Nível 2.5)</option>
             <option value="tribe_leader">🏷️ Líder de Tribo (Nível 3)</option>
             <option value="researcher">🔬 Pesquisador (Nível 4)</option>
             <option value="facilitator">🤝 Facilitador (Nível 4)</option>
@@ -463,6 +465,7 @@ import Toast from '../../components/ui/Toast.astro';
   function getAccessTier(isSuperadmin: boolean, opRole: string, desigs: string[]): string {
     if (isSuperadmin) return 'superadmin';
     if (opRole === 'manager') return 'admin';
+    if (opRole === 'deputy_manager') return 'admin';
     if (desigs.includes('co_gp')) return 'admin';
     if (opRole === 'tribe_leader') return 'leader';
     if (desigs.includes('sponsor') || desigs.includes('curator')) return 'observer';
@@ -667,11 +670,11 @@ import Toast from '../../components/ui/Toast.astro';
   // ══════════════════════════════════════════
 
   const OPROLE_LABELS: Record<string, string> = {
-    manager: 'Gerente', tribe_leader: 'Líder de Tribo', researcher: 'Pesquisador',
+    manager: 'Gerente', deputy_manager: 'Deputy PM', tribe_leader: 'Líder de Tribo', researcher: 'Pesquisador',
     facilitator: 'Facilitador', communicator: 'Multiplicador', none: 'Sem papel', guest: 'Convidado'
   };
   const OPROLE_COLORS: Record<string, string> = {
-    manager: '#FF610F', tribe_leader: '#4F17A8', researcher: '#EC4899',
+    manager: '#FF610F', deputy_manager: '#FF610F', tribe_leader: '#4F17A8', researcher: '#EC4899',
     facilitator: '#06B6D4', communicator: '#8B5CF6', none: '#94A3B8', guest: '#94A3B8'
   };
   const DESIG_LABELS: Record<string, string> = {
@@ -1583,6 +1586,7 @@ import Toast from '../../components/ui/Toast.astro';
     if (m.is_superadmin) return 'superadmin';
     const opRole = m.operational_role || m.role || 'guest';
     if (opRole === 'manager') return 'admin';
+    if (opRole === 'deputy_manager') return 'admin';
     const desigs: string[] = m.designations || [];
     if (desigs.includes('co_gp')) return 'admin';
     if (opRole === 'tribe_leader') return 'leader';

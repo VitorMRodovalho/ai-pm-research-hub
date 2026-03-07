@@ -16,11 +16,11 @@ import Toast from '../components/ui/Toast.astro';
   import { ROLE_COLORS } from '../lib/supabase';
 
   const OPROLE_LABELS: Record<string, string> = {
-    manager: 'Gerente', tribe_leader: 'Líder de Tribo', researcher: 'Pesquisador',
+    manager: 'Gerente', deputy_manager: 'Deputy PM', tribe_leader: 'Líder de Tribo', researcher: 'Pesquisador',
     facilitator: 'Facilitador', communicator: 'Multiplicador', none: 'Sem papel operacional', guest: 'Convidado'
   };
   const OPROLE_COLORS: Record<string, string> = {
-    manager: '#FF610F', tribe_leader: '#4F17A8', researcher: '#EC4899',
+    manager: '#FF610F', deputy_manager: '#FF610F', tribe_leader: '#4F17A8', researcher: '#EC4899',
     facilitator: '#06B6D4', communicator: '#8B5CF6', none: '#94A3B8', guest: '#94A3B8'
   };
   const DESIG_LABELS: Record<string, string> = {
@@ -130,7 +130,7 @@ import Toast from '../components/ui/Toast.astro';
   // ── Completeness calculation ──
   function getCompleteness(m: any): { pct: number; missing: string[] } {
     const opRole = m.operational_role || 'guest';
-    const isOperational = ['manager', 'tribe_leader', 'researcher', 'facilitator', 'communicator'].includes(opRole);
+    const isOperational = ['manager', 'deputy_manager', 'tribe_leader', 'researcher', 'facilitator', 'communicator'].includes(opRole);
     const missing: string[] = [];
     let earned = 0;
     let total = 0;
@@ -248,7 +248,7 @@ import Toast from '../components/ui/Toast.astro';
   // ── Dashboard cards ──
   function dashboardHtml(m: any): string {
     const opRole = m.operational_role || 'guest';
-    const isOperational = ['manager', 'tribe_leader', 'researcher', 'facilitator', 'communicator'].includes(opRole);
+    const isOperational = ['manager', 'deputy_manager', 'tribe_leader', 'researcher', 'facilitator', 'communicator'].includes(opRole);
     if (!cycleStats) return '';
 
     const pctAttend = cycleStats.totalEvents > 0
@@ -399,12 +399,12 @@ import Toast from '../components/ui/Toast.astro';
           </div>
           <div class="sm:col-span-2">
             <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">LinkedIn</label>
-            <input type="url" id="self-li" value="${m.linkedin_url || ''}" placeholder="https://linkedin.com/in/…"
+            <input type="text" inputmode="url" id="self-li" value="${m.linkedin_url || ''}" placeholder="https://linkedin.com/in/…"
               class="w-full px-3 py-2 border-[1.5px] border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
           </div>
           <div class="sm:col-span-2">
             <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Credly (perfil público)</label>
-            <input type="url" id="self-credly" value="${m.credly_url || ''}" placeholder="https://www.credly.com/users/seu-nome"
+            <input type="text" inputmode="url" id="self-credly" value="${m.credly_url || ''}" placeholder="https://www.credly.com/users/seu-nome"
               class="w-full px-3 py-2 border-[1.5px] border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
             <div class="flex items-center gap-2 mt-1">
               <p class="text-[.68rem] text-slate-400 flex-1">Usado para validar certificações PMI automaticamente. Opcional.</p>
