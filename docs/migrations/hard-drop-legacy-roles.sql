@@ -1,0 +1,12 @@
+-- Hard drop legacy role/roles columns from members table
+-- Executed: 2026-03-07
+-- 
+-- Created compute_legacy_role() and compute_legacy_roles() helper functions
+-- Rewrote 5 RPCs: get_member_by_auth, admin_list_members, admin_update_member,
+--   admin_get_tribe_allocations, get_tribe_event_roster
+-- Recreated 3 views: gamification_leaderboard, member_attendance_summary, public_members
+-- Recreated 3 RLS policies: admin_update_artifacts, Managers can insert, Managers create presentations
+-- Dropped get_primary_role() function
+-- 
+-- Frontend receives computed role/roles in JSON via compute_legacy_role()
+-- Zero breaking changes to client code
