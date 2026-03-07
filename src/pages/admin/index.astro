@@ -1418,13 +1418,51 @@ import Toast from '../../components/ui/Toast.astro';
 
     const settingsEl = document.getElementById('my-tribe-settings')!;
     if (tribe) {
+      // Load existing slots
+      const { data: slots } = await sb.from('tribe_meeting_slots')
+        .select('id, day_of_week, time_start, time_end, is_active')
+        .eq('tribe_id', tribeId)
+        .order('day_of_week');
+
+      const DAY_OPTS = [
+        { v: 0, l: 'Domingo' }, { v: 1, l: 'Segunda' }, { v: 2, l: 'Terça' },
+        { v: 3, l: 'Quarta' }, { v: 4, l: 'Quinta' }, { v: 5, l: 'Sexta' }, { v: 6, l: 'Sábado' }
+      ];
+      const DAY_SHORT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+      const slotsHtml = (slots || []).map((s: any) => `
+        <div class="flex items-center gap-2 py-1.5 border-b border-slate-100" data-slot-id="${s.id}">
+          <span class="text-[.78rem] font-semibold w-12">${DAY_SHORT[s.day_of_week]}</span>
+          <span class="text-[.78rem] text-slate-600">${s.time_start.substring(0,5)} – ${s.time_end.substring(0,5)}</span>
+          <span class="flex-1"></span>
+          <button onclick="deleteSlot('${s.id}', ${tribeId})"
+            class="text-[.6rem] px-2 py-0.5 rounded bg-red-50 text-crimson hover:bg-red-100 border-0 cursor-pointer transition-all">🗑️</button>
+        </div>`).join('');
+
+      const dayOptions = DAY_OPTS.map(d => `<option value="${d.v}">${d.l}</option>`).join('');
+
       settingsEl.innerHTML = `
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Horário das Reuniões</label>
-            <input type="text" id="tribe-schedule" value="${tribe.meeting_schedule || ''}" placeholder="Ex: Segunda e Quarta, 18:30–19:30"
-              class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+        <!-- Meeting Slots -->
+        <div class="mb-4">
+          <label class="text-[.68rem] font-semibold text-slate-500 block mb-2">📅 Horários de Reunião</label>
+          <div id="tribe-slots-list" class="mb-2">
+            ${slotsHtml || '<p class="text-[.72rem] text-slate-400 italic py-1">Nenhum horário definido</p>'}
           </div>
+          <div class="flex gap-2 items-end">
+            <select id="slot-day" class="px-2 py-1.5 border border-slate-200 rounded-lg text-[.72rem] bg-white">
+              ${dayOptions}
+            </select>
+            <input type="time" id="slot-start" value="19:00" class="px-2 py-1.5 border border-slate-200 rounded-lg text-[.72rem]">
+            <span class="text-slate-400 text-[.72rem]">–</span>
+            <input type="time" id="slot-end" value="20:00" class="px-2 py-1.5 border border-slate-200 rounded-lg text-[.72rem]">
+            <button onclick="addSlot(${tribeId})"
+              class="px-3 py-1.5 bg-teal text-white rounded-lg text-[.72rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all flex-shrink-0">
+              + Adicionar
+            </button>
+          </div>
+        </div>
+        <!-- Links & Config -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Link da Reunião (Meet/Zoom)</label>
             <input type="text" inputmode="url" id="tribe-meeting-link" value="${tribe.meeting_link || ''}" placeholder="https://meet.google.com/..."
@@ -1445,7 +1483,7 @@ import Toast from '../../components/ui/Toast.astro';
             <input type="text" inputmode="url" id="tribe-miro" value="${tribe.miro_url || ''}" placeholder="https://miro.com/..."
               class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
           </div>
-          <div>
+          <div class="sm:col-span-2">
             <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Recado / Notas</label>
             <input type="text" id="tribe-notes" value="${tribe.notes || ''}" placeholder="Aviso para a tribo..."
               class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
@@ -1454,7 +1492,7 @@ import Toast from '../../components/ui/Toast.astro';
         <div class="mt-3 flex justify-end">
           <button onclick="saveTribeSettings(${tribeId})"
             class="px-4 py-2 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
-            💾 Salvar Configurações
+            💾 Salvar Links & Notas
           </button>
         </div>`;
     } else {
@@ -1541,9 +1579,30 @@ import Toast from '../../components/ui/Toast.astro';
     }).join('');
   }
 
+  (window as any).addSlot = async (tribeId: number) => {
+    const day = parseInt((document.getElementById('slot-day') as HTMLSelectElement).value);
+    const start = (document.getElementById('slot-start') as HTMLInputElement).value;
+    const end = (document.getElementById('slot-end') as HTMLInputElement).value;
+    if (!start || !end) { toast('Preencha início e fim', 'error'); return; }
+    if (start >= end) { toast('Horário de início deve ser antes do fim', 'error'); return; }
+
+    const { error } = await sb.from('tribe_meeting_slots').insert({
+      tribe_id: tribeId, day_of_week: day, time_start: start, time_end: end
+    });
+    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    toast('Horário adicionado ✅', 'success');
+    loadMyTribe(); // Refresh the whole panel
+  };
+
+  (window as any).deleteSlot = async (slotId: string, tribeId: number) => {
+    const { error } = await sb.from('tribe_meeting_slots').delete().eq('id', slotId);
+    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    toast('Horário removido', 'info');
+    loadMyTribe();
+  };
+
   (window as any).saveTribeSettings = async (tribeId: number) => {
     const { error } = await sb.from('tribes').update({
-      meeting_schedule: (document.getElementById('tribe-schedule') as HTMLInputElement).value.trim() || null,
       meeting_link: (document.getElementById('tribe-meeting-link') as HTMLInputElement).value.trim() || null,
       whatsapp_url: (document.getElementById('tribe-wa') as HTMLInputElement).value.trim() || null,
       drive_url: (document.getElementById('tribe-drive') as HTMLInputElement).value.trim() || null,
