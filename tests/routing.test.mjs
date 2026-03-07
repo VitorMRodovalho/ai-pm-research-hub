@@ -17,11 +17,11 @@ test('buildLanguageHref preserves non-index path across locale switches', () => 
 test('shouldRedirectFromProfile redirects guest or missing member', () => {
   assert.equal(shouldRedirectFromProfile(undefined), true);
   assert.equal(shouldRedirectFromProfile(null), true);
-  assert.equal(shouldRedirectFromProfile({ role: 'guest' }), true);
+  assert.equal(shouldRedirectFromProfile({ role: 'guest' }), true); // legacy-only payload treated as guest
   assert.equal(shouldRedirectFromProfile({ operational_role: 'guest' }), true);
 });
 
 test('shouldRedirectFromProfile allows authenticated non-guest members', () => {
-  assert.equal(shouldRedirectFromProfile({ role: 'researcher' }), false);
   assert.equal(shouldRedirectFromProfile({ operational_role: 'manager' }), false);
+  assert.equal(shouldRedirectFromProfile({ operational_role: 'researcher' }), false);
 });

@@ -182,7 +182,7 @@ import Toast from '../components/ui/Toast.astro';
   // ── Role badges (3-axis) ──
   function roleBadgesHtml(m: any): string {
     let html = '';
-    const opRole = m.operational_role || m.role || 'guest';
+    const opRole = m.operational_role || 'guest';
     if (opRole !== 'none' && opRole !== 'guest') {
       const c = OPROLE_COLORS[opRole] || '#94A3B8';
       html += `<span class="inline-block px-2 py-0.5 rounded-md text-[.62rem] font-bold uppercase" style="background:${c}22;color:${c}">${OPROLE_LABELS[opRole] || opRole}</span> `;
