@@ -463,6 +463,7 @@ import Toast from '../../components/ui/Toast.astro';
 <script>
   import { ROLE_COLORS, ROLE_LABELS } from '../../lib/supabase';
   import { getMemberRole } from '../../lib/routing';
+  import { normalizeMemberCycleHistory, uniqueSortedCycleCodes } from '../../lib/cycle-history';
 
   let sb: any = null;
   let MEMBER: any = null;
@@ -1243,19 +1244,19 @@ import Toast from '../../components/ui/Toast.astro';
 
     // Get cycle history
     const { data: history } = await sb.from('member_cycle_history')
-      .select('member_id, cycle_code');
+      .select('member_id, cycle_code, cycle_start, cycle_label, is_active');
 
-    const cycleMap: Record<string, string[]> = {};
+    const cycleRecordsByMember: Record<string, any[]> = {};
     (history || []).forEach((h: any) => {
-      if (!cycleMap[h.member_id]) cycleMap[h.member_id] = [];
-      cycleMap[h.member_id].push(h.cycle_code);
+      if (!cycleRecordsByMember[h.member_id]) cycleRecordsByMember[h.member_id] = [];
+      cycleRecordsByMember[h.member_id].push(h);
     });
 
     const header = 'Nome,Email,PMI ID,Telefone,Capítulo,Papel Operacional,Designações,Tribo,Ativo,Superadmin,Ciclos Participados,LinkedIn,Credly';
     const rows = members.map((m: any) => {
       const opRole = OPROLE_LABELS[m.operational_role] || m.operational_role || '';
       const desigs = (m.designations || []).map((d: string) => DESIG_LABELS[d] || d).join('; ');
-      const cycles = (cycleMap[m.id] || []).sort().join('; ');
+      const cycles = uniqueSortedCycleCodes(cycleRecordsByMember[m.id] || []).join('; ');
       const tid = m.tribe_id || '';
       return `"${m.name}","${m.email}","${m.pmi_id || ''}","${m.phone || ''}","${m.chapter || ''}","${opRole}","${desigs}","${tid}","${m.current_cycle_active ? 'Sim' : 'Não'}","${m.is_superadmin ? 'Sim' : 'Não'}","${cycles}","${m.linkedin_url || ''}","${m.credly_url || ''}"`;
     });
@@ -1281,10 +1282,11 @@ import Toast from '../../components/ui/Toast.astro';
     chMemberId = memberId;
     document.getElementById('ch-member-name')!.textContent = memberName;
 
-    const { data: records } = await sb.from('member_cycle_history')
+    const { data: recordsRaw } = await sb.from('member_cycle_history')
       .select('*')
       .eq('member_id', memberId)
       .order('cycle_start', { ascending: true });
+    const records = normalizeMemberCycleHistory(recordsRaw);
 
     const area = document.getElementById('ch-cycles-area')!;
     const existingCodes = (records || []).map((r: any) => r.cycle_code);
