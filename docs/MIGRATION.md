@@ -39,9 +39,9 @@ This document tracks active technical transition points so the team can distingu
 The current platform may still use fallback behavior in some places, but new work must prefer the target fields.
 
 ### Required next steps
-1. Update all frontend reads to consume `operational_role` and `designations`.
-2. Keep fallback logic only where necessary for stability.
-3. After migration is complete and validated, hard drop `role` and `roles`.
+1. Frontend reads have been migrated in core and admin pages to consume `operational_role` and `designations`.
+2. Remaining compatibility is concentrated in admin RPC payload contracts (`p_role`, `p_roles`) during transition.
+3. After RPC contract cleanup and validation, hard drop `role` and `roles`.
 
 ### Final cleanup target
 ```sql

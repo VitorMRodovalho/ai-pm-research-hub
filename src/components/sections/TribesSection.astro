@@ -215,7 +215,7 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
     if (!sb) return;
     const { data } = await sb.from('members')
       .select('tribe_id, photo_url')
-      .eq('role', 'tribe_leader')
+      .eq('operational_role', 'tribe_leader')
       .not('photo_url', 'is', null);
     if (!data) return;
     data.forEach((m: any) => {
