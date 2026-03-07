@@ -502,6 +502,36 @@ import Toast from '../../components/ui/Toast.astro';
     return { role, roles: allRoles };
   }
 
+  async function adminUpdateMemberCompat(payload: {
+    memberId: string;
+    opRole: string;
+    desigs: string[];
+    chapter: string;
+    active: boolean;
+  }) {
+    const v2Payload = {
+      p_member_id: payload.memberId,
+      p_operational_role: payload.opRole,
+      p_designations: payload.desigs,
+      p_chapter: payload.chapter,
+      p_current_cycle_active: payload.active
+    };
+    const v2 = await sb.rpc('admin_update_member', v2Payload);
+    if (!v2.error && v2.data?.success) {
+      return { mode: 'v2', data: v2.data, error: null };
+    }
+
+    const { role, roles } = computeLegacyFields(payload.opRole, payload.desigs);
+    const legacy = await sb.rpc('admin_update_member', {
+      p_member_id: payload.memberId,
+      p_role: role,
+      p_roles: roles,
+      p_chapter: payload.chapter,
+      p_current_cycle_active: payload.active
+    });
+    return { mode: 'legacy', data: legacy.data, error: legacy.error || v2.error };
+  }
+
   const TRIBE_NAMES: Record<number, string> = {
     1: 'Radar Tecnológico', 2: 'Agentes Autônomos', 3: 'TMO & PMO do Futuro',
     4: 'Cultura & Change', 5: 'Talentos & Upskilling', 6: 'ROI & Portfólio',
@@ -985,16 +1015,12 @@ import Toast from '../../components/ui/Toast.astro';
     const chapter = (document.getElementById('edit-m-chapter') as HTMLSelectElement).value;
     const active = (document.getElementById('edit-m-active') as HTMLSelectElement).value === 'true';
 
-    // Compute backward-compatible role/roles
-    const { role, roles } = computeLegacyFields(opRole, desigs);
-
-    // Save via RPC (handles role + roles)
-    const { data, error } = await sb.rpc('admin_update_member', {
-      p_member_id: id,
-      p_role: role,
-      p_roles: roles,
-      p_chapter: chapter,
-      p_current_cycle_active: active
+    const { data, error, mode } = await adminUpdateMemberCompat({
+      memberId: id,
+      opRole,
+      desigs,
+      chapter,
+      active
     });
 
     if (error) {
@@ -1007,8 +1033,7 @@ import Toast from '../../components/ui/Toast.astro';
       return;
     }
 
-    // Also update the new 3-axis fields directly
-    // (RPC updates role/roles, we update operational_role/designations/is_superadmin)
+    // Keep source-of-truth fields synchronized even when backend falls back to legacy contract.
     const { error: e2 } = await sb.from('members').update({
       operational_role: opRole,
       designations: desigs,
@@ -1017,7 +1042,11 @@ import Toast from '../../components/ui/Toast.astro';
 
     if (e2) {
       console.warn('3-axis direct update warning:', e2.message);
-      // Non-fatal: RPC already saved role/roles
+      // Non-fatal: role contract update succeeded.
+    }
+
+    if (mode === 'legacy') {
+      console.warn('admin_update_member used legacy payload fallback');
     }
 
     (window as any).closeEditMember();
