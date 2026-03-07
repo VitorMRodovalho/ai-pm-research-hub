@@ -16,6 +16,7 @@ import Toast from '../components/ui/Toast.astro';
   import { ROLE_COLORS } from '../lib/supabase';
   import { shouldRedirectFromProfile } from '../lib/routing';
   import { normalizeCredlyUrl } from '../lib/credly';
+  import { normalizeMemberCycleHistory } from '../lib/cycle-history';
 
   const OPROLE_LABELS: Record<string, string> = {
     manager: 'Gerente', deputy_manager: 'Deputy PM', tribe_leader: 'Líder de Tribo', researcher: 'Pesquisador',
@@ -80,7 +81,7 @@ import Toast from '../components/ui/Toast.astro';
       .select('*')
       .eq('member_id', currentMember.id)
       .order('cycle_start', { ascending: true });
-    cycleHistory = hist || [];
+    cycleHistory = normalizeMemberCycleHistory(hist);
 
     // Load stats for current cycle
     try {
