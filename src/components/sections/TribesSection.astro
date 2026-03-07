@@ -109,7 +109,7 @@ const QUAD_COLORS: Record<string, string> = {
                     <div class="mb-3">
                       <strong class="text-[.85rem]">Entregáveis do Ciclo:</strong>
                       <ul class="mt-1.5 ml-5 text-[.84rem] text-slate-500 list-disc">
-                        {(t as any).deliverables.map((d) => <li class="mb-1">{d}</li>)}
+                        {((t as any).deliverables ?? []).map((d: string) => <li class="mb-1">{d}</li>)}
                       </ul>
                     </div>
 
