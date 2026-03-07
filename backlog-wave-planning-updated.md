@@ -1,118 +1,169 @@
-# Núcleo IA & GP — v4 Backlog & Wave Planning
-## Status: Março 2026 (Atualizado com Knowledge Hub, Comms Analytics e Fundação DB/UI)
+# Núcleo IA & GP — Backlog & Wave Planning
+## Status: Março 2026
+## Atualizado após estabilização de produção, revisão documental e alinhamento produto engenharia
 
 ---
 
-## ✅ COMPLETED (Sprints 2-7 + Wave 2 Partial)
+## ✅ COMPLETED / STABILIZED
 
-| Sprint | Deliverable | Status |
-|--------|------------|--------|
-| S2 | Index migration: 10 sections + 6 data files | ✅ Production |
+| Sprint / Linha | Deliverable | Status |
+|----------------|-------------|--------|
+| S2 | Index migration: 10 sections + core data files | ✅ Production |
 | S3 | Attendance page: KPIs, events, roster, modals | ✅ Production |
-| S4 | Artifact tracking (draft→published) + Enhanced profile | ✅ Production |
-| S5 | i18n infrastructure + index PT/EN/ES (partial) | ✅ Production |
-| S6 | Gamification: leaderboard, points, certificates | ✅ Production |
-| S7 | Admin Dashboard: Tribe Management + Member CRUD | ✅ Production |
-| — | Credly Edge Function (fuzzy match, 3 categories) | ✅ Production |
-| — | LinkedIn OIDC login button | ✅ Production |
-| — | 56 member photos in Supabase Storage | ✅ Production |
+| S4 | Artifact tracking + enriched profile | ✅ Production |
+| S5 | i18n infrastructure + PT EN ES public index | ✅ Production |
+| S6 | Gamification base: leaderboard, points, certificates | ✅ Production |
+| S7 | Admin dashboard: tribe management + member CRUD | ✅ Production |
+| RM | LinkedIn OIDC login button | ✅ Production |
+| RM | Member photo storage setup | ✅ Production |
+| RM | Cloudflare Pages SPA fallback redirects | ✅ Production |
+| RM | Legacy route aliases `/teams`, `/rank`, `/ranks` | ✅ Production |
+| RM | SSR guard in `TribesSection.astro` for missing `deliverables` | ✅ Production |
+| RM | Credly Edge Function with tier based badge scoring | ✅ Backend Production |
+| RM | Initial release log discipline adopted | ✅ Documentation Governance |
+
+---
+
+## 🚨 OPEN HOTFIX / STABILIZATION ITEMS
+
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| S-HF1 | Credly Mobile Paste Fix | Critical | Open | Validate and fix Credly public URL paste behavior on iOS Safari and Chrome in `Profile.astro`. Must trim spaces and accept benign query params or trailing slash. |
+| S-HF2 | Rank UI Alignment with Credly Tiers | Critical | Partial | Backend tier scoring is live, but leaderboard and gamification surfaces do not yet fully reflect the new model end to end. |
+| S-HF3 | Post Deploy Smoke Test | High | Open | Create repeatable smoke checklist for `/`, `/attendance`, `/gamification`, `/artifacts`, `/profile`, `/admin`, `/teams`, `/rank`, `/ranks`. |
+| S-HF4 | SSR Safety Audit | High | Open | Review other server rendered sections for unsafe `.map()`, `.filter()`, and optional data assumptions. |
+| S-HF5 | Data Patch Follow Through | High | Open | Apply and verify specific cleanup patches such as Sarah LinkedIn restoration, Roberto role correction, and Deputy PM hierarchy adjustment. |
 
 ---
 
 ## 🌊 WAVE 3: Profile, Gamification & UX Excellence
 **Foco:** Retenção de voluntários, UX impecável e inteligência de uso.
 
-| ID | Feature | Priority | Description |
-|----|---------|----------|-------------|
-| S-RM2 | Completeness Bar & Timeline | High | Adaptative completion bar (Role-based) + "Minha Jornada" cycle history timeline. |
-| S-RM3 | Gamification v2 (Levels) | High | Lifetime XP points, Levels (Explorador → Lenda), Automated achievements (Early Adopter). |
-| S-PA1 | Product Analytics | High | Setup do PostHog (rastreamento autenticado via Supabase ID) para medir funis e retenção no Astro. |
-| S8b | i18n Internal Pages | Medium | Apply i18n keys to `/admin`, `/attendance`, and modals. |
-| S11 | UI Polish & Empty States | Medium | 404 page, loading spinners, and actionable Empty States nas tabelas. |
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| S-RM2 | Completeness Bar & Timeline | High | Partial | Adaptive completeness bar and “Minha Jornada” timeline using cycle aware history. |
+| S-RM3 | Gamification v2 | High | Partial | Lifetime XP, levels, achievements, and distinction between current cycle vs lifetime progress. |
+| S-PA1 | Product Analytics | High | Planned | PostHog setup with authenticated tracking via Supabase UUID and protected iframe dashboards in `/admin/analytics`. |
+| S8b | i18n Internal Pages | Medium | Partial | Apply i18n keys to `/admin`, `/attendance`, and modals. |
+| S11 | UI Polish & Empty States | Medium | Partial | 404 page, loading states, actionable empty states, and graceful fallback content. |
 
 ---
 
 ## 🌊 WAVE 4: Admin Tiers, Integrations & Comms
-**Foco:** Reduzir atrito do Gerente de Projeto (GP) e melhorar comunicação.
+**Foco:** Reduzir atrito do GP e melhorar comunicação e governança operacional.
 
-| ID | Feature | Priority | Description |
-|----|---------|----------|-------------|
-| S-RM4 | Admin Tiers (ACL) | High | Implement access control (Superadmin, Admin, Leader, Observer) across routes and Supabase RLS. |
-| S-REP1| Exportação VRMS (PMI) | High | Relatório CSV mastigado no `/admin` com as "Horas de Impacto" para o GP lançar no sistema global do PMI. |
-| S10 | Credly Auto-Sync | Medium | Edge Function / Cron Job to auto-sync badges weekly. |
-| S-AN1 | Announcements System | Medium | Tabela no banco para exibir banners/notificações globais no topo do site (ex: "Prazo encerra amanhã!"). |
-| S-DR1 | Disaster Recovery Doc | Low | POP (Procedimento Operacional Padrão) de Restauração de Backup via Supabase (PITR). |
-
----
-
-## 🌊 WAVE 5: The Knowledge Hub & Comms (A Cidade das Tribos)
-**Foco:** Polinização cruzada de conhecimento, visibilidade entre tribos, acúmulo de patrimônio intelectual e centralização da gestão de comunicação interna e externa.
-
-| ID | Feature | Priority | Description |
-|----|---------|----------|-------------|
-| S-KNW1 | **Repositório Central de Recursos** | High | Criar tabela `knowledge_assets` no Supabase (Cursos, Artigos de Referência, Webinares sugeridos). Tudo amarrado ao `tribe_id` e ao autor. |
-| S-KNW2 | **Tribe Workspace (A Cidade)** | High | Criar a página `/workspace` no Astro. Uma interface rica (estilo Notion Gallery/Board) onde é possível ver os "Artefatos em Andamento", "Estudos" e "Eventos" de todas as tribos no mesmo lugar. |
-| S-KNW3 | **Sistema de Tags e Relações** | Medium | Permitir que um "Artefato Final" seja visualmente linkado a um "Curso" que o originou, criando rastreabilidade de insumos. |
-| S-COM2 | **Log de Horas e Esforço (Comms)** | High | Garantir que todas as reuniões e horas da equipe de comunicação passem a ser logadas exclusivamente no Hub, tornando-o a fonte da verdade para o esforço (XP). |
-| S-COM3 | **Kanban Interno (Substituição Trello)** | Medium | Criar um Kanban supersimples dentro do `/admin` do próprio Hub para orquestrar as tarefas da equipe de Comunicação, abandonando a dependência do Trello. |
-| S-COM6 | **Dashboard Central de Mídia (Looker Studio)** | Medium | Construir painel no Google Looker Studio consolidando YouTube (nativo) e LinkedIn/Instagram (via Google Sheets/Make.com). Embeber via Iframe na rota `/admin/comms` restrito à gerência e equipe de comunicação. |
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| S-RM4 | Admin Tiers (ACL) | High | Partial | Implement access control tiers such as Superadmin, Admin, Leader, Observer across routes and RLS. |
+| S-REP1 | Exportação VRMS (PMI) | High | Partial | CSV mastigado no `/admin` para Horas de Impacto e reporte PMI. |
+| S10 | Credly Auto Sync | Medium | Planned | Edge Function or cron to auto sync badges weekly. |
+| S-AN1 | Announcements System | Medium | Planned | Global banners and notifications at top of site. |
+| S-DR1 | Disaster Recovery Doc | Low | Planned | POP de restauração de backup e PITR. |
+| S-COM6 | Dashboard Central de Mídia | Medium | Planned | Looker Studio dashboard using YouTube native connector and LinkedIn/Instagram via Sheets automation, embedded in admin communications route. |
 
 ---
 
-## 🌊 WAVE 6: Scale, Multi-tenant & Global Impact
-**Foco:** Preparar o projeto para ser clonado/adotado por outros Capítulos (Antiga Wave 5).
+## 🌊 WAVE 5: The Knowledge Hub
+**Foco:** Polinização cruzada de conhecimento, visibilidade entre tribos e acúmulo de patrimônio intelectual.
 
-| ID | Feature | Priority | Description |
-|----|---------|----------|-------------|
-| S-RM5 | Multi-tenant Config | Medium | Superadmin panel (`/admin/config`) to set `group_term`, `current_cycle`, and manage Webhooks. |
-| S23 | Chapter Integrations | Medium | Event-driven architecture (Webhooks) para enviar dados aos portfólios locais (Artia/Jira) de forma agnóstica. |
-| S24 | API for Chapters | Low | Read-only API endpoints for chapters to query their members' impact hours. |
-| S-SC1 | Multilingual Screenshots| Low | Portar script Puppeteer para automatizar prints da documentação em PT/EN/ES a cada release. |
-
----
-
-## 🛠️ TECHNICAL DEBT & DEVOPS INFRASTRUCTURE
-
-| Issue | Impact | Mitigation Plan |
-|-------|--------|-----------------|
-| **README History Lost** | High | Restaurar história (Piloto 2024), 4 Quadrantes e stack atual baseando-se no antigo `README (archive).md`. |
-| **No Security Scanning** | High | Ativar nativamente o GitHub Dependabot e CodeQL (Substitui scripts manuais de segurança). |
-| **Semantic Versioning** | Medium | Criar workflow de Release Automática (GitHub Actions `release.yml`) para gerar tags (ex: v3.0.0). |
-| **Hardcoded strings** | Medium | Apply i18n-first guidelines: chaves no banco, traduções no frontend. |
-| **Architectural guidelines**| High | Enforce role-model-v3: Soft-delete-always (LGPD), cycle-aware-data e event-driven integrations. |
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| S-KNW1 | Repositório Central de Recursos | Medium | Planned | Create `knowledge_assets` table for courses, references, webinars, linked to `tribe_id` and author. |
+| S-KNW2 | Tribe Workspace | Medium | Planned | Create `/workspace` with relational views of artifacts in progress, studies, and events across tribes. |
+| S-KNW3 | Sistema de Tags e Relações | Medium | Planned | Link final artifacts to upstream courses, studies, or events to preserve traceability. |
+| S-KNW4 | Views Relacionais Governadas | Medium | Planned | Gallery board style views powered by Supabase data model and RLS, not external knowledge software. |
 
 ---
 
-## 📋 RECOMMENDED EXECUTION ORDER (PLANO DE AÇÃO DETALHADO)
+## 🌍 WAVE 6: Scale, Multi Tenant & Global Impact
+**Foco:** Preparar o projeto para ser replicável e internacionalizável.
 
-### 🔴 SESSÃO 1: Fundação de Dados & Interface Base (Imediato)
-*Objetivo: Preparar o banco de dados e as interfaces do Admin para a nova estrutura de papéis antes de lançar a Gamificação.*
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| S-RM5 | Multi tenant Config | Medium | Planned | Admin config for `group_term`, cycle config, and webhooks. |
+| S23 | Chapter Integrations | Medium | Planned | Event driven integrations with local chapter portfolios and tools. |
+| S24 | API for Chapters | Low | Planned | Read only API for chapter impact and participation data. |
+| S-SC1 | Multilingual Screenshots | Low | Planned | Automated screenshots for PT EN ES docs or release snapshots. |
 
-**Passo 1.1: Backend (Supabase SQL)**
-* [ ] Rodar `ALTER TABLE members` para adicionar `operational_role` (text) e `designations` (text array).
-* [ ] Criar tabela `member_cycle_history` (com `ON DELETE SET NULL` no member_id).
-* [ ] Criar tabela `member_chapter_affiliations` (com colunas de consentimento LGPD).
-* [ ] Criar a PostgreSQL Function `anonymize_member(uuid)` para soft delete (LGPD).
-* [ ] Rodar o *Backfill* (UPDATE manual provisório) para colocar os líderes atuais como `operational_role = 'tribe_leader'`.
+---
 
-**Passo 1.2: Frontend (Astro / TypeScript)**
-* [ ] Atualizar as interfaces TS (`types.d.ts` ou tipos do Supabase) para refletir os novos campos.
-* [ ] Modificar o Modal de Edição de Membros no `/admin`:
-    * Substituir o campo antigo "Role" por um Dropdown para `operational_role`.
-    * Adicionar grupo de Checkboxes para `designations` (Embaixador, Patrocinador, Fundador).
-    * Adicionar visualização read-only do Nível de Acesso (Superadmin, Admin, etc).
-* [ ] Atualizar as queries no Astro para buscarem os novos campos ao invés do antigo array `roles`.
+## 🛠️ TECHNICAL DEBT & DEVOPS
 
-### 🟡 SESSÃO 2: Engajamento & UX (Próxima semana)
-*Objetivo: Entregar valor para o usuário final com um perfil rico e gamificação contínua.*
+| Issue | Impact | Status | Mitigation Plan |
+|-------|--------|--------|-----------------|
+| README History Lost | High | Addressed in docs refresh | Restore pilot 2024 history, quadrants, multilingual positioning, and current stack without losing operational context. |
+| No Release Log | High | Addressed in docs refresh | Maintain `docs/RELEASE_LOG.md` for hotfixes and production changes from now on. |
+| Semantic Versioning Missing | Medium | Open | Create automated release workflow and tags later, but do not block manual release notes now. |
+| No Security Scanning | High | Open | Enable Dependabot and CodeQL in GitHub. |
+| Hardcoded strings | Medium | Open | Continue i18n first migration. |
+| Legacy role columns still alive | High | Partial | Finish frontend migration to `operational_role` and `designations`, then hard drop `role` and `roles`. |
+| Architectural guideline drift | High | Open | Enforce role model v3, cycle aware data, soft delete, and event driven integration discipline. |
+| Route compatibility not tested | High | Open | Add smoke tests and deploy checklist. |
 
-**Passo 2.1: Frontend & Integrações**
-* [ ] Criar o componente de **Completeness Bar** (Barra de Progresso do Perfil) adaptativa.
-* [ ] Renderizar a **Timeline de Histórico de Ciclos** na aba do Perfil.
-* [ ] Implementar a Lógica de XP e Níveis (Gamificação v2) mostrando Impacto *Lifetime* vs *Ciclo Atual*.
-* [ ] Instalar o Script do **PostHog** no `BaseLayout.astro` e atrelar a sessão do Supabase ao rastreamento.
+---
 
-### 🟢 SESSÃO 3: Escala & DevOps (Semanas seguintes)
-* [ ] Refatorar rotas com **Admin Tiers** (Bloquear rotas via Middleware Astro + RLS Supabase baseado na função `get_access_tier()`).
-* [ ] Restauração do `README.md` e configuração do **GitHub Advanced Security / SemVer**.
-* [ ] Criação do relatório exportável (CSV) para o VRMS do PMI.
+## 🧱 DATA / ARCHITECTURE FOUNDATIONS
+
+### Approved architectural direction
+
+- `members` is the current snapshot for identity, contact, auth, and current state.
+- `member_cycle_history` is the historical fact table for role, tribe, and cycle participation.
+- `operational_role` and `designations` are the target fields.
+- `role` and `roles` are tolerated only during migration.
+- The Hub remains the only source of truth for gamification and operational metrics.
+
+### Required next technical steps
+
+- [ ] Complete frontend reads from `operational_role` and `designations`.
+- [ ] Render cycle history timeline from `member_cycle_history`.
+- [ ] Add and validate `deputy_manager` visual treatment and ordering rules.
+- [ ] Define hard drop window for `role` and `roles`.
+- [ ] Add consent aware analytics instrumentation without leaking PII.
+
+---
+
+## 📊 ANALYTICS GOVERNANCE
+
+### Internal product analytics
+Use PostHog through protected iframe dashboards. Do not build custom charts in Astro unless there is a very strong product need.
+
+### Required analytics rules
+- use `member_id` or at most `operational_role`
+- do not send email or full name unless strictly required
+- mask all input fields in session replay
+- maintain operational delete path for right to be forgotten
+- restrict `/admin/analytics` by tier
+
+### External communication metrics
+Use Looker Studio for YouTube, LinkedIn, and Instagram funnel style KPIs through low maintenance connectors and automation.
+
+---
+
+## 📋 RECOMMENDED EXECUTION ORDER
+
+### Sessão 1 — House on fire first
+1. Credly mobile paste fix  
+2. Rank and gamification alignment with tier scoring  
+3. Deputy PM hierarchy validation  
+4. Smoke test routes and direct navigation  
+
+### Sessão 2 — Finish migration discipline
+1. Frontend reads from `operational_role` and `designations` only  
+2. Timeline from `member_cycle_history`  
+3. Cleanup SQL patches and validation  
+
+### Sessão 3 — Product intelligence
+1. PostHog iframe analytics route  
+2. Looker Studio communications dashboard plan  
+3. i18n internal pages and UX polish  
+
+### Sessão 4 — Knowledge hub runway
+1. Define knowledge asset schema  
+2. Design `/workspace` relational views  
+3. Preserve cross tribe visibility without turning the Hub into Miro chaos with prettier fonts
+
+---
+
+## Notes for the dev team
+
+This backlog reflects a simple truth: some backend and hotfix work is already delivered while related UI and operational validation are still pending. Marking everything green because code landed somewhere is how teams accidentally summon chaos goblins.

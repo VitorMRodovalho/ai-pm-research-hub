@@ -1,168 +1,145 @@
-# Wave 2 — Migration Guide
-## S8 (i18n) + S9 (CPMAI Showcase) + S12 (Mobile Nav)
+# Migration Notes
+
+## Current migration state
+## March 2026
+
+This document tracks active technical transition points so the team can distinguish between:
+
+- what is already in production
+- what exists in schema but is not yet fully consumed
+- what is legacy and scheduled for removal
 
 ---
 
-## Files Included (drop-in replacements)
+## 1. Navigation and production stabilization
 
-### ✅ Ready to drop in (replace existing files):
+### Applied
+- Cloudflare Pages SPA fallback redirects introduced.
+- Legacy aliases restored for `/teams`, `/rank`, and `/ranks`.
+- `TribesSection.astro` guarded against missing `deliverables` during SSR.
 
-```
-src/i18n/pt-BR.ts          ← expanded: +150 keys (internal pages, roles, data labels, CPMAI)
-src/i18n/en-US.ts           ← expanded: same keys translated
-src/i18n/es-LATAM.ts        ← expanded: same keys translated
-src/i18n/utils.ts           ← new: getRoleLabel(), getRoleLabelsMap(), getLangFromURL()
-
-src/data/kpis.ts            ← BREAKING: label → labelKey (i18n key)
-src/data/quadrants.ts       ← BREAKING: label/title/subtitle → labelKey/titleKey/subtitleKey
-src/data/tribes.ts          ← BREAKING: name/description/deliverables → key-based + resolveTribe()
-
-src/lib/supabase.ts         ← updated: Member type + getLocalizedRoleLabel()
-src/layouts/BaseLayout.astro ← updated: injects role-labels-data JSON for client JS
-
-src/components/nav/Nav.astro           ← updated: hamburger menu + i18n JS strings
-src/components/sections/KpiSection.astro     ← updated: uses labelKey
-src/components/sections/QuadrantsSection.astro ← updated: uses i18n keys
-src/components/sections/CpmaiSection.astro   ← NEW: CPMAI showcase (S9)
-
-src/pages/index.astro       ← updated: includes CpmaiSection
-src/pages/en/index.astro    ← updated: includes CpmaiSection
-src/pages/es/index.astro    ← updated: includes CpmaiSection
-```
+### Still needed
+- repeatable post deploy smoke tests
+- explicit route compatibility checklist
+- validation that production propagation matches local behavior after deploy
 
 ---
 
-## Integration Steps
+## 2. Role model migration
 
-### Step 1: Replace i18n files
-Copy all 4 files from `wave2/src/i18n/` → `src/i18n/`. These are backward-compatible (all existing keys preserved, new keys added).
+### Legacy fields still alive
+- `role`
+- `roles`
 
-### Step 2: Replace data files (⚠️ BREAKING)
-The data files now use i18n keys instead of hardcoded strings. You MUST also update every component that imports them.
+### Target fields
+- `operational_role`
+- `designations`
 
-**kpis.ts**: `k.label` → `t(k.labelKey, lang)`
-**quadrants.ts**: `q.label` → `t(q.labelKey, lang)`, `q.title` → `t(q.titleKey, lang)`, etc.
-**tribes.ts**: Use `resolveTribe(tribe, lang)` or `resolveTribes(lang)` to get translated data.
+### Transition rule
+The current platform may still use fallback behavior in some places, but new work must prefer the target fields.
 
-### Step 3: Update TribesSection.astro
-This is the most complex change. The current TribesSection directly accesses `tribe.name`, `tribe.description`, etc. With the new data file, you need to resolve tribes first:
+### Required next steps
+1. Update all frontend reads to consume `operational_role` and `designations`.
+2. Keep fallback logic only where necessary for stability.
+3. After migration is complete and validated, hard drop `role` and `roles`.
 
-```astro
----
-import { TRIBES, resolveTribes } from '../../data/tribes';
-import { QUADRANTS } from '../../data/quadrants';
-import { t, type Lang } from '../../i18n/utils';
-
-interface Props { lang?: Lang; }
-const { lang = 'pt-BR' } = Astro.props;
-
-const tribes = resolveTribes(lang);
-// Now use tribes[i].name, tribes[i].description, etc. (already translated)
----
-```
-
-Replace every `{t.name}` with the resolved tribe's `.name`, `{t.description}` → `.description`, etc.
-The `t` variable in `{TRIBES.filter(...).map(t => ...)}` should be renamed to avoid conflict with the i18n `t()` function. Suggest using `tribe` instead.
-
-### Step 4: Update index pages
-Replace all 3 index pages (/, /en/, /es/) with the provided versions that include `<CpmaiSection>`.
-
-### Step 5: Replace Nav component
-The new Nav.astro includes:
-- Mobile hamburger menu (visible below `lg:` breakpoint)
-- Mobile menu drawer with all navigation links
-- i18n'd client-side JS strings (login, logout, profile, etc.)
-- Role labels read from DOM JSON element
-
-### Step 6: Replace BaseLayout
-The new BaseLayout injects a `<script id="role-labels-data">` JSON element that client JS reads for localized role names.
-
-### Step 7: Replace supabase.ts
-Updated Member type includes `cpmai_certified`, `credly_badges`, `credly_url` fields.
-New `getLocalizedRoleLabel()` function reads from DOM i18n data.
-
----
-
-## DB Changes Needed (Supabase)
-
-### For S9 (CPMAI Showcase):
-Add column to members table if not already present:
-
+### Final cleanup target
 ```sql
-ALTER TABLE members ADD COLUMN IF NOT EXISTS cpmai_certified BOOLEAN DEFAULT false;
-```
-
-The CpmaiSection queries:
-```sql
-SELECT id, name, photo_url, chapter, credly_badges, credly_url
-FROM members
-WHERE current_cycle_active = true
-AND (cpmai_certified = true OR credly_badges @> '[{"category":"cpmai"}]')
+ALTER TABLE public.members DROP COLUMN role;
+ALTER TABLE public.members DROP COLUMN roles;
 ```
 
 ---
 
-## Internal Pages i18n (Remaining Work)
+## 3. Hierarchy refinement
 
-The internal pages (attendance, profile, artifacts, gamification, admin) still have hardcoded PT-BR strings in their client-side JS. The translation keys are now defined in the i18n files. The recommended migration pattern:
+### New role introduced
+`deputy_manager`
 
-1. Each page should inject translated strings as a hidden JSON element:
-```astro
----
-const pageI18n = JSON.stringify({
-  loading: t('attendance.loading', lang),
-  events: t('attendance.events', lang),
-  // ... all strings used in client JS
-});
----
-<script id="page-i18n" type="application/json" set:html={pageI18n}></script>
-```
+### Why
+The platform must visually and logically distinguish the primary GP layer from the Deputy PM layer.
 
-2. Client JS reads from it:
-```js
-const i18n = JSON.parse(document.getElementById('page-i18n')?.textContent || '{}');
-// Use i18n.loading instead of 'Carregando...'
-```
-
-3. Create `/en/attendance.astro` and `/es/attendance.astro` wrappers:
-```astro
----
-import BaseLayout from '../../layouts/BaseLayout.astro';
-const lang = 'en-US' as const;
----
-<BaseLayout title={t('attendance.meta', lang)} activePage="attendance" lang={lang}>
-  <!-- Same content as root attendance.astro but with lang prop -->
-</BaseLayout>
-```
-
-This pattern applies to all internal pages. It's a systematic but repetitive task — each page needs its hardcoded strings extracted to the i18n JSON element.
+### Frontend implications
+- badge rendering
+- sorting logic
+- team section hierarchy
+- profile displays
+- admin editing flows
 
 ---
 
-## Mobile Fixes (S12)
+## 4. Current snapshot vs historical truth
 
-The Nav hamburger menu handles the core mobile navigation issue. Additional mobile fixes to verify:
+### Governing rule
+`members` is the current snapshot table only.
 
-- [ ] RosterModal: add `max-h-[80vh] overflow-y-auto` to modal content on mobile
-- [ ] Tribe selection cards: ensure they stack properly on 375px
-- [ ] Gamification leaderboard: add horizontal scroll wrapper on mobile
-- [ ] Test all pages at 375px, 768px, 1024px widths
+### Historical truth
+Historical cycle state belongs in `member_cycle_history`.
+
+### Product implications
+Features such as:
+
+- timeline in profile
+- “who was leader in cycle X”
+- chapter and tribe participation history
+- cycle aware reporting
+
+must read from historical fact tables instead of overloading `members`.
 
 ---
 
-## Summary Checklist
+## 5. Credly scoring migration
 
-- [ ] Copy i18n files (4 files)
-- [ ] Copy data files (3 files) — ⚠️ update all consuming components
-- [ ] Copy KpiSection.astro
-- [ ] Copy QuadrantsSection.astro
-- [ ] Update TribesSection.astro (manual, see Step 3)
-- [ ] Copy CpmaiSection.astro (new)
-- [ ] Copy Nav.astro (hamburger + i18n)
-- [ ] Copy BaseLayout.astro
-- [ ] Copy supabase.ts
-- [ ] Copy 3 index pages
-- [ ] Add cpmai_certified column to DB
-- [ ] Test /en/ and /es/ index routes
-- [ ] Test mobile hamburger menu
-- [ ] Begin internal page i18n (attendance, profile, etc.)
+### Applied
+Tier based scoring logic has already advanced in backend verification behavior.
+
+### Current issue
+Frontend rank and gamification surfaces do not yet fully reflect the new scoring model.
+
+### Migration note
+Treat this as a partial migration, not a completed feature.
+
+### Required next steps
+- align leaderboard calculations and display
+- expose tier aware outcomes in user visible flows where appropriate
+- validate historical recalculation logic for already imported badges
+
+---
+
+## 6. Mobile profile input hardening
+
+### Current issue
+Credly URL entry on iOS needs validation against real mobile paste behavior.
+
+### Suspected causes
+- regex too strict for pasted public URLs with trailing slash or benign params
+- paste or focus handling on mobile
+- save button enablement not responding correctly after paste
+
+### Required next steps
+- test on iOS Safari and Chrome
+- trim and normalize URL before submit
+- accept valid public profile variants without needless form drama
+
+---
+
+## 7. Analytics architecture
+
+### Internal analytics
+Recommended route is PostHog shared dashboards embedded via iframe in protected admin routes.
+
+### External media analytics
+Recommended route is Looker Studio via iframe, fed by:
+- YouTube native connector
+- LinkedIn and Instagram through Google Sheets plus automation
+
+### Migration constraint
+Do not build brittle direct social API integrations into core Astro or Supabase flows unless absolutely necessary.
+
+---
+
+## 8. Architecture sustainability note
+
+The project remains viable on a zero cost or free tier oriented stack so long as heavy binary storage and unnecessary frontend complexity are avoided.
+
+This is not a hack. It is a deliberate operating principle.

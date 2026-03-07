@@ -1,79 +1,128 @@
-# Governance Changelog — Núcleo IA & GP
-## Registro de Decisões Arquiteturais e de Governança
+# Governance Changelog
 
-Este documento registra formalmente as mudanças de estrutura organizacional, papéis, e regras de negócio da plataforma. Cada entrada tem data, autor, justificativa e impacto técnico.
+## 2026-03-07 — Documentation and release governance reset
 
----
+### Decision
+The repository will maintain a disciplined documentation set with clear boundaries:
 
-### GC-001 — Modelo de Papéis 3-Eixos (v3)
-**Data:** 2026-03-07 · **Autor:** Vitor Maia Rodovalho (GP)
+- `README.md` = institutional context, platform scope, current status, stack, and documentation map
+- `backlog-wave-planning-updated.md` = execution plan and debt visibility
+- `docs/GOVERNANCE_CHANGELOG.md` = governance, access, and product engineering decisions
+- `docs/MIGRATION.md` = transitional technical notes and compatibility state
+- `docs/RELEASE_LOG.md` = operational release and hotfix history
 
-**Decisão:** Substituir o campo único `role` por um modelo de 3 eixos: `operational_role` (o que a pessoa FAZ no ciclo), `designations[]` (reconhecimentos que transcendem ciclos), e `is_superadmin` (acesso à plataforma).
-
-**Justificativa:** O campo `role` não comportava pessoas com múltiplas funções (ex: Fabricio é Líder de Tribo + Embaixador + Fundador + Curador). O modelo anterior forçava a escolha de um único papel.
-
-**Impacto técnico:** Colunas `role` e `roles` dropadas da tabela `members`. RPCs reescritas com `compute_legacy_role()` para backward-compat. 3 views e 3 RLS policies recriadas.
-
----
-
-### GC-002 — Deputy PM (Nível 2.5)
-**Data:** 2026-03-07 · **Autor:** Vitor Maia Rodovalho (GP)
-
-**Decisão:** Criar o `operational_role = 'deputy_manager'` para formalizar o Co-Gerente de Projeto. Fabricio Costa promovido a Deputy PM no Ciclo 3, mantendo `tribe_leader` como designação.
-
-**Justificativa:** Com a expansão para 5 capítulos e 45+ colaboradores, a gestão necessita de um braço operacional. O Deputy PM tem acesso admin completo mas é visualmente diferenciado do GP.
-
-**Hierarquia atualizada:**
-- Nível 1.0: Patrocinador (sponsor) — Presidente do capítulo
-- Nível 1.5: Ponto Focal (chapter_liaison) — Representante indicado pelo presidente
-- Nível 2.0: Gerente de Projeto (manager)
-- Nível 2.5: Deputy PM (deputy_manager)
-- Nível 3: Líder de Tribo (tribe_leader)
-- Nível 4: Pesquisador / Facilitador / Multiplicador
-- Nível 5: Embaixador (ambassador)
-- Órgão de Apoio: Curador (curator)
+### Why
+Recent hotfixes exposed that code can move faster than shared team understanding. Documentation is now part of the delivery obligation.
 
 ---
 
-### GC-003 — Ponto Focal dos Capítulos (chapter_liaison)
-**Data:** 2026-03-07 · **Autor:** Vitor Maia Rodovalho (GP)
+## 2026-03-07 — Manual release log becomes mandatory
 
-**Decisão:** Criar a designação `chapter_liaison` para representantes indicados pelos presidentes dos capítulos. Diferencia do Patrocinador (que é o próprio presidente).
+### Decision
+Manual release logging is required immediately, even before automated semantic versioning exists.
 
-**Justificativa:** Os capítulos PMI-CE, PMI-DF e PMI-MG indicaram representantes operacionais que não são presidentes. Esses pontos focais têm visibilidade no site (seção Patrocinadores) e acesso observer no admin, mas não são o nível máximo de autoridade institucional.
+### Rule
+Every production affecting hotfix should document:
 
-**Pontos Focais iniciais:**
-- Roberto Macêdo — PMI-CE (indicado por Jéssica Alcântara)
-- Ana Cristina Fernandes Lima — PMI-DF
-- Certificação PMI-MG — PMI-MG
+- what changed
+- why it changed
+- how it was validated
+- what remains pending
 
----
-
-### GC-004 — Time de Comunicação
-**Data:** 2026-03-07 · **Autor:** Vitor Maia Rodovalho (GP)
-
-**Decisão:** Criar a designação `comms_team` para membros do time de comunicação. No Ciclo 3: Mayanna Duarte (Líder), Leticia Clemente, Andressa Martins.
-
-**Justificativa:** O time de comunicação existe desde o Ciclo 2 mas não estava registrado na plataforma. São responsáveis por postagens em redes sociais e disseminação de conteúdo. Todo membro do time é necessariamente ativo (Nível 2-4).
+### Note
+Automated version tags can come later. Invisible releases are not acceptable now.
 
 ---
 
-### GC-005 — Hard Drop de Colunas Legadas
-**Data:** 2026-03-07 · **Autor:** Vitor Maia Rodovalho (GP)
+## 2026-03-07 — Route compatibility policy
 
-**Decisão:** Eliminar definitivamente as colunas `role` (TEXT) e `roles` (TEXT[]) da tabela `members`. Criadas funções `compute_legacy_role()` e `compute_legacy_roles()` para backward-compat nas RPCs.
+### Decision
+Legacy routes may be retained when there is evidence of active navigation patterns, bookmarks, old links, or prior product behavior.
 
-**Justificativa:** A tabela `members` deve ser tratada apenas como snapshot do momento atual. O tagueamento real é gerido via `member_cycle_history`. Manter colunas duplicadas era fonte de inconsistência.
+### Current examples
+- `/teams`
+- `/rank`
+- `/ranks`
 
----
-
-### GC-006 — Política de Custo Zero e Alto Valor
-**Data:** 2026-03-07 · **Autor:** Vitor Maia Rodovalho (GP)
-
-**Decisão:** Formalizar no README.md a arquitetura "Zero-Cost, High-Value". O projeto opera exclusivamente com Free Tiers (Cloudflare Pages, Supabase, PostHog) e prioriza construção interna sobre ferramentas pagas.
-
-**Justificativa:** Como iniciativa voluntária ligada ao PMI, não há orçamento recorrente. A arquitetura deve ser replicável por outros capítulos sem custos.
+### Implication
+Backward compatibility is a product decision, not a random convenience.
 
 ---
 
-*Para adicionar uma nova entrada, use o formato acima. Cada decisão deve ter Data, Autor, Decisão, Justificativa, e Impacto técnico quando aplicável.*
+## 2026-03-07 — SSR fail safe rule
+
+### Decision
+Server rendered sections must degrade safely when optional arrays or metadata are absent.
+
+### Current reminder
+`TribesSection.astro` already required a guard around missing `deliverables`.
+
+### Rule
+No server rendered page should assume optional data exists without a default or guard.
+
+---
+
+## 2026-03-07 — Role model v3 becomes the governing model
+
+### Decision
+The platform formally adopts the v3 separation between operational role and designations.
+
+### Target fields
+- `operational_role`
+- `designations`
+
+### Transitional note
+Legacy `role` and `roles` may exist during migration but must not define the long term architecture.
+
+---
+
+## 2026-03-07 — Deputy PM hierarchy recognition
+
+### Decision
+The hierarchy must distinguish between the main Project Manager and the supporting Deputy PM role.
+
+### Operational meaning
+- `manager` remains the principal GP layer
+- `deputy_manager` becomes the explicit Co GP / Deputy PM layer
+
+### Product implication
+Frontend ordering, badges, and admin views must reflect the distinction consistently.
+
+---
+
+## 2026-03-07 — Members snapshot vs cycle history
+
+### Decision
+`members` is the current snapshot table. Historical role, tribe, and cycle participation belongs to `member_cycle_history`.
+
+### Why
+Trying to force both current state and historical truth into one table creates ambiguity, broken reporting, and governance confusion.
+
+### Rule
+Future timeline and historical reporting features must read from cycle aware history tables.
+
+---
+
+## 2026-03-07 — Product analytics governance
+
+### Decision
+The Hub may adopt PostHog and Looker Studio style dashboards, but under strict governance.
+
+### Rules
+- no unnecessary PII in analytics identity
+- input masking required
+- access tier restrictions required
+- right to be forgotten must include analytics systems when applicable
+- iframe first strategy preferred over custom frontend charting for internal admin dashboards
+
+---
+
+## 2026-03-07 — Source of truth doctrine
+
+### Decision
+The Hub is the only source of truth for gamification and project operational metrics.
+
+### Implication
+External tools may feed or visualize data, but they do not own business truth.
+
+This rule exists to stop the project from dissolving into a swamp of disconnected tools pretending to be architecture.
