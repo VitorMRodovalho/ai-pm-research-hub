@@ -87,6 +87,7 @@ import Toast from '../../components/ui/Toast.astro';
             <select id="f-desig" onchange="applyFilters()" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-[.72rem] bg-white">
               <option value="">Designação: Todas</option>
               <option value="sponsor">Patrocinador</option>
+              <option value="chapter_liaison">Ponto Focal</option>
               <option value="ambassador">Embaixador</option>
               <option value="founder">Fundador</option>
               <option value="curator">Curador</option>
@@ -362,6 +363,9 @@ import Toast from '../../components/ui/Toast.astro';
               <input type="checkbox" value="sponsor" class="desig-cb accent-[#BE2027]"> <span style="color:#BE2027">●</span> Patrocinador
             </label>
             <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-all text-[.78rem]">
+              <input type="checkbox" value="chapter_liaison" class="desig-cb accent-[#BE2027]"> <span style="color:#BE2027">○</span> Ponto Focal
+            </label>
+            <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-all text-[.78rem]">
               <input type="checkbox" value="ambassador" class="desig-cb accent-[#10B981]"> <span style="color:#10B981">●</span> Embaixador
             </label>
             <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-all text-[.78rem]">
@@ -468,7 +472,7 @@ import Toast from '../../components/ui/Toast.astro';
     if (opRole === 'deputy_manager') return 'admin';
     if (desigs.includes('co_gp')) return 'admin';
     if (opRole === 'tribe_leader') return 'leader';
-    if (desigs.includes('sponsor') || desigs.includes('curator')) return 'observer';
+    if (desigs.includes('sponsor') || desigs.includes('curator') || desigs.includes('chapter_liaison')) return 'observer';
     if (['researcher', 'facilitator', 'communicator'].includes(opRole)) return 'member';
     if (desigs.length > 0) return 'member';
     return 'visitor';
@@ -678,10 +682,10 @@ import Toast from '../../components/ui/Toast.astro';
     facilitator: '#06B6D4', communicator: '#8B5CF6', none: '#94A3B8', guest: '#94A3B8'
   };
   const DESIG_LABELS: Record<string, string> = {
-    sponsor: 'Patrocinador', ambassador: 'Embaixador', founder: 'Fundador', curator: 'Curador', comms_team: 'Comunicação', co_gp: 'Co-GP'
+    sponsor: 'Patrocinador', chapter_liaison: 'Ponto Focal', ambassador: 'Embaixador', founder: 'Fundador', curator: 'Curador', comms_team: 'Comunicação', co_gp: 'Co-GP', tribe_leader: 'Líder de Tribo'
   };
   const DESIG_COLORS: Record<string, string> = {
-    sponsor: '#BE2027', ambassador: '#10B981', founder: '#7C3AED', curator: '#D97706', comms_team: '#06B6D4', co_gp: '#FF610F'
+    sponsor: '#BE2027', chapter_liaison: '#BE2027', ambassador: '#10B981', founder: '#7C3AED', curator: '#D97706', comms_team: '#06B6D4', co_gp: '#FF610F', tribe_leader: '#4F17A8'
   };
 
   function memberTags(m: any): string {
@@ -1590,7 +1594,7 @@ import Toast from '../../components/ui/Toast.astro';
     const desigs: string[] = m.designations || [];
     if (desigs.includes('co_gp')) return 'admin';
     if (opRole === 'tribe_leader') return 'leader';
-    if (desigs.includes('sponsor') || desigs.includes('curator')) return 'observer';
+    if (desigs.includes('sponsor') || desigs.includes('curator') || desigs.includes('chapter_liaison')) return 'observer';
     return 'visitor';
   }
 
