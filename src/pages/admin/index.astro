@@ -129,7 +129,7 @@ import Toast from '../../components/ui/Toast.astro';
           <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div class="px-5 py-3.5 border-b border-slate-200">
               <h3 class="text-sm font-bold text-navy">📋 Relatório VRMS (PMI)</h3>
-              <p class="text-[.68rem] text-slate-400 mt-0.5">Horas de Impacto para lançamento no sistema PMI</p>
+              <p class="text-[.68rem] text-slate-400 mt-0.5">Horas de Impacto para CCRS/PDU · Formato de auditoria PMI</p>
             </div>
             <div class="p-5">
               <div class="flex gap-3 mb-4">
@@ -179,12 +179,12 @@ import Toast from '../../components/ui/Toast.astro';
             <table class="w-full text-[.72rem]">
               <thead class="bg-slate-50">
                 <tr>
-                  <th class="px-3 py-2 text-left font-semibold text-slate-500">Nome</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-500">Voluntário</th>
                   <th class="px-3 py-2 text-left font-semibold text-slate-500">PMI ID</th>
                   <th class="px-3 py-2 text-left font-semibold text-slate-500">Email</th>
-                  <th class="px-3 py-2 text-left font-semibold text-slate-500">Capítulo</th>
-                  <th class="px-3 py-2 text-left font-semibold text-slate-500">Papel</th>
-                  <th class="px-3 py-2 text-right font-semibold text-slate-500">Eventos</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-500">Organização</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-500">Iniciativa / Papel</th>
+                  <th class="px-3 py-2 text-center font-semibold text-slate-500">Período</th>
                   <th class="px-3 py-2 text-right font-semibold text-slate-500">Horas</th>
                 </tr>
               </thead>
@@ -1012,19 +1012,30 @@ import Toast from '../../components/ui/Toast.astro';
       hoursMap[a.member_id].hours += eventHoursMap[a.event_id] || 2;
     });
 
-    // Build VRMS rows
+    // Build VRMS rows (PMI audit-compliant)
+    const CHAPTER_FULL: Record<string, string> = {
+      'PMI-GO': 'PMI Chapter Goiás', 'PMI-CE': 'PMI Chapter Ceará',
+      'PMI-DF': 'PMI Chapter Distrito Federal', 'PMI-MG': 'PMI Chapter Minas Gerais',
+      'PMI-RS': 'PMI Chapter Rio Grande do Sul',
+    };
+
     vrmsData = (members || []).map((m: any) => {
       const h = hoursMap[m.id] || { events: 0, hours: 0 };
-      const opLabel = OPROLE_LABELS[m.operational_role] || m.operational_role || '';
+      const opLabel = OPROLE_LABELS[m.operational_role] || m.operational_role || 'Colaborador';
       const desigLabels = (m.designations || []).map((d: string) => DESIG_LABELS[d] || d).join('; ');
+      const initiative = 'Núcleo IA & GP — ' + opLabel + (desigLabels ? ' + ' + desigLabels : '');
       return {
         name: m.name,
         pmi_id: m.pmi_id || '',
         email: m.email,
-        chapter: m.chapter || '',
-        role: opLabel + (desigLabels ? ' + ' + desigLabels : ''),
+        org: CHAPTER_FULL[m.chapter] || m.chapter || '',
+        initiative,
+        date_from: fromDate,
+        date_to: toDate,
         events: h.events,
         hours: h.hours,
+        validator: 'Vitor Maia Rodovalho (vitor.rodovalho@outlook.com)',
+        evidence: 'https://ai-pm-research-hub.pages.dev/attendance',
       };
     }).filter((r: any) => r.hours > 0).sort((a: any, b: any) => b.hours - a.hours);
 
@@ -1032,22 +1043,22 @@ import Toast from '../../components/ui/Toast.astro';
     const totalHours = vrmsData.reduce((s: number, r: any) => s + r.hours, 0);
     const totalMembers = vrmsData.length;
     document.getElementById('vrms-preview')!.innerHTML =
-      `<span class="text-emerald-600 font-bold">${totalMembers}</span> membros · <span class="text-navy font-bold">${totalHours}</span> horas de impacto · <span class="text-slate-400">${events.length} eventos no período</span>`;
+      `<span class="text-emerald-600 font-bold">${totalMembers}</span> voluntários · <span class="text-navy font-bold">${totalHours}</span> horas de impacto · <span class="text-slate-400">${events.length} eventos no período</span>`;
 
-    // Render table
+    // Render preview table
     const tbody = document.getElementById('vrms-table-body')!;
     tbody.innerHTML = vrmsData.map((r: any) => `
       <tr class="border-b border-slate-50 hover:bg-slate-50">
         <td class="px-3 py-2 font-medium">${r.name}</td>
         <td class="px-3 py-2 font-mono text-slate-500">${r.pmi_id || '—'}</td>
         <td class="px-3 py-2 text-slate-500">${r.email}</td>
-        <td class="px-3 py-2">${r.chapter}</td>
-        <td class="px-3 py-2 text-slate-500">${r.role}</td>
-        <td class="px-3 py-2 text-right">${r.events}</td>
-        <td class="px-3 py-2 text-right font-bold text-navy">${r.hours}</td>
+        <td class="px-3 py-2 text-[.65rem]">${r.org}</td>
+        <td class="px-3 py-2 text-[.65rem] text-slate-500">${r.initiative}</td>
+        <td class="px-3 py-2 text-center text-[.65rem]">${r.date_from} → ${r.date_to}</td>
+        <td class="px-3 py-2 text-right font-bold text-navy">${r.hours}h</td>
       </tr>`).join('');
 
-    document.getElementById('vrms-table-count')!.textContent = `${totalMembers} membros · ${totalHours}h`;
+    document.getElementById('vrms-table-count')!.textContent = `${totalMembers} voluntários · ${totalHours}h`;
     document.getElementById('vrms-table-area')?.classList.remove('hidden');
   };
 
@@ -1060,9 +1071,9 @@ import Toast from '../../components/ui/Toast.astro';
     const fromDate = (document.getElementById('vrms-from') as HTMLInputElement).value;
     const toDate = (document.getElementById('vrms-to') as HTMLInputElement).value;
 
-    const header = 'Nome,PMI ID,Email,Capítulo,Papel,Eventos Presentes,Horas de Impacto';
+    const header = 'Nome do Voluntário,PMI ID,E-mail,Organização Beneficiada,Nome da Iniciativa / Papel,Data Início,Data Fim,Total de Horas,Contato de Validação (Nome e E-mail),Evidências (Link)';
     const rows = vrmsData.map((r: any) =>
-      `"${r.name}","${r.pmi_id}","${r.email}","${r.chapter}","${r.role}",${r.events},${r.hours}`
+      `"${r.name}","${r.pmi_id}","${r.email}","${r.org}","${r.initiative}","${r.date_from}","${r.date_to}",${r.hours},"${r.validator}","${r.evidence}"`
     );
     const csv = '\uFEFF' + [header, ...rows].join('\n'); // BOM for Excel UTF-8
 
