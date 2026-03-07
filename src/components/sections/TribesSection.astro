@@ -1,19 +1,16 @@
 ---
 /**
- * TribesSection.astro — Sprint 2 + Wave 2 i18n
+ * TribesSection.astro — Sprint 2
  * Gamified tribe selection with realtime slot tracking.
  * Dynamic data (counts, leader photos, user selection) from Supabase via window.navGetSb().
- * Static structure from data/tribes.ts, resolved via i18n.
+ * Static structure (tribe names, descriptions) from data/tribes.ts.
  */
-import { TRIBES, resolveTribes, MAX_SLOTS, MIN_SLOTS } from '../../data/tribes';
+import { TRIBES, MAX_SLOTS, MIN_SLOTS } from '../../data/tribes';
 import { QUADRANTS } from '../../data/quadrants';
 import { t, type Lang } from '../../i18n/utils';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
-
-// Resolve tribe data for current language
-const tribes = resolveTribes(lang);
 
 const QUAD_COLORS: Record<string, string> = {
   q1: '#00799E',
@@ -47,43 +44,43 @@ const QUAD_COLORS: Record<string, string> = {
 
     <div id="tribesContainer">
       {QUADRANTS.map((quad) => {
-        const quadTribes = tribes.filter((tribe) => tribe.quadrant === quad.key);
-        if (!quadTribes.length) return null;
+        const tribes = TRIBES.filter((t) => t.quadrant === quad.key);
+        if (!tribes.length) return null;
         return (
           <>
             {/* Quadrant header */}
             <div class="mt-8 mb-4 pl-2" style={`border-left: 4px solid ${QUAD_COLORS[quad.key]}`}>
               <div class="text-[.7rem] font-bold tracking-wider uppercase"
                    style={`color: ${QUAD_COLORS[quad.key]}`}>
-                {t(quad.labelKey, lang)}
+                {quad.label}
               </div>
-              <div class="text-[1.15rem] font-extrabold mt-0.5">{t(quad.titleKey, lang)}</div>
-              <div class="text-[.82rem] text-slate-500">{t(quad.subtitleKey, lang)}</div>
+              <div class="text-[1.15rem] font-extrabold mt-0.5">{quad.title}</div>
+              <div class="text-[.82rem] text-slate-500">{quad.subtitle}</div>
             </div>
 
             {/* Tribe cards */}
-            {quadTribes.map((tribe) => (
+            {tribes.map((t) => (
               <div class="bg-white rounded-2xl overflow-hidden border border-black/5 mb-4
                           hover:shadow-md transition-all duration-300"
-                   id={`t-${tribe.id}`}
-                   data-quadrant={tribe.quadrant}>
+                   id={`t-${t.id}`}
+                   data-quadrant={t.quadrant}>
                 {/* Header — always visible */}
                 <div class="flex items-center gap-4 px-5 py-4 cursor-pointer"
-                     data-tribe-header={tribe.id}>
+                     data-tribe-header={t.id}>
                   {/* Leader photo placeholder / number badge */}
                   <div class="w-[42px] h-[42px] rounded-xl flex items-center justify-center
                               text-white font-extrabold text-base flex-shrink-0"
-                       id={`tp-${tribe.id}`}
-                       style={`background: ${QUAD_COLORS[tribe.quadrant]}`}>
-                    {String(tribe.id).padStart(2, '0')}
+                       id={`tp-${t.id}`}
+                       style={`background: ${QUAD_COLORS[t.quadrant]}`}>
+                    {String(t.id).padStart(2, '0')}
                   </div>
 
                   <div class="flex-1 min-w-0">
-                    <h3 class="text-[.95rem] font-bold truncate">{tribe.name}</h3>
+                    <h3 class="text-[.95rem] font-bold truncate">{t.name}</h3>
                     <div class="text-[.82rem] text-slate-500">
-                      {tribe.leader}
-                      {tribe.leaderLinkedIn && (
-                        <a href={tribe.leaderLinkedIn} target="_blank" rel="noopener"
+                      {t.leader}
+                      {t.leaderLinkedIn && (
+                        <a href={t.leaderLinkedIn} target="_blank" rel="noopener"
                            class="text-teal no-underline text-[.75rem] ml-1"
                            onclick="event.stopPropagation()">🔗</a>
                       )}
@@ -92,12 +89,12 @@ const QUAD_COLORS: Record<string, string> = {
 
                   {/* Slot dots */}
                   <div class="flex-shrink-0 text-center">
-                    <div class="flex gap-[3px] mb-0.5" id={`sl-${tribe.id}`}>
+                    <div class="flex gap-[3px] mb-0.5" id={`sl-${t.id}`}>
                       {Array.from({ length: MAX_SLOTS }).map(() => (
                         <div class="w-3.5 h-3.5 rounded-full border-2 border-gray-300 transition-all duration-300"></div>
                       ))}
                     </div>
-                    <div class="text-[.68rem] text-slate-500 font-semibold" id={`st-${tribe.id}`}>
+                    <div class="text-[.68rem] text-slate-500 font-semibold" id={`st-${t.id}`}>
                       0/{MAX_SLOTS}
                     </div>
                   </div>
@@ -105,39 +102,37 @@ const QUAD_COLORS: Record<string, string> = {
 
                 {/* Body — collapsible */}
                 <div class="max-h-0 overflow-hidden transition-all duration-400 px-5"
-                     id={`tb-${tribe.id}`}>
+                     id={`tb-${t.id}`}>
                   <div class="pb-5 pt-3 border-t border-black/5">
-                    <p class="text-[.88rem] text-slate-500 mb-3">{tribe.description}</p>
+                    <p class="text-[.88rem] text-slate-500 mb-3">{t.description}</p>
 
                     <div class="mb-3">
-                      <strong class="text-[.85rem]">{t('tribes.deliverables', lang)}</strong>
+                      <strong class="text-[.85rem]">Entregáveis do Ciclo:</strong>
                       <ul class="mt-1.5 ml-5 text-[.84rem] text-slate-500 list-disc">
-                        {tribe.deliverables.map((d) => <li class="mb-1">{d}</li>)}
+                        {t.deliverables.map((d) => <li class="mb-1">{d}</li>)}
                       </ul>
                     </div>
 
-                    {tribe.meetingSchedule && (
-                      <p class="text-[.82rem] mb-3">
-                        <strong>{t('tribes.meetings', lang)}</strong> {tribe.meetingSchedule}
-                      </p>
-                    )}
+                    <p class="text-[.82rem] mb-3" id={`ms-${t.id}`}>
+                      <strong>📅 Encontros:</strong> <span class="text-slate-400">{t.meetingSchedule || 'Carregando...'}</span>
+                    </p>
 
                     <div class="flex gap-3 flex-wrap items-center mt-4">
-                      <a href={tribe.videoUrl} target="_blank" rel="noopener"
+                      <a href={t.videoUrl} target="_blank" rel="noopener"
                          class="inline-flex items-center gap-1.5 bg-crimson text-white px-4 py-2
                                 rounded-xl no-underline text-[.82rem] font-semibold
                                 hover:opacity-85 transition-opacity"
                          onclick="event.stopPropagation()">
-                        ▶ {t('tribes.video', lang)} ({tribe.videoDuration})
+                        ▶ Vídeo ({t.videoDuration})
                       </a>
                       <button class="tribe-select-btn w-full sm:w-auto px-4 py-2.5 rounded-xl
                                      text-[.82rem] font-semibold text-white bg-teal
                                      hover:bg-teal/80 transition-all cursor-pointer border-0
                                      disabled:opacity-50 disabled:cursor-not-allowed"
-                              id={`sb-${tribe.id}`}
-                              data-tribe-id={tribe.id}
+                              id={`sb-${t.id}`}
+                              data-tribe-id={t.id}
                               style="display:none">
-                        {t('tribes.select', lang)}
+                        Escolher esta Tribo
                       </button>
                     </div>
                   </div>
@@ -159,13 +154,6 @@ const QUAD_COLORS: Record<string, string> = {
   </div>
 </section>
 
-<!-- i18n strings for client-side JS -->
-<script id="tribes-i18n" type="application/json" set:html={JSON.stringify({
-  select: t('tribes.select', lang),
-  selected: t('tribes.selected', lang),
-  full: t('tribes.full', lang),
-})}></script>
-
 <script>
   // ── Tribe selection logic ──
   // Uses window.navGetSb() and nav:member event per established Astro patterns.
@@ -173,10 +161,6 @@ const QUAD_COLORS: Record<string, string> = {
   const MAX_SLOTS = 6;
   const MIN_SLOTS = 3;
   const DEADLINE = new Date('2026-03-08T15:00:00Z');
-
-  // Read i18n strings
-  const tribesI18nEl = document.getElementById('tribes-i18n');
-  const tribesI18n = tribesI18nEl ? JSON.parse(tribesI18nEl.textContent || '{}') : {};
 
   let tribeCounts: Record<number, number> = {};
   let userTribe: number | null = null;
@@ -221,7 +205,7 @@ const QUAD_COLORS: Record<string, string> = {
     if (!sb) return;
     const { data } = await sb.from('members')
       .select('tribe_id, photo_url')
-      .eq('operational_role', 'tribe_leader')
+      .eq('role', 'tribe_leader')
       .not('photo_url', 'is', null);
     if (!data) return;
     data.forEach((m: any) => {
@@ -242,11 +226,11 @@ const QUAD_COLORS: Record<string, string> = {
       document.dispatchEvent(new CustomEvent('open-auth'));
       return;
     }
-    if ((member.operational_role || member.role) === 'guest') {
+    if (member.role === 'guest') {
       (window as any).toast?.('Apenas participantes cadastrados.', 'error');
       return;
     }
-    if ((member.operational_role || member.role) === 'tribe_leader') {
+    if (member.role === 'tribe_leader') {
       (window as any).toast?.('Líderes já estão designados à sua tribo!', 'info');
       return;
     }
@@ -319,7 +303,7 @@ const QUAD_COLORS: Record<string, string> = {
       // Text
       if (text) {
         if (count >= MAX_SLOTS) {
-          text.innerHTML = `<span class="text-red-600 font-bold">${tribesI18n.full || 'FULL'}</span>`;
+          text.innerHTML = '<span class="text-red-600 font-bold">LOTADA</span>';
         } else if (count >= MIN_SLOTS) {
           text.innerHTML = `${count}/${MAX_SLOTS} ✓`;
           text.style.color = '#70AD47';
@@ -334,20 +318,20 @@ const QUAD_COLORS: Record<string, string> = {
         const isSelected = userTribe === tid;
         const isFull = count >= MAX_SLOTS && !isSelected;
         const canSelect = member
-          && (member.operational_role || member.role) !== 'guest'
-          && (member.operational_role || member.role) !== 'tribe_leader'
+          && member.role !== 'guest'
+          && member.role !== 'tribe_leader'
           && member.is_active !== false;
 
         if (isSelected) {
-          btn.textContent = tribesI18n.selected || '✓ Selected';
+          btn.textContent = '✓ Selecionada (clique para trocar)';
           btn.style.background = '#70AD47';
           btn.disabled = false;
         } else if (isFull) {
-          btn.textContent = tribesI18n.full || 'Full';
+          btn.textContent = 'Lotada';
           btn.style.background = '';
           btn.disabled = true;
         } else {
-          btn.textContent = tribesI18n.select || 'Select';
+          btn.textContent = 'Escolher esta Tribo';
           btn.style.background = '';
           btn.disabled = false;
         }
@@ -372,6 +356,7 @@ const QUAD_COLORS: Record<string, string> = {
 
   // ── Boot ──
   async function bootTribes() {
+    // Wait for nav to initialize
     const sb = getSb();
     if (!sb) {
       setTimeout(bootTribes, 200);
@@ -379,8 +364,10 @@ const QUAD_COLORS: Record<string, string> = {
     }
     await loadTribeCounts();
     await loadLeaderPhotos();
+    await loadMeetingSlots();
     subscribeRealtime();
 
+    // Load user tribe selection if logged in
     member = (window as any).navGetMember?.();
     if (member?.id) {
       const { data: sel } = await sb.from('tribe_selections')
@@ -390,6 +377,68 @@ const QUAD_COLORS: Record<string, string> = {
       if (sel) userTribe = sel.tribe_id;
     }
     updateUI();
+  }
+
+  // ── Load meeting slots from DB ──
+  const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+  async function loadMeetingSlots() {
+    const sb = getSb();
+    if (!sb) return;
+
+    const [{ data: slots }, { data: tribes }] = await Promise.all([
+      sb.from('tribe_meeting_slots')
+        .select('tribe_id, day_of_week, time_start, time_end')
+        .eq('is_active', true)
+        .order('day_of_week'),
+      sb.from('tribes')
+        .select('id, notes, whatsapp_url')
+    ]);
+
+    // Group slots by tribe
+    const slotMap: Record<number, any[]> = {};
+    (slots || []).forEach((s: any) => {
+      if (!slotMap[s.tribe_id]) slotMap[s.tribe_id] = [];
+      slotMap[s.tribe_id].push(s);
+    });
+
+    // Notes map
+    const notesMap: Record<number, string> = {};
+    const waMap: Record<number, string> = {};
+    (tribes || []).forEach((t: any) => {
+      if (t.notes) notesMap[t.id] = t.notes;
+      if (t.whatsapp_url) waMap[t.id] = t.whatsapp_url;
+    });
+
+    // Update each tribe's meeting schedule display
+    for (let tid = 1; tid <= 8; tid++) {
+      const el = document.getElementById(`ms-${tid}`);
+      if (!el) continue;
+
+      const tribeSlots = slotMap[tid];
+      let scheduleHtml = '';
+
+      if (tribeSlots?.length) {
+        const formatted = tribeSlots.map((s: any) => {
+          const day = DAY_NAMES[s.day_of_week] || '?';
+          const start = s.time_start.substring(0, 5);
+          const end = s.time_end.substring(0, 5);
+          return `${day} ${start}–${end}`;
+        }).join(' · ');
+        scheduleHtml = formatted;
+      } else if (notesMap[tid]) {
+        scheduleHtml = `<span class="text-slate-400 italic">${notesMap[tid]}</span>`;
+      } else {
+        scheduleHtml = '<span class="text-slate-400 italic">A definir</span>';
+      }
+
+      // Add WhatsApp link if available
+      const waLink = waMap[tid]
+        ? ` <a href="${waMap[tid]}" target="_blank" rel="noopener" class="text-emerald-600 no-underline text-[.75rem] ml-1" onclick="event.stopPropagation()">💬 WhatsApp</a>`
+        : '';
+
+      el.innerHTML = `<strong>📅 Encontros:</strong> ${scheduleHtml}${waLink}`;
+    }
   }
 
   // Listen for auth changes
