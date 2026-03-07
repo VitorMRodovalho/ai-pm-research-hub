@@ -245,6 +245,17 @@ import Toast from '../../components/ui/Toast.astro';
 
       <!-- Leader Tier: My Tribe panel -->
       <div id="panel-my-tribe" class="hidden">
+        <!-- Tribe Settings (editable by leader) -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-5">
+          <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+            <h3 class="text-sm font-bold text-navy">⚙️ Configurações da Tribo</h3>
+            <span class="text-[.65rem] text-emerald-600 font-bold hidden" id="tribe-save-ok">✅ Salvo</span>
+          </div>
+          <div class="p-5" id="my-tribe-settings">
+            <p class="text-slate-400 text-sm text-center py-4">Carregando...</p>
+          </div>
+        </div>
+        <!-- Members list -->
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-5">
           <div class="px-5 py-3.5 border-b border-slate-200">
             <h3 class="text-sm font-bold text-navy">👥 Membros da Minha Tribo</h3>
@@ -825,8 +836,7 @@ import Toast from '../../components/ui/Toast.astro';
       </div>
     </div>`;
 
-    // @ts-ignore
-      applyFilters();
+    applyFilters();
   }
 
   (window as any).applyFilters = () => {
@@ -895,15 +905,13 @@ import Toast from '../../components/ui/Toast.astro';
     (document.getElementById('f-status') as HTMLSelectElement).value = '';
     (document.getElementById('f-auth') as HTMLSelectElement).value = '';
     (document.getElementById('f-tribe') as HTMLSelectElement).value = '';
-    // @ts-ignore
-      applyFilters();
+    applyFilters();
   };
 
   // Keep old filterMembers as alias for backward-compat
   (window as any).filterMembers = (q: string) => {
     (document.getElementById('f-search') as HTMLInputElement).value = q;
-    // @ts-ignore
-      applyFilters();
+    applyFilters();
   };
 
   // ══════════════════════════════════════════
@@ -1395,18 +1403,70 @@ import Toast from '../../components/ui/Toast.astro';
   async function loadMyTribe() {
     const tribeId = MEMBER.tribe_id;
     if (!tribeId) {
+      document.getElementById('my-tribe-settings')!.innerHTML =
+        '<p class="text-slate-400 text-sm text-center py-4">Você não está alocado em uma tribo.</p>';
       document.getElementById('my-tribe-members')!.innerHTML =
         '<p class="text-slate-400 text-sm text-center py-6">Você não está alocado em uma tribo.</p>';
       return;
     }
 
-    // Load tribe members
+    // ── Load tribe settings ──
+    const { data: tribe } = await sb.from('tribes')
+      .select('*')
+      .eq('id', tribeId)
+      .single();
+
+    const settingsEl = document.getElementById('my-tribe-settings')!;
+    if (tribe) {
+      settingsEl.innerHTML = `
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Horário das Reuniões</label>
+            <input type="text" id="tribe-schedule" value="${tribe.meeting_schedule || ''}" placeholder="Ex: Segunda e Quarta, 18:30–19:30"
+              class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Link da Reunião (Meet/Zoom)</label>
+            <input type="text" inputmode="url" id="tribe-meeting-link" value="${tribe.meeting_link || ''}" placeholder="https://meet.google.com/..."
+              class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">WhatsApp do Grupo</label>
+            <input type="text" inputmode="url" id="tribe-wa" value="${tribe.whatsapp_url || ''}" placeholder="https://chat.whatsapp.com/..."
+              class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Drive da Tribo</label>
+            <input type="text" inputmode="url" id="tribe-drive" value="${tribe.drive_url || ''}" placeholder="https://drive.google.com/..."
+              class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Miro (opcional)</label>
+            <input type="text" inputmode="url" id="tribe-miro" value="${tribe.miro_url || ''}" placeholder="https://miro.com/..."
+              class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Recado / Notas</label>
+            <input type="text" id="tribe-notes" value="${tribe.notes || ''}" placeholder="Aviso para a tribo..."
+              class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+          </div>
+        </div>
+        <div class="mt-3 flex justify-end">
+          <button onclick="saveTribeSettings(${tribeId})"
+            class="px-4 py-2 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
+            💾 Salvar Configurações
+          </button>
+        </div>`;
+    } else {
+      settingsEl.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">Tribo não encontrada no banco.</p>';
+    }
+
+    // ── Load tribe members ──
     const { data: selections } = await sb.from('tribe_selections')
       .select('member_id')
       .eq('tribe_id', tribeId);
 
     const memberIds = (selections || []).map((s: any) => s.member_id);
-    // Include self (tribe leader)
     if (!memberIds.includes(MEMBER.id)) memberIds.push(MEMBER.id);
 
     const { data: members } = await sb.from('members')
@@ -1424,10 +1484,10 @@ import Toast from '../../components/ui/Toast.astro';
       <div class="text-[.72rem] text-slate-400 mb-3">${members.length} membros na tribo</div>
       ${members.map((m: any) => {
         const isLeader = m.operational_role === 'tribe_leader';
-        const initials = m.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+        const ini = m.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
         const photo = m.photo_url
           ? `<img src="${m.photo_url}" class="w-10 h-10 rounded-full object-cover flex-shrink-0" alt="">`
-          : `<div class="w-10 h-10 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.7rem] flex-shrink-0">${initials}</div>`;
+          : `<div class="w-10 h-10 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.7rem] flex-shrink-0">${ini}</div>`;
         return `
         <div class="flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-b-0">
           ${photo}
@@ -1441,10 +1501,10 @@ import Toast from '../../components/ui/Toast.astro';
         </div>`;
       }).join('')}`;
 
-    // Load recent attendance
+    // ── Load recent attendance ──
     const { data: events } = await sb.from('events')
-      .select('id, title, event_date, duration_hours')
-      .order('event_date', { ascending: false })
+      .select('id, title, date, duration_minutes')
+      .order('date', { ascending: false })
       .limit(5);
 
     const attEl = document.getElementById('my-tribe-attendance')!;
@@ -1453,7 +1513,6 @@ import Toast from '../../components/ui/Toast.astro';
       return;
     }
 
-    // Get attendance for these events
     const eventIds = events.map((e: any) => e.id);
     const { data: attendance } = await sb.from('attendance')
       .select('event_id, member_id, status')
@@ -1467,7 +1526,7 @@ import Toast from '../../components/ui/Toast.astro';
     });
 
     attEl.innerHTML = events.map((ev: any) => {
-      const date = new Date(ev.event_date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+      const date = new Date(ev.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
       const evAtt = attMap[ev.id] || {};
       const present = Object.values(evAtt).filter(s => s === 'present').length;
       const total = members.length;
@@ -1481,6 +1540,24 @@ import Toast from '../../components/ui/Toast.astro';
       </div>`;
     }).join('');
   }
+
+  (window as any).saveTribeSettings = async (tribeId: number) => {
+    const { error } = await sb.from('tribes').update({
+      meeting_schedule: (document.getElementById('tribe-schedule') as HTMLInputElement).value.trim() || null,
+      meeting_link: (document.getElementById('tribe-meeting-link') as HTMLInputElement).value.trim() || null,
+      whatsapp_url: (document.getElementById('tribe-wa') as HTMLInputElement).value.trim() || null,
+      drive_url: (document.getElementById('tribe-drive') as HTMLInputElement).value.trim() || null,
+      miro_url: (document.getElementById('tribe-miro') as HTMLInputElement).value.trim() || null,
+      notes: (document.getElementById('tribe-notes') as HTMLInputElement).value.trim() || null,
+      updated_at: new Date().toISOString(),
+      updated_by: MEMBER.id,
+    }).eq('id', tribeId);
+
+    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    const ok = document.getElementById('tribe-save-ok');
+    if (ok) { ok.classList.remove('hidden'); setTimeout(() => ok.classList.add('hidden'), 2000); }
+    toast('Configurações salvas ✅', 'success');
+  };
 
   // ══════════════════════════════════════════
   // SPONSOR TIER: Executive Overview
@@ -1623,7 +1700,7 @@ import Toast from '../../components/ui/Toast.astro';
       header.classList.remove('hidden');
       document.getElementById('tier-icon')!.textContent = '🏷️';
       document.getElementById('tier-title')!.textContent = 'Painel da Tribo — ' + (TRIBE_NAMES[MEMBER.tribe_id] || 'Sua Tribo');
-      document.getElementById('tier-subtitle')!.textContent = 'Visualização read-only · Pode registrar presença dos membros';
+      document.getElementById('tier-subtitle')!.textContent = 'Configurações da tribo, membros e presenças · Pode editar horários e links';
 
       // Hide superadmin tabs, show my-tribe
       document.querySelectorAll('.adm-tab').forEach(t => (t as HTMLElement).style.display = 'none');
@@ -1663,20 +1740,20 @@ import Toast from '../../components/ui/Toast.astro';
     if (!sb) { setTimeout(boot, 200); return; }
 
     window.addEventListener('nav:member', ((e: CustomEvent) => {
-      if (e.detail && (e.detail.operational_role || e.detail.role) !== 'guest' && !MEMBER) {
+      if (e.detail && e.detail.role !== 'guest' && !MEMBER) {
         MEMBER = e.detail;
         setup();
       }
     }) as EventListener);
 
     const m = (window as any).navGetMember?.();
-    if (m && (m.operational_role || m.role) !== 'guest') { MEMBER = m; setup(); return; }
+    if (m && m.role !== 'guest') { MEMBER = m; setup(); return; }
 
     try {
       const { data: { session } } = await sb.auth.getSession();
       if (session) {
         const { data } = await sb.rpc('get_member_by_auth');
-        if (data && (data.operational_role || data.role) !== 'guest') { MEMBER = data; setup(); return; }
+        if (data && data.role !== 'guest') { MEMBER = data; setup(); return; }
       }
     } catch (e) {}
 
