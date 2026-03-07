@@ -21,6 +21,7 @@ const ROLE_COLORS: Record<string, string> = {
   curator:      '#D97706',
   sponsor:      '#BE2027',
   founder:      '#7C3AED',
+  comms_team:   '#06B6D4',
 };
 ---
 
@@ -43,11 +44,11 @@ const ROLE_COLORS: Record<string, string> = {
     <!-- Role legend -->
     <div class="mt-6 flex gap-6 justify-center flex-wrap text-[.7rem] text-white/50">
       {Object.entries(ROLE_COLORS).filter(([k]) =>
-        ['manager','tribe_leader','researcher','ambassador','curator','sponsor','founder'].includes(k)
+        ['manager','tribe_leader','researcher','ambassador','curator','sponsor','founder','comms_team'].includes(k)
       ).map(([role, color]) => (
         <span class="inline-flex items-center gap-1">
           <span class="w-[9px] h-[9px] rounded-full inline-block" style={`background:${color}`}></span>
-          {t(`role.${role}`, lang)}
+          {role === 'comms_team' ? 'Comunicação' : t(`role.${role}`, lang)}
         </span>
       ))}
     </div>
@@ -74,7 +75,7 @@ const ROLE_COLORS: Record<string, string> = {
   const ROLE_COLORS: Record<string, string> = {
     manager: '#FF610F', tribe_leader: '#4F17A8', researcher: '#EC4899',
     facilitator: '#EC4899', communicator: '#EC4899', ambassador: '#10B981',
-    curator: '#D97706', sponsor: '#BE2027', founder: '#7C3AED',
+    curator: '#D97706', sponsor: '#BE2027', founder: '#7C3AED', comms_team: '#06B6D4',
   };
 
   const HEADING_COLORS: Record<string, string> = {
@@ -222,15 +223,57 @@ const ROLE_COLORS: Record<string, string> = {
     </div>`;
   }
 
+  function projectTeamSection(gp: Member[], commsTeam: Member[]): string {
+    if (!gp.length && !commsTeam.length) return '';
+    let inner = '';
+
+    // GP sub-section
+    if (gp.length) {
+      inner += `<div class="mb-4">
+        <div class="text-[.7rem] font-bold text-white/40 uppercase tracking-wider mb-2">Gerência de Projeto (Nível 2)</div>
+        <div class="flex flex-wrap gap-4 justify-center">${gp.map(m => memberCard(m)).join('')}</div>
+      </div>`;
+    }
+
+    // Comms team sub-section
+    if (commsTeam.length) {
+      inner += `<div>
+        <div class="text-[.7rem] font-bold text-white/40 uppercase tracking-wider mb-2">Time de Comunicação</div>
+        <div class="flex flex-wrap gap-4 justify-center">${commsTeam.map(m => memberCard(m)).join('')}</div>
+      </div>`;
+    }
+
+    return `<div id="team-project" class="mt-10 w-full">
+      <div class="flex items-baseline gap-2.5 mb-3">
+        <h3 class="text-[1.05rem] font-extrabold" style="color:${HEADING_COLORS.purple}">Equipe de Projeto</h3>
+        <span class="text-[.75rem] text-white/50">gestão, operações & comunicação · Ciclo 3</span>
+      </div>
+      <div class="bg-white/5 border border-white/10 rounded-2xl px-5 py-4">${inner}</div>
+    </div>`;
+  }
+
   function renderTeam(allMembers: Member[]) {
     const el = document.getElementById('teamGrid');
     if (!el || !allMembers.length) return;
 
     // ── Grouping using 3-axis model ──
-    // Leaders: operational_role = manager or tribe_leader, active, not pure sponsor
-    const leaders = allMembers.filter(m =>
+
+    // GP: operational_role = manager, active
+    const gp = allMembers.filter(m =>
       m.current_cycle_active &&
-      hasOpRole(m, ['manager', 'tribe_leader'])
+      hasOpRole(m, ['manager'])
+    );
+
+    // Comms Team: designation includes comms_team, active
+    const commsTeam = allMembers.filter(m =>
+      m.current_cycle_active &&
+      hasDesig(m, 'comms_team')
+    );
+
+    // Tribe Leaders: operational_role = tribe_leader, active
+    const tribeLeaders = allMembers.filter(m =>
+      m.current_cycle_active &&
+      hasOpRole(m, ['tribe_leader'])
     );
 
     // Researchers: operational_role = researcher/facilitator/communicator, active
@@ -239,11 +282,8 @@ const ROLE_COLORS: Record<string, string> = {
       hasOpRole(m, ['researcher', 'facilitator', 'communicator'])
     );
 
-    // Ambassadors: designation includes ambassador (any status — ambassadors transcend cycles)
-    const ambassadors = allMembers.filter(m =>
-      hasDesig(m, 'ambassador') &&
-      !hasOpRole(m, ['manager', 'tribe_leader'])  // avoid duplicates with leaders
-    );
+    // Ambassadors: designation includes ambassador (ALL — no duplicate filtering)
+    const ambassadors = allMembers.filter(m => hasDesig(m, 'ambassador'));
 
     // Curators: designation includes curator
     const curators = allMembers.filter(m => hasDesig(m, 'curator'));
@@ -255,7 +295,8 @@ const ROLE_COLORS: Record<string, string> = {
     const founders = allMembers.filter(m => hasDesig(m, 'founder'));
 
     el.innerHTML =
-      teamSection('team-leaders', i18n.leaders || 'Líderes de Tribo & Gestão', i18n.leadersSub || 'coordenação e governança · Ciclo 3', HEADING_COLORS.purple, leaders)
+      projectTeamSection(gp, commsTeam)
+      + teamSection('team-leaders', i18n.leaders || 'Líderes de Tribo', i18n.leadersSub || 'pesquisadores-chefe & mentoria · Ciclo 3', HEADING_COLORS.purple, tribeLeaders)
       + teamSection('team-researchers', i18n.researchers || 'Pesquisadores', i18n.researchersSub || 'participantes ativos · Ciclo 3', HEADING_COLORS.pink, researchers)
       + teamSection('team-ambassadors', i18n.ambassadors || 'Embaixadores', i18n.ambassadorsSub || 'representação & multiplicação', HEADING_COLORS.emerald, ambassadors)
       + teamSection('team-curators', i18n.curators || 'Comitê de Curadoria', i18n.curatorsSub || 'peer review & qualidade', HEADING_COLORS.amber, curators)
