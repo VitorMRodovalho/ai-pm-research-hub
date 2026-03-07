@@ -97,6 +97,7 @@ import RosterModal from '../components/attendance/RosterModal.astro';
   // ════════════════════════════════════════════════════════════════
 
   import { ROLE_LABELS, ROLE_COLORS } from '../lib/supabase';
+  import { getMemberRole } from '../lib/routing';
 
   let sb: any = null;
   let MEMBER: any = null;
@@ -123,6 +124,18 @@ import RosterModal from '../components/attendance/RosterModal.astro';
       const m = ROLE_MAP[r] || { label: r, color: '#6B7280', bg: '#F1F5F9' };
       return `<span style="display:inline-block;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700;color:${m.color};background:${m.bg};border:1px solid ${m.color}22;margin:1px">${m.label}</span>`;
     }).join('');
+  }
+
+  function rolesFromMember(member: any): string[] {
+    if (!member) return [];
+    const roles: string[] = [];
+    const op = member.operational_role;
+    if (op && op !== 'guest' && op !== 'none') roles.push(op);
+    const desigs: string[] = Array.isArray(member.designations) ? member.designations : [];
+    desigs.forEach((d) => {
+      if (d && !roles.includes(d)) roles.push(d);
+    });
+    return roles.length ? roles : ['guest'];
   }
 
   function toast(msg: string, type = '') {
@@ -206,8 +219,9 @@ import RosterModal from '../components/attendance/RosterModal.astro';
     el.innerHTML = data.map((ev: any) => {
       const attIcon = ev.i_attended === true ? '✅' : ev.i_attended === false ? '❌' : '—';
       const attBg = ev.i_attended === true ? 'bg-green-100 text-green-800' : ev.i_attended === false ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-500';
-      const canEdit = MEMBER.is_superadmin || (MEMBER.operational_role || MEMBER.role) === 'tribe_leader' || ev.created_by === MEMBER.auth_id;
-      const canRoster = MEMBER.is_superadmin || (MEMBER.operational_role || MEMBER.role) === 'tribe_leader';
+      const role = getMemberRole(MEMBER);
+      const canEdit = MEMBER.is_superadmin || role === 'tribe_leader' || ev.created_by === MEMBER.auth_id;
+      const canRoster = MEMBER.is_superadmin || role === 'tribe_leader';
 
       const isPast = new Date(ev.date + 'T23:59:59') < new Date();
       const linkHtml = ev.meeting_link && !isPast
@@ -397,7 +411,7 @@ import RosterModal from '../components/attendance/RosterModal.astro';
             <span class="${m.present ? 'font-semibold' : ''}">${m.name}</span>
           </div>
         </td>
-        <td class="px-3 py-2.5 border-b border-slate-100">${roleBadges(m.roles?.length ? m.roles : [m.role])}</td>
+        <td class="px-3 py-2.5 border-b border-slate-100">${roleBadges(rolesFromMember(m))}</td>
         <td class="px-3 py-2.5 border-b border-slate-100 text-center">
           ${CAN_MANAGE
             ? `<button class="toggle-btn ${m.present ? 'on' : 'off'}" id="tog-${m.id}"
@@ -427,7 +441,7 @@ import RosterModal from '../components/attendance/RosterModal.astro';
         <img class="w-8 h-8 rounded-full object-cover bg-slate-100 flex-shrink-0" src="${m.photo_url || ''}" onerror="this.style.visibility='hidden'" alt="">
         <div class="flex-1 min-w-0">
           <div class="text-[13px] font-semibold truncate">${m.name}</div>
-          <div>${roleBadges(m.roles?.length ? m.roles : [m.role])}</div>
+          <div>${roleBadges(rolesFromMember(m))}</div>
         </div>
         <div class="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden flex-shrink-0">
           <div class="h-full bg-crimson rounded-full" style="width:${(m.hours_attended / max * 100).toFixed(1)}%"></div>
@@ -452,7 +466,7 @@ import RosterModal from '../components/attendance/RosterModal.astro';
   }
 
   async function onMemberReady() {
-    CAN_MANAGE = MEMBER.is_superadmin || (MEMBER.operational_role || MEMBER.role) === 'tribe_leader';
+    CAN_MANAGE = MEMBER.is_superadmin || getMemberRole(MEMBER) === 'tribe_leader';
     if (CAN_MANAGE) {
       document.getElementById('tab-new-event')?.classList.remove('hidden');
       document.getElementById('tab-recurring')?.classList.remove('hidden');
@@ -468,7 +482,7 @@ import RosterModal from '../components/attendance/RosterModal.astro';
 
     // Listen for future auth changes
     window.addEventListener('nav:member', ((e: CustomEvent) => {
-      if (e.detail && (e.detail.operational_role || e.detail.role) !== 'guest') {
+      if (e.detail && getMemberRole(e.detail) !== 'guest') {
         MEMBER = e.detail;
         onMemberReady();
       } else if (!e.detail) {
@@ -478,7 +492,7 @@ import RosterModal from '../components/attendance/RosterModal.astro';
 
     // 1) Check if nav already has a member loaded
     const m = (window as any).navGetMember?.();
-    if (m && (m.operational_role || m.role) !== 'guest') {
+    if (m && getMemberRole(m) !== 'guest') {
       MEMBER = m;
       onMemberReady();
       return;
@@ -488,7 +502,7 @@ import RosterModal from '../components/attendance/RosterModal.astro';
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
       const { data } = await sb.rpc('get_member_by_auth');
-      if (data && (data.operational_role || data.role) !== 'guest') {
+      if (data && getMemberRole(data) !== 'guest') {
         MEMBER = data;
         onMemberReady();
         return;

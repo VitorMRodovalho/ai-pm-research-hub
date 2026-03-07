@@ -8,7 +8,7 @@
  */
 export function getMemberRole(member) {
   if (!member) return 'guest';
-  return member.operational_role || member.role || 'guest';
+  return member.operational_role || 'guest';
 }
 
 /**

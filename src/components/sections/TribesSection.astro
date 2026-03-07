@@ -163,6 +163,8 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
 </section>
 
 <script>
+  import { getMemberRole } from '../../lib/routing';
+
   // ── Tribe selection logic ──
   // Uses window.navGetSb() and nav:member event per established Astro patterns.
 
@@ -234,11 +236,12 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
       document.dispatchEvent(new CustomEvent('open-auth'));
       return;
     }
-    if (member.role === 'guest') {
+    const role = getMemberRole(member);
+    if (role === 'guest') {
       (window as any).toast?.('Apenas participantes cadastrados.', 'error');
       return;
     }
-    if (member.role === 'tribe_leader') {
+    if (role === 'tribe_leader') {
       (window as any).toast?.('Líderes já estão designados à sua tribo!', 'info');
       return;
     }
@@ -325,9 +328,10 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
       if (btn) {
         const isSelected = userTribe === tid;
         const isFull = count >= MAX_SLOTS && !isSelected;
+        const role = getMemberRole(member);
         const canSelect = member
-          && member.role !== 'guest'
-          && member.role !== 'tribe_leader'
+          && role !== 'guest'
+          && role !== 'tribe_leader'
           && member.is_active !== false;
 
         if (isSelected) {
