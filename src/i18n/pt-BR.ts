@@ -250,6 +250,19 @@ const ptBR: Record<string, string> = {
   'profile.public': 'Público',
   'profile.private': 'Privado',
 
+  // ── Auth modal ──
+  'authModal.title': 'Acessar plataforma',
+  'authModal.subtitle': 'Entre com seu email cadastrado no Núcleo.',
+  'authModal.google': 'Entrar com Google',
+  'authModal.linkedin': 'Entrar com LinkedIn',
+  'authModal.or': 'ou',
+  'authModal.emailPlaceholder': 'seu@email.com',
+  'authModal.magic': '📩 Enviar link mágico',
+  'authModal.enterEmail': 'Digite seu email.',
+  'authModal.wait': 'Aguarde carregar e tente novamente.',
+  'authModal.sent': '📩 Link enviado! Verifique seu email.',
+  'authModal.errorPrefix': 'Erro: ',
+
   // ── Artifacts page ──
   'artifacts.title': 'Artefatos — Núcleo IA & GP',
   'artifacts.authTitle': 'Artefatos',

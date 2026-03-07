@@ -250,6 +250,19 @@ const enUS: Record<string, string> = {
   'profile.public': 'Public',
   'profile.private': 'Private',
 
+  // ── Auth modal ──
+  'authModal.title': 'Access platform',
+  'authModal.subtitle': 'Sign in with your email registered in the Hub.',
+  'authModal.google': 'Sign in with Google',
+  'authModal.linkedin': 'Sign in with LinkedIn',
+  'authModal.or': 'or',
+  'authModal.emailPlaceholder': 'you@email.com',
+  'authModal.magic': '📩 Send magic link',
+  'authModal.enterEmail': 'Enter your email.',
+  'authModal.wait': 'Wait for page load and try again.',
+  'authModal.sent': '📩 Link sent! Check your email.',
+  'authModal.errorPrefix': 'Error: ',
+
   // ── Artifacts page ──
   'artifacts.title': 'Artifacts — AI & PM Hub',
   'artifacts.authTitle': 'Artifacts',
