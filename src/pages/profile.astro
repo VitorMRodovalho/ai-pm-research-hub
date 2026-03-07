@@ -15,6 +15,7 @@ import Toast from '../components/ui/Toast.astro';
 <script>
   import { ROLE_COLORS } from '../lib/supabase';
   import { shouldRedirectFromProfile } from '../lib/routing';
+  import { normalizeCredlyUrl } from '../lib/credly';
 
   const OPROLE_LABELS: Record<string, string> = {
     manager: 'Gerente', deputy_manager: 'Deputy PM', tribe_leader: 'Líder de Tribo', researcher: 'Pesquisador',
@@ -425,6 +426,26 @@ import Toast from '../components/ui/Toast.astro';
         </div>
       </div>
     `;
+    bindCredlyField();
+  }
+
+  function bindCredlyField() {
+    const input = document.getElementById('self-credly') as HTMLInputElement | null;
+    if (!input) return;
+
+    const normalize = () => {
+      const raw = input.value || '';
+      const trimmed = raw.trim();
+      if (!trimmed) {
+        input.value = '';
+        return;
+      }
+      const normalized = normalizeCredlyUrl(trimmed);
+      if (normalized) input.value = normalized;
+    };
+
+    input.addEventListener('blur', normalize);
+    input.addEventListener('paste', () => setTimeout(normalize, 0));
   }
 
   // ── Toggle password field visibility ──
@@ -438,11 +459,21 @@ import Toast from '../components/ui/Toast.astro';
   (window as any).saveSelf = async () => {
     const sb = (window as any).navGetSb?.();
     if (!sb || !currentMember) return;
+    const credlyInput = (document.getElementById('self-credly') as HTMLInputElement)?.value || '';
+    const credlyNormalized = credlyInput.trim() ? normalizeCredlyUrl(credlyInput) : null;
+    if (credlyInput.trim() && !credlyNormalized) {
+      (window as any).toast?.('URL Credly inválida. Use o perfil público: https://www.credly.com/users/seu-usuario', 'error');
+      return;
+    }
+    if (credlyNormalized) {
+      const credlyField = document.getElementById('self-credly') as HTMLInputElement;
+      if (credlyField) credlyField.value = credlyNormalized;
+    }
     const { data } = await sb.rpc('member_self_update', {
       p_pmi_id: (document.getElementById('self-pmi') as HTMLInputElement)?.value.trim() || null,
       p_phone: (document.getElementById('self-phone') as HTMLInputElement)?.value.trim() || null,
       p_linkedin_url: (document.getElementById('self-li') as HTMLInputElement)?.value.trim() || null,
-      p_credly_url: (document.getElementById('self-credly') as HTMLInputElement)?.value.trim() || null,
+      p_credly_url: credlyNormalized,
     });
     if (data?.error) (window as any).toast?.(data.error, 'error');
     else {
@@ -501,11 +532,20 @@ import Toast from '../components/ui/Toast.astro';
   (window as any).verifyCredly = async () => {
     const sb = (window as any).navGetSb?.();
     if (!sb || !currentMember) return;
+    const credlyInput = (document.getElementById('self-credly') as HTMLInputElement)?.value || '';
+    const credlyNormalized = credlyInput.trim() ? normalizeCredlyUrl(credlyInput) : normalizeCredlyUrl(currentMember.credly_url || '');
+    if (!credlyNormalized) {
+      (window as any).toast?.('Informe uma URL Credly válida antes de verificar.', 'error');
+      return;
+    }
+    const credlyField = document.getElementById('self-credly') as HTMLInputElement | null;
+    if (credlyField) credlyField.value = credlyNormalized;
+
     const btn = document.getElementById('btn-credly-verify') as HTMLButtonElement;
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Verificando...'; }
     try {
       const { data, error } = await sb.functions.invoke('verify-credly', {
-        body: { member_id: currentMember.id, credly_url: (document.getElementById('self-credly') as HTMLInputElement)?.value.trim() || currentMember.credly_url },
+        body: { member_id: currentMember.id, credly_url: credlyNormalized },
       });
       if (error) throw error;
       if (data?.success) {
