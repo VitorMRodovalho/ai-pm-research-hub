@@ -160,7 +160,7 @@ const isNew = id === 'new';
     let result;
     if (isNew) {
       const { error } = await sb.from('members').insert({
-        name:params.p_name, email:params.p_email, role:params.p_role, roles:params.p_roles,
+        name:params.p_name, email:params.p_email, operational_role:params.p_role || 'guest', designations:[],
         chapter:params.p_chapter, tribe_id:params.p_tribe_id, pmi_id:params.p_pmi_id,
         phone:params.p_phone, linkedin_url:params.p_linkedin_url, current_cycle_active:true,
       });
