@@ -8,6 +8,8 @@ const { lang = 'pt-BR' } = Astro.props;
 const COLORS: Record<string, string> = {
   teal: '#00799E', orange: '#FF610F', purple: '#4F17A8', emerald: '#10B981',
 };
+
+const safeQuadrants = Array.isArray(QUADRANTS) ? QUADRANTS : [];
 ---
 
 <section class="py-16 px-6 bg-white" id="quadrants">
@@ -22,7 +24,7 @@ const COLORS: Record<string, string> = {
       {t('quadrants.subtitle', lang)}
     </p>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-      {QUADRANTS.map((q) => (
+      {safeQuadrants.map((q) => (
         <div class="relative p-7 rounded-2xl border border-black/5 bg-[#FAFAF8]
                     hover:-translate-y-px hover:shadow-md transition-all duration-200"
              style={`border-left: 4px solid ${COLORS[q.color]}`}>
@@ -34,6 +36,11 @@ const COLORS: Record<string, string> = {
           <div class="text-[.85rem] text-slate-500">{t(q.subtitleKey, lang)}</div>
         </div>
       ))}
+      {!safeQuadrants.length && (
+        <div class="col-span-full bg-[#FAFAF8] rounded-2xl border border-black/5 p-6 text-sm text-slate-500">
+          Quadrantes temporariamente indisponiveis.
+        </div>
+      )}
     </div>
   </div>
 </section>

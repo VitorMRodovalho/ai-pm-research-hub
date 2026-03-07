@@ -18,6 +18,9 @@ const QUAD_COLORS: Record<string, string> = {
   q3: '#4F17A8',
   q4: '#10B981',
 };
+
+const safeQuadrants = Array.isArray(QUADRANTS) ? QUADRANTS : [];
+const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
 ---
 
 <section class="py-16 px-6 bg-[#F7F4EF]" id="tribes">
@@ -43,8 +46,8 @@ const QUAD_COLORS: Record<string, string> = {
     </div>
 
     <div id="tribesContainer">
-      {QUADRANTS.map((quad) => {
-        const tribes = TRIBES.filter((t) => t.quadrant === quad.key);
+      {safeQuadrants.map((quad) => {
+        const tribes = safeTribes.filter((t) => t.quadrant === quad.key);
         if (!tribes.length) return null;
         return (
           <>
@@ -142,6 +145,11 @@ const QUAD_COLORS: Record<string, string> = {
           </>
         );
       })}
+      {!safeQuadrants.length && (
+        <div class="bg-white rounded-2xl border border-black/5 p-5 text-sm text-slate-500">
+          Dados de trilhas indisponiveis temporariamente. Atualize a pagina em alguns instantes.
+        </div>
+      )}
     </div>
 
     <div class="text-center mt-6">

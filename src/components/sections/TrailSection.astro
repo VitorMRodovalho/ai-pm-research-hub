@@ -9,8 +9,17 @@ import { t, type Lang } from '../../i18n/utils';
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
 
-const core = coreCourses();
-const extra = extraCourses();
+let core = [] as ReturnType<typeof coreCourses>;
+let extra = [] as ReturnType<typeof extraCourses>;
+try {
+  const coreResolved = coreCourses();
+  const extraResolved = extraCourses();
+  core = Array.isArray(coreResolved) ? coreResolved : [];
+  extra = Array.isArray(extraResolved) ? extraResolved : [];
+} catch {
+  core = [];
+  extra = [];
+}
 ---
 
 <section class="py-16 px-6" id="trail">
@@ -42,6 +51,9 @@ const extra = extraCourses();
             <span class="text-[.82rem] font-medium">{c.name}</span>
           </a>
         ))}
+        {!core.length && (
+          <p class="text-[.82rem] text-slate-500">Cursos core indisponiveis no momento.</p>
+        )}
       </div>
 
       <!-- Extra -->
@@ -59,6 +71,9 @@ const extra = extraCourses();
             <span class="text-[.82rem] font-medium">{c.name}</span>
           </a>
         ))}
+        {!extra.length && (
+          <p class="text-[.82rem] text-slate-500">Cursos extra indisponiveis no momento.</p>
+        )}
       </div>
     </div>
 

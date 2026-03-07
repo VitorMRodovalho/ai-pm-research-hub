@@ -4,6 +4,8 @@ import { t, type Lang } from '../../i18n/utils';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
+
+const safeKpis = Array.isArray(KPIS) ? KPIS : [];
 ---
 
 <section class="py-16 px-6 bg-[#003B5C] text-white" id="kpis">
@@ -18,7 +20,7 @@ const { lang = 'pt-BR' } = Astro.props;
       {t('kpis.subtitle', lang)}
     </p>
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
-      {KPIS.map((k) => (
+      {safeKpis.map((k) => (
         <div class="bg-white/6 border border-white/10 rounded-2xl p-7 text-center">
           <div class="text-[2.5rem] font-extrabold leading-none bg-gradient-to-br from-[#05BFE0] to-[#ED7D31] bg-clip-text text-transparent">
             {k.value}
@@ -26,6 +28,11 @@ const { lang = 'pt-BR' } = Astro.props;
           <div class="text-[.82rem] text-white/60 mt-1">{t(k.labelKey, lang)}</div>
         </div>
       ))}
+      {!safeKpis.length && (
+        <div class="col-span-full bg-white/6 border border-white/10 rounded-2xl p-5 text-center text-sm text-white/70">
+          Metas temporariamente indisponiveis.
+        </div>
+      )}
     </div>
   </div>
 </section>
