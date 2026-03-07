@@ -31,8 +31,11 @@ const { deadline = '2026-03-08T15:00:00Z', lang = 'pt-BR' } = Astro.props;
       {t('hero.subtitle', lang)}
     </h2>
 
-    <div class="inline-flex items-center gap-2 bg-white/6 border border-white/10 px-5 py-2.5 rounded-xl text-white text-[.9rem] font-medium">
-      📅 {t('hero.date', lang)}
+    <!-- Event info area (populated by JS) -->
+    <div id="hero-event-area">
+      <div class="inline-flex items-center gap-2 bg-white/6 border border-white/10 px-5 py-2.5 rounded-xl text-white text-[.9rem] font-medium">
+        📅 {t('hero.date', lang)}
+      </div>
     </div>
 
     <div class="flex flex-wrap justify-center gap-2 mt-6">
@@ -43,28 +46,34 @@ const { deadline = '2026-03-08T15:00:00Z', lang = 'pt-BR' } = Astro.props;
       ))}
     </div>
 
-    <div class="mt-8 bg-white/6 border border-white/10 rounded-2xl px-6 py-4 inline-flex items-center gap-5 flex-wrap justify-center" id="countdown-bar">
-      <div class="text-center">
-        <div class="text-3xl font-extrabold text-[#05BFE0] leading-none" id="cd-d">--</div>
-        <div class="text-[.65rem] text-white/50 uppercase tracking-wider">{t('hero.countdown.days', lang)}</div>
+    <!-- Countdown / Post-event area -->
+    <div id="hero-countdown-area">
+      <div class="mt-8 bg-white/6 border border-white/10 rounded-2xl px-6 py-4 inline-flex items-center gap-5 flex-wrap justify-center" id="countdown-bar">
+        <div class="text-center">
+          <div class="text-3xl font-extrabold text-[#05BFE0] leading-none" id="cd-d">--</div>
+          <div class="text-[.65rem] text-white/50 uppercase tracking-wider">{t('hero.countdown.days', lang)}</div>
+        </div>
+        <div class="text-2xl text-white/20">:</div>
+        <div class="text-center">
+          <div class="text-3xl font-extrabold text-[#05BFE0] leading-none" id="cd-h">--</div>
+          <div class="text-[.65rem] text-white/50 uppercase tracking-wider">{t('hero.countdown.hours', lang)}</div>
+        </div>
+        <div class="text-2xl text-white/20">:</div>
+        <div class="text-center">
+          <div class="text-3xl font-extrabold text-[#05BFE0] leading-none" id="cd-m">--</div>
+          <div class="text-[.65rem] text-white/50 uppercase tracking-wider">{t('hero.countdown.min', lang)}</div>
+        </div>
+        <div class="text-2xl text-white/20">:</div>
+        <div class="text-center">
+          <div class="text-3xl font-extrabold text-[#05BFE0] leading-none" id="cd-s">--</div>
+          <div class="text-[.65rem] text-white/50 uppercase tracking-wider">{t('hero.countdown.sec', lang)}</div>
+        </div>
+        <div class="text-[.72rem] text-white/50" id="countdown-label">{t('hero.countdown.label', lang)}</div>
       </div>
-      <div class="text-2xl text-white/20">:</div>
-      <div class="text-center">
-        <div class="text-3xl font-extrabold text-[#05BFE0] leading-none" id="cd-h">--</div>
-        <div class="text-[.65rem] text-white/50 uppercase tracking-wider">{t('hero.countdown.hours', lang)}</div>
-      </div>
-      <div class="text-2xl text-white/20">:</div>
-      <div class="text-center">
-        <div class="text-3xl font-extrabold text-[#05BFE0] leading-none" id="cd-m">--</div>
-        <div class="text-[.65rem] text-white/50 uppercase tracking-wider">{t('hero.countdown.min', lang)}</div>
-      </div>
-      <div class="text-2xl text-white/20">:</div>
-      <div class="text-center">
-        <div class="text-3xl font-extrabold text-[#05BFE0] leading-none" id="cd-s">--</div>
-        <div class="text-[.65rem] text-white/50 uppercase tracking-wider">{t('hero.countdown.sec', lang)}</div>
-      </div>
-      <div class="text-[.72rem] text-white/50">{t('hero.countdown.label', lang)}</div>
     </div>
+
+    <!-- Recurring meeting (shown for logged-in users, after kickoff) -->
+    <div id="hero-meeting-bar" class="hidden mt-4"></div>
   </div>
 
   <div class="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/30 text-[.75rem] animate-bounce">
@@ -73,14 +82,13 @@ const { deadline = '2026-03-08T15:00:00Z', lang = 'pt-BR' } = Astro.props;
 </section>
 
 <script define:vars={{ deadline }}>
+  // ── Countdown (for tribe selection deadline) ──
   var dl = new Date(deadline);
   function tick() {
     var diff = dl - new Date();
     if (diff <= 0) {
-      ['cd-d','cd-h','cd-m','cd-s'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (el) el.textContent = '00';
-      });
+      var bar = document.getElementById('countdown-bar');
+      if (bar) bar.style.display = 'none';
       return;
     }
     var d = document.getElementById('cd-d');
@@ -94,6 +102,95 @@ const { deadline = '2026-03-08T15:00:00Z', lang = 'pt-BR' } = Astro.props;
   }
   tick();
   setInterval(tick, 1000);
+</script>
+
+<script>
+  // ── Dynamic event info from DB ──
+  async function loadHeroEvent() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(loadHeroEvent, 300); return; }
+
+    // Get the latest general event (not tribe-specific)
+    const { data: events } = await sb.from('events')
+      .select('id, title, date, meeting_link, youtube_url, is_recorded, duration_minutes, duration_actual')
+      .is('tribe_id', null)
+      .order('date', { ascending: false })
+      .limit(1);
+
+    if (!events?.length) return;
+    const ev = events[0];
+    const evDate = new Date(ev.date + 'T22:30:00Z'); // 19:30 BRT = 22:30 UTC
+    const isPast = evDate < new Date();
+
+    const eventArea = document.getElementById('hero-event-area');
+    if (!eventArea) return;
+
+    if (isPast && ev.youtube_url) {
+      // Event happened + recording available
+      const dateStr = new Date(ev.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+      const duration = ev.duration_actual || ev.duration_minutes || 90;
+      eventArea.innerHTML = `
+        <div class="flex flex-wrap gap-3 justify-center">
+          <a href="${ev.youtube_url}" target="_blank" rel="noopener"
+            class="inline-flex items-center gap-2 bg-red-600/90 hover:bg-red-600 text-white px-5 py-2.5 rounded-xl text-[.9rem] font-semibold no-underline transition-all">
+            ▶️ Assistir Gravação · ${Math.round(duration)}min
+          </a>
+          ${ev.meeting_link ? `
+          <a href="${ev.meeting_link}" target="_blank" rel="noopener"
+            class="inline-flex items-center gap-2 bg-white/6 border border-white/10 hover:bg-white/12 text-white px-5 py-2.5 rounded-xl text-[.9rem] font-medium no-underline transition-all">
+            📅 Reunião Recorrente · Quintas 19:30 BRT
+          </a>` : ''}
+        </div>
+        <div class="text-[.72rem] text-white/40 mt-2">Kick-off realizado em ${dateStr}</div>`;
+    } else if (isPast) {
+      // Event happened but no recording yet
+      eventArea.innerHTML = `
+        <div class="inline-flex items-center gap-2 bg-white/6 border border-white/10 px-5 py-2.5 rounded-xl text-white text-[.9rem] font-medium">
+          ✅ Kick-off realizado · Gravação em breve
+        </div>`;
+    }
+    // If not past, keep the static date display (Astro-rendered)
+
+    // Show recurring meeting bar for logged-in users
+    const member = (window as any).navGetMember?.();
+    if (member && ev.meeting_link && isPast) {
+      const meetBar = document.getElementById('hero-meeting-bar');
+      if (meetBar) {
+        meetBar.classList.remove('hidden');
+        meetBar.innerHTML = `
+          <div class="bg-white/6 border border-[#05BFE0]/20 rounded-xl px-5 py-3 inline-flex items-center gap-3 flex-wrap justify-center">
+            <span class="text-[.78rem] text-white/60">📅 Próxima reunião geral:</span>
+            <span class="text-[.85rem] font-semibold text-[#05BFE0]">Quintas · 19:30 → 20:30 BRT</span>
+            <a href="${ev.meeting_link}" target="_blank" rel="noopener"
+              class="px-4 py-1.5 bg-[#05BFE0] text-navy rounded-lg text-[.78rem] font-bold no-underline hover:opacity-90 transition-all">
+              Entrar no Meet
+            </a>
+          </div>`;
+      }
+    }
+
+    // Also listen for login events
+    window.addEventListener('nav:member', () => {
+      const m = (window as any).navGetMember?.();
+      if (m && ev.meeting_link && isPast) {
+        const meetBar = document.getElementById('hero-meeting-bar');
+        if (meetBar && meetBar.classList.contains('hidden')) {
+          meetBar.classList.remove('hidden');
+          meetBar.innerHTML = `
+            <div class="bg-white/6 border border-[#05BFE0]/20 rounded-xl px-5 py-3 inline-flex items-center gap-3 flex-wrap justify-center">
+              <span class="text-[.78rem] text-white/60">📅 Próxima reunião geral:</span>
+              <span class="text-[.85rem] font-semibold text-[#05BFE0]">Quintas · 19:30 → 20:30 BRT</span>
+              <a href="${ev.meeting_link}" target="_blank" rel="noopener"
+                class="px-4 py-1.5 bg-[#05BFE0] text-navy rounded-lg text-[.78rem] font-bold no-underline hover:opacity-90 transition-all">
+                Entrar no Meet
+              </a>
+            </div>`;
+        }
+      }
+    });
+  }
+
+  loadHeroEvent();
 </script>
 
 <style>
