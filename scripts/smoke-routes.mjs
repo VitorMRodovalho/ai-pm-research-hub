@@ -1,0 +1,73 @@
+import { spawn } from 'node:child_process';
+
+const PORT = Number(process.env.SMOKE_PORT || 4329);
+const BASE = `http://127.0.0.1:${PORT}`;
+const START_TIMEOUT_MS = 45_000;
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitForServer() {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < START_TIMEOUT_MS) {
+    try {
+      const res = await fetch(`${BASE}/`, { redirect: 'manual' });
+      if (res.status >= 200 && res.status < 500) return;
+    } catch {
+      // keep polling until timeout
+    }
+    await sleep(500);
+  }
+  throw new Error(`Server did not start within ${START_TIMEOUT_MS}ms`);
+}
+
+async function assertOk(path) {
+  const res = await fetch(`${BASE}${path}`);
+  if (!res.ok) {
+    throw new Error(`Expected ${path} to return 2xx, got ${res.status}`);
+  }
+}
+
+async function assertRedirect(path, expectedLocation) {
+  const res = await fetch(`${BASE}${path}`, { redirect: 'manual' });
+  if (!(res.status >= 300 && res.status < 400)) {
+    throw new Error(`Expected ${path} to redirect, got ${res.status}`);
+  }
+  const location = res.headers.get('location');
+  if (location !== expectedLocation) {
+    throw new Error(`Expected ${path} redirect to ${expectedLocation}, got ${location || '(none)'}`);
+  }
+}
+
+async function run() {
+  const dev = spawn(
+    'npm',
+    ['run', 'dev', '--', '--host', '127.0.0.1', '--port', String(PORT)],
+    { stdio: 'inherit', shell: false }
+  );
+
+  try {
+    await waitForServer();
+
+    await assertOk('/');
+    await assertOk('/attendance');
+    await assertOk('/gamification');
+    await assertOk('/artifacts');
+    await assertOk('/profile');
+    await assertOk('/admin');
+
+    await assertRedirect('/teams', '/#team');
+    await assertRedirect('/rank', '/gamification');
+    await assertRedirect('/ranks', '/gamification');
+
+    console.log('Route smoke tests passed.');
+  } finally {
+    dev.kill('SIGTERM');
+  }
+}
+
+run().catch((err) => {
+  console.error(err.message || err);
+  process.exit(1);
+});
