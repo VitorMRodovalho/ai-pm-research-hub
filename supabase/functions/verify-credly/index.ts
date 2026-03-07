@@ -51,9 +51,29 @@ interface CredlyBadge {
   state: string
 }
 
+const USERNAME_RE = /^[A-Za-z0-9._-]{2,100}$/
+
 function extractUsername(url: string): string | null {
-  const match = url.match(/credly\.com\/users\/([^\/\?]+)/)
-  return match ? match[1] : null
+  const raw = (url || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim()
+  if (!raw) return null
+
+  if (USERNAME_RE.test(raw) && !raw.includes('/')) return raw
+
+  const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
+  try {
+    const parsed = new URL(withScheme)
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, '')
+    if (!host.endsWith('credly.com')) return null
+
+    const segments = parsed.pathname.split('/').filter(Boolean)
+    const usersIndex = segments.findIndex((s) => s.toLowerCase() === 'users')
+    if (usersIndex === -1 || !segments[usersIndex + 1]) return null
+
+    const username = decodeURIComponent(segments[usersIndex + 1]).trim()
+    return USERNAME_RE.test(username) ? username : null
+  } catch {
+    return null
+  }
 }
 
 async function fetchBadges(username: string): Promise<CredlyBadge[]> {
