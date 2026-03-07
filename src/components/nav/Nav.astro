@@ -4,6 +4,7 @@ import LangSwitcher from './LangSwitcher.astro';
 
 interface Props { activePage?: string; lang?: Lang; }
 const { activePage = '', lang = 'pt-BR' } = Astro.props;
+const currentPath = Astro.url.pathname;
 
 const base = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
@@ -66,7 +67,7 @@ const jsI18n = JSON.stringify({
   </div>
 
   <div class="flex items-center gap-2">
-    <LangSwitcher currentLang={lang} />
+    <LangSwitcher currentLang={lang} currentPath={currentPath} />
 
     <!-- Auth area: populated by client script -->
     <div id="nav-auth" class="flex items-center gap-2 flex-shrink-0">

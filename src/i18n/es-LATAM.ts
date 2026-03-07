@@ -250,6 +250,19 @@ const esLATAM: Record<string, string> = {
   'profile.public': 'Público',
   'profile.private': 'Privado',
 
+  // ── Auth modal ──
+  'authModal.title': 'Acceder a la plataforma',
+  'authModal.subtitle': 'Ingresa con tu e-mail registrado en el Núcleo.',
+  'authModal.google': 'Ingresar con Google',
+  'authModal.linkedin': 'Ingresar con LinkedIn',
+  'authModal.or': 'o',
+  'authModal.emailPlaceholder': 'tu@email.com',
+  'authModal.magic': '📩 Enviar enlace mágico',
+  'authModal.enterEmail': 'Ingresa tu e-mail.',
+  'authModal.wait': 'Espera a que cargue y vuelve a intentarlo.',
+  'authModal.sent': '📩 ¡Enlace enviado! Revisa tu e-mail.',
+  'authModal.errorPrefix': 'Error: ',
+
   // ── Artifacts page ──
   'artifacts.title': 'Artefactos — Núcleo IA & GP',
   'artifacts.authTitle': 'Artefactos',

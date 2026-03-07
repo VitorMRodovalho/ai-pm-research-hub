@@ -52,7 +52,7 @@ const roleLabels = JSON.stringify(getRoleLabelsMap(lang));
   
   <Nav activePage={activePage} lang={lang} />
   <AnnouncementBanner />
-  <AuthModal />
+  <AuthModal lang={lang} />
   <slot />
   <!-- Profile drawer (populated by nav client script) -->
   <div id="pd-overlay" class="hidden fixed inset-0 z-[500]" onclick="closePD()"></div>

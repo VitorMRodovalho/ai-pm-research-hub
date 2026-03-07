@@ -4,6 +4,7 @@
  * Dropdown language selector for the Nav bar.
  */
 import { LANGUAGES, type Lang } from '../../i18n/utils';
+import { buildLanguageHref } from '../../lib/routing';
 
 interface Props {
   currentLang: Lang;
@@ -13,12 +14,7 @@ interface Props {
 const { currentLang, currentPath = '/' } = Astro.props;
 
 function buildHref(prefix: string): string {
-  // For index pages, just use the prefix
-  if (currentPath === '/' || currentPath === '') {
-    return prefix ? `/${prefix}/` : '/';
-  }
-  // For other pages, prepend prefix
-  return prefix ? `/${prefix}${currentPath}` : currentPath;
+  return buildLanguageHref(currentPath, prefix);
 }
 ---
 
