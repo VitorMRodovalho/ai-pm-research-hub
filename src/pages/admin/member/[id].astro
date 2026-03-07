@@ -43,7 +43,10 @@ const isNew = id === 'new';
     if (!el) return;
     const CHAPTERS = ['PMI-GO','PMI-CE','PMI-DF','PMI-MG','PMI-RS'];
     const ROLES_ALL = Object.keys(ROLE_COLORS);
-    const selectedRoles = m?.roles?.length ? m.roles : (m?.role ? [m.role] : ['researcher']);
+    const selectedRoles = [
+      ...(m?.operational_role && m.operational_role !== 'none' && m.operational_role !== 'guest' ? [m.operational_role] : []),
+      ...((m?.designations || []) as string[]),
+    ];
 
     el.innerHTML = `
       <div class="grid grid-cols-2 gap-4">
