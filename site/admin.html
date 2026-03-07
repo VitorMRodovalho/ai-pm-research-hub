@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Núcleo IA & GP</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/nav.js"></script>
+<style>
+:root {
+  --navy:#003B5C; --orange:#FF610F; --purple:#4F17A8; --teal:#00799E;
+  --red:#BE2027; --green:#10B981; --amber:#D97706;
+  --bg:#F0F4F8; --card:#fff; --border:#E2E8F0;
+  --text:#1a1a2e; --muted:#64748B; --font:'Plus Jakarta Sans',sans-serif;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:100;background:rgba(0,59,92,.97);backdrop-filter:blur(12px);border-bottom:2px solid var(--orange);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:56px}
+.nav-brand{color:#fff;font-weight:700;font-size:.9rem;text-decoration:none}.nav-brand span{color:var(--orange)}
+.nav-links{display:flex;gap:.2rem}
+.nav-links a{color:rgba(255,255,255,.7);text-decoration:none;font-size:.73rem;font-weight:500;padding:.35rem .6rem;border-radius:6px;transition:.2s}
+.nav-links a:hover,.nav-links a.active{color:#fff;background:rgba(255,255,255,.1)}
+.nav-links a.nav-presence{background:rgba(190,32,39,.2);border:1px solid rgba(190,32,39,.4);color:#fff;font-weight:600}
+.nav-links a.nav-admin{background:rgba(79,23,168,.25);border:1px solid rgba(79,23,168,.4);color:#fff;font-weight:600}
+.nav-auth{display:flex;align-items:center;gap:.5rem;color:#fff;font-size:.75rem}
+.role-badge{font-size:.6rem;padding:.15rem .4rem;border-radius:4px;font-weight:700;text-transform:uppercase}
+.role-manager{background:rgba(255,97,15,.2);color:var(--orange)}
+.role-tribe_leader{background:rgba(79,23,168,.2);color:var(--purple)}
+@media(max-width:900px){.nav-links{display:none}}
+
+/* LAYOUT */
+.page{max-width:1200px;margin:0 auto;padding:1.5rem}
+.page-header{margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem}
+.page-title{font-size:1.5rem;font-weight:800;color:var(--navy)}
+.page-sub{font-size:.85rem;color:var(--muted);margin-top:.15rem}
+
+/* TABS */
+.tabs{display:flex;gap:.3rem;background:#E2E8F0;padding:.3rem;border-radius:12px;width:fit-content;margin-bottom:1.5rem}
+.tab{padding:.4rem 1rem;border-radius:9px;font-size:.8rem;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:.2s}
+.tab.active{background:#fff;color:var(--navy);box-shadow:0 1px 4px rgba(0,0,0,.1)}
+
+/* STATS BAR */
+.stats-bar{display:flex;gap:.8rem;flex-wrap:wrap;margin-bottom:1.2rem}
+.stat-chip{background:#fff;border:1px solid var(--border);border-radius:10px;padding:.5rem .9rem;display:flex;align-items:center;gap:.5rem;font-size:.8rem}
+.stat-chip .val{font-weight:800;font-size:1.1rem;color:var(--navy)}
+.stat-chip .lbl{color:var(--muted);font-size:.72rem}
+
+/* FILTERS */
+.filters{background:#fff;border:1px solid var(--border);border-radius:12px;padding:.9rem 1rem;display:flex;gap:.6rem;flex-wrap:wrap;align-items:flex-end;margin-bottom:1rem}
+.filter-group{display:flex;flex-direction:column;gap:.3rem}
+.filter-group label{font-size:.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.filter-group input,.filter-group select{padding:.38rem .7rem;border:1.5px solid var(--border);border-radius:8px;font-size:.8rem;font-family:var(--font);color:var(--text);background:#fff;transition:.2s;min-width:140px}
+.filter-group input:focus,.filter-group select:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,121,158,.1)}
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .9rem;border-radius:8px;font-size:.8rem;font-weight:600;border:none;cursor:pointer;transition:.2s;font-family:var(--font);text-decoration:none}
+.btn-primary{background:var(--navy);color:#fff}.btn-primary:hover{opacity:.88}
+.btn-teal{background:var(--teal);color:#fff}.btn-teal:hover{opacity:.88}
+.btn-ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border)}.btn-ghost:hover{border-color:var(--teal);color:var(--teal)}
+.btn-danger{background:#FEF2F2;color:var(--red);border:1px solid #FECACA}.btn-danger:hover{background:#FEE2E2}
+.btn-success{background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0}.btn-success:hover{background:#DCFCE7}
+.btn-sm{padding:.28rem .65rem;font-size:.72rem}
+
+/* MEMBER TABLE */
+.table-wrap{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.table-head{padding:.75rem 1rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.table-head-label{font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.member-row{display:grid;grid-template-columns:2.5rem 1fr 130px 100px 100px 110px;align-items:center;padding:.65rem 1rem;border-bottom:1px solid var(--border);gap:.6rem;transition:.15s}
+.member-row:last-child{border-bottom:none}
+.member-row:hover{background:#F8FAFC}
+.member-row.inactive{opacity:.55}
+.avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;background:var(--teal);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.72rem;flex-shrink:0}
+.member-name{font-weight:600;font-size:.82rem;line-height:1.2}
+.member-email{font-size:.7rem;color:var(--muted)}
+.chapter-badge{font-size:.68rem;font-weight:700;padding:.15rem .5rem;border-radius:6px;background:#EFF6FF;color:var(--navy);width:fit-content}
+.role-dot-row{display:flex;gap:3px;align-items:center;flex-wrap:wrap}
+.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.status-pill{font-size:.68rem;font-weight:700;padding:.2rem .55rem;border-radius:99px}
+.pill-active{background:#F0FDF4;color:#15803D}
+.pill-inactive{background:#FEF2F2;color:var(--red)}
+.actions{display:flex;gap:.3rem;justify-content:flex-end}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:flex-start;justify-content:center;overflow-y:auto;padding:2rem 1rem}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:20px;padding:2rem;width:100%;max-width:600px;position:relative;margin:auto}
+.modal-title{font-size:1.1rem;font-weight:800;margin-bottom:1.2rem;color:var(--navy);display:flex;align-items:center;gap:.5rem}
+.modal-close{position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.form-grid .full{grid-column:1/-1}
+.field label{display:block;font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.3rem}
+.field input,.field select,.field textarea{width:100%;padding:.45rem .7rem;border:1.5px solid var(--border);border-radius:9px;font-size:.82rem;font-family:var(--font);transition:.2s}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,121,158,.08)}
+.field input.error{border-color:var(--red)}
+.field-hint{font-size:.68rem;color:var(--muted);margin-top:.2rem}
+.field-error{font-size:.68rem;color:var(--red);margin-top:.2rem;display:none}
+.field-error.show{display:block}
+.roles-grid{display:flex;flex-wrap:wrap;gap:.4rem}
+.role-check{display:flex;align-items:center;gap:.35rem;padding:.3rem .6rem;border-radius:7px;border:1.5px solid var(--border);cursor:pointer;font-size:.75rem;font-weight:600;transition:.15s;user-select:none}
+.role-check:hover{border-color:var(--teal)}
+.role-check.checked{border-color:transparent;color:#fff}
+.modal-foot{display:flex;justify-content:flex-end;gap:.5rem;margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--border)}
+.sensitive-field{position:relative}
+.sensitive-field input{padding-right:2.2rem}
+.toggle-vis{position:absolute;right:.6rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:.9rem;padding:0}
+.inactivate-modal .reason-field{margin-top:.8rem}
+.inactivate-modal textarea{width:100%;height:80px;resize:none;padding:.5rem .7rem;border:1.5px solid var(--border);border-radius:9px;font-size:.82rem;font-family:var(--font)}
+.emails-list{display:flex;flex-direction:column;gap:.3rem;margin-top:.3rem}
+.email-item{display:flex;align-items:center;gap:.4rem}
+.email-item input{flex:1}
+.email-item .remove-email{background:none;border:none;color:var(--red);cursor:pointer;font-size:1rem;padding:0 .2rem}
+
+/* SELF SERVICE */
+.profile-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:1.5rem;max-width:520px}
+.profile-avatar-wrap{display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem}
+.profile-avatar{width:72px;height:72px;border-radius:50%;object-fit:cover;background:var(--teal);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:1.3rem}
+.profile-name{font-size:1.1rem;font-weight:800;color:var(--navy)}
+.profile-roles{display:flex;gap:.3rem;flex-wrap:wrap;margin-top:.3rem}
+
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;padding:.7rem 1.2rem;border-radius:10px;font-size:.82rem;font-weight:600;z-index:999;transform:translateY(80px);opacity:0;transition:.3s;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{background:#15803D;color:#fff}
+.toast.error{background:var(--red);color:#fff}
+.toast.info{background:var(--navy);color:#fff}
+
+/* AUTH GATE */
+.auth-gate{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--navy),#0a1628)}
+.auth-box{background:#fff;border-radius:20px;padding:2.5rem;max-width:380px;width:90%;text-align:center}
+.auth-box h2{font-size:1.3rem;font-weight:800;margin-bottom:.3rem}
+.auth-box p{font-size:.85rem;color:var(--muted);margin-bottom:1.5rem}
+
+/* LOADING */
+.loading{text-align:center;padding:3rem;color:var(--muted);font-size:.85rem}
+.spinner{width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto .8rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<!-- nav injected by nav.js -->
+
+<!-- AUTH GATE -->
+<div class="auth-gate" id="auth-gate">
+  <div class="auth-box">
+    <div style="font-size:2.5rem;margin-bottom:.8rem">⚙️</div>
+    <h2>Painel Administrativo</h2>
+    <p>Acesse com sua conta para continuar.</p>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:.7rem" onclick="loginGoogle()">
+      <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#fff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#fff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#fff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Entrar com Google
+    </button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none">
+  <div class="page">
+
+    <!-- HEADER -->
+    <div class="page-header">
+      <div>
+        <div class="page-title" id="page-title">⚙️ Administração</div>
+        <div class="page-sub" id="page-sub">Gerenciamento de membros e cadastros</div>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs" id="tabs-wrap">
+      <button class="tab active" onclick="switchTab('members')" id="tab-members">👥 Membros</button>
+      <button class="tab" onclick="switchTab('profile')" id="tab-profile">👤 Meu Perfil</button>
+    </div>
+
+    <!-- ── MEMBERS TAB (admin only) ── -->
+    <div id="pane-members">
+      <!-- Stats -->
+      <div class="stats-bar" id="stats-bar">
+        <div class="stat-chip"><div><div class="val" id="stat-total">—</div><div class="lbl">Total</div></div></div>
+        <div class="stat-chip"><div><div class="val" id="stat-active" style="color:var(--green)">—</div><div class="lbl">Ativos</div></div></div>
+        <div class="stat-chip"><div><div class="val" id="stat-inactive" style="color:var(--red)">—</div><div class="lbl">Inativos</div></div></div>
+        <div class="stat-chip"><div><div class="val" id="stat-noauth" style="color:var(--amber)">—</div><div class="lbl">Sem login</div></div></div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters">
+        <div class="filter-group">
+          <label>Buscar</label>
+          <input type="text" id="f-search" placeholder="Nome, email, PMI ID…" oninput="debounceLoad()">
+        </div>
+        <div class="filter-group">
+          <label>Capítulo</label>
+          <select id="f-chapter" onchange="loadMembers()">
+            <option value="">Todos</option>
+            <option>PMI-GO</option><option>PMI-CE</option>
+            <option>PMI-DF</option><option>PMI-MG</option><option>PMI-RS</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Papel</label>
+          <select id="f-role" onchange="loadMembers()">
+            <option value="">Todos</option>
+            <option value="manager">Gerente</option>
+            <option value="tribe_leader">Líder de Tribo</option>
+            <option value="researcher">Pesquisador</option>
+            <option value="ambassador">Embaixador</option>
+            <option value="curator">Curador</option>
+            <option value="sponsor">Patrocinador</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Status</label>
+          <select id="f-active" onchange="loadMembers()">
+            <option value="">Todos</option>
+            <option value="true">Ativos</option>
+            <option value="false">Inativos</option>
+          </select>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="clearFilters()">✕ Limpar</button>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <div class="table-head">
+          <span class="table-head-label" id="members-count">Membros</span>
+          <button class="btn btn-teal btn-sm" onclick="openNewMember()">+ Novo membro</button>
+        </div>
+        <div id="members-list"><div class="loading"><div class="spinner"></div>Carregando…</div></div>
+      </div>
+    </div>
+
+    <!-- ── PROFILE TAB (self-service) ── -->
+    <div id="pane-profile" style="display:none">
+      <div class="profile-card" id="profile-card">
+        <div class="loading"><div class="spinner"></div>Carregando perfil…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── EDIT/NEW MEMBER MODAL ── -->
+<div class="overlay" id="modal-member">
+  <div class="modal" style="max-width:640px">
+    <button class="modal-close" onclick="closeModal('modal-member')">✕</button>
+    <div class="modal-title" id="modal-member-title">✏️ Editar Membro</div>
+    <input type="hidden" id="m-id">
+    <div class="form-grid">
+      <div class="field full">
+        <label>Nome completo</label>
+        <input type="text" id="m-name" placeholder="Nome completo">
+      </div>
+      <div class="field">
+        <label>Email principal</label>
+        <input type="email" id="m-email" placeholder="email@exemplo.com">
+        <div class="field-error" id="err-email"></div>
+      </div>
+      <div class="field">
+        <label>Capítulo</label>
+        <select id="m-chapter">
+          <option value="">— Selecionar —</option>
+          <option>PMI-GO</option><option>PMI-CE</option>
+          <option>PMI-DF</option><option>PMI-MG</option><option>PMI-RS</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Papel principal</label>
+        <select id="m-role">
+          <option value="researcher">Pesquisador</option>
+          <option value="tribe_leader">Líder de Tribo</option>
+          <option value="manager">Gerente de Projeto</option>
+          <option value="sponsor">Patrocinador</option>
+          <option value="ambassador">Embaixador</option>
+          <option value="curator">Curador</option>
+          <option value="facilitator">Facilitador</option>
+          <option value="communicator">Multiplicador</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Tribo (1–8)</label>
+        <select id="m-tribe">
+          <option value="">— Nenhuma —</option>
+          <option value="1">Tribo 1 — Hayala Curto</option>
+          <option value="2">Tribo 2 — Débora Moura</option>
+          <option value="3">Tribo 3 — Marcel Fleming</option>
+          <option value="4">Tribo 4 — Fernando Maquiaveli</option>
+          <option value="5">Tribo 5 — Jefferson Pinto</option>
+          <option value="6">Tribo 6 — Fabrício Costa</option>
+          <option value="7">Tribo 7 — Marcos Klemz</option>
+          <option value="8">Tribo 8 — Ana Carla Cavalcante</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>PMI ID <span style="font-size:.65rem;color:var(--amber)">único</span></label>
+        <div class="sensitive-field">
+          <input type="text" id="m-pmi-id" placeholder="Ex: 5975367">
+          <button class="toggle-vis" onclick="toggleVis('m-pmi-id')">👁</button>
+        </div>
+        <div class="field-error" id="err-pmi"></div>
+      </div>
+      <div class="field">
+        <label>Telefone <span style="font-size:.65rem;color:var(--amber)">único · criptografado</span></label>
+        <div class="sensitive-field">
+          <input type="password" id="m-phone" placeholder="+55 (00) 00000-0000">
+          <button class="toggle-vis" onclick="toggleVis('m-phone')">👁</button>
+        </div>
+        <div class="field-error" id="err-phone"></div>
+      </div>
+      <div class="field">
+        <label>LinkedIn URL</label>
+        <input type="url" id="m-linkedin" placeholder="https://linkedin.com/in/…">
+      </div>
+      <div class="field full">
+        <label>Todos os papéis (multi-papel)</label>
+        <div class="roles-grid" id="roles-grid"></div>
+      </div>
+      <div class="field full">
+        <label>Emails secundários</label>
+        <div class="emails-list" id="secondary-emails-list"></div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:.4rem" onclick="addSecondaryEmail()">+ Adicionar email</button>
+        <div class="field-hint">Usado para auto-link no primeiro login via Google/Magic Link</div>
+      </div>
+      <div class="field full" id="active-toggle-wrap">
+        <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+          <input type="checkbox" id="m-active" style="width:auto">
+          Membro ativo no ciclo atual
+        </label>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-member')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveMember()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── INACTIVATE MODAL ── -->
+<div class="overlay" id="modal-inactivate">
+  <div class="modal inactivate-modal" style="max-width:420px">
+    <button class="modal-close" onclick="closeModal('modal-inactivate')">✕</button>
+    <div class="modal-title">🔴 Inativar Membro</div>
+    <p style="font-size:.85rem;color:var(--muted);margin-bottom:.5rem">
+      O membro <strong id="inactivate-name"></strong> será marcado como inativo com data de hoje.
+      Pode ser reativado a qualquer momento.
+    </p>
+    <input type="hidden" id="inactivate-id">
+    <div class="reason-field">
+      <label style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:.3rem">Motivo (opcional)</label>
+      <textarea id="inactivate-reason" placeholder="Ex: Saída voluntária Ciclo 3, inatividade após 2 semanas sem resposta…"></textarea>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('modal-inactivate')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmInactivate()">🔴 Confirmar inativação</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://ldrfrvwhxsmgaabwmaik.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkcmZydndoeHNtZ2FhYndtYWlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYxMDgxNjgsImV4cCI6MjA1MTY4NDE2OH0.dO5-nsjPWmNgBgfmmEyKWzlpMsWFe5NJqzBwEhvIUco';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const ROLE_COLORS = {
+  manager:      '#FF610F', tribe_leader: '#4F17A8',
+  researcher:   '#EC4899', communicator: '#EC4899', facilitator: '#EC4899',
+  ambassador:   '#10B981', curator:      '#D97706',
+  sponsor:      '#BE2027', founder:      '#7C3AED',
+};
+const ROLE_LABELS = {
+  manager:'Gerente', tribe_leader:'Líder de Tribo', researcher:'Pesquisador',
+  communicator:'Multiplicador', facilitator:'Facilitador',
+  ambassador:'Embaixador', curator:'Curador',
+  sponsor:'Patrocinador', founder:'Fundador',
+};
+const ALL_ROLES = Object.keys(ROLE_COLORS);
+
+let MEMBER = null, IS_ADMIN = false, allData = [];
+let debTimer = null;
+
+// ── AUTH ────────────────────────────────────────────────────────────────────
+async function loginGoogle() {
+  await sb.auth.signInWithOAuth({ provider:'google', options:{redirectTo:location.origin+'/admin'} });
+}
+async function logout() {
+  await sb.auth.signOut(); location.reload();
+}
+
+// Shared nav + auth bootstrap
+snavInit(sb);
+window.addEventListener('snav:member', (e) => {
+  if (e.detail) { MEMBER = e.detail; IS_ADMIN = e.detail.is_superadmin === true; showApp(); }
+  else { showGate(); }
+});
+// Fallback direct call
+(async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) await matchMember();
+  else showGate();
+})();
+sb.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'SIGNED_IN')  await matchMember();
+  if (event === 'SIGNED_OUT') showGate();
+});
+
+async function matchMember() {
+  const { data } = await sb.rpc('get_member_by_auth');
+  if (!data || data.role === 'guest') { showGate(); return; }
+  MEMBER = data;
+  IS_ADMIN = data.is_superadmin === true;
+  showApp();
+}
+
+function showGate() {
+  document.getElementById('auth-gate').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+function showApp() {
+  document.getElementById('auth-gate').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  // Nav
+  document.getElementById('nav-user-name').textContent = MEMBER.name;
+  const rb = document.getElementById('nav-role-badge');
+  rb.textContent = ROLE_LABELS[MEMBER.role] || MEMBER.role;
+  rb.className = 'role-badge role-' + MEMBER.role;
+  document.getElementById('btn-logout').style.display = 'block';
+  if (IS_ADMIN) document.getElementById('nav-admin-link').style.display = 'inline-flex';
+
+  if (IS_ADMIN) {
+    loadMembers();
+  } else {
+    // Non-admin: only see profile tab
+    document.getElementById('pane-members').style.display = 'none';
+    document.getElementById('tab-members').style.display = 'none';
+    document.getElementById('page-title').textContent = '👤 Meu Perfil';
+    document.getElementById('page-sub').textContent = 'Gerencie seus dados cadastrais';
+    switchTab('profile');
+  }
+}
+
+// ── TABS ────────────────────────────────────────────────────────────────────
+function switchTab(t) {
+  ['members','profile'].forEach(id => {
+    document.getElementById('pane-'+id).style.display = id===t ? 'block' : 'none';
+    document.getElementById('tab-'+id)?.classList.toggle('active', id===t);
+  });
+  if (t === 'profile') renderProfile();
+}
+
+// ── LOAD MEMBERS ────────────────────────────────────────────────────────────
+function debounceLoad() {
+  clearTimeout(debTimer);
+  debTimer = setTimeout(loadMembers, 350);
+}
+
+function clearFilters() {
+  document.getElementById('f-search').value = '';
+  document.getElementById('f-chapter').value = '';
+  document.getElementById('f-role').value = '';
+  document.getElementById('f-active').value = '';
+  loadMembers();
+}
+
+async function loadMembers() {
+  document.getElementById('members-list').innerHTML = '<div class="loading"><div class="spinner"></div>Carregando…</div>';
+  const params = {
+    p_search:  document.getElementById('f-search').value.trim() || null,
+    p_chapter: document.getElementById('f-chapter').value || null,
+    p_role:    document.getElementById('f-role').value || null,
+    p_active:  document.getElementById('f-active').value === '' ? null
+               : document.getElementById('f-active').value === 'true',
+    p_limit: 100, p_offset: 0
+  };
+  const { data } = await sb.rpc('admin_list_members', params);
+  allData = Array.isArray(data) ? data : [];
+  renderMembersList(allData);
+  updateStats(allData);
+}
+
+function updateStats(data) {
+  document.getElementById('stat-total').textContent    = data.length;
+  document.getElementById('stat-active').textContent   = data.filter(m=>m.current_cycle_active).length;
+  document.getElementById('stat-inactive').textContent = data.filter(m=>!m.current_cycle_active).length;
+  document.getElementById('stat-noauth').textContent   = data.filter(m=>!m.auth_id).length;
+  document.getElementById('members-count').textContent = `${data.length} membros encontrados`;
+}
+
+function renderMembersList(data) {
+  const el = document.getElementById('members-list');
+  if (!data.length) { el.innerHTML = '<div class="loading">Nenhum membro encontrado.</div>'; return; }
+  el.innerHTML = data.map(m => {
+    const initials = m.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+    const photo = m.photo_url
+      ? `<img class="avatar" src="${m.photo_url}" onerror="this.outerHTML='<div class=avatar>${initials}</div>'">`
+      : `<div class="avatar">${initials}</div>`;
+    const roles = m.roles && m.roles.length ? m.roles : [m.role];
+    const dots = roles.filter(r=>ROLE_COLORS[r]).map(r=>
+      `<span class="dot" style="background:${ROLE_COLORS[r]}" title="${ROLE_LABELS[r]||r}"></span>`).join('');
+    const status = m.current_cycle_active
+      ? `<span class="status-pill pill-active">● Ativo</span>`
+      : `<span class="status-pill pill-inactive">● Inativo${m.inactivated_at ? ' · '+new Date(m.inactivated_at).toLocaleDateString('pt-BR') : ''}</span>`;
+    const authFlag = !m.auth_id ? `<span title="Nunca fez login" style="font-size:.7rem;color:var(--amber)">⚠ sem login</span>` : '';
+    return `<div class="member-row ${m.current_cycle_active?'':'inactive'}">
+      ${photo}
+      <div>
+        <div class="member-name">${m.name} ${authFlag}</div>
+        <div class="member-email">${m.email}</div>
+      </div>
+      <div><span class="chapter-badge">${m.chapter||'—'}</span></div>
+      <div><div class="role-dot-row">${dots}</div></div>
+      <div>${status}</div>
+      <div class="actions">
+        <button class="btn btn-ghost btn-sm" onclick='openEditMember(${JSON.stringify(m).replace(/'/g,"&#39;")})' title="Editar">✏️</button>
+        ${m.current_cycle_active
+          ? `<button class="btn btn-danger btn-sm" onclick="openInactivate('${m.id}','${m.name.replace(/'/g,"&#39;")}')" title="Inativar">🔴</button>`
+          : `<button class="btn btn-success btn-sm" onclick="reactivate('${m.id}')" title="Reativar">🟢</button>`
+        }
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── EDIT / NEW MEMBER ───────────────────────────────────────────────────────
+function buildRolesGrid(selected) {
+  document.getElementById('roles-grid').innerHTML = ALL_ROLES.map(r => {
+    const checked = (selected||[]).includes(r);
+    return `<div class="role-check ${checked?'checked':''}" id="rc-${r}"
+      style="${checked?`background:${ROLE_COLORS[r]};border-color:${ROLE_COLORS[r]}`:''}"
+      onclick="toggleRole('${r}')">
+      <span style="width:8px;height:8px;border-radius:50%;background:${checked?'#fff':ROLE_COLORS[r]};display:inline-block"></span>
+      ${ROLE_LABELS[r]}
+    </div>`;
+  }).join('');
+}
+
+function toggleRole(r) {
+  const el = document.getElementById('rc-'+r);
+  const on = !el.classList.contains('checked');
+  el.classList.toggle('checked', on);
+  el.style.background = on ? ROLE_COLORS[r] : '';
+  el.style.borderColor = on ? ROLE_COLORS[r] : '';
+  el.style.color = on ? '#fff' : '';
+  el.querySelector('span').style.background = on ? '#fff' : ROLE_COLORS[r];
+}
+
+function getSelectedRoles() {
+  return ALL_ROLES.filter(r => document.getElementById('rc-'+r)?.classList.contains('checked'));
+}
+
+function renderSecondaryEmails(emails) {
+  const list = document.getElementById('secondary-emails-list');
+  list.innerHTML = (emails||[]).map((e,i) => `
+    <div class="email-item">
+      <input type="email" value="${e}" oninput="updateSecEmail(${i},this.value)" placeholder="email@exemplo.com">
+      <button class="remove-email" onclick="removeSecEmail(${i})">✕</button>
+    </div>`).join('');
+}
+let secEmails = [];
+function addSecondaryEmail() {
+  secEmails.push('');
+  renderSecondaryEmails(secEmails);
+}
+function removeSecEmail(i) { secEmails.splice(i,1); renderSecondaryEmails(secEmails); }
+function updateSecEmail(i,v) { secEmails[i]=v; }
+
+function openNewMember() {
+  document.getElementById('modal-member-title').textContent = '+ Novo Membro';
+  document.getElementById('m-id').value = '';
+  ['m-name','m-email','m-pmi-id','m-phone','m-linkedin'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('m-chapter').value = '';
+  document.getElementById('m-role').value = 'researcher';
+  document.getElementById('m-tribe').value = '';
+  document.getElementById('m-active').checked = true;
+  secEmails = []; renderSecondaryEmails([]);
+  buildRolesGrid(['researcher']);
+  ['err-email','err-pmi','err-phone'].forEach(id => {
+    const el = document.getElementById(id); el.textContent=''; el.classList.remove('show');
+  });
+  document.getElementById('modal-member').classList.add('open');
+}
+
+function openEditMember(m) {
+  document.getElementById('modal-member-title').textContent = '✏️ Editar Membro';
+  document.getElementById('m-id').value = m.id;
+  document.getElementById('m-name').value = m.name || '';
+  document.getElementById('m-email').value = m.email || '';
+  document.getElementById('m-chapter').value = m.chapter || '';
+  document.getElementById('m-role').value = m.role || 'researcher';
+  document.getElementById('m-tribe').value = m.tribe_id || '';
+  document.getElementById('m-pmi-id').value = m.pmi_id || '';
+  document.getElementById('m-phone').value = m.phone || '';
+  document.getElementById('m-linkedin').value = m.linkedin_url || '';
+  document.getElementById('m-active').checked = m.current_cycle_active !== false;
+  secEmails = [...(m.secondary_emails||[])];
+  renderSecondaryEmails(secEmails);
+  buildRolesGrid(m.roles && m.roles.length ? m.roles : [m.role]);
+  ['err-email','err-pmi','err-phone'].forEach(id => {
+    const el = document.getElementById(id); el.textContent=''; el.classList.remove('show');
+  });
+  document.getElementById('modal-member').classList.add('open');
+}
+
+async function saveMember() {
+  const id    = document.getElementById('m-id').value;
+  const name  = document.getElementById('m-name').value.trim();
+  const email = document.getElementById('m-email').value.trim();
+  if (!name || !email) { showToast('Nome e email são obrigatórios','error'); return; }
+
+  const params = {
+    p_member_id:          id || undefined,
+    p_name:               name,
+    p_email:              email,
+    p_secondary_emails:   secEmails.filter(e=>e.trim()),
+    p_pmi_id:             document.getElementById('m-pmi-id').value.trim() || null,
+    p_phone:              document.getElementById('m-phone').value.trim() || null,
+    p_role:               document.getElementById('m-role').value,
+    p_roles:              getSelectedRoles(),
+    p_chapter:            document.getElementById('m-chapter').value || null,
+    p_tribe_id:           parseInt(document.getElementById('m-tribe').value) || null,
+    p_current_cycle_active: document.getElementById('m-active').checked,
+    p_linkedin_url:       document.getElementById('m-linkedin').value.trim() || null,
+  };
+
+  let data;
+  if (id) {
+    const r = await sb.rpc('admin_update_member', params);
+    data = r.data;
+  } else {
+    // New member: insert directly (RLS allows superadmin)
+    const { data: ins, error } = await sb.from('members').insert({
+      name: params.p_name, email: params.p_email,
+      secondary_emails: params.p_secondary_emails,
+      pmi_id: params.p_pmi_id, phone: params.p_phone,
+      role: params.p_role, roles: params.p_roles,
+      chapter: params.p_chapter, tribe_id: params.p_tribe_id,
+      current_cycle_active: params.p_current_cycle_active,
+      linkedin_url: params.p_linkedin_url,
+    }).select().single();
+    if (error) { showToast(error.message,'error'); return; }
+    data = { success: true };
+  }
+
+  if (data?.error) {
+    // Map errors to fields
+    const msg = data.error;
+    if (msg.includes('Email'))  showFieldError('err-email', msg);
+    else if (msg.includes('PMI')) showFieldError('err-pmi', msg);
+    else if (msg.includes('Telefone')) showFieldError('err-phone', msg);
+    else showToast(msg, 'error');
+    return;
+  }
+
+  closeModal('modal-member');
+  showToast(id ? 'Membro atualizado ✅' : 'Membro criado ✅', 'success');
+  loadMembers();
+}
+
+function showFieldError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.classList.add('show');
+}
+
+// ── INACTIVATE / REACTIVATE ─────────────────────────────────────────────────
+function openInactivate(id, name) {
+  document.getElementById('inactivate-id').value = id;
+  document.getElementById('inactivate-name').textContent = name;
+  document.getElementById('inactivate-reason').value = '';
+  document.getElementById('modal-inactivate').classList.add('open');
+}
+
+async function confirmInactivate() {
+  const id     = document.getElementById('inactivate-id').value;
+  const reason = document.getElementById('inactivate-reason').value.trim() || null;
+  const { data } = await sb.rpc('admin_inactivate_member', { p_member_id: id, p_reason: reason });
+  if (data?.success) {
+    closeModal('modal-inactivate');
+    showToast('Membro inativado com data de hoje 🔴', 'info');
+    loadMembers();
+  } else {
+    showToast(data?.error || 'Erro ao inativar', 'error');
+  }
+}
+
+async function reactivate(id) {
+  const { data } = await sb.rpc('admin_reactivate_member', { p_member_id: id });
+  if (data?.success) { showToast('Membro reativado 🟢', 'success'); loadMembers(); }
+  else showToast(data?.error || 'Erro', 'error');
+}
+
+// ── SELF-SERVICE PROFILE ────────────────────────────────────────────────────
+async function renderProfile() {
+  const card = document.getElementById('profile-card');
+  if (!MEMBER) return;
+
+  // Fetch fresh data
+  const { data } = await sb.rpc('get_member_by_auth');
+  if (!data) return;
+
+  const roles = data.roles && data.roles.length ? data.roles : [data.role];
+  const dots = roles.filter(r=>ROLE_COLORS[r]).map(r=>
+    `<span style="display:inline-flex;align-items:center;gap:3px;font-size:.72rem;font-weight:600;
+      padding:.2rem .55rem;border-radius:99px;background:${ROLE_COLORS[r]}22;color:${ROLE_COLORS[r]}">
+      <span style="width:7px;height:7px;border-radius:50%;background:${ROLE_COLORS[r]};display:inline-block"></span>
+      ${ROLE_LABELS[r]||r}</span>`
+  ).join('');
+
+  const initials = data.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  const photo = data.photo_url
+    ? `<img class="profile-avatar" src="${data.photo_url}" onerror="this.outerHTML='<div class=profile-avatar>${initials}</div>'">`
+    : `<div class="profile-avatar">${initials}</div>`;
+
+  card.innerHTML = `
+    <div class="profile-avatar-wrap">
+      ${photo}
+      <div>
+        <div class="profile-name">${data.name}</div>
+        <div style="font-size:.78rem;color:var(--muted)">${data.email} · ${data.chapter||'—'}</div>
+        <div class="profile-roles">${dots}</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem">
+      <div class="field">
+        <label>PMI ID <span style="font-size:.65rem;color:var(--amber)">único</span></label>
+        <div class="sensitive-field">
+          <input type="password" id="self-pmi" value="${data.pmi_id||''}" placeholder="Ex: 5975367">
+          <button class="toggle-vis" onclick="toggleVis('self-pmi')">👁</button>
+        </div>
+        <div class="field-error" id="self-err-pmi"></div>
+      </div>
+      <div class="field">
+        <label>Telefone <span style="font-size:.65rem;color:var(--amber)">único · criptografado</span></label>
+        <div class="sensitive-field">
+          <input type="password" id="self-phone" value="${data.phone||''}" placeholder="+55 (00) 00000-0000">
+          <button class="toggle-vis" onclick="toggleVis('self-phone')">👁</button>
+        </div>
+        <div class="field-error" id="self-err-phone"></div>
+      </div>
+      <div class="field" style="grid-column:1/-1">
+        <label>LinkedIn URL</label>
+        <input type="url" id="self-linkedin" value="${data.linkedin_url||''}" placeholder="https://linkedin.com/in/…">
+      </div>
+    </div>
+
+    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
+      <button class="btn btn-primary" onclick="saveSelf()">💾 Salvar meus dados</button>
+    </div>
+
+    <div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--border)">
+      <div style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:.5rem">Informações do cadastro</div>
+      <div style="font-size:.78rem;color:var(--muted);display:grid;grid-template-columns:auto 1fr;gap:.3rem .8rem">
+        <span>Capítulo:</span><span style="color:var(--text);font-weight:600">${data.chapter||'—'}</span>
+        <span>Papel:</span><span style="color:var(--text);font-weight:600">${ROLE_LABELS[data.role]||data.role}</span>
+        <span>Status:</span><span>${data.current_cycle_active?'<span style="color:var(--green);font-weight:600">● Ativo</span>':'<span style="color:var(--red);font-weight:600">● Inativo</span>'}</span>
+        <span>Login:</span><span style="color:${data.auth_id?'var(--green)':'var(--amber)'};font-weight:600">${data.auth_id?'✅ Vinculado':'⚠ Nunca fez login'}</span>
+      </div>
+    </div>`;
+}
+
+async function saveSelf() {
+  const pmi   = document.getElementById('self-pmi')?.value.trim() || null;
+  const phone = document.getElementById('self-phone')?.value.trim() || null;
+  const li    = document.getElementById('self-linkedin')?.value.trim() || null;
+
+  ['self-err-pmi','self-err-phone'].forEach(id => {
+    const el = document.getElementById(id); if(el){el.textContent='';el.classList.remove('show');}
+  });
+
+  const { data } = await sb.rpc('member_self_update', {
+    p_pmi_id: pmi, p_phone: phone, p_linkedin_url: li
+  });
+
+  if (data?.error) {
+    if (data.error.includes('PMI')) {
+      const el = document.getElementById('self-err-pmi');
+      if(el){el.textContent=data.error;el.classList.add('show');}
+    } else if (data.error.includes('Telefone')) {
+      const el = document.getElementById('self-err-phone');
+      if(el){el.textContent=data.error;el.classList.add('show');}
+    } else showToast(data.error,'error');
+    return;
+  }
+  showToast('Dados salvos ✅','success');
+  MEMBER.pmi_id = pmi; MEMBER.phone = phone; MEMBER.linkedin_url = li;
+}
+
+// ── UTILS ────────────────────────────────────────────────────────────────────
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function toggleVis(id) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+function showToast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'toast '+type+' show';
+  setTimeout(()=>el.classList.remove('show'), 4000);
+}
+</script>
+</body>
+</html>
