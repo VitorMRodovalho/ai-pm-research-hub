@@ -294,6 +294,25 @@ import Toast from '../../components/ui/Toast.astro';
       </div>
     </div>
   </div>
+  <!-- Modal: Cycle History (Superadmin only) -->
+  <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-cycle-history">
+    <div class="bg-white rounded-2xl w-full max-w-[600px] overflow-hidden flex flex-col" style="max-height:90vh">
+      <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center flex-shrink-0">
+        <h3 class="text-base font-bold text-navy">📅 Histórico de Ciclos</h3>
+        <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" onclick="closeCycleHistory()">✕</button>
+      </div>
+      <div class="px-5 pt-3 pb-1">
+        <div class="text-sm font-semibold text-navy" id="ch-member-name"></div>
+        <div class="text-[.68rem] text-slate-400 mb-3">🔧 Somente superadmins podem editar dados históricos</div>
+      </div>
+      <div class="px-5 pb-4 overflow-y-auto flex-1" id="ch-cycles-area">
+        <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
+      </div>
+      <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2 flex-shrink-0">
+        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer" onclick="closeCycleHistory()">Fechar</button>
+      </div>
+    </div>
+  </div>
 </BaseLayout>
 
 <script>
@@ -568,14 +587,46 @@ import Toast from '../../components/ui/Toast.astro';
     return `<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded" style="background:${color}18;color:${color}">T${String(tid).padStart(2,'0')}</span>`;
   }
 
+  // Cycle history colors
+  const CYCLE_META: Record<string, { label: string; abbr: string; color: string }> = {
+    pilot:   { label: 'Piloto 2024', abbr: 'P',  color: '#D97706' },
+    cycle_1: { label: 'Ciclo 1',     abbr: 'C1', color: '#4F17A8' },
+    cycle_2: { label: 'Ciclo 2',     abbr: 'C2', color: '#00799E' },
+    cycle_3: { label: 'Ciclo 3',     abbr: 'C3', color: '#FF610F' },
+  };
+  const CYCLE_ORDER = ['pilot', 'cycle_1', 'cycle_2', 'cycle_3'];
+
+  let allCycleHistory: any[] = [];
+  let memberListCache: any[] = [];
+
+  function cycleDots(memberId: string): string {
+    const memberCycles = allCycleHistory.filter((h: any) => h.member_id === memberId);
+    return CYCLE_ORDER.map(code => {
+      const record = memberCycles.find((h: any) => h.cycle_code === code);
+      const meta = CYCLE_META[code];
+      if (!record) return `<span class="w-[18px] h-[14px] rounded text-[.5rem] font-bold inline-flex items-center justify-center bg-slate-100 text-slate-300" title="${meta.label}: não participou">${meta.abbr}</span>`;
+      const opLabel = OPROLE_LABELS[record.operational_role] || record.operational_role || '';
+      const desigLabels = (record.designations || []).map((d: string) => DESIG_LABELS[d] || d).join(', ');
+      const tooltip = `${meta.label}: ${opLabel}${desigLabels ? ' + ' + desigLabels : ''}${record.tribe_name ? ' · ' + record.tribe_name : ''}`;
+      return `<span class="w-[18px] h-[14px] rounded text-[.5rem] font-bold inline-flex items-center justify-center text-white" style="background:${meta.color}" title="${tooltip}">${meta.abbr}</span>`;
+    }).join('');
+  }
+
   async function loadMembersList() {
-    const { data } = await sb.rpc('admin_list_members', { p_limit: 200, p_offset: 0 });
-    const members = Array.isArray(data) ? data : [];
+    const [membersRes, historyRes] = await Promise.all([
+      sb.rpc('admin_list_members', { p_limit: 200, p_offset: 0 }),
+      sb.from('member_cycle_history').select('member_id, cycle_code, operational_role, designations, tribe_name, chapter, is_active')
+    ]);
+    const members = Array.isArray(membersRes.data) ? membersRes.data : [];
+    allCycleHistory = historyRes.data || [];
+    memberListCache = members;
 
     const inactive = members.filter((m: any) => !m.current_cycle_active);
     const noAuth = members.filter((m: any) => !m.auth_id);
     document.getElementById('stat-inactive')!.textContent = String(inactive.length);
     document.getElementById('stat-noauth')!.textContent = String(noAuth.length);
+
+    const isSA = MEMBER?.is_superadmin === true;
 
     const area = document.getElementById('members-area')!;
     area.innerHTML = `
@@ -590,6 +641,11 @@ import Toast from '../../components/ui/Toast.astro';
         const status = isActive
           ? '<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Ativo</span>'
           : '<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-crimson">Inativo</span>';
+
+        const histBtn = isSA
+          ? `<button onclick='openCycleHistory("${m.id}","${m.name.replace(/'/g, '')}")'
+               class="px-1.5 py-0.5 text-[.6rem] font-semibold text-slate-400 border border-slate-100 rounded hover:border-amber-300 hover:text-amber-600 bg-transparent cursor-pointer transition-all" title="Editar histórico de ciclos (superadmin)">📅</button>`
+          : '';
 
         return `
         <div class="member-row flex items-center gap-2 px-4 py-2.5 border-b border-slate-50 hover:bg-slate-50 transition-all ${isActive ? '' : 'opacity-50'}"
@@ -613,13 +669,19 @@ import Toast from '../../components/ui/Toast.astro';
           <div class="flex gap-1 items-center flex-wrap justify-end max-w-[280px]">
             ${memberTags(m)}
           </div>
+          <div class="flex gap-0.5 items-center flex-shrink-0 hidden md:flex" title="Ciclos participados">
+            ${cycleDots(m.id)}
+          </div>
           <span class="text-[.65rem] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-navy whitespace-nowrap hidden lg:block">${m.chapter || '—'}</span>
           ${memberTribeTag(m)}
           ${status}
-          <button onclick='openEditMember(${JSON.stringify(m).replace(/'/g, "&#39;")})'
-            class="px-2 py-1 text-[.68rem] font-semibold text-slate-500 border border-slate-200 rounded-lg hover:border-teal hover:text-teal bg-transparent cursor-pointer transition-all whitespace-nowrap flex-shrink-0">
-            Editar
-          </button>
+          <div class="flex gap-1 flex-shrink-0">
+            <button onclick='openEditMember(${JSON.stringify(m).replace(/'/g, "&#39;")})'
+              class="px-2 py-1 text-[.68rem] font-semibold text-slate-500 border border-slate-200 rounded-lg hover:border-teal hover:text-teal bg-transparent cursor-pointer transition-all whitespace-nowrap">
+              Editar
+            </button>
+            ${histBtn}
+          </div>
         </div>`;
       }).join('')}
       </div>
@@ -808,6 +870,136 @@ import Toast from '../../components/ui/Toast.astro';
     toast('Membro atualizado!', 'success');
     loadMembersList();
     loadTribes();
+  };
+
+  // ══════════════════════════════════════════
+  // CYCLE HISTORY MODAL (Superadmin only)
+  // ══════════════════════════════════════════
+  let chMemberId = '';
+
+  (window as any).openCycleHistory = async (memberId: string, memberName: string) => {
+    if (!MEMBER?.is_superadmin) { toast('Apenas superadmins podem editar histórico', 'error'); return; }
+    chMemberId = memberId;
+    document.getElementById('ch-member-name')!.textContent = memberName;
+
+    const { data: records } = await sb.from('member_cycle_history')
+      .select('*')
+      .eq('member_id', memberId)
+      .order('cycle_start', { ascending: true });
+
+    const area = document.getElementById('ch-cycles-area')!;
+    const existingCodes = (records || []).map((r: any) => r.cycle_code);
+
+    area.innerHTML = `
+      ${(records || []).map((r: any) => {
+        const meta = CYCLE_META[r.cycle_code] || { label: r.cycle_code, color: '#94A3B8' };
+        const opLabel = OPROLE_LABELS[r.operational_role] || r.operational_role || 'none';
+        const desigLabels = (r.designations || []).map((d: string) => DESIG_LABELS[d] || d);
+        return `
+        <div class="rounded-xl border border-slate-200 p-3 mb-3" style="border-left:4px solid ${meta.color}">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[.78rem] font-bold" style="color:${meta.color}">${r.cycle_label || meta.label}</span>
+            <div class="flex gap-1">
+              <button onclick="editCycleRecord('${r.id}')" class="text-[.6rem] px-2 py-0.5 rounded bg-slate-100 text-slate-500 hover:bg-amber-50 hover:text-amber-600 cursor-pointer border-0 transition-all">✏️ Editar</button>
+              <button onclick="deleteCycleRecord('${r.id}','${r.cycle_label || meta.label}')" class="text-[.6rem] px-2 py-0.5 rounded bg-slate-100 text-red-400 hover:bg-red-50 hover:text-crimson cursor-pointer border-0 transition-all">🗑️</button>
+            </div>
+          </div>
+          <div class="text-[.72rem] text-slate-600">
+            <span class="font-semibold">Papel:</span> ${opLabel}
+            ${desigLabels.length ? ` · <span class="font-semibold">Designações:</span> ${desigLabels.join(', ')}` : ''}
+          </div>
+          ${r.tribe_name ? `<div class="text-[.68rem] text-slate-400 mt-0.5">🏷️ ${r.tribe_name}</div>` : ''}
+          ${r.chapter ? `<div class="text-[.68rem] text-slate-400">📍 ${r.chapter}</div>` : ''}
+          ${r.notes ? `<div class="text-[.65rem] text-slate-400 italic mt-1">📝 ${r.notes}</div>` : ''}
+          <div class="text-[.6rem] text-slate-300 mt-1">${r.is_active ? '✅ Ativo' : '❌ Inativo'} · ${r.cycle_start || ''} → ${r.cycle_end || 'atual'}</div>
+        </div>`;
+      }).join('')}
+
+      ${CYCLE_ORDER.filter(c => !existingCodes.includes(c)).length > 0 ? `
+      <div class="mt-3 p-3 border border-dashed border-slate-200 rounded-xl">
+        <div class="text-[.72rem] font-semibold text-slate-500 mb-2">➕ Adicionar registro de ciclo</div>
+        <div class="flex gap-2 flex-wrap">
+          ${CYCLE_ORDER.filter(c => !existingCodes.includes(c)).map(c => {
+            const meta = CYCLE_META[c];
+            return `<button onclick="addCycleRecord('${c}')" class="px-3 py-1.5 text-[.68rem] font-bold rounded-lg border-0 cursor-pointer text-white hover:opacity-90 transition-all" style="background:${meta.color}">${meta.label}</button>`;
+          }).join('')}
+        </div>
+      </div>` : '<div class="text-center text-[.72rem] text-emerald-600 font-semibold mt-2">✅ Todos os ciclos registrados</div>'}
+    `;
+
+    const modal = document.getElementById('modal-cycle-history')!;
+    modal.classList.remove('hidden'); modal.classList.add('flex');
+  };
+
+  (window as any).closeCycleHistory = () => {
+    const modal = document.getElementById('modal-cycle-history')!;
+    modal.classList.add('hidden'); modal.classList.remove('flex');
+  };
+
+  (window as any).addCycleRecord = async (cycleCode: string) => {
+    if (!MEMBER?.is_superadmin || !chMemberId) return;
+    const meta = CYCLE_META[cycleCode];
+    const dates: Record<string, { start: string; end: string|null }> = {
+      pilot:   { start: '2024-03-01', end: '2024-12-31' },
+      cycle_1: { start: '2025-01-01', end: '2025-06-30' },
+      cycle_2: { start: '2025-07-01', end: '2025-12-31' },
+      cycle_3: { start: '2026-01-01', end: null },
+    };
+    const d = dates[cycleCode] || { start: '2026-01-01', end: null };
+
+    // Get member name for snapshot
+    const member = memberListCache?.find((m: any) => m.id === chMemberId) || {};
+
+    const { error } = await sb.from('member_cycle_history').insert({
+      member_id: chMemberId,
+      member_name_snapshot: member.name || 'Unknown',
+      cycle_code: cycleCode,
+      cycle_label: meta.label,
+      cycle_start: d.start,
+      cycle_end: d.end,
+      operational_role: 'researcher',
+      designations: [],
+      chapter: member.chapter || '',
+      is_active: true,
+    });
+
+    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    toast(`${meta.label} adicionado ✅`, 'success');
+    // Refresh
+    (window as any).openCycleHistory(chMemberId, document.getElementById('ch-member-name')!.textContent || '');
+  };
+
+  (window as any).editCycleRecord = async (recordId: string) => {
+    if (!MEMBER?.is_superadmin) return;
+    const opRole = prompt('Papel operacional (manager/tribe_leader/researcher/facilitator/communicator/none):');
+    if (opRole === null) return;
+    const desigsRaw = prompt('Designações (separar por vírgula: sponsor,ambassador,founder,curator):');
+    if (desigsRaw === null) return;
+    const tribeName = prompt('Nome da tribo (ex: "T3: Priorização e Seleção" ou vazio):');
+    if (tribeName === null) return;
+    const notes = prompt('Notas (opcional):');
+
+    const desigs = desigsRaw.split(',').map(d => d.trim()).filter(Boolean);
+
+    const { error } = await sb.from('member_cycle_history').update({
+      operational_role: opRole || 'researcher',
+      designations: desigs,
+      tribe_name: tribeName || null,
+      notes: notes || null,
+    }).eq('id', recordId);
+
+    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    toast('Registro atualizado ✅', 'success');
+    (window as any).openCycleHistory(chMemberId, document.getElementById('ch-member-name')!.textContent || '');
+  };
+
+  (window as any).deleteCycleRecord = async (recordId: string, label: string) => {
+    if (!MEMBER?.is_superadmin) return;
+    if (!confirm(`Excluir registro "${label}"? Esta ação não pode ser desfeita.`)) return;
+    const { error } = await sb.from('member_cycle_history').delete().eq('id', recordId);
+    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    toast(`${label} removido`, 'info');
+    (window as any).openCycleHistory(chMemberId, document.getElementById('ch-member-name')!.textContent || '');
   };
 
   // ══════════════════════════════════════════
