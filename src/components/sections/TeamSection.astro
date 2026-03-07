@@ -161,7 +161,7 @@ const ROLE_COLORS: Record<string, string> = {
       .join('');
   }
 
-  function memberCard(m: Member): string {
+  function memberCard(m: Member, subtitle?: string): string {
     const initials = m.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
     const photo = m.photo_url
       ? `<img src="${m.photo_url}" class="w-16 h-16 rounded-full object-cover border-2 border-white/10" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
@@ -171,10 +171,13 @@ const ROLE_COLORS: Record<string, string> = {
       ? `<a href="${m.linkedin_url}" target="_blank" class="text-teal text-[.65rem] no-underline">🔗</a>`
       : '';
     const dots = getRoleDots(m);
+    const sub = subtitle
+      ? `<div class="text-[.55rem] font-bold uppercase tracking-wider mt-0.5" style="color:#FF610F">${subtitle}</div>`
+      : `<div class="text-[.6rem] text-slate-400">${m.chapter || ''}</div>`;
     return `<div class="text-center w-[90px]">
       ${photo}
       <div class="text-[.7rem] font-semibold mt-1.5 leading-tight">${m.name.split(' ').slice(0, 2).join(' ')} ${li}</div>
-      <div class="text-[.6rem] text-slate-400">${m.chapter || ''}</div>
+      ${sub}
       <div class="flex justify-center gap-[3px] mt-1">${dots}</div>
     </div>`;
   }
@@ -227,11 +230,24 @@ const ROLE_COLORS: Record<string, string> = {
     if (!gp.length && !commsTeam.length) return '';
     let inner = '';
 
-    // GP sub-section
+    // GP sub-section — original GP (founder + manager since pilot) first, then Co-GP
     if (gp.length) {
+      const sorted = [...gp].sort((a, b) => {
+        // manager (GP) before co_gp (Co-GP)
+        const aIsGP = getOpRole(a) === 'manager' ? 0 : 1;
+        const bIsGP = getOpRole(b) === 'manager' ? 0 : 1;
+        return aIsGP - bIsGP || a.name.localeCompare(b.name);
+      });
+      let gpIdx = 0;
+      const gpCards = sorted.map(m => {
+        const isMainGP = getOpRole(m) === 'manager';
+        const label = isMainGP ? 'GP · ' + (m.chapter || '') : 'Co-GP · ' + (m.chapter || '');
+        gpIdx++;
+        return memberCard(m, label);
+      }).join('');
       inner += `<div class="mb-4">
         <div class="text-[.7rem] font-bold text-white/40 uppercase tracking-wider mb-2">Gerência de Projeto (Nível 2)</div>
-        <div class="flex flex-wrap gap-4 justify-center">${gp.map(m => memberCard(m)).join('')}</div>
+        <div class="flex flex-wrap gap-4 justify-center">${gpCards}</div>
       </div>`;
     }
 
@@ -258,10 +274,10 @@ const ROLE_COLORS: Record<string, string> = {
 
     // ── Grouping using 3-axis model ──
 
-    // GP: operational_role = manager, active
+    // GP: operational_role = manager OR designation co_gp, active
     const gp = allMembers.filter(m =>
       m.current_cycle_active &&
-      hasOpRole(m, ['manager'])
+      (hasOpRole(m, ['manager']) || hasDesig(m, 'co_gp'))
     );
 
     // Comms Team: designation includes comms_team, active

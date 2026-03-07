@@ -89,6 +89,7 @@ import Toast from '../../components/ui/Toast.astro';
               <option value="founder">Fundador</option>
               <option value="curator">Curador</option>
               <option value="comms_team">Comunicação</option>
+              <option value="co_gp">Co-GP</option>
               <option value="has_any">✦ Com designação</option>
               <option value="has_none">○ Sem designação</option>
             </select>
@@ -250,6 +251,9 @@ import Toast from '../../components/ui/Toast.astro';
             <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-all text-[.78rem]">
               <input type="checkbox" value="comms_team" class="desig-cb accent-[#06B6D4]"> <span style="color:#06B6D4">●</span> Comunicação
             </label>
+            <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-all text-[.78rem]">
+              <input type="checkbox" value="co_gp" class="desig-cb accent-[#FF610F]"> <span style="color:#FF610F">●</span> Co-GP
+            </label>
           </div>
         </div>
 
@@ -339,6 +343,7 @@ import Toast from '../../components/ui/Toast.astro';
   function getAccessTier(isSuperadmin: boolean, opRole: string, desigs: string[]): string {
     if (isSuperadmin) return 'superadmin';
     if (opRole === 'manager') return 'admin';
+    if (desigs.includes('co_gp')) return 'admin';
     if (opRole === 'tribe_leader') return 'leader';
     if (desigs.includes('sponsor') || desigs.includes('curator')) return 'observer';
     if (['researcher', 'facilitator', 'communicator'].includes(opRole)) return 'member';
@@ -548,10 +553,10 @@ import Toast from '../../components/ui/Toast.astro';
     facilitator: '#06B6D4', communicator: '#8B5CF6', none: '#94A3B8', guest: '#94A3B8'
   };
   const DESIG_LABELS: Record<string, string> = {
-    sponsor: 'Patrocinador', ambassador: 'Embaixador', founder: 'Fundador', curator: 'Curador', comms_team: 'Comunicação'
+    sponsor: 'Patrocinador', ambassador: 'Embaixador', founder: 'Fundador', curator: 'Curador', comms_team: 'Comunicação', co_gp: 'Co-GP'
   };
   const DESIG_COLORS: Record<string, string> = {
-    sponsor: '#BE2027', ambassador: '#10B981', founder: '#7C3AED', curator: '#D97706', comms_team: '#06B6D4'
+    sponsor: '#BE2027', ambassador: '#10B981', founder: '#7C3AED', curator: '#D97706', comms_team: '#06B6D4', co_gp: '#FF610F'
   };
 
   function memberTags(m: any): string {
@@ -1210,8 +1215,9 @@ import Toast from '../../components/ui/Toast.astro';
     if (m.is_superadmin) return 'superadmin';
     const opRole = m.operational_role || m.role || 'guest';
     if (opRole === 'manager') return 'admin';
-    if (opRole === 'tribe_leader') return 'leader';
     const desigs: string[] = m.designations || [];
+    if (desigs.includes('co_gp')) return 'admin';
+    if (opRole === 'tribe_leader') return 'leader';
     if (desigs.includes('sponsor') || desigs.includes('curator')) return 'observer';
     return 'visitor';
   }
