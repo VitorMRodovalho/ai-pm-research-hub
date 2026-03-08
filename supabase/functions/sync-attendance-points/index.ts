@@ -12,13 +12,9 @@ function parseBearer(authHeader: string | null): string | null {
 }
 
 async function resolveSuperadminCaller(
-  authClient: ReturnType<typeof createClient>,
   sb: ReturnType<typeof createClient>,
   user: { id: string; email?: string | null },
 ) {
-  const { data: callerByRpc } = await authClient.rpc('get_member_by_auth')
-  if (callerByRpc?.is_superadmin) return callerByRpc
-
   const { data: superadmins } = await sb
     .from('members')
     .select('id, auth_id, email, secondary_emails, is_superadmin')
@@ -41,7 +37,6 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const anonKey = req.headers.get('apikey') || Deno.env.get('SUPABASE_ANON_KEY') || ''
     const authHeader = req.headers.get('Authorization')
     const token = parseBearer(authHeader)
     if (!token) {
@@ -50,20 +45,11 @@ Deno.serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
-    if (!anonKey) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Missing anon key for auth validation' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
-    }
-
-    const authClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    })
+    const sb = createClient(supabaseUrl, serviceRole)
     const {
       data: { user },
       error: userError,
-    } = await authClient.auth.getUser()
+    } = await sb.auth.getUser(token)
     if (userError || !user) {
       return new Response(
         JSON.stringify({ success: false, error: 'Unauthorized caller' }),
@@ -71,9 +57,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    const sb = createClient(supabaseUrl, serviceRole)
-
-    const caller = await resolveSuperadminCaller(authClient, sb, user)
+    const caller = await resolveSuperadminCaller(sb, user)
     if (!caller?.is_superadmin) {
       return new Response(
         JSON.stringify({ success: false, error: 'Only superadmin can run attendance sync' }),
