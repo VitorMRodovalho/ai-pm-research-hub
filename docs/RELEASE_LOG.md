@@ -10,6 +10,10 @@ Migrar strings hardcoded da seção Avisos Globais (admin) para i18n PT/EN/ES.
 - Lista: empty state, status (Inativo/Expirado/Ativo), botões Desativar/Ativar
 - Chaves `admin.announcements.*` em pt-BR, en-US, es-LATAM
 
+### Pendente (S-AN1)
+- **Rich editor opcional**: editor de texto rico para corpo do aviso (ex.: TipTap, Quill)
+- **Scheduling UX**: interface para agendar início/fim de exibição dos avisos
+
 ---
 
 ## 2026-03-08 — S-REP1 VRMS i18n + QA/QC workflow
