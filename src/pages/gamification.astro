@@ -199,10 +199,13 @@ import Toast from '../components/ui/Toast.astro';
 <script>
   import { getMemberRole } from '../lib/routing';
   import { aggregateCredlyByMember } from '../lib/gamification';
+  import { buildTrailProgressByMember } from '../lib/trail-progress';
 
   let sb: any = null;
   let MEMBER: any = null;
   let leaderboardData: any[] = [];
+  let trailProgressByMember = new Map();
+  const TRAIL_TOTAL = 8;
 
   const CATEGORY_META: Record<string, { icon: string; color: string; bg: string }> = {
     attendance: { icon: '📅', color: '#2563EB', bg: '#EFF6FF' },
@@ -298,9 +301,13 @@ import Toast from '../components/ui/Toast.astro';
         .select('member_id, points, reason')
         .like('reason', 'Credly:%');
       if (credlyError) throw credlyError;
+      const { data: courseRows, error: courseRowsError } = await sb.from('course_progress')
+        .select('member_id, course_id, status');
+      if (courseRowsError) throw courseRowsError;
 
       leaderboardData = data || [];
       const credlyByMember = aggregateCredlyByMember(credlyRows || []);
+      trailProgressByMember = buildTrailProgressByMember(courseRows || [], TRAIL_TOTAL);
       if (!data?.length) {
         setPanelMessage('leaderboard-list', 'Nenhum ponto registrado. Clique em "Sincronizar Pontos" para calcular.', 'empty');
         return;
@@ -320,10 +327,12 @@ import Toast from '../components/ui/Toast.astro';
       const level = getLevel(m.total_points);
       const isMe = MEMBER && m.member_id === MEMBER.id;
       const credly = credlyByMember[m.member_id] || { total: 0, badges: 0, t1: 0, t2: 0, t3: 0, t4: 0 };
+      const trail = trailProgressByMember.get(m.member_id) || { completed: 0, inProgress: 0, pct: 0 };
 
       const breakdown = [
         m.attendance_points > 0 ? `📅 ${m.attendance_points}` : '',
-        m.course_points > 0 ? `🎓 ${m.course_points}` : '',
+        `📚 ${trail.completed}/${TRAIL_TOTAL}`,
+        trail.inProgress > 0 ? `⏳ ${trail.inProgress} em andamento` : '',
         m.artifact_points > 0 ? `📄 ${m.artifact_points}` : '',
         m.bonus_points > 0 ? `⭐ ${m.bonus_points}` : '',
         credly.total > 0 ? `🏅 ${credly.total}` : '',
