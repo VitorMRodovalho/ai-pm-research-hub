@@ -93,7 +93,7 @@ Validate with `npm test` and `npm run build` before pushing. For production-impa
 - **Pages**: `src/pages/` (including `en/`, `es/`, `admin/`).
 - **Components**: `src/components/` (sections, UI, nav, attendance).
 - **Data / lib**: `src/data/`, `src/lib/` (routing, Supabase, credly, gamification, trail, admin constants).
-- **Edge functions**: `supabase/functions/` (e.g. `verify-credly`, `sync-comms-metrics`, `sync-credly-all`).
+- **Edge functions**: `supabase/functions/` — `verify-credly`, `sync-comms-metrics`, `sync-knowledge-insights` presentes; `sync-credly-all` e `sync-attendance-points` invocados mas ausentes no repo (ver `docs/project-governance/PROJECT_ON_TRACK.md`).
 - **Migrations**: `supabase/migrations/`, with supporting SQL/docs in `docs/migrations/`.
 
 When adding features, respect the existing structure and the governance/release discipline above.

@@ -13,3 +13,5 @@ Para considerar um item de Sprint ou Hotfix tecnicamente concluído, os seguinte
    - Regras de leitura/escrita devem respeitar a Row Level Security (RLS) e a matriz de Tiers do Admin.
 4. **Governança:**
    - Atualizar o `docs/RELEASE_LOG.md` com as evidências do que foi para produção.
+5. **Gate de Integração:**
+   - Feature de frontend sem backend/API/SQL pronto não avança para desenvolvimento. Ver `docs/project-governance/PROJECT_ON_TRACK.md`.

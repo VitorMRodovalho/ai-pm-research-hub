@@ -62,3 +62,9 @@ on conflict do nothing;  -- ou update onde aplicável
 4. **Thresholds:** Constantes em `data/config.ts` ou DB para KPIs.
 5. **Regra:** Nenhum ponto de mudança de ciclo/deadline/config deve ser hardcoded; sempre fonte única (DB ou config injetável).
 6. **RPC `select_tribe`:** Verificar se valida `home_schedule.selection_deadline_at` no backend; se não, adicionar validação para evitar bypass via API.
+
+---
+
+## Documentos relacionados
+
+- `docs/project-governance/PROJECT_ON_TRACK.md` — Análise de integridade, roadmap por batch, regras de governança.

@@ -54,6 +54,8 @@ Isso ocorreu por execução orientada a incidentes de produção (hotfixes) sem 
 
 ## 🚨 OPEN HOTFIX / STABILIZATION ITEMS
 
+> **Auditoria de integridade:** Ver `docs/project-governance/PROJECT_ON_TRACK.md` para mapa DB↔Frontend↔API, gaps e roadmap por batch.
+
 | ID | Feature | Priority | Status | Description |
 |----|---------|----------|--------|-------------|
 | S-HF1 | Credly Mobile Paste Fix | Critical | ✅ Done | Credly URL now normalizes/validates paste input (trim/query/trailing slash) in profile and edge verification flow. |
@@ -64,6 +66,7 @@ Isso ocorreu por execução orientada a incidentes de produção (hotfixes) sem 
 | S-HF6 | Source of Truth Drift (Trail vs Gamification) | Critical | ✅ Done (2026-03-08) | Reconciliation hardening in `sync-credly-all` now also syncs legacy trail completions into `course_progress`, keeping `/#trail` and `/gamification` aligned. |
 | S-HF7 | Gamification Secondary Tabs Stuck on Loading | Critical | ✅ Done (2026-03-08) | Added timeout and robust error fallback on secondary tab loaders in `/gamification`, removing indefinite "Carregando..." hangs. |
 | S-HF8 | Credly Legacy Sanitization & Dedup | Critical | ✅ Done (2026-03-08) | Promoted BI/SFPC to Tier 2, deployed `verify-credly` + `sync-credly-all` hardening, sanitized `tier=null`, removed duplicate handling gaps, and corrected legacy Tier 1 rows still at 10 points. |
+| S-HF9 | Edge Functions no Repo | Critical | **Open** | `sync-credly-all` e `sync-attendance-points` são invocados por gamification.astro e GitHub Action mas **não existem em supabase/functions/**. Recuperar ou recriar no repo para versionamento e deploy reprodutível. Ver PROJECT_ON_TRACK.md. |
 
 ---
 
