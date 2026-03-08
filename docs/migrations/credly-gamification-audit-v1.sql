@@ -19,6 +19,7 @@ where reason ilike 'Credly:%'
     or lower(reason) like '%cpmai%'
     or lower(reason) like '%pmi-cpmai%'
   )
+  and lower(reason) not like '%introduction to cognitive project management in ai%'
   and points <> 50
 group by reason, points
 order by qty desc, reason;

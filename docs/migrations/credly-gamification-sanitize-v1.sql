@@ -36,6 +36,9 @@ with scored as (
   select
     id,
     case
+      -- PMI mini trail exceptions must win over generic Tier 1/2 keyword matches
+      when lower(reason) ~ '(generative ai overview.*project managers|data landscape.*genai.*project managers|prompt engineering.*project managers|practical application.*gen ai.*project managers|citizen developer.*cdba|introduction.*cognitive.*cpmai|ai in infrastructure.*construction|ai in agile delivery)'
+        then 15
       -- Tier 1 (+50)
       when lower(reason) ~ '(project management professional|\bpmp\b|\bcpmai\b|pmi-cpmai|cognitive project management|\bpmi-acp\b|\bpmi-cp\b|\bpgmp\b|\bpfmp\b|\bpmi-rmp\b|\bpmi-sp\b)'
         then 50
