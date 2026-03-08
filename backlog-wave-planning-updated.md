@@ -102,8 +102,8 @@ Isso ocorreu por execução orientada a incidentes de produção (hotfixes) sem 
 
 | ID | Feature | Priority | Status | Description |
 |----|---------|----------|--------|-------------|
-| S-KNW1 | Repositório Central de Recursos | Medium | Partial (2026-03-08) | Migration `knowledge_assets` criada; RLS + docs pack. **Pendente**: rota/CRUD UI (S-KNW2). |
-| S-KNW2 | Tribe Workspace | Medium | Planned | Create `/workspace` with relational views of artifacts in progress, studies, and events across tribes. |
+| S-KNW1 | Repositório Central de Recursos | Medium | Partial (2026-03-08) | Migration `knowledge_assets`/`hub_resources`; RLS + docs pack. |
+| S-KNW2 | Tribe Workspace | Medium | Partial (2026-03-08) | CRUD admin para `hub_resources` (aba Recursos). **Pendente**: rota `/workspace` pública com views relacionais. |
 | S-KNW3 | Sistema de Tags e Relações | Medium | Planned | Link final artifacts to upstream courses, studies, or events to preserve traceability. |
 | S-KNW4 | Views Relacionais Governadas | Medium | Planned | Gallery board style views powered by Supabase data model and RLS, not external knowledge software. |
 | S-KNW5 | Knowledge-Certification Correlation Layer | Medium | Planned | Correlate `knowledge_assets` consumption with course/certification progress to evidence the Hub as catalyst of qualification outcomes. |

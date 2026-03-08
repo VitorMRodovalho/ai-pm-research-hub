@@ -1,19 +1,30 @@
 # Release Log
 
+## 2026-03-08 — S-KNW2: Admin CRUD para hub_resources (Knowledge Hub)
+
+### Escopo
+CRUD admin para recursos curados (cursos, referências, webinars). Tabela `hub_resources` separada de `knowledge_assets` (sync/embeddings).
+
+### Entregas
+- Migration `20260308170000_hub_resources.sql` (asset_type, title, description, url, tribe_id, author_id, course_id, is_active)
+- Nova aba Admin "📚 Recursos" com listagem, form, edição inline e toggle ativo/inativo
+- i18n PT/EN/ES para admin.knowledge.*
+- RLS: select público (ativo); select/insert/update (can_manage_knowledge); delete (superadmin)
+
+### Próximos passos
+- Rota `/workspace` pública para consulta de recursos (S-KNW2 expandido)
+- Link artifacts ↔ hub_resources (S-KNW3)
+
+---
+
 ## 2026-03-08 — S-KNW1: knowledge_assets table (backend runway)
 
 ### Escopo
-Preparar schema para Wave 5 Knowledge Hub. Tabela `knowledge_assets` para cursos, referências, webinars vinculados a tribo e autor.
+Preparar schema para Wave 5 Knowledge Hub. Tabela `knowledge_assets` existe para sync/embeddings; `hub_resources` criada para CRUD manual.
 
 ### Entregas
-- Migration `20260308150000_knowledge_assets.sql`
-- Campos: asset_type, title, description, url, tribe_id, author_id, course_id, is_active
-- RLS: select (authenticated, is_active); insert/update (can_manage_knowledge); delete (superadmin)
-- Docs pack: audit, rollback, runbook
-
-### Próximos passos
-- Frontend/rota `/workspace` ou CRUD em admin (S-KNW2)
-- Link artifacts ↔ knowledge_assets (S-KNW3)
+- Migration `20260308150000_knowledge_assets.sql`, `20260308160000` (manager select), `20260308170000_hub_resources.sql`
+- Docs pack: audit, rollback, runbook (knowledge_assets)
 
 ---
 
