@@ -456,7 +456,7 @@ import Toast from '../components/ui/Toast.astro';
             <div class="relative">
               <input type="password" id="self-pmi" value="${m.pmi_id || ''}" placeholder="Ex: 5975367"
                 class="w-full px-3 py-2 pr-10 border-[1.5px] border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
-              <button onclick="toggleField('self-pmi')" type="button"
+              <button type="button" data-toggle-field="self-pmi"
                 class="absolute right-2 top-1/2 -translate-y-1/2 bg-transparent border-0 cursor-pointer text-slate-400 hover:text-slate-600 text-base p-1">👁</button>
             </div>
           </div>
@@ -465,7 +465,7 @@ import Toast from '../components/ui/Toast.astro';
             <div class="relative">
               <input type="password" id="self-phone" value="${m.phone || ''}" placeholder="+55 (00) 00000-0000"
                 class="w-full px-3 py-2 pr-10 border-[1.5px] border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
-              <button onclick="toggleField('self-phone')" type="button"
+              <button type="button" data-toggle-field="self-phone"
                 class="absolute right-2 top-1/2 -translate-y-1/2 bg-transparent border-0 cursor-pointer text-slate-400 hover:text-slate-600 text-base p-1">👁</button>
             </div>
           </div>
@@ -488,7 +488,7 @@ import Toast from '../components/ui/Toast.astro';
           </div>
         </div>
         <div class="mt-5 flex justify-end">
-          <button onclick="saveSelf()"
+          <button type="button" id="btn-save-profile"
             class="px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all cursor-pointer border-0">
             💾 Salvar Alterações
           </button>
@@ -496,7 +496,6 @@ import Toast from '../components/ui/Toast.astro';
       </div>
     `;
     bindCredlyField();
-    bindProfileActions();
   }
 
   function bindCredlyField() {
@@ -518,29 +517,53 @@ import Toast from '../components/ui/Toast.astro';
     input.addEventListener('paste', () => setTimeout(normalize, 0));
   }
 
-  function bindProfileActions() {
-    const addBtn = document.getElementById('btn-add-secondary-email');
-    if (addBtn) {
-      addBtn.addEventListener('click', () => {
+  function wireProfileActionHandlersOnce() {
+    const root = document.getElementById('profile-content');
+    if (!root || (root as any)._profileHandlersBound) return;
+    (root as any)._profileHandlersBound = true;
+
+    root.addEventListener('click', (ev) => {
+      const target = ev.target as HTMLElement | null;
+      if (!target) return;
+
+      const addBtn = target.closest('#btn-add-secondary-email');
+      if (addBtn) {
+        ev.preventDefault();
         void (window as any).addSecondaryEmail?.();
-      });
-    }
+        return;
+      }
 
-    const verifyBtn = document.getElementById('btn-credly-verify');
-    if (verifyBtn) {
-      verifyBtn.addEventListener('click', () => {
+      const verifyBtn = target.closest('#btn-credly-verify');
+      if (verifyBtn) {
+        ev.preventDefault();
         void (window as any).verifyCredly?.();
-      });
-    }
+        return;
+      }
 
-    document.querySelectorAll('.btn-remove-secondary-email').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const idxRaw = (btn as HTMLElement).getAttribute('data-secondary-index');
+      const saveBtn = target.closest('#btn-save-profile');
+      if (saveBtn) {
+        ev.preventDefault();
+        void (window as any).saveSelf?.();
+        return;
+      }
+
+      const removeBtn = target.closest('.btn-remove-secondary-email');
+      if (removeBtn) {
+        ev.preventDefault();
+        const idxRaw = (removeBtn as HTMLElement).getAttribute('data-secondary-index');
         const idx = Number(idxRaw);
         if (Number.isInteger(idx) && idx >= 0) {
           void (window as any).removeSecondaryEmail?.(idx);
         }
-      });
+        return;
+      }
+
+      const toggleBtn = target.closest('[data-toggle-field]');
+      if (toggleBtn) {
+        ev.preventDefault();
+        const fieldId = (toggleBtn as HTMLElement).getAttribute('data-toggle-field');
+        if (fieldId) (window as any).toggleField?.(fieldId);
+      }
     });
   }
 
@@ -554,7 +577,10 @@ import Toast from '../components/ui/Toast.astro';
   // ── Save profile ──
   (window as any).saveSelf = async () => {
     const sb = (window as any).navGetSb?.();
-    if (!sb || !currentMember) return;
+    if (!sb || !currentMember) {
+      (window as any).toast?.('Sessão ainda não pronta. Aguarde e tente novamente.', 'info');
+      return;
+    }
     const credlyInput = (document.getElementById('self-credly') as HTMLInputElement)?.value || '';
     const credlyNormalized = credlyInput.trim() ? normalizeCredlyUrl(credlyInput) : null;
     if (credlyInput.trim() && !credlyNormalized) {
@@ -583,7 +609,10 @@ import Toast from '../components/ui/Toast.astro';
   // ── Secondary email management ──
   (window as any).addSecondaryEmail = async () => {
     const sb = (window as any).navGetSb?.();
-    if (!sb || !currentMember) return;
+    if (!sb || !currentMember) {
+      (window as any).toast?.('Sessão ainda não pronta. Aguarde e tente novamente.', 'info');
+      return;
+    }
     const input = document.getElementById('new-secondary-email') as HTMLInputElement;
     const email = input?.value.trim().toLowerCase();
     if (!email || !email.includes('@')) {
@@ -609,7 +638,10 @@ import Toast from '../components/ui/Toast.astro';
 
   (window as any).removeSecondaryEmail = async (idx: number) => {
     const sb = (window as any).navGetSb?.();
-    if (!sb || !currentMember) return;
+    if (!sb || !currentMember) {
+      (window as any).toast?.('Sessão ainda não pronta. Aguarde e tente novamente.', 'info');
+      return;
+    }
     const existing: string[] = currentMember.secondary_emails || [];
     const removed = existing[idx];
     if (!removed || !confirm(`Remover ${removed}?`)) return;
@@ -639,7 +671,10 @@ import Toast from '../components/ui/Toast.astro';
 
   (window as any).verifyCredly = async () => {
     const sb = (window as any).navGetSb?.();
-    if (!sb || !currentMember) return;
+    if (!sb || !currentMember) {
+      (window as any).toast?.('Sessão ainda não pronta. Aguarde e tente novamente.', 'info');
+      return;
+    }
     await sb.auth.refreshSession();
     const { data: { session } } = await sb.auth.getSession();
     if (!session?.access_token) {
@@ -686,5 +721,6 @@ import Toast from '../components/ui/Toast.astro';
     }
   };
 
+  wireProfileActionHandlersOnce();
   boot();
 </script>

@@ -1,4 +1,22 @@
 # Release Log
+## 2026-03-08 — Hotfix (Profile actions hardening v2)
+
+### Scope
+Fix non-responsive profile actions for secondary email and Credly verification in production.
+
+### Delivered
+- `/profile` action handling hardened:
+  - event delegation on stable `#profile-content` container
+  - profile card controls moved away from fragile inline click paths
+  - readiness fallback toasts when session/member context is not yet available
+- governance updates:
+  - `docs/DEBUG_HOLISTIC_PLAYBOOK.md`
+  - `.github/pull_request_template.md` with mandatory regression checklist
+
+### Validation captured
+- local `npm run build` passed
+- local `npm test` passed
+
 ## 2026-03-08 — Wave 4 Sprint Increment (S-COM10 Publish Log Filters & Export v1)
 
 ### Scope
