@@ -1,5 +1,27 @@
 # Release Log
 
+## 2026-03-08 — Governance Reorganization (Parent/Child Work Packages)
+
+### Scope
+Reorganize roadmap execution to prevent out-of-sequence delivery and recurrent regressions caused by feature-first flow without explicit dependency gates.
+
+### Delivered
+- created EPIC parent issues in `ai-pm-hub-v2`:
+  - `#47` Foundation Reliability Gate
+  - `#48` Comms Operating System
+  - `#49` Knowledge Hub Sequential Delivery
+  - `#50` Scale, Data Platform & FinOps
+- mapped child sprint issues under each EPIC with gate criteria (entry/exit) and dependency flow.
+- documented sequential grouped roadmap and governance rules:
+  - `docs/project-governance/ROADMAP_SEQUENCIAL_AGRUPADO.md`
+- added governance helper scripts:
+  - `scripts/roadmap_sequence_report.sh`
+  - `scripts/sync_project_roadmap_sequence.sh`
+- updated `backlog-wave-planning-updated.md` with mandatory parent/child execution policy.
+
+### Notes
+- GitHub Project GraphQL quota hit during final board-view synchronization. All issue-level regrouping is complete; project view sync script is ready to run after quota reset.
+
 ## 2026-03-08 — Wave 4 Sprint Increment (S-COM6 COMMS_METRICS_V2)
 
 ### Scope

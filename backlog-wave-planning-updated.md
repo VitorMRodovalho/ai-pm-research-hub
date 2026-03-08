@@ -4,6 +4,32 @@
 
 ---
 
+## 🧭 ROADMAP REORGANIZATION (2026-03-08)
+
+Para eliminar execução fora de sequência e reduzir regressões, o backlog passa a operar com pacote pai -> atividades filhas.
+
+### Pacotes Pai (EPICs)
+
+1. `P0 Foundation Reliability Gate` (issue `#47`)
+2. `P1 Comms Operating System` (issue `#48`)
+3. `P2 Knowledge Hub Sequential Delivery` (issue `#49`)
+4. `P3 Scale, Data Platform & FinOps` (issue `#50`)
+
+### Regra de execução
+
+- Nenhuma tarefa sai de `Backlog/Ready` para `In progress` sem:
+  - vínculo com EPIC pai;
+  - dependências front/back/SQL/integrador explícitas;
+  - critérios de entrada e saída definidos.
+- Feature de frontend sem backend/API/SQL pronto não avança para desenvolvimento.
+- Quando houver risco de regressão em produção, prioridade volta para `P0 Foundation`.
+
+### Sobre itens abertos em Wave 2/3 enquanto Wave 4 avançou
+
+Isso ocorreu por execução orientada a incidentes de produção (hotfixes) sem gate formal de pacote pai. A reorganização acima passa a ser obrigatória para manter sequência e previsibilidade.
+
+---
+
 ## ✅ COMPLETED / STABILIZED
 
 | Sprint / Linha | Deliverable | Status |
