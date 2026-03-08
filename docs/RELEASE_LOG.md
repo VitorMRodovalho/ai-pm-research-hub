@@ -1,5 +1,25 @@
 # Release Log
 
+## 2026-03-08 — S-PA2-UI-BIND + S11 + S8b i18n (Sprint increment)
+
+### S-PA2-UI-BIND: Painel executivo ligado aos RPCs
+- **exec_funnel_summary**: Funil de qualificação (ativos, Credly, trilha completa, Tier 1/2+, artefatos publicados) com barras de progresso
+- **exec_cert_timeline**: Timeline de certificação por coorte (12 meses) — barras por mês
+- **exec_skills_radar**: Radar de competências Credly por eixo — barras por radar_axis
+- Painel Executive (tier observer) agora consome RPCs; loading + fallback de erro por bloco
+- escapeHtml adicionado para XSS nos labels dinâmicos
+
+### S11: Empty states acionáveis em gamification
+- setPanelMessage aceita CTA opcional (text, onclick)
+- Leaderboard vazio: botão "Sincronizar Pontos + Credly" quando logado
+- Meus Pontos vazio: mesmo CTA para disparar sync
+
+### S8b: i18n cycle-history e profile (commit 9ae54a9)
+- Admin: toasts ciclo adicionado/atualizado/removido; seção add ciclo; todos ciclos; ativo/inativo/atual
+- Profile: email adicionado/removido; já cadastrado; erros; confirm de remoção
+
+---
+
 ## 2026-03-08 — Production Release (EPIC #52, #51–55)
 
 ### Escopo

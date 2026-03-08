@@ -77,7 +77,7 @@ Isso ocorreu por execução orientada a incidentes de produção (hotfixes) sem 
 | S-UX1 | Trilha Progress Clarity for Researchers | High | ✅ Done (2026-03-08) | `/gamification` now shows logged-in mini trail clarity card with explicit progress (`X de Y`) and missing/in-progress course list. |
 | S-PA1 | Product Analytics | High | Partial (v2 delivered 2026-03-08) | Protected `/admin/analytics` route + iframe embeds + admin shortcut, plus consent-aware analytics toggle (allow/revoke), session replay control, and identify gated by consent without name/email PII. |
 | S8b | i18n Internal Pages | Medium | Partial (advanced++ 2026-03-08) | `/attendance` shell + modals localized and `/admin` shell, filters, reports, key modals, critical toasts/confirms, and dynamic action messages localized (PT/EN/ES) with locale-key parity; pending only residual long-tail hardcoded strings in secondary admin flows. |
-| S11 | UI Polish & Empty States | Medium | Partial (advanced 2026-03-08) | 404 already active; upgraded `/artifacts` and `/attendance` with skeleton loading and actionable empty states (CTA), keeping graceful fallback flows for logged and non-logged users. |
+| S11 | UI Polish & Empty States | Medium | Partial (2026-03-08) | 404 active; artifacts/attendance com skeleton + empty states; gamification: setPanelMessage com CTA opcional — leaderboard e Meus Pontos exibem botão Sincronizar quando vazios. |
 
 ---
 
@@ -93,7 +93,7 @@ Isso ocorreu por execução orientada a incidentes de produção (hotfixes) sem 
 | S-AN1 | Announcements System | Medium | Partial (2026-03-08) | Banners in BaseLayout, CRUD in admin, Event Delegation + XSS hardening. Pending: optional rich editor, scheduling UX. |
 | S-DR1 | Disaster Recovery Doc | Low | ✅ Done (2026-03-08) | `docs/DISASTER_RECOVERY.md` — POP Supabase (backup, PITR, dump), Cloudflare rollback, checklist. |
 | S-COM6 | Dashboard Central de Mídia | Medium | Partial (UI delivered 2026-03-08) | `/admin/comms` route with Looker iframe or native table from `comms_metrics_latest_by_channel`. Backend: sync-comms-metrics, SQL pack. Pending: deploy sync-comms-metrics in prod. |
-| S-PA2 | Admin Executive Visual Dashboards (ROI PMI) | High | Planned | Evolve `AdminExecutive` with visual charts (iframe-first or lightweight native SVG): qualification funnel, certification timeline after member join, and skill/certification radar across the base. |
+| S-PA2 | Admin Executive Visual Dashboards (ROI PMI) | High | Partial (2026-03-08) | Painel executivo conectado a exec_funnel_summary, exec_cert_timeline, exec_skills_radar RPCs. Funil, timeline de coortes e radar de competências com barras nativas. |
 
 ---
 

@@ -405,12 +405,39 @@ const ADMIN_I18N = {
 
       <!-- Sponsor Tier: Executive Overview panel -->
       <div id="panel-executive" class="hidden">
+        <!-- Funnel (exec_funnel_summary RPC) -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-5">
+          <div class="px-5 py-3.5 border-b border-slate-200">
+            <h3 class="text-sm font-bold text-navy">📊 Funil de Qualificação (ROI)</h3>
+          </div>
+          <div class="p-5" id="exec-funnel">
+            <p class="text-slate-400 text-sm text-center py-4">Carregando...</p>
+          </div>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
           <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div class="px-5 py-3.5 border-b border-slate-200">
               <h3 class="text-sm font-bold text-navy">🏛️ Membros por Capítulo</h3>
             </div>
             <div class="p-5" id="exec-chapters">
+              <p class="text-slate-400 text-sm text-center py-4">Carregando...</p>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-slate-200">
+              <h3 class="text-sm font-bold text-navy">📈 Timeline de Certificação (coortes)</h3>
+            </div>
+            <div class="p-5" id="exec-cert-timeline">
+              <p class="text-slate-400 text-sm text-center py-4">Carregando...</p>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-slate-200">
+              <h3 class="text-sm font-bold text-navy">🎯 Radar de Competências (Credly)</h3>
+            </div>
+            <div class="p-5" id="exec-skills-radar">
               <p class="text-slate-400 text-sm text-center py-4">Carregando...</p>
             </div>
           </div>
@@ -680,6 +707,15 @@ const ADMIN_I18N = {
       .replace(/'/g, '&#39;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
+  }
+
+  function escapeHtml(s: string): string {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   function avatar(m: any, size = 'w-8 h-8'): string {
@@ -2095,10 +2131,126 @@ const ADMIN_I18N = {
   };
 
   // ══════════════════════════════════════════
-  // SPONSOR TIER: Executive Overview
+  // SPONSOR TIER: Executive Overview (S-PA2-UI-BIND)
+  // Uses exec_funnel_summary, exec_cert_timeline, exec_skills_radar RPCs
   // ══════════════════════════════════════════
+  const EXEC_LOADING = '<p class="text-slate-400 text-sm text-center py-4">Carregando...</p>';
+  const EXEC_ERROR = (msg: string) => `<p class="text-crimson text-sm text-center py-4">${escapeHtml(msg)}</p>`;
+
   async function loadExecutiveOverview() {
-    // Members by chapter
+    // ── 1. Funnel (exec_funnel_summary RPC) ──
+    const funnelEl = document.getElementById('exec-funnel')!;
+    funnelEl.innerHTML = EXEC_LOADING;
+    try {
+      const { data: funnelData, error: funnelErr } = await sb.rpc('exec_funnel_summary');
+      if (funnelErr) throw funnelErr;
+      const f = Array.isArray(funnelData) && funnelData[0] ? funnelData[0] : null;
+      if (!f) {
+        funnelEl.innerHTML = EXEC_ERROR('RPC exec_funnel_summary sem dados');
+      } else {
+        const total = f.total_members || 0;
+        const maxStage = Math.max(f.active_members || 0, 1);
+        const stagePct = (n: number) => Math.round((n / maxStage) * 100);
+        funnelEl.innerHTML = `
+          <div class="space-y-2 text-[.78rem]">
+            <div class="flex justify-between items-center py-1.5 border-b border-slate-100">
+              <span class="font-semibold text-slate-600">Total membros</span>
+              <span class="font-bold text-navy">${f.total_members ?? 0}</span>
+            </div>
+            <div class="flex justify-between items-center py-1.5 border-b border-slate-100">
+              <span class="font-semibold text-slate-600">Ativos</span>
+              <span class="font-bold text-teal">${f.active_members ?? 0}</span>
+            </div>
+            <div class="flex items-center gap-2 py-1.5">
+              <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full bg-teal rounded-full" style="width:${stagePct(f.members_with_credly_url || 0)}%"></div>
+              </div>
+              <span class="text-[.7rem] font-semibold">Credly: ${f.members_with_credly_url ?? 0}</span>
+            </div>
+            <div class="flex items-center gap-2 py-1.5">
+              <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full bg-purple rounded-full" style="width:${stagePct(f.members_with_full_core_trail || 0)}%"></div>
+              </div>
+              <span class="text-[.7rem] font-semibold">Trilha completa: ${f.members_with_full_core_trail ?? 0}</span>
+            </div>
+            <div class="flex items-center gap-2 py-1.5">
+              <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full bg-amber-500 rounded-full" style="width:${stagePct(f.members_with_tier1 || 0)}%"></div>
+              </div>
+              <span class="text-[.7rem] font-semibold">Tier 1: ${f.members_with_tier1 ?? 0}</span>
+            </div>
+            <div class="flex items-center gap-2 py-1.5">
+              <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full bg-emerald-600 rounded-full" style="width:${stagePct(f.members_with_tier2_plus || 0)}%"></div>
+              </div>
+              <span class="text-[.7rem] font-semibold">Tier 2+: ${f.members_with_tier2_plus ?? 0}</span>
+            </div>
+            <div class="flex justify-between items-center py-1.5 border-t border-slate-200 mt-2">
+              <span class="font-semibold text-slate-600">Artefatos publicados</span>
+              <span class="font-bold text-emerald-600">${f.total_published_artifacts ?? 0}</span>
+            </div>
+          </div>`;
+      }
+    } catch (e: any) {
+      funnelEl.innerHTML = EXEC_ERROR(e?.message || 'Erro ao carregar funil');
+    }
+
+    // ── 2. Cert Timeline (exec_cert_timeline RPC) ──
+    const certEl = document.getElementById('exec-cert-timeline')!;
+    certEl.innerHTML = EXEC_LOADING;
+    try {
+      const { data: timelineData, error: timelineErr } = await sb.rpc('exec_cert_timeline', { p_months: 12 });
+      if (timelineErr) throw timelineErr;
+      const rows = Array.isArray(timelineData) ? timelineData : [];
+      if (!rows.length) {
+        certEl.innerHTML = '<p class="text-slate-400 text-[.78rem] text-center py-4">Nenhum dado de coorte ainda.</p>';
+      } else {
+        const maxT1 = Math.max(...rows.map((r: any) => r.members_with_tier1 || 0), 1);
+        certEl.innerHTML = rows.slice(0, 8).map((r: any) => {
+          const pct = Math.round(((r.members_with_tier1 || 0) / maxT1) * 100);
+          return `
+          <div class="flex items-center gap-2 py-1.5 border-b border-slate-100 last:border-b-0">
+            <span class="text-[.72rem] font-bold text-slate-500 w-20">${r.cohort_month || '—'}</span>
+            <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full bg-amber-500 rounded-full" style="width:${pct}%"></div>
+            </div>
+            <span class="text-[.68rem] font-semibold w-12 text-right">${r.members_with_tier1 ?? 0}/${r.members_in_cohort ?? 0}</span>
+          </div>`;
+        }).join('');
+      }
+    } catch (e: any) {
+      certEl.innerHTML = EXEC_ERROR(e?.message || 'Erro ao carregar timeline');
+    }
+
+    // ── 3. Skills Radar (exec_skills_radar RPC) ──
+    const radarEl = document.getElementById('exec-skills-radar')!;
+    radarEl.innerHTML = EXEC_LOADING;
+    try {
+      const { data: radarData, error: radarErr } = await sb.rpc('exec_skills_radar');
+      if (radarErr) throw radarErr;
+      const radarRows = Array.isArray(radarData) ? radarData : [];
+      if (!radarRows.length) {
+        radarEl.innerHTML = '<p class="text-slate-400 text-[.78rem] text-center py-4">Nenhum dado de competências ainda.</p>';
+      } else {
+        const maxPts = Math.max(...radarRows.map((r: any) => r.total_points || 0), 1);
+        radarEl.innerHTML = radarRows.map((r: any) => {
+          const pct = Math.round(((r.total_points || 0) / maxPts) * 100);
+          const axis = (r.radar_axis || '—').replace(/_/g, ' ');
+          return `
+          <div class="flex items-center gap-2 py-1.5 border-b border-slate-100 last:border-b-0">
+            <span class="text-[.72rem] font-semibold text-slate-600 flex-1 truncate">${escapeHtml(axis)}</span>
+            <div class="flex-1 max-w-[100px] h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full bg-navy rounded-full" style="width:${pct}%"></div>
+            </div>
+            <span class="text-[.68rem] font-bold text-navy w-14 text-right">${r.total_points ?? 0} pts</span>
+          </div>`;
+        }).join('');
+      }
+    } catch (e: any) {
+      radarEl.innerHTML = EXEC_ERROR(e?.message || 'Erro ao carregar radar');
+    }
+
+    // ── 4. Chapters (manual — lightweight) ──
     const { data: members } = await sb.from('members')
       .select('chapter, current_cycle_active, operational_role')
       .neq('operational_role', 'guest');
@@ -2124,7 +2276,7 @@ const ADMIN_I18N = {
         const pct = Math.round((s.active / maxActive) * 100);
         return `
         <div class="flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-b-0">
-          <div class="text-[.82rem] font-bold w-16 flex-shrink-0" style="color:${color}">${ch}</div>
+          <div class="text-[.82rem] font-bold w-16 flex-shrink-0" style="color:${color}">${escapeHtml(ch)}</div>
           <div class="flex-1">
             <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
               <div class="h-full rounded-full" style="width:${pct}%;background:${color}"></div>
@@ -2135,20 +2287,17 @@ const ADMIN_I18N = {
         </div>`;
       }).join('');
 
-    // General progress stats
+    // ── 5. Progress (manual — complements funnel) ──
     const totalActive = active.length;
     const researchers = active.filter((m: any) => m.operational_role === 'researcher').length;
     const leaders = active.filter((m: any) => m.operational_role === 'tribe_leader').length;
     const managers = active.filter((m: any) => m.operational_role === 'manager').length;
 
-    // Course progress aggregated
-    const { data: courseProgress } = await sb.from('course_progress')
-      .select('status');
+    const { data: courseProgress } = await sb.from('course_progress').select('status');
     const completed = (courseProgress || []).filter((c: any) => c.status === 'completed').length;
     const totalCourseSlots = totalActive * 8;
     const trailPct = totalCourseSlots > 0 ? Math.round((completed / totalCourseSlots) * 100) : 0;
 
-    // Artifacts
     const { data: artifacts } = await sb.from('artifacts').select('status');
     const published = (artifacts || []).filter((a: any) => a.status === 'published').length;
     const inReview = (artifacts || []).filter((a: any) => a.status === 'review').length;
@@ -2176,7 +2325,7 @@ const ADMIN_I18N = {
         ${researchers} pesquisadores · ${inReview} artefatos em revisão · ${completed} cursos concluídos
       </div>`;
 
-    // Tribe summary
+    // ── 6. Tribes ──
     const { data: tribeData } = await sb.from('tribe_selections').select('tribe_id');
     const tribeCounts: Record<number, number> = {};
     (tribeData || []).forEach((t: any) => { tribeCounts[t.tribe_id] = (tribeCounts[t.tribe_id] || 0) + 1; });
@@ -2190,7 +2339,7 @@ const ADMIN_I18N = {
           <div class="rounded-xl p-3 text-center border border-slate-100">
             <div class="text-[.65rem] font-bold uppercase tracking-wider mb-1" style="color:${color}">T${String(tid).padStart(2,'0')}</div>
             <div class="text-lg font-black text-navy">${count}/6</div>
-            <div class="text-[.6rem] text-slate-400">${TRIBE_NAMES[tid]?.split(' ').slice(0,2).join(' ')}</div>
+            <div class="text-[.6rem] text-slate-400">${(TRIBE_NAMES[tid] || '').split(' ').slice(0,2).join(' ')}</div>
           </div>`;
         }).join('')}
       </div>`;

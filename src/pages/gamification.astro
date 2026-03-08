@@ -256,11 +256,12 @@ import Toast from '../components/ui/Toast.astro';
 
   function toast(msg: string, type = '') { (window as any).toast?.(msg, type); }
 
-  function setPanelMessage(targetId: string, message: string, kind: 'loading' | 'error' | 'empty' = 'loading') {
+  function setPanelMessage(targetId: string, message: string, kind: 'loading' | 'error' | 'empty' = 'loading', cta?: { text: string; onclick: string }) {
     const el = document.getElementById(targetId);
     if (!el) return;
     const color = kind === 'error' ? 'text-crimson' : 'text-slate-400';
-    el.innerHTML = `<p class="${color} text-sm text-center py-6">${message}</p>`;
+    const ctaHtml = cta ? `<button type="button" class="mt-4 px-4 py-2 bg-teal text-white rounded-xl text-sm font-semibold cursor-pointer border-0 hover:opacity-90 transition-all" onclick="${cta.onclick}">${cta.text}</button>` : '';
+    el.innerHTML = `<div class="text-center py-6"><p class="${color} text-sm">${message}</p>${ctaHtml}</div>`;
   }
 
   async function withTimeout<T>(promise: Promise<T>, ms = PANEL_QUERY_TIMEOUT_MS): Promise<T> {
@@ -467,7 +468,7 @@ import Toast from '../components/ui/Toast.astro';
       leaderboardData = data || [];
       trailProgressByMember = buildTrailProgressByMember(courseRows || [], TRAIL_TOTAL);
       if (!data?.length) {
-        setPanelMessage('leaderboard-list', 'Nenhum ponto registrado. Clique em "Sincronizar Pontos" para calcular.', 'empty');
+        setPanelMessage('leaderboard-list', 'Nenhum ponto registrado. Sincronize para calcular o ranking.', 'empty', MEMBER ? { text: '🔄 Sincronizar Pontos + Credly', onclick: 'syncPoints()' } : undefined);
         return;
       }
 
@@ -671,7 +672,7 @@ import Toast from '../components/ui/Toast.astro';
 
       const el = document.getElementById('mypoints-list')!;
       if (!data?.length) {
-        setPanelMessage('mypoints-list', 'Nenhum ponto registrado ainda.', 'empty');
+        setPanelMessage('mypoints-list', 'Você ainda não tem pontos registrados.', 'empty', MEMBER ? { text: '🔄 Sincronizar Pontos + Credly', onclick: 'syncPoints()' } : undefined);
         return;
       }
 
