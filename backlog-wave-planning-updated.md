@@ -58,8 +58,8 @@
 
 | ID | Feature | Priority | Status | Description |
 |----|---------|----------|--------|-------------|
-| S-RM4 | Admin Tiers (ACL) | High | Partial (v2 delivered 2026-03-08) | Centralized ACL now gates both critical routes and privileged in-page actions (allocation, member edits, announcements, reports exports, leadership snapshot actions, cycle-history writes, tribe settings), reducing console-trigger bypass risk. |
-| S-REP1 | Exportação VRMS (PMI) | High | Partial | CSV mastigado no `/admin` para Horas de Impacto e reporte PMI. |
+| S-RM4 | Admin Tiers (ACL) | High | Partial (v3 pack ready 2026-03-08) | Frontend ACL hardened (routes + in-page actions) and backend parity pack added (`acl-tier-parity-v1.sql` + checklist) to align RLS/RPC authorization with the same tier matrix in staging/production rollout. |
+| S-REP1 | Exportação VRMS (PMI) | High | Partial (advanced 2026-03-08) | VRMS no `/admin` agora suporta filtros opcionais por capítulo/tribo no preview e no CSV (incluindo sufixo no nome do arquivo), além do período. |
 | S-ADM2 | Leadership Training Progress Snapshot | High | Partial (v2 delivered 2026-03-08) | `/admin` reports snapshot now has filters (capítulo/tribo/período), CSV export, and i18n keys for PT/EN/ES, in addition to completion/blocking and recent Credly insights. |
 | S10 | Credly Auto Sync | Medium | Planned | Edge Function or cron to auto sync badges weekly. |
 | S-AN1 | Announcements System | Medium | Planned | Global banners and notifications at top of site. |
