@@ -10,12 +10,95 @@ const PROFILE_I18N = {
   errorRemovePrefix: t('profile.errorRemovePrefix', lang),
   removeEmailConfirm: t('profile.removeEmailConfirm', lang),
   emailRemoved: t('profile.emailRemoved', lang),
+  heading: t('profile.heading', lang),
+  dateLocale: t('profile.dateLocale', lang),
+  oproleManager: t('profile.oprole.manager', lang),
+  oproleDeputyManager: t('profile.oprole.deputyManager', lang),
+  oproleTribeLeader: t('profile.oprole.tribeLeader', lang),
+  oproleResearcher: t('profile.oprole.researcher', lang),
+  oproleFacilitator: t('profile.oprole.facilitator', lang),
+  oproleCommunicator: t('profile.oprole.communicator', lang),
+  oproleNone: t('profile.oprole.none', lang),
+  oproleGuest: t('profile.oprole.guest', lang),
+  desigSponsor: t('profile.desig.sponsor', lang),
+  desigChapterLiaison: t('profile.desig.chapterLiaison', lang),
+  desigAmbassador: t('profile.desig.ambassador', lang),
+  desigFounder: t('profile.desig.founder', lang),
+  desigCurator: t('profile.desig.curator', lang),
+  desigCommsTeam: t('profile.desig.commsTeam', lang),
+  desigCoGp: t('profile.desig.coGp', lang),
+  desigTribeLeader: t('profile.desig.tribeLeader', lang),
+  adminPlatform: t('profile.adminPlatform', lang),
+  completenessLabel: t('profile.completenessLabel', lang),
+  missingPrefix: t('profile.missingPrefix', lang),
+  completenessFull: t('profile.completeness.full', lang),
+  completenessAlmost: t('profile.completeness.almost', lang),
+  completenessGood: t('profile.completeness.good', lang),
+  completenessIncomplete: t('profile.completeness.incomplete', lang),
+  fieldPhoto: t('profile.field.photo', lang),
+  fieldPmiId: t('profile.field.pmiId', lang),
+  fieldLinkedin: t('profile.field.linkedin', lang),
+  fieldPhone: t('profile.field.phone', lang),
+  fieldCredlyUrl: t('profile.field.credlyUrl', lang),
+  fieldSecondaryEmail: t('profile.field.secondaryEmail', lang),
+  fieldCycleLink: t('profile.field.cycleLink', lang),
+  fieldTrailCourse: t('profile.field.trailCourse', lang),
+  levelLegend: t('profile.level.legend', lang),
+  levelMaster: t('profile.level.master', lang),
+  levelExpert: t('profile.level.expert', lang),
+  levelPractitioner: t('profile.level.practitioner', lang),
+  levelExplorer: t('profile.level.explorer', lang),
+  noActiveCycle: t('profile.noActiveCycle', lang),
+  journeyTitle: t('profile.journeyTitle', lang),
+  noHistory: t('profile.noHistory', lang),
+  activeTag: t('profile.activeTag', lang),
+  participant: t('profile.participant', lang),
+  journeySummary: t('profile.journeySummary', lang),
+  cyclesLabel: t('profile.cyclesLabel', lang),
+  currentCycleLabel: t('profile.currentCycleLabel', lang),
+  joinedLabel: t('profile.joinedLabel', lang),
+  lastActivationLabel: t('profile.lastActivationLabel', lang),
+  dashboardTitle: t('profile.dashboardTitle', lang),
+  pointsLabel: t('profile.pointsLabel', lang),
+  attendanceLabel: t('profile.attendanceLabel', lang),
+  trailLabel: t('profile.trailLabel', lang),
+  artifactsLabel: t('profile.artifactsLabel', lang),
+  emailsTitle: t('profile.emailsTitle', lang),
+  emailsDesc: t('profile.emailsDesc', lang),
+  primaryBadge: t('profile.primaryBadge', lang),
+  removeBtn: t('profile.removeBtn', lang),
+  addBtn: t('profile.addBtn', lang),
+  emailInputPlaceholder: t('profile.emailInputPlaceholder', lang),
+  personalDataTitle: t('profile.personalDataTitle', lang),
+  phoneLabel: t('profile.phoneLabel', lang),
+  pmiIdLabel: t('profile.pmiIdLabel', lang),
+  linkedinLabel: t('profile.linkedinLabel', lang),
+  credlyLabel: t('profile.credlyLabel', lang),
+  credlyHint: t('profile.credlyHint', lang),
+  verifyCredly: t('profile.verifyCredly', lang),
+  saveChanges: t('profile.saveChanges', lang),
+  pmiIdPlaceholder: t('profile.pmiIdPlaceholder', lang),
+  phonePlaceholder: t('profile.phonePlaceholder', lang),
+  linkedinPlaceholder: t('profile.linkedinPlaceholder', lang),
+  credlyPlaceholder: t('profile.credlyPlaceholder', lang),
+  invalidCredlyUrl: t('profile.invalidCredlyUrl', lang),
+  dataSaved: t('profile.dataSaved', lang),
+  invalidEmail: t('profile.invalidEmail', lang),
+  credlyInvalidSession: t('profile.credlyInvalidSession', lang),
+  credlyRequired: t('profile.credlyRequired', lang),
+  credlyVerifying: t('profile.credlyVerifying', lang),
+  credlyCpmaiMsg: t('profile.credlyCpmaiMsg', lang),
+  credlyBadgesMsg: t('profile.credlyBadgesMsg', lang),
+  credlyNoBadgesMsg: t('profile.credlyNoBadgesMsg', lang),
+  credlyVerifyError: t('profile.credlyVerifyError', lang),
+  credlyConnectError: t('profile.credlyConnectError', lang),
+  unknownError: t('profile.unknownError', lang),
 };
 ---
 <BaseLayout title={t('profile.title', lang)} activePage="profile">
   <Toast />
   <div class="max-w-2xl mx-auto px-4 py-10">
-    <h1 class="text-2xl font-extrabold text-navy mb-6">👤 Meu Perfil</h1>
+    <h1 class="text-2xl font-extrabold text-navy mb-6">{t('profile.heading', lang)}</h1>
     <div id="profile-content" class="space-y-5">
       <div class="text-center text-slate-400 py-8">{t('profile.loading', lang)}</div>
     </div>
@@ -33,15 +116,15 @@ const PROFILE_I18N = {
 
   const PROFILE_I18N = (typeof window !== 'undefined' && (window as any).__PROFILE_I18N) || {};
   const OPROLE_LABELS: Record<string, string> = {
-    manager: 'Gerente', deputy_manager: 'Deputy PM', tribe_leader: 'Líder de Tribo', researcher: 'Pesquisador',
-    facilitator: 'Facilitador', communicator: 'Multiplicador', none: 'Sem papel operacional', guest: 'Convidado'
+    manager: PROFILE_I18N.oproleManager, deputy_manager: PROFILE_I18N.oproleDeputyManager, tribe_leader: PROFILE_I18N.oproleTribeLeader, researcher: PROFILE_I18N.oproleResearcher,
+    facilitator: PROFILE_I18N.oproleFacilitator, communicator: PROFILE_I18N.oproleCommunicator, none: PROFILE_I18N.oproleNone, guest: PROFILE_I18N.oproleGuest
   };
   const OPROLE_COLORS: Record<string, string> = {
     manager: '#FF610F', deputy_manager: '#FF610F', tribe_leader: '#4F17A8', researcher: '#EC4899',
     facilitator: '#06B6D4', communicator: '#8B5CF6', none: '#94A3B8', guest: '#94A3B8'
   };
   const DESIG_LABELS: Record<string, string> = {
-    sponsor: 'Patrocinador', chapter_liaison: 'Ponto Focal', ambassador: 'Embaixador', founder: 'Fundador', curator: 'Curador', comms_team: 'Comunicação', co_gp: 'Co-GP', tribe_leader: 'Líder de Tribo'
+    sponsor: PROFILE_I18N.desigSponsor, chapter_liaison: PROFILE_I18N.desigChapterLiaison, ambassador: PROFILE_I18N.desigAmbassador, founder: PROFILE_I18N.desigFounder, curator: PROFILE_I18N.desigCurator, comms_team: PROFILE_I18N.desigCommsTeam, co_gp: PROFILE_I18N.desigCoGp, tribe_leader: PROFILE_I18N.desigTribeLeader
   };
   const DESIG_COLORS: Record<string, string> = {
     sponsor: '#BE2027', chapter_liaison: '#BE2027', ambassador: '#10B981', founder: '#7C3AED', curator: '#D97706', comms_team: '#06B6D4', co_gp: '#FF610F', tribe_leader: '#4F17A8'
@@ -156,7 +239,7 @@ const PROFILE_I18N = {
     if (!value) return '—';
     const dt = new Date(value);
     if (Number.isNaN(dt.getTime())) return '—';
-    return dt.toLocaleDateString('pt-BR', { year: 'numeric', month: 'short' });
+    return dt.toLocaleDateString(PROFILE_I18N.dateLocale || 'pt-BR', { year: 'numeric', month: 'short' });
   }
 
   function buildJourneyStats(history: any[]) {
@@ -166,7 +249,7 @@ const PROFILE_I18N = {
     const first = list[0] || null;
     return {
       totalCycles,
-      currentCycleLabel: active?.cycle_label || 'Sem ciclo ativo',
+      currentCycleLabel: active?.cycle_label || PROFILE_I18N.noActiveCycle,
       firstStart: formatDatePt(first?.cycle_start),
       latestStart: formatDatePt(active?.cycle_start),
       hasHistory: totalCycles > 0,
@@ -194,31 +277,31 @@ const PROFILE_I18N = {
     };
 
     if (isOperational) {
-      check(m.photo_url, 'Foto', 15);
-      check(m.pmi_id, 'PMI ID', 15);
-      check(m.linkedin_url, 'LinkedIn', 15);
-      check(m.phone, 'Telefone', 10);
-      check(m.credly_url, 'Credly URL', 15);
-      check(m.secondary_emails?.length, 'Email secundário', 10);
-      check(hasCurrentCycleContext(m), 'Vínculo de ciclo', 10);
-      check(cycleStats?.coursesCompleted || cycleStats?.coursesInProgress, '≥1 curso da trilha', 10);
+      check(m.photo_url, PROFILE_I18N.fieldPhoto, 15);
+      check(m.pmi_id, PROFILE_I18N.fieldPmiId, 15);
+      check(m.linkedin_url, PROFILE_I18N.fieldLinkedin, 15);
+      check(m.phone, PROFILE_I18N.fieldPhone, 10);
+      check(m.credly_url, PROFILE_I18N.fieldCredlyUrl, 15);
+      check(m.secondary_emails?.length, PROFILE_I18N.fieldSecondaryEmail, 10);
+      check(hasCurrentCycleContext(m), PROFILE_I18N.fieldCycleLink, 10);
+      check(cycleStats?.coursesCompleted || cycleStats?.coursesInProgress, PROFILE_I18N.fieldTrailCourse, 10);
     } else {
-      check(m.photo_url, 'Foto', 20);
-      check(m.pmi_id, 'PMI ID', 20);
-      check(m.linkedin_url, 'LinkedIn', 20);
-      check(m.phone, 'Telefone', 15);
-      check(m.credly_url, 'Credly URL', 15);
-      check(m.secondary_emails?.length, 'Email secundário', 10);
+      check(m.photo_url, PROFILE_I18N.fieldPhoto, 20);
+      check(m.pmi_id, PROFILE_I18N.fieldPmiId, 20);
+      check(m.linkedin_url, PROFILE_I18N.fieldLinkedin, 20);
+      check(m.phone, PROFILE_I18N.fieldPhone, 15);
+      check(m.credly_url, PROFILE_I18N.fieldCredlyUrl, 15);
+      check(m.secondary_emails?.length, PROFILE_I18N.fieldSecondaryEmail, 10);
     }
 
     return { pct: total > 0 ? Math.round((earned / total) * 100) : 0, missing };
   }
 
   function completenessMessage(pct: number): string {
-    if (pct >= 100) return '🏆 Perfil completo! +50 pontos de gamificação.';
-    if (pct >= 71) return '🔥 Quase lá!';
-    if (pct >= 31) return '💪 Bom progresso! Complete para aparecer no ranking.';
-    return '📋 Seu perfil está incompleto — complete para ganhar pontos!';
+    if (pct >= 100) return PROFILE_I18N.completenessFull;
+    if (pct >= 71) return PROFILE_I18N.completenessAlmost;
+    if (pct >= 31) return PROFILE_I18N.completenessGood;
+    return PROFILE_I18N.completenessIncomplete;
   }
 
   function completenessColor(pct: number): string {
@@ -242,18 +325,18 @@ const PROFILE_I18N = {
       html += `<span class="inline-block px-2 py-0.5 rounded-md text-[.62rem] font-bold uppercase" style="background:${c}22;color:${c}">${DESIG_LABELS[d] || d}</span> `;
     });
     if (m.is_superadmin) {
-      html += `<span class="inline-block px-2 py-0.5 rounded-md text-[.62rem] font-bold uppercase bg-orange/10 text-orange">🔧 Admin Plataforma</span>`;
+      html += `<span class="inline-block px-2 py-0.5 rounded-md text-[.62rem] font-bold uppercase bg-orange/10 text-orange">${PROFILE_I18N.adminPlatform}</span>`;
     }
     return html;
   }
 
   // ── XP Level ──
   function getLevel(totalHours: number): { name: string; emoji: string; next: string; hoursToNext: number } {
-    if (totalHours >= 401) return { name: 'Lenda IA', emoji: '🏆', next: '', hoursToNext: 0 };
-    if (totalHours >= 201) return { name: 'Mestre IA', emoji: '💎', next: 'Lenda IA', hoursToNext: 401 - totalHours };
-    if (totalHours >= 91) return { name: 'Especialista IA', emoji: '🔥', next: 'Mestre IA', hoursToNext: 201 - totalHours };
-    if (totalHours >= 31) return { name: 'Praticante IA', emoji: '⚡', next: 'Especialista IA', hoursToNext: 91 - totalHours };
-    return { name: 'Explorador IA', emoji: '🌱', next: 'Praticante IA', hoursToNext: 31 - totalHours };
+    if (totalHours >= 401) return { name: PROFILE_I18N.levelLegend, emoji: '🏆', next: '', hoursToNext: 0 };
+    if (totalHours >= 201) return { name: PROFILE_I18N.levelMaster, emoji: '💎', next: PROFILE_I18N.levelLegend, hoursToNext: 401 - totalHours };
+    if (totalHours >= 91) return { name: PROFILE_I18N.levelExpert, emoji: '🔥', next: PROFILE_I18N.levelMaster, hoursToNext: 201 - totalHours };
+    if (totalHours >= 31) return { name: PROFILE_I18N.levelPractitioner, emoji: '⚡', next: PROFILE_I18N.levelExpert, hoursToNext: 91 - totalHours };
+    return { name: PROFILE_I18N.levelExplorer, emoji: '🌱', next: PROFILE_I18N.levelPractitioner, hoursToNext: 31 - totalHours };
   }
 
   // ── Timeline ──
@@ -261,8 +344,8 @@ const PROFILE_I18N = {
     if (!cycleHistory.length) {
       return `
         <div class="bg-white rounded-2xl border border-slate-200 p-6">
-          <h2 class="text-sm font-bold text-navy mb-2">📅 Minha Jornada no Núcleo</h2>
-          <p class="text-[.78rem] text-slate-500">Ainda sem histórico de ciclo cadastrado.</p>
+          <h2 class="text-sm font-bold text-navy mb-2">${PROFILE_I18N.journeyTitle}</h2>
+          <p class="text-[.78rem] text-slate-500">${PROFILE_I18N.noHistory}</p>
         </div>`;
     }
     const CYCLE_COLORS: Record<string, string> = {
@@ -270,7 +353,7 @@ const PROFILE_I18N = {
     };
     return `
       <div class="bg-white rounded-2xl border border-slate-200 p-6">
-        <h2 class="text-sm font-bold text-navy mb-4">📅 Minha Jornada no Núcleo</h2>
+        <h2 class="text-sm font-bold text-navy mb-4">${PROFILE_I18N.journeyTitle}</h2>
         <div class="relative pl-6 border-l-2 border-slate-200 space-y-4">
           ${cycleHistory.map(h => {
             const color = CYCLE_COLORS[h.cycle_code] || '#94A3B8';
@@ -289,10 +372,10 @@ const PROFILE_I18N = {
                 <div class="rounded-xl p-3 ${isCurrent ? 'bg-orange/5 border border-orange/20' : 'bg-slate-50 border border-slate-100'}">
                   <div class="flex items-center gap-2 flex-wrap">
                     <span class="text-[.72rem] font-bold" style="color:${color}">${h.cycle_label}</span>
-                    ${isCurrent ? '<span class="text-[.58rem] font-bold px-1.5 py-0.5 rounded-full bg-orange/10 text-orange animate-pulse">ATIVO</span>' : ''}
+                    ${isCurrent ? `<span class="text-[.58rem] font-bold px-1.5 py-0.5 rounded-full bg-orange/10 text-orange animate-pulse">${PROFILE_I18N.activeTag}</span>` : ''}
                   </div>
                   <div class="text-[.72rem] text-slate-600 mt-1">
-                    ${allLabels.length ? allLabels.join(' · ') : '<span class="text-slate-400">Participante</span>'}
+                    ${allLabels.length ? allLabels.join(' · ') : `<span class="text-slate-400">${PROFILE_I18N.participant}</span>`}
                   </div>
                   ${h.tribe_name ? `<div class="text-[.65rem] text-slate-400 mt-0.5">🏷️ ${h.tribe_name}</div>` : ''}
                   <div class="text-[.65rem] text-slate-400 mt-0.5">${h.chapter || ''}</div>
@@ -307,23 +390,23 @@ const PROFILE_I18N = {
     if (!journeyStats) return '';
     return `
       <div class="bg-white rounded-2xl border border-slate-200 p-6">
-        <h2 class="text-sm font-bold text-navy mb-4">🧭 Resumo da Jornada</h2>
+        <h2 class="text-sm font-bold text-navy mb-4">${PROFILE_I18N.journeySummary}</h2>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div class="bg-slate-50 rounded-xl p-3 text-center">
             <div class="text-lg font-black text-navy">${journeyStats.totalCycles}</div>
-            <div class="text-[.65rem] text-slate-400 font-semibold">Ciclos</div>
+            <div class="text-[.65rem] text-slate-400 font-semibold">${PROFILE_I18N.cyclesLabel}</div>
           </div>
           <div class="bg-slate-50 rounded-xl p-3 text-center">
             <div class="text-[.72rem] font-black text-navy">${journeyStats.currentCycleLabel}</div>
-            <div class="text-[.65rem] text-slate-400 font-semibold">Ciclo atual</div>
+            <div class="text-[.65rem] text-slate-400 font-semibold">${PROFILE_I18N.currentCycleLabel}</div>
           </div>
           <div class="bg-slate-50 rounded-xl p-3 text-center">
             <div class="text-[.72rem] font-black text-navy">${journeyStats.firstStart}</div>
-            <div class="text-[.65rem] text-slate-400 font-semibold">Ingresso</div>
+            <div class="text-[.65rem] text-slate-400 font-semibold">${PROFILE_I18N.joinedLabel}</div>
           </div>
           <div class="bg-slate-50 rounded-xl p-3 text-center">
             <div class="text-[.72rem] font-black text-navy">${journeyStats.latestStart}</div>
-            <div class="text-[.65rem] text-slate-400 font-semibold">Última ativação</div>
+            <div class="text-[.65rem] text-slate-400 font-semibold">${PROFILE_I18N.lastActivationLabel}</div>
           </div>
         </div>
       </div>`;
@@ -343,31 +426,31 @@ const PROFILE_I18N = {
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <div class="bg-slate-50 rounded-xl p-3 text-center">
           <div class="text-lg font-black text-navy">${cycleStats.points}</div>
-          <div class="text-[.65rem] text-slate-400 font-semibold">🏆 Pontos</div>
+          <div class="text-[.65rem] text-slate-400 font-semibold">${PROFILE_I18N.pointsLabel}</div>
         </div>`;
 
     if (isOperational) {
       cardsHtml += `
         <div class="bg-slate-50 rounded-xl p-3 text-center">
           <div class="text-lg font-black text-navy">${cycleStats.attendance}/${cycleStats.totalEvents}</div>
-          <div class="text-[.65rem] text-slate-400 font-semibold">📅 Presenças (${pctAttend}%)</div>
+          <div class="text-[.65rem] text-slate-400 font-semibold">${PROFILE_I18N.attendanceLabel} (${pctAttend}%)</div>
         </div>
         <div class="bg-slate-50 rounded-xl p-3 text-center">
           <div class="text-lg font-black text-navy">${cycleStats.coursesCompleted}/8</div>
-          <div class="text-[.65rem] text-slate-400 font-semibold">📚 Trilha IA</div>
+          <div class="text-[.65rem] text-slate-400 font-semibold">${PROFILE_I18N.trailLabel}</div>
         </div>`;
     }
 
     cardsHtml += `
         <div class="bg-slate-50 rounded-xl p-3 text-center">
           <div class="text-lg font-black text-navy">${cycleStats.artifacts.total}</div>
-          <div class="text-[.65rem] text-slate-400 font-semibold">📝 Artefatos</div>
+          <div class="text-[.65rem] text-slate-400 font-semibold">${PROFILE_I18N.artifactsLabel}</div>
         </div>
       </div>`;
 
     return `
       <div class="bg-white rounded-2xl border border-slate-200 p-6">
-        <h2 class="text-sm font-bold text-navy mb-4">📊 Ciclo 3 (2026/1)</h2>
+        <h2 class="text-sm font-bold text-navy mb-4">${PROFILE_I18N.dashboardTitle}</h2>
         ${cardsHtml}
       </div>`;
   }
@@ -408,7 +491,7 @@ const PROFILE_I18N = {
         <!-- Completeness bar -->
         <div class="mt-2">
           <div class="flex items-center justify-between mb-1">
-            <span class="text-[.7rem] font-semibold text-slate-500">Completude do Perfil</span>
+            <span class="text-[.7rem] font-semibold text-slate-500">${PROFILE_I18N.completenessLabel}</span>
             <span class="text-[.7rem] font-bold" style="color:${barColor}">${comp.pct}%</span>
           </div>
           <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
@@ -418,7 +501,7 @@ const PROFILE_I18N = {
           <div class="mt-1.5 text-[.68rem] text-slate-400">
             ${completenessMessage(comp.pct)}
             ${comp.missing.length > 0 && comp.pct < 100
-              ? ` Falta: <strong>${comp.missing.join(', ')}</strong>.`
+              ? ` ${PROFILE_I18N.missingPrefix}<strong>${comp.missing.join(', ')}</strong>.`
               : ''}
           </div>
         </div>
@@ -435,69 +518,69 @@ const PROFILE_I18N = {
 
       <!-- Card: Emails -->
       <div class="bg-white rounded-2xl border border-slate-200 p-6">
-        <h2 class="text-sm font-bold text-navy mb-4">📧 Emails Cadastrados</h2>
+        <h2 class="text-sm font-bold text-navy mb-4">${PROFILE_I18N.emailsTitle}</h2>
         <p class="text-[.75rem] text-slate-400 mb-3">
-          Usado para login, vinculação de certificações (Credly) e comunicações. Adicione emails alternativos para melhor matching.
+          ${PROFILE_I18N.emailsDesc}
         </p>
         <div class="flex items-center gap-2 py-2 px-3 bg-slate-50 rounded-lg mb-2">
           <span class="text-sm flex-1">${m.email}</span>
-          <span class="text-[.65rem] font-bold text-teal uppercase bg-teal/10 px-2 py-0.5 rounded">Principal</span>
+          <span class="text-[.65rem] font-bold text-teal uppercase bg-teal/10 px-2 py-0.5 rounded">${PROFILE_I18N.primaryBadge}</span>
         </div>
         <div id="secondary-emails-list">
           ${secondaryEmails.map((e: string, i: number) => `
             <div class="flex items-center gap-2 py-2 px-3 bg-slate-50/50 rounded-lg mb-2">
               <span class="text-sm flex-1">${e}</span>
               <button type="button" data-action="remove-secondary-email" class="text-[.7rem] font-semibold text-red-500 hover:text-red-700 cursor-pointer bg-transparent border-0 px-2 py-0.5 rounded hover:bg-red-50 transition-all"
-                data-email-idx="${i}">✕ Remover</button>
+                data-email-idx="${i}">${PROFILE_I18N.removeBtn}</button>
             </div>
           `).join('')}
         </div>
         <div class="flex gap-2 mt-2">
-          <input type="email" id="new-secondary-email" placeholder="outro@email.com"
+          <input type="email" id="new-secondary-email" placeholder="${PROFILE_I18N.emailInputPlaceholder}"
             class="flex-1 px-3 py-2 border-[1.5px] border-slate-200 rounded-lg text-sm focus:outline-none focus:border-teal">
           <button data-action="add-secondary-email"
             class="px-3 py-2 bg-teal text-white rounded-lg text-sm font-semibold cursor-pointer border-0 hover:opacity-90 transition-all flex-shrink-0">
-            + Adicionar
+            ${PROFILE_I18N.addBtn}
           </button>
         </div>
       </div>
 
       <!-- Card: Personal data -->
       <div class="bg-white rounded-2xl border border-slate-200 p-6">
-        <h2 class="text-sm font-bold text-navy mb-4">🔒 Dados Pessoais</h2>
+        <h2 class="text-sm font-bold text-navy mb-4">${PROFILE_I18N.personalDataTitle}</h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">PMI ID</label>
+            <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">${PROFILE_I18N.pmiIdLabel}</label>
             <div class="relative">
-              <input type="password" id="self-pmi" value="${m.pmi_id || ''}" placeholder="Ex: 5975367"
+              <input type="password" id="self-pmi" value="${m.pmi_id || ''}" placeholder="${PROFILE_I18N.pmiIdPlaceholder}"
                 class="w-full px-3 py-2 pr-10 border-[1.5px] border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
               <button data-action="toggle-field" data-target="self-pmi" type="button"
                 class="absolute right-2 top-1/2 -translate-y-1/2 bg-transparent border-0 cursor-pointer text-slate-400 hover:text-slate-600 text-base p-1">👁</button>
             </div>
           </div>
           <div>
-            <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Telefone</label>
+            <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">${PROFILE_I18N.phoneLabel}</label>
             <div class="relative">
-              <input type="password" id="self-phone" value="${m.phone || ''}" placeholder="+55 (00) 00000-0000"
+              <input type="password" id="self-phone" value="${m.phone || ''}" placeholder="${PROFILE_I18N.phonePlaceholder}"
                 class="w-full px-3 py-2 pr-10 border-[1.5px] border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
               <button data-action="toggle-field" data-target="self-phone" type="button"
                 class="absolute right-2 top-1/2 -translate-y-1/2 bg-transparent border-0 cursor-pointer text-slate-400 hover:text-slate-600 text-base p-1">👁</button>
             </div>
           </div>
           <div class="sm:col-span-2">
-            <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">LinkedIn</label>
-            <input type="text" inputmode="url" id="self-li" value="${m.linkedin_url || ''}" placeholder="https://linkedin.com/in/…"
+            <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">${PROFILE_I18N.linkedinLabel}</label>
+            <input type="text" inputmode="url" id="self-li" value="${m.linkedin_url || ''}" placeholder="${PROFILE_I18N.linkedinPlaceholder}"
               class="w-full px-3 py-2 border-[1.5px] border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
           </div>
           <div class="sm:col-span-2">
-            <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Credly (perfil público)</label>
-            <input type="text" inputmode="url" id="self-credly" value="${m.credly_url || ''}" placeholder="https://www.credly.com/users/seu-nome"
+            <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">${PROFILE_I18N.credlyLabel}</label>
+            <input type="text" inputmode="url" id="self-credly" value="${m.credly_url || ''}" placeholder="${PROFILE_I18N.credlyPlaceholder}"
               class="w-full px-3 py-2 border-[1.5px] border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
             <div class="flex items-center gap-2 mt-1">
-              <p class="text-[.68rem] text-slate-400 flex-1">Usado para validar certificações PMI automaticamente. Opcional.</p>
+              <p class="text-[.68rem] text-slate-400 flex-1">${PROFILE_I18N.credlyHint}</p>
               <button id="btn-credly-verify" data-action="verify-credly"
                 class="px-3 py-1.5 bg-teal text-white rounded-lg text-[.7rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all flex-shrink-0">
-                🔍 Verificar Credly
+                ${PROFILE_I18N.verifyCredly}
               </button>
             </div>
           </div>
@@ -505,7 +588,7 @@ const PROFILE_I18N = {
         <div class="mt-5 flex justify-end">
           <button data-action="save-self"
             class="px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all cursor-pointer border-0">
-            💾 Salvar Alterações
+            ${PROFILE_I18N.saveChanges}
           </button>
         </div>
       </div>
@@ -553,7 +636,7 @@ const PROFILE_I18N = {
     const credlyInput = (document.getElementById('self-credly') as HTMLInputElement)?.value || '';
     const credlyNormalized = credlyInput.trim() ? normalizeCredlyUrl(credlyInput) : null;
     if (credlyInput.trim() && !credlyNormalized) {
-      (window as any).toast?.('URL Credly inválida. Use o perfil público: https://www.credly.com/users/seu-usuario', 'error');
+      (window as any).toast?.(PROFILE_I18N.invalidCredlyUrl, 'error');
       return;
     }
     if (credlyNormalized) {
@@ -568,7 +651,7 @@ const PROFILE_I18N = {
     });
     if (data?.error) (window as any).toast?.(data.error, 'error');
     else {
-      (window as any).toast?.('Dados salvos ✅', 'success');
+      (window as any).toast?.(PROFILE_I18N.dataSaved, 'success');
       // Reload to update completeness bar
       const { data: updated } = await sb.rpc('get_member_by_auth');
       if (updated) { currentMember = updated; renderProfile(updated); }
@@ -582,7 +665,7 @@ const PROFILE_I18N = {
     const input = document.getElementById('new-secondary-email') as HTMLInputElement;
     const email = input?.value.trim().toLowerCase();
     if (!email || !email.includes('@')) {
-      (window as any).toast?.('Digite um email válido', 'error');
+      (window as any).toast?.(PROFILE_I18N.invalidEmail, 'error');
       return;
     }
     const existing = currentMember.secondary_emails || [];
@@ -650,7 +733,7 @@ const PROFILE_I18N = {
 
   // ── Credly verification ──
   async function describeFnError(err: any): Promise<string> {
-    if (!err) return 'Erro desconhecido';
+    if (!err) return PROFILE_I18N.unknownError;
     if (err.context && typeof err.context.json === 'function') {
       try {
         const payload = await err.context.json();
@@ -658,7 +741,7 @@ const PROFILE_I18N = {
         if (detail) return detail;
       } catch {}
     }
-    return err.message || 'Erro desconhecido';
+    return err.message || PROFILE_I18N.unknownError;
   }
 
   async function verifyCredly() {
@@ -667,20 +750,20 @@ const PROFILE_I18N = {
     await sb.auth.refreshSession();
     const { data: { session } } = await sb.auth.getSession();
     if (!session?.access_token) {
-      (window as any).toast?.('Sessão inválida. Faça login novamente para verificar o Credly.', 'error');
+      (window as any).toast?.(PROFILE_I18N.credlyInvalidSession, 'error');
       return;
     }
     const credlyInput = (document.getElementById('self-credly') as HTMLInputElement)?.value || '';
     const credlyNormalized = credlyInput.trim() ? normalizeCredlyUrl(credlyInput) : normalizeCredlyUrl(currentMember.credly_url || '');
     if (!credlyNormalized) {
-      (window as any).toast?.('Informe uma URL Credly válida antes de verificar.', 'error');
+      (window as any).toast?.(PROFILE_I18N.credlyRequired, 'error');
       return;
     }
     const credlyField = document.getElementById('self-credly') as HTMLInputElement | null;
     if (credlyField) credlyField.value = credlyNormalized;
 
     const btn = document.getElementById('btn-credly-verify') as HTMLButtonElement;
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Verificando...'; }
+    if (btn) { btn.disabled = true; btn.textContent = PROFILE_I18N.credlyVerifying; }
     try {
       const { data, error } = await sb.functions.invoke('verify-credly', {
         headers: { Authorization: `Bearer ${session.access_token}` },
@@ -693,20 +776,20 @@ const PROFILE_I18N = {
         const trailDetected = data.pmi_trail_count || 0;
         const trailSynced = data.pmi_trail_synced || 0;
         const msg = data.has_cpmai
-          ? `🎉 CPMAI verificada! ${matched} badge(s) encontrada(s) de ${total} no Credly. Trilha: ${trailDetected} detectadas, ${trailSynced} sincronizadas.`
+          ? PROFILE_I18N.credlyCpmaiMsg.replace('{matched}', matched).replace('{total}', total).replace('{trailDetected}', trailDetected).replace('{trailSynced}', trailSynced)
           : matched > 0
-            ? `✅ ${matched} badge(s) verificada(s) de ${total} no Credly. Trilha: ${trailDetected} detectadas, ${trailSynced} sincronizadas.`
-            : `ℹ️ ${total} badge(s) encontrada(s) no Credly, nenhuma da trilha PMI-AI.`;
+            ? PROFILE_I18N.credlyBadgesMsg.replace('{matched}', matched).replace('{total}', total).replace('{trailDetected}', trailDetected).replace('{trailSynced}', trailSynced)
+            : PROFILE_I18N.credlyNoBadgesMsg.replace('{total}', total);
         (window as any).toast?.(msg, matched > 0 ? 'success' : 'info');
         const { data: updated } = await sb.rpc('get_member_by_auth');
         if (updated) { currentMember = updated; renderProfile(updated); }
       } else {
-        (window as any).toast?.(data?.error || 'Erro na verificação', 'error');
+        (window as any).toast?.(data?.error || PROFILE_I18N.credlyVerifyError, 'error');
       }
     } catch (e: any) {
-      (window as any).toast?.(e.message || 'Erro ao conectar com Credly', 'error');
+      (window as any).toast?.(e.message || PROFILE_I18N.credlyConnectError, 'error');
     } finally {
-      if (btn) { btn.disabled = false; btn.textContent = '🔍 Verificar Credly'; }
+      if (btn) { btn.disabled = false; btn.textContent = PROFILE_I18N.verifyCredly; }
     }
   }
 
