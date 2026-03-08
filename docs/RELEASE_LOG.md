@@ -1,5 +1,32 @@
 # Release Log
 
+## 2026-03-08 — Admin allocation 400 fix (admin_force_tribe_selection)
+
+### Escopo
+Corrigir erro 400 Bad Request ao alocar pesquisadores pendentes no pool (botão Alocar → escolher tribo → confirmar).
+
+### Causa provável
+`admin_get_tribe_allocations` retorna objetos com `id` (de members), mas o frontend usava `m.member_id` que podia ser undefined. Isso enviava a string "undefined" como `p_member_id`, causando 400 (UUID inválido).
+
+### Correção
+- `data-member-id`: usar `m.id ?? m.member_id ?? ''` para cobrir ambos os formatos de resposta
+- `confirmAllocate`: validar memberId antes de chamar RPC; tratar `error` do Supabase; `parseInt(..., 10)` explícito
+
+---
+
+## 2026-03-08 — S11 polish + define:vars sustainability (Sprint increment)
+
+### S11: Painel executivo i18n
+- Painel Executive (observer tier): loading e empty states migrados para ADMIN_I18N
+- Chaves: admin.exec.noCohortData, funnelNoData, funnelError, certError, radarError, noRadarData
+- PT/EN/ES parity
+
+### Sustentabilidade
+- Regra 0 em `.cursorrules`: nunca combinar define:vars com import no mesmo script Astro
+- Previne regressão "Cannot use import statement outside a module"
+
+---
+
 ## 2026-03-08 — Admin page fix: define:vars + import (Critical)
 
 ### Escopo

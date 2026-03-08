@@ -12,6 +12,9 @@ Checklist de qualidade para garantir que cada release não afeta usabilidade nos
 - [ ] Navegar pelas rotas principais sem erros em vermelho
 - [ ] Rotas obrigatórias: `/`, `/profile`, `/attendance`, `/gamification`, `/artifacts`, `/admin`
 
+### Regra de prevenção (adicionada em .cursorrules)
+Nunca combinar `define:vars` com `import` no mesmo script Astro. Ver `.cursorrules` regra 0.
+
 ### Erro conhecido evitado (março 2026)
 
 **"Cannot use import statement outside a module"** — Ocorria em páginas Astro com `<script define:vars={{ ... }}>` e `import` no mesmo bloco. A diretiva `define:vars` força `is:inline`, impedindo o bundler de processar imports.

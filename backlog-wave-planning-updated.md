@@ -77,7 +77,7 @@ Isso ocorreu por execução orientada a incidentes de produção (hotfixes) sem 
 | S-UX1 | Trilha Progress Clarity for Researchers | High | ✅ Done (2026-03-08) | `/gamification` now shows logged-in mini trail clarity card with explicit progress (`X de Y`) and missing/in-progress course list. |
 | S-PA1 | Product Analytics | High | Partial (v2 delivered 2026-03-08) | Protected `/admin/analytics` route + iframe embeds + admin shortcut, plus consent-aware analytics toggle (allow/revoke), session replay control, and identify gated by consent without name/email PII. |
 | S8b | i18n Internal Pages | Medium | ✅ Done (2026-03-08) | Admin completo: modal Eixo 1/2/3, oprole options, desig labels, CSV headers (VRMS + Member), Sim/Não. Attendance, profile, artifacts, gamification, TribesSection. PT/EN/ES parity. |
-| S11 | UI Polish & Empty States | Medium | Partial (2026-03-08) | 404 active; artifacts/attendance com skeleton + empty states; gamification: setPanelMessage com CTA opcional — leaderboard e Meus Pontos exibem botão Sincronizar quando vazios. |
+| S11 | UI Polish & Empty States | Medium | Partial (2026-03-08) | 404 active; artifacts/attendance com skeleton + empty states; gamification: setPanelMessage com CTA opcional; admin painel executivo: loading/empty/error i18n PT/EN/ES; .cursorrules regra define:vars. |
 
 ---
 

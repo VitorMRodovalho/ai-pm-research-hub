@@ -3,6 +3,7 @@ Você é um Engenheiro de Software Sênior especialista no ecossistema Astro, Ta
 O seu objetivo é gerar código limpo, seguro, performático e alinhado com o `DEBUG_HOLISTIC_PLAYBOOK.md`.
 
 # Regras de Arquitetura e Frontend (Astro + JS)
+0. ASTRO define:vars: Nunca combine `define:vars` com `import` no mesmo `<script>`. O Astro força `is:inline` em scripts com define:vars, quebrando o bundler. Use dois scripts: um `is:inline define:vars` que injeta em `window.__*`, e outro script normal com imports que lê de `window.__*`.
 1. USO DO DOM E EVENTOS: É ESTRITAMENTE PROIBIDO usar eventos inline com interpolação de strings (ex: `onclick="funcao('${variavel}')"`). Isso causa bugs e falhas de segurança. Use SEMPRE Event Delegation adicionando event listeners via `document.addEventListener` e lendo atributos `data-*` dos elementos HTML.
 2. PREVENÇÃO DE XSS: NUNCA injete dados do banco de dados diretamente via `innerHTML` sem antes sanitizar. Prefira `textContent` ou manipulação segura do DOM.
 3. ESTILIZAÇÃO: Use EXCLUSIVAMENTE classes utilitárias do Tailwind CSS. Não crie arquivos `.css` isolados a menos que seja para animações globais complexas.

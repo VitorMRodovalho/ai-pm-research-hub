@@ -64,6 +64,12 @@ const ADMIN_I18N = {
   execLabelResearchers: t('admin.exec.labelResearchers', lang),
   execLabelArtifactsInReview: t('admin.exec.labelArtifactsInReview', lang),
   execLabelCoursesCompleted: t('admin.exec.labelCoursesCompleted', lang),
+  execNoCohortData: t('admin.exec.noCohortData', lang),
+  execFunnelNoData: t('admin.exec.funnelNoData', lang),
+  execFunnelError: t('admin.exec.funnelError', lang),
+  execCertError: t('admin.exec.certError', lang),
+  execRadarError: t('admin.exec.radarError', lang),
+  execNoRadarData: t('admin.exec.noRadarData', lang),
   cyclePromptOpRole: t('admin.cycleHistory.promptOpRole', lang),
   cyclePromptDesigs: t('admin.cycleHistory.promptDesigs', lang),
   cyclePromptTribeName: t('admin.cycleHistory.promptTribeName', lang),
@@ -870,7 +876,7 @@ const ADMIN_I18N = {
           ${waLink ? '<a href="' + waLink + '" target="_blank" class="px-2 py-1 text-[.68rem] font-bold bg-green-50 text-green-700 border border-green-200 rounded-lg no-underline hover:bg-green-100 transition-all" title="WhatsApp">&#x1F4F1;</a>' : ''}
           <a href="${mailLink}" class="px-2 py-1 text-[.68rem] font-bold bg-blue-50 text-blue-700 border border-blue-200 rounded-lg no-underline hover:bg-blue-100 transition-all" title="Email">&#x1F4E7;</a>
           <button type="button" class="btn-alloc px-2.5 py-1 text-[.68rem] font-bold bg-navy text-white border-0 rounded-lg cursor-pointer hover:opacity-90 transition-all"
-            data-member-id="${escapeAttr(String(m.member_id))}"
+            data-member-id="${escapeAttr(String(m.id ?? m.member_id ?? ''))}"
             data-member-name="${escapeAttr(m.name || '')}"
             data-member-email="${escapeAttr(m.email || '')}"
             data-member-chapter="${escapeAttr(m.chapter || '')}">
@@ -910,10 +916,15 @@ const ADMIN_I18N = {
   };
   (window as any).confirmAllocate = async () => {
     if (!ensureAdminAction()) return;
-    const memberId = (document.getElementById('alloc-member-id') as HTMLInputElement).value;
-    const tribeId = parseInt((document.getElementById('alloc-tribe') as HTMLSelectElement).value);
-    if (!tribeId) { toast(ADMIN_I18N.selectTribe, 'error'); return; }
-    const { data } = await sb.rpc('admin_force_tribe_selection', { p_member_id: memberId, p_tribe_id: tribeId });
+    const memberId = (document.getElementById('alloc-member-id') as HTMLInputElement).value?.trim();
+    const tribeId = parseInt((document.getElementById('alloc-tribe') as HTMLSelectElement).value, 10);
+    if (!memberId) { toast(ADMIN_I18N.allocateError, 'error'); return; }
+    if (!tribeId || isNaN(tribeId)) { toast(ADMIN_I18N.selectTribe, 'error'); return; }
+    const { data, error: rpcError } = await sb.rpc('admin_force_tribe_selection', { p_member_id: memberId, p_tribe_id: tribeId });
+    if (rpcError) {
+      toast(rpcError.message || ADMIN_I18N.allocateError, 'error');
+      return;
+    }
     if (data?.success) {
       (window as any).closeAllocate();
       toast(`${ADMIN_I18N.allocatedPrefix} ${String(tribeId).padStart(2, '0')}!`, 'success');
@@ -2162,19 +2173,19 @@ const ADMIN_I18N = {
   // SPONSOR TIER: Executive Overview (S-PA2-UI-BIND)
   // Uses exec_funnel_summary, exec_cert_timeline, exec_skills_radar RPCs
   // ══════════════════════════════════════════
-  const EXEC_LOADING = '<p class="text-slate-400 text-sm text-center py-4">Carregando...</p>';
+  const EXEC_LOADING = () => `<p class="text-slate-400 text-sm text-center py-4">${escapeHtml(ADMIN_I18N.loading)}</p>`;
   const EXEC_ERROR = (msg: string) => `<p class="text-crimson text-sm text-center py-4">${escapeHtml(msg)}</p>`;
 
   async function loadExecutiveOverview() {
     // ── 1. Funnel (exec_funnel_summary RPC) ──
     const funnelEl = document.getElementById('exec-funnel')!;
-    funnelEl.innerHTML = EXEC_LOADING;
+    funnelEl.innerHTML = EXEC_LOADING();
     try {
       const { data: funnelData, error: funnelErr } = await sb.rpc('exec_funnel_summary');
       if (funnelErr) throw funnelErr;
       const f = Array.isArray(funnelData) && funnelData[0] ? funnelData[0] : null;
       if (!f) {
-        funnelEl.innerHTML = EXEC_ERROR('RPC exec_funnel_summary sem dados');
+        funnelEl.innerHTML = EXEC_ERROR(ADMIN_I18N.execFunnelNoData);
       } else {
         const total = f.total_members || 0;
         const maxStage = Math.max(f.active_members || 0, 1);
@@ -2220,18 +2231,18 @@ const ADMIN_I18N = {
           </div>`;
       }
     } catch (e: any) {
-      funnelEl.innerHTML = EXEC_ERROR(e?.message || 'Erro ao carregar funil');
+      funnelEl.innerHTML = EXEC_ERROR(e?.message || ADMIN_I18N.execFunnelError);
     }
 
     // ── 2. Cert Timeline (exec_cert_timeline RPC) ──
     const certEl = document.getElementById('exec-cert-timeline')!;
-    certEl.innerHTML = EXEC_LOADING;
+    certEl.innerHTML = EXEC_LOADING();
     try {
       const { data: timelineData, error: timelineErr } = await sb.rpc('exec_cert_timeline', { p_months: 12 });
       if (timelineErr) throw timelineErr;
       const rows = Array.isArray(timelineData) ? timelineData : [];
       if (!rows.length) {
-        certEl.innerHTML = '<p class="text-slate-400 text-[.78rem] text-center py-4">Nenhum dado de coorte ainda.</p>';
+        certEl.innerHTML = `<p class="text-slate-400 text-[.78rem] text-center py-4">${escapeHtml(ADMIN_I18N.execNoCohortData)}</p>`;
       } else {
         const maxT1 = Math.max(...rows.map((r: any) => r.members_with_tier1 || 0), 1);
         certEl.innerHTML = rows.slice(0, 8).map((r: any) => {
@@ -2247,18 +2258,18 @@ const ADMIN_I18N = {
         }).join('');
       }
     } catch (e: any) {
-      certEl.innerHTML = EXEC_ERROR(e?.message || 'Erro ao carregar timeline');
+      certEl.innerHTML = EXEC_ERROR(e?.message || ADMIN_I18N.execCertError);
     }
 
     // ── 3. Skills Radar (exec_skills_radar RPC) ──
     const radarEl = document.getElementById('exec-skills-radar')!;
-    radarEl.innerHTML = EXEC_LOADING;
+    radarEl.innerHTML = EXEC_LOADING();
     try {
       const { data: radarData, error: radarErr } = await sb.rpc('exec_skills_radar');
       if (radarErr) throw radarErr;
       const radarRows = Array.isArray(radarData) ? radarData : [];
       if (!radarRows.length) {
-        radarEl.innerHTML = '<p class="text-slate-400 text-[.78rem] text-center py-4">Nenhum dado de competências ainda.</p>';
+        radarEl.innerHTML = `<p class="text-slate-400 text-[.78rem] text-center py-4">${escapeHtml(ADMIN_I18N.execNoRadarData)}</p>`;
       } else {
         const maxPts = Math.max(...radarRows.map((r: any) => r.total_points || 0), 1);
         radarEl.innerHTML = radarRows.map((r: any) => {
@@ -2275,7 +2286,7 @@ const ADMIN_I18N = {
         }).join('');
       }
     } catch (e: any) {
-      radarEl.innerHTML = EXEC_ERROR(e?.message || 'Erro ao carregar radar');
+      radarEl.innerHTML = EXEC_ERROR(e?.message || ADMIN_I18N.execRadarError);
     }
 
     // ── 4. Chapters (manual — lightweight) ──
