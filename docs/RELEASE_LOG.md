@@ -167,6 +167,15 @@ Improve VRMS export usability for leadership reporting by adding optional segmen
 - presets now auto-fill `ls-from`/`ls-to` before applying/exporting snapshot filters
 - i18n keys added in PT/EN/ES for snapshot quick-range labels
 - local `npm run build` and `npm test` passed after update
+
+### Completion update (same day, v5 snapshot persistence)
+- delivered Leadership Snapshot filter persistence using browser `localStorage`
+- restored automatically on reports open:
+  - chapter
+  - tribe
+  - date range (`ls-from`/`ls-to`)
+- auto-save on filter changes, apply action, and quick presets (`7d`, `30d`, `cycle`)
+- local `npm run build` and `npm test` passed after update
 - local `npm run build` passed after v2 changes
 
 ## 2026-03-08 — Wave 3 Sprint Increment (S11 UI Polish / Empty States)

@@ -59,7 +59,7 @@
 | ID | Feature | Priority | Status | Description |
 |----|---------|----------|--------|-------------|
 | S-RM4 | Admin Tiers (ACL) | High | Partial (v3 pack ready 2026-03-08) | Frontend ACL hardened (routes + in-page actions) and backend parity pack added (`acl-tier-parity-v1.sql` + checklist) to align RLS/RPC authorization with the same tier matrix in staging/production rollout. |
-| S-REP1 | Exportação VRMS (PMI) | High | Partial (advanced v4 2026-03-08) | VRMS no `/admin` suporta filtros opcionais por capítulo/tribo no preview e CSV (com sufixo), presets rápidos (7d, 30d, ciclo atual), persistência automática via `localStorage` e paridade de presets no Leadership Snapshot. |
+| S-REP1 | Exportação VRMS (PMI) | High | Partial (advanced v5 2026-03-08) | VRMS no `/admin` suporta filtros opcionais por capítulo/tribo no preview e CSV (com sufixo), presets rápidos (7d, 30d, ciclo atual), persistência automática via `localStorage` e paridade completa no Leadership Snapshot (presets + persistência). |
 | S-ADM2 | Leadership Training Progress Snapshot | High | Partial (v2 delivered 2026-03-08) | `/admin` reports snapshot now has filters (capítulo/tribo/período), CSV export, and i18n keys for PT/EN/ES, in addition to completion/blocking and recent Credly insights. |
 | S10 | Credly Auto Sync | Medium | Planned | Edge Function or cron to auto sync badges weekly. |
 | S-AN1 | Announcements System | Medium | Planned | Global banners and notifications at top of site. |
