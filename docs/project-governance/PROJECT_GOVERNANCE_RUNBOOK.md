@@ -40,6 +40,7 @@ Keep GitHub Project (`AI PM Hub - Wave Sprint Pipeline`) synchronized with real 
 Project number: `1` · Owner: `VitorMRodovalho` · URL: https://github.com/users/VitorMRodovalho/projects/1/
 
 - **Sincronização Board ↔ Docs**: ver `docs/AGENT_BOARD_SYNC.md` (workflow do assistente para issues + status + RELEASE_LOG)
+- **Boas práticas de sprints**: ver `docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md` (priorização, gates, checklist ao concluir)
 - Inventory project items:
   - `gh project item-list 1 --owner VitorMRodovalho --limit 200 --format json`
 - Find active drafts (must be converted):

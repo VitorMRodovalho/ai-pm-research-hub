@@ -20,7 +20,11 @@ const isNew = id === 'new';
   </div>
 </BaseLayout>
 
-<script define:vars={{ memberId: id, isNew }}>
+<script is:inline define:vars={{ memberId: id, isNew }}>
+  window.__MEMBER_EDIT = { memberId, isNew };
+</script>
+<script>
+  const { memberId, isNew } = (typeof window !== 'undefined' && (window as any).__MEMBER_EDIT) || { memberId: '', isNew: false };
   import { ROLE_LABELS, ROLE_COLORS } from '../../../lib/supabase';
   import { canAccessAdminRoute } from '../../../lib/admin/constants';
   let _member = null;

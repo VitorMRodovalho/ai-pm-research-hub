@@ -22,12 +22,16 @@ const PROFILE_I18N = {
   </div>
 </BaseLayout>
 
-<script define:vars={{ PROFILE_I18N }}>
+<script is:inline define:vars={{ PROFILE_I18N }}>
+  window.__PROFILE_I18N = typeof PROFILE_I18N !== 'undefined' ? PROFILE_I18N : {};
+</script>
+<script>
   import { ROLE_COLORS } from '../lib/supabase';
   import { shouldRedirectFromProfile } from '../lib/routing';
   import { normalizeCredlyUrl } from '../lib/credly';
   import { normalizeMemberCycleHistory } from '../lib/cycle-history';
 
+  const PROFILE_I18N = (typeof window !== 'undefined' && (window as any).__PROFILE_I18N) || {};
   const OPROLE_LABELS: Record<string, string> = {
     manager: 'Gerente', deputy_manager: 'Deputy PM', tribe_leader: 'Líder de Tribo', researcher: 'Pesquisador',
     facilitator: 'Facilitador', communicator: 'Multiplicador', none: 'Sem papel operacional', guest: 'Convidado'

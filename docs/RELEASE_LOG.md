@@ -1,5 +1,27 @@
 # Release Log
 
+## 2026-03-08 — Admin page fix: define:vars + import (Critical)
+
+### Escopo
+Corrigir erro "Cannot use import statement outside a module" na página `/admin` que mantinha "Verificando acesso" indefinidamente.
+
+### Causa raiz
+Em Astro, `<script define:vars={{ ... }}>` aplica implicitamente `is:inline`, impedindo o bundler de processar imports. O script era enviado ao navegador com `import` em texto, gerando SyntaxError.
+
+### Solução
+- Separar em dois scripts: (1) `is:inline define:vars` que injeta em `window.__ADMIN_I18N`; (2) script normal com imports que lê de `window.__ADMIN_I18N`
+- Aplicada a mesma correção em `/profile` e `/admin/member/[id]` (preventivo)
+
+### Validação
+- `npm run build` passou
+- QA/QC: criar `docs/QA_RELEASE_VALIDATION.md` com checklist de console e cross-browser para releases futuros
+
+### Aprendizado para QA/QC
+- Toda release validar console F12 em rotas principais (evitar erros de script)
+- Toda release validar usabilidade em Windows, Mac, iPhone, Android
+
+---
+
 ## 2026-03-08 — S8b i18n closure (Done)
 
 ### S8b: Modal Edit Member + CSV headers

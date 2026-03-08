@@ -20,6 +20,8 @@ This file orients the AI assistant (Cursor) on the project so it can work effect
 | Debug / troubleshoot  | `DEBUG_HOLISTIC_PLAYBOOK.md` |
 | Project board / sprints | [GitHub Project](https://github.com/users/VitorMRodovalho/projects/1/) |
 | Board ↔ docs sync      | docs/AGENT_BOARD_SYNC.md — checklist para manter board e documentação atrelados |
+| Sprint implementation  | docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md — ordem de prioridade, gates, checklist |
+| QA/QC release         | docs/QA_RELEASE_VALIDATION.md — console F12, cross-browser (Win/Mac/iPhone/Android) |
 
 ---
 

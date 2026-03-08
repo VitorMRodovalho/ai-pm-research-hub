@@ -639,7 +639,11 @@ const ADMIN_I18N = {
   </div>
 </BaseLayout>
 
-<script define:vars={{ ADMIN_I18N }}>
+<!-- define:vars forces is:inline and breaks imports; inject i18n separately -->
+<script is:inline define:vars={{ ADMIN_I18N }}>
+  window.__ADMIN_I18N = typeof ADMIN_I18N !== 'undefined' ? ADMIN_I18N : {};
+</script>
+<script>
   import { ROLE_COLORS, ROLE_LABELS } from '../../lib/supabase';
   import { getMemberRole } from '../../lib/routing';
   import { normalizeMemberCycleHistory, uniqueSortedCycleCodes } from '../../lib/cycle-history';
@@ -662,6 +666,7 @@ const ADMIN_I18N = {
     resolveTierFromMember,
   } from '../../lib/admin/constants';
 
+  const ADMIN_I18N = (typeof window !== 'undefined' && (window as any).__ADMIN_I18N) || {};
   let sb: any = null;
   let MEMBER: any = null;
   let allMembers: any[] = [];

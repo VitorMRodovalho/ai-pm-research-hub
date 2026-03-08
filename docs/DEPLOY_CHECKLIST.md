@@ -2,6 +2,8 @@
 
 Checklist único para concluir a configuração e deploy dos itens pendentes.
 
+**Validação QA/QC**: Após deploy, executar `docs/QA_RELEASE_VALIDATION.md` (console + cross-browser).
+
 **Issues no board:** #56 (HF5), #57 (sync-comms), #58 (Credly secrets)
 
 ---
