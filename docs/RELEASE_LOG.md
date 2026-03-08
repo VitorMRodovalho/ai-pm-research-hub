@@ -1,5 +1,27 @@
 # Release Log
 
+## 2026-03-08 — Wave 4 Sprint Increment (S-AN1 / S-ADM2 Formal Closure)
+
+### Scope
+Close remaining Wave 4 documentation drift for features already implemented and running in production.
+
+### Delivered (already active in app)
+- `S-AN1` Announcements System confirmed as delivered:
+  - global top-of-site banner rendering via `AnnouncementBanner` in `BaseLayout`
+  - admin management (publish/toggle/delete) in `/admin`
+  - dismiss-by-session behavior and severity/expiry handling
+- `S-ADM2` Leadership Snapshot confirmed as delivered:
+  - chapter/tribe/date filters
+  - quick date presets and local persistence
+  - CSV export
+  - PT/EN/ES i18n coverage
+  - completion/blocking counters and recent Credly feed
+
+### Completion update
+- backlog status aligned with production reality:
+  - `S-AN1` -> Completed
+  - `S-ADM2` -> Completed
+
 ## 2026-03-08 — Wave 4 Sprint Increment (S10 Credly Auto Sync v1)
 
 ### Scope
