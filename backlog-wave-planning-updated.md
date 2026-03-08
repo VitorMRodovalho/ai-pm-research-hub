@@ -37,6 +37,7 @@
 | S-HF6 | Source of Truth Drift (Trail vs Gamification) | Critical | ✅ Done (2026-03-08) | Reconciliation hardening in `sync-credly-all` now also syncs legacy trail completions into `course_progress`, keeping `/#trail` and `/gamification` aligned. |
 | S-HF7 | Gamification Secondary Tabs Stuck on Loading | Critical | ✅ Done (2026-03-08) | Added timeout and robust error fallback on secondary tab loaders in `/gamification`, removing indefinite "Carregando..." hangs. |
 | S-HF8 | Credly Legacy Sanitization & Dedup | Critical | ✅ Done (2026-03-08) | Promoted BI/SFPC to Tier 2, deployed `verify-credly` + `sync-credly-all` hardening, sanitized `tier=null`, removed duplicate handling gaps, and corrected legacy Tier 1 rows still at 10 points. |
+| S-HF9 | Admin Tribe Allocation Crash (`replace` undefined) | Critical | Planned (next sprint gate) | Fix `/admin` pending allocation flow crash caused by inline `onclick` string interpolation using `m.name.replace(...)` when `name` is null/undefined; include immediate fallback guard + DB sanitation query and regression validation in pending/edit/history actions. |
 
 ---
 
@@ -52,6 +53,7 @@
 | S-FE1 | Frontend XSS & DOM Safety Baseline | High | Planned | Harden render paths with safe escaping strategy and remove direct `innerHTML` interpolation of DB text in critical surfaces (`/admin`, `/artifacts`, `/profile`). |
 | S-FE2 | Admin Modularization v1 | High | Planned | Break `/admin/index.astro` monolith into modular components and reduce `window.*` global coupling for better maintainability. |
 | S-FE3 | Auth SSR Gate v1 | High | Planned | Migrate critical auth gates to SSR/cookie session flow to eliminate client-side flicker and tighten route protection semantics. |
+| S-FE5 | Admin Event Delegation Migration (Tribes/Members) | High | Planned | Remove fragile inline `onclick` flows in `/admin/index.astro` for allocation/edit/history actions and migrate to delegated handlers with local cache lookup (`memberListCache`) and dataset IDs only. |
 | S8b | i18n Internal Pages | Medium | Partial (advanced++ 2026-03-08) | `/attendance` shell + modals localized and `/admin` shell, filters, reports, key modals, critical toasts/confirms, and dynamic action messages localized (PT/EN/ES) with locale-key parity; pending only residual long-tail hardcoded strings in secondary admin flows. |
 | S11 | UI Polish & Empty States | Medium | Partial (advanced 2026-03-08) | 404 already active; upgraded `/artifacts` and `/attendance` with skeleton loading and actionable empty states (CTA), keeping graceful fallback flows for logged and non-logged users. |
 
@@ -127,6 +129,7 @@
 | Vector search cost/performance uncertainty | Medium | Open | Prioritize `S-DB4`: benchmarked vector indexing strategy with rollout guardrails (`ivfflat` current, `hnsw` evaluation path). |
 | Lack of immutable change history for sensitive entities | High | Open | Prioritize `S-DB6`: audit schema for critical tables and compliance-ready traceability. |
 | Frontend XSS surface via imperative DOM | High | Open | Prioritize `S-FE1`: sanitize/escape all DB-derived text before DOM insertion and phase out unsafe `innerHTML` paths. |
+| Inline `onclick` coupling in admin critical flows | High | Open | Prioritize `S-HF9` (stabilize crash now) and `S-FE5` (event delegation migration) to remove string-interpolated handlers in allocation/edit/history flows. |
 | Admin page monolith complexity | High | Open | Prioritize `S-FE2`: split admin into modules and isolate data-access from render logic. |
 | Client-side auth flicker on protected routes | High | Open | Prioritize `S-FE3`: server-side auth gate with cookie-based session in critical routes. |
 
@@ -191,11 +194,13 @@ Use Looker Studio for YouTube, LinkedIn, and Instagram funnel style KPIs through
 1. Monitorar pós deploy de `S-HF6` e `S-HF7` com amostragem de membros com e sem `credly_url`.  
 2. Consolidar query de auditoria recorrente para duplicatas e pontos legados Credly.  
 3. Registrar evidências no `docs/RELEASE_LOG.md` para cada correção com validação pós deploy.  
+4. Executar `S-HF9`: hotfix de null-safety no `/admin` (`m.name` fallback + sanitização de dados nulos em `members.name`) e smoke do fluxo de alocação pendente.  
 
 ### Próxima sprint recomendada — 2026-03-12 to 2026-03-19 (Wave 3)
 1. Entregar `S-RM2` (Completeness Bar & Timeline) com dados 100% em `member_cycle_history`.  
 2. Avançar `S-RM3` (Gamification v2) com separação explícita de XP vitalício vs ciclo atual.  
 3. Iniciar `S-UX1` para explicitar “X de 8 cursos” + pendências individuais de trilha para pesquisador.  
+4. Iniciar `S-FE5`: migração de handlers inline para event delegation nos blocos de administração críticos (`pending`, `members`, histórico de ciclo).  
 
 ### Sessão 2 — Finish migration discipline
 1. Frontend reads from `operational_role` and `designations` only  

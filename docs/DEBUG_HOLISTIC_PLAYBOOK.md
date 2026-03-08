@@ -40,3 +40,5 @@ Evitar correções parciais que resolvem um sintoma e deixam falhas adjacentes a
   - SSR com contrato resolvido (`resolveTribes` + labels de quadrantes)
   - script browser-safe (sem sintaxe TS no HTML final)
   - fallback visível quando dado/client runtime falhar
+- Caso Admin Tribes (pool de pendentes/alocação): proibir `onclick` com interpolação de string para dados do membro (`name/email/chapter`) e adotar dataset + cache local + event delegation para abrir modais de alocação/edição/histórico.
+- Caso Admin data hygiene: para qualquer erro de render por valor nulo em campos críticos (`members.name`), aplicar hotfix de null-safety no frontend e registrar SQL de saneamento com auditoria antes/depois.
