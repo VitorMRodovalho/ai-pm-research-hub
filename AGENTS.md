@@ -97,3 +97,33 @@ Validate with `npm test` and `npm run build` before pushing. For production-impa
 - **Migrations**: `supabase/migrations/`, with supporting SQL/docs in `docs/migrations/`.
 
 When adding features, respect the existing structure and the governance/release discipline above.
+
+## Agent team structure
+
+Specialized agents operate within strict boundaries. An agent must NOT work outside its lane.
+
+### Active agents
+
+| Agent | Scope | Can modify | Cannot touch |
+|-------|-------|------------|-------------|
+| **Foundation** | DB schema, RPCs, migrations, RLS, triggers | `supabase/`, `database.gen.ts`, `docs/migrations/` | Frontend pages, styling |
+| **Frontend** | Pages, components, i18n, Tailwind | `src/pages/`, `src/components/`, `src/i18n/`, `src/data/` | DB schema, RPCs, migrations |
+| **Integration** | Edge functions, API calls, sync logic | `supabase/functions/`, API fetch calls in `src/lib/` | Pages, components, DB schema |
+| **Governance** | Docs, backlog, release log, runbooks | `docs/`, `AGENTS.md`, `backlog-*.md`, `README.md` | Code files |
+| **DevOps** | CI/CD, workflows, deploy config | `.github/`, `wrangler.toml`, `package.json` scripts | Application code, DB |
+
+### Disabled / blocked until foundation is stable
+
+| Agent | Why blocked |
+|-------|------------|
+| Knowledge Hub UI | DB tables exist (`knowledge_assets`, `hub_resources`) but no frontend route; blocked on P2 gate |
+| Multi-tenant / Scale | P3 — requires P2 stable |
+| Custom analytics charts | Use PostHog/Looker iframes instead |
+
+### Agent rules
+
+1. **No frontend without backend:** A frontend change that calls a new RPC/table MUST have the corresponding migration merged first.
+2. **No orphan code:** If an edge function is invoked, it must exist in `supabase/functions/` or be explicitly documented as externally deployed.
+3. **Break the build = revert:** If CI fails after merge, revert before doing anything else.
+4. **One concern per commit:** Don't mix DB migrations with UI changes in the same commit.
+5. **Gate checks before merge:** `npm test` + `npm run build` + `npm run smoke:routes` must pass.

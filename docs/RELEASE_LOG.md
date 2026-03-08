@@ -1,5 +1,40 @@
 # Release Log
 
+## 2026-03-08 — Fix critical: restore role/roles columns + admin_update_member v2
+
+### Problema
+Coluna `role` foi dropada da tabela `members` mas RPCs (`admin_force_tribe_selection`, `admin_update_member`, views) ainda a referenciavam. Resultado: "column role does not exist" ao alocar membro em tribo e ao editar membros.
+
+### Causa raiz
+Migração anterior removeu `role`/`roles` sem atualizar todos os RPCs e views que dependiam delas.
+
+### Solução (3 migrations)
+1. **20260308222431_restore_legacy_role_columns.sql**: Re-adiciona `role` e `roles` como colunas regulares; backfill via `compute_legacy_role()`/`compute_legacy_roles()`; trigger `trg_sync_legacy_role` mantém em sync com `operational_role`+`designations`.
+2. **20260308223000_admin_update_member_v2.sql**: Drop do overload legado `(p_role, p_roles)`; recria `admin_update_member` com params `(p_operational_role, p_designations)`.
+3. **20260308223500_admin_update_member_full.sql**: Overload completo para `admin/member/[id]` com `(p_name, p_email, p_operational_role, p_designations, p_chapter, p_tribe_id, p_pmi_id, p_phone, p_linkedin_url, p_current_cycle_active)`.
+
+### Frontend
+- Removido `computeLegacyFields` e fallback legado de `admin/index.astro`
+- Removido `buildLegacyRolePayload` e fallback legado de `admin/member/[id].astro`
+
+### Validação
+- RPC `admin_force_tribe_selection`: retorna "Acesso negado" (auth check) em vez de crash
+- RPC `admin_update_member` v2: retorna "Not authenticated" (auth check) em vez de "function not found"
+- `npm test` + `npm run build` passando
+- Migrations aplicadas via `supabase db push --linked`
+
+---
+
+## 2026-03-08 — Cleanup .gitignore + PROJECT_ON_TRACK doc
+
+### Escopo
+- `.gitignore`: ignorar `.astro/data-store.json`, `.cursor/`, scripts ad hoc
+- `docs/project-governance/PROJECT_ON_TRACK.md`: auditoria completa DB↔Frontend↔API
+- S-HF9 criado no backlog: edge functions ausentes no repo
+- Gate de integração adicionado a SPRINT_IMPLEMENTATION_PRACTICES
+
+---
+
 ## 2026-03-08 — CI workflow (validação automática de qualidade)
 
 ### Problema
