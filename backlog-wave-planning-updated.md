@@ -67,7 +67,7 @@
 | S-AN1 | Announcements System | Medium | Completed (2026-03-08) | Sistema de anúncios ativo: CRUD no `/admin` e renderização global no topo do site via `AnnouncementBanner`, com dismiss por sessão e suporte a severidade/expiração. |
 | S-DR1 | Disaster Recovery Doc | Low | Planned | POP de restauração de backup e PITR. |
 | S-COM6 | Dashboard Central de Mídia | Medium | Partial (S-COM10 advanced 2026-03-08) | `/admin/comms` já suporta KPI via endpoint/RPC (V1) + backbone V2 (`sync-comms-metrics`, `comms_metrics_ingestion_log`, `comms_metrics_latest_by_channel`) + jornada no-code (`/admin/comms/data-entry`, CSV preview/publish) + workflow de publicação/auditoria (`publish_comms_metrics_batch` + `comms_metrics_publish_log`) + filtros/export de log e pendências por canal; próximo passo: teste guiado operacional com o time de Comms (postergado para +2 sprints). |
-| S-PA2 | Admin Executive Visual Dashboards (ROI PMI) | High | Planned | Evolve `AdminExecutive` with visual charts (iframe-first or lightweight native SVG): qualification funnel, certification timeline after member join, and skill/certification radar across the base. |
+| S-PA2 | Admin Executive Visual Dashboards (ROI PMI) | High | In Progress (v1 SQL foundation 2026-03-08) | Views e RPCs executivas entregues (`vw_exec_funnel`, `vw_exec_cert_timeline`, `vw_exec_skills_radar` + `exec_*`); pendente apply/audit em produção e binding do frontend `/admin` para os RPCs. |
 
 ---
 
