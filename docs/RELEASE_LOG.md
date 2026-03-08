@@ -1,4 +1,33 @@
 # Release Log
+## 2026-03-08 — Wave 4 Sprint Increment (S-COM9 Publish Workflow & Audit v1)
+
+### Scope
+Add operational publish workflow for comms batches with explicit audit trail and SQL-backed controls.
+
+### Delivered
+- DB workflow migration:
+  - `supabase/migrations/20260308012510_comms_metrics_v3_publish_workflow.sql`
+  - extends `comms_metrics_daily` with:
+    - `published_at`
+    - `published_by`
+    - `publish_batch_id`
+  - creates `comms_metrics_publish_log`
+  - adds RPC `publish_comms_metrics_batch(source, metric_date)` with admin-tier guard
+- `/admin/comms/data-entry` publish block:
+  - pending rows view (`manual_csv` / `manual_admin`)
+  - publish action by source/date via RPC
+  - recent publish log table
+  - status feedback and toast integration
+- SQL governance docs added:
+  - `docs/migrations/comms-metrics-v3-publish-workflow.sql`
+  - `docs/migrations/comms-metrics-v3-publish-workflow-audit.sql`
+  - `docs/migrations/comms-metrics-v3-publish-workflow-rollback.sql`
+  - `docs/migrations/COMMS_METRICS_V3_RUNBOOK.md`
+
+### Validation captured
+- local `npm run build` passed
+- local `npm test` passed
+
 ## 2026-03-08 — Wave 4 Sprint Increment (S-COM8 CSV Import v1)
 
 ### Scope
