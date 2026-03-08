@@ -176,6 +176,17 @@ Improve VRMS export usability for leadership reporting by adding optional segmen
   - date range (`ls-from`/`ls-to`)
 - auto-save on filter changes, apply action, and quick presets (`7d`, `30d`, `cycle`)
 - local `npm run build` and `npm test` passed after update
+
+### Completion update (same day, v6 UX hardening / S-REP1 closure)
+- added explicit `Clear` actions for both report surfaces:
+  - VRMS filters clear/reset
+  - Leadership Snapshot filters clear/reset
+- added active-filter visual indicators:
+  - VRMS preview highlights when filters are active
+  - Leadership Snapshot shows active filter badge
+- added restore feedback when saved filters are reapplied automatically
+- i18n labels/messages added in PT/EN/ES for active/restored/cleared filter states
+- local `npm run build` and `npm test` passed after update
 - local `npm run build` passed after v2 changes
 
 ## 2026-03-08 — Wave 3 Sprint Increment (S11 UI Polish / Empty States)
