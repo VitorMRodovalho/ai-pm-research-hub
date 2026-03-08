@@ -22,6 +22,33 @@ const QUAD_COLORS: Record<string, string> = {
 
 const safeQuadrants = Array.isArray(QUADRANTS) ? QUADRANTS : [];
 const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
+
+async function loadInitialTribeCounts(): Promise<Record<number, number>> {
+  const url = import.meta.env.PUBLIC_SUPABASE_URL;
+  const anon = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anon) return {};
+  try {
+    const res = await fetch(`${url}/rest/v1/tribe_selections?select=tribe_id`, {
+      headers: {
+        apikey: anon,
+        Authorization: `Bearer ${anon}`,
+      },
+    });
+    if (!res.ok) return {};
+    const rows = await res.json();
+    const counts: Record<number, number> = {};
+    (Array.isArray(rows) ? rows : []).forEach((r: any) => {
+      const tid = Number(r?.tribe_id || 0);
+      if (!tid) return;
+      counts[tid] = (counts[tid] || 0) + 1;
+    });
+    return counts;
+  } catch {
+    return {};
+  }
+}
+
+const initialCounts = await loadInitialTribeCounts();
 ---
 
 <section class="py-16 px-6 bg-[#F7F4EF]" id="tribes">
@@ -97,12 +124,13 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
                   {/* Slot dots */}
                   <div class="flex-shrink-0 text-center">
                     <div class="flex gap-[3px] mb-0.5" id={`sl-${t.id}`}>
-                      {Array.from({ length: MAX_SLOTS }).map(() => (
-                        <div class="w-3.5 h-3.5 rounded-full border-2 border-gray-300 transition-all duration-300"></div>
+                      {Array.from({ length: MAX_SLOTS }).map((_, i) => (
+                        <div class="w-3.5 h-3.5 rounded-full border-2 border-gray-300 transition-all duration-300"
+                             style={i < (initialCounts[t.id] || 0) ? 'background:#70AD47;border-color:#70AD47' : ''}></div>
                       ))}
                     </div>
                     <div class="text-[.68rem] text-slate-500 font-semibold" id={`st-${t.id}`}>
-                      0/{MAX_SLOTS}
+                      {initialCounts[t.id] || 0}/{MAX_SLOTS}
                     </div>
                   </div>
                 </div>
