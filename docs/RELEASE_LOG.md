@@ -1,5 +1,21 @@
 # Release Log
 
+## 2026-03-08 — Fix: Deadline tribo hardcoded → home_schedule
+
+### Problema
+Pesquisador recebeu "Seleção encerrada!" ao tentar escolher tribo. Deadline estava fixa em `2026-03-08T15:00:00Z`, ignorando `home_schedule.selection_deadline_at`.
+
+### Correção
+- `src/lib/schedule.ts`: `getSelectionDeadlineIso()` lê `home_schedule.selection_deadline_at`
+- Index pages (pt-BR, en, es): fetch deadline no SSR e passam para HeroSection e TribesSection
+- TribesSection e HeroSection: usam prop em vez de hardcode; fallback 2030-12-31 se DB vazio
+- `docs/HARDCODED_DATA_AUDIT.md`: auditoria de outros pontos de risco (ciclos, MAX_SLOTS, labels)
+
+### Admin
+Atualizar `home_schedule.selection_deadline_at` via SQL quando necessário. Se tabela vazia, fallback permite seleção.
+
+---
+
 ## 2026-03-08 — S-KNW2: Admin CRUD para hub_resources (Knowledge Hub)
 
 ### Escopo

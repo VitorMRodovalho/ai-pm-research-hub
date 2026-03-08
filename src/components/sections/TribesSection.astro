@@ -9,8 +9,8 @@ import { MAX_SLOTS, MIN_SLOTS } from '../../data/tribes';
 import { buildTribesViewModel } from '../../data/tribesViewModel';
 import { t, type Lang } from '../../i18n/utils';
 
-interface Props { lang?: Lang; }
-const { lang = 'pt-BR' } = Astro.props;
+interface Props { lang?: Lang; deadline?: string; }
+const { lang = 'pt-BR', deadline: deadlineProp } = Astro.props;
 
 const QUAD_COLORS: Record<string, string> = {
   q1: '#00799E',
@@ -23,7 +23,8 @@ const viewModel = buildTribesViewModel(lang);
 const safeQuadrants = viewModel.quadrants;
 const safeTribes = viewModel.tribes;
 const viewWarnings = viewModel.warnings;
-const TRIBE_SELECTION_DEADLINE_ISO = '2026-03-08T15:00:00Z';
+// Deadline from home_schedule (passed by index); fallback far-future if not provided
+const TRIBE_SELECTION_DEADLINE_ISO = deadlineProp ?? '2030-12-31T23:59:59Z';
 // SSR: slot counts come from Supabase client-side; use 0 until hydrated
 const initialCounts: Record<number, number> = {};
 ---
