@@ -29,8 +29,36 @@ export function extractCredlyUsername(input) {
   }
 }
 
+export function isCredlyDomainUrl(input) {
+  const raw = stripInvisible(String(input || '')).trim();
+  if (!raw) return false;
+  const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  try {
+    const url = new URL(withScheme);
+    const host = url.hostname.toLowerCase().replace(/^www\./, '');
+    return host.endsWith('credly.com');
+  } catch {
+    return false;
+  }
+}
+
 export function normalizeCredlyUrl(input) {
+  const raw = stripInvisible(String(input || '')).trim();
   const username = extractCredlyUsername(input);
-  if (!username) return null;
-  return `https://www.credly.com/users/${username}`;
+  if (username) return `https://www.credly.com/users/${username}`;
+  if (!isCredlyDomainUrl(raw)) return null;
+
+  // Accept only badge/earner links as-is; backend will attempt username resolution fallback.
+  const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  try {
+    const url = new URL(withScheme);
+    const p = url.pathname.toLowerCase();
+    const isSharePath = p.includes('/badges/') || p.includes('/badge/') || p.includes('/earner/');
+    if (!isSharePath) return null;
+    url.search = '';
+    url.hash = '';
+    return url.toString().replace(/\/$/, '');
+  } catch {
+    return null;
+  }
 }

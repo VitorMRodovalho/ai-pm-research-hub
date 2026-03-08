@@ -77,6 +77,32 @@ function extractUsername(url: string): string | null {
   }
 }
 
+async function resolveUsername(urlOrUsername: string): Promise<string | null> {
+  const direct = extractUsername(urlOrUsername)
+  if (direct) return direct
+
+  const raw = (urlOrUsername || '').trim()
+  if (!raw) return null
+  const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
+
+  try {
+    const parsed = new URL(withScheme)
+    const host = parsed.hostname.toLowerCase().replace(/^www\./, '')
+    if (!host.endsWith('credly.com')) return null
+
+    // Fallback for share URLs (badge/earner pages): scrape first /users/{username} occurrence.
+    const resp = await fetch(withScheme, {
+      headers: { 'User-Agent': 'NucleoIA-GP/1.0' },
+    })
+    if (!resp.ok) return null
+    const html = await resp.text()
+    const m = html.match(/\/users\/([A-Za-z0-9._-]{2,100})/i)
+    return m?.[1] || null
+  } catch {
+    return null
+  }
+}
+
 async function fetchBadges(username: string): Promise<CredlyBadge[]> {
   const resp = await fetch(`https://www.credly.com/users/${username}/badges.json`, {
     headers: { 'Accept': 'application/json', 'User-Agent': 'NucleoIA-GP/1.0' },
@@ -289,11 +315,11 @@ Deno.serve(async (req) => {
     const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
     // Resolve username
-    let username: string | null = credly_url ? extractUsername(credly_url) : null
+    let username: string | null = credly_url ? await resolveUsername(credly_url) : null
 
     if (!username && member_id) {
       const { data: m } = await sb.from('members').select('credly_url').eq('id', member_id).single()
-      if (m?.credly_url) username = extractUsername(m.credly_url)
+      if (m?.credly_url) username = await resolveUsername(m.credly_url)
     }
 
     if (!username) {
