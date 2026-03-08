@@ -5,6 +5,11 @@ import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 const PRODUCT_DASHBOARD_URL = import.meta.env.PUBLIC_POSTHOG_PRODUCT_DASHBOARD_URL || '';
 const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL || '';
+const ANALYTICS_I18N = {
+  consentGranted: t('admin.analytics.consentGranted', lang),
+  consentDenied: t('admin.analytics.consentDenied', lang),
+  consentUnknown: t('admin.analytics.consentUnknown', lang),
+};
 ---
 
 <BaseLayout title={t('admin.analytics.meta', lang)} activePage="admin">
@@ -109,6 +114,9 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
   </div>
 </BaseLayout>
 
+<script is:inline define:vars={{ ANALYTICS_I18N }}>
+  window.__ANALYTICS_I18N = typeof ANALYTICS_I18N !== 'undefined' ? ANALYTICS_I18N : { consentGranted: '', consentDenied: '', consentUnknown: '' };
+</script>
 <script>
   import { canAccessAdminRoute } from '../../lib/admin/constants';
 
@@ -142,18 +150,19 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
   function renderConsentStatus() {
     const statusEl = document.getElementById('consent-status');
     if (!statusEl) return;
+    const i18n = (typeof window !== 'undefined' && (window as any).__ANALYTICS_I18N) || { consentGranted: '', consentDenied: '', consentUnknown: '' };
     const v = consentValue();
     if (v === 'granted') {
-      statusEl.textContent = "{t('admin.analytics.consentGranted', lang)}";
+      statusEl.textContent = i18n.consentGranted || 'Consentimento ativo';
       statusEl.className = 'text-[.68rem] text-emerald-600 mt-1';
       return;
     }
     if (v === 'denied') {
-      statusEl.textContent = "{t('admin.analytics.consentDenied', lang)}";
+      statusEl.textContent = i18n.consentDenied || 'Consentimento revogado';
       statusEl.className = 'text-[.68rem] text-crimson mt-1';
       return;
     }
-    statusEl.textContent = "{t('admin.analytics.consentUnknown', lang)}";
+    statusEl.textContent = i18n.consentUnknown || 'Não consentido';
     statusEl.className = 'text-[.68rem] text-slate-400 mt-1';
   }
 

@@ -1,9 +1,11 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Toast from '../../../components/ui/Toast.astro';
+import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
 
 const { id } = Astro.params;
 const isNew = id === 'new';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 <BaseLayout title={isNew ? 'Novo Membro' : 'Editar Membro'} activePage="admin">
   <Toast />
@@ -15,7 +17,7 @@ const isNew = id === 'new';
       </h1>
     </div>
     <div class="bg-white border border-slate-200 rounded-2xl p-6" id="member-form">
-      <div class="text-center py-8 text-slate-400">Carregando…</div>
+      <div class="text-center py-8 text-slate-400">{t('admin.loadingMembers', lang)}</div>
     </div>
   </div>
 </BaseLayout>

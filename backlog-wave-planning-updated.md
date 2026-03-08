@@ -75,9 +75,9 @@ Isso ocorreu por execução orientada a incidentes de produção (hotfixes) sem 
 | S-RM2 | Completeness Bar & Timeline | High | ✅ Done (2026-03-08) | Profile now renders adaptive completeness + “Resumo da Jornada” and timeline backed by `member_cycle_history` with safe fallback when history is unavailable. |
 | S-RM3 | Gamification v2 | High | ✅ Done (2026-03-08) | Cycle vs lifetime split now implemented across individual leaderboard, tribe ranking, achievements context, and my points summary. |
 | S-UX1 | Trilha Progress Clarity for Researchers | High | ✅ Done (2026-03-08) | `/gamification` now shows logged-in mini trail clarity card with explicit progress (`X de Y`) and missing/in-progress course list. |
-| S-PA1 | Product Analytics | High | Partial (v2 delivered 2026-03-08) | Protected `/admin/analytics` route + iframe embeds + admin shortcut, plus consent-aware analytics toggle (allow/revoke), session replay control, and identify gated by consent without name/email PII. |
+| S-PA1 | Product Analytics | High | Partial (v3 2026-03-08) | Route + iframe + consent toggle; consent status labels agora i18n (PT/EN/ES) em vez de literais. |
 | S8b | i18n Internal Pages | Medium | ✅ Done (2026-03-08) | Admin completo: modal Eixo 1/2/3, oprole options, desig labels, CSV headers (VRMS + Member), Sim/Não. Attendance, profile, artifacts, gamification, TribesSection. PT/EN/ES parity. |
-| S11 | UI Polish & Empty States | Medium | Partial (2026-03-08) | 404 active; artifacts/attendance com skeleton + empty states; gamification: setPanelMessage com CTA opcional; admin painel executivo: loading/empty/error i18n PT/EN/ES; .cursorrules regra define:vars. |
+| S11 | UI Polish & Empty States | Medium | Partial (2026-03-08) | Skeleton + empty states; admin exec i18n; TrailSection/profile/admin-member loading → i18n; .cursorrules define:vars. |
 
 ---
 

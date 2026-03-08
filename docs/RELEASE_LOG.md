@@ -1,5 +1,18 @@
 # Release Log
 
+## 2026-03-08 — S-PA1 + S11 polish (analytics i18n, loading strings)
+
+### S-PA1: Analytics consent status i18n
+- Bug: `/admin/analytics` exibia literais `{t('admin.analytics.consentGranted', lang)}` em vez de traduções
+- Fix: `ANALYTICS_I18N` via `define:vars` + `window.__ANALYTICS_I18N`; `renderConsentStatus()` lê valores reais
+
+### S11: Loading strings i18n
+- TrailSection: "Carregando..." → `t('common.loading', lang)`
+- profile: "Carregando perfil…" → `t('profile.loading', lang)`
+- admin/member/[id]: "Carregando…" → `t('admin.loadingMembers', lang)`
+
+---
+
 ## 2026-03-08 — Admin allocation 400 fix (admin_force_tribe_selection)
 
 ### Escopo
