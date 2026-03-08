@@ -33,6 +33,16 @@ Prepare a production-safe SQL package to reconcile legacy Credly scoring drift a
   - post-check index verification
 - runbook updated with hardening/rollback sequence and operational notes
 
+### Completion update (same day, v3 production execution closed)
+- production execution completed (`audit -> sanitize -> audit`)
+- post-fix applied for `SFPC` Tier 2 mapping and persisted in sanitize SQL
+- production hardening applied:
+  - partial unique index `uq_gp_credly_member_reason_ci` created on `gamification_points`
+- final checks in production:
+  - no Credly duplicates by `member_id + lower(trim(reason))`
+  - no manual-vs-Credly double counting for mini trail
+  - no null/missing tier fields in `members.credly_badges` audit queries
+
 ## 2026-03-08 — Wave 4 Sprint Increment (S-RM4 ACL Hardening v1)
 
 ### Scope
