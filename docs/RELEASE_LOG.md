@@ -1,4 +1,25 @@
 # Release Log
+## 2026-03-08 — Wave 4 Sprint Increment (S-COM8 CSV Import v1)
+
+### Scope
+Add batch ingestion UX for communications metrics with CSV preview and controlled publish.
+
+### Delivered
+- extended `/admin/comms/data-entry` with CSV flow:
+  - file input (`.csv`)
+  - parser for quoted CSV lines and canonical headers
+  - preview table for valid rows
+  - invalid-row count reporting
+  - batch upsert into `comms_metrics_daily` (`source=manual_csv`)
+- maintained idempotent behavior:
+  - `upsert` by `metric_date + channel + source`
+- i18n parity for PT/EN/ES:
+  - CSV labels, statuses, and error messages
+
+### Validation captured
+- local `npm run build` passed
+- local `npm test` passed
+
 ## 2026-03-08 — Wave 4 Sprint Increment (S-COM7 Data Entry v1)
 
 ### Scope
