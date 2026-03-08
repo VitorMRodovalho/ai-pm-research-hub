@@ -114,7 +114,7 @@ import Toast from '../components/ui/Toast.astro';
       // Artifacts
       const { data: artifacts } = await sb.from('artifacts')
         .select('status')
-        .eq('author_id', currentMember.id);
+        .eq('member_id', currentMember.id);
 
       const totalPoints = (points || []).reduce((s: number, p: any) => s + (p.points || 0), 0);
       const completedCourses = (courses || []).filter((c: any) => c.status === 'completed').length;
