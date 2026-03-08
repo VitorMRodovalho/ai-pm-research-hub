@@ -1,5 +1,28 @@
 # Release Log
 
+## 2026-03-08 — Wave 4 Sprint Increment (S-DB1 Credly/Gamification Data Sanitation Pack v1)
+
+### Scope
+Prepare a production-safe SQL package to reconcile legacy Credly scoring drift and remove gamification double counting.
+
+### Delivered
+- added audit script:
+  - `docs/migrations/credly-gamification-audit-v1.sql`
+  - checks points distribution, tier mismatch hotspots, duplicates, double counting, and null/missing `tier` in `members.credly_badges`
+- added sanitize script:
+  - `docs/migrations/credly-gamification-sanitize-v1.sql`
+  - includes backup snapshot, points normalization, dedupe, manual-vs-Credly cleanup, and JSON tier/points repair when inferable
+- added execution runbook:
+  - `docs/migrations/CREDLY_GAMIFICATION_SANITIZE_RUNBOOK.md`
+  - defines order `audit -> sanitize -> audit` and DoD criteria for DB cleanup
+
+### Validation captured
+- SQL pack reviewed against current Edge Function scoring behavior (`verify-credly` / `sync-credly-all`) for keyword parity and operational consistency.
+
+### Follow up still required
+- execute sanitize pack in production window and attach before/after audit outputs
+- decide on optional unique partial index for hard prevention of future Credly duplicate inserts
+
 ## 2026-03-08 — Wave 4 Sprint Increment (S-RM4 ACL Hardening v1)
 
 ### Scope
