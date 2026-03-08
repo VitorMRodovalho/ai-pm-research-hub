@@ -1,0 +1,53 @@
+S-ADM2	S-ADM2 Leadership Training Progress Snapshot	Done	Wave 4	High		
+S-AN1	S-AN1 Announcements System	Done	Wave 4	Medium		
+S-ARTIFACTS-400-HARDEN	S-ARTIFACTS-400-HARDEN — Eliminar erro recorrente artifacts 400	In review	Wave 4	High	https://github.com/VitorMRodovalho/ai-pm-research-hub	
+S-COM10	S-COM10 Publish Log Filters v1	Done	Wave 4	Medium		
+S-COM6	S-COM6 Dashboard Central de Mídia	In progress	Wave 4	Medium	https://github.com/VitorMRodovalho/ai-pm-hub-v2	https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/2
+S-COM7	S-COM7 Data Entry v1	Done	Wave 4	Medium		
+S-COM8	S-COM8 CSV Import v1	Done	Wave 4	Medium		
+S-COM9	S-COM9 Publish Workflow v1	Done	Wave 4	Medium		
+S-DB1	S-DB1 Credly/Gamification Data Sanitation	Done	Wave 4	High		
+S-DB2	S-DB2 Data backlog item	Backlog	Wave 6	High		
+S-DB3	S-DB3 Data backlog item	Backlog	Wave 6	High		
+S-DB4	S-DB4 Data backlog item	Backlog	Wave 6	Medium		
+S-DB5	S-DB5 Data backlog item	Backlog	Wave 6	Medium		
+S-DB6	S-DB6 Data backlog item	Backlog	Wave 6	High		
+S-DB7	S-DB7 Data backlog item	Backlog	Wave 6	Medium		
+S-DR1	S-DR1 Disaster Recovery Doc	Backlog	Wave 4	Low		
+S-FE5	S-FE5 Tribes UI Resilience — data-contract hardening + anti-regression	In progress	Wave 4	Critical	https://github.com/VitorMRodovalho/ai-pm-research-hub	
+S-GOV-PROJECT-AUTOMATION	S-GOV-PROJECT-AUTOMATION — Governança de waves/sprints no GitHub Project	Backlog	Wave 4	Medium	https://github.com/VitorMRodovalho/ai-pm-research-hub	
+S-HF1	S-HF1 Credly Mobile Paste Fix	Done	Wave 2-4 Stabilization	Critical	https://github.com/VitorMRodovalho/ai-pm-hub-v2	https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/8
+S-HF2	S-HF2 Rank UI Alignment with Credly Tiers	Done	Wave 2-4 Stabilization	Critical	https://github.com/VitorMRodovalho/ai-pm-hub-v2	https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/9
+S-HF3	S-HF3 Post Deploy Smoke Test	Done	Wave 2-4 Stabilization	High	https://github.com/VitorMRodovalho/ai-pm-hub-v2	https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/10
+S-HF4	S-HF4 SSR Safety Audit	Done	Wave 2-4 Stabilization	High	https://github.com/VitorMRodovalho/ai-pm-hub-v2	https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/11
+S-HF5	S-HF5 Data Patch Follow Through	In progress	Wave 2-4 Stabilization	High	https://github.com/VitorMRodovalho/ai-pm-hub-v2	
+S-HF6	S-HF6 Source of Truth Drift (Trail vs Gamification)	Done	Wave 2-4 Stabilization	Critical	https://github.com/VitorMRodovalho/ai-pm-hub-v2	https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/12
+S-HF7	S-HF7 Gamification Secondary Tabs Stuck on Loading	Done	Wave 2-4 Stabilization	Critical	https://github.com/VitorMRodovalho/ai-pm-hub-v2	https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/13
+S-HF8	S-HF8 Credly Legacy Sanitization & Dedup	Done	Wave 2-4 Stabilization	Critical		
+S-HF9	Recurring regression: Profile Credly flow (save/verify)	In progress	Wave 4	Critical	https://github.com/VitorMRodovalho/ai-pm-research-hub	https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/1
+S-HOME-SCHEDULE-SOT	S-HOME-SCHEDULE-SOT — Fonte única de agenda/prazo (DB)	In review	Wave 4	High	https://github.com/VitorMRodovalho/ai-pm-research-hub	
+S-HOTFIX-PROD-VALIDATION	S-HOTFIX-PROD-VALIDATION — Smoke pós deploy d5aa521	In progress	Wave 4	Critical	https://github.com/VitorMRodovalho/ai-pm-research-hub	
+S-KNW1	S-KNW1 Repositório Central de Recursos	Backlog	Wave 5	Medium		
+S-KNW2	S-KNW2 Tribe Workspace	Backlog	Wave 5	Medium		
+S-KNW3	S-KNW3 Sistema de Tags e Relações	Backlog	Wave 5	Medium		
+S-KNW4	S-KNW4 Views Relacionais Governadas	Backlog	Wave 5	Medium		
+S-KNW5	S-KNW5 Knowledge-Certification Correlation Layer	Backlog	Wave 5	Medium		
+S-KNW6	S-KNW6 AI Knowledge Ingestion MVP (YouTube-first)	In review	Wave 5	High	https://github.com/VitorMRodovalho/ai-pm-hub-v2	https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/7
+S-KNW7	S-KNW7 Internal RAG Assistant	Backlog	Wave 5	High		
+S-KNW8	S-KNW8 Friction & Insight Mining	Done	Wave 5	Medium		
+S-OPS2	S-OPS2 AI Cost Guardrails & FinOps Lite	Backlog	Wave 6	High		
+S-PA1	S-PA1 Product Analytics v3	In progress	Wave 3	High	https://github.com/VitorMRodovalho/ai-pm-hub-v2	https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/3
+S-PA2	S-PA2 Admin Executive Visual Dashboards (ROI PMI)	In progress	Wave 4	High	https://github.com/VitorMRodovalho/ai-pm-hub-v2	https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/6
+S-PA2-UI-BIND	S-PA2-UI-BIND — Conectar painel admin aos RPCs executivos	In review	Wave 4	High	https://github.com/VitorMRodovalho/ai-pm-research-hub	
+S-REP1	S-REP1 Exportação VRMS (PMI)	Done	Wave 4	High		
+S-RM2	S-RM2 Completeness Bar & Timeline	Done	Wave 3	High	https://github.com/VitorMRodovalho/ai-pm-hub-v2	https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/14
+S-RM3	S-RM3 Gamification v2	Done	Wave 3	High	https://github.com/VitorMRodovalho/ai-pm-hub-v2	https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/15
+S-RM4	S-RM4 Admin Tiers (ACL)	Done	Wave 4	High		
+S-RM5	S-RM5 Multi tenant Config	Backlog	Wave 6	Medium		
+S-SC1	S-SC1 Multilingual Screenshots	Backlog	Wave 6	Low		
+S-UX1	S-UX1 Trilha Progress Clarity for Researchers	Done	Wave 3	High	https://github.com/VitorMRodovalho/ai-pm-hub-v2	https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/16
+S10	S10 Credly Auto Sync	Done	Wave 4	Medium		
+S11	S11 UI Polish & Empty States closure	In progress	Wave 3	Medium	https://github.com/VitorMRodovalho/ai-pm-hub-v2	https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/5
+S23	S23 Chapter Integrations	Backlog	Wave 6	Medium		
+S24	S24 API for Chapters	Backlog	Wave 6	Low		
+S8b	S8b i18n Internal Pages closure	In progress	Wave 3	Medium	https://github.com/VitorMRodovalho/ai-pm-hub-v2	https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/4

@@ -1,0 +1,1142 @@
+[
+  {
+    "content": {
+      "body": "Documentar POP de restauração, backup e PITR.",
+      "title": "S-DR1 Disaster Recovery Doc",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6gYo",
+    "last Commit": "planned",
+    "last Update": "2026-03-08",
+    "module": "Ops/DR Docs",
+    "priority": "Low",
+    "sQL Required": "No",
+    "sprint": "S-DR1",
+    "status": "Backlog",
+    "title": "S-DR1 Disaster Recovery Doc",
+    "type": "Ops",
+    "wave": "Wave 4",
+    "work Origin": "Governance/Docs"
+  },
+  {
+    "content": {
+      "body": "Modelo relacional knowledge_assets com RLS.",
+      "title": "S-KNW1 Repositório Central de Recursos",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6gZA",
+    "last Commit": "planned",
+    "last Update": "2026-03-08",
+    "module": "Knowledge Hub/DB",
+    "priority": "Medium",
+    "sQL Required": "Yes",
+    "sprint": "S-KNW1",
+    "status": "Backlog",
+    "title": "S-KNW1 Repositório Central de Recursos",
+    "type": "SQL",
+    "wave": "Wave 5",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "content": {
+      "body": "Tela /workspace com visão relacional de ativos e progresso.",
+      "title": "S-KNW2 Tribe Workspace",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6gZg",
+    "last Commit": "planned",
+    "last Update": "2026-03-08",
+    "module": "Knowledge Hub/UI",
+    "priority": "Medium",
+    "sQL Required": "Yes",
+    "sprint": "S-KNW2",
+    "status": "Backlog",
+    "title": "S-KNW2 Tribe Workspace",
+    "type": "Feature",
+    "wave": "Wave 5",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "content": {
+      "body": "Rastrear relação entre artefatos, cursos, estudos e eventos.",
+      "title": "S-KNW3 Sistema de Tags e Relações",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6gaA",
+    "last Commit": "planned",
+    "last Update": "2026-03-08",
+    "module": "Knowledge Hub/Model",
+    "priority": "Medium",
+    "sQL Required": "Yes",
+    "sprint": "S-KNW3",
+    "status": "Backlog",
+    "title": "S-KNW3 Sistema de Tags e Relações",
+    "type": "SQL",
+    "wave": "Wave 5",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "content": {
+      "body": "Views governadas com RLS para exploração transversal.",
+      "title": "S-KNW4 Views Relacionais Governadas",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6gbI",
+    "last Commit": "planned",
+    "last Update": "2026-03-08",
+    "module": "Knowledge Hub/Views",
+    "priority": "Medium",
+    "sQL Required": "Yes",
+    "sprint": "S-KNW4",
+    "status": "Backlog",
+    "title": "S-KNW4 Views Relacionais Governadas",
+    "type": "SQL",
+    "wave": "Wave 5",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "content": {
+      "body": "Correlacionar consumo de conhecimento com certificações.",
+      "title": "S-KNW5 Knowledge-Certification Correlation Layer",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6gcE",
+    "last Commit": "planned",
+    "last Update": "2026-03-08",
+    "module": "Knowledge Hub/Analytics",
+    "priority": "Medium",
+    "sQL Required": "Yes",
+    "sprint": "S-KNW5",
+    "status": "Backlog",
+    "title": "S-KNW5 Knowledge-Certification Correlation Layer",
+    "type": "SQL",
+    "wave": "Wave 5",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "content": {
+      "body": "Estruturar parâmetros multi-tenant e governança por capítulo.",
+      "title": "S-RM5 Multi tenant Config",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6gcc",
+    "last Commit": "planned",
+    "last Update": "2026-03-08",
+    "module": "Platform/Multi-tenant",
+    "priority": "Medium",
+    "sQL Required": "Yes",
+    "sprint": "S-RM5",
+    "status": "Backlog",
+    "title": "S-RM5 Multi tenant Config",
+    "type": "SQL",
+    "wave": "Wave 6",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "content": {
+      "body": "Integrações orientadas a eventos com ferramentas de capítulo.",
+      "title": "S23 Chapter Integrations",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6gdA",
+    "last Commit": "planned",
+    "last Update": "2026-03-08",
+    "module": "Integrations/Chapters",
+    "priority": "Medium",
+    "sQL Required": "Yes",
+    "sprint": "S23",
+    "status": "Backlog",
+    "title": "S23 Chapter Integrations",
+    "type": "Feature",
+    "wave": "Wave 6",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "content": {
+      "body": "API somente leitura para impacto e participação.",
+      "title": "S24 API for Chapters",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6gdg",
+    "last Commit": "planned",
+    "last Update": "2026-03-08",
+    "module": "API/External",
+    "priority": "Low",
+    "sQL Required": "Yes",
+    "sprint": "S24",
+    "status": "Backlog",
+    "title": "S24 API for Chapters",
+    "type": "SQL",
+    "wave": "Wave 6",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "content": {
+      "body": "Automação de screenshots PT/EN/ES para release/docs.",
+      "title": "S-SC1 Multilingual Screenshots",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6geY",
+    "last Commit": "planned",
+    "last Update": "2026-03-08",
+    "module": "Ops/Automation",
+    "priority": "Low",
+    "sQL Required": "No",
+    "sprint": "S-SC1",
+    "status": "Backlog",
+    "title": "S-SC1 Multilingual Screenshots",
+    "type": "Ops",
+    "wave": "Wave 6",
+    "work Origin": "Governance/Docs"
+  },
+  {
+    "commit Timestamp": "2026-03-08T03:35:41-04:00",
+    "content": {
+      "body": "## Context\nProfile Credly flow has regressed multiple times across sprint increments.\n\n## Symptoms observed\n- Credly verification returning 401 Invalid JWT intermittently\n- Profile actions appearing non-responsive under some timing conditions\n- Certain Credly share URLs not accepted by strict `/users/{username}` parser\n\n## Actions already applied\n- Event-handler hardening on `/profile` (stable binding + re-render resilience)\n- Retry on JWT/401 in verify action\n- Frontend parser now accepts Credly share links (badge/earner) and canonical `/users/*`\n- Edge function `verify-credly` fallback to resolve username from shared Credly page\n- Edge Function deployed to production\n\n## Follow-up tasks\n- [ ] Add end-to-end smoke test for profile critical actions (save, secondary email, verify credly)\n- [ ] Add telemetry for function 401s by member context (without PII)\n- [ ] Document golden path + known URL formats in user-facing helper text\n- [ ] Add post-deploy checklist item specific to profile journey\n\n## Governance\nTrack this as a recurring-regression issue and link all future PRs touching profile/auth/credly paths.\n",
+      "number": 1,
+      "repository": "VitorMRodovalho/ai-pm-research-hub",
+      "title": "Recurring regression: Profile Credly flow (save/verify)",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/1"
+    },
+    "delivery Mode": "Review Loop",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6hm0",
+    "issue Link": "https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/1",
+    "last Commit": "39e5fb5",
+    "last Update": "2026-03-08",
+    "module": "Profile/Auth + Credly",
+    "priority": "Critical",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-research-hub",
+    "sQL Required": "No",
+    "sprint": "S-HF9",
+    "start date": "2026-03-08",
+    "status": "In progress",
+    "title": "Recurring regression: Profile Credly flow (save/verify)",
+    "type": "Hotfix",
+    "wave": "Wave 4",
+    "work Origin": "Issue-Driven"
+  },
+  {
+    "commit Timestamp": "2026-03-07T23:22:21-05:00",
+    "content": {
+      "body": "Closed in production on 2026-03-08.",
+      "title": "S-HF8 Credly Legacy Sanitization & Dedup",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6jX4",
+    "last Commit": "3f2b6a3",
+    "last Update": "2026-03-08",
+    "module": "Credly/Gamification Data",
+    "priority": "Critical",
+    "sQL Required": "Yes",
+    "sprint": "S-HF8",
+    "status": "Done",
+    "title": "S-HF8 Credly Legacy Sanitization & Dedup",
+    "type": "Hotfix",
+    "wave": "Wave 2-4 Stabilization",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "commit Timestamp": "2026-03-07T23:44:53-05:00",
+    "content": {
+      "body": "Closed in production on 2026-03-08.",
+      "title": "S-RM4 Admin Tiers (ACL)",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6jYo",
+    "last Commit": "d214de8",
+    "last Update": "2026-03-08",
+    "module": "ACL/Authorization",
+    "priority": "High",
+    "sQL Required": "Yes",
+    "sprint": "S-RM4",
+    "status": "Done",
+    "title": "S-RM4 Admin Tiers (ACL)",
+    "type": "SQL",
+    "wave": "Wave 4",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "commit Timestamp": "2026-03-07T22:52:21-05:00",
+    "content": {
+      "body": "Closed in production on 2026-03-08.",
+      "title": "S-REP1 Exportação VRMS (PMI)",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6jZE",
+    "last Commit": "b756a90",
+    "last Update": "2026-03-08",
+    "module": "Admin/Reports",
+    "priority": "High",
+    "sQL Required": "No",
+    "sprint": "S-REP1",
+    "status": "Done",
+    "title": "S-REP1 Exportação VRMS (PMI)",
+    "type": "Feature",
+    "wave": "Wave 4",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "commit Timestamp": "2026-03-07T22:56:58-05:00",
+    "content": {
+      "body": "Closed in production on 2026-03-08.",
+      "title": "S-ADM2 Leadership Training Progress Snapshot",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6jZo",
+    "last Commit": "94d67fb",
+    "last Update": "2026-03-08",
+    "module": "Admin/Reports",
+    "priority": "High",
+    "sQL Required": "No",
+    "sprint": "S-ADM2",
+    "status": "Done",
+    "title": "S-ADM2 Leadership Training Progress Snapshot",
+    "type": "Feature",
+    "wave": "Wave 4",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "commit Timestamp": "2026-03-07T23:22:21-05:00",
+    "content": {
+      "body": "Closed in production on 2026-03-08.",
+      "title": "S-DB1 Credly/Gamification Data Sanitation",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6jb4",
+    "last Commit": "3f2b6a3",
+    "last Update": "2026-03-08",
+    "module": "Credly/Gamification Data",
+    "priority": "High",
+    "sQL Required": "Yes",
+    "sprint": "S-DB1",
+    "status": "Done",
+    "title": "S-DB1 Credly/Gamification Data Sanitation",
+    "type": "SQL",
+    "wave": "Wave 4",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "commit Timestamp": "2026-03-08T00:02:55-05:00",
+    "content": {
+      "body": "Closed in production on 2026-03-08.",
+      "title": "S10 Credly Auto Sync",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6jdo",
+    "last Commit": "252f727",
+    "last Update": "2026-03-08",
+    "module": "Ops/Automation",
+    "priority": "Medium",
+    "sQL Required": "No",
+    "sprint": "S10",
+    "status": "Done",
+    "title": "S10 Credly Auto Sync",
+    "type": "Ops",
+    "wave": "Wave 4",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "commit Timestamp": "2026-03-08T00:04:35-05:00",
+    "content": {
+      "body": "Closed in production on 2026-03-08.",
+      "title": "S-AN1 Announcements System",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6jd8",
+    "last Commit": "e76deda",
+    "last Update": "2026-03-08",
+    "module": "Admin/Announcements",
+    "priority": "Medium",
+    "sQL Required": "No",
+    "sprint": "S-AN1",
+    "status": "Done",
+    "title": "S-AN1 Announcements System",
+    "type": "Feature",
+    "wave": "Wave 4",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "commit Timestamp": "2026-03-08T01:10:31-05:00",
+    "content": {
+      "body": "S-COM7 Data Entry v1",
+      "title": "S-COM7 Data Entry v1",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6kBU",
+    "last Commit": "bab759f",
+    "last Update": "2026-03-08",
+    "module": "Admin/Comms + Data Entry",
+    "priority": "Medium",
+    "sQL Required": "Yes",
+    "sprint": "S-COM7",
+    "start date": "2026-03-08",
+    "status": "Done",
+    "title": "S-COM7 Data Entry v1",
+    "type": "Feature",
+    "wave": "Wave 4",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "commit Timestamp": "2026-03-08T01:16:24-05:00",
+    "content": {
+      "body": "S-COM8 CSV Import v1",
+      "title": "S-COM8 CSV Import v1",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6kBs",
+    "last Commit": "1a04f6e",
+    "last Update": "2026-03-08",
+    "module": "Admin/Comms + CSV",
+    "priority": "Medium",
+    "sQL Required": "Yes",
+    "sprint": "S-COM8",
+    "start date": "2026-03-08",
+    "status": "Done",
+    "title": "S-COM8 CSV Import v1",
+    "type": "Feature",
+    "wave": "Wave 4",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "commit Timestamp": "2026-03-08T01:21:21-05:00",
+    "content": {
+      "body": "S-COM9 Publish Workflow v1",
+      "title": "S-COM9 Publish Workflow v1",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6kCM",
+    "last Commit": "ba9c841",
+    "last Update": "2026-03-08",
+    "module": "Admin/Comms + Publish/Audit",
+    "priority": "Medium",
+    "sQL Required": "Yes",
+    "sprint": "S-COM9",
+    "start date": "2026-03-08",
+    "status": "Done",
+    "title": "S-COM9 Publish Workflow v1",
+    "type": "SQL",
+    "wave": "Wave 4",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "commit Timestamp": "2026-03-08T01:28:53-05:00",
+    "content": {
+      "body": "S-COM10 Publish Log Filters v1",
+      "title": "S-COM10 Publish Log Filters v1",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6kDM",
+    "last Commit": "38d554e",
+    "last Update": "2026-03-08",
+    "module": "Admin/Comms + Audit UX",
+    "priority": "Medium",
+    "sQL Required": "No",
+    "sprint": "S-COM10",
+    "start date": "2026-03-08",
+    "status": "Done",
+    "title": "S-COM10 Publish Log Filters v1",
+    "type": "Feature",
+    "wave": "Wave 4",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "commit Timestamp": "2026-03-08T08:22:29Z",
+    "content": {
+      "body": "Deliver /ai-assistant with internal retrieval + citations over curated hub sources.",
+      "title": "S-KNW7 Internal RAG Assistant",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6kyM",
+    "last Commit": "df5cd62",
+    "last Update": "2026-03-08",
+    "module": "Knowledge Hub/RAG UX",
+    "priority": "High",
+    "sQL Required": "Yes",
+    "sprint": "S-KNW7",
+    "status": "Backlog",
+    "title": "S-KNW7 Internal RAG Assistant",
+    "type": "Feature",
+    "wave": "Wave 5",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "commit Timestamp": "2026-03-08T04:36:28-04:00",
+    "content": {
+      "body": "Topic/sentiment extraction from operational transcripts to roadmap insight cards.",
+      "title": "S-KNW8 Friction & Insight Mining",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6ky0",
+    "last Commit": "95fe18b",
+    "last Update": "2026-03-08",
+    "module": "Knowledge Hub/Insights",
+    "priority": "Medium",
+    "sQL Required": "Yes",
+    "sprint": "S-KNW8",
+    "status": "Done",
+    "title": "S-KNW8 Friction & Insight Mining",
+    "type": "SQL",
+    "wave": "Wave 5",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "content": {
+      "body": "Usage quotas, token budget limits and alerts before multi-source scaling.",
+      "title": "S-OPS2 AI Cost Guardrails & FinOps Lite",
+      "type": "DraftIssue"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6kzg",
+    "last Commit": "planned",
+    "last Update": "2026-03-08",
+    "module": "Ops/AI Cost Governance",
+    "priority": "High",
+    "sQL Required": "Yes",
+    "sprint": "S-OPS2",
+    "status": "Backlog",
+    "title": "S-OPS2 AI Cost Guardrails & FinOps Lite",
+    "type": "SQL",
+    "wave": "Wave 6",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "content": {
+      "body": "Auto-created from DATA_SCALABILITY_ROADMAP.md",
+      "title": "S-DB2 Data backlog item",
+      "type": "DraftIssue"
+    },
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6sa4",
+    "module": "Data Platform",
+    "priority": "High",
+    "sQL Required": "Yes",
+    "sprint": "S-DB2",
+    "status": "Backlog",
+    "title": "S-DB2 Data backlog item",
+    "type": "SQL",
+    "wave": "Wave 6"
+  },
+  {
+    "content": {
+      "body": "Auto-created from DATA_SCALABILITY_ROADMAP.md",
+      "title": "S-DB3 Data backlog item",
+      "type": "DraftIssue"
+    },
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6sbE",
+    "module": "Data Platform",
+    "priority": "High",
+    "sQL Required": "Yes",
+    "sprint": "S-DB3",
+    "status": "Backlog",
+    "title": "S-DB3 Data backlog item",
+    "type": "SQL",
+    "wave": "Wave 6"
+  },
+  {
+    "content": {
+      "body": "Auto-created from DATA_SCALABILITY_ROADMAP.md",
+      "title": "S-DB4 Data backlog item",
+      "type": "DraftIssue"
+    },
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6sbY",
+    "module": "Data Platform",
+    "priority": "Medium",
+    "sQL Required": "Yes",
+    "sprint": "S-DB4",
+    "status": "Backlog",
+    "title": "S-DB4 Data backlog item",
+    "type": "SQL",
+    "wave": "Wave 6"
+  },
+  {
+    "content": {
+      "body": "Auto-created from DATA_SCALABILITY_ROADMAP.md",
+      "title": "S-DB5 Data backlog item",
+      "type": "DraftIssue"
+    },
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6sbo",
+    "module": "Data Platform",
+    "priority": "Medium",
+    "sQL Required": "Yes",
+    "sprint": "S-DB5",
+    "status": "Backlog",
+    "title": "S-DB5 Data backlog item",
+    "type": "SQL",
+    "wave": "Wave 6"
+  },
+  {
+    "content": {
+      "body": "Auto-created from DATA_SCALABILITY_ROADMAP.md",
+      "title": "S-DB6 Data backlog item",
+      "type": "DraftIssue"
+    },
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6scI",
+    "module": "Data Platform",
+    "priority": "High",
+    "sQL Required": "Yes",
+    "sprint": "S-DB6",
+    "status": "Backlog",
+    "title": "S-DB6 Data backlog item",
+    "type": "SQL",
+    "wave": "Wave 6"
+  },
+  {
+    "content": {
+      "body": "Auto-created from DATA_SCALABILITY_ROADMAP.md",
+      "title": "S-DB7 Data backlog item",
+      "type": "DraftIssue"
+    },
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6scU",
+    "module": "Data Platform",
+    "priority": "Medium",
+    "sQL Required": "Yes",
+    "sprint": "S-DB7",
+    "status": "Backlog",
+    "title": "S-DB7 Data backlog item",
+    "type": "SQL",
+    "wave": "Wave 6"
+  },
+  {
+    "content": {
+      "body": "## Objetivo\nValidar em produção o hotfix de homepage publicado no commit d5aa521 (prazo de tribos + reunião geral).\n\n## Escopo\n- Validar home em PT/EN/ES\n- Confirmar aviso de prazo estendido até segunda 12h BRT\n- Confirmar barra de reunião geral em quinta 19:30–20:30 BRT\n- Confirmar countdown e trava de seleção após prazo\n\n## Definition of Done\n- [ ] Smoke completo em produção sem regressões\n- [ ] Evidências (prints/logs) anexadas\n- [ ] Resultado registrado no docs/RELEASE_LOG.md\n\n## Dependências\n- Deploy Cloudflare do commit d5aa521 ativo em main\n",
+      "number": 2,
+      "repository": "VitorMRodovalho/ai-pm-research-hub",
+      "title": "S-HOTFIX-PROD-VALIDATION — Smoke pós deploy d5aa521",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/2"
+    },
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6tMo",
+    "labels": [
+      "bug"
+    ],
+    "module": "Homepage/Schedule",
+    "priority": "Critical",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-research-hub",
+    "sQL Required": "No",
+    "sprint": "S-HOTFIX-PROD-VALIDATION",
+    "start date": "2026-03-08",
+    "status": "In progress",
+    "title": "S-HOTFIX-PROD-VALIDATION — Smoke pós deploy d5aa521",
+    "type": "Hotfix",
+    "wave": "Wave 4",
+    "work Origin": "Post-Deploy Stabilization"
+  },
+  {
+    "content": {
+      "body": "## Objetivo\nEliminar o erro recorrente no console envolvendo requests de artifacts com status 400.\n\n## Escopo\n- Reproduzir cenário com evidência (perfil, ação, endpoint)\n- Identificar causa raiz (query, RLS, payload, auth/session)\n- Corrigir endpoint/consulta e tratamento de erro\n- Adicionar observabilidade mínima para não regressão\n\n## Definition of Done\n- [ ] Fluxo principal sem 400 em produção\n- [ ] Mensagem de erro amigável quando aplicável\n- [ ] Evidência de validação em produção anexada\n- [ ] Lição aprendida registrada no DEBUG_HOLISTIC_PLAYBOOK\n",
+      "number": 4,
+      "repository": "VitorMRodovalho/ai-pm-research-hub",
+      "title": "S-ARTIFACTS-400-HARDEN — Eliminar erro recorrente artifacts 400",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/4"
+    },
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6tO8",
+    "labels": [
+      "bug"
+    ],
+    "module": "Artifacts/API + RLS",
+    "priority": "High",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-research-hub",
+    "sQL Required": "No",
+    "sprint": "S-ARTIFACTS-400-HARDEN",
+    "start date": "2026-03-10",
+    "status": "In review",
+    "title": "S-ARTIFACTS-400-HARDEN — Eliminar erro recorrente artifacts 400",
+    "type": "Hotfix",
+    "wave": "Wave 4",
+    "work Origin": "Post-Deploy Stabilization"
+  },
+  {
+    "content": {
+      "body": "## Objetivo\nEliminar hardcodes de agenda/prazo na home e mover para fonte única de verdade em banco.\n\n## Escopo\n- Definir tabela/config (ex: site_settings) para agenda home\n- Expor RPC/view para consumo frontend\n- Remover datas estáticas remanescentes (hero.date + agenda item 3)\n- Garantir i18n sem drift de data/hora\n\n## Definition of Done\n- [ ] Home lê agenda/prazo via DB/RPC\n- [ ] Nenhum hardcode de data operacional na home\n- [ ] SQL migration + audit + rollback documentados\n- [ ] Runbook atualizado\n",
+      "number": 3,
+      "repository": "VitorMRodovalho/ai-pm-research-hub",
+      "title": "S-HOME-SCHEDULE-SOT — Fonte única de agenda/prazo (DB)",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/3"
+    },
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6tPA",
+    "labels": [
+      "enhancement"
+    ],
+    "module": "Homepage/Config + DB",
+    "priority": "High",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-research-hub",
+    "sQL Required": "Yes",
+    "sprint": "S-HOME-SCHEDULE-SOT",
+    "start date": "2026-03-09",
+    "status": "In review",
+    "title": "S-HOME-SCHEDULE-SOT — Fonte única de agenda/prazo (DB)",
+    "type": "SQL",
+    "wave": "Wave 4",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "content": {
+      "body": "## Objetivo\nPadronizar e automatizar governança de waves/sprints no GitHub Project.\n\n## Escopo\n- Definir campos mínimos (Wave, Sprint, Module, SQL impact, Start, End, Status)\n- Exigir linked issue em commits/PRs críticos\n- Automatizar transição de status (To do/In progress/Done)\n- Manter concluídos visíveis para rastreabilidade histórica\n\n## Definition of Done\n- [ ] Projeto com campos e visões padronizados\n- [ ] Workflow de sync estável sem falhas\n- [ ] Commits/PRs com referência de issue em trilha crítica\n- [ ] Guia operacional curto em docs\n",
+      "number": 5,
+      "repository": "VitorMRodovalho/ai-pm-research-hub",
+      "title": "S-GOV-PROJECT-AUTOMATION — Governança de waves/sprints no GitHub Project",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/5"
+    },
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6tQ4",
+    "labels": [
+      "documentation"
+    ],
+    "module": "Governance/Project Ops",
+    "priority": "Medium",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-research-hub",
+    "sQL Required": "No",
+    "sprint": "S-GOV-PROJECT-AUTOMATION",
+    "start date": "2026-03-12",
+    "status": "Backlog",
+    "title": "S-GOV-PROJECT-AUTOMATION — Governança de waves/sprints no GitHub Project",
+    "type": "Ops",
+    "wave": "Wave 4",
+    "work Origin": "Governance/Docs"
+  },
+  {
+    "content": {
+      "body": "## Objetivo\nConectar os painéis executivos do admin aos RPCs SQL já entregues.\n\n## Escopo\n- Integrar exec_funnel_summary no bloco de funil\n- Integrar exec_cert_timeline no gráfico temporal\n- Integrar exec_skills_radar no radar de competências\n- Implementar filtros + loading + fallback de erro\n\n## Definition of Done\n- [ ] Cards/gráficos consumindo RPC real\n- [ ] Sem dependência de agregação pesada no cliente\n- [ ] Smoke funcional em produção\n- [ ] Release log atualizado com evidências\n",
+      "number": 6,
+      "repository": "VitorMRodovalho/ai-pm-research-hub",
+      "title": "S-PA2-UI-BIND — Conectar painel admin aos RPCs executivos",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/6"
+    },
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6tRM",
+    "labels": [
+      "enhancement"
+    ],
+    "module": "Admin/Executive",
+    "priority": "High",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-research-hub",
+    "sQL Required": "No",
+    "sprint": "S-PA2-UI-BIND",
+    "start date": "2026-03-11",
+    "status": "In review",
+    "title": "S-PA2-UI-BIND — Conectar painel admin aos RPCs executivos",
+    "type": "Feature",
+    "wave": "Wave 4",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "content": {
+      "body": "## Problema\\nRegressões recorrentes na seção Tribos (contadores zerados, cards sem expandir, entregáveis em branco) por fragilidade de scripts inline + contrato de dados i18n não validado.\\n\\n## Objetivo\\nEliminar regressões de Tribos e estabelecer padrão para seções críticas do frontend.\\n\\n## Plano em Ondas\\n### Onda 1 — Hotfix estabilizador\\n- [ ] Garantir render SSR com dados resolvidos (quadrantes/tribos/entregáveis)\\n- [ ] Garantir runtime browser-safe (sem sintaxe TS em script inline)\\n- [ ] Smoke funcional: expandir card, mostrar detalhes, selecionar tribo, contagem atualiza\\n\\n### Onda 2 — Hardening de contrato\\n- [ ] Criar helper único para resolve de i18n de quadrantes/tribos\\n- [ ] Adicionar validações de shape (campos obrigatórios antes de render)\\n- [ ] Fallback explícito de erro no UI ao detectar dados inválidos\\n\\n### Onda 3 — Anti-regressão estrutural\\n- [ ] Extrair lógica interativa de Tribos para módulo dedicado (evitar script monolítico inline)\\n- [ ] Adicionar smoke E2E mínimo para jornada Tribos (open card + select + counter)\\n- [ ] Registrar checklist de regressão em deploy\\n\\n## Definition of Done\\n- [ ] Nenhuma regressão de Tribos em produção por 2 deploys consecutivos\\n- [ ] Evidência de smoke anexada\\n- [ ] Guia de engenharia atualizado (playbook + roadmap)\\n",
+      "number": 7,
+      "repository": "VitorMRodovalho/ai-pm-research-hub",
+      "title": "S-FE5 Tribes UI Resilience — data-contract hardening + anti-regression",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/7"
+    },
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6wYM",
+    "labels": [
+      "bug"
+    ],
+    "module": "Homepage/Tribes",
+    "priority": "Critical",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-research-hub",
+    "sprint": "S-FE5",
+    "status": "In progress",
+    "title": "S-FE5 Tribes UI Resilience — data-contract hardening + anti-regression",
+    "wave": "Wave 4",
+    "work Origin": "Issue-Driven"
+  },
+  {
+    "content": {
+      "body": "Fechar execução do SQL pack e evidências pós-auditoria.\n\n---\nMigrated from project draft item: PVTI_lAHOC2hXyM4BRGtHzgm6gW0\nSource project: VitorMRodovalho/ai-pm-hub-v2\n",
+      "number": 1,
+      "repository": "VitorMRodovalho/ai-pm-hub-v2",
+      "title": "S-HF5 Data Patch Follow Through",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/1"
+    },
+    "delivery Mode": "Review Loop",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6xqQ",
+    "module": "Credly/Gamification Data",
+    "priority": "High",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-hub-v2",
+    "sQL Required": "Yes",
+    "sprint": "S-HF5",
+    "status": "In progress",
+    "title": "S-HF5 Data Patch Follow Through",
+    "type": "Hotfix",
+    "wave": "Wave 2-4 Stabilization",
+    "work Origin": "Post-Deploy Stabilization"
+  },
+  {
+    "content": {
+      "body": "Consolidar ciclo operacional completo de comms e validar produção.\n\n---\nMigrated from project draft item: PVTI_lAHOC2hXyM4BRGtHzgm6gXQ\nSource project: VitorMRodovalho/ai-pm-hub-v2\n",
+      "number": 2,
+      "repository": "VitorMRodovalho/ai-pm-hub-v2",
+      "title": "S-COM6 Dashboard Central de Mídia",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/2"
+    },
+    "delivery Mode": "Review Loop",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6xr4",
+    "issue Link": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/2",
+    "last Update": "2026-03-08",
+    "module": "Admin/Comms",
+    "priority": "Medium",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-hub-v2",
+    "sQL Required": "Yes",
+    "sprint": "S-COM6",
+    "status": "In progress",
+    "title": "S-COM6 Dashboard Central de Mídia",
+    "type": "Feature",
+    "wave": "Wave 4",
+    "work Origin": "Post-Deploy Stabilization"
+  },
+  {
+    "content": {
+      "body": "Fechar pendências residuais de analytics governance e cobertura.\n\n---\nMigrated from project draft item: PVTI_lAHOC2hXyM4BRGtHzgm6gXc\nSource project: VitorMRodovalho/ai-pm-hub-v2\n",
+      "number": 3,
+      "repository": "VitorMRodovalho/ai-pm-hub-v2",
+      "title": "S-PA1 Product Analytics v3",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/3"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6xtY",
+    "issue Link": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/3",
+    "last Update": "2026-03-08",
+    "module": "Admin/Analytics",
+    "priority": "High",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-hub-v2",
+    "sQL Required": "No",
+    "sprint": "S-PA1",
+    "status": "In progress",
+    "title": "S-PA1 Product Analytics v3",
+    "type": "Feature",
+    "wave": "Wave 3",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "content": {
+      "body": "Completar strings remanescentes em fluxos administrativos secundários.\n\n---\nMigrated from project draft item: PVTI_lAHOC2hXyM4BRGtHzgm6gX0\nSource project: VitorMRodovalho/ai-pm-hub-v2\n",
+      "number": 4,
+      "repository": "VitorMRodovalho/ai-pm-hub-v2",
+      "title": "S8b i18n Internal Pages closure",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/4"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6xuI",
+    "issue Link": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/4",
+    "last Update": "2026-03-08",
+    "module": "i18n/Internal",
+    "priority": "Medium",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-hub-v2",
+    "sQL Required": "No",
+    "sprint": "S8b",
+    "status": "In progress",
+    "title": "S8b i18n Internal Pages closure",
+    "type": "Feature",
+    "wave": "Wave 3",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "content": {
+      "body": "Finalizar long-tail de estados vazios e consistência visual interna.\n\n---\nMigrated from project draft item: PVTI_lAHOC2hXyM4BRGtHzgm6gYM\nSource project: VitorMRodovalho/ai-pm-hub-v2\n",
+      "number": 5,
+      "repository": "VitorMRodovalho/ai-pm-hub-v2",
+      "title": "S11 UI Polish & Empty States closure",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/5"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6xvA",
+    "issue Link": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/5",
+    "last Update": "2026-03-08",
+    "module": "UX/Core Pages",
+    "priority": "Medium",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-hub-v2",
+    "sQL Required": "No",
+    "sprint": "S11",
+    "status": "In progress",
+    "title": "S11 UI Polish & Empty States closure",
+    "type": "Feature",
+    "wave": "Wave 3",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "content": {
+      "body": "Painéis executivos para funil, timeline de certificações e radar de skills.\n\n---\nMigrated from project draft item: PVTI_lAHOC2hXyM4BRGtHzgm6gYc\nSource project: VitorMRodovalho/ai-pm-hub-v2\n",
+      "number": 6,
+      "repository": "VitorMRodovalho/ai-pm-hub-v2",
+      "title": "S-PA2 Admin Executive Visual Dashboards (ROI PMI)",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/6"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6xvo",
+    "issue Link": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/6",
+    "last Update": "2026-03-08",
+    "module": "Admin/Executive",
+    "priority": "High",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-hub-v2",
+    "sQL Required": "Yes",
+    "sprint": "S-PA2",
+    "status": "In progress",
+    "title": "S-PA2 Admin Executive Visual Dashboards (ROI PMI)",
+    "type": "Feature",
+    "wave": "Wave 4",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "content": {
+      "body": "YouTube transcripts -> summaries/tags/chunks in Supabase with low-cost ingestion controls.\n\n---\nMigrated from project draft item: PVTI_lAHOC2hXyM4BRGtHzgm6kxI\nSource project: VitorMRodovalho/ai-pm-hub-v2\n",
+      "number": 7,
+      "repository": "VitorMRodovalho/ai-pm-hub-v2",
+      "title": "S-KNW6 AI Knowledge Ingestion MVP (YouTube-first)",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/7"
+    },
+    "delivery Mode": "Advancing",
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6xws",
+    "issue Link": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/7",
+    "last Update": "2026-03-08",
+    "module": "Knowledge Hub/AI Ingestion",
+    "priority": "High",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-hub-v2",
+    "sQL Required": "Yes",
+    "sprint": "S-KNW6",
+    "status": "In review",
+    "title": "S-KNW6 AI Knowledge Ingestion MVP (YouTube-first)",
+    "type": "SQL",
+    "wave": "Wave 5",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "content": {
+      "body": "## Contexto\nHistórico: normalização/validação robusta de URL Credly no profile + edge verify.\n\n## Governance\n- Sprint: S-HF1\n- Wave: Wave 2-4 Stabilization\n- Status alvo: Done\n",
+      "number": 8,
+      "repository": "VitorMRodovalho/ai-pm-hub-v2",
+      "title": "S-HF1 Credly Mobile Paste Fix",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/8"
+    },
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6x2I",
+    "issue Link": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/8",
+    "last Update": "2026-03-08",
+    "module": "Profile/Credly",
+    "priority": "Critical",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-hub-v2",
+    "sQL Required": "No",
+    "sprint": "S-HF1",
+    "status": "Done",
+    "title": "S-HF1 Credly Mobile Paste Fix",
+    "type": "Hotfix",
+    "wave": "Wave 2-4 Stabilization",
+    "work Origin": "Post-Deploy Stabilization"
+  },
+  {
+    "content": {
+      "body": "## Contexto\nHistórico: UI de gamificação alinhada ao modelo de tiers Credly.\n\n## Governance\n- Sprint: S-HF2\n- Wave: Wave 2-4 Stabilization\n- Status alvo: Done\n",
+      "number": 9,
+      "repository": "VitorMRodovalho/ai-pm-hub-v2",
+      "title": "S-HF2 Rank UI Alignment with Credly Tiers",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/9"
+    },
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6x3Q",
+    "issue Link": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/9",
+    "last Update": "2026-03-08",
+    "module": "Gamification/UI",
+    "priority": "Critical",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-hub-v2",
+    "sQL Required": "No",
+    "sprint": "S-HF2",
+    "status": "Done",
+    "title": "S-HF2 Rank UI Alignment with Credly Tiers",
+    "type": "Hotfix",
+    "wave": "Wave 2-4 Stabilization",
+    "work Origin": "Post-Deploy Stabilization"
+  },
+  {
+    "content": {
+      "body": "## Contexto\nHistórico: script e rotina de smoke pós-deploy em rotas críticas.\n\n## Governance\n- Sprint: S-HF3\n- Wave: Wave 2-4 Stabilization\n- Status alvo: Done\n",
+      "number": 10,
+      "repository": "VitorMRodovalho/ai-pm-hub-v2",
+      "title": "S-HF3 Post Deploy Smoke Test",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/10"
+    },
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6x4I",
+    "issue Link": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/10",
+    "last Update": "2026-03-08",
+    "module": "QA/Smoke",
+    "priority": "High",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-hub-v2",
+    "sQL Required": "No",
+    "sprint": "S-HF3",
+    "status": "Done",
+    "title": "S-HF3 Post Deploy Smoke Test",
+    "type": "Ops",
+    "wave": "Wave 2-4 Stabilization",
+    "work Origin": "Post-Deploy Stabilization"
+  },
+  {
+    "content": {
+      "body": "## Contexto\nHistórico: guards SSR e fallbacks para dados opcionais.\n\n## Governance\n- Sprint: S-HF4\n- Wave: Wave 2-4 Stabilization\n- Status alvo: Done\n",
+      "number": 11,
+      "repository": "VitorMRodovalho/ai-pm-hub-v2",
+      "title": "S-HF4 SSR Safety Audit",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/11"
+    },
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6x5I",
+    "issue Link": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/11",
+    "last Update": "2026-03-08",
+    "module": "SSR/Core Pages",
+    "priority": "High",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-hub-v2",
+    "sQL Required": "No",
+    "sprint": "S-HF4",
+    "status": "Done",
+    "title": "S-HF4 SSR Safety Audit",
+    "type": "Hotfix",
+    "wave": "Wave 2-4 Stabilization",
+    "work Origin": "Post-Deploy Stabilization"
+  },
+  {
+    "content": {
+      "body": "## Contexto\nHistórico: reconciliação de trilha x gamificação via sync global.\n\n## Governance\n- Sprint: S-HF6\n- Wave: Wave 2-4 Stabilization\n- Status alvo: Done\n",
+      "number": 12,
+      "repository": "VitorMRodovalho/ai-pm-hub-v2",
+      "title": "S-HF6 Source of Truth Drift (Trail vs Gamification)",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/12"
+    },
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6x5s",
+    "issue Link": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/12",
+    "last Update": "2026-03-08",
+    "module": "Credly/Gamification Data",
+    "priority": "Critical",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-hub-v2",
+    "sQL Required": "Yes",
+    "sprint": "S-HF6",
+    "status": "Done",
+    "title": "S-HF6 Source of Truth Drift (Trail vs Gamification)",
+    "type": "Hotfix",
+    "wave": "Wave 2-4 Stabilization",
+    "work Origin": "Post-Deploy Stabilization"
+  },
+  {
+    "content": {
+      "body": "## Contexto\nHistórico: timeout/fallback para remoção de loading infinito.\n\n## Governance\n- Sprint: S-HF7\n- Wave: Wave 2-4 Stabilization\n- Status alvo: Done\n",
+      "number": 13,
+      "repository": "VitorMRodovalho/ai-pm-hub-v2",
+      "title": "S-HF7 Gamification Secondary Tabs Stuck on Loading",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/13"
+    },
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6x68",
+    "issue Link": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/13",
+    "last Update": "2026-03-08",
+    "module": "Gamification/UI",
+    "priority": "Critical",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-hub-v2",
+    "sQL Required": "No",
+    "sprint": "S-HF7",
+    "status": "Done",
+    "title": "S-HF7 Gamification Secondary Tabs Stuck on Loading",
+    "type": "Hotfix",
+    "wave": "Wave 2-4 Stabilization",
+    "work Origin": "Post-Deploy Stabilization"
+  },
+  {
+    "content": {
+      "body": "## Contexto\nHistórico: barra de completude + timeline de jornada com fallback seguro.\n\n## Governance\n- Sprint: S-RM2\n- Wave: Wave 3\n- Status alvo: Done\n",
+      "number": 14,
+      "repository": "VitorMRodovalho/ai-pm-hub-v2",
+      "title": "S-RM2 Completeness Bar & Timeline",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/14"
+    },
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6x8A",
+    "issue Link": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/14",
+    "last Update": "2026-03-08",
+    "module": "Profile/Journey",
+    "priority": "High",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-hub-v2",
+    "sQL Required": "No",
+    "sprint": "S-RM2",
+    "status": "Done",
+    "title": "S-RM2 Completeness Bar & Timeline",
+    "type": "Feature",
+    "wave": "Wave 3",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "content": {
+      "body": "## Contexto\nHistórico: separação ciclo atual vs lifetime na gamificação.\n\n## Governance\n- Sprint: S-RM3\n- Wave: Wave 3\n- Status alvo: Done\n",
+      "number": 15,
+      "repository": "VitorMRodovalho/ai-pm-hub-v2",
+      "title": "S-RM3 Gamification v2",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/15"
+    },
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6x9Q",
+    "issue Link": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/15",
+    "last Update": "2026-03-08",
+    "module": "Gamification/Core",
+    "priority": "High",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-hub-v2",
+    "sQL Required": "No",
+    "sprint": "S-RM3",
+    "status": "Done",
+    "title": "S-RM3 Gamification v2",
+    "type": "Feature",
+    "wave": "Wave 3",
+    "work Origin": "Sprint Planned"
+  },
+  {
+    "content": {
+      "body": "## Contexto\nHistórico: clareza de progresso X/Y e pendências da mini trilha.\n\n## Governance\n- Sprint: S-UX1\n- Wave: Wave 3\n- Status alvo: Done\n",
+      "number": 16,
+      "repository": "VitorMRodovalho/ai-pm-hub-v2",
+      "title": "S-UX1 Trilha Progress Clarity for Researchers",
+      "type": "Issue",
+      "url": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/16"
+    },
+    "id": "PVTI_lAHOC2hXyM4BRGtHzgm6x-A",
+    "issue Link": "https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/16",
+    "last Update": "2026-03-08",
+    "module": "Gamification/Trail UX",
+    "priority": "High",
+    "repository": "https://github.com/VitorMRodovalho/ai-pm-hub-v2",
+    "sQL Required": "No",
+    "sprint": "S-UX1",
+    "status": "Done",
+    "title": "S-UX1 Trilha Progress Clarity for Researchers",
+    "type": "Feature",
+    "wave": "Wave 3",
+    "work Origin": "Sprint Planned"
+  }
+]
