@@ -496,6 +496,7 @@ import Toast from '../components/ui/Toast.astro';
       </div>
     `;
     bindCredlyField();
+    wireProfileActionHandlersOnce();
   }
 
   function bindCredlyField() {
@@ -519,7 +520,11 @@ import Toast from '../components/ui/Toast.astro';
 
   function wireProfileActionHandlersOnce() {
     const root = document.getElementById('profile-content');
-    if (!root || (root as any)._profileHandlersBound) return;
+    if (!root) {
+      setTimeout(wireProfileActionHandlersOnce, 50);
+      return;
+    }
+    if ((root as any)._profileHandlersBound) return;
     (root as any)._profileHandlersBound = true;
 
     root.addEventListener('click', (ev) => {
@@ -675,8 +680,8 @@ import Toast from '../components/ui/Toast.astro';
       (window as any).toast?.('Sessão ainda não pronta. Aguarde e tente novamente.', 'info');
       return;
     }
-    await sb.auth.refreshSession();
-    const { data: { session } } = await sb.auth.getSession();
+    const { data: refreshData } = await sb.auth.refreshSession();
+    const session = refreshData?.session || (await sb.auth.getSession()).data.session;
     if (!session?.access_token) {
       (window as any).toast?.('Sessão inválida. Faça login novamente para verificar o Credly.', 'error');
       return;
@@ -693,10 +698,18 @@ import Toast from '../components/ui/Toast.astro';
     const btn = document.getElementById('btn-credly-verify') as HTMLButtonElement;
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Verificando...'; }
     try {
-      const { data, error } = await sb.functions.invoke('verify-credly', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
+      let { data, error } = await sb.functions.invoke('verify-credly', {
         body: { member_id: currentMember.id, credly_url: credlyNormalized },
       });
+      // Retry once after refreshing token when gateway rejects JWT.
+      if (error && /401|jwt|token|unauthorized/i.test(String(error.message || ''))) {
+        await sb.auth.refreshSession();
+        const retry = await sb.functions.invoke('verify-credly', {
+          body: { member_id: currentMember.id, credly_url: credlyNormalized },
+        });
+        data = retry.data;
+        error = retry.error;
+      }
       if (error) throw new Error(await describeFnError(error));
       if (data?.success) {
         const matched = data.all_matched || 0;
