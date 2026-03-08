@@ -1,4 +1,31 @@
 # Release Log
+## 2026-03-08 — Wave 5 Sprint Increment (S-KNW6 Knowledge Ingestion v1 Foundation)
+
+### Scope
+Start YouTube-first knowledge ingestion foundation with low-cost architecture guardrails.
+
+### Delivered
+- migration pack created:
+  - `supabase/migrations/20260308041010_knowledge_ingestion_v1.sql`
+  - tables: `knowledge_assets`, `knowledge_chunks`, `knowledge_ingestion_runs`
+  - optional `pgvector` enablement (`extensions.vector`)
+  - RLS + ACL helper `can_manage_knowledge()`
+  - RPCs: `knowledge_assets_latest(...)`, `knowledge_search(...)`
+- edge function created:
+  - `supabase/functions/sync-knowledge-youtube/index.ts`
+  - secret-gated batch ingestion (`SYNC_KNOWLEDGE_INGEST_SECRET`)
+  - dry-run support and ingestion run logging
+- docs pack created:
+  - `docs/migrations/knowledge-ingest-v1.sql`
+  - `docs/migrations/knowledge-ingest-v1-audit.sql`
+  - `docs/migrations/knowledge-ingest-v1-rollback.sql`
+  - `docs/migrations/KNOWLEDGE_INGEST_V1_RUNBOOK.md`
+
+### Pending to close S-KNW6
+- apply migration in production
+- deploy function in production
+- run smoke/audit and attach evidence
+
 ## 2026-03-08 — Planning Update (AI Knowledge Hub fit-to-strategy)
 
 ### Scope
