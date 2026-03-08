@@ -8,7 +8,6 @@
 import { MAX_SLOTS, MIN_SLOTS } from '../../data/tribes';
 import { buildTribesViewModel } from '../../data/tribesViewModel';
 import { t, type Lang } from '../../i18n/utils';
-import { TRIBE_SELECTION_DEADLINE_ISO } from '../../config/homeSchedule';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
@@ -24,6 +23,7 @@ const viewModel = buildTribesViewModel(lang);
 const safeQuadrants = viewModel.quadrants;
 const safeTribes = viewModel.tribes;
 const viewWarnings = viewModel.warnings;
+const TRIBE_SELECTION_DEADLINE_ISO = '2026-03-08T15:00:00Z';
 ---
 
 <section class="py-16 px-6 bg-[#F7F4EF]" id="tribes">
