@@ -4,7 +4,6 @@ import Nav from '../components/nav/Nav.astro';
 import AnnouncementBanner from '../components/ui/AnnouncementBanner.astro';
 import AuthModal from '../components/ui/AuthModal.astro';
 import { t, getRoleLabelsMap, type Lang } from '../i18n/utils';
-import { getMemberRole } from '../lib/routing';
 
 interface Props {
   title?: string;
@@ -69,11 +68,12 @@ const roleLabels = JSON.stringify(getRoleLabelsMap(lang));
     window.addEventListener('nav:member', (e) => {
       const m = (e as CustomEvent).detail;
       if (m && m.id && (window as any).posthog) {
+        const opRole = m.operational_role || m.role || 'guest';
         (window as any).posthog.identify(m.id, {
           name: m.name,
           email: m.email,
           chapter: m.chapter || '',
-          operational_role: getMemberRole(m),
+          operational_role: opRole,
           designations: (m.designations || []).join(','),
           is_superadmin: m.is_superadmin || false,
           cycle_active: m.current_cycle_active || false,
