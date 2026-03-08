@@ -5,7 +5,7 @@
  * Dynamic data (counts, leader photos, user selection) from Supabase via window.navGetSb().
  * Static structure (tribe names, descriptions) from data/tribes.ts.
  */
-import { TRIBES, MAX_SLOTS, MIN_SLOTS } from '../../data/tribes';
+import { MAX_SLOTS, MIN_SLOTS, resolveTribes } from '../../data/tribes';
 import { QUADRANTS } from '../../data/quadrants';
 import { t, type Lang } from '../../i18n/utils';
 import { TRIBE_SELECTION_DEADLINE_ISO } from '../../config/homeSchedule';
@@ -20,8 +20,13 @@ const QUAD_COLORS: Record<string, string> = {
   q4: '#10B981',
 };
 
-const safeQuadrants = Array.isArray(QUADRANTS) ? QUADRANTS : [];
-const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
+const safeQuadrants = Array.isArray(QUADRANTS) ? QUADRANTS.map((q) => ({
+  ...q,
+  label: t(q.labelKey, lang),
+  title: t(q.titleKey, lang),
+  subtitle: t(q.subtitleKey, lang),
+})) : [];
+const safeTribes = resolveTribes(lang);
 
 async function loadInitialTribeCounts(): Promise<Record<number, number>> {
   const url = import.meta.env.PUBLIC_SUPABASE_URL;
@@ -86,10 +91,10 @@ const initialCounts = await loadInitialTribeCounts();
             <div class="mt-8 mb-4 pl-2" style={`border-left: 4px solid ${QUAD_COLORS[quad.key]}`}>
               <div class="text-[.7rem] font-bold tracking-wider uppercase"
                    style={`color: ${QUAD_COLORS[quad.key]}`}>
-                {(quad as any).label}
+                {quad.label}
               </div>
-              <div class="text-[1.15rem] font-extrabold mt-0.5">{(quad as any).title}</div>
-              <div class="text-[.82rem] text-slate-500">{(quad as any).subtitle}</div>
+              <div class="text-[1.15rem] font-extrabold mt-0.5">{quad.title}</div>
+              <div class="text-[.82rem] text-slate-500">{quad.subtitle}</div>
             </div>
 
             {/* Tribe cards */}
@@ -110,7 +115,7 @@ const initialCounts = await loadInitialTribeCounts();
                   </div>
 
                   <div class="flex-1 min-w-0">
-                    <h3 class="text-[.95rem] font-bold truncate">{(t as any).name}</h3>
+                    <h3 class="text-[.95rem] font-bold truncate">{t.name}</h3>
                     <div class="text-[.82rem] text-slate-500">
                       {t.leader}
                       {t.leaderLinkedIn && (
@@ -139,17 +144,17 @@ const initialCounts = await loadInitialTribeCounts();
                 <div class="max-h-0 overflow-hidden transition-all duration-400 px-5"
                      id={`tb-${t.id}`}>
                   <div class="pb-5 pt-3 border-t border-black/5">
-                    <p class="text-[.88rem] text-slate-500 mb-3">{(t as any).description}</p>
+                    <p class="text-[.88rem] text-slate-500 mb-3">{t.description}</p>
 
                     <div class="mb-3">
                       <strong class="text-[.85rem]">Entregáveis do Ciclo:</strong>
                       <ul class="mt-1.5 ml-5 text-[.84rem] text-slate-500 list-disc">
-                        {((t as any).deliverables ?? []).map((d: string) => <li class="mb-1">{d}</li>)}
+                        {(t.deliverables || []).map((d: string) => <li class="mb-1">{d}</li>)}
                       </ul>
                     </div>
 
                     <p class="text-[.82rem] mb-3" id={`ms-${t.id}`}>
-                      <strong>📅 Encontros:</strong> <span class="text-slate-400">{(t as any).meetingSchedule || 'Carregando...'}</span>
+                      <strong>📅 Encontros:</strong> <span class="text-slate-400">{t.meetingSchedule || 'Carregando...'}</span>
                     </p>
 
                     <div class="flex gap-3 flex-wrap items-center mt-4">

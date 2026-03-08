@@ -52,6 +52,16 @@ Este roadmap formaliza a intervenção técnica para reduzir regressões, risco 
   - painel executivo consumindo somente modelos agregados do backend;
   - tempo de resposta e payload reduzidos.
 
+### S-FE5 — Tribes UI Resilience (Data Contract + Runtime Stability)
+- Escopo:
+  - consolidar contrato de dados de Tribos/Quadrantes (i18n keys -> resolved strings) em único ponto;
+  - remover padrões frágeis de script inline que causam regressões por parse/runtime;
+  - garantir fallback SSR para contadores e conteúdo mínimo crítico em caso de falha JS.
+- Critério de aceite:
+  - cards de Tribos exibem consistentemente: líder, descrição, entregáveis, agenda e CTA;
+  - contagens não dependem exclusivamente de JS client-side;
+  - smoke de jornada (`expandir card`, `visualizar detalhes`, `selecionar tribo`) estável por 2 deploys.
+
 ## Guardrails
 - Não introduzir framework pesado; priorizar incremental (`Astro islands` leves quando necessário).
 - Preservar a estratégia no-cost de operação e deploy.
