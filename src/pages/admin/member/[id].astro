@@ -199,24 +199,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     };
   }
 
-  function buildLegacyRolePayload(baseParams, opRole, selectedRoles) {
-    const split = splitRoleSelection(opRole, selectedRoles);
-    const allRoles = Array.from(new Set([
-      ...(split.operationalRole !== 'none' && split.operationalRole !== 'guest' ? [split.operationalRole] : []),
-      ...split.designations,
-    ]));
-    return {
-      ...baseParams,
-      p_role: split.operationalRole !== 'none' && split.operationalRole !== 'guest'
-        ? split.operationalRole
-        : (split.designations[0] || 'guest'),
-      p_roles: allRoles.length ? allRoles : ['guest'],
-    };
-  }
-
   async function adminUpdateMemberCompat(sb, params, opRole, selectedRoles) {
     const split = splitRoleSelection(opRole, selectedRoles);
-    const v2Payload = {
+    const res = await sb.rpc('admin_update_member', {
       p_member_id: params.p_member_id,
       p_name: params.p_name,
       p_email: params.p_email,
@@ -228,13 +213,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       p_phone: params.p_phone,
       p_linkedin_url: params.p_linkedin_url,
       p_current_cycle_active: params.p_current_cycle_active,
-    };
-    const v2 = await sb.rpc('admin_update_member', v2Payload);
-    if (!v2.error && v2.data?.success) return { mode: 'v2', data: v2.data, error: null };
-
-    const legacyPayload = buildLegacyRolePayload(params, opRole, selectedRoles);
-    const legacy = await sb.rpc('admin_update_member', legacyPayload);
-    return { mode: 'legacy', data: legacy.data, error: legacy.error || v2.error };
+    });
+    return { mode: 'v2', data: res.data, error: res.error };
   }
 
   saveMember = async () => {
@@ -268,13 +248,6 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       result = error ? { error: error.message } : { success: true };
     } else {
       const compat = await adminUpdateMemberCompat(sb, params, opRole, roles);
-      if (compat.mode === 'legacy') {
-        const split = splitRoleSelection(opRole, roles);
-        await sb.from('members').update({
-          operational_role: split.operationalRole,
-          designations: split.designations
-        }).eq('id', memberId);
-      }
       result = compat.data;
     }
     if (result?.error) { toast?.(result.error, 'error'); return; }

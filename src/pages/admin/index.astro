@@ -760,14 +760,6 @@ const ADMIN_I18N = {
   let MEMBER: any = null;
   let allMembers: any[] = [];
 
-  // ── Compute legacy payload fields only for temporary RPC fallback ──
-  function computeLegacyFields(opRole: string, desigs: string[]): { role: string; roles: string[] } {
-    const allRoles = [...(opRole !== 'none' && opRole !== 'guest' ? [opRole] : []), ...desigs];
-    if (allRoles.length === 0) return { role: 'guest', roles: ['guest'] };
-    const role = opRole !== 'none' && opRole !== 'guest' ? opRole : desigs[0] || 'guest';
-    return { role, roles: allRoles };
-  }
-
   async function adminUpdateMemberCompat(payload: {
     memberId: string;
     opRole: string;
@@ -775,27 +767,14 @@ const ADMIN_I18N = {
     chapter: string;
     active: boolean;
   }) {
-    const v2Payload = {
+    const res = await sb.rpc('admin_update_member', {
       p_member_id: payload.memberId,
       p_operational_role: payload.opRole,
       p_designations: payload.desigs,
       p_chapter: payload.chapter,
       p_current_cycle_active: payload.active
-    };
-    const v2 = await sb.rpc('admin_update_member', v2Payload);
-    if (!v2.error && v2.data?.success) {
-      return { mode: 'v2', data: v2.data, error: null };
-    }
-
-    const { role, roles } = computeLegacyFields(payload.opRole, payload.desigs);
-    const legacy = await sb.rpc('admin_update_member', {
-      p_member_id: payload.memberId,
-      p_role: role,
-      p_roles: roles,
-      p_chapter: payload.chapter,
-      p_current_cycle_active: payload.active
     });
-    return { mode: 'legacy', data: legacy.data, error: legacy.error || v2.error };
+    return { mode: 'v2', data: res.data, error: res.error };
   }
 
   function toast(msg: string, type = '') { (window as any).toast?.(msg, type); }
