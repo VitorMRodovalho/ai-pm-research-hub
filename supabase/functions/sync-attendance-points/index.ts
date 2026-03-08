@@ -43,12 +43,18 @@ Deno.serve(async (req) => {
 
     const sb = createClient(supabaseUrl, serviceRole)
 
-    const { data: me, error: meError } = await sb
-      .from('members')
-      .select('id, is_superadmin')
-      .eq('auth_id', user.id)
-      .maybeSingle()
-    if (meError || !me?.is_superadmin) {
+    let caller: any = null
+    const { data: callerByRpc } = await authClient.rpc('get_member_by_auth')
+    if (callerByRpc) caller = callerByRpc
+    if (!caller) {
+      const { data: me } = await sb
+        .from('members')
+        .select('id, is_superadmin, email, secondary_emails')
+        .eq('auth_id', user.id)
+        .maybeSingle()
+      caller = me
+    }
+    if (!caller?.is_superadmin) {
       return new Response(
         JSON.stringify({ success: false, error: 'Only superadmin can run attendance sync' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -57,20 +63,12 @@ Deno.serve(async (req) => {
 
     const { data: attendance, error: attendanceError } = await sb
       .from('attendance')
-      .select('member_id, event_id, status')
+      .select('member_id, event_id, status, created_at')
       .eq('status', 'present')
       .not('member_id', 'is', null)
       .not('event_id', 'is', null)
       .limit(5000)
     if (attendanceError) throw attendanceError
-
-    const eventIds = Array.from(new Set((attendance || []).map((a: any) => a.event_id)))
-    const { data: events, error: eventsError } = await sb
-      .from('events')
-      .select('id, title, date')
-      .in('id', eventIds.length ? eventIds : ['00000000-0000-0000-0000-000000000000'])
-    if (eventsError) throw eventsError
-    const eventMap = new Map((events || []).map((e: any) => [String(e.id), e]))
 
     const { data: existing, error: existingError } = await sb
       .from('gamification_points')
@@ -83,8 +81,6 @@ Deno.serve(async (req) => {
 
     const inserts: any[] = []
     for (const a of attendance || []) {
-      const ev = eventMap.get(String(a.event_id))
-      if (!ev) continue
       const reason = `Presença evento ${a.event_id}`
       const key = `${a.member_id}::${reason}`
       if (existingKey.has(key)) continue
@@ -93,7 +89,7 @@ Deno.serve(async (req) => {
         points: 10,
         reason,
         category: 'attendance',
-        created_at: ev.date ? `${ev.date}T12:00:00.000Z` : new Date().toISOString(),
+        created_at: a.created_at || new Date().toISOString(),
       })
       existingKey.add(key)
     }

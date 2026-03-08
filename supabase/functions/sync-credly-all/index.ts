@@ -45,12 +45,18 @@ Deno.serve(async (req) => {
 
     const sb = createClient(supabaseUrl, serviceRole)
 
-    const { data: me, error: meError } = await sb
-      .from('members')
-      .select('id, is_superadmin')
-      .eq('auth_id', user.id)
-      .maybeSingle()
-    if (meError || !me?.is_superadmin) {
+    let caller: any = null
+    const { data: callerByRpc } = await authClient.rpc('get_member_by_auth')
+    if (callerByRpc) caller = callerByRpc
+    if (!caller) {
+      const { data: me } = await sb
+        .from('members')
+        .select('id, is_superadmin, email, secondary_emails')
+        .eq('auth_id', user.id)
+        .maybeSingle()
+      caller = me
+    }
+    if (!caller?.is_superadmin) {
       return new Response(
         JSON.stringify({ success: false, error: 'Only superadmin can run bulk Credly sync' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
