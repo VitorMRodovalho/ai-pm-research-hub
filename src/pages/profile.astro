@@ -1,8 +1,18 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Toast from '../components/ui/Toast.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+const PROFILE_I18N = {
+  emailAlreadyRegistered: t('profile.emailAlreadyRegistered', lang),
+  emailAdded: t('profile.emailAdded', lang),
+  errorAddPrefix: t('profile.errorAddPrefix', lang),
+  errorRemovePrefix: t('profile.errorRemovePrefix', lang),
+  removeEmailConfirm: t('profile.removeEmailConfirm', lang),
+  emailRemoved: t('profile.emailRemoved', lang),
+};
 ---
-<BaseLayout title="Meu Perfil — Núcleo IA & GP" activePage="profile">
+<BaseLayout title={t('profile.title', lang)} activePage="profile">
   <Toast />
   <div class="max-w-2xl mx-auto px-4 py-10">
     <h1 class="text-2xl font-extrabold text-navy mb-6">👤 Meu Perfil</h1>
@@ -12,7 +22,7 @@ import Toast from '../components/ui/Toast.astro';
   </div>
 </BaseLayout>
 
-<script>
+<script define:vars={{ PROFILE_I18N }}>
   import { ROLE_COLORS } from '../lib/supabase';
   import { shouldRedirectFromProfile } from '../lib/routing';
   import { normalizeCredlyUrl } from '../lib/credly';
@@ -573,18 +583,18 @@ import Toast from '../components/ui/Toast.astro';
     }
     const existing = currentMember.secondary_emails || [];
     if (email === currentMember.email || existing.includes(email)) {
-      (window as any).toast?.('Este email já está cadastrado', 'error');
+      (window as any).toast?.(PROFILE_I18N.emailAlreadyRegistered, 'error');
       return;
     }
     const newList = [...existing, email];
     const { error } = await sb.from('members').update({ secondary_emails: newList }).eq('id', currentMember.id);
     if (error) {
-      (window as any).toast?.('Erro ao adicionar: ' + error.message, 'error');
+      (window as any).toast?.(PROFILE_I18N.errorAddPrefix + error.message, 'error');
     } else {
       currentMember.secondary_emails = newList;
       input.value = '';
       renderProfile(currentMember);
-      (window as any).toast?.('Email adicionado ✅', 'success');
+      (window as any).toast?.(PROFILE_I18N.emailAdded, 'success');
     }
   };
 
@@ -593,15 +603,15 @@ import Toast from '../components/ui/Toast.astro';
     if (!sb || !currentMember) return;
     const existing: string[] = currentMember.secondary_emails || [];
     const removed = existing[idx];
-    if (!removed || !confirm(`Remover ${removed}?`)) return;
+    if (!removed || !confirm(PROFILE_I18N.removeEmailConfirm.replace('{email}', removed))) return;
     const newList = existing.filter((_: string, i: number) => i !== idx);
     const { error } = await sb.from('members').update({ secondary_emails: newList }).eq('id', currentMember.id);
     if (error) {
-      (window as any).toast?.('Erro ao remover: ' + error.message, 'error');
+      (window as any).toast?.(PROFILE_I18N.errorRemovePrefix + error.message, 'error');
     } else {
       currentMember.secondary_emails = newList;
       renderProfile(currentMember);
-      (window as any).toast?.(`${removed} removido`, 'info');
+      (window as any).toast?.(PROFILE_I18N.emailRemoved.replace('{email}', removed), 'info');
     }
   };
 

@@ -44,6 +44,14 @@ const ADMIN_I18N = {
   slotAdded: t('admin.msg.slotAdded', lang),
   slotRemoved: t('admin.msg.slotRemoved', lang),
   settingsSaved: t('admin.msg.settingsSaved', lang),
+  cycleRecordAdded: t('admin.msg.cycleRecordAdded', lang),
+  recordUpdated: t('admin.msg.recordUpdated', lang),
+  recordRemoved: t('admin.msg.recordRemoved', lang),
+  addCycleRecordSection: t('admin.msg.addCycleRecordSection', lang),
+  allCyclesRegistered: t('admin.msg.allCyclesRegistered', lang),
+  cycleHistoryActive: t('admin.msg.cycleHistoryActive', lang),
+  cycleHistoryInactive: t('admin.msg.cycleHistoryInactive', lang),
+  cycleHistoryCurrent: t('admin.msg.cycleHistoryCurrent', lang),
   tierLeaderTitlePrefix: t('admin.tier.leaderTitlePrefix', lang),
   tierLeaderSubtitle: t('admin.tier.leaderSubtitle', lang),
   tierMyTribe: t('admin.tier.myTribe', lang),
@@ -1770,20 +1778,20 @@ const ADMIN_I18N = {
           ${r.tribe_name ? `<div class="text-[.68rem] text-slate-400 mt-0.5">🏷️ ${r.tribe_name}</div>` : ''}
           ${r.chapter ? `<div class="text-[.68rem] text-slate-400">📍 ${r.chapter}</div>` : ''}
           ${r.notes ? `<div class="text-[.65rem] text-slate-400 italic mt-1">📝 ${r.notes}</div>` : ''}
-          <div class="text-[.6rem] text-slate-300 mt-1">${r.is_active ? '✅ Ativo' : '❌ Inativo'} · ${r.cycle_start || ''} → ${r.cycle_end || 'atual'}</div>
+          <div class="text-[.6rem] text-slate-300 mt-1">${r.is_active ? ADMIN_I18N.cycleHistoryActive : ADMIN_I18N.cycleHistoryInactive} · ${r.cycle_start || ''} → ${r.cycle_end || ADMIN_I18N.cycleHistoryCurrent}</div>
         </div>`;
       }).join('')}
 
       ${CYCLE_ORDER.filter(c => !existingCodes.includes(c)).length > 0 ? `
       <div class="mt-3 p-3 border border-dashed border-slate-200 rounded-xl">
-        <div class="text-[.72rem] font-semibold text-slate-500 mb-2">➕ Adicionar registro de ciclo</div>
+        <div class="text-[.72rem] font-semibold text-slate-500 mb-2">${ADMIN_I18N.addCycleRecordSection}</div>
         <div class="flex gap-2 flex-wrap">
           ${CYCLE_ORDER.filter(c => !existingCodes.includes(c)).map(c => {
             const meta = CYCLE_META[c];
             return `<button type="button" class="btn-add-cycle-record px-3 py-1.5 text-[.68rem] font-bold rounded-lg border-0 cursor-pointer text-white hover:opacity-90 transition-all" style="background:${meta.color}" data-cycle-code="${escapeAttr(c)}">${meta.label}</button>`;
           }).join('')}
         </div>
-      </div>` : '<div class="text-center text-[.72rem] text-emerald-600 font-semibold mt-2">✅ Todos os ciclos registrados</div>'}
+      </div>` : `<div class="text-center text-[.72rem] text-emerald-600 font-semibold mt-2">${ADMIN_I18N.allCyclesRegistered}</div>`}
     `;
 
     const modal = document.getElementById('modal-cycle-history')!;
@@ -1823,7 +1831,7 @@ const ADMIN_I18N = {
     });
 
     if (error) { toast(ADMIN_I18N.errorPrefix + error.message, 'error'); return; }
-    toast(`${meta.label} adicionado ✅`, 'success');
+    toast(ADMIN_I18N.cycleRecordAdded.replace('{label}', meta.label), 'success');
     // Refresh
     (window as any).openCycleHistory(chMemberId, document.getElementById('ch-member-name')!.textContent || '');
   };
@@ -1848,7 +1856,7 @@ const ADMIN_I18N = {
     }).eq('id', recordId);
 
     if (error) { toast(ADMIN_I18N.errorPrefix + error.message, 'error'); return; }
-    toast('Registro atualizado ✅', 'success');
+    toast(ADMIN_I18N.recordUpdated, 'success');
     (window as any).openCycleHistory(chMemberId, document.getElementById('ch-member-name')!.textContent || '');
   };
 
@@ -1857,7 +1865,7 @@ const ADMIN_I18N = {
     if (!confirm(`${ADMIN_I18N.deleteRecordConfirmPrefix} "${label}"? ${ADMIN_I18N.deleteRecordConfirmSuffix}`)) return;
     const { error } = await sb.from('member_cycle_history').delete().eq('id', recordId);
     if (error) { toast(ADMIN_I18N.errorPrefix + error.message, 'error'); return; }
-    toast(`${label} removido`, 'info');
+    toast(ADMIN_I18N.recordRemoved.replace('{label}', label), 'info');
     (window as any).openCycleHistory(chMemberId, document.getElementById('ch-member-name')!.textContent || '');
   };
 
