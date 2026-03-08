@@ -22,14 +22,53 @@ const isNew = id === 'new';
 
 <script define:vars={{ memberId: id, isNew }}>
   import { ROLE_LABELS, ROLE_COLORS } from '../../../lib/supabase';
+  import { canAccessAdminRoute } from '../../../lib/admin/constants';
   let _member = null;
+  let _aclReady = false;
+
+  async function onAuthorized() {
+    if (_aclReady) return;
+    _aclReady = true;
+    if (!isNew) await loadMember();
+    else renderForm(null);
+  }
+
+  function denyAccess() {
+    location.href = '/admin';
+  }
+
+  async function bootAcl() {
+    const navMember = navGetMember?.();
+    if (navMember) {
+      if (!canAccessAdminRoute(navMember, 'admin_member_edit')) { denyAccess(); return; }
+      await onAuthorized();
+      return;
+    }
+
+    const sb = navGetSb?.();
+    if (!sb) { setTimeout(bootAcl, 200); return; }
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        const { data: me } = await sb.rpc('get_member_by_auth');
+        if (!canAccessAdminRoute(me, 'admin_member_edit')) { denyAccess(); return; }
+        await onAuthorized();
+        return;
+      }
+    } catch {}
+
+    denyAccess();
+  }
 
   window.addEventListener('nav:member', async (e) => {
     const me = e.detail;
-    if (!me?.is_superadmin) { location.href = '/admin'; return; }
-    if (!isNew) await loadMember();
-    else renderForm(null);
+    if (!me) return;
+    if (!canAccessAdminRoute(me, 'admin_member_edit')) { denyAccess(); return; }
+    await onAuthorized();
   });
+
+  bootAcl();
 
   async function loadMember() {
     const sb = navGetSb?.();
