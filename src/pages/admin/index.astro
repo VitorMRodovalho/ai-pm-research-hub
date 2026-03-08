@@ -1256,6 +1256,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   let leadershipRows: any[] = [];
   const TRAIL_CODES = ['GENAI_OVERVIEW','DATA_LANDSCAPE','PROMPT_ENG','PRACTICAL_GENAI','CDBA_INTRO','CPMAI_INTRO','AI_INFRA','AI_AGILE'];
   const CURRENT_CYCLE_START = '2026-01-01';
+  const VRMS_PREFS_KEY = 'admin_vrms_filters_v1';
 
   function isoDate(date: Date) {
     return date.toISOString().split('T')[0];
@@ -1268,6 +1269,55 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     if (toEl) toEl.value = toDate;
   }
 
+  function saveVRMSPrefs(preset = 'custom') {
+    try {
+      const fromDate = (document.getElementById('vrms-from') as HTMLInputElement)?.value || '';
+      const toDate = (document.getElementById('vrms-to') as HTMLInputElement)?.value || '';
+      const chapter = (document.getElementById('vrms-chapter') as HTMLSelectElement)?.value || '';
+      const tribe = (document.getElementById('vrms-tribe') as HTMLSelectElement)?.value || '';
+      localStorage.setItem(VRMS_PREFS_KEY, JSON.stringify({ fromDate, toDate, chapter, tribe, preset }));
+    } catch {}
+  }
+
+  function restoreVRMSPrefs() {
+    const fromEl = document.getElementById('vrms-from') as HTMLInputElement;
+    const toEl = document.getElementById('vrms-to') as HTMLInputElement;
+    const chapterEl = document.getElementById('vrms-chapter') as HTMLSelectElement;
+    const tribeEl = document.getElementById('vrms-tribe') as HTMLSelectElement;
+    if (!fromEl || !toEl || !chapterEl || !tribeEl) return;
+
+    let restored = false;
+    try {
+      const raw = localStorage.getItem(VRMS_PREFS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.fromDate) fromEl.value = parsed.fromDate;
+        if (parsed?.toDate) toEl.value = parsed.toDate;
+        if (typeof parsed?.chapter === 'string') chapterEl.value = parsed.chapter;
+        if (typeof parsed?.tribe === 'string') tribeEl.value = parsed.tribe;
+        restored = !!(parsed?.fromDate || parsed?.toDate);
+      }
+    } catch {}
+
+    if (!restored) {
+      fromEl.value = CURRENT_CYCLE_START;
+      toEl.value = isoDate(new Date());
+    }
+  }
+
+  function bindVRMSPrefs() {
+    const fromEl = document.getElementById('vrms-from') as HTMLInputElement;
+    const toEl = document.getElementById('vrms-to') as HTMLInputElement;
+    const chapterEl = document.getElementById('vrms-chapter') as HTMLSelectElement;
+    const tribeEl = document.getElementById('vrms-tribe') as HTMLSelectElement;
+    const controls = [fromEl, toEl, chapterEl, tribeEl].filter(Boolean) as HTMLElement[];
+    controls.forEach((el: HTMLElement) => {
+      if (el.dataset.vrmsBound === '1') return;
+      el.dataset.vrmsBound = '1';
+      el.addEventListener('change', () => saveVRMSPrefs('custom'));
+    });
+  }
+
   (window as any).setVRMSPreset = (preset: string) => {
     if (!ensureAdminAction()) return;
     const today = new Date();
@@ -1275,24 +1325,24 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       const from = new Date(today);
       from.setDate(today.getDate() - 6);
       setVRMSRange(isoDate(from), isoDate(today));
+      saveVRMSPrefs('7d');
       return;
     }
     if (preset === '30d') {
       const from = new Date(today);
       from.setDate(today.getDate() - 29);
       setVRMSRange(isoDate(from), isoDate(today));
+      saveVRMSPrefs('30d');
       return;
     }
     setVRMSRange(CURRENT_CYCLE_START, isoDate(today));
+    saveVRMSPrefs('cycle');
   };
 
   function initReports() {
     if (!ensureAdminAction(false)) return;
-    // Set default date range: current cycle start → today
-    const fromEl = document.getElementById('vrms-from') as HTMLInputElement;
-    const toEl = document.getElementById('vrms-to') as HTMLInputElement;
-    if (fromEl && !fromEl.value) fromEl.value = CURRENT_CYCLE_START;
-    if (toEl && !toEl.value) toEl.value = isoDate(new Date());
+    restoreVRMSPrefs();
+    bindVRMSPrefs();
     const lsFrom = document.getElementById('ls-from') as HTMLInputElement;
     const lsTo = document.getElementById('ls-to') as HTMLInputElement;
     if (lsFrom && !lsFrom.value) lsFrom.value = CURRENT_CYCLE_START;

@@ -149,6 +149,15 @@ Improve VRMS export usability for leadership reporting by adding optional segmen
 - presets auto-fill `from`/`to` fields for faster preview/export workflows
 - i18n keys added for quick-range labels in PT/EN/ES
 - local `npm run build` and `npm test` passed after update
+
+### Completion update (same day, v3)
+- delivered VRMS filter persistence in `/admin` using browser `localStorage`
+- restored automatically on reports tab open:
+  - date range (`from`/`to`)
+  - chapter filter
+  - tribe filter
+- auto-save on user changes and preset actions (`7d`, `30d`, `cycle`)
+- local `npm run build` and `npm test` passed after update
 - local `npm run build` passed after v2 changes
 
 ## 2026-03-08 — Wave 3 Sprint Increment (S11 UI Polish / Empty States)
