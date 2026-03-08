@@ -14,6 +14,12 @@ Deploy consolidado: Event Delegation completo, setup replicável, Credly mobile,
 ### Validação
 - npm test ✅ | npm run build ✅ | npm run smoke:routes ✅
 
+### 2026-03-08 — Próximos passos acionáveis
+- **#56** S-HF5: Executar Data Patch em produção (manual)
+- **#57** S-COM6: Deploy sync-comms-metrics + secrets (manual)
+- **#58** S10: Configurar Credly Auto Sync — GitHub secrets (manual)
+- DEPLOY_CHECKLIST atualizado com links para as issues
+
 ---
 
 ## 2026-03-08 — Event Delegation: Attendance + Admin (cycle/slot handlers)

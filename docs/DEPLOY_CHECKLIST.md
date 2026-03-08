@@ -2,9 +2,11 @@
 
 Checklist único para concluir a configuração e deploy dos itens pendentes.
 
+**Issues no board:** #56 (HF5), #57 (sync-comms), #58 (Credly secrets)
+
 ---
 
-## 1. HF5 — Data Patch (ação manual em produção)
+## 1. HF5 — Data Patch (ação manual em produção) — [#56](https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/56)
 
 **Artefatos**: `docs/migrations/hf5-apply-data-patch.sql`, `docs/migrations/HF5_PRODUCTION_RUNBOOK.md`
 
@@ -17,7 +19,7 @@ Checklist único para concluir a configuração e deploy dos itens pendentes.
 
 ---
 
-## 2. sync-comms-metrics — Edge Function
+## 2. sync-comms-metrics — Edge Function — [#57](https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/57)
 
 **Runbook**: `docs/migrations/COMMS_METRICS_V2_RUNBOOK.md`
 
@@ -57,7 +59,7 @@ Se usar o workflow `.github/workflows/comms-metrics-sync.yml`, configurar secret
 
 ---
 
-## 3. Credly Auto Sync (S10)
+## 3. Credly Auto Sync (S10) — [#58](https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/58)
 
 **Workflow**: `.github/workflows/credly-auto-sync.yml`
 
