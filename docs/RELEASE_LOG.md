@@ -1,5 +1,17 @@
 # Release Log
 
+## 2026-03-08 — S8b i18n closure (Done)
+
+### S8b: Modal Edit Member + CSV headers
+- Eixo 1/2/3 labels e descrições
+- Oprole options (Gerente, Deputy, Líder, etc.)
+- Designações (incl. Co-GP)
+- Tier hint, Capítulo, Status
+- CSV VRMS e Member: headers + Sim/Não nas células
+- admin.desig.coGp adicionado
+
+---
+
 ## 2026-03-08 — S8b i18n long-tail (Sprint increment)
 
 ### S8b: i18n admin loadMyTribe, exec panel, cycle-history prompts

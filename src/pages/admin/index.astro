@@ -71,6 +71,10 @@ const ADMIN_I18N = {
   cycleLabelRole: t('admin.cycleHistory.labelRole', lang),
   cycleLabelDesignations: t('admin.cycleHistory.labelDesignations', lang),
   dayNames: [t('common.days.sun', lang), t('common.days.mon', lang), t('common.days.tue', lang), t('common.days.wed', lang), t('common.days.thu', lang), t('common.days.fri', lang), t('common.days.sat', lang)],
+  csvVrmsHeader: t('admin.csv.vrmsHeader', lang),
+  csvMemberHeader: t('admin.csv.memberHeader', lang),
+  csvYes: t('admin.csv.yes', lang),
+  csvNo: t('admin.csv.no', lang),
   tierLeaderTitlePrefix: t('admin.tier.leaderTitlePrefix', lang),
   tierLeaderSubtitle: t('admin.tier.leaderSubtitle', lang),
   tierMyTribe: t('admin.tier.myTribe', lang),
@@ -526,56 +530,56 @@ const ADMIN_I18N = {
 
         <!-- AXIS 1: Operational Role -->
         <div class="mb-4 p-3 rounded-xl bg-slate-50 border border-slate-200">
-          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Eixo 1 — Papel Operacional</label>
-          <p class="text-[.68rem] text-slate-400 mb-2">O que essa pessoa FAZ no ciclo ativo. Apenas um.</p>
+          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">{t('admin.modal.axis1Label', lang)}</label>
+          <p class="text-[.68rem] text-slate-400 mb-2">{t('admin.modal.axis1Desc', lang)}</p>
           <select id="edit-m-oprole" class="w-full px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
-            <option value="manager">⚙️ Gerente de Projeto (Nível 2)</option>
-            <option value="deputy_manager">⚙️ Deputy PM (Nível 2.5)</option>
-            <option value="tribe_leader">🏷️ Líder de Tribo (Nível 3)</option>
-            <option value="researcher">🔬 Pesquisador (Nível 4)</option>
-            <option value="facilitator">🤝 Facilitador (Nível 4)</option>
-            <option value="communicator">📢 Multiplicador (Nível 4)</option>
-            <option value="none">— Sem papel operacional (patrocinador/embaixador)</option>
-            <option value="guest">👤 Convidado / Visitante</option>
+            <option value="manager">{t('admin.modal.oprole.manager', lang)}</option>
+            <option value="deputy_manager">{t('admin.modal.oprole.deputy_manager', lang)}</option>
+            <option value="tribe_leader">{t('admin.modal.oprole.tribe_leader', lang)}</option>
+            <option value="researcher">{t('admin.modal.oprole.researcher', lang)}</option>
+            <option value="facilitator">{t('admin.modal.oprole.facilitator', lang)}</option>
+            <option value="communicator">{t('admin.modal.oprole.communicator', lang)}</option>
+            <option value="none">{t('admin.modal.oprole.none', lang)}</option>
+            <option value="guest">{t('admin.modal.oprole.guest', lang)}</option>
           </select>
         </div>
 
         <!-- AXIS 2: Designations -->
         <div class="mb-4 p-3 rounded-xl bg-slate-50 border border-slate-200">
-          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Eixo 2 — Designações Especiais</label>
-          <p class="text-[.68rem] text-slate-400 mb-2">Reconhecimentos que transcendem ciclos. Múltiplos possíveis.</p>
+          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">{t('admin.modal.axis2Label', lang)}</label>
+          <p class="text-[.68rem] text-slate-400 mb-2">{t('admin.modal.axis2Desc', lang)}</p>
           <div class="grid grid-cols-2 gap-2">
             <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-all text-[.78rem]">
-              <input type="checkbox" value="sponsor" class="desig-cb accent-[#BE2027]"> <span style="color:#BE2027">●</span> Patrocinador
+              <input type="checkbox" value="sponsor" class="desig-cb accent-[#BE2027]"> <span style="color:#BE2027">●</span> {t('admin.desig.sponsor', lang)}
             </label>
             <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-all text-[.78rem]">
-              <input type="checkbox" value="chapter_liaison" class="desig-cb accent-[#BE2027]"> <span style="color:#BE2027">○</span> Ponto Focal
+              <input type="checkbox" value="chapter_liaison" class="desig-cb accent-[#BE2027]"> <span style="color:#BE2027">○</span> {t('admin.desig.chapterLiaison', lang)}
             </label>
             <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-all text-[.78rem]">
-              <input type="checkbox" value="ambassador" class="desig-cb accent-[#10B981]"> <span style="color:#10B981">●</span> Embaixador
+              <input type="checkbox" value="ambassador" class="desig-cb accent-[#10B981]"> <span style="color:#10B981">●</span> {t('admin.desig.ambassador', lang)}
             </label>
             <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-all text-[.78rem]">
-              <input type="checkbox" value="founder" class="desig-cb accent-[#7C3AED]"> <span style="color:#7C3AED">●</span> Fundador
+              <input type="checkbox" value="founder" class="desig-cb accent-[#7C3AED]"> <span style="color:#7C3AED">●</span> {t('admin.desig.founder', lang)}
             </label>
             <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-all text-[.78rem]">
-              <input type="checkbox" value="curator" class="desig-cb accent-[#D97706]"> <span style="color:#D97706">●</span> Curador
+              <input type="checkbox" value="curator" class="desig-cb accent-[#D97706]"> <span style="color:#D97706">●</span> {t('admin.desig.curator', lang)}
             </label>
             <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-all text-[.78rem]">
-              <input type="checkbox" value="comms_team" class="desig-cb accent-[#06B6D4]"> <span style="color:#06B6D4">●</span> Comunicação
+              <input type="checkbox" value="comms_team" class="desig-cb accent-[#06B6D4]"> <span style="color:#06B6D4">●</span> {t('admin.desig.comms', lang)}
             </label>
             <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-all text-[.78rem]">
-              <input type="checkbox" value="co_gp" class="desig-cb accent-[#FF610F]"> <span style="color:#FF610F">●</span> Co-GP
+              <input type="checkbox" value="co_gp" class="desig-cb accent-[#FF610F]"> <span style="color:#FF610F">●</span> {t('admin.desig.coGp', lang)}
             </label>
           </div>
         </div>
 
         <!-- AXIS 3: Platform Access -->
         <div class="mb-4 p-3 rounded-xl bg-slate-50 border border-slate-200">
-          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">Eixo 3 — Acesso à Plataforma</label>
+          <label class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-2">{t('admin.modal.axis3Label', lang)}</label>
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-[.78rem] font-semibold text-slate-700">🔧 Superadmin</p>
-              <p class="text-[.68rem] text-slate-400">CRUD total, configurações, integrações, segurança</p>
+              <p class="text-[.78rem] font-semibold text-slate-700">{t('admin.modal.axis3Superadmin', lang)}</p>
+              <p class="text-[.68rem] text-slate-400">{t('admin.modal.axis3SuperadminDesc', lang)}</p>
             </div>
             <label class="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" id="edit-m-superadmin" class="sr-only peer">
@@ -583,14 +587,14 @@ const ADMIN_I18N = {
             </label>
           </div>
           <div class="mt-2 text-[.68rem] text-slate-400" id="edit-m-tier-hint">
-            Nível de acesso derivado: <strong id="edit-m-tier-display">—</strong>
+            {t('admin.modal.tierHint', lang)}: <strong id="edit-m-tier-display">—</strong>
           </div>
         </div>
 
         <!-- Chapter + Status -->
         <div class="grid grid-cols-2 gap-3">
           <div class="flex flex-col gap-1.5">
-            <label class="text-[12px] font-semibold text-slate-500">Capítulo</label>
+            <label class="text-[12px] font-semibold text-slate-500">{t('admin.modal.labelChapter', lang)}</label>
             <select id="edit-m-chapter" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white">
               <option value="PMI-GO">PMI-GO</option>
               <option value="PMI-CE">PMI-CE</option>
@@ -600,10 +604,10 @@ const ADMIN_I18N = {
             </select>
           </div>
           <div class="flex flex-col gap-1.5">
-            <label class="text-[12px] font-semibold text-slate-500">Status</label>
+            <label class="text-[12px] font-semibold text-slate-500">{t('admin.modal.labelStatus', lang)}</label>
             <select id="edit-m-active" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white">
-              <option value="true">✅ Ativo no Ciclo 3</option>
-              <option value="false">❌ Inativo</option>
+              <option value="true">{t('admin.modal.statusActive', lang)}</option>
+              <option value="false">{t('admin.modal.statusInactive', lang)}</option>
             </select>
           </div>
         </div>
@@ -1740,7 +1744,7 @@ const ADMIN_I18N = {
     const fromDate = (document.getElementById('vrms-from') as HTMLInputElement).value;
     const toDate = (document.getElementById('vrms-to') as HTMLInputElement).value;
 
-    const header = 'Nome do Voluntário,PMI ID,E-mail,Organização Beneficiada,Nome da Iniciativa / Papel,Data Início,Data Fim,Total de Horas,Contato de Validação (Nome e E-mail),Evidências (Link)';
+    const header = ADMIN_I18N.csvVrmsHeader;
     const rows = vrmsData.map((r: any) =>
       `"${r.name}","${r.pmi_id}","${r.email}","${r.org}","${r.initiative}","${r.date_from}","${r.date_to}",${r.hours},"${r.validator}","${r.evidence}"`
     );
@@ -1771,13 +1775,13 @@ const ADMIN_I18N = {
       cycleRecordsByMember[h.member_id].push(h);
     });
 
-    const header = 'Nome,Email,PMI ID,Telefone,Capítulo,Papel Operacional,Designações,Tribo,Ativo,Superadmin,Ciclos Participados,LinkedIn,Credly';
+    const header = ADMIN_I18N.csvMemberHeader;
     const rows = members.map((m: any) => {
       const opRole = OPROLE_LABELS[m.operational_role] || m.operational_role || '';
       const desigs = (m.designations || []).map((d: string) => DESIG_LABELS[d] || d).join('; ');
       const cycles = uniqueSortedCycleCodes(cycleRecordsByMember[m.id] || []).join('; ');
       const tid = m.tribe_id || '';
-      return `"${m.name}","${m.email}","${m.pmi_id || ''}","${m.phone || ''}","${m.chapter || ''}","${opRole}","${desigs}","${tid}","${m.current_cycle_active ? 'Sim' : 'Não'}","${m.is_superadmin ? 'Sim' : 'Não'}","${cycles}","${m.linkedin_url || ''}","${m.credly_url || ''}"`;
+      return `"${m.name}","${m.email}","${m.pmi_id || ''}","${m.phone || ''}","${m.chapter || ''}","${opRole}","${desigs}","${tid}","${m.current_cycle_active ? ADMIN_I18N.csvYes : ADMIN_I18N.csvNo}","${m.is_superadmin ? ADMIN_I18N.csvYes : ADMIN_I18N.csvNo}","${cycles}","${m.linkedin_url || ''}","${m.credly_url || ''}"`;
     });
 
     const csv = '\uFEFF' + [header, ...rows].join('\n');
