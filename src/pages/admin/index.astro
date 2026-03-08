@@ -1269,6 +1269,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   const TRAIL_CODES = ['GENAI_OVERVIEW','DATA_LANDSCAPE','PROMPT_ENG','PRACTICAL_GENAI','CDBA_INTRO','CPMAI_INTRO','AI_INFRA','AI_AGILE'];
   const CURRENT_CYCLE_START = '2026-01-01';
   const VRMS_PREFS_KEY = 'admin_vrms_filters_v1';
+  const LEADERSHIP_PREFS_KEY = 'admin_leadership_filters_v1';
 
   function isoDate(date: Date) {
     return date.toISOString().split('T')[0];
@@ -1295,6 +1296,16 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       const chapter = (document.getElementById('vrms-chapter') as HTMLSelectElement)?.value || '';
       const tribe = (document.getElementById('vrms-tribe') as HTMLSelectElement)?.value || '';
       localStorage.setItem(VRMS_PREFS_KEY, JSON.stringify({ fromDate, toDate, chapter, tribe, preset }));
+    } catch {}
+  }
+
+  function saveLeadershipPrefs(preset = 'custom') {
+    try {
+      const chapter = (document.getElementById('ls-chapter') as HTMLSelectElement)?.value || '';
+      const tribe = (document.getElementById('ls-tribe') as HTMLSelectElement)?.value || '';
+      const fromDate = (document.getElementById('ls-from') as HTMLInputElement)?.value || '';
+      const toDate = (document.getElementById('ls-to') as HTMLInputElement)?.value || '';
+      localStorage.setItem(LEADERSHIP_PREFS_KEY, JSON.stringify({ chapter, tribe, fromDate, toDate, preset }));
     } catch {}
   }
 
@@ -1337,6 +1348,45 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     });
   }
 
+  function restoreLeadershipPrefs() {
+    const chapterEl = document.getElementById('ls-chapter') as HTMLSelectElement;
+    const tribeEl = document.getElementById('ls-tribe') as HTMLSelectElement;
+    const fromEl = document.getElementById('ls-from') as HTMLInputElement;
+    const toEl = document.getElementById('ls-to') as HTMLInputElement;
+    if (!chapterEl || !tribeEl || !fromEl || !toEl) return;
+
+    let restored = false;
+    try {
+      const raw = localStorage.getItem(LEADERSHIP_PREFS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed?.chapter === 'string') chapterEl.value = parsed.chapter;
+        if (typeof parsed?.tribe === 'string') tribeEl.value = parsed.tribe;
+        if (parsed?.fromDate) fromEl.value = parsed.fromDate;
+        if (parsed?.toDate) toEl.value = parsed.toDate;
+        restored = !!(parsed?.fromDate || parsed?.toDate);
+      }
+    } catch {}
+
+    if (!restored) {
+      fromEl.value = CURRENT_CYCLE_START;
+      toEl.value = isoDate(new Date());
+    }
+  }
+
+  function bindLeadershipPrefs() {
+    const chapterEl = document.getElementById('ls-chapter') as HTMLSelectElement;
+    const tribeEl = document.getElementById('ls-tribe') as HTMLSelectElement;
+    const fromEl = document.getElementById('ls-from') as HTMLInputElement;
+    const toEl = document.getElementById('ls-to') as HTMLInputElement;
+    const controls = [chapterEl, tribeEl, fromEl, toEl].filter(Boolean) as HTMLElement[];
+    controls.forEach((el: HTMLElement) => {
+      if (el.dataset.lsBound === '1') return;
+      el.dataset.lsBound = '1';
+      el.addEventListener('change', () => saveLeadershipPrefs('custom'));
+    });
+  }
+
   (window as any).setVRMSPreset = (preset: string) => {
     if (!ensureAdminAction()) return;
     const today = new Date();
@@ -1365,25 +1415,26 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       const from = new Date(today);
       from.setDate(today.getDate() - 6);
       setLeadershipRange(isoDate(from), isoDate(today));
+      saveLeadershipPrefs('7d');
       return;
     }
     if (preset === '30d') {
       const from = new Date(today);
       from.setDate(today.getDate() - 29);
       setLeadershipRange(isoDate(from), isoDate(today));
+      saveLeadershipPrefs('30d');
       return;
     }
     setLeadershipRange(CURRENT_CYCLE_START, isoDate(today));
+    saveLeadershipPrefs('cycle');
   };
 
   function initReports() {
     if (!ensureAdminAction(false)) return;
     restoreVRMSPrefs();
     bindVRMSPrefs();
-    const lsFrom = document.getElementById('ls-from') as HTMLInputElement;
-    const lsTo = document.getElementById('ls-to') as HTMLInputElement;
-    if (lsFrom && !lsFrom.value) lsFrom.value = CURRENT_CYCLE_START;
-    if (lsTo && !lsTo.value) lsTo.value = isoDate(new Date());
+    restoreLeadershipPrefs();
+    bindLeadershipPrefs();
     loadAnnouncements();
     loadLeadershipSnapshot();
   }
@@ -1404,6 +1455,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
   (window as any).applyLeadershipFilters = async () => {
     if (!ensureAdminAction()) return;
+    saveLeadershipPrefs('custom');
     await loadLeadershipSnapshot();
   };
 
