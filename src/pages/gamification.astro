@@ -9,7 +9,7 @@ import Toast from '../components/ui/Toast.astro';
       <h1 class="text-2xl font-extrabold text-navy">🏆 Gamificação & Certificados</h1>
       <button id="btn-sync" class="hidden px-4 py-2 bg-teal text-white rounded-xl font-semibold text-sm cursor-pointer border-0 hover:opacity-90 transition-all"
               onclick="syncPoints()">
-        🔄 Sincronizar Pontos
+        🔄 Sincronizar Pontos + Credly
       </button>
     </div>
 
@@ -638,12 +638,29 @@ import Toast from '../components/ui/Toast.astro';
 
   // ── SYNC POINTS (admin) ──
   (window as any).syncPoints = async () => {
-    const { data } = await sb.rpc('sync_attendance_points');
-    if (data?.success) {
-      toast(`${data.points_created} pontos sincronizados ✅`, 'success');
+    const btn = document.getElementById('btn-sync') as HTMLButtonElement | null;
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Sincronizando...'; }
+    try {
+      const { data: attendanceData, error: attendanceError } = await sb.rpc('sync_attendance_points');
+      if (attendanceError) throw attendanceError;
+      if (!attendanceData?.success) throw new Error(attendanceData?.error || 'Falha ao sincronizar presenças');
+
+      let credlySummary = 'Credly em lote não executado.';
+      const { data: credlyData, error: credlyError } = await sb.functions.invoke('sync-credly-all');
+      if (!credlyError && credlyData?.success) {
+        credlySummary = `Credly: ${credlyData.success_count}/${credlyData.total_candidates} perfis sincronizados, ${credlyData.fail_count} falhas.`;
+      } else if (credlyError) {
+        credlySummary = `Credly em lote com erro: ${credlyError.message}`;
+      } else if (credlyData?.error) {
+        credlySummary = `Credly em lote com erro: ${credlyData.error}`;
+      }
+
+      toast(`${attendanceData.points_created} pontos de presença sincronizados ✅ ${credlySummary}`, 'success');
       loadLeaderboard();
-    } else {
-      toast(data?.error || 'Erro ao sincronizar', 'error');
+    } catch (e: any) {
+      toast(e?.message || 'Erro ao sincronizar', 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '🔄 Sincronizar Pontos + Credly'; }
     }
   };
 
