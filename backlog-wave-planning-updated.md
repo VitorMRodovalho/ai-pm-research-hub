@@ -65,7 +65,8 @@
 | S10 | Credly Auto Sync | Medium | Completed (2026-03-08) | Weekly GitHub Actions scheduler active (`.github/workflows/credly-auto-sync.yml`) with cron-secret mode in `sync-credly-all`, function deployed, secrets provisioned, and manual workflow validation successful (`execution_mode: cron`, `fail_count: 0`). |
 | S-AN1 | Announcements System | Medium | Completed (2026-03-08) | Sistema de anúncios ativo: CRUD no `/admin` e renderização global no topo do site via `AnnouncementBanner`, com dismiss por sessão e suporte a severidade/expiração. |
 | S-DR1 | Disaster Recovery Doc | Low | Planned | POP de restauração de backup e PITR. |
-| S-COM6 | Dashboard Central de Mídia | Medium | Partial (v3 SQL-pack ready 2026-03-08) | `/admin/comms` agora suporta KPIs por endpoint externo (`PUBLIC_COMMS_KPI_API_URL`) ou fallback RPC (`comms_metrics_latest`) com SQL pack `COMMS_METRICS_V1` (migration/audit/rollback) pronto para aplicação em produção. |
+<<<<<<< HEAD
+| S-COM6 | Dashboard Central de Mídia | Medium | Partial (V2 backend started 2026-03-08) | `/admin/comms` já suporta KPI via endpoint/RPC (V1) e agora ganhou backbone V2 de ingestão com `sync-comms-metrics`, `comms_metrics_ingestion_log` e `comms_metrics_latest_by_channel`; próximo passo é fechar UI dedicada + operação em produção. |
 | S-PA2 | Admin Executive Visual Dashboards (ROI PMI) | High | Planned | Evolve `AdminExecutive` with visual charts (iframe-first or lightweight native SVG): qualification funnel, certification timeline after member join, and skill/certification radar across the base. |
 
 ---
@@ -107,6 +108,7 @@
 | Legacy role columns still alive | High | Partial | Finish frontend migration to `operational_role` and `designations`, then hard drop `role` and `roles`. |
 | Architectural guideline drift | High | Open | Enforce role model v3, cycle aware data, soft delete, and event driven integration discipline. |
 | Route compatibility not tested | High | Addressed | Smoke tests added and validated in deploy checklist. |
+| SQL architecture not tracked in every sprint | High | In Progress | Mandatory DB gate for admin/analytics increments: include migration in `supabase/migrations` + docs pack (`apply/audit/rollback/runbook`) and capture evidence in `docs/RELEASE_LOG.md`. |
 
 ---
 
