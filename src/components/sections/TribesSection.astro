@@ -176,12 +176,12 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
   const MIN_SLOTS = 3;
   const DEADLINE = new Date(tribeSelectionDeadline);
 
-  let tribeCounts: Record<number, number> = {};
-  let userTribe: number | null = null;
-  let member: any = null;
+  let tribeCounts = {};
+  let userTribe = null;
+  let member = null;
 
   function getSb() {
-    return (window as any).navGetSb?.();
+    return window.navGetSb?.();
   }
 
   // ── Accordion toggle ──
@@ -193,7 +193,7 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
       const wasOpen = body.style.maxHeight && body.style.maxHeight !== '0px';
       // Close all
       document.querySelectorAll('[id^="tb-"]').forEach((b) => {
-        (b as HTMLElement).style.maxHeight = '0px';
+        b.style.maxHeight = '0px';
       });
       if (!wasOpen) {
         body.style.maxHeight = body.scrollHeight + 'px';
@@ -205,9 +205,13 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
   async function loadTribeCounts() {
     const sb = getSb();
     if (!sb) return;
-    const { data } = await sb.from('tribe_selections').select('tribe_id');
+    const { data, error } = await sb.from('tribe_selections').select('tribe_id');
+    if (error) {
+      console.error('tribes.loadTribeCounts failed', error);
+      return;
+    }
     tribeCounts = {};
-    if (data) data.forEach((s: any) => {
+    if (data) data.forEach((s) => {
       tribeCounts[s.tribe_id] = (tribeCounts[s.tribe_id] || 0) + 1;
     });
     updateUI();
@@ -222,7 +226,7 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
       .eq('operational_role', 'tribe_leader')
       .not('photo_url', 'is', null);
     if (!data) return;
-    data.forEach((m: any) => {
+    data.forEach((m) => {
       if (!m.tribe_id || !m.photo_url) return;
       const el = document.getElementById(`tp-${m.tribe_id}`);
       if (el) {
@@ -233,7 +237,7 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
   }
 
   // ── Select / deselect tribe ──
-  async function selectTribe(id: number) {
+  async function selectTribe(id) {
     const sb = getSb();
     if (!sb) return;
     if (!member) {
@@ -242,15 +246,15 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
     }
     const role = getMemberRole(member);
     if (role === 'guest') {
-      (window as any).toast?.('Apenas participantes cadastrados.', 'error');
+      window.toast?.('Apenas participantes cadastrados.', 'error');
       return;
     }
     if (role === 'tribe_leader') {
-      (window as any).toast?.('Líderes já estão designados à sua tribo!', 'info');
+      window.toast?.('Líderes já estão designados à sua tribo!', 'info');
       return;
     }
     if (new Date() > DEADLINE) {
-      (window as any).toast?.('Seleção encerrada!', 'error');
+      window.toast?.('Seleção encerrada!', 'error');
       return;
     }
 
@@ -260,13 +264,13 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
         const { data } = await sb.rpc('deselect_tribe');
         if (data?.success) {
           userTribe = null;
-          (window as any).toast?.('Seleção removida', 'info');
+          window.toast?.('Seleção removida', 'info');
           await loadTribeCounts();
         } else {
-          (window as any).toast?.(data?.error || 'Erro ao remover', 'error');
+          window.toast?.(data?.error || 'Erro ao remover', 'error');
         }
-      } catch (e: any) {
-        (window as any).toast?.('Erro: ' + e.message, 'error');
+      } catch (e) {
+        window.toast?.('Erro: ' + (e?.message || 'falha inesperada'), 'error');
       }
       return;
     }
@@ -274,7 +278,7 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
     // Select / switch
     const count = tribeCounts[id] || 0;
     if (count >= MAX_SLOTS) {
-      (window as any).toast?.('Tribo lotada!', 'error');
+      window.toast?.('Tribo lotada!', 'error');
       return;
     }
 
@@ -282,13 +286,13 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
       const { data } = await sb.rpc('select_tribe', { p_tribe_id: id });
       if (data?.success) {
         userTribe = id;
-        (window as any).toast?.(`Tribo ${id} selecionada! ✓`, 'success');
+        window.toast?.(`Tribo ${id} selecionada! ✓`, 'success');
         await loadTribeCounts();
       } else {
-        (window as any).toast?.(data?.error || 'Erro ao selecionar', 'error');
+        window.toast?.(data?.error || 'Erro ao selecionar', 'error');
       }
-    } catch (e: any) {
-      (window as any).toast?.('Erro: ' + e.message, 'error');
+    } catch (e) {
+      window.toast?.('Erro: ' + (e?.message || 'falha inesperada'), 'error');
     }
   }
 
@@ -296,7 +300,7 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
   document.querySelectorAll('.tribe-select-btn').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const id = Number((btn as HTMLElement).dataset.tribeId);
+      const id = Number(btn.dataset.tribeId);
       selectTribe(id);
     });
   });
@@ -307,12 +311,12 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
       const count = tribeCounts[tid] || 0;
       const dots = document.querySelectorAll(`#sl-${tid} > div`);
       const text = document.getElementById(`st-${tid}`);
-      const btn = document.getElementById(`sb-${tid}`) as HTMLButtonElement | null;
+      const btn = document.getElementById(`sb-${tid}`);
 
       // Dots
       dots.forEach((d, i) => {
-        (d as HTMLElement).style.background = i < count ? '#70AD47' : '';
-        (d as HTMLElement).style.borderColor = i < count ? '#70AD47' : '';
+        d.style.background = i < count ? '#70AD47' : '';
+        d.style.borderColor = i < count ? '#70AD47' : '';
       });
 
       // Text
@@ -384,7 +388,7 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
     subscribeRealtime();
 
     // Load user tribe selection if logged in
-    member = (window as any).navGetMember?.();
+    member = window.navGetMember?.();
     if (member?.id) {
       const { data: sel } = await sb.from('tribe_selections')
         .select('tribe_id')
@@ -412,16 +416,16 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
     ]);
 
     // Group slots by tribe
-    const slotMap: Record<number, any[]> = {};
-    (slots || []).forEach((s: any) => {
+    const slotMap = {};
+    (slots || []).forEach((s) => {
       if (!slotMap[s.tribe_id]) slotMap[s.tribe_id] = [];
       slotMap[s.tribe_id].push(s);
     });
 
     // Notes map
-    const notesMap: Record<number, string> = {};
-    const waMap: Record<number, string> = {};
-    (tribes || []).forEach((t: any) => {
+    const notesMap = {};
+    const waMap = {};
+    (tribes || []).forEach((t) => {
       if (t.notes) notesMap[t.id] = t.notes;
       if (t.whatsapp_url) waMap[t.id] = t.whatsapp_url;
     });
@@ -435,7 +439,7 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
       let scheduleHtml = '';
 
       if (tribeSlots?.length) {
-        const formatted = tribeSlots.map((s: any) => {
+        const formatted = tribeSlots.map((s) => {
           const day = DAY_NAMES[s.day_of_week] || '?';
           const start = s.time_start.substring(0, 5);
           const end = s.time_end.substring(0, 5);
@@ -458,14 +462,14 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
   }
 
   // Listen for auth changes
-  window.addEventListener('nav:member', ((e: CustomEvent) => {
+  window.addEventListener('nav:member', (e) => {
     member = e.detail;
     if (member?.id) {
       getSb()?.from('tribe_selections')
         .select('tribe_id')
         .eq('member_id', member.id)
         .maybeSingle()
-        .then(({ data }: any) => {
+        .then(({ data }) => {
           userTribe = data?.tribe_id ?? null;
           updateUI();
         });
@@ -473,7 +477,7 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
       userTribe = null;
       updateUI();
     }
-  }) as EventListener);
+  });
 
   bootTribes();
 </script>
