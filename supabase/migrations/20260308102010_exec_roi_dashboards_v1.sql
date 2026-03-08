@@ -17,9 +17,10 @@ trail_progress as (
     cp.member_id,
     count(*) filter (
       where cp.status = 'completed'
-        and cp.code in ('GENAI_OVERVIEW','DATA_LANDSCAPE','PROMPT_ENG','PRACTICAL_GENAI','CDBA_INTRO','CPMAI_INTRO','AI_INFRA','AI_AGILE')
+        and c.code in ('GENAI_OVERVIEW','DATA_LANDSCAPE','PROMPT_ENG','PRACTICAL_GENAI','CDBA_INTRO','CPMAI_INTRO','AI_INFRA','AI_AGILE')
     )::integer as core_completed
   from public.course_progress cp
+  join public.courses c on c.id = cp.course_id
   group by cp.member_id
 ),
 credly_points as (
