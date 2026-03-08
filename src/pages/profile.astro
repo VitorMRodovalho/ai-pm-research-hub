@@ -545,6 +545,7 @@ import Toast from '../components/ui/Toast.astro';
   (window as any).verifyCredly = async () => {
     const sb = (window as any).navGetSb?.();
     if (!sb || !currentMember) return;
+    await sb.auth.refreshSession();
     const credlyInput = (document.getElementById('self-credly') as HTMLInputElement)?.value || '';
     const credlyNormalized = credlyInput.trim() ? normalizeCredlyUrl(credlyInput) : normalizeCredlyUrl(currentMember.credly_url || '');
     if (!credlyNormalized) {
