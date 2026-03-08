@@ -4,6 +4,7 @@ import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL || '';
+const COMMS_KPI_API_URL = import.meta.env.PUBLIC_COMMS_KPI_API_URL || '';
 ---
 
 <BaseLayout title={t('admin.comms.meta', lang)} activePage="admin">
@@ -23,38 +24,86 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
       </a>
     </div>
 
-    <section id="comms-panel" class="hidden bg-white border border-slate-200 rounded-xl overflow-hidden">
-      <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-        <div>
-          <h2 class="text-sm font-bold text-navy">{t('admin.comms.dashboardTitle', lang)}</h2>
-          <p class="text-[.68rem] text-slate-400">{t('admin.comms.dashboardSubtitle', lang)}</p>
+    <section id="comms-panel" class="hidden space-y-4">
+      <div class="bg-white border border-slate-200 rounded-xl p-4">
+        <div class="flex items-center justify-between gap-3 flex-wrap mb-3">
+          <div>
+            <h2 class="text-sm font-bold text-navy">{t('admin.comms.kpiTitle', lang)}</h2>
+            <p class="text-[.68rem] text-slate-400">{t('admin.comms.kpiSubtitle', lang)}</p>
+          </div>
+          <button id="comms-kpi-refresh" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-[.72rem] font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-all">
+            {t('admin.comms.kpiRefresh', lang)}
+          </button>
         </div>
-        {COMMS_DASHBOARD_URL && (
-          <a href={COMMS_DASHBOARD_URL} target="_blank" rel="noopener noreferrer" class="text-[.72rem] font-semibold text-teal no-underline hover:underline">
-            {t('admin.comms.openExternal', lang)}
-          </a>
+
+        {!COMMS_KPI_API_URL ? (
+          <p id="comms-kpi-status" class="text-[.72rem] text-slate-500">
+            {t('admin.comms.kpiMissingConfig', lang)} <code class="bg-slate-100 px-1 py-0.5 rounded">PUBLIC_COMMS_KPI_API_URL</code>
+          </p>
+        ) : (
+          <>
+            <p id="comms-kpi-status" class="text-[.72rem] text-slate-500 mb-3">{t('admin.comms.kpiLoading', lang)}</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div class="text-[.65rem] font-semibold text-slate-500">{t('admin.comms.kpiAudience', lang)}</div>
+                <div id="kpi-audience" class="text-xl font-black text-navy">—</div>
+              </div>
+              <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div class="text-[.65rem] font-semibold text-slate-500">{t('admin.comms.kpiReach', lang)}</div>
+                <div id="kpi-reach" class="text-xl font-black text-teal">—</div>
+              </div>
+              <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div class="text-[.65rem] font-semibold text-slate-500">{t('admin.comms.kpiEngagement', lang)}</div>
+                <div id="kpi-engagement" class="text-xl font-black text-violet-700">—</div>
+              </div>
+              <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div class="text-[.65rem] font-semibold text-slate-500">{t('admin.comms.kpiLeads', lang)}</div>
+                <div id="kpi-leads" class="text-xl font-black text-orange">—</div>
+              </div>
+            </div>
+          </>
         )}
       </div>
-      {!COMMS_DASHBOARD_URL ? (
-        <div class="p-4 text-[.72rem] text-slate-500">
-          {t('admin.comms.missingConfig', lang)} <code class="bg-slate-100 px-1 py-0.5 rounded">PUBLIC_LOOKER_COMMS_DASHBOARD_URL</code>
+
+      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-bold text-navy">{t('admin.comms.dashboardTitle', lang)}</h2>
+            <p class="text-[.68rem] text-slate-400">{t('admin.comms.dashboardSubtitle', lang)}</p>
+          </div>
+          {COMMS_DASHBOARD_URL && (
+            <a href={COMMS_DASHBOARD_URL} target="_blank" rel="noopener noreferrer" class="text-[.72rem] font-semibold text-teal no-underline hover:underline">
+              {t('admin.comms.openExternal', lang)}
+            </a>
+          )}
         </div>
-      ) : (
-        <iframe
-          src={COMMS_DASHBOARD_URL}
-          title="Comms Central Dashboard"
-          class="w-full min-h-[760px] border-0"
-          loading="lazy"
-          referrerpolicy="strict-origin-when-cross-origin"
-          sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
-        ></iframe>
-      )}
+        {!COMMS_DASHBOARD_URL ? (
+          <div class="p-4 text-[.72rem] text-slate-500">
+            {t('admin.comms.missingConfig', lang)} <code class="bg-slate-100 px-1 py-0.5 rounded">PUBLIC_LOOKER_COMMS_DASHBOARD_URL</code>
+          </div>
+        ) : (
+          <iframe
+            src={COMMS_DASHBOARD_URL}
+            title="Comms Central Dashboard"
+            class="w-full min-h-[760px] border-0"
+            loading="lazy"
+            referrerpolicy="strict-origin-when-cross-origin"
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+          ></iframe>
+        )}
+      </section>
     </section>
   </div>
 </BaseLayout>
 
 <script>
   import { canAccessAdminRoute } from '../../lib/admin/constants';
+
+  const KPI_URL = "{COMMS_KPI_API_URL}";
+  const KPI_MSG_LOADING = "{t('admin.comms.kpiLoading', lang)}";
+  const KPI_MSG_ERROR = "{t('admin.comms.kpiError', lang)}";
+  const KPI_MSG_UPDATED = "{t('admin.comms.kpiUpdatedAt', lang)}";
+  let kpiLoaded = false;
 
   function allowComms(m: any): boolean {
     return canAccessAdminRoute(m, 'admin_analytics');
@@ -70,6 +119,56 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
     document.getElementById('comms-loading')?.classList.add('hidden');
     document.getElementById('comms-denied')?.classList.add('hidden');
     document.getElementById('comms-panel')?.classList.remove('hidden');
+    if (!kpiLoaded) void loadCommsKpis();
+  }
+
+  function fmtKpi(v: any): string {
+    if (v === null || v === undefined || v === '') return '—';
+    if (typeof v === 'number') return Number.isInteger(v) ? v.toLocaleString('pt-BR') : v.toFixed(2);
+    return String(v);
+  }
+
+  function setKpi(id: string, value: any) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = fmtKpi(value);
+  }
+
+  function setKpiStatus(text: string, tone: 'default' | 'error' = 'default') {
+    const el = document.getElementById('comms-kpi-status');
+    if (!el) return;
+    el.textContent = text;
+    el.className = tone === 'error' ? 'text-[.72rem] text-crimson mb-3' : 'text-[.72rem] text-slate-500 mb-3';
+  }
+
+  function parseKpis(payload: any) {
+    const p = payload?.metrics || payload?.kpis || payload || {};
+    return {
+      audience: p.audience ?? p.followers ?? p.total_followers ?? null,
+      reach: p.reach ?? p.impressions ?? p.views ?? null,
+      engagement: p.engagement ?? p.engagement_rate ?? p.er ?? null,
+      leads: p.leads ?? p.conversions ?? p.qualified_leads ?? null,
+      updatedAt: payload?.updated_at || p.updated_at || null,
+    };
+  }
+
+  async function loadCommsKpis() {
+    if (!KPI_URL) return;
+    setKpiStatus(KPI_MSG_LOADING);
+    try {
+      const resp = await fetch(KPI_URL, { headers: { Accept: 'application/json' } });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      const k = parseKpis(data);
+      setKpi('kpi-audience', k.audience);
+      setKpi('kpi-reach', k.reach);
+      setKpi('kpi-engagement', k.engagement);
+      setKpi('kpi-leads', k.leads);
+      const status = k.updatedAt ? `${KPI_MSG_UPDATED} ${new Date(k.updatedAt).toLocaleString('pt-BR')}` : KPI_MSG_UPDATED;
+      setKpiStatus(status);
+      kpiLoaded = true;
+    } catch (e: any) {
+      setKpiStatus(`${KPI_MSG_ERROR} ${e?.message || ''}`.trim(), 'error');
+    }
   }
 
   function applyGate(m: any) {
@@ -80,6 +179,12 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
   async function boot() {
     const sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(boot, 200); return; }
+
+    const refreshBtn = document.getElementById('comms-kpi-refresh') as HTMLButtonElement | null;
+    if (refreshBtn && !refreshBtn.dataset.bound) {
+      refreshBtn.dataset.bound = '1';
+      refreshBtn.addEventListener('click', () => { void loadCommsKpis(); });
+    }
 
     window.addEventListener('nav:member', ((e: CustomEvent) => {
       if (e.detail) applyGate(e.detail);
