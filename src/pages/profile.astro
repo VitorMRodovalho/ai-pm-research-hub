@@ -546,6 +546,11 @@ import Toast from '../components/ui/Toast.astro';
     const sb = (window as any).navGetSb?.();
     if (!sb || !currentMember) return;
     await sb.auth.refreshSession();
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.access_token) {
+      (window as any).toast?.('Sessão inválida. Faça login novamente para verificar o Credly.', 'error');
+      return;
+    }
     const credlyInput = (document.getElementById('self-credly') as HTMLInputElement)?.value || '';
     const credlyNormalized = credlyInput.trim() ? normalizeCredlyUrl(credlyInput) : normalizeCredlyUrl(currentMember.credly_url || '');
     if (!credlyNormalized) {
@@ -559,6 +564,7 @@ import Toast from '../components/ui/Toast.astro';
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Verificando...'; }
     try {
       const { data, error } = await sb.functions.invoke('verify-credly', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
         body: { member_id: currentMember.id, credly_url: credlyNormalized },
       });
       if (error) throw new Error(await describeFnError(error));

@@ -654,8 +654,14 @@ import Toast from '../components/ui/Toast.astro';
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Sincronizando...'; }
     try {
       await sb.auth.refreshSession();
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Sessão inválida. Faça login novamente.');
+      }
       let attendanceSummary = '';
-      const { data: attendanceData, error: attendanceError } = await sb.functions.invoke('sync-attendance-points');
+      const { data: attendanceData, error: attendanceError } = await sb.functions.invoke('sync-attendance-points', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
       if (attendanceError || !attendanceData?.success) {
         const attendanceMsg = attendanceError
           ? await describeFnError(attendanceError)
@@ -666,7 +672,9 @@ import Toast from '../components/ui/Toast.astro';
       }
 
       let credlySummary = '';
-      const { data: credlyData, error: credlyError } = await sb.functions.invoke('sync-credly-all');
+      const { data: credlyData, error: credlyError } = await sb.functions.invoke('sync-credly-all', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
       if (!credlyError && credlyData?.success) {
         credlySummary = `Credly: ${credlyData.success_count}/${credlyData.total_candidates} perfis sincronizados, ${credlyData.fail_count} falhas.`;
       } else if (credlyError) {
