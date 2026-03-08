@@ -25,6 +25,23 @@ const safeTribes = viewModel.tribes;
 const viewWarnings = viewModel.warnings;
 // Deadline from home_schedule (passed by index); fallback far-future if not provided
 const TRIBE_SELECTION_DEADLINE_ISO = deadlineProp ?? '2030-12-31T23:59:59Z';
+// i18n for client-side toast/UI (inject via define:vars; no import in script per .cursorrules)
+const TRIBES_MSG = {
+  onlyParticipants: t('tribes.onlyParticipants', lang),
+  leadersAssigned: t('tribes.leadersAssigned', lang),
+  selectionClosed: t('tribes.selectionClosed', lang),
+  selectionRemoved: t('tribes.selectionRemoved', lang),
+  tribeFull: t('tribes.tribeFull', lang),
+  errorRemove: t('tribes.errorRemove', lang),
+  errorSelect: t('tribes.errorSelect', lang),
+  selectedSuccess: t('tribes.selectedSuccess', lang),
+  selectBtn: t('tribes.select', lang),
+  selected: t('tribes.selected', lang),
+  fullCaps: t('tribes.fullCaps', lang),
+  full: t('tribes.full', lang),
+  loading: t('tribes.loading', lang),
+  trailsUnavailable: t('tribes.trailsUnavailable', lang),
+};
 // SSR: slot counts come from Supabase client-side; use 0 until hydrated
 const initialCounts: Record<number, number> = {};
 ---
@@ -125,14 +142,14 @@ const initialCounts: Record<number, number> = {};
                     <p class="text-[.88rem] text-slate-500 mb-3">{t.description}</p>
 
                     <div class="mb-3">
-                      <strong class="text-[.85rem]">Entregáveis do Ciclo:</strong>
+                      <strong class="text-[.85rem]">{t('tribes.deliverables', lang)}</strong>
                       <ul class="mt-1.5 ml-5 text-[.84rem] text-slate-500 list-disc">
                         {(t.deliverables || []).map((d: string) => <li class="mb-1">{d}</li>)}
                       </ul>
                     </div>
 
                     <p class="text-[.82rem] mb-3" id={`ms-${t.id}`}>
-                      <strong>📅 Encontros:</strong> <span class="text-slate-400">{t.meetingSchedule || 'Carregando...'}</span>
+                      <strong>{t('tribes.meetings', lang)}</strong> <span class="text-slate-400">{t.meetingSchedule || t('tribes.loading', lang)}</span>
                     </p>
 
                     <div class="flex gap-3 flex-wrap items-center mt-4">
@@ -162,7 +179,7 @@ const initialCounts: Record<number, number> = {};
       })}
       {(!safeQuadrants.length || !safeTribes.length) && (
         <div class="bg-white rounded-2xl border border-black/5 p-5 text-sm text-slate-500">
-          Dados de trilhas indisponiveis temporariamente. Atualize a pagina em alguns instantes.
+          {t('tribes.trailsUnavailable', lang)}
         </div>
       )}
     </div>
@@ -177,12 +194,11 @@ const initialCounts: Record<number, number> = {};
   </div>
 </section>
 
-<script define:vars={{ tribeSelectionDeadline: TRIBE_SELECTION_DEADLINE_ISO }}>
+<script define:vars={{ tribeSelectionDeadline: TRIBE_SELECTION_DEADLINE_ISO, TRIBES_MSG, MAX_SLOTS, MIN_SLOTS }}>
   // ── Tribe selection logic ──
   // Uses window.navGetSb() and nav:member event per established Astro patterns.
+  // MAX_SLOTS, MIN_SLOTS from data/tribes via define:vars (single source of truth)
 
-  const MAX_SLOTS = 6;
-  const MIN_SLOTS = 3;
   const DEADLINE = new Date(tribeSelectionDeadline);
 
   let tribeCounts = {};
@@ -259,15 +275,15 @@ const initialCounts: Record<number, number> = {};
     }
     const role = getRole(member);
     if (role === 'guest') {
-      window.toast?.('Apenas participantes cadastrados.', 'error');
+      window.toast?.(TRIBES_MSG.onlyParticipants, 'error');
       return;
     }
     if (role === 'tribe_leader') {
-      window.toast?.('Líderes já estão designados à sua tribo!', 'info');
+      window.toast?.(TRIBES_MSG.leadersAssigned, 'info');
       return;
     }
     if (new Date() > DEADLINE) {
-      window.toast?.('Seleção encerrada!', 'error');
+      window.toast?.(TRIBES_MSG.selectionClosed, 'error');
       return;
     }
 
@@ -277,10 +293,10 @@ const initialCounts: Record<number, number> = {};
         const { data } = await sb.rpc('deselect_tribe');
         if (data?.success) {
           userTribe = null;
-          window.toast?.('Seleção removida', 'info');
+          window.toast?.(TRIBES_MSG.selectionRemoved, 'info');
           await loadTribeCounts();
         } else {
-          window.toast?.(data?.error || 'Erro ao remover', 'error');
+          window.toast?.(data?.error || TRIBES_MSG.errorRemove, 'error');
         }
       } catch (e) {
         window.toast?.('Erro: ' + (e?.message || 'falha inesperada'), 'error');
@@ -291,7 +307,7 @@ const initialCounts: Record<number, number> = {};
     // Select / switch
     const count = tribeCounts[id] || 0;
     if (count >= MAX_SLOTS) {
-      window.toast?.('Tribo lotada!', 'error');
+      window.toast?.(TRIBES_MSG.tribeFull, 'error');
       return;
     }
 
@@ -299,10 +315,10 @@ const initialCounts: Record<number, number> = {};
       const { data } = await sb.rpc('select_tribe', { p_tribe_id: id });
       if (data?.success) {
         userTribe = id;
-        window.toast?.(`Tribo ${id} selecionada! ✓`, 'success');
+        window.toast?.(TRIBES_MSG.selectedSuccess.replace('{id}', String(id)), 'success');
         await loadTribeCounts();
       } else {
-        window.toast?.(data?.error || 'Erro ao selecionar', 'error');
+        window.toast?.(data?.error || TRIBES_MSG.errorSelect, 'error');
       }
     } catch (e) {
       window.toast?.('Erro: ' + (e?.message || 'falha inesperada'), 'error');
@@ -335,7 +351,7 @@ const initialCounts: Record<number, number> = {};
       // Text
       if (text) {
         if (count >= MAX_SLOTS) {
-          text.innerHTML = '<span class="text-red-600 font-bold">LOTADA</span>';
+          text.innerHTML = '<span class="text-red-600 font-bold">' + TRIBES_MSG.fullCaps + '</span>';
         } else if (count >= MIN_SLOTS) {
           text.innerHTML = `${count}/${MAX_SLOTS} ✓`;
           text.style.color = '#70AD47';
@@ -356,15 +372,15 @@ const initialCounts: Record<number, number> = {};
           && member.is_active !== false;
 
         if (isSelected) {
-          btn.textContent = '✓ Selecionada (clique para trocar)';
+          btn.textContent = TRIBES_MSG.selected;
           btn.style.background = '#70AD47';
           btn.disabled = false;
         } else if (isFull) {
-          btn.textContent = 'Lotada';
+          btn.textContent = TRIBES_MSG.full;
           btn.style.background = '';
           btn.disabled = true;
         } else {
-          btn.textContent = 'Escolher esta Tribo';
+          btn.textContent = TRIBES_MSG.selectBtn;
           btn.style.background = '';
           btn.disabled = false;
         }

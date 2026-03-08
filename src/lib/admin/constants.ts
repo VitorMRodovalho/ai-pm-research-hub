@@ -80,7 +80,7 @@ export const CYCLE_META: Record<string, { label: string; abbr: string; color: st
 
 export const CYCLE_ORDER = ['pilot', 'cycle_1', 'cycle_2', 'cycle_3'];
 
-export const MAX_SLOTS = 6;
+export { MAX_SLOTS } from '../../data/tribes';
 export const ELIGIBLE_ROLES = ['researcher', 'facilitator', 'communicator'];
 
 export const CATEGORY_META: Record<string, { icon: string; color: string; bg: string }> = {

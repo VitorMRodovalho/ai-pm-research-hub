@@ -78,6 +78,8 @@ Isso ocorreu por execução orientada a incidentes de produção (hotfixes) sem 
 | S-PA1 | Product Analytics | High | Partial (v3 2026-03-08) | Route + iframe + consent toggle; consent status labels agora i18n (PT/EN/ES) em vez de literais. |
 | S8b | i18n Internal Pages | Medium | ✅ Done (2026-03-08) | Admin completo: modal Eixo 1/2/3, oprole options, desig labels, CSV headers (VRMS + Member), Sim/Não. Attendance, profile, artifacts, gamification, TribesSection. PT/EN/ES parity. |
 | S11 | UI Polish & Empty States | Medium | Partial (2026-03-08) | Skeleton + empty states; admin exec i18n; TrailSection/profile/admin-member loading → i18n; .cursorrules define:vars. |
+| S-AUD1 | TribesSection i18n | Medium | ✅ Done (2026-03-08) | Toast e labels (Seleção encerrada, LOTADA, Tribo lotada, etc.) → tribes.* PT/EN/ES. |
+| S-CFG1 | MAX_SLOTS single source | Medium | ✅ Done (2026-03-08) | data/tribes como fonte única; admin re-exporta; TribesSection via define:vars. |
 
 ---
 

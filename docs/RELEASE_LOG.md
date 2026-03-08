@@ -1,5 +1,19 @@
 # Release Log
 
+## 2026-03-08 — S-AUD1 + S-CFG1 (sprints continuidade)
+
+### S-AUD1: TribesSection i18n
+- Toast e labels: "Seleção encerrada!", "Tribo lotada!", "LOTADA", "Escolher esta Tribo", etc. → `tribes.*` PT/EN/ES
+- TRIBES_MSG injetado via define:vars (sem import no script)
+- Entregáveis, Encontros, trailsUnavailable, loading → i18n
+
+### S-CFG1: MAX_SLOTS single source of truth
+- `data/tribes.ts` continua como fonte única de MAX_SLOTS (6) e MIN_SLOTS (3)
+- `admin/constants.ts` re-exporta MAX_SLOTS de data/tribes
+- TribesSection recebe MAX_SLOTS/MIN_SLOTS via define:vars (remove duplicata no script)
+
+---
+
 ## 2026-03-08 — Fix: Deadline tribo hardcoded → home_schedule
 
 ### Problema
