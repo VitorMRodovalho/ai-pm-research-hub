@@ -1612,11 +1612,12 @@ const ADMIN_I18N = {
     // Set default date range: current cycle start → today
     const fromEl = document.getElementById('vrms-from') as HTMLInputElement;
     const toEl = document.getElementById('vrms-to') as HTMLInputElement;
-    if (fromEl && !fromEl.value) fromEl.value = '2026-01-01';
+    const cycleStart = (window as any).__CURRENT_CYCLE_START || '2026-01-01';
+    if (fromEl && !fromEl.value) fromEl.value = cycleStart;
     if (toEl && !toEl.value) toEl.value = new Date().toISOString().split('T')[0];
     const lsFrom = document.getElementById('ls-from') as HTMLInputElement;
     const lsTo = document.getElementById('ls-to') as HTMLInputElement;
-    if (lsFrom && !lsFrom.value) lsFrom.value = '2026-01-01';
+    if (lsFrom && !lsFrom.value) lsFrom.value = cycleStart;
     if (lsTo && !lsTo.value) lsTo.value = new Date().toISOString().split('T')[0];
     loadAnnouncements();
     loadLeadershipSnapshot();
@@ -2077,13 +2078,8 @@ const ADMIN_I18N = {
   (window as any).addCycleRecord = async (cycleCode: string) => {
     if (!canAccessAdminRoute(MEMBER, 'admin_member_edit') || !chMemberId) return;
     const meta = CYCLE_META[cycleCode];
-    const dates: Record<string, { start: string; end: string|null }> = {
-      pilot:   { start: '2024-03-01', end: '2024-12-31' },
-      cycle_1: { start: '2025-01-01', end: '2025-06-30' },
-      cycle_2: { start: '2025-07-01', end: '2025-12-31' },
-      cycle_3: { start: '2026-01-01', end: null },
-    };
-    const d = dates[cycleCode] || { start: '2026-01-01', end: null };
+    const cycleDatesMap = (window as any).__CYCLE_DATES || {};
+    const d = cycleDatesMap[cycleCode] || { start: '2026-01-01', end: null };
 
     // Get member name for snapshot
     const member = memberListCache?.find((m: any) => m.id === chMemberId) || {};
@@ -2648,6 +2644,17 @@ const ADMIN_I18N = {
   async function boot() {
     sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(boot, 200); return; }
+
+    try {
+      const { data: cyclesData } = await sb.rpc('list_cycles');
+      if (Array.isArray(cyclesData) && cyclesData.length > 0) {
+        const current = cyclesData.find((c: any) => c.is_current) || cyclesData[cyclesData.length - 1];
+        (window as any).__CURRENT_CYCLE_START = current.cycle_start;
+        const datesMap: Record<string, { start: string; end: string | null }> = {};
+        for (const c of cyclesData) datesMap[c.cycle_code] = { start: c.cycle_start, end: c.cycle_end };
+        (window as any).__CYCLE_DATES = datesMap;
+      }
+    } catch (_) {}
 
     window.addEventListener('nav:member', ((e: CustomEvent) => {
       if (e.detail && getMemberRole(e.detail) !== 'guest' && !MEMBER) {
