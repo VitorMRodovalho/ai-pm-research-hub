@@ -26,6 +26,17 @@ Start YouTube-first knowledge ingestion foundation with low-cost architecture gu
 - deploy function in production
 - run smoke/audit and attach evidence
 
+### Completion update (same day, production rollout)
+- migration applied in production:
+  - `supabase/migrations/20260308041010_knowledge_ingestion_v1.sql`
+- function deployed in production:
+  - `sync-knowledge-youtube` (`--no-verify-jwt`)
+- secret configured:
+  - `SYNC_KNOWLEDGE_INGEST_SECRET`
+- smoke evidence:
+  - dry-run `HTTP 200` (`rows_valid: 1`, `rows_invalid: 0`)
+  - insert run `HTTP 200` (`rows_upserted: 1`, `rows_chunked: 1`)
+
 ## 2026-03-08 — Planning Update (AI Knowledge Hub fit-to-strategy)
 
 ### Scope
