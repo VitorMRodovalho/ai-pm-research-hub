@@ -19,7 +19,7 @@ Force explicit backend/SQL decisions for every sprint feature so we never ship o
 | `S-REP1` VRMS Export | Completed | Uses existing `events`, `attendance`, `members` | No (v1) | Optional reporting view for audit reproducibility | Backlog |
 | `S-RM4` Admin ACL | Completed | `has_min_tier` + `current_member_tier_rank` + policies in prod | No | Extend parity to any new privileged table | Continuous |
 | `S10` Credly Auto Sync | Completed | Edge functions + cron + DB hardening index | No | Track function versioning and secret rotation cadence | Ops |
-| `S-COM6` Media Dashboard | Partial v2 | Route `/admin/comms`, iframe, KPI endpoint via env | **Yes** | Create native comms metrics storage + ingestion path (`comms_metrics_daily`) + RLS + read RPC | Next |
+| `S-COM6` Media Dashboard | Partial v3 | Route `/admin/comms`, iframe, KPI endpoint via env, and RPC fallback | **Yes** | `COMMS_METRICS_V1` SQL pack created (`comms_metrics_daily` + RLS + `comms_metrics_latest()`); pending production apply and ingestion source rollout | Active |
 | `S-PA2` Executive ROI Dashboards | Planned | UI concept only | **Yes** | Define curated analytics views/functions (funnel, certification timeline, skills radar) | Next |
 | `S-DR1` Disaster Recovery | Planned | Docs only | **Yes** | Add backup/restore verification SQL scripts + runbook sign-off checklist | Next |
 

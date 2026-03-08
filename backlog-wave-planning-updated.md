@@ -65,7 +65,7 @@
 | S10 | Credly Auto Sync | Medium | Completed (2026-03-08) | Weekly GitHub Actions scheduler active (`.github/workflows/credly-auto-sync.yml`) with cron-secret mode in `sync-credly-all`, function deployed, secrets provisioned, and manual workflow validation successful (`execution_mode: cron`, `fail_count: 0`). |
 | S-AN1 | Announcements System | Medium | Completed (2026-03-08) | Sistema de anúncios ativo: CRUD no `/admin` e renderização global no topo do site via `AnnouncementBanner`, com dismiss por sessão e suporte a severidade/expiração. |
 | S-DR1 | Disaster Recovery Doc | Low | Planned | POP de restauração de backup e PITR. |
-| S-COM6 | Dashboard Central de Mídia | Medium | Partial (v2 delivered 2026-03-08) | Rota `/admin/comms` com embed protegido + faixa de KPIs (audiência, alcance, engajamento, leads) consumida por endpoint configurável (`PUBLIC_COMMS_KPI_API_URL`) com refresh manual e status de atualização. |
+| S-COM6 | Dashboard Central de Mídia | Medium | Partial (v3 SQL-pack ready 2026-03-08) | `/admin/comms` agora suporta KPIs por endpoint externo (`PUBLIC_COMMS_KPI_API_URL`) ou fallback RPC (`comms_metrics_latest`) com SQL pack `COMMS_METRICS_V1` (migration/audit/rollback) pronto para aplicação em produção. |
 | S-PA2 | Admin Executive Visual Dashboards (ROI PMI) | High | Planned | Evolve `AdminExecutive` with visual charts (iframe-first or lightweight native SVG): qualification funnel, certification timeline after member join, and skill/certification radar across the base. |
 
 ---

@@ -492,6 +492,7 @@ const esLATAM: Record<string, string> = {
   'admin.comms.kpiLoading': 'Cargando KPIs...',
   'admin.comms.kpiError': 'Error al cargar KPIs:',
   'admin.comms.kpiUpdatedAt': 'Última actualización:',
+  'admin.comms.kpiDbFallback': 'Fuente: base de datos interna',
   'admin.comms.kpiAudience': 'Audiencia',
   'admin.comms.kpiReach': 'Alcance',
   'admin.comms.kpiEngagement': 'Engagement',
