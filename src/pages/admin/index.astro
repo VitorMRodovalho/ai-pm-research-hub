@@ -136,14 +136,41 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
               <p class="text-[.68rem] text-slate-400 mt-0.5">{t('admin.reports.vrmsSubtitle', lang)}</p>
             </div>
             <div class="p-5">
-              <div class="flex gap-3 mb-4">
-                <div class="flex-1">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                <div>
                   <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.reports.from', lang)}</label>
                   <input type="date" id="vrms-from" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
                 </div>
-                <div class="flex-1">
+                <div>
                   <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.reports.to', lang)}</label>
                   <input type="date" id="vrms-to" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+                </div>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                <div>
+                  <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.reports.chapterOptional', lang)}</label>
+                  <select id="vrms-chapter" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem] bg-white">
+                    <option value="">{t('admin.reports.allChapters', lang)}</option>
+                    <option value="PMI-GO">PMI-GO</option>
+                    <option value="PMI-CE">PMI-CE</option>
+                    <option value="PMI-DF">PMI-DF</option>
+                    <option value="PMI-MG">PMI-MG</option>
+                    <option value="PMI-RS">PMI-RS</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.reports.tribeOptional', lang)}</label>
+                  <select id="vrms-tribe" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem] bg-white">
+                    <option value="">{t('admin.reports.allTribes', lang)}</option>
+                    <option value="1">T01 — Radar Tecnológico</option>
+                    <option value="2">T02 — Agentes Autônomos</option>
+                    <option value="3">T03 — TMO & PMO do Futuro</option>
+                    <option value="4">T04 — Cultura & Change</option>
+                    <option value="5">T05 — Talentos & Upskilling</option>
+                    <option value="6">T06 — ROI & Portfólio</option>
+                    <option value="7">T07 — Governança & Trustworthy AI</option>
+                    <option value="8">T08 — Inclusão & Colaboração</option>
+                  </select>
                 </div>
               </div>
               <div class="flex gap-2 mb-3">
@@ -1230,6 +1257,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     loadLeadershipSnapshot();
   }
 
+  function vrmsFilters() {
+    const chapter = (document.getElementById('vrms-chapter') as HTMLSelectElement)?.value || '';
+    const tribe = (document.getElementById('vrms-tribe') as HTMLSelectElement)?.value || '';
+    return { chapter, tribe };
+  }
+
   function leadershipFilters() {
     const chapter = (document.getElementById('ls-chapter') as HTMLSelectElement)?.value || '';
     const tribe = (document.getElementById('ls-tribe') as HTMLSelectElement)?.value || '';
@@ -1464,6 +1497,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     if (!ensureAdminAction()) return;
     const fromDate = (document.getElementById('vrms-from') as HTMLInputElement).value;
     const toDate = (document.getElementById('vrms-to') as HTMLInputElement).value;
+    const filters = vrmsFilters();
     if (!fromDate || !toDate) { toast(ADMIN_I18N.selectDates, 'error'); return; }
 
     // Get events in range
@@ -1488,10 +1522,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       .eq('status', 'present');
 
     // Get active members
-    const { data: members } = await sb.from('members')
+    let membersQuery = sb.from('members')
       .select('id, name, email, pmi_id, chapter, operational_role, designations')
       .eq('current_cycle_active', true)
       .order('name');
+    if (filters.chapter) membersQuery = membersQuery.eq('chapter', filters.chapter);
+    if (filters.tribe) membersQuery = membersQuery.eq('tribe_id', Number(filters.tribe));
+    const { data: members } = await membersQuery;
 
     // Build hours map: member_id → { events: count, hours: sum }
     const hoursMap: Record<string, { events: number; hours: number }> = {};
@@ -1534,8 +1571,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     // Preview stats
     const totalHours = vrmsData.reduce((s: number, r: any) => s + r.hours, 0);
     const totalMembers = vrmsData.length;
+    const filterBits = [
+      filters.chapter ? `capítulo ${filters.chapter}` : '',
+      filters.tribe ? `tribo T${String(filters.tribe).padStart(2, '0')}` : '',
+    ].filter(Boolean).join(' · ');
     document.getElementById('vrms-preview')!.innerHTML =
-      `<span class="text-emerald-600 font-bold">${totalMembers}</span> voluntários · <span class="text-navy font-bold">${totalHours}</span> horas de impacto · <span class="text-slate-400">${events.length} eventos no período</span>`;
+      `<span class="text-emerald-600 font-bold">${totalMembers}</span> voluntários · <span class="text-navy font-bold">${totalHours}</span> horas de impacto · <span class="text-slate-400">${events.length} eventos no período${filterBits ? ` · ${filterBits}` : ''}</span>`;
 
     // Render preview table
     const tbody = document.getElementById('vrms-table-body')!;
@@ -1563,6 +1604,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
     const fromDate = (document.getElementById('vrms-from') as HTMLInputElement).value;
     const toDate = (document.getElementById('vrms-to') as HTMLInputElement).value;
+    const filters = vrmsFilters();
 
     const header = 'Nome do Voluntário,PMI ID,E-mail,Organização Beneficiada,Nome da Iniciativa / Papel,Data Início,Data Fim,Total de Horas,Contato de Validação (Nome e E-mail),Evidências (Link)';
     const rows = vrmsData.map((r: any) =>
@@ -1573,8 +1615,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
+    const chapterSuffix = filters.chapter ? `_${filters.chapter}` : '';
+    const tribeSuffix = filters.tribe ? `_T${String(filters.tribe).padStart(2, '0')}` : '';
     a.href = url;
-    a.download = `VRMS_Nucleo_IA_GP_${fromDate}_${toDate}.csv`;
+    a.download = `VRMS_Nucleo_IA_GP_${fromDate}_${toDate}${chapterSuffix}${tribeSuffix}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     toast(ADMIN_I18N.csvDownloaded, 'success');

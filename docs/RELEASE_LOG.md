@@ -39,6 +39,23 @@ Reduce authorization drift by centralizing admin tier checks and reusing them ac
     - tribe settings/slots actions (leader+)
 - local `npm run build` passed after ACL action hardening
 
+### Completion update (same day, v3 backend parity pack)
+- added backend parity artifacts for ACL tier matrix rollout:
+  - `docs/migrations/acl-tier-parity-v1.sql`
+  - `docs/migrations/ACL_POLICY_CHECKLIST.md`
+  - `docs/migrations/acl-tier-parity-audit.sql`
+- pack includes:
+  - tier rank resolver (`current_member_tier_rank`)
+  - min-tier helper (`has_min_tier`)
+  - sample policy mappings aligned with frontend ACL tiers
+  - rollout/validation checklist for staging -> production
+
+### Completion update (same day, regression safety)
+- added automated ACL tests:
+  - `tests/admin-acl.test.mjs`
+  - covers tier resolution, tier ordering, and route/action access guards
+- `npm test` passed with full suite green
+
 ## 2026-03-08 — Wave 4 Sprint Increment (S-PA1 Product Analytics v1)
 
 ### Scope
@@ -101,6 +118,28 @@ Deliver first operational version of leadership training snapshot in `/admin` fo
   - snapshot filters: chapter, tribe, from, to
   - CSV export for per-member snapshot rows
   - i18n keys added for new snapshot labels/actions/messages in PT/EN/ES
+
+## 2026-03-08 — Wave 4 Sprint Increment (S-REP1 VRMS Export Filters v1)
+
+### Scope
+Improve VRMS export usability for leadership reporting by adding optional segmentation filters.
+
+### Delivered
+- `/admin` VRMS report card now supports optional filters:
+  - chapter (`PMI-XX`)
+  - tribe (`T0X`)
+- preview flow (`Preview VRMS`) now applies the same chapter/tribe filters used in export
+- preview summary shows active filter scope (all chapters/tribes or selected values)
+- CSV export filename now includes filter suffixes when selected:
+  - example: `vrms_2026-03-01_2026-03-08_PMI-SP_T02.csv`
+- i18n keys added in PT/EN/ES for the new optional selectors
+
+### Validation captured
+- local `npm run build` passed after VRMS filter additions
+
+### Follow up still required
+- optional date presets (`7d`, `30d`, current cycle) for faster reporting
+- align future snapshot export UX with same filter persistence
 - local `npm run build` passed after v2 changes
 
 ## 2026-03-08 — Wave 3 Sprint Increment (S11 UI Polish / Empty States)
