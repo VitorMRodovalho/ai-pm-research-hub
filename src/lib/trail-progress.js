@@ -2,36 +2,37 @@
  * Build per-member trail progress from course_progress rows.
  * Source of truth: course_progress table (status by member/course).
  */
-export function buildTrailProgressByMember(rows, totalCourses = 8) {
-  const byMemberCourse = new Map();
+export function buildTrailProgressByMember(rows = [], totalCourses = 8) {
+  const byMember = new Map();
 
   for (const row of rows || []) {
-    const memberId = row?.member_id;
-    const courseId = row?.course_id;
-    const status = row?.status;
+    const memberId = row?.member_id ? String(row.member_id) : '';
+    const courseId = row?.course_id ? String(row.course_id) : '';
+    const status = String(row?.status || '').toLowerCase();
     if (!memberId || !courseId) continue;
     if (status !== 'completed' && status !== 'in_progress') continue;
 
-    const key = `${memberId}::${courseId}`;
-    const prev = byMemberCourse.get(key);
-    // completed supersedes in_progress when duplicate rows exist.
-    if (prev === 'completed') continue;
-    if (status === 'completed' || !prev) byMemberCourse.set(key, status);
+    if (!byMember.has(memberId)) {
+      byMember.set(memberId, { completedSet: new Set(), inProgressSet: new Set() });
+    }
+
+    const bucket = byMember.get(memberId);
+    if (status === 'completed') {
+      bucket.completedSet.add(courseId);
+      bucket.inProgressSet.delete(courseId);
+      continue;
+    }
+    if (!bucket.completedSet.has(courseId)) bucket.inProgressSet.add(courseId);
   }
 
-  const byMember = new Map();
-  for (const [key, status] of byMemberCourse.entries()) {
-    const memberId = key.split('::')[0];
-    if (!byMember.has(memberId)) byMember.set(memberId, { completed: 0, inProgress: 0, pct: 0 });
-    const acc = byMember.get(memberId);
-    if (status === 'completed') acc.completed += 1;
-    if (status === 'in_progress') acc.inProgress += 1;
+  const result = new Map();
+  const safeTotal = Math.max(Number(totalCourses) || 0, 1);
+  for (const [memberId, bucket] of byMember.entries()) {
+    const completed = bucket.completedSet.size;
+    const inProgress = bucket.inProgressSet.size;
+    const pct = Math.round((completed / safeTotal) * 100);
+    result.set(memberId, { completed, inProgress, pct });
   }
 
-  for (const value of byMember.values()) {
-    const safeTotal = Math.max(totalCourses, 1);
-    value.pct = Math.round((value.completed / safeTotal) * 100);
-  }
-
-  return byMember;
+  return result;
 }
