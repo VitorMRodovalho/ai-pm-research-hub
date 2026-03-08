@@ -88,7 +88,7 @@ const recurringCta = t('hero.recurring.cta', lang);
 <script define:vars={{ deadline }}>
   // ── Countdown (for tribe selection deadline) ──
   var dl = new Date(deadline);
-  (window as any).__setHeroDeadline = (iso: string) => {
+  window.__setHeroDeadline = function(iso) {
     if (!iso) return;
     var parsed = new Date(iso);
     if (isNaN(parsed.getTime())) return;
@@ -118,24 +118,24 @@ const recurringCta = t('hero.recurring.cta', lang);
 <script define:vars={{ fallbackRecurringLabel, recurringLead, recurringCta, lang }}>
   // ── Dynamic event info from DB ──
   async function loadHeroEvent() {
-    const canSeeRecurringMeeting = (member) => {
+    const canSeeRecurringMeeting = function(member) {
       if (!member) return false;
       if (member.current_cycle_active !== true) return false;
       const opRole = member.operational_role || member.role || 'guest';
       return opRole !== 'guest';
     };
 
-    const sb = (window as any).navGetSb?.();
+    const sb = window.navGetSb?.();
     if (!sb) { setTimeout(loadHeroEvent, 300); return; }
 
     const locale = lang === 'pt-BR' ? 'pt-BR' : lang === 'es-LATAM' ? 'es-ES' : 'en-US';
-    const weekdayByLang: Record<string, string[]> = {
+    const weekdayByLang = {
       'pt-BR': ['Domingos', 'Segundas', 'Terças', 'Quartas', 'Quintas', 'Sextas', 'Sábados'],
       'en-US': ['Sundays', 'Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays'],
       'es-LATAM': ['Domingos', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábados'],
     };
     let recurringLabel = fallbackRecurringLabel;
-    let kickoffAtOverride: string | null = null;
+    let kickoffAtOverride = null;
 
     // Load home schedule source-of-truth (if available)
     const { data: schedule } = await sb.from('home_schedule')
@@ -145,7 +145,7 @@ const recurringCta = t('hero.recurring.cta', lang);
 
     if (schedule) {
       kickoffAtOverride = schedule.kickoff_at;
-      (window as any).__setHeroDeadline?.(schedule.selection_deadline_at);
+      window.__setHeroDeadline?.(schedule.selection_deadline_at);
 
       const dateEl = document.getElementById('hero-date-line');
       if (dateEl) {
@@ -204,38 +204,46 @@ const recurringCta = t('hero.recurring.cta', lang);
     // If not past, keep the static date display (Astro-rendered)
 
     // Show recurring meeting bar for logged-in users
-    const member = (window as any).navGetMember?.();
-    if (canSeeRecurringMeeting(member) && ev.meeting_link && isPast) {
+    const member = window.navGetMember?.();
+    if (isPast) {
       const meetBar = document.getElementById('hero-meeting-bar');
       if (meetBar) {
         meetBar.classList.remove('hidden');
+        const canJoin = canSeeRecurringMeeting(member) && !!ev.meeting_link;
+        const cta = canJoin
+          ? `<a href="${ev.meeting_link}" target="_blank" rel="noopener"
+              class="px-4 py-1.5 bg-[#05BFE0] text-navy rounded-lg text-[.78rem] font-bold no-underline hover:opacity-90 transition-all">
+              ${recurringCta}
+            </a>`
+          : `<span class="text-[.72rem] text-white/55">Faça login para acessar o link da reunião</span>`;
         meetBar.innerHTML = `
             <div class="bg-white/6 border border-[#05BFE0]/20 rounded-xl px-5 py-3 inline-flex items-center gap-3 flex-wrap justify-center">
             <span class="text-[.78rem] text-white/60">${recurringLead}</span>
             <span class="text-[.85rem] font-semibold text-[#05BFE0]">${recurringLabel}</span>
-            <a href="${ev.meeting_link}" target="_blank" rel="noopener"
-              class="px-4 py-1.5 bg-[#05BFE0] text-navy rounded-lg text-[.78rem] font-bold no-underline hover:opacity-90 transition-all">
-              ${recurringCta}
-            </a>
+            ${cta}
           </div>`;
       }
     }
 
     // Also listen for login events
     window.addEventListener('nav:member', () => {
-      const m = (window as any).navGetMember?.();
-      if (canSeeRecurringMeeting(m) && ev.meeting_link && isPast) {
+      const m = window.navGetMember?.();
+      if (isPast) {
         const meetBar = document.getElementById('hero-meeting-bar');
-        if (meetBar && meetBar.classList.contains('hidden')) {
+        if (meetBar) {
           meetBar.classList.remove('hidden');
+          const canJoin = canSeeRecurringMeeting(m) && !!ev.meeting_link;
+          const cta = canJoin
+            ? `<a href="${ev.meeting_link}" target="_blank" rel="noopener"
+                class="px-4 py-1.5 bg-[#05BFE0] text-navy rounded-lg text-[.78rem] font-bold no-underline hover:opacity-90 transition-all">
+                ${recurringCta}
+              </a>`
+            : `<span class="text-[.72rem] text-white/55">Faça login para acessar o link da reunião</span>`;
           meetBar.innerHTML = `
             <div class="bg-white/6 border border-[#05BFE0]/20 rounded-xl px-5 py-3 inline-flex items-center gap-3 flex-wrap justify-center">
               <span class="text-[.78rem] text-white/60">${recurringLead}</span>
               <span class="text-[.85rem] font-semibold text-[#05BFE0]">${recurringLabel}</span>
-              <a href="${ev.meeting_link}" target="_blank" rel="noopener"
-                class="px-4 py-1.5 bg-[#05BFE0] text-navy rounded-lg text-[.78rem] font-bold no-underline hover:opacity-90 transition-all">
-                ${recurringCta}
-              </a>
+              ${cta}
             </div>`;
         }
       }

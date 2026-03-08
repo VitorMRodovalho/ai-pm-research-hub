@@ -47,7 +47,7 @@ const AGENDA = [
 
 <script define:vars={{ lang }}>
   async function loadAgendaScheduleHint() {
-    const sb = (window as any).navGetSb?.();
+    const sb = window.navGetSb?.();
     if (!sb) { setTimeout(loadAgendaScheduleHint, 300); return; }
 
     const el = document.getElementById('agenda-item3-desc');
