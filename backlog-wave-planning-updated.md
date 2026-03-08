@@ -49,6 +49,9 @@
 | S-RM3 | Gamification v2 | High | ✅ Done (2026-03-08) | Cycle vs lifetime split now implemented across individual leaderboard, tribe ranking, achievements context, and my points summary. |
 | S-UX1 | Trilha Progress Clarity for Researchers | High | ✅ Done (2026-03-08) | `/gamification` now shows logged-in mini trail clarity card with explicit progress (`X de Y`) and missing/in-progress course list. |
 | S-PA1 | Product Analytics | High | Partial (v2 delivered 2026-03-08) | Protected `/admin/analytics` route + iframe embeds + admin shortcut, plus consent-aware analytics toggle (allow/revoke), session replay control, and identify gated by consent without name/email PII. |
+| S-FE1 | Frontend XSS & DOM Safety Baseline | High | Planned | Harden render paths with safe escaping strategy and remove direct `innerHTML` interpolation of DB text in critical surfaces (`/admin`, `/artifacts`, `/profile`). |
+| S-FE2 | Admin Modularization v1 | High | Planned | Break `/admin/index.astro` monolith into modular components and reduce `window.*` global coupling for better maintainability. |
+| S-FE3 | Auth SSR Gate v1 | High | Planned | Migrate critical auth gates to SSR/cookie session flow to eliminate client-side flicker and tighten route protection semantics. |
 | S8b | i18n Internal Pages | Medium | Partial (advanced++ 2026-03-08) | `/attendance` shell + modals localized and `/admin` shell, filters, reports, key modals, critical toasts/confirms, and dynamic action messages localized (PT/EN/ES) with locale-key parity; pending only residual long-tail hardcoded strings in secondary admin flows. |
 | S11 | UI Polish & Empty States | Medium | Partial (advanced 2026-03-08) | 404 already active; upgraded `/artifacts` and `/attendance` with skeleton loading and actionable empty states (CTA), keeping graceful fallback flows for logged and non-logged users. |
 
@@ -97,6 +100,7 @@
 | S24 | API for Chapters | Low | Planned | Read only API for chapter impact and participation data. |
 | S-SC1 | Multilingual Screenshots | Low | Planned | Automated screenshots for PT EN ES docs or release snapshots. |
 | S-OPS2 | AI Cost Guardrails & FinOps Lite | High | Planned | Enforce free/low-cost operation thresholds (ingestion quotas, token budgets, fallback models, usage alerts) before scaling AI features. |
+| S-FE4 | Executive RPC Binding | High | Planned | Rewire executive admin analytics from browser-side aggregation to RPC-backed models (`exec_funnel_summary`, `exec_cert_timeline`, `exec_skills_radar`). |
 
 ---
 
@@ -113,6 +117,9 @@
 | Architectural guideline drift | High | Open | Enforce role model v3, cycle aware data, soft delete, and event driven integration discipline. |
 | Route compatibility not tested | High | Addressed | Smoke tests added and validated in deploy checklist. |
 | SQL architecture not tracked in every sprint | High | In Progress | Mandatory DB gate for admin/analytics increments: include migration in `supabase/migrations` + docs pack (`apply/audit/rollback/runbook`) and capture evidence in `docs/RELEASE_LOG.md`. |
+| Frontend XSS surface via imperative DOM | High | Open | Prioritize `S-FE1`: sanitize/escape all DB-derived text before DOM insertion and phase out unsafe `innerHTML` paths. |
+| Admin page monolith complexity | High | Open | Prioritize `S-FE2`: split admin into modules and isolate data-access from render logic. |
+| Client-side auth flicker on protected routes | High | Open | Prioritize `S-FE3`: server-side auth gate with cookie-based session in critical routes. |
 
 ---
 
