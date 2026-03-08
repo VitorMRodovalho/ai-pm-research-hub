@@ -1,5 +1,28 @@
 # Release Log
 
+## 2026-03-08 — Wave 4 Sprint Increment (S-COM6 Media Dashboard v1)
+
+### Scope
+Start dedicated communications analytics surface for media operations in admin workflows.
+
+### Delivered
+- created protected communications route:
+  - `/admin/comms`
+  - ACL gate aligned to admin analytics access (`admin+`)
+- new media card in `/admin` reports panel linking to `/admin/comms`
+- dedicated comms dashboard embed with env configuration:
+  - `PUBLIC_LOOKER_COMMS_DASHBOARD_URL`
+- added missing-config fallback, external-open link, and denied/loading states
+- i18n keys added in PT/EN/ES for new reports card and comms route copy
+
+### Validation captured
+- local `npm run build` passed
+- local `npm test` passed
+
+### Follow up still required
+- connect final Looker Studio dashboard with YouTube + LinkedIn/Instagram pipeline
+- add KPI summary tiles above iframe (followers growth, reach, engagement, leads)
+
 ## 2026-03-08 — Wave 4 Sprint Increment (S-AN1 / S-ADM2 Formal Closure)
 
 ### Scope

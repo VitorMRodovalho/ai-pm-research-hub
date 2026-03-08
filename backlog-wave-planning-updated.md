@@ -65,7 +65,7 @@
 | S10 | Credly Auto Sync | Medium | Completed (2026-03-08) | Weekly GitHub Actions scheduler active (`.github/workflows/credly-auto-sync.yml`) with cron-secret mode in `sync-credly-all`, function deployed, secrets provisioned, and manual workflow validation successful (`execution_mode: cron`, `fail_count: 0`). |
 | S-AN1 | Announcements System | Medium | Completed (2026-03-08) | Sistema de anúncios ativo: CRUD no `/admin` e renderização global no topo do site via `AnnouncementBanner`, com dismiss por sessão e suporte a severidade/expiração. |
 | S-DR1 | Disaster Recovery Doc | Low | Planned | POP de restauração de backup e PITR. |
-| S-COM6 | Dashboard Central de Mídia | Medium | Planned | Looker Studio dashboard using YouTube native connector and LinkedIn/Instagram via Sheets automation, embedded in admin communications route. |
+| S-COM6 | Dashboard Central de Mídia | Medium | Partial (v1 delivered 2026-03-08) | Nova rota protegida `/admin/comms` com embed de dashboard de comunicação e card dedicado no `/admin`; base pronta para conectar Looker/YouTube/LinkedIn/Instagram via `PUBLIC_LOOKER_COMMS_DASHBOARD_URL`. |
 | S-PA2 | Admin Executive Visual Dashboards (ROI PMI) | High | Planned | Evolve `AdminExecutive` with visual charts (iframe-first or lightweight native SVG): qualification funnel, certification timeline after member join, and skill/certification radar across the base. |
 
 ---

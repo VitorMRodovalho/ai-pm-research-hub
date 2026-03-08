@@ -1,0 +1,104 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL || '';
+---
+
+<BaseLayout title={t('admin.comms.meta', lang)} activePage="admin">
+  <div class="max-w-[1200px] mx-auto px-4 py-8">
+    <div class="mb-6">
+      <h1 class="text-2xl font-extrabold text-navy">{t('admin.comms.title', lang)}</h1>
+      <p class="text-sm text-slate-500">{t('admin.comms.subtitle', lang)}</p>
+    </div>
+
+    <div id="comms-loading" class="text-center py-10 text-slate-400">{t('admin.comms.loading', lang)}</div>
+
+    <div id="comms-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
+      <div class="text-2xl mb-2">🔒</div>
+      <p class="font-semibold text-amber-800">{t('admin.comms.denied', lang)}</p>
+      <a href="/admin" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
+        {t('admin.comms.backAdmin', lang)}
+      </a>
+    </div>
+
+    <section id="comms-panel" class="hidden bg-white border border-slate-200 rounded-xl overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+        <div>
+          <h2 class="text-sm font-bold text-navy">{t('admin.comms.dashboardTitle', lang)}</h2>
+          <p class="text-[.68rem] text-slate-400">{t('admin.comms.dashboardSubtitle', lang)}</p>
+        </div>
+        {COMMS_DASHBOARD_URL && (
+          <a href={COMMS_DASHBOARD_URL} target="_blank" rel="noopener noreferrer" class="text-[.72rem] font-semibold text-teal no-underline hover:underline">
+            {t('admin.comms.openExternal', lang)}
+          </a>
+        )}
+      </div>
+      {!COMMS_DASHBOARD_URL ? (
+        <div class="p-4 text-[.72rem] text-slate-500">
+          {t('admin.comms.missingConfig', lang)} <code class="bg-slate-100 px-1 py-0.5 rounded">PUBLIC_LOOKER_COMMS_DASHBOARD_URL</code>
+        </div>
+      ) : (
+        <iframe
+          src={COMMS_DASHBOARD_URL}
+          title="Comms Central Dashboard"
+          class="w-full min-h-[760px] border-0"
+          loading="lazy"
+          referrerpolicy="strict-origin-when-cross-origin"
+          sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+        ></iframe>
+      )}
+    </section>
+  </div>
+</BaseLayout>
+
+<script>
+  import { canAccessAdminRoute } from '../../lib/admin/constants';
+
+  function allowComms(m: any): boolean {
+    return canAccessAdminRoute(m, 'admin_analytics');
+  }
+
+  function showDenied() {
+    document.getElementById('comms-loading')?.classList.add('hidden');
+    document.getElementById('comms-denied')?.classList.remove('hidden');
+    document.getElementById('comms-panel')?.classList.add('hidden');
+  }
+
+  function showPanel() {
+    document.getElementById('comms-loading')?.classList.add('hidden');
+    document.getElementById('comms-denied')?.classList.add('hidden');
+    document.getElementById('comms-panel')?.classList.remove('hidden');
+  }
+
+  function applyGate(m: any) {
+    if (m && allowComms(m)) showPanel();
+    else showDenied();
+  }
+
+  async function boot() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail) applyGate(e.detail);
+    }) as EventListener);
+
+    const m = (window as any).navGetMember?.();
+    if (m) { applyGate(m); return; }
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        const { data } = await sb.rpc('get_member_by_auth');
+        applyGate(data);
+        return;
+      }
+    } catch {}
+
+    showDenied();
+  }
+
+  boot();
+</script>
