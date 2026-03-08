@@ -41,13 +41,19 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
+    const anonKey = req.headers.get('apikey') || Deno.env.get('SUPABASE_ANON_KEY') || ''
     const authHeader = req.headers.get('Authorization')
     const token = parseBearer(authHeader)
     if (!token) {
       return new Response(
         JSON.stringify({ success: false, error: 'Missing bearer token' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
+    if (!anonKey) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Missing anon key for auth validation' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       )
     }
 

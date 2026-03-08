@@ -653,6 +653,7 @@ import Toast from '../components/ui/Toast.astro';
     const btn = document.getElementById('btn-sync') as HTMLButtonElement | null;
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Sincronizando...'; }
     try {
+      await sb.auth.refreshSession();
       let attendanceSummary = '';
       const { data: attendanceData, error: attendanceError } = await sb.functions.invoke('sync-attendance-points');
       if (attendanceError || !attendanceData?.success) {
