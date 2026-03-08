@@ -375,6 +375,7 @@ Deno.serve(async (req) => {
             'Content-Type': 'application/json',
             apikey: anonKey,
             Authorization: `Bearer ${downstreamBearer}`,
+            ...(isCronAuthorized ? { 'x-cron-secret': expectedCronSecret } : {}),
           },
           body: JSON.stringify({ member_id: m.id, credly_url: m.credly_url }),
         })

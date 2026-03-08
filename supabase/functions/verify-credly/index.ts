@@ -54,6 +54,44 @@ interface CredlyBadge {
 
 const USERNAME_RE = /^[A-Za-z0-9._-]{2,100}$/
 
+function parseBearer(authHeader: string | null): string | null {
+  if (!authHeader) return null
+  const m = authHeader.match(/^Bearer\s+(.+)$/i)
+  return m?.[1] || null
+}
+
+function safeEqual(a: string, b: string): boolean {
+  if (!a || !b) return false
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
+}
+
+async function resolveSuperadminCaller(
+  authClient: ReturnType<typeof createClient>,
+  sb: ReturnType<typeof createClient>,
+  user: { id: string; email?: string | null },
+) {
+  const { data: callerByRpc } = await authClient.rpc('get_member_by_auth')
+  if (callerByRpc?.is_superadmin) return callerByRpc
+
+  const { data: superadmins } = await sb
+    .from('members')
+    .select('id, auth_id, email, secondary_emails, is_superadmin')
+    .eq('is_superadmin', true)
+    .limit(20)
+
+  const uid = String(user.id || '')
+  const mail = String(user.email || '').toLowerCase()
+  return (superadmins || []).find((m: any) => {
+    if (m.auth_id && String(m.auth_id) === uid) return true
+    if (mail && m.email && String(m.email).toLowerCase() === mail) return true
+    const secs = Array.isArray(m.secondary_emails) ? m.secondary_emails.map((x: any) => String(x).toLowerCase()) : []
+    return mail && secs.includes(mail)
+  }) || null
+}
+
 function extractUsername(url: string): string | null {
   const raw = (url || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim()
   if (!raw) return null
@@ -312,7 +350,60 @@ Deno.serve(async (req) => {
 
   try {
     const { member_id, credly_url } = await req.json()
-    const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const anonKey = req.headers.get('apikey') || Deno.env.get('SUPABASE_ANON_KEY') || ''
+    const token = parseBearer(req.headers.get('Authorization'))
+    const cronSecret = req.headers.get('x-cron-secret') || ''
+    const expectedCronSecret = Deno.env.get('SYNC_CREDLY_CRON_SECRET') || ''
+    const isInternalCron = safeEqual(cronSecret, expectedCronSecret)
+
+    if (!anonKey && !isInternalCron) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'Missing anon key for auth validation',
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 })
+    }
+
+    const sb = createClient(supabaseUrl, serviceRole)
+
+    // Internal cron/sync mode is allowed via shared secret.
+    if (!isInternalCron) {
+      if (!token) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Missing bearer token',
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 })
+      }
+
+      const authClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: `Bearer ${token}` } },
+      })
+      const {
+        data: { user },
+        error: userError,
+      } = await authClient.auth.getUser()
+      if (userError || !user) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: 'Unauthorized caller',
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 })
+      }
+
+      // Allow only self-verify or superadmin verify when member_id is present.
+      if (member_id) {
+        const { data: callerByRpc } = await authClient.rpc('get_member_by_auth')
+        const callerMemberId = String(callerByRpc?.id || '')
+        const superadminCaller = await resolveSuperadminCaller(authClient, sb, user)
+        const callerIsSuperadmin = !!superadminCaller?.is_superadmin
+        if (!callerIsSuperadmin && callerMemberId !== String(member_id)) {
+          return new Response(JSON.stringify({
+            success: false,
+            error: 'Forbidden target member',
+          }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 })
+        }
+      }
+    }
 
     // Resolve username
     let username: string | null = credly_url ? await resolveUsername(credly_url) : null
