@@ -128,7 +128,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
       <!-- Reports panel -->
       <div id="panel-reports" class="hidden">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-5">
           <!-- VRMS Export -->
           <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div class="px-5 py-3.5 border-b border-slate-200">
@@ -226,6 +226,20 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
               <p class="text-[.72rem] text-slate-500 mb-4">{t('admin.reports.analyticsDesc', lang)}</p>
               <a href="/admin/analytics" class="w-full inline-flex items-center justify-center px-4 py-2.5 bg-navy text-white rounded-lg text-[.78rem] font-semibold no-underline hover:opacity-90 transition-all">
                 {t('admin.reports.analyticsButton', lang)}
+              </a>
+            </div>
+          </div>
+
+          <!-- Comms Dashboard -->
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-slate-200">
+              <h3 class="text-sm font-bold text-navy">{t('admin.reports.commsTitle', lang)}</h3>
+              <p class="text-[.68rem] text-slate-400 mt-0.5">{t('admin.reports.commsSubtitle', lang)}</p>
+            </div>
+            <div class="p-5">
+              <p class="text-[.72rem] text-slate-500 mb-4">{t('admin.reports.commsDesc', lang)}</p>
+              <a href="/admin/comms" class="w-full inline-flex items-center justify-center px-4 py-2.5 bg-teal text-white rounded-lg text-[.78rem] font-semibold no-underline hover:opacity-90 transition-all">
+                {t('admin.reports.commsButton', lang)}
               </a>
             </div>
           </div>
