@@ -1,6 +1,6 @@
 # S10 — Credly Auto Sync (weekly)
 # Invokes sync-credly-all Edge Function to refresh badge data.
-# Requires: sync-credly-all deployed; SUPABASE_SERVICE_ROLE_KEY or SYNC_CREDLY_SECRET configured.
+# Requires: sync-credly-all deployed; SUPABASE_SERVICE_ROLE_KEY configured (#58).
 
 name: Credly Auto Sync
 
@@ -8,6 +8,10 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "0 8 * * 1"   # Monday 08:00 UTC
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -19,12 +23,22 @@ jobs:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
-      - name: Validate secrets
+      - name: Check secrets (skip if not configured)
+        id: check
         run: |
-          test -n "$SUPABASE_URL" || (echo "Missing SUPABASE_URL"; exit 1)
-          test -n "$SUPABASE_SERVICE_ROLE_KEY" || (echo "Missing SUPABASE_SERVICE_ROLE_KEY"; exit 1)
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Credly sync skipped — configure SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (#58)"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip notice
+        if: steps.check.outputs.skip == 'true'
+        run: echo "Skipped — secrets not configured"
 
       - name: Trigger sync-credly-all
+        if: steps.check.outputs.skip != 'true'
         run: |
           set -euo pipefail
           URL="${SUPABASE_URL%/}/functions/v1/sync-credly-all"

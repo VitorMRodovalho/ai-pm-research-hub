@@ -112,6 +112,21 @@ Sem as URLs de dashboard, as rotas mostram placeholder ou tabela nativa.
 
 ---
 
+## 6. Workflows GitHub Actions — visão geral
+
+| Workflow | Gatilho | Status esperado |
+|----------|---------|-----------------|
+| **CodeQL Analysis** | push/PR em main | ✅ Passa (upload: false até Code scanning habilitado) |
+| **Project Governance Sync** | diário 09:15 UTC, push em gov paths | ✅ Passa (usa GITHUB_TOKEN) |
+| **Knowledge Insights** | seg/qui 10:30 UTC | ✅ Passa (skip quando secrets ausentes) |
+| **Credly Auto Sync** | seg 08:00 UTC | ✅ Passa (skip até #58) |
+| **Comms Metrics Sync** | diário 07:30 UTC | ✅ Passa (skip até #57) |
+| **Dependabot Updates** | PRs do Dependabot | Padrão GitHub ao abrir PR de deps |
+
+**Nenhum workflow é legado/Codex** — todos têm propósito atual. Dependabot não é nosso workflow, é o fluxo padrão do GitHub.
+
+---
+
 ## Resumo de prioridade
 
 | # | Item | Bloqueia? |

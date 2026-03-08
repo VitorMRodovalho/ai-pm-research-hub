@@ -1,6 +1,6 @@
 # COMMS_METRICS — ingestão periódica
 # Dispara sync-comms-metrics para popular comms_metrics_daily.
-# Requer: sync-comms-metrics deployada; secrets configurados.
+# Requer: sync-comms-metrics deployada; secrets configurados (#57).
 
 name: Comms Metrics Sync
 
@@ -8,6 +8,10 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "30 7 * * *"   # 07:30 UTC diário
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -21,15 +25,22 @@ jobs:
       COMMS_METRICS_SOURCE_URL: ${{ secrets.COMMS_METRICS_SOURCE_URL }}
       COMMS_METRICS_SOURCE_TOKEN: ${{ secrets.COMMS_METRICS_SOURCE_TOKEN }}
     steps:
-      - name: Validate secrets
+      - name: Check secrets (skip if not configured)
+        id: check
         run: |
-          test -n "$SUPABASE_URL" || (echo "Missing SUPABASE_URL"; exit 1)
-          test -n "$SYNC_COMMS_METRICS_SECRET" || (echo "Missing SYNC_COMMS_METRICS_SECRET"; exit 1)
-          if [ -z "$COMMS_METRICS_SOURCE_URL" ]; then
-            echo "COMMS_METRICS_SOURCE_URL not set — schedule runs will skip. Use workflow_dispatch with rows in payload for manual ingest."
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SYNC_COMMS_METRICS_SECRET" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Comms sync skipped — configure SUPABASE_URL, SYNC_COMMS_METRICS_SECRET (#57)"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Skip notice
+        if: steps.check.outputs.skip == 'true'
+        run: echo "Skipped — secrets not configured"
+
       - name: Trigger sync-comms-metrics
+        if: steps.check.outputs.skip != 'true'
         run: |
           set -euo pipefail
           URL="${SUPABASE_URL%/}/functions/v1/sync-comms-metrics"

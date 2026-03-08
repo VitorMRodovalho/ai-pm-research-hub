@@ -5,6 +5,10 @@ on:
   schedule:
     - cron: "30 10 * * 1,4"
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
@@ -18,13 +22,29 @@ jobs:
       SYNC_KNOWLEDGE_INSIGHTS_SECRET: ${{ secrets.SYNC_KNOWLEDGE_INSIGHTS_SECRET }}
       KNOWLEDGE_INSIGHTS_FUNCTION_NAME: ${{ secrets.KNOWLEDGE_INSIGHTS_FUNCTION_NAME }}
     steps:
+      - name: Check required secrets (skip if not configured)
+        id: check
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ] || [ -z "$SYNC_KNOWLEDGE_INSIGHTS_SECRET" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Secrets not configured — skipping. Set SUPABASE_URL, SUPABASE_ANON_KEY, SYNC_KNOWLEDGE_INSIGHTS_SECRET to enable."
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip (secrets not configured)
+        if: steps.check.outputs.skip == 'true'
+        run: echo "Knowledge Insights sync skipped — configure secrets to enable."
+
       - name: Validate required secrets
+        if: steps.check.outputs.skip != 'true'
         run: |
           test -n "$SUPABASE_URL"
           test -n "$SUPABASE_ANON_KEY"
           test -n "$SYNC_KNOWLEDGE_INSIGHTS_SECRET"
 
       - name: Resolve function name
+        if: steps.check.outputs.skip != 'true'
         id: fn
         run: |
           if [ -n "$KNOWLEDGE_INSIGHTS_FUNCTION_NAME" ]; then
@@ -34,6 +54,7 @@ jobs:
           fi
 
       - name: Trigger edge function
+        if: steps.check.outputs.skip != 'true'
         run: |
           set -euo pipefail
           API_KEY="${SUPABASE_SERVICE_ROLE_KEY:-$SUPABASE_ANON_KEY}"

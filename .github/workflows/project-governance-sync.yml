@@ -3,7 +3,7 @@ name: Project Governance Sync
 on:
   workflow_dispatch:
   schedule:
-    - cron: "15 */6 * * *"
+    - cron: "15 9 * * *"   # Diário 09:15 UTC (antes era a cada 6h)
   push:
     branches: [main]
     paths:
@@ -11,6 +11,10 @@ on:
       - "docs/project-governance/**"
       - "scripts/audit_project_governance.sh"
       - "scripts/sync_project_roadmap_sequence.sh"
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
