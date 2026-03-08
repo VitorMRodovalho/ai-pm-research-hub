@@ -107,6 +107,13 @@ const { deadline = '2026-03-08T15:00:00Z', lang = 'pt-BR' } = Astro.props;
 <script>
   // ── Dynamic event info from DB ──
   async function loadHeroEvent() {
+    const canSeeRecurringMeeting = (member) => {
+      if (!member) return false;
+      if (member.current_cycle_active !== true) return false;
+      const opRole = member.operational_role || member.role || 'guest';
+      return opRole !== 'guest';
+    };
+
     const sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(loadHeroEvent, 300); return; }
 
@@ -130,16 +137,11 @@ const { deadline = '2026-03-08T15:00:00Z', lang = 'pt-BR' } = Astro.props;
       const dateStr = new Date(ev.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
       const duration = ev.duration_actual || ev.duration_minutes || 90;
       eventArea.innerHTML = `
-        <div class="flex flex-wrap gap-3 justify-center">
+        <div class="flex justify-center">
           <a href="${ev.youtube_url}" target="_blank" rel="noopener"
             class="inline-flex items-center gap-2 bg-red-600/90 hover:bg-red-600 text-white px-5 py-2.5 rounded-xl text-[.9rem] font-semibold no-underline transition-all">
             ▶️ Assistir Gravação · ${Math.round(duration)}min
           </a>
-          ${ev.meeting_link ? `
-          <a href="${ev.meeting_link}" target="_blank" rel="noopener"
-            class="inline-flex items-center gap-2 bg-white/6 border border-white/10 hover:bg-white/12 text-white px-5 py-2.5 rounded-xl text-[.9rem] font-medium no-underline transition-all">
-            📅 Reunião Recorrente · Quintas 19:30 BRT
-          </a>` : ''}
         </div>
         <div class="text-[.72rem] text-white/40 mt-2">Kick-off realizado em ${dateStr}</div>`;
     } else if (isPast) {
@@ -153,14 +155,14 @@ const { deadline = '2026-03-08T15:00:00Z', lang = 'pt-BR' } = Astro.props;
 
     // Show recurring meeting bar for logged-in users
     const member = (window as any).navGetMember?.();
-    if (member && ev.meeting_link && isPast) {
+    if (canSeeRecurringMeeting(member) && ev.meeting_link && isPast) {
       const meetBar = document.getElementById('hero-meeting-bar');
       if (meetBar) {
         meetBar.classList.remove('hidden');
         meetBar.innerHTML = `
           <div class="bg-white/6 border border-[#05BFE0]/20 rounded-xl px-5 py-3 inline-flex items-center gap-3 flex-wrap justify-center">
             <span class="text-[.78rem] text-white/60">📅 Próxima reunião geral:</span>
-            <span class="text-[.85rem] font-semibold text-[#05BFE0]">Quintas · 19:30 → 20:30 BRT</span>
+            <span class="text-[.85rem] font-semibold text-[#05BFE0]">Sábados · 09:00 → 10:30 BRT</span>
             <a href="${ev.meeting_link}" target="_blank" rel="noopener"
               class="px-4 py-1.5 bg-[#05BFE0] text-navy rounded-lg text-[.78rem] font-bold no-underline hover:opacity-90 transition-all">
               Entrar no Meet
@@ -172,14 +174,14 @@ const { deadline = '2026-03-08T15:00:00Z', lang = 'pt-BR' } = Astro.props;
     // Also listen for login events
     window.addEventListener('nav:member', () => {
       const m = (window as any).navGetMember?.();
-      if (m && ev.meeting_link && isPast) {
+      if (canSeeRecurringMeeting(m) && ev.meeting_link && isPast) {
         const meetBar = document.getElementById('hero-meeting-bar');
         if (meetBar && meetBar.classList.contains('hidden')) {
           meetBar.classList.remove('hidden');
           meetBar.innerHTML = `
             <div class="bg-white/6 border border-[#05BFE0]/20 rounded-xl px-5 py-3 inline-flex items-center gap-3 flex-wrap justify-center">
               <span class="text-[.78rem] text-white/60">📅 Próxima reunião geral:</span>
-              <span class="text-[.85rem] font-semibold text-[#05BFE0]">Quintas · 19:30 → 20:30 BRT</span>
+              <span class="text-[.85rem] font-semibold text-[#05BFE0]">Sábados · 09:00 → 10:30 BRT</span>
               <a href="${ev.meeting_link}" target="_blank" rel="noopener"
                 class="px-4 py-1.5 bg-[#05BFE0] text-navy rounded-lg text-[.78rem] font-bold no-underline hover:opacity-90 transition-all">
                 Entrar no Meet
