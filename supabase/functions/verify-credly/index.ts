@@ -155,16 +155,16 @@ async function syncTrailProgressFromCredly(
 function classifyBadge(name: string, slug: string): { tier: number; category: string; points: number } {
   const combined = (name + ' ' + slug).toLowerCase()
 
-  // Tier 1: Master certifications (+50 XP)
-  if (TIER1_KEYWORDS.some(kw => combined.includes(kw))) {
-    return { tier: 1, category: 'master_cert', points: 50 }
-  }
-
   // PMI Trail (strict match — Tier 3 but category 'pmi_trail' for KPI tracking)
   for (const trail of PMI_TRAIL_KEYWORDS) {
     if (trail.keywords.every(kw => combined.includes(kw))) {
       return { tier: 3, category: 'pmi_trail', points: 15 }
     }
+  }
+
+  // Tier 1: Master certifications (+50 XP)
+  if (TIER1_KEYWORDS.some(kw => combined.includes(kw))) {
+    return { tier: 1, category: 'master_cert', points: 50 }
   }
 
   // Tier 2: Specializations (+25 XP)
