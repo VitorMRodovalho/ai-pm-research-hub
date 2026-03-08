@@ -81,6 +81,9 @@
 | S-KNW3 | Sistema de Tags e Relações | Medium | Planned | Link final artifacts to upstream courses, studies, or events to preserve traceability. |
 | S-KNW4 | Views Relacionais Governadas | Medium | Planned | Gallery board style views powered by Supabase data model and RLS, not external knowledge software. |
 | S-KNW5 | Knowledge-Certification Correlation Layer | Medium | Planned | Correlate `knowledge_assets` consumption with course/certification progress to evidence the Hub as catalyst of qualification outcomes. |
+| S-KNW6 | AI Knowledge Ingestion MVP (YouTube-first) | High | Planned | Build no-code-friendly ingestion pipeline (YouTube transcripts -> structured summaries/tags -> Supabase) with low-cost controls and scheduled sync. |
+| S-KNW7 | Assistente RAG Interno do Núcleo | High | Planned | Deliver `/ai-assistant` using retrieval over internal knowledge only (`pgvector` + citations), avoiding generic internet-only answers. |
+| S-KNW8 | Friction & Insight Mining | Medium | Planned | Extract recurring pains/requests from meeting transcripts and operational logs to feed roadmap prioritization dashboards. |
 
 ---
 
@@ -93,6 +96,7 @@
 | S23 | Chapter Integrations | Medium | Planned | Event driven integrations with local chapter portfolios and tools. |
 | S24 | API for Chapters | Low | Planned | Read only API for chapter impact and participation data. |
 | S-SC1 | Multilingual Screenshots | Low | Planned | Automated screenshots for PT EN ES docs or release snapshots. |
+| S-OPS2 | AI Cost Guardrails & FinOps Lite | High | Planned | Enforce free/low-cost operation thresholds (ingestion quotas, token budgets, fallback models, usage alerts) before scaling AI features. |
 
 ---
 
@@ -150,6 +154,12 @@ Use PostHog through protected iframe dashboards. Do not build custom charts in A
 
 ### External communication metrics
 Use Looker Studio for YouTube, LinkedIn, and Instagram funnel style KPIs through low maintenance connectors and automation.
+
+### AI knowledge expansion guardrails (no-cost first)
+- start with one source only (`YouTube`) before adding Drive/LinkedIn
+- schedule batch ingestion (no real-time LLM calls in UI paths)
+- cache summaries/embeddings and reprocess only deltas
+- require usage caps and budget alarms before enabling multi-source ingestion
 
 ---
 
