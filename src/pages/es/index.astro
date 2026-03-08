@@ -14,12 +14,13 @@ import TeamSection from '../../components/sections/TeamSection.astro';
 import VisionSection from '../../components/sections/VisionSection.astro';
 import ResourcesSection from '../../components/sections/ResourcesSection.astro';
 import { t } from '../../i18n/utils';
+import { TRIBE_SELECTION_DEADLINE_ISO } from '../../config/homeSchedule';
 
 const lang = 'es-LATAM' as const;
 ---
 <BaseLayout title={t('meta.title', lang)} activePage="home" lang={lang}>
   <Toast />
-  <HeroSection deadline="2026-03-08T15:00:00Z" lang={lang} />
+  <HeroSection deadline={TRIBE_SELECTION_DEADLINE_ISO} lang={lang} />
   <AgendaSection lang={lang} />
   <QuadrantsSection lang={lang} />
   <TribesSection lang={lang} />

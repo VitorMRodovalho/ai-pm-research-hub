@@ -36,7 +36,7 @@
 - [x] Leader photos displayed in tribe headers
 - [x] Team gallery with circular photos + role dots
 - [x] Strategic vision section (Benchmarking, Bimodal, CPMAI, Roadmap)
-- [x] Countdown timer to selection deadline (Sat Mar 8, 12h BRT)
+- [x] Countdown timer to selection deadline (Mon Mar 9, 12h BRT)
 - [x] Realtime slot counters via Supabase
 - [x] Certification trail section with 8 PMI courses (links to PMI.org)
 - [x] Gamified ranking with progress bars and badges
@@ -190,7 +190,7 @@
 1. Min 3, Max 6 researchers per tribe
 2. Tribe leaders are pre-assigned (tribe_id set in members table)
 3. Tribe leaders cannot self-select via gamification UI
-4. Members can change selection until deadline (Saturday 12h BRT)
+4. Members can change selection until deadline (Monday 12h BRT)
 5. After deadline, selections are locked
 
 ### Artifacts

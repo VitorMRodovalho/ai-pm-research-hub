@@ -1,13 +1,18 @@
 ---
 import { CHAPTER_CODES } from '../../data/chapters';
 import { t, type Lang } from '../../i18n/utils';
+import { GENERAL_RECURRING_MEETING, TRIBE_SELECTION_DEADLINE_ISO } from '../../config/homeSchedule';
 
 interface Props {
   deadline?: string;
   lang?: Lang;
 }
 
-const { deadline = '2026-03-08T15:00:00Z', lang = 'pt-BR' } = Astro.props;
+const { deadline = TRIBE_SELECTION_DEADLINE_ISO, lang = 'pt-BR' } = Astro.props;
+const recurringLabel = t('hero.recurring.slot', lang);
+const recurringLead = t('hero.recurring.lead', lang);
+const recurringCta = t('hero.recurring.cta', lang);
+const recurringTime = GENERAL_RECURRING_MEETING;
 ---
 
 <section class="hero relative min-h-screen flex items-center justify-center overflow-hidden pt-14" id="hero">
@@ -104,7 +109,7 @@ const { deadline = '2026-03-08T15:00:00Z', lang = 'pt-BR' } = Astro.props;
   setInterval(tick, 1000);
 </script>
 
-<script>
+<script define:vars={{ recurringLabel, recurringLead, recurringCta, recurringTime }}>
   // ── Dynamic event info from DB ──
   async function loadHeroEvent() {
     const canSeeRecurringMeeting = (member) => {
@@ -117,7 +122,7 @@ const { deadline = '2026-03-08T15:00:00Z', lang = 'pt-BR' } = Astro.props;
     const sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(loadHeroEvent, 300); return; }
 
-    // Get the latest general event (not tribe-specific)
+    // Get latest general event plus link (source of truth: events table)
     const { data: events } = await sb.from('events')
       .select('id, title, date, meeting_link, youtube_url, is_recorded, duration_minutes, duration_actual')
       .is('tribe_id', null)
@@ -126,7 +131,7 @@ const { deadline = '2026-03-08T15:00:00Z', lang = 'pt-BR' } = Astro.props;
 
     if (!events?.length) return;
     const ev = events[0];
-    const evDate = new Date(ev.date + 'T22:30:00Z'); // 19:30 BRT = 22:30 UTC
+    const evDate = new Date(`${ev.date}T${recurringTime.startUtc}:00Z`);
     const isPast = evDate < new Date();
 
     const eventArea = document.getElementById('hero-event-area');
@@ -160,12 +165,12 @@ const { deadline = '2026-03-08T15:00:00Z', lang = 'pt-BR' } = Astro.props;
       if (meetBar) {
         meetBar.classList.remove('hidden');
         meetBar.innerHTML = `
-          <div class="bg-white/6 border border-[#05BFE0]/20 rounded-xl px-5 py-3 inline-flex items-center gap-3 flex-wrap justify-center">
-            <span class="text-[.78rem] text-white/60">📅 Próxima reunião geral:</span>
-            <span class="text-[.85rem] font-semibold text-[#05BFE0]">Sábados · 09:00 → 10:30 BRT</span>
+            <div class="bg-white/6 border border-[#05BFE0]/20 rounded-xl px-5 py-3 inline-flex items-center gap-3 flex-wrap justify-center">
+            <span class="text-[.78rem] text-white/60">${recurringLead}</span>
+            <span class="text-[.85rem] font-semibold text-[#05BFE0]">${recurringLabel}</span>
             <a href="${ev.meeting_link}" target="_blank" rel="noopener"
               class="px-4 py-1.5 bg-[#05BFE0] text-navy rounded-lg text-[.78rem] font-bold no-underline hover:opacity-90 transition-all">
-              Entrar no Meet
+              ${recurringCta}
             </a>
           </div>`;
       }
@@ -180,11 +185,11 @@ const { deadline = '2026-03-08T15:00:00Z', lang = 'pt-BR' } = Astro.props;
           meetBar.classList.remove('hidden');
           meetBar.innerHTML = `
             <div class="bg-white/6 border border-[#05BFE0]/20 rounded-xl px-5 py-3 inline-flex items-center gap-3 flex-wrap justify-center">
-              <span class="text-[.78rem] text-white/60">📅 Próxima reunião geral:</span>
-              <span class="text-[.85rem] font-semibold text-[#05BFE0]">Sábados · 09:00 → 10:30 BRT</span>
+              <span class="text-[.78rem] text-white/60">${recurringLead}</span>
+              <span class="text-[.85rem] font-semibold text-[#05BFE0]">${recurringLabel}</span>
               <a href="${ev.meeting_link}" target="_blank" rel="noopener"
                 class="px-4 py-1.5 bg-[#05BFE0] text-navy rounded-lg text-[.78rem] font-bold no-underline hover:opacity-90 transition-all">
-                Entrar no Meet
+                ${recurringCta}
               </a>
             </div>`;
         }

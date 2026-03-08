@@ -1,4 +1,27 @@
 # Release Log
+## 2026-03-08 — Homepage Schedule Hotfix (Tribe Deadline + General Meeting)
+
+### Scope
+Correct wrong schedule communication on home and align deadline/recurrent meeting to current operational decision.
+
+### Root cause
+- recurrent meeting banner in `HeroSection` was hardcoded as `Sábados · 09:00 → 10:30 BRT` (not sourced from DB)
+- tribe selection deadline was duplicated in multiple places with stale date (`2026-03-08T15:00:00Z`)
+- localized copy (PT/EN/ES) still referenced the previous cut-off date
+
+### Delivered
+- centralized home schedule source:
+  - `src/config/homeSchedule.ts`
+  - `TRIBE_SELECTION_DEADLINE_ISO = 2026-03-09T15:00:00Z` (Monday 12:00 BRT)
+  - recurring meeting time slot set to Thursday 19:30–20:30 BRT
+- wired home pages (`pt/en/es`) and `TribesSection` countdown lock to the centralized deadline
+- updated `HeroSection` recurring bar to use localized strings instead of hardcoded Saturday text
+- updated i18n copies (`pt-BR`, `en-US`, `es-LATAM`) for:
+  - hero kickoff date reference
+  - tribe deadline label
+  - clear deadline extension notice for participants
+  - recurring meeting label/CTA
+
 ## 2026-03-08 — Planning Update (Data Scalability & DB Governance Queue)
 
 ### Scope
