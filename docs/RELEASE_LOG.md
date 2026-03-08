@@ -1,4 +1,17 @@
 # Release Log
+## 2026-03-08 — Tribes Stability Patch (Data Contract Restore + Regression Track)
+
+### Scope
+Stop recurrence cycle in homepage Tribes section where counters/details intermittently broke due to frontend fragility.
+
+### Delivered
+- restored Tribes data contract in render path:
+  - `TribesSection` now uses resolved i18n data (`resolveTribes(lang)`) and resolved quadrant labels/titles/subtitles.
+  - fixed blank fields (`entregáveis`, quadrant headers, descriptions) caused by rendering unresolved key-based structures.
+- governance escalation:
+  - opened structural issue `#7` (`S-FE5 Tribes UI Resilience`) with wave-based plan for this class of regressions.
+  - updated `docs/FRONTEND_HARDENING_ROADMAP.md` with `S-FE5`.
+
 ## 2026-03-08 — Wave 4 Increment (S-HOME-SCHEDULE-SOT v1 Draft)
 
 ### Scope
