@@ -195,8 +195,6 @@ const initialCounts = await loadInitialTribeCounts();
 </section>
 
 <script define:vars={{ tribeSelectionDeadline: TRIBE_SELECTION_DEADLINE_ISO }}>
-  import { getMemberRole } from '../../lib/routing';
-
   // ── Tribe selection logic ──
   // Uses window.navGetSb() and nav:member event per established Astro patterns.
 
@@ -210,6 +208,10 @@ const initialCounts = await loadInitialTribeCounts();
 
   function getSb() {
     return window.navGetSb?.();
+  }
+
+  function getRole(member) {
+    return member?.operational_role || member?.role || 'guest';
   }
 
   // ── Accordion toggle ──
@@ -272,7 +274,7 @@ const initialCounts = await loadInitialTribeCounts();
       document.dispatchEvent(new CustomEvent('open-auth'));
       return;
     }
-    const role = getMemberRole(member);
+    const role = getRole(member);
     if (role === 'guest') {
       window.toast?.('Apenas participantes cadastrados.', 'error');
       return;
@@ -364,7 +366,7 @@ const initialCounts = await loadInitialTribeCounts();
       if (btn) {
         const isSelected = userTribe === tid;
         const isFull = count >= MAX_SLOTS && !isSelected;
-        const role = getMemberRole(member);
+        const role = getRole(member);
         const canSelect = member
           && role !== 'guest'
           && role !== 'tribe_leader'
