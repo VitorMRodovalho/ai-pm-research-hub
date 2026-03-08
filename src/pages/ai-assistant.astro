@@ -1,0 +1,285 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+---
+
+<BaseLayout title={t('assistant.meta', lang)} activePage="" lang={lang}>
+  <div class="max-w-[1000px] mx-auto px-4 py-8">
+    <div class="mb-6">
+      <h1 class="text-2xl font-extrabold text-navy">{t('assistant.title', lang)}</h1>
+      <p class="text-sm text-slate-500">{t('assistant.subtitle', lang)}</p>
+    </div>
+
+    <div id="assistant-loading" class="text-center py-10 text-slate-400">{t('assistant.loading', lang)}</div>
+
+    <div id="assistant-auth" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
+      <div class="text-2xl mb-2">🔒</div>
+      <p class="font-semibold text-amber-800">{t('assistant.authRequired', lang)}</p>
+      <button onclick="document.dispatchEvent(new CustomEvent('open-auth'))" class="mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold border-0 cursor-pointer hover:opacity-90">
+        {t('assistant.authButton', lang)}
+      </button>
+    </div>
+
+    <section id="assistant-panel" class="hidden space-y-4">
+      <div class="bg-white border border-slate-200 rounded-xl p-4">
+        <div class="grid grid-cols-1 md:grid-cols-[1fr_auto_auto] gap-2">
+          <input
+            id="assistant-query"
+            type="text"
+            placeholder={t('assistant.queryPlaceholder', lang)}
+            class="px-3 py-2 border border-slate-200 rounded-lg text-[.84rem] focus:outline-none focus:border-teal"
+          />
+          <select id="assistant-source" class="px-3 py-2 border border-slate-200 rounded-lg text-[.82rem] bg-white">
+            <option value="">{t('assistant.sourceAll', lang)}</option>
+            <option value="youtube">YouTube</option>
+          </select>
+          <button id="assistant-search" class="px-4 py-2 bg-navy text-white rounded-lg text-[.82rem] font-semibold border-0 cursor-pointer hover:opacity-90">
+            {t('assistant.search', lang)}
+          </button>
+        </div>
+        <p id="assistant-status" class="text-[.72rem] text-slate-500 mt-2">{t('assistant.initialHint', lang)}</p>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl p-4">
+        <h2 class="text-sm font-bold text-navy mb-3">{t('assistant.recentTitle', lang)}</h2>
+        <div id="assistant-recent" class="space-y-2 text-[.78rem] text-slate-600"></div>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl p-4">
+        <h2 class="text-sm font-bold text-navy mb-3">{t('assistant.resultsTitle', lang)}</h2>
+        <div id="assistant-results" class="space-y-3"></div>
+      </div>
+    </section>
+  </div>
+</BaseLayout>
+
+<script>
+  let sb: any = null;
+
+  const MSG_EMPTY_QUERY = "{t('assistant.emptyQuery', lang)}";
+  const MSG_LOADING = "{t('assistant.searching', lang)}";
+  const MSG_ERROR = "{t('assistant.error', lang)}";
+  const MSG_NO_RESULTS = "{t('assistant.noResults', lang)}";
+  const MSG_RECENT_EMPTY = "{t('assistant.recentEmpty', lang)}";
+
+  function setStatus(text: string, tone: 'default' | 'error' = 'default') {
+    const el = document.getElementById('assistant-status');
+    if (!el) return;
+    el.textContent = text;
+    el.className = tone === 'error' ? 'text-[.72rem] text-crimson mt-2' : 'text-[.72rem] text-slate-500 mt-2';
+  }
+
+  function showAuth() {
+    document.getElementById('assistant-loading')?.classList.add('hidden');
+    document.getElementById('assistant-panel')?.classList.add('hidden');
+    document.getElementById('assistant-auth')?.classList.remove('hidden');
+  }
+
+  function showPanel() {
+    document.getElementById('assistant-loading')?.classList.add('hidden');
+    document.getElementById('assistant-auth')?.classList.add('hidden');
+    document.getElementById('assistant-panel')?.classList.remove('hidden');
+  }
+
+  function fmtDate(iso?: string | null): string {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('pt-BR');
+  }
+
+  function renderRecent(rows: any[]) {
+    const root = document.getElementById('assistant-recent');
+    if (!root) return;
+    root.innerHTML = '';
+
+    if (!Array.isArray(rows) || !rows.length) {
+      const empty = document.createElement('p');
+      empty.className = 'text-[.78rem] text-slate-400';
+      empty.textContent = MSG_RECENT_EMPTY;
+      root.appendChild(empty);
+      return;
+    }
+
+    for (const row of rows) {
+      const card = document.createElement('div');
+      card.className = 'rounded-lg border border-slate-200 p-3 bg-slate-50';
+
+      const title = document.createElement('div');
+      title.className = 'text-[.8rem] font-semibold text-navy';
+      title.textContent = row?.title || 'Sem título';
+
+      const meta = document.createElement('div');
+      meta.className = 'text-[.7rem] text-slate-500 mt-1';
+      meta.textContent = `${row?.source || 'source'} · ${fmtDate(row?.published_at)} · ${(row?.chunk_count ?? 0)} chunks`;
+
+      card.appendChild(title);
+      card.appendChild(meta);
+
+      if (row?.source_url) {
+        const link = document.createElement('a');
+        link.href = String(row.source_url);
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.className = 'inline-block mt-1 text-[.72rem] text-teal no-underline hover:underline';
+        link.textContent = 'Abrir fonte';
+        card.appendChild(link);
+      }
+
+      root.appendChild(card);
+    }
+  }
+
+  function renderResults(rows: any[]) {
+    const root = document.getElementById('assistant-results');
+    if (!root) return;
+    root.innerHTML = '';
+
+    if (!Array.isArray(rows) || !rows.length) {
+      const empty = document.createElement('p');
+      empty.className = 'text-[.78rem] text-slate-400';
+      empty.textContent = MSG_NO_RESULTS;
+      root.appendChild(empty);
+      return;
+    }
+
+    for (const row of rows) {
+      const card = document.createElement('article');
+      card.className = 'rounded-xl border border-slate-200 p-4 bg-white';
+
+      const title = document.createElement('h3');
+      title.className = 'text-[.84rem] font-bold text-navy';
+      title.textContent = row?.title || 'Sem título';
+
+      const meta = document.createElement('p');
+      meta.className = 'text-[.7rem] text-slate-500 mt-1';
+      const score = Number(row?.rank ?? 0);
+      meta.textContent = `${row?.source || 'source'} · rank ${score.toFixed(3)}`;
+
+      const snippet = document.createElement('p');
+      snippet.className = 'text-[.78rem] text-slate-600 mt-2 whitespace-pre-wrap';
+      snippet.textContent = row?.snippet || '';
+
+      card.appendChild(title);
+      card.appendChild(meta);
+      card.appendChild(snippet);
+
+      if (row?.source_url) {
+        const link = document.createElement('a');
+        link.href = String(row.source_url);
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.className = 'inline-block mt-2 text-[.74rem] font-semibold text-teal no-underline hover:underline';
+        link.textContent = 'Ver fonte';
+        card.appendChild(link);
+      }
+
+      root.appendChild(card);
+    }
+  }
+
+  async function loadRecent() {
+    if (!sb) return;
+    try {
+      const source = (document.getElementById('assistant-source') as HTMLSelectElement | null)?.value || null;
+      const { data, error } = await sb.rpc('knowledge_assets_latest', { p_source: source, p_limit: 6 });
+      if (error) throw error;
+      renderRecent(data || []);
+    } catch {
+      renderRecent([]);
+    }
+  }
+
+  async function runSearch() {
+    if (!sb) return;
+    const queryEl = document.getElementById('assistant-query') as HTMLInputElement | null;
+    const sourceEl = document.getElementById('assistant-source') as HTMLSelectElement | null;
+    const rawQuery = queryEl?.value || '';
+    const query = rawQuery.trim();
+    const source = sourceEl?.value || null;
+
+    if (!query) {
+      setStatus(MSG_EMPTY_QUERY, 'error');
+      renderResults([]);
+      return;
+    }
+
+    setStatus(MSG_LOADING);
+
+    try {
+      const { data, error } = await sb.rpc('knowledge_search_text', {
+        p_query: query,
+        p_source: source,
+        p_match_count: 8,
+      });
+      if (error) throw error;
+
+      const rows = data || [];
+      renderResults(rows);
+      setStatus(`${rows.length} resultado(s)`);
+    } catch (e: any) {
+      renderResults([]);
+      setStatus(`${MSG_ERROR} ${e?.message || ''}`.trim(), 'error');
+    }
+  }
+
+  async function bindUi() {
+    const searchBtn = document.getElementById('assistant-search');
+    const queryEl = document.getElementById('assistant-query') as HTMLInputElement | null;
+    const sourceEl = document.getElementById('assistant-source') as HTMLSelectElement | null;
+
+    if (searchBtn && !searchBtn.dataset.bound) {
+      searchBtn.dataset.bound = '1';
+      searchBtn.addEventListener('click', () => { void runSearch(); });
+    }
+
+    if (queryEl && !queryEl.dataset.bound) {
+      queryEl.dataset.bound = '1';
+      queryEl.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          void runSearch();
+        }
+      });
+    }
+
+    if (sourceEl && !sourceEl.dataset.bound) {
+      sourceEl.dataset.bound = '1';
+      sourceEl.addEventListener('change', () => { void loadRecent(); });
+    }
+
+    await loadRecent();
+    renderResults([]);
+  }
+
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) {
+      setTimeout(boot, 200);
+      return;
+    }
+
+    const member = (window as any).navGetMember?.();
+    if (member) {
+      showPanel();
+      await bindUi();
+      return;
+    }
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        showAuth();
+        return;
+      }
+      showPanel();
+      await bindUi();
+    } catch {
+      showAuth();
+    }
+  }
+
+  boot();
+</script>

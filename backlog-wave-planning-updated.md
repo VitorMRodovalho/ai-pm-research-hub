@@ -82,7 +82,7 @@
 | S-KNW4 | Views Relacionais Governadas | Medium | Planned | Gallery board style views powered by Supabase data model and RLS, not external knowledge software. |
 | S-KNW5 | Knowledge-Certification Correlation Layer | Medium | Planned | Correlate `knowledge_assets` consumption with course/certification progress to evidence the Hub as catalyst of qualification outcomes. |
 | S-KNW6 | AI Knowledge Ingestion MVP (YouTube-first) | High | Partial (v1 foundation deployed 2026-03-08) | SQL foundation (`knowledge_assets`, `knowledge_chunks`, `knowledge_ingestion_runs`) applied in production, Edge Function `sync-knowledge-youtube` deployed, smoke dry-run and insert validated; pending source connector automation and embeddings pipeline. |
-| S-KNW7 | Assistente RAG Interno do Núcleo | High | Planned | Deliver `/ai-assistant` using retrieval over internal knowledge only (`pgvector` + citations), avoiding generic internet-only answers. |
+| S-KNW7 | Assistente RAG Interno do Núcleo | High | In Progress (v1 textual retrieval + UI 2026-03-08) | `/ai-assistant` entregue com autenticação, busca RPC `knowledge_search_text` e citações por fonte; SQL pack pronto (`knowledge-assistant-v1`) pendente de apply/audit em produção para fechamento da sprint. |
 | S-KNW8 | Friction & Insight Mining | Medium | Planned | Extract recurring pains/requests from meeting transcripts and operational logs to feed roadmap prioritization dashboards. |
 
 ---
