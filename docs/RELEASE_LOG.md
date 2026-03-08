@@ -24,6 +24,15 @@ Automate recurring bulk Credly synchronization to reduce manual admin operations
   - Edge Function env: `SYNC_CREDLY_CRON_SECRET`
   - GitHub Actions secrets: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SYNC_CREDLY_CRON_SECRET`
 
+### Completion update (production rollout closed)
+- deployed `sync-credly-all` in production with cron-secret support
+- configured secrets in production:
+  - Supabase Edge Function: `SYNC_CREDLY_CRON_SECRET`
+  - GitHub Actions repo secrets: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SYNC_CREDLY_CRON_SECRET`
+- validated end-to-end execution via manual workflow dispatch:
+  - workflow run `22814354422` succeeded
+  - response payload: `"execution_mode":"cron"`, `"fail_count":0`, `"success_count":6`
+
 ## 2026-03-08 — Wave 4 Sprint Increment (S-DB1 Credly/Gamification Data Sanitation Pack v1)
 
 ### Scope
