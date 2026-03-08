@@ -65,7 +65,7 @@
 | S10 | Credly Auto Sync | Medium | Completed (2026-03-08) | Weekly GitHub Actions scheduler active (`.github/workflows/credly-auto-sync.yml`) with cron-secret mode in `sync-credly-all`, function deployed, secrets provisioned, and manual workflow validation successful (`execution_mode: cron`, `fail_count: 0`). |
 | S-AN1 | Announcements System | Medium | Completed (2026-03-08) | Sistema de anúncios ativo: CRUD no `/admin` e renderização global no topo do site via `AnnouncementBanner`, com dismiss por sessão e suporte a severidade/expiração. |
 | S-DR1 | Disaster Recovery Doc | Low | Planned | POP de restauração de backup e PITR. |
-| S-COM6 | Dashboard Central de Mídia | Medium | Partial (S-COM7 started 2026-03-08) | `/admin/comms` já suporta KPI via endpoint/RPC (V1) + backbone V2 (`sync-comms-metrics`, `comms_metrics_ingestion_log`, `comms_metrics_latest_by_channel`) e agora iniciou a jornada no-code com `/admin/comms/data-entry`; próximos passos: CSV batch (S-COM8) e fluxo de publicação/auditoria (S-COM9). |
+| S-COM6 | Dashboard Central de Mídia | Medium | Partial (S-COM8 started 2026-03-08) | `/admin/comms` já suporta KPI via endpoint/RPC (V1) + backbone V2 (`sync-comms-metrics`, `comms_metrics_ingestion_log`, `comms_metrics_latest_by_channel`) e a jornada no-code avançou com `/admin/comms/data-entry` + importação CSV com preview e batch upsert; próximo passo: fluxo de publicação/auditoria (S-COM9). |
 | S-PA2 | Admin Executive Visual Dashboards (ROI PMI) | High | Planned | Evolve `AdminExecutive` with visual charts (iframe-first or lightweight native SVG): qualification funnel, certification timeline after member join, and skill/certification radar across the base. |
 
 ---

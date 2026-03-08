@@ -35,12 +35,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
             <p class="text-[.72rem] text-slate-500">{t('admin.comms.entry.formSubtitle', lang)}</p>
           </div>
           <div class="flex gap-2">
-            <button id="btn-today" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-[.72rem] font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-all">
-              {t('admin.comms.entry.today', lang)}
-            </button>
-            <button id="btn-yesterday" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-[.72rem] font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-all">
-              {t('admin.comms.entry.yesterday', lang)}
-            </button>
+            <button id="btn-today" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-[.72rem] font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-all">{t('admin.comms.entry.today', lang)}</button>
+            <button id="btn-yesterday" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-[.72rem] font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-all">{t('admin.comms.entry.yesterday', lang)}</button>
           </div>
         </div>
 
@@ -86,16 +82,52 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         </div>
 
         <div class="flex flex-wrap gap-2">
-          <button id="btn-load" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-[.78rem] font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-all">
-            {t('admin.comms.entry.load', lang)}
-          </button>
-          <button id="btn-save" class="px-4 py-2 bg-teal text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
-            {t('admin.comms.entry.save', lang)}
-          </button>
-          <button id="btn-delete" class="px-4 py-2 bg-white border border-amber-300 text-amber-700 rounded-lg text-[.78rem] font-semibold cursor-pointer hover:bg-amber-50 transition-all">
-            {t('admin.comms.entry.delete', lang)}
-          </button>
+          <button id="btn-load" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-[.78rem] font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-all">{t('admin.comms.entry.load', lang)}</button>
+          <button id="btn-save" class="px-4 py-2 bg-teal text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">{t('admin.comms.entry.save', lang)}</button>
+          <button id="btn-delete" class="px-4 py-2 bg-white border border-amber-300 text-amber-700 rounded-lg text-[.78rem] font-semibold cursor-pointer hover:bg-amber-50 transition-all">{t('admin.comms.entry.delete', lang)}</button>
           <span id="entry-status" class="text-[.72rem] text-slate-500 self-center"></span>
+        </div>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl p-5">
+        <div class="flex items-start justify-between gap-3 flex-wrap mb-3">
+          <div>
+            <h2 class="text-sm font-bold text-navy">{t('admin.comms.entry.csvTitle', lang)}</h2>
+            <p class="text-[.72rem] text-slate-500">{t('admin.comms.entry.csvSubtitle', lang)}</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+          <div class="md:col-span-2">
+            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.comms.entry.csvFile', lang)}</label>
+            <input type="file" id="csv-file" accept=".csv,text/csv" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem] bg-white" />
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.comms.entry.source', lang)}</label>
+            <input type="text" id="csv-source" value="manual_csv" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem] bg-slate-50 text-slate-600" readonly />
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2 mb-3">
+          <button id="btn-csv-preview" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-[.78rem] font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-all">{t('admin.comms.entry.csvPreview', lang)}</button>
+          <button id="btn-csv-publish" class="px-4 py-2 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">{t('admin.comms.entry.csvPublish', lang)}</button>
+          <span id="csv-status" class="text-[.72rem] text-slate-500 self-center"></span>
+        </div>
+        <div id="csv-summary" class="text-[.72rem] text-slate-500 mb-3"></div>
+        <div class="overflow-x-auto border border-slate-200 rounded-lg">
+          <table class="w-full text-[.72rem]">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="px-3 py-2 text-left font-semibold text-slate-500">{t('admin.comms.entry.date', lang)}</th>
+                <th class="px-3 py-2 text-left font-semibold text-slate-500">{t('admin.comms.entry.channel', lang)}</th>
+                <th class="px-3 py-2 text-right font-semibold text-slate-500">{t('admin.comms.kpiAudience', lang)}</th>
+                <th class="px-3 py-2 text-right font-semibold text-slate-500">{t('admin.comms.kpiReach', lang)}</th>
+                <th class="px-3 py-2 text-right font-semibold text-slate-500">{t('admin.comms.kpiEngagement', lang)}</th>
+                <th class="px-3 py-2 text-right font-semibold text-slate-500">{t('admin.comms.kpiLeads', lang)}</th>
+              </tr>
+            </thead>
+            <tbody id="csv-preview-body">
+              <tr><td colspan="6" class="px-3 py-5 text-center text-slate-400">{t('admin.comms.entry.csvEmpty', lang)}</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -121,9 +153,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
               </tr>
             </thead>
             <tbody id="entry-recent-body">
-              <tr>
-                <td colspan="8" class="px-3 py-5 text-center text-slate-400">{t('common.loading', lang)}</td>
-              </tr>
+              <tr><td colspan="8" class="px-3 py-5 text-center text-slate-400">{t('common.loading', lang)}</td></tr>
             </tbody>
           </table>
         </div>
@@ -145,10 +175,18 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     saveError: "{t('admin.comms.entry.saveError', lang)}",
     deleteError: "{t('admin.comms.entry.deleteError', lang)}",
     confirmDelete: "{t('admin.comms.entry.confirmDelete', lang)}",
+    csvNoFile: "{t('admin.comms.entry.csvNoFile', lang)}",
+    csvParseError: "{t('admin.comms.entry.csvParseError', lang)}",
+    csvPreviewReady: "{t('admin.comms.entry.csvPreviewReady', lang)}",
+    csvPublishSuccess: "{t('admin.comms.entry.csvPublishSuccess', lang)}",
+    csvPublishError: "{t('admin.comms.entry.csvPublishError', lang)}",
+    csvNothingToPublish: "{t('admin.comms.entry.csvNothingToPublish', lang)}",
   };
 
   let sb: any = null;
   let MEMBER: any = null;
+  let csvValidRows: any[] = [];
+  let csvInvalidRows: string[] = [];
 
   function allowComms(m: any): boolean {
     return canAccessAdminRoute(m, 'admin_analytics');
@@ -173,16 +211,110 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const el = document.getElementById('entry-status');
     if (!el) return;
     el.textContent = text;
-    el.className = error
-      ? 'text-[.72rem] text-crimson self-center'
-      : 'text-[.72rem] text-slate-500 self-center';
+    el.className = error ? 'text-[.72rem] text-crimson self-center' : 'text-[.72rem] text-slate-500 self-center';
+  }
+
+  function setCsvStatus(text: string, error = false) {
+    const el = document.getElementById('csv-status');
+    if (!el) return;
+    el.textContent = text;
+    el.className = error ? 'text-[.72rem] text-crimson self-center' : 'text-[.72rem] text-slate-500 self-center';
   }
 
   function asNumber(v: string, decimals = false): number {
     if (!v) return 0;
-    const n = Number(v);
+    const n = Number(v.replace(',', '.'));
     if (!Number.isFinite(n)) return 0;
     return decimals ? n : Math.trunc(n);
+  }
+
+  function parseCsvLine(line: string): string[] {
+    const out: string[] = [];
+    let current = '';
+    let quoted = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (quoted && line[i + 1] === '"') {
+          current += '"';
+          i += 1;
+        } else {
+          quoted = !quoted;
+        }
+        continue;
+      }
+      if (ch === ',' && !quoted) {
+        out.push(current.trim());
+        current = '';
+        continue;
+      }
+      current += ch;
+    }
+    out.push(current.trim());
+    return out;
+  }
+
+  function parseCsvContent(content: string) {
+    const lines = content.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    if (lines.length < 2) return { valid: [], invalid: ['empty_file'] };
+
+    const headers = parseCsvLine(lines[0]).map((h) => h.trim().toLowerCase());
+    const idx = {
+      metric_date: headers.findIndex((h) => ['metric_date', 'date'].includes(h)),
+      channel: headers.findIndex((h) => ['channel', 'platform', 'network'].includes(h)),
+      audience: headers.findIndex((h) => ['audience', 'followers', 'subscribers'].includes(h)),
+      reach: headers.findIndex((h) => ['reach', 'impressions'].includes(h)),
+      engagement: headers.findIndex((h) => ['engagement_rate', 'engagement', 'engagementrate'].includes(h)),
+      leads: headers.findIndex((h) => ['leads', 'conversions'].includes(h)),
+    };
+
+    if (idx.metric_date < 0 || idx.channel < 0) return { valid: [], invalid: ['missing_required_headers'] };
+
+    const valid: any[] = [];
+    const invalid: string[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const cols = parseCsvLine(lines[i]);
+      const metricDate = String(cols[idx.metric_date] || '').trim();
+      const channel = String(cols[idx.channel] || '').trim().toLowerCase();
+      if (!metricDate || !/^\d{4}-\d{2}-\d{2}$/.test(metricDate) || !channel) {
+        invalid.push(`line_${i + 1}`);
+        continue;
+      }
+      valid.push({
+        metric_date: metricDate,
+        channel,
+        audience: asNumber(String(cols[idx.audience] || '0')),
+        reach: asNumber(String(cols[idx.reach] || '0')),
+        engagement_rate: Number(asNumber(String(cols[idx.engagement] || '0'), true).toFixed(4)),
+        leads: asNumber(String(cols[idx.leads] || '0')),
+      });
+    }
+
+    return { valid, invalid };
+  }
+
+  function renderCsvPreview() {
+    const body = document.getElementById('csv-preview-body');
+    const summary = document.getElementById('csv-summary');
+    if (!body || !summary) return;
+
+    if (!csvValidRows.length) {
+      body.innerHTML = `<tr><td colspan="6" class="px-3 py-5 text-center text-slate-400">{t('admin.comms.entry.csvEmpty', lang)}</td></tr>`;
+    } else {
+      body.innerHTML = csvValidRows.slice(0, 20).map((r) => `
+        <tr class="border-t border-slate-100">
+          <td class="px-3 py-2 text-slate-700">${r.metric_date}</td>
+          <td class="px-3 py-2 text-slate-700">${r.channel}</td>
+          <td class="px-3 py-2 text-right text-slate-700">${Number(r.audience || 0).toLocaleString('pt-BR')}</td>
+          <td class="px-3 py-2 text-right text-slate-700">${Number(r.reach || 0).toLocaleString('pt-BR')}</td>
+          <td class="px-3 py-2 text-right text-slate-700">${Number(r.engagement_rate || 0).toFixed(4)}</td>
+          <td class="px-3 py-2 text-right text-slate-700">${Number(r.leads || 0).toLocaleString('pt-BR')}</td>
+        </tr>
+      `).join('');
+    }
+
+    summary.textContent = `${csvValidRows.length} valid · ${csvInvalidRows.length} invalid`;
   }
 
   function showDenied() {
@@ -256,10 +388,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       const { data, error } = await sb
         .from('comms_metrics_daily')
         .select('metric_date, channel, audience, reach, engagement_rate, leads, source, updated_at')
-        .eq('source', SOURCE)
+        .in('source', [SOURCE, 'manual_csv'])
         .order('metric_date', { ascending: false })
         .order('updated_at', { ascending: false })
-        .limit(20);
+        .limit(30);
       if (error) throw error;
       renderRecent(data || []);
     } catch {
@@ -294,9 +426,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     };
 
     try {
-      const { error } = await sb
-        .from('comms_metrics_daily')
-        .upsert(row, { onConflict: 'metric_date,channel,source' });
+      const { error } = await sb.from('comms_metrics_daily').upsert(row, { onConflict: 'metric_date,channel,source' });
       if (error) throw error;
       (window as any).toast?.(MSG.saved, 'success');
       setStatus(MSG.saved, false);
@@ -333,12 +463,67 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     }
   }
 
+  async function previewCsv() {
+    const fileEl = document.getElementById('csv-file') as HTMLInputElement | null;
+    const file = fileEl?.files?.[0];
+    if (!file) {
+      setCsvStatus(MSG.csvNoFile, true);
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      const parsed = parseCsvContent(text);
+      csvValidRows = parsed.valid;
+      csvInvalidRows = parsed.invalid;
+      renderCsvPreview();
+      setCsvStatus(MSG.csvPreviewReady, false);
+    } catch (e: any) {
+      csvValidRows = [];
+      csvInvalidRows = [];
+      renderCsvPreview();
+      setCsvStatus(`${MSG.csvParseError} ${e?.message || ''}`.trim(), true);
+    }
+  }
+
+  async function publishCsv() {
+    if (!sb || !MEMBER) return;
+    if (!csvValidRows.length) {
+      setCsvStatus(MSG.csvNothingToPublish, true);
+      return;
+    }
+
+    const source = readValue('csv-source') || 'manual_csv';
+    const rows = csvValidRows.map((r) => ({
+      ...r,
+      source,
+      created_by: MEMBER.id,
+      payload: {
+        origin: 'admin_csv_import',
+        actor_member_id: MEMBER.id,
+        updated_at: new Date().toISOString(),
+      },
+    }));
+
+    try {
+      const { error } = await sb.from('comms_metrics_daily').upsert(rows, { onConflict: 'metric_date,channel,source' });
+      if (error) throw error;
+      setCsvStatus(MSG.csvPublishSuccess, false);
+      (window as any).toast?.(MSG.csvPublishSuccess, 'success');
+      await refreshRecentRows();
+    } catch (e: any) {
+      setCsvStatus(`${MSG.csvPublishError} ${e?.message || ''}`.trim(), true);
+    }
+  }
+
   function bindButtons() {
     const todayBtn = document.getElementById('btn-today');
     const yBtn = document.getElementById('btn-yesterday');
     const loadBtn = document.getElementById('btn-load');
     const saveBtn = document.getElementById('btn-save');
     const deleteBtn = document.getElementById('btn-delete');
+    const csvPreviewBtn = document.getElementById('btn-csv-preview');
+    const csvPublishBtn = document.getElementById('btn-csv-publish');
 
     if (todayBtn && !todayBtn.dataset.bound) {
       todayBtn.dataset.bound = '1';
@@ -363,6 +548,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     if (deleteBtn && !deleteBtn.dataset.bound) {
       deleteBtn.dataset.bound = '1';
       deleteBtn.addEventListener('click', () => { void deleteEntry(); });
+    }
+    if (csvPreviewBtn && !csvPreviewBtn.dataset.bound) {
+      csvPreviewBtn.dataset.bound = '1';
+      csvPreviewBtn.addEventListener('click', () => { void previewCsv(); });
+    }
+    if (csvPublishBtn && !csvPublishBtn.dataset.bound) {
+      csvPublishBtn.dataset.bound = '1';
+      csvPublishBtn.addEventListener('click', () => { void publishCsv(); });
     }
   }
 
