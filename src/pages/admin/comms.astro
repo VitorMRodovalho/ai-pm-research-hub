@@ -149,6 +149,39 @@ const COMMS_KPI_API_URL = import.meta.env.PUBLIC_COMMS_KPI_API_URL || '';
     };
   }
 
+  function parseKpisFromChannelRows(rows: any[]) {
+    const safeRows = Array.isArray(rows) ? rows : [];
+    if (!safeRows.length) {
+      return { audience: null, reach: null, engagement: null, leads: null, updatedAt: null };
+    }
+
+    const dated = safeRows
+      .map((r) => ({ ...r, metric_date: String(r?.metric_date || '') }))
+      .filter((r) => r.metric_date);
+    if (!dated.length) {
+      return { audience: null, reach: null, engagement: null, leads: null, updatedAt: null };
+    }
+
+    const latestDate = dated.reduce((max, row) => (row.metric_date > max ? row.metric_date : max), dated[0].metric_date);
+    const latestRows = dated.filter((row) => row.metric_date === latestDate);
+
+    const audience = latestRows.reduce((sum, r) => sum + Number(r?.audience || 0), 0);
+    const reach = latestRows.reduce((sum, r) => sum + Number(r?.reach || 0), 0);
+    const leads = latestRows.reduce((sum, r) => sum + Number(r?.leads || 0), 0);
+    const engagementValues = latestRows
+      .map((r) => Number(r?.engagement ?? r?.engagement_rate ?? 0))
+      .filter((v) => Number.isFinite(v) && v >= 0);
+    const engagement = engagementValues.length
+      ? Number((engagementValues.reduce((sum, v) => sum + v, 0) / engagementValues.length).toFixed(4))
+      : null;
+    const updatedAt = latestRows.reduce((max, r) => {
+      const candidate = String(r?.updated_at || '');
+      return candidate > max ? candidate : max;
+    }, '');
+
+    return { audience, reach, engagement, leads, updatedAt: updatedAt || null };
+  }
+
   async function loadCommsKpis() {
     setKpiStatus(KPI_MSG_LOADING);
     try {
@@ -159,18 +192,10 @@ const COMMS_KPI_API_URL = import.meta.env.PUBLIC_COMMS_KPI_API_URL || '';
         data = await resp.json();
       } else {
         if (!sb) throw new Error('Supabase client unavailable');
-        const { data: rows, error } = await sb.rpc('comms_metrics_latest');
+        const { data: rows, error } = await sb.rpc('comms_metrics_latest_by_channel', { p_days: 14 });
         if (error) throw error;
-        const row = Array.isArray(rows) ? rows[0] : rows;
-        data = {
-          metrics: {
-            audience: row?.audience ?? null,
-            reach: row?.reach ?? null,
-            engagement: row?.engagement ?? null,
-            leads: row?.leads ?? null,
-          },
-          updated_at: row?.updated_at ?? null,
-        };
+        const k = parseKpisFromChannelRows(rows || []);
+        data = { metrics: k, updated_at: k.updatedAt };
       }
       const k = parseKpis(data);
       setKpi('kpi-audience', k.audience);
