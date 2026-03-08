@@ -32,10 +32,10 @@ credly_points as (
   group by gp.member_id
 ),
 published_artifacts as (
-  select a.author_id as member_id, count(*)::integer as qty
+  select a.member_id, count(*)::integer as qty
   from public.artifacts a
   where a.status = 'published'
-  group by a.author_id
+  group by a.member_id
 )
 select
   now()::date as snapshot_date,
