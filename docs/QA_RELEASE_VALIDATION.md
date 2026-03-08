@@ -2,6 +2,18 @@
 
 Checklist de qualidade para garantir que cada release não afeta usabilidade nos ambientes principais. **Executar antes de considerar release concluído.**
 
+## Automação recomendada (assistente)
+
+O assistente deve **agendar/executar validação automatizada** após cada incremento de sprint:
+
+```bash
+npm test && npm run build && npm run smoke:routes
+```
+
+- Se algum comando falhar → corrigir antes de push/deploy
+- Se todos passarem → prosseguir com commit e deploy
+- Pós-deploy: checklist manual (Console F12 + cross-browser conforme seção 1 e 2)
+
 ---
 
 ## 1. Validação de Scripts (Console F12)

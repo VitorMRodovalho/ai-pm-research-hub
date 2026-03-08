@@ -79,6 +79,7 @@ const ADMIN_I18N = {
   dayNames: [t('common.days.sun', lang), t('common.days.mon', lang), t('common.days.tue', lang), t('common.days.wed', lang), t('common.days.thu', lang), t('common.days.fri', lang), t('common.days.sat', lang)],
   csvVrmsHeader: t('admin.csv.vrmsHeader', lang),
   csvMemberHeader: t('admin.csv.memberHeader', lang),
+  vrmsCountFormat: t('admin.reports.vrmsCountFormat', lang),
   csvYes: t('admin.csv.yes', lang),
   csvNo: t('admin.csv.no', lang),
   tierLeaderTitlePrefix: t('admin.tier.leaderTitlePrefix', lang),
@@ -340,7 +341,7 @@ const ADMIN_I18N = {
               <thead class="bg-slate-50">
                 <tr>
                   <th class="px-3 py-2 text-left font-semibold text-slate-500">{t('admin.reports.colVolunteer', lang)}</th>
-                  <th class="px-3 py-2 text-left font-semibold text-slate-500">PMI ID</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-500">{t('admin.reports.colPmiId', lang)}</th>
                   <th class="px-3 py-2 text-left font-semibold text-slate-500">{t('admin.reports.colEmail', lang)}</th>
                   <th class="px-3 py-2 text-left font-semibold text-slate-500">{t('admin.reports.colOrg', lang)}</th>
                   <th class="px-3 py-2 text-left font-semibold text-slate-500">{t('admin.reports.colInitiativeRole', lang)}</th>
@@ -1746,7 +1747,7 @@ const ADMIN_I18N = {
         <td class="px-3 py-2 text-right font-bold text-navy">${r.hours}h</td>
       </tr>`).join('');
 
-    document.getElementById('vrms-table-count')!.textContent = `${totalMembers} voluntários · ${totalHours}h`;
+    document.getElementById('vrms-table-count')!.textContent = ADMIN_I18N.vrmsCountFormat.replace('{n}', String(totalMembers)).replace('{h}', String(totalHours));
     document.getElementById('vrms-table-area')?.classList.remove('hidden');
   };
 

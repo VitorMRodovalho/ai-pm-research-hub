@@ -384,6 +384,8 @@ const ptBR: Record<string, string> = {
   'admin.reports.commsButton': 'Abrir Dashboard Comms',
   'admin.reports.vrmsPreviewTitle': 'Pré-visualização VRMS',
   'admin.reports.colVolunteer': 'Voluntário',
+  'admin.reports.colPmiId': 'PMI ID',
+  'admin.reports.vrmsCountFormat': '{n} voluntários · {h}h',
   'admin.reports.colEmail': 'Email',
   'admin.reports.colOrg': 'Organização',
   'admin.reports.colInitiativeRole': 'Iniciativa / Papel',

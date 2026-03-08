@@ -1,5 +1,17 @@
 # Release Log
 
+## 2026-03-08 — S-REP1 VRMS i18n + QA/QC workflow
+
+### S-REP1: VRMS export i18n
+- Coluna "PMI ID" → `t('admin.reports.colPmiId', lang)`
+- Contador "X voluntários · Yh" → `admin.reports.vrmsCountFormat` PT/EN/ES
+
+### QA/QC
+- `docs/QA_RELEASE_VALIDATION.md`: seção "Automação recomendada" — assistente executa `npm test && npm run build && npm run smoke:routes` após cada sprint
+- `SPRINT_IMPLEMENTATION_PRACTICES.md`: checklist inclui validação automatizada obrigatória
+
+---
+
 ## 2026-03-08 — S-PA1 + S11 polish (analytics i18n, loading strings)
 
 ### S-PA1: Analytics consent status i18n

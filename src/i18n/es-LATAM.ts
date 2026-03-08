@@ -384,6 +384,8 @@ const esLATAM: Record<string, string> = {
   'admin.reports.commsButton': 'Abrir Dashboard Comms',
   'admin.reports.vrmsPreviewTitle': 'Previsualización VRMS',
   'admin.reports.colVolunteer': 'Voluntario',
+  'admin.reports.colPmiId': 'PMI ID',
+  'admin.reports.vrmsCountFormat': '{n} voluntarios · {h}h',
   'admin.reports.colEmail': 'Email',
   'admin.reports.colOrg': 'Organización',
   'admin.reports.colInitiativeRole': 'Iniciativa / Rol',

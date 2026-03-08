@@ -52,9 +52,9 @@ Antes de `In progress`:
 
 ## 3. Ao concluir uma tarefa
 
-Seguir `docs/AGENT_BOARD_SYNC.md`:
+Seguir `docs/AGENT_BOARD_SYNC.md` e `docs/QA_RELEASE_VALIDATION.md`:
 
-- [ ] Código alterado e `npm run build` OK
+- [ ] **QA automatizado**: `npm test && npm run build && npm run smoke:routes` — todos passando
 - [ ] `docs/RELEASE_LOG.md` — entrada com escopo, entregue, validação
 - [ ] Commit referenciando issue (`fix: desc (#NN)`)
 - [ ] Issue/Project Board — mover para Done quando aplicável

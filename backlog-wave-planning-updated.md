@@ -87,7 +87,7 @@ Isso ocorreu por execução orientada a incidentes de produção (hotfixes) sem 
 | ID | Feature | Priority | Status | Description |
 |----|---------|----------|--------|-------------|
 | S-RM4 | Admin Tiers (ACL) | High | Partial (v2 delivered 2026-03-08) | Centralized ACL now gates both critical routes and privileged in-page actions (allocation, member edits, announcements, reports exports, leadership snapshot actions, cycle-history writes, tribe settings), reducing console-trigger bypass risk. |
-| S-REP1 | Exportação VRMS (PMI) | High | Partial | CSV mastigado no `/admin` para Horas de Impacto e reporte PMI. |
+| S-REP1 | Exportação VRMS (PMI) | High | Partial (2026-03-08) | CSV preview + download; colPmiId e vrmsCountFormat i18n PT/EN/ES. |
 | S-ADM2 | Leadership Training Progress Snapshot | High | Partial (v2 delivered 2026-03-08) | `/admin` reports snapshot now has filters (capítulo/tribo/período), CSV export, and i18n keys for PT/EN/ES, in addition to completion/blocking and recent Credly insights. |
 | S10 | Credly Auto Sync | Medium | Partial (2026-03-08) | GitHub Action `credly-auto-sync.yml` runs weekly (Monday). Requires SUPABASE_SERVICE_ROLE_KEY. Manual trigger via workflow_dispatch. |
 | S-AN1 | Announcements System | Medium | Partial (2026-03-08) | Banners in BaseLayout, CRUD in admin, Event Delegation + XSS hardening. Pending: optional rich editor, scheduling UX. |

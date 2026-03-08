@@ -384,6 +384,8 @@ const enUS: Record<string, string> = {
   'admin.reports.commsButton': 'Open Comms Dashboard',
   'admin.reports.vrmsPreviewTitle': 'VRMS Preview',
   'admin.reports.colVolunteer': 'Volunteer',
+  'admin.reports.colPmiId': 'PMI ID',
+  'admin.reports.vrmsCountFormat': '{n} volunteers · {h}h',
   'admin.reports.colEmail': 'Email',
   'admin.reports.colOrg': 'Organization',
   'admin.reports.colInitiativeRole': 'Initiative / Role',
