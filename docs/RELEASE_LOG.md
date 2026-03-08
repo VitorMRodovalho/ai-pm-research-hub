@@ -42,6 +42,17 @@ Start dedicated communications analytics surface for media operations in admin w
 - board now tracks per-feature backend reality (`DB-backed` vs `Frontend/Embed`) and explicit SQL gaps
 - established sprint gate: features marked as `Needs SQL` cannot be considered complete without migration/audit/rollback artifacts
 
+### Completion update (same day, v3 DB-backed prep)
+- `/admin/comms` KPI band now supports DB-backed fallback:
+  - when `PUBLIC_COMMS_KPI_API_URL` is absent, frontend calls `rpc('comms_metrics_latest')`
+- delivered full SQL pack for native comms metrics:
+  - `docs/migrations/comms-metrics-v1.sql`
+  - `docs/migrations/comms-metrics-v1-audit.sql`
+  - `docs/migrations/comms-metrics-v1-rollback.sql`
+  - `docs/migrations/COMMS_METRICS_V1_RUNBOOK.md`
+- i18n updated with KPI source/status copy for DB fallback mode
+- local `npm run build` and `npm test` passed
+
 ## 2026-03-08 — Wave 4 Sprint Increment (S-AN1 / S-ADM2 Formal Closure)
 
 ### Scope

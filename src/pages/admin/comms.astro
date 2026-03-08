@@ -36,33 +36,29 @@ const COMMS_KPI_API_URL = import.meta.env.PUBLIC_COMMS_KPI_API_URL || '';
           </button>
         </div>
 
-        {!COMMS_KPI_API_URL ? (
-          <p id="comms-kpi-status" class="text-[.72rem] text-slate-500">
-            {t('admin.comms.kpiMissingConfig', lang)} <code class="bg-slate-100 px-1 py-0.5 rounded">PUBLIC_COMMS_KPI_API_URL</code>
-          </p>
-        ) : (
-          <>
-            <p id="comms-kpi-status" class="text-[.72rem] text-slate-500 mb-3">{t('admin.comms.kpiLoading', lang)}</p>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <div class="text-[.65rem] font-semibold text-slate-500">{t('admin.comms.kpiAudience', lang)}</div>
-                <div id="kpi-audience" class="text-xl font-black text-navy">—</div>
-              </div>
-              <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <div class="text-[.65rem] font-semibold text-slate-500">{t('admin.comms.kpiReach', lang)}</div>
-                <div id="kpi-reach" class="text-xl font-black text-teal">—</div>
-              </div>
-              <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <div class="text-[.65rem] font-semibold text-slate-500">{t('admin.comms.kpiEngagement', lang)}</div>
-                <div id="kpi-engagement" class="text-xl font-black text-violet-700">—</div>
-              </div>
-              <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <div class="text-[.65rem] font-semibold text-slate-500">{t('admin.comms.kpiLeads', lang)}</div>
-                <div id="kpi-leads" class="text-xl font-black text-orange">—</div>
-              </div>
-            </div>
-          </>
-        )}
+        <p id="comms-kpi-status" class="text-[.72rem] text-slate-500 mb-3">
+          {COMMS_KPI_API_URL
+            ? t('admin.comms.kpiLoading', lang)
+            : t('admin.comms.kpiDbFallback', lang)}
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div class="text-[.65rem] font-semibold text-slate-500">{t('admin.comms.kpiAudience', lang)}</div>
+            <div id="kpi-audience" class="text-xl font-black text-navy">—</div>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div class="text-[.65rem] font-semibold text-slate-500">{t('admin.comms.kpiReach', lang)}</div>
+            <div id="kpi-reach" class="text-xl font-black text-teal">—</div>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div class="text-[.65rem] font-semibold text-slate-500">{t('admin.comms.kpiEngagement', lang)}</div>
+            <div id="kpi-engagement" class="text-xl font-black text-violet-700">—</div>
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <div class="text-[.65rem] font-semibold text-slate-500">{t('admin.comms.kpiLeads', lang)}</div>
+            <div id="kpi-leads" class="text-xl font-black text-orange">—</div>
+          </div>
+        </div>
       </div>
 
       <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
@@ -103,7 +99,9 @@ const COMMS_KPI_API_URL = import.meta.env.PUBLIC_COMMS_KPI_API_URL || '';
   const KPI_MSG_LOADING = "{t('admin.comms.kpiLoading', lang)}";
   const KPI_MSG_ERROR = "{t('admin.comms.kpiError', lang)}";
   const KPI_MSG_UPDATED = "{t('admin.comms.kpiUpdatedAt', lang)}";
+  const KPI_MSG_DB_FALLBACK = "{t('admin.comms.kpiDbFallback', lang)}";
   let kpiLoaded = false;
+  let sb: any = null;
 
   function allowComms(m: any): boolean {
     return canAccessAdminRoute(m, 'admin_analytics');
@@ -152,18 +150,35 @@ const COMMS_KPI_API_URL = import.meta.env.PUBLIC_COMMS_KPI_API_URL || '';
   }
 
   async function loadCommsKpis() {
-    if (!KPI_URL) return;
     setKpiStatus(KPI_MSG_LOADING);
     try {
-      const resp = await fetch(KPI_URL, { headers: { Accept: 'application/json' } });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const data = await resp.json();
+      let data: any = null;
+      if (KPI_URL) {
+        const resp = await fetch(KPI_URL, { headers: { Accept: 'application/json' } });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        data = await resp.json();
+      } else {
+        if (!sb) throw new Error('Supabase client unavailable');
+        const { data: rows, error } = await sb.rpc('comms_metrics_latest');
+        if (error) throw error;
+        const row = Array.isArray(rows) ? rows[0] : rows;
+        data = {
+          metrics: {
+            audience: row?.audience ?? null,
+            reach: row?.reach ?? null,
+            engagement: row?.engagement ?? null,
+            leads: row?.leads ?? null,
+          },
+          updated_at: row?.updated_at ?? null,
+        };
+      }
       const k = parseKpis(data);
       setKpi('kpi-audience', k.audience);
       setKpi('kpi-reach', k.reach);
       setKpi('kpi-engagement', k.engagement);
       setKpi('kpi-leads', k.leads);
-      const status = k.updatedAt ? `${KPI_MSG_UPDATED} ${new Date(k.updatedAt).toLocaleString('pt-BR')}` : KPI_MSG_UPDATED;
+      const statusBase = k.updatedAt ? `${KPI_MSG_UPDATED} ${new Date(k.updatedAt).toLocaleString('pt-BR')}` : KPI_MSG_UPDATED;
+      const status = KPI_URL ? statusBase : `${KPI_MSG_DB_FALLBACK} · ${statusBase}`;
       setKpiStatus(status);
       kpiLoaded = true;
     } catch (e: any) {
@@ -177,7 +192,7 @@ const COMMS_KPI_API_URL = import.meta.env.PUBLIC_COMMS_KPI_API_URL || '';
   }
 
   async function boot() {
-    const sb = (window as any).navGetSb?.();
+    sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(boot, 200); return; }
 
     const refreshBtn = document.getElementById('comms-kpi-refresh') as HTMLButtonElement | null;

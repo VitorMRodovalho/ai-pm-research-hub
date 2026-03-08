@@ -492,6 +492,7 @@ const enUS: Record<string, string> = {
   'admin.comms.kpiLoading': 'Loading KPIs...',
   'admin.comms.kpiError': 'Error loading KPIs:',
   'admin.comms.kpiUpdatedAt': 'Last update:',
+  'admin.comms.kpiDbFallback': 'Source: internal database',
   'admin.comms.kpiAudience': 'Audience',
   'admin.comms.kpiReach': 'Reach',
   'admin.comms.kpiEngagement': 'Engagement',

@@ -492,6 +492,7 @@ const ptBR: Record<string, string> = {
   'admin.comms.kpiLoading': 'Carregando KPIs...',
   'admin.comms.kpiError': 'Erro ao carregar KPIs:',
   'admin.comms.kpiUpdatedAt': 'Última atualização:',
+  'admin.comms.kpiDbFallback': 'Fonte: banco interno',
   'admin.comms.kpiAudience': 'Audiência',
   'admin.comms.kpiReach': 'Alcance',
   'admin.comms.kpiEngagement': 'Engajamento',
