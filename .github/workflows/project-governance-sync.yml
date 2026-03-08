@@ -27,16 +27,21 @@ jobs:
       PROJECT_NUMBER: "1"
     steps:
       - name: Validate token
+        id: token_gate
         run: |
           if [ -z "${GH_TOKEN:-}" ]; then
-            echo "Missing secret PROJECT_AUTOMATION_TOKEN (requires project scope)."
-            exit 1
+            echo "Missing secret PROJECT_AUTOMATION_TOKEN (requires project scope). Skipping sync."
+            echo "has_token=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          echo "has_token=true" >> "$GITHUB_OUTPUT"
 
       - name: Checkout
+        if: steps.token_gate.outputs.has_token == 'true'
         uses: actions/checkout@v4
 
       - name: Resolve commit metadata
+        if: steps.token_gate.outputs.has_token == 'true'
         id: meta
         run: |
           SHA_INPUT='${{ github.event.inputs.commit_sha }}'
@@ -67,6 +72,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Sync Project metadata
+        if: steps.token_gate.outputs.has_token == 'true'
         env:
           COMMIT_SHA: ${{ steps.meta.outputs.commit_sha }}
           COMMIT_MESSAGE: ${{ steps.meta.outputs.commit_message }}
