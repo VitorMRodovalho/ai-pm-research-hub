@@ -1,5 +1,18 @@
 # Governance Changelog
 
+## 2026-03-08 — Frontend data-contract governance for critical sections
+
+### Decision
+Critical homepage sections (starting with Tribes) must not render directly from key-based raw objects when translated/resolved objects are required by the UI contract.
+
+### Rule
+- SSR must render from resolved view-models (example: `resolveTribes(lang)`), not from untranslated key maps.
+- Inline browser scripts must be plain JavaScript only (no TypeScript syntax in delivered HTML payload).
+- Critical counters/content must have SSR fallback so the first paint is not dependent on client JS execution.
+
+### Why
+This prevents repeated regressions where one patch restores one behavior and breaks adjacent behaviors (empty deliverables, missing interactions, stale counters).
+
 ## 2026-03-08 — Holistic debug protocol for critical journeys
 
 ### Decision
