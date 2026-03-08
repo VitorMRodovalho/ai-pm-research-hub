@@ -6,6 +6,18 @@ Checklist único para concluir a configuração e deploy dos itens pendentes.
 
 ---
 
+## 0. Code scanning (CodeQL) — habilitar no GitHub [#59](https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/59)
+
+O workflow `codeql-analysis.yml` roda em todo push/PR. Enquanto Code scanning não estiver habilitado, os resultados não são exibidos na aba Security, mas a análise executa.
+
+**Para habilitar alertas na aba Security:**
+1. GitHub → Repo → **Settings** → **Security** → **Code security and analysis**
+2. Em **Code scanning**, clicar em **Set up** ou **Enable**
+3. Escolher **Advanced** e associar ao workflow existente
+4. Depois, em `.github/workflows/codeql-analysis.yml`, remover `upload: false` do step `Perform CodeQL Analysis`
+
+---
+
 ## 1. HF5 — Data Patch (ação manual em produção) — [#56](https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/56)
 
 **Artefatos**: `docs/migrations/hf5-apply-data-patch.sql`, `docs/migrations/HF5_PRODUCTION_RUNBOOK.md`
