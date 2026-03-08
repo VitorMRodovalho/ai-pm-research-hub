@@ -433,15 +433,14 @@ import Toast from '../components/ui/Toast.astro';
           ${secondaryEmails.map((e: string, i: number) => `
             <div class="flex items-center gap-2 py-2 px-3 bg-slate-50/50 rounded-lg mb-2">
               <span class="text-sm flex-1">${e}</span>
-              <button onclick="removeSecondaryEmail(${i})"
-                class="text-[.7rem] font-semibold text-red-500 hover:text-red-700 cursor-pointer bg-transparent border-0 px-2 py-0.5 rounded hover:bg-red-50 transition-all">✕ Remover</button>
+              <button type="button" data-secondary-index="${i}" class="btn-remove-secondary-email text-[.7rem] font-semibold text-red-500 hover:text-red-700 cursor-pointer bg-transparent border-0 px-2 py-0.5 rounded hover:bg-red-50 transition-all">✕ Remover</button>
             </div>
           `).join('')}
         </div>
         <div class="flex gap-2 mt-2">
           <input type="email" id="new-secondary-email" placeholder="outro@email.com"
             class="flex-1 px-3 py-2 border-[1.5px] border-slate-200 rounded-lg text-sm focus:outline-none focus:border-teal">
-          <button onclick="addSecondaryEmail()"
+          <button type="button" id="btn-add-secondary-email"
             class="px-3 py-2 bg-teal text-white rounded-lg text-sm font-semibold cursor-pointer border-0 hover:opacity-90 transition-all flex-shrink-0">
             + Adicionar
           </button>
@@ -481,7 +480,7 @@ import Toast from '../components/ui/Toast.astro';
               class="w-full px-3 py-2 border-[1.5px] border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
             <div class="flex items-center gap-2 mt-1">
               <p class="text-[.68rem] text-slate-400 flex-1">Usado para validar certificações PMI automaticamente. Opcional.</p>
-              <button id="btn-credly-verify" onclick="verifyCredly()"
+              <button type="button" id="btn-credly-verify"
                 class="px-3 py-1.5 bg-teal text-white rounded-lg text-[.7rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all flex-shrink-0">
                 🔍 Verificar Credly
               </button>
@@ -497,6 +496,7 @@ import Toast from '../components/ui/Toast.astro';
       </div>
     `;
     bindCredlyField();
+    bindProfileActions();
   }
 
   function bindCredlyField() {
@@ -516,6 +516,32 @@ import Toast from '../components/ui/Toast.astro';
 
     input.addEventListener('blur', normalize);
     input.addEventListener('paste', () => setTimeout(normalize, 0));
+  }
+
+  function bindProfileActions() {
+    const addBtn = document.getElementById('btn-add-secondary-email');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        void (window as any).addSecondaryEmail?.();
+      });
+    }
+
+    const verifyBtn = document.getElementById('btn-credly-verify');
+    if (verifyBtn) {
+      verifyBtn.addEventListener('click', () => {
+        void (window as any).verifyCredly?.();
+      });
+    }
+
+    document.querySelectorAll('.btn-remove-secondary-email').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const idxRaw = (btn as HTMLElement).getAttribute('data-secondary-index');
+        const idx = Number(idxRaw);
+        if (Number.isInteger(idx) && idx >= 0) {
+          void (window as any).removeSecondaryEmail?.(idx);
+        }
+      });
+    });
   }
 
   // ── Toggle password field visibility ──
