@@ -62,7 +62,7 @@
 | S-REP1 | Exportação VRMS (PMI) | High | Completed (2026-03-08) | Entrega consolidada: filtros opcionais (capítulo/tribo), presets rápidos, persistência automática (`localStorage`), paridade com Leadership Snapshot, indicador de filtros ativos e ação de limpar filtros nas duas superfícies. |
 | S-ADM2 | Leadership Training Progress Snapshot | High | Partial (v2 delivered 2026-03-08) | `/admin` reports snapshot now has filters (capítulo/tribo/período), CSV export, and i18n keys for PT/EN/ES, in addition to completion/blocking and recent Credly insights. |
 | S-DB1 | Credly/Gamification Data Sanitation | High | Completed (2026-03-08) | SQL pack executed in production (`audit -> sanitize -> audit`) with SFPC hotfix applied, data reconciled, and DB hardening enabled via partial unique index `uq_gp_credly_member_reason_ci` to prevent future Credly duplicates. |
-| S10 | Credly Auto Sync | Medium | Planned | Edge Function or cron to auto sync badges weekly. |
+| S10 | Credly Auto Sync | Medium | Partial (v1 delivered 2026-03-08) | Weekly GitHub Actions scheduler added (`.github/workflows/credly-auto-sync.yml`) plus cron-secret mode in `sync-credly-all`. Pending only production secret provisioning and function deploy confirmation. |
 | S-AN1 | Announcements System | Medium | Planned | Global banners and notifications at top of site. |
 | S-DR1 | Disaster Recovery Doc | Low | Planned | POP de restauração de backup e PITR. |
 | S-COM6 | Dashboard Central de Mídia | Medium | Planned | Looker Studio dashboard using YouTube native connector and LinkedIn/Instagram via Sheets automation, embedded in admin communications route. |

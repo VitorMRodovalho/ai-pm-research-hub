@@ -1,5 +1,29 @@
 # Release Log
 
+## 2026-03-08 — Wave 4 Sprint Increment (S10 Credly Auto Sync v1)
+
+### Scope
+Automate recurring bulk Credly synchronization to reduce manual admin operations.
+
+### Delivered
+- `sync-credly-all` now supports secure cron execution mode:
+  - validates `x-cron-secret` against `SYNC_CREDLY_CRON_SECRET`
+  - preserves existing superadmin/manual flow when cron secret is absent
+  - reports `execution_mode` and `triggered_by` in response payload
+- added weekly scheduler workflow:
+  - `.github/workflows/credly-auto-sync.yml`
+  - triggers every Sunday (`05:00 UTC`) and supports manual dispatch
+  - fails fast on missing secrets or non-success HTTP/function response
+- added setup runbook:
+  - `docs/CREDLY_AUTO_SYNC_SETUP.md`
+  - includes required Supabase/GitHub secrets and verification curl
+
+### Follow up still required
+- deploy updated `sync-credly-all` function to production
+- configure production secrets:
+  - Edge Function env: `SYNC_CREDLY_CRON_SECRET`
+  - GitHub Actions secrets: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SYNC_CREDLY_CRON_SECRET`
+
 ## 2026-03-08 — Wave 4 Sprint Increment (S-DB1 Credly/Gamification Data Sanitation Pack v1)
 
 ### Scope
