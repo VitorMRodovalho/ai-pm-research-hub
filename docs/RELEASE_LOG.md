@@ -1,4 +1,24 @@
 # Release Log
+## 2026-03-08 — Wave 4 Sprint Increment (S-COM10 Publish Log Filters & Export v1)
+
+### Scope
+Improve comms publish operations with faster audit navigation and pending visibility by channel.
+
+### Delivered
+- `/admin/comms/data-entry` publish workflow enhancements:
+  - pending summary by `metric_date + source`
+  - pending indicators grouped by channel
+  - publish log filters by `source`, `from`, `to`
+  - CSV export for filtered publish log rows
+- i18n parity updates (PT/EN/ES) for new publish-log controls:
+  - source/date filters
+  - apply filters action
+  - export CSV action
+
+### Validation captured
+- local `npm run build` passed
+- local `npm test` passed
+
 ## 2026-03-08 — Wave 4 Sprint Increment (S-COM9 Publish Workflow & Audit v1)
 
 ### Scope

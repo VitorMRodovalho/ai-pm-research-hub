@@ -151,30 +151,67 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
             <select id="publish-date" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem] bg-white"></select>
           </div>
           <div class="flex items-end gap-2">
-            <button id="btn-publish-refresh" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-[.78rem] font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-all">
-              {t('admin.comms.entry.publishRefresh', lang)}
-            </button>
-            <button id="btn-publish-run" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
-              {t('admin.comms.entry.publishRun', lang)}
-            </button>
+            <button id="btn-publish-refresh" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-[.78rem] font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-all">{t('admin.comms.entry.publishRefresh', lang)}</button>
+            <button id="btn-publish-run" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">{t('admin.comms.entry.publishRun', lang)}</button>
           </div>
         </div>
         <div id="publish-status" class="text-[.72rem] text-slate-500 mb-3"></div>
-        <div class="overflow-x-auto border border-slate-200 rounded-lg">
-          <table class="w-full text-[.72rem]">
-            <thead class="bg-slate-50">
-              <tr>
-                <th class="px-3 py-2 text-left font-semibold text-slate-500">{t('admin.comms.entry.publishDate', lang)}</th>
-                <th class="px-3 py-2 text-left font-semibold text-slate-500">{t('admin.comms.entry.source', lang)}</th>
-                <th class="px-3 py-2 text-right font-semibold text-slate-500">{t('admin.comms.entry.publishPendingRows', lang)}</th>
-              </tr>
-            </thead>
-            <tbody id="publish-pending-body">
-              <tr><td colspan="3" class="px-3 py-5 text-center text-slate-400">{t('common.loading', lang)}</td></tr>
-            </tbody>
-          </table>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
+          <div class="overflow-x-auto border border-slate-200 rounded-lg">
+            <table class="w-full text-[.72rem]">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-500">{t('admin.comms.entry.publishDate', lang)}</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-500">{t('admin.comms.entry.source', lang)}</th>
+                  <th class="px-3 py-2 text-right font-semibold text-slate-500">{t('admin.comms.entry.publishPendingRows', lang)}</th>
+                </tr>
+              </thead>
+              <tbody id="publish-pending-body">
+                <tr><td colspan="3" class="px-3 py-5 text-center text-slate-400">{t('common.loading', lang)}</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="overflow-x-auto border border-slate-200 rounded-lg">
+            <table class="w-full text-[.72rem]">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-500">{t('admin.comms.entry.channel', lang)}</th>
+                  <th class="px-3 py-2 text-right font-semibold text-slate-500">{t('admin.comms.entry.publishPendingRows', lang)}</th>
+                </tr>
+              </thead>
+              <tbody id="publish-pending-channel-body">
+                <tr><td colspan="2" class="px-3 py-5 text-center text-slate-400">{t('common.loading', lang)}</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-        <div class="mt-3 overflow-x-auto border border-slate-200 rounded-lg">
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-2">
+          <div>
+            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.comms.entry.publishLogSourceFilter', lang)}</label>
+            <select id="log-filter-source" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem] bg-white">
+              <option value="all">all</option>
+              <option value="manual_csv">manual_csv</option>
+              <option value="manual_admin">manual_admin</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.comms.entry.publishLogFrom', lang)}</label>
+            <input type="date" id="log-filter-from" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]" />
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.comms.entry.publishLogTo', lang)}</label>
+            <input type="date" id="log-filter-to" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]" />
+          </div>
+          <div class="flex items-end gap-2">
+            <button id="btn-log-apply" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-[.78rem] font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-all">{t('admin.comms.entry.publishLogApply', lang)}</button>
+            <button id="btn-log-export" class="px-4 py-2 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">{t('admin.comms.entry.publishLogExport', lang)}</button>
+          </div>
+        </div>
+        <div id="publish-log-summary" class="text-[.72rem] text-slate-500 mb-2"></div>
+
+        <div class="overflow-x-auto border border-slate-200 rounded-lg">
           <table class="w-full text-[.72rem]">
             <thead class="bg-slate-50">
               <tr>
@@ -253,6 +290,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   let csvValidRows: any[] = [];
   let csvInvalidRows: string[] = [];
   let pendingPublishRows: any[] = [];
+  let pendingByChannelRows: any[] = [];
+  let publishLogRows: any[] = [];
+  let filteredLogRows: any[] = [];
 
   function allowComms(m: any): boolean {
     return canAccessAdminRoute(m, 'admin_analytics');
@@ -445,20 +485,37 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       </tr>
     `).join('');
 
-    const currentSource = (document.getElementById('publish-source') as HTMLSelectElement | null)?.value || 'manual_csv';
+    const currentSource = readValue('publish-source') || 'manual_csv';
     const filtered = rows.filter((r) => r.source === currentSource);
-    dateSelect.innerHTML = filtered
-      .map((r) => `<option value="${r.metric_date}">${r.metric_date}</option>`)
-      .join('');
+    dateSelect.innerHTML = filtered.map((r) => `<option value="${r.metric_date}">${r.metric_date}</option>`).join('');
+  }
+
+  function renderPendingByChannel(rows: any[]) {
+    const body = document.getElementById('publish-pending-channel-body');
+    if (!body) return;
+    if (!rows.length) {
+      body.innerHTML = `<tr><td colspan="2" class="px-3 py-5 text-center text-slate-400">${MSG.publishNothing}</td></tr>`;
+      return;
+    }
+    body.innerHTML = rows.map((r) => `
+      <tr class="border-t border-slate-100">
+        <td class="px-3 py-2 text-slate-700">${r.channel}</td>
+        <td class="px-3 py-2 text-right text-slate-700">${Number(r.rows_count || 0).toLocaleString('pt-BR')}</td>
+      </tr>
+    `).join('');
   }
 
   function renderPublishLog(rows: any[]) {
     const body = document.getElementById('publish-log-body');
-    if (!body) return;
+    const summary = document.getElementById('publish-log-summary');
+    if (!body || !summary) return;
     if (!rows.length) {
       body.innerHTML = `<tr><td colspan="5" class="px-3 py-5 text-center text-slate-400">${MSG.noRows}</td></tr>`;
+      summary.textContent = '0 logs';
       return;
     }
+
+    summary.textContent = `${rows.length} logs`;
     body.innerHTML = rows.map((r) => {
       const createdAt = r.created_at ? new Date(r.created_at).toLocaleString('pt-BR') : '—';
       return `<tr class="border-t border-slate-100">
@@ -469,6 +526,45 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         <td class="px-3 py-2 text-slate-500">${createdAt}</td>
       </tr>`;
     }).join('');
+  }
+
+  function applyPublishLogFilters() {
+    const source = readValue('log-filter-source') || 'all';
+    const from = readValue('log-filter-from');
+    const to = readValue('log-filter-to');
+
+    filteredLogRows = publishLogRows.filter((r) => {
+      if (source !== 'all' && r.source !== source) return false;
+      const d = String(r.target_date || '');
+      if (from && d < from) return false;
+      if (to && d > to) return false;
+      return true;
+    });
+    renderPublishLog(filteredLogRows);
+  }
+
+  function exportPublishLogCsv() {
+    const rows = filteredLogRows.length ? filteredLogRows : publishLogRows;
+    if (!rows.length) return;
+
+    const header = ['batch_id', 'source', 'target_date', 'published_rows', 'created_at'];
+    const lines = [header.join(',')];
+    for (const r of rows) {
+      lines.push([
+        String(r.batch_id || ''),
+        String(r.source || ''),
+        String(r.target_date || ''),
+        String(r.published_rows || 0),
+        String(r.created_at || ''),
+      ].map((v) => `"${v.replace(/"/g, '""')}"`).join(','));
+    }
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `comms_publish_log_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   async function loadCurrentSelection() {
@@ -519,31 +615,41 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
   async function refreshPublishData() {
     if (!sb) return;
+
     try {
       const { data: pendingRows, error: pendingError } = await sb
         .from('comms_metrics_daily')
-        .select('metric_date, source')
+        .select('metric_date, source, channel')
         .is('published_at', null)
         .in('source', ['manual_csv', 'manual_admin'])
         .order('metric_date', { ascending: false })
-        .limit(300);
+        .limit(500);
       if (pendingError) throw pendingError;
 
       const grouped = new Map<string, { metric_date: string; source: string; rows_count: number }>();
+      const groupedChannel = new Map<string, { channel: string; rows_count: number }>();
+
       (pendingRows || []).forEach((row: any) => {
         const key = `${row.metric_date}::${row.source}`;
         const prev = grouped.get(key);
-        if (prev) {
-          prev.rows_count += 1;
-        } else {
-          grouped.set(key, { metric_date: String(row.metric_date || ''), source: String(row.source || ''), rows_count: 1 });
-        }
+        if (prev) prev.rows_count += 1;
+        else grouped.set(key, { metric_date: String(row.metric_date || ''), source: String(row.source || ''), rows_count: 1 });
+
+        const ckey = String(row.channel || 'other');
+        const cprev = groupedChannel.get(ckey);
+        if (cprev) cprev.rows_count += 1;
+        else groupedChannel.set(ckey, { channel: ckey, rows_count: 1 });
       });
+
       pendingPublishRows = Array.from(grouped.values()).sort((a, b) => (a.metric_date < b.metric_date ? 1 : -1));
+      pendingByChannelRows = Array.from(groupedChannel.values()).sort((a, b) => b.rows_count - a.rows_count);
       renderPendingPublishTable(pendingPublishRows);
+      renderPendingByChannel(pendingByChannelRows);
     } catch {
       pendingPublishRows = [];
+      pendingByChannelRows = [];
       renderPendingPublishTable([]);
+      renderPendingByChannel([]);
     }
 
     try {
@@ -551,10 +657,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         .from('comms_metrics_publish_log')
         .select('batch_id, source, target_date, published_rows, created_at')
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(100);
       if (logError) throw logError;
-      renderPublishLog(logRows || []);
+      publishLogRows = logRows || [];
+      filteredLogRows = publishLogRows;
+      applyPublishLogFilters();
     } catch {
+      publishLogRows = [];
+      filteredLogRows = [];
       renderPublishLog([]);
     }
   }
@@ -591,6 +701,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       (window as any).toast?.(MSG.saved, 'success');
       setStatus(MSG.saved, false);
       await refreshRecentRows();
+      await refreshPublishData();
     } catch (e: any) {
       setStatus(`${MSG.saveError} ${e?.message || ''}`.trim(), true);
     }
@@ -618,6 +729,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       setStatus(MSG.deleted, false);
       (window as any).toast?.(MSG.deleted, 'success');
       await refreshRecentRows();
+      await refreshPublishData();
     } catch (e: any) {
       setStatus(`${MSG.deleteError} ${e?.message || ''}`.trim(), true);
     }
@@ -671,6 +783,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       setCsvStatus(MSG.csvPublishSuccess, false);
       (window as any).toast?.(MSG.csvPublishSuccess, 'success');
       await refreshRecentRows();
+      await refreshPublishData();
     } catch (e: any) {
       setCsvStatus(`${MSG.csvPublishError} ${e?.message || ''}`.trim(), true);
     }
@@ -678,10 +791,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
   async function publishSelectedBatch() {
     if (!sb) return;
-    const sourceEl = document.getElementById('publish-source') as HTMLSelectElement | null;
-    const dateEl = document.getElementById('publish-date') as HTMLSelectElement | null;
-    const source = sourceEl?.value || 'manual_csv';
-    const metricDate = dateEl?.value || '';
+    const source = readValue('publish-source') || 'manual_csv';
+    const metricDate = readValue('publish-date');
     if (!metricDate) {
       setPublishStatus(MSG.publishNoDate, true);
       return;
@@ -715,6 +826,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const publishRefreshBtn = document.getElementById('btn-publish-refresh');
     const publishRunBtn = document.getElementById('btn-publish-run');
     const publishSourceEl = document.getElementById('publish-source') as HTMLSelectElement | null;
+    const logApplyBtn = document.getElementById('btn-log-apply');
+    const logExportBtn = document.getElementById('btn-log-export');
 
     if (todayBtn && !todayBtn.dataset.bound) {
       todayBtn.dataset.bound = '1';
@@ -761,6 +874,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       publishSourceEl.addEventListener('change', () => {
         renderPendingPublishTable(pendingPublishRows);
       });
+    }
+    if (logApplyBtn && !logApplyBtn.dataset.bound) {
+      logApplyBtn.dataset.bound = '1';
+      logApplyBtn.addEventListener('click', () => applyPublishLogFilters());
+    }
+    if (logExportBtn && !logExportBtn.dataset.bound) {
+      logExportBtn.dataset.bound = '1';
+      logExportBtn.addEventListener('click', () => exportPublishLogCsv());
     }
   }
 

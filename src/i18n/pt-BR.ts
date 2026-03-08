@@ -547,6 +547,11 @@ const ptBR: Record<string, string> = {
   'admin.comms.entry.publishSuccess': 'Lote publicado com sucesso',
   'admin.comms.entry.publishError': 'Erro ao publicar lote:',
   'admin.comms.entry.publishNothing': 'Sem pendências para publicação.',
+  'admin.comms.entry.publishLogSourceFilter': 'Fonte',
+  'admin.comms.entry.publishLogFrom': 'De',
+  'admin.comms.entry.publishLogTo': 'Até',
+  'admin.comms.entry.publishLogApply': 'Aplicar filtros',
+  'admin.comms.entry.publishLogExport': 'Exportar CSV',
   'artifacts.tribe': 'Tribo',
   'artifacts.author': 'Autor',
 

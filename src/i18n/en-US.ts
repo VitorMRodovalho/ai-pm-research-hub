@@ -547,6 +547,11 @@ const enUS: Record<string, string> = {
   'admin.comms.entry.publishSuccess': 'Batch published successfully',
   'admin.comms.entry.publishError': 'Error publishing batch:',
   'admin.comms.entry.publishNothing': 'No pending rows to publish.',
+  'admin.comms.entry.publishLogSourceFilter': 'Source',
+  'admin.comms.entry.publishLogFrom': 'From',
+  'admin.comms.entry.publishLogTo': 'To',
+  'admin.comms.entry.publishLogApply': 'Apply filters',
+  'admin.comms.entry.publishLogExport': 'Export CSV',
   'artifacts.tribe': 'Stream',
   'artifacts.author': 'Author',
 
