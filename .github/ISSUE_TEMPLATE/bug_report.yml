@@ -1,0 +1,75 @@
+name: Bug Report
+description: Report a defect or regression.
+title: "[BUG] "
+labels: ["type:bug", "status:triage"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What is broken?
+      placeholder: Describe the defect and expected behavior.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Web Public Routes
+        - Admin
+        - Gamification
+        - Profile
+        - Attendance
+        - Supabase Functions
+        - CI/CD
+        - Documentation
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - Critical
+        - High
+        - Medium
+        - Low
+    validations:
+      required: true
+
+  - type: input
+    id: sprint_wave
+    attributes:
+      label: Sprint/Wave Link
+      description: Reference from backlog-wave-planning-updated.md (example S-HF2, S-RM3).
+      placeholder: S-HF2
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction Steps
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Logs, screenshots, route, browser, device.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Validation
+      options:
+        - label: I confirmed this is reproducible in current main.
+          required: true
+        - label: I linked this issue to a sprint/wave item.
+          required: true
