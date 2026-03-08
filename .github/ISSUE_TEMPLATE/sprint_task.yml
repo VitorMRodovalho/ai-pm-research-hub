@@ -1,0 +1,81 @@
+name: Sprint Task
+description: Work item tied to sprint/wave execution.
+title: "[TASK] "
+labels: ["type:task", "status:ready"]
+body:
+  - type: input
+    id: sprint_wave
+    attributes:
+      label: Sprint/Wave ID
+      description: Use IDs from backlog-wave-planning-updated.md.
+      placeholder: S-HF1
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - Critical
+        - High
+        - Medium
+        - Low
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Work Type
+      options:
+        - Hotfix
+        - Feature
+        - Technical Debt
+        - Documentation
+        - Governance
+    validations:
+      required: true
+
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      placeholder: What outcome must be true when this task is complete?
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      placeholder: Routes, files, functions, and constraints.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+        - [ ] Criterion 3
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies/Blockers
+      description: Link issues, PRs, or external dependencies.
+
+  - type: checkboxes
+    id: done_checks
+    attributes:
+      label: Done Definition
+      options:
+        - label: CI pipeline passes for this change.
+          required: true
+        - label: Release log entry updated when user-visible behavior changed.
+          required: true

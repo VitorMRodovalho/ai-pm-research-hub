@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Governance and Roadmap
+    url: https://github.com/vitormrodovalho/ai-pm-research-hub/blob/main/backlog-wave-planning-updated.md
+    about: Check sprint waves, hotfix queue, and planning before opening new issues.

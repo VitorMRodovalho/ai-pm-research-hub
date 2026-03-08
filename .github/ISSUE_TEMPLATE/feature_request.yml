@@ -1,0 +1,41 @@
+name: Feature Request
+description: Propose a product/engineering enhancement.
+title: "[FEAT] "
+labels: ["type:feature", "status:triage"]
+body:
+  - type: input
+    id: sprint_wave
+    attributes:
+      label: Sprint/Wave Link
+      placeholder: S-PA1
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      placeholder: What user or operator problem are we solving?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      placeholder: Describe the solution and expected impact.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+    validations:
+      required: true
