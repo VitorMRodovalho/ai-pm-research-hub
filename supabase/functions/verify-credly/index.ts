@@ -85,6 +85,69 @@ async function fetchBadges(username: string): Promise<CredlyBadge[]> {
   return data.data || data || []
 }
 
+async function syncTrailProgressFromCredly(
+  sb: ReturnType<typeof createClient>,
+  memberId: string,
+  pmiTrail: { code: string; issued_at: string }[],
+) {
+  if (!pmiTrail.length) return { synced: 0, missingCourses: [] as string[] }
+
+  const trailCodes = Array.from(new Set(pmiTrail.map((t) => t.code).filter(Boolean)))
+  const { data: courses, error: coursesError } = await sb
+    .from('courses')
+    .select('id, code')
+    .in('code', trailCodes)
+
+  if (coursesError) throw coursesError
+
+  const codeToCourseId = new Map<string, string>()
+  for (const c of courses || []) {
+    if (c?.code && c?.id) codeToCourseId.set(String(c.code), String(c.id))
+  }
+
+  let synced = 0
+  const missingCourses: string[] = []
+
+  for (const t of pmiTrail) {
+    const courseId = codeToCourseId.get(t.code)
+    if (!courseId) {
+      missingCourses.push(t.code)
+      continue
+    }
+
+    const { data: existing, error: existingError } = await sb
+      .from('course_progress')
+      .select('id, status')
+      .eq('member_id', memberId)
+      .eq('course_id', courseId)
+      .maybeSingle()
+
+    if (existingError) throw existingError
+
+    if (!existing) {
+      const { error: insertError } = await sb.from('course_progress').insert({
+        member_id: memberId,
+        course_id: courseId,
+        status: 'completed',
+      })
+      if (insertError) throw insertError
+      synced++
+      continue
+    }
+
+    if (existing.status !== 'completed') {
+      const { error: updateError } = await sb
+        .from('course_progress')
+        .update({ status: 'completed' })
+        .eq('id', existing.id)
+      if (updateError) throw updateError
+      synced++
+    }
+  }
+
+  return { synced, missingCourses }
+}
+
 // ── Tier classification ──
 // Returns: { tier: 1|2|3|4, category: string, points: number }
 function classifyBadge(name: string, slug: string): { tier: number; category: string; points: number } {
@@ -236,6 +299,34 @@ Deno.serve(async (req) => {
           .eq('category', 'course')
           .like('reason', `Curso: ${trail.code}%`)
       }
+
+      // Keep trail source-of-truth aligned with Credly verification.
+      // This updates course_progress used by /#trail and other UX panels.
+      const trailSync = await syncTrailProgressFromCredly(
+        sb,
+        member_id,
+        result.pmiTrail.map((t) => ({ code: t.code, issued_at: t.issued_at })),
+      )
+
+      return new Response(JSON.stringify({
+        success: true,
+        credly_username: username,
+        total_badges: result.totalBadges,
+        pmi_trail: result.pmiTrail,
+        pmi_trail_count: result.pmiTrailCount,
+        pmi_trail_synced: trailSync.synced,
+        pmi_trail_missing_courses: trailSync.missingCourses,
+        cpmai: result.cpmai,
+        has_cpmai: result.hasCPMAI,
+        all_matched: result.all.filter(b => b.tier <= 3).length,
+        total_points: result.totalPoints,
+        tiers: {
+          master: result.tier1Count,
+          specialization: result.tier2Count,
+          trail_knowledge: result.tier3Count,
+          other: result.tier4Count,
+        },
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     return new Response(JSON.stringify({

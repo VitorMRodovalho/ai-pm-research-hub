@@ -552,10 +552,12 @@ import Toast from '../components/ui/Toast.astro';
       if (data?.success) {
         const matched = data.all_matched || 0;
         const total = data.total_badges || 0;
+        const trailDetected = data.pmi_trail_count || 0;
+        const trailSynced = data.pmi_trail_synced || 0;
         const msg = data.has_cpmai
-          ? `🎉 CPMAI verificada! ${matched} badge(s) encontrada(s) de ${total} no Credly.`
+          ? `🎉 CPMAI verificada! ${matched} badge(s) encontrada(s) de ${total} no Credly. Trilha: ${trailDetected} detectadas, ${trailSynced} sincronizadas.`
           : matched > 0
-            ? `✅ ${matched} badge(s) verificada(s) de ${total} no Credly.`
+            ? `✅ ${matched} badge(s) verificada(s) de ${total} no Credly. Trilha: ${trailDetected} detectadas, ${trailSynced} sincronizadas.`
             : `ℹ️ ${total} badge(s) encontrada(s) no Credly, nenhuma da trilha PMI-AI.`;
         (window as any).toast?.(msg, matched > 0 ? 'success' : 'info');
         const { data: updated } = await sb.rpc('get_member_by_auth');
