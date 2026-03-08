@@ -58,7 +58,7 @@
 
 | ID | Feature | Priority | Status | Description |
 |----|---------|----------|--------|-------------|
-| S-RM4 | Admin Tiers (ACL) | High | Partial (v3 pack ready 2026-03-08) | Frontend ACL hardened (routes + in-page actions) and backend parity pack added (`acl-tier-parity-v1.sql` + checklist) to align RLS/RPC authorization with the same tier matrix in staging/production rollout. |
+| S-RM4 | Admin Tiers (ACL) | High | Completed (2026-03-08) | Frontend ACL hardened and backend parity rolled out in production (`current_member_tier_rank` + `has_min_tier` + policy alignment for announcements/member_cycle_history), with grants hardened and duplicate policy cleanup applied. |
 | S-REP1 | Exportação VRMS (PMI) | High | Completed (2026-03-08) | Entrega consolidada: filtros opcionais (capítulo/tribo), presets rápidos, persistência automática (`localStorage`), paridade com Leadership Snapshot, indicador de filtros ativos e ação de limpar filtros nas duas superfícies. |
 | S-ADM2 | Leadership Training Progress Snapshot | High | Partial (v2 delivered 2026-03-08) | `/admin` reports snapshot now has filters (capítulo/tribo/período), CSV export, and i18n keys for PT/EN/ES, in addition to completion/blocking and recent Credly insights. |
 | S-DB1 | Credly/Gamification Data Sanitation | High | Completed (2026-03-08) | SQL pack executed in production (`audit -> sanitize -> audit`) with SFPC hotfix applied, data reconciled, and DB hardening enabled via partial unique index `uq_gp_credly_member_reason_ci` to prevent future Credly duplicates. |
