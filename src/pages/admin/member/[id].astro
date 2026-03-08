@@ -175,7 +175,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           ${!isNew && m?.current_cycle_active ? `<button type="button" class="btn-inactivate-member text-xs text-crimson font-semibold hover:underline cursor-pointer border-0 bg-transparent" data-member-id="${escapeAttr(m.id)}" data-member-name="${escapeAttr(m.name||'')}">🔴 Inativar membro</button>` : ''}
           ${!isNew && !m?.current_cycle_active ? `<button type="button" class="btn-reactivate-member text-xs text-emerald-600 font-semibold hover:underline cursor-pointer border-0 bg-transparent" data-member-id="${escapeAttr(m.id)}">🟢 Reativar membro</button>` : ''}
         </div>
-        <button type="button" onclick="saveMember()" class="px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all cursor-pointer border-0">💾 Salvar</button>
+        <button type="button" data-action="save-member" class="px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all cursor-pointer border-0">💾 Salvar</button>
       </div>`;
   }
 
@@ -275,6 +275,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     (window as any).__adminMemberDelegationBound = true;
     document.addEventListener('click', (e: MouseEvent) => {
       const target = e.target as HTMLElement;
+      const actionEl = target.closest('[data-action]') as HTMLElement | null;
+      if (actionEl) {
+        const action = actionEl.dataset.action;
+        if (action === 'save-member') { saveMember(); return; }
+      }
       const toggleBtn = target.closest('.btn-toggle-role');
       if (toggleBtn) {
         const r = toggleBtn.getAttribute('data-role') || '';

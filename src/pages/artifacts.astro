@@ -9,7 +9,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
     <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
       <h1 class="text-2xl font-extrabold text-navy">📄 Artefatos do Núcleo</h1>
       <button id="btn-submit" class="hidden px-4 py-2 bg-teal text-white rounded-xl font-semibold text-sm cursor-pointer border-0 hover:opacity-90 transition-all"
-              onclick="openSubmitModal()">
+              data-action="open-submit-modal">
         + Submeter Artefato
       </button>
     </div>
@@ -17,11 +17,11 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
     <!-- Tabs -->
     <div class="flex gap-2 mb-6 flex-wrap">
       <button class="art-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white"
-              data-tab="catalog" onclick="switchArtTab(this,'catalog')">📚 Catálogo</button>
+              data-tab="catalog" data-action="switch-tab">📚 Catálogo</button>
       <button class="art-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
-              id="tab-my" data-tab="mine" onclick="switchArtTab(this,'mine')">📝 Meus Artefatos</button>
+              id="tab-my" data-tab="mine" data-action="switch-tab">📝 Meus Artefatos</button>
       <button class="art-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
-              id="tab-review" data-tab="review" onclick="switchArtTab(this,'review')">🔍 Fila de Revisão</button>
+              id="tab-review" data-tab="review" data-action="switch-tab">🔍 Fila de Revisão</button>
     </div>
 
     <!-- Catalog tab -->
@@ -51,7 +51,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
     <div class="bg-white rounded-2xl w-full max-w-[560px] overflow-hidden flex flex-col" style="max-height:85vh">
       <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center flex-shrink-0">
         <h3 class="text-base font-bold text-navy" id="modal-artifact-title">Submeter Artefato</h3>
-        <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" onclick="closeArtModal()">✕</button>
+        <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" data-action="close-art-modal">✕</button>
       </div>
       <div class="p-5 overflow-y-auto flex-1">
         <input type="hidden" id="art-id">
@@ -101,9 +101,9 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
       </div>
       <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2 flex-shrink-0">
         <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer"
-                onclick="closeArtModal()">Cancelar</button>
+                data-action="close-art-modal">Cancelar</button>
         <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer"
-                onclick="saveArtifact()">Salvar</button>
+                data-action="save-artifact">Salvar</button>
       </div>
     </div>
   </div>
@@ -113,7 +113,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
     <div class="bg-white rounded-2xl w-full max-w-[480px] overflow-hidden flex flex-col">
       <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center">
         <h3 class="text-base font-bold text-navy">Revisar Artefato</h3>
-        <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" onclick="closeReviewModal()">✕</button>
+        <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" data-action="close-review-modal">✕</button>
       </div>
       <div class="p-5">
         <input type="hidden" id="rev-id">
@@ -136,9 +136,9 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
       </div>
       <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2">
         <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer"
-                onclick="closeReviewModal()">Cancelar</button>
+                data-action="close-review-modal">Cancelar</button>
         <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer"
-                onclick="submitReview()">Salvar Revisão</button>
+                data-action="submit-review">Salvar Revisão</button>
       </div>
     </div>
   </div>
@@ -190,10 +190,10 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
     title: string,
     message: string,
     ctaText?: string,
-    ctaOnclick?: string
+    ctaAction?: string
   ): string {
-    const cta = ctaText && ctaOnclick
-      ? `<button onclick="${ctaOnclick}" class="mt-4 px-4 py-2 bg-navy text-white rounded-xl text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">${ctaText}</button>`
+    const cta = ctaText && ctaAction
+      ? `<button data-action="${ctaAction}" class="mt-4 px-4 py-2 bg-navy text-white rounded-xl text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">${ctaText}</button>`
       : '';
     return `
       <div class="text-center py-10">
@@ -211,7 +211,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
   }
 
   // ── TABS ──
-  (window as any).switchArtTab = (el: HTMLElement, tab: string) => {
+  function switchArtTab(el: HTMLElement, tab: string) {
     document.querySelectorAll('.art-tab').forEach(t => {
       t.classList.remove('bg-navy', 'text-white', 'border-navy');
       t.classList.add('bg-white', 'text-slate-500', 'border-slate-200');
@@ -224,7 +224,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
     if (tab === 'catalog') loadCatalog();
     if (tab === 'mine') loadMyArtifacts();
     if (tab === 'review') loadReviewQueue();
-  };
+  }
 
   // ── CATALOG (published) ──
   async function loadCatalog() {
@@ -236,8 +236,8 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
       .order('published_at', { ascending: false });
     if (!data?.length) {
       el.innerHTML = MEMBER
-        ? emptyStateHtml('📚', 'Nenhum artefato publicado ainda', 'Os primeiros estão a caminho. Você pode submeter o primeiro agora.', '+ Submeter Artefato', 'openSubmitModal()')
-        : emptyStateHtml('📚', 'Nenhum artefato publicado ainda', 'Faça login para submeter o primeiro artefato do ciclo.', 'Fazer Login', "document.dispatchEvent(new CustomEvent('open-auth'))");
+        ? emptyStateHtml('📚', 'Nenhum artefato publicado ainda', 'Os primeiros estão a caminho. Você pode submeter o primeiro agora.', '+ Submeter Artefato', 'open-submit-modal')
+        : emptyStateHtml('📚', 'Nenhum artefato publicado ainda', 'Faça login para submeter o primeiro artefato do ciclo.', 'Fazer Login', 'open-auth');
       return;
     }
     el.innerHTML = data.map((a: any) => artifactCard(a, false)).join('');
@@ -253,7 +253,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
       .eq('member_id', MEMBER.id)
       .order('created_at', { ascending: false });
     if (!data?.length) {
-      el.innerHTML = emptyStateHtml('📝', 'Você ainda não submeteu artefatos', 'Crie seu primeiro artefato para iniciar seu histórico no Núcleo.', '+ Submeter Artefato', 'openSubmitModal()');
+      el.innerHTML = emptyStateHtml('📝', 'Você ainda não submeteu artefatos', 'Crie seu primeiro artefato para iniciar seu histórico no Núcleo.', '+ Submeter Artefato', 'open-submit-modal');
       return;
     }
     el.innerHTML = data.map((a: any) => artifactCard(a, true)).join('');
@@ -310,7 +310,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
   }
 
   // ── SUBMIT / EDIT MODAL ──
-  (window as any).openSubmitModal = () => {
+  function openSubmitModal() {
     (document.getElementById('art-id') as HTMLInputElement).value = '';
     (document.getElementById('art-title') as HTMLInputElement).value = '';
     (document.getElementById('art-type') as HTMLSelectElement).value = 'article';
@@ -321,9 +321,9 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
     const modal = document.getElementById('modal-artifact')!;
     modal.classList.remove('hidden');
     modal.classList.add('flex');
-  };
+  }
 
-  (window as any).editArtifact = (a: any) => {
+  function editArtifact(a: any) {
     (document.getElementById('art-id') as HTMLInputElement).value = a.id;
     (document.getElementById('art-title') as HTMLInputElement).value = a.title || '';
     (document.getElementById('art-type') as HTMLSelectElement).value = a.type || 'article';
@@ -334,35 +334,53 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
     const modal = document.getElementById('modal-artifact')!;
     modal.classList.remove('hidden');
     modal.classList.add('flex');
-  };
+  }
 
-  (window as any).closeArtModal = () => {
+  function closeArtModal() {
     const modal = document.getElementById('modal-artifact')!;
     modal.classList.add('hidden');
     modal.classList.remove('flex');
-  };
+  }
 
   if (!(window as any).__artifactsDelegationBound) {
     (window as any).__artifactsDelegationBound = true;
     document.addEventListener('click', (e: MouseEvent) => {
       const target = e.target as HTMLElement;
+      const actionEl = target.closest('[data-action]') as HTMLElement | null;
+      if (actionEl) {
+        const action = actionEl.dataset.action;
+        if (action === 'open-submit-modal') { openSubmitModal(); return; }
+        if (action === 'switch-tab') {
+          const tab = actionEl.dataset.tab;
+          if (tab) switchArtTab(actionEl, tab);
+          return;
+        }
+        if (action === 'close-art-modal') { closeArtModal(); return; }
+        if (action === 'save-artifact') { saveArtifact(); return; }
+        if (action === 'close-review-modal') { closeReviewModal(); return; }
+        if (action === 'submit-review') { submitReview(); return; }
+        if (action === 'open-auth') {
+          document.dispatchEvent(new CustomEvent('open-auth'));
+          return;
+        }
+      }
       const editBtn = target.closest('.btn-edit-artifact');
       if (editBtn) {
         const id = editBtn.getAttribute('data-artifact-id') || '';
         const a = (window as any).__artifactsById?.[id];
-        if (a) (window as any).editArtifact(a);
+        if (a) editArtifact(a);
         return;
       }
       const reviewBtn = target.closest('.btn-review-artifact');
       if (reviewBtn) {
         const id = reviewBtn.getAttribute('data-artifact-id') || '';
         const a = (window as any).__artifactsById?.[id];
-        if (a) (window as any).openReview(a);
+        if (a) openReview(a);
       }
     });
   }
 
-  (window as any).saveArtifact = async () => {
+  async function saveArtifact() {
     const id = (document.getElementById('art-id') as HTMLInputElement).value;
     const title = (document.getElementById('art-title') as HTMLInputElement).value.trim();
     const type = (document.getElementById('art-type') as HTMLSelectElement).value;
@@ -395,13 +413,13 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
     }
 
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
-    (window as any).closeArtModal();
+    closeArtModal();
     toast(id ? 'Artefato atualizado ✅' : 'Artefato submetido ✅', 'success');
     loadMyArtifacts();
-  };
+  }
 
   // ── REVIEW MODAL ──
-  (window as any).openReview = (a: any) => {
+  function openReview(a: any) {
     (document.getElementById('rev-id') as HTMLInputElement).value = a.id;
     document.getElementById('rev-title-display')!.textContent = a.title;
     document.getElementById('rev-author-display')!.textContent = a.members?.name || '—';
@@ -410,15 +428,15 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
     const modal = document.getElementById('modal-review')!;
     modal.classList.remove('hidden');
     modal.classList.add('flex');
-  };
+  }
 
-  (window as any).closeReviewModal = () => {
+  function closeReviewModal() {
     const modal = document.getElementById('modal-review')!;
     modal.classList.add('hidden');
     modal.classList.remove('flex');
-  };
+  }
 
-  (window as any).submitReview = async () => {
+  async function submitReview() {
     const id = (document.getElementById('rev-id') as HTMLInputElement).value;
     const status = (document.getElementById('rev-status') as HTMLSelectElement).value;
     const notes = (document.getElementById('rev-notes') as HTMLTextAreaElement).value.trim() || null;
@@ -436,10 +454,10 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
 
     const { error } = await sb.from('artifacts').update(updatePayload).eq('id', id);
     if (error) { toast('Erro: ' + error.message, 'error'); return; }
-    (window as any).closeReviewModal();
+    closeReviewModal();
     toast('Revisão salva ✅', 'success');
     loadReviewQueue();
-  };
+  }
 
   // ── BOOT ──
   async function boot() {

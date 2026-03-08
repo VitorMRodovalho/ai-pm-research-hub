@@ -8,7 +8,7 @@ import Toast from '../components/ui/Toast.astro';
     <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
       <h1 class="text-2xl font-extrabold text-navy">🏆 Gamificação & Certificados</h1>
       <button id="btn-sync" class="hidden px-4 py-2 bg-teal text-white rounded-xl font-semibold text-sm cursor-pointer border-0 hover:opacity-90 transition-all"
-              onclick="syncPoints()">
+              data-action="sync-points">
         🔄 Sincronizar Pontos + Credly
       </button>
     </div>
@@ -73,17 +73,17 @@ import Toast from '../components/ui/Toast.astro';
     <!-- Tabs -->
     <div class="flex gap-2 mb-6 flex-wrap">
       <button class="gam-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white"
-              data-tab="leaderboard" onclick="switchGamTab(this,'leaderboard')">🏅 Ranking Individual</button>
+              data-tab="leaderboard" data-action="switch-tab">🏅 Ranking Individual</button>
       <button class="gam-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
-              data-tab="tribes" onclick="switchGamTab(this,'tribes')">🏷️ Ranking de Tribos</button>
+              data-tab="tribes" data-action="switch-tab">🏷️ Ranking de Tribos</button>
       <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
-              id="tab-achievements" data-tab="achievements" onclick="switchGamTab(this,'achievements')">🎯 Conquistas</button>
+              id="tab-achievements" data-tab="achievements" data-action="switch-tab">🎯 Conquistas</button>
       <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
-              id="tab-mypoints" data-tab="mypoints" onclick="switchGamTab(this,'mypoints')">📊 Meus Pontos</button>
+              id="tab-mypoints" data-tab="mypoints" data-action="switch-tab">📊 Meus Pontos</button>
       <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
-              id="tab-mycerts" data-tab="mycerts" onclick="switchGamTab(this,'mycerts')">🎓 Certificados</button>
+              id="tab-mycerts" data-tab="mycerts" data-action="switch-tab">🎓 Certificados</button>
       <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
-              id="tab-admin-certs" data-tab="admin-certs" onclick="switchGamTab(this,'admin-certs')">📋 Emitir</button>
+              id="tab-admin-certs" data-tab="admin-certs" data-action="switch-tab">📋 Emitir</button>
     </div>
 
     <!-- Trail Clarity (logged user) -->
@@ -102,9 +102,9 @@ import Toast from '../components/ui/Toast.astro';
           <h3 class="text-sm font-bold text-navy">Ranking Individual — Ciclo 3</h3>
           <div class="inline-flex items-center gap-1.5 bg-slate-50 rounded-full p-1 border border-slate-200">
             <button id="lb-mode-cycle" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-navy text-white border-0 cursor-pointer"
-                    onclick="setLeaderboardMode('cycle')">Ciclo Atual</button>
+                    data-action="set-leaderboard-mode" data-mode="cycle">Ciclo Atual</button>
             <button id="lb-mode-lifetime" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-transparent text-slate-500 border-0 cursor-pointer"
-                    onclick="setLeaderboardMode('lifetime')">XP Vitalício</button>
+                    data-action="set-leaderboard-mode" data-mode="lifetime">XP Vitalício</button>
           </div>
         </div>
         <div class="p-5" id="leaderboard-list">
@@ -120,9 +120,9 @@ import Toast from '../components/ui/Toast.astro';
           <h3 class="text-sm font-bold text-navy">Ranking de Tribos — Ciclo 3</h3>
           <div class="inline-flex items-center gap-1.5 bg-slate-50 rounded-full p-1 border border-slate-200">
             <button id="tr-mode-cycle" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-navy text-white border-0 cursor-pointer"
-                    onclick="setTribeMode('cycle')">Ciclo Atual</button>
+                    data-action="set-tribe-mode" data-mode="cycle">Ciclo Atual</button>
             <button id="tr-mode-lifetime" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-transparent text-slate-500 border-0 cursor-pointer"
-                    onclick="setTribeMode('lifetime')">XP Vitalício</button>
+                    data-action="set-tribe-mode" data-mode="lifetime">XP Vitalício</button>
           </div>
         </div>
         <p class="px-5 pt-2 text-[.7rem] text-slate-400">Score = (média pontos × 1) + (membros ativos × 10)</p>
@@ -207,7 +207,7 @@ import Toast from '../components/ui/Toast.astro';
             </div>
           </div>
           <div class="mt-4 flex justify-end">
-            <button onclick="issueCertificate()" class="px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm cursor-pointer border-0 hover:opacity-90 transition-all">
+            <button data-action="issue-certificate" class="px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm cursor-pointer border-0 hover:opacity-90 transition-all">
               🎓 Emitir Certificado
             </button>
           </div>
@@ -256,11 +256,11 @@ import Toast from '../components/ui/Toast.astro';
 
   function toast(msg: string, type = '') { (window as any).toast?.(msg, type); }
 
-  function setPanelMessage(targetId: string, message: string, kind: 'loading' | 'error' | 'empty' = 'loading', cta?: { text: string; onclick: string }) {
+  function setPanelMessage(targetId: string, message: string, kind: 'loading' | 'error' | 'empty' = 'loading', cta?: { text: string; action: string }) {
     const el = document.getElementById(targetId);
     if (!el) return;
     const color = kind === 'error' ? 'text-crimson' : 'text-slate-400';
-    const ctaHtml = cta ? `<button type="button" class="mt-4 px-4 py-2 bg-teal text-white rounded-xl text-sm font-semibold cursor-pointer border-0 hover:opacity-90 transition-all" onclick="${cta.onclick}">${cta.text}</button>` : '';
+    const ctaHtml = cta ? `<button type="button" class="mt-4 px-4 py-2 bg-teal text-white rounded-xl text-sm font-semibold cursor-pointer border-0 hover:opacity-90 transition-all" data-action="${cta.action}">${cta.text}</button>` : '';
     el.innerHTML = `<div class="text-center py-6"><p class="${color} text-sm">${message}</p>${ctaHtml}</div>`;
   }
 
@@ -323,7 +323,7 @@ import Toast from '../components/ui/Toast.astro';
   ];
 
   // ── TABS ──
-  (window as any).setLeaderboardMode = (mode: 'cycle' | 'lifetime') => {
+  function setLeaderboardMode(mode: 'cycle' | 'lifetime') {
     leaderboardMode = mode;
     const cycleBtn = document.getElementById('lb-mode-cycle');
     const lifeBtn = document.getElementById('lb-mode-lifetime');
@@ -337,9 +337,9 @@ import Toast from '../components/ui/Toast.astro';
       lifeBtn.classList.toggle('text-slate-500', cycleOn);
     }
     renderLeaderboard();
-  };
+  }
 
-  (window as any).switchGamTab = (el: HTMLElement, tab: string) => {
+  function switchGamTab(el: HTMLElement, tab: string) {
     document.querySelectorAll('.gam-tab').forEach(t => {
       t.classList.remove('bg-navy', 'text-white', 'border-navy');
       t.classList.add('bg-white', 'text-slate-500', 'border-slate-200');
@@ -354,9 +354,9 @@ import Toast from '../components/ui/Toast.astro';
     if (tab === 'achievements') loadAchievements();
     if (tab === 'mypoints') loadMyPoints();
     if (tab === 'mycerts') loadMyCertificates();
-  };
+  }
 
-  (window as any).setTribeMode = (mode: 'cycle' | 'lifetime') => {
+  function setTribeMode(mode: 'cycle' | 'lifetime') {
     tribeMode = mode;
     const cycleBtn = document.getElementById('tr-mode-cycle');
     const lifeBtn = document.getElementById('tr-mode-lifetime');
@@ -370,7 +370,7 @@ import Toast from '../components/ui/Toast.astro';
       lifeBtn.classList.toggle('text-slate-500', cycleOn);
     }
     loadTribeRanking();
-  };
+  }
 
   function renderLeaderboard() {
     const el = document.getElementById('leaderboard-list')!;
@@ -468,7 +468,7 @@ import Toast from '../components/ui/Toast.astro';
       leaderboardData = data || [];
       trailProgressByMember = buildTrailProgressByMember(courseRows || [], TRAIL_TOTAL);
       if (!data?.length) {
-        setPanelMessage('leaderboard-list', 'Nenhum ponto registrado. Sincronize para calcular o ranking.', 'empty', MEMBER ? { text: '🔄 Sincronizar Pontos + Credly', onclick: 'syncPoints()' } : undefined);
+        setPanelMessage('leaderboard-list', 'Nenhum ponto registrado. Sincronize para calcular o ranking.', 'empty', MEMBER ? { text: '🔄 Sincronizar Pontos + Credly', action: 'sync-points' } : undefined);
         return;
       }
 
@@ -672,7 +672,7 @@ import Toast from '../components/ui/Toast.astro';
 
       const el = document.getElementById('mypoints-list')!;
       if (!data?.length) {
-        setPanelMessage('mypoints-list', 'Você ainda não tem pontos registrados.', 'empty', MEMBER ? { text: '🔄 Sincronizar Pontos + Credly', onclick: 'syncPoints()' } : undefined);
+        setPanelMessage('mypoints-list', 'Você ainda não tem pontos registrados.', 'empty', MEMBER ? { text: '🔄 Sincronizar Pontos + Credly', action: 'sync-points' } : undefined);
         return;
       }
 
@@ -826,7 +826,7 @@ import Toast from '../components/ui/Toast.astro';
   }
 
   // ── SYNC POINTS (admin) ──
-  (window as any).syncPoints = async () => {
+  async function syncPoints() {
     const btn = document.getElementById('btn-sync') as HTMLButtonElement | null;
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Sincronizando...'; }
     try {
@@ -871,10 +871,10 @@ import Toast from '../components/ui/Toast.astro';
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = '🔄 Sincronizar Pontos + Credly'; }
     }
-  };
+  }
 
   // ── ISSUE CERTIFICATE (admin) ──
-  (window as any).issueCertificate = async () => {
+  async function issueCertificate() {
     const memberId = (document.getElementById('cert-member') as HTMLSelectElement).value;
     const type = (document.getElementById('cert-type') as HTMLSelectElement).value;
     const title = (document.getElementById('cert-title') as HTMLInputElement).value.trim();
@@ -891,7 +891,7 @@ import Toast from '../components/ui/Toast.astro';
     toast('Certificado emitido ✅', 'success');
     (document.getElementById('cert-title') as HTMLInputElement).value = '';
     (document.getElementById('cert-desc') as HTMLTextAreaElement).value = '';
-  };
+  }
 
   // ── LOAD MEMBERS FOR CERT DROPDOWN ──
   async function loadMembersDropdown() {
@@ -953,6 +953,36 @@ import Toast from '../components/ui/Toast.astro';
     loadMyTrailClarity();
     loadMembersDropdown();
   }
+
+  // ── CENTRALIZED EVENT DELEGATION ──
+  document.addEventListener('click', (e: Event) => {
+    const target = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
+    if (!target) return;
+
+    switch (target.dataset.action) {
+      case 'sync-points':
+        syncPoints();
+        break;
+      case 'switch-tab': {
+        const tab = target.dataset.tab;
+        if (tab) switchGamTab(target, tab);
+        break;
+      }
+      case 'set-leaderboard-mode': {
+        const mode = target.dataset.mode as 'cycle' | 'lifetime';
+        if (mode) setLeaderboardMode(mode);
+        break;
+      }
+      case 'set-tribe-mode': {
+        const mode = target.dataset.mode as 'cycle' | 'lifetime';
+        if (mode) setTribeMode(mode);
+        break;
+      }
+      case 'issue-certificate':
+        issueCertificate();
+        break;
+    }
+  });
 
   boot();
 </script>
