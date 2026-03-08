@@ -66,6 +66,12 @@
 | S-REP1 | Exportação VRMS (PMI) | High | Completed (2026-03-08) | Entrega consolidada: filtros opcionais (capítulo/tribo), presets rápidos, persistência automática (`localStorage`), paridade com Leadership Snapshot, indicador de filtros ativos e ação de limpar filtros nas duas superfícies. |
 | S-ADM2 | Leadership Training Progress Snapshot | High | Completed (2026-03-08) | `/admin` reports snapshot entregue com filtros (capítulo/tribo/período), presets rápidos, persistência local, CSV export, i18n PT/EN/ES e visão de conclusão/bloqueio + certificações recentes. |
 | S-DB1 | Credly/Gamification Data Sanitation | High | Completed (2026-03-08) | SQL pack executed in production (`audit -> sanitize -> audit`) with SFPC hotfix applied, data reconciled, and DB hardening enabled via partial unique index `uq_gp_credly_member_reason_ci` to prevent future Credly duplicates. |
+| S-DB2 | Executive MViews & Server Aggregation | High | Planned | Add materialized views for executive snapshots and tribe funnel so admin dashboards stop doing heavy client-side aggregation. |
+| S-DB3 | High-volume Index Audit | High | Planned | Review/patch index coverage for `attendance`, `course_progress`, `gamification_points`, and comms ingestion/publish tables with evidence (`EXPLAIN ANALYZE`). |
+| S-DB4 | Vector Index Strategy v2 | Medium | Planned | Evaluate `pgvector` index strategy (`ivfflat` vs `hnsw`) with benchmark gate before rollout. |
+| S-DB5 | Embedding Refresh Lifecycle | Medium | Planned | Add scheduled delta embedding refresh and model-version metadata discipline for knowledge retrieval consistency. |
+| S-DB6 | Audit Trail Schema | High | Planned | Implement immutable audit trail for sensitive writes (`members`, `comms_metrics`, `gamification_points`) with actor + before/after payload. |
+| S-DB7 | Soft-delete Parity | Medium | Planned | Standardize soft-delete patterns in analytics-relevant entities to preserve long-term historical integrity. |
 | S10 | Credly Auto Sync | Medium | Completed (2026-03-08) | Weekly GitHub Actions scheduler active (`.github/workflows/credly-auto-sync.yml`) with cron-secret mode in `sync-credly-all`, function deployed, secrets provisioned, and manual workflow validation successful (`execution_mode: cron`, `fail_count: 0`). |
 | S-AN1 | Announcements System | Medium | Completed (2026-03-08) | Sistema de anúncios ativo: CRUD no `/admin` e renderização global no topo do site via `AnnouncementBanner`, com dismiss por sessão e suporte a severidade/expiração. |
 | S-DR1 | Disaster Recovery Doc | Low | Planned | POP de restauração de backup e PITR. |
@@ -117,6 +123,9 @@
 | Architectural guideline drift | High | Open | Enforce role model v3, cycle aware data, soft delete, and event driven integration discipline. |
 | Route compatibility not tested | High | Addressed | Smoke tests added and validated in deploy checklist. |
 | SQL architecture not tracked in every sprint | High | In Progress | Mandatory DB gate for admin/analytics increments: include migration in `supabase/migrations` + docs pack (`apply/audit/rollback/runbook`) and capture evidence in `docs/RELEASE_LOG.md`. |
+| Dashboards with browser-side heavy aggregation | High | Open | Prioritize `S-DB2` + `S-FE4`: move executive calculations to server models (MViews/RPC) and keep frontend thin. |
+| Vector search cost/performance uncertainty | Medium | Open | Prioritize `S-DB4`: benchmarked vector indexing strategy with rollout guardrails (`ivfflat` current, `hnsw` evaluation path). |
+| Lack of immutable change history for sensitive entities | High | Open | Prioritize `S-DB6`: audit schema for critical tables and compliance-ready traceability. |
 | Frontend XSS surface via imperative DOM | High | Open | Prioritize `S-FE1`: sanitize/escape all DB-derived text before DOM insertion and phase out unsafe `innerHTML` paths. |
 | Admin page monolith complexity | High | Open | Prioritize `S-FE2`: split admin into modules and isolate data-access from render logic. |
 | Client-side auth flicker on protected routes | High | Open | Prioritize `S-FE3`: server-side auth gate with cookie-based session in critical routes. |
