@@ -238,6 +238,18 @@ import Toast from '../components/ui/Toast.astro';
     el.innerHTML = `<p class="${color} text-sm text-center py-6">${message}</p>`;
   }
 
+  async function describeFnError(err: any): Promise<string> {
+    if (!err) return 'Erro desconhecido';
+    if (err.context && typeof err.context.json === 'function') {
+      try {
+        const payload = await err.context.json();
+        const detail = payload?.error || payload?.message;
+        if (detail) return detail;
+      } catch {}
+    }
+    return err.message || 'Erro desconhecido';
+  }
+
   // ── XP LEVEL SYSTEM ──
   function getLevel(pts: number): { name: string; emoji: string; next: string; ptsToNext: number; pctInLevel: number } {
     const levels = [
@@ -644,7 +656,9 @@ import Toast from '../components/ui/Toast.astro';
       let attendanceSummary = '';
       const { data: attendanceData, error: attendanceError } = await sb.functions.invoke('sync-attendance-points');
       if (attendanceError || !attendanceData?.success) {
-        const attendanceMsg = attendanceError?.message || attendanceData?.error || 'Falha ao sincronizar presenças';
+        const attendanceMsg = attendanceError
+          ? await describeFnError(attendanceError)
+          : (attendanceData?.error || 'Falha ao sincronizar presenças');
         attendanceSummary = `Presenças com erro: ${attendanceMsg}.`;
       } else {
         attendanceSummary = `${attendanceData.points_created} pontos de presença sincronizados ✅`;
@@ -655,7 +669,7 @@ import Toast from '../components/ui/Toast.astro';
       if (!credlyError && credlyData?.success) {
         credlySummary = `Credly: ${credlyData.success_count}/${credlyData.total_candidates} perfis sincronizados, ${credlyData.fail_count} falhas.`;
       } else if (credlyError) {
-        credlySummary = `Credly em lote com erro: ${credlyError.message}.`;
+        credlySummary = `Credly em lote com erro: ${await describeFnError(credlyError)}.`;
       } else if (credlyData?.error) {
         credlySummary = `Credly em lote com erro: ${credlyData.error}.`;
       } else {

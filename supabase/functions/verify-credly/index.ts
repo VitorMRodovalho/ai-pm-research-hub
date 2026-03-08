@@ -115,16 +115,16 @@ async function syncTrailProgressFromCredly(
       continue
     }
 
-    const { data: existing, error: existingError } = await sb
+    const { data: existingRows, error: existingError } = await sb
       .from('course_progress')
       .select('id, status')
       .eq('member_id', memberId)
       .eq('course_id', courseId)
-      .maybeSingle()
+      .limit(20)
 
     if (existingError) throw existingError
 
-    if (!existing) {
+    if (!existingRows || existingRows.length === 0) {
       const { error: insertError } = await sb.from('course_progress').insert({
         member_id: memberId,
         course_id: courseId,
@@ -135,11 +135,13 @@ async function syncTrailProgressFromCredly(
       continue
     }
 
-    if (existing.status !== 'completed') {
+    const hasCompleted = existingRows.some((r: any) => r.status === 'completed')
+    if (!hasCompleted) {
       const { error: updateError } = await sb
         .from('course_progress')
         .update({ status: 'completed' })
-        .eq('id', existing.id)
+        .eq('member_id', memberId)
+        .eq('course_id', courseId)
       if (updateError) throw updateError
       synced++
     }
