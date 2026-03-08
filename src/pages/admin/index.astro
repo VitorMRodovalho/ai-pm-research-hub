@@ -146,6 +146,20 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
                   <input type="date" id="vrms-to" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
                 </div>
               </div>
+              <div class="mb-3">
+                <p class="text-[.68rem] font-semibold text-slate-500 mb-1">{t('admin.reports.quickRange', lang)}</p>
+                <div class="flex flex-wrap gap-2">
+                  <button onclick="setVRMSPreset('7d')" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-[.72rem] font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-all">
+                    {t('admin.reports.last7d', lang)}
+                  </button>
+                  <button onclick="setVRMSPreset('30d')" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-[.72rem] font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-all">
+                    {t('admin.reports.last30d', lang)}
+                  </button>
+                  <button onclick="setVRMSPreset('cycle')" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-[.72rem] font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-all">
+                    {t('admin.reports.currentCycle', lang)}
+                  </button>
+                </div>
+              </div>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                 <div>
                   <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.reports.chapterOptional', lang)}</label>
@@ -1241,18 +1255,48 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   let vrmsData: any[] = [];
   let leadershipRows: any[] = [];
   const TRAIL_CODES = ['GENAI_OVERVIEW','DATA_LANDSCAPE','PROMPT_ENG','PRACTICAL_GENAI','CDBA_INTRO','CPMAI_INTRO','AI_INFRA','AI_AGILE'];
+  const CURRENT_CYCLE_START = '2026-01-01';
+
+  function isoDate(date: Date) {
+    return date.toISOString().split('T')[0];
+  }
+
+  function setVRMSRange(fromDate: string, toDate: string) {
+    const fromEl = document.getElementById('vrms-from') as HTMLInputElement;
+    const toEl = document.getElementById('vrms-to') as HTMLInputElement;
+    if (fromEl) fromEl.value = fromDate;
+    if (toEl) toEl.value = toDate;
+  }
+
+  (window as any).setVRMSPreset = (preset: string) => {
+    if (!ensureAdminAction()) return;
+    const today = new Date();
+    if (preset === '7d') {
+      const from = new Date(today);
+      from.setDate(today.getDate() - 6);
+      setVRMSRange(isoDate(from), isoDate(today));
+      return;
+    }
+    if (preset === '30d') {
+      const from = new Date(today);
+      from.setDate(today.getDate() - 29);
+      setVRMSRange(isoDate(from), isoDate(today));
+      return;
+    }
+    setVRMSRange(CURRENT_CYCLE_START, isoDate(today));
+  };
 
   function initReports() {
     if (!ensureAdminAction(false)) return;
     // Set default date range: current cycle start → today
     const fromEl = document.getElementById('vrms-from') as HTMLInputElement;
     const toEl = document.getElementById('vrms-to') as HTMLInputElement;
-    if (fromEl && !fromEl.value) fromEl.value = '2026-01-01';
-    if (toEl && !toEl.value) toEl.value = new Date().toISOString().split('T')[0];
+    if (fromEl && !fromEl.value) fromEl.value = CURRENT_CYCLE_START;
+    if (toEl && !toEl.value) toEl.value = isoDate(new Date());
     const lsFrom = document.getElementById('ls-from') as HTMLInputElement;
     const lsTo = document.getElementById('ls-to') as HTMLInputElement;
-    if (lsFrom && !lsFrom.value) lsFrom.value = '2026-01-01';
-    if (lsTo && !lsTo.value) lsTo.value = new Date().toISOString().split('T')[0];
+    if (lsFrom && !lsFrom.value) lsFrom.value = CURRENT_CYCLE_START;
+    if (lsTo && !lsTo.value) lsTo.value = isoDate(new Date());
     loadAnnouncements();
     loadLeadershipSnapshot();
   }
