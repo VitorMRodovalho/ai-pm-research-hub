@@ -266,6 +266,18 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
                 </button>
               </div>
             </div>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <span class="text-[.68rem] font-semibold text-slate-500 self-center">{t('admin.snapshot.quickRange', lang)}</span>
+              <button onclick="setLeadershipPreset('7d')" class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-[.7rem] font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-all">
+                {t('admin.snapshot.last7d', lang)}
+              </button>
+              <button onclick="setLeadershipPreset('30d')" class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-[.7rem] font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-all">
+                {t('admin.snapshot.last30d', lang)}
+              </button>
+              <button onclick="setLeadershipPreset('cycle')" class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-[.7rem] font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-all">
+                {t('admin.snapshot.currentCycle', lang)}
+              </button>
+            </div>
           </div>
           <div class="p-5" id="leadership-snapshot">
             <p class="text-slate-400 text-sm text-center py-4">{t('admin.loading', lang)}</p>
@@ -1269,6 +1281,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     if (toEl) toEl.value = toDate;
   }
 
+  function setLeadershipRange(fromDate: string, toDate: string) {
+    const fromEl = document.getElementById('ls-from') as HTMLInputElement;
+    const toEl = document.getElementById('ls-to') as HTMLInputElement;
+    if (fromEl) fromEl.value = fromDate;
+    if (toEl) toEl.value = toDate;
+  }
+
   function saveVRMSPrefs(preset = 'custom') {
     try {
       const fromDate = (document.getElementById('vrms-from') as HTMLInputElement)?.value || '';
@@ -1337,6 +1356,24 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     }
     setVRMSRange(CURRENT_CYCLE_START, isoDate(today));
     saveVRMSPrefs('cycle');
+  };
+
+  (window as any).setLeadershipPreset = (preset: string) => {
+    if (!ensureAdminAction()) return;
+    const today = new Date();
+    if (preset === '7d') {
+      const from = new Date(today);
+      from.setDate(today.getDate() - 6);
+      setLeadershipRange(isoDate(from), isoDate(today));
+      return;
+    }
+    if (preset === '30d') {
+      const from = new Date(today);
+      from.setDate(today.getDate() - 29);
+      setLeadershipRange(isoDate(from), isoDate(today));
+      return;
+    }
+    setLeadershipRange(CURRENT_CYCLE_START, isoDate(today));
   };
 
   function initReports() {
