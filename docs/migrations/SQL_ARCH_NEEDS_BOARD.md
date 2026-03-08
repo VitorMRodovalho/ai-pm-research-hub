@@ -24,7 +24,7 @@ Force explicit backend/SQL decisions for every sprint feature so we never ship o
 | `S-DR1` Disaster Recovery | Planned | Docs only | **Yes** | Add backup/restore verification SQL scripts + runbook sign-off checklist | Next |
 | `S-KNW6` AI Knowledge Ingestion MVP | Partial (v1 foundation deployed) | Migration applied + function deployed + smoke validated in production | **Yes** | Add source connector automation + embeddings refresh and operational monitoring | Wave 5 |
 | `S-KNW7` Internal RAG Assistant | In Progress (v1 text retrieval ready) | UI `/ai-assistant` + RPC `knowledge_search_text` migration pack prepared | **Yes** | Apply `knowledge-assistant-v1` in production, run audit, and evolve to hybrid ranking (`tsvector + vector`) once embedding refresh is operational | Wave 5 |
-| `S-KNW8` Friction Insight Mining | Planned | No pipeline yet | **Yes** | Add `knowledge_insights` fact table + taxonomy and quality score columns for roadmap analytics | Wave 5 |
+| `S-KNW8` Friction Insight Mining | In Progress (v1 SQL foundation ready) | `knowledge_insights` fact table + scoring/taxonomy RPCs prepared in migration pack | **Yes** | Apply migration in production, run audit, then add automated extractor pipeline from transcripts/logs | Wave 5 |
 | `S-OPS2` AI Cost Guardrails | Planned | No quota model yet | **Yes** | Add usage/budget tables (`ai_usage_daily`, `ai_budget_limits`) + alerting query views for no-cost threshold control | Wave 6 |
 
 ## Immediate SQL Backlog (priority)
