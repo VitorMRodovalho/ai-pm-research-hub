@@ -43,7 +43,7 @@ with scored as (
       when lower(reason) ~ '(project management professional|\bpmp\b|\bcpmai\b|pmi-cpmai|cognitive project management|\bpmi-acp\b|\bpmi-cp\b|\bpgmp\b|\bpfmp\b|\bpmi-rmp\b|\bpmi-sp\b)'
         then 50
       -- Tier 2 (+25)
-      when lower(reason) ~ '(\bcapm\b|pmi-pbsm|disciplined agile|professional scrum master|\bpsm\b|\bpspo\b|\bsafe\b|scaled agile|\bcsm\b|certified scrum|prosci|change management|finops|aws certified|azure|google cloud certified|data analyst|data engineer|data scientist|itil|togaf|cobit|business intelligence|scrum foundation|\bsfpc\b)'
+      when lower(reason) ~ '(\bcapm\b|pmi-pbsm|disciplined agile|professional scrum master|\bpsm\b|\bpspo\b|\bsafe\b|scaled agile|\bcsm\b|certified scrum|prosci|change management|finops|aws certified|azure|google cloud certified|data analyst|data engineer|data scientist|itil|togaf|cobit|business intelligence|scrum foundation|sfpc)'
         then 25
       -- Tier 3 (+15)
       when lower(reason) ~ '(artificial intelligence|machine learning|deep learning|generative ai|gen ai|genai|prompt engineering|data science|data landscape|business intelligence|cognitive|project management|agile|scrum)'
