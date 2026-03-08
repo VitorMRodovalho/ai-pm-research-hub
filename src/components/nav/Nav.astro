@@ -28,6 +28,7 @@ const jsI18n = JSON.stringify({
   login: t('nav.login', lang),
   profile: t('nav.profile', lang),
   attendance: t('nav.attendanceLink', lang),
+  assistant: t('nav.assistantLink', lang),
   admin: t('nav.adminLink', lang),
   logout: t('nav.logout', lang),
   user: t('nav.user', lang),
@@ -243,6 +244,7 @@ const jsI18n = JSON.stringify({
       <hr class="border-slate-100 my-2">
       <a href="${base}/profile" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-slate-800 hover:bg-slate-50 no-underline transition-all">${i18n.profile || '👤 Profile'}</a>
       <a href="${base}/attendance" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-slate-800 hover:bg-slate-50 no-underline transition-all">${i18n.attendance || '⏱ Attendance'}</a>
+      <a href="${base}/ai-assistant" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-slate-800 hover:bg-slate-50 no-underline transition-all">${i18n.assistant || '🧠 AI Assistant'}</a>
       ${isAdmin ? `<hr class="border-slate-100 my-2"><a href="${base}/admin" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-purple hover:bg-purple/5 no-underline transition-all">${i18n.admin || '⚙️ Admin'}</a>` : ''}
       <hr class="border-slate-100 my-2">
       <button onclick="doLogout()" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-crimson hover:bg-red-50 cursor-pointer border-0 bg-transparent transition-all">${i18n.logout || '↩ Sign Out'}</button>`;

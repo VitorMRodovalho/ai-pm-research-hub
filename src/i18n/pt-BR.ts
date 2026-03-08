@@ -24,6 +24,7 @@ const ptBR: Record<string, string> = {
   'nav.login': 'Entrar',
   'nav.profile': '👤 Meu Perfil',
   'nav.attendanceLink': '⏱ Presenças & Horas',
+  'nav.assistantLink': '🧠 Assistente IA',
   'nav.adminLink': '⚙️ Painel Admin',
   'nav.logout': '↩ Sair',
   'nav.user': 'Usuário',
@@ -286,6 +287,25 @@ const ptBR: Record<string, string> = {
   'profile.error': 'Erro ao salvar perfil.',
   'profile.public': 'Público',
   'profile.private': 'Privado',
+
+  // ── AI Assistant page ──
+  'assistant.meta': 'Assistente IA — Núcleo IA & GP',
+  'assistant.title': 'Assistente IA do Núcleo',
+  'assistant.subtitle': 'Busca semântica interna sobre o acervo já ingerido (YouTube-first).',
+  'assistant.loading': 'Carregando assistente...',
+  'assistant.authRequired': 'Faça login para consultar a base interna do Núcleo.',
+  'assistant.authButton': 'Entrar',
+  'assistant.queryPlaceholder': 'Pergunte algo (ex.: priorização de backlog, CPMAI, governança)...',
+  'assistant.sourceAll': 'Todas as fontes',
+  'assistant.search': 'Buscar',
+  'assistant.initialHint': 'Digite uma pergunta e execute a busca.',
+  'assistant.recentTitle': 'Fontes Recentes',
+  'assistant.recentEmpty': 'Nenhuma fonte recente encontrada.',
+  'assistant.resultsTitle': 'Resultados com Citação',
+  'assistant.emptyQuery': 'Digite uma pergunta para buscar.',
+  'assistant.searching': 'Buscando...',
+  'assistant.error': 'Erro ao buscar.',
+  'assistant.noResults': 'Nenhum resultado encontrado para a consulta.',
 
   // ── Auth modal ──
   'authModal.title': 'Acessar plataforma',

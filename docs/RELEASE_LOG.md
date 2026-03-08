@@ -1,4 +1,28 @@
 # Release Log
+## 2026-03-08 — Wave 5 Sprint Increment (S-KNW7 Internal Assistant v1)
+
+### Scope
+Deliver first internal assistant surface (`/ai-assistant`) using low-cost textual retrieval over ingested knowledge.
+
+### Delivered
+- new route:
+  - `/ai-assistant` with authenticated gate and citations-first result cards
+  - profile drawer shortcut to assistant for signed-in users
+- retrieval flow:
+  - query form + optional source filter
+  - recent source listing via `knowledge_assets_latest(...)`
+  - search via `knowledge_search_text(...)`
+- SQL pack completed:
+  - `supabase/migrations/20260308042540_knowledge_assistant_v1.sql`
+  - `docs/migrations/knowledge-assistant-v1.sql`
+  - `docs/migrations/knowledge-assistant-v1-audit.sql`
+  - `docs/migrations/knowledge-assistant-v1-rollback.sql`
+
+### Pending to close S-KNW7
+- apply `knowledge-assistant-v1` migration in production
+- run post-audit SQL and attach evidence
+- smoke test `/ai-assistant` against production dataset
+
 ## 2026-03-08 — Wave 5 Sprint Increment (S-KNW6 Knowledge Ingestion v1 Foundation)
 
 ### Scope
