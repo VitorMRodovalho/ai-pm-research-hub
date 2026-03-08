@@ -76,7 +76,7 @@ Isso ocorreu por execução orientada a incidentes de produção (hotfixes) sem 
 | S-RM3 | Gamification v2 | High | ✅ Done (2026-03-08) | Cycle vs lifetime split now implemented across individual leaderboard, tribe ranking, achievements context, and my points summary. |
 | S-UX1 | Trilha Progress Clarity for Researchers | High | ✅ Done (2026-03-08) | `/gamification` now shows logged-in mini trail clarity card with explicit progress (`X de Y`) and missing/in-progress course list. |
 | S-PA1 | Product Analytics | High | Partial (v2 delivered 2026-03-08) | Protected `/admin/analytics` route + iframe embeds + admin shortcut, plus consent-aware analytics toggle (allow/revoke), session replay control, and identify gated by consent without name/email PII. |
-| S8b | i18n Internal Pages | Medium | Partial (advanced++ 2026-03-08) | `/attendance` shell + modals localized and `/admin` shell, filters, reports, key modals, critical toasts/confirms, and dynamic action messages localized (PT/EN/ES) with locale-key parity; pending only residual long-tail hardcoded strings in secondary admin flows. |
+| S8b | i18n Internal Pages | Medium | Partial (2026-03-08) | Admin: loadMyTribe, exec panel, cycle-history prompts, days of week; TribesSection viewWarnings. Attendance/admin/profile/artifacts done. Residual: modal labels, CSV headers. |
 | S11 | UI Polish & Empty States | Medium | Partial (2026-03-08) | 404 active; artifacts/attendance com skeleton + empty states; gamification: setPanelMessage com CTA opcional — leaderboard e Meus Pontos exibem botão Sincronizar quando vazios. |
 
 ---

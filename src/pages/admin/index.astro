@@ -52,6 +52,25 @@ const ADMIN_I18N = {
   cycleHistoryActive: t('admin.msg.cycleHistoryActive', lang),
   cycleHistoryInactive: t('admin.msg.cycleHistoryInactive', lang),
   cycleHistoryCurrent: t('admin.msg.cycleHistoryCurrent', lang),
+  myTribeNoAllocation: t('admin.myTribe.noAllocation', lang),
+  myTribeSettingsTitle: t('admin.myTribe.settingsTitle', lang),
+  myTribeMembersTitle: t('admin.myTribe.membersTitle', lang),
+  myTribeAttendanceTitle: t('admin.myTribe.attendanceTitle', lang),
+  myTribeMeetingSlots: t('admin.myTribe.meetingSlots', lang),
+  myTribeSaved: t('admin.myTribe.saved', lang),
+  researchersPending: t('admin.myTribe.researchersPending', lang),
+  execLabelActive: t('admin.exec.labelActive', lang),
+  execLabelLeadership: t('admin.exec.labelLeadership', lang),
+  execLabelResearchers: t('admin.exec.labelResearchers', lang),
+  execLabelArtifactsInReview: t('admin.exec.labelArtifactsInReview', lang),
+  execLabelCoursesCompleted: t('admin.exec.labelCoursesCompleted', lang),
+  cyclePromptOpRole: t('admin.cycleHistory.promptOpRole', lang),
+  cyclePromptDesigs: t('admin.cycleHistory.promptDesigs', lang),
+  cyclePromptTribeName: t('admin.cycleHistory.promptTribeName', lang),
+  cyclePromptNotes: t('admin.cycleHistory.promptNotes', lang),
+  cycleLabelRole: t('admin.cycleHistory.labelRole', lang),
+  cycleLabelDesignations: t('admin.cycleHistory.labelDesignations', lang),
+  dayNames: [t('common.days.sun', lang), t('common.days.mon', lang), t('common.days.tue', lang), t('common.days.wed', lang), t('common.days.thu', lang), t('common.days.fri', lang), t('common.days.sat', lang)],
   tierLeaderTitlePrefix: t('admin.tier.leaderTitlePrefix', lang),
   tierLeaderSubtitle: t('admin.tier.leaderSubtitle', lang),
   tierMyTribe: t('admin.tier.myTribe', lang),
@@ -377,28 +396,28 @@ const ADMIN_I18N = {
         <!-- Tribe Settings (editable by leader) -->
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-5">
           <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
-            <h3 class="text-sm font-bold text-navy">⚙️ Configurações da Tribo</h3>
-            <span class="text-[.65rem] text-emerald-600 font-bold hidden" id="tribe-save-ok">✅ Salvo</span>
+            <h3 class="text-sm font-bold text-navy">{t('admin.myTribe.settingsTitle', lang)}</h3>
+            <span class="text-[.65rem] text-emerald-600 font-bold hidden" id="tribe-save-ok">{t('admin.myTribe.saved', lang)}</span>
           </div>
           <div class="p-5" id="my-tribe-settings">
-            <p class="text-slate-400 text-sm text-center py-4">Carregando...</p>
+            <p class="text-slate-400 text-sm text-center py-4">{t('admin.loading', lang)}</p>
           </div>
         </div>
         <!-- Members list -->
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-5">
           <div class="px-5 py-3.5 border-b border-slate-200">
-            <h3 class="text-sm font-bold text-navy">👥 Membros da Minha Tribo</h3>
+            <h3 class="text-sm font-bold text-navy">{t('admin.myTribe.membersTitle', lang)}</h3>
           </div>
           <div class="p-5" id="my-tribe-members">
-            <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
+            <p class="text-slate-400 text-sm text-center py-6">{t('admin.loading', lang)}</p>
           </div>
         </div>
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div class="px-5 py-3.5 border-b border-slate-200">
-            <h3 class="text-sm font-bold text-navy">📅 Presenças Recentes da Tribo</h3>
+            <h3 class="text-sm font-bold text-navy">{t('admin.myTribe.attendanceTitle', lang)}</h3>
           </div>
           <div class="p-5" id="my-tribe-attendance">
-            <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
+            <p class="text-slate-400 text-sm text-center py-6">{t('admin.loading', lang)}</p>
           </div>
         </div>
       </div>
@@ -408,54 +427,54 @@ const ADMIN_I18N = {
         <!-- Funnel (exec_funnel_summary RPC) -->
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-5">
           <div class="px-5 py-3.5 border-b border-slate-200">
-            <h3 class="text-sm font-bold text-navy">📊 Funil de Qualificação (ROI)</h3>
+            <h3 class="text-sm font-bold text-navy">{t('admin.exec.funnelTitle', lang)}</h3>
           </div>
           <div class="p-5" id="exec-funnel">
-            <p class="text-slate-400 text-sm text-center py-4">Carregando...</p>
+            <p class="text-slate-400 text-sm text-center py-4">{t('admin.loading', lang)}</p>
           </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
           <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div class="px-5 py-3.5 border-b border-slate-200">
-              <h3 class="text-sm font-bold text-navy">🏛️ Membros por Capítulo</h3>
+              <h3 class="text-sm font-bold text-navy">{t('admin.exec.chaptersTitle', lang)}</h3>
             </div>
             <div class="p-5" id="exec-chapters">
-              <p class="text-slate-400 text-sm text-center py-4">Carregando...</p>
+              <p class="text-slate-400 text-sm text-center py-4">{t('admin.loading', lang)}</p>
             </div>
           </div>
           <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div class="px-5 py-3.5 border-b border-slate-200">
-              <h3 class="text-sm font-bold text-navy">📈 Timeline de Certificação (coortes)</h3>
+              <h3 class="text-sm font-bold text-navy">{t('admin.exec.certTimelineTitle', lang)}</h3>
             </div>
             <div class="p-5" id="exec-cert-timeline">
-              <p class="text-slate-400 text-sm text-center py-4">Carregando...</p>
+              <p class="text-slate-400 text-sm text-center py-4">{t('admin.loading', lang)}</p>
             </div>
           </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
           <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div class="px-5 py-3.5 border-b border-slate-200">
-              <h3 class="text-sm font-bold text-navy">🎯 Radar de Competências (Credly)</h3>
+              <h3 class="text-sm font-bold text-navy">{t('admin.exec.skillsRadarTitle', lang)}</h3>
             </div>
             <div class="p-5" id="exec-skills-radar">
-              <p class="text-slate-400 text-sm text-center py-4">Carregando...</p>
+              <p class="text-slate-400 text-sm text-center py-4">{t('admin.loading', lang)}</p>
             </div>
           </div>
           <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div class="px-5 py-3.5 border-b border-slate-200">
-              <h3 class="text-sm font-bold text-navy">📊 Progresso Geral</h3>
+              <h3 class="text-sm font-bold text-navy">{t('admin.exec.progressTitle', lang)}</h3>
             </div>
             <div class="p-5" id="exec-progress">
-              <p class="text-slate-400 text-sm text-center py-4">Carregando...</p>
+              <p class="text-slate-400 text-sm text-center py-4">{t('admin.loading', lang)}</p>
             </div>
           </div>
         </div>
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div class="px-5 py-3.5 border-b border-slate-200">
-            <h3 class="text-sm font-bold text-navy">🏷️ Status das Tribos</h3>
+            <h3 class="text-sm font-bold text-navy">{t('admin.exec.tribesTitle', lang)}</h3>
           </div>
           <div class="p-5" id="exec-tribes">
-            <p class="text-slate-400 text-sm text-center py-4">Carregando...</p>
+            <p class="text-slate-400 text-sm text-center py-4">{t('admin.loading', lang)}</p>
           </div>
         </div>
       </div>
@@ -826,7 +845,7 @@ const ADMIN_I18N = {
       return;
     }
     el.innerHTML = `
-    <div class="text-[.72rem] text-slate-400 mb-2">${pending.length} pesquisadores pendentes</div>
+    <div class="text-[.72rem] text-slate-400 mb-2">${ADMIN_I18N.researchersPending.replace('{n}', String(pending.length))}</div>
     ${pending.map((m: any) => {
       const phone = m.phone ? m.phone.replace(/\D/g, '') : '';
       const waLink = phone ? 'https://wa.me/' + phone + '?text=' + encodeURIComponent('Ola ' + m.name.split(' ')[0] + '! Lembrete: escolha sua tribo no Nucleo IA GP -> https://ai-pm-research-hub.pages.dev/#tribes') : '';
@@ -1808,8 +1827,8 @@ const ADMIN_I18N = {
             </div>
           </div>
           <div class="text-[.72rem] text-slate-600">
-            <span class="font-semibold">Papel:</span> ${opLabel}
-            ${desigLabels.length ? ` · <span class="font-semibold">Designações:</span> ${desigLabels.join(', ')}` : ''}
+            <span class="font-semibold">${ADMIN_I18N.cycleLabelRole}:</span> ${opLabel}
+            ${desigLabels.length ? ` · <span class="font-semibold">${ADMIN_I18N.cycleLabelDesignations}:</span> ${desigLabels.join(', ')}` : ''}
           </div>
           ${r.tribe_name ? `<div class="text-[.68rem] text-slate-400 mt-0.5">🏷️ ${r.tribe_name}</div>` : ''}
           ${r.chapter ? `<div class="text-[.68rem] text-slate-400">📍 ${r.chapter}</div>` : ''}
@@ -1874,13 +1893,13 @@ const ADMIN_I18N = {
 
   (window as any).editCycleRecord = async (recordId: string) => {
     if (!canAccessAdminRoute(MEMBER, 'admin_member_edit')) return;
-    const opRole = prompt('Papel operacional (manager/tribe_leader/researcher/facilitator/communicator/none):');
+    const opRole = prompt(ADMIN_I18N.cyclePromptOpRole);
     if (opRole === null) return;
-    const desigsRaw = prompt('Designações (separar por vírgula: sponsor,ambassador,founder,curator):');
+    const desigsRaw = prompt(ADMIN_I18N.cyclePromptDesigs);
     if (desigsRaw === null) return;
-    const tribeName = prompt('Nome da tribo (ex: "T3: Priorização e Seleção" ou vazio):');
+    const tribeName = prompt(ADMIN_I18N.cyclePromptTribeName);
     if (tribeName === null) return;
-    const notes = prompt('Notas (opcional):');
+    const notes = prompt(ADMIN_I18N.cyclePromptNotes);
 
     const desigs = desigsRaw.split(',').map(d => d.trim()).filter(Boolean);
 
@@ -1913,9 +1932,9 @@ const ADMIN_I18N = {
     const tribeId = MEMBER.tribe_id;
     if (!tribeId) {
       document.getElementById('my-tribe-settings')!.innerHTML =
-        '<p class="text-slate-400 text-sm text-center py-4">Você não está alocado em uma tribo.</p>';
+        `<p class="text-slate-400 text-sm text-center py-4">${ADMIN_I18N.myTribeNoAllocation}</p>`;
       document.getElementById('my-tribe-members')!.innerHTML =
-        '<p class="text-slate-400 text-sm text-center py-6">Você não está alocado em uma tribo.</p>';
+        `<p class="text-slate-400 text-sm text-center py-6">${ADMIN_I18N.myTribeNoAllocation}</p>`;
       return;
     }
 
@@ -1934,8 +1953,8 @@ const ADMIN_I18N = {
         .order('day_of_week');
 
       const DAY_OPTS = [
-        { v: 0, l: 'Domingo' }, { v: 1, l: 'Segunda' }, { v: 2, l: 'Terça' },
-        { v: 3, l: 'Quarta' }, { v: 4, l: 'Quinta' }, { v: 5, l: 'Sexta' }, { v: 6, l: 'Sábado' }
+        { v: 0, l: ADMIN_I18N.dayNames[0] }, { v: 1, l: ADMIN_I18N.dayNames[1] }, { v: 2, l: ADMIN_I18N.dayNames[2] },
+        { v: 3, l: ADMIN_I18N.dayNames[3] }, { v: 4, l: ADMIN_I18N.dayNames[4] }, { v: 5, l: ADMIN_I18N.dayNames[5] }, { v: 6, l: ADMIN_I18N.dayNames[6] }
       ];
       const DAY_SHORT = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
@@ -1953,7 +1972,7 @@ const ADMIN_I18N = {
       settingsEl.innerHTML = `
         <!-- Meeting Slots -->
         <div class="mb-4">
-          <label class="text-[.68rem] font-semibold text-slate-500 block mb-2">📅 Horários de Reunião</label>
+          <label class="text-[.68rem] font-semibold text-slate-500 block mb-2">${ADMIN_I18N.myTribeMeetingSlots}</label>
           <div id="tribe-slots-list" class="mb-2">
             ${slotsHtml || '<p class="text-[.72rem] text-slate-400 italic py-1">Nenhum horário definido</p>'}
           </div>
@@ -2283,7 +2302,7 @@ const ADMIN_I18N = {
             </div>
           </div>
           <div class="text-[.78rem] font-bold text-navy flex-shrink-0">${s.active}</div>
-          <div class="text-[.65rem] text-slate-400 flex-shrink-0">ativos</div>
+          <div class="text-[.65rem] text-slate-400 flex-shrink-0">${ADMIN_I18N.execLabelActive}</div>
         </div>`;
       }).join('');
 
@@ -2310,7 +2329,7 @@ const ADMIN_I18N = {
         </div>
         <div class="bg-slate-50 rounded-xl p-3 text-center">
           <div class="text-xl font-black text-purple">${leaders + managers}</div>
-          <div class="text-[.65rem] text-slate-400 font-semibold">Liderança</div>
+          <div class="text-[.65rem] text-slate-400 font-semibold">${ADMIN_I18N.execLabelLeadership}</div>
         </div>
         <div class="bg-slate-50 rounded-xl p-3 text-center">
           <div class="text-xl font-black text-teal">${trailPct}%</div>
@@ -2322,7 +2341,7 @@ const ADMIN_I18N = {
         </div>
       </div>
       <div class="mt-3 text-[.7rem] text-slate-400">
-        ${researchers} pesquisadores · ${inReview} artefatos em revisão · ${completed} cursos concluídos
+        ${researchers} ${ADMIN_I18N.execLabelResearchers} · ${inReview} ${ADMIN_I18N.execLabelArtifactsInReview} · ${completed} ${ADMIN_I18N.execLabelCoursesCompleted}
       </div>`;
 
     // ── 6. Tribes ──

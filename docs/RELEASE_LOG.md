@@ -1,5 +1,17 @@
 # Release Log
 
+## 2026-03-08 — S8b i18n long-tail (Sprint increment)
+
+### S8b: i18n admin loadMyTribe, exec panel, cycle-history prompts
+- Admin My Tribe: noAllocation, settings/members/attendance titles, meeting slots, saved, researchers pending
+- Admin exec panel: chapters/cert/tribes titles; labelActive, labelLeadership, labelResearchers, artifactsInReview, coursesCompleted
+- editCycleRecord prompts: opRole, desigs, tribeName, notes — PT/EN/ES
+- Cycle history cards: Papel, Designações
+- Days of week: common.days.sun..sat
+- TribesSection: partialContentWarning para viewWarnings
+
+---
+
 ## 2026-03-08 — S-PA2-UI-BIND + S11 + S8b i18n (Sprint increment)
 
 ### S-PA2-UI-BIND: Painel executivo ligado aos RPCs
