@@ -38,7 +38,7 @@ jobs:
 
       - name: Checkout
         if: steps.token_gate.outputs.has_token == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Resolve commit metadata
         if: steps.token_gate.outputs.has_token == 'true'
