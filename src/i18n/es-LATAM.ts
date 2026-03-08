@@ -547,6 +547,11 @@ const esLATAM: Record<string, string> = {
   'admin.comms.entry.publishSuccess': 'Lote publicado correctamente',
   'admin.comms.entry.publishError': 'Error al publicar lote:',
   'admin.comms.entry.publishNothing': 'No hay pendientes para publicar.',
+  'admin.comms.entry.publishLogSourceFilter': 'Fuente',
+  'admin.comms.entry.publishLogFrom': 'Desde',
+  'admin.comms.entry.publishLogTo': 'Hasta',
+  'admin.comms.entry.publishLogApply': 'Aplicar filtros',
+  'admin.comms.entry.publishLogExport': 'Exportar CSV',
   'artifacts.tribe': 'Línea',
   'artifacts.author': 'Autor',
 
