@@ -36,6 +36,17 @@ Start the SQL architecture for friction/insight mining so roadmap prioritization
     - `knowledge_insights_overview(...)`
     - `knowledge_insights_backlog_candidates(...)`
 
+### Completion update (same day, operational sync v1)
+- edge function created:
+  - `supabase/functions/sync-knowledge-insights/index.ts`
+  - heuristic extraction from `knowledge_chunks` into `knowledge_insights`
+  - idempotent insert behavior via dedup key strategy
+  - run ledger writes in `knowledge_ingestion_runs` (`source='insights'`)
+- scheduler workflow created:
+  - `.github/workflows/knowledge-insights-auto-sync.yml`
+- runbook created:
+  - `docs/migrations/KNOWLEDGE_INSIGHTS_SYNC_RUNBOOK.md`
+
 ## 2026-03-08 — Wave 5 Sprint Increment (S-KNW7 Internal Assistant v1)
 
 ### Scope

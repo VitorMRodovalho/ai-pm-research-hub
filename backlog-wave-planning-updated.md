@@ -83,7 +83,7 @@
 | S-KNW5 | Knowledge-Certification Correlation Layer | Medium | Planned | Correlate `knowledge_assets` consumption with course/certification progress to evidence the Hub as catalyst of qualification outcomes. |
 | S-KNW6 | AI Knowledge Ingestion MVP (YouTube-first) | High | Partial (v1 foundation deployed 2026-03-08) | SQL foundation (`knowledge_assets`, `knowledge_chunks`, `knowledge_ingestion_runs`) applied in production, Edge Function `sync-knowledge-youtube` deployed, smoke dry-run and insert validated; pending source connector automation and embeddings pipeline. |
 | S-KNW7 | Assistente RAG Interno do Núcleo | High | In Progress (v1 textual retrieval + UI 2026-03-08) | `/ai-assistant` entregue com autenticação, busca RPC `knowledge_search_text` e citações por fonte; SQL pack pronto (`knowledge-assistant-v1`) pendente de apply/audit em produção para fechamento da sprint. |
-| S-KNW8 | Friction & Insight Mining | Medium | In Progress (v1 SQL foundation 2026-03-08) | SQL base entregue com `knowledge_insights` + RPCs de visão/priors (`knowledge_insights_overview`, `knowledge_insights_backlog_candidates`); pendente apply/audit em produção e camada de ingestão automática. |
+| S-KNW8 | Friction & Insight Mining | Medium | In Progress (v1 SQL + ingestão automática 2026-03-08) | `knowledge_insights` + RPCs + ACL hardening aplicados em produção e função `sync-knowledge-insights` criada com cron GitHub; pendente apenas deploy da função/secrets e smoke operacional final. |
 
 ---
 
