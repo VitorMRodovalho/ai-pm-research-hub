@@ -22,7 +22,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       <h2 class="text-navy font-bold text-xl mb-2">{t('attendance.authTitle', lang)}</h2>
       <p class="text-slate-500 text-sm mb-6">{t('attendance.authDesc', lang)}</p>
       <button class="w-full py-3 rounded-lg bg-navy text-white font-semibold text-sm border-0 cursor-pointer hover:bg-navy/90 transition-colors"
-              onclick="document.dispatchEvent(new CustomEvent('open-auth'))">
+              data-action="open-auth">
         {t('attendance.authBtn', lang)}
       </button>
       <p id="auth-not-found-msg" class="hidden mt-4 text-[13px] text-red-600"></p>
@@ -42,19 +42,19 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       <!-- Tabs -->
       <div class="flex gap-2 mb-5 flex-wrap">
         <button class="tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white transition-all"
-                data-tab="events" onclick="switchTab(this,'events')">
+                data-tab="events" data-action="switch-tab">
           {t('attendance.events', lang)}
         </button>
         <button class="tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
-                data-tab="ranking" onclick="switchTab(this,'ranking')">
+                data-tab="ranking" data-action="switch-tab">
           {t('attendance.ranking', lang)}
         </button>
         <button class="hidden tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
-                id="tab-new-event" onclick="openNewEventModal()">
+                id="tab-new-event" data-action="open-new-event">
           {t('attendance.newEvent', lang)}
         </button>
         <button class="hidden tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
-                id="tab-recurring" onclick="openRecurringModal()">
+                id="tab-recurring" data-action="open-recurring">
           {t('attendance.recurring', lang)}
         </button>
       </div>
@@ -65,7 +65,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
             <h3 class="text-sm font-bold text-navy">{t('attendance.eventsTitle', lang)}</h3>
             <button class="px-3 py-1.5 rounded-lg text-[12px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer"
-                    onclick="loadEvents()">{t('attendance.refresh', lang)}</button>
+                    data-action="refresh-events">{t('attendance.refresh', lang)}</button>
           </div>
           <div class="p-5" id="events-list">
             <LoadingSkeleton variant="row" count={3} />
@@ -195,7 +195,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   }
 
   // ── TABS ──
-  (window as any).switchTab = (el: HTMLElement, name: string) => {
+  function switchTab(el: HTMLElement, name: string) {
     document.querySelectorAll('.tab-btn').forEach(t => {
       t.classList.remove('bg-navy', 'text-white', 'border-navy');
       t.classList.add('bg-white', 'text-slate-500', 'border-slate-200');
@@ -205,7 +205,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     document.getElementById('tab-events')!.classList.toggle('hidden', name !== 'events');
     document.getElementById('tab-ranking')!.classList.toggle('hidden', name !== 'ranking');
     if (name === 'ranking') loadRanking();
-  };
+  }
 
   // ── KPIs ──
   async function loadKPIs() {
@@ -231,8 +231,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const { data } = await sb.rpc('get_events_with_attendance', { p_limit: 40, p_offset: 0 });
     if (!data?.length) {
       const cta = CAN_MANAGE
-        ? `<button class="mt-3 px-4 py-2 bg-navy text-white rounded-xl text-[12px] font-semibold border-0 cursor-pointer hover:opacity-90" onclick="openNewEventModal()">+ Novo Evento</button>`
-        : `<button class="mt-3 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[12px] font-semibold cursor-pointer hover:bg-slate-50" onclick="loadEvents()">Atualizar</button>`;
+        ? `<button class="mt-3 px-4 py-2 bg-navy text-white rounded-xl text-[12px] font-semibold border-0 cursor-pointer hover:opacity-90" data-action="open-new-event">+ Novo Evento</button>`
+        : `<button class="mt-3 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[12px] font-semibold cursor-pointer hover:bg-slate-50" data-action="refresh-events">Atualizar</button>`;
       el.innerHTML = `
         <div class="text-center py-8">
           <div class="text-3xl mb-2">📅</div>
@@ -294,10 +294,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           <div class="flex gap-1.5 items-center flex-wrap">${eventBadges(ev)}</div>
           <div class="flex gap-1.5 items-center flex-shrink-0">
             ${ev.i_attended !== true
-              ? `<button type="button" class="btn-checkin px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-navy text-white border-0 cursor-pointer hover:opacity-90" data-event-id="${escapeAttr(ev.id)}">Check-in</button>`
+              ? `<button type="button" class="px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-navy text-white border-0 cursor-pointer hover:opacity-90" data-action="check-in" data-event-id="${escapeAttr(ev.id)}">Check-in</button>`
               : `<button class="px-3 py-1.5 rounded-lg text-[12px] font-semibold border-[1.5px] border-navy text-navy bg-transparent cursor-not-allowed opacity-40" disabled>✓</button>`}
-            ${canRoster ? `<button type="button" class="btn-roster px-2 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-md cursor-pointer" title="Lista de presença" data-event-id="${escapeAttr(ev.id)}" data-event-title="${escapeAttr(ev.title || '')}">📋</button>` : ''}
-            ${canEdit ? `<button type="button" class="btn-edit-ev px-2 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-md cursor-pointer" title="Editar evento" data-event-id="${escapeAttr(ev.id)}">✏️</button>` : ''}
+            ${canRoster ? `<button type="button" class="px-2 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-md cursor-pointer" title="Lista de presença" data-action="open-roster" data-event-id="${escapeAttr(ev.id)}" data-event-title="${escapeAttr(ev.title || '')}">📋</button>` : ''}
+            ${canEdit ? `<button type="button" class="px-2 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-md cursor-pointer" title="Editar evento" data-action="edit-event" data-event-id="${escapeAttr(ev.id)}">✏️</button>` : ''}
           </div>
         </div>
       </div>`;
@@ -306,22 +306,49 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
   if (!(window as any).__attendanceDelegationBound) {
     (window as any).__attendanceDelegationBound = true;
+
     document.addEventListener('click', (e: MouseEvent) => {
-      const t = (e.target as HTMLElement).closest('.btn-checkin');
-      if (t) { (window as any).checkIn(t.getAttribute('data-event-id') || ''); return; }
-      const r = (e.target as HTMLElement).closest('.btn-roster');
-      if (r) { (window as any).openRoster(r.getAttribute('data-event-id') || '', r.getAttribute('data-event-title') || ''); return; }
-      const ed = (e.target as HTMLElement).closest('.btn-edit-ev');
-      if (ed) {
-        const ev = (window as any).__attendanceEventsById?.[ed.getAttribute('data-event-id') || ''];
-        if (ev) (window as any).openEditEvent(ev);
-        return;
-      }
-      const tp = (e.target as HTMLElement).closest('.btn-toggle-presence');
-      if (tp) {
-        (window as any).togglePresence(tp.getAttribute('data-event-id') || '', tp.getAttribute('data-member-id') || '', tp as HTMLElement);
+      const target = (e.target as HTMLElement).closest('[data-action]') as HTMLElement | null;
+      if (!target) return;
+
+      switch (target.dataset.action) {
+        case 'open-auth':
+          document.dispatchEvent(new CustomEvent('open-auth'));
+          break;
+        case 'switch-tab':
+          switchTab(target, target.dataset.tab || '');
+          break;
+        case 'open-new-event':
+          (window as any).openNewEventModal();
+          break;
+        case 'open-recurring':
+          (window as any).openRecurringModal();
+          break;
+        case 'refresh-events':
+          loadEvents();
+          break;
+        case 'check-in':
+          (window as any).checkIn(target.dataset.eventId || '');
+          break;
+        case 'open-roster':
+          (window as any).openRoster(target.dataset.eventId || '', target.dataset.eventTitle || '');
+          break;
+        case 'edit-event': {
+          const ev = (window as any).__attendanceEventsById?.[target.dataset.eventId || ''];
+          if (ev) (window as any).openEditEvent(ev);
+          break;
+        }
+        case 'toggle-presence':
+          (window as any).togglePresence(target.dataset.eventId || '', target.dataset.memberId || '', target);
+          break;
       }
     });
+
+    document.addEventListener('error', (e: Event) => {
+      if (e.target instanceof HTMLImageElement && (e.target as HTMLElement).hasAttribute('data-hide-on-error')) {
+        (e.target as HTMLImageElement).style.visibility = 'hidden';
+      }
+    }, true);
   }
 
   // ── CHECK-IN ──
@@ -471,15 +498,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       <tr class="roster-row" data-name="${(m.name || '').toLowerCase()}">
         <td class="px-3 py-2.5 border-b border-slate-100">
           <div class="flex items-center gap-2">
-            <img class="w-7 h-7 rounded-full object-cover bg-slate-100 flex-shrink-0" src="${m.photo_url || ''}" onerror="this.style.visibility='hidden'" alt="">
+            <img class="w-7 h-7 rounded-full object-cover bg-slate-100 flex-shrink-0" src="${m.photo_url || ''}" data-hide-on-error alt="">
             <span class="${m.present ? 'font-semibold' : ''}">${m.name}</span>
           </div>
         </td>
         <td class="px-3 py-2.5 border-b border-slate-100">${roleBadges(rolesFromMember(m))}</td>
         <td class="px-3 py-2.5 border-b border-slate-100 text-center">
           ${CAN_MANAGE
-            ? `<button type="button" class="toggle-btn btn-toggle-presence ${m.present ? 'on' : 'off'}" id="tog-${m.id}"
-                 data-event-id="${escapeAttr(eventId)}" data-member-id="${escapeAttr(m.id)}"></button>`
+            ? `<button type="button" class="toggle-btn ${m.present ? 'on' : 'off'}" id="tog-${m.id}"
+                 data-action="toggle-presence" data-event-id="${escapeAttr(eventId)}" data-member-id="${escapeAttr(m.id)}"></button>`
             : `<div class="w-7 h-7 rounded-full flex items-center justify-center text-[13px] mx-auto ${m.present ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${m.present ? '✅' : '❌'}</div>`
           }
         </td>
@@ -512,7 +539,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     el.innerHTML = data.map((m: any, i: number) => `
       <div class="flex items-center gap-2.5 py-2 border-b border-slate-100 last:border-b-0">
         <div class="text-[13px] font-bold text-slate-500 w-6 text-center flex-shrink-0">${i + 1}</div>
-        <img class="w-8 h-8 rounded-full object-cover bg-slate-100 flex-shrink-0" src="${m.photo_url || ''}" onerror="this.style.visibility='hidden'" alt="">
+        <img class="w-8 h-8 rounded-full object-cover bg-slate-100 flex-shrink-0" src="${m.photo_url || ''}" data-hide-on-error alt="">
         <div class="flex-1 min-w-0">
           <div class="text-[13px] font-semibold truncate">${m.name}</div>
           <div>${roleBadges(rolesFromMember(m))}</div>
