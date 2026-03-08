@@ -8,6 +8,7 @@
 import { TRIBES, MAX_SLOTS, MIN_SLOTS } from '../../data/tribes';
 import { QUADRANTS } from '../../data/quadrants';
 import { t, type Lang } from '../../i18n/utils';
+import { TRIBE_SELECTION_DEADLINE_ISO } from '../../config/homeSchedule';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
@@ -37,6 +38,9 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
       </span>
       <span class="inline-block px-2.5 py-0.5 rounded-md text-[.68rem] font-bold bg-red-50 text-red-600 ml-1">
         {t('tribes.deadline', lang)}
+      </span>
+      <span class="block mt-2 text-[.75rem] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
+        {t('tribes.deadlineNotice', lang)}
       </span>
       <br>
       {t('tribes.slots', lang)}
@@ -162,7 +166,7 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
   </div>
 </section>
 
-<script>
+<script define:vars={{ tribeSelectionDeadline: TRIBE_SELECTION_DEADLINE_ISO }}>
   import { getMemberRole } from '../../lib/routing';
 
   // ── Tribe selection logic ──
@@ -170,7 +174,7 @@ const safeTribes = Array.isArray(TRIBES) ? TRIBES : [];
 
   const MAX_SLOTS = 6;
   const MIN_SLOTS = 3;
-  const DEADLINE = new Date('2026-03-08T15:00:00Z');
+  const DEADLINE = new Date(tribeSelectionDeadline);
 
   let tribeCounts: Record<number, number> = {};
   let userTribe: number | null = null;

@@ -35,3 +35,4 @@ Evitar correções parciais que resolvem um sintoma e deixam falhas adjacentes a
 
 ## Aplicação atual
 - Caso profile (email secundário + verify Credly): adotar event delegation estável no container e remover dependência de binding por render.
+- Caso homepage (prazo tribos + reunião geral): remover textos hardcoded duplicados e centralizar constantes em `src/config/homeSchedule.ts` para evitar divergência entre DB/UI e idiomas.
