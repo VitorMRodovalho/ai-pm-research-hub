@@ -33,6 +33,8 @@
 | S-HF3 | Post Deploy Smoke Test | High | ✅ Done | Added repeatable route smoke script for `/`, `/attendance`, `/gamification`, `/artifacts`, `/profile`, `/admin`, `/teams`, `/rank`, `/ranks`. |
 | S-HF4 | SSR Safety Audit | High | ✅ Done | Added SSR-safe guards/fallbacks in high-risk sections for optional list data. |
 | S-HF5 | Data Patch Follow Through | High | Open | Apply and verify specific cleanup patches such as Sarah LinkedIn restoration, Roberto role correction, and Deputy PM hierarchy adjustment. |
+| S-HF6 | Source of Truth Drift (Trail vs Gamification) | Critical | Open | Unify course progress and certification scoring reads so `/#trail` and `/gamification` show consistent completion and points for the same member. |
+| S-HF7 | Gamification Secondary Tabs Stuck on Loading | Critical | Open | Investigate Supabase requests and state handling in `/gamification` where secondary tabs (tribes/achievements/my points/certificates) remain in permanent loading state. |
 
 ---
 
@@ -43,6 +45,7 @@
 |----|---------|----------|--------|-------------|
 | S-RM2 | Completeness Bar & Timeline | High | Partial | Adaptive completeness bar and “Minha Jornada” timeline using cycle aware history. |
 | S-RM3 | Gamification v2 | High | Partial | Lifetime XP, levels, achievements, and distinction between current cycle vs lifetime progress. |
+| S-UX1 | Trilha Progress Clarity for Researchers | High | Planned | Add explicit logged-in progress indicator: “X de Y cursos concluídos” plus list of missing courses required to finish the mini trilha. |
 | S-PA1 | Product Analytics | High | Planned | PostHog setup with authenticated tracking via Supabase UUID and protected iframe dashboards in `/admin/analytics`. |
 | S8b | i18n Internal Pages | Medium | Partial | Apply i18n keys to `/admin`, `/attendance`, and modals. |
 | S11 | UI Polish & Empty States | Medium | Partial | 404 page, loading states, actionable empty states, and graceful fallback content. |
@@ -56,10 +59,12 @@
 |----|---------|----------|--------|-------------|
 | S-RM4 | Admin Tiers (ACL) | High | Partial | Implement access control tiers such as Superadmin, Admin, Leader, Observer across routes and RLS. |
 | S-REP1 | Exportação VRMS (PMI) | High | Partial | CSV mastigado no `/admin` para Horas de Impacto e reporte PMI. |
+| S-ADM2 | Leadership Training Progress Snapshot | High | Planned | Add fast manager view in Admin for superadmin/manager/deputy_manager showing who completed the trilha, who is blocked, and recent certifications by team/chapter. |
 | S10 | Credly Auto Sync | Medium | Planned | Edge Function or cron to auto sync badges weekly. |
 | S-AN1 | Announcements System | Medium | Planned | Global banners and notifications at top of site. |
 | S-DR1 | Disaster Recovery Doc | Low | Planned | POP de restauração de backup e PITR. |
 | S-COM6 | Dashboard Central de Mídia | Medium | Planned | Looker Studio dashboard using YouTube native connector and LinkedIn/Instagram via Sheets automation, embedded in admin communications route. |
+| S-PA2 | Admin Executive Visual Dashboards (ROI PMI) | High | Planned | Evolve `AdminExecutive` with visual charts (iframe-first or lightweight native SVG): qualification funnel, certification timeline after member join, and skill/certification radar across the base. |
 
 ---
 
@@ -72,6 +77,7 @@
 | S-KNW2 | Tribe Workspace | Medium | Planned | Create `/workspace` with relational views of artifacts in progress, studies, and events across tribes. |
 | S-KNW3 | Sistema de Tags e Relações | Medium | Planned | Link final artifacts to upstream courses, studies, or events to preserve traceability. |
 | S-KNW4 | Views Relacionais Governadas | Medium | Planned | Gallery board style views powered by Supabase data model and RLS, not external knowledge software. |
+| S-KNW5 | Knowledge-Certification Correlation Layer | Medium | Planned | Correlate `knowledge_assets` consumption with course/certification progress to evidence the Hub as catalyst of qualification outcomes. |
 
 ---
 
@@ -142,8 +148,8 @@ Use Looker Studio for YouTube, LinkedIn, and Instagram funnel style KPIs through
 ## 📋 RECOMMENDED EXECUTION ORDER
 
 ### Sessão 1 — House on fire first
-1. Credly mobile paste fix  
-2. Rank and gamification alignment with tier scoring  
+1. Unificar Source of Truth de trilha vs gamificação (`S-HF6`)  
+2. Corrigir loading infinito das abas secundárias em `/gamification` (`S-HF7`)  
 3. Deputy PM hierarchy validation  
 4. Smoke test routes and direct navigation  
 
