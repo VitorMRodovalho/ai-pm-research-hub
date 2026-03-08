@@ -3,6 +3,53 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Toast from '../../components/ui/Toast.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
+const ADMIN_I18N = {
+  loadError: t('admin.msg.loadError', lang),
+  selectTribe: t('admin.msg.selectTribe', lang),
+  allocatedPrefix: t('admin.msg.allocatedPrefix', lang),
+  allocateError: t('admin.msg.allocateError', lang),
+  saveErrorPrefix: t('admin.msg.saveErrorPrefix', lang),
+  memberUpdated: t('admin.msg.memberUpdated', lang),
+  fillTitle: t('admin.msg.fillTitle', lang),
+  errorPrefix: t('admin.msg.errorPrefix', lang),
+  annPublished: t('admin.msg.annPublished', lang),
+  annEnabled: t('admin.msg.annEnabled', lang),
+  annDisabled: t('admin.msg.annDisabled', lang),
+  annDeleteConfirm: t('admin.msg.annDeleteConfirm', lang),
+  annDeleted: t('admin.msg.annDeleted', lang),
+  selectDates: t('admin.msg.selectDates', lang),
+  noExportData: t('admin.msg.noExportData', lang),
+  csvDownloaded: t('admin.msg.csvDownloaded', lang),
+  noMembers: t('admin.msg.noMembers', lang),
+  memberCsvDownloaded: t('admin.msg.memberCsvDownloaded', lang),
+  superadminOnlyHistory: t('admin.msg.superadminOnlyHistory', lang),
+  noEventsInPeriod: t('admin.msg.noEventsInPeriod', lang),
+  deleteRecordConfirmPrefix: t('admin.msg.deleteRecordConfirmPrefix', lang),
+  deleteRecordConfirmSuffix: t('admin.msg.deleteRecordConfirmSuffix', lang),
+  saveError: t('admin.msg.saveError', lang),
+  snapshotLoadError: t('admin.snapshot.loadError', lang),
+  snapshotNoData: t('admin.snapshot.noData', lang),
+  snapshotBase: t('admin.snapshot.base', lang),
+  snapshotDone: t('admin.snapshot.done', lang),
+  snapshotInProgress: t('admin.snapshot.inProgress', lang),
+  snapshotBlocked: t('admin.snapshot.blocked', lang),
+  snapshotByChapter: t('admin.snapshot.byChapter', lang),
+  snapshotByTribe: t('admin.snapshot.byTribe', lang),
+  snapshotRecentCerts: t('admin.snapshot.recentCerts', lang),
+  snapshotNoRecentCerts: t('admin.snapshot.noRecentCerts', lang),
+  loading: t('admin.loading', lang),
+  noPermission: t('admin.restricted', lang),
+  fillStartEnd: t('admin.msg.fillStartEnd', lang),
+  startBeforeEnd: t('admin.msg.startBeforeEnd', lang),
+  slotAdded: t('admin.msg.slotAdded', lang),
+  slotRemoved: t('admin.msg.slotRemoved', lang),
+  settingsSaved: t('admin.msg.settingsSaved', lang),
+  tierLeaderTitlePrefix: t('admin.tier.leaderTitlePrefix', lang),
+  tierLeaderSubtitle: t('admin.tier.leaderSubtitle', lang),
+  tierMyTribe: t('admin.tier.myTribe', lang),
+  tierExecTitle: t('admin.tier.execTitle', lang),
+  tierExecSubtitle: t('admin.tier.execSubtitle', lang),
+};
 ---
 <BaseLayout title={t('admin.meta', lang)} activePage="admin">
   <Toast />
@@ -534,7 +581,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   </div>
 </BaseLayout>
 
-<script>
+<script define:vars={{ ADMIN_I18N }}>
   import { ROLE_COLORS, ROLE_LABELS } from '../../lib/supabase';
   import { getMemberRole } from '../../lib/routing';
   import { normalizeMemberCycleHistory, uniqueSortedCycleCodes } from '../../lib/cycle-history';
@@ -560,43 +607,6 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   let sb: any = null;
   let MEMBER: any = null;
   let allMembers: any[] = [];
-  const ADMIN_I18N = {
-    loadError: "{t('admin.msg.loadError', lang)}",
-    selectTribe: "{t('admin.msg.selectTribe', lang)}",
-    allocatedPrefix: "{t('admin.msg.allocatedPrefix', lang)}",
-    allocateError: "{t('admin.msg.allocateError', lang)}",
-    saveErrorPrefix: "{t('admin.msg.saveErrorPrefix', lang)}",
-    memberUpdated: "{t('admin.msg.memberUpdated', lang)}",
-    fillTitle: "{t('admin.msg.fillTitle', lang)}",
-    errorPrefix: "{t('admin.msg.errorPrefix', lang)}",
-    annPublished: "{t('admin.msg.annPublished', lang)}",
-    annEnabled: "{t('admin.msg.annEnabled', lang)}",
-    annDisabled: "{t('admin.msg.annDisabled', lang)}",
-    annDeleteConfirm: "{t('admin.msg.annDeleteConfirm', lang)}",
-    annDeleted: "{t('admin.msg.annDeleted', lang)}",
-    selectDates: "{t('admin.msg.selectDates', lang)}",
-    noExportData: "{t('admin.msg.noExportData', lang)}",
-    csvDownloaded: "{t('admin.msg.csvDownloaded', lang)}",
-    noMembers: "{t('admin.msg.noMembers', lang)}",
-    memberCsvDownloaded: "{t('admin.msg.memberCsvDownloaded', lang)}",
-    superadminOnlyHistory: "{t('admin.msg.superadminOnlyHistory', lang)}",
-    noEventsInPeriod: "{t('admin.msg.noEventsInPeriod', lang)}",
-    deleteRecordConfirmPrefix: "{t('admin.msg.deleteRecordConfirmPrefix', lang)}",
-    deleteRecordConfirmSuffix: "{t('admin.msg.deleteRecordConfirmSuffix', lang)}",
-    saveError: "{t('admin.msg.saveError', lang)}",
-    snapshotLoadError: "{t('admin.snapshot.loadError', lang)}",
-    snapshotNoData: "{t('admin.snapshot.noData', lang)}",
-    snapshotBase: "{t('admin.snapshot.base', lang)}",
-    snapshotDone: "{t('admin.snapshot.done', lang)}",
-    snapshotInProgress: "{t('admin.snapshot.inProgress', lang)}",
-    snapshotBlocked: "{t('admin.snapshot.blocked', lang)}",
-    snapshotByChapter: "{t('admin.snapshot.byChapter', lang)}",
-    snapshotByTribe: "{t('admin.snapshot.byTribe', lang)}",
-    snapshotRecentCerts: "{t('admin.snapshot.recentCerts', lang)}",
-    snapshotNoRecentCerts: "{t('admin.snapshot.noRecentCerts', lang)}",
-    loading: "{t('admin.loading', lang)}",
-    noPermission: "{t('admin.restricted', lang)}",
-  };
 
   // ── Compute legacy payload fields only for temporary RPC fallback ──
   function computeLegacyFields(opRole: string, desigs: string[]): { role: string; roles: string[] } {
@@ -2039,14 +2049,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const day = parseInt((document.getElementById('slot-day') as HTMLSelectElement).value);
     const start = (document.getElementById('slot-start') as HTMLInputElement).value;
     const end = (document.getElementById('slot-end') as HTMLInputElement).value;
-    if (!start || !end) { toast("{t('admin.msg.fillStartEnd', lang)}", 'error'); return; }
-    if (start >= end) { toast("{t('admin.msg.startBeforeEnd', lang)}", 'error'); return; }
+    if (!start || !end) { toast(ADMIN_I18N.fillStartEnd, 'error'); return; }
+    if (start >= end) { toast(ADMIN_I18N.startBeforeEnd, 'error'); return; }
 
     const { error } = await sb.from('tribe_meeting_slots').insert({
       tribe_id: tribeId, day_of_week: day, time_start: start, time_end: end
     });
     if (error) { toast(ADMIN_I18N.errorPrefix + error.message, 'error'); return; }
-    toast("{t('admin.msg.slotAdded', lang)}", 'success');
+    toast(ADMIN_I18N.slotAdded, 'success');
     loadMyTribe(); // Refresh the whole panel
   };
 
@@ -2054,7 +2064,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     if (!ensureLeaderAction()) return;
     const { error } = await sb.from('tribe_meeting_slots').delete().eq('id', slotId);
     if (error) { toast(ADMIN_I18N.errorPrefix + error.message, 'error'); return; }
-    toast("{t('admin.msg.slotRemoved', lang)}", 'info');
+    toast(ADMIN_I18N.slotRemoved, 'info');
     loadMyTribe();
   };
 
@@ -2073,7 +2083,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     if (error) { toast(ADMIN_I18N.errorPrefix + error.message, 'error'); return; }
     const ok = document.getElementById('tribe-save-ok');
     if (ok) { ok.classList.remove('hidden'); setTimeout(() => ok.classList.add('hidden'), 2000); }
-    toast("{t('admin.msg.settingsSaved', lang)}", 'success');
+    toast(ADMIN_I18N.settingsSaved, 'success');
   };
 
   // ══════════════════════════════════════════
@@ -2204,8 +2214,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       const header = document.getElementById('tier-header')!;
       header.classList.remove('hidden');
       document.getElementById('tier-icon')!.textContent = '🏷️';
-      document.getElementById('tier-title')!.textContent = 'Painel da Tribo — ' + (TRIBE_NAMES[MEMBER.tribe_id] || 'Sua Tribo');
-      document.getElementById('tier-subtitle')!.textContent = 'Configurações da tribo, membros e presenças · Pode editar horários e links';
+      document.getElementById('tier-title')!.textContent = ADMIN_I18N.tierLeaderTitlePrefix + (TRIBE_NAMES[MEMBER.tribe_id] || ADMIN_I18N.tierMyTribe);
+      document.getElementById('tier-subtitle')!.textContent = ADMIN_I18N.tierLeaderSubtitle;
 
       // Hide superadmin tabs, show my-tribe
       document.querySelectorAll('.adm-tab').forEach(t => (t as HTMLElement).style.display = 'none');
@@ -2226,8 +2236,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       header.style.borderColor = '#BE202730';
       header.style.background = '#BE202708';
       document.getElementById('tier-icon')!.textContent = '📊';
-      document.getElementById('tier-title')!.textContent = 'Visão Executiva — Ciclo 3';
-      document.getElementById('tier-subtitle')!.textContent = 'Dados agregados · Sem acesso a informações individuais detalhadas';
+      document.getElementById('tier-title')!.textContent = ADMIN_I18N.tierExecTitle;
+      document.getElementById('tier-subtitle')!.textContent = ADMIN_I18N.tierExecSubtitle;
 
       // Hide superadmin tabs, show executive
       document.querySelectorAll('.adm-tab').forEach(t => (t as HTMLElement).style.display = 'none');

@@ -20,6 +20,11 @@ Deploy consolidado: Event Delegation completo, setup replicável, Credly mobile,
 - **#58** S10: Configurar Credly Auto Sync — GitHub secrets (manual)
 - DEPLOY_CHECKLIST atualizado com links para as issues
 
+### 2026-03-08 — S8b: ADMIN_I18N fix + i18n tier header
+- **Bug fix**: ADMIN_I18N exibia literais `{t('key', lang)}` em vez de traduções
+- Solução: valores reais via `t()` no frontmatter; passagem ao client via `define:vars`
+- Tier header (leader/observer): `admin.tier.leaderTitlePrefix`, `tierLeaderSubtitle`, `tierMyTribe`, `tierExecTitle`, `tierExecSubtitle` em PT/EN/ES
+
 ---
 
 ## 2026-03-08 — Event Delegation: Attendance + Admin (cycle/slot handlers)
