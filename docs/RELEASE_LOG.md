@@ -36,6 +36,12 @@ Start dedicated communications analytics surface for media operations in admin w
 - i18n keys added for KPI copy in PT/EN/ES
 - local `npm run build` and `npm test` passed
 
+### Completion update (architecture governance)
+- added SQL architecture decision board:
+  - `docs/migrations/SQL_ARCH_NEEDS_BOARD.md`
+- board now tracks per-feature backend reality (`DB-backed` vs `Frontend/Embed`) and explicit SQL gaps
+- established sprint gate: features marked as `Needs SQL` cannot be considered complete without migration/audit/rollback artifacts
+
 ## 2026-03-08 — Wave 4 Sprint Increment (S-AN1 / S-ADM2 Formal Closure)
 
 ### Scope

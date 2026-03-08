@@ -112,6 +112,10 @@
 
 ## 🧱 DATA / ARCHITECTURE FOUNDATIONS
 
+### SQL Architecture gate (mandatory)
+- Every sprint feature must be classified in `docs/migrations/SQL_ARCH_NEEDS_BOARD.md` before being marked complete.
+- If classified as `Needs SQL`, completion requires migration + audit + rollback artifacts.
+
 ### Approved architectural direction
 
 - `members` is the current snapshot for identity, contact, auth, and current state.
