@@ -51,6 +51,25 @@ export const TIER_LABELS: Record<string, string> = {
   visitor: '🚫 Visitante (apenas página pública)',
 };
 
+export type AccessTier = 'superadmin' | 'admin' | 'leader' | 'observer' | 'member' | 'visitor';
+export type AdminRouteKey = 'admin_panel' | 'admin_analytics' | 'admin_member_edit' | 'admin_manage_actions';
+
+const TIER_RANK: Record<AccessTier, number> = {
+  visitor: 0,
+  member: 1,
+  observer: 2,
+  leader: 3,
+  admin: 4,
+  superadmin: 5,
+};
+
+const ROUTE_MIN_TIER: Record<AdminRouteKey, AccessTier> = {
+  admin_panel: 'observer',
+  admin_analytics: 'admin',
+  admin_member_edit: 'superadmin',
+  admin_manage_actions: 'admin',
+};
+
 export const CYCLE_META: Record<string, { label: string; abbr: string; color: string }> = {
   pilot:   { label: 'Piloto 2024', abbr: 'P',  color: '#D97706' },
   cycle_1: { label: 'Ciclo 1',     abbr: 'C1', color: '#4F17A8' },
@@ -133,14 +152,22 @@ export function getAccessTier(isSuperadmin: boolean, opRole: string, desigs: str
   return 'visitor';
 }
 
+export function resolveTierFromMember(member: any): AccessTier {
+  if (!member) return 'visitor';
+  const opRole = member.operational_role || 'guest';
+  const desigs: string[] = member.designations || [];
+  return getAccessTier(!!member.is_superadmin, opRole, desigs) as AccessTier;
+}
+
+export function hasMinimumTier(current: AccessTier, required: AccessTier): boolean {
+  return TIER_RANK[current] >= TIER_RANK[required];
+}
+
+export function canAccessAdminRoute(member: any, route: AdminRouteKey): boolean {
+  const tier = resolveTierFromMember(member);
+  return hasMinimumTier(tier, ROUTE_MIN_TIER[route]);
+}
+
 export function getTier(m: any): string {
-  if (m.is_superadmin) return 'superadmin';
-  const opRole = m.operational_role || 'guest';
-  if (opRole === 'manager') return 'admin';
-  if (opRole === 'deputy_manager') return 'admin';
-  const desigs: string[] = m.designations || [];
-  if (desigs.includes('co_gp')) return 'admin';
-  if (opRole === 'tribe_leader') return 'leader';
-  if (desigs.includes('sponsor') || desigs.includes('curator') || desigs.includes('chapter_liaison')) return 'observer';
-  return 'visitor';
+  return resolveTierFromMember(m);
 }

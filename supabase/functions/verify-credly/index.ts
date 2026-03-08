@@ -21,6 +21,7 @@ const TIER2_KEYWORDS = [
   'finops', 'aws certified', 'azure', 'google cloud certified',
   'data analyst', 'data engineer', 'data scientist',
   'itil', 'togaf', 'cobit',
+  'business intelligence', 'scrum foundation', 'sfpc',
 ]
 
 // ── PMI AI Trail (strict KPI tracking — Tier 3: +15 XP) ──
@@ -85,21 +86,130 @@ async function fetchBadges(username: string): Promise<CredlyBadge[]> {
   return data.data || data || []
 }
 
+async function upsertCredlyPoints(
+  sb: ReturnType<typeof createClient>,
+  memberId: string,
+  badge: { name: string; points: number; issued_at: string },
+) {
+  const reason = `Credly: ${badge.name}`
+  const { data: rows, error: rowsError } = await sb.from('gamification_points')
+    .select('id, points, created_at')
+    .eq('member_id', memberId)
+    .eq('reason', reason)
+    .order('created_at', { ascending: true })
+    .order('id', { ascending: true })
+
+  if (rowsError) throw rowsError
+
+  if (!rows || rows.length === 0) {
+    const { error: insertError } = await sb.from('gamification_points').insert({
+      member_id: memberId,
+      points: badge.points,
+      reason,
+      category: 'course',
+      created_at: badge.issued_at || new Date().toISOString(),
+    })
+    if (insertError) throw insertError
+    return
+  }
+
+  const keeper = rows[0]
+  if (keeper.points !== badge.points) {
+    const { error: updateError } = await sb.from('gamification_points')
+      .update({ points: badge.points })
+      .eq('id', keeper.id)
+    if (updateError) throw updateError
+  }
+
+  if (rows.length > 1) {
+    const dupIds = rows.slice(1).map(r => r.id)
+    const { error: deleteDupError } = await sb.from('gamification_points')
+      .delete()
+      .in('id', dupIds)
+    if (deleteDupError) throw deleteDupError
+  }
+}
+
+async function syncTrailProgressFromCredly(
+  sb: ReturnType<typeof createClient>,
+  memberId: string,
+  pmiTrail: { code: string; issued_at: string }[],
+) {
+  if (!pmiTrail.length) return { synced: 0, missingCourses: [] as string[] }
+
+  const trailCodes = Array.from(new Set(pmiTrail.map((t) => t.code).filter(Boolean)))
+  const { data: courses, error: coursesError } = await sb
+    .from('courses')
+    .select('id, code')
+    .in('code', trailCodes)
+
+  if (coursesError) throw coursesError
+
+  const codeToCourseId = new Map<string, string>()
+  for (const c of courses || []) {
+    if (c?.code && c?.id) codeToCourseId.set(String(c.code), String(c.id))
+  }
+
+  let synced = 0
+  const missingCourses: string[] = []
+
+  for (const t of pmiTrail) {
+    const courseId = codeToCourseId.get(t.code)
+    if (!courseId) {
+      missingCourses.push(t.code)
+      continue
+    }
+
+    const { data: existingRows, error: existingError } = await sb
+      .from('course_progress')
+      .select('id, status')
+      .eq('member_id', memberId)
+      .eq('course_id', courseId)
+      .limit(20)
+
+    if (existingError) throw existingError
+
+    if (!existingRows || existingRows.length === 0) {
+      const { error: insertError } = await sb.from('course_progress').insert({
+        member_id: memberId,
+        course_id: courseId,
+        status: 'completed',
+      })
+      if (insertError) throw insertError
+      synced++
+      continue
+    }
+
+    const hasCompleted = existingRows.some((r: any) => r.status === 'completed')
+    if (!hasCompleted) {
+      const { error: updateError } = await sb
+        .from('course_progress')
+        .update({ status: 'completed' })
+        .eq('member_id', memberId)
+        .eq('course_id', courseId)
+      if (updateError) throw updateError
+      synced++
+    }
+  }
+
+  return { synced, missingCourses }
+}
+
 // ── Tier classification ──
 // Returns: { tier: 1|2|3|4, category: string, points: number }
 function classifyBadge(name: string, slug: string): { tier: number; category: string; points: number } {
   const combined = (name + ' ' + slug).toLowerCase()
-
-  // Tier 1: Master certifications (+50 XP)
-  if (TIER1_KEYWORDS.some(kw => combined.includes(kw))) {
-    return { tier: 1, category: 'master_cert', points: 50 }
-  }
 
   // PMI Trail (strict match — Tier 3 but category 'pmi_trail' for KPI tracking)
   for (const trail of PMI_TRAIL_KEYWORDS) {
     if (trail.keywords.every(kw => combined.includes(kw))) {
       return { tier: 3, category: 'pmi_trail', points: 15 }
     }
+  }
+
+  // Tier 1: Master certifications (+50 XP)
+  if (TIER1_KEYWORDS.some(kw => combined.includes(kw))) {
+    return { tier: 1, category: 'master_cert', points: 50 }
   }
 
   // Tier 2: Specializations (+25 XP)
@@ -208,24 +318,7 @@ Deno.serve(async (req) => {
 
       // Award gamification points (with tier-based scoring)
       for (const badge of result.all) {
-        const reason = `Credly: ${badge.name}`
-
-        const { data: existing } = await sb.from('gamification_points')
-          .select('id, points').eq('member_id', member_id)
-          .eq('reason', reason).maybeSingle()
-
-        if (!existing) {
-          // New badge — insert with tier points
-          await sb.from('gamification_points').insert({
-            member_id, points: badge.points, reason, category: 'course',
-            created_at: badge.issued_at || new Date().toISOString(),
-          })
-        } else if (existing.points !== badge.points) {
-          // Existing badge but points changed (tier recalculation) — update
-          await sb.from('gamification_points')
-            .update({ points: badge.points })
-            .eq('id', existing.id)
-        }
+        await upsertCredlyPoints(sb, member_id, badge)
       }
 
       // Remove old manual course points that Credly now covers
@@ -234,8 +327,36 @@ Deno.serve(async (req) => {
           .delete()
           .eq('member_id', member_id)
           .eq('category', 'course')
-          .like('reason', `Curso: ${trail.code}%`)
+          .ilike('reason', `curso:%${trail.code}%`)
       }
+
+      // Keep trail source-of-truth aligned with Credly verification.
+      // This updates course_progress used by /#trail and other UX panels.
+      const trailSync = await syncTrailProgressFromCredly(
+        sb,
+        member_id,
+        result.pmiTrail.map((t) => ({ code: t.code, issued_at: t.issued_at })),
+      )
+
+      return new Response(JSON.stringify({
+        success: true,
+        credly_username: username,
+        total_badges: result.totalBadges,
+        pmi_trail: result.pmiTrail,
+        pmi_trail_count: result.pmiTrailCount,
+        pmi_trail_synced: trailSync.synced,
+        pmi_trail_missing_courses: trailSync.missingCourses,
+        cpmai: result.cpmai,
+        has_cpmai: result.hasCPMAI,
+        all_matched: result.all.filter(b => b.tier <= 3).length,
+        total_points: result.totalPoints,
+        tiers: {
+          master: result.tier1Count,
+          specialization: result.tier2Count,
+          trail_knowledge: result.tier3Count,
+          other: result.tier4Count,
+        },
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     return new Response(JSON.stringify({

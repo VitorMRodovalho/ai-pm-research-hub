@@ -32,7 +32,10 @@
 | S-HF2 | Rank UI Alignment with Credly Tiers | Critical | ✅ Done | Gamification UI now surfaces Credly tier totals and per-tier breakdowns aligned with backend scoring model. |
 | S-HF3 | Post Deploy Smoke Test | High | ✅ Done | Added repeatable route smoke script for `/`, `/attendance`, `/gamification`, `/artifacts`, `/profile`, `/admin`, `/teams`, `/rank`, `/ranks`. |
 | S-HF4 | SSR Safety Audit | High | ✅ Done | Added SSR-safe guards/fallbacks in high-risk sections for optional list data. |
-| S-HF5 | Data Patch Follow Through | High | Open | Apply and verify specific cleanup patches such as Sarah LinkedIn restoration, Roberto role correction, and Deputy PM hierarchy adjustment. |
+| S-HF5 | Data Patch Follow Through | High | In Progress (SQL pack ready 2026-03-08) | Added idempotent SQL pack (`docs/migrations/hf5-apply-data-patch.sql` + `hf5-audit-data-patch.sql`) for Sarah LinkedIn restoration, Roberto role correction by active cycle history, and Deputy PM hierarchy consistency checks/fixes. |
+| S-HF6 | Source of Truth Drift (Trail vs Gamification) | Critical | ✅ Done (2026-03-08) | Reconciliation hardening in `sync-credly-all` now also syncs legacy trail completions into `course_progress`, keeping `/#trail` and `/gamification` aligned. |
+| S-HF7 | Gamification Secondary Tabs Stuck on Loading | Critical | ✅ Done (2026-03-08) | Added timeout and robust error fallback on secondary tab loaders in `/gamification`, removing indefinite "Carregando..." hangs. |
+| S-HF8 | Credly Legacy Sanitization & Dedup | Critical | ✅ Done (2026-03-08) | Promoted BI/SFPC to Tier 2, deployed `verify-credly` + `sync-credly-all` hardening, sanitized `tier=null`, removed duplicate handling gaps, and corrected legacy Tier 1 rows still at 10 points. |
 
 ---
 
@@ -41,11 +44,12 @@
 
 | ID | Feature | Priority | Status | Description |
 |----|---------|----------|--------|-------------|
-| S-RM2 | Completeness Bar & Timeline | High | Partial | Adaptive completeness bar and “Minha Jornada” timeline using cycle aware history. |
-| S-RM3 | Gamification v2 | High | Partial | Lifetime XP, levels, achievements, and distinction between current cycle vs lifetime progress. |
-| S-PA1 | Product Analytics | High | Planned | PostHog setup with authenticated tracking via Supabase UUID and protected iframe dashboards in `/admin/analytics`. |
-| S8b | i18n Internal Pages | Medium | Partial | Apply i18n keys to `/admin`, `/attendance`, and modals. |
-| S11 | UI Polish & Empty States | Medium | Partial | 404 page, loading states, actionable empty states, and graceful fallback content. |
+| S-RM2 | Completeness Bar & Timeline | High | ✅ Done (2026-03-08) | Profile now renders adaptive completeness + “Resumo da Jornada” and timeline backed by `member_cycle_history` with safe fallback when history is unavailable. |
+| S-RM3 | Gamification v2 | High | ✅ Done (2026-03-08) | Cycle vs lifetime split now implemented across individual leaderboard, tribe ranking, achievements context, and my points summary. |
+| S-UX1 | Trilha Progress Clarity for Researchers | High | ✅ Done (2026-03-08) | `/gamification` now shows logged-in mini trail clarity card with explicit progress (`X de Y`) and missing/in-progress course list. |
+| S-PA1 | Product Analytics | High | Partial (v2 delivered 2026-03-08) | Protected `/admin/analytics` route + iframe embeds + admin shortcut, plus consent-aware analytics toggle (allow/revoke), session replay control, and identify gated by consent without name/email PII. |
+| S8b | i18n Internal Pages | Medium | Partial (advanced++ 2026-03-08) | `/attendance` shell + modals localized and `/admin` shell, filters, reports, key modals, critical toasts/confirms, and dynamic action messages localized (PT/EN/ES) with locale-key parity; pending only residual long-tail hardcoded strings in secondary admin flows. |
+| S11 | UI Polish & Empty States | Medium | Partial (advanced 2026-03-08) | 404 already active; upgraded `/artifacts` and `/attendance` with skeleton loading and actionable empty states (CTA), keeping graceful fallback flows for logged and non-logged users. |
 
 ---
 
@@ -54,12 +58,14 @@
 
 | ID | Feature | Priority | Status | Description |
 |----|---------|----------|--------|-------------|
-| S-RM4 | Admin Tiers (ACL) | High | Partial | Implement access control tiers such as Superadmin, Admin, Leader, Observer across routes and RLS. |
+| S-RM4 | Admin Tiers (ACL) | High | Partial (v2 delivered 2026-03-08) | Centralized ACL now gates both critical routes and privileged in-page actions (allocation, member edits, announcements, reports exports, leadership snapshot actions, cycle-history writes, tribe settings), reducing console-trigger bypass risk. |
 | S-REP1 | Exportação VRMS (PMI) | High | Partial | CSV mastigado no `/admin` para Horas de Impacto e reporte PMI. |
+| S-ADM2 | Leadership Training Progress Snapshot | High | Partial (v2 delivered 2026-03-08) | `/admin` reports snapshot now has filters (capítulo/tribo/período), CSV export, and i18n keys for PT/EN/ES, in addition to completion/blocking and recent Credly insights. |
 | S10 | Credly Auto Sync | Medium | Planned | Edge Function or cron to auto sync badges weekly. |
 | S-AN1 | Announcements System | Medium | Planned | Global banners and notifications at top of site. |
 | S-DR1 | Disaster Recovery Doc | Low | Planned | POP de restauração de backup e PITR. |
 | S-COM6 | Dashboard Central de Mídia | Medium | Planned | Looker Studio dashboard using YouTube native connector and LinkedIn/Instagram via Sheets automation, embedded in admin communications route. |
+| S-PA2 | Admin Executive Visual Dashboards (ROI PMI) | High | Planned | Evolve `AdminExecutive` with visual charts (iframe-first or lightweight native SVG): qualification funnel, certification timeline after member join, and skill/certification radar across the base. |
 
 ---
 
@@ -72,6 +78,7 @@
 | S-KNW2 | Tribe Workspace | Medium | Planned | Create `/workspace` with relational views of artifacts in progress, studies, and events across tribes. |
 | S-KNW3 | Sistema de Tags e Relações | Medium | Planned | Link final artifacts to upstream courses, studies, or events to preserve traceability. |
 | S-KNW4 | Views Relacionais Governadas | Medium | Planned | Gallery board style views powered by Supabase data model and RLS, not external knowledge software. |
+| S-KNW5 | Knowledge-Certification Correlation Layer | Medium | Planned | Correlate `knowledge_assets` consumption with course/certification progress to evidence the Hub as catalyst of qualification outcomes. |
 
 ---
 
@@ -142,10 +149,20 @@ Use Looker Studio for YouTube, LinkedIn, and Instagram funnel style KPIs through
 ## 📋 RECOMMENDED EXECUTION ORDER
 
 ### Sessão 1 — House on fire first
-1. Credly mobile paste fix  
-2. Rank and gamification alignment with tier scoring  
+1. Unificar Source of Truth de trilha vs gamificação (`S-HF6`)  
+2. Corrigir loading infinito das abas secundárias em `/gamification` (`S-HF7`)  
 3. Deputy PM hierarchy validation  
 4. Smoke test routes and direct navigation  
+
+### Sprint operacional imediata — 2026-03-08 to 2026-03-12
+1. Monitorar pós deploy de `S-HF6` e `S-HF7` com amostragem de membros com e sem `credly_url`.  
+2. Consolidar query de auditoria recorrente para duplicatas e pontos legados Credly.  
+3. Registrar evidências no `docs/RELEASE_LOG.md` para cada correção com validação pós deploy.  
+
+### Próxima sprint recomendada — 2026-03-12 to 2026-03-19 (Wave 3)
+1. Entregar `S-RM2` (Completeness Bar & Timeline) com dados 100% em `member_cycle_history`.  
+2. Avançar `S-RM3` (Gamification v2) com separação explícita de XP vitalício vs ciclo atual.  
+3. Iniciar `S-UX1` para explicitar “X de 8 cursos” + pendências individuais de trilha para pesquisador.  
 
 ### Sessão 2 — Finish migration discipline
 1. Frontend reads from `operational_role` and `designations` only  

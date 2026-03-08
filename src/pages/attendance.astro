@@ -6,20 +6,24 @@ import NewEventModal from '../components/attendance/NewEventModal.astro';
 import RecurringModal from '../components/attendance/RecurringModal.astro';
 import EditEventModal from '../components/attendance/EditEventModal.astro';
 import RosterModal from '../components/attendance/RosterModal.astro';
+import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
-<BaseLayout title="Presença & Horas de Impacto — Núcleo IA & GP" activePage="attendance">
+<BaseLayout title={t('attendance.meta', lang)} activePage="attendance">
   <Toast />
 
   <!-- AUTH GATE (hidden by default, shown only if no session) -->
   <div id="auth-gate" class="hidden items-center justify-center min-h-screen bg-slate-50">
     <div class="bg-white rounded-2xl p-9 max-w-[360px] w-full text-center border border-slate-200">
       <div class="text-4xl mb-3">⏱️</div>
-      <h2 class="text-navy font-bold text-xl mb-2">Presença & Impacto</h2>
-      <p class="text-slate-500 text-sm mb-6">Faça login para registrar sua presença e acompanhar as horas de impacto do Ciclo 3.</p>
+      <h2 class="text-navy font-bold text-xl mb-2">{t('attendance.authTitle', lang)}</h2>
+      <p class="text-slate-500 text-sm mb-6">{t('attendance.authDesc', lang)}</p>
       <button class="w-full py-3 rounded-lg bg-navy text-white font-semibold text-sm border-0 cursor-pointer hover:bg-navy/90 transition-colors"
               onclick="document.dispatchEvent(new CustomEvent('open-auth'))">
-        Entrar
+        {t('attendance.authBtn', lang)}
       </button>
       <p id="auth-not-found-msg" class="hidden mt-4 text-[13px] text-red-600"></p>
     </div>
@@ -27,7 +31,7 @@ import RosterModal from '../components/attendance/RosterModal.astro';
 
   <!-- LOADING STATE -->
   <div id="loading-gate" class="flex items-center justify-center min-h-[60vh]">
-    <p class="text-slate-400 text-sm">Carregando...</p>
+    <p class="text-slate-400 text-sm">{t('attendance.loading', lang)}</p>
   </div>
 
   <!-- APP (hidden until auth) -->
@@ -39,19 +43,19 @@ import RosterModal from '../components/attendance/RosterModal.astro';
       <div class="flex gap-2 mb-5 flex-wrap">
         <button class="tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white transition-all"
                 data-tab="events" onclick="switchTab(this,'events')">
-          📅 Eventos
+          {t('attendance.events', lang)}
         </button>
         <button class="tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
                 data-tab="ranking" onclick="switchTab(this,'ranking')">
-          🏆 Ranking de Horas
+          {t('attendance.ranking', lang)}
         </button>
         <button class="hidden tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
                 id="tab-new-event" onclick="openNewEventModal()">
-          ➕ Novo Evento
+          {t('attendance.newEvent', lang)}
         </button>
         <button class="hidden tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
                 id="tab-recurring" onclick="openRecurringModal()">
-          🔁 Criar Recorrente
+          {t('attendance.recurring', lang)}
         </button>
       </div>
 
@@ -59,12 +63,12 @@ import RosterModal from '../components/attendance/RosterModal.astro';
       <div id="tab-events">
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
-            <h3 class="text-sm font-bold text-navy">Eventos do Ciclo 3</h3>
+            <h3 class="text-sm font-bold text-navy">{t('attendance.eventsTitle', lang)}</h3>
             <button class="px-3 py-1.5 rounded-lg text-[12px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer"
-                    onclick="loadEvents()">↻ Atualizar</button>
+                    onclick="loadEvents()">{t('attendance.refresh', lang)}</button>
           </div>
           <div class="p-5" id="events-list">
-            <p class="text-slate-500 text-[13px]">Carregando...</p>
+            <LoadingSkeleton variant="row" count={3} />
           </div>
         </div>
       </div>
@@ -73,10 +77,10 @@ import RosterModal from '../components/attendance/RosterModal.astro';
       <div id="tab-ranking" class="hidden">
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div class="px-5 py-3.5 border-b border-slate-200">
-            <h3 class="text-sm font-bold text-navy">Ranking de Horas de Impacto — Ciclo 3</h3>
+            <h3 class="text-sm font-bold text-navy">{t('attendance.rankingTitle', lang)}</h3>
           </div>
           <div class="p-5" id="ranking-list">
-            <p class="text-slate-500 text-[13px]">Carregando...</p>
+            <LoadingSkeleton variant="row" count={3} />
           </div>
         </div>
       </div>
@@ -98,6 +102,12 @@ import RosterModal from '../components/attendance/RosterModal.astro';
 
   import { ROLE_LABELS, ROLE_COLORS } from '../lib/supabase';
   import { getMemberRole } from '../lib/routing';
+
+  const I18N = {
+    loading: "{t('attendance.loading', lang)}",
+    noEvents: "{t('attendance.noEvents', lang)}",
+    hours: "{t('attendance.hours', lang)}",
+  };
 
   let sb: any = null;
   let MEMBER: any = null;
@@ -140,6 +150,18 @@ import RosterModal from '../components/attendance/RosterModal.astro';
 
   function toast(msg: string, type = '') {
     (window as any).toast?.(msg, type);
+  }
+  function loadingRows(count = 3): string {
+    return Array.from({ length: count }).map(() => `
+      <div class="flex items-center gap-3 px-1 py-3 border-b border-slate-100 last:border-b-0 animate-pulse">
+        <div class="w-9 h-9 rounded-full bg-slate-200 flex-shrink-0"></div>
+        <div class="flex-1 space-y-1.5">
+          <div class="h-3 w-40 bg-slate-200 rounded"></div>
+          <div class="h-2.5 w-56 bg-slate-200 rounded"></div>
+        </div>
+        <div class="h-5 w-14 rounded-full bg-slate-200"></div>
+      </div>
+    `).join('');
   }
 
   function today(): string { return new Date().toISOString().slice(0, 10); }
@@ -192,10 +214,21 @@ import RosterModal from '../components/attendance/RosterModal.astro';
 
   // ── EVENTS LIST ──
   async function loadEvents() {
-    const { data } = await sb.rpc('get_events_with_attendance', { p_limit: 40, p_offset: 0 });
     const el = document.getElementById('events-list')!;
+    el.innerHTML = loadingRows(3);
+    const { data } = await sb.rpc('get_events_with_attendance', { p_limit: 40, p_offset: 0 });
     if (!data?.length) {
-      el.innerHTML = '<p class="text-slate-500 text-[13px] text-center py-5">Nenhum evento registrado ainda.</p>';
+      const cta = CAN_MANAGE
+        ? `<button class="mt-3 px-4 py-2 bg-navy text-white rounded-xl text-[12px] font-semibold border-0 cursor-pointer hover:opacity-90" onclick="openNewEventModal()">+ Novo Evento</button>`
+        : `<button class="mt-3 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[12px] font-semibold cursor-pointer hover:bg-slate-50" onclick="loadEvents()">Atualizar</button>`;
+      el.innerHTML = `
+        <div class="text-center py-8">
+          <div class="text-3xl mb-2">📅</div>
+          <div class="font-semibold text-slate-600 text-sm">${I18N.noEvents}</div>
+          <p class="text-slate-400 text-[12px] mt-1">${CAN_MANAGE ? 'Crie um evento para iniciar os registros de presença.' : 'Novos eventos aparecerão aqui assim que forem publicados.'}</p>
+          ${cta}
+        </div>
+      `;
       return;
     }
 
@@ -431,9 +464,19 @@ import RosterModal from '../components/attendance/RosterModal.astro';
 
   // ── RANKING ──
   async function loadRanking() {
-    const { data } = await sb.from('member_attendance_summary').select('*').limit(50);
     const el = document.getElementById('ranking-list')!;
-    if (!data?.length) { el.innerHTML = '<p class="text-slate-500">Sem dados ainda.</p>'; return; }
+    el.innerHTML = loadingRows(4);
+    const { data } = await sb.from('member_attendance_summary').select('*').limit(50);
+    if (!data?.length) {
+      el.innerHTML = `
+        <div class="text-center py-8">
+          <div class="text-3xl mb-2">📊</div>
+          <div class="font-semibold text-slate-600 text-sm">Sem dados de ranking ainda</div>
+          <p class="text-slate-400 text-[12px] mt-1">Quando os eventos tiverem presença registrada, o ranking aparecerá aqui.</p>
+        </div>
+      `;
+      return;
+    }
     const max = Math.max(...data.map((m: any) => parseFloat(m.hours_attended || 0)), 1);
     el.innerHTML = data.map((m: any, i: number) => `
       <div class="flex items-center gap-2.5 py-2 border-b border-slate-100 last:border-b-0">

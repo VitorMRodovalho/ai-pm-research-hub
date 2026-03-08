@@ -3,67 +3,69 @@
  * NewEventModal.astro — Sprint 3
  * Modal for creating a single event. Visible only to CAN_MANAGE users.
  */
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
 <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-new-event">
   <div class="bg-white rounded-2xl w-full max-w-[560px] overflow-hidden max-h-[90vh] flex flex-col">
     <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center flex-shrink-0">
-      <h3 class="text-base font-bold text-navy">Criar Evento</h3>
+      <h3 class="text-base font-bold text-navy">{t('attendance.modal.newEventTitle', lang)}</h3>
       <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" onclick="closeModal('modal-new-event')">✕</button>
     </div>
     <div class="p-5 overflow-y-auto flex-1">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
         <div class="flex flex-col gap-1.5 sm:col-span-2">
-          <label class="text-[12px] font-semibold text-slate-500">Título</label>
+          <label class="text-[12px] font-semibold text-slate-500">{t('attendance.modal.title', lang)}</label>
           <input type="text" id="ev-title" placeholder="Ex: Reunião Geral — Semana 1"
                  class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy transition-colors">
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[12px] font-semibold text-slate-500">Tipo</label>
+          <label class="text-[12px] font-semibold text-slate-500">{t('attendance.modal.type', lang)}</label>
           <select id="ev-type" onchange="updateAudienceFromType('ev-audience','ev-type')"
                   class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
-            <option value="tribe_meeting">Reunião de Tribo</option>
-            <option value="general_meeting">Reunião Geral</option>
-            <option value="webinar">Webinar</option>
-            <option value="other">Outro</option>
+            <option value="tribe_meeting">{t('attendance.modal.typeTribe', lang)}</option>
+            <option value="general_meeting">{t('attendance.modal.typeGeneral', lang)}</option>
+            <option value="webinar">{t('attendance.modal.typeWebinar', lang)}</option>
+            <option value="other">{t('attendance.modal.typeOther', lang)}</option>
           </select>
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[12px] font-semibold text-slate-500">Público da lista de presença</label>
+          <label class="text-[12px] font-semibold text-slate-500">{t('attendance.modal.audience', lang)}</label>
           <select id="ev-audience"
                   class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
-            <option value="all">Todos os participantes ativos</option>
-            <option value="leadership">Liderança (Nível 1+2 + Embaixadores)</option>
-            <option value="tribe">Apenas a tribo</option>
-            <option value="curators">Comitê de Curadoria</option>
+            <option value="all">{t('attendance.modal.audienceAll', lang)}</option>
+            <option value="leadership">{t('attendance.modal.audienceLeadership', lang)}</option>
+            <option value="tribe">{t('attendance.modal.audienceTribe', lang)}</option>
+            <option value="curators">{t('attendance.modal.audienceCurators', lang)}</option>
           </select>
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[12px] font-semibold text-slate-500">Data</label>
+          <label class="text-[12px] font-semibold text-slate-500">{t('attendance.modal.date', lang)}</label>
           <input type="date" id="ev-date"
                  class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[12px] font-semibold text-slate-500">Duração (minutos)</label>
+          <label class="text-[12px] font-semibold text-slate-500">{t('attendance.modal.duration', lang)}</label>
           <input type="number" id="ev-duration" value="90" min="15" max="480"
                  class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
         </div>
         <div class="flex flex-col gap-1.5 sm:col-span-2">
-          <label class="text-[12px] font-semibold text-slate-500">Link da reunião (Google Meet, Zoom…)</label>
+          <label class="text-[12px] font-semibold text-slate-500">{t('attendance.modal.meetingLink', lang)} (Google Meet, Zoom…)</label>
           <input type="url" id="ev-link" placeholder="https://meet.google.com/..."
                  class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
         </div>
         <div class="flex flex-col gap-1.5">
           <label class="flex items-center gap-2 text-[13px] font-medium cursor-pointer">
             <input type="checkbox" id="ev-recorded" class="w-4 h-4 accent-navy">
-            🔴 Reunião gravada
+            {t('attendance.modal.recordedMeeting', lang)}
           </label>
         </div>
       </div>
     </div>
     <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2 flex-shrink-0">
-      <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer" onclick="closeModal('modal-new-event')">Cancelar</button>
-      <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer" onclick="createEvent()">Criar Evento</button>
+      <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer" onclick="closeModal('modal-new-event')">{t('attendance.modal.cancel', lang)}</button>
+      <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer" onclick="createEvent()">{t('attendance.modal.createEvent', lang)}</button>
     </div>
   </div>
 </div>
