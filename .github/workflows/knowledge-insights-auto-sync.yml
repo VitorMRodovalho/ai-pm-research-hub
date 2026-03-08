@@ -14,6 +14,7 @@ jobs:
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       SYNC_KNOWLEDGE_INSIGHTS_SECRET: ${{ secrets.SYNC_KNOWLEDGE_INSIGHTS_SECRET }}
       KNOWLEDGE_INSIGHTS_FUNCTION_NAME: ${{ secrets.KNOWLEDGE_INSIGHTS_FUNCTION_NAME }}
     steps:
@@ -35,14 +36,17 @@ jobs:
       - name: Trigger edge function
         run: |
           set -euo pipefail
+          API_KEY="${SUPABASE_SERVICE_ROLE_KEY:-$SUPABASE_ANON_KEY}"
           URL="${SUPABASE_URL%/}/functions/v1/${{ steps.fn.outputs.name }}"
           echo "Calling: $URL"
           HTTP_CODE=$(curl -sS -o /tmp/knowledge_sync_resp.json -w "%{http_code}" \
             -X POST "$URL" \
             -H "Content-Type: application/json" \
-            -H "apikey: $SUPABASE_ANON_KEY" \
-            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "apikey: $API_KEY" \
+            -H "Authorization: Bearer $API_KEY" \
             -H "x-cron-secret: $SYNC_KNOWLEDGE_INSIGHTS_SECRET" \
+            -H "x-sync-secret: $SYNC_KNOWLEDGE_INSIGHTS_SECRET" \
+            -H "x-sync-token: $SYNC_KNOWLEDGE_INSIGHTS_SECRET" \
             -d '{"triggered_by":"github_actions","source":"knowledge_insights_auto_sync"}')
 
           echo "HTTP_CODE=$HTTP_CODE"
