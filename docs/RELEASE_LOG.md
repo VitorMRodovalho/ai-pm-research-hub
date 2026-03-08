@@ -1,4 +1,23 @@
 # Release Log
+## 2026-03-08 — Planning Update (Data Scalability & DB Governance Queue)
+
+### Scope
+Consolidate database-focused recommendations into explicit production queue items and architecture governance artifacts.
+
+### Decisions registered
+- created roadmap:
+  - `docs/migrations/DATA_SCALABILITY_ROADMAP.md`
+- backlog queue additions:
+  - `S-DB2` Executive MViews
+  - `S-DB3` High-volume Index Audit
+  - `S-DB4` Vector Index Strategy v2
+  - `S-DB5` Embedding Refresh Lifecycle
+  - `S-DB6` Audit Trail Schema
+  - `S-DB7` Soft-delete Parity
+- SQL board alignment:
+  - registered DB scalability track items with explicit delivery gate (`migration + audit + rollback + runbook`)
+  - linked data roadmap as canonical reference for next DB interventions
+
 ## 2026-03-08 — Planning Update (Frontend Hardening & Production Queue)
 
 ### Scope

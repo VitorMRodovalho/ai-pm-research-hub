@@ -27,6 +27,11 @@ Force explicit backend/SQL decisions for every sprint feature so we never ship o
 | `S-KNW7` Internal RAG Assistant | In Progress (v1 text retrieval ready) | UI `/ai-assistant` + RPC `knowledge_search_text` migration pack prepared | **Yes** | Apply `knowledge-assistant-v1` in production, run audit, and evolve to hybrid ranking (`tsvector + vector`) once embedding refresh is operational | Wave 5 |
 | `S-KNW8` Friction Insight Mining | In Progress (v1 SQL + sync function) | `knowledge_insights` fact table + scoring/taxonomy RPCs in production + `sync-knowledge-insights` function and cron workflow | **Yes** | Complete function production deploy + secret wiring + smoke/audit evidence for sustained operation | Wave 5 |
 | `S-OPS2` AI Cost Guardrails | Planned | No quota model yet | **Yes** | Add usage/budget tables (`ai_usage_daily`, `ai_budget_limits`) + alerting query views for no-cost threshold control | Wave 6 |
+| `S-DB2` Executive MViews | Planned | Aggregations still partially computed client-side | **Yes** | Create materialized views for executive snapshots + refresh strategy + staleness audit query | Next |
+| `S-DB3` High-volume Index Audit | Planned | Index coverage not yet benchmark-documented for hot paths | **Yes** | Add index/audit migration pack with `EXPLAIN` evidence for attendance/gamification/comms heavy reads | Next |
+| `S-DB4` Vector Index Strategy v2 | Planned | `knowledge_chunks.embedding` currently on `ivfflat` | **Yes** | Benchmark and evaluate `hnsw` adoption path (or keep ivfflat with evidence) + operational reindex playbook | Wave 6 |
+| `S-DB6` Audit Trail Schema | Planned | No dedicated immutable audit schema for critical writes | **Yes** | Add trigger-based audit ledger for `members`, comms and gamification mutations | Wave 6 |
+| `S-DB7` Soft-delete Parity | Planned | Mixed lifecycle semantics across analytics-relevant entities | **Yes** | Standardize soft-delete pattern and referential safeguards to preserve historical analytics integrity | Wave 6 |
 
 ## Immediate SQL Backlog (priority)
 1. `COMMS_METRICS_V1` migration pack
@@ -53,3 +58,5 @@ A feature cannot be marked `Completed` unless this board says either:
 ## Related Frontend Track
 - Frontend hardening backlog and decomposition plan are tracked in:
   - `docs/FRONTEND_HARDENING_ROADMAP.md`
+- Data scalability and observability interventions are tracked in:
+  - `docs/migrations/DATA_SCALABILITY_ROADMAP.md`
