@@ -1,4 +1,21 @@
 # Release Log
+## 2026-03-08 — Validation Note (Tribes Flow Restored in Production)
+
+### User validation
+- manual production smoke confirmed by product owner:
+  - tribe counters visible again
+  - tribe detail expansion/interactions restored
+
+### Technical closure notes
+- root causes addressed in sequence:
+  - browser runtime instability in inline scripts (TS syntax leaking to client)
+  - unresolved i18n data contract in `TribesSection` render path
+- stabilization patches shipped:
+  - `a34a7bb` (tribes counter runtime stability)
+  - `a6beb02` (server-side fallback counters)
+  - `17fead7` (runtime decoupled from fragile import dependency)
+  - `724f94c` (resolved tribe/quadrant content contract restore)
+
 ## 2026-03-08 — Tribes Stability Patch (Data Contract Restore + Regression Track)
 
 ### Scope
