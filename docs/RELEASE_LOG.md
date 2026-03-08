@@ -140,6 +140,15 @@ Improve VRMS export usability for leadership reporting by adding optional segmen
 ### Follow up still required
 - optional date presets (`7d`, `30d`, current cycle) for faster reporting
 - align future snapshot export UX with same filter persistence
+
+### Completion update (same day, v2)
+- delivered VRMS quick period presets in `/admin`:
+  - `Last 7 days`
+  - `Last 30 days`
+  - `Current cycle`
+- presets auto-fill `from`/`to` fields for faster preview/export workflows
+- i18n keys added for quick-range labels in PT/EN/ES
+- local `npm run build` and `npm test` passed after update
 - local `npm run build` passed after v2 changes
 
 ## 2026-03-08 — Wave 3 Sprint Increment (S11 UI Polish / Empty States)
