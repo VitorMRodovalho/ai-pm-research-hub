@@ -1,5 +1,19 @@
 # Governance Changelog
 
+## 2026-03-08 — Holistic debug protocol for critical journeys
+
+### Decision
+Critical user journeys (profile, auth, gamification sync, admin operations) must be debugged and validated end-to-end, not by isolated symptom fixes.
+
+### Rule
+- root-cause chain must cover UI handler, session/auth, backend call, RLS/SQL, and return rendering
+- fixes for interactive flows should prefer resilient binding patterns (event delegation on stable containers)
+- every production fix must include explicit validation evidence and regression checklist
+
+### Documentation artifacts
+- `docs/DEBUG_HOLISTIC_PLAYBOOK.md`
+- `.github/pull_request_template.md` regression checklist block
+
 ## 2026-03-07 — Documentation and release governance reset
 
 ### Decision
