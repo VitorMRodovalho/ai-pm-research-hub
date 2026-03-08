@@ -86,11 +86,26 @@ import Toast from '../components/ui/Toast.astro';
               id="tab-admin-certs" data-tab="admin-certs" onclick="switchGamTab(this,'admin-certs')">📋 Emitir</button>
     </div>
 
+    <!-- Trail Clarity (logged user) -->
+    <div id="trail-clarity-card" class="hidden mb-6">
+      <div class="bg-white rounded-xl border border-slate-200 p-5">
+        <div id="trail-clarity-content">
+          <p class="text-slate-400 text-sm text-center py-2">Carregando progresso da trilha...</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Individual Leaderboard -->
     <div id="panel-leaderboard">
       <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
           <h3 class="text-sm font-bold text-navy">Ranking Individual — Ciclo 3</h3>
+          <div class="inline-flex items-center gap-1.5 bg-slate-50 rounded-full p-1 border border-slate-200">
+            <button id="lb-mode-cycle" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-navy text-white border-0 cursor-pointer"
+                    onclick="setLeaderboardMode('cycle')">Ciclo Atual</button>
+            <button id="lb-mode-lifetime" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-transparent text-slate-500 border-0 cursor-pointer"
+                    onclick="setLeaderboardMode('lifetime')">XP Vitalício</button>
+          </div>
         </div>
         <div class="p-5" id="leaderboard-list">
           <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
@@ -101,10 +116,16 @@ import Toast from '../components/ui/Toast.astro';
     <!-- Tribe Ranking -->
     <div id="panel-tribes" class="hidden">
       <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div class="px-5 py-3.5 border-b border-slate-200">
+        <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between gap-3 flex-wrap">
           <h3 class="text-sm font-bold text-navy">Ranking de Tribos — Ciclo 3</h3>
-          <p class="text-[.7rem] text-slate-400 mt-0.5">Score = (média pontos × 1) + (membros ativos × 10)</p>
+          <div class="inline-flex items-center gap-1.5 bg-slate-50 rounded-full p-1 border border-slate-200">
+            <button id="tr-mode-cycle" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-navy text-white border-0 cursor-pointer"
+                    onclick="setTribeMode('cycle')">Ciclo Atual</button>
+            <button id="tr-mode-lifetime" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-transparent text-slate-500 border-0 cursor-pointer"
+                    onclick="setTribeMode('lifetime')">XP Vitalício</button>
+          </div>
         </div>
+        <p class="px-5 pt-2 text-[.7rem] text-slate-400">Score = (média pontos × 1) + (membros ativos × 10)</p>
         <div class="p-5" id="tribes-ranking-list">
           <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
         </div>
@@ -204,8 +225,12 @@ import Toast from '../components/ui/Toast.astro';
   let sb: any = null;
   let MEMBER: any = null;
   let leaderboardData: any[] = [];
+  let leaderboardMode: 'cycle' | 'lifetime' = 'cycle';
+  let tribeMode: 'cycle' | 'lifetime' = 'cycle';
+  let lifetimePointsByMember: Record<string, number> = {};
   let trailProgressByMember = new Map();
   const TRAIL_TOTAL = 8;
+  const PANEL_QUERY_TIMEOUT_MS = 15000;
 
   const CATEGORY_META: Record<string, { icon: string; color: string; bg: string }> = {
     attendance: { icon: '📅', color: '#2563EB', bg: '#EFF6FF' },
@@ -236,6 +261,18 @@ import Toast from '../components/ui/Toast.astro';
     if (!el) return;
     const color = kind === 'error' ? 'text-crimson' : 'text-slate-400';
     el.innerHTML = `<p class="${color} text-sm text-center py-6">${message}</p>`;
+  }
+
+  async function withTimeout<T>(promise: Promise<T>, ms = PANEL_QUERY_TIMEOUT_MS): Promise<T> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('Tempo limite excedido ao carregar dados.')), ms);
+    });
+    try {
+      return await Promise.race([promise, timeout]);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
   }
 
   async function describeFnError(err: any): Promise<string> {
@@ -285,6 +322,22 @@ import Toast from '../components/ui/Toast.astro';
   ];
 
   // ── TABS ──
+  (window as any).setLeaderboardMode = (mode: 'cycle' | 'lifetime') => {
+    leaderboardMode = mode;
+    const cycleBtn = document.getElementById('lb-mode-cycle');
+    const lifeBtn = document.getElementById('lb-mode-lifetime');
+    if (cycleBtn && lifeBtn) {
+      const cycleOn = mode === 'cycle';
+      cycleBtn.classList.toggle('bg-navy', cycleOn);
+      cycleBtn.classList.toggle('text-white', cycleOn);
+      cycleBtn.classList.toggle('text-slate-500', !cycleOn);
+      lifeBtn.classList.toggle('bg-navy', !cycleOn);
+      lifeBtn.classList.toggle('text-white', !cycleOn);
+      lifeBtn.classList.toggle('text-slate-500', cycleOn);
+    }
+    renderLeaderboard();
+  };
+
   (window as any).switchGamTab = (el: HTMLElement, tab: string) => {
     document.querySelectorAll('.gam-tab').forEach(t => {
       t.classList.remove('bg-navy', 'text-white', 'border-navy');
@@ -302,32 +355,45 @@ import Toast from '../components/ui/Toast.astro';
     if (tab === 'mycerts') loadMyCertificates();
   };
 
-  // ── INDIVIDUAL LEADERBOARD (with XP levels) ──
-  async function loadLeaderboard() {
+  (window as any).setTribeMode = (mode: 'cycle' | 'lifetime') => {
+    tribeMode = mode;
+    const cycleBtn = document.getElementById('tr-mode-cycle');
+    const lifeBtn = document.getElementById('tr-mode-lifetime');
+    if (cycleBtn && lifeBtn) {
+      const cycleOn = mode === 'cycle';
+      cycleBtn.classList.toggle('bg-navy', cycleOn);
+      cycleBtn.classList.toggle('text-white', cycleOn);
+      cycleBtn.classList.toggle('text-slate-500', !cycleOn);
+      lifeBtn.classList.toggle('bg-navy', !cycleOn);
+      lifeBtn.classList.toggle('text-white', !cycleOn);
+      lifeBtn.classList.toggle('text-slate-500', cycleOn);
+    }
+    loadTribeRanking();
+  };
+
+  function renderLeaderboard() {
     const el = document.getElementById('leaderboard-list')!;
-    setPanelMessage('leaderboard-list', 'Carregando...', 'loading');
-    try {
-      const { data, error } = await sb.from('gamification_leaderboard').select('*');
-      if (error) throw error;
-      const { data: credlyRows, error: credlyError } = await sb.from('gamification_points')
-        .select('member_id, points, reason')
-        .like('reason', 'Credly:%');
-      if (credlyError) throw credlyError;
-      const { data: courseRows, error: courseRowsError } = await sb.from('course_progress')
-        .select('member_id, course_id, status');
-      if (courseRowsError) throw courseRowsError;
+    if (!leaderboardData?.length) {
+      setPanelMessage('leaderboard-list', 'Nenhum ponto registrado. Clique em "Sincronizar Pontos" para calcular.', 'empty');
+      return;
+    }
 
-      leaderboardData = data || [];
-      const credlyByMember = aggregateCredlyByMember(credlyRows || []);
-      trailProgressByMember = buildTrailProgressByMember(courseRows || [], TRAIL_TOTAL);
-      if (!data?.length) {
-        setPanelMessage('leaderboard-list', 'Nenhum ponto registrado. Clique em "Sincronizar Pontos" para calcular.', 'empty');
-        return;
-      }
+    const rankedRows = (leaderboardData || [])
+      .map((m: any) => ({
+        ...m,
+        cycle_points: Number(m.total_points || 0),
+        lifetime_points: Number(lifetimePointsByMember[m.member_id] || m.total_points || 0),
+      }))
+      .sort((a: any, b: any) => {
+        const left = leaderboardMode === 'lifetime' ? a.lifetime_points : a.cycle_points;
+        const right = leaderboardMode === 'lifetime' ? b.lifetime_points : b.cycle_points;
+        return right - left;
+      });
 
-      const maxPts = Math.max(...data.map((m: any) => m.total_points), 1);
+    const maxPts = Math.max(...rankedRows.map((m: any) => leaderboardMode === 'lifetime' ? m.lifetime_points : m.cycle_points), 1);
+    const modeLabel = leaderboardMode === 'lifetime' ? 'XP Vitalício' : 'Ciclo Atual';
 
-      el.innerHTML = data.map((m: any, i: number) => {
+    el.innerHTML = rankedRows.map((m: any, i: number) => {
       const initials = m.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
       const photo = m.photo_url
         ? `<img src="${m.photo_url}" class="w-10 h-10 rounded-full object-cover flex-shrink-0" alt="">`
@@ -335,29 +401,19 @@ import Toast from '../components/ui/Toast.astro';
 
       const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
       const rank = i + 1;
-      const pct = (m.total_points / maxPts * 100).toFixed(0);
-      const level = getLevel(m.total_points);
+      const displayPoints = leaderboardMode === 'lifetime' ? m.lifetime_points : m.cycle_points;
+      const pct = (displayPoints / maxPts * 100).toFixed(0);
+      const level = getLevel(displayPoints);
       const isMe = MEMBER && m.member_id === MEMBER.id;
-      const credly = credlyByMember[m.member_id] || { total: 0, badges: 0, t1: 0, t2: 0, t3: 0, t4: 0 };
+      const credly = aggregateCredlyByMember([])[m.member_id] || { total: 0, badges: 0, t1: 0, t2: 0, t3: 0, t4: 0 };
       const trail = trailProgressByMember.get(m.member_id) || { completed: 0, inProgress: 0, pct: 0 };
 
       const breakdown = [
-        m.attendance_points > 0 ? `📅 ${m.attendance_points}` : '',
+        `🧭 ${modeLabel}: ${displayPoints}`,
+        leaderboardMode === 'lifetime' ? `📅 Ciclo: ${m.cycle_points}` : `♾️ Vida: ${m.lifetime_points}`,
         `📚 ${trail.completed}/${TRAIL_TOTAL}`,
         trail.inProgress > 0 ? `⏳ ${trail.inProgress} em andamento` : '',
-        m.artifact_points > 0 ? `📄 ${m.artifact_points}` : '',
-        m.bonus_points > 0 ? `⭐ ${m.bonus_points}` : '',
-        credly.total > 0 ? `🏅 ${credly.total}` : '',
       ].filter(Boolean).join(' · ');
-
-      const credlyTierTags = credly.total > 0
-        ? [
-          credly.t1 > 0 ? `T1×${credly.t1}` : '',
-          credly.t2 > 0 ? `T2×${credly.t2}` : '',
-          credly.t3 > 0 ? `T3×${credly.t3}` : '',
-          credly.t4 > 0 ? `T4×${credly.t4}` : '',
-        ].filter(Boolean).map((x: string) => `<span class="text-[.55rem] px-1 py-0.5 rounded bg-amber-50 text-amber-700">${x}</span>`).join(' ')
-        : '';
 
       return `
       <div class="flex items-center gap-3 py-3 border-b border-slate-100 last:border-b-0 ${i < 3 ? 'bg-amber-50/30' : ''} ${isMe ? 'ring-2 ring-orange/30 rounded-lg' : ''}">
@@ -369,18 +425,55 @@ import Toast from '../components/ui/Toast.astro';
             <span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-slate-100">${level.emoji} ${level.name}</span>
             ${isMe ? '<span class="text-[.55rem] font-bold px-1 py-0.5 rounded bg-orange/10 text-orange">VOCÊ</span>' : ''}
           </div>
-          <div class="text-[11px] text-slate-400">${m.chapter || ''} ${breakdown ? '· ' + breakdown : ''}</div>
-          ${credlyTierTags ? `<div class="mt-1 flex gap-1 flex-wrap">${credlyTierTags}</div>` : ''}
+          <div class="text-[11px] text-slate-400">${m.chapter || ''} · ${breakdown}</div>
           <div class="h-1.5 bg-slate-100 rounded-full mt-1 overflow-hidden">
-            <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${m.total_points > 0 ? '#FF610F' : '#E2E8F0'}"></div>
+            <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${displayPoints > 0 ? '#FF610F' : '#E2E8F0'}"></div>
           </div>
         </div>
         <div class="text-right flex-shrink-0">
-          <div class="text-lg font-extrabold text-navy">${m.total_points}</div>
+          <div class="text-lg font-extrabold text-navy">${displayPoints}</div>
           <div class="text-[10px] text-slate-400">pts</div>
         </div>
       </div>`;
-      }).join('');
+    }).join('');
+  }
+
+  async function ensureLifetimePointsLoaded() {
+    if (Object.keys(lifetimePointsByMember).length > 0 || !leaderboardData.length) return;
+    const ids = leaderboardData.map((m: any) => m.member_id).filter(Boolean);
+    if (!ids.length) return;
+    const { data: allPointsRows, error: allPointsError } = await withTimeout(
+      sb.from('gamification_points').select('member_id, points').in('member_id', ids),
+    );
+    if (allPointsError) throw allPointsError;
+    lifetimePointsByMember = {};
+    (allPointsRows || []).forEach((r: any) => {
+      const id = String(r.member_id || '');
+      if (!id) return;
+      lifetimePointsByMember[id] = (lifetimePointsByMember[id] || 0) + Number(r.points || 0);
+    });
+  }
+
+  // ── INDIVIDUAL LEADERBOARD (with XP levels) ──
+  async function loadLeaderboard() {
+    setPanelMessage('leaderboard-list', 'Carregando...', 'loading');
+    try {
+      const { data, error } = await sb.from('gamification_leaderboard').select('*');
+      if (error) throw error;
+      const { data: courseRows, error: courseRowsError } = await sb.from('course_progress')
+        .select('member_id, course_id, status');
+      if (courseRowsError) throw courseRowsError;
+
+      leaderboardData = data || [];
+      trailProgressByMember = buildTrailProgressByMember(courseRows || [], TRAIL_TOTAL);
+      if (!data?.length) {
+        setPanelMessage('leaderboard-list', 'Nenhum ponto registrado. Clique em "Sincronizar Pontos" para calcular.', 'empty');
+        return;
+      }
+
+      lifetimePointsByMember = {};
+      await ensureLifetimePointsLoaded();
+      renderLeaderboard();
     } catch (e: any) {
       console.error('gamification.loadLeaderboard failed', e);
       setPanelMessage('leaderboard-list', `Erro ao carregar ranking: ${e?.message || 'falha inesperada'}`, 'error');
@@ -392,18 +485,21 @@ import Toast from '../components/ui/Toast.astro';
     setPanelMessage('tribes-ranking-list', 'Carregando...', 'loading');
     try {
       // Get tribe selections + leaderboard data
-      const { data: selections, error: selectionsError } = await sb.from('tribe_selections').select('tribe_id, member_id');
+      const { data: selections, error: selectionsError } = await withTimeout(
+        sb.from('tribe_selections').select('tribe_id, member_id'),
+      );
       if (selectionsError) throw selectionsError;
-      const { data: leaders, error: leadersError } = await sb.from('members')
-        .select('id, tribe_id')
-        .eq('operational_role', 'tribe_leader');
+      const { data: leaders, error: leadersError } = await withTimeout(
+        sb.from('members').select('id, tribe_id').eq('operational_role', 'tribe_leader'),
+      );
       if (leadersError) throw leadersError;
 
       if (!leaderboardData.length) {
-        const { data, error } = await sb.from('gamification_leaderboard').select('*');
+        const { data, error } = await withTimeout(sb.from('gamification_leaderboard').select('*'));
         if (error) throw error;
         leaderboardData = data || [];
       }
+      await ensureLifetimePointsLoaded();
 
     // Build tribe map: member_id → tribe_id
     const memberTribe: Record<string, number> = {};
@@ -417,7 +513,10 @@ import Toast from '../components/ui/Toast.astro';
     leaderboardData.forEach((m: any) => {
       const tid = memberTribe[m.member_id];
       if (tid && tribeStats[tid]) {
-        tribeStats[tid].points += m.total_points;
+        const points = tribeMode === 'lifetime'
+          ? Number(lifetimePointsByMember[m.member_id] || m.total_points || 0)
+          : Number(m.total_points || 0);
+        tribeStats[tid].points += points;
         tribeStats[tid].members++;
         tribeStats[tid].names.push(m.name.split(' ')[0]);
       }
@@ -442,6 +541,7 @@ import Toast from '../components/ui/Toast.astro';
 
     const maxScore = Math.max(...ranked.map(t => t.score), 1);
 
+      const modeLabel = tribeMode === 'lifetime' ? 'XP Vitalício' : 'Ciclo Atual';
       el.innerHTML = ranked.map((t, i) => {
       const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
       const pct = Math.round((t.score / maxScore) * 100);
@@ -454,7 +554,7 @@ import Toast from '../components/ui/Toast.astro';
           </div>
           <div class="flex-1 min-w-0">
             <div class="text-[13px] font-bold">${t.name}</div>
-            <div class="text-[11px] text-slate-400">${t.members} membros · Média: ${t.avg} pts · Total: ${t.total} pts</div>
+            <div class="text-[11px] text-slate-400">${t.members} membros · ${modeLabel} média: ${t.avg} pts · Total: ${t.total} pts</div>
             <div class="h-1.5 bg-slate-100 rounded-full mt-1.5 overflow-hidden">
               <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${t.color}"></div>
             </div>
@@ -485,28 +585,36 @@ import Toast from '../components/ui/Toast.astro';
     setPanelMessage('achievements-list', 'Carregando...', 'loading');
 
     try {
+      if (!leaderboardData.length) {
+        const { data: lbRows, error: lbError } = await withTimeout(sb.from('gamification_leaderboard').select('*'));
+        if (lbError) throw lbError;
+        leaderboardData = lbRows || [];
+      }
+      await ensureLifetimePointsLoaded();
+
       // Gather data for achievement checks
-      const { count: attendanceCount, error: attendanceError } = await sb.from('attendance')
-        .select('*', { count: 'exact', head: true })
-        .eq('member_id', MEMBER.id);
+      const { count: attendanceCount, error: attendanceError } = await withTimeout(
+        sb.from('attendance').select('*', { count: 'exact', head: true }).eq('member_id', MEMBER.id),
+      );
       if (attendanceError) throw attendanceError;
 
-      const { data: courses, error: coursesError } = await sb.from('course_progress')
-        .select('status')
-        .eq('member_id', MEMBER.id);
+      const { data: courses, error: coursesError } = await withTimeout(
+        sb.from('course_progress').select('status').eq('member_id', MEMBER.id),
+      );
       if (coursesError) throw coursesError;
 
-      const { data: artifacts, error: artifactsError } = await sb.from('artifacts')
-        .select('status')
-        .eq('author_id', MEMBER.id);
+      const { data: artifacts, error: artifactsError } = await withTimeout(
+        sb.from('artifacts').select('status').eq('author_id', MEMBER.id),
+      );
       if (artifactsError) throw artifactsError;
 
-      const { data: cycles, error: cyclesError } = await sb.from('member_cycle_history')
-        .select('cycle_code')
-        .eq('member_id', MEMBER.id);
+      const { data: cycles, error: cyclesError } = await withTimeout(
+        sb.from('member_cycle_history').select('cycle_code').eq('member_id', MEMBER.id),
+      );
       if (cyclesError) throw cyclesError;
 
-    const myPoints = leaderboardData.find((m: any) => m.member_id === MEMBER.id)?.total_points || 0;
+    const cyclePoints = leaderboardData.find((m: any) => m.member_id === MEMBER.id)?.total_points || 0;
+    const myPoints = Number(lifetimePointsByMember[MEMBER.id] || cyclePoints || 0);
     const coursesCompleted = (courses || []).filter((c: any) => c.status === 'completed').length;
     const artifactsPublished = (artifacts || []).filter((a: any) => a.status === 'published').length;
     const cycleCount = (cycles || []).length;
@@ -536,6 +644,7 @@ import Toast from '../components/ui/Toast.astro';
         }).join('')}
       </div>
       <div class="mt-4 text-center text-[.78rem] text-slate-500">
+        XP Vitalício: <strong>${myPoints}</strong> · Ciclo atual: <strong>${cyclePoints}</strong><br>
         ${earned} de ${total} conquistas desbloqueadas
       </div>`;
     } catch (e: any) {
@@ -551,33 +660,34 @@ import Toast from '../components/ui/Toast.astro';
       return;
     }
     setPanelMessage('mypoints-list', 'Carregando...', 'loading');
-    const { data, error } = await sb.from('gamification_points')
-      .select('*')
-      .eq('member_id', MEMBER.id)
-      .order('created_at', { ascending: false });
-    if (error) {
-      console.error('gamification.loadMyPoints failed', error);
-      setPanelMessage('mypoints-list', `Erro ao carregar seus pontos: ${error.message}`, 'error');
-      return;
-    }
+    try {
+      const { data, error } = await withTimeout(
+        sb.from('gamification_points')
+          .select('*')
+          .eq('member_id', MEMBER.id)
+          .order('created_at', { ascending: false }),
+      );
+      if (error) throw error;
 
-    const el = document.getElementById('mypoints-list')!;
-    if (!data?.length) {
-      setPanelMessage('mypoints-list', 'Nenhum ponto registrado ainda.', 'empty');
-      return;
-    }
+      const el = document.getElementById('mypoints-list')!;
+      if (!data?.length) {
+        setPanelMessage('mypoints-list', 'Nenhum ponto registrado ainda.', 'empty');
+        return;
+      }
 
     const total = data.reduce((s: number, p: any) => s + p.points, 0);
+    const cyclePoints = leaderboardData.find((m: any) => m.member_id === MEMBER.id)?.total_points || 0;
     const level = getLevel(total);
-    const myCredly = aggregateCredlyByMember(
-      (data || []).filter((p: any) => String(p.reason || '').startsWith('Credly:'))
-    )[MEMBER.id] || { total: 0, badges: 0, t1: 0, t2: 0, t3: 0, t4: 0 };
+      const myCredly = aggregateCredlyByMember(
+        (data || []).filter((p: any) => String(p.reason || '').startsWith('Credly:'))
+      )[MEMBER.id] || { total: 0, badges: 0, t1: 0, t2: 0, t3: 0, t4: 0 };
 
-    el.innerHTML = `
+      el.innerHTML = `
       <div class="text-center mb-6 py-5 bg-gradient-to-br from-navy/5 to-orange/5 rounded-xl">
         <div class="text-3xl mb-1">${level.emoji}</div>
         <div class="text-3xl font-extrabold text-navy">${total}</div>
-        <div class="text-sm text-slate-500">pontos · <strong>${level.name}</strong></div>
+        <div class="text-sm text-slate-500">XP Vitalício · <strong>${level.name}</strong></div>
+        <div class="text-[.7rem] text-slate-400 mt-1">Ciclo atual: <strong>${cyclePoints}</strong> pts</div>
         ${level.next ? `<div class="text-[.7rem] text-slate-400 mt-1">Faltam ${level.ptsToNext} pts para ${level.next}</div>` : '<div class="text-[.7rem] text-amber-600 mt-1 font-bold">Nível máximo alcançado!</div>'}
         <div class="w-40 h-2 bg-slate-200 rounded-full mx-auto mt-2 overflow-hidden">
           <div class="h-full bg-orange rounded-full" style="width:${level.pctInLevel}%"></div>
@@ -606,7 +716,11 @@ import Toast from '../components/ui/Toast.astro';
         </div>
         <div class="font-bold text-sm" style="color:${cat.color}">+${p.points}</div>
       </div>`;
-    }).join('');
+      }).join('');
+    } catch (e: any) {
+      console.error('gamification.loadMyPoints failed', e);
+      setPanelMessage('mypoints-list', `Erro ao carregar seus pontos: ${e?.message || 'falha inesperada'}`, 'error');
+    }
   }
 
   // ── MY CERTIFICATES ──
@@ -616,25 +730,24 @@ import Toast from '../components/ui/Toast.astro';
       return;
     }
     setPanelMessage('mycerts-list', 'Carregando...', 'loading');
-    const { data, error } = await sb.from('certificates')
-      .select('*')
-      .eq('member_id', MEMBER.id)
-      .order('issued_at', { ascending: false });
-    if (error) {
-      console.error('gamification.loadMyCertificates failed', error);
-      setPanelMessage('mycerts-list', `Erro ao carregar certificados: ${error.message}`, 'error');
-      return;
-    }
+    try {
+      const { data, error } = await withTimeout(
+        sb.from('certificates')
+          .select('*')
+          .eq('member_id', MEMBER.id)
+          .order('issued_at', { ascending: false }),
+      );
+      if (error) throw error;
 
-    const el = document.getElementById('mycerts-list')!;
-    if (!data?.length) {
-      setPanelMessage('mycerts-list', 'Nenhum certificado emitido ainda. Continue participando!', 'empty');
-      return;
-    }
+      const el = document.getElementById('mycerts-list')!;
+      if (!data?.length) {
+        setPanelMessage('mycerts-list', 'Nenhum certificado emitido ainda. Continue participando!', 'empty');
+        return;
+      }
 
-    el.innerHTML = data.map((c: any) => {
-      const date = new Date(c.issued_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-      return `
+      el.innerHTML = data.map((c: any) => {
+        const date = new Date(c.issued_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+        return `
       <div class="flex items-center gap-3 py-3 border-b border-slate-100 last:border-b-0">
         <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-xl flex-shrink-0">🎓</div>
         <div class="flex-1 min-w-0">
@@ -645,7 +758,70 @@ import Toast from '../components/ui/Toast.astro';
         </div>
         ${c.pdf_url ? `<a href="${c.pdf_url}" target="_blank" class="px-3 py-1.5 bg-navy text-white rounded-lg text-[12px] font-semibold no-underline hover:opacity-90">📥 PDF</a>` : ''}
       </div>`;
-    }).join('');
+      }).join('');
+    } catch (e: any) {
+      console.error('gamification.loadMyCertificates failed', e);
+      setPanelMessage('mycerts-list', `Erro ao carregar certificados: ${e?.message || 'falha inesperada'}`, 'error');
+    }
+  }
+
+  // ── MY TRAIL CLARITY ──
+  async function loadMyTrailClarity() {
+    if (!MEMBER) return;
+    const host = document.getElementById('trail-clarity-content');
+    if (!host) return;
+    host.innerHTML = `<p class="text-slate-400 text-sm text-center py-2">Carregando progresso da trilha...</p>`;
+
+    try {
+      const { data: courses, error: coursesError } = await withTimeout(
+        sb.from('courses').select('id, code, name, sort_order').order('sort_order', { ascending: true }),
+      );
+      if (coursesError) throw coursesError;
+
+      const { data: rows, error: rowsError } = await withTimeout(
+        sb.from('course_progress').select('course_id, status').eq('member_id', MEMBER.id),
+      );
+      if (rowsError) throw rowsError;
+
+      const courseList = courses || [];
+      const totalCourses = courseList.length || TRAIL_TOTAL;
+      const statusByCourseId = new Map<number, string>();
+      (rows || []).forEach((r: any) => {
+        const id = Number(r.course_id);
+        const current = String(r.status || '');
+        const prev = statusByCourseId.get(id);
+        if (prev === 'completed') return;
+        if (current === 'completed' || !prev) statusByCourseId.set(id, current);
+      });
+
+      const completed = courseList.filter((c: any) => statusByCourseId.get(Number(c.id)) === 'completed');
+      const inProgress = courseList.filter((c: any) => statusByCourseId.get(Number(c.id)) === 'in_progress');
+      const missing = courseList.filter((c: any) => !statusByCourseId.has(Number(c.id)));
+      const pct = totalCourses > 0 ? Math.round((completed.length / totalCourses) * 100) : 0;
+
+      host.innerHTML = `
+        <div class="flex items-center justify-between gap-3 flex-wrap mb-2">
+          <div>
+            <div class="text-sm font-bold text-navy">📚 Mini Trilha PMI AI</div>
+            <div class="text-[12px] text-slate-500">${completed.length} de ${totalCourses} cursos concluídos</div>
+          </div>
+          <span class="text-[11px] font-bold px-2 py-1 rounded-full ${pct >= 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
+            ${pct}% concluído
+          </span>
+        </div>
+        <div class="h-2 bg-slate-100 rounded-full overflow-hidden mb-3">
+          <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${pct >= 100 ? '#10B981' : '#FF610F'}"></div>
+        </div>
+        <div class="text-[12px] text-slate-500">
+          ${missing.length === 0
+            ? '✅ Trilha completa. Você já concluiu todos os cursos.'
+            : `Faltam <strong>${missing.length}</strong> curso(s): ${missing.map((c: any) => c.name).join(' · ')}`}
+          ${inProgress.length > 0 ? `<br>⏳ Em andamento: ${inProgress.map((c: any) => c.name).join(' · ')}` : ''}
+        </div>
+      `;
+    } catch (e: any) {
+      host.innerHTML = `<p class="text-crimson text-sm text-center py-2">Erro ao carregar progresso da trilha: ${e?.message || 'falha inesperada'}</p>`;
+    }
   }
 
   // ── SYNC POINTS (admin) ──
@@ -688,6 +864,7 @@ import Toast from '../components/ui/Toast.astro';
       const isPartialError = attendanceSummary.includes('com erro') || credlySummary.includes('com erro');
       toast(`${attendanceSummary} ${credlySummary}`, isPartialError ? 'info' : 'success');
       loadLeaderboard();
+      loadMyTrailClarity();
     } catch (e: any) {
       toast(`Erro inesperado ao sincronizar: ${e?.message || 'falha desconhecida'}`, 'error');
     } finally {
@@ -763,6 +940,7 @@ import Toast from '../components/ui/Toast.astro';
 
   function setupUI() {
     const isAdmin = MEMBER.is_superadmin;
+    document.getElementById('trail-clarity-card')?.classList.remove('hidden');
     document.getElementById('tab-achievements')?.classList.remove('hidden');
     document.getElementById('tab-mypoints')?.classList.remove('hidden');
     document.getElementById('tab-mycerts')?.classList.remove('hidden');
@@ -771,6 +949,7 @@ import Toast from '../components/ui/Toast.astro';
       document.getElementById('tab-admin-certs')?.classList.remove('hidden');
     }
     loadLeaderboard();
+    loadMyTrailClarity();
     loadMembersDropdown();
   }
 

@@ -36,6 +36,7 @@ import Toast from '../components/ui/Toast.astro';
   let currentMember: any = null;
   let cycleHistory: any[] = [];
   let cycleStats: any = null;
+  let journeyStats: any = null;
 
   // ── Boot ──
   async function boot() {
@@ -77,11 +78,17 @@ import Toast from '../components/ui/Toast.astro';
   async function loadExtras(sb: any) {
     if (!currentMember?.id) return;
     // Load cycle history
-    const { data: hist } = await sb.from('member_cycle_history')
-      .select('*')
-      .eq('member_id', currentMember.id)
-      .order('cycle_start', { ascending: true });
-    cycleHistory = normalizeMemberCycleHistory(hist);
+    try {
+      const { data: hist } = await sb.from('member_cycle_history')
+        .select('*')
+        .eq('member_id', currentMember.id)
+        .order('cycle_start', { ascending: true });
+      cycleHistory = normalizeMemberCycleHistory(hist);
+      journeyStats = buildJourneyStats(cycleHistory);
+    } catch {
+      cycleHistory = [];
+      journeyStats = buildJourneyStats([]);
+    }
 
     // Load stats for current cycle
     try {
@@ -131,6 +138,33 @@ import Toast from '../components/ui/Toast.astro';
     }
   }
 
+  function formatDatePt(value: string | null | undefined): string {
+    if (!value) return '—';
+    const dt = new Date(value);
+    if (Number.isNaN(dt.getTime())) return '—';
+    return dt.toLocaleDateString('pt-BR', { year: 'numeric', month: 'short' });
+  }
+
+  function buildJourneyStats(history: any[]) {
+    const list = Array.isArray(history) ? history : [];
+    const totalCycles = list.length;
+    const active = list.find((h: any) => h?.is_active) || list[list.length - 1] || null;
+    const first = list[0] || null;
+    return {
+      totalCycles,
+      currentCycleLabel: active?.cycle_label || 'Sem ciclo ativo',
+      firstStart: formatDatePt(first?.cycle_start),
+      latestStart: formatDatePt(active?.cycle_start),
+      hasHistory: totalCycles > 0,
+    };
+  }
+
+  function hasCurrentCycleContext(m: any): boolean {
+    if (Array.isArray(cycleHistory) && cycleHistory.some((h: any) => !!h?.is_active)) return true;
+    if (Array.isArray(cycleHistory) && cycleHistory.some((h: any) => !!h?.cycle_code)) return true;
+    return !!m?.current_cycle_active;
+  }
+
   // ── Completeness calculation ──
   function getCompleteness(m: any): { pct: number; missing: string[] } {
     const opRole = m.operational_role || 'guest';
@@ -152,7 +186,7 @@ import Toast from '../components/ui/Toast.astro';
       check(m.phone, 'Telefone', 10);
       check(m.credly_url, 'Credly URL', 15);
       check(m.secondary_emails?.length, 'Email secundário', 10);
-      check(m.tribe_id || null, 'Tribo selecionada', 10);
+      check(hasCurrentCycleContext(m), 'Vínculo de ciclo', 10);
       check(cycleStats?.coursesCompleted || cycleStats?.coursesInProgress, '≥1 curso da trilha', 10);
     } else {
       check(m.photo_url, 'Foto', 20);
@@ -210,7 +244,13 @@ import Toast from '../components/ui/Toast.astro';
 
   // ── Timeline ──
   function timelineHtml(): string {
-    if (!cycleHistory.length) return '';
+    if (!cycleHistory.length) {
+      return `
+        <div class="bg-white rounded-2xl border border-slate-200 p-6">
+          <h2 class="text-sm font-bold text-navy mb-2">📅 Minha Jornada no Núcleo</h2>
+          <p class="text-[.78rem] text-slate-500">Ainda sem histórico de ciclo cadastrado.</p>
+        </div>`;
+    }
     const CYCLE_COLORS: Record<string, string> = {
       pilot: '#D97706', cycle_1: '#4F17A8', cycle_2: '#00799E', cycle_3: '#FF610F'
     };
@@ -245,6 +285,32 @@ import Toast from '../components/ui/Toast.astro';
                 </div>
               </div>`;
           }).join('')}
+        </div>
+      </div>`;
+  }
+
+  function journeySummaryHtml(): string {
+    if (!journeyStats) return '';
+    return `
+      <div class="bg-white rounded-2xl border border-slate-200 p-6">
+        <h2 class="text-sm font-bold text-navy mb-4">🧭 Resumo da Jornada</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div class="bg-slate-50 rounded-xl p-3 text-center">
+            <div class="text-lg font-black text-navy">${journeyStats.totalCycles}</div>
+            <div class="text-[.65rem] text-slate-400 font-semibold">Ciclos</div>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-3 text-center">
+            <div class="text-[.72rem] font-black text-navy">${journeyStats.currentCycleLabel}</div>
+            <div class="text-[.65rem] text-slate-400 font-semibold">Ciclo atual</div>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-3 text-center">
+            <div class="text-[.72rem] font-black text-navy">${journeyStats.firstStart}</div>
+            <div class="text-[.65rem] text-slate-400 font-semibold">Ingresso</div>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-3 text-center">
+            <div class="text-[.72rem] font-black text-navy">${journeyStats.latestStart}</div>
+            <div class="text-[.65rem] text-slate-400 font-semibold">Última ativação</div>
+          </div>
         </div>
       </div>`;
   }
@@ -346,6 +412,9 @@ import Toast from '../components/ui/Toast.astro';
 
       <!-- Dashboard: Current Cycle -->
       ${dashboardHtml(m)}
+
+      <!-- Journey Summary -->
+      ${journeySummaryHtml()}
 
       <!-- Timeline: Cycle History -->
       ${timelineHtml()}

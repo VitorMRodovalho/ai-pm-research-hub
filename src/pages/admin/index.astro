@@ -1,24 +1,26 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Toast from '../../components/ui/Toast.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
-<BaseLayout title="Admin — Núcleo IA & GP" activePage="admin">
+<BaseLayout title={t('admin.meta', lang)} activePage="admin">
   <Toast />
   <div class="max-w-[1200px] mx-auto px-4 py-8">
     <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
       <div>
-        <h1 class="text-2xl font-extrabold text-navy">⚙️ Administração</h1>
-        <p class="text-sm text-slate-500">Gerenciamento de membros, tribos e operações do Ciclo 3</p>
+        <h1 class="text-2xl font-extrabold text-navy">{t('admin.title', lang)}</h1>
+        <p class="text-sm text-slate-500">{t('admin.subtitle', lang)}</p>
       </div>
     </div>
 
     <div id="not-admin-msg" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
       <div class="text-2xl mb-2">🔒</div>
-      <p class="font-semibold text-amber-800">Acesso restrito. Faça login com uma conta autorizada.</p>
-      <a href="/profile" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">👤 Ver meu perfil</a>
+      <p class="font-semibold text-amber-800">{t('admin.restricted', lang)}</p>
+      <a href="/profile" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">{t('admin.viewProfile', lang)}</a>
     </div>
 
-    <div id="admin-loading" class="text-center py-10 text-slate-400">Verificando acesso...</div>
+    <div id="admin-loading" class="text-center py-10 text-slate-400">{t('admin.checkingAccess', lang)}</div>
 
     <!-- Tier header (shown for non-superadmin tiers) -->
     <div id="tier-header" class="hidden mb-5 p-4 rounded-xl border" style="border-color:#4F17A830;background:#4F17A808">
@@ -33,26 +35,26 @@ import Toast from '../../components/ui/Toast.astro';
 
     <div id="admin-panel" class="hidden">
       <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
-        <div class="bg-white border border-slate-200 rounded-xl p-4"><div class="text-2xl font-black text-navy" id="stat-total">—</div><div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">Total</div></div>
-        <div class="bg-white border border-slate-200 rounded-xl p-4"><div class="text-2xl font-black text-emerald-600" id="stat-active">—</div><div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">Ativos</div></div>
-        <div class="bg-white border border-slate-200 rounded-xl p-4"><div class="text-2xl font-black text-amber-600" id="stat-pending">—</div><div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">Sem Tribo</div></div>
-        <div class="bg-white border border-slate-200 rounded-xl p-4"><div class="text-2xl font-black text-crimson" id="stat-inactive">—</div><div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">Inativos</div></div>
-        <div class="bg-white border border-slate-200 rounded-xl p-4"><div class="text-2xl font-black text-purple" id="stat-noauth">—</div><div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">Sem Login</div></div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4"><div class="text-2xl font-black text-navy" id="stat-total">—</div><div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">{t('admin.stat.total', lang)}</div></div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4"><div class="text-2xl font-black text-emerald-600" id="stat-active">—</div><div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">{t('admin.stat.active', lang)}</div></div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4"><div class="text-2xl font-black text-amber-600" id="stat-pending">—</div><div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">{t('admin.stat.noTribe', lang)}</div></div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4"><div class="text-2xl font-black text-crimson" id="stat-inactive">—</div><div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">{t('admin.stat.inactive', lang)}</div></div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4"><div class="text-2xl font-black text-purple" id="stat-noauth">—</div><div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">{t('admin.stat.noLogin', lang)}</div></div>
       </div>
 
       <div class="flex gap-2 mb-5 flex-wrap">
-        <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white" data-tab="tribes" onclick="switchAdmTab(this,'tribes')">🏷️ Gestão de Tribos</button>
-        <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500" data-tab="members" onclick="switchAdmTab(this,'members')">👥 Membros</button>
-        <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500" data-tab="reports" onclick="switchAdmTab(this,'reports')">📊 Relatórios</button>
+        <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white" data-tab="tribes" onclick="switchAdmTab(this,'tribes')">{t('admin.tab.tribes', lang)}</button>
+        <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500" data-tab="members" onclick="switchAdmTab(this,'members')">{t('admin.tab.members', lang)}</button>
+        <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500" data-tab="reports" onclick="switchAdmTab(this,'reports')">{t('admin.tab.reports', lang)}</button>
       </div>
 
       <div id="panel-tribes">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6" id="tribe-cards"></div>
         <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
           <div class="px-5 py-3.5 border-b border-slate-200 bg-amber-50">
-            <h3 class="text-sm font-bold text-amber-800">⚠️ Pool de Pendentes — Ainda não escolheram tribo</h3>
+            <h3 class="text-sm font-bold text-amber-800">{t('admin.pendingPoolTitle', lang)}</h3>
           </div>
-          <div class="p-4" id="pending-list"><p class="text-slate-400 text-sm text-center py-4">Carregando...</p></div>
+          <div class="p-4" id="pending-list"><p class="text-slate-400 text-sm text-center py-4">{t('admin.loading', lang)}</p></div>
         </div>
       </div>
 
@@ -60,13 +62,13 @@ import Toast from '../../components/ui/Toast.astro';
         <!-- Filter bar -->
         <div class="bg-white border border-slate-200 rounded-2xl p-4 mb-4">
           <div class="flex items-center gap-3 mb-3 flex-wrap">
-            <input type="text" id="f-search" placeholder="🔍 Buscar nome ou email..." oninput="applyFilters()"
+            <input type="text" id="f-search" placeholder={t('admin.filter.search', lang)} oninput="applyFilters()"
               class="px-3 py-2 border border-slate-200 rounded-lg text-[.78rem] focus:outline-none focus:border-teal flex-1 min-w-[200px]">
             <span class="text-[.72rem] font-bold text-slate-400" id="f-count">—</span>
           </div>
           <div class="flex gap-2 flex-wrap">
             <select id="f-chapter" onchange="applyFilters()" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-[.72rem] bg-white">
-              <option value="">Capítulo: Todos</option>
+              <option value="">{t('admin.filter.chapterAll', lang)}</option>
               <option value="PMI-GO">PMI-GO</option>
               <option value="PMI-CE">PMI-CE</option>
               <option value="PMI-DF">PMI-DF</option>
@@ -74,40 +76,40 @@ import Toast from '../../components/ui/Toast.astro';
               <option value="PMI-RS">PMI-RS</option>
             </select>
             <select id="f-oprole" onchange="applyFilters()" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-[.72rem] bg-white">
-              <option value="">Papel: Todos</option>
-              <option value="manager">Gerente</option>
+              <option value="">{t('admin.filter.roleAll', lang)}</option>
+              <option value="manager">{t('role.manager', lang)}</option>
               <option value="deputy_manager">Deputy PM</option>
-              <option value="tribe_leader">Líder de Tribo</option>
-              <option value="researcher">Pesquisador</option>
-              <option value="facilitator">Facilitador</option>
-              <option value="communicator">Multiplicador</option>
-              <option value="none">Sem papel operacional</option>
-              <option value="guest">Convidado</option>
+              <option value="tribe_leader">{t('role.tribe_leader', lang)}</option>
+              <option value="researcher">{t('role.researcher', lang)}</option>
+              <option value="facilitator">{t('role.facilitator', lang)}</option>
+              <option value="communicator">{t('role.communicator', lang)}</option>
+              <option value="none">{t('admin.filter.noOperationalRole', lang)}</option>
+              <option value="guest">{t('role.guest', lang)}</option>
             </select>
             <select id="f-desig" onchange="applyFilters()" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-[.72rem] bg-white">
-              <option value="">Designação: Todas</option>
-              <option value="sponsor">Patrocinador</option>
-              <option value="chapter_liaison">Ponto Focal</option>
-              <option value="ambassador">Embaixador</option>
-              <option value="founder">Fundador</option>
-              <option value="curator">Curador</option>
-              <option value="comms_team">Comunicação</option>
+              <option value="">{t('admin.filter.designationAll', lang)}</option>
+              <option value="sponsor">{t('admin.desig.sponsor', lang)}</option>
+              <option value="chapter_liaison">{t('admin.desig.chapterLiaison', lang)}</option>
+              <option value="ambassador">{t('admin.desig.ambassador', lang)}</option>
+              <option value="founder">{t('admin.desig.founder', lang)}</option>
+              <option value="curator">{t('admin.desig.curator', lang)}</option>
+              <option value="comms_team">{t('admin.desig.comms', lang)}</option>
               <option value="co_gp">Co-GP</option>
-              <option value="has_any">✦ Com designação</option>
-              <option value="has_none">○ Sem designação</option>
+              <option value="has_any">{t('admin.filter.withDesignation', lang)}</option>
+              <option value="has_none">{t('admin.filter.withoutDesignation', lang)}</option>
             </select>
             <select id="f-status" onchange="applyFilters()" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-[.72rem] bg-white">
-              <option value="">Status: Todos</option>
-              <option value="active">✅ Ativos</option>
-              <option value="inactive">❌ Inativos</option>
+              <option value="">{t('admin.filter.statusAll', lang)}</option>
+              <option value="active">{t('admin.filter.statusActive', lang)}</option>
+              <option value="inactive">{t('admin.filter.statusInactive', lang)}</option>
             </select>
             <select id="f-auth" onchange="applyFilters()" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-[.72rem] bg-white">
-              <option value="">Login: Todos</option>
-              <option value="has">✅ Com login</option>
-              <option value="no">⚠️ Sem login</option>
+              <option value="">{t('admin.filter.loginAll', lang)}</option>
+              <option value="has">{t('admin.filter.loginHas', lang)}</option>
+              <option value="no">{t('admin.filter.loginNo', lang)}</option>
             </select>
             <select id="f-tribe" onchange="applyFilters()" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-[.72rem] bg-white">
-              <option value="">Tribo: Todas</option>
+              <option value="">{t('admin.filter.tribeAll', lang)}</option>
               <option value="1">01 — Radar Tecnológico</option>
               <option value="2">02 — Agentes Autônomos</option>
               <option value="3">03 — TMO & PMO</option>
@@ -116,40 +118,40 @@ import Toast from '../../components/ui/Toast.astro';
               <option value="6">06 — ROI & Portfólio</option>
               <option value="7">07 — Governança</option>
               <option value="8">08 — Inclusão</option>
-              <option value="none">⚠️ Sem tribo</option>
+              <option value="none">{t('admin.filter.noTribe', lang)}</option>
             </select>
-            <button onclick="clearFilters()" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-[.72rem] text-slate-400 hover:text-crimson hover:border-crimson bg-white cursor-pointer transition-all">✕ Limpar</button>
+            <button onclick="clearFilters()" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-[.72rem] text-slate-400 hover:text-crimson hover:border-crimson bg-white cursor-pointer transition-all">{t('admin.filter.clear', lang)}</button>
           </div>
         </div>
-        <div id="members-area"><div class="text-center py-10 text-slate-400">Carregando membros…</div></div>
+        <div id="members-area"><div class="text-center py-10 text-slate-400">{t('admin.loadingMembers', lang)}</div></div>
       </div>
 
       <!-- Reports panel -->
       <div id="panel-reports" class="hidden">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
           <!-- VRMS Export -->
           <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div class="px-5 py-3.5 border-b border-slate-200">
-              <h3 class="text-sm font-bold text-navy">📋 Relatório VRMS (PMI)</h3>
-              <p class="text-[.68rem] text-slate-400 mt-0.5">Horas de Impacto para CCRS/PDU · Formato de auditoria PMI</p>
+              <h3 class="text-sm font-bold text-navy">{t('admin.reports.vrmsTitle', lang)}</h3>
+              <p class="text-[.68rem] text-slate-400 mt-0.5">{t('admin.reports.vrmsSubtitle', lang)}</p>
             </div>
             <div class="p-5">
               <div class="flex gap-3 mb-4">
                 <div class="flex-1">
-                  <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">De</label>
+                  <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.reports.from', lang)}</label>
                   <input type="date" id="vrms-from" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
                 </div>
                 <div class="flex-1">
-                  <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Até</label>
+                  <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.reports.to', lang)}</label>
                   <input type="date" id="vrms-to" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
                 </div>
               </div>
               <div class="flex gap-2 mb-3">
                 <button onclick="previewVRMS()" class="flex-1 px-4 py-2 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
-                  👁️ Pré-visualizar
+                  {t('admin.reports.preview', lang)}
                 </button>
                 <button onclick="downloadVRMS()" class="flex-1 px-4 py-2 bg-teal text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
-                  📥 Baixar CSV
+                  {t('admin.reports.downloadCsv', lang)}
                 </button>
               </div>
               <div id="vrms-preview" class="text-[.72rem] text-slate-400"></div>
@@ -159,35 +161,93 @@ import Toast from '../../components/ui/Toast.astro';
           <!-- Full Member Export -->
           <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div class="px-5 py-3.5 border-b border-slate-200">
-              <h3 class="text-sm font-bold text-navy">👥 Export Completo de Membros</h3>
-              <p class="text-[.68rem] text-slate-400 mt-0.5">Dados cadastrais + papéis + designações + ciclos</p>
+              <h3 class="text-sm font-bold text-navy">{t('admin.reports.memberExportTitle', lang)}</h3>
+              <p class="text-[.68rem] text-slate-400 mt-0.5">{t('admin.reports.memberExportSubtitle', lang)}</p>
             </div>
             <div class="p-5">
-              <p class="text-[.72rem] text-slate-500 mb-4">Inclui: nome, email, PMI ID, capítulo, papel operacional, designações, tribo, status, superadmin, ciclos participados.</p>
+              <p class="text-[.72rem] text-slate-500 mb-4">{t('admin.reports.memberExportDesc', lang)}</p>
               <button onclick="downloadMembersCSV()" class="w-full px-4 py-2.5 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
-                📥 Baixar CSV de Membros
+                {t('admin.reports.memberExportButton', lang)}
               </button>
             </div>
+          </div>
+
+          <!-- Analytics -->
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-slate-200">
+              <h3 class="text-sm font-bold text-navy">{t('admin.reports.analyticsTitle', lang)}</h3>
+              <p class="text-[.68rem] text-slate-400 mt-0.5">{t('admin.reports.analyticsSubtitle', lang)}</p>
+            </div>
+            <div class="p-5">
+              <p class="text-[.72rem] text-slate-500 mb-4">{t('admin.reports.analyticsDesc', lang)}</p>
+              <a href="/admin/analytics" class="w-full inline-flex items-center justify-center px-4 py-2.5 bg-navy text-white rounded-lg text-[.78rem] font-semibold no-underline hover:opacity-90 transition-all">
+                {t('admin.reports.analyticsButton', lang)}
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Leadership Training Snapshot -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-5">
+          <div class="px-5 py-3.5 border-b border-slate-200">
+            <h3 class="text-sm font-bold text-navy">{t('admin.snapshot.title', lang)}</h3>
+            <p class="text-[.68rem] text-slate-400 mt-0.5">{t('admin.snapshot.subtitle', lang)}</p>
+          </div>
+          <div class="px-5 py-3 border-b border-slate-100 bg-slate-50">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-2">
+              <select id="ls-chapter" class="px-2.5 py-2 border border-slate-200 rounded-lg text-[.72rem] bg-white">
+                <option value="">{t('admin.snapshot.filter.chapterAll', lang)}</option>
+                <option value="PMI-GO">PMI-GO</option>
+                <option value="PMI-CE">PMI-CE</option>
+                <option value="PMI-DF">PMI-DF</option>
+                <option value="PMI-MG">PMI-MG</option>
+                <option value="PMI-RS">PMI-RS</option>
+              </select>
+              <select id="ls-tribe" class="px-2.5 py-2 border border-slate-200 rounded-lg text-[.72rem] bg-white">
+                <option value="">{t('admin.snapshot.filter.tribeAll', lang)}</option>
+                <option value="1">T01</option>
+                <option value="2">T02</option>
+                <option value="3">T03</option>
+                <option value="4">T04</option>
+                <option value="5">T05</option>
+                <option value="6">T06</option>
+                <option value="7">T07</option>
+                <option value="8">T08</option>
+              </select>
+              <input type="date" id="ls-from" class="px-2.5 py-2 border border-slate-200 rounded-lg text-[.72rem] bg-white" />
+              <input type="date" id="ls-to" class="px-2.5 py-2 border border-slate-200 rounded-lg text-[.72rem] bg-white" />
+              <div class="flex gap-2">
+                <button onclick="applyLeadershipFilters()" class="flex-1 px-3 py-2 bg-navy text-white rounded-lg text-[.72rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
+                  {t('admin.snapshot.apply', lang)}
+                </button>
+                <button onclick="downloadLeadershipSnapshot()" class="flex-1 px-3 py-2 bg-teal text-white rounded-lg text-[.72rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
+                  {t('admin.snapshot.export', lang)}
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="p-5" id="leadership-snapshot">
+            <p class="text-slate-400 text-sm text-center py-4">{t('admin.loading', lang)}</p>
           </div>
         </div>
 
         <!-- VRMS Preview Table -->
         <div id="vrms-table-area" class="hidden bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
-            <h3 class="text-sm font-bold text-navy">Pré-visualização VRMS</h3>
+            <h3 class="text-sm font-bold text-navy">{t('admin.reports.vrmsPreviewTitle', lang)}</h3>
             <span class="text-[.68rem] text-slate-400" id="vrms-table-count"></span>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-[.72rem]">
               <thead class="bg-slate-50">
                 <tr>
-                  <th class="px-3 py-2 text-left font-semibold text-slate-500">Voluntário</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-500">{t('admin.reports.colVolunteer', lang)}</th>
                   <th class="px-3 py-2 text-left font-semibold text-slate-500">PMI ID</th>
-                  <th class="px-3 py-2 text-left font-semibold text-slate-500">Email</th>
-                  <th class="px-3 py-2 text-left font-semibold text-slate-500">Organização</th>
-                  <th class="px-3 py-2 text-left font-semibold text-slate-500">Iniciativa / Papel</th>
-                  <th class="px-3 py-2 text-center font-semibold text-slate-500">Período</th>
-                  <th class="px-3 py-2 text-right font-semibold text-slate-500">Horas</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-500">{t('admin.reports.colEmail', lang)}</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-500">{t('admin.reports.colOrg', lang)}</th>
+                  <th class="px-3 py-2 text-left font-semibold text-slate-500">{t('admin.reports.colInitiativeRole', lang)}</th>
+                  <th class="px-3 py-2 text-center font-semibold text-slate-500">{t('admin.reports.colPeriod', lang)}</th>
+                  <th class="px-3 py-2 text-right font-semibold text-slate-500">{t('admin.reports.colHours', lang)}</th>
                 </tr>
               </thead>
               <tbody id="vrms-table-body"></tbody>
@@ -238,7 +298,7 @@ import Toast from '../../components/ui/Toast.astro';
                 </button>
               </div>
             </div>
-            <div id="ann-list"><p class="text-slate-400 text-[.72rem] text-center py-3">Carregando avisos...</p></div>
+            <div id="ann-list"><p class="text-slate-400 text-[.72rem] text-center py-3">{t('admin.loadingAnnouncements', lang)}</p></div>
           </div>
         </div>
       </div>
@@ -311,16 +371,16 @@ import Toast from '../../components/ui/Toast.astro';
   <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-allocate">
     <div class="bg-white rounded-2xl w-full max-w-[400px] overflow-hidden">
       <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center">
-        <h3 class="text-base font-bold text-navy">Alocar em Tribo</h3>
+        <h3 class="text-base font-bold text-navy">{t('admin.modal.allocateTitle', lang)}</h3>
         <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" onclick="closeAllocate()">✕</button>
       </div>
       <div class="p-5">
         <input type="hidden" id="alloc-member-id">
         <div class="text-sm font-semibold mb-1" id="alloc-member-name"></div>
         <div class="text-[12px] text-slate-500 mb-4" id="alloc-member-info"></div>
-        <label class="text-[12px] font-semibold text-slate-500 block mb-1.5">Selecione a Tribo</label>
+        <label class="text-[12px] font-semibold text-slate-500 block mb-1.5">{t('admin.modal.selectTribe', lang)}</label>
         <select id="alloc-tribe" class="w-full px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
-          <option value="">— Selecione —</option>
+          <option value="">{t('admin.modal.select', lang)}</option>
           <option value="1">01 — Radar Tecnológico</option>
           <option value="2">02 — Agentes Autônomos</option>
           <option value="3">03 — TMO & PMO do Futuro</option>
@@ -332,8 +392,8 @@ import Toast from '../../components/ui/Toast.astro';
         </select>
       </div>
       <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2">
-        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer" onclick="closeAllocate()">Cancelar</button>
-        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer" onclick="confirmAllocate()">Alocar</button>
+        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer" onclick="closeAllocate()">{t('admin.modal.cancel', lang)}</button>
+        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer" onclick="confirmAllocate()">{t('admin.modal.allocate', lang)}</button>
       </div>
     </div>
   </div>
@@ -342,7 +402,7 @@ import Toast from '../../components/ui/Toast.astro';
   <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-edit-member">
     <div class="bg-white rounded-2xl w-full max-w-[500px] overflow-hidden flex flex-col" style="max-height:90vh">
       <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center flex-shrink-0">
-        <h3 class="text-base font-bold text-navy">Editar Membro</h3>
+        <h3 class="text-base font-bold text-navy">{t('admin.modal.editMemberTitle', lang)}</h3>
         <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" onclick="closeEditMember()">✕</button>
       </div>
       <div class="p-5 overflow-y-auto flex-1">
@@ -434,8 +494,8 @@ import Toast from '../../components/ui/Toast.astro';
         </div>
       </div>
       <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2 flex-shrink-0">
-        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer" onclick="closeEditMember()">Cancelar</button>
-        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer" onclick="saveEditMember()">Salvar</button>
+        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer" onclick="closeEditMember()">{t('admin.modal.cancel', lang)}</button>
+        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer" onclick="saveEditMember()">{t('admin.modal.save', lang)}</button>
       </div>
     </div>
   </div>
@@ -443,18 +503,18 @@ import Toast from '../../components/ui/Toast.astro';
   <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-cycle-history">
     <div class="bg-white rounded-2xl w-full max-w-[600px] overflow-hidden flex flex-col" style="max-height:90vh">
       <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center flex-shrink-0">
-        <h3 class="text-base font-bold text-navy">📅 Histórico de Ciclos</h3>
+        <h3 class="text-base font-bold text-navy">{t('admin.modal.cycleHistoryTitle', lang)}</h3>
         <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" onclick="closeCycleHistory()">✕</button>
       </div>
       <div class="px-5 pt-3 pb-1">
         <div class="text-sm font-semibold text-navy" id="ch-member-name"></div>
-        <div class="text-[.68rem] text-slate-400 mb-3">🔧 Somente superadmins podem editar dados históricos</div>
+        <div class="text-[.68rem] text-slate-400 mb-3">{t('admin.modal.cycleHistoryHint', lang)}</div>
       </div>
       <div class="px-5 pb-4 overflow-y-auto flex-1" id="ch-cycles-area">
-        <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
+        <p class="text-slate-400 text-sm text-center py-6">{t('admin.loading', lang)}</p>
       </div>
       <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2 flex-shrink-0">
-        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer" onclick="closeCycleHistory()">Fechar</button>
+        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer" onclick="closeCycleHistory()">{t('admin.modal.close', lang)}</button>
       </div>
     </div>
   </div>
@@ -478,11 +538,51 @@ import Toast from '../../components/ui/Toast.astro';
     TRIBE_LEADERS,
     TRIBE_NAMES,
     getAccessTier,
+    canAccessAdminRoute,
+    hasMinimumTier,
+    resolveTierFromMember,
   } from '../../lib/admin/constants';
 
   let sb: any = null;
   let MEMBER: any = null;
   let allMembers: any[] = [];
+  const ADMIN_I18N = {
+    loadError: "{t('admin.msg.loadError', lang)}",
+    selectTribe: "{t('admin.msg.selectTribe', lang)}",
+    allocatedPrefix: "{t('admin.msg.allocatedPrefix', lang)}",
+    allocateError: "{t('admin.msg.allocateError', lang)}",
+    saveErrorPrefix: "{t('admin.msg.saveErrorPrefix', lang)}",
+    memberUpdated: "{t('admin.msg.memberUpdated', lang)}",
+    fillTitle: "{t('admin.msg.fillTitle', lang)}",
+    errorPrefix: "{t('admin.msg.errorPrefix', lang)}",
+    annPublished: "{t('admin.msg.annPublished', lang)}",
+    annEnabled: "{t('admin.msg.annEnabled', lang)}",
+    annDisabled: "{t('admin.msg.annDisabled', lang)}",
+    annDeleteConfirm: "{t('admin.msg.annDeleteConfirm', lang)}",
+    annDeleted: "{t('admin.msg.annDeleted', lang)}",
+    selectDates: "{t('admin.msg.selectDates', lang)}",
+    noExportData: "{t('admin.msg.noExportData', lang)}",
+    csvDownloaded: "{t('admin.msg.csvDownloaded', lang)}",
+    noMembers: "{t('admin.msg.noMembers', lang)}",
+    memberCsvDownloaded: "{t('admin.msg.memberCsvDownloaded', lang)}",
+    superadminOnlyHistory: "{t('admin.msg.superadminOnlyHistory', lang)}",
+    noEventsInPeriod: "{t('admin.msg.noEventsInPeriod', lang)}",
+    deleteRecordConfirmPrefix: "{t('admin.msg.deleteRecordConfirmPrefix', lang)}",
+    deleteRecordConfirmSuffix: "{t('admin.msg.deleteRecordConfirmSuffix', lang)}",
+    saveError: "{t('admin.msg.saveError', lang)}",
+    snapshotLoadError: "{t('admin.snapshot.loadError', lang)}",
+    snapshotNoData: "{t('admin.snapshot.noData', lang)}",
+    snapshotBase: "{t('admin.snapshot.base', lang)}",
+    snapshotDone: "{t('admin.snapshot.done', lang)}",
+    snapshotInProgress: "{t('admin.snapshot.inProgress', lang)}",
+    snapshotBlocked: "{t('admin.snapshot.blocked', lang)}",
+    snapshotByChapter: "{t('admin.snapshot.byChapter', lang)}",
+    snapshotByTribe: "{t('admin.snapshot.byTribe', lang)}",
+    snapshotRecentCerts: "{t('admin.snapshot.recentCerts', lang)}",
+    snapshotNoRecentCerts: "{t('admin.snapshot.noRecentCerts', lang)}",
+    loading: "{t('admin.loading', lang)}",
+    noPermission: "{t('admin.restricted', lang)}",
+  };
 
   // ── Compute legacy payload fields only for temporary RPC fallback ──
   function computeLegacyFields(opRole: string, desigs: string[]): { role: string; roles: string[] } {
@@ -524,6 +624,19 @@ import Toast from '../../components/ui/Toast.astro';
 
   function toast(msg: string, type = '') { (window as any).toast?.(msg, type); }
 
+  function ensureAdminAction(showToast = true): boolean {
+    if (canAccessAdminRoute(MEMBER, 'admin_manage_actions')) return true;
+    if (showToast) toast(ADMIN_I18N.noPermission, 'error');
+    return false;
+  }
+
+  function ensureLeaderAction(showToast = true): boolean {
+    const tier = resolveTierFromMember(MEMBER);
+    if (hasMinimumTier(tier, 'leader')) return true;
+    if (showToast) toast(ADMIN_I18N.noPermission, 'error');
+    return false;
+  }
+
   function initials(name: string): string {
     return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
   }
@@ -554,6 +667,7 @@ import Toast from '../../components/ui/Toast.astro';
 
   // ── TABS ──
   (window as any).switchAdmTab = (el: HTMLElement, tab: string) => {
+    if (['tribes', 'members', 'reports'].includes(tab) && !ensureAdminAction()) return;
     document.querySelectorAll('.adm-tab').forEach(t => {
       t.classList.remove('bg-navy', 'text-white', 'border-navy');
       t.classList.add('bg-white', 'text-slate-500', 'border-slate-200');
@@ -571,8 +685,9 @@ import Toast from '../../components/ui/Toast.astro';
   // TRIBE MANAGEMENT
   // ══════════════════════════════════════════
   async function loadTribes() {
+    if (!ensureAdminAction(false)) return;
     const { data } = await sb.rpc('admin_get_tribe_allocations');
-    if (!data || data.error) { toast(data?.error || 'Erro ao carregar', 'error'); return; }
+    if (!data || data.error) { toast(data?.error || ADMIN_I18N.loadError, 'error'); return; }
     allMembers = data;
 
     const active = data.filter((m: any) => m.current_cycle_active);
@@ -660,6 +775,7 @@ import Toast from '../../components/ui/Toast.astro';
 
   // ── ALLOCATE MODAL ──
   (window as any).openAllocate = (id: string, name: string, email: string, chapter: string) => {
+    if (!ensureAdminAction()) return;
     (document.getElementById('alloc-member-id') as HTMLInputElement).value = id;
     document.getElementById('alloc-member-name')!.textContent = name;
     document.getElementById('alloc-member-info')!.textContent = email + ' - ' + chapter;
@@ -672,16 +788,17 @@ import Toast from '../../components/ui/Toast.astro';
     modal.classList.add('hidden'); modal.classList.remove('flex');
   };
   (window as any).confirmAllocate = async () => {
+    if (!ensureAdminAction()) return;
     const memberId = (document.getElementById('alloc-member-id') as HTMLInputElement).value;
     const tribeId = parseInt((document.getElementById('alloc-tribe') as HTMLSelectElement).value);
-    if (!tribeId) { toast('Selecione uma tribo', 'error'); return; }
+    if (!tribeId) { toast(ADMIN_I18N.selectTribe, 'error'); return; }
     const { data } = await sb.rpc('admin_force_tribe_selection', { p_member_id: memberId, p_tribe_id: tribeId });
     if (data?.success) {
       (window as any).closeAllocate();
-      toast('Alocado na Tribo ' + String(tribeId).padStart(2, '0') + '!', 'success');
+      toast(`${ADMIN_I18N.allocatedPrefix} ${String(tribeId).padStart(2, '0')}!`, 'success');
       loadTribes();
     } else {
-      toast(data?.error || 'Erro ao alocar', 'error');
+      toast(data?.error || ADMIN_I18N.allocateError, 'error');
     }
   };
 
@@ -743,6 +860,7 @@ import Toast from '../../components/ui/Toast.astro';
   }
 
   async function loadMembersList() {
+    if (!ensureAdminAction(false)) return;
     const [membersRes, historyRes] = await Promise.all([
       sb.rpc('admin_list_members', { p_limit: 200, p_offset: 0 }),
       sb.from('member_cycle_history').select('member_id, cycle_code, operational_role, designations, tribe_name, chapter, is_active')
@@ -917,6 +1035,7 @@ import Toast from '../../components/ui/Toast.astro';
   document.querySelectorAll('.desig-cb').forEach(cb => cb.addEventListener('change', updateTierHint));
 
   (window as any).openEditMember = (m: any) => {
+    if (!ensureAdminAction()) return;
     (document.getElementById('edit-m-id') as HTMLInputElement).value = m.id;
 
     // Header
@@ -957,6 +1076,7 @@ import Toast from '../../components/ui/Toast.astro';
   };
 
   (window as any).saveEditMember = async () => {
+    if (!ensureAdminAction()) return;
     const id = (document.getElementById('edit-m-id') as HTMLInputElement).value;
     const opRole = (document.getElementById('edit-m-oprole') as HTMLSelectElement).value;
     const desigs = Array.from(document.querySelectorAll('.desig-cb:checked')).map(cb => (cb as HTMLInputElement).value);
@@ -973,12 +1093,12 @@ import Toast from '../../components/ui/Toast.astro';
     });
 
     if (error) {
-      toast('Erro ao salvar: ' + error.message, 'error');
+      toast(ADMIN_I18N.saveErrorPrefix + error.message, 'error');
       return;
     }
 
     if (!data?.success) {
-      toast(data?.error || 'Erro ao salvar', 'error');
+      toast(data?.error || ADMIN_I18N.saveError, 'error');
       return;
     }
 
@@ -999,7 +1119,7 @@ import Toast from '../../components/ui/Toast.astro';
     }
 
     (window as any).closeEditMember();
-    toast('Membro atualizado!', 'success');
+    toast(ADMIN_I18N.memberUpdated, 'success');
     loadMembersList();
     loadTribes();
   };
@@ -1008,6 +1128,7 @@ import Toast from '../../components/ui/Toast.astro';
   // ANNOUNCEMENTS MANAGEMENT
   // ══════════════════════════════════════════
   async function loadAnnouncements() {
+    if (!ensureAdminAction(false)) return;
     const { data } = await sb.from('announcements')
       .select('id, title, message, type, link_url, link_text, starts_at, ends_at, is_active, created_at')
       .order('created_at', { ascending: false })
@@ -1048,8 +1169,9 @@ import Toast from '../../components/ui/Toast.astro';
   }
 
   (window as any).createAnnouncement = async () => {
+    if (!ensureAdminAction()) return;
     const title = (document.getElementById('ann-title') as HTMLInputElement).value.trim();
-    if (!title) { toast('Preencha o título', 'error'); return; }
+    if (!title) { toast(ADMIN_I18N.fillTitle, 'error'); return; }
 
     const { error } = await sb.from('announcements').insert({
       title,
@@ -1061,8 +1183,8 @@ import Toast from '../../components/ui/Toast.astro';
       created_by: MEMBER.id,
     });
 
-    if (error) { toast('Erro: ' + error.message, 'error'); return; }
-    toast('Aviso publicado ✅', 'success');
+    if (error) { toast(ADMIN_I18N.errorPrefix + error.message, 'error'); return; }
+    toast(ADMIN_I18N.annPublished, 'success');
     (document.getElementById('ann-title') as HTMLInputElement).value = '';
     (document.getElementById('ann-message') as HTMLInputElement).value = '';
     (document.getElementById('ann-link-url') as HTMLInputElement).value = '';
@@ -1072,15 +1194,17 @@ import Toast from '../../components/ui/Toast.astro';
   };
 
   (window as any).toggleAnnouncement = async (id: string, active: boolean) => {
+    if (!ensureAdminAction()) return;
     await sb.from('announcements').update({ is_active: active }).eq('id', id);
-    toast(active ? 'Aviso ativado' : 'Aviso desativado', 'info');
+    toast(active ? ADMIN_I18N.annEnabled : ADMIN_I18N.annDisabled, 'info');
     loadAnnouncements();
   };
 
   (window as any).deleteAnnouncement = async (id: string) => {
-    if (!confirm('Excluir este aviso permanentemente?')) return;
+    if (!ensureAdminAction()) return;
+    if (!confirm(ADMIN_I18N.annDeleteConfirm)) return;
     await sb.from('announcements').delete().eq('id', id);
-    toast('Aviso excluído', 'info');
+    toast(ADMIN_I18N.annDeleted, 'info');
     loadAnnouncements();
   };
 
@@ -1088,20 +1212,259 @@ import Toast from '../../components/ui/Toast.astro';
   // REPORTS (VRMS CSV + Members Export)
   // ══════════════════════════════════════════
   let vrmsData: any[] = [];
+  let leadershipRows: any[] = [];
+  const TRAIL_CODES = ['GENAI_OVERVIEW','DATA_LANDSCAPE','PROMPT_ENG','PRACTICAL_GENAI','CDBA_INTRO','CPMAI_INTRO','AI_INFRA','AI_AGILE'];
 
   function initReports() {
+    if (!ensureAdminAction(false)) return;
     // Set default date range: current cycle start → today
     const fromEl = document.getElementById('vrms-from') as HTMLInputElement;
     const toEl = document.getElementById('vrms-to') as HTMLInputElement;
     if (fromEl && !fromEl.value) fromEl.value = '2026-01-01';
     if (toEl && !toEl.value) toEl.value = new Date().toISOString().split('T')[0];
+    const lsFrom = document.getElementById('ls-from') as HTMLInputElement;
+    const lsTo = document.getElementById('ls-to') as HTMLInputElement;
+    if (lsFrom && !lsFrom.value) lsFrom.value = '2026-01-01';
+    if (lsTo && !lsTo.value) lsTo.value = new Date().toISOString().split('T')[0];
     loadAnnouncements();
+    loadLeadershipSnapshot();
   }
 
+  function leadershipFilters() {
+    const chapter = (document.getElementById('ls-chapter') as HTMLSelectElement)?.value || '';
+    const tribe = (document.getElementById('ls-tribe') as HTMLSelectElement)?.value || '';
+    const fromDate = (document.getElementById('ls-from') as HTMLInputElement)?.value || '';
+    const toDate = (document.getElementById('ls-to') as HTMLInputElement)?.value || '';
+    return { chapter, tribe, fromDate, toDate };
+  }
+
+  (window as any).applyLeadershipFilters = async () => {
+    if (!ensureAdminAction()) return;
+    await loadLeadershipSnapshot();
+  };
+
+  async function loadLeadershipSnapshot() {
+    if (!ensureAdminAction(false)) return;
+    const host = document.getElementById('leadership-snapshot');
+    if (!host) return;
+    host.innerHTML = `<p class="text-slate-400 text-sm text-center py-4">${ADMIN_I18N.loading}</p>`;
+    leadershipRows = [];
+    const filters = leadershipFilters();
+
+    let membersQuery = sb.from('members')
+        .select('id, name, chapter, tribe_id, current_cycle_active, operational_role')
+        .eq('current_cycle_active', true);
+    if (filters.chapter) membersQuery = membersQuery.eq('chapter', filters.chapter);
+    if (filters.tribe) membersQuery = membersQuery.eq('tribe_id', Number(filters.tribe));
+
+    const { data: membersRaw, error: membersError } = await membersQuery;
+    if (membersError) {
+      host.innerHTML = `<p class="text-crimson text-sm text-center py-4">${ADMIN_I18N.snapshotLoadError}</p>`;
+      return;
+    }
+
+    const members = (membersRaw || []).filter((m: any) => ['manager', 'deputy_manager', 'tribe_leader', 'researcher', 'facilitator', 'communicator'].includes(m.operational_role));
+    if (!members.length) {
+      host.innerHTML = `<p class="text-slate-400 text-sm text-center py-4">${ADMIN_I18N.snapshotNoData}</p>`;
+      return;
+    }
+
+    const memberIds = members.map((m: any) => m.id);
+    let pointsQuery = sb.from('gamification_points')
+      .select('member_id, reason, created_at, points')
+      .in('member_id', memberIds)
+      .like('reason', 'Credly:%')
+      .order('created_at', { ascending: false })
+      .limit(400);
+    if (filters.fromDate) pointsQuery = pointsQuery.gte('created_at', `${filters.fromDate}T00:00:00`);
+    if (filters.toDate) pointsQuery = pointsQuery.lte('created_at', `${filters.toDate}T23:59:59`);
+
+    const [progressRes, pointsRes] = await Promise.all([
+      sb.from('course_progress')
+        .select('member_id, code, status, completed_at')
+        .in('member_id', memberIds)
+        .in('code', TRAIL_CODES),
+      pointsQuery,
+    ]);
+
+    if (progressRes.error || pointsRes.error) {
+      host.innerHTML = `<p class="text-crimson text-sm text-center py-4">${ADMIN_I18N.snapshotLoadError}</p>`;
+      return;
+    }
+
+    const progress = progressRes.data || [];
+    const points = pointsRes.data || [];
+
+    const perMember: Record<string, { completed: Set<string>; inProgress: Set<string> }> = {};
+    progress.forEach((p: any) => {
+      if (!perMember[p.member_id]) perMember[p.member_id] = { completed: new Set(), inProgress: new Set() };
+      if (p.status === 'completed') {
+        const completedDate = p.completed_at ? String(p.completed_at).slice(0, 10) : '';
+        const inRange = (!filters.fromDate || completedDate >= filters.fromDate) && (!filters.toDate || completedDate <= filters.toDate);
+        if (inRange) perMember[p.member_id].completed.add(p.code);
+      }
+      if (p.status === 'in_progress') perMember[p.member_id].inProgress.add(p.code);
+    });
+
+    let trailDone = 0;
+    let trailInProgress = 0;
+    let blocked = 0;
+    const chapterAgg: Record<string, { total: number; done: number }> = {};
+    const tribeAgg: Record<number, { total: number; done: number }> = {};
+
+    members.forEach((m: any) => {
+      const p = perMember[m.id] || { completed: new Set(), inProgress: new Set() };
+      const doneCount = p.completed.size;
+      const progCount = p.inProgress.size;
+      const isDone = doneCount >= TRAIL_CODES.length;
+      const isBlocked = doneCount === 0 && progCount === 0;
+      if (isDone) trailDone++;
+      else if (doneCount > 0 || progCount > 0) trailInProgress++;
+      if (isBlocked) blocked++;
+
+      const ch = m.chapter || 'Outros';
+      if (!chapterAgg[ch]) chapterAgg[ch] = { total: 0, done: 0 };
+      chapterAgg[ch].total++;
+      if (isDone) chapterAgg[ch].done++;
+
+      const tid = Number(m.tribe_id || 0);
+      if (tid > 0) {
+        if (!tribeAgg[tid]) tribeAgg[tid] = { total: 0, done: 0 };
+        tribeAgg[tid].total++;
+        if (isDone) tribeAgg[tid].done++;
+      }
+
+      const status = isDone ? 'done' : (isBlocked ? 'blocked' : 'progress');
+      leadershipRows.push({
+        member_id: m.id,
+        name: m.name,
+        chapter: m.chapter || '',
+        tribe: m.tribe_id ? `T${String(m.tribe_id).padStart(2, '0')}` : '',
+        completed_courses: doneCount,
+        in_progress_courses: progCount,
+        status,
+      });
+    });
+
+    const memberById: Record<string, any> = {};
+    members.forEach((m: any) => { memberById[m.id] = m; });
+
+    const recentCerts = points
+      .filter((p: any) => memberById[p.member_id])
+      .slice(0, 12)
+      .map((p: any) => {
+        const m = memberById[p.member_id];
+        return {
+          name: m.name,
+          chapter: m.chapter || '—',
+          tribe: m.tribe_id ? `T${String(m.tribe_id).padStart(2, '0')}` : '—',
+          badge: String(p.reason || '').replace(/^Credly:\s*/, ''),
+          createdAt: p.created_at,
+          points: p.points || 0,
+        };
+      });
+
+    const chapterRows = Object.entries(chapterAgg)
+      .sort((a, b) => b[1].done - a[1].done)
+      .map(([chapter, stats]) => {
+        const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
+        return `
+          <div class="flex items-center gap-2 py-1.5 border-b border-slate-100 last:border-b-0">
+            <div class="w-16 text-[.72rem] font-bold text-slate-600">${chapter}</div>
+            <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full bg-teal rounded-full" style="width:${pct}%"></div>
+            </div>
+            <div class="text-[.7rem] font-bold text-navy">${stats.done}/${stats.total}</div>
+          </div>
+        `;
+      }).join('');
+
+    const tribeRows = Object.entries(tribeAgg)
+      .sort((a, b) => Number(a[0]) - Number(b[0]))
+      .map(([tid, stats]) => {
+        const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
+        return `
+          <div class="flex items-center gap-2 py-1.5 border-b border-slate-100 last:border-b-0">
+            <div class="w-10 text-[.72rem] font-bold text-slate-600">T${String(tid).padStart(2, '0')}</div>
+            <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full bg-purple rounded-full" style="width:${pct}%"></div>
+            </div>
+            <div class="text-[.7rem] font-bold text-navy">${stats.done}/${stats.total}</div>
+          </div>
+        `;
+      }).join('');
+
+    host.innerHTML = `
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+        <div class="bg-slate-50 rounded-xl p-3 text-center">
+          <div class="text-xl font-black text-navy">${members.length}</div>
+          <div class="text-[.65rem] text-slate-400 font-semibold">${ADMIN_I18N.snapshotBase}</div>
+        </div>
+        <div class="bg-emerald-50 rounded-xl p-3 text-center">
+          <div class="text-xl font-black text-emerald-700">${trailDone}</div>
+          <div class="text-[.65rem] text-emerald-700 font-semibold">${ADMIN_I18N.snapshotDone}</div>
+        </div>
+        <div class="bg-amber-50 rounded-xl p-3 text-center">
+          <div class="text-xl font-black text-amber-700">${trailInProgress}</div>
+          <div class="text-[.65rem] text-amber-700 font-semibold">${ADMIN_I18N.snapshotInProgress}</div>
+        </div>
+        <div class="bg-red-50 rounded-xl p-3 text-center">
+          <div class="text-xl font-black text-crimson">${blocked}</div>
+          <div class="text-[.65rem] text-crimson font-semibold">${ADMIN_I18N.snapshotBlocked}</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div class="bg-white border border-slate-200 rounded-xl p-3">
+          <div class="text-[.72rem] font-bold text-slate-500 mb-1">${ADMIN_I18N.snapshotByChapter}</div>
+          ${chapterRows || `<p class="text-[.72rem] text-slate-400 py-2">${ADMIN_I18N.snapshotNoData}</p>`}
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-3">
+          <div class="text-[.72rem] font-bold text-slate-500 mb-1">${ADMIN_I18N.snapshotByTribe}</div>
+          ${tribeRows || `<p class="text-[.72rem] text-slate-400 py-2">${ADMIN_I18N.snapshotNoData}</p>`}
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-3">
+          <div class="text-[.72rem] font-bold text-slate-500 mb-1">${ADMIN_I18N.snapshotRecentCerts}</div>
+          <div class="space-y-1.5">
+            ${recentCerts.length ? recentCerts.map((r: any) => `
+              <div class="text-[.68rem] border-b border-slate-100 last:border-b-0 pb-1.5">
+                <div class="font-semibold text-slate-700 truncate">${r.name} · ${r.chapter} · ${r.tribe}</div>
+                <div class="text-slate-500 truncate">${r.badge}</div>
+                <div class="text-slate-400">${new Date(r.createdAt).toLocaleDateString('pt-BR')} · ${r.points} XP</div>
+              </div>
+            `).join('') : `<p class="text-[.72rem] text-slate-400 py-2">${ADMIN_I18N.snapshotNoRecentCerts}</p>`}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  (window as any).downloadLeadershipSnapshot = () => {
+    if (!ensureAdminAction()) return;
+    if (!leadershipRows.length) { toast(ADMIN_I18N.noExportData, 'error'); return; }
+    const filters = leadershipFilters();
+    const header = 'Member ID,Name,Chapter,Tribe,Completed Courses,In Progress Courses,Status';
+    const rows = leadershipRows.map((r: any) =>
+      `"${r.member_id}","${r.name}","${r.chapter}","${r.tribe}",${r.completed_courses},${r.in_progress_courses},"${r.status}"`
+    );
+    const csv = '\uFEFF' + [header, ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const from = filters.fromDate || 'all';
+    const to = filters.toDate || 'all';
+    a.href = url;
+    a.download = `Leadership_Snapshot_${from}_${to}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast(ADMIN_I18N.csvDownloaded, 'success');
+  };
+
   (window as any).previewVRMS = async () => {
+    if (!ensureAdminAction()) return;
     const fromDate = (document.getElementById('vrms-from') as HTMLInputElement).value;
     const toDate = (document.getElementById('vrms-to') as HTMLInputElement).value;
-    if (!fromDate || !toDate) { toast('Selecione as datas', 'error'); return; }
+    if (!fromDate || !toDate) { toast(ADMIN_I18N.selectDates, 'error'); return; }
 
     // Get events in range
     const { data: events } = await sb.from('events')
@@ -1111,7 +1474,7 @@ import Toast from '../../components/ui/Toast.astro';
       .order('event_date');
 
     if (!events?.length) {
-      document.getElementById('vrms-preview')!.textContent = 'Nenhum evento encontrado no período.';
+      document.getElementById('vrms-preview')!.textContent = ADMIN_I18N.noEventsInPeriod;
       document.getElementById('vrms-table-area')?.classList.add('hidden');
       return;
     }
@@ -1192,9 +1555,10 @@ import Toast from '../../components/ui/Toast.astro';
   };
 
   (window as any).downloadVRMS = async () => {
+    if (!ensureAdminAction()) return;
     if (!vrmsData.length) {
       await (window as any).previewVRMS();
-      if (!vrmsData.length) { toast('Nenhum dado para exportar', 'error'); return; }
+      if (!vrmsData.length) { toast(ADMIN_I18N.noExportData, 'error'); return; }
     }
 
     const fromDate = (document.getElementById('vrms-from') as HTMLInputElement).value;
@@ -1213,12 +1577,13 @@ import Toast from '../../components/ui/Toast.astro';
     a.download = `VRMS_Nucleo_IA_GP_${fromDate}_${toDate}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast('CSV baixado ✅', 'success');
+    toast(ADMIN_I18N.csvDownloaded, 'success');
   };
 
   (window as any).downloadMembersCSV = async () => {
+    if (!ensureAdminAction()) return;
     const { data: members } = await sb.rpc('admin_list_members', { p_limit: 500, p_offset: 0 });
-    if (!members?.length) { toast('Nenhum membro', 'error'); return; }
+    if (!members?.length) { toast(ADMIN_I18N.noMembers, 'error'); return; }
 
     // Get cycle history
     const { data: history } = await sb.from('member_cycle_history')
@@ -1247,7 +1612,7 @@ import Toast from '../../components/ui/Toast.astro';
     a.download = `Membros_Nucleo_IA_GP_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    toast('CSV de membros baixado ✅', 'success');
+    toast(ADMIN_I18N.memberCsvDownloaded, 'success');
   };
 
   // ══════════════════════════════════════════
@@ -1256,7 +1621,7 @@ import Toast from '../../components/ui/Toast.astro';
   let chMemberId = '';
 
   (window as any).openCycleHistory = async (memberId: string, memberName: string) => {
-    if (!MEMBER?.is_superadmin) { toast('Apenas superadmins podem editar histórico', 'error'); return; }
+    if (!canAccessAdminRoute(MEMBER, 'admin_member_edit')) { toast(ADMIN_I18N.superadminOnlyHistory, 'error'); return; }
     chMemberId = memberId;
     document.getElementById('ch-member-name')!.textContent = memberName;
 
@@ -1316,7 +1681,7 @@ import Toast from '../../components/ui/Toast.astro';
   };
 
   (window as any).addCycleRecord = async (cycleCode: string) => {
-    if (!MEMBER?.is_superadmin || !chMemberId) return;
+    if (!canAccessAdminRoute(MEMBER, 'admin_member_edit') || !chMemberId) return;
     const meta = CYCLE_META[cycleCode];
     const dates: Record<string, { start: string; end: string|null }> = {
       pilot:   { start: '2024-03-01', end: '2024-12-31' },
@@ -1342,14 +1707,14 @@ import Toast from '../../components/ui/Toast.astro';
       is_active: true,
     });
 
-    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    if (error) { toast(ADMIN_I18N.errorPrefix + error.message, 'error'); return; }
     toast(`${meta.label} adicionado ✅`, 'success');
     // Refresh
     (window as any).openCycleHistory(chMemberId, document.getElementById('ch-member-name')!.textContent || '');
   };
 
   (window as any).editCycleRecord = async (recordId: string) => {
-    if (!MEMBER?.is_superadmin) return;
+    if (!canAccessAdminRoute(MEMBER, 'admin_member_edit')) return;
     const opRole = prompt('Papel operacional (manager/tribe_leader/researcher/facilitator/communicator/none):');
     if (opRole === null) return;
     const desigsRaw = prompt('Designações (separar por vírgula: sponsor,ambassador,founder,curator):');
@@ -1367,16 +1732,16 @@ import Toast from '../../components/ui/Toast.astro';
       notes: notes || null,
     }).eq('id', recordId);
 
-    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    if (error) { toast(ADMIN_I18N.errorPrefix + error.message, 'error'); return; }
     toast('Registro atualizado ✅', 'success');
     (window as any).openCycleHistory(chMemberId, document.getElementById('ch-member-name')!.textContent || '');
   };
 
   (window as any).deleteCycleRecord = async (recordId: string, label: string) => {
-    if (!MEMBER?.is_superadmin) return;
-    if (!confirm(`Excluir registro "${label}"? Esta ação não pode ser desfeita.`)) return;
+    if (!canAccessAdminRoute(MEMBER, 'admin_member_edit')) return;
+    if (!confirm(`${ADMIN_I18N.deleteRecordConfirmPrefix} "${label}"? ${ADMIN_I18N.deleteRecordConfirmSuffix}`)) return;
     const { error } = await sb.from('member_cycle_history').delete().eq('id', recordId);
-    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    if (error) { toast(ADMIN_I18N.errorPrefix + error.message, 'error'); return; }
     toast(`${label} removido`, 'info');
     (window as any).openCycleHistory(chMemberId, document.getElementById('ch-member-name')!.textContent || '');
   };
@@ -1385,6 +1750,7 @@ import Toast from '../../components/ui/Toast.astro';
   // LEADER TIER: My Tribe view
   // ══════════════════════════════════════════
   async function loadMyTribe() {
+    if (!ensureLeaderAction(false)) return;
     const tribeId = MEMBER.tribe_id;
     if (!tribeId) {
       document.getElementById('my-tribe-settings')!.innerHTML =
@@ -1564,28 +1930,31 @@ import Toast from '../../components/ui/Toast.astro';
   }
 
   (window as any).addSlot = async (tribeId: number) => {
+    if (!ensureLeaderAction()) return;
     const day = parseInt((document.getElementById('slot-day') as HTMLSelectElement).value);
     const start = (document.getElementById('slot-start') as HTMLInputElement).value;
     const end = (document.getElementById('slot-end') as HTMLInputElement).value;
-    if (!start || !end) { toast('Preencha início e fim', 'error'); return; }
-    if (start >= end) { toast('Horário de início deve ser antes do fim', 'error'); return; }
+    if (!start || !end) { toast("{t('admin.msg.fillStartEnd', lang)}", 'error'); return; }
+    if (start >= end) { toast("{t('admin.msg.startBeforeEnd', lang)}", 'error'); return; }
 
     const { error } = await sb.from('tribe_meeting_slots').insert({
       tribe_id: tribeId, day_of_week: day, time_start: start, time_end: end
     });
-    if (error) { toast('Erro: ' + error.message, 'error'); return; }
-    toast('Horário adicionado ✅', 'success');
+    if (error) { toast(ADMIN_I18N.errorPrefix + error.message, 'error'); return; }
+    toast("{t('admin.msg.slotAdded', lang)}", 'success');
     loadMyTribe(); // Refresh the whole panel
   };
 
   (window as any).deleteSlot = async (slotId: string, tribeId: number) => {
+    if (!ensureLeaderAction()) return;
     const { error } = await sb.from('tribe_meeting_slots').delete().eq('id', slotId);
-    if (error) { toast('Erro: ' + error.message, 'error'); return; }
-    toast('Horário removido', 'info');
+    if (error) { toast(ADMIN_I18N.errorPrefix + error.message, 'error'); return; }
+    toast("{t('admin.msg.slotRemoved', lang)}", 'info');
     loadMyTribe();
   };
 
   (window as any).saveTribeSettings = async (tribeId: number) => {
+    if (!ensureLeaderAction()) return;
     const { error } = await sb.from('tribes').update({
       meeting_link: (document.getElementById('tribe-meeting-link') as HTMLInputElement).value.trim() || null,
       whatsapp_url: (document.getElementById('tribe-wa') as HTMLInputElement).value.trim() || null,
@@ -1596,10 +1965,10 @@ import Toast from '../../components/ui/Toast.astro';
       updated_by: MEMBER.id,
     }).eq('id', tribeId);
 
-    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    if (error) { toast(ADMIN_I18N.errorPrefix + error.message, 'error'); return; }
     const ok = document.getElementById('tribe-save-ok');
     if (ok) { ok.classList.remove('hidden'); setTimeout(() => ok.classList.add('hidden'), 2000); }
-    toast('Configurações salvas ✅', 'success');
+    toast("{t('admin.msg.settingsSaved', lang)}", 'success');
   };
 
   // ══════════════════════════════════════════
@@ -1709,23 +2078,11 @@ import Toast from '../../components/ui/Toast.astro';
   // ══════════════════════════════════════════
   let TIER = 'visitor';
 
-  function getTier(m: any): string {
-    if (m.is_superadmin) return 'superadmin';
-    const opRole = getMemberRole(m);
-    if (opRole === 'manager') return 'admin';
-    if (opRole === 'deputy_manager') return 'admin';
-    const desigs: string[] = m.designations || [];
-    if (desigs.includes('co_gp')) return 'admin';
-    if (opRole === 'tribe_leader') return 'leader';
-    if (desigs.includes('sponsor') || desigs.includes('curator') || desigs.includes('chapter_liaison')) return 'observer';
-    return 'visitor';
-  }
-
   function setup() {
     document.getElementById('admin-loading')?.classList.add('hidden');
-    TIER = getTier(MEMBER);
+    TIER = resolveTierFromMember(MEMBER);
 
-    if (TIER === 'visitor') {
+    if (!canAccessAdminRoute(MEMBER, 'admin_panel')) {
       document.getElementById('not-admin-msg')?.classList.remove('hidden');
       return;
     }

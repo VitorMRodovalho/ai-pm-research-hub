@@ -21,6 +21,7 @@ const TIER2_KEYWORDS = [
   'finops', 'aws certified', 'azure', 'google cloud certified',
   'data analyst', 'data engineer', 'data scientist',
   'itil', 'togaf', 'cobit',
+  'business intelligence', 'scrum foundation', 'sfpc',
 ]
 
 // ── PMI AI Trail (strict KPI tracking — Tier 3: +15 XP) ──
@@ -83,6 +84,50 @@ async function fetchBadges(username: string): Promise<CredlyBadge[]> {
   if (!resp.ok) throw new Error(`Credly ${resp.status}: ${username}`)
   const data = await resp.json()
   return data.data || data || []
+}
+
+async function upsertCredlyPoints(
+  sb: ReturnType<typeof createClient>,
+  memberId: string,
+  badge: { name: string; points: number; issued_at: string },
+) {
+  const reason = `Credly: ${badge.name}`
+  const { data: rows, error: rowsError } = await sb.from('gamification_points')
+    .select('id, points, created_at')
+    .eq('member_id', memberId)
+    .eq('reason', reason)
+    .order('created_at', { ascending: true })
+    .order('id', { ascending: true })
+
+  if (rowsError) throw rowsError
+
+  if (!rows || rows.length === 0) {
+    const { error: insertError } = await sb.from('gamification_points').insert({
+      member_id: memberId,
+      points: badge.points,
+      reason,
+      category: 'course',
+      created_at: badge.issued_at || new Date().toISOString(),
+    })
+    if (insertError) throw insertError
+    return
+  }
+
+  const keeper = rows[0]
+  if (keeper.points !== badge.points) {
+    const { error: updateError } = await sb.from('gamification_points')
+      .update({ points: badge.points })
+      .eq('id', keeper.id)
+    if (updateError) throw updateError
+  }
+
+  if (rows.length > 1) {
+    const dupIds = rows.slice(1).map(r => r.id)
+    const { error: deleteDupError } = await sb.from('gamification_points')
+      .delete()
+      .in('id', dupIds)
+    if (deleteDupError) throw deleteDupError
+  }
 }
 
 async function syncTrailProgressFromCredly(
@@ -273,24 +318,7 @@ Deno.serve(async (req) => {
 
       // Award gamification points (with tier-based scoring)
       for (const badge of result.all) {
-        const reason = `Credly: ${badge.name}`
-
-        const { data: existing } = await sb.from('gamification_points')
-          .select('id, points').eq('member_id', member_id)
-          .eq('reason', reason).maybeSingle()
-
-        if (!existing) {
-          // New badge — insert with tier points
-          await sb.from('gamification_points').insert({
-            member_id, points: badge.points, reason, category: 'course',
-            created_at: badge.issued_at || new Date().toISOString(),
-          })
-        } else if (existing.points !== badge.points) {
-          // Existing badge but points changed (tier recalculation) — update
-          await sb.from('gamification_points')
-            .update({ points: badge.points })
-            .eq('id', existing.id)
-        }
+        await upsertCredlyPoints(sb, member_id, badge)
       }
 
       // Remove old manual course points that Credly now covers
@@ -299,7 +327,7 @@ Deno.serve(async (req) => {
           .delete()
           .eq('member_id', member_id)
           .eq('category', 'course')
-          .like('reason', `Curso: ${trail.code}%`)
+          .ilike('reason', `curso:%${trail.code}%`)
       }
 
       // Keep trail source-of-truth aligned with Credly verification.
