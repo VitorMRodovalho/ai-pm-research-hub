@@ -99,6 +99,8 @@ try {
 </section>
 
 <script>
+  import { buildTrailProgressByMember } from '../../lib/trail-progress';
+
   const TOTAL = 8;
 
   async function bootTrail() {
@@ -116,20 +118,14 @@ try {
     const members = membersRes.data;
     if (!progress || !courses || !members) return;
 
-    // Per-member stats
-    const mp: Record<string, { completed: number; in_progress: number }> = {};
-    progress.forEach((p: any) => {
-      if (!mp[p.member_id]) mp[p.member_id] = { completed: 0, in_progress: 0 };
-      if (p.status === 'completed') mp[p.member_id].completed++;
-      else if (p.status === 'in_progress') mp[p.member_id].in_progress++;
-    });
+    const progressByMember = buildTrailProgressByMember(progress || [], TOTAL);
 
     const ranked = members.map((m: any) => ({
       name: m.name,
       photo: m.photo_url,
-      completed: mp[m.id]?.completed || 0,
-      inProgress: mp[m.id]?.in_progress || 0,
-      pct: Math.round((mp[m.id]?.completed || 0) / TOTAL * 100),
+      completed: progressByMember.get(m.id)?.completed || 0,
+      inProgress: progressByMember.get(m.id)?.inProgress || 0,
+      pct: progressByMember.get(m.id)?.pct || 0,
     })).sort((a: any, b: any) => b.pct - a.pct || b.inProgress - a.inProgress);
 
     // KPI
