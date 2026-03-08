@@ -1,4 +1,31 @@
 # Release Log
+## 2026-03-08 — Wave 4 Sprint Increment (S-PA2 Executive ROI Dashboards v1 SQL Foundation)
+
+### Scope
+Build production-ready SQL architecture for executive product/ROI dashboards in admin.
+
+### Delivered
+- migration pack created:
+  - `supabase/migrations/20260308102010_exec_roi_dashboards_v1.sql`
+  - views:
+    - `vw_exec_funnel`
+    - `vw_exec_cert_timeline`
+    - `vw_exec_skills_radar`
+  - RPCs (admin+ gated by `has_min_tier(4)`):
+    - `exec_funnel_summary()`
+    - `exec_cert_timeline(p_months)`
+    - `exec_skills_radar()`
+- docs pack created:
+  - `docs/migrations/exec-roi-dashboards-v1.sql`
+  - `docs/migrations/exec-roi-dashboards-v1-audit.sql`
+  - `docs/migrations/exec-roi-dashboards-v1-rollback.sql`
+  - `docs/migrations/EXEC_ROI_DASHBOARDS_V1_RUNBOOK.md`
+
+### Pending to close S-PA2
+- apply migration in production
+- run post-audit and attach evidence
+- wire `/admin` executive panel to RPCs (replace client-only aggregation path)
+
 ## 2026-03-08 — Wave 5 Sprint Increment (S-KNW8 Friction & Insight Mining v1 Foundation)
 
 ### Scope
