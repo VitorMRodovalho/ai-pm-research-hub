@@ -2,9 +2,21 @@
 
 Checklist de qualidade para garantir que cada release não afeta usabilidade nos ambientes principais. **Executar antes de considerar release concluído.**
 
-## Automação recomendada (assistente)
+## Automação recomendada
 
-O assistente deve **agendar/executar validação automatizada** após cada incremento de sprint:
+### GitHub Actions CI (`.github/workflows/ci.yml`)
+
+O workflow **CI** roda automaticamente em `push` e `pull_request` para `main`:
+
+- `npm test` — testes unitários
+- `npm run build` — build de produção
+- `npm run smoke:routes` — smoke de rotas principais
+
+**Recomendação:** Exigir que CI passe antes de merge (Settings → Branches → Branch protection rules para `main`).
+
+### Local (assistente ou desenvolvedor)
+
+Antes de push, executar:
 
 ```bash
 npm test && npm run build && npm run smoke:routes

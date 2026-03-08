@@ -1,5 +1,21 @@
 # Release Log
 
+## 2026-03-08 — CI workflow (validação automática de qualidade)
+
+### Problema
+Não havia workflow GitHub Actions executando `npm test && npm run build && npm run smoke:routes` em push/PR. A validação era manual, com risco de regressões em main.
+
+### Solução
+- `.github/workflows/ci.yml`: roda em `push` e `pull_request` para `main`
+- Passos: install → test → build → smoke:routes
+- Env placeholder para build (PUBLIC_SUPABASE_*); smoke usa dev server
+- `docs/QA_RELEASE_VALIDATION.md` e `SPRINT_IMPLEMENTATION_PRACTICES.md` atualizados
+
+### Recomendação
+Configurar branch protection em `main` para exigir que CI passe antes de merge.
+
+---
+
 ## 2026-03-08 — S-AUD1 + S-CFG1 (sprints continuidade)
 
 ### S-AUD1: TribesSection i18n

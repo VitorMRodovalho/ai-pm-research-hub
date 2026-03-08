@@ -1,0 +1,44 @@
+# CI — Validação de qualidade em push/PR (QA_RELEASE_VALIDATION)
+# Garante que test + build + smoke passam antes de merge.
+# Ref: docs/QA_RELEASE_VALIDATION.md, docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+      PUBLIC_SUPABASE_ANON_KEY: placeholder-key-for-ci-build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Smoke routes
+        run: npm run smoke:routes
+        timeout-minutes: 2

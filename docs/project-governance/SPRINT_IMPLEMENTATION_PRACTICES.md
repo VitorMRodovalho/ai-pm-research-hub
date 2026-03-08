@@ -54,7 +54,7 @@ Antes de `In progress`:
 
 Seguir `docs/AGENT_BOARD_SYNC.md` e `docs/QA_RELEASE_VALIDATION.md`:
 
-- [ ] **QA automatizado**: `npm test && npm run build && npm run smoke:routes` — todos passando
+- [ ] **QA automatizado**: CI workflow (`.github/workflows/ci.yml`) passa em push/PR, ou localmente `npm test && npm run build && npm run smoke:routes`
 - [ ] `docs/RELEASE_LOG.md` — entrada com escopo, entregue, validação
 - [ ] Commit referenciando issue (`fix: desc (#NN)`)
 - [ ] Issue/Project Board — mover para Done quando aplicável
