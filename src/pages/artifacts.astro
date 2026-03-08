@@ -2,26 +2,72 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Toast from '../components/ui/Toast.astro';
 import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+const tribeOptions = Array.from({length: 8}, (_, i) => ({
+  value: String(i + 1),
+  label: `${String(i + 1).padStart(2, '0')} — ${t(`data.tribe${i + 1}.name`, lang)}`,
+}));
+const ARTIFACTS_I18N = {
+  typeLabels: {
+    article: t('artifacts.typeLabel.article', lang),
+    ebook: t('artifacts.typeLabel.ebook', lang),
+    framework: t('artifacts.typeLabel.framework', lang),
+    presentation: t('artifacts.typeLabel.presentation', lang),
+    video: t('artifacts.typeLabel.video', lang),
+    toolkit: t('artifacts.typeLabel.toolkit', lang),
+    other: t('artifacts.typeLabel.other', lang),
+  },
+  statusLabels: {
+    draft: t('artifacts.draft', lang),
+    review: t('artifacts.review', lang),
+    approved: t('artifacts.status.approved', lang),
+    published: t('artifacts.published', lang),
+  },
+  tribeNames: Object.fromEntries(
+    Array.from({length: 8}, (_, i) => [i + 1, t(`data.tribe${i + 1}.name`, lang)])
+  ),
+  emptyCatalogTitle: t('artifacts.empty.catalogTitle', lang),
+  emptyCatalogMsgAuth: t('artifacts.empty.catalogMsgAuth', lang),
+  emptyCatalogMsgAnon: t('artifacts.empty.catalogMsgAnon', lang),
+  emptyCatalogCtaAuth: t('artifacts.empty.catalogCtaAuth', lang),
+  emptyCatalogCtaAnon: t('artifacts.empty.catalogCtaAnon', lang),
+  emptyMineTitle: t('artifacts.empty.mineTitle', lang),
+  emptyMineMsg: t('artifacts.empty.mineMsg', lang),
+  emptyMineCta: t('artifacts.empty.mineCta', lang),
+  emptyReviewTitle: t('artifacts.empty.reviewTitle', lang),
+  emptyReviewMsg: t('artifacts.empty.reviewMsg', lang),
+  cardOpen: t('artifacts.card.open', lang),
+  cardReview: t('artifacts.card.review', lang),
+  modalSubmitTitle: t('artifacts.modal.submitTitle', lang),
+  modalEditTitle: t('artifacts.modal.editTitle', lang),
+  msgTitleRequired: t('artifacts.msg.titleRequired', lang),
+  msgErrorPrefix: t('artifacts.msg.errorPrefix', lang),
+  msgUpdated: t('artifacts.msg.updated', lang),
+  msgSubmitted: t('artifacts.msg.submitted', lang),
+  msgReviewSaved: t('artifacts.msg.reviewSaved', lang),
+  dateLocale: t('artifacts.dateLocale', lang),
+};
 ---
-<BaseLayout title="Artefatos — Núcleo IA & GP" activePage="artifacts">
+<BaseLayout title={t('artifacts.title', lang)} activePage="artifacts">
   <Toast />
   <div class="max-w-[1100px] mx-auto px-4 py-8">
     <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
-      <h1 class="text-2xl font-extrabold text-navy">📄 Artefatos do Núcleo</h1>
+      <h1 class="text-2xl font-extrabold text-navy">{t('artifacts.heading', lang)}</h1>
       <button id="btn-submit" class="hidden px-4 py-2 bg-teal text-white rounded-xl font-semibold text-sm cursor-pointer border-0 hover:opacity-90 transition-all"
               data-action="open-submit-modal">
-        + Submeter Artefato
+        {t('artifacts.submitBtn', lang)}
       </button>
     </div>
 
     <!-- Tabs -->
     <div class="flex gap-2 mb-6 flex-wrap">
       <button class="art-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white"
-              data-tab="catalog" data-action="switch-tab">📚 Catálogo</button>
+              data-tab="catalog" data-action="switch-tab">{t('artifacts.tab.catalog', lang)}</button>
       <button class="art-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
-              id="tab-my" data-tab="mine" data-action="switch-tab">📝 Meus Artefatos</button>
+              id="tab-my" data-tab="mine" data-action="switch-tab">{t('artifacts.tab.mine', lang)}</button>
       <button class="art-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
-              id="tab-review" data-tab="review" data-action="switch-tab">🔍 Fila de Revisão</button>
+              id="tab-review" data-tab="review" data-action="switch-tab">{t('artifacts.tab.review', lang)}</button>
     </div>
 
     <!-- Catalog tab -->
@@ -50,60 +96,55 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
   <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-artifact">
     <div class="bg-white rounded-2xl w-full max-w-[560px] overflow-hidden flex flex-col" style="max-height:85vh">
       <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center flex-shrink-0">
-        <h3 class="text-base font-bold text-navy" id="modal-artifact-title">Submeter Artefato</h3>
+        <h3 class="text-base font-bold text-navy" id="modal-artifact-title">{t('artifacts.modal.submitTitle', lang)}</h3>
         <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" data-action="close-art-modal">✕</button>
       </div>
       <div class="p-5 overflow-y-auto flex-1">
         <input type="hidden" id="art-id">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <div class="flex flex-col gap-1.5 sm:col-span-2">
-            <label class="text-[12px] font-semibold text-slate-500">Título do Artefato</label>
-            <input type="text" id="art-title" placeholder="Ex: Framework EAA — Estrutura Analítica do Agente"
+            <label class="text-[12px] font-semibold text-slate-500">{t('artifacts.modal.labelTitle', lang)}</label>
+            <input type="text" id="art-title" placeholder={t('artifacts.modal.placeholderTitle', lang)}
                    class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
           </div>
           <div class="flex flex-col gap-1.5">
-            <label class="text-[12px] font-semibold text-slate-500">Tipo</label>
+            <label class="text-[12px] font-semibold text-slate-500">{t('artifacts.type', lang)}</label>
             <select id="art-type" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
-              <option value="article">Artigo</option>
-              <option value="ebook">E-book / Guia</option>
-              <option value="framework">Framework</option>
-              <option value="presentation">Apresentação</option>
-              <option value="video">Vídeo / Webinar</option>
-              <option value="toolkit">Toolkit</option>
-              <option value="other">Outro</option>
+              <option value="article">{t('artifacts.type.article', lang)}</option>
+              <option value="ebook">{t('artifacts.type.ebook', lang)}</option>
+              <option value="framework">{t('artifacts.type.framework', lang)}</option>
+              <option value="presentation">{t('artifacts.type.presentation', lang)}</option>
+              <option value="video">{t('artifacts.type.video', lang)}</option>
+              <option value="toolkit">{t('artifacts.type.toolkit', lang)}</option>
+              <option value="other">{t('artifacts.type.other', lang)}</option>
             </select>
           </div>
           <div class="flex flex-col gap-1.5">
-            <label class="text-[12px] font-semibold text-slate-500">Tribo</label>
+            <label class="text-[12px] font-semibold text-slate-500">{t('artifacts.tribe', lang)}</label>
             <select id="art-tribe" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
-              <option value="">— Nenhuma —</option>
-              <option value="1">01 — Radar Tecnológico</option>
-              <option value="2">02 — Agentes Autônomos</option>
-              <option value="3">03 — TMO & PMO do Futuro</option>
-              <option value="4">04 — Cultura & Change</option>
-              <option value="5">05 — Talentos & Upskilling</option>
-              <option value="6">06 — ROI & Portfólio</option>
-              <option value="7">07 — Governança & Trustworthy AI</option>
-              <option value="8">08 — Inclusão & Colaboração</option>
+              <option value="">{t('artifacts.tribe.none', lang)}</option>
+              {tribeOptions.map(opt => (
+                <option value={opt.value}>{opt.label}</option>
+              ))}
             </select>
           </div>
           <div class="flex flex-col gap-1.5 sm:col-span-2">
-            <label class="text-[12px] font-semibold text-slate-500">URL (Google Docs, PDF, YouTube…)</label>
+            <label class="text-[12px] font-semibold text-slate-500">{t('artifacts.modal.labelUrl', lang)}</label>
             <input type="url" id="art-url" placeholder="https://docs.google.com/..."
                    class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
           </div>
           <div class="flex flex-col gap-1.5 sm:col-span-2">
-            <label class="text-[12px] font-semibold text-slate-500">Descrição breve</label>
-            <textarea id="art-desc" rows="3" placeholder="Resumo do artefato…"
+            <label class="text-[12px] font-semibold text-slate-500">{t('artifacts.modal.labelDesc', lang)}</label>
+            <textarea id="art-desc" rows="3" placeholder={t('artifacts.modal.placeholderDesc', lang)}
                       class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy resize-y"></textarea>
           </div>
         </div>
       </div>
       <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2 flex-shrink-0">
         <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer"
-                data-action="close-art-modal">Cancelar</button>
+                data-action="close-art-modal">{t('artifacts.modal.cancel', lang)}</button>
         <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer"
-                data-action="save-artifact">Salvar</button>
+                data-action="save-artifact">{t('artifacts.modal.save', lang)}</button>
       </div>
     </div>
   </div>
@@ -112,7 +153,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
   <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-review">
     <div class="bg-white rounded-2xl w-full max-w-[480px] overflow-hidden flex flex-col">
       <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center">
-        <h3 class="text-base font-bold text-navy">Revisar Artefato</h3>
+        <h3 class="text-base font-bold text-navy">{t('artifacts.modal.reviewTitle', lang)}</h3>
         <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" data-action="close-review-modal">✕</button>
       </div>
       <div class="p-5">
@@ -120,48 +161,54 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
         <div class="text-sm font-bold mb-1" id="rev-title-display"></div>
         <div class="text-[12px] text-slate-500 mb-4" id="rev-author-display"></div>
         <div class="flex flex-col gap-1.5 mb-4">
-          <label class="text-[12px] font-semibold text-slate-500">Novo Status</label>
+          <label class="text-[12px] font-semibold text-slate-500">{t('artifacts.modal.labelStatus', lang)}</label>
           <select id="rev-status" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
-            <option value="review">Em Revisão</option>
-            <option value="approved">Aprovado</option>
-            <option value="published">Publicado</option>
-            <option value="draft">Devolver ao Autor (Rascunho)</option>
+            <option value="review">{t('artifacts.review', lang)}</option>
+            <option value="approved">{t('artifacts.status.approved', lang)}</option>
+            <option value="published">{t('artifacts.published', lang)}</option>
+            <option value="draft">{t('artifacts.status.returnDraft', lang)}</option>
           </select>
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[12px] font-semibold text-slate-500">Notas de revisão</label>
-          <textarea id="rev-notes" rows="3" placeholder="Feedback para o autor…"
+          <label class="text-[12px] font-semibold text-slate-500">{t('artifacts.modal.labelNotes', lang)}</label>
+          <textarea id="rev-notes" rows="3" placeholder={t('artifacts.modal.placeholderNotes', lang)}
                     class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy resize-y"></textarea>
         </div>
       </div>
       <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2">
         <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer"
-                data-action="close-review-modal">Cancelar</button>
+                data-action="close-review-modal">{t('artifacts.modal.cancel', lang)}</button>
         <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer"
-                data-action="submit-review">Salvar Revisão</button>
+                data-action="submit-review">{t('artifacts.modal.saveReview', lang)}</button>
       </div>
     </div>
   </div>
 </BaseLayout>
 
+<!-- define:vars forces is:inline and breaks imports; inject i18n separately -->
+<script is:inline define:vars={{ ARTIFACTS_I18N }}>
+  window.__ARTIFACTS_I18N = typeof ARTIFACTS_I18N !== 'undefined' ? ARTIFACTS_I18N : {};
+</script>
 <script>
   import { getMemberRole } from '../lib/routing';
+
+  const I18N = (typeof window !== 'undefined' && (window as any).__ARTIFACTS_I18N) || {};
 
   let sb: any = null;
   let MEMBER: any = null;
   let CAN_MANAGE = false;
 
-  const TYPE_LABELS: Record<string, string> = {
+  const TYPE_LABELS: Record<string, string> = I18N.typeLabels || {
     article: '📄 Artigo', ebook: '📖 E-book', framework: '🏗️ Framework',
     presentation: '📊 Apresentação', video: '🎬 Vídeo', toolkit: '🧰 Toolkit', other: '📎 Outro'
   };
   const STATUS_LABELS: Record<string, { label: string; bg: string; color: string }> = {
-    draft:     { label: 'Rascunho',   bg: '#F1F5F9', color: '#475569' },
-    review:    { label: 'Em Revisão', bg: '#FEF3C7', color: '#92400E' },
-    approved:  { label: 'Aprovado',   bg: '#D1FAE5', color: '#065F46' },
-    published: { label: 'Publicado',  bg: '#DBEAFE', color: '#1E40AF' },
+    draft:     { label: I18N.statusLabels?.draft     || 'Rascunho',   bg: '#F1F5F9', color: '#475569' },
+    review:    { label: I18N.statusLabels?.review    || 'Em Revisão', bg: '#FEF3C7', color: '#92400E' },
+    approved:  { label: I18N.statusLabels?.approved  || 'Aprovado',   bg: '#D1FAE5', color: '#065F46' },
+    published: { label: I18N.statusLabels?.published || 'Publicado',  bg: '#DBEAFE', color: '#1E40AF' },
   };
-  const TRIBE_NAMES: Record<number, string> = {
+  const TRIBE_NAMES: Record<number, string> = I18N.tribeNames || {
     1: 'Radar Tecnológico', 2: 'Agentes Autônomos', 3: 'TMO & PMO do Futuro',
     4: 'Cultura & Change', 5: 'Talentos & Upskilling', 6: 'ROI & Portfólio',
     7: 'Governança & Trustworthy AI', 8: 'Inclusão & Colaboração'
@@ -207,7 +254,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
 
   function fmtDate(d: string): string {
     if (!d) return '';
-    return new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+    return new Date(d).toLocaleDateString(I18N.dateLocale || 'pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
   // ── TABS ──
@@ -236,8 +283,8 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
       .order('published_at', { ascending: false });
     if (!data?.length) {
       el.innerHTML = MEMBER
-        ? emptyStateHtml('📚', 'Nenhum artefato publicado ainda', 'Os primeiros estão a caminho. Você pode submeter o primeiro agora.', '+ Submeter Artefato', 'open-submit-modal')
-        : emptyStateHtml('📚', 'Nenhum artefato publicado ainda', 'Faça login para submeter o primeiro artefato do ciclo.', 'Fazer Login', 'open-auth');
+        ? emptyStateHtml('📚', I18N.emptyCatalogTitle, I18N.emptyCatalogMsgAuth, I18N.emptyCatalogCtaAuth, 'open-submit-modal')
+        : emptyStateHtml('📚', I18N.emptyCatalogTitle, I18N.emptyCatalogMsgAnon, I18N.emptyCatalogCtaAnon, 'open-auth');
       return;
     }
     el.innerHTML = data.map((a: any) => artifactCard(a, false)).join('');
@@ -253,7 +300,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
       .eq('member_id', MEMBER.id)
       .order('created_at', { ascending: false });
     if (!data?.length) {
-      el.innerHTML = emptyStateHtml('📝', 'Você ainda não submeteu artefatos', 'Crie seu primeiro artefato para iniciar seu histórico no Núcleo.', '+ Submeter Artefato', 'open-submit-modal');
+      el.innerHTML = emptyStateHtml('📝', I18N.emptyMineTitle, I18N.emptyMineMsg, I18N.emptyMineCta, 'open-submit-modal');
       return;
     }
     el.innerHTML = data.map((a: any) => artifactCard(a, true)).join('');
@@ -268,7 +315,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
       .in('status', ['draft', 'review'])
       .order('submitted_at', { ascending: true });
     if (!data?.length) {
-      el.innerHTML = emptyStateHtml('✅', 'Fila de revisão vazia', 'Não há artefatos pendentes de revisão no momento.');
+      el.innerHTML = emptyStateHtml('✅', I18N.emptyReviewTitle, I18N.emptyReviewMsg);
       return;
     }
     el.innerHTML = data.map((a: any) => artifactCard(a, false, true)).join('');
@@ -283,7 +330,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
     const author = a.members?.name || '—';
     const tribe = a.tribe_id ? TRIBE_NAMES[a.tribe_id] || '' : '';
     const typeLabel = TYPE_LABELS[a.type] || a.type;
-    const urlLink = a.url ? `<a href="${a.url}" target="_blank" rel="noopener" class="text-teal text-[12px] font-semibold no-underline hover:underline">🔗 Abrir</a>` : '';
+    const urlLink = a.url ? `<a href="${a.url}" target="_blank" rel="noopener" class="text-teal text-[12px] font-semibold no-underline hover:underline">${I18N.cardOpen}</a>` : '';
 
     return `
     <div class="py-3.5 border-b border-slate-100 last:border-b-0">
@@ -303,7 +350,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
         </div>
         <div class="flex gap-1.5 flex-shrink-0">
           ${showEdit && a.status === 'draft' ? `<button type="button" class="btn-edit-artifact px-2.5 py-1.5 text-[12px] bg-slate-50 border border-slate-200 rounded-md cursor-pointer font-semibold" data-artifact-id="${esc(a.id)}">✏️</button>` : ''}
-          ${showReview ? `<button type="button" class="btn-review-artifact px-2.5 py-1.5 text-[12px] bg-amber-50 border border-amber-200 rounded-md cursor-pointer font-semibold text-amber-800" data-artifact-id="${esc(a.id)}">🔍 Revisar</button>` : ''}
+          ${showReview ? `<button type="button" class="btn-review-artifact px-2.5 py-1.5 text-[12px] bg-amber-50 border border-amber-200 rounded-md cursor-pointer font-semibold text-amber-800" data-artifact-id="${esc(a.id)}">${I18N.cardReview}</button>` : ''}
         </div>
       </div>
     </div>`;
@@ -317,7 +364,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
     (document.getElementById('art-tribe') as HTMLSelectElement).value = MEMBER?.tribe_id?.toString() || '';
     (document.getElementById('art-url') as HTMLInputElement).value = '';
     (document.getElementById('art-desc') as HTMLTextAreaElement).value = '';
-    document.getElementById('modal-artifact-title')!.textContent = 'Submeter Artefato';
+    document.getElementById('modal-artifact-title')!.textContent = I18N.modalSubmitTitle;
     const modal = document.getElementById('modal-artifact')!;
     modal.classList.remove('hidden');
     modal.classList.add('flex');
@@ -330,7 +377,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
     (document.getElementById('art-tribe') as HTMLSelectElement).value = a.tribe_id?.toString() || '';
     (document.getElementById('art-url') as HTMLInputElement).value = a.url || '';
     (document.getElementById('art-desc') as HTMLTextAreaElement).value = a.description || '';
-    document.getElementById('modal-artifact-title')!.textContent = 'Editar Artefato';
+    document.getElementById('modal-artifact-title')!.textContent = I18N.modalEditTitle;
     const modal = document.getElementById('modal-artifact')!;
     modal.classList.remove('hidden');
     modal.classList.add('flex');
@@ -388,7 +435,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
     const url = (document.getElementById('art-url') as HTMLInputElement).value.trim() || null;
     const desc = (document.getElementById('art-desc') as HTMLTextAreaElement).value.trim() || null;
 
-    if (!title) { toast('Título é obrigatório', 'error'); return; }
+    if (!title) { toast(I18N.msgTitleRequired, 'error'); return; }
 
     const payload = {
       title, type, url, description: desc,
@@ -412,9 +459,9 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
       error = res.error;
     }
 
-    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    if (error) { toast(I18N.msgErrorPrefix + error.message, 'error'); return; }
     closeArtModal();
-    toast(id ? 'Artefato atualizado ✅' : 'Artefato submetido ✅', 'success');
+    toast(id ? I18N.msgUpdated : I18N.msgSubmitted, 'success');
     loadMyArtifacts();
   }
 
@@ -453,9 +500,9 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
     }
 
     const { error } = await sb.from('artifacts').update(updatePayload).eq('id', id);
-    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    if (error) { toast(I18N.msgErrorPrefix + error.message, 'error'); return; }
     closeReviewModal();
-    toast('Revisão salva ✅', 'success');
+    toast(I18N.msgReviewSaved, 'success');
     loadReviewQueue();
   }
 

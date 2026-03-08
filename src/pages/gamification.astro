@@ -1,96 +1,222 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Toast from '../components/ui/Toast.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+
+const GAM_I18N = {
+  loading: t('gamification.loading', lang),
+  headingFull: t('gamification.headingFull', lang),
+  syncBtn: t('gamification.syncCredlyBtn', lang),
+  syncBtnSyncing: t('gamification.syncCredlyBtnSyncing', lang),
+  modeCycle: t('gamification.mode.cycle', lang),
+  modeLifetime: t('gamification.mode.lifetime', lang),
+  msgTimeout: t('gamification.msg.timeout', lang),
+  msgUnknownError: t('gamification.msg.unknownError', lang),
+  msgFailUnexpected: t('gamification.msg.failUnexpected', lang),
+  msgInvalidSession: t('gamification.msg.invalidSession', lang),
+  msgSyncError: t('gamification.msg.syncError', lang),
+  msgErrorPrefix: t('gamification.msg.errorPrefix', lang),
+  msgLoginAchievements: t('gamification.msg.loginAchievements', lang),
+  msgLoginPoints: t('gamification.msg.loginPoints', lang),
+  msgLoginCerts: t('gamification.msg.loginCerts', lang),
+  lbTitle: t('gamification.lb.title', lang),
+  lbEmpty: t('gamification.lb.empty', lang),
+  lbEmptySync: t('gamification.lb.emptySync', lang),
+  lbErrorLoad: t('gamification.lb.errorLoad', lang),
+  lbYou: t('gamification.lb.you', lang),
+  lbBreakdownCycle: t('gamification.lb.breakdownCycle', lang),
+  lbBreakdownLifetime: t('gamification.lb.breakdownLifetime', lang),
+  lbBreakdownInProgress: t('gamification.lb.breakdownInProgress', lang),
+  trTitle: t('gamification.tr.title', lang),
+  trFormula: t('gamification.tr.formula', lang),
+  trEmpty: t('gamification.tr.empty', lang),
+  trErrorLoad: t('gamification.tr.errorLoad', lang),
+  trMembers: t('gamification.tr.members', lang),
+  trAvg: t('gamification.tr.avg', lang),
+  trTotal: t('gamification.tr.total', lang),
+  trScore: t('gamification.tr.score', lang),
+  trModeAvg: t('gamification.tr.modeAvg', lang),
+  achTitle: t('gamification.ach.title', lang),
+  achUnlocked: t('gamification.ach.unlocked', lang),
+  achOf: t('gamification.ach.of', lang),
+  achErrorLoad: t('gamification.ach.errorLoad', lang),
+  achLifetimeXP: t('gamification.ach.lifetimeXP', lang),
+  achCurrentCycle: t('gamification.ach.currentCycle', lang),
+  mpTitle: t('gamification.mp.title', lang),
+  mpEmpty: t('gamification.mp.empty', lang),
+  mpTotal: t('gamification.mp.total', lang),
+  mpToNext: t('gamification.mp.toNext', lang),
+  mpMaxLevel: t('gamification.mp.maxLevel', lang),
+  mpNoPoints: t('gamification.mp.noPoints', lang),
+  mpErrorLoad: t('gamification.mp.errorLoad', lang),
+  mpLifetimeLabel: t('gamification.mp.lifetimeLabel', lang),
+  mpCurrentCycleLabel: t('gamification.mp.currentCycleLabel', lang),
+  mpPtsLabel: t('gamification.mp.ptsLabel', lang),
+  certTitle: t('gamification.cert.title', lang),
+  certEmpty: t('gamification.cert.empty', lang),
+  certIssue: t('gamification.cert.issue', lang),
+  certSelect: t('gamification.cert.select', lang),
+  certParticipant: t('gamification.cert.participant', lang),
+  certType: t('gamification.cert.type', lang),
+  certCycle: t('gamification.cert.cycle', lang),
+  certCertTitle: t('gamification.cert.certTitle', lang),
+  certDesc: t('gamification.cert.desc', lang),
+  certIssued: t('gamification.cert.issued', lang),
+  certFillFields: t('gamification.cert.fillFields', lang),
+  certCode: t('gamification.cert.code', lang),
+  certErrorLoad: t('gamification.cert.errorLoad', lang),
+  certIssueBtn: t('gamification.cert.issueBtn', lang),
+  certTitlePlaceholder: t('gamification.cert.titlePlaceholder', lang),
+  certDescPlaceholder: t('gamification.cert.descPlaceholder', lang),
+  typeParticipation: t('gamification.cert.type.participation', lang),
+  typeCompletion: t('gamification.cert.type.completion', lang),
+  typeContribution: t('gamification.cert.type.contribution', lang),
+  typeExcellence: t('gamification.cert.type.excellence', lang),
+  syncAttendanceError: t('gamification.sync.attendanceError', lang),
+  syncAttendanceFail: t('gamification.sync.attendanceFail', lang),
+  syncAttendanceSuccess: t('gamification.sync.attendanceSuccess', lang),
+  syncCredlySuccess: t('gamification.sync.credlySuccess', lang),
+  syncCredlyBatchError: t('gamification.sync.credlyBatchError', lang),
+  syncCredlyNotRun: t('gamification.sync.credlyNotRun', lang),
+  trailLoading: t('gamification.trail.loading', lang),
+  trailTitle: t('gamification.trail.title', lang),
+  trailCoursesOf: t('gamification.trail.coursesOf', lang),
+  trailPctComplete: t('gamification.trail.pctComplete', lang),
+  trailComplete: t('gamification.trail.complete', lang),
+  trailMissing: t('gamification.trail.missing', lang),
+  trailInProgress: t('gamification.trail.inProgress', lang),
+  trailError: t('gamification.trail.error', lang),
+  credlyTierTitle: t('gamification.credly.tierTitle', lang),
+  credlyTotalLabel: t('gamification.credly.totalLabel', lang),
+  credlyTiersDesc: t('gamification.credly.tiersDesc', lang),
+  levelExplorer: t('gamification.levels.explorer', lang),
+  levelPractitioner: t('gamification.levels.practitioner', lang),
+  levelExpert: t('gamification.levels.expert', lang),
+  levelMaster: t('gamification.levels.master', lang),
+  levelLegend: t('gamification.levels.legend', lang),
+  achDefFirstPointsName: t('gamification.ach.def.firstPoints.name', lang),
+  achDefFirstPointsDesc: t('gamification.ach.def.firstPoints.desc', lang),
+  achDefPractitionerName: t('gamification.ach.def.practitioner.name', lang),
+  achDefPractitionerDesc: t('gamification.ach.def.practitioner.desc', lang),
+  achDefExpertName: t('gamification.ach.def.expert.name', lang),
+  achDefExpertDesc: t('gamification.ach.def.expert.desc', lang),
+  achDefMasterName: t('gamification.ach.def.master.name', lang),
+  achDefMasterDesc: t('gamification.ach.def.master.desc', lang),
+  achDefLegendName: t('gamification.ach.def.legend.name', lang),
+  achDefLegendDesc: t('gamification.ach.def.legend.desc', lang),
+  achDefScholarName: t('gamification.ach.def.scholar.name', lang),
+  achDefScholarDesc: t('gamification.ach.def.scholar.desc', lang),
+  achDefPublisherName: t('gamification.ach.def.publisher.name', lang),
+  achDefPublisherDesc: t('gamification.ach.def.publisher.desc', lang),
+  achDefConsistentName: t('gamification.ach.def.consistent.name', lang),
+  achDefConsistentDesc: t('gamification.ach.def.consistent.desc', lang),
+  achDefEngagedName: t('gamification.ach.def.engaged.name', lang),
+  achDefEngagedDesc: t('gamification.ach.def.engaged.desc', lang),
+  achDefVeteranName: t('gamification.ach.def.veteran.name', lang),
+  achDefVeteranDesc: t('gamification.ach.def.veteran.desc', lang),
+  achDefProfileCompleteName: t('gamification.ach.def.profileComplete.name', lang),
+  achDefProfileCompleteDesc: t('gamification.ach.def.profileComplete.desc', lang),
+  tribeName1: t('gamification.tribeName.1', lang),
+  tribeName2: t('gamification.tribeName.2', lang),
+  tribeName3: t('gamification.tribeName.3', lang),
+  tribeName4: t('gamification.tribeName.4', lang),
+  tribeName5: t('gamification.tribeName.5', lang),
+  tribeName6: t('gamification.tribeName.6', lang),
+  tribeName7: t('gamification.tribeName.7', lang),
+  tribeName8: t('gamification.tribeName.8', lang),
+  locale: lang === 'es-LATAM' ? 'es' : lang,
+};
 ---
-<BaseLayout title="Gamificação & Certificados — Núcleo IA & GP" activePage="gamification">
+<BaseLayout title={t('gamification.titleFull', lang)} activePage="gamification">
   <Toast />
   <div class="max-w-[1100px] mx-auto px-4 py-8">
     <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
-      <h1 class="text-2xl font-extrabold text-navy">🏆 Gamificação & Certificados</h1>
+      <h1 class="text-2xl font-extrabold text-navy">{t('gamification.headingFull', lang)}</h1>
       <button id="btn-sync" class="hidden px-4 py-2 bg-teal text-white rounded-xl font-semibold text-sm cursor-pointer border-0 hover:opacity-90 transition-all"
               data-action="sync-points">
-        🔄 Sincronizar Pontos + Credly
+        {t('gamification.syncCredlyBtn', lang)}
       </button>
     </div>
 
     <!-- XP Level Legend -->
     <div class="bg-gradient-to-r from-navy/5 to-orange/5 rounded-xl border border-slate-200 p-5 mb-6">
-      <h3 class="text-sm font-bold text-navy mb-3">Níveis de Experiência</h3>
+      <h3 class="text-sm font-bold text-navy mb-3">{t('gamification.levels.title', lang)}</h3>
       <div class="flex flex-wrap gap-3">
         <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-white rounded-lg border border-slate-100">
           <span class="text-lg">🌱</span>
-          <div><strong>Explorador</strong><span class="text-slate-400 ml-1">0–30 pts</span></div>
+          <div><strong>{t('gamification.levels.explorer', lang)}</strong><span class="text-slate-400 ml-1">0–30 pts</span></div>
         </div>
         <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-white rounded-lg border border-slate-100">
           <span class="text-lg">⚡</span>
-          <div><strong>Praticante</strong><span class="text-slate-400 ml-1">31–90 pts</span></div>
+          <div><strong>{t('gamification.levels.practitioner', lang)}</strong><span class="text-slate-400 ml-1">31–90 pts</span></div>
         </div>
         <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-white rounded-lg border border-slate-100">
           <span class="text-lg">🔥</span>
-          <div><strong>Especialista</strong><span class="text-slate-400 ml-1">91–200 pts</span></div>
+          <div><strong>{t('gamification.levels.expert', lang)}</strong><span class="text-slate-400 ml-1">91–200 pts</span></div>
         </div>
         <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-white rounded-lg border border-slate-100">
           <span class="text-lg">💎</span>
-          <div><strong>Mestre</strong><span class="text-slate-400 ml-1">201–400 pts</span></div>
+          <div><strong>{t('gamification.levels.master', lang)}</strong><span class="text-slate-400 ml-1">201–400 pts</span></div>
         </div>
         <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-white rounded-lg border border-slate-100">
           <span class="text-lg">🏆</span>
-          <div><strong>Lenda</strong><span class="text-slate-400 ml-1">401+ pts</span></div>
+          <div><strong>{t('gamification.levels.legend', lang)}</strong><span class="text-slate-400 ml-1">401+ pts</span></div>
         </div>
       </div>
     </div>
 
     <!-- Points legend -->
     <div class="bg-white rounded-xl border border-slate-200 p-5 mb-6">
-      <h3 class="text-sm font-bold text-navy mb-3">Como ganhar pontos</h3>
+      <h3 class="text-sm font-bold text-navy mb-3">{t('gamification.pointsLegend.title', lang)}</h3>
       <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-[13px]">
         <div class="flex items-center gap-2">
           <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-[11px]">+10</span>
-          <span class="text-slate-600">Presença</span>
+          <span class="text-slate-600">{t('gamification.pointsLegend.attendance', lang)}</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-[11px]">+15</span>
-          <span class="text-slate-600">Curso</span>
+          <span class="text-slate-600">{t('gamification.pointsLegend.course', lang)}</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-[11px]">+30</span>
-          <span class="text-slate-600">Artefato</span>
+          <span class="text-slate-600">{t('gamification.pointsLegend.artifact', lang)}</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="w-8 h-8 rounded-lg bg-pink-50 text-pink-600 flex items-center justify-center font-bold text-[11px]">+50</span>
-          <span class="text-slate-600">Perfil 100%</span>
+          <span class="text-slate-600">{t('gamification.pointsLegend.profile', lang)}</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-[11px]">+10-50</span>
-          <span class="text-slate-600">Credly (T1-4)</span>
+          <span class="text-slate-600">{t('gamification.pointsLegend.credly', lang)}</span>
         </div>
       </div>
       <div class="mt-3 text-[11px] text-slate-500">
-        Credly tiers: T1 Master +50, T2 Specialization +25, T3 Trail/Knowledge +15, T4 Other +10.
+        {t('gamification.credly.tiersDesc', lang)}
       </div>
     </div>
 
     <!-- Tabs -->
     <div class="flex gap-2 mb-6 flex-wrap">
       <button class="gam-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white"
-              data-tab="leaderboard" data-action="switch-tab">🏅 Ranking Individual</button>
+              data-tab="leaderboard" data-action="switch-tab">{t('gamification.tab.individual', lang)}</button>
       <button class="gam-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
-              data-tab="tribes" data-action="switch-tab">🏷️ Ranking de Tribos</button>
+              data-tab="tribes" data-action="switch-tab">{t('gamification.tab.tribes', lang)}</button>
       <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
-              id="tab-achievements" data-tab="achievements" data-action="switch-tab">🎯 Conquistas</button>
+              id="tab-achievements" data-tab="achievements" data-action="switch-tab">{t('gamification.tab.achievements', lang)}</button>
       <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
-              id="tab-mypoints" data-tab="mypoints" data-action="switch-tab">📊 Meus Pontos</button>
+              id="tab-mypoints" data-tab="mypoints" data-action="switch-tab">{t('gamification.tab.myPoints', lang)}</button>
       <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
-              id="tab-mycerts" data-tab="mycerts" data-action="switch-tab">🎓 Certificados</button>
+              id="tab-mycerts" data-tab="mycerts" data-action="switch-tab">{t('gamification.tab.certs', lang)}</button>
       <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
-              id="tab-admin-certs" data-tab="admin-certs" data-action="switch-tab">📋 Emitir</button>
+              id="tab-admin-certs" data-tab="admin-certs" data-action="switch-tab">{t('gamification.tab.issue', lang)}</button>
     </div>
 
     <!-- Trail Clarity (logged user) -->
     <div id="trail-clarity-card" class="hidden mb-6">
       <div class="bg-white rounded-xl border border-slate-200 p-5">
         <div id="trail-clarity-content">
-          <p class="text-slate-400 text-sm text-center py-2">Carregando progresso da trilha...</p>
+          <p class="text-slate-400 text-sm text-center py-2">{t('gamification.trail.loading', lang)}</p>
         </div>
       </div>
     </div>
@@ -99,16 +225,16 @@ import Toast from '../components/ui/Toast.astro';
     <div id="panel-leaderboard">
       <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
-          <h3 class="text-sm font-bold text-navy">Ranking Individual — Ciclo 3</h3>
+          <h3 class="text-sm font-bold text-navy">{t('gamification.lb.title', lang)}</h3>
           <div class="inline-flex items-center gap-1.5 bg-slate-50 rounded-full p-1 border border-slate-200">
             <button id="lb-mode-cycle" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-navy text-white border-0 cursor-pointer"
-                    data-action="set-leaderboard-mode" data-mode="cycle">Ciclo Atual</button>
+                    data-action="set-leaderboard-mode" data-mode="cycle">{t('gamification.mode.cycle', lang)}</button>
             <button id="lb-mode-lifetime" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-transparent text-slate-500 border-0 cursor-pointer"
-                    data-action="set-leaderboard-mode" data-mode="lifetime">XP Vitalício</button>
+                    data-action="set-leaderboard-mode" data-mode="lifetime">{t('gamification.mode.lifetime', lang)}</button>
           </div>
         </div>
         <div class="p-5" id="leaderboard-list">
-          <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
+          <p class="text-slate-400 text-sm text-center py-6">{t('gamification.loading', lang)}</p>
         </div>
       </div>
     </div>
@@ -117,17 +243,17 @@ import Toast from '../components/ui/Toast.astro';
     <div id="panel-tribes" class="hidden">
       <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between gap-3 flex-wrap">
-          <h3 class="text-sm font-bold text-navy">Ranking de Tribos — Ciclo 3</h3>
+          <h3 class="text-sm font-bold text-navy">{t('gamification.tr.title', lang)}</h3>
           <div class="inline-flex items-center gap-1.5 bg-slate-50 rounded-full p-1 border border-slate-200">
             <button id="tr-mode-cycle" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-navy text-white border-0 cursor-pointer"
-                    data-action="set-tribe-mode" data-mode="cycle">Ciclo Atual</button>
+                    data-action="set-tribe-mode" data-mode="cycle">{t('gamification.mode.cycle', lang)}</button>
             <button id="tr-mode-lifetime" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-transparent text-slate-500 border-0 cursor-pointer"
-                    data-action="set-tribe-mode" data-mode="lifetime">XP Vitalício</button>
+                    data-action="set-tribe-mode" data-mode="lifetime">{t('gamification.mode.lifetime', lang)}</button>
           </div>
         </div>
-        <p class="px-5 pt-2 text-[.7rem] text-slate-400">Score = (média pontos × 1) + (membros ativos × 10)</p>
+        <p class="px-5 pt-2 text-[.7rem] text-slate-400">{t('gamification.tr.formula', lang)}</p>
         <div class="p-5" id="tribes-ranking-list">
-          <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
+          <p class="text-slate-400 text-sm text-center py-6">{t('gamification.loading', lang)}</p>
         </div>
       </div>
     </div>
@@ -136,10 +262,10 @@ import Toast from '../components/ui/Toast.astro';
     <div id="panel-achievements" class="hidden">
       <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div class="px-5 py-3.5 border-b border-slate-200">
-          <h3 class="text-sm font-bold text-navy">Minhas Conquistas</h3>
+          <h3 class="text-sm font-bold text-navy">{t('gamification.ach.title', lang)}</h3>
         </div>
         <div class="p-5" id="achievements-list">
-          <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
+          <p class="text-slate-400 text-sm text-center py-6">{t('gamification.loading', lang)}</p>
         </div>
       </div>
     </div>
@@ -148,10 +274,10 @@ import Toast from '../components/ui/Toast.astro';
     <div id="panel-mypoints" class="hidden">
       <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div class="px-5 py-3.5 border-b border-slate-200">
-          <h3 class="text-sm font-bold text-navy">Meu Histórico de Pontos</h3>
+          <h3 class="text-sm font-bold text-navy">{t('gamification.mp.title', lang)}</h3>
         </div>
         <div class="p-5" id="mypoints-list">
-          <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
+          <p class="text-slate-400 text-sm text-center py-6">{t('gamification.loading', lang)}</p>
         </div>
       </div>
     </div>
@@ -160,10 +286,10 @@ import Toast from '../components/ui/Toast.astro';
     <div id="panel-mycerts" class="hidden">
       <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div class="px-5 py-3.5 border-b border-slate-200">
-          <h3 class="text-sm font-bold text-navy">Meus Certificados</h3>
+          <h3 class="text-sm font-bold text-navy">{t('gamification.cert.title', lang)}</h3>
         </div>
         <div class="p-5" id="mycerts-list">
-          <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
+          <p class="text-slate-400 text-sm text-center py-6">{t('gamification.loading', lang)}</p>
         </div>
       </div>
     </div>
@@ -172,43 +298,43 @@ import Toast from '../components/ui/Toast.astro';
     <div id="panel-admin-certs" class="hidden">
       <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div class="px-5 py-3.5 border-b border-slate-200">
-          <h3 class="text-sm font-bold text-navy">Emitir Certificado</h3>
+          <h3 class="text-sm font-bold text-navy">{t('gamification.cert.issue', lang)}</h3>
         </div>
         <div class="p-5">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="flex flex-col gap-1.5 sm:col-span-2">
-              <label class="text-[12px] font-semibold text-slate-500">Participante</label>
+              <label class="text-[12px] font-semibold text-slate-500">{t('gamification.cert.participant', lang)}</label>
               <select id="cert-member" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
-                <option value="">Selecione...</option>
+                <option value="">{t('gamification.cert.select', lang)}</option>
               </select>
             </div>
             <div class="flex flex-col gap-1.5">
-              <label class="text-[12px] font-semibold text-slate-500">Tipo</label>
+              <label class="text-[12px] font-semibold text-slate-500">{t('gamification.cert.type', lang)}</label>
               <select id="cert-type" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white">
-                <option value="participation">Participação</option>
-                <option value="completion">Conclusão de Trilha</option>
-                <option value="contribution">Contribuição</option>
-                <option value="excellence">Excelência</option>
+                <option value="participation">{t('gamification.cert.type.participation', lang)}</option>
+                <option value="completion">{t('gamification.cert.type.completion', lang)}</option>
+                <option value="contribution">{t('gamification.cert.type.contribution', lang)}</option>
+                <option value="excellence">{t('gamification.cert.type.excellence', lang)}</option>
               </select>
             </div>
             <div class="flex flex-col gap-1.5">
-              <label class="text-[12px] font-semibold text-slate-500">Ciclo</label>
+              <label class="text-[12px] font-semibold text-slate-500">{t('gamification.cert.cycle', lang)}</label>
               <input type="number" id="cert-cycle" value="3" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
             </div>
             <div class="flex flex-col gap-1.5 sm:col-span-2">
-              <label class="text-[12px] font-semibold text-slate-500">Título</label>
-              <input type="text" id="cert-title" placeholder="Ex: Certificado de Participação — Ciclo 3"
+              <label class="text-[12px] font-semibold text-slate-500">{t('gamification.cert.certTitle', lang)}</label>
+              <input type="text" id="cert-title" placeholder={t('gamification.cert.titlePlaceholder', lang)}
                      class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
             </div>
             <div class="flex flex-col gap-1.5 sm:col-span-2">
-              <label class="text-[12px] font-semibold text-slate-500">Descrição</label>
-              <textarea id="cert-desc" rows="2" placeholder="Descrição opcional..."
+              <label class="text-[12px] font-semibold text-slate-500">{t('gamification.cert.desc', lang)}</label>
+              <textarea id="cert-desc" rows="2" placeholder={t('gamification.cert.descPlaceholder', lang)}
                         class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy resize-y"></textarea>
             </div>
           </div>
           <div class="mt-4 flex justify-end">
             <button data-action="issue-certificate" class="px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm cursor-pointer border-0 hover:opacity-90 transition-all">
-              🎓 Emitir Certificado
+              {t('gamification.cert.issueBtn', lang)}
             </button>
           </div>
         </div>
@@ -217,10 +343,15 @@ import Toast from '../components/ui/Toast.astro';
   </div>
 </BaseLayout>
 
+<script is:inline define:vars={{ GAM_I18N }}>
+  window.__GAMIFICATION_I18N = typeof GAM_I18N !== 'undefined' ? GAM_I18N : {};
+</script>
 <script>
   import { getMemberRole } from '../lib/routing';
   import { aggregateCredlyByMember } from '../lib/gamification';
   import { buildTrailProgressByMember } from '../lib/trail-progress';
+
+  const I = (typeof window !== 'undefined' && (window as any).__GAMIFICATION_I18N) || {};
 
   let sb: any = null;
   let MEMBER: any = null;
@@ -240,14 +371,14 @@ import Toast from '../components/ui/Toast.astro';
   };
 
   const TYPE_LABELS: Record<string, string> = {
-    participation: 'Participação', completion: 'Conclusão de Trilha',
-    contribution: 'Contribuição', excellence: 'Excelência',
+    participation: I.typeParticipation, completion: I.typeCompletion,
+    contribution: I.typeContribution, excellence: I.typeExcellence,
   };
 
   const TRIBE_NAMES: Record<number, string> = {
-    1: 'Radar Tecnológico', 2: 'Agentes Autônomos', 3: 'TMO & PMO do Futuro',
-    4: 'Cultura & Change', 5: 'Talentos & Upskilling', 6: 'ROI & Portfólio',
-    7: 'Governança & Trustworthy AI', 8: 'Inclusão & Colaboração'
+    1: I.tribeName1, 2: I.tribeName2, 3: I.tribeName3,
+    4: I.tribeName4, 5: I.tribeName5, 6: I.tribeName6,
+    7: I.tribeName7, 8: I.tribeName8,
   };
   const TRIBE_COLORS: Record<number, string> = {
     1: '#00799E', 2: '#00799E', 3: '#FF610F', 4: '#FF610F',
@@ -267,7 +398,7 @@ import Toast from '../components/ui/Toast.astro';
   async function withTimeout<T>(promise: Promise<T>, ms = PANEL_QUERY_TIMEOUT_MS): Promise<T> {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const timeout = new Promise<never>((_, reject) => {
-      timer = setTimeout(() => reject(new Error('Tempo limite excedido ao carregar dados.')), ms);
+      timer = setTimeout(() => reject(new Error(I.msgTimeout)), ms);
     });
     try {
       return await Promise.race([promise, timeout]);
@@ -277,7 +408,7 @@ import Toast from '../components/ui/Toast.astro';
   }
 
   async function describeFnError(err: any): Promise<string> {
-    if (!err) return 'Erro desconhecido';
+    if (!err) return I.msgUnknownError;
     if (err.context && typeof err.context.json === 'function') {
       try {
         const payload = await err.context.json();
@@ -285,17 +416,17 @@ import Toast from '../components/ui/Toast.astro';
         if (detail) return detail;
       } catch {}
     }
-    return err.message || 'Erro desconhecido';
+    return err.message || I.msgUnknownError;
   }
 
   // ── XP LEVEL SYSTEM ──
   function getLevel(pts: number): { name: string; emoji: string; next: string; ptsToNext: number; pctInLevel: number } {
     const levels = [
-      { min: 0,   max: 30,  name: 'Explorador', emoji: '🌱', next: 'Praticante' },
-      { min: 31,  max: 90,  name: 'Praticante', emoji: '⚡', next: 'Especialista' },
-      { min: 91,  max: 200, name: 'Especialista', emoji: '🔥', next: 'Mestre' },
-      { min: 201, max: 400, name: 'Mestre', emoji: '💎', next: 'Lenda' },
-      { min: 401, max: 9999, name: 'Lenda', emoji: '🏆', next: '' },
+      { min: 0,   max: 30,  name: I.levelExplorer, emoji: '🌱', next: I.levelPractitioner },
+      { min: 31,  max: 90,  name: I.levelPractitioner, emoji: '⚡', next: I.levelExpert },
+      { min: 91,  max: 200, name: I.levelExpert, emoji: '🔥', next: I.levelMaster },
+      { min: 201, max: 400, name: I.levelMaster, emoji: '💎', next: I.levelLegend },
+      { min: 401, max: 9999, name: I.levelLegend, emoji: '🏆', next: '' },
     ];
     const lvl = levels.find(l => pts >= l.min && pts <= l.max) || levels[0];
     const range = lvl.max - lvl.min;
@@ -309,17 +440,17 @@ import Toast from '../components/ui/Toast.astro';
 
   // ── ACHIEVEMENTS (computed from existing data) ──
   const ACHIEVEMENT_DEFS = [
-    { id: 'first_points', icon: '🎯', name: 'Primeira Pontuação', desc: 'Ganhou seus primeiros pontos', check: (pts: number, data: any) => pts > 0 },
-    { id: 'level_practitioner', icon: '⚡', name: 'Praticante IA', desc: 'Alcançou 31 pontos', check: (pts: number) => pts >= 31 },
-    { id: 'level_expert', icon: '🔥', name: 'Especialista IA', desc: 'Alcançou 91 pontos', check: (pts: number) => pts >= 91 },
-    { id: 'level_master', icon: '💎', name: 'Mestre IA', desc: 'Alcançou 201 pontos', check: (pts: number) => pts >= 201 },
-    { id: 'level_legend', icon: '🏆', name: 'Lenda IA', desc: 'Alcançou 401 pontos', check: (pts: number) => pts >= 401 },
-    { id: 'scholar', icon: '📚', name: 'Scholar', desc: 'Completou toda a trilha IA (8/8 cursos)', check: (_: number, d: any) => d.coursesCompleted >= 8 },
-    { id: 'publisher', icon: '📝', name: 'Publisher', desc: 'Publicou seu primeiro artefato', check: (_: number, d: any) => d.artifactsPublished > 0 },
-    { id: 'consistent', icon: '🔥', name: 'Consistente', desc: 'Participou de 5+ eventos', check: (_: number, d: any) => d.attendanceCount >= 5 },
-    { id: 'engaged', icon: '💪', name: 'Engajado', desc: 'Participou de 10+ eventos', check: (_: number, d: any) => d.attendanceCount >= 10 },
-    { id: 'veteran', icon: '🌟', name: 'Veterano', desc: 'Participou em 2+ ciclos do Núcleo', check: (_: number, d: any) => d.cycleCount >= 2 },
-    { id: 'profile_complete', icon: '✨', name: 'Perfil Completo', desc: 'Preencheu 100% do perfil', check: (_: number, d: any) => d.profileComplete },
+    { id: 'first_points', icon: '🎯', name: I.achDefFirstPointsName, desc: I.achDefFirstPointsDesc, check: (pts: number, data: any) => pts > 0 },
+    { id: 'level_practitioner', icon: '⚡', name: I.achDefPractitionerName, desc: I.achDefPractitionerDesc, check: (pts: number) => pts >= 31 },
+    { id: 'level_expert', icon: '🔥', name: I.achDefExpertName, desc: I.achDefExpertDesc, check: (pts: number) => pts >= 91 },
+    { id: 'level_master', icon: '💎', name: I.achDefMasterName, desc: I.achDefMasterDesc, check: (pts: number) => pts >= 201 },
+    { id: 'level_legend', icon: '🏆', name: I.achDefLegendName, desc: I.achDefLegendDesc, check: (pts: number) => pts >= 401 },
+    { id: 'scholar', icon: '📚', name: I.achDefScholarName, desc: I.achDefScholarDesc, check: (_: number, d: any) => d.coursesCompleted >= 8 },
+    { id: 'publisher', icon: '📝', name: I.achDefPublisherName, desc: I.achDefPublisherDesc, check: (_: number, d: any) => d.artifactsPublished > 0 },
+    { id: 'consistent', icon: '🔥', name: I.achDefConsistentName, desc: I.achDefConsistentDesc, check: (_: number, d: any) => d.attendanceCount >= 5 },
+    { id: 'engaged', icon: '💪', name: I.achDefEngagedName, desc: I.achDefEngagedDesc, check: (_: number, d: any) => d.attendanceCount >= 10 },
+    { id: 'veteran', icon: '🌟', name: I.achDefVeteranName, desc: I.achDefVeteranDesc, check: (_: number, d: any) => d.cycleCount >= 2 },
+    { id: 'profile_complete', icon: '✨', name: I.achDefProfileCompleteName, desc: I.achDefProfileCompleteDesc, check: (_: number, d: any) => d.profileComplete },
   ];
 
   // ── TABS ──
@@ -375,7 +506,7 @@ import Toast from '../components/ui/Toast.astro';
   function renderLeaderboard() {
     const el = document.getElementById('leaderboard-list')!;
     if (!leaderboardData?.length) {
-      setPanelMessage('leaderboard-list', 'Nenhum ponto registrado. Clique em "Sincronizar Pontos" para calcular.', 'empty');
+      setPanelMessage('leaderboard-list', I.lbEmpty, 'empty');
       return;
     }
 
@@ -392,7 +523,7 @@ import Toast from '../components/ui/Toast.astro';
       });
 
     const maxPts = Math.max(...rankedRows.map((m: any) => leaderboardMode === 'lifetime' ? m.lifetime_points : m.cycle_points), 1);
-    const modeLabel = leaderboardMode === 'lifetime' ? 'XP Vitalício' : 'Ciclo Atual';
+    const modeLabel = leaderboardMode === 'lifetime' ? I.modeLifetime : I.modeCycle;
 
     el.innerHTML = rankedRows.map((m: any, i: number) => {
       const initials = m.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
@@ -411,9 +542,9 @@ import Toast from '../components/ui/Toast.astro';
 
       const breakdown = [
         `🧭 ${modeLabel}: ${displayPoints}`,
-        leaderboardMode === 'lifetime' ? `📅 Ciclo: ${m.cycle_points}` : `♾️ Vida: ${m.lifetime_points}`,
+        leaderboardMode === 'lifetime' ? `📅 ${I.lbBreakdownCycle}: ${m.cycle_points}` : `♾️ ${I.lbBreakdownLifetime}: ${m.lifetime_points}`,
         `📚 ${trail.completed}/${TRAIL_TOTAL}`,
-        trail.inProgress > 0 ? `⏳ ${trail.inProgress} em andamento` : '',
+        trail.inProgress > 0 ? `⏳ ${trail.inProgress} ${I.lbBreakdownInProgress}` : '',
       ].filter(Boolean).join(' · ');
 
       return `
@@ -424,7 +555,7 @@ import Toast from '../components/ui/Toast.astro';
           <div class="flex items-center gap-1.5">
             <span class="text-[13px] font-semibold truncate">${m.name.split(' ').slice(0, 3).join(' ')}</span>
             <span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-slate-100">${level.emoji} ${level.name}</span>
-            ${isMe ? '<span class="text-[.55rem] font-bold px-1 py-0.5 rounded bg-orange/10 text-orange">VOCÊ</span>' : ''}
+            ${isMe ? `<span class="text-[.55rem] font-bold px-1 py-0.5 rounded bg-orange/10 text-orange">${I.lbYou}</span>` : ''}
           </div>
           <div class="text-[11px] text-slate-400">${m.chapter || ''} · ${breakdown}</div>
           <div class="h-1.5 bg-slate-100 rounded-full mt-1 overflow-hidden">
@@ -433,7 +564,7 @@ import Toast from '../components/ui/Toast.astro';
         </div>
         <div class="text-right flex-shrink-0">
           <div class="text-lg font-extrabold text-navy">${displayPoints}</div>
-          <div class="text-[10px] text-slate-400">pts</div>
+          <div class="text-[10px] text-slate-400">${I.mpPtsLabel}</div>
         </div>
       </div>`;
     }).join('');
@@ -457,7 +588,7 @@ import Toast from '../components/ui/Toast.astro';
 
   // ── INDIVIDUAL LEADERBOARD (with XP levels) ──
   async function loadLeaderboard() {
-    setPanelMessage('leaderboard-list', 'Carregando...', 'loading');
+    setPanelMessage('leaderboard-list', I.loading, 'loading');
     try {
       const { data, error } = await sb.from('gamification_leaderboard').select('*');
       if (error) throw error;
@@ -468,7 +599,7 @@ import Toast from '../components/ui/Toast.astro';
       leaderboardData = data || [];
       trailProgressByMember = buildTrailProgressByMember(courseRows || [], TRAIL_TOTAL);
       if (!data?.length) {
-        setPanelMessage('leaderboard-list', 'Nenhum ponto registrado. Sincronize para calcular o ranking.', 'empty', MEMBER ? { text: '🔄 Sincronizar Pontos + Credly', action: 'sync-points' } : undefined);
+        setPanelMessage('leaderboard-list', I.lbEmptySync, 'empty', MEMBER ? { text: I.syncBtn, action: 'sync-points' } : undefined);
         return;
       }
 
@@ -477,13 +608,13 @@ import Toast from '../components/ui/Toast.astro';
       renderLeaderboard();
     } catch (e: any) {
       console.error('gamification.loadLeaderboard failed', e);
-      setPanelMessage('leaderboard-list', `Erro ao carregar ranking: ${e?.message || 'falha inesperada'}`, 'error');
+      setPanelMessage('leaderboard-list', `${I.lbErrorLoad}${e?.message || I.msgFailUnexpected}`, 'error');
     }
   }
 
   // ── TRIBE RANKING ──
   async function loadTribeRanking() {
-    setPanelMessage('tribes-ranking-list', 'Carregando...', 'loading');
+    setPanelMessage('tribes-ranking-list', I.loading, 'loading');
     try {
       // Get tribe selections + leaderboard data
       const { data: selections, error: selectionsError } = await withTimeout(
@@ -536,13 +667,13 @@ import Toast from '../components/ui/Toast.astro';
 
       const el = document.getElementById('tribes-ranking-list')!;
       if (!ranked.length) {
-        setPanelMessage('tribes-ranking-list', 'Nenhum dado de tribo disponível.', 'empty');
+        setPanelMessage('tribes-ranking-list', I.trEmpty, 'empty');
         return;
       }
 
     const maxScore = Math.max(...ranked.map(t => t.score), 1);
 
-      const modeLabel = tribeMode === 'lifetime' ? 'XP Vitalício' : 'Ciclo Atual';
+      const modeLabel = tribeMode === 'lifetime' ? I.modeLifetime : I.modeCycle;
       el.innerHTML = ranked.map((t, i) => {
       const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
       const pct = Math.round((t.score / maxScore) * 100);
@@ -555,14 +686,14 @@ import Toast from '../components/ui/Toast.astro';
           </div>
           <div class="flex-1 min-w-0">
             <div class="text-[13px] font-bold">${t.name}</div>
-            <div class="text-[11px] text-slate-400">${t.members} membros · ${modeLabel} média: ${t.avg} pts · Total: ${t.total} pts</div>
+            <div class="text-[11px] text-slate-400">${t.members} ${I.trMembers} · ${modeLabel} ${I.trModeAvg}: ${t.avg} ${I.mpPtsLabel} · ${I.trTotal}: ${t.total} ${I.mpPtsLabel}</div>
             <div class="h-1.5 bg-slate-100 rounded-full mt-1.5 overflow-hidden">
               <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${t.color}"></div>
             </div>
           </div>
           <div class="text-right flex-shrink-0">
             <div class="text-xl font-extrabold text-navy">${t.score}</div>
-            <div class="text-[10px] text-slate-400">score</div>
+            <div class="text-[10px] text-slate-400">${I.trScore}</div>
           </div>
         </div>
         <div class="ml-[76px] mt-2 flex flex-wrap gap-1">
@@ -572,7 +703,7 @@ import Toast from '../components/ui/Toast.astro';
       }).join('');
     } catch (e: any) {
       console.error('gamification.loadTribeRanking failed', e);
-      setPanelMessage('tribes-ranking-list', `Erro ao carregar ranking de tribos: ${e?.message || 'falha inesperada'}`, 'error');
+      setPanelMessage('tribes-ranking-list', `${I.trErrorLoad}${e?.message || I.msgFailUnexpected}`, 'error');
     }
   }
 
@@ -580,10 +711,10 @@ import Toast from '../components/ui/Toast.astro';
   async function loadAchievements() {
     const el = document.getElementById('achievements-list')!;
     if (!MEMBER) {
-      setPanelMessage('achievements-list', 'Faça login para ver suas conquistas.', 'empty');
+      setPanelMessage('achievements-list', I.msgLoginAchievements, 'empty');
       return;
     }
-    setPanelMessage('achievements-list', 'Carregando...', 'loading');
+    setPanelMessage('achievements-list', I.loading, 'loading');
 
     try {
       if (!leaderboardData.length) {
@@ -645,22 +776,22 @@ import Toast from '../components/ui/Toast.astro';
         }).join('')}
       </div>
       <div class="mt-4 text-center text-[.78rem] text-slate-500">
-        XP Vitalício: <strong>${myPoints}</strong> · Ciclo atual: <strong>${cyclePoints}</strong><br>
-        ${earned} de ${total} conquistas desbloqueadas
+        ${I.achLifetimeXP}: <strong>${myPoints}</strong> · ${I.achCurrentCycle}: <strong>${cyclePoints}</strong><br>
+        ${earned} ${I.achOf} ${total} ${I.achUnlocked}
       </div>`;
     } catch (e: any) {
       console.error('gamification.loadAchievements failed', e);
-      setPanelMessage('achievements-list', `Erro ao carregar conquistas: ${e?.message || 'falha inesperada'}`, 'error');
+      setPanelMessage('achievements-list', `${I.achErrorLoad}${e?.message || I.msgFailUnexpected}`, 'error');
     }
   }
 
   // ── MY POINTS ──
   async function loadMyPoints() {
     if (!MEMBER) {
-      setPanelMessage('mypoints-list', 'Faça login para ver seus pontos.', 'empty');
+      setPanelMessage('mypoints-list', I.msgLoginPoints, 'empty');
       return;
     }
-    setPanelMessage('mypoints-list', 'Carregando...', 'loading');
+    setPanelMessage('mypoints-list', I.loading, 'loading');
     try {
       const { data, error } = await withTimeout(
         sb.from('gamification_points')
@@ -672,7 +803,7 @@ import Toast from '../components/ui/Toast.astro';
 
       const el = document.getElementById('mypoints-list')!;
       if (!data?.length) {
-        setPanelMessage('mypoints-list', 'Você ainda não tem pontos registrados.', 'empty', MEMBER ? { text: '🔄 Sincronizar Pontos + Credly', action: 'sync-points' } : undefined);
+        setPanelMessage('mypoints-list', I.mpNoPoints, 'empty', MEMBER ? { text: I.syncBtn, action: 'sync-points' } : undefined);
         return;
       }
 
@@ -687,27 +818,27 @@ import Toast from '../components/ui/Toast.astro';
       <div class="text-center mb-6 py-5 bg-gradient-to-br from-navy/5 to-orange/5 rounded-xl">
         <div class="text-3xl mb-1">${level.emoji}</div>
         <div class="text-3xl font-extrabold text-navy">${total}</div>
-        <div class="text-sm text-slate-500">XP Vitalício · <strong>${level.name}</strong></div>
-        <div class="text-[.7rem] text-slate-400 mt-1">Ciclo atual: <strong>${cyclePoints}</strong> pts</div>
-        ${level.next ? `<div class="text-[.7rem] text-slate-400 mt-1">Faltam ${level.ptsToNext} pts para ${level.next}</div>` : '<div class="text-[.7rem] text-amber-600 mt-1 font-bold">Nível máximo alcançado!</div>'}
+        <div class="text-sm text-slate-500">${I.mpLifetimeLabel} · <strong>${level.name}</strong></div>
+        <div class="text-[.7rem] text-slate-400 mt-1">${I.mpCurrentCycleLabel}: <strong>${cyclePoints}</strong> ${I.mpPtsLabel}</div>
+        ${level.next ? `<div class="text-[.7rem] text-slate-400 mt-1">${I.mpToNext.replace('{n}', String(level.ptsToNext)).replace('{level}', level.next)}</div>` : `<div class="text-[.7rem] text-amber-600 mt-1 font-bold">${I.mpMaxLevel}</div>`}
         <div class="w-40 h-2 bg-slate-200 rounded-full mx-auto mt-2 overflow-hidden">
           <div class="h-full bg-orange rounded-full" style="width:${level.pctInLevel}%"></div>
         </div>
       </div>
       ${myCredly.total > 0 ? `
       <div class="mb-5 p-3 rounded-xl border border-amber-200 bg-amber-50/50">
-        <div class="text-[.78rem] font-bold text-navy mb-2">🏅 Credly por Tier</div>
+        <div class="text-[.78rem] font-bold text-navy mb-2">${I.credlyTierTitle}</div>
         <div class="flex flex-wrap gap-2 text-[.7rem]">
           <span class="px-2 py-1 rounded bg-white border border-amber-200 text-amber-700">T1 Master: ${myCredly.t1}</span>
           <span class="px-2 py-1 rounded bg-white border border-amber-200 text-amber-700">T2 Specialization: ${myCredly.t2}</span>
           <span class="px-2 py-1 rounded bg-white border border-amber-200 text-amber-700">T3 Trail/Knowledge: ${myCredly.t3}</span>
           <span class="px-2 py-1 rounded bg-white border border-amber-200 text-amber-700">T4 Other: ${myCredly.t4}</span>
-          <span class="px-2 py-1 rounded bg-navy text-white font-semibold">Total Credly: ${myCredly.total} pts</span>
+          <span class="px-2 py-1 rounded bg-navy text-white font-semibold">${I.credlyTotalLabel}: ${myCredly.total} ${I.mpPtsLabel}</span>
         </div>
       </div>` : ''}
     ` + data.map((p: any) => {
       const cat = CATEGORY_META[p.category] || CATEGORY_META.bonus;
-      const date = new Date(p.created_at).toLocaleDateString('pt-BR', { year: 'numeric', month: 'short', day: '2-digit' });
+      const date = new Date(p.created_at).toLocaleDateString(I.locale || 'pt-BR', { year: 'numeric', month: 'short', day: '2-digit' });
       return `
       <div class="flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-b-0">
         <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style="background:${cat.bg}">${cat.icon}</div>
@@ -720,17 +851,17 @@ import Toast from '../components/ui/Toast.astro';
       }).join('');
     } catch (e: any) {
       console.error('gamification.loadMyPoints failed', e);
-      setPanelMessage('mypoints-list', `Erro ao carregar seus pontos: ${e?.message || 'falha inesperada'}`, 'error');
+      setPanelMessage('mypoints-list', `${I.mpErrorLoad}${e?.message || I.msgFailUnexpected}`, 'error');
     }
   }
 
   // ── MY CERTIFICATES ──
   async function loadMyCertificates() {
     if (!MEMBER) {
-      setPanelMessage('mycerts-list', 'Faça login para ver seus certificados.', 'empty');
+      setPanelMessage('mycerts-list', I.msgLoginCerts, 'empty');
       return;
     }
-    setPanelMessage('mycerts-list', 'Carregando...', 'loading');
+    setPanelMessage('mycerts-list', I.loading, 'loading');
     try {
       const { data, error } = await withTimeout(
         sb.from('certificates')
@@ -742,12 +873,12 @@ import Toast from '../components/ui/Toast.astro';
 
       const el = document.getElementById('mycerts-list')!;
       if (!data?.length) {
-        setPanelMessage('mycerts-list', 'Nenhum certificado emitido ainda. Continue participando!', 'empty');
+        setPanelMessage('mycerts-list', I.certEmpty, 'empty');
         return;
       }
 
       el.innerHTML = data.map((c: any) => {
-        const date = new Date(c.issued_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+        const date = new Date(c.issued_at).toLocaleDateString(I.locale || 'pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
         return `
       <div class="flex items-center gap-3 py-3 border-b border-slate-100 last:border-b-0">
         <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-xl flex-shrink-0">🎓</div>
@@ -755,14 +886,14 @@ import Toast from '../components/ui/Toast.astro';
           <div class="text-[13px] font-semibold">${c.title}</div>
           <div class="text-[11px] text-slate-400">${TYPE_LABELS[c.type] || c.type} · ${date}</div>
           ${c.description ? `<div class="text-[12px] text-slate-500 mt-0.5">${c.description}</div>` : ''}
-          <div class="text-[10px] text-slate-400 mt-0.5 font-mono">Código: ${c.verification_code}</div>
+          <div class="text-[10px] text-slate-400 mt-0.5 font-mono">${I.certCode}: ${c.verification_code}</div>
         </div>
         ${c.pdf_url ? `<a href="${c.pdf_url}" target="_blank" class="px-3 py-1.5 bg-navy text-white rounded-lg text-[12px] font-semibold no-underline hover:opacity-90">📥 PDF</a>` : ''}
       </div>`;
       }).join('');
     } catch (e: any) {
       console.error('gamification.loadMyCertificates failed', e);
-      setPanelMessage('mycerts-list', `Erro ao carregar certificados: ${e?.message || 'falha inesperada'}`, 'error');
+      setPanelMessage('mycerts-list', `${I.certErrorLoad}${e?.message || I.msgFailUnexpected}`, 'error');
     }
   }
 
@@ -771,7 +902,7 @@ import Toast from '../components/ui/Toast.astro';
     if (!MEMBER) return;
     const host = document.getElementById('trail-clarity-content');
     if (!host) return;
-    host.innerHTML = `<p class="text-slate-400 text-sm text-center py-2">Carregando progresso da trilha...</p>`;
+    host.innerHTML = `<p class="text-slate-400 text-sm text-center py-2">${I.trailLoading}</p>`;
 
     try {
       const { data: courses, error: coursesError } = await withTimeout(
@@ -803,11 +934,11 @@ import Toast from '../components/ui/Toast.astro';
       host.innerHTML = `
         <div class="flex items-center justify-between gap-3 flex-wrap mb-2">
           <div>
-            <div class="text-sm font-bold text-navy">📚 Mini Trilha PMI AI</div>
-            <div class="text-[12px] text-slate-500">${completed.length} de ${totalCourses} cursos concluídos</div>
+            <div class="text-sm font-bold text-navy">${I.trailTitle}</div>
+            <div class="text-[12px] text-slate-500">${I.trailCoursesOf.replace('{completed}', String(completed.length)).replace('{total}', String(totalCourses))}</div>
           </div>
           <span class="text-[11px] font-bold px-2 py-1 rounded-full ${pct >= 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
-            ${pct}% concluído
+            ${I.trailPctComplete.replace('{pct}', String(pct))}
           </span>
         </div>
         <div class="h-2 bg-slate-100 rounded-full overflow-hidden mb-3">
@@ -815,25 +946,25 @@ import Toast from '../components/ui/Toast.astro';
         </div>
         <div class="text-[12px] text-slate-500">
           ${missing.length === 0
-            ? '✅ Trilha completa. Você já concluiu todos os cursos.'
-            : `Faltam <strong>${missing.length}</strong> curso(s): ${missing.map((c: any) => c.name).join(' · ')}`}
-          ${inProgress.length > 0 ? `<br>⏳ Em andamento: ${inProgress.map((c: any) => c.name).join(' · ')}` : ''}
+            ? I.trailComplete
+            : `${I.trailMissing.replace('{n}', String(missing.length))} ${missing.map((c: any) => c.name).join(' · ')}`}
+          ${inProgress.length > 0 ? `<br>${I.trailInProgress}${inProgress.map((c: any) => c.name).join(' · ')}` : ''}
         </div>
       `;
     } catch (e: any) {
-      host.innerHTML = `<p class="text-crimson text-sm text-center py-2">Erro ao carregar progresso da trilha: ${e?.message || 'falha inesperada'}</p>`;
+      host.innerHTML = `<p class="text-crimson text-sm text-center py-2">${I.trailError}${e?.message || I.msgFailUnexpected}</p>`;
     }
   }
 
   // ── SYNC POINTS (admin) ──
   async function syncPoints() {
     const btn = document.getElementById('btn-sync') as HTMLButtonElement | null;
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Sincronizando...'; }
+    if (btn) { btn.disabled = true; btn.textContent = I.syncBtnSyncing; }
     try {
       await sb.auth.refreshSession();
       const { data: { session } } = await sb.auth.getSession();
       if (!session?.access_token) {
-        throw new Error('Sessão inválida. Faça login novamente.');
+        throw new Error(I.msgInvalidSession);
       }
       let attendanceSummary = '';
       const { data: attendanceData, error: attendanceError } = await sb.functions.invoke('sync-attendance-points', {
@@ -842,10 +973,10 @@ import Toast from '../components/ui/Toast.astro';
       if (attendanceError || !attendanceData?.success) {
         const attendanceMsg = attendanceError
           ? await describeFnError(attendanceError)
-          : (attendanceData?.error || 'Falha ao sincronizar presenças');
-        attendanceSummary = `Presenças com erro: ${attendanceMsg}.`;
+          : (attendanceData?.error || I.syncAttendanceFail);
+        attendanceSummary = `${I.syncAttendanceError}${attendanceMsg}.`;
       } else {
-        attendanceSummary = `${attendanceData.points_created} pontos de presença sincronizados ✅`;
+        attendanceSummary = I.syncAttendanceSuccess.replace('{n}', String(attendanceData.points_created));
       }
 
       let credlySummary = '';
@@ -853,23 +984,23 @@ import Toast from '../components/ui/Toast.astro';
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (!credlyError && credlyData?.success) {
-        credlySummary = `Credly: ${credlyData.success_count}/${credlyData.total_candidates} perfis sincronizados, ${credlyData.fail_count} falhas.`;
+        credlySummary = I.syncCredlySuccess.replace('{success}', String(credlyData.success_count)).replace('{total}', String(credlyData.total_candidates)).replace('{fail}', String(credlyData.fail_count));
       } else if (credlyError) {
-        credlySummary = `Credly em lote com erro: ${await describeFnError(credlyError)}.`;
+        credlySummary = `${I.syncCredlyBatchError}${await describeFnError(credlyError)}.`;
       } else if (credlyData?.error) {
-        credlySummary = `Credly em lote com erro: ${credlyData.error}.`;
+        credlySummary = `${I.syncCredlyBatchError}${credlyData.error}.`;
       } else {
-        credlySummary = 'Credly em lote não executado.';
+        credlySummary = I.syncCredlyNotRun;
       }
 
-      const isPartialError = attendanceSummary.includes('com erro') || credlySummary.includes('com erro');
+      const isPartialError = attendanceSummary.includes(I.syncAttendanceError) || credlySummary.includes(I.syncCredlyBatchError);
       toast(`${attendanceSummary} ${credlySummary}`, isPartialError ? 'info' : 'success');
       loadLeaderboard();
       loadMyTrailClarity();
     } catch (e: any) {
-      toast(`Erro inesperado ao sincronizar: ${e?.message || 'falha desconhecida'}`, 'error');
+      toast(`${I.msgSyncError}${e?.message || I.msgUnknownError}`, 'error');
     } finally {
-      if (btn) { btn.disabled = false; btn.textContent = '🔄 Sincronizar Pontos + Credly'; }
+      if (btn) { btn.disabled = false; btn.textContent = I.syncBtn; }
     }
   }
 
@@ -881,14 +1012,14 @@ import Toast from '../components/ui/Toast.astro';
     const desc = (document.getElementById('cert-desc') as HTMLTextAreaElement).value.trim() || null;
     const cycle = parseInt((document.getElementById('cert-cycle') as HTMLInputElement).value);
 
-    if (!memberId || !title) { toast('Selecione participante e preencha o título', 'error'); return; }
+    if (!memberId || !title) { toast(I.certFillFields, 'error'); return; }
 
     const { error } = await sb.from('certificates').insert({
       member_id: memberId, type, title, description: desc, cycle, issued_by: MEMBER.id,
     });
 
-    if (error) { toast('Erro: ' + error.message, 'error'); return; }
-    toast('Certificado emitido ✅', 'success');
+    if (error) { toast(I.msgErrorPrefix + error.message, 'error'); return; }
+    toast(I.certIssued, 'success');
     (document.getElementById('cert-title') as HTMLInputElement).value = '';
     (document.getElementById('cert-desc') as HTMLTextAreaElement).value = '';
   }
@@ -901,7 +1032,7 @@ import Toast from '../components/ui/Toast.astro';
       .order('name');
     const sel = document.getElementById('cert-member') as HTMLSelectElement;
     if (sel && data) {
-      sel.innerHTML = '<option value="">Selecione...</option>' +
+      sel.innerHTML = `<option value="">${I.certSelect}</option>` +
         data.map((m: any) => `<option value="${m.id}">${m.name}</option>`).join('');
     }
   }
