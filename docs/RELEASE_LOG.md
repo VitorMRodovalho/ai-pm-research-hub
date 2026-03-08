@@ -1,4 +1,24 @@
 # Release Log
+## 2026-03-08 — Planning Update (AI Knowledge Hub fit-to-strategy)
+
+### Scope
+Evaluate AI ingestion/RAG proposal against current scalability, UX and no-cost constraints, then map it into waves/sprints.
+
+### Decision
+- Proposal is **aligned** with platform direction when executed incrementally.
+- Guardrails are mandatory:
+  - YouTube-first MVP
+  - batch ingestion (no realtime LLM in critical UI)
+  - explicit budget/usage controls before multi-source scale
+
+### Planning updates applied
+- backlog updates:
+  - `S-KNW6` AI Knowledge Ingestion MVP
+  - `S-KNW7` Internal RAG Assistant
+  - `S-KNW8` Friction Insight Mining
+  - `S-OPS2` AI Cost Guardrails
+- SQL architecture board updated with required data model/RPC work for these items.
+
 ## 2026-03-08 — Governance Automation (GitHub Project metadata sync)
 
 ### Scope

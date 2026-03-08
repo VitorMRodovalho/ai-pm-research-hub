@@ -22,6 +22,10 @@ Force explicit backend/SQL decisions for every sprint feature so we never ship o
 | `S-COM6` Media Dashboard | Partial v3 | Route `/admin/comms`, iframe, KPI endpoint via env, and RPC fallback | **Yes** | `COMMS_METRICS_V1` SQL pack created (`comms_metrics_daily` + RLS + `comms_metrics_latest()`); pending production apply and ingestion source rollout | Active |
 | `S-PA2` Executive ROI Dashboards | Planned | UI concept only | **Yes** | Define curated analytics views/functions (funnel, certification timeline, skills radar) | Next |
 | `S-DR1` Disaster Recovery | Planned | Docs only | **Yes** | Add backup/restore verification SQL scripts + runbook sign-off checklist | Next |
+| `S-KNW6` AI Knowledge Ingestion MVP | Planned | Architecture concept validated; no production schema yet | **Yes** | Create `knowledge_assets` + `knowledge_ingestion_runs` + `knowledge_chunks` (+ optional `pgvector`) with RLS and idempotent upsert keys | Wave 5 |
+| `S-KNW7` Internal RAG Assistant | Planned | UI concept only | **Yes** | Add retrieval RPC (`knowledge_search`) and citation view with source-level ACL; require embedding refresh strategy | Wave 5 |
+| `S-KNW8` Friction Insight Mining | Planned | No pipeline yet | **Yes** | Add `knowledge_insights` fact table + taxonomy and quality score columns for roadmap analytics | Wave 5 |
+| `S-OPS2` AI Cost Guardrails | Planned | No quota model yet | **Yes** | Add usage/budget tables (`ai_usage_daily`, `ai_budget_limits`) + alerting query views for no-cost threshold control | Wave 6 |
 
 ## Immediate SQL Backlog (priority)
 1. `COMMS_METRICS_V1` migration pack
@@ -35,6 +39,10 @@ Force explicit backend/SQL decisions for every sprint feature so we never ship o
    - `vw_exec_funnel`
    - `vw_exec_cert_timeline`
    - `vw_exec_skills_radar`
+4. `KNOWLEDGE_INGEST_V1` (YouTube-first MVP)
+   - source table for raw transcript metadata
+   - normalized chunk table + vector-ready columns
+   - ingestion run ledger and retry-safe constraints
 
 ## Sprint Gate (mandatory)
 A feature cannot be marked `Completed` unless this board says either:
