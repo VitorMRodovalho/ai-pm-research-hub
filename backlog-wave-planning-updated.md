@@ -1,6 +1,7 @@
 # Núcleo IA & GP — Backlog & Wave Planning
 ## Status: Março 2026
 ## Atualizado após estabilização de produção, revisão documental e alinhamento produto engenharia
+## Governança: pipeline oficial de waves/sprints em GitHub Projects + espelho em `docs/GITHUB_PROJECT_GOVERNANCE.md`
 
 ---
 
