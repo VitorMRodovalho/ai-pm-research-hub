@@ -56,6 +56,15 @@ Deno.serve(async (req) => {
         .maybeSingle()
       caller = me
     }
+    if (!caller && user.email) {
+      const mail = String(user.email).toLowerCase()
+      const { data: byEmail } = await sb
+        .from('members')
+        .select('id, is_superadmin, email, secondary_emails')
+        .or(`email.eq.${mail},secondary_emails.cs.{${mail}}`)
+        .maybeSingle()
+      caller = byEmail
+    }
     if (!caller?.is_superadmin) {
       return new Response(
         JSON.stringify({ success: false, error: 'Only superadmin can run bulk Credly sync' }),
