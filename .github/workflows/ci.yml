@@ -1,44 +1,40 @@
-# CI — Validação de qualidade em push/PR (QA_RELEASE_VALIDATION)
-# Garante que test + build + smoke passam antes de merge.
-# Ref: docs/QA_RELEASE_VALIDATION.md, docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md
-
-name: CI
+name: CI Validate
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [ main ]
 
 jobs:
   validate:
     runs-on: ubuntu-latest
-    env:
-      PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
-      PUBLIC_SUPABASE_ANON_KEY: placeholder-key-for-ci-build
+    timeout-minutes: 10
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-
-      - name: Install
+          
+      - name: Install dependencies
         run: npm ci
-
-      - name: Test
+        
+      - name: Run Unit Tests
         run: npm test
-
-      - name: Build
+        
+      - name: Build Project
+        # Usamos chaves falsas (mock) apenas para o Astro conseguir compilar no GitHub
+        env:
+          PUBLIC_SUPABASE_URL: 'https://mock.supabase.co'
+          PUBLIC_SUPABASE_ANON_KEY: 'mock-key-for-build'
         run: npm run build
-
-      - name: Smoke routes
+        
+      - name: Smoke Test Routes
+        env:
+          PUBLIC_SUPABASE_URL: 'https://mock.supabase.co'
+          PUBLIC_SUPABASE_ANON_KEY: 'mock-key-for-build'
         run: npm run smoke:routes
         timeout-minutes: 2

@@ -1,95 +1,16 @@
-# QA/QC — Validação de Release
+# Protocolo de Validação de QA & Release
 
-Checklist de qualidade para garantir que cada release não afeta usabilidade nos ambientes principais. **Executar antes de considerar release concluído.**
+## 1. Continuous Integration (CI)
+Todos os Pull Requests e pushes para a branch `main` devem passar pelo pipeline automatizado de CI (`.github/workflows/ci.yml`).
+O CI garante que:
+- `npm test`: Testes unitários passem (ex: regras de ACL, Credly, roteamento).
+- `npm run build`: O Astro compile com sucesso (garantia de SSR).
+- `npm run smoke:routes`: O servidor local suba e as rotas críticas (`/`, `/admin`, `/gamification`, etc.) retornem HTTP 200 sem quebrar.
 
-## Automação recomendada
+## 2. Branch Protection
+A branch `main` é protegida. 
+- Você não pode realizar o "Merge" de um PR se o check `validate` do CI falhar.
+- Pushes diretos para a `main` devem ser evitados.
 
-### GitHub Actions CI (`.github/workflows/ci.yml`)
-
-O workflow **CI** roda automaticamente em `push` e `pull_request` para `main`:
-
-- `npm test` — testes unitários
-- `npm run build` — build de produção
-- `npm run smoke:routes` — smoke de rotas principais
-
-**Recomendação:** Exigir que CI passe antes de merge (Settings → Branches → Branch protection rules para `main`).
-
-### Local (assistente ou desenvolvedor)
-
-Antes de push, executar:
-
-```bash
-npm test && npm run build && npm run smoke:routes
-```
-
-- Se algum comando falhar → corrigir antes de push/deploy
-- Se todos passarem → prosseguir com commit e deploy
-- Pós-deploy: checklist manual (Console F12 + cross-browser conforme seção 1 e 2)
-
----
-
-## 1. Validação de Scripts (Console F12)
-
-### Regra: nenhum erro de script no console
-
-- [ ] Abrir DevTools (F12) → aba **Console**
-- [ ] Navegar pelas rotas principais sem erros em vermelho
-- [ ] Rotas obrigatórias: `/`, `/profile`, `/attendance`, `/gamification`, `/artifacts`, `/admin`
-
-### Regra de prevenção (adicionada em .cursorrules)
-Nunca combinar `define:vars` com `import` no mesmo script Astro. Ver `.cursorrules` regra 0.
-
-### Erro conhecido evitado (março 2026)
-
-**"Cannot use import statement outside a module"** — Ocorria em páginas Astro com `<script define:vars={{ ... }}>` e `import` no mesmo bloco. A diretiva `define:vars` força `is:inline`, impedindo o bundler de processar imports.
-
-**Solução aplicada**: Separar em dois scripts:
-1. Um `is:inline define:vars` que injeta valores em `window.__*`
-2. Um script normal com imports que lê de `window.__*`
-
-**Páginas que usavam esse padrão**: admin, profile, admin/member/[id].
-
-### Checklist rápido pós-deploy
-
-- [ ] `/admin` carrega sem travar em "Verificando acesso"
-- [ ] Console sem `SyntaxError` ou `Uncaught` em rotas críticas
-
----
-
-## 2. Validação Cross-Browser
-
-Toda release deve ser validada nos principais tipos de browser em **Windows**, **Mac**, **iPhone** e **Android**.
-
-### Matriz mínima
-
-| Plataforma | Browsers | Foco |
-|------------|----------|------|
-| **Windows** | Chrome, Edge, Firefox | Desktop padrão |
-| **macOS** | Safari, Chrome | Desktop Apple |
-| **iPhone** | Safari, Chrome (se instalado) | Mobile iOS |
-| **Android** | Chrome | Mobile Android |
-
-### Checklist por rota (amostra em 2+ ambientes)
-
-- [ ] Login (OAuth LinkedIn) funciona
-- [ ] Profile: visualização e edição
-- [ ] Attendance: lista de eventos, check-in
-- [ ] Gamification: leaderboard, Meus Pontos
-- [ ] Admin: painel principal carrega (tier apropriado)
-- [ ] Artifacts: catálogo e submissão
-
-### Problemas comuns por ambiente
-
-| Ambiente | Atenção |
-|----------|---------|
-| Safari (iOS) | Paste em input Credly pode exigir delay; CSP e cookies |
-| Chrome Android | Viewport, touch targets |
-| Firefox | Alguns recursos de auth |
-
----
-
-## 3. Integração com Release Process
-
-- Antes de marcar release como concluído: executar seção 1 (Console) + amostra da seção 2 (Cross-Browser).
-- Registrar evidência em `docs/RELEASE_LOG.md` quando houver validação explícita.
-- Falhas encontradas: criar issue, referenciar no release log.
+## 3. Log de Release Manual
+Após um deploy com sucesso em produção (Cloudflare Pages), o desenvolvedor deve atualizar o arquivo `docs/RELEASE_LOG.md` com as evidências.
