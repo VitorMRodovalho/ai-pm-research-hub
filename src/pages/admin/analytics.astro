@@ -5,6 +5,11 @@ import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 const PRODUCT_DASHBOARD_URL = import.meta.env.PUBLIC_POSTHOG_PRODUCT_DASHBOARD_URL || '';
 const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL || '';
+const analyticsI18n = JSON.stringify({
+  consentGranted: t('admin.analytics.consentGranted', lang),
+  consentDenied: t('admin.analytics.consentDenied', lang),
+  consentUnknown: t('admin.analytics.consentUnknown', lang),
+});
 ---
 
 <BaseLayout title={t('admin.analytics.meta', lang)} activePage="admin">
@@ -64,6 +69,7 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
           {!PRODUCT_DASHBOARD_URL ? (
             <div class="p-4 text-[.72rem] text-slate-500">
               {t('admin.analytics.missingConfig', lang)} <code class="bg-slate-100 px-1 py-0.5 rounded">PUBLIC_POSTHOG_PRODUCT_DASHBOARD_URL</code>
+              <p class="mt-2 text-[.68rem] text-slate-400">Cloudflare Pages → Settings → Environment Variables.</p>
             </div>
           ) : (
             <iframe
@@ -92,6 +98,7 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
           {!COMMS_DASHBOARD_URL ? (
             <div class="p-4 text-[.72rem] text-slate-500">
               {t('admin.analytics.missingConfig', lang)} <code class="bg-slate-100 px-1 py-0.5 rounded">PUBLIC_LOOKER_COMMS_DASHBOARD_URL</code>
+              <p class="mt-2 text-[.68rem] text-slate-400">Cloudflare Pages → Settings → Environment Variables.</p>
             </div>
           ) : (
             <iframe
@@ -109,12 +116,16 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
   </div>
 </BaseLayout>
 
+<script id="analytics-i18n-data" type="application/json" set:html={analyticsI18n}></script>
+
 <script>
   import { canAccessAdminRoute } from '../../lib/admin/constants';
 
   const CONSENT_KEY = 'analytics_consent';
   let sb: any = null;
   let MEMBER: any = null;
+  const i18nEl = document.getElementById('analytics-i18n-data');
+  const i18n = i18nEl ? JSON.parse(i18nEl.textContent || '{}') : {};
 
   function allowAnalytics(m: any): boolean {
     return canAccessAdminRoute(m, 'admin_analytics');
@@ -144,16 +155,16 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
     if (!statusEl) return;
     const v = consentValue();
     if (v === 'granted') {
-      statusEl.textContent = "{t('admin.analytics.consentGranted', lang)}";
+      statusEl.textContent = i18n.consentGranted || 'Consent granted.';
       statusEl.className = 'text-[.68rem] text-emerald-600 mt-1';
       return;
     }
     if (v === 'denied') {
-      statusEl.textContent = "{t('admin.analytics.consentDenied', lang)}";
+      statusEl.textContent = i18n.consentDenied || 'Consent denied.';
       statusEl.className = 'text-[.68rem] text-crimson mt-1';
       return;
     }
-    statusEl.textContent = "{t('admin.analytics.consentUnknown', lang)}";
+    statusEl.textContent = i18n.consentUnknown || 'Consent unknown.';
     statusEl.className = 'text-[.68rem] text-slate-400 mt-1';
   }
 
