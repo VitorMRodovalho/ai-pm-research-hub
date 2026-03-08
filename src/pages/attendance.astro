@@ -98,6 +98,52 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   loading: t('attendance.loading', lang),
   noEvents: t('attendance.noEvents', lang),
   hours: t('attendance.hours', lang),
+  dateLocale: t('attendance.dateLocale', lang),
+  roleManager: t('attendance.role.manager', lang),
+  roleTribeLeader: t('attendance.role.tribe_leader', lang),
+  roleResearcher: t('attendance.role.researcher', lang),
+  roleFacilitator: t('attendance.role.facilitator', lang),
+  roleCommunicator: t('attendance.role.communicator', lang),
+  roleSponsor: t('attendance.role.sponsor', lang),
+  roleAmbassador: t('attendance.role.ambassador', lang),
+  roleCurator: t('attendance.role.curator', lang),
+  roleFounder: t('attendance.role.founder', lang),
+  roleGuest: t('attendance.role.guest', lang),
+  eventTypeTribe: t('attendance.eventType.tribe', lang),
+  eventTypeGeneral: t('attendance.eventType.general', lang),
+  eventTypeWebinar: t('attendance.eventType.webinar', lang),
+  eventTypeOther: t('attendance.eventType.other', lang),
+  audienceLeadership: t('attendance.audience.leadership', lang),
+  audienceTribe: t('attendance.audience.tribe', lang),
+  audienceCurators: t('attendance.audience.curators', lang),
+  badgeRecorded: t('attendance.badge.recorded', lang),
+  emptyNewEvent: t('attendance.empty.newEvent', lang),
+  emptyRefresh: t('attendance.empty.refresh', lang),
+  emptyManagerHint: t('attendance.empty.managerHint', lang),
+  emptyMemberHint: t('attendance.empty.memberHint', lang),
+  eventJoin: t('attendance.event.join', lang),
+  eventYoutube: t('attendance.event.youtube', lang),
+  eventYoutubeSoon: t('attendance.event.youtubeSoon', lang),
+  eventAttendees: t('attendance.event.attendees', lang),
+  eventCheckIn: t('attendance.event.checkIn', lang),
+  eventRosterTooltip: t('attendance.event.rosterTooltip', lang),
+  eventEditTooltip: t('attendance.event.editTooltip', lang),
+  msgCheckedIn: t('attendance.msg.checkedIn', lang),
+  msgCheckInError: t('attendance.msg.checkInError', lang),
+  msgFillTitleDate: t('attendance.msg.fillTitleDate', lang),
+  msgEventCreated: t('attendance.msg.eventCreated', lang),
+  msgEventCreateError: t('attendance.msg.eventCreateError', lang),
+  msgFillTemplateDate: t('attendance.msg.fillTemplateDate', lang),
+  msgEventsCreated: t('attendance.msg.eventsCreated', lang),
+  msgRecurringError: t('attendance.msg.recurringError', lang),
+  msgEventUpdated: t('attendance.msg.eventUpdated', lang),
+  msgEventSaveError: t('attendance.msg.eventSaveError', lang),
+  msgError: t('attendance.msg.error', lang),
+  rosterLoading: t('attendance.roster.loading', lang),
+  rosterNoParticipants: t('attendance.roster.noParticipants', lang),
+  rosterCount: t('attendance.roster.count', lang),
+  rankingNoData: t('attendance.ranking.noData', lang),
+  rankingNoDataHint: t('attendance.ranking.noDataHint', lang),
 }) }}>
   window.__ATTENDANCE_I18N = JSON.parse(__ATTENDANCE_I18N);
 </script>
@@ -115,6 +161,52 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     loading: 'Carregando...',
     noEvents: 'Nenhum evento encontrado.',
     hours: 'horas',
+    dateLocale: 'pt-BR',
+    roleManager: 'Gerente de Projeto',
+    roleTribeLeader: 'Líder de Tribo',
+    roleResearcher: 'Pesquisador',
+    roleFacilitator: 'Facilitador',
+    roleCommunicator: 'Multiplicador',
+    roleSponsor: 'Patrocinador',
+    roleAmbassador: 'Embaixador',
+    roleCurator: 'Curador',
+    roleFounder: 'Fundador',
+    roleGuest: 'Convidado',
+    eventTypeTribe: 'Tribo',
+    eventTypeGeneral: 'Geral',
+    eventTypeWebinar: 'Webinar',
+    eventTypeOther: 'Outro',
+    audienceLeadership: '🏛️ Liderança',
+    audienceTribe: '🔷 Tribo',
+    audienceCurators: '📋 Curadoria',
+    badgeRecorded: '● Gravada',
+    emptyNewEvent: '+ Novo Evento',
+    emptyRefresh: 'Atualizar',
+    emptyManagerHint: 'Crie um evento para iniciar os registros de presença.',
+    emptyMemberHint: 'Novos eventos aparecerão aqui assim que forem publicados.',
+    eventJoin: '🎥 Entrar',
+    eventYoutube: '▶ YouTube',
+    eventYoutubeSoon: 'gravada · YouTube em breve',
+    eventAttendees: 'presentes',
+    eventCheckIn: 'Check-in',
+    eventRosterTooltip: 'Lista de presença',
+    eventEditTooltip: 'Editar evento',
+    msgCheckedIn: 'Presença registrada! ✅',
+    msgCheckInError: 'Erro ao registrar presença',
+    msgFillTitleDate: 'Preencha título e data',
+    msgEventCreated: 'Evento criado ✅',
+    msgEventCreateError: 'Erro ao criar evento',
+    msgFillTemplateDate: 'Preencha template e data de início',
+    msgEventsCreated: '{n} eventos criados ✅',
+    msgRecurringError: 'Erro ao criar série',
+    msgEventUpdated: 'Evento atualizado ✅',
+    msgEventSaveError: 'Erro ao salvar',
+    msgError: 'Erro',
+    rosterLoading: 'Carregando...',
+    rosterNoParticipants: 'Nenhum participante encontrado.',
+    rosterCount: '✅ {present}/{total} presentes',
+    rankingNoData: 'Sem dados de ranking ainda',
+    rankingNoDataHint: 'Quando os eventos tiverem presença registrada, o ranking aparecerá aqui.',
   };
 
   let sb: any = null;
@@ -127,16 +219,16 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   }
 
   const ROLE_MAP: Record<string, { label: string; color: string; bg: string }> = {
-    manager:      { label: 'Gerente de Projeto', color: '#003865', bg: '#EFF6FF' },
-    tribe_leader: { label: 'Líder de Tribo',     color: '#065F46', bg: '#F0FDF4' },
-    researcher:   { label: 'Pesquisador',         color: '#1E293B', bg: '#F1F5F9' },
-    facilitator:  { label: 'Facilitador',         color: '#92400E', bg: '#FFF7ED' },
-    communicator: { label: 'Multiplicador',       color: '#6B21A8', bg: '#FAF5FF' },
-    sponsor:      { label: 'Patrocinador',        color: '#BE2027', bg: '#FFF0F0' },
-    ambassador:   { label: 'Embaixador',          color: '#0369A1', bg: '#E0F2FE' },
-    curator:      { label: 'Curador',             color: '#78350F', bg: '#FEF3C7' },
-    founder:      { label: 'Fundador',            color: '#7C3AED', bg: '#EDE9FE' },
-    guest:        { label: 'Convidado',           color: '#6B7280', bg: '#F9FAFB' },
+    manager:      { label: I18N.roleManager,      color: '#003865', bg: '#EFF6FF' },
+    tribe_leader: { label: I18N.roleTribeLeader,   color: '#065F46', bg: '#F0FDF4' },
+    researcher:   { label: I18N.roleResearcher,    color: '#1E293B', bg: '#F1F5F9' },
+    facilitator:  { label: I18N.roleFacilitator,   color: '#92400E', bg: '#FFF7ED' },
+    communicator: { label: I18N.roleCommunicator,  color: '#6B21A8', bg: '#FAF5FF' },
+    sponsor:      { label: I18N.roleSponsor,       color: '#BE2027', bg: '#FFF0F0' },
+    ambassador:   { label: I18N.roleAmbassador,    color: '#0369A1', bg: '#E0F2FE' },
+    curator:      { label: I18N.roleCurator,       color: '#78350F', bg: '#FEF3C7' },
+    founder:      { label: I18N.roleFounder,       color: '#7C3AED', bg: '#EDE9FE' },
+    guest:        { label: I18N.roleGuest,         color: '#6B7280', bg: '#F9FAFB' },
   };
 
   // ── HELPERS ──
@@ -180,7 +272,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
   function fmtDate(d: string): string {
     if (!d) return '';
-    return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+    return new Date(d + 'T12:00:00').toLocaleDateString(I18N.dateLocale, { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
   // ── MODAL HELPERS ──
@@ -231,30 +323,30 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const { data } = await sb.rpc('get_events_with_attendance', { p_limit: 40, p_offset: 0 });
     if (!data?.length) {
       const cta = CAN_MANAGE
-        ? `<button class="mt-3 px-4 py-2 bg-navy text-white rounded-xl text-[12px] font-semibold border-0 cursor-pointer hover:opacity-90" data-action="open-new-event">+ Novo Evento</button>`
-        : `<button class="mt-3 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[12px] font-semibold cursor-pointer hover:bg-slate-50" data-action="refresh-events">Atualizar</button>`;
+        ? `<button class="mt-3 px-4 py-2 bg-navy text-white rounded-xl text-[12px] font-semibold border-0 cursor-pointer hover:opacity-90" data-action="open-new-event">${I18N.emptyNewEvent}</button>`
+        : `<button class="mt-3 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[12px] font-semibold cursor-pointer hover:bg-slate-50" data-action="refresh-events">${I18N.emptyRefresh}</button>`;
       el.innerHTML = `
         <div class="text-center py-8">
           <div class="text-3xl mb-2">📅</div>
           <div class="font-semibold text-slate-600 text-sm">${I18N.noEvents}</div>
-          <p class="text-slate-400 text-[12px] mt-1">${CAN_MANAGE ? 'Crie um evento para iniciar os registros de presença.' : 'Novos eventos aparecerão aqui assim que forem publicados.'}</p>
+          <p class="text-slate-400 text-[12px] mt-1">${CAN_MANAGE ? I18N.emptyManagerHint : I18N.emptyMemberHint}</p>
           ${cta}
         </div>
       `;
       return;
     }
 
-    const typeLabel: Record<string, string> = { tribe_meeting: 'Tribo', general_meeting: 'Geral', webinar: 'Webinar', other: 'Outro' };
+    const typeLabel: Record<string, string> = { tribe_meeting: I18N.eventTypeTribe, general_meeting: I18N.eventTypeGeneral, webinar: I18N.eventTypeWebinar, other: I18N.eventTypeOther };
     const badgeClass: Record<string, string> = {
       tribe_meeting: 'bg-blue-50 text-navy',
       general_meeting: 'bg-green-50 text-green-800',
       webinar: 'bg-orange-50 text-amber-800',
       other: 'bg-blue-50 text-navy',
     };
-    const audienceLabel: Record<string, string> = { leadership: '🏛️ Liderança', tribe: '🔷 Tribo', curators: '📋 Curadoria' };
+    const audienceLabel: Record<string, string> = { leadership: I18N.audienceLeadership, tribe: I18N.audienceTribe, curators: I18N.audienceCurators };
 
     function eventBadges(ev: any): string {
-      const rec = ev.is_recorded ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-50 text-red-700">● Gravada</span>` : '';
+      const rec = ev.is_recorded ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-50 text-red-700">${I18N.badgeRecorded}</span>` : '';
       if (ev.audience_level && audienceLabel[ev.audience_level]) {
         return `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-green-50 text-green-800">${audienceLabel[ev.audience_level]}</span>${rec}`;
       }
@@ -270,11 +362,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
       const isPast = new Date(ev.date + 'T23:59:59') < new Date();
       const linkHtml = ev.meeting_link && !isPast
-        ? `<a href="${ev.meeting_link}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-navy font-semibold no-underline px-2 py-0.5 bg-blue-50 rounded-md text-[12px]">🎥 Entrar</a>`
+        ? `<a href="${ev.meeting_link}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-navy font-semibold no-underline px-2 py-0.5 bg-blue-50 rounded-md text-[12px]">${I18N.eventJoin}</a>`
         : '';
       const ytHtml = ev.youtube_url
-        ? `<a href="${ev.youtube_url}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-white font-semibold no-underline px-2 py-0.5 bg-red-600 rounded-md text-[12px]">▶ YouTube</a>`
-        : (ev.is_recorded ? `<span class="text-[11px] text-slate-400 italic">gravada · YouTube em breve</span>` : '');
+        ? `<a href="${ev.youtube_url}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-white font-semibold no-underline px-2 py-0.5 bg-red-600 rounded-md text-[12px]">${I18N.eventYoutube}</a>`
+        : (ev.is_recorded ? `<span class="text-[11px] text-slate-400 italic">${I18N.eventYoutubeSoon}</span>` : '');
 
       ((window as any).__attendanceEventsById = (window as any).__attendanceEventsById || {})[ev.id] = ev;
       return `
@@ -286,7 +378,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
             <div class="text-[12px] text-slate-500 mt-0.5 flex items-center gap-2 flex-wrap">
               <span>${fmtDate(ev.date)}</span><span>·</span>
               <span>${ev.duration_minutes}min</span><span>·</span>
-              <span>${ev.attendee_count || 0} presentes</span>
+              <span>${ev.attendee_count || 0} ${I18N.eventAttendees}</span>
               ${linkHtml ? '<span>·</span>' + linkHtml : ''}
               ${ytHtml ? '<span>·</span>' + ytHtml : ''}
             </div>
@@ -294,10 +386,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           <div class="flex gap-1.5 items-center flex-wrap">${eventBadges(ev)}</div>
           <div class="flex gap-1.5 items-center flex-shrink-0">
             ${ev.i_attended !== true
-              ? `<button type="button" class="px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-navy text-white border-0 cursor-pointer hover:opacity-90" data-action="check-in" data-event-id="${escapeAttr(ev.id)}">Check-in</button>`
+              ? `<button type="button" class="px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-navy text-white border-0 cursor-pointer hover:opacity-90" data-action="check-in" data-event-id="${escapeAttr(ev.id)}">${I18N.eventCheckIn}</button>`
               : `<button class="px-3 py-1.5 rounded-lg text-[12px] font-semibold border-[1.5px] border-navy text-navy bg-transparent cursor-not-allowed opacity-40" disabled>✓</button>`}
-            ${canRoster ? `<button type="button" class="px-2 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-md cursor-pointer" title="Lista de presença" data-action="open-roster" data-event-id="${escapeAttr(ev.id)}" data-event-title="${escapeAttr(ev.title || '')}">📋</button>` : ''}
-            ${canEdit ? `<button type="button" class="px-2 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-md cursor-pointer" title="Editar evento" data-action="edit-event" data-event-id="${escapeAttr(ev.id)}">✏️</button>` : ''}
+            ${canRoster ? `<button type="button" class="px-2 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-md cursor-pointer" title="${I18N.eventRosterTooltip}" data-action="open-roster" data-event-id="${escapeAttr(ev.id)}" data-event-title="${escapeAttr(ev.title || '')}">📋</button>` : ''}
+            ${canEdit ? `<button type="button" class="px-2 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-md cursor-pointer" title="${I18N.eventEditTooltip}" data-action="edit-event" data-event-id="${escapeAttr(ev.id)}">✏️</button>` : ''}
           </div>
         </div>
       </div>`;
@@ -354,8 +446,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   // ── CHECK-IN ──
   (window as any).checkIn = async (eventId: string) => {
     const { data } = await sb.rpc('register_own_presence', { p_event_id: eventId });
-    if (data?.success) { toast('Presença registrada! ✅', 'success'); loadEvents(); loadKPIs(); }
-    else toast(data?.error || 'Erro ao registrar presença', 'error');
+    if (data?.success) { toast(I18N.msgCheckedIn, 'success'); loadEvents(); loadKPIs(); }
+    else toast(data?.error || I18N.msgCheckInError, 'error');
   };
 
   // ── AUDIENCE HELPER ──
@@ -380,7 +472,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const link = (document.getElementById('ev-link') as HTMLInputElement).value.trim() || null;
     const recorded = (document.getElementById('ev-recorded') as HTMLInputElement).checked;
     const audience = (document.getElementById('ev-audience') as HTMLSelectElement).value;
-    if (!title || !date) return toast('Preencha título e data', 'error');
+    if (!title || !date) return toast(I18N.msgFillTitleDate, 'error');
 
     const { data } = await sb.rpc('create_event', {
       p_type: type, p_title: title, p_date: date,
@@ -393,9 +485,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         await sb.rpc('update_event', { p_event_id: data.event_id, p_meeting_link: link, p_is_recorded: recorded });
       }
       (window as any).closeModal('modal-new-event');
-      toast('Evento criado ✅', 'success');
+      toast(I18N.msgEventCreated, 'success');
       loadEvents(); loadKPIs();
-    } else toast(data?.error || 'Erro ao criar evento', 'error');
+    } else toast(data?.error || I18N.msgEventCreateError, 'error');
   };
 
   // ── RECURRING ──
@@ -413,7 +505,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const link = (document.getElementById('rec-link') as HTMLInputElement).value.trim() || null;
     const recorded = (document.getElementById('rec-recorded') as HTMLInputElement).checked;
     const audience = (document.getElementById('rec-audience') as HTMLSelectElement).value;
-    if (!titleTpl || !start) return toast('Preencha template e data de início', 'error');
+    if (!titleTpl || !start) return toast(I18N.msgFillTemplateDate, 'error');
 
     const { data } = await sb.rpc('create_recurring_weekly_events', {
       p_type: type, p_title_template: titleTpl, p_start_date: start,
@@ -425,9 +517,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     });
     if (data?.success) {
       (window as any).closeModal('modal-recurring');
-      toast(`${data.events_created} eventos criados ✅`, 'success');
+      toast(I18N.msgEventsCreated.replace('{n}', data.events_created), 'success');
       loadEvents(); loadKPIs();
-    } else toast(data?.error || 'Erro ao criar série', 'error');
+    } else toast(data?.error || I18N.msgRecurringError, 'error');
   };
 
   // ── EDIT EVENT ──
@@ -461,9 +553,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     });
     if (data?.success) {
       (window as any).closeModal('modal-edit-event');
-      toast('Evento atualizado ✅', 'success');
+      toast(I18N.msgEventUpdated, 'success');
       loadEvents(); loadKPIs();
-    } else toast(data?.error || 'Erro ao salvar', 'error');
+    } else toast(data?.error || I18N.msgEventSaveError, 'error');
   };
 
   // ── ROSTER ──
@@ -474,11 +566,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const searchInput = document.getElementById('roster-search') as HTMLInputElement;
     if (searchInput) searchInput.value = '';
     openModal('modal-roster');
-    document.getElementById('roster-body')!.innerHTML = '<tr><td colspan="3" class="text-center py-5 text-slate-500">Carregando...</td></tr>';
+    document.getElementById('roster-body')!.innerHTML = `<tr><td colspan="3" class="text-center py-5 text-slate-500">${I18N.rosterLoading}</td></tr>`;
     const { data } = await sb.rpc('get_tribe_event_roster', { p_event_id: eventId });
     const tbody = document.getElementById('roster-body')!;
     if (!data?.length) {
-      tbody.innerHTML = '<tr><td colspan="3" class="text-center text-slate-500 py-5">Nenhum participante encontrado.</td></tr>';
+      tbody.innerHTML = `<tr><td colspan="3" class="text-center text-slate-500 py-5">${I18N.rosterNoParticipants}</td></tr>`;
       return;
     }
     // Sort: present first, then alphabetically
@@ -490,7 +582,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     // Update counter
     const countEl = document.getElementById('roster-count');
     if (countEl) {
-      const text = `✅ ${presentCount}/${sorted.length} presentes`;
+      const text = I18N.rosterCount.replace('{present}', String(presentCount)).replace('{total}', String(sorted.length));
       countEl.textContent = text;
       countEl.dataset.full = text;
     }
@@ -517,7 +609,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const isOn = btn.classList.contains('on');
     const { data } = await sb.rpc('mark_member_present', { p_event_id: eventId, p_member_id: memberId, p_present: !isOn });
     if (data?.success) { btn.classList.toggle('on', !isOn); btn.classList.toggle('off', isOn); loadKPIs(); }
-    else toast(data?.error || 'Erro', 'error');
+    else toast(data?.error || I18N.msgError, 'error');
   };
 
   // ── RANKING ──
@@ -529,8 +621,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       el.innerHTML = `
         <div class="text-center py-8">
           <div class="text-3xl mb-2">📊</div>
-          <div class="font-semibold text-slate-600 text-sm">Sem dados de ranking ainda</div>
-          <p class="text-slate-400 text-[12px] mt-1">Quando os eventos tiverem presença registrada, o ranking aparecerá aqui.</p>
+          <div class="font-semibold text-slate-600 text-sm">${I18N.rankingNoData}</div>
+          <p class="text-slate-400 text-[12px] mt-1">${I18N.rankingNoDataHint}</p>
         </div>
       `;
       return;
