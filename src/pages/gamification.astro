@@ -228,6 +228,13 @@ import Toast from '../components/ui/Toast.astro';
 
   function toast(msg: string, type = '') { (window as any).toast?.(msg, type); }
 
+  function setPanelMessage(targetId: string, message: string, kind: 'loading' | 'error' | 'empty' = 'loading') {
+    const el = document.getElementById(targetId);
+    if (!el) return;
+    const color = kind === 'error' ? 'text-crimson' : 'text-slate-400';
+    el.innerHTML = `<p class="${color} text-sm text-center py-6">${message}</p>`;
+  }
+
   // ── XP LEVEL SYSTEM ──
   function getLevel(pts: number): { name: string; emoji: string; next: string; ptsToNext: number; pctInLevel: number } {
     const levels = [
@@ -282,22 +289,26 @@ import Toast from '../components/ui/Toast.astro';
 
   // ── INDIVIDUAL LEADERBOARD (with XP levels) ──
   async function loadLeaderboard() {
-    const { data } = await sb.from('gamification_leaderboard').select('*');
-    const { data: credlyRows } = await sb.from('gamification_points')
-      .select('member_id, points, reason')
-      .like('reason', 'Credly:%');
-
-    leaderboardData = data || [];
-    const credlyByMember = aggregateCredlyByMember(credlyRows || []);
     const el = document.getElementById('leaderboard-list')!;
-    if (!data?.length) {
-      el.innerHTML = '<p class="text-slate-400 text-sm text-center py-6">Nenhum ponto registrado. Clique em "Sincronizar Pontos" para calcular.</p>';
-      return;
-    }
+    setPanelMessage('leaderboard-list', 'Carregando...', 'loading');
+    try {
+      const { data, error } = await sb.from('gamification_leaderboard').select('*');
+      if (error) throw error;
+      const { data: credlyRows, error: credlyError } = await sb.from('gamification_points')
+        .select('member_id, points, reason')
+        .like('reason', 'Credly:%');
+      if (credlyError) throw credlyError;
 
-    const maxPts = Math.max(...data.map((m: any) => m.total_points), 1);
+      leaderboardData = data || [];
+      const credlyByMember = aggregateCredlyByMember(credlyRows || []);
+      if (!data?.length) {
+        setPanelMessage('leaderboard-list', 'Nenhum ponto registrado. Clique em "Sincronizar Pontos" para calcular.', 'empty');
+        return;
+      }
 
-    el.innerHTML = data.map((m: any, i: number) => {
+      const maxPts = Math.max(...data.map((m: any) => m.total_points), 1);
+
+      el.innerHTML = data.map((m: any, i: number) => {
       const initials = m.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
       const photo = m.photo_url
         ? `<img src="${m.photo_url}" class="w-10 h-10 rounded-full object-cover flex-shrink-0" alt="">`
@@ -348,21 +359,30 @@ import Toast from '../components/ui/Toast.astro';
           <div class="text-[10px] text-slate-400">pts</div>
         </div>
       </div>`;
-    }).join('');
+      }).join('');
+    } catch (e: any) {
+      console.error('gamification.loadLeaderboard failed', e);
+      setPanelMessage('leaderboard-list', `Erro ao carregar ranking: ${e?.message || 'falha inesperada'}`, 'error');
+    }
   }
 
   // ── TRIBE RANKING ──
   async function loadTribeRanking() {
-    // Get tribe selections + leaderboard data
-    const { data: selections } = await sb.from('tribe_selections').select('tribe_id, member_id');
-    const { data: leaders } = await sb.from('members')
-      .select('id, tribe_id')
-      .eq('operational_role', 'tribe_leader');
+    setPanelMessage('tribes-ranking-list', 'Carregando...', 'loading');
+    try {
+      // Get tribe selections + leaderboard data
+      const { data: selections, error: selectionsError } = await sb.from('tribe_selections').select('tribe_id, member_id');
+      if (selectionsError) throw selectionsError;
+      const { data: leaders, error: leadersError } = await sb.from('members')
+        .select('id, tribe_id')
+        .eq('operational_role', 'tribe_leader');
+      if (leadersError) throw leadersError;
 
-    if (!leaderboardData.length) {
-      const { data } = await sb.from('gamification_leaderboard').select('*');
-      leaderboardData = data || [];
-    }
+      if (!leaderboardData.length) {
+        const { data, error } = await sb.from('gamification_leaderboard').select('*');
+        if (error) throw error;
+        leaderboardData = data || [];
+      }
 
     // Build tribe map: member_id → tribe_id
     const memberTribe: Record<string, number> = {};
@@ -393,15 +413,15 @@ import Toast from '../components/ui/Toast.astro';
       .filter(t => t.members > 0)
       .sort((a, b) => b.score - a.score);
 
-    const el = document.getElementById('tribes-ranking-list')!;
-    if (!ranked.length) {
-      el.innerHTML = '<p class="text-slate-400 text-sm text-center py-6">Nenhum dado de tribo disponível.</p>';
-      return;
-    }
+      const el = document.getElementById('tribes-ranking-list')!;
+      if (!ranked.length) {
+        setPanelMessage('tribes-ranking-list', 'Nenhum dado de tribo disponível.', 'empty');
+        return;
+      }
 
     const maxScore = Math.max(...ranked.map(t => t.score), 1);
 
-    el.innerHTML = ranked.map((t, i) => {
+      el.innerHTML = ranked.map((t, i) => {
       const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
       const pct = Math.round((t.score / maxScore) * 100);
       return `
@@ -427,30 +447,43 @@ import Toast from '../components/ui/Toast.astro';
           ${t.names.map((n: string) => `<span class="text-[.6rem] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">${n}</span>`).join('')}
         </div>
       </div>`;
-    }).join('');
+      }).join('');
+    } catch (e: any) {
+      console.error('gamification.loadTribeRanking failed', e);
+      setPanelMessage('tribes-ranking-list', `Erro ao carregar ranking de tribos: ${e?.message || 'falha inesperada'}`, 'error');
+    }
   }
 
   // ── ACHIEVEMENTS ──
   async function loadAchievements() {
-    if (!MEMBER) return;
     const el = document.getElementById('achievements-list')!;
+    if (!MEMBER) {
+      setPanelMessage('achievements-list', 'Faça login para ver suas conquistas.', 'empty');
+      return;
+    }
+    setPanelMessage('achievements-list', 'Carregando...', 'loading');
 
-    // Gather data for achievement checks
-    const { count: attendanceCount } = await sb.from('attendance')
-      .select('*', { count: 'exact', head: true })
-      .eq('member_id', MEMBER.id);
+    try {
+      // Gather data for achievement checks
+      const { count: attendanceCount, error: attendanceError } = await sb.from('attendance')
+        .select('*', { count: 'exact', head: true })
+        .eq('member_id', MEMBER.id);
+      if (attendanceError) throw attendanceError;
 
-    const { data: courses } = await sb.from('course_progress')
-      .select('status')
-      .eq('member_id', MEMBER.id);
+      const { data: courses, error: coursesError } = await sb.from('course_progress')
+        .select('status')
+        .eq('member_id', MEMBER.id);
+      if (coursesError) throw coursesError;
 
-    const { data: artifacts } = await sb.from('artifacts')
-      .select('status')
-      .eq('author_id', MEMBER.id);
+      const { data: artifacts, error: artifactsError } = await sb.from('artifacts')
+        .select('status')
+        .eq('author_id', MEMBER.id);
+      if (artifactsError) throw artifactsError;
 
-    const { data: cycles } = await sb.from('member_cycle_history')
-      .select('cycle_code')
-      .eq('member_id', MEMBER.id);
+      const { data: cycles, error: cyclesError } = await sb.from('member_cycle_history')
+        .select('cycle_code')
+        .eq('member_id', MEMBER.id);
+      if (cyclesError) throw cyclesError;
 
     const myPoints = leaderboardData.find((m: any) => m.member_id === MEMBER.id)?.total_points || 0;
     const coursesCompleted = (courses || []).filter((c: any) => c.status === 'completed').length;
@@ -465,7 +498,7 @@ import Toast from '../components/ui/Toast.astro';
     let earned = 0;
     const total = ACHIEVEMENT_DEFS.length;
 
-    el.innerHTML = `
+      el.innerHTML = `
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
         ${ACHIEVEMENT_DEFS.map(a => {
           const unlocked = a.check(myPoints, checkData);
@@ -484,19 +517,32 @@ import Toast from '../components/ui/Toast.astro';
       <div class="mt-4 text-center text-[.78rem] text-slate-500">
         ${earned} de ${total} conquistas desbloqueadas
       </div>`;
+    } catch (e: any) {
+      console.error('gamification.loadAchievements failed', e);
+      setPanelMessage('achievements-list', `Erro ao carregar conquistas: ${e?.message || 'falha inesperada'}`, 'error');
+    }
   }
 
   // ── MY POINTS ──
   async function loadMyPoints() {
-    if (!MEMBER) return;
-    const { data } = await sb.from('gamification_points')
+    if (!MEMBER) {
+      setPanelMessage('mypoints-list', 'Faça login para ver seus pontos.', 'empty');
+      return;
+    }
+    setPanelMessage('mypoints-list', 'Carregando...', 'loading');
+    const { data, error } = await sb.from('gamification_points')
       .select('*')
       .eq('member_id', MEMBER.id)
       .order('created_at', { ascending: false });
+    if (error) {
+      console.error('gamification.loadMyPoints failed', error);
+      setPanelMessage('mypoints-list', `Erro ao carregar seus pontos: ${error.message}`, 'error');
+      return;
+    }
 
     const el = document.getElementById('mypoints-list')!;
     if (!data?.length) {
-      el.innerHTML = '<p class="text-slate-400 text-sm text-center py-6">Nenhum ponto registrado ainda.</p>';
+      setPanelMessage('mypoints-list', 'Nenhum ponto registrado ainda.', 'empty');
       return;
     }
 
@@ -544,15 +590,24 @@ import Toast from '../components/ui/Toast.astro';
 
   // ── MY CERTIFICATES ──
   async function loadMyCertificates() {
-    if (!MEMBER) return;
-    const { data } = await sb.from('certificates')
+    if (!MEMBER) {
+      setPanelMessage('mycerts-list', 'Faça login para ver seus certificados.', 'empty');
+      return;
+    }
+    setPanelMessage('mycerts-list', 'Carregando...', 'loading');
+    const { data, error } = await sb.from('certificates')
       .select('*')
       .eq('member_id', MEMBER.id)
       .order('issued_at', { ascending: false });
+    if (error) {
+      console.error('gamification.loadMyCertificates failed', error);
+      setPanelMessage('mycerts-list', `Erro ao carregar certificados: ${error.message}`, 'error');
+      return;
+    }
 
     const el = document.getElementById('mycerts-list')!;
     if (!data?.length) {
-      el.innerHTML = '<p class="text-slate-400 text-sm text-center py-6">Nenhum certificado emitido ainda. Continue participando!</p>';
+      setPanelMessage('mycerts-list', 'Nenhum certificado emitido ainda. Continue participando!', 'empty');
       return;
     }
 
