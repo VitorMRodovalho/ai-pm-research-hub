@@ -90,7 +90,7 @@ Isso ocorreu por execução orientada a incidentes de produção (hotfixes) sem 
 | S-REP1 | Exportação VRMS (PMI) | High | Partial (2026-03-08) | CSV preview + download; colPmiId e vrmsCountFormat i18n PT/EN/ES. |
 | S-ADM2 | Leadership Training Progress Snapshot | High | Partial (v2 delivered 2026-03-08) | `/admin` reports snapshot now has filters (capítulo/tribo/período), CSV export, and i18n keys for PT/EN/ES, in addition to completion/blocking and recent Credly insights. |
 | S10 | Credly Auto Sync | Medium | Partial (2026-03-08) | GitHub Action `credly-auto-sync.yml` runs weekly (Monday). Requires SUPABASE_SERVICE_ROLE_KEY. Manual trigger via workflow_dispatch. |
-| S-AN1 | Announcements System | Medium | Partial (2026-03-08) | Banners in BaseLayout, CRUD in admin, Event Delegation + XSS hardening. Pending: optional rich editor, scheduling UX. |
+| S-AN1 | Announcements System | Medium | Partial (2026-03-08) | Banners + CRUD + Event Delegation + XSS; form e lista i18n PT/EN/ES. Pending: rich editor, scheduling UX. |
 | S-DR1 | Disaster Recovery Doc | Low | ✅ Done (2026-03-08) | `docs/DISASTER_RECOVERY.md` — POP Supabase (backup, PITR, dump), Cloudflare rollback, checklist. |
 | S-COM6 | Dashboard Central de Mídia | Medium | Partial (UI delivered 2026-03-08) | `/admin/comms` route with Looker iframe or native table from `comms_metrics_latest_by_channel`. Backend: sync-comms-metrics, SQL pack. Pending: deploy sync-comms-metrics in prod. |
 | S-PA2 | Admin Executive Visual Dashboards (ROI PMI) | High | Partial (2026-03-08) | Painel executivo conectado a exec_funnel_summary, exec_cert_timeline, exec_skills_radar RPCs. Funil, timeline de coortes e radar de competências com barras nativas. |

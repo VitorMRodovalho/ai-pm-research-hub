@@ -1,5 +1,17 @@
 # Release Log
 
+## 2026-03-08 — S-AN1: Announcements i18n
+
+### Escopo
+Migrar strings hardcoded da seção Avisos Globais (admin) para i18n PT/EN/ES.
+
+### Entregas
+- Form: título, tipo, mensagem, link URL/texto, expira em, placeholders, botão publicar
+- Lista: empty state, status (Inativo/Expirado/Ativo), botões Desativar/Ativar
+- Chaves `admin.announcements.*` em pt-BR, en-US, es-LATAM
+
+---
+
 ## 2026-03-08 — S-REP1 VRMS i18n + QA/QC workflow
 
 ### S-REP1: VRMS export i18n

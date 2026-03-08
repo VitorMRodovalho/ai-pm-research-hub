@@ -17,6 +17,12 @@ const ADMIN_I18N = {
   annDisabled: t('admin.msg.annDisabled', lang),
   annDeleteConfirm: t('admin.msg.annDeleteConfirm', lang),
   annDeleted: t('admin.msg.annDeleted', lang),
+  annBtnDeactivate: t('admin.announcements.btnDeactivate', lang),
+  annBtnActivate: t('admin.announcements.btnActivate', lang),
+  annEmpty: t('admin.announcements.empty', lang),
+  annStatusInactive: t('admin.announcements.statusInactive', lang),
+  annStatusExpired: t('admin.announcements.statusExpired', lang),
+  annStatusActive: t('admin.announcements.statusActive', lang),
   selectDates: t('admin.msg.selectDates', lang),
   noExportData: t('admin.msg.noExportData', lang),
   csvDownloaded: t('admin.msg.csvDownloaded', lang),
@@ -357,43 +363,43 @@ const ADMIN_I18N = {
         <!-- Announcements Management -->
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mt-5">
           <div class="px-5 py-3.5 border-b border-slate-200">
-            <h3 class="text-sm font-bold text-navy">📢 Avisos Globais</h3>
-            <p class="text-[.68rem] text-slate-400 mt-0.5">Banners exibidos no topo do site para todos os visitantes</p>
+            <h3 class="text-sm font-bold text-navy">📢 {t('admin.announcements.title', lang)}</h3>
+            <p class="text-[.68rem] text-slate-400 mt-0.5">{t('admin.announcements.subtitle', lang)}</p>
           </div>
           <div class="p-5">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
               <div>
-                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Título</label>
-                <input type="text" id="ann-title" placeholder="Ex: Prazo de inscrição encerra amanhã!" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.announcements.labelTitle', lang)}</label>
+                <input type="text" id="ann-title" placeholder={t('admin.announcements.placeholderTitle', lang)} class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
               </div>
               <div>
-                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Tipo</label>
+                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.announcements.labelType', lang)}</label>
                 <select id="ann-type" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem] bg-white">
-                  <option value="info">ℹ️ Informativo (azul)</option>
-                  <option value="warning">⚠️ Atenção (amarelo)</option>
-                  <option value="success">✅ Sucesso (verde)</option>
-                  <option value="urgent">🚨 Urgente (vermelho)</option>
+                  <option value="info">ℹ️ {t('admin.announcements.typeInfo', lang)}</option>
+                  <option value="warning">⚠️ {t('admin.announcements.typeWarning', lang)}</option>
+                  <option value="success">✅ {t('admin.announcements.typeSuccess', lang)}</option>
+                  <option value="urgent">🚨 {t('admin.announcements.typeUrgent', lang)}</option>
                 </select>
               </div>
               <div class="sm:col-span-2">
-                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Mensagem (opcional)</label>
-                <input type="text" id="ann-message" placeholder="Detalhes adicionais..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.announcements.labelMessage', lang)}</label>
+                <input type="text" id="ann-message" placeholder={t('admin.announcements.placeholderMessage', lang)} class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
               </div>
               <div>
-                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Link URL (opcional)</label>
-                <input type="url" id="ann-link-url" placeholder="https://..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.announcements.labelLinkUrl', lang)}</label>
+                <input type="url" id="ann-link-url" placeholder={t('admin.announcements.placeholderLinkUrl', lang)} class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
               </div>
               <div>
-                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Texto do link</label>
-                <input type="text" id="ann-link-text" placeholder="Saiba mais" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.announcements.labelLinkText', lang)}</label>
+                <input type="text" id="ann-link-text" placeholder={t('admin.announcements.placeholderLinkText', lang)} class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
               </div>
               <div>
-                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Expira em</label>
+                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.announcements.labelExpires', lang)}</label>
                 <input type="datetime-local" id="ann-ends" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
               </div>
               <div class="flex items-end">
                 <button onclick="createAnnouncement()" class="w-full px-4 py-2 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
-                  📢 Publicar Aviso
+                  📢 {t('admin.announcements.btnPublish', lang)}
                 </button>
               </div>
             </div>
@@ -1271,7 +1277,7 @@ const ADMIN_I18N = {
     const el = document.getElementById('ann-list');
     if (!el) return;
     if (!data?.length) {
-      el.innerHTML = '<p class="text-slate-400 text-[.72rem] text-center py-3">Nenhum aviso cadastrado.</p>';
+      el.innerHTML = `<p class="text-slate-400 text-[.72rem] text-center py-3">${escapeHtml(ADMIN_I18N.annEmpty)}</p>`;
       return;
     }
 
@@ -1280,22 +1286,23 @@ const ADMIN_I18N = {
     el.innerHTML = data.map((a: any) => {
       const isExpired = a.ends_at && new Date(a.ends_at) < new Date();
       const statusBadge = !a.is_active
-        ? '<span class="text-[.58rem] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-400">Inativo</span>'
+        ? `<span class="text-[.58rem] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-400">${escapeHtml(ADMIN_I18N.annStatusInactive)}</span>`
         : isExpired
-          ? '<span class="text-[.58rem] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-crimson">Expirado</span>'
-          : '<span class="text-[.58rem] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Ativo</span>';
+          ? `<span class="text-[.58rem] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-crimson">${escapeHtml(ADMIN_I18N.annStatusExpired)}</span>`
+          : `<span class="text-[.58rem] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700">${escapeHtml(ADMIN_I18N.annStatusActive)}</span>`;
       const date = new Date(a.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+      const toggleLabel = a.is_active ? ADMIN_I18N.annBtnDeactivate : ADMIN_I18N.annBtnActivate;
       return `
       <div class="flex items-center gap-2 py-2 border-b border-slate-100 last:border-b-0">
         <span class="flex-shrink-0">${TYPE_ICONS[a.type] || 'ℹ️'}</span>
         <div class="flex-1 min-w-0">
-          <div class="text-[.78rem] font-semibold truncate">${a.title}</div>
-          ${a.message ? `<div class="text-[.65rem] text-slate-400 truncate">${a.message}</div>` : ''}
+          <div class="text-[.78rem] font-semibold truncate">${escapeHtml(a.title || '')}</div>
+          ${a.message ? `<div class="text-[.65rem] text-slate-400 truncate">${escapeHtml(a.message)}</div>` : ''}
         </div>
         ${statusBadge}
         <span class="text-[.6rem] text-slate-300 flex-shrink-0">${date}</span>
         <button type="button" class="btn-toggle-ann text-[.6rem] px-2 py-0.5 rounded border-0 cursor-pointer transition-all ${a.is_active ? 'bg-red-50 text-crimson hover:bg-red-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}"
-          data-ann-id="${escapeAttr(String(a.id))}" data-ann-active="${!a.is_active}">${a.is_active ? 'Desativar' : 'Ativar'}</button>
+          data-ann-id="${escapeAttr(String(a.id))}" data-ann-active="${!a.is_active}">${escapeHtml(toggleLabel)}</button>
         <button type="button" class="btn-delete-ann text-[.6rem] px-2 py-0.5 rounded bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-crimson border-0 cursor-pointer transition-all"
           data-ann-id="${escapeAttr(String(a.id))}">🗑️</button>
       </div>`;
