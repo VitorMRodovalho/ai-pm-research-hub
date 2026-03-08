@@ -7,6 +7,12 @@ set -euo pipefail
 : "${COMMIT_MESSAGE:?COMMIT_MESSAGE is required}"
 : "${COMMIT_TIMESTAMP:?COMMIT_TIMESTAMP is required}"
 
+# Graceful skip when GH token cannot access Project API (common with wrong PAT type/scopes).
+if ! gh project view "$PROJECT_NUMBER" --owner "$PROJECT_OWNER" --format json >/dev/null 2>&1; then
+  echo "Project metadata sync skipped: token cannot access project ${PROJECT_OWNER}/${PROJECT_NUMBER}."
+  exit 0
+fi
+
 PROJECT_OWNER="${PROJECT_OWNER}"
 PROJECT_NUMBER="${PROJECT_NUMBER}"
 COMMIT_SHA="${COMMIT_SHA}"
