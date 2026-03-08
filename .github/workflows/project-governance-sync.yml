@@ -1,0 +1,76 @@
+name: Project Governance Sync
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: Commit SHA to sync
+        required: false
+      commit_message:
+        description: Commit message override
+        required: false
+      commit_timestamp:
+        description: Commit timestamp override (ISO)
+        required: false
+      issue_link:
+        description: Issue URL to attach
+        required: false
+
+jobs:
+  sync_project:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.PROJECT_AUTOMATION_TOKEN }}
+      PROJECT_OWNER: VitorMRodovalho
+      PROJECT_NUMBER: "1"
+    steps:
+      - name: Validate token
+        run: |
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "Missing secret PROJECT_AUTOMATION_TOKEN (requires project scope)."
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve commit metadata
+        id: meta
+        run: |
+          SHA_INPUT='${{ github.event.inputs.commit_sha }}'
+          MSG_INPUT='${{ github.event.inputs.commit_message }}'
+          TS_INPUT='${{ github.event.inputs.commit_timestamp }}'
+
+          SHA="${SHA_INPUT:-${GITHUB_SHA}}"
+          if [ -z "${MSG_INPUT}" ]; then
+            MSG="${{ github.event.head_commit.message }}"
+          else
+            MSG="${MSG_INPUT}"
+          fi
+          if [ -z "${TS_INPUT}" ]; then
+            TS="${{ github.event.head_commit.timestamp }}"
+          else
+            TS="${TS_INPUT}"
+          fi
+          if [ -z "${TS}" ]; then
+            TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          fi
+
+          {
+            echo "commit_sha=$SHA"
+            echo "commit_message<<EOF"
+            echo "$MSG"
+            echo "EOF"
+            echo "commit_timestamp=$TS"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Sync Project metadata
+        env:
+          COMMIT_SHA: ${{ steps.meta.outputs.commit_sha }}
+          COMMIT_MESSAGE: ${{ steps.meta.outputs.commit_message }}
+          COMMIT_TIMESTAMP: ${{ steps.meta.outputs.commit_timestamp }}
+          ISSUE_LINK: ${{ github.event.inputs.issue_link }}
+        run: |
+          ./scripts/sync-project-metadata.sh
