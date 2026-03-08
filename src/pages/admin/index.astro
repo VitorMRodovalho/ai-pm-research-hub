@@ -415,7 +415,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
           <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div class="px-5 py-3.5 border-b border-slate-200">
-              <h3 class="text-sm font-bold text-navy">🏛️ Membros por Capítulo</h3>
+              <h3 class="text-sm font-bold text-navy">🧭 Skills Radar (Credly)</h3>
             </div>
             <div class="p-5" id="exec-chapters">
               <p class="text-slate-400 text-sm text-center py-4">Carregando...</p>
@@ -423,7 +423,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           </div>
           <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
             <div class="px-5 py-3.5 border-b border-slate-200">
-              <h3 class="text-sm font-bold text-navy">📊 Progresso Geral</h3>
+              <h3 class="text-sm font-bold text-navy">📈 Funil Executivo</h3>
             </div>
             <div class="p-5" id="exec-progress">
               <p class="text-slate-400 text-sm text-center py-4">Carregando...</p>
@@ -432,7 +432,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         </div>
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div class="px-5 py-3.5 border-b border-slate-200">
-            <h3 class="text-sm font-bold text-navy">🏷️ Status das Tribos</h3>
+            <h3 class="text-sm font-bold text-navy">🗓️ Timeline de Certificações</h3>
           </div>
           <div class="p-5" id="exec-tribes">
             <p class="text-slate-400 text-sm text-center py-4">Carregando...</p>
@@ -2283,102 +2283,91 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   // SPONSOR TIER: Executive Overview
   // ══════════════════════════════════════════
   async function loadExecutiveOverview() {
-    // Members by chapter
-    const { data: members } = await sb.from('members')
-      .select('chapter, current_cycle_active, operational_role')
-      .neq('operational_role', 'guest');
+    const radarHost = document.getElementById('exec-chapters')!;
+    const funnelHost = document.getElementById('exec-progress')!;
+    const timelineHost = document.getElementById('exec-tribes')!;
 
-    const active = (members || []).filter((m: any) => m.current_cycle_active);
-    const byChapter: Record<string, { total: number; active: number }> = {};
-    (members || []).forEach((m: any) => {
-      const ch = m.chapter || 'Outros';
-      if (!byChapter[ch]) byChapter[ch] = { total: 0, active: 0 };
-      byChapter[ch].total++;
-      if (m.current_cycle_active) byChapter[ch].active++;
-    });
+    radarHost.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">Carregando radar...</p>';
+    funnelHost.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">Carregando funil...</p>';
+    timelineHost.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">Carregando timeline...</p>';
 
-    const CHAPTER_COLORS: Record<string, string> = {
-      'PMI-GO': '#FF610F', 'PMI-CE': '#4F17A8', 'PMI-DF': '#00799E',
-      'PMI-MG': '#10B981', 'PMI-RS': '#D97706'
-    };
+    try {
+      const [{ data: funnel, error: funnelErr }, { data: timeline, error: timelineErr }, { data: radar, error: radarErr }] = await Promise.all([
+        sb.rpc('exec_funnel_summary'),
+        sb.rpc('exec_cert_timeline', { p_months: 12 }),
+        sb.rpc('exec_skills_radar'),
+      ]);
 
-    document.getElementById('exec-chapters')!.innerHTML =
-      Object.entries(byChapter).sort((a, b) => b[1].active - a[1].active).map(([ch, s]) => {
-        const color = CHAPTER_COLORS[ch] || '#94A3B8';
-        const maxActive = Math.max(...Object.values(byChapter).map(v => v.active), 1);
-        const pct = Math.round((s.active / maxActive) * 100);
-        return `
-        <div class="flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-b-0">
-          <div class="text-[.82rem] font-bold w-16 flex-shrink-0" style="color:${color}">${ch}</div>
-          <div class="flex-1">
-            <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div class="h-full rounded-full" style="width:${pct}%;background:${color}"></div>
-            </div>
+      if (funnelErr) throw funnelErr;
+      if (timelineErr) throw timelineErr;
+      if (radarErr) throw radarErr;
+
+      const f = (funnel || [])[0];
+      if (!f) throw new Error('Resumo executivo indisponível.');
+
+      funnelHost.innerHTML = `
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-slate-50 rounded-xl p-3 text-center">
+            <div class="text-xl font-black text-navy">${f.active_members || 0}</div>
+            <div class="text-[.65rem] text-slate-400 font-semibold">Ativos</div>
           </div>
-          <div class="text-[.78rem] font-bold text-navy flex-shrink-0">${s.active}</div>
-          <div class="text-[.65rem] text-slate-400 flex-shrink-0">ativos</div>
+          <div class="bg-slate-50 rounded-xl p-3 text-center">
+            <div class="text-xl font-black text-purple">${f.members_with_tier1 || 0}</div>
+            <div class="text-[.65rem] text-slate-400 font-semibold">Tier 1</div>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-3 text-center">
+            <div class="text-xl font-black text-teal">${f.members_with_tier2_plus || 0}</div>
+            <div class="text-[.65rem] text-slate-400 font-semibold">Tier 2+</div>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-3 text-center">
+            <div class="text-xl font-black text-emerald-600">${f.total_published_artifacts || 0}</div>
+            <div class="text-[.65rem] text-slate-400 font-semibold">Publicados</div>
+          </div>
+        </div>
+        <div class="mt-3 text-[.7rem] text-slate-400">
+          ${f.members_with_credly_url || 0} com Credly URL · ${f.members_with_full_core_trail || 0} trilha núcleo completa · ${f.members_with_published_artifact || 0} com artefato publicado
         </div>`;
+
+      const radarRows = (radar || []).slice(0, 8).map((r: any) => {
+        const pct = Math.max(4, Math.min(100, Math.round((Number(r.members_with_signal || 0) / Math.max(Number(f.active_members || 1), 1)) * 100)));
+        return `
+          <div class="flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-b-0">
+            <div class="text-[.74rem] font-bold text-slate-700 w-24 sm:w-32 truncate">${r.radar_axis || 'N/A'}</div>
+            <div class="flex-1">
+              <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full rounded-full bg-[#05BFE0]" style="width:${pct}%"></div>
+              </div>
+            </div>
+            <div class="text-[.74rem] font-bold text-navy">${r.members_with_signal || 0}</div>
+            <div class="text-[.62rem] text-slate-400">membros</div>
+          </div>`;
       }).join('');
 
-    // General progress stats
-    const totalActive = active.length;
-    const researchers = active.filter((m: any) => m.operational_role === 'researcher').length;
-    const leaders = active.filter((m: any) => m.operational_role === 'tribe_leader').length;
-    const managers = active.filter((m: any) => m.operational_role === 'manager').length;
+      radarHost.innerHTML = radarRows || '<p class="text-slate-400 text-sm text-center py-4">Sem dados de skills radar.</p>';
 
-    // Course progress aggregated
-    const { data: courseProgress } = await sb.from('course_progress')
-      .select('status');
-    const completed = (courseProgress || []).filter((c: any) => c.status === 'completed').length;
-    const totalCourseSlots = totalActive * 8;
-    const trailPct = totalCourseSlots > 0 ? Math.round((completed / totalCourseSlots) * 100) : 0;
-
-    // Artifacts
-    const { data: artifacts } = await sb.from('artifacts').select('status');
-    const published = (artifacts || []).filter((a: any) => a.status === 'published').length;
-    const inReview = (artifacts || []).filter((a: any) => a.status === 'review').length;
-
-    document.getElementById('exec-progress')!.innerHTML = `
-      <div class="grid grid-cols-2 gap-3">
-        <div class="bg-slate-50 rounded-xl p-3 text-center">
-          <div class="text-xl font-black text-navy">${totalActive}</div>
-          <div class="text-[.65rem] text-slate-400 font-semibold">Ativos</div>
-        </div>
-        <div class="bg-slate-50 rounded-xl p-3 text-center">
-          <div class="text-xl font-black text-purple">${leaders + managers}</div>
-          <div class="text-[.65rem] text-slate-400 font-semibold">Liderança</div>
-        </div>
-        <div class="bg-slate-50 rounded-xl p-3 text-center">
-          <div class="text-xl font-black text-teal">${trailPct}%</div>
-          <div class="text-[.65rem] text-slate-400 font-semibold">Trilha IA</div>
-        </div>
-        <div class="bg-slate-50 rounded-xl p-3 text-center">
-          <div class="text-xl font-black text-emerald-600">${published}</div>
-          <div class="text-[.65rem] text-slate-400 font-semibold">Publicados</div>
-        </div>
-      </div>
-      <div class="mt-3 text-[.7rem] text-slate-400">
-        ${researchers} pesquisadores · ${inReview} artefatos em revisão · ${completed} cursos concluídos
-      </div>`;
-
-    // Tribe summary
-    const { data: tribeData } = await sb.from('tribe_selections').select('tribe_id');
-    const tribeCounts: Record<number, number> = {};
-    (tribeData || []).forEach((t: any) => { tribeCounts[t.tribe_id] = (tribeCounts[t.tribe_id] || 0) + 1; });
-
-    document.getElementById('exec-tribes')!.innerHTML = `
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        ${[1,2,3,4,5,6,7,8].map(tid => {
-          const count = tribeCounts[tid] || 0;
-          const color = TRIBE_COLORS[tid] || '#94A3B8';
-          return `
-          <div class="rounded-xl p-3 text-center border border-slate-100">
-            <div class="text-[.65rem] font-bold uppercase tracking-wider mb-1" style="color:${color}">T${String(tid).padStart(2,'0')}</div>
-            <div class="text-lg font-black text-navy">${count}/6</div>
-            <div class="text-[.6rem] text-slate-400">${TRIBE_NAMES[tid]?.split(' ').slice(0,2).join(' ')}</div>
+      const timelineRows = (timeline || []).map((r: any) => {
+        const month = new Date(r.cohort_month).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+        const pct1 = Math.round(Number(r.pct_with_tier1 || 0));
+        const pct2 = Math.round(Number(r.pct_with_tier2 || 0));
+        return `
+          <div class="rounded-xl border border-slate-100 p-3">
+            <div class="flex items-center justify-between text-[.72rem] mb-1.5">
+              <span class="font-bold text-slate-700">${month}</span>
+              <span class="text-slate-400">${r.members_in_cohort || 0} membros</span>
+            </div>
+            <div class="text-[.68rem] text-slate-500">Tier 1: <span class="font-semibold text-purple">${r.members_with_tier1 || 0}</span> (${pct1}%) · Tier 2+: <span class="font-semibold text-teal">${r.members_with_tier2 || 0}</span> (${pct2}%)</div>
           </div>`;
-        }).join('')}
-      </div>`;
+      }).join('');
+
+      timelineHost.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">${timelineRows || '<p class="text-slate-400 text-sm text-center py-4">Sem dados de timeline.</p>'}</div>`;
+    } catch (e: any) {
+      const msg = e?.code === '42501'
+        ? 'Sem permissão para dados executivos (tier insuficiente).'
+        : `Falha ao carregar dados executivos: ${e?.message || 'erro inesperado'}`;
+      radarHost.innerHTML = `<p class="text-red-500 text-sm text-center py-4">${msg}</p>`;
+      funnelHost.innerHTML = `<p class="text-red-500 text-sm text-center py-4">${msg}</p>`;
+      timelineHost.innerHTML = `<p class="text-red-500 text-sm text-center py-4">${msg}</p>`;
+    }
   }
 
   // ══════════════════════════════════════════
