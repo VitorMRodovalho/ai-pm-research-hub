@@ -433,8 +433,8 @@ import Toast from '../components/ui/Toast.astro';
           ${secondaryEmails.map((e: string, i: number) => `
             <div class="flex items-center gap-2 py-2 px-3 bg-slate-50/50 rounded-lg mb-2">
               <span class="text-sm flex-1">${e}</span>
-              <button onclick="removeSecondaryEmail(${i})"
-                class="text-[.7rem] font-semibold text-red-500 hover:text-red-700 cursor-pointer bg-transparent border-0 px-2 py-0.5 rounded hover:bg-red-50 transition-all">✕ Remover</button>
+              <button type="button" class="btn-remove-secondary-email text-[.7rem] font-semibold text-red-500 hover:text-red-700 cursor-pointer bg-transparent border-0 px-2 py-0.5 rounded hover:bg-red-50 transition-all"
+                data-email-idx="${i}">✕ Remover</button>
             </div>
           `).join('')}
         </div>
@@ -515,7 +515,14 @@ import Toast from '../components/ui/Toast.astro';
     };
 
     input.addEventListener('blur', normalize);
-    input.addEventListener('paste', () => setTimeout(normalize, 0));
+    // Mobile (iOS Safari/Chrome): paste can fire before value is in input; delay allows DOM to settle
+    input.addEventListener('paste', () => setTimeout(normalize, 100));
+    // Fallback: some mobile browsers don't reliably fire paste; debounced input catches pasted content
+    let inputDebounce: ReturnType<typeof setTimeout>;
+    input.addEventListener('input', () => {
+      clearTimeout(inputDebounce);
+      inputDebounce = setTimeout(normalize, 300);
+    });
   }
 
   // ── Toggle password field visibility ──
@@ -597,6 +604,17 @@ import Toast from '../components/ui/Toast.astro';
       (window as any).toast?.(`${removed} removido`, 'info');
     }
   };
+
+  if (!(window as any).__profileDelegationBound) {
+    (window as any).__profileDelegationBound = true;
+    document.addEventListener('click', (e: MouseEvent) => {
+      const btn = (e.target as HTMLElement).closest('.btn-remove-secondary-email');
+      if (btn) {
+        const idx = parseInt(btn.getAttribute('data-email-idx') || '0', 10);
+        (window as any).removeSecondaryEmail(idx);
+      }
+    });
+  }
 
   // ── Credly verification ──
   async function describeFnError(err: any): Promise<string> {

@@ -1,0 +1,53 @@
+# S10 — Credly Auto Sync (weekly)
+# Invokes sync-credly-all Edge Function to refresh badge data.
+# Requires: sync-credly-all deployed; SUPABASE_SERVICE_ROLE_KEY or SYNC_CREDLY_SECRET configured.
+
+name: Credly Auto Sync
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 8 * * 1"   # Monday 08:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  sync_credly:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Validate secrets
+        run: |
+          test -n "$SUPABASE_URL" || (echo "Missing SUPABASE_URL"; exit 1)
+          test -n "$SUPABASE_SERVICE_ROLE_KEY" || (echo "Missing SUPABASE_SERVICE_ROLE_KEY"; exit 1)
+
+      - name: Trigger sync-credly-all
+        run: |
+          set -euo pipefail
+          URL="${SUPABASE_URL%/}/functions/v1/sync-credly-all"
+          echo "Calling: $URL"
+          HTTP_CODE=$(curl -sS -o /tmp/credly_sync_resp.json -w "%{http_code}" \
+            -X POST "$URL" \
+            -H "Content-Type: application/json" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -d '{"triggered_by":"github_actions_cron"}')
+
+          echo "HTTP_CODE=$HTTP_CODE"
+          cat /tmp/credly_sync_resp.json || true
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "Credly sync returned HTTP $HTTP_CODE"
+            exit 1
+          fi
+
+      - name: Upload response artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: credly-sync-response
+          path: /tmp/credly_sync_resp.json
+          if-no-files-found: ignore

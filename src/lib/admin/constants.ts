@@ -52,7 +52,7 @@ export const TIER_LABELS: Record<string, string> = {
 };
 
 export type AccessTier = 'superadmin' | 'admin' | 'leader' | 'observer' | 'member' | 'visitor';
-export type AdminRouteKey = 'admin_panel' | 'admin_analytics' | 'admin_member_edit' | 'admin_manage_actions';
+export type AdminRouteKey = 'admin_panel' | 'admin_analytics' | 'admin_comms' | 'admin_member_edit' | 'admin_manage_actions';
 
 const TIER_RANK: Record<AccessTier, number> = {
   visitor: 0,
@@ -66,6 +66,7 @@ const TIER_RANK: Record<AccessTier, number> = {
 const ROUTE_MIN_TIER: Record<AdminRouteKey, AccessTier> = {
   admin_panel: 'observer',
   admin_analytics: 'admin',
+  admin_comms: 'admin',
   admin_member_edit: 'superadmin',
   admin_manage_actions: 'admin',
 };

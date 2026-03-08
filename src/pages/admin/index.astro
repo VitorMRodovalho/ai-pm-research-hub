@@ -185,6 +185,20 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
               </a>
             </div>
           </div>
+
+          <!-- Comms Dashboard (S-COM6) -->
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-slate-200">
+              <h3 class="text-sm font-bold text-navy">{t('admin.reports.commsTitle', lang)}</h3>
+              <p class="text-[.68rem] text-slate-400 mt-0.5">{t('admin.reports.commsSubtitle', lang)}</p>
+            </div>
+            <div class="p-5">
+              <p class="text-[.72rem] text-slate-500 mb-4">{t('admin.reports.commsDesc', lang)}</p>
+              <a href="/admin/comms" class="w-full inline-flex items-center justify-center px-4 py-2.5 bg-teal text-white rounded-lg text-[.78rem] font-semibold no-underline hover:opacity-90 transition-all">
+                {t('admin.reports.commsButton', lang)}
+              </a>
+            </div>
+          </div>
         </div>
 
         <!-- Leadership Training Snapshot -->
@@ -641,6 +655,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
   }
 
+  function escapeAttr(s: string): string {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
   function avatar(m: any, size = 'w-8 h-8'): string {
     return m.photo_url
       ? `<img src="${m.photo_url}" class="${size} rounded-full object-cover flex-shrink-0" alt="">`
@@ -764,8 +787,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         <div class="flex gap-1.5 flex-shrink-0">
           ${waLink ? '<a href="' + waLink + '" target="_blank" class="px-2 py-1 text-[.68rem] font-bold bg-green-50 text-green-700 border border-green-200 rounded-lg no-underline hover:bg-green-100 transition-all" title="WhatsApp">&#x1F4F1;</a>' : ''}
           <a href="${mailLink}" class="px-2 py-1 text-[.68rem] font-bold bg-blue-50 text-blue-700 border border-blue-200 rounded-lg no-underline hover:bg-blue-100 transition-all" title="Email">&#x1F4E7;</a>
-          <button onclick="openAllocate('${m.member_id}','${m.name.replace(/'/g, '')}','${m.email}','${m.chapter || ''}')"
-            class="px-2.5 py-1 text-[.68rem] font-bold bg-navy text-white border-0 rounded-lg cursor-pointer hover:opacity-90 transition-all">
+          <button type="button" class="btn-alloc px-2.5 py-1 text-[.68rem] font-bold bg-navy text-white border-0 rounded-lg cursor-pointer hover:opacity-90 transition-all"
+            data-member-id="${escapeAttr(String(m.member_id))}"
+            data-member-name="${escapeAttr(m.name || '')}"
+            data-member-email="${escapeAttr(m.email || '')}"
+            data-member-chapter="${escapeAttr(m.chapter || '')}">
             Alocar
           </button>
         </div>
@@ -773,7 +799,20 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     }).join('')}`;
   }
 
-  // ── ALLOCATE MODAL ──
+  // ── ALLOCATE MODAL (Event Delegation: .btn-alloc, .cursorrules compliant) ──
+  if (!(window as any).__adminAllocBound) {
+    (window as any).__adminAllocBound = true;
+    document.addEventListener('click', (e: MouseEvent) => {
+      const btn = (e.target as HTMLElement).closest('.btn-alloc');
+      if (btn) {
+        const id = btn.getAttribute('data-member-id') || '';
+        const name = btn.getAttribute('data-member-name') || '';
+        const email = btn.getAttribute('data-member-email') || '';
+        const chapter = btn.getAttribute('data-member-chapter') || '';
+        (window as any).openAllocate(id, name, email, chapter);
+      }
+    });
+  }
   (window as any).openAllocate = (id: string, name: string, email: string, chapter: string) => {
     if (!ensureAdminAction()) return;
     (document.getElementById('alloc-member-id') as HTMLInputElement).value = id;
@@ -891,8 +930,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           : '<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-crimson">Inativo</span>';
 
         const histBtn = isSA
-          ? `<button onclick='openCycleHistory("${m.id}","${m.name.replace(/'/g, '')}")'
-               class="px-1.5 py-0.5 text-[.6rem] font-semibold text-slate-400 border border-slate-100 rounded hover:border-amber-300 hover:text-amber-600 bg-transparent cursor-pointer transition-all" title="Editar histórico de ciclos (superadmin)">📅</button>`
+          ? `<button type="button" class="btn-cycle-history px-1.5 py-0.5 text-[.6rem] font-semibold text-slate-400 border border-slate-100 rounded hover:border-amber-300 hover:text-amber-600 bg-transparent cursor-pointer transition-all"
+               data-member-id="${escapeAttr(m.id)}" data-member-name="${escapeAttr(m.name || '')}" title="Editar histórico de ciclos (superadmin)">📅</button>`
           : '';
 
         return `
@@ -924,8 +963,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           ${memberTribeTag(m)}
           ${status}
           <div class="flex gap-1 flex-shrink-0">
-            <button onclick='openEditMember(${JSON.stringify(m).replace(/'/g, "&#39;")})'
-              class="px-2 py-1 text-[.68rem] font-semibold text-slate-500 border border-slate-200 rounded-lg hover:border-teal hover:text-teal bg-transparent cursor-pointer transition-all whitespace-nowrap">
+            <button type="button" class="btn-edit-member px-2 py-1 text-[.68rem] font-semibold text-slate-500 border border-slate-200 rounded-lg hover:border-teal hover:text-teal bg-transparent cursor-pointer transition-all whitespace-nowrap"
+              data-member-id="${escapeAttr(m.id)}">
               Editar
             </button>
             ${histBtn}
@@ -1036,6 +1075,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
   (window as any).openEditMember = (m: any) => {
     if (!ensureAdminAction()) return;
+    if (!m) return;
     (document.getElementById('edit-m-id') as HTMLInputElement).value = m.id;
 
     // Header
@@ -1160,10 +1200,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         </div>
         ${statusBadge}
         <span class="text-[.6rem] text-slate-300 flex-shrink-0">${date}</span>
-        <button onclick="toggleAnnouncement('${a.id}', ${!a.is_active})"
-          class="text-[.6rem] px-2 py-0.5 rounded border-0 cursor-pointer transition-all ${a.is_active ? 'bg-red-50 text-crimson hover:bg-red-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}">${a.is_active ? 'Desativar' : 'Ativar'}</button>
-        <button onclick="deleteAnnouncement('${a.id}')"
-          class="text-[.6rem] px-2 py-0.5 rounded bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-crimson border-0 cursor-pointer transition-all">🗑️</button>
+        <button type="button" class="btn-toggle-ann text-[.6rem] px-2 py-0.5 rounded border-0 cursor-pointer transition-all ${a.is_active ? 'bg-red-50 text-crimson hover:bg-red-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}"
+          data-ann-id="${escapeAttr(String(a.id))}" data-ann-active="${!a.is_active}">${a.is_active ? 'Desativar' : 'Ativar'}</button>
+        <button type="button" class="btn-delete-ann text-[.6rem] px-2 py-0.5 rounded bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-crimson border-0 cursor-pointer transition-all"
+          data-ann-id="${escapeAttr(String(a.id))}">🗑️</button>
       </div>`;
     }).join('');
   }
@@ -1193,6 +1233,69 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     loadAnnouncements();
   };
 
+  if (!(window as any).__adminAnnBound) {
+    (window as any).__adminAnnBound = true;
+    document.addEventListener('click', (e: MouseEvent) => {
+      const t = (e.target as HTMLElement).closest('.btn-toggle-ann');
+      if (t) {
+        (window as any).toggleAnnouncement(t.getAttribute('data-ann-id') || '', t.getAttribute('data-ann-active') === 'true');
+        return;
+      }
+      const d = (e.target as HTMLElement).closest('.btn-delete-ann');
+      if (d) {
+        (window as any).deleteAnnouncement(d.getAttribute('data-ann-id') || '');
+      }
+    });
+  }
+
+  // Event Delegation: members, cycle history, tribe slots (.cursorrules compliant)
+  if (!(window as any).__adminCycleSlotBound) {
+    (window as any).__adminCycleSlotBound = true;
+    document.addEventListener('click', (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const editMember = target.closest('.btn-edit-member');
+      if (editMember) {
+        const id = editMember.getAttribute('data-member-id') || '';
+        const m = memberListCache?.find((x: any) => x.id === id);
+        (window as any).openEditMember(m);
+        return;
+      }
+      const cycleHist = target.closest('.btn-cycle-history');
+      if (cycleHist) {
+        (window as any).openCycleHistory(cycleHist.getAttribute('data-member-id') || '', cycleHist.getAttribute('data-member-name') || '');
+        return;
+      }
+      const editRec = target.closest('.btn-edit-cycle-record');
+      if (editRec) {
+        (window as any).editCycleRecord(editRec.getAttribute('data-record-id') || '');
+        return;
+      }
+      const delRec = target.closest('.btn-delete-cycle-record');
+      if (delRec) {
+        (window as any).deleteCycleRecord(delRec.getAttribute('data-record-id') || '', delRec.getAttribute('data-record-label') || '');
+        return;
+      }
+      const addRec = target.closest('.btn-add-cycle-record');
+      if (addRec) {
+        (window as any).addCycleRecord(addRec.getAttribute('data-cycle-code') || '');
+        return;
+      }
+      const delSlot = target.closest('.btn-delete-slot');
+      if (delSlot) {
+        (window as any).deleteSlot(delSlot.getAttribute('data-slot-id') || '', parseInt(delSlot.getAttribute('data-tribe-id') || '0', 10));
+        return;
+      }
+      const addSlot = target.closest('.btn-add-slot');
+      if (addSlot) {
+        (window as any).addSlot(parseInt(addSlot.getAttribute('data-tribe-id') || '0', 10));
+        return;
+      }
+      const saveTribe = target.closest('.btn-save-tribe');
+      if (saveTribe) {
+        (window as any).saveTribeSettings(parseInt(saveTribe.getAttribute('data-tribe-id') || '0', 10));
+      }
+    });
+  }
   (window as any).toggleAnnouncement = async (id: string, active: boolean) => {
     if (!ensureAdminAction()) return;
     await sb.from('announcements').update({ is_active: active }).eq('id', id);
@@ -1644,8 +1747,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           <div class="flex items-center justify-between mb-2">
             <span class="text-[.78rem] font-bold" style="color:${meta.color}">${r.cycle_label || meta.label}</span>
             <div class="flex gap-1">
-              <button onclick="editCycleRecord('${r.id}')" class="text-[.6rem] px-2 py-0.5 rounded bg-slate-100 text-slate-500 hover:bg-amber-50 hover:text-amber-600 cursor-pointer border-0 transition-all">✏️ Editar</button>
-              <button onclick="deleteCycleRecord('${r.id}','${r.cycle_label || meta.label}')" class="text-[.6rem] px-2 py-0.5 rounded bg-slate-100 text-red-400 hover:bg-red-50 hover:text-crimson cursor-pointer border-0 transition-all">🗑️</button>
+              <button type="button" class="btn-edit-cycle-record text-[.6rem] px-2 py-0.5 rounded bg-slate-100 text-slate-500 hover:bg-amber-50 hover:text-amber-600 cursor-pointer border-0 transition-all"
+                data-record-id="${escapeAttr(r.id)}">✏️ Editar</button>
+              <button type="button" class="btn-delete-cycle-record text-[.6rem] px-2 py-0.5 rounded bg-slate-100 text-red-400 hover:bg-red-50 hover:text-crimson cursor-pointer border-0 transition-all"
+                data-record-id="${escapeAttr(r.id)}" data-record-label="${escapeAttr(r.cycle_label || meta.label)}">🗑️</button>
             </div>
           </div>
           <div class="text-[.72rem] text-slate-600">
@@ -1665,7 +1770,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         <div class="flex gap-2 flex-wrap">
           ${CYCLE_ORDER.filter(c => !existingCodes.includes(c)).map(c => {
             const meta = CYCLE_META[c];
-            return `<button onclick="addCycleRecord('${c}')" class="px-3 py-1.5 text-[.68rem] font-bold rounded-lg border-0 cursor-pointer text-white hover:opacity-90 transition-all" style="background:${meta.color}">${meta.label}</button>`;
+            return `<button type="button" class="btn-add-cycle-record px-3 py-1.5 text-[.68rem] font-bold rounded-lg border-0 cursor-pointer text-white hover:opacity-90 transition-all" style="background:${meta.color}" data-cycle-code="${escapeAttr(c)}">${meta.label}</button>`;
           }).join('')}
         </div>
       </div>` : '<div class="text-center text-[.72rem] text-emerald-600 font-semibold mt-2">✅ Todos os ciclos registrados</div>'}
@@ -1785,8 +1890,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           <span class="text-[.78rem] font-semibold w-12">${DAY_SHORT[s.day_of_week]}</span>
           <span class="text-[.78rem] text-slate-600">${s.time_start.substring(0,5)} – ${s.time_end.substring(0,5)}</span>
           <span class="flex-1"></span>
-          <button onclick="deleteSlot('${s.id}', ${tribeId})"
-            class="text-[.6rem] px-2 py-0.5 rounded bg-red-50 text-crimson hover:bg-red-100 border-0 cursor-pointer transition-all">🗑️</button>
+          <button type="button" class="btn-delete-slot text-[.6rem] px-2 py-0.5 rounded bg-red-50 text-crimson hover:bg-red-100 border-0 cursor-pointer transition-all"
+            data-slot-id="${escapeAttr(s.id)}" data-tribe-id="${tribeId}">🗑️</button>
         </div>`).join('');
 
       const dayOptions = DAY_OPTS.map(d => `<option value="${d.v}">${d.l}</option>`).join('');
@@ -1805,8 +1910,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
             <input type="time" id="slot-start" value="19:00" class="px-2 py-1.5 border border-slate-200 rounded-lg text-[.72rem]">
             <span class="text-slate-400 text-[.72rem]">–</span>
             <input type="time" id="slot-end" value="20:00" class="px-2 py-1.5 border border-slate-200 rounded-lg text-[.72rem]">
-            <button onclick="addSlot(${tribeId})"
-              class="px-3 py-1.5 bg-teal text-white rounded-lg text-[.72rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all flex-shrink-0">
+            <button type="button" class="btn-add-slot px-3 py-1.5 bg-teal text-white rounded-lg text-[.72rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all flex-shrink-0"
+              data-tribe-id="${tribeId}">
               + Adicionar
             </button>
           </div>
@@ -1840,8 +1945,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           </div>
         </div>
         <div class="mt-3 flex justify-end">
-          <button onclick="saveTribeSettings(${tribeId})"
-            class="px-4 py-2 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
+          <button type="button" class="btn-save-tribe px-4 py-2 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all"
+            data-tribe-id="${tribeId}">
             💾 Salvar Links & Notas
           </button>
         </div>`;

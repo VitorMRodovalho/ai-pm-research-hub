@@ -1,0 +1,179 @@
+---
+/**
+ * admin/comms.astro — S-COM6 Dashboard Central de Mídia
+ * Dedicated route for communications metrics: Looker iframe or native table from comms_metrics_latest_by_channel.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL || '';
+---
+
+<BaseLayout title={t('admin.comms.meta', lang)} activePage="admin">
+  <div class="max-w-[1200px] mx-auto px-4 py-8">
+    <div class="mb-6">
+      <h1 class="text-2xl font-extrabold text-navy">{t('admin.comms.title', lang)}</h1>
+      <p class="text-sm text-slate-500">{t('admin.comms.subtitle', lang)}</p>
+    </div>
+
+    <div id="comms-loading" class="text-center py-10 text-slate-400">{t('admin.comms.loading', lang)}</div>
+
+    <div id="comms-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
+      <div class="text-2xl mb-2">🔒</div>
+      <p class="font-semibold text-amber-800">{t('admin.comms.denied', lang)}</p>
+      <a href="/admin" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
+        {t('admin.comms.backAdmin', lang)}
+      </a>
+    </div>
+
+    <div id="comms-panel" class="hidden space-y-4" data-comms-mode={COMMS_DASHBOARD_URL ? 'iframe' : 'native'}>
+      {COMMS_DASHBOARD_URL ? (
+        <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+            <div>
+              <h2 class="text-sm font-bold text-navy">{t('admin.comms.lookerTitle', lang)}</h2>
+              <p class="text-[.68rem] text-slate-400">{t('admin.comms.lookerSubtitle', lang)}</p>
+            </div>
+            <a href={COMMS_DASHBOARD_URL} target="_blank" rel="noopener noreferrer" class="text-[.72rem] font-semibold text-teal no-underline hover:underline">
+              {t('admin.analytics.openExternal', lang)}
+            </a>
+          </div>
+          <iframe
+            src={COMMS_DASHBOARD_URL}
+            title="Communications Analytics Dashboard"
+            class="w-full min-h-[640px] border-0"
+            loading="lazy"
+            referrerpolicy="strict-origin-when-cross-origin"
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+          ></iframe>
+        </section>
+      ) : (
+        <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div class="px-4 py-3 border-b border-slate-200">
+            <h2 class="text-sm font-bold text-navy">{t('admin.comms.nativeTitle', lang)}</h2>
+            <p class="text-[.68rem] text-slate-400">{t('admin.comms.nativeSubtitle', lang)}</p>
+          </div>
+          <div id="comms-table-container" class="p-4 overflow-x-auto">
+            <div id="comms-table-loading" class="text-center py-8 text-slate-400 text-sm">{t('admin.comms.tableLoading', lang)}</div>
+            <div id="comms-table-empty" class="hidden text-center py-8 text-slate-500 text-sm">{t('admin.comms.tableEmpty', lang)}</div>
+            <table id="comms-table" class="hidden w-full text-[.72rem] border-collapse">
+              <thead>
+                <tr class="border-b border-slate-200 text-left">
+                  <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colDate', lang)}</th>
+                  <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colChannel', lang)}</th>
+                  <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colAudience', lang)}</th>
+                  <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colReach', lang)}</th>
+                  <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colEngagement', lang)}</th>
+                  <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colLeads', lang)}</th>
+                </tr>
+              </thead>
+              <tbody id="comms-table-body"></tbody>
+            </table>
+          </div>
+          <p class="px-4 pb-4 text-[.65rem] text-slate-400">{t('admin.comms.configNote', lang)}</p>
+        </section>
+      )}
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { canAccessAdminRoute } from '../../lib/admin/constants';
+
+  let sb: any = null;
+  let MEMBER: any = null;
+
+  function allowAccess(m: any): boolean {
+    return canAccessAdminRoute(m, 'admin_comms');
+  }
+
+  function showDenied() {
+    document.getElementById('comms-loading')?.classList.add('hidden');
+    document.getElementById('comms-denied')?.classList.remove('hidden');
+    document.getElementById('comms-panel')?.classList.add('hidden');
+  }
+
+  function showPanel() {
+    document.getElementById('comms-loading')?.classList.add('hidden');
+    document.getElementById('comms-denied')?.classList.add('hidden');
+    document.getElementById('comms-panel')?.classList.remove('hidden');
+    if (document.getElementById('comms-panel')?.dataset.commsMode === 'native') {
+      loadNativeTable();
+    }
+  }
+
+  async function loadNativeTable() {
+    const loading = document.getElementById('comms-table-loading');
+    const empty = document.getElementById('comms-table-empty');
+    const table = document.getElementById('comms-table');
+    const tbody = document.getElementById('comms-table-body');
+    if (!loading || !empty || !table || !tbody) return;
+
+    try {
+      const { data, error } = await sb.rpc('comms_metrics_latest_by_channel', { p_days: 14 });
+      loading.classList.add('hidden');
+      if (error) {
+        empty.textContent = 'Erro ao carregar: ' + (error.message || 'desconhecido');
+        empty.classList.remove('hidden');
+        return;
+      }
+      if (!data?.length) {
+        empty.classList.remove('hidden');
+        return;
+      }
+      tbody.innerHTML = data.map((r: any) => `
+        <tr class="border-b border-slate-50 hover:bg-slate-50">
+          <td class="px-3 py-2">${r.metric_date || '—'}</td>
+          <td class="px-3 py-2 font-medium">${escapeHtml(r.channel || '—')}</td>
+          <td class="px-3 py-2 text-right">${r.audience ?? '—'}</td>
+          <td class="px-3 py-2 text-right">${r.reach ?? '—'}</td>
+          <td class="px-3 py-2 text-right">${r.engagement != null ? (Number(r.engagement) * 100).toFixed(2) + '%' : '—'}</td>
+          <td class="px-3 py-2 text-right">${r.leads ?? '—'}</td>
+        </tr>
+      `).join('');
+      table.classList.remove('hidden');
+    } catch (e: any) {
+      loading.classList.add('hidden');
+      empty.textContent = 'Erro: ' + (e?.message || 'falha');
+      empty.classList.remove('hidden');
+    }
+  }
+
+  function escapeHtml(s: string): string {
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  function applyGate(m: any) {
+    if (m && allowAccess(m)) showPanel();
+    else showDenied();
+  }
+
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail) { MEMBER = e.detail; applyGate(MEMBER); }
+    }) as EventListener);
+
+    const m = (window as any).navGetMember?.();
+    if (m) { MEMBER = m; applyGate(MEMBER); return; }
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        const { data } = await sb.rpc('get_member_by_auth');
+        MEMBER = data;
+        applyGate(MEMBER);
+        return;
+      }
+    } catch {}
+
+    showDenied();
+  }
+
+  boot();
+</script>

@@ -114,6 +114,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   let CAN_MANAGE = false;
   let CURRENT_EVENT_ID: string | null = null;
 
+  function escapeAttr(s: string): string {
+    return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
   const ROLE_MAP: Record<string, { label: string; color: string; bg: string }> = {
     manager:      { label: 'Gerente de Projeto', color: '#003865', bg: '#EFF6FF' },
     tribe_leader: { label: 'Líder de Tribo',     color: '#065F46', bg: '#F0FDF4' },
@@ -264,8 +268,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         ? `<a href="${ev.youtube_url}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-white font-semibold no-underline px-2 py-0.5 bg-red-600 rounded-md text-[12px]">▶ YouTube</a>`
         : (ev.is_recorded ? `<span class="text-[11px] text-slate-400 italic">gravada · YouTube em breve</span>` : '');
 
-      const evJson = JSON.stringify(ev).replace(/"/g, '&quot;');
-
+      ((window as any).__attendanceEventsById = (window as any).__attendanceEventsById || {})[ev.id] = ev;
       return `
       <div class="py-3.5 border-b border-slate-100 last:border-b-0">
         <div class="flex items-center gap-2.5">
@@ -283,14 +286,34 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           <div class="flex gap-1.5 items-center flex-wrap">${eventBadges(ev)}</div>
           <div class="flex gap-1.5 items-center flex-shrink-0">
             ${ev.i_attended !== true
-              ? `<button class="px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-navy text-white border-0 cursor-pointer hover:bg-navy/90" onclick="checkIn('${ev.id}')">Check-in</button>`
+              ? `<button type="button" class="btn-checkin px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-navy text-white border-0 cursor-pointer hover:opacity-90" data-event-id="${escapeAttr(ev.id)}">Check-in</button>`
               : `<button class="px-3 py-1.5 rounded-lg text-[12px] font-semibold border-[1.5px] border-navy text-navy bg-transparent cursor-not-allowed opacity-40" disabled>✓</button>`}
-            ${canRoster ? `<button class="px-2 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-md cursor-pointer" title="Lista de presença" onclick="openRoster('${ev.id}','${ev.title.replace(/'/g, "\\'")}')">📋</button>` : ''}
-            ${canEdit ? `<button class="px-2 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-md cursor-pointer" title="Editar evento" onclick="openEditEvent(${evJson})">✏️</button>` : ''}
+            ${canRoster ? `<button type="button" class="btn-roster px-2 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-md cursor-pointer" title="Lista de presença" data-event-id="${escapeAttr(ev.id)}" data-event-title="${escapeAttr(ev.title || '')}">📋</button>` : ''}
+            ${canEdit ? `<button type="button" class="btn-edit-ev px-2 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-md cursor-pointer" title="Editar evento" data-event-id="${escapeAttr(ev.id)}">✏️</button>` : ''}
           </div>
         </div>
       </div>`;
     }).join('');
+  }
+
+  if (!(window as any).__attendanceDelegationBound) {
+    (window as any).__attendanceDelegationBound = true;
+    document.addEventListener('click', (e: MouseEvent) => {
+      const t = (e.target as HTMLElement).closest('.btn-checkin');
+      if (t) { (window as any).checkIn(t.getAttribute('data-event-id') || ''); return; }
+      const r = (e.target as HTMLElement).closest('.btn-roster');
+      if (r) { (window as any).openRoster(r.getAttribute('data-event-id') || '', r.getAttribute('data-event-title') || ''); return; }
+      const ed = (e.target as HTMLElement).closest('.btn-edit-ev');
+      if (ed) {
+        const ev = (window as any).__attendanceEventsById?.[ed.getAttribute('data-event-id') || ''];
+        if (ev) (window as any).openEditEvent(ev);
+        return;
+      }
+      const tp = (e.target as HTMLElement).closest('.btn-toggle-presence');
+      if (tp) {
+        (window as any).togglePresence(tp.getAttribute('data-event-id') || '', tp.getAttribute('data-member-id') || '', tp as HTMLElement);
+      }
+    });
   }
 
   // ── CHECK-IN ──
@@ -447,8 +470,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         <td class="px-3 py-2.5 border-b border-slate-100">${roleBadges(rolesFromMember(m))}</td>
         <td class="px-3 py-2.5 border-b border-slate-100 text-center">
           ${CAN_MANAGE
-            ? `<button class="toggle-btn ${m.present ? 'on' : 'off'}" id="tog-${m.id}"
-                 onclick="togglePresence('${eventId}','${m.id}',this)"></button>`
+            ? `<button type="button" class="toggle-btn btn-toggle-presence ${m.present ? 'on' : 'off'}" id="tog-${m.id}"
+                 data-event-id="${escapeAttr(eventId)}" data-member-id="${escapeAttr(m.id)}"></button>`
             : `<div class="w-7 h-7 rounded-full flex items-center justify-center text-[13px] mx-auto ${m.present ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${m.present ? '✅' : '❌'}</div>`
           }
         </td>

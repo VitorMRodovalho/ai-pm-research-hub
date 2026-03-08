@@ -8,7 +8,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "test": "node --test tests/**/*.test.mjs",
-    "smoke:routes": "node scripts/smoke-routes.mjs"
+    "smoke:routes": "node scripts/smoke-routes.mjs",
+    "db:types": "supabase gen types typescript --linked > src/lib/database.gen.ts"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.12",

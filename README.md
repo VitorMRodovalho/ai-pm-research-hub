@@ -152,20 +152,37 @@ This avoids brittle direct social API integrations inside Astro or Supabase.
 ## Immediate Engineering Priorities
 
 1. Complete UI integration for tier based Credly scoring in rank and gamification flows.
-2. Validate and fix the mobile Credly URL paste experience in `Profile.astro`.
-3. Continue frontend migration away from legacy role fields toward `operational_role` and `designations`.
-4. Add smoke checks for direct navigation and legacy aliases.
+2. ~~Validate and fix the mobile Credly URL paste experience~~ — Paste 100ms + input debounce fallback em `Profile.astro`.
+3. Continue frontend migration: Event Delegation **complete** (admin, attendance, profile, artifacts, admin/member). `operational_role`/`designations` migration ongoing.
+4. ~~Add smoke checks for direct navigation and legacy aliases~~ — Smoke inclui /en, /es, legacy redirects.
 5. Keep documentation in sync with every production hotfix and architectural decision.
+
+---
+
+## Project Board and Governance
+
+- **Sprint board**: [GitHub Project — AI PM Hub](https://github.com/users/VitorMRodovalho/projects/1/)
+- Backlog and waves: `backlog-wave-planning-updated.md`
+- How to work with the board: `docs/project-governance/PROJECT_GOVERNANCE_RUNBOOK.md`
+- Board ↔ docs sync (gestão à vista): `docs/AGENT_BOARD_SYNC.md`
 
 ---
 
 ## Repository Documentation Map
 
 - `README.md` → project entry point, product context, stack, and current status
+- `AGENTS.md` → context for AI assistants (Cursor) and contributors; conventions and doc map
+- `CONTRIBUTING.md` → how to contribute, quality gates, release discipline
 - `backlog-wave-planning-updated.md` → wave planning, completed work, debt, and next priorities
 - `docs/GOVERNANCE_CHANGELOG.md` → governance and product engineering decisions
 - `docs/MIGRATION.md` → technical transition notes and compatibility guidance
 - `docs/RELEASE_LOG.md` → operational release and hotfix history
+- `docs/CURSOR_SETUP.md` → first-use checklist for Cursor IDE
+- `docs/REPLICATION_GUIDE.md` → how to replicate the Hub for another project
+- `DEBUG_HOLISTIC_PLAYBOOK.md` → holistic debugging and troubleshooting guide
+- `docs/SPRINT_SANATION_PLAN.md` → plan to stabilize P0 and resume sprints
+- `docs/DEPLOY_CHECKLIST.md` → pending production steps (HF5, secrets, workflows)
+- `docs/DISASTER_RECOVERY.md` → DR runbook (Supabase backup/PITR, Cloudflare rollback)
 
 ---
 

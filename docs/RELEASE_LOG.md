@@ -1,5 +1,116 @@
 # Release Log
 
+## 2026-03-08 — Production Release (EPIC #52, #51–55)
+
+### Escopo
+Deploy consolidado: Event Delegation completo, setup replicável, Credly mobile, smoke i18n, documentação.
+
+### Entregas
+- Event Delegation: attendance, admin (cycle/slot), profile, artifacts, admin/member (#51, #53)
+- EPIC #52 SaaS Readiness + filhos: setup replicabilidade (#54), Credly mobile + smoke (#55)
+- docs/REPLICATION_GUIDE.md, docs/RELEASE_PROCESS.md, docs/AGENT_BOARD_SYNC.md, docs/AI_DB_ACCESS_SETUP.md
+- npm run db:types, .env.example expandido
+
+### Validação
+- npm test ✅ | npm run build ✅ | npm run smoke:routes ✅
+
+---
+
+## 2026-03-08 — Event Delegation: Attendance + Admin (cycle/slot handlers)
+
+### Scope
+Migrate remaining inline `onclick` handlers to Event Delegation (.cursorrules compliant, XSS hardening).
+
+### Delivered
+- **attendance.astro**:
+  - `checkIn`, `openRoster`, `openEditEvent`, `togglePresence` → `data-*` + delegation
+  - Added `escapeAttr()` for all dynamic attributes; `__attendanceEventsById` lookup for `openEditEvent`
+- **admin/index.astro**:
+  - `openEditMember` → `data-member-id` + lookup from `memberListCache` (removed `JSON.stringify(m)`)
+  - `openCycleHistory` → `data-member-id`, `data-member-name`
+  - `editCycleRecord`, `deleteCycleRecord`, `addCycleRecord` → `btn-edit-cycle-record`, `btn-delete-cycle-record`, `btn-add-cycle-record`
+  - `deleteSlot`, `addSlot`, `saveTribeSettings` → `btn-delete-slot`, `btn-add-slot`, `btn-save-tribe`
+  - Single `document` listener `__adminCycleSlotBound` for all handlers
+- **README.md**: Updated "Immediate Engineering Priorities" item 3 with progress and remaining handlers
+- **docs/RELEASE_PROCESS.md**: Processo de release para produção com changelog e sync com Project Board
+
+### Validation
+- `npm run build` passed
+
+### 2026-03-08 (continuação) — Event Delegation closure (#53, EPIC #52)
+- **profile.astro**: `removeSecondaryEmail` → `btn-remove-secondary-email` + `data-email-idx`
+- **artifacts.astro**: `editArtifact`, `openReview` → `btn-edit-artifact`, `btn-review-artifact` + `__artifactsById` cache
+- **admin/member/[id].astro**: `toggleRole`, `inactivateMember`, `reactivateMember` → delegation + `data-role`, `data-member-id`, `data-member-name`
+- EPIC #52 (SaaS Readiness) criado; issue #53 concluída
+
+### 2026-03-08 — Setup para replicabilidade (#54, EPIC #52)
+- **docs/REPLICATION_GUIDE.md** — Guia para replicar o Hub em outro projeto/chapter
+- **docs/CURSOR_SETUP.md** — Fluxo rápido clone→run; tabela de variáveis; link para REPLICATION_GUIDE
+- **.env.example** — Documentação por variável; DATABASE_URL opcional; referência a REPLICATION_GUIDE
+
+### 2026-03-08 — Credly mobile paste + smoke i18n
+- **profile.astro**: Credly paste 100ms delay (iOS); input debounce 300ms como fallback
+- **smoke-routes.mjs**: rotas /en e /es adicionadas
+
+---
+
+## 2026-03-08 — Sprint Sanation: P0 Foundation & Security Scanning
+
+### Scope
+Prepare project for resumed sprint execution: close P0 gaps, enable security scanning, document production runbooks.
+
+### Delivered
+- **Dependabot**: `.github/dependabot.yml` — weekly npm dependency updates, label `dependencies`
+- **CodeQL**: `.github/workflows/codeql-analysis.yml` — security analysis on push/PR to main
+- **HF5 Production Runbook**: `docs/migrations/HF5_PRODUCTION_RUNBOOK.md` — step-by-step for executing HF5 data patch in production
+- **Sprint Sanation Plan**: `docs/SPRINT_SANATION_PLAN.md` — phased plan: P0 completion → operational follow-ups → feature sprints
+- **Backlog updates**: Technical debt "No Security Scanning" marked done; deputy_manager validation marked done
+
+### Validation captured
+- local `npm test` and `npm run build` passed
+
+### Follow up still required
+- Execute HF5 data patch in production per runbook; then update this release log
+- Deploy `sync-comms-metrics` and configure secrets (S-COM6 follow-up)
+
+### Bugfix (same session)
+- Fixed `TribesSection.astro` SSR error: `initialCounts is not defined`. Added `initialCounts = {}` for SSR; slot counts still hydrate client-side from Supabase.
+
+---
+
+## 2026-03-08 — S-COM6, S-AN1, S10 Sprint Increments
+
+### Scope
+Advance Wave 4 features: dedicated Comms dashboard, Announcements security fix, Credly auto-sync workflow.
+
+### Delivered
+- **S-COM6 Dashboard Central de Mídia**:
+  - New route `/admin/comms` with ACL gate (admin tier)
+  - Looker iframe when `PUBLIC_LOOKER_COMMS_DASHBOARD_URL` is set
+  - Native table from `comms_metrics_latest_by_channel` RPC when Looker not configured
+  - Card added to admin reports panel; i18n PT/EN/ES
+- **S-AN1 Announcements**:
+  - Replaced inline `onclick` with Event Delegation (`.cursorrules` compliant)
+  - Added `escapeHtml` for all user/DB content in banners (XSS hardening)
+- **S10 Credly Auto Sync**:
+  - GitHub Action `.github/workflows/credly-auto-sync.yml` — weekly Monday 08:00 UTC
+  - Invokes `sync-credly-all` with service role; requires `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`
+- Smoke routes: added `/admin/comms` to `scripts/smoke-routes.mjs`
+
+### S-DR1 + Admin Security (2026-03-08)
+- **docs/DISASTER_RECOVERY.md** — POP Supabase (backup, PITR, dump), Cloudflare rollback, checklist de incidente
+- **Admin Event Delegation** — openAllocate, toggleAnnouncement, deleteAnnouncement migrados de `onclick` para `data-*` + `addEventListener` (.cursorrules compliant, XSS hardening)
+
+### Deploy / config follow-up (2026-03-08)
+- **docs/DEPLOY_CHECKLIST.md** — master checklist: HF5, sync-comms-metrics, Credly workflow, env vars
+- **.env.example** — expanded with optional vars (Looker, PostHog, sync secrets)
+- **.github/workflows/comms-metrics-sync.yml** — ingestão diária de comms (07:30 UTC); manual ou agendada
+
+### Validation captured
+- `npm test` and `npm run build` passed
+
+---
+
 ## 2026-03-08 — Governance Reorganization (Parent/Child Work Packages)
 
 ### Scope

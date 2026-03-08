@@ -1,5 +1,25 @@
 # Project Governance Runbook
 
+## GitHub Project (em uso)
+
+Sim, continuamos a usar o **GitHub Project** para gestão de sprints e backlog.
+
+- **Board**: [GitHub Project — AI PM Hub](https://github.com/users/VitorMRodovalho/projects/1/)
+- **Repositório**: `VitorMRodovalho/ai-pm-hub-v2`
+- **EPICs atuais**: #47 (P0 Foundation), #48 (P1 Comms), #49 (P2 Knowledge), #50 (P3 Scale)
+
+---
+
+## Para começar a trabalhar
+
+1. Abra o [board](https://github.com/users/VitorMRodovalho/projects/1/) e veja itens em `Backlog` ou `Ready`.
+2. Leia `backlog-wave-planning-updated.md` para contexto das waves e prioridades.
+3. Leia `docs/project-governance/ROADMAP_SEQUENCIAL_AGRUPADO.md` para regras de pacote pai → filho.
+4. Itens em `In progress` devem ser **GitHub Issues** no repositório (não Drafts). Crie a issue se ainda não existir.
+5. Ao commitar, referencie o sprint/issue (ex.: `fix: S-HF5 data patch (#XX)`).
+
+---
+
 ## Objective
 Keep GitHub Project (`AI PM Hub - Wave Sprint Pipeline`) synchronized with real delivery state and avoid draft-only work items for active execution.
 
@@ -16,6 +36,10 @@ Keep GitHub Project (`AI PM Hub - Wave Sprint Pipeline`) synchronized with real 
 4. `Evidence sync`: update `Last Commit`, `Last Update`, and release evidence (`docs/RELEASE_LOG.md`).
 
 ## Commands
+
+Project number: `1` · Owner: `VitorMRodovalho` · URL: https://github.com/users/VitorMRodovalho/projects/1/
+
+- **Sincronização Board ↔ Docs**: ver `docs/AGENT_BOARD_SYNC.md` (workflow do assistente para issues + status + RELEASE_LOG)
 - Inventory project items:
   - `gh project item-list 1 --owner VitorMRodovalho --limit 200 --format json`
 - Find active drafts (must be converted):

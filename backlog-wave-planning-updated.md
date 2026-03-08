@@ -2,6 +2,8 @@
 ## Status: Março 2026
 ## Atualizado após estabilização de produção, revisão documental e alinhamento produto engenharia
 
+**Board de sprints**: [GitHub Project — AI PM Hub](https://github.com/users/VitorMRodovalho/projects/1/) · Regras: `docs/project-governance/PROJECT_GOVERNANCE_RUNBOOK.md`
+
 ---
 
 ## 🧭 ROADMAP REORGANIZATION (2026-03-08)
@@ -87,10 +89,10 @@ Isso ocorreu por execução orientada a incidentes de produção (hotfixes) sem 
 | S-RM4 | Admin Tiers (ACL) | High | Partial (v2 delivered 2026-03-08) | Centralized ACL now gates both critical routes and privileged in-page actions (allocation, member edits, announcements, reports exports, leadership snapshot actions, cycle-history writes, tribe settings), reducing console-trigger bypass risk. |
 | S-REP1 | Exportação VRMS (PMI) | High | Partial | CSV mastigado no `/admin` para Horas de Impacto e reporte PMI. |
 | S-ADM2 | Leadership Training Progress Snapshot | High | Partial (v2 delivered 2026-03-08) | `/admin` reports snapshot now has filters (capítulo/tribo/período), CSV export, and i18n keys for PT/EN/ES, in addition to completion/blocking and recent Credly insights. |
-| S10 | Credly Auto Sync | Medium | Planned | Edge Function or cron to auto sync badges weekly. |
-| S-AN1 | Announcements System | Medium | Planned | Global banners and notifications at top of site. |
-| S-DR1 | Disaster Recovery Doc | Low | Planned | POP de restauração de backup e PITR. |
-| S-COM6 | Dashboard Central de Mídia | Medium | Partial (V2 backend started 2026-03-08) | COMMS_METRICS_V2 started with SQL ingestion backbone (`comms_metrics_ingestion_log`, `comms_metrics_latest_by_channel`) and edge function `sync-comms-metrics`; UI surface for dedicated route is next increment. |
+| S10 | Credly Auto Sync | Medium | Partial (2026-03-08) | GitHub Action `credly-auto-sync.yml` runs weekly (Monday). Requires SUPABASE_SERVICE_ROLE_KEY. Manual trigger via workflow_dispatch. |
+| S-AN1 | Announcements System | Medium | Partial (2026-03-08) | Banners in BaseLayout, CRUD in admin, Event Delegation + XSS hardening. Pending: optional rich editor, scheduling UX. |
+| S-DR1 | Disaster Recovery Doc | Low | ✅ Done (2026-03-08) | `docs/DISASTER_RECOVERY.md` — POP Supabase (backup, PITR, dump), Cloudflare rollback, checklist. |
+| S-COM6 | Dashboard Central de Mídia | Medium | Partial (UI delivered 2026-03-08) | `/admin/comms` route with Looker iframe or native table from `comms_metrics_latest_by_channel`. Backend: sync-comms-metrics, SQL pack. Pending: deploy sync-comms-metrics in prod. |
 | S-PA2 | Admin Executive Visual Dashboards (ROI PMI) | High | Planned | Evolve `AdminExecutive` with visual charts (iframe-first or lightweight native SVG): qualification funnel, certification timeline after member join, and skill/certification radar across the base. |
 
 ---
@@ -127,7 +129,7 @@ Isso ocorreu por execução orientada a incidentes de produção (hotfixes) sem 
 | README History Lost | High | Addressed in docs refresh | Restore pilot 2024 history, quadrants, multilingual positioning, and current stack without losing operational context. |
 | No Release Log | High | Addressed in docs refresh | Maintain `docs/RELEASE_LOG.md` for hotfixes and production changes from now on. |
 | Semantic Versioning Missing | Medium | Open | Create automated release workflow and tags later, but do not block manual release notes now. |
-| No Security Scanning | High | Open | Enable Dependabot and CodeQL in GitHub. |
+| No Security Scanning | High | ✅ Done (2026-03-08) | Dependabot (`.github/dependabot.yml`) + CodeQL (`.github/workflows/codeql-analysis.yml`) habilitados. |
 | Hardcoded strings | Medium | Open | Continue i18n first migration. |
 | Legacy role columns still alive | High | Partial | Finish frontend migration to `operational_role` and `designations`, then hard drop `role` and `roles`. |
 | Architectural guideline drift | High | Open | Enforce role model v3, cycle aware data, soft delete, and event driven integration discipline. |
@@ -150,7 +152,7 @@ Isso ocorreu por execução orientada a incidentes de produção (hotfixes) sem 
 
 - [x] Complete frontend reads from `operational_role` and `designations`.
 - [x] Render cycle history timeline from `member_cycle_history`.
-- [ ] Add and validate `deputy_manager` visual treatment and ordering rules.
+- [x] Add and validate `deputy_manager` visual treatment and ordering rules (TeamSection, profile, admin).
 - [x] Define hard drop window for `role` and `roles`.
 - [ ] Add consent aware analytics instrumentation without leaking PII.
 

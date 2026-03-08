@@ -1,5 +1,7 @@
 # Roadmap Sequencial Agrupado (Pai -> Filho)
 
+**Board**: [GitHub Project](https://github.com/users/VitorMRodovalho/projects/1/) · **Runbook**: `PROJECT_GOVERNANCE_RUNBOOK.md`
+
 ## Por que havia itens em Wave 2/3 abertos enquanto Wave 4 avançou
 A execução recente foi orientada por incidentes de produção e dependências urgentes (hotfix/ACL/credly/comms), mas sem um gate formal de pacote pai. Isso permitiu avanço de trilhas paralelas e deixou percepção de "onda fora de ordem".
 

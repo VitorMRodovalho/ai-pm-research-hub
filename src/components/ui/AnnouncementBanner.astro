@@ -38,29 +38,46 @@
     area.innerHTML = visible.map((a: any) => {
       const s = TYPE_STYLES[a.type] || TYPE_STYLES.info;
       const link = a.link_url && a.link_text
-        ? `<a href="${a.link_url}" class="font-bold underline ml-1 hover:opacity-80">${a.link_text}</a>`
+        ? `<a href="${escapeHtml(a.link_url)}" class="font-bold underline ml-1 hover:opacity-80">${escapeHtml(a.link_text)}</a>`
         : '';
       const pulse = a.type === 'urgent' ? 'animate-pulse' : '';
       return `
-      <div class="ann-banner ${s.bg} ${s.text} border-b ${s.border} px-4 py-2.5 text-[.78rem] flex items-center gap-2 ${pulse}" data-ann-id="${a.id}">
+      <div class="ann-banner ${s.bg} ${s.text} border-b ${s.border} px-4 py-2.5 text-[.78rem] flex items-center gap-2 ${pulse}" data-ann-id="${escapeHtml(String(a.id))}">
         <span class="flex-shrink-0">${s.icon}</span>
         <div class="flex-1 min-w-0">
-          <strong>${a.title}</strong>
-          ${a.message ? `<span class="ml-1 opacity-80">${a.message}</span>` : ''}
+          <strong>${escapeHtml(a.title)}</strong>
+          ${a.message ? `<span class="ml-1 opacity-80">${escapeHtml(a.message)}</span>` : ''}
           ${link}
         </div>
-        <button onclick="dismissAnnouncement('${a.id}')"
-          class="flex-shrink-0 text-current opacity-40 hover:opacity-80 bg-transparent border-0 cursor-pointer text-base px-1"
-          title="Fechar">✕</button>
+        <button type="button" class="ann-dismiss flex-shrink-0 text-current opacity-40 hover:opacity-80 bg-transparent border-0 cursor-pointer text-base px-1" data-ann-id="${escapeHtml(String(a.id))}" title="Fechar">✕</button>
       </div>`;
     }).join('');
+
+    if (!(area as any).__annClickBound) {
+      (area as any).__annClickBound = true;
+      area.addEventListener('click', (e: MouseEvent) => {
+        const btn = (e.target as HTMLElement).closest('.ann-dismiss');
+        if (btn) {
+          const id = btn.getAttribute('data-ann-id');
+          if (id) (window as any).dismissAnnouncement(id);
+        }
+      });
+    }
+  }
+
+  function escapeHtml(str: string): string {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
   }
 
   (window as any).dismissAnnouncement = (id: string) => {
     const dismissed: string[] = JSON.parse(sessionStorage.getItem('dismissed_announcements') || '[]');
     dismissed.push(id);
     sessionStorage.setItem('dismissed_announcements', JSON.stringify(dismissed));
-    document.querySelector(`[data-ann-id="${id}"]`)?.remove();
+    document.querySelectorAll('.ann-banner').forEach((el) => {
+      if (el.getAttribute('data-ann-id') === id) el.remove();
+    });
   };
 
   loadAnnouncements();

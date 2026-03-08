@@ -1,0 +1,66 @@
+# COMMS_METRICS — ingestão periódica
+# Dispara sync-comms-metrics para popular comms_metrics_daily.
+# Requer: sync-comms-metrics deployada; secrets configurados.
+
+name: Comms Metrics Sync
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 7 * * *"   # 07:30 UTC diário
+
+permissions:
+  contents: read
+
+jobs:
+  sync_comms:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SYNC_COMMS_METRICS_SECRET: ${{ secrets.SYNC_COMMS_METRICS_SECRET }}
+      COMMS_METRICS_SOURCE_URL: ${{ secrets.COMMS_METRICS_SOURCE_URL }}
+      COMMS_METRICS_SOURCE_TOKEN: ${{ secrets.COMMS_METRICS_SOURCE_TOKEN }}
+    steps:
+      - name: Validate secrets
+        run: |
+          test -n "$SUPABASE_URL" || (echo "Missing SUPABASE_URL"; exit 1)
+          test -n "$SYNC_COMMS_METRICS_SECRET" || (echo "Missing SYNC_COMMS_METRICS_SECRET"; exit 1)
+          if [ -z "$COMMS_METRICS_SOURCE_URL" ]; then
+            echo "COMMS_METRICS_SOURCE_URL not set — schedule runs will skip. Use workflow_dispatch with rows in payload for manual ingest."
+          fi
+
+      - name: Trigger sync-comms-metrics
+        run: |
+          set -euo pipefail
+          URL="${SUPABASE_URL%/}/functions/v1/sync-comms-metrics"
+          if [ -z "$COMMS_METRICS_SOURCE_URL" ] && [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "Skipping scheduled run: COMMS_METRICS_SOURCE_URL not configured"
+            exit 0
+          fi
+          echo "Calling: $URL"
+          PAYLOAD='{"triggered_by":"github_actions","source":"external","dry_run":false}'
+          if [ -z "$COMMS_METRICS_SOURCE_URL" ]; then
+            PAYLOAD='{"triggered_by":"github_actions_manual","rows":[],"source":"manual","dry_run":false}'
+          fi
+          HTTP_CODE=$(curl -sS -o /tmp/comms_sync_resp.json -w "%{http_code}" \
+            -X POST "$URL" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $SYNC_COMMS_METRICS_SECRET" \
+            -H "x-sync-secret: $SYNC_COMMS_METRICS_SECRET" \
+            -d "$PAYLOAD")
+
+          echo "HTTP_CODE=$HTTP_CODE"
+          cat /tmp/comms_sync_resp.json || true
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "Comms sync returned HTTP $HTTP_CODE"
+            exit 1
+          fi
+
+      - name: Upload response artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: comms-metrics-sync-response
+          path: /tmp/comms_sync_resp.json
+          if-no-files-found: ignore

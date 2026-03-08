@@ -77,6 +77,10 @@ const isNew = id === 'new';
     renderForm(data);
   }
 
+  function escapeAttr(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
   function renderForm(m) {
     const el = document.getElementById('member-form');
     if (!el) return;
@@ -145,10 +149,9 @@ const isNew = id === 'new';
             ${ROLES_ALL.map(r => {
               const on = selectedRoles.includes(r);
               const col = ROLE_COLORS[r];
-              return `<button type="button" onclick="toggleRole('${r}')" id="rc-${r}"
-                class="px-3 py-1.5 rounded-lg text-xs font-semibold border-2 transition-all cursor-pointer"
+              return `<button type="button" class="btn-toggle-role px-3 py-1.5 rounded-lg text-xs font-semibold border-2 transition-all cursor-pointer" id="rc-${escapeAttr(r)}"
                 style="${on ? `background:${col};border-color:${col};color:#fff` : `background:transparent;border-color:#e2e8f0;color:#64748b`}"
-                data-on="${on}">
+                data-role="${escapeAttr(r)}" data-on="${on}">
                 ${ROLE_LABELS[r]||r}
               </button>`;
             }).join('')}
@@ -163,10 +166,10 @@ const isNew = id === 'new';
       </div>
       <div class="flex justify-between items-center mt-6 pt-4 border-t border-slate-100">
         <div>
-          ${!isNew && m?.current_cycle_active ? `<button onclick="inactivateMember('${m.id}','${m.name.replace(/'/g,"&#39;")}'')" class="text-xs text-crimson font-semibold hover:underline cursor-pointer border-0 bg-transparent">🔴 Inativar membro</button>` : ''}
-          ${!isNew && !m?.current_cycle_active ? `<button onclick="reactivateMember('${m.id}')" class="text-xs text-emerald-600 font-semibold hover:underline cursor-pointer border-0 bg-transparent">🟢 Reativar membro</button>` : ''}
+          ${!isNew && m?.current_cycle_active ? `<button type="button" class="btn-inactivate-member text-xs text-crimson font-semibold hover:underline cursor-pointer border-0 bg-transparent" data-member-id="${escapeAttr(m.id)}" data-member-name="${escapeAttr(m.name||'')}">🔴 Inativar membro</button>` : ''}
+          ${!isNew && !m?.current_cycle_active ? `<button type="button" class="btn-reactivate-member text-xs text-emerald-600 font-semibold hover:underline cursor-pointer border-0 bg-transparent" data-member-id="${escapeAttr(m.id)}">🟢 Reativar membro</button>` : ''}
         </div>
-        <button onclick="saveMember()" class="px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all cursor-pointer border-0">💾 Salvar</button>
+        <button type="button" onclick="saveMember()" class="px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all cursor-pointer border-0">💾 Salvar</button>
       </div>`;
   }
 
@@ -288,4 +291,26 @@ const isNew = id === 'new';
     toast?.('Membro reativado 🟢','success');
     setTimeout(() => location.href = '/admin', 1200);
   };
+
+  if (!(window as any).__adminMemberDelegationBound) {
+    (window as any).__adminMemberDelegationBound = true;
+    document.addEventListener('click', (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const toggleBtn = target.closest('.btn-toggle-role');
+      if (toggleBtn) {
+        const r = toggleBtn.getAttribute('data-role') || '';
+        toggleRole(r);
+        return;
+      }
+      const inactBtn = target.closest('.btn-inactivate-member');
+      if (inactBtn) {
+        inactivateMember(inactBtn.getAttribute('data-member-id') || '', inactBtn.getAttribute('data-member-name') || '');
+        return;
+      }
+      const reactBtn = target.closest('.btn-reactivate-member');
+      if (reactBtn) {
+        reactivateMember(reactBtn.getAttribute('data-member-id') || '');
+      }
+    });
+  }
 </script>

@@ -274,7 +274,12 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
     el.innerHTML = data.map((a: any) => artifactCard(a, false, true)).join('');
   }
 
+  const esc = (s: string) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
   function artifactCard(a: any, showEdit = false, showReview = false): string {
+    (window as any).__artifactsById = (window as any).__artifactsById || {};
+    (window as any).__artifactsById[a.id] = a;
+
     const author = a.members?.name || '—';
     const tribe = a.tribe_id ? TRIBE_NAMES[a.tribe_id] || '' : '';
     const typeLabel = TYPE_LABELS[a.type] || a.type;
@@ -297,8 +302,8 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
           ${a.review_notes ? `<div class="text-[12px] text-amber-700 bg-amber-50 px-2 py-1 rounded mt-1">💬 ${a.review_notes}</div>` : ''}
         </div>
         <div class="flex gap-1.5 flex-shrink-0">
-          ${showEdit && a.status === 'draft' ? `<button class="px-2.5 py-1.5 text-[12px] bg-slate-50 border border-slate-200 rounded-md cursor-pointer font-semibold" onclick="editArtifact(${JSON.stringify(a).replace(/"/g, '&quot;')})">✏️</button>` : ''}
-          ${showReview ? `<button class="px-2.5 py-1.5 text-[12px] bg-amber-50 border border-amber-200 rounded-md cursor-pointer font-semibold text-amber-800" onclick="openReview(${JSON.stringify(a).replace(/"/g, '&quot;')})">🔍 Revisar</button>` : ''}
+          ${showEdit && a.status === 'draft' ? `<button type="button" class="btn-edit-artifact px-2.5 py-1.5 text-[12px] bg-slate-50 border border-slate-200 rounded-md cursor-pointer font-semibold" data-artifact-id="${esc(a.id)}">✏️</button>` : ''}
+          ${showReview ? `<button type="button" class="btn-review-artifact px-2.5 py-1.5 text-[12px] bg-amber-50 border border-amber-200 rounded-md cursor-pointer font-semibold text-amber-800" data-artifact-id="${esc(a.id)}">🔍 Revisar</button>` : ''}
         </div>
       </div>
     </div>`;
@@ -336,6 +341,26 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
     modal.classList.add('hidden');
     modal.classList.remove('flex');
   };
+
+  if (!(window as any).__artifactsDelegationBound) {
+    (window as any).__artifactsDelegationBound = true;
+    document.addEventListener('click', (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const editBtn = target.closest('.btn-edit-artifact');
+      if (editBtn) {
+        const id = editBtn.getAttribute('data-artifact-id') || '';
+        const a = (window as any).__artifactsById?.[id];
+        if (a) (window as any).editArtifact(a);
+        return;
+      }
+      const reviewBtn = target.closest('.btn-review-artifact');
+      if (reviewBtn) {
+        const id = reviewBtn.getAttribute('data-artifact-id') || '';
+        const a = (window as any).__artifactsById?.[id];
+        if (a) (window as any).openReview(a);
+      }
+    });
+  }
 
   (window as any).saveArtifact = async () => {
     const id = (document.getElementById('art-id') as HTMLInputElement).value;
