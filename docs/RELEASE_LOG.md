@@ -1,4 +1,29 @@
 # Release Log
+## 2026-03-08 — Wave 5 Sprint Increment (S-KNW8 Friction & Insight Mining v1 Foundation)
+
+### Scope
+Start the SQL architecture for friction/insight mining so roadmap prioritization can use structured evidence instead of ad-hoc notes.
+
+### Delivered
+- migration pack created:
+  - `supabase/migrations/20260308043820_knowledge_insights_v1.sql`
+  - table: `knowledge_insights`
+  - taxonomy columns (`insight_type`, `taxonomy_area`) and scoring (`impact`, `urgency`, `confidence`)
+  - review lifecycle fields (`status`, `reviewed_at`, `reviewed_by`)
+  - RLS + ACL policies (`knowledge_insights_read`, `knowledge_insights_manage`)
+- analytical RPCs created:
+  - `knowledge_insights_overview(status, days)`
+  - `knowledge_insights_backlog_candidates(status, limit)`
+- docs pack created:
+  - `docs/migrations/knowledge-insights-v1.sql`
+  - `docs/migrations/knowledge-insights-v1-audit.sql`
+  - `docs/migrations/knowledge-insights-v1-rollback.sql`
+  - `docs/migrations/KNOWLEDGE_INSIGHTS_V1_RUNBOOK.md`
+
+### Pending to close S-KNW8
+- apply migration in production
+- run audit SQL in production and attach evidence
+
 ## 2026-03-08 — Wave 5 Sprint Increment (S-KNW7 Internal Assistant v1)
 
 ### Scope
