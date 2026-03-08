@@ -11,6 +11,30 @@ function parseBearer(authHeader: string | null): string | null {
   return m?.[1] || null
 }
 
+async function resolveSuperadminCaller(
+  authClient: ReturnType<typeof createClient>,
+  sb: ReturnType<typeof createClient>,
+  user: { id: string; email?: string | null },
+) {
+  const { data: callerByRpc } = await authClient.rpc('get_member_by_auth')
+  if (callerByRpc?.is_superadmin) return callerByRpc
+
+  const { data: superadmins } = await sb
+    .from('members')
+    .select('id, auth_id, email, secondary_emails, is_superadmin')
+    .eq('is_superadmin', true)
+    .limit(20)
+
+  const uid = String(user.id || '')
+  const mail = String(user.email || '').toLowerCase()
+  return (superadmins || []).find((m: any) => {
+    if (m.auth_id && String(m.auth_id) === uid) return true
+    if (mail && m.email && String(m.email).toLowerCase() === mail) return true
+    const secs = Array.isArray(m.secondary_emails) ? m.secondary_emails.map((x: any) => String(x).toLowerCase()) : []
+    return mail && secs.includes(mail)
+  }) || null
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -43,26 +67,7 @@ Deno.serve(async (req) => {
 
     const sb = createClient(supabaseUrl, serviceRole)
 
-    let caller: any = null
-    const { data: callerByRpc } = await authClient.rpc('get_member_by_auth')
-    if (callerByRpc) caller = callerByRpc
-    if (!caller) {
-      const { data: me } = await sb
-        .from('members')
-        .select('id, is_superadmin, email, secondary_emails')
-        .eq('auth_id', user.id)
-        .maybeSingle()
-      caller = me
-    }
-    if (!caller && user.email) {
-      const mail = String(user.email).toLowerCase()
-      const { data: byEmail } = await sb
-        .from('members')
-        .select('id, is_superadmin, email, secondary_emails')
-        .or(`email.eq.${mail},secondary_emails.cs.{${mail}}`)
-        .maybeSingle()
-      caller = byEmail
-    }
+    const caller = await resolveSuperadminCaller(authClient, sb, user)
     if (!caller?.is_superadmin) {
       return new Response(
         JSON.stringify({ success: false, error: 'Only superadmin can run attendance sync' }),

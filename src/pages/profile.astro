@@ -530,6 +530,18 @@ import Toast from '../components/ui/Toast.astro';
   };
 
   // ── Credly verification ──
+  async function describeFnError(err: any): Promise<string> {
+    if (!err) return 'Erro desconhecido';
+    if (err.context && typeof err.context.json === 'function') {
+      try {
+        const payload = await err.context.json();
+        const detail = payload?.error || payload?.message;
+        if (detail) return detail;
+      } catch {}
+    }
+    return err.message || 'Erro desconhecido';
+  }
+
   (window as any).verifyCredly = async () => {
     const sb = (window as any).navGetSb?.();
     if (!sb || !currentMember) return;
@@ -548,7 +560,7 @@ import Toast from '../components/ui/Toast.astro';
       const { data, error } = await sb.functions.invoke('verify-credly', {
         body: { member_id: currentMember.id, credly_url: credlyNormalized },
       });
-      if (error) throw error;
+      if (error) throw new Error(await describeFnError(error));
       if (data?.success) {
         const matched = data.all_matched || 0;
         const total = data.total_badges || 0;
