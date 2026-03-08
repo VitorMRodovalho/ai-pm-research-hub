@@ -23,6 +23,16 @@ Prepare a production-safe SQL package to reconcile legacy Credly scoring drift a
 - execute sanitize pack in production window and attach before/after audit outputs
 - decide on optional unique partial index for hard prevention of future Credly duplicate inserts
 
+### Completion update (same day, v2 DB hardening pack)
+- added DB-level hardening scripts for recurrence prevention:
+  - `docs/migrations/credly-gamification-hardening-v1.sql`
+  - `docs/migrations/credly-gamification-hardening-rollback-v1.sql`
+- hardening script includes:
+  - duplicate pre-check query
+  - partial unique index creation on Credly rows (`member_id + lower(trim(reason))`)
+  - post-check index verification
+- runbook updated with hardening/rollback sequence and operational notes
+
 ## 2026-03-08 — Wave 4 Sprint Increment (S-RM4 ACL Hardening v1)
 
 ### Scope

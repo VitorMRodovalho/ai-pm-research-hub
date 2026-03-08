@@ -10,11 +10,14 @@ Sanear inconsistências legadas em `gamification_points` e `members.credly_badge
 ## Arquivos
 - `docs/migrations/credly-gamification-audit-v1.sql`
 - `docs/migrations/credly-gamification-sanitize-v1.sql`
+- `docs/migrations/credly-gamification-hardening-v1.sql`
+- `docs/migrations/credly-gamification-hardening-rollback-v1.sql`
 
 ## Ordem de execução
 1. Rodar `credly-gamification-audit-v1.sql` e salvar resultado (`before`).
 2. Rodar `credly-gamification-sanitize-v1.sql` em produção.
 3. Rodar novamente `credly-gamification-audit-v1.sql` e comparar (`after`).
+4. (Opcional recomendado) Rodar `credly-gamification-hardening-v1.sql` para criar índice parcial único anti-duplicação.
 
 ## Resultado esperado (DoD de banco)
 - Nenhum caso de Tier 1 com 10 pontos (ex.: PMP/CPMAI).
@@ -25,4 +28,5 @@ Sanear inconsistências legadas em `gamification_points` e `members.credly_badge
 
 ## Observações
 - O script cria backup em `public._bak_gp_credly_sanitize_v1` antes de alterar dados.
-- Se quiser blindar recorrência no banco, considerar aplicar índice parcial único sugerido no final do script de sanitize.
+- Se precisar rollback do hardening, usar `credly-gamification-hardening-rollback-v1.sql`.
+- O `create unique index concurrently` não deve rodar dentro de transação (`BEGIN/COMMIT`).
