@@ -813,8 +813,9 @@ const ADMIN_I18N = {
     return false;
   }
 
-  function initials(name: string): string {
-    return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+  function initials(name: string | null | undefined): string {
+    if (!name || typeof name !== 'string') return '?';
+    return name.split(' ').map(w => w[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || '?';
   }
 
   function escapeAttr(s: string): string {
@@ -838,7 +839,11 @@ const ADMIN_I18N = {
   function avatar(m: any, size = 'w-8 h-8'): string {
     return m.photo_url
       ? `<img src="${m.photo_url}" class="${size} rounded-full object-cover flex-shrink-0" alt="">`
-      : `<div class="${size} rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.6rem] flex-shrink-0">${initials(m.name)}</div>`;
+      : `<div class="${size} rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.6rem] flex-shrink-0">${initials(m?.name)}</div>`;
+  }
+
+  function safeName(m: any): string {
+    return m?.name || 'Membro sem nome';
   }
 
   function roleDots(m: any): string {
@@ -924,9 +929,9 @@ const ADMIN_I18N = {
         </div>
         <div class="p-3 flex flex-wrap gap-2 min-h-[52px]">
           ${members.map((m: any) => `
-            <div class="flex items-center gap-1.5 bg-slate-50 rounded-lg px-2 py-1.5 text-[.72rem]" title="${m.name}">
+            <div class="flex items-center gap-1.5 bg-slate-50 rounded-lg px-2 py-1.5 text-[.72rem]" title="${escapeAttr(safeName(m))}">
               ${avatar(m, 'w-6 h-6')}
-              <span class="font-medium max-w-[90px] truncate">${m.name.split(' ').slice(0, 2).join(' ')}</span>
+              <span class="font-medium max-w-[90px] truncate">${(m?.name || '').split(' ').slice(0, 2).join(' ')}</span>
               ${getMemberRole(m) === 'tribe_leader' ? '<span class="text-amber-500">&#x1F451;</span>' : ''}
             </div>
           `).join('')}
@@ -947,14 +952,16 @@ const ADMIN_I18N = {
     el.innerHTML = `
     <div class="text-[.72rem] text-slate-400 mb-2">${ADMIN_I18N.researchersPending.replace('{n}', String(pending.length))}</div>
     ${pending.map((m: any) => {
+      const nm = safeName(m);
+      const first = (m?.name || '').split(' ')[0] || 'Membro';
       const phone = m.phone ? m.phone.replace(/\D/g, '') : '';
-      const waLink = phone ? 'https://wa.me/' + phone + '?text=' + encodeURIComponent('Ola ' + m.name.split(' ')[0] + '! Lembrete: escolha sua tribo no Nucleo IA GP -> https://ai-pm-research-hub.pages.dev/#tribes') : '';
-      const mailLink = 'mailto:' + m.email + '?subject=' + encodeURIComponent('Nucleo IA GP - Escolha sua Tribo') + '&body=' + encodeURIComponent('Ola ' + m.name.split(' ')[0] + ', lembrete: escolha sua tribo em https://ai-pm-research-hub.pages.dev/#tribes');
+      const waLink = phone ? 'https://wa.me/' + phone + '?text=' + encodeURIComponent('Ola ' + first + '! Lembrete: escolha sua tribo no Nucleo IA GP -> https://ai-pm-research-hub.pages.dev/#tribes') : '';
+      const mailLink = 'mailto:' + (m.email || '') + '?subject=' + encodeURIComponent('Nucleo IA GP - Escolha sua Tribo') + '&body=' + encodeURIComponent('Ola ' + first + ', lembrete: escolha sua tribo em https://ai-pm-research-hub.pages.dev/#tribes');
       return `
       <div class="flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-b-0">
         ${avatar(m, 'w-9 h-9')}
         <div class="flex-1 min-w-0">
-          <div class="text-[.82rem] font-semibold text-navy">${m.name}</div>
+          <div class="text-[.82rem] font-semibold text-navy">${escapeHtml(nm)}</div>
           <div class="text-[.68rem] text-slate-400">${m.email} - ${m.chapter || ''}</div>
         </div>
         <div class="flex gap-1.5 flex-shrink-0">
@@ -962,7 +969,7 @@ const ADMIN_I18N = {
           <a href="${mailLink}" class="px-2 py-1 text-[.68rem] font-bold bg-blue-50 text-blue-700 border border-blue-200 rounded-lg no-underline hover:bg-blue-100 transition-all" title="Email">&#x1F4E7;</a>
           <button type="button" class="btn-alloc px-2.5 py-1 text-[.68rem] font-bold bg-navy text-white border-0 rounded-lg cursor-pointer hover:opacity-90 transition-all"
             data-member-id="${escapeAttr(String(m.id ?? m.member_id ?? ''))}"
-            data-member-name="${escapeAttr(m.name || '')}"
+            data-member-name="${escapeAttr(safeName(m))}"
             data-member-email="${escapeAttr(m.email || '')}"
             data-member-chapter="${escapeAttr(m.chapter || '')}">
             Alocar
@@ -1109,12 +1116,12 @@ const ADMIN_I18N = {
 
         const histBtn = isSA
           ? `<button type="button" class="btn-cycle-history px-1.5 py-0.5 text-[.6rem] font-semibold text-slate-400 border border-slate-100 rounded hover:border-amber-300 hover:text-amber-600 bg-transparent cursor-pointer transition-all"
-               data-member-id="${escapeAttr(m.id)}" data-member-name="${escapeAttr(m.name || '')}" title="Editar histórico de ciclos (superadmin)">📅</button>`
+               data-member-id="${escapeAttr(m.id)}" data-member-name="${escapeAttr(safeName(m))}" title="Editar histórico de ciclos (superadmin)">📅</button>`
           : '';
 
         return `
         <div class="member-row flex items-center gap-2 px-4 py-2.5 border-b border-slate-50 hover:bg-slate-50 transition-all ${isActive ? '' : 'opacity-50'}"
-             data-name="${m.name.toLowerCase()}"
+             data-name="${(m?.name || '').toLowerCase()}"
              data-email="${(m.email || '').toLowerCase()}"
              data-chapter="${m.chapter || ''}"
              data-oprole="${opRole}"
@@ -1126,7 +1133,7 @@ const ADMIN_I18N = {
           ${avatar(m, 'w-9 h-9')}
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-1.5 flex-wrap">
-              <span class="font-semibold text-[.82rem] text-navy">${m.name}</span>
+              <span class="font-semibold text-[.82rem] text-navy">${escapeHtml(safeName(m))}</span>
               ${!hasAuth ? '<span class="text-[.58rem] font-bold px-1 py-0.5 rounded bg-amber-50 text-amber-600">SEM LOGIN</span>' : ''}
             </div>
             <div class="text-[.65rem] text-slate-400 truncate">${m.email}</div>
@@ -1260,7 +1267,7 @@ const ADMIN_I18N = {
     const isSA = m.is_superadmin === true;
     document.getElementById('edit-m-header')!.innerHTML = avatar(m, 'w-12 h-12') +
       `<div>
-        <div class="font-bold text-navy">${m.name}</div>
+        <div class="font-bold text-navy">${escapeHtml(safeName(m))}</div>
         <div class="text-[.72rem] text-slate-400">${m.email} · ${m.chapter || ''}</div>
         ${isSA ? '<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded bg-orange/10 text-orange">🔧 SUPERADMIN</span>' : ''}
       </div>`;
@@ -1743,7 +1750,7 @@ const ADMIN_I18N = {
       const status = isDone ? 'done' : (isBlocked ? 'blocked' : 'progress');
       leadershipRows.push({
         member_id: m.id,
-        name: m.name,
+        name: safeName(m),
         chapter: m.chapter || '',
         tribe: m.tribe_id ? `T${String(m.tribe_id).padStart(2, '0')}` : '',
         completed_courses: doneCount,
@@ -1761,7 +1768,7 @@ const ADMIN_I18N = {
       .map((p: any) => {
         const m = memberById[p.member_id];
         return {
-          name: m.name,
+          name: safeName(m),
           chapter: m.chapter || '—',
           tribe: m.tribe_id ? `T${String(m.tribe_id).padStart(2, '0')}` : '—',
           badge: String(p.reason || '').replace(/^Credly:\s*/, ''),
@@ -1834,7 +1841,7 @@ const ADMIN_I18N = {
           <div class="space-y-1.5">
             ${recentCerts.length ? recentCerts.map((r: any) => `
               <div class="text-[.68rem] border-b border-slate-100 last:border-b-0 pb-1.5">
-                <div class="font-semibold text-slate-700 truncate">${r.name} · ${r.chapter} · ${r.tribe}</div>
+                <div class="font-semibold text-slate-700 truncate">${escapeHtml(r.name || 'Membro sem nome')} · ${r.chapter} · ${r.tribe}</div>
                 <div class="text-slate-500 truncate">${r.badge}</div>
                 <div class="text-slate-400">${new Date(r.createdAt).toLocaleDateString('pt-BR')} · ${r.points} XP</div>
               </div>
@@ -1851,7 +1858,7 @@ const ADMIN_I18N = {
     const filters = leadershipFilters();
     const header = 'Member ID,Name,Chapter,Tribe,Completed Courses,In Progress Courses,Status';
     const rows = leadershipRows.map((r: any) =>
-      `"${r.member_id}","${r.name}","${r.chapter}","${r.tribe}",${r.completed_courses},${r.in_progress_courses},"${r.status}"`
+      `"${r.member_id}","${(r.name || 'Membro sem nome').replace(/"/g, '""')}","${r.chapter}","${r.tribe}",${r.completed_courses},${r.in_progress_courses},"${r.status}"`
     );
     const csv = '\uFEFF' + [header, ...rows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1923,7 +1930,7 @@ const ADMIN_I18N = {
       const desigLabels = (m.designations || []).map((d: string) => DESIG_LABELS[d] || d).join('; ');
       const initiative = 'Núcleo IA & GP — ' + opLabel + (desigLabels ? ' + ' + desigLabels : '');
       return {
-        name: m.name,
+        name: safeName(m),
         pmi_id: m.pmi_id || '',
         email: m.email,
         org: CHAPTER_FULL[m.chapter] || m.chapter || '',
@@ -1947,7 +1954,7 @@ const ADMIN_I18N = {
     const tbody = document.getElementById('vrms-table-body')!;
     tbody.innerHTML = vrmsData.map((r: any) => `
       <tr class="border-b border-slate-50 hover:bg-slate-50">
-        <td class="px-3 py-2 font-medium">${r.name}</td>
+        <td class="px-3 py-2 font-medium">${escapeHtml(r.name || 'Membro sem nome')}</td>
         <td class="px-3 py-2 font-mono text-slate-500">${r.pmi_id || '—'}</td>
         <td class="px-3 py-2 text-slate-500">${r.email}</td>
         <td class="px-3 py-2 text-[.65rem]">${r.org}</td>
@@ -1972,7 +1979,7 @@ const ADMIN_I18N = {
 
     const header = ADMIN_I18N.csvVrmsHeader;
     const rows = vrmsData.map((r: any) =>
-      `"${r.name}","${r.pmi_id}","${r.email}","${r.org}","${r.initiative}","${r.date_from}","${r.date_to}",${r.hours},"${r.validator}","${r.evidence}"`
+      `"${(r.name || 'Membro sem nome').replace(/"/g, '""')}","${r.pmi_id || ''}","${r.email || ''}","${(r.org || '').replace(/"/g, '""')}","${(r.initiative || '').replace(/"/g, '""')}","${r.date_from}","${r.date_to}",${r.hours},"${r.validator}","${r.evidence}"`
     );
     const csv = '\uFEFF' + [header, ...rows].join('\n'); // BOM for Excel UTF-8
 
@@ -2007,7 +2014,7 @@ const ADMIN_I18N = {
       const desigs = (m.designations || []).map((d: string) => DESIG_LABELS[d] || d).join('; ');
       const cycles = uniqueSortedCycleCodes(cycleRecordsByMember[m.id] || []).join('; ');
       const tid = m.tribe_id || '';
-      return `"${m.name}","${m.email}","${m.pmi_id || ''}","${m.phone || ''}","${m.chapter || ''}","${opRole}","${desigs}","${tid}","${m.current_cycle_active ? ADMIN_I18N.csvYes : ADMIN_I18N.csvNo}","${m.is_superadmin ? ADMIN_I18N.csvYes : ADMIN_I18N.csvNo}","${cycles}","${m.linkedin_url || ''}","${m.credly_url || ''}"`;
+      return `"${(m?.name || 'Membro sem nome').replace(/"/g, '""')}","${m.email || ''}","${m.pmi_id || ''}","${m.phone || ''}","${m.chapter || ''}","${opRole}","${desigs}","${tid}","${m.current_cycle_active ? ADMIN_I18N.csvYes : ADMIN_I18N.csvNo}","${m.is_superadmin ? ADMIN_I18N.csvYes : ADMIN_I18N.csvNo}","${cycles}","${m.linkedin_url || ''}","${m.credly_url || ''}"`;
     });
 
     const csv = '\uFEFF' + [header, ...rows].join('\n');
@@ -2104,7 +2111,7 @@ const ADMIN_I18N = {
 
     const { error } = await sb.from('member_cycle_history').insert({
       member_id: chMemberId,
-      member_name_snapshot: member.name || 'Unknown',
+      member_name_snapshot: safeName(member),
       cycle_code: cycleCode,
       cycle_label: meta.label,
       cycle_start: d.start,
@@ -2280,7 +2287,8 @@ const ADMIN_I18N = {
       <div class="text-[.72rem] text-slate-400 mb-3">${members.length} membros na tribo</div>
       ${members.map((m: any) => {
         const isLeader = m.operational_role === 'tribe_leader';
-        const ini = m.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+        const nm = safeName(m);
+        const ini = initials(m?.name);
         const photo = m.photo_url
           ? `<img src="${m.photo_url}" class="w-10 h-10 rounded-full object-cover flex-shrink-0" alt="">`
           : `<div class="w-10 h-10 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.7rem] flex-shrink-0">${ini}</div>`;
@@ -2288,7 +2296,7 @@ const ADMIN_I18N = {
         <div class="flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-b-0">
           ${photo}
           <div class="flex-1 min-w-0">
-            <div class="text-[.82rem] font-semibold text-navy">${m.name} ${isLeader ? '👑' : ''}</div>
+            <div class="text-[.82rem] font-semibold text-navy">${escapeHtml(nm)} ${isLeader ? '👑' : ''}</div>
             <div class="text-[.68rem] text-slate-400">${m.email} · ${m.chapter || ''}</div>
           </div>
           <span class="text-[.65rem] font-bold px-2 py-0.5 rounded-full ${m.current_cycle_active ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-crimson'}">
