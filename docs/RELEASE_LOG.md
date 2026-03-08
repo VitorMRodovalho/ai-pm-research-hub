@@ -99,6 +99,18 @@ Reduce authorization drift by centralizing admin tier checks and reusing them ac
   - covers tier resolution, tier ordering, and route/action access guards
 - `npm test` passed with full suite green
 
+### Completion update (production rollout closed)
+- applied backend parity in production:
+  - `current_member_tier_rank()` and `has_min_tier(int)` active in `public`
+  - helper grants restricted (`authenticated`, `service_role`, `postgres`) and `anon` execute revoked
+- effective policy state validated in production:
+  - `announcements`: admin+ write (`has_min_tier(4)`)
+  - `member_cycle_history`: superadmin write (`has_min_tier(5)`)
+- duplicate `announcements` admin policy removed to keep single source of truth
+- rollout caveat handled:
+  - `tribe_slots` policy skipped (table absent in current schema)
+  - reverted over-broad `tribes_leader_write` test policy to preserve existing “leader edits own tribe” guard
+
 ## 2026-03-08 — Wave 4 Sprint Increment (S-PA1 Product Analytics v1)
 
 ### Scope
