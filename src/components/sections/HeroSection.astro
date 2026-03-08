@@ -1,7 +1,7 @@
 ---
 import { CHAPTER_CODES } from '../../data/chapters';
 import { t, type Lang } from '../../i18n/utils';
-import { GENERAL_RECURRING_MEETING, TRIBE_SELECTION_DEADLINE_ISO } from '../../config/homeSchedule';
+import { TRIBE_SELECTION_DEADLINE_ISO } from '../../config/homeSchedule';
 
 interface Props {
   deadline?: string;
@@ -9,10 +9,9 @@ interface Props {
 }
 
 const { deadline = TRIBE_SELECTION_DEADLINE_ISO, lang = 'pt-BR' } = Astro.props;
-const recurringLabel = t('hero.recurring.slot', lang);
+const fallbackRecurringLabel = t('hero.recurring.slot', lang);
 const recurringLead = t('hero.recurring.lead', lang);
 const recurringCta = t('hero.recurring.cta', lang);
-const recurringTime = GENERAL_RECURRING_MEETING;
 ---
 
 <section class="hero relative min-h-screen flex items-center justify-center overflow-hidden pt-14" id="hero">
@@ -39,7 +38,7 @@ const recurringTime = GENERAL_RECURRING_MEETING;
     <!-- Event info area (populated by JS) -->
     <div id="hero-event-area">
       <div class="inline-flex items-center gap-2 bg-white/6 border border-white/10 px-5 py-2.5 rounded-xl text-white text-[.9rem] font-medium">
-        📅 {t('hero.date', lang)}
+        📅 <span id="hero-date-line">{t('hero.date', lang)}</span>
       </div>
     </div>
 
@@ -89,6 +88,13 @@ const recurringTime = GENERAL_RECURRING_MEETING;
 <script define:vars={{ deadline }}>
   // ── Countdown (for tribe selection deadline) ──
   var dl = new Date(deadline);
+  (window as any).__setHeroDeadline = (iso: string) => {
+    if (!iso) return;
+    var parsed = new Date(iso);
+    if (isNaN(parsed.getTime())) return;
+    dl = parsed;
+    tick();
+  };
   function tick() {
     var diff = dl - new Date();
     if (diff <= 0) {
@@ -109,7 +115,7 @@ const recurringTime = GENERAL_RECURRING_MEETING;
   setInterval(tick, 1000);
 </script>
 
-<script define:vars={{ recurringLabel, recurringLead, recurringCta, recurringTime }}>
+<script define:vars={{ fallbackRecurringLabel, recurringLead, recurringCta, lang }}>
   // ── Dynamic event info from DB ──
   async function loadHeroEvent() {
     const canSeeRecurringMeeting = (member) => {
@@ -122,6 +128,45 @@ const recurringTime = GENERAL_RECURRING_MEETING;
     const sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(loadHeroEvent, 300); return; }
 
+    const locale = lang === 'pt-BR' ? 'pt-BR' : lang === 'es-LATAM' ? 'es-ES' : 'en-US';
+    const weekdayByLang: Record<string, string[]> = {
+      'pt-BR': ['Domingos', 'Segundas', 'Terças', 'Quartas', 'Quintas', 'Sextas', 'Sábados'],
+      'en-US': ['Sundays', 'Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays'],
+      'es-LATAM': ['Domingos', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábados'],
+    };
+    let recurringLabel = fallbackRecurringLabel;
+    let kickoffAtOverride: string | null = null;
+
+    // Load home schedule source-of-truth (if available)
+    const { data: schedule } = await sb.from('home_schedule')
+      .select('kickoff_at, selection_deadline_at, recurring_weekday, recurring_start_brt, recurring_end_brt, platform_label')
+      .eq('id', 1)
+      .maybeSingle();
+
+    if (schedule) {
+      kickoffAtOverride = schedule.kickoff_at;
+      (window as any).__setHeroDeadline?.(schedule.selection_deadline_at);
+
+      const dateEl = document.getElementById('hero-date-line');
+      if (dateEl) {
+        const kickoffAt = new Date(schedule.kickoff_at);
+        const datePart = kickoffAt.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'America/Sao_Paulo' });
+        const timePart = kickoffAt.toLocaleTimeString(locale, {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: lang === 'en-US',
+          timeZone: 'America/Sao_Paulo',
+        });
+        dateEl.textContent = `${datePart} · ${timePart} BRT · ${schedule.platform_label || 'Google Meet'}`;
+      }
+
+      if (Number.isInteger(schedule.recurring_weekday) && schedule.recurring_start_brt && schedule.recurring_end_brt) {
+        const dayNames = weekdayByLang[lang] || weekdayByLang['pt-BR'];
+        const day = dayNames[schedule.recurring_weekday] || dayNames[4];
+        recurringLabel = `${day} · ${String(schedule.recurring_start_brt).slice(0, 5)} → ${String(schedule.recurring_end_brt).slice(0, 5)} BRT`;
+      }
+    }
+
     // Get latest general event plus link (source of truth: events table)
     const { data: events } = await sb.from('events')
       .select('id, title, date, meeting_link, youtube_url, is_recorded, duration_minutes, duration_actual')
@@ -131,15 +176,15 @@ const recurringTime = GENERAL_RECURRING_MEETING;
 
     if (!events?.length) return;
     const ev = events[0];
-    const evDate = new Date(`${ev.date}T${recurringTime.startUtc}:00Z`);
-    const isPast = evDate < new Date();
+    const kickoffAt = kickoffAtOverride ? new Date(kickoffAtOverride) : new Date(`${ev.date}T22:30:00Z`);
+    const isPast = kickoffAt < new Date();
 
     const eventArea = document.getElementById('hero-event-area');
     if (!eventArea) return;
 
     if (isPast && ev.youtube_url) {
       // Event happened + recording available
-      const dateStr = new Date(ev.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+      const dateStr = kickoffAt.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'America/Sao_Paulo' });
       const duration = ev.duration_actual || ev.duration_minutes || 90;
       eventArea.innerHTML = `
         <div class="flex justify-center">
