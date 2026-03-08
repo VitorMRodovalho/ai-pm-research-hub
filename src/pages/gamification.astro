@@ -604,7 +604,7 @@ import Toast from '../components/ui/Toast.astro';
       if (coursesError) throw coursesError;
 
       const { data: artifacts, error: artifactsError } = await withTimeout(
-        sb.from('artifacts').select('status').eq('author_id', MEMBER.id),
+        sb.from('artifacts').select('status').eq('member_id', MEMBER.id),
       );
       if (artifactsError) throw artifactsError;
 
