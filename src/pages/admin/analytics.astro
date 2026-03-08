@@ -168,6 +168,26 @@ const analyticsI18n = JSON.stringify({
     statusEl.className = 'text-[.68rem] text-slate-400 mt-1';
   }
 
+  function renderConsentButtons() {
+    const grantBtn = document.getElementById('btn-consent-grant') as HTMLButtonElement | null;
+    const revokeBtn = document.getElementById('btn-consent-revoke') as HTMLButtonElement | null;
+    if (!grantBtn || !revokeBtn) return;
+
+    const v = consentValue();
+
+    const grantActive = v === 'granted';
+    grantBtn.className = grantActive
+      ? 'px-3 py-2 bg-emerald-700 text-white rounded-lg text-[.72rem] font-semibold cursor-pointer border-0 transition-all'
+      : 'px-3 py-2 bg-emerald-600 text-white rounded-lg text-[.72rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all';
+    grantBtn.setAttribute('aria-pressed', grantActive ? 'true' : 'false');
+
+    const revokeActive = v === 'denied';
+    revokeBtn.className = revokeActive
+      ? 'px-3 py-2 bg-slate-300 text-slate-800 rounded-lg text-[.72rem] font-semibold cursor-pointer border border-slate-300 transition-all'
+      : 'px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-[.72rem] font-semibold cursor-pointer border border-slate-200 hover:bg-slate-200 transition-all';
+    revokeBtn.setAttribute('aria-pressed', revokeActive ? 'true' : 'false');
+  }
+
   function broadcastConsent() {
     const detail = { consent: consentValue() };
     window.dispatchEvent(new CustomEvent('analytics:consent-changed', { detail }));
@@ -181,6 +201,7 @@ const analyticsI18n = JSON.stringify({
       grantBtn.addEventListener('click', () => {
         localStorage.setItem(CONSENT_KEY, 'granted');
         renderConsentStatus();
+        renderConsentButtons();
         broadcastConsent();
       });
     }
@@ -189,10 +210,12 @@ const analyticsI18n = JSON.stringify({
       revokeBtn.addEventListener('click', () => {
         localStorage.setItem(CONSENT_KEY, 'denied');
         renderConsentStatus();
+        renderConsentButtons();
         broadcastConsent();
       });
     }
     renderConsentStatus();
+    renderConsentButtons();
   }
 
   function applyGate(m: any) {
