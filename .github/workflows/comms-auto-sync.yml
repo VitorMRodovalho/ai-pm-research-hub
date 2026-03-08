@@ -1,0 +1,48 @@
+name: Comms Auto Sync
+
+on:
+  schedule:
+    # Weekly: Sunday 05:20 UTC
+    - cron: '20 5 * * 0'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Trigger sync-comms-metrics
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SYNC_COMMS_METRICS_SECRET: ${{ secrets.SYNC_COMMS_METRICS_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_ANON_KEY:-}" ] || [ -z "${SYNC_COMMS_METRICS_SECRET:-}" ]; then
+            echo "Missing required secrets: SUPABASE_URL, SUPABASE_ANON_KEY, SYNC_COMMS_METRICS_SECRET"
+            exit 1
+          fi
+
+          RESPONSE=$(curl -sS -w "\n%{http_code}" -X POST "${SUPABASE_URL}/functions/v1/sync-comms-metrics" \
+            -H "Content-Type: application/json" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -H "x-sync-secret: ${SYNC_COMMS_METRICS_SECRET}" \
+            --data '{"dry_run":false,"triggered_by":"github_cron","source":"external"}')
+
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          STATUS=$(echo "$RESPONSE" | tail -n1)
+
+          echo "HTTP ${STATUS}"
+          echo "$BODY"
+
+          if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
+            echo "Sync request failed with HTTP ${STATUS}"
+            exit 1
+          fi
+
+          echo "$BODY" | grep -q '"success":true' || {
+            echo "Sync did not return success=true"
+            exit 1
+          }
