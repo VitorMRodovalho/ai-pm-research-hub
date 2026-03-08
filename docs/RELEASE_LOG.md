@@ -1,4 +1,33 @@
 # Release Log
+## 2026-03-08 — Wave 4 Sprint Increment (S-COM7 Data Entry v1)
+
+### Scope
+Start no-code comms operations flow so the communications team can publish daily metrics directly from admin.
+
+### Delivered
+- route refactor for comms pages:
+  - moved `/admin/comms` file to `src/pages/admin/comms/index.astro` (same URL)
+  - added new protected route `/admin/comms/data-entry`
+- new `/admin/comms/data-entry` capabilities:
+  - ACL gate aligned with admin analytics tier (`admin+`)
+  - manual form for `metric_date`, `channel`, `audience`, `reach`, `engagement_rate`, `leads`
+  - idempotent `upsert` into `comms_metrics_daily` using `metric_date + channel + source`
+  - controlled delete for selected row (`manual_admin` source)
+  - quick date actions (today/yesterday) and recent-entry table
+- UX linking updates:
+  - added `Lançar Dados / Enter Data` button in `/admin/comms`
+  - added secondary CTA in `/admin` reports comms card to open data-entry route
+- i18n parity:
+  - new PT/EN/ES keys for comms data-entry journey and actions
+
+### Validation captured
+- local `npm run build` passed
+- local `npm test` passed
+
+### Follow up still required
+- `S-COM8`: CSV import with preview/validation and batch publish flow
+- `S-COM9`: publish workflow + stronger audit trail (who approved batch) in UI
+
 ## 2026-03-08 — Wave 4 Sprint Increment (S-COM6 Media Dashboard v1)
 
 ### Scope

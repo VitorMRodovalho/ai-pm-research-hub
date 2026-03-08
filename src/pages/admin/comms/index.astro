@@ -1,6 +1,6 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL || '';
@@ -9,9 +9,14 @@ const COMMS_KPI_API_URL = import.meta.env.PUBLIC_COMMS_KPI_API_URL || '';
 
 <BaseLayout title={t('admin.comms.meta', lang)} activePage="admin">
   <div class="max-w-[1200px] mx-auto px-4 py-8">
-    <div class="mb-6">
-      <h1 class="text-2xl font-extrabold text-navy">{t('admin.comms.title', lang)}</h1>
-      <p class="text-sm text-slate-500">{t('admin.comms.subtitle', lang)}</p>
+    <div class="mb-6 flex items-start justify-between gap-3 flex-wrap">
+      <div>
+        <h1 class="text-2xl font-extrabold text-navy">{t('admin.comms.title', lang)}</h1>
+        <p class="text-sm text-slate-500">{t('admin.comms.subtitle', lang)}</p>
+      </div>
+      <a href="/admin/comms/data-entry" class="inline-flex items-center px-3 py-2 bg-white border border-slate-200 rounded-lg text-[.78rem] font-semibold text-slate-600 no-underline hover:bg-slate-50 transition-all">
+        {t('admin.comms.dataEntryButton', lang)}
+      </a>
     </div>
 
     <div id="comms-loading" class="text-center py-10 text-slate-400">{t('admin.comms.loading', lang)}</div>
@@ -93,7 +98,7 @@ const COMMS_KPI_API_URL = import.meta.env.PUBLIC_COMMS_KPI_API_URL || '';
 </BaseLayout>
 
 <script>
-  import { canAccessAdminRoute } from '../../lib/admin/constants';
+  import { canAccessAdminRoute } from '../../../lib/admin/constants';
 
   const KPI_URL = "{COMMS_KPI_API_URL}";
   const KPI_MSG_LOADING = "{t('admin.comms.kpiLoading', lang)}";

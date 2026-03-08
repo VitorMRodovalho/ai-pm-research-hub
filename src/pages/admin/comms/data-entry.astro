@@ -1,0 +1,405 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+---
+
+<BaseLayout title={t('admin.comms.entry.meta', lang)} activePage="admin">
+  <div class="max-w-[1200px] mx-auto px-4 py-8">
+    <div class="mb-6 flex items-start justify-between gap-3 flex-wrap">
+      <div>
+        <h1 class="text-2xl font-extrabold text-navy">{t('admin.comms.entry.title', lang)}</h1>
+        <p class="text-sm text-slate-500">{t('admin.comms.entry.subtitle', lang)}</p>
+      </div>
+      <a href="/admin/comms" class="inline-flex items-center px-3 py-2 bg-white border border-slate-200 rounded-lg text-[.78rem] font-semibold text-slate-600 no-underline hover:bg-slate-50 transition-all">
+        {t('admin.comms.entry.backComms', lang)}
+      </a>
+    </div>
+
+    <div id="entry-loading" class="text-center py-10 text-slate-400">{t('admin.comms.loading', lang)}</div>
+
+    <div id="entry-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
+      <div class="text-2xl mb-2">🔒</div>
+      <p class="font-semibold text-amber-800">{t('admin.comms.denied', lang)}</p>
+      <a href="/admin" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
+        {t('admin.comms.backAdmin', lang)}
+      </a>
+    </div>
+
+    <section id="entry-panel" class="hidden space-y-4">
+      <div class="bg-white border border-slate-200 rounded-xl p-5">
+        <div class="flex items-start justify-between gap-3 flex-wrap mb-4">
+          <div>
+            <h2 class="text-sm font-bold text-navy">{t('admin.comms.entry.formTitle', lang)}</h2>
+            <p class="text-[.72rem] text-slate-500">{t('admin.comms.entry.formSubtitle', lang)}</p>
+          </div>
+          <div class="flex gap-2">
+            <button id="btn-today" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-[.72rem] font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-all">
+              {t('admin.comms.entry.today', lang)}
+            </button>
+            <button id="btn-yesterday" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-[.72rem] font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-all">
+              {t('admin.comms.entry.yesterday', lang)}
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+          <div>
+            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.comms.entry.date', lang)}</label>
+            <input type="date" id="entry-date" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]" />
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.comms.entry.channel', lang)}</label>
+            <select id="entry-channel" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem] bg-white">
+              <option value="linkedin">LinkedIn</option>
+              <option value="instagram">Instagram</option>
+              <option value="youtube">YouTube</option>
+              <option value="newsletter">Newsletter</option>
+              <option value="website">Website</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.comms.entry.source', lang)}</label>
+            <input type="text" id="entry-source" value="manual_admin" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem] bg-slate-50 text-slate-600" readonly />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <div>
+            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.comms.kpiAudience', lang)}</label>
+            <input type="number" id="entry-audience" min="0" step="1" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]" placeholder="0" />
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.comms.kpiReach', lang)}</label>
+            <input type="number" id="entry-reach" min="0" step="1" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]" placeholder="0" />
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.comms.kpiEngagement', lang)}</label>
+            <input type="number" id="entry-engagement" min="0" max="1" step="0.0001" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]" placeholder="0.0000" />
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('admin.comms.kpiLeads', lang)}</label>
+            <input type="number" id="entry-leads" min="0" step="1" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]" placeholder="0" />
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button id="btn-load" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-[.78rem] font-semibold text-slate-600 cursor-pointer hover:bg-slate-50 transition-all">
+            {t('admin.comms.entry.load', lang)}
+          </button>
+          <button id="btn-save" class="px-4 py-2 bg-teal text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
+            {t('admin.comms.entry.save', lang)}
+          </button>
+          <button id="btn-delete" class="px-4 py-2 bg-white border border-amber-300 text-amber-700 rounded-lg text-[.78rem] font-semibold cursor-pointer hover:bg-amber-50 transition-all">
+            {t('admin.comms.entry.delete', lang)}
+          </button>
+          <span id="entry-status" class="text-[.72rem] text-slate-500 self-center"></span>
+        </div>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div class="px-5 py-3 border-b border-slate-200 flex items-center justify-between gap-2 flex-wrap">
+          <div>
+            <h3 class="text-sm font-bold text-navy">{t('admin.comms.entry.recentTitle', lang)}</h3>
+            <p class="text-[.68rem] text-slate-400">{t('admin.comms.entry.recentSubtitle', lang)}</p>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-[.72rem]">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="px-3 py-2 text-left font-semibold text-slate-500">{t('admin.comms.entry.date', lang)}</th>
+                <th class="px-3 py-2 text-left font-semibold text-slate-500">{t('admin.comms.entry.channel', lang)}</th>
+                <th class="px-3 py-2 text-right font-semibold text-slate-500">{t('admin.comms.kpiAudience', lang)}</th>
+                <th class="px-3 py-2 text-right font-semibold text-slate-500">{t('admin.comms.kpiReach', lang)}</th>
+                <th class="px-3 py-2 text-right font-semibold text-slate-500">{t('admin.comms.kpiEngagement', lang)}</th>
+                <th class="px-3 py-2 text-right font-semibold text-slate-500">{t('admin.comms.kpiLeads', lang)}</th>
+                <th class="px-3 py-2 text-left font-semibold text-slate-500">{t('admin.comms.entry.source', lang)}</th>
+                <th class="px-3 py-2 text-left font-semibold text-slate-500">{t('admin.comms.kpiUpdatedAt', lang)}</th>
+              </tr>
+            </thead>
+            <tbody id="entry-recent-body">
+              <tr>
+                <td colspan="8" class="px-3 py-5 text-center text-slate-400">{t('common.loading', lang)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</BaseLayout>
+
+<script>
+  import { canAccessAdminRoute } from '../../../lib/admin/constants';
+
+  const SOURCE = 'manual_admin';
+  const MSG = {
+    loaded: "{t('admin.comms.entry.loaded', lang)}",
+    noRows: "{t('admin.comms.entry.noRows', lang)}",
+    saved: "{t('admin.comms.entry.saved', lang)}",
+    deleted: "{t('admin.comms.entry.deleted', lang)}",
+    loadError: "{t('admin.comms.entry.loadError', lang)}",
+    saveError: "{t('admin.comms.entry.saveError', lang)}",
+    deleteError: "{t('admin.comms.entry.deleteError', lang)}",
+    confirmDelete: "{t('admin.comms.entry.confirmDelete', lang)}",
+  };
+
+  let sb: any = null;
+  let MEMBER: any = null;
+
+  function allowComms(m: any): boolean {
+    return canAccessAdminRoute(m, 'admin_analytics');
+  }
+
+  function toDateInput(d: Date): string {
+    return d.toISOString().slice(0, 10);
+  }
+
+  function readValue(id: string): string {
+    const el = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
+    return el?.value?.trim?.() || '';
+  }
+
+  function setValue(id: string, value: any) {
+    const el = document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null;
+    if (!el) return;
+    el.value = value === null || value === undefined ? '' : String(value);
+  }
+
+  function setStatus(text: string, error = false) {
+    const el = document.getElementById('entry-status');
+    if (!el) return;
+    el.textContent = text;
+    el.className = error
+      ? 'text-[.72rem] text-crimson self-center'
+      : 'text-[.72rem] text-slate-500 self-center';
+  }
+
+  function asNumber(v: string, decimals = false): number {
+    if (!v) return 0;
+    const n = Number(v);
+    if (!Number.isFinite(n)) return 0;
+    return decimals ? n : Math.trunc(n);
+  }
+
+  function showDenied() {
+    document.getElementById('entry-loading')?.classList.add('hidden');
+    document.getElementById('entry-denied')?.classList.remove('hidden');
+    document.getElementById('entry-panel')?.classList.add('hidden');
+  }
+
+  function showPanel() {
+    document.getElementById('entry-loading')?.classList.add('hidden');
+    document.getElementById('entry-denied')?.classList.add('hidden');
+    document.getElementById('entry-panel')?.classList.remove('hidden');
+  }
+
+  function renderRecent(rows: any[]) {
+    const body = document.getElementById('entry-recent-body');
+    if (!body) return;
+    if (!rows.length) {
+      body.innerHTML = `<tr><td colspan="8" class="px-3 py-5 text-center text-slate-400">${MSG.noRows}</td></tr>`;
+      return;
+    }
+
+    body.innerHTML = rows.map((r) => {
+      const updated = r.updated_at ? new Date(r.updated_at).toLocaleString('pt-BR') : '—';
+      const engagement = typeof r.engagement_rate === 'number' ? r.engagement_rate.toFixed(4) : (r.engagement_rate ?? '—');
+      return `<tr class="border-t border-slate-100">
+        <td class="px-3 py-2 text-slate-700">${r.metric_date || '—'}</td>
+        <td class="px-3 py-2 text-slate-700">${r.channel || '—'}</td>
+        <td class="px-3 py-2 text-right text-slate-700">${Number(r.audience || 0).toLocaleString('pt-BR')}</td>
+        <td class="px-3 py-2 text-right text-slate-700">${Number(r.reach || 0).toLocaleString('pt-BR')}</td>
+        <td class="px-3 py-2 text-right text-slate-700">${engagement}</td>
+        <td class="px-3 py-2 text-right text-slate-700">${Number(r.leads || 0).toLocaleString('pt-BR')}</td>
+        <td class="px-3 py-2 text-slate-500">${r.source || '—'}</td>
+        <td class="px-3 py-2 text-slate-500">${updated}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function loadCurrentSelection() {
+    if (!sb) return;
+    const date = readValue('entry-date');
+    const channel = readValue('entry-channel');
+    if (!date || !channel) return;
+
+    try {
+      const { data, error } = await sb
+        .from('comms_metrics_daily')
+        .select('metric_date, channel, audience, reach, engagement_rate, leads, source, updated_at')
+        .eq('metric_date', date)
+        .eq('channel', channel)
+        .eq('source', SOURCE)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      setValue('entry-audience', data?.audience ?? '');
+      setValue('entry-reach', data?.reach ?? '');
+      setValue('entry-engagement', data?.engagement_rate ?? '');
+      setValue('entry-leads', data?.leads ?? '');
+      setStatus(data ? MSG.loaded : MSG.noRows, false);
+    } catch (e: any) {
+      setStatus(`${MSG.loadError} ${e?.message || ''}`.trim(), true);
+    }
+
+    await refreshRecentRows();
+  }
+
+  async function refreshRecentRows() {
+    if (!sb) return;
+    try {
+      const { data, error } = await sb
+        .from('comms_metrics_daily')
+        .select('metric_date, channel, audience, reach, engagement_rate, leads, source, updated_at')
+        .eq('source', SOURCE)
+        .order('metric_date', { ascending: false })
+        .order('updated_at', { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      renderRecent(data || []);
+    } catch {
+      renderRecent([]);
+    }
+  }
+
+  async function saveEntry() {
+    if (!sb || !MEMBER) return;
+
+    const metricDate = readValue('entry-date');
+    const channel = readValue('entry-channel');
+    if (!metricDate || !channel) {
+      setStatus(MSG.loadError, true);
+      return;
+    }
+
+    const row = {
+      metric_date: metricDate,
+      channel,
+      audience: asNumber(readValue('entry-audience')),
+      reach: asNumber(readValue('entry-reach')),
+      engagement_rate: asNumber(readValue('entry-engagement'), true),
+      leads: asNumber(readValue('entry-leads')),
+      source: SOURCE,
+      created_by: MEMBER.id,
+      payload: {
+        origin: 'admin_data_entry',
+        actor_member_id: MEMBER.id,
+        updated_at: new Date().toISOString(),
+      },
+    };
+
+    try {
+      const { error } = await sb
+        .from('comms_metrics_daily')
+        .upsert(row, { onConflict: 'metric_date,channel,source' });
+      if (error) throw error;
+      (window as any).toast?.(MSG.saved, 'success');
+      setStatus(MSG.saved, false);
+      await refreshRecentRows();
+    } catch (e: any) {
+      setStatus(`${MSG.saveError} ${e?.message || ''}`.trim(), true);
+    }
+  }
+
+  async function deleteEntry() {
+    if (!sb) return;
+    const metricDate = readValue('entry-date');
+    const channel = readValue('entry-channel');
+    if (!metricDate || !channel) return;
+    if (!confirm(MSG.confirmDelete)) return;
+
+    try {
+      const { error } = await sb
+        .from('comms_metrics_daily')
+        .delete()
+        .eq('metric_date', metricDate)
+        .eq('channel', channel)
+        .eq('source', SOURCE);
+      if (error) throw error;
+      setValue('entry-audience', '');
+      setValue('entry-reach', '');
+      setValue('entry-engagement', '');
+      setValue('entry-leads', '');
+      setStatus(MSG.deleted, false);
+      (window as any).toast?.(MSG.deleted, 'success');
+      await refreshRecentRows();
+    } catch (e: any) {
+      setStatus(`${MSG.deleteError} ${e?.message || ''}`.trim(), true);
+    }
+  }
+
+  function bindButtons() {
+    const todayBtn = document.getElementById('btn-today');
+    const yBtn = document.getElementById('btn-yesterday');
+    const loadBtn = document.getElementById('btn-load');
+    const saveBtn = document.getElementById('btn-save');
+    const deleteBtn = document.getElementById('btn-delete');
+
+    if (todayBtn && !todayBtn.dataset.bound) {
+      todayBtn.dataset.bound = '1';
+      todayBtn.addEventListener('click', () => setValue('entry-date', toDateInput(new Date())));
+    }
+    if (yBtn && !yBtn.dataset.bound) {
+      yBtn.dataset.bound = '1';
+      yBtn.addEventListener('click', () => {
+        const d = new Date();
+        d.setDate(d.getDate() - 1);
+        setValue('entry-date', toDateInput(d));
+      });
+    }
+    if (loadBtn && !loadBtn.dataset.bound) {
+      loadBtn.dataset.bound = '1';
+      loadBtn.addEventListener('click', () => { void loadCurrentSelection(); });
+    }
+    if (saveBtn && !saveBtn.dataset.bound) {
+      saveBtn.dataset.bound = '1';
+      saveBtn.addEventListener('click', () => { void saveEntry(); });
+    }
+    if (deleteBtn && !deleteBtn.dataset.bound) {
+      deleteBtn.dataset.bound = '1';
+      deleteBtn.addEventListener('click', () => { void deleteEntry(); });
+    }
+  }
+
+  async function applyGate(m: any) {
+    if (m && allowComms(m)) {
+      MEMBER = m;
+      showPanel();
+      bindButtons();
+      setValue('entry-date', toDateInput(new Date()));
+      await refreshRecentRows();
+      return;
+    }
+    showDenied();
+  }
+
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail) void applyGate(e.detail);
+    }) as EventListener);
+
+    const m = (window as any).navGetMember?.();
+    if (m) { await applyGate(m); return; }
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        const { data } = await sb.rpc('get_member_by_auth');
+        await applyGate(data);
+        return;
+      }
+    } catch {}
+
+    showDenied();
+  }
+
+  boot();
+</script>
