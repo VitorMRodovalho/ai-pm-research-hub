@@ -23,6 +23,19 @@ Start dedicated communications analytics surface for media operations in admin w
 - connect final Looker Studio dashboard with YouTube + LinkedIn/Instagram pipeline
 - add KPI summary tiles above iframe (followers growth, reach, engagement, leads)
 
+### Completion update (same day, v2 KPI band)
+- added KPI summary band above the comms dashboard iframe in `/admin/comms`:
+  - audience
+  - reach
+  - engagement
+  - leads
+- KPI loader supports configurable JSON endpoint:
+  - `PUBLIC_COMMS_KPI_API_URL`
+- added manual refresh action and status line with last-update timestamp
+- resilient payload parser accepts common metric key variants (`metrics`/`kpis` roots)
+- i18n keys added for KPI copy in PT/EN/ES
+- local `npm run build` and `npm test` passed
+
 ## 2026-03-08 — Wave 4 Sprint Increment (S-AN1 / S-ADM2 Formal Closure)
 
 ### Scope
