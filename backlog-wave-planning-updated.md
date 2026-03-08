@@ -81,7 +81,7 @@
 | S-KNW3 | Sistema de Tags e Relações | Medium | Planned | Link final artifacts to upstream courses, studies, or events to preserve traceability. |
 | S-KNW4 | Views Relacionais Governadas | Medium | Planned | Gallery board style views powered by Supabase data model and RLS, not external knowledge software. |
 | S-KNW5 | Knowledge-Certification Correlation Layer | Medium | Planned | Correlate `knowledge_assets` consumption with course/certification progress to evidence the Hub as catalyst of qualification outcomes. |
-| S-KNW6 | AI Knowledge Ingestion MVP (YouTube-first) | High | Planned | Build no-code-friendly ingestion pipeline (YouTube transcripts -> structured summaries/tags -> Supabase) with low-cost controls and scheduled sync. |
+| S-KNW6 | AI Knowledge Ingestion MVP (YouTube-first) | High | In Progress (v1 foundation started 2026-03-08) | SQL foundation (`knowledge_assets`, `knowledge_chunks`, `knowledge_ingestion_runs`), RLS/RPC pack and ingestion Edge Function `sync-knowledge-youtube` in progress with low-cost batch controls. |
 | S-KNW7 | Assistente RAG Interno do Núcleo | High | Planned | Deliver `/ai-assistant` using retrieval over internal knowledge only (`pgvector` + citations), avoiding generic internet-only answers. |
 | S-KNW8 | Friction & Insight Mining | Medium | Planned | Extract recurring pains/requests from meeting transcripts and operational logs to feed roadmap prioritization dashboards. |
 
