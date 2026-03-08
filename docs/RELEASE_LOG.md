@@ -1,4 +1,24 @@
 # Release Log
+## 2026-03-08 — Planning Update (Frontend Hardening & Production Queue)
+
+### Scope
+Consolidate technical diagnosis into executable governance items for frontend resiliency, security, and maintainability.
+
+### Decisions registered
+- created roadmap:
+  - `docs/FRONTEND_HARDENING_ROADMAP.md`
+- backlog queue updated with planned sprints:
+  - `S-FE1` XSS/DOM safety baseline
+  - `S-FE2` admin modularization
+  - `S-FE3` auth SSR gate
+  - `S-FE4` executive RPC binding
+- technical debt register updated:
+  - imperative DOM/XSS surface
+  - admin monolith complexity
+  - client-side auth flicker
+- SQL board aligned with execution path:
+  - `S-FE4` linked as frontend binding over already delivered SQL models
+
 ## 2026-03-08 — Wave 4 Sprint Increment (S-PA2 Executive ROI Dashboards v1 SQL Foundation)
 
 ### Scope

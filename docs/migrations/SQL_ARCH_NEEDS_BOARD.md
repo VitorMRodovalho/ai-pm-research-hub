@@ -21,6 +21,7 @@ Force explicit backend/SQL decisions for every sprint feature so we never ship o
 | `S10` Credly Auto Sync | Completed | Edge functions + cron + DB hardening index | No | Track function versioning and secret rotation cadence | Ops |
 | `S-COM6` Media Dashboard | Partial v3 | Route `/admin/comms`, iframe, KPI endpoint via env, and RPC fallback | **Yes** | `COMMS_METRICS_V1` SQL pack created (`comms_metrics_daily` + RLS + `comms_metrics_latest()`); pending production apply and ingestion source rollout | Active |
 | `S-PA2` Executive ROI Dashboards | In Progress (v1 SQL foundation ready) | Curated views/RPCs implemented (`vw_exec_*`, `exec_*`) with admin+ gate | **Yes** | Apply migration in production, run audit, and rewire `/admin` executive panel to RPC-backed models | Active |
+| `S-FE4` Executive RPC Binding | Planned | Frontend still performs client-side aggregation in parts of `/admin` | **No (SQL ready)** | Consume existing `exec_*` RPCs in UI and remove browser heavy-lifting paths | Next |
 | `S-DR1` Disaster Recovery | Planned | Docs only | **Yes** | Add backup/restore verification SQL scripts + runbook sign-off checklist | Next |
 | `S-KNW6` AI Knowledge Ingestion MVP | Partial (v1 foundation deployed) | Migration applied + function deployed + smoke validated in production | **Yes** | Add source connector automation + embeddings refresh and operational monitoring | Wave 5 |
 | `S-KNW7` Internal RAG Assistant | In Progress (v1 text retrieval ready) | UI `/ai-assistant` + RPC `knowledge_search_text` migration pack prepared | **Yes** | Apply `knowledge-assistant-v1` in production, run audit, and evolve to hybrid ranking (`tsvector + vector`) once embedding refresh is operational | Wave 5 |
@@ -48,3 +49,7 @@ Force explicit backend/SQL decisions for every sprint feature so we never ship o
 A feature cannot be marked `Completed` unless this board says either:
 - `Needs SQL = No`, or
 - SQL work is delivered with migration + audit + rollback artifacts.
+
+## Related Frontend Track
+- Frontend hardening backlog and decomposition plan are tracked in:
+  - `docs/FRONTEND_HARDENING_ROADMAP.md`
