@@ -102,7 +102,7 @@ Isso ocorreu por execução orientada a incidentes de produção (hotfixes) sem 
 
 | ID | Feature | Priority | Status | Description |
 |----|---------|----------|--------|-------------|
-| S-KNW1 | Repositório Central de Recursos | Medium | Planned | Create `knowledge_assets` table for courses, references, webinars, linked to `tribe_id` and author. |
+| S-KNW1 | Repositório Central de Recursos | Medium | Partial (2026-03-08) | Migration `knowledge_assets` criada; RLS + docs pack. **Pendente**: rota/CRUD UI (S-KNW2). |
 | S-KNW2 | Tribe Workspace | Medium | Planned | Create `/workspace` with relational views of artifacts in progress, studies, and events across tribes. |
 | S-KNW3 | Sistema de Tags e Relações | Medium | Planned | Link final artifacts to upstream courses, studies, or events to preserve traceability. |
 | S-KNW4 | Views Relacionais Governadas | Medium | Planned | Gallery board style views powered by Supabase data model and RLS, not external knowledge software. |

@@ -1,5 +1,22 @@
 # Release Log
 
+## 2026-03-08 — S-KNW1: knowledge_assets table (backend runway)
+
+### Escopo
+Preparar schema para Wave 5 Knowledge Hub. Tabela `knowledge_assets` para cursos, referências, webinars vinculados a tribo e autor.
+
+### Entregas
+- Migration `20260308150000_knowledge_assets.sql`
+- Campos: asset_type, title, description, url, tribe_id, author_id, course_id, is_active
+- RLS: select (authenticated, is_active); insert/update (can_manage_knowledge); delete (superadmin)
+- Docs pack: audit, rollback, runbook
+
+### Próximos passos
+- Frontend/rota `/workspace` ou CRUD em admin (S-KNW2)
+- Link artifacts ↔ knowledge_assets (S-KNW3)
+
+---
+
 ## 2026-03-08 — S-AN1: Announcements i18n
 
 ### Escopo
