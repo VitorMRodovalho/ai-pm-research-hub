@@ -7,3 +7,15 @@ node_modules/
 *.local
 *.tar.gz
 *.bak.*
+
+# Astro generated (regenerates on build/dev)
+.astro/data-store.json
+
+# Cursor IDE workspace state
+.cursor/
+
+# Adhoc/debug scripts (one-off, not part of release)
+apply_docs_updates.sh
+fix_tribes_deliverables.sh
+hash_menu_debug.sh
+nav_section_inspect.sh
