@@ -699,12 +699,18 @@ import Toast from '../components/ui/Toast.astro';
     if (btn) { btn.disabled = true; btn.textContent = '⏳ Verificando...'; }
     try {
       let { data, error } = await sb.functions.invoke('verify-credly', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
         body: { member_id: currentMember.id, credly_url: credlyNormalized },
       });
       // Retry once after refreshing token when gateway rejects JWT.
       if (error && /401|jwt|token|unauthorized/i.test(String(error.message || ''))) {
-        await sb.auth.refreshSession();
+        const { data: retryRefresh } = await sb.auth.refreshSession();
+        const retrySession = retryRefresh?.session || (await sb.auth.getSession()).data.session;
+        if (!retrySession?.access_token) {
+          throw new Error('Sessão inválida. Faça login novamente para verificar o Credly.');
+        }
         const retry = await sb.functions.invoke('verify-credly', {
+          headers: { Authorization: `Bearer ${retrySession.access_token}` },
           body: { member_id: currentMember.id, credly_url: credlyNormalized },
         });
         data = retry.data;
