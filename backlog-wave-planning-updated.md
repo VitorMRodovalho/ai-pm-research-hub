@@ -61,6 +61,7 @@
 | S-RM4 | Admin Tiers (ACL) | High | Partial (v3 pack ready 2026-03-08) | Frontend ACL hardened (routes + in-page actions) and backend parity pack added (`acl-tier-parity-v1.sql` + checklist) to align RLS/RPC authorization with the same tier matrix in staging/production rollout. |
 | S-REP1 | Exportação VRMS (PMI) | High | Completed (2026-03-08) | Entrega consolidada: filtros opcionais (capítulo/tribo), presets rápidos, persistência automática (`localStorage`), paridade com Leadership Snapshot, indicador de filtros ativos e ação de limpar filtros nas duas superfícies. |
 | S-ADM2 | Leadership Training Progress Snapshot | High | Partial (v2 delivered 2026-03-08) | `/admin` reports snapshot now has filters (capítulo/tribo/período), CSV export, and i18n keys for PT/EN/ES, in addition to completion/blocking and recent Credly insights. |
+| S-DB1 | Credly/Gamification Data Sanitation | High | Partial (SQL pack v1 ready 2026-03-08) | Added production SQL pack (`audit + sanitize + runbook`) to reconcile legacy Credly points, dedupe `gamification_points`, remove manual-vs-Credly double counting, and repair inferable null/missing JSON tier fields. Pending production execution + evidence capture. |
 | S10 | Credly Auto Sync | Medium | Planned | Edge Function or cron to auto sync badges weekly. |
 | S-AN1 | Announcements System | Medium | Planned | Global banners and notifications at top of site. |
 | S-DR1 | Disaster Recovery Doc | Low | Planned | POP de restauração de backup e PITR. |
