@@ -29,3 +29,16 @@ Keep GitHub Project (`AI PM Hub - Wave Sprint Pipeline`) synchronized with real 
 - Snapshot evidence:
   - `docs/project-governance/project-snapshot-2026-03-08.json`
   - `docs/project-governance/project-snapshot-2026-03-08.tsv`
+
+## Workflows (GitHub Actions)
+- `Project Governance Sync`:
+  - file: `.github/workflows/project-governance-sync.yml`
+  - trigger: `workflow_dispatch`, schedule each 6h, and push on governance files
+- `Knowledge Insights Auto Sync`:
+  - file: `.github/workflows/knowledge-insights-auto-sync.yml`
+  - trigger: `workflow_dispatch`, schedule Monday/Thursday
+  - required secrets:
+    - `SUPABASE_URL`
+    - `SUPABASE_ANON_KEY`
+    - `SYNC_KNOWLEDGE_INSIGHTS_SECRET`
+    - optional: `KNOWLEDGE_INSIGHTS_FUNCTION_NAME` (default `sync-knowledge-insights`)

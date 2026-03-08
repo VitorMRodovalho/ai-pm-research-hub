@@ -1,0 +1,46 @@
+name: Project Governance Sync
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 */6 * * *"
+  push:
+    branches: [main]
+    paths:
+      - "backlog-wave-planning-updated.md"
+      - "docs/project-governance/**"
+      - "scripts/audit_project_governance.sh"
+      - "scripts/sync_project_roadmap_sequence.sh"
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  governance_audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate governance scripts exist
+        run: |
+          test -f scripts/audit_project_governance.sh
+          test -f scripts/sync_project_roadmap_sequence.sh
+
+      - name: Governance snapshot (best effort)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          chmod +x scripts/audit_project_governance.sh
+          scripts/audit_project_governance.sh || true
+
+      - name: Upload audit artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: governance-audit
+          path: |
+            /tmp/project_items_audit.json
+          if-no-files-found: ignore

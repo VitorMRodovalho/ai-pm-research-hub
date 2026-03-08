@@ -1,0 +1,62 @@
+name: Knowledge Insights Auto Sync
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 10 * * 1,4"
+
+permissions:
+  contents: read
+
+jobs:
+  sync_knowledge_insights:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SYNC_KNOWLEDGE_INSIGHTS_SECRET: ${{ secrets.SYNC_KNOWLEDGE_INSIGHTS_SECRET }}
+      KNOWLEDGE_INSIGHTS_FUNCTION_NAME: ${{ secrets.KNOWLEDGE_INSIGHTS_FUNCTION_NAME }}
+    steps:
+      - name: Validate required secrets
+        run: |
+          test -n "$SUPABASE_URL"
+          test -n "$SUPABASE_ANON_KEY"
+          test -n "$SYNC_KNOWLEDGE_INSIGHTS_SECRET"
+
+      - name: Resolve function name
+        id: fn
+        run: |
+          if [ -n "$KNOWLEDGE_INSIGHTS_FUNCTION_NAME" ]; then
+            echo "name=$KNOWLEDGE_INSIGHTS_FUNCTION_NAME" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=sync-knowledge-insights" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Trigger edge function
+        run: |
+          set -euo pipefail
+          URL="${SUPABASE_URL%/}/functions/v1/${{ steps.fn.outputs.name }}"
+          echo "Calling: $URL"
+          HTTP_CODE=$(curl -sS -o /tmp/knowledge_sync_resp.json -w "%{http_code}" \
+            -X POST "$URL" \
+            -H "Content-Type: application/json" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "x-cron-secret: $SYNC_KNOWLEDGE_INSIGHTS_SECRET" \
+            -d '{"triggered_by":"github_actions","source":"knowledge_insights_auto_sync"}')
+
+          echo "HTTP_CODE=$HTTP_CODE"
+          cat /tmp/knowledge_sync_resp.json || true
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "Knowledge insights sync failed with HTTP $HTTP_CODE"
+            exit 1
+          fi
+
+      - name: Upload response artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: knowledge-insights-sync-response
+          path: /tmp/knowledge_sync_resp.json
+          if-no-files-found: ignore
