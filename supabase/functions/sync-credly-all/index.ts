@@ -48,6 +48,14 @@ function parseBearer(authHeader: string | null): string | null {
   return m?.[1] || null
 }
 
+function safeEqual(a: string, b: string): boolean {
+  if (!a || !b) return false
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
+}
+
 function toInt(v: unknown): number | null {
   if (typeof v === 'number' && Number.isFinite(v)) return Math.trunc(v)
   if (typeof v === 'string' && v.trim() !== '') {
@@ -273,13 +281,10 @@ Deno.serve(async (req) => {
     const anonKey = req.headers.get('apikey') || Deno.env.get('SUPABASE_ANON_KEY') || ''
     const authHeader = req.headers.get('Authorization')
     const token = parseBearer(authHeader)
+    const cronSecret = req.headers.get('x-cron-secret') || ''
+    const expectedCronSecret = Deno.env.get('SYNC_CREDLY_CRON_SECRET') || ''
+    const isCronAuthorized = safeEqual(cronSecret, expectedCronSecret)
 
-    if (!token) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Missing bearer token' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
-    }
     if (!anonKey) {
       return new Response(
         JSON.stringify({ success: false, error: 'Missing anon key for auth validation' }),
@@ -287,29 +292,41 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Caller identity (user JWT) to validate admin permission.
-    const authClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    })
-    const {
-      data: { user },
-      error: userError,
-    } = await authClient.auth.getUser()
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized caller' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
-    }
-
     const sb = createClient(supabaseUrl, serviceRole)
+    const mode = isCronAuthorized ? 'cron' : 'manual'
+    let callerLabel = 'cron'
 
-    const caller = await resolveSuperadminCaller(authClient, sb, user)
-    if (!caller?.is_superadmin) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Only superadmin can run bulk Credly sync' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
+    if (!isCronAuthorized) {
+      if (!token) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Missing bearer token' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
+      }
+
+      // Caller identity (user JWT) to validate admin permission.
+      const authClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: `Bearer ${token}` } },
+      })
+      const {
+        data: { user },
+        error: userError,
+      } = await authClient.auth.getUser()
+      if (userError || !user) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Unauthorized caller' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
+      }
+
+      const caller = await resolveSuperadminCaller(authClient, sb, user)
+      if (!caller?.is_superadmin) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Only superadmin can run bulk Credly sync' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
+      }
+      callerLabel = String(user.email || user.id || 'manual-superadmin')
     }
 
     const { data: members, error: membersError } = await sb
@@ -351,12 +368,13 @@ Deno.serve(async (req) => {
     for (const m of candidates) {
       report.processed++
       try {
+        const downstreamBearer = token || anonKey
         const resp = await fetch(baseFnUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             apikey: anonKey,
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${downstreamBearer}`,
           },
           body: JSON.stringify({ member_id: m.id, credly_url: m.credly_url }),
         })
@@ -401,7 +419,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify(report), {
+    return new Response(JSON.stringify({
+      ...report,
+      execution_mode: mode,
+      triggered_by: callerLabel,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err: any) {

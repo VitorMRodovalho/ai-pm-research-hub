@@ -1,0 +1,48 @@
+name: Credly Auto Sync
+
+on:
+  schedule:
+    # Weekly: Sunday 05:00 UTC
+    - cron: '0 5 * * 0'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Trigger sync-credly-all
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SYNC_CREDLY_CRON_SECRET: ${{ secrets.SYNC_CREDLY_CRON_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_ANON_KEY:-}" ] || [ -z "${SYNC_CREDLY_CRON_SECRET:-}" ]; then
+            echo "Missing required secrets: SUPABASE_URL, SUPABASE_ANON_KEY, SYNC_CREDLY_CRON_SECRET"
+            exit 1
+          fi
+
+          RESPONSE=$(curl -sS -w "\n%{http_code}" -X POST "${SUPABASE_URL}/functions/v1/sync-credly-all" \
+            -H "Content-Type: application/json" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -H "x-cron-secret: ${SYNC_CREDLY_CRON_SECRET}" \
+            --data '{}')
+
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          STATUS=$(echo "$RESPONSE" | tail -n1)
+
+          echo "HTTP ${STATUS}"
+          echo "$BODY"
+
+          if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
+            echo "Sync request failed with HTTP ${STATUS}"
+            exit 1
+          fi
+
+          echo "$BODY" | grep -q '"success":true' || {
+            echo "Sync did not return success=true"
+            exit 1
+          }
