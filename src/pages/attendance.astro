@@ -94,6 +94,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   <RosterModal />
 </BaseLayout>
 
+<script is:inline define:vars={{ __ATTENDANCE_I18N: JSON.stringify({
+  loading: t('attendance.loading', lang),
+  noEvents: t('attendance.noEvents', lang),
+  hours: t('attendance.hours', lang),
+}) }}>
+  window.__ATTENDANCE_I18N = JSON.parse(__ATTENDANCE_I18N);
+</script>
+
 <script>
   // ════════════════════════════════════════════════════════════════
   // ATTENDANCE PAGE — Client-side logic
@@ -103,10 +111,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   import { ROLE_LABELS, ROLE_COLORS } from '../lib/supabase';
   import { getMemberRole } from '../lib/routing';
 
-  const I18N = {
-    loading: "{t('attendance.loading', lang)}",
-    noEvents: "{t('attendance.noEvents', lang)}",
-    hours: "{t('attendance.hours', lang)}",
+  const I18N = (window as any).__ATTENDANCE_I18N || {
+    loading: 'Carregando...',
+    noEvents: 'Nenhum evento encontrado.',
+    hours: 'horas',
   };
 
   let sb: any = null;
