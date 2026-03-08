@@ -40,6 +40,10 @@ find_item_id_by_sprint() {
   local sprint="$1"
   echo "$ITEMS_JSON" | jq -r --arg s "$sprint" '.items[] | select((.sprint // "") == $s) | .id' | head -n1
 }
+current_status_by_item() {
+  local item_id="$1"
+  echo "$ITEMS_JSON" | jq -r --arg id "$item_id" '.items[] | select(.id == $id) | (.status // "")'
+}
 
 LAST_COMMIT_FIELD=$(field_id "Last Commit")
 COMMIT_TS_FIELD=$(field_id "Commit Timestamp")
@@ -52,6 +56,7 @@ WAVE_FIELD=$(field_id "Wave")
 TYPE_FIELD=$(field_id "Type")
 PRIORITY_FIELD=$(field_id "Priority")
 SQL_REQUIRED_FIELD=$(field_id "SQL Required")
+STATUS_FIELD=$(field_id "Status")
 
 MODE_ADV=$(opt_id "Delivery Mode" "Advancing")
 MODE_REVIEW=$(opt_id "Delivery Mode" "Review Loop")
@@ -61,6 +66,11 @@ ORIGIN_ISSUE=$(opt_id "Work Origin" "Issue-Driven")
 TYPE_HOTFIX=$(opt_id "Type" "Hotfix")
 PRIO_HIGH=$(opt_id "Priority" "High")
 SQL_NO=$(opt_id "SQL Required" "No")
+STATUS_BACKLOG=$(opt_id "Status" "Backlog")
+STATUS_READY=$(opt_id "Status" "Ready")
+STATUS_IN_PROGRESS=$(opt_id "Status" "In progress")
+STATUS_IN_REVIEW=$(opt_id "Status" "In review")
+STATUS_DONE=$(opt_id "Status" "Done")
 
 if [[ -z "$LAST_COMMIT_FIELD" || -z "$LAST_UPDATE_FIELD" || -z "$COMMIT_TS_FIELD" ]]; then
   echo "Required project fields missing. Expected: Last Commit, Commit Timestamp, Last Update" >&2
@@ -86,6 +96,47 @@ set_date() {
 set_select() {
   local item_id="$1" field_id="$2" option_id="$3"
   gh project item-edit --id "$item_id" --project-id "$PROJECT_ID" --field-id "$field_id" --single-select-option-id "$option_id" >/dev/null
+}
+
+status_rank() {
+  local status_name="$1"
+  case "$status_name" in
+    "Backlog") echo 1 ;;
+    "Ready") echo 2 ;;
+    "In progress") echo 3 ;;
+    "In review") echo 4 ;;
+    "Done") echo 5 ;;
+    *) echo 0 ;;
+  esac
+}
+
+status_option_by_message() {
+  local msg_lc="$1"
+  if [[ "$msg_lc" =~ (finalize|finalise|close|closed|done|completed|conclude|rollout\ complete) ]]; then
+    echo "$STATUS_DONE"
+    return
+  fi
+  if [[ "$msg_lc" =~ ^(feat|plan):|start\  ]]; then
+    echo "$STATUS_IN_PROGRESS"
+    return
+  fi
+  if [[ "$msg_lc" =~ ^(fix|docs|chore): ]]; then
+    echo "$STATUS_IN_REVIEW"
+    return
+  fi
+  echo ""
+}
+
+status_name_by_option() {
+  local opt="$1"
+  case "$opt" in
+    "$STATUS_BACKLOG") echo "Backlog" ;;
+    "$STATUS_READY") echo "Ready" ;;
+    "$STATUS_IN_PROGRESS") echo "In progress" ;;
+    "$STATUS_IN_REVIEW") echo "In review" ;;
+    "$STATUS_DONE") echo "Done" ;;
+    *) echo "" ;;
+  esac
 }
 
 create_missing_item() {
@@ -120,6 +171,20 @@ while IFS= read -r sprint; do
   if [[ -z "$item_id" ]]; then
     echo "No project item found for sprint token: $sprint"
     continue
+  fi
+
+  # Auto-progress status with non-regression rule.
+  if [[ -n "$STATUS_FIELD" ]]; then
+    target_status_opt="$(status_option_by_message "${COMMIT_MESSAGE,,}")"
+    if [[ -n "$target_status_opt" ]]; then
+      current_status_name="$(current_status_by_item "$item_id")"
+      target_status_name="$(status_name_by_option "$target_status_opt")"
+      current_rank="$(status_rank "$current_status_name")"
+      target_rank="$(status_rank "$target_status_name")"
+      if [[ "$target_rank" -gt "$current_rank" ]]; then
+        set_select "$item_id" "$STATUS_FIELD" "$target_status_opt"
+      fi
+    fi
   fi
 
   set_text "$item_id" "$LAST_COMMIT_FIELD" "$SHORT_SHA"
