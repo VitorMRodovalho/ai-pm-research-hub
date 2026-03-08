@@ -54,6 +54,12 @@ jobs:
           else
             MSG="${MSG_INPUT}"
           fi
+          if [ -z "${MSG}" ]; then
+            MSG=$(git log -1 --format=%s "$SHA" 2>/dev/null || true)
+          fi
+          if [ -z "${MSG}" ]; then
+            MSG="chore: project governance manual sync"
+          fi
           if [ -z "${TS_INPUT}" ]; then
             TS="${{ github.event.head_commit.timestamp }}"
           else
