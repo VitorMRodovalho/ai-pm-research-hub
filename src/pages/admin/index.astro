@@ -194,6 +194,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
                 <button onclick="downloadVRMS()" class="flex-1 px-4 py-2 bg-teal text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
                   {t('admin.reports.downloadCsv', lang)}
                 </button>
+                <button onclick="clearVRMSFilters()" class="px-4 py-2 border border-slate-200 bg-white text-slate-600 rounded-lg text-[.78rem] font-semibold cursor-pointer hover:bg-slate-50 transition-all">
+                  {t('admin.filter.clear', lang)}
+                </button>
               </div>
               <div id="vrms-preview" class="text-[.72rem] text-slate-400"></div>
             </div>
@@ -263,6 +266,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
                 </button>
                 <button onclick="downloadLeadershipSnapshot()" class="flex-1 px-3 py-2 bg-teal text-white rounded-lg text-[.72rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
                   {t('admin.snapshot.export', lang)}
+                </button>
+                <button onclick="clearLeadershipFilters()" class="px-3 py-2 border border-slate-200 bg-white text-slate-600 rounded-lg text-[.72rem] font-semibold cursor-pointer hover:bg-slate-50 transition-all">
+                  {t('admin.filter.clear', lang)}
                 </button>
               </div>
             </div>
@@ -633,6 +639,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     snapshotByTribe: "{t('admin.snapshot.byTribe', lang)}",
     snapshotRecentCerts: "{t('admin.snapshot.recentCerts', lang)}",
     snapshotNoRecentCerts: "{t('admin.snapshot.noRecentCerts', lang)}",
+    reportsFiltersActive: "{t('admin.reports.filtersActive', lang)}",
+    reportsFiltersRestored: "{t('admin.reports.filtersRestored', lang)}",
+    reportsFiltersCleared: "{t('admin.reports.filtersCleared', lang)}",
+    snapshotFiltersActive: "{t('admin.snapshot.filtersActive', lang)}",
+    snapshotFiltersRestored: "{t('admin.snapshot.filtersRestored', lang)}",
+    snapshotFiltersCleared: "{t('admin.snapshot.filtersCleared', lang)}",
     loading: "{t('admin.loading', lang)}",
     noPermission: "{t('admin.restricted', lang)}",
   };
@@ -1289,6 +1301,24 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     if (toEl) toEl.value = toDate;
   }
 
+  function hasActiveVRMSFilters() {
+    const fromDate = (document.getElementById('vrms-from') as HTMLInputElement)?.value || '';
+    const toDate = (document.getElementById('vrms-to') as HTMLInputElement)?.value || '';
+    const chapter = (document.getElementById('vrms-chapter') as HTMLSelectElement)?.value || '';
+    const tribe = (document.getElementById('vrms-tribe') as HTMLSelectElement)?.value || '';
+    const defaultTo = isoDate(new Date());
+    return !!chapter || !!tribe || fromDate !== CURRENT_CYCLE_START || toDate !== defaultTo;
+  }
+
+  function hasActiveLeadershipFilters() {
+    const chapter = (document.getElementById('ls-chapter') as HTMLSelectElement)?.value || '';
+    const tribe = (document.getElementById('ls-tribe') as HTMLSelectElement)?.value || '';
+    const fromDate = (document.getElementById('ls-from') as HTMLInputElement)?.value || '';
+    const toDate = (document.getElementById('ls-to') as HTMLInputElement)?.value || '';
+    const defaultTo = isoDate(new Date());
+    return !!chapter || !!tribe || fromDate !== CURRENT_CYCLE_START || toDate !== defaultTo;
+  }
+
   function saveVRMSPrefs(preset = 'custom') {
     try {
       const fromDate = (document.getElementById('vrms-from') as HTMLInputElement)?.value || '';
@@ -1317,6 +1347,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     if (!fromEl || !toEl || !chapterEl || !tribeEl) return;
 
     let restored = false;
+    let hadSavedFilters = false;
     try {
       const raw = localStorage.getItem(VRMS_PREFS_KEY);
       if (raw) {
@@ -1326,6 +1357,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         if (typeof parsed?.chapter === 'string') chapterEl.value = parsed.chapter;
         if (typeof parsed?.tribe === 'string') tribeEl.value = parsed.tribe;
         restored = !!(parsed?.fromDate || parsed?.toDate);
+        hadSavedFilters = !!(parsed?.chapter || parsed?.tribe || parsed?.fromDate || parsed?.toDate);
       }
     } catch {}
 
@@ -1333,6 +1365,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       fromEl.value = CURRENT_CYCLE_START;
       toEl.value = isoDate(new Date());
     }
+    if (hadSavedFilters && hasActiveVRMSFilters()) toast(ADMIN_I18N.reportsFiltersRestored, 'info');
   }
 
   function bindVRMSPrefs() {
@@ -1356,6 +1389,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     if (!chapterEl || !tribeEl || !fromEl || !toEl) return;
 
     let restored = false;
+    let hadSavedFilters = false;
     try {
       const raw = localStorage.getItem(LEADERSHIP_PREFS_KEY);
       if (raw) {
@@ -1365,6 +1399,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         if (parsed?.fromDate) fromEl.value = parsed.fromDate;
         if (parsed?.toDate) toEl.value = parsed.toDate;
         restored = !!(parsed?.fromDate || parsed?.toDate);
+        hadSavedFilters = !!(parsed?.chapter || parsed?.tribe || parsed?.fromDate || parsed?.toDate);
       }
     } catch {}
 
@@ -1372,6 +1407,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       fromEl.value = CURRENT_CYCLE_START;
       toEl.value = isoDate(new Date());
     }
+    if (hadSavedFilters && hasActiveLeadershipFilters()) toast(ADMIN_I18N.snapshotFiltersRestored, 'info');
   }
 
   function bindLeadershipPrefs() {
@@ -1408,6 +1444,19 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     saveVRMSPrefs('cycle');
   };
 
+  (window as any).clearVRMSFilters = () => {
+    if (!ensureAdminAction()) return;
+    setVRMSRange(CURRENT_CYCLE_START, isoDate(new Date()));
+    const chapterEl = document.getElementById('vrms-chapter') as HTMLSelectElement;
+    const tribeEl = document.getElementById('vrms-tribe') as HTMLSelectElement;
+    if (chapterEl) chapterEl.value = '';
+    if (tribeEl) tribeEl.value = '';
+    saveVRMSPrefs('cycle');
+    const preview = document.getElementById('vrms-preview');
+    if (preview) preview.textContent = ADMIN_I18N.reportsFiltersCleared;
+    document.getElementById('vrms-table-area')?.classList.add('hidden');
+  };
+
   (window as any).setLeadershipPreset = (preset: string) => {
     if (!ensureAdminAction()) return;
     const today = new Date();
@@ -1427,6 +1476,18 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     }
     setLeadershipRange(CURRENT_CYCLE_START, isoDate(today));
     saveLeadershipPrefs('cycle');
+  };
+
+  (window as any).clearLeadershipFilters = async () => {
+    if (!ensureAdminAction()) return;
+    const chapterEl = document.getElementById('ls-chapter') as HTMLSelectElement;
+    const tribeEl = document.getElementById('ls-tribe') as HTMLSelectElement;
+    if (chapterEl) chapterEl.value = '';
+    if (tribeEl) tribeEl.value = '';
+    setLeadershipRange(CURRENT_CYCLE_START, isoDate(new Date()));
+    saveLeadershipPrefs('cycle');
+    toast(ADMIN_I18N.snapshotFiltersCleared, 'info');
+    await loadLeadershipSnapshot();
   };
 
   function initReports() {
@@ -1466,6 +1527,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     host.innerHTML = `<p class="text-slate-400 text-sm text-center py-4">${ADMIN_I18N.loading}</p>`;
     leadershipRows = [];
     const filters = leadershipFilters();
+    const hasFilters = hasActiveLeadershipFilters();
 
     let membersQuery = sb.from('members')
         .select('id, name, chapter, tribe_id, current_cycle_active, operational_role')
@@ -1611,6 +1673,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       }).join('');
 
     host.innerHTML = `
+      ${hasFilters ? `<div class="mb-3 text-[.7rem] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">${ADMIN_I18N.snapshotFiltersActive}</div>` : ''}
       <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
         <div class="bg-slate-50 rounded-xl p-3 text-center">
           <div class="text-xl font-black text-navy">${members.length}</div>
@@ -1681,6 +1744,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const fromDate = (document.getElementById('vrms-from') as HTMLInputElement).value;
     const toDate = (document.getElementById('vrms-to') as HTMLInputElement).value;
     const filters = vrmsFilters();
+    const hasFilters = hasActiveVRMSFilters();
     if (!fromDate || !toDate) { toast(ADMIN_I18N.selectDates, 'error'); return; }
 
     // Get events in range
@@ -1759,7 +1823,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       filters.tribe ? `tribo T${String(filters.tribe).padStart(2, '0')}` : '',
     ].filter(Boolean).join(' · ');
     document.getElementById('vrms-preview')!.innerHTML =
-      `<span class="text-emerald-600 font-bold">${totalMembers}</span> voluntários · <span class="text-navy font-bold">${totalHours}</span> horas de impacto · <span class="text-slate-400">${events.length} eventos no período${filterBits ? ` · ${filterBits}` : ''}</span>`;
+      `${hasFilters ? `<span class="text-amber-700 font-semibold">${ADMIN_I18N.reportsFiltersActive}</span> · ` : ''}<span class="text-emerald-600 font-bold">${totalMembers}</span> voluntários · <span class="text-navy font-bold">${totalHours}</span> horas de impacto · <span class="text-slate-400">${events.length} eventos no período${filterBits ? ` · ${filterBits}` : ''}</span>`;
 
     // Render preview table
     const tbody = document.getElementById('vrms-table-body')!;
