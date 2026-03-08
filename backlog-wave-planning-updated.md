@@ -64,7 +64,7 @@
 | S10 | Credly Auto Sync | Medium | Planned | Edge Function or cron to auto sync badges weekly. |
 | S-AN1 | Announcements System | Medium | Planned | Global banners and notifications at top of site. |
 | S-DR1 | Disaster Recovery Doc | Low | Planned | POP de restauração de backup e PITR. |
-| S-COM6 | Dashboard Central de Mídia | Medium | Planned | Looker Studio dashboard using YouTube native connector and LinkedIn/Instagram via Sheets automation, embedded in admin communications route. |
+| S-COM6 | Dashboard Central de Mídia | Medium | Partial (V2 backend started 2026-03-08) | COMMS_METRICS_V2 started with SQL ingestion backbone (`comms_metrics_ingestion_log`, `comms_metrics_latest_by_channel`) and edge function `sync-comms-metrics`; UI surface for dedicated route is next increment. |
 | S-PA2 | Admin Executive Visual Dashboards (ROI PMI) | High | Planned | Evolve `AdminExecutive` with visual charts (iframe-first or lightweight native SVG): qualification funnel, certification timeline after member join, and skill/certification radar across the base. |
 
 ---
@@ -106,6 +106,7 @@
 | Legacy role columns still alive | High | Partial | Finish frontend migration to `operational_role` and `designations`, then hard drop `role` and `roles`. |
 | Architectural guideline drift | High | Open | Enforce role model v3, cycle aware data, soft delete, and event driven integration discipline. |
 | Route compatibility not tested | High | Addressed | Smoke tests added and validated in deploy checklist. |
+| SQL architecture not tracked in every sprint | High | In Progress | Mandatory DB gate for admin/analytics increments: include migration in `supabase/migrations` + docs pack (`apply/audit/rollback/runbook`) and capture evidence in `docs/RELEASE_LOG.md`. |
 
 ---
 

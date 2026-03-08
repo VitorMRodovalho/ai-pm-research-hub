@@ -1,5 +1,38 @@
 # Release Log
 
+## 2026-03-08 — Wave 4 Sprint Increment (S-COM6 COMMS_METRICS_V2)
+
+### Scope
+Add an operational ingestion backbone for communications KPIs with SQL-governed observability.
+
+### Delivered
+- created new edge function:
+  - `supabase/functions/sync-comms-metrics/index.ts`
+  - supports secret-based auth (`SYNC_COMMS_METRICS_SECRET`)
+  - supports external fetch (`COMMS_METRICS_SOURCE_URL` + optional token) or manual payload (`rows`)
+  - normalizes metrics and upserts into `comms_metrics_daily`
+  - writes execution telemetry to `comms_metrics_ingestion_log`
+- added migration pack for V2 ingestion:
+  - `supabase/migrations/20260308003330_comms_metrics_v2_ingestion.sql`
+  - `docs/migrations/comms-metrics-v2-ingestion.sql`
+  - `docs/migrations/comms-metrics-v2-ingestion-audit.sql`
+  - `docs/migrations/comms-metrics-v2-ingestion-rollback.sql`
+  - `docs/migrations/COMMS_METRICS_V2_RUNBOOK.md`
+- SQL additions include:
+  - ingestion log table with run-level telemetry
+  - admin-level RLS policies for ingestion logs
+  - `public.can_manage_comms_metrics()` helper function
+  - `public.comms_metrics_latest_by_channel(p_days)` RPC-ready read function
+
+### Validation captured
+- local tests pass (`npm test`)
+- migration and function package prepared for production apply/deploy
+
+### Follow up still required
+- deploy `sync-comms-metrics` in production
+- configure secrets in Supabase project
+- run V2 audit SQL after first production sync
+
 ## 2026-03-08 — Wave 4 Sprint Increment (S-RM4 ACL Hardening v1)
 
 ### Scope
