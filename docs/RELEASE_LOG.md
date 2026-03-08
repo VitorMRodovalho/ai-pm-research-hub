@@ -1,4 +1,24 @@
 # Release Log
+## 2026-03-08 — Governance Automation (GitHub Project metadata sync)
+
+### Scope
+Automate Project governance metadata updates on `main` merges and manual issue-driven updates.
+
+### Delivered
+- workflow added:
+  - `.github/workflows/project-governance-sync.yml`
+- sync script added:
+  - `scripts/sync-project-metadata.sh`
+- project governance docs updated:
+  - `docs/GITHUB_PROJECT_GOVERNANCE.md`
+- project #1 metadata backfill completed:
+  - module, work-origin, issue link, commit hash, commit timestamp, last update, delivery mode
+  - done/in-progress/backlog items normalized
+
+### Validation captured
+- workflow YAML parsed successfully
+- project fields and item metadata audited via `gh project item-list`
+
 ## 2026-03-08 — Hotfix (Profile actions hardening v2)
 
 ### Scope

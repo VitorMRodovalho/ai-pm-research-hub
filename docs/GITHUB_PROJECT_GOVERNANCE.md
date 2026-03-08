@@ -30,6 +30,48 @@ To audit/sync Project items with GitHub CLI, token must include project scopes:
 gh auth refresh -s read:project -s project
 ```
 
+## Automation
+- Workflow: `.github/workflows/project-governance-sync.yml`
+- Script: `scripts/sync-project-metadata.sh`
+- Trigger:
+  - every push to `main`
+  - manual dispatch with optional `issue_link`
+- Required secret in GitHub repo:
+  - `PROJECT_AUTOMATION_TOKEN` (PAT with `project` + `repo`)
+- Auto-updated fields:
+  - `Last Commit`
+  - `Commit Timestamp`
+  - `Last Update`
+  - `Delivery Mode` (heuristic: `fix:` => `Review Loop`, else `Advancing`)
+  - `Work Origin` (heuristic: `fix:` => `Issue-Driven`, else `Sprint Planned`)
+  - `Issue Link` (when provided on manual dispatch)
+
+## Board Views (manual setup in UI)
+GitHub CLI/API currently does not reliably manage Project view layout/grouping. Keep these views in the Project UI:
+
+1. `Execution Board`
+- Layout: Board
+- Group by: `Status`
+- Sort by: `Priority` desc, then `Last Update` desc
+
+2. `By Wave`
+- Layout: Table
+- Group by: `Wave`
+- Sort by: `Sprint` asc
+
+3. `By Module`
+- Layout: Table
+- Group by: `Module`
+- Sort by: `Last Update` desc
+
+4. `Review Loop`
+- Filter: `Delivery Mode = Review Loop`
+- Sort by: `Last Update` desc
+
+5. `Done Timeline`
+- Filter: `Status = Done`
+- Sort by: `Commit Timestamp` desc
+
 ## Definition of Done (Governance)
 - Project item marked `Done`.
 - Release log entry created with validation evidence.
