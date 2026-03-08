@@ -47,7 +47,7 @@ jobs:
             -H "x-cron-secret: $SYNC_KNOWLEDGE_INSIGHTS_SECRET" \
             -H "x-sync-secret: $SYNC_KNOWLEDGE_INSIGHTS_SECRET" \
             -H "x-sync-token: $SYNC_KNOWLEDGE_INSIGHTS_SECRET" \
-            -d '{"triggered_by":"github_actions","source":"knowledge_insights_auto_sync"}')
+            -d '{"triggered_by":"github_actions","source":"youtube","dry_run":false}')
 
           echo "HTTP_CODE=$HTTP_CODE"
           cat /tmp/knowledge_sync_resp.json || true
