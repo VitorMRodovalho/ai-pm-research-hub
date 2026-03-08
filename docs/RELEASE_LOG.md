@@ -24,6 +24,18 @@ Start the SQL architecture for friction/insight mining so roadmap prioritization
 - apply migration in production
 - run audit SQL in production and attach evidence
 
+### Completion update (same day, ACL hardening)
+- production migration applied:
+  - `20260308043820_knowledge_insights_v1.sql`
+- post-audit evidence captured:
+  - table/index/policies/functions present
+  - smoke queries running without errors
+- ACL hardening added:
+  - `supabase/migrations/20260308083610_knowledge_insights_acl_hardening_v1.sql`
+  - removes `anon/public` execute from:
+    - `knowledge_insights_overview(...)`
+    - `knowledge_insights_backlog_candidates(...)`
+
 ## 2026-03-08 — Wave 5 Sprint Increment (S-KNW7 Internal Assistant v1)
 
 ### Scope
