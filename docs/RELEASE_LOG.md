@@ -1,4 +1,23 @@
 # Release Log
+## 2026-03-08 — Wave 4 Increment (S-HOME-SCHEDULE-SOT v1 Draft)
+
+### Scope
+Start database-backed source-of-truth for homepage schedule content, removing remaining operational date hardcodes from UI fallback text.
+
+### Delivered (local draft)
+- SQL migration draft:
+  - `supabase/migrations/20260308111010_home_schedule_sot_v1.sql`
+  - table `public.home_schedule` (singleton config row)
+  - RLS read policy (`public`) + manage policy (`authenticated` + `has_min_tier(4)`)
+- docs migration pack:
+  - `docs/migrations/home-schedule-sot-v1.sql`
+  - `docs/migrations/home-schedule-sot-v1-audit.sql`
+  - `docs/migrations/home-schedule-sot-v1-rollback.sql`
+- homepage runtime binding:
+  - `HeroSection` reads `home_schedule` for kickoff date, recurring slot label, and countdown deadline override
+  - `AgendaSection` item 3 now renders deadline text dynamically from `home_schedule`
+- i18n fallback text normalized (no hardcoded operational dates) for `hero.date` and `agenda.item3.desc` in PT/EN/ES
+
 ## 2026-03-08 — Homepage Schedule Hotfix (Tribe Deadline + General Meeting)
 
 ### Scope

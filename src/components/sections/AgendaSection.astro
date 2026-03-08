@@ -37,10 +37,54 @@ const AGENDA = [
           </div>
           <div>
             <div class="font-bold text-base mb-0.5">{item.title}</div>
-            <div class="text-[.85rem] text-slate-500">{item.desc}</div>
+            <div class="text-[.85rem] text-slate-500" id={item.time === '30-45' ? 'agenda-item3-desc' : undefined}>{item.desc}</div>
           </div>
         </div>
       ))}
     </div>
   </div>
 </section>
+
+<script define:vars={{ lang }}>
+  async function loadAgendaScheduleHint() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(loadAgendaScheduleHint, 300); return; }
+
+    const el = document.getElementById('agenda-item3-desc');
+    if (!el) return;
+
+    const { data: schedule } = await sb.from('home_schedule')
+      .select('selection_deadline_at')
+      .eq('id', 1)
+      .maybeSingle();
+
+    if (!schedule?.selection_deadline_at) return;
+
+    const locale = lang === 'pt-BR' ? 'pt-BR' : lang === 'es-LATAM' ? 'es-ES' : 'en-US';
+    const deadline = new Date(schedule.selection_deadline_at);
+    const datePart = deadline.toLocaleDateString(locale, {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short',
+      timeZone: 'America/Sao_Paulo',
+    });
+    const timePart = deadline.toLocaleTimeString(locale, {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: lang === 'en-US',
+      timeZone: 'America/Sao_Paulo',
+    });
+
+    if (lang === 'pt-BR') {
+      el.textContent = `8 vídeos. Escolha sua tribo até ${datePart} ${timePart} BRT.`;
+      return;
+    }
+    if (lang === 'es-LATAM') {
+      el.textContent = `8 videos. Elige tu línea hasta ${datePart} ${timePart} BRT.`;
+      return;
+    }
+    el.textContent = `8 videos. Choose your stream by ${datePart} ${timePart} BRT.`;
+  }
+
+  loadAgendaScheduleHint();
+</script>
