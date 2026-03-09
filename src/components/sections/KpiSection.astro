@@ -30,7 +30,7 @@ const safeKpis = Array.isArray(KPIS) ? KPIS : [];
       ))}
       {!safeKpis.length && (
         <div class="col-span-full bg-white/6 border border-white/10 rounded-2xl p-5 text-center text-sm text-white/70">
-          Metas temporariamente indisponiveis.
+          {t('kpis.unavailable', lang)}
         </div>
       )}
     </div>

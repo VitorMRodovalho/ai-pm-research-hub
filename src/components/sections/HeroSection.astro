@@ -81,6 +81,18 @@ const { deadline = '2030-12-31T23:59:59Z', lang = 'pt-BR' } = Astro.props;
   </div>
 </section>
 
+<!-- i18n for client JS -->
+<script id="hero-i18n" type="application/json" set:html={JSON.stringify({
+  dateLocale: t('hero.dateLocale', lang),
+  watchRecording: t('hero.watchRecording', lang),
+  recurringMeeting: t('hero.recurringMeeting', lang),
+  kickoffHeldOn: t('hero.kickoffHeldOn', lang),
+  kickoffDoneRecordingSoon: t('hero.kickoffDoneRecordingSoon', lang),
+  nextGeneralMeeting: t('hero.nextGeneralMeeting', lang),
+  meetingSchedule: t('hero.meetingSchedule', lang),
+  joinMeet: t('hero.joinMeet', lang),
+})}></script>
+
 <script define:vars={{ deadline }}>
   // ── Countdown (for tribe selection deadline) ──
   var dl = new Date(deadline);
@@ -106,11 +118,25 @@ const { deadline = '2030-12-31T23:59:59Z', lang = 'pt-BR' } = Astro.props;
 
 <script>
   // ── Dynamic event info from DB ──
+  const heroI18nEl = document.getElementById('hero-i18n');
+  const hi18n = heroI18nEl ? JSON.parse(heroI18nEl.textContent || '{}') : {};
+
+  function meetingBarHtml(meetLink: string): string {
+    return `
+      <div class="bg-white/6 border border-[#05BFE0]/20 rounded-xl px-5 py-3 inline-flex items-center gap-3 flex-wrap justify-center">
+        <span class="text-[.78rem] text-white/60">📅 ${hi18n.nextGeneralMeeting || 'Próxima reunião geral:'}</span>
+        <span class="text-[.85rem] font-semibold text-[#05BFE0]">${hi18n.meetingSchedule || 'Quintas · 19:30 → 20:30 BRT'}</span>
+        <a href="${meetLink}" target="_blank" rel="noopener"
+          class="px-4 py-1.5 bg-[#05BFE0] text-navy rounded-lg text-[.78rem] font-bold no-underline hover:opacity-90 transition-all">
+          ${hi18n.joinMeet || 'Entrar no Meet'}
+        </a>
+      </div>`;
+  }
+
   async function loadHeroEvent() {
     const sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(loadHeroEvent, 300); return; }
 
-    // Get the latest general event (not tribe-specific)
     const { data: events } = await sb.from('events')
       .select('id, title, date, meeting_link, youtube_url, is_recorded, duration_minutes, duration_actual')
       .is('tribe_id', null)
@@ -119,72 +145,53 @@ const { deadline = '2030-12-31T23:59:59Z', lang = 'pt-BR' } = Astro.props;
 
     if (!events?.length) return;
     const ev = events[0];
-    const evDate = new Date(ev.date + 'T22:30:00Z'); // 19:30 BRT = 22:30 UTC
+    const evDate = new Date(ev.date + 'T22:30:00Z');
     const isPast = evDate < new Date();
 
     const eventArea = document.getElementById('hero-event-area');
     if (!eventArea) return;
 
+    const dateLocale = hi18n.dateLocale || 'pt-BR';
+
     if (isPast && ev.youtube_url) {
-      // Event happened + recording available
-      const dateStr = new Date(ev.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+      const dateStr = new Date(ev.date).toLocaleDateString(dateLocale, { day: '2-digit', month: 'long', year: 'numeric' });
       const duration = ev.duration_actual || ev.duration_minutes || 90;
       eventArea.innerHTML = `
         <div class="flex flex-wrap gap-3 justify-center">
           <a href="${ev.youtube_url}" target="_blank" rel="noopener"
             class="inline-flex items-center gap-2 bg-red-600/90 hover:bg-red-600 text-white px-5 py-2.5 rounded-xl text-[.9rem] font-semibold no-underline transition-all">
-            ▶️ Assistir Gravação · ${Math.round(duration)}min
+            ▶️ ${hi18n.watchRecording || 'Assistir Gravação'} · ${Math.round(duration)}min
           </a>
           ${ev.meeting_link ? `
           <a href="${ev.meeting_link}" target="_blank" rel="noopener"
             class="inline-flex items-center gap-2 bg-white/6 border border-white/10 hover:bg-white/12 text-white px-5 py-2.5 rounded-xl text-[.9rem] font-medium no-underline transition-all">
-            📅 Reunião Recorrente · Quintas 19:30 BRT
+            📅 ${hi18n.recurringMeeting || 'Reunião Recorrente · Quintas 19:30 BRT'}
           </a>` : ''}
         </div>
-        <div class="text-[.72rem] text-white/40 mt-2">Kick-off realizado em ${dateStr}</div>`;
+        <div class="text-[.72rem] text-white/40 mt-2">${hi18n.kickoffHeldOn || 'Kick-off realizado em'} ${dateStr}</div>`;
     } else if (isPast) {
-      // Event happened but no recording yet
       eventArea.innerHTML = `
         <div class="inline-flex items-center gap-2 bg-white/6 border border-white/10 px-5 py-2.5 rounded-xl text-white text-[.9rem] font-medium">
-          ✅ Kick-off realizado · Gravação em breve
+          ${hi18n.kickoffDoneRecordingSoon || '✅ Kick-off realizado · Gravação em breve'}
         </div>`;
     }
-    // If not past, keep the static date display (Astro-rendered)
 
-    // Show recurring meeting bar for logged-in users
     const member = (window as any).navGetMember?.();
     if (member && ev.meeting_link && isPast) {
       const meetBar = document.getElementById('hero-meeting-bar');
       if (meetBar) {
         meetBar.classList.remove('hidden');
-        meetBar.innerHTML = `
-          <div class="bg-white/6 border border-[#05BFE0]/20 rounded-xl px-5 py-3 inline-flex items-center gap-3 flex-wrap justify-center">
-            <span class="text-[.78rem] text-white/60">📅 Próxima reunião geral:</span>
-            <span class="text-[.85rem] font-semibold text-[#05BFE0]">Quintas · 19:30 → 20:30 BRT</span>
-            <a href="${ev.meeting_link}" target="_blank" rel="noopener"
-              class="px-4 py-1.5 bg-[#05BFE0] text-navy rounded-lg text-[.78rem] font-bold no-underline hover:opacity-90 transition-all">
-              Entrar no Meet
-            </a>
-          </div>`;
+        meetBar.innerHTML = meetingBarHtml(ev.meeting_link);
       }
     }
 
-    // Also listen for login events
     window.addEventListener('nav:member', () => {
       const m = (window as any).navGetMember?.();
       if (m && ev.meeting_link && isPast) {
         const meetBar = document.getElementById('hero-meeting-bar');
         if (meetBar && meetBar.classList.contains('hidden')) {
           meetBar.classList.remove('hidden');
-          meetBar.innerHTML = `
-            <div class="bg-white/6 border border-[#05BFE0]/20 rounded-xl px-5 py-3 inline-flex items-center gap-3 flex-wrap justify-center">
-              <span class="text-[.78rem] text-white/60">📅 Próxima reunião geral:</span>
-              <span class="text-[.85rem] font-semibold text-[#05BFE0]">Quintas · 19:30 → 20:30 BRT</span>
-              <a href="${ev.meeting_link}" target="_blank" rel="noopener"
-                class="px-4 py-1.5 bg-[#05BFE0] text-navy rounded-lg text-[.78rem] font-bold no-underline hover:opacity-90 transition-all">
-                Entrar no Meet
-              </a>
-            </div>`;
+          meetBar.innerHTML = meetingBarHtml(ev.meeting_link);
         }
       }
     });

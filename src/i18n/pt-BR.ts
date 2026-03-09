@@ -43,6 +43,16 @@ const ptBR: Record<string, string> = {
   'hero.countdown.label': 'para escolher sua tribo',
   'hero.scroll': '▼ Role para começar',
 
+  // ── Hero (client-side script) ──
+  'hero.dateLocale': 'pt-BR',
+  'hero.watchRecording': 'Assistir Gravação',
+  'hero.recurringMeeting': 'Reunião Recorrente · Quintas 19:30 BRT',
+  'hero.kickoffHeldOn': 'Kick-off realizado em',
+  'hero.kickoffDoneRecordingSoon': '✅ Kick-off realizado · Gravação em breve',
+  'hero.nextGeneralMeeting': 'Próxima reunião geral:',
+  'hero.meetingSchedule': 'Quintas · 19:30 → 20:30 BRT',
+  'hero.joinMeet': 'Entrar no Meet',
+
   // ── Agenda ──
   'agenda.label': 'Pauta do Evento',
   'agenda.title': 'O que acontece hoje',
@@ -72,6 +82,7 @@ const ptBR: Record<string, string> = {
   'quadrants.q3.sub': 'Estratégia, Pessoas, Cultura e Portfólio',
   'quadrants.q4.title': 'Futuro e Responsabilidade',
   'quadrants.q4.sub': 'Ética, Governança e Sociedade',
+  'quadrants.unavailable': 'Quadrantes temporariamente indisponíveis.',
 
   // ── Tribes ──
   'tribes.label': 'Dream Team — 8 Líderes',
@@ -111,6 +122,7 @@ const ptBR: Record<string, string> = {
   'kpis.pilots': 'Pilotos IA',
   'kpis.impact': 'Impacto',
   'kpis.cert': 'Mini cert. IA',
+  'kpis.unavailable': 'Metas temporariamente indisponíveis.',
 
   // ── Networking ──
   'networking.label': 'Momento de Conexão',
@@ -155,6 +167,8 @@ const ptBR: Record<string, string> = {
   'trail.ranking.avg': 'Média geral',
   'trail.completed': 'concluídos',
   'trail.inProgress': 'em andamento',
+  'trail.coreUnavailable': 'Cursos core indisponíveis no momento.',
+  'trail.extraUnavailable': 'Cursos complementares indisponíveis no momento.',
 
   // ── CPMAI Showcase (S9) ──
   'cpmai.label': 'Certificação PMI-CPMAI',
@@ -181,6 +195,13 @@ const ptBR: Record<string, string> = {
   'team.founders': 'Fundadores',
   'team.founders.sub': 'a história que trouxe o Núcleo até aqui',
   'team.loading': 'Carregando time...',
+  'team.projectTeam': 'Equipe de Projeto',
+  'team.projectTeam.sub': 'gestão, operações & comunicação · Ciclo 3',
+  'team.projectManagement': 'Gerência de Projeto (Nível 2)',
+  'team.commsTeam': 'Time de Comunicação',
+  'team.otherChapter': 'Outros',
+  'team.gpLabel': 'GP',
+  'team.deputyPmLabel': 'Deputy PM',
 
   // ── Vision ──
   'vision.label': 'Visão de Futuro',
@@ -218,6 +239,9 @@ const ptBR: Record<string, string> = {
   'role.facilitator': 'Facilitador',
   'role.communicator': 'Multiplicador',
   'role.guest': 'Visitante',
+  'role.comms_team': 'Comunicação',
+  'role.chapter_liaison': 'Ponto Focal',
+  'role.deputy_manager': 'Deputy PM',
 
   // ── Attendance page ──
   'attendance.title': 'Presença & Horas de Impacto',

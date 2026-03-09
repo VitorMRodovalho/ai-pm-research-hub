@@ -43,6 +43,16 @@ const enUS: Record<string, string> = {
   'hero.countdown.label': 'to choose your research stream',
   'hero.scroll': '▼ Scroll to begin',
 
+  // ── Hero (client-side script) ──
+  'hero.dateLocale': 'en-US',
+  'hero.watchRecording': 'Watch Recording',
+  'hero.recurringMeeting': 'Recurring Meeting · Thursdays 7:30 PM BRT',
+  'hero.kickoffHeldOn': 'Kick-off held on',
+  'hero.kickoffDoneRecordingSoon': '✅ Kick-off completed · Recording coming soon',
+  'hero.nextGeneralMeeting': 'Next general meeting:',
+  'hero.meetingSchedule': 'Thursdays · 7:30 → 8:30 PM BRT',
+  'hero.joinMeet': 'Join Meet',
+
   // ── Agenda ──
   'agenda.label': 'Event Agenda',
   'agenda.title': 'What Happens Today',
@@ -72,6 +82,7 @@ const enUS: Record<string, string> = {
   'quadrants.q3.sub': 'Strategy, People, Culture, and Portfolio',
   'quadrants.q4.title': 'Future & Responsibility',
   'quadrants.q4.sub': 'Ethics, Governance, and Society',
+  'quadrants.unavailable': 'Quadrants temporarily unavailable.',
 
   // ── Tribes ──
   'tribes.label': 'Dream Team — 8 Leaders',
@@ -111,6 +122,7 @@ const enUS: Record<string, string> = {
   'kpis.pilots': 'AI Pilots',
   'kpis.impact': 'Impact',
   'kpis.cert': 'AI Mini Cert.',
+  'kpis.unavailable': 'Goals temporarily unavailable.',
 
   // ── Networking ──
   'networking.label': 'Connection Moment',
@@ -155,6 +167,8 @@ const enUS: Record<string, string> = {
   'trail.ranking.avg': 'Overall average',
   'trail.completed': 'completed',
   'trail.inProgress': 'in progress',
+  'trail.coreUnavailable': 'Core courses unavailable at the moment.',
+  'trail.extraUnavailable': 'Complementary courses unavailable at the moment.',
 
   // ── CPMAI Showcase (S9) ──
   'cpmai.label': 'PMI-CPMAI Certification',
@@ -181,6 +195,13 @@ const enUS: Record<string, string> = {
   'team.founders': 'Founders',
   'team.founders.sub': 'the history that brought the Hub to life',
   'team.loading': 'Loading team...',
+  'team.projectTeam': 'Project Team',
+  'team.projectTeam.sub': 'management, operations & communications · Cycle 3',
+  'team.projectManagement': 'Project Management (Level 2)',
+  'team.commsTeam': 'Communications Team',
+  'team.otherChapter': 'Others',
+  'team.gpLabel': 'PM',
+  'team.deputyPmLabel': 'Deputy PM',
 
   // ── Vision ──
   'vision.label': 'Future Vision',
@@ -218,6 +239,9 @@ const enUS: Record<string, string> = {
   'role.facilitator': 'Facilitator',
   'role.communicator': 'Communicator',
   'role.guest': 'Guest',
+  'role.comms_team': 'Communications',
+  'role.chapter_liaison': 'Chapter Liaison',
+  'role.deputy_manager': 'Deputy PM',
 
   // ── Attendance page ──
   'attendance.title': 'Attendance & Impact Hours',

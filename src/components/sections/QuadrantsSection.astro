@@ -38,7 +38,7 @@ const safeQuadrants = Array.isArray(QUADRANTS) ? QUADRANTS : [];
       ))}
       {!safeQuadrants.length && (
         <div class="col-span-full bg-[#FAFAF8] rounded-2xl border border-black/5 p-6 text-sm text-slate-500">
-          Quadrantes temporariamente indisponiveis.
+          {t('quadrants.unavailable', lang)}
         </div>
       )}
     </div>
