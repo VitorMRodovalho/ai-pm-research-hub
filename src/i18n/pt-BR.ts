@@ -428,6 +428,8 @@ const ptBR: Record<string, string> = {
   'profile.desig.founder': 'Fundador',
   'profile.desig.curator': 'Curador',
   'profile.desig.commsTeam': 'Comunicação',
+  'profile.desig.commsLeader': 'Líder de Comunicação',
+  'profile.desig.commsMember': 'Membro de Comunicação',
   'profile.desig.coGp': 'Co-GP',
   'profile.desig.tribeLeader': 'Líder de Tribo',
   'profile.adminPlatform': '🔧 Admin Plataforma',
@@ -1317,6 +1319,18 @@ const ptBR: Record<string, string> = {
   'admin.comms.colSentAt': 'Enviado em',
   'admin.comms.colSentBy': 'Enviado por',
   'admin.comms.broadcastEmpty': 'Nenhum broadcast enviado ainda.',
+
+
+  // ── Admin Governance Links ──
+  'admin.links.title': 'Recursos Administrativos',
+  'admin.links.subtitle': 'Links restritos para governança e gestão (Tier 4+)',
+  'admin.links.empty': 'Nenhum link administrativo cadastrado.',
+  'admin.links.governance': 'Governança',
+  'admin.links.finance': 'Financeiro',
+  'admin.links.legal': 'Jurídico',
+  'admin.links.operations': 'Operacional',
+  'admin.links.templates': 'Templates',
+  'admin.links.other': 'Outros',
 
   // ── Webinars Admin ──
   'admin.webinars.meta': 'Webinars & Parcerias — Núcleo IA & GP',

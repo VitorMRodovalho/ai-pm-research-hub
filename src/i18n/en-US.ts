@@ -428,6 +428,8 @@ const enUS: Record<string, string> = {
   'profile.desig.founder': 'Founder',
   'profile.desig.curator': 'Curator',
   'profile.desig.commsTeam': 'Communications',
+  'profile.desig.commsLeader': 'Comms Leader',
+  'profile.desig.commsMember': 'Comms Member',
   'profile.desig.coGp': 'Co-GP',
   'profile.desig.tribeLeader': 'Stream Leader',
   'profile.adminPlatform': '🔧 Platform Admin',
@@ -1317,6 +1319,18 @@ const enUS: Record<string, string> = {
   'admin.comms.colSentAt': 'Sent at',
   'admin.comms.colSentBy': 'Sent by',
   'admin.comms.broadcastEmpty': 'No broadcasts sent yet.',
+
+
+  // ── Admin Governance Links ──
+  'admin.links.title': 'Administrative Resources',
+  'admin.links.subtitle': 'Restricted links for governance and management (Tier 4+)',
+  'admin.links.empty': 'No administrative links registered.',
+  'admin.links.governance': 'Governance',
+  'admin.links.finance': 'Finance',
+  'admin.links.legal': 'Legal',
+  'admin.links.operations': 'Operations',
+  'admin.links.templates': 'Templates',
+  'admin.links.other': 'Other',
 
   // ── Webinars Admin ──
   'admin.webinars.meta': 'Webinars & Partnerships — AI & PM Research Hub',

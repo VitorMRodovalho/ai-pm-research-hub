@@ -203,5 +203,7 @@ e as Edge Functions estão alinhados com esta matriz.
 
 | Data       | Alteração                                              |
 |------------|--------------------------------------------------------|
+| 2026-03-09 | Legacy Ingestion: admin_links (Tier 4/5 ACL), trello_import_log, import-trello-legacy + import-calendar-legacy Edge Functions. list_tribe_deliverables auth hardening. |
+| 2026-03-09 | Wave 4 Expansion: /admin/comms (ranking + broadcasts), /admin/webinars, webinars schema, sb.functions.invoke eliminated. |
 | 2026-03-09 | S-COM1: Divergências #1 e #2 resolvidas. Backfill de designações + blindagem de Edge Functions. |
 | 2026-03-09 | Documento criado (Wave 4). Cobertura: W1–W3 + W4.10.  |

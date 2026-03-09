@@ -210,6 +210,8 @@ const ADMIN_I18N = {
               <option value="founder">{t('admin.desig.founder', lang)}</option>
               <option value="curator">{t('admin.desig.curator', lang)}</option>
               <option value="comms_team">{t('admin.desig.comms', lang)}</option>
+              <option value="comms_leader">{t('admin.desig.commsLeader' as any, lang) || 'Comms Leader'}</option>
+              <option value="comms_member">{t('admin.desig.commsMember' as any, lang) || 'Comms Member'}</option>
               <option value="co_gp">Co-GP</option>
               <option value="has_any">{t('admin.filter.withDesignation', lang)}</option>
               <option value="has_none">{t('admin.filter.withoutDesignation', lang)}</option>
@@ -313,6 +315,17 @@ const ADMIN_I18N = {
               <a href="/admin/comms" class="w-full inline-flex items-center justify-center px-4 py-2.5 bg-teal text-white rounded-lg text-[.78rem] font-semibold no-underline hover:opacity-90 transition-all">
                 {t('admin.reports.commsButton', lang)}
               </a>
+            </div>
+          </div>
+
+          <!-- Governance Links (Tier 4+ only) -->
+          <div id="admin-links-section" class="hidden bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-slate-200">
+              <h3 class="text-sm font-bold text-navy">{t('admin.links.title', lang)}</h3>
+              <p class="text-[.68rem] text-slate-400 mt-0.5">{t('admin.links.subtitle', lang)}</p>
+            </div>
+            <div id="admin-links-list" class="p-4 space-y-2">
+              <div class="text-center py-4 text-slate-400 text-sm">{t('admin.links.empty', lang)}</div>
             </div>
           </div>
         </div>
@@ -660,6 +673,8 @@ const ADMIN_I18N = {
             </label>
             <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-all text-[.78rem]">
               <input type="checkbox" value="comms_team" class="desig-cb accent-[#06B6D4]"> <span style="color:#06B6D4">●</span> {t('admin.desig.comms', lang)}
+              <input type="checkbox" value="comms_leader" class="desig-cb accent-[#06B6D4]"> <span style="color:#06B6D4">●</span> Comms Leader
+              <input type="checkbox" value="comms_member" class="desig-cb accent-[#06B6D4]"> <span style="color:#06B6D4">●</span> Comms Member
             </label>
             <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition-all text-[.78rem]">
               <input type="checkbox" value="co_gp" class="desig-cb accent-[#FF610F]"> <span style="color:#FF610F">●</span> {t('admin.desig.coGp', lang)}
@@ -2655,6 +2670,53 @@ const ADMIN_I18N = {
 
       document.getElementById('panel-executive')?.classList.remove('hidden');
       loadExecutiveOverview();
+      loadAdminLinks();
+    }
+  }
+
+
+  async function loadAdminLinks() {
+    const section = document.getElementById('admin-links-section');
+    const list = document.getElementById('admin-links-list');
+    if (!section || !list || !sb) return;
+
+    const m = (window as any).navGetMember?.() || MEMBER;
+    if (!m) return;
+    const isAdmin = m.is_superadmin || m.operational_role === 'manager' || m.operational_role === 'deputy_manager' || m.operational_role === 'co_gp';
+    if (!isAdmin) return;
+
+    section.classList.remove('hidden');
+
+    try {
+      const { data, error } = await sb.rpc('list_admin_links');
+      if (error || !data?.length) return;
+
+      const ICONS: Record<string, string> = {
+        'folder-lock': '\u{1F512}',
+        'folder': '\u{1F4C1}',
+        'file-text': '\u{1F4C4}',
+        'shield': '\u{1F6E1}',
+      };
+      const CATS: Record<string, string> = {
+        governance: 'Governan\u00e7a', finance: 'Financeiro', legal: 'Jur\u00eddico',
+        operations: 'Operacional', templates: 'Templates', other: 'Outros',
+      };
+
+      list.innerHTML = data.map(function(link: any) {
+        var icon = ICONS[link.icon] || '\u{1F517}';
+        var cat = CATS[link.category] || link.category;
+        return '<a href="' + link.url + '" target="_blank" rel="noopener noreferrer" '
+          + 'class="flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-50 hover:bg-slate-100 no-underline transition-colors">'
+          + '<span class="text-xl">' + icon + '</span>'
+          + '<div class="flex-1 min-w-0">'
+          + '<div class="text-sm font-semibold text-navy truncate">' + (link.title || '') + '</div>'
+          + '<div class="text-[.68rem] text-slate-500 truncate">' + (link.description || '') + '</div>'
+          + '</div>'
+          + '<span class="px-2 py-0.5 rounded-full text-[.65rem] font-semibold bg-purple-100 text-purple-800 whitespace-nowrap">' + cat + '</span>'
+          + '</a>';
+      }).join('');
+    } catch (e) {
+      console.warn('Admin links load error:', e);
     }
   }
 

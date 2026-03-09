@@ -158,10 +158,10 @@ const PROFILE_I18N = {
     facilitator: '#06B6D4', communicator: '#8B5CF6', none: '#94A3B8', guest: '#94A3B8'
   };
   const DESIG_LABELS: Record<string, string> = {
-    sponsor: PROFILE_I18N.desigSponsor, chapter_liaison: PROFILE_I18N.desigChapterLiaison, ambassador: PROFILE_I18N.desigAmbassador, founder: PROFILE_I18N.desigFounder, curator: PROFILE_I18N.desigCurator, comms_team: PROFILE_I18N.desigCommsTeam, co_gp: PROFILE_I18N.desigCoGp, tribe_leader: PROFILE_I18N.desigTribeLeader
+    sponsor: PROFILE_I18N.desigSponsor, chapter_liaison: PROFILE_I18N.desigChapterLiaison, ambassador: PROFILE_I18N.desigAmbassador, founder: PROFILE_I18N.desigFounder, curator: PROFILE_I18N.desigCurator, comms_team: PROFILE_I18N.desigCommsTeam, comms_leader: PROFILE_I18N.desigCommsLeader || 'Comms Leader', comms_member: PROFILE_I18N.desigCommsMember || 'Comms Member', co_gp: PROFILE_I18N.desigCoGp, tribe_leader: PROFILE_I18N.desigTribeLeader
   };
   const DESIG_COLORS: Record<string, string> = {
-    sponsor: '#BE2027', chapter_liaison: '#BE2027', ambassador: '#10B981', founder: '#7C3AED', curator: '#D97706', comms_team: '#06B6D4', co_gp: '#FF610F', tribe_leader: '#4F17A8'
+    sponsor: '#BE2027', chapter_liaison: '#BE2027', ambassador: '#10B981', founder: '#7C3AED', curator: '#D97706', comms_team: '#06B6D4', comms_leader: '#06B6D4', comms_member: '#06B6D4', co_gp: '#FF610F', tribe_leader: '#4F17A8'
   };
 
   let currentMember: any = null;
