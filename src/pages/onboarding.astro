@@ -1,0 +1,127 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+const base = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+
+const steps = [
+  {
+    icon: '📋',
+    title: t('onboarding.step1.title', lang),
+    desc: t('onboarding.step1.desc', lang),
+    link: t('onboarding.step1.link', lang),
+    linkText: t('onboarding.step1.linkText', lang),
+    external: true,
+  },
+  {
+    icon: '✉️',
+    title: t('onboarding.step2.title', lang),
+    desc: t('onboarding.step2.desc', lang),
+    link: 'mailto:nucleoiagp@gmail.com',
+    linkText: t('onboarding.step2.linkText', lang),
+    external: true,
+  },
+  {
+    icon: '🔑',
+    title: t('onboarding.step3.title', lang),
+    desc: t('onboarding.step3.desc', lang),
+  },
+  {
+    icon: '👤',
+    title: t('onboarding.step4.title', lang),
+    desc: t('onboarding.step4.desc', lang),
+    link: base + '/profile',
+    linkText: t('onboarding.step4.linkText', lang),
+  },
+  {
+    icon: '🏷️',
+    title: t('onboarding.step5.title', lang),
+    desc: t('onboarding.step5.desc', lang),
+    link: base + '/#tribes',
+    linkText: t('onboarding.step5.linkText', lang),
+    hasDeadline: true,
+  },
+  {
+    icon: '🎓',
+    title: t('onboarding.step6.title', lang),
+    desc: t('onboarding.step6.desc', lang),
+    link: t('onboarding.step6.link', lang),
+    linkText: t('onboarding.step6.linkText', lang),
+    external: true,
+  },
+  {
+    icon: '📅',
+    title: t('onboarding.step7.title', lang),
+    desc: t('onboarding.step7.desc', lang),
+  },
+  {
+    icon: '📄',
+    title: t('onboarding.step8.title', lang),
+    desc: t('onboarding.step8.desc', lang),
+    link: base + '/artifacts',
+    linkText: t('onboarding.step8.linkText', lang),
+  },
+];
+
+const deadlinePrefix = t('onboarding.step5.deadlinePrefix', lang);
+---
+<BaseLayout title={t('onboarding.title', lang)} activePage="onboarding" lang={lang}>
+  <div class="max-w-2xl mx-auto px-4 py-10">
+    <h1 class="text-2xl font-extrabold text-navy mb-2">{t('onboarding.heading', lang)}</h1>
+    <p class="text-slate-500 text-sm mb-8">{t('onboarding.subtitle', lang)}</p>
+
+    <div class="space-y-4">
+      {steps.map((step, i) => (
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 flex gap-4 items-start">
+          <div class="flex-shrink-0 w-10 h-10 rounded-xl bg-navy/5 border border-navy/10 flex items-center justify-center">
+            <span class="text-lg font-black text-navy">{i + 1}</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-base">{step.icon}</span>
+              <h2 class="text-sm font-bold text-navy">{step.title}</h2>
+            </div>
+            <p class="text-[.78rem] text-slate-500 mb-2">{step.desc}</p>
+            {step.hasDeadline && (
+              <p class="text-[.72rem] font-semibold text-orange mb-2" id="onboarding-deadline">
+                {deadlinePrefix} <span id="onboarding-deadline-value" class="text-slate-400">…</span>
+              </p>
+            )}
+            {step.link && (
+              <a
+                href={step.link}
+                class="inline-block text-[.75rem] font-semibold text-teal hover:text-teal/80 no-underline transition-all"
+                target={step.external ? '_blank' : undefined}
+                rel={step.external ? 'noopener noreferrer' : undefined}
+              >
+                {step.linkText}
+              </a>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { getSupabase } from '../lib/supabase';
+
+  async function loadDeadline() {
+    const el = document.getElementById('onboarding-deadline-value');
+    if (!el) return;
+    try {
+      const sb = getSupabase();
+      const { data } = await sb.rpc('get_current_cycle') as { data: any };
+      if (data?.cycle_end) {
+        const d = new Date(data.cycle_end);
+        const locale = document.documentElement.lang || 'pt-BR';
+        el.textContent = d.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
+      } else if (data?.cycle_label) {
+        el.textContent = data.cycle_label;
+      }
+    } catch (_) { /* keep placeholder */ }
+  }
+
+  loadDeadline();
+</script>

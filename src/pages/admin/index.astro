@@ -1052,9 +1052,11 @@ const ADMIN_I18N = {
 
   function cycleDots(memberId: string): string {
     const memberCycles = allCycleHistory.filter((h: any) => h.member_id === memberId);
-    return CYCLE_ORDER.map(code => {
+    const cycleOrder = (window as any).__CYCLE_ORDER || CYCLE_ORDER;
+    const cycleMeta = (window as any).__CYCLE_META || CYCLE_META;
+    return cycleOrder.map((code: string) => {
       const record = memberCycles.find((h: any) => h.cycle_code === code);
-      const meta = CYCLE_META[code];
+      const meta = cycleMeta[code] || CYCLE_META[code] || { label: code, abbr: code, color: '#94A3B8' };
       if (!record) return `<span class="w-[18px] h-[14px] rounded text-[.5rem] font-bold inline-flex items-center justify-center bg-slate-100 text-slate-300" title="${meta.label}: não participou">${meta.abbr}</span>`;
       const opLabel = OPROLE_LABELS[record.operational_role] || record.operational_role || '';
       const desigLabels = (record.designations || []).map((d: string) => DESIG_LABELS[d] || d).join(', ');
@@ -2028,9 +2030,12 @@ const ADMIN_I18N = {
     const area = document.getElementById('ch-cycles-area')!;
     const existingCodes = (records || []).map((r: any) => r.cycle_code);
 
+    const cycleMeta = (window as any).__CYCLE_META || CYCLE_META;
+    const cycleOrder = (window as any).__CYCLE_ORDER || CYCLE_ORDER;
+
     area.innerHTML = `
       ${(records || []).map((r: any) => {
-        const meta = CYCLE_META[r.cycle_code] || { label: r.cycle_code, color: '#94A3B8' };
+        const meta = cycleMeta[r.cycle_code] || CYCLE_META[r.cycle_code] || { label: r.cycle_code, color: '#94A3B8' };
         const opLabel = OPROLE_LABELS[r.operational_role] || r.operational_role || 'none';
         const desigLabels = (r.designations || []).map((d: string) => DESIG_LABELS[d] || d);
         return `
@@ -2055,12 +2060,12 @@ const ADMIN_I18N = {
         </div>`;
       }).join('')}
 
-      ${CYCLE_ORDER.filter(c => !existingCodes.includes(c)).length > 0 ? `
+      ${cycleOrder.filter((c: string) => !existingCodes.includes(c)).length > 0 ? `
       <div class="mt-3 p-3 border border-dashed border-slate-200 rounded-xl">
         <div class="text-[.72rem] font-semibold text-slate-500 mb-2">${ADMIN_I18N.addCycleRecordSection}</div>
         <div class="flex gap-2 flex-wrap">
-          ${CYCLE_ORDER.filter(c => !existingCodes.includes(c)).map(c => {
-            const meta = CYCLE_META[c];
+          ${cycleOrder.filter((c: string) => !existingCodes.includes(c)).map((c: string) => {
+            const meta = cycleMeta[c] || CYCLE_META[c] || { label: c, color: '#94A3B8' };
             return `<button type="button" class="btn-add-cycle-record px-3 py-1.5 text-[.68rem] font-bold rounded-lg border-0 cursor-pointer text-white hover:opacity-90 transition-all" style="background:${meta.color}" data-cycle-code="${escapeAttr(c)}">${meta.label}</button>`;
           }).join('')}
         </div>
@@ -2078,7 +2083,8 @@ const ADMIN_I18N = {
 
   (window as any).addCycleRecord = async (cycleCode: string) => {
     if (!canAccessAdminRoute(MEMBER, 'admin_member_edit') || !chMemberId) return;
-    const meta = CYCLE_META[cycleCode];
+    const cycleMeta = (window as any).__CYCLE_META || CYCLE_META;
+    const meta = cycleMeta[cycleCode] || CYCLE_META[cycleCode] || { label: cycleCode, color: '#94A3B8' };
     const cycleDatesMap = (window as any).__CYCLE_DATES || {};
     const d = cycleDatesMap[cycleCode] || { start: '2026-01-01', end: null };
 
@@ -2652,8 +2658,16 @@ const ADMIN_I18N = {
         const current = cyclesData.find((c: any) => c.is_current) || cyclesData[cyclesData.length - 1];
         (window as any).__CURRENT_CYCLE_START = current.cycle_start;
         const datesMap: Record<string, { start: string; end: string | null }> = {};
-        for (const c of cyclesData) datesMap[c.cycle_code] = { start: c.cycle_start, end: c.cycle_end };
+        const dbCycleMeta: Record<string, { label: string; abbr: string; color: string }> = {};
+        const dbCycleOrder: string[] = [];
+        for (const c of cyclesData) {
+          datesMap[c.cycle_code] = { start: c.cycle_start, end: c.cycle_end };
+          dbCycleMeta[c.cycle_code] = { label: c.cycle_label, abbr: c.cycle_abbr, color: c.cycle_color };
+          dbCycleOrder.push(c.cycle_code);
+        }
         (window as any).__CYCLE_DATES = datesMap;
+        (window as any).__CYCLE_META = dbCycleMeta;
+        (window as any).__CYCLE_ORDER = dbCycleOrder;
       }
     } catch (_) { console.warn('Admin boot cycle check:', _); }
 
