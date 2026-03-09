@@ -44,6 +44,7 @@ const TRIBES_MSG = {
 };
 // SSR: slot counts come from Supabase client-side; use 0 until hydrated
 const initialCounts: Record<number, number> = {};
+const TRIBE_IDS = safeTribes.map(t => t.id);
 ---
 
 <section class="py-16 px-6 bg-[#F7F4EF]" id="tribes">
@@ -194,7 +195,7 @@ const initialCounts: Record<number, number> = {};
   </div>
 </section>
 
-<script define:vars={{ tribeSelectionDeadline: TRIBE_SELECTION_DEADLINE_ISO, TRIBES_MSG, MAX_SLOTS, MIN_SLOTS }}>
+<script define:vars={{ tribeSelectionDeadline: TRIBE_SELECTION_DEADLINE_ISO, TRIBES_MSG, MAX_SLOTS, MIN_SLOTS, TRIBE_IDS }}>
   // ── Tribe selection logic ──
   // Uses window.navGetSb() and nav:member event per established Astro patterns.
   // MAX_SLOTS, MIN_SLOTS from data/tribes via define:vars (single source of truth)
@@ -336,7 +337,7 @@ const initialCounts: Record<number, number> = {};
 
   // ── Update UI based on counts + auth ──
   function updateUI() {
-    for (let tid = 1; tid <= 8; tid++) {
+    for (const tid of TRIBE_IDS) {
       const count = tribeCounts[tid] || 0;
       const dots = document.querySelectorAll(`#sl-${tid} > div`);
       const text = document.getElementById(`st-${tid}`);
@@ -460,7 +461,7 @@ const initialCounts: Record<number, number> = {};
     });
 
     // Update each tribe's meeting schedule display
-    for (let tid = 1; tid <= 8; tid++) {
+    for (const tid of TRIBE_IDS) {
       const el = document.getElementById(`ms-${tid}`);
       if (!el) continue;
 

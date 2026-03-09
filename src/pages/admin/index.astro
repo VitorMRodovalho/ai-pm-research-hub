@@ -881,7 +881,8 @@ const ADMIN_I18N = {
     const cardsEl = document.getElementById('tribe-cards')!;
     let cardsHtml = '';
 
-    for (let t = 1; t <= 8; t++) {
+    const tribeIds = Object.keys(TRIBE_NAMES).map(Number).sort((a, b) => a - b);
+    for (const t of tribeIds) {
       const members = data.filter((m: any) =>
         m.selected_tribe_id === t || (m.fixed_tribe_id === t && getMemberRole(m) === 'tribe_leader')
       );

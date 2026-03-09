@@ -198,6 +198,8 @@ const enUS: Record<string, string> = {
   // ── Resources ──
   'resources.label': 'Links & Resources',
   'resources.title': 'Next Steps',
+  'resources.linkText': 'Open →',
+  'resources.noResources': 'No resources available at the moment.',
 
   // ── Footer ──
   'footer.line1': 'AI & PM Study and Research Hub · Núcleo de Estudos e Pesquisa em IA e GP',
