@@ -1,36 +1,149 @@
-# Contributing to AI & PM Research Hub
+# Contributing to the AI & PM Research Hub
 
-## Before you start
+Welcome! The **AI & PM Research Hub** is the operational platform for the *Núcleo de Estudos e Pesquisa em IA e GP* — a joint initiative of PMI Brazilian chapters (PMI-GO, PMI-CE, PMI-DF, PMI-MG, PMI-RS). Whether you're a chapter member, a researcher, or an open-source contributor, we appreciate your help making the Hub better.
 
-- Read **README.md** for project scope and stack.
-- Read **AGENTS.md** for conventions, doc map, and where things live (recommended for contributors and AI-assisted workflows).
-- Using **Cursor**? See **docs/CURSOR_SETUP.md** for first-use checklist.
+---
 
-## Quality gates
+## Getting started
 
-Before opening a PR or pushing to a shared branch:
+### Prerequisites
 
-1. **Tests**: `npm test`
-2. **Build**: `npm run build`
-3. **Smoke** (optional): `npm run smoke:routes`
+- **Node.js** 20+
+- A Supabase project (or access to the shared development instance)
 
-## Documentation and releases
+### Local development
 
-- **Production-impacting changes** (hotfixes, new features, schema changes): add or update an entry in **docs/RELEASE_LOG.md** (what changed, why, how it was validated, what remains).
-- **SQL / migrations**: Put migrations in `supabase/migrations/`. For non-trivial changes, add a docs pack in `docs/migrations/` (apply, audit, rollback, runbook) and follow **docs/project-governance/PROJECT_GOVERNANCE_RUNBOOK.md** (e.g. no marking Done without migration pack when SQL is required).
+```bash
+# 1. Clone and install
+git clone https://github.com/VitorMRodovalho/ai-pm-hub-v2.git
+cd ai-pm-hub-v2/pve
+npm install
 
-## Conventions
+# 2. Configure environment
+cp .env.example .env
+# Edit .env with your Supabase credentials (see .env.example for docs)
 
-- Use **operational_role** and **designations**; avoid relying on legacy **role** / **roles** for new logic.
-- **members** = current snapshot; history in **member_cycle_history**.
-- SSR: guard optional data; do not assume arrays/objects exist.
-- User-facing strings: use i18n keys from `src/i18n/` (PT/EN/ES).
-- Keep **docs/GOVERNANCE_CHANGELOG.md** and **docs/MIGRATION.md** in mind for governance and migration state.
+# 3. Start the dev server
+npm run dev
+```
 
-## Repository docs
+The dev server runs at `http://localhost:4321` by default. Use `npm run dev -- --host 0.0.0.0 --port 4321` to expose it on the network.
 
-- **GitHub Project board** — [https://github.com/users/VitorMRodovalho/projects/1/](https://github.com/users/VitorMRodovalho/projects/1/) — Sprint status; use with `backlog-wave-planning-updated.md`.
-- **backlog-wave-planning-updated.md** — Wave planning and execution order.
-- **docs/GOVERNANCE_CHANGELOG.md** — Decisions and governance.
-- **docs/MIGRATION.md** — Technical transitions and compatibility.
-- **docs/RELEASE_LOG.md** — Release and hotfix log.
+### Verifying your setup
+
+```bash
+npm test              # Unit tests
+npm run build         # Full production build
+npm run smoke:routes  # Smoke-test critical routes
+```
+
+All three must pass before you open a PR.
+
+---
+
+## Code conventions
+
+### Stack
+
+| Layer | Tech |
+|-------|------|
+| Frontend | Astro + Tailwind CSS (utility-only) |
+| Database | Supabase (PostgreSQL, RLS, Edge Functions) |
+| Hosting | Cloudflare Pages |
+| i18n | PT-BR, EN, ES — keys in `src/i18n/` |
+
+### Rules
+
+1. **Event delegation only.** Never use inline event handlers like `onclick="fn('${var}')"`. Attach listeners via `document.addEventListener` and read `data-*` attributes. See `.cursorrules` for the rationale.
+
+2. **Tailwind utility classes only.** Do not create standalone `.css` files unless they contain complex global animations.
+
+3. **i18n for all user-facing strings.** Add keys to `src/i18n/` (pt-BR, en-US, es-LATAM). Never hardcode display text in templates.
+
+4. **`define:vars` isolation.** In Astro, never combine `define:vars` with `import` in the same `<script>`. Use a separate `is:inline define:vars` script that writes to `window.__*`, and a normal bundled script that reads from it.
+
+5. **SSR safety.** Always guard optional data — never assume arrays or objects exist in server-rendered pages.
+
+6. **Role model v3.** Use `operational_role` and `designations`. Do not rely on the legacy `role` / `roles` columns for new logic.
+
+7. **No hardcoded deletes.** Use soft deletes (`is_active = false`). The governance model requires history preservation.
+
+---
+
+## Submitting a pull request
+
+### Branch naming
+
+Use a descriptive prefix:
+
+```
+feat/artifact-gallery-public
+fix/credly-paste-ios
+docs/update-release-log
+chore/ci-node-upgrade
+```
+
+### Commit messages
+
+Write clear, imperative-mood messages. One concern per commit — do not mix DB migrations with UI changes.
+
+```
+feat: make artifact catalog visible to anonymous visitors
+fix: guard missing deliverables in TribesSection SSR
+docs: add March 2026 stabilization notes to RELEASE_LOG
+```
+
+### PR checklist
+
+- [ ] `npm test` passes
+- [ ] `npm run build` succeeds
+- [ ] `npm run smoke:routes` passes (if routes were changed)
+- [ ] i18n keys added for any new user-facing strings
+- [ ] Production-impacting changes documented in `docs/RELEASE_LOG.md`
+- [ ] DB changes include a migration in `supabase/migrations/`
+
+CI runs automatically on PRs to `main`. All checks must be green before merge.
+
+---
+
+## Reporting bugs
+
+Use the **Bug Report** issue template in this repository. It will guide you through:
+
+- Description of the problem
+- Steps to reproduce
+- Expected vs. actual behavior
+- Browser / OS / device information
+
+If you don't have access to create issues, email the project manager listed in README.md.
+
+---
+
+## Requesting features
+
+Use the **Feature Request** issue template. Include the problem you're solving, your proposed solution, and acceptance criteria so reviewers have clear context.
+
+---
+
+## Project structure references
+
+| Resource | Purpose |
+|----------|---------|
+| [`AGENTS.md`](./AGENTS.md) | AI agent structure, conventions, doc map, and lane boundaries |
+| [`docs/project-governance/`](./docs/project-governance/) | Governance runbook, sprint practices, roadmap, and project snapshots |
+| [`backlog-wave-planning-updated.md`](./backlog-wave-planning-updated.md) | Wave planning, execution order, and debt tracking |
+| [`docs/RELEASE_LOG.md`](./docs/RELEASE_LOG.md) | Release and hotfix history |
+| [`DEBUG_HOLISTIC_PLAYBOOK.md`](./DEBUG_HOLISTIC_PLAYBOOK.md) | Debugging and troubleshooting guide |
+
+If you use **Cursor IDE**, see `docs/CURSOR_SETUP.md` for the first-use checklist.
+
+---
+
+## License
+
+This repository does not yet include a standalone `LICENSE` file. As stated in `README.md`:
+
+- **Code** is licensed under the **MIT License**.
+- **Documentation** is licensed under **CC BY-SA 4.0**.
+
+The AI & PM Research Hub is a community project of independent PMI® Brazilian chapters and is not directly affiliated with or endorsed by PMI Global. Contributions are subject to these terms.

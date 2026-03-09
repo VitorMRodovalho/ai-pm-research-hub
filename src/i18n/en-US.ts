@@ -54,6 +54,7 @@ const enUS: Record<string, string> = {
   'hero.joinMeet': 'Join Meet',
 
   // ── Agenda ──
+  'agenda.unit': 'min',
   'agenda.label': 'Event Agenda',
   'agenda.title': 'What Happens Today',
   'agenda.subtitle': '1h30 of alignment, knowledge, and connection.',

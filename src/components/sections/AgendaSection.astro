@@ -5,12 +5,12 @@ interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
 
 const AGENDA = [
-  { time: '00-15', unit: 'min', title: t('agenda.item1.title', lang), desc: t('agenda.item1.desc', lang) },
-  { time: '15-30', unit: 'min', title: t('agenda.item2.title', lang), desc: t('agenda.item2.desc', lang) },
-  { time: '30-45', unit: 'min', title: t('agenda.item3.title', lang), desc: t('agenda.item3.desc', lang) },
-  { time: '45-60', unit: 'min', title: t('agenda.item4.title', lang), desc: t('agenda.item4.desc', lang) },
-  { time: '60-75', unit: 'min', title: t('agenda.item5.title', lang), desc: t('agenda.item5.desc', lang) },
-  { time: '75-90', unit: 'min', title: t('agenda.item6.title', lang), desc: t('agenda.item6.desc', lang) },
+  { time: '00-15', unit: t('agenda.unit', lang), title: t('agenda.item1.title', lang), desc: t('agenda.item1.desc', lang) },
+  { time: '15-30', unit: t('agenda.unit', lang), title: t('agenda.item2.title', lang), desc: t('agenda.item2.desc', lang) },
+  { time: '30-45', unit: t('agenda.unit', lang), title: t('agenda.item3.title', lang), desc: t('agenda.item3.desc', lang) },
+  { time: '45-60', unit: t('agenda.unit', lang), title: t('agenda.item4.title', lang), desc: t('agenda.item4.desc', lang) },
+  { time: '60-75', unit: t('agenda.unit', lang), title: t('agenda.item5.title', lang), desc: t('agenda.item5.desc', lang) },
+  { time: '75-90', unit: t('agenda.unit', lang), title: t('agenda.item6.title', lang), desc: t('agenda.item6.desc', lang) },
 ];
 ---
 
