@@ -309,11 +309,14 @@ Deno.serve(async (req) => {
 
     // Update member if ID provided
     if (member_id) {
+      const canonicalCredlyUrl = `https://www.credly.com/users/${username}`
       await sb.from('members').update({
         credly_verified_at: new Date().toISOString(),
-        credly_badges: result.all.filter(b => b.tier <= 3), // Store relevant badges
+        credly_badges: result.all.filter(b => b.tier <= 3),
         cpmai_certified: result.hasCPMAI,
         cpmai_certified_at: result.cpmai[0]?.issued_at || null,
+        credly_url: credly_url || canonicalCredlyUrl,
+        credly_profile_url: canonicalCredlyUrl,
       }).eq('id', member_id)
 
       // Award gamification points (with tier-based scoring)

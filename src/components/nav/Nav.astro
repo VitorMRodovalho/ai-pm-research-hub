@@ -63,6 +63,7 @@ const jsI18n = JSON.stringify({
   adminCuratorship: t('nav.adminCuratorship', lang),
   presentations: t('nav.presentations', lang),
   myTribe: t('nav.myTribe', lang),
+  exploreTribes: t('nav.exploreTribes', lang),
   logout: t('nav.logout', lang),
   user: t('nav.user', lang),
   guestNotFound: t('guest.navNotFound', lang),
@@ -214,9 +215,13 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
 
       if (visible && item.dynamic && item.resolver === 'resolveMyTribeHref') {
         const href = resolveMyTribeHref();
+        const isHighTier = (TIER_RANK[tier] ?? 0) >= (TIER_RANK['admin' as AccessTier] ?? 4);
         if (href) {
-          if (desktopEl) { desktopEl.setAttribute('href', href); desktopEl.classList.remove('opacity-50', 'pointer-events-none'); }
-          if (mobileEl) { mobileEl.setAttribute('href', href); mobileEl.classList.remove('opacity-50', 'pointer-events-none'); }
+          if (desktopEl) { desktopEl.setAttribute('href', href); desktopEl.classList.remove('opacity-50', 'pointer-events-none'); desktopEl.textContent = i18n.myTribe || 'Minha Tribo'; }
+          if (mobileEl) { mobileEl.setAttribute('href', href); mobileEl.classList.remove('opacity-50', 'pointer-events-none'); if (mobileEl.querySelector('span')) { mobileEl.querySelector('span')!.textContent = i18n.myTribe || 'Minha Tribo'; } }
+        } else if (isHighTier) {
+          if (desktopEl) { desktopEl.setAttribute('href', '/#tribes'); desktopEl.classList.remove('opacity-50', 'pointer-events-none'); desktopEl.textContent = i18n.exploreTribes || 'Explorar Tribos'; desktopEl.style.display = 'inline-flex'; }
+          if (mobileEl) { mobileEl.setAttribute('href', '/#tribes'); mobileEl.classList.remove('opacity-50', 'pointer-events-none'); if (mobileEl.querySelector('span')) { mobileEl.querySelector('span')!.textContent = i18n.exploreTribes || 'Explorar Tribos'; } mobileEl.style.display = 'block'; }
         } else {
           if (desktopEl) { desktopEl.setAttribute('href', '/#tribes'); desktopEl.classList.add('opacity-50', 'pointer-events-none'); desktopEl.style.display = 'inline-flex'; }
           if (mobileEl) { mobileEl.setAttribute('href', '/#tribes'); mobileEl.classList.add('opacity-50', 'pointer-events-none'); mobileEl.style.display = 'block'; }
@@ -326,18 +331,25 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
     function drawerLink(item: any, extraClass: string = ''): string {
       let href = base + item.href;
       let disabledClass = '';
+      let labelOverride = '';
       if (item.dynamic && item.resolver === 'resolveMyTribeHref') {
         const resolved = resolveMyTribeHref();
         if (!resolved) {
           href = '/#tribes';
-          disabledClass = ' opacity-50 pointer-events-none';
+          const tier = _member ? resolveTierFromMember(_member) : 'visitor';
+          const isHighTier = (TIER_RANK[tier] ?? 0) >= (TIER_RANK['admin' as AccessTier] ?? 4);
+          if (isHighTier) {
+            labelOverride = i18n.exploreTribes || 'Explorar Tribos';
+          } else {
+            disabledClass = ' opacity-50 pointer-events-none';
+          }
         } else {
           href = resolved;
         }
       }
-      const label = i18n[toCamelKey(item.key)] || item.labelKey;
+      const label = labelOverride || i18n[toCamelKey(item.key)] || item.labelKey;
       const icon = DRAWER_ICONS[item.key] || '';
-      return '<a href="' + href + '" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold no-underline transition-all ' + extraClass + disabledClass + '">' + icon + label + '</a>';
+      return '<a href="' + href + '" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold no-underline transition-all ' + extraClass + disabledClass + '">' + icon + '<span>' + label + '</span></a>';
     }
 
     function toCamelKey(key: string): string {

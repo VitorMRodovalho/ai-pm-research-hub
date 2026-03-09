@@ -4,12 +4,29 @@ import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import AdminNav from '../../components/nav/AdminNav.astro';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
-const PRODUCT_DASHBOARD_URL = import.meta.env.PUBLIC_POSTHOG_PRODUCT_DASHBOARD_URL || '';
-const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL || '';
 const ANALYTICS_I18N = {
   consentGranted: t('admin.analytics.consentGranted', lang),
   consentDenied: t('admin.analytics.consentDenied', lang),
   consentUnknown: t('admin.analytics.consentUnknown', lang),
+  funnelTitle: t('admin.analytics.funnelTitle', lang),
+  funnelDesc: t('admin.analytics.funnelDesc', lang),
+  radarTitle: t('admin.analytics.radarTitle', lang),
+  radarDesc: t('admin.analytics.radarDesc', lang),
+  totalMembers: t('admin.analytics.totalMembers', lang),
+  withTribe: t('admin.analytics.withTribe', lang),
+  withCredly: t('admin.analytics.withCredly', lang),
+  withPhoto: t('admin.analytics.withPhoto', lang),
+  withLinkedin: t('admin.analytics.withLinkedin', lang),
+  tribeLeaders: t('admin.analytics.tribeLeaders', lang),
+  totalArtifacts: t('admin.analytics.totalArtifacts', lang),
+  totalEvents: t('admin.analytics.totalEvents', lang),
+  totalBroadcasts: t('admin.analytics.totalBroadcasts', lang),
+  members: t('admin.analytics.members', lang),
+  credly: t('admin.analytics.credly', lang),
+  photos: t('admin.analytics.photos', lang),
+  linkedin: t('admin.analytics.linkedin', lang),
+  artifacts: t('admin.analytics.artifacts', lang),
+  noData: t('admin.analytics.noData', lang),
 };
 ---
 
@@ -26,19 +43,15 @@ const ANALYTICS_I18N = {
     <div id="analytics-loading" class="text-center py-10 text-slate-400">{t('admin.analytics.loading', lang)}</div>
 
     <div id="analytics-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
-      <div class="text-2xl mb-2">🔒</div>
+      <div class="text-2xl mb-2">&#x1F512;</div>
       <p class="font-semibold text-amber-800">{t('admin.analytics.denied', lang)}</p>
       <a href="/admin" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
         {t('admin.analytics.backAdmin', lang)}
       </a>
     </div>
 
-    <div id="analytics-panel" class="hidden space-y-4">
-      <div class="bg-white border border-slate-200 rounded-xl p-4">
-        <div class="text-[.75rem] font-semibold text-slate-500 mb-1">{t('admin.analytics.ruleTitle', lang)}</div>
-        <p class="text-[.72rem] text-slate-500">{t('admin.analytics.ruleBody', lang)}</p>
-      </div>
-
+    <div id="analytics-panel" class="hidden space-y-6">
+      <!-- Consent card -->
       <div class="bg-white border border-slate-200 rounded-xl p-4">
         <div class="flex items-center justify-between gap-3 flex-wrap">
           <div>
@@ -57,69 +70,33 @@ const ANALYTICS_I18N = {
         </div>
       </div>
 
-      <div class="grid grid-cols-1 gap-4">
-        <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-            <div>
-              <h2 class="text-sm font-bold text-navy">{t('admin.analytics.productTitle', lang)}</h2>
-              <p class="text-[.68rem] text-slate-400">{t('admin.analytics.productSubtitle', lang)}</p>
-            </div>
-            {PRODUCT_DASHBOARD_URL && (
-              <a href={PRODUCT_DASHBOARD_URL} target="_blank" rel="noopener noreferrer" class="text-[.72rem] font-semibold text-teal no-underline hover:underline">
-                {t('admin.analytics.openExternal', lang)}
-              </a>
-            )}
-          </div>
-          {!PRODUCT_DASHBOARD_URL ? (
-            <div class="p-4 text-[.72rem] text-slate-500">
-              {t('admin.analytics.missingConfig', lang)} <code class="bg-slate-100 px-1 py-0.5 rounded">PUBLIC_POSTHOG_PRODUCT_DASHBOARD_URL</code>
-            </div>
-          ) : (
-            <iframe
-              src={PRODUCT_DASHBOARD_URL}
-              title="PostHog Product Analytics Dashboard"
-              class="w-full min-h-[640px] border-0"
-              loading="lazy"
-              referrerpolicy="strict-origin-when-cross-origin"
-              sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
-            ></iframe>
-          )}
-        </section>
+      <!-- Funnel Section -->
+      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-200">
+          <h2 class="text-sm font-bold text-navy" id="funnel-title"></h2>
+          <p class="text-[.68rem] text-slate-400" id="funnel-desc"></p>
+        </div>
+        <div id="funnel-body" class="p-4">
+          <div class="text-center py-6 text-slate-400 text-sm animate-pulse">Carregando...</div>
+        </div>
+      </section>
 
-        <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-            <div>
-              <h2 class="text-sm font-bold text-navy">{t('admin.analytics.commsTitle', lang)}</h2>
-              <p class="text-[.68rem] text-slate-400">{t('admin.analytics.commsSubtitle', lang)}</p>
-            </div>
-            {COMMS_DASHBOARD_URL && (
-              <a href={COMMS_DASHBOARD_URL} target="_blank" rel="noopener noreferrer" class="text-[.72rem] font-semibold text-teal no-underline hover:underline">
-                {t('admin.analytics.openExternal', lang)}
-              </a>
-            )}
-          </div>
-          {!COMMS_DASHBOARD_URL ? (
-            <div class="p-4 text-[.72rem] text-slate-500">
-              {t('admin.analytics.missingConfig', lang)} <code class="bg-slate-100 px-1 py-0.5 rounded">PUBLIC_LOOKER_COMMS_DASHBOARD_URL</code>
-            </div>
-          ) : (
-            <iframe
-              src={COMMS_DASHBOARD_URL}
-              title="Communications Analytics Dashboard"
-              class="w-full min-h-[640px] border-0"
-              loading="lazy"
-              referrerpolicy="strict-origin-when-cross-origin"
-              sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
-            ></iframe>
-          )}
-        </section>
-      </div>
+      <!-- Radar Section -->
+      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-200">
+          <h2 class="text-sm font-bold text-navy" id="radar-title"></h2>
+          <p class="text-[.68rem] text-slate-400" id="radar-desc"></p>
+        </div>
+        <div id="radar-body" class="p-4">
+          <div class="text-center py-6 text-slate-400 text-sm animate-pulse">Carregando...</div>
+        </div>
+      </section>
     </div>
   </div>
 </BaseLayout>
 
 <script is:inline define:vars={{ ANALYTICS_I18N }}>
-  window.__ANALYTICS_I18N = typeof ANALYTICS_I18N !== 'undefined' ? ANALYTICS_I18N : { consentGranted: '', consentDenied: '', consentUnknown: '' };
+  window.__ANALYTICS_I18N = typeof ANALYTICS_I18N !== 'undefined' ? ANALYTICS_I18N : {};
 </script>
 <script>
   import { canAccessAdminRoute } from '../../lib/admin/constants';
@@ -127,6 +104,7 @@ const ANALYTICS_I18N = {
   const CONSENT_KEY = 'analytics_consent';
   let sb: any = null;
   let MEMBER: any = null;
+  const L = (typeof window !== 'undefined' && (window as any).__ANALYTICS_I18N) || {};
 
   function allowAnalytics(m: any): boolean {
     return canAccessAdminRoute(m, 'admin_analytics');
@@ -143,6 +121,8 @@ const ANALYTICS_I18N = {
     document.getElementById('analytics-denied')?.classList.add('hidden');
     document.getElementById('analytics-panel')?.classList.remove('hidden');
     setupConsentUi();
+    loadFunnel();
+    loadRadar();
   }
 
   function consentValue(): 'granted' | 'denied' | 'unknown' {
@@ -154,25 +134,21 @@ const ANALYTICS_I18N = {
   function renderConsentStatus() {
     const statusEl = document.getElementById('consent-status');
     if (!statusEl) return;
-    const i18n = (typeof window !== 'undefined' && (window as any).__ANALYTICS_I18N) || { consentGranted: '', consentDenied: '', consentUnknown: '' };
     const v = consentValue();
     if (v === 'granted') {
-      statusEl.textContent = i18n.consentGranted || 'Consentimento ativo';
+      statusEl.textContent = L.consentGranted || 'Consentimento ativo';
       statusEl.className = 'text-[.68rem] text-emerald-600 mt-1';
-      return;
-    }
-    if (v === 'denied') {
-      statusEl.textContent = i18n.consentDenied || 'Consentimento revogado';
+    } else if (v === 'denied') {
+      statusEl.textContent = L.consentDenied || 'Consentimento revogado';
       statusEl.className = 'text-[.68rem] text-crimson mt-1';
-      return;
+    } else {
+      statusEl.textContent = L.consentUnknown || 'Nao consentido';
+      statusEl.className = 'text-[.68rem] text-slate-400 mt-1';
     }
-    statusEl.textContent = i18n.consentUnknown || 'Não consentido';
-    statusEl.className = 'text-[.68rem] text-slate-400 mt-1';
   }
 
   function broadcastConsent() {
-    const detail = { consent: consentValue() };
-    window.dispatchEvent(new CustomEvent('analytics:consent-changed', { detail }));
+    window.dispatchEvent(new CustomEvent('analytics:consent-changed', { detail: { consent: consentValue() } }));
   }
 
   function setupConsentUi() {
@@ -180,21 +156,132 @@ const ANALYTICS_I18N = {
     const revokeBtn = document.getElementById('btn-consent-revoke');
     if (grantBtn && !grantBtn.dataset.bound) {
       grantBtn.dataset.bound = '1';
-      grantBtn.addEventListener('click', () => {
-        localStorage.setItem(CONSENT_KEY, 'granted');
-        renderConsentStatus();
-        broadcastConsent();
-      });
+      grantBtn.addEventListener('click', () => { localStorage.setItem(CONSENT_KEY, 'granted'); renderConsentStatus(); broadcastConsent(); });
     }
     if (revokeBtn && !revokeBtn.dataset.bound) {
       revokeBtn.dataset.bound = '1';
-      revokeBtn.addEventListener('click', () => {
-        localStorage.setItem(CONSENT_KEY, 'denied');
-        renderConsentStatus();
-        broadcastConsent();
-      });
+      revokeBtn.addEventListener('click', () => { localStorage.setItem(CONSENT_KEY, 'denied'); renderConsentStatus(); broadcastConsent(); });
     }
     renderConsentStatus();
+  }
+
+  function escapeHtml(s: string): string {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function progressBar(label: string, value: number, total: number, color: string): string {
+    const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+    return '<div class="flex items-center gap-3 py-2">' +
+      '<div class="w-40 text-[.72rem] font-semibold text-slate-600 truncate">' + escapeHtml(label) + '</div>' +
+      '<div class="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden">' +
+        '<div class="h-full rounded-full transition-all duration-700" style="width:' + pct + '%;background:' + color + '"></div>' +
+      '</div>' +
+      '<div class="w-20 text-right text-[.72rem] font-bold" style="color:' + color + '">' + value + '/' + total + ' (' + pct + '%)</div>' +
+    '</div>';
+  }
+
+  async function loadFunnel() {
+    const titleEl = document.getElementById('funnel-title');
+    const descEl = document.getElementById('funnel-desc');
+    const bodyEl = document.getElementById('funnel-body');
+    if (titleEl) titleEl.textContent = L.funnelTitle || 'Funil de Engajamento';
+    if (descEl) descEl.textContent = L.funnelDesc || '';
+    if (!bodyEl || !sb) return;
+
+    try {
+      const { data, error } = await sb.rpc('exec_funnel_summary');
+      if (error || !data || typeof data !== 'object' || !data.total_members) {
+        bodyEl.innerHTML = '<div class="text-center py-6 text-slate-400 text-sm">' + escapeHtml(L.noData || 'Sem dados') + '</div>';
+        return;
+      }
+      const total = data.total_members;
+      const rows = [
+        { label: L.withTribe || 'Com Tribo', value: data.with_tribe, color: '#0d9488' },
+        { label: L.withCredly || 'Credly Sincronizado', value: data.with_credly, color: '#7c3aed' },
+        { label: L.withPhoto || 'Com Foto', value: data.with_photo, color: '#2563eb' },
+        { label: L.withLinkedin || 'Com LinkedIn', value: data.with_linkedin, color: '#0a66c2' },
+      ];
+
+      let html = '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">';
+      const stats = [
+        { label: L.totalMembers || 'Membros Ativos', value: data.total_members, icon: '&#x1F465;' },
+        { label: L.tribeLeaders || 'Lideres', value: data.tribe_leaders, icon: '&#x1F451;' },
+        { label: L.totalArtifacts || 'Artefatos', value: data.total_artifacts, icon: '&#x1F4C4;' },
+        { label: L.totalBroadcasts || 'Broadcasts', value: data.total_broadcasts, icon: '&#x1F4E7;' },
+      ];
+      stats.forEach(s => {
+        html += '<div class="bg-slate-50 rounded-xl p-3 text-center">' +
+          '<div class="text-lg">' + s.icon + '</div>' +
+          '<div class="text-xl font-extrabold text-navy">' + s.value + '</div>' +
+          '<div class="text-[.65rem] text-slate-500 font-semibold">' + escapeHtml(s.label) + '</div>' +
+        '</div>';
+      });
+      html += '</div>';
+
+      html += '<div class="space-y-1">';
+      rows.forEach(r => { html += progressBar(r.label, r.value, total, r.color); });
+      html += '</div>';
+
+      bodyEl.innerHTML = html;
+    } catch (e) {
+      console.warn('Funnel load error:', e);
+      bodyEl.innerHTML = '<div class="text-center py-6 text-slate-400 text-sm">' + escapeHtml(L.noData || 'Sem dados') + '</div>';
+    }
+  }
+
+  async function loadRadar() {
+    const titleEl = document.getElementById('radar-title');
+    const descEl = document.getElementById('radar-desc');
+    const bodyEl = document.getElementById('radar-body');
+    if (titleEl) titleEl.textContent = L.radarTitle || 'Radar por Tribo';
+    if (descEl) descEl.textContent = L.radarDesc || '';
+    if (!bodyEl || !sb) return;
+
+    try {
+      const { data, error } = await sb.rpc('exec_skills_radar');
+      if (error || !Array.isArray(data) || !data.length) {
+        bodyEl.innerHTML = '<div class="text-center py-6 text-slate-400 text-sm">' + escapeHtml(L.noData || 'Sem dados') + '</div>';
+        return;
+      }
+
+      const COLORS = ['#0d9488', '#7c3aed', '#2563eb', '#e11d48', '#ea580c', '#65a30d', '#0891b2'];
+      let html = '<div class="overflow-x-auto"><table class="w-full text-left text-[.72rem]">' +
+        '<thead><tr class="border-b border-slate-200 text-slate-500 font-bold">' +
+        '<th class="px-3 py-2">Tribo</th>' +
+        '<th class="px-3 py-2 text-center">' + escapeHtml(L.members || 'Membros') + '</th>' +
+        '<th class="px-3 py-2 text-center">' + escapeHtml(L.credly || 'Credly') + '</th>' +
+        '<th class="px-3 py-2 text-center">' + escapeHtml(L.photos || 'Fotos') + '</th>' +
+        '<th class="px-3 py-2 text-center">' + escapeHtml(L.linkedin || 'LinkedIn') + '</th>' +
+        '<th class="px-3 py-2 text-center">' + escapeHtml(L.artifacts || 'Artefatos') + '</th>' +
+        '</tr></thead><tbody>';
+
+      data.forEach((tribe: any, idx: number) => {
+        const color = COLORS[idx % COLORS.length];
+        const mc = tribe.member_count || 0;
+
+        function miniBar(val: number, max: number): string {
+          const pct = max > 0 ? Math.round((val / max) * 100) : 0;
+          return '<div class="flex items-center gap-1">' +
+            '<div class="w-16 h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:' + pct + '%;background:' + color + '"></div></div>' +
+            '<span class="text-[.65rem] font-bold" style="color:' + color + '">' + val + '</span></div>';
+        }
+
+        html += '<tr class="border-b border-slate-50 hover:bg-slate-50">' +
+          '<td class="px-3 py-2.5 font-semibold" style="color:' + color + '">' + escapeHtml(tribe.tribe_name) + '</td>' +
+          '<td class="px-3 py-2.5 text-center font-bold text-navy">' + mc + '</td>' +
+          '<td class="px-3 py-2.5">' + miniBar(tribe.credly_count, mc) + '</td>' +
+          '<td class="px-3 py-2.5">' + miniBar(tribe.photo_count, mc) + '</td>' +
+          '<td class="px-3 py-2.5">' + miniBar(tribe.linkedin_count, mc) + '</td>' +
+          '<td class="px-3 py-2.5 text-center font-bold text-slate-700">' + (tribe.artifacts_count || 0) + '</td>' +
+        '</tr>';
+      });
+
+      html += '</tbody></table></div>';
+      bodyEl.innerHTML = html;
+    } catch (e) {
+      console.warn('Radar load error:', e);
+      bodyEl.innerHTML = '<div class="text-center py-6 text-slate-400 text-sm">' + escapeHtml(L.noData || 'Sem dados') + '</div>';
+    }
   }
 
   function applyGate(m: any) {
@@ -207,10 +294,7 @@ const ANALYTICS_I18N = {
     if (!sb) { setTimeout(boot, 200); return; }
 
     window.addEventListener('nav:member', ((e: CustomEvent) => {
-      if (e.detail) {
-        MEMBER = e.detail;
-        applyGate(MEMBER);
-      }
+      if (e.detail) { MEMBER = e.detail; applyGate(MEMBER); }
     }) as EventListener);
 
     const m = (window as any).navGetMember?.();
@@ -224,7 +308,7 @@ const ANALYTICS_I18N = {
         applyGate(MEMBER);
         return;
       }
-    } catch (e) { console.warn('Analytics boot session check:', e); }
+    } catch (e) { console.warn('Analytics boot:', e); }
 
     showDenied();
   }
