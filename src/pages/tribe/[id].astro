@@ -62,6 +62,29 @@ const TRIBE_I18N = {
   moveToCancelled: t('tribe.moveTo.cancelled', lang),
   joinWhatsApp: t('tribe.joinWhatsApp', lang),
   chatWhatsApp: t('tribe.chatWhatsApp', lang),
+  broadcastTab: t('tribe.broadcastTab', lang),
+  broadcast: {
+    title: t('tribe.broadcast.title', lang),
+    subtitle: t('tribe.broadcast.subtitle', lang),
+    subject: t('tribe.broadcast.subject', lang),
+    subjectPlaceholder: t('tribe.broadcast.subjectPlaceholder', lang),
+    body: t('tribe.broadcast.body', lang),
+    bodyPlaceholder: t('tribe.broadcast.bodyPlaceholder', lang),
+    send: t('tribe.broadcast.send', lang),
+    sending: t('tribe.broadcast.sending', lang),
+    sent: t('tribe.broadcast.sent', lang),
+    error: t('tribe.broadcast.error', lang),
+    confirmTitle: t('tribe.broadcast.confirmTitle', lang),
+    confirmMsg: t('tribe.broadcast.confirmMsg', lang),
+    confirmYes: t('tribe.broadcast.confirmYes', lang),
+    confirmNo: t('tribe.broadcast.confirmNo', lang),
+    historyTitle: t('tribe.broadcast.historyTitle', lang),
+    historyEmpty: t('tribe.broadcast.historyEmpty', lang),
+    historyRecipients: t('tribe.broadcast.historyRecipients', lang),
+    subjectRequired: t('tribe.broadcast.subjectRequired', lang),
+    bodyRequired: t('tribe.broadcast.bodyRequired', lang),
+    rateLimit: t('tribe.broadcast.rateLimit', lang),
+  },
   commsHub: {
     title: t('tribe.commsHub.title', lang),
     subtitle: t('tribe.commsHub.subtitle', lang),
@@ -122,6 +145,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
     </div>
     <!-- Comms Hub panel (conditionally shown for comms_team members) -->
     <div id="panel-commshub" class="hidden"></div>
+    <!-- Broadcast panel (conditionally shown for tribe leader + admin) -->
+    <div id="panel-broadcast" class="hidden"></div>
   </div>
 
   <!-- Deliverable Modal -->
@@ -218,7 +243,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
 
   // ── Tab switching ──
   function switchTab(tabName: string) {
-    const panels = ['members', 'deliverables', 'resources', 'commshub'];
+    const panels = ['members', 'deliverables', 'resources', 'commshub', 'broadcast'];
     panels.forEach(p => {
       const el = document.getElementById(`panel-${p}`);
       if (el) el.classList.toggle('hidden', p !== tabName);
@@ -758,6 +783,10 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
         closeDeliverableModal();
       }
 
+      if (action === 'send-broadcast') {
+        sendBroadcast();
+      }
+
       if (action === 'open-wa') {
         e.preventDefault();
         const memberId = target.dataset.memberId;
@@ -785,6 +814,140 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
     });
   }
 
+  // ── Broadcast tab (leader + admin only) ──
+  let broadcastShown = false;
+
+  function showBroadcastTab() {
+    if (broadcastShown) return;
+    broadcastShown = true;
+    const tabs = document.getElementById('tribe-tabs');
+    if (tabs) {
+      const btn = document.createElement('button');
+      btn.className = 'tribe-tab px-4 py-2 rounded-xl text-[13px] font-semibold cursor-pointer border-0 bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all';
+      btn.dataset.action = 'switch-tab';
+      btn.dataset.tab = 'broadcast';
+      btn.textContent = I18N.broadcastTab || 'Comunicados';
+      tabs.appendChild(btn);
+    }
+  }
+
+  function checkBroadcastAccess() {
+    if (!currentMember) return;
+    const isLeaderOfThisTribe = currentMember.operational_role === 'tribe_leader'
+      && currentMember.tribe_id === TRIBE_ID;
+    if (isLeaderOfThisTribe || isHighManagement(currentMember)) {
+      showBroadcastTab();
+      renderBroadcastPanel();
+    }
+  }
+
+  function renderBroadcastPanel() {
+    const el = document.getElementById('panel-broadcast');
+    if (!el) return;
+    const BC = I18N.broadcast || {};
+    el.innerHTML = `
+      <div class="space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-200 p-6">
+          <h2 class="text-lg font-extrabold text-navy mb-1">${BC.title || 'Enviar Comunicado'}</h2>
+          <p class="text-[13px] text-slate-400 mb-4">${BC.subtitle || ''}</p>
+          <div class="space-y-3">
+            <div>
+              <label class="text-[13px] font-semibold text-slate-600 block mb-1">${BC.subject || 'Assunto'}</label>
+              <input type="text" id="bc-subject" placeholder="${BC.subjectPlaceholder || ''}"
+                class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
+            </div>
+            <div>
+              <label class="text-[13px] font-semibold text-slate-600 block mb-1">${BC.body || 'Mensagem'}</label>
+              <textarea id="bc-body" rows="6" placeholder="${BC.bodyPlaceholder || ''}"
+                class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40 resize-y"></textarea>
+            </div>
+            <div class="flex justify-end">
+              <button data-action="send-broadcast" id="btn-send-broadcast"
+                class="px-5 py-2.5 bg-purple text-white rounded-xl text-[14px] font-bold cursor-pointer border-0 hover:opacity-90 transition-all">
+                ${BC.send || 'Enviar'}
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl border border-slate-200 p-6">
+          <h3 class="text-[15px] font-bold text-navy mb-3">${BC.historyTitle || 'Histórico'}</h3>
+          <div id="bc-history-list" class="text-center py-6 text-slate-400 text-sm">${BC.historyEmpty || 'Nenhum comunicado.'}</div>
+        </div>
+      </div>`;
+    loadBroadcastHistory();
+  }
+
+  async function loadBroadcastHistory() {
+    if (!sb) return;
+    const { data } = await sb
+      .from('broadcast_log')
+      .select('id, subject, recipient_count, status, sent_at')
+      .eq('tribe_id', TRIBE_ID)
+      .order('sent_at', { ascending: false })
+      .limit(20);
+    const el = document.getElementById('bc-history-list');
+    if (!el) return;
+    const BC = I18N.broadcast || {};
+    if (!data?.length) {
+      el.innerHTML = `<div class="text-center py-6 text-slate-400 text-sm">${BC.historyEmpty || 'Nenhum comunicado.'}</div>`;
+      return;
+    }
+    const locale = I18N.dateLocale || 'pt-BR';
+    el.innerHTML = `<div class="divide-y divide-slate-100">${data.map((b: any) => {
+      const date = new Date(b.sent_at).toLocaleString(locale, { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+      const statusColor = b.status === 'sent' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600';
+      return `<div class="flex items-center gap-3 py-3">
+        <div class="flex-1 min-w-0">
+          <div class="font-semibold text-[13px] text-navy truncate">${escapeHtml(b.subject)}</div>
+          <div class="text-[11px] text-slate-400">${date} · ${b.recipient_count} ${BC.historyRecipients || 'destinatários'}</div>
+        </div>
+        <span class="text-[10px] font-bold px-2 py-0.5 rounded ${statusColor} uppercase">${b.status}</span>
+      </div>`;
+    }).join('')}</div>`;
+  }
+
+  async function sendBroadcast() {
+    if (!sb || !currentMember) return;
+    const BC = I18N.broadcast || {};
+    const subjectEl = document.getElementById('bc-subject') as HTMLInputElement;
+    const bodyEl = document.getElementById('bc-body') as HTMLTextAreaElement;
+    const btnEl = document.getElementById('btn-send-broadcast') as HTMLButtonElement;
+    if (!subjectEl || !bodyEl) return;
+
+    const subject = subjectEl.value.trim();
+    const body = bodyEl.value.trim();
+
+    if (!subject) { (window as any).toast?.(BC.subjectRequired || 'Assunto obrigatório', 'error'); return; }
+    if (!body) { (window as any).toast?.(BC.bodyRequired || 'Mensagem obrigatória', 'error'); return; }
+
+    if (!confirm((BC.confirmMsg || 'Enviar para todos os membros ativos?'))) return;
+
+    if (btnEl) { btnEl.disabled = true; btnEl.textContent = BC.sending || 'Enviando...'; }
+
+    try {
+      const { data, error } = await sb.functions.invoke('send-tribe-broadcast', {
+        body: { tribe_id: TRIBE_ID, subject, body },
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        const msg = (BC.sent || 'Enviado para {count} membros!').replace('{count}', String(data.recipient_count));
+        (window as any).toast?.(msg, 'success');
+        subjectEl.value = '';
+        bodyEl.value = '';
+        loadBroadcastHistory();
+      } else {
+        (window as any).toast?.(data?.error || BC.error || 'Erro', 'error');
+      }
+    } catch (e: any) {
+      (window as any).toast?.(BC.error || 'Erro ao enviar', 'error');
+      console.error('Broadcast error:', e);
+    } finally {
+      if (btnEl) { btnEl.disabled = false; btnEl.textContent = BC.send || 'Enviar'; }
+    }
+  }
+
   // ── Boot ──
   async function boot() {
     sb = (window as any).navGetSb?.();
@@ -809,10 +972,12 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
         currentMember = e.detail;
         checkEditPermission();
         checkCommsHubAccess();
+        checkBroadcastAccess();
       }) as EventListener);
 
       checkEditPermission();
       checkCommsHubAccess();
+      checkBroadcastAccess();
 
       // Load all tribe data in parallel
       const [tribeRes, slotsRes, membersRes, selectionsRes, delivRes, resourcesRes, artifactsRes] = await Promise.all([
