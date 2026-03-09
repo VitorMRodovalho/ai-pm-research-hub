@@ -140,7 +140,8 @@ Deno.serve(async (req) => {
   const senderName = caller.name || 'Líder de Tribo'
 
   // ── Send via Resend API (BCC for privacy) ──
-  const fromAddress = 'Núcleo IA & GP <noreply@nucleoiagp.com>'
+  // Use RESEND_FROM_ADDRESS env or default to Resend test domain
+  const fromAddress = Deno.env.get('RESEND_FROM_ADDRESS') || 'Núcleo IA & GP <onboarding@resend.dev>'
 
   const htmlBody = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
