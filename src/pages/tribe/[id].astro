@@ -925,21 +925,38 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
     if (btnEl) { btnEl.disabled = true; btnEl.textContent = BC.sending || 'Enviando...'; }
 
     try {
-      const { data, error } = await sb.functions.invoke('send-tribe-broadcast', {
-        body: { tribe_id: TRIBE_ID, subject, body },
+      const sess = await sb.auth.getSession();
+      const jwt = sess?.data?.session?.access_token || '';
+      if (!jwt) { (window as any).toast?.('Sessao expirada', 'error'); return; }
+
+      const fnBase = (sb as any).functionsUrl?.toString?.() || (sb as any).supabaseUrl + '/functions/v1';
+      const fnUrl = fnBase.replace(/\/$/, '') + '/send-tribe-broadcast';
+      const ak = (sb as any).supabaseKey || '';
+
+      console.log('[broadcast] POST', fnUrl, 'jwt:', jwt.length, 'ak:', ak.length);
+
+      const res = await fetch(fnUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt, 'apikey': ak },
+        body: JSON.stringify({ tribe_id: TRIBE_ID, subject: subject, body: body }),
       });
 
-      if (error) throw error;
+      const txt = await res.text();
+      console.log('[broadcast] status:', res.status, 'body:', txt);
 
-      if (data?.success) {
-        const msg = (BC.sent || 'Enviado para {count} membros!').replace('{count}', String(data.recipient_count));
-        (window as any).toast?.(msg, 'success');
-        subjectEl.value = '';
-        bodyEl.value = '';
-        loadBroadcastHistory();
-      } else {
-        (window as any).toast?.(data?.error || BC.error || 'Erro', 'error');
+      let data: any = {};
+      try { data = JSON.parse(txt); } catch (_) { data = { success: false, error: 'Resposta invalida: ' + txt.substring(0, 200) }; }
+
+      if (!res.ok || !data.success) {
+        (window as any).toast?.(data.error || data.detail || BC.error || 'Erro', 'error');
+        return;
       }
+
+      const msg = (BC.sent || 'Enviado para {count} membros!').replace('{count}', String(data.recipient_count));
+      (window as any).toast?.(msg, 'success');
+      subjectEl.value = '';
+      bodyEl.value = '';
+      loadBroadcastHistory();
     } catch (e: any) {
       (window as any).toast?.(BC.error || 'Erro ao enviar', 'error');
       console.error('Broadcast error:', e);
