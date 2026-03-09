@@ -16,13 +16,15 @@ export const OPROLE_COLORS: Record<string, string> = {
 export const DESIG_LABELS: Record<string, string> = {
   sponsor: 'Patrocinador', chapter_liaison: 'Ponto Focal', ambassador: 'Embaixador',
   founder: 'Fundador', curator: 'Curador', comms_team: 'Comunicação',
-  co_gp: 'Co-GP', tribe_leader: 'Líder de Tribo'
+  co_gp: 'Co-GP', tribe_leader: 'Líder de Tribo',
+  comms_leader: 'Líder de Comunicação', comms_member: 'Membro de Comunicação'
 };
 
 export const DESIG_COLORS: Record<string, string> = {
   sponsor: '#BE2027', chapter_liaison: '#BE2027', ambassador: '#10B981',
   founder: '#7C3AED', curator: '#D97706', comms_team: '#06B6D4',
-  co_gp: '#FF610F', tribe_leader: '#4F17A8'
+  co_gp: '#FF610F', tribe_leader: '#4F17A8',
+  comms_leader: '#06B6D4', comms_member: '#06B6D4'
 };
 
 export const TRIBE_NAMES: Record<number, string> = {

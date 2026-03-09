@@ -320,7 +320,41 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
+    const token = authHeader.replace(/^Bearer\s+/i, '')
+    const isServiceRole = token === serviceRoleKey
+
     const sb = createClient(supabaseUrl, serviceRoleKey)
+
+    // Admin-only: verify caller has tier >= admin (batch operation)
+    if (!isServiceRole) {
+      const uc = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: 'Bearer ' + token } },
+      })
+      const ur = await uc.auth.getUser()
+      if (ur.error || !ur.data?.user) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Invalid token' }),
+          { headers: jsonHeaders, status: 401 },
+        )
+      }
+      const { data: caller } = await sb
+        .from('members')
+        .select('is_superadmin, operational_role')
+        .eq('auth_id', ur.data.user.id)
+        .single()
+
+      const isAdmin = caller?.is_superadmin === true
+        || caller?.operational_role === 'manager'
+        || caller?.operational_role === 'deputy_manager'
+
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Admin access required for batch sync' }),
+          { headers: jsonHeaders, status: 403 },
+        )
+      }
+    }
 
     const { data: members, error: membersError } = await sb
       .from('members')

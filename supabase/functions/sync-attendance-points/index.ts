@@ -37,12 +37,17 @@ Deno.serve(async (req) => {
 
     const { data: member } = await sb
       .from('members')
-      .select('id, is_superadmin')
+      .select('id, is_superadmin, operational_role')
       .eq('auth_id', user.id)
       .single()
 
     if (!member) return unauthorizedResponse()
-    if (!member.is_superadmin) {
+
+    const isAdmin = member.is_superadmin === true
+      || member.operational_role === 'manager'
+      || member.operational_role === 'deputy_manager'
+
+    if (!isAdmin) {
       callerMemberId = member.id
     }
   }

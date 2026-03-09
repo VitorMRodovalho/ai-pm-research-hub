@@ -191,14 +191,11 @@ Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Se
 Nenhuma divergência crítica encontrada. O `navigation.config.ts`, as RLS policies,
 e as Edge Functions estão alinhados com esta matriz.
 
-**Observações menores**:
-1. `TeamSection.astro` filtra comms team por designação `comms_team` (legada),
-   enquanto o RBAC usa `comms_leader`/`comms_member`. Recomendação: atualizar o
-   filtro para `comms_leader || comms_member` quando o backfill de designações
-   for executado (S-COM1).
-2. `sync-attendance-points` e `sync-credly-all` aceitam qualquer Bearer token
-   autenticado, mas na prática são invocados apenas por admins via UI. Considerar
-   adicionar verificação `has_min_tier(4)` se necessário.
+**Observações menores (todas resolvidas em S-COM1)**:
+1. ~~`TeamSection.astro` filtra comms team por designação `comms_team` (legada).~~
+   **Resolvido**: Filtro atualizado para `comms_leader || comms_member || comms_team` (backward compat). Backfill executado.
+2. ~~`sync-attendance-points` e `sync-credly-all` aceitam qualquer Bearer token.~~
+   **Resolvido**: Ambas as Edge Functions agora verificam `is_superadmin || operational_role in (manager, deputy_manager)` antes de executar sincronizações em massa. Não-admins em `sync-attendance-points` só sincronizam seus próprios pontos.
 
 ---
 
@@ -206,4 +203,5 @@ e as Edge Functions estão alinhados com esta matriz.
 
 | Data       | Alteração                                              |
 |------------|--------------------------------------------------------|
+| 2026-03-09 | S-COM1: Divergências #1 e #2 resolvidas. Backfill de designações + blindagem de Edge Functions. |
 | 2026-03-09 | Documento criado (Wave 4). Cobertura: W1–W3 + W4.10.  |

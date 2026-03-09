@@ -22,6 +22,8 @@ const ROLE_COLORS: Record<string, string> = {
   sponsor:         '#BE2027',
   founder:         '#7C3AED',
   comms_team:      '#06B6D4',
+  comms_leader:    '#06B6D4',
+  comms_member:    '#06B6D4',
   chapter_liaison: '#BE2027',
 };
 ---
@@ -45,7 +47,7 @@ const ROLE_COLORS: Record<string, string> = {
     <!-- Role legend -->
     <div class="mt-6 flex gap-6 justify-center flex-wrap text-[.7rem] text-white/50">
       {Object.entries(ROLE_COLORS).filter(([k]) =>
-        ['manager','deputy_manager','tribe_leader','researcher','ambassador','curator','sponsor','founder','comms_team','chapter_liaison'].includes(k)
+        ['manager','deputy_manager','tribe_leader','researcher','ambassador','curator','sponsor','founder','comms_team','comms_leader','comms_member','chapter_liaison'].includes(k)
       ).map(([role, color]) => (
         <span class="inline-flex items-center gap-1">
           <span class="w-[9px] h-[9px] rounded-full inline-block" style={`background:${color}`}></span>
@@ -83,7 +85,7 @@ const ROLE_COLORS: Record<string, string> = {
   const ROLE_COLORS: Record<string, string> = {
     manager: '#FF610F', deputy_manager: '#FF610F', tribe_leader: '#4F17A8', researcher: '#EC4899',
     facilitator: '#EC4899', communicator: '#EC4899', ambassador: '#10B981',
-    curator: '#D97706', sponsor: '#BE2027', founder: '#7C3AED', comms_team: '#06B6D4', chapter_liaison: '#BE2027',
+    curator: '#D97706', sponsor: '#BE2027', founder: '#7C3AED', comms_team: '#06B6D4', comms_leader: '#06B6D4', comms_member: '#06B6D4', chapter_liaison: '#BE2027',
   };
 
   const HEADING_COLORS: Record<string, string> = {
@@ -277,10 +279,10 @@ const ROLE_COLORS: Record<string, string> = {
       (hasOpRole(m, ['manager', 'deputy_manager']) || hasDesig(m, 'co_gp'))
     );
 
-    // Comms Team: designation includes comms_team, active
+    // Comms Team: designation includes comms_leader, comms_member, or legacy comms_team
     const commsTeam = allMembers.filter(m =>
       m.current_cycle_active &&
-      hasDesig(m, 'comms_team')
+      (hasDesig(m, 'comms_leader') || hasDesig(m, 'comms_member') || hasDesig(m, 'comms_team'))
     );
 
     // Tribe Leaders: operational_role = tribe_leader OR designation tribe_leader, active
