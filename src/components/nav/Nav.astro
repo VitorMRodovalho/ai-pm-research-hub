@@ -64,6 +64,7 @@ const jsI18n = JSON.stringify({
   presentations: t('nav.presentations', lang),
   myTribe: t('nav.myTribe', lang),
   exploreTribes: t('nav.exploreTribes', lang),
+  tribePrefix: t('workspace.tribePrefix', lang),
   logout: t('nav.logout', lang),
   user: t('nav.user', lang),
   guestNotFound: t('guest.navNotFound', lang),
@@ -172,6 +173,16 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
   const sb = getSupabase();
   let _member: any = null;
   let _user: any = null;
+  let _tribesCache: any[] | null = null;
+
+  async function loadTribesForDropdown(): Promise<any[]> {
+    if (_tribesCache) return _tribesCache;
+    try {
+      const { data } = await sb.from('tribes').select('id, name, whatsapp_url').eq('is_active', true).order('id');
+      _tribesCache = data || [];
+    } catch (_) { _tribesCache = []; }
+    return _tribesCache;
+  }
 
   const i18nEl = document.getElementById('nav-i18n-data');
   const i18n = i18nEl ? JSON.parse(i18nEl.textContent || '{}') : {};
@@ -220,8 +231,42 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
           if (desktopEl) { desktopEl.setAttribute('href', href); desktopEl.classList.remove('opacity-50', 'pointer-events-none'); desktopEl.textContent = i18n.myTribe || 'Minha Tribo'; }
           if (mobileEl) { mobileEl.setAttribute('href', href); mobileEl.classList.remove('opacity-50', 'pointer-events-none'); if (mobileEl.querySelector('span')) { mobileEl.querySelector('span')!.textContent = i18n.myTribe || 'Minha Tribo'; } }
         } else if (isHighTier) {
-          if (desktopEl) { desktopEl.setAttribute('href', '/#tribes'); desktopEl.classList.remove('opacity-50', 'pointer-events-none'); desktopEl.textContent = i18n.exploreTribes || 'Explorar Tribos'; desktopEl.style.display = 'inline-flex'; }
-          if (mobileEl) { mobileEl.setAttribute('href', '/#tribes'); mobileEl.classList.remove('opacity-50', 'pointer-events-none'); if (mobileEl.querySelector('span')) { mobileEl.querySelector('span')!.textContent = i18n.exploreTribes || 'Explorar Tribos'; } mobileEl.style.display = 'block'; }
+          // Desktop: inject dropdown trigger
+          if (desktopEl) {
+            desktopEl.style.display = 'inline-flex';
+            desktopEl.classList.remove('opacity-50', 'pointer-events-none');
+            desktopEl.removeAttribute('href');
+            desktopEl.setAttribute('data-action', 'toggle-tribe-dropdown');
+            desktopEl.setAttribute('role', 'button');
+            desktopEl.setAttribute('aria-haspopup', 'true');
+            desktopEl.setAttribute('aria-expanded', 'false');
+            desktopEl.innerHTML = (i18n.exploreTribes || 'Explorar Tribos') + ' <span class="text-[.55rem] ml-0.5 opacity-60">&#x25BE;</span>';
+            // Create dropdown container if missing
+            if (!document.getElementById('tribe-dropdown')) {
+              var dd = document.createElement('div');
+              dd.id = 'tribe-dropdown';
+              dd.className = 'hidden absolute top-full mt-1 right-0 w-56 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-[300] max-h-[60vh] overflow-y-auto';
+              dd.innerHTML = '<div class="px-3 py-2 text-slate-400 text-xs">Loading...</div>';
+              desktopEl.style.position = 'relative';
+              desktopEl.appendChild(dd);
+            }
+          }
+          // Mobile: same approach
+          if (mobileEl) {
+            mobileEl.style.display = 'block';
+            mobileEl.classList.remove('opacity-50', 'pointer-events-none');
+            mobileEl.removeAttribute('href');
+            mobileEl.setAttribute('data-action', 'toggle-tribe-dropdown-mobile');
+            mobileEl.setAttribute('role', 'button');
+            if (mobileEl.querySelector('span')) { mobileEl.querySelector('span')!.textContent = (i18n.exploreTribes || 'Explorar Tribos') + ' ▾'; }
+            else { mobileEl.textContent = (i18n.exploreTribes || 'Explorar Tribos') + ' ▾'; }
+            if (!document.getElementById('tribe-dropdown-mobile')) {
+              var ddm = document.createElement('div');
+              ddm.id = 'tribe-dropdown-mobile';
+              ddm.className = 'hidden mt-1 bg-white/10 rounded-lg overflow-hidden';
+              mobileEl.parentElement?.insertBefore(ddm, mobileEl.nextSibling);
+            }
+          }
         } else {
           if (desktopEl) { desktopEl.setAttribute('href', '/#tribes'); desktopEl.classList.add('opacity-50', 'pointer-events-none'); desktopEl.style.display = 'inline-flex'; }
           if (mobileEl) { mobileEl.setAttribute('href', '/#tribes'); mobileEl.classList.add('opacity-50', 'pointer-events-none'); mobileEl.style.display = 'block'; }
@@ -340,6 +385,12 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
           const isHighTier = (TIER_RANK[tier] ?? 0) >= (TIER_RANK['admin' as AccessTier] ?? 4);
           if (isHighTier) {
             labelOverride = i18n.exploreTribes || 'Explorar Tribos';
+            const icon = DRAWER_ICONS[item.key] || '';
+            return '<div class="drawer-tribe-group">'
+              + '<button data-action="toggle-drawer-tribes" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 bg-transparent transition-all ' + extraClass + '">'
+              + icon + '<span>' + labelOverride + '</span><span class="ml-auto text-[.6rem] opacity-50 drawer-tribe-chevron">&#x25B6;</span></button>'
+              + '<div id="drawer-tribe-list" class="hidden ml-6 mt-1 flex flex-col gap-0.5"></div>'
+              + '</div>';
           } else {
             disabledClass = ' opacity-50 pointer-events-none';
           }
@@ -391,6 +442,64 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
     if (!target) return;
     const action = target.dataset.action;
 
+    if (action === 'toggle-tribe-dropdown') {
+      e.preventDefault(); e.stopPropagation();
+      var dd = document.getElementById('tribe-dropdown');
+      if (!dd) return;
+      var isOpen = !dd.classList.contains('hidden');
+      dd.classList.toggle('hidden');
+      target.setAttribute('aria-expanded', String(!isOpen));
+      if (!isOpen) {
+        loadTribesForDropdown().then(function(tribes) {
+          var base = document.documentElement.lang === 'pt-BR' || document.documentElement.lang === 'pt' ? '' : document.documentElement.lang === 'en' ? '/en' : '/es';
+          dd!.innerHTML = tribes.map(function(t: any) {
+            return '<a href="' + base + '/tribe/' + t.id + '" class="flex items-center gap-2 px-3 py-2 text-[.78rem] text-slate-700 font-medium hover:bg-slate-50 no-underline transition-all">'
+              + '<span class="w-5 h-5 rounded-full bg-navy/10 flex items-center justify-center text-[.6rem] font-bold text-navy shrink-0">' + t.id + '</span>'
+              + '<span class="truncate">' + (t.name || (i18n.tribePrefix || 'Tribo') + ' ' + t.id) + '</span>'
+              + '</a>';
+          }).join('') + '<hr class="border-slate-100 my-1"><a href="' + base + '/#tribes" class="flex items-center gap-2 px-3 py-2 text-[.7rem] text-slate-400 font-medium hover:bg-slate-50 no-underline transition-all"><span class="w-5 h-5 flex items-center justify-center text-[.7rem]">&#x1F30D;</span>' + (i18n.exploreTribes || 'Ver todas') + '</a>';
+        });
+      }
+    }
+    if (action === 'toggle-drawer-tribes') {
+      e.preventDefault();
+      var dtl = document.getElementById('drawer-tribe-list');
+      var chev = target.querySelector('.drawer-tribe-chevron');
+      if (!dtl) return;
+      var isOpenD = !dtl.classList.contains('hidden');
+      dtl.classList.toggle('hidden');
+      if (chev) chev.innerHTML = isOpenD ? '&#x25B6;' : '&#x25BC;';
+      if (!isOpenD && !dtl.dataset.loaded) {
+        dtl.dataset.loaded = '1';
+        loadTribesForDropdown().then(function(tribes) {
+          var base = document.documentElement.lang === 'pt-BR' || document.documentElement.lang === 'pt' ? '' : document.documentElement.lang === 'en' ? '/en' : '/es';
+          dtl!.innerHTML = tribes.map(function(t: any) {
+            return '<a href="' + base + '/tribe/' + t.id + '" class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[.73rem] text-slate-600 font-medium no-underline hover:bg-slate-50 transition-all">'
+              + '<span class="w-4 h-4 rounded-full bg-navy/10 flex items-center justify-center text-[.55rem] font-bold text-navy shrink-0">' + t.id + '</span>'
+              + (t.name || 'Tribo ' + t.id)
+              + '</a>';
+          }).join('');
+        });
+      }
+    }
+    if (action === 'toggle-tribe-dropdown-mobile') {
+      e.preventDefault();
+      var ddm = document.getElementById('tribe-dropdown-mobile');
+      if (!ddm) return;
+      var isOpenM = !ddm.classList.contains('hidden');
+      ddm.classList.toggle('hidden');
+      if (!isOpenM) {
+        loadTribesForDropdown().then(function(tribes) {
+          var base = document.documentElement.lang === 'pt-BR' || document.documentElement.lang === 'pt' ? '' : document.documentElement.lang === 'en' ? '/en' : '/es';
+          ddm!.innerHTML = tribes.map(function(t: any) {
+            return '<a href="' + base + '/tribe/' + t.id + '" data-action="close-mobile" class="flex items-center gap-2 px-4 py-2.5 text-white/80 text-sm font-medium no-underline hover:bg-white/10 transition-all">'
+              + '<span class="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[.6rem] font-bold shrink-0">' + t.id + '</span>'
+              + (t.name || (i18n.tribePrefix || 'Tribo') + ' ' + t.id)
+              + '</a>';
+          }).join('');
+        });
+      }
+    }
     if (action === 'open-auth') {
       document.dispatchEvent(new CustomEvent('open-auth'));
     }
@@ -465,6 +574,29 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
   (window as any).navGetSb = () => sb;
 
   // ── Boot ──
+  // Close tribe dropdown on outside click
+  document.addEventListener('click', function(ev: MouseEvent) {
+    var dd = document.getElementById('tribe-dropdown');
+    if (dd && !dd.classList.contains('hidden')) {
+      var trigger = dd.parentElement;
+      if (trigger && !trigger.contains(ev.target as Node)) {
+        dd.classList.add('hidden');
+        trigger.setAttribute('aria-expanded', 'false');
+      }
+    }
+  }, true);
+
+  // Close on Escape
+  document.addEventListener('keydown', function(ev: KeyboardEvent) {
+    if (ev.key === 'Escape') {
+      var dd = document.getElementById('tribe-dropdown');
+      if (dd && !dd.classList.contains('hidden')) {
+        dd.classList.add('hidden');
+        dd.parentElement?.setAttribute('aria-expanded', 'false');
+      }
+    }
+  });
+
   async function bootNav() {
     const { data: { session } } = await sb.auth.getSession();
     if (session) {

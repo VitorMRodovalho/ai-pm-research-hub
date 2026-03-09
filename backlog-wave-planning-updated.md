@@ -6,19 +6,22 @@
 
 ---
 
-## 🔄 LATEST UPDATE (2026-03-09 — Critical Bugfix Sprint)
+## 🔄 LATEST UPDATE (2026-03-10 — Sprint 4: UX Avancada e Fecho de Alocacoes)
 
 ### Completed
+- **Sprint 4 Epic 1: Global Tribe Selector** — Interactive dropdown for Tier 4+ admins in Nav.astro (desktop + mobile + drawer). Cached tribe list, click-outside close, Escape key support.
+- **Sprint 4 Epic 2: Allocation Notification** — `send-allocation-notify` Edge Function + Admin UI with dry-run preview, confirmation modal, per-tribe personalized emails with WhatsApp CTA.
+- **Sprint 2+3: Knowledge Hub Tags + Leader Tools** — Artifact tag filtering, deliverables progress bar and My Week validated as existing.
+- **Sprint 1: Gamification Refactor** — Cycle-aware leaderboard, trail clarity checklist, per-cycle XP in profile timeline.
+
+### Previously Completed
 - **P0 Bug: Tribe Counter 0/6** — Root cause: JSON string keys vs numeric TRIBE_IDS. Fixed with key coercion.
 - **P0 Bug: Curatorship forced logout** — Refactored auth boot to use nav:member event pattern.
 - **P0 Bug: Comms Dashboard infinite loading** — Fixed iframe/native mode loader state.
 - **S-PRES1: Presentation Module** — Democratic ACL (admin+ on Home, leader+ on tribe), end-session modal, /presentations page.
 - **ACAO ZERO: Legacy Assets** — 106 files organized into public/legacy-assets/ and data/legacy-imports/.
-
-### In Progress (P2 — UX Governance Refactor)
-- Minha Tribo link for Superadmin (Tier 4+) → "Explorar Tribos" or tribe selector
-- LGPD visual mask for non-authorized users in tribe view
-- Replace PostHog iframes with native Tailwind analytics from RPCs
+- **P2 UX Governance Refactor** — LGPD visual masks, native analytics, Superadmin navigation fallback.
+- **P3 Knowledge Ingestion** — Trello/Calendar import, PDF upload, webinar pipeline.
 
 ### ✅ Completed (P3 — Knowledge Ingestion) [2026-03-09]
 - ✅ Trello JSON import UI in admin Knowledge tab (dry-run + real import)

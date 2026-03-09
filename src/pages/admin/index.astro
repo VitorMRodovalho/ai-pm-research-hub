@@ -169,6 +169,27 @@ const ADMIN_I18N = {
 
       <div id="panel-tribes">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6" id="tribe-cards"></div>
+
+        <!-- Notify Allocations Action Card -->
+        <div class="bg-gradient-to-r from-navy/5 to-teal/5 border border-navy/20 rounded-2xl p-5 mb-6 flex items-center justify-between flex-wrap gap-4" id="notify-alloc-card" style="display:none">
+          <div>
+            <h3 class="text-sm font-bold text-navy flex items-center gap-2">
+              <svg class="w-5 h-5 text-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+              Notificar Alocacoes
+            </h3>
+            <p class="text-[.72rem] text-slate-500 mt-1">Enviar e-mail de confirmacao de tribo para todos os membros alocados, incluindo link do WhatsApp.</p>
+            <div class="text-[.68rem] text-slate-400 mt-1" id="notify-alloc-summary"></div>
+          </div>
+          <div class="flex gap-2">
+            <button type="button" class="px-4 py-2 rounded-lg text-[.78rem] font-semibold border border-navy/30 text-navy bg-white hover:bg-navy/5 cursor-pointer transition-all" id="btn-notify-preview">
+              Pre-visualizar
+            </button>
+            <button type="button" class="px-4 py-2 rounded-lg text-[.78rem] font-semibold bg-teal text-white border-0 hover:bg-teal/90 cursor-pointer transition-all" id="btn-notify-send">
+              Notificar Membros
+            </button>
+          </div>
+        </div>
+
         <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
           <div class="px-5 py-3.5 border-b border-slate-200 bg-amber-50">
             <h3 class="text-sm font-bold text-amber-800">{t('admin.pendingPoolTitle', lang)}</h3>
@@ -962,6 +983,28 @@ const ADMIN_I18N = {
       </div>
     </div>
   </div>
+  <!-- Modal: Notify Allocations Confirmation -->
+  <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-notify-alloc">
+    <div class="bg-white rounded-2xl w-full max-w-[520px] overflow-hidden flex flex-col" style="max-height:90vh">
+      <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center flex-shrink-0">
+        <h3 class="text-base font-bold text-navy flex items-center gap-2">
+          <svg class="w-5 h-5 text-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          Confirmar Notificacao de Alocacoes
+        </h3>
+        <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" id="btn-close-notify-modal">&#x2715;</button>
+      </div>
+      <div class="p-5 overflow-y-auto flex-1" id="notify-modal-body">
+        <p class="text-slate-400 text-sm text-center py-6">Carregando...</p>
+      </div>
+      <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2 flex-shrink-0">
+        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer" id="btn-cancel-notify">Cancelar</button>
+        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-teal text-white border-0 hover:bg-teal/90 cursor-pointer" id="btn-confirm-notify">
+          Confirmar e Enviar
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal: Cycle History (Superadmin only) -->
   <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-cycle-history">
     <div class="bg-white rounded-2xl w-full max-w-[600px] overflow-hidden flex flex-col" style="max-height:90vh">
@@ -1195,6 +1238,15 @@ const ADMIN_I18N = {
     }
     cardsEl.innerHTML = cardsHtml;
     renderPending(pending);
+
+    // Show notify card for superadmins with allocated members
+    const allocatedCount = eligible.filter((m: any) => m.selected_tribe_id || m.fixed_tribe_id).length;
+    const notifyCard = document.getElementById('notify-alloc-card');
+    if (notifyCard && allocatedCount > 0) {
+      notifyCard.style.display = 'flex';
+      const summaryEl = document.getElementById('notify-alloc-summary');
+      if (summaryEl) summaryEl.textContent = allocatedCount + ' membros alocados em ' + tribeIds.length + ' tribos';
+    }
   }
 
   function renderPending(pending: any[]) {
@@ -1232,6 +1284,109 @@ const ADMIN_I18N = {
       </div>`;
     }).join('')}`;
   }
+
+  // ══════════════════════════════════════════
+  // ALLOCATION NOTIFICATION
+  // ══════════════════════════════════════════
+  let _notifyPreviewData: any = null;
+
+  async function notifyPreview() {
+    if (!ensureAdminAction()) return;
+    const body = document.getElementById('notify-modal-body');
+    if (body) body.innerHTML = '<p class="text-slate-400 text-sm text-center py-6">Carregando preview...</p>';
+    const modal = document.getElementById('modal-notify-alloc')!;
+    modal.classList.remove('hidden'); modal.classList.add('flex');
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { toast('Sessao expirada', 'error'); return; }
+      const res = await fetch(sb.supabaseUrl + '/functions/v1/send-allocation-notify', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + session.access_token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ dry_run: true }),
+      });
+      const data = await res.json();
+      _notifyPreviewData = data;
+
+      if (!data.success && !data.dry_run) {
+        if (body) body.innerHTML = '<p class="text-crimson text-sm text-center py-6">' + (data.error || 'Erro ao carregar preview') + '</p>';
+        return;
+      }
+
+      const byTribe: Record<string, any[]> = {};
+      (data.members || []).forEach((m: any) => {
+        const key = m.tribe_name || 'Tribo ' + m.tribe_id;
+        if (!byTribe[key]) byTribe[key] = [];
+        byTribe[key].push(m);
+      });
+
+      let html = '<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">'
+        + '<p class="text-[.78rem] font-semibold text-amber-800">Tem certeza que deseja notificar ' + data.count + ' membros?</p>'
+        + '<p class="text-[.68rem] text-amber-600 mt-1">Cada membro recebera um e-mail com o nome da sua tribo e o link do grupo de WhatsApp.</p>'
+        + '</div>';
+
+      for (const [tribe, members] of Object.entries(byTribe)) {
+        html += '<div class="mb-3"><div class="text-[.78rem] font-bold text-navy mb-1">' + tribe + ' (' + members.length + ')</div>';
+        html += '<div class="flex flex-wrap gap-1">';
+        members.forEach((m: any) => {
+          html += '<span class="text-[.68rem] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">' + (m.name || m.email).split(' ').slice(0,2).join(' ') + '</span>';
+        });
+        html += '</div></div>';
+      }
+
+      if (body) body.innerHTML = html;
+    } catch (err) {
+      if (body) body.innerHTML = '<p class="text-crimson text-sm text-center py-6">Erro: ' + (err instanceof Error ? err.message : String(err)) + '</p>';
+    }
+  }
+
+  async function notifySend() {
+    if (!ensureAdminAction()) return;
+    const btn = document.getElementById('btn-confirm-notify') as HTMLButtonElement;
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { toast('Sessao expirada', 'error'); return; }
+      const res = await fetch(sb.supabaseUrl + '/functions/v1/send-allocation-notify', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + session.access_token,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ dry_run: false }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        toast('Notificacoes enviadas para ' + data.total_notified + ' membros em ' + data.tribes_processed + ' tribos!' + (data.sandbox ? ' (Sandbox)' : ''), 'success');
+      } else {
+        toast('Erro: ' + (data.error || JSON.stringify(data.errors || 'Falha desconhecida')), 'error');
+      }
+    } catch (err) {
+      toast('Erro: ' + (err instanceof Error ? err.message : String(err)), 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Confirmar e Enviar'; }
+      const modal = document.getElementById('modal-notify-alloc')!;
+      modal.classList.add('hidden'); modal.classList.remove('flex');
+    }
+  }
+
+  // Event delegation for notify buttons
+  document.getElementById('btn-notify-preview')?.addEventListener('click', () => notifyPreview());
+  document.getElementById('btn-notify-send')?.addEventListener('click', () => notifyPreview());
+  document.getElementById('btn-close-notify-modal')?.addEventListener('click', () => {
+    const modal = document.getElementById('modal-notify-alloc')!;
+    modal.classList.add('hidden'); modal.classList.remove('flex');
+  });
+  document.getElementById('btn-cancel-notify')?.addEventListener('click', () => {
+    const modal = document.getElementById('modal-notify-alloc')!;
+    modal.classList.add('hidden'); modal.classList.remove('flex');
+  });
+  document.getElementById('btn-confirm-notify')?.addEventListener('click', () => notifySend());
 
   // ── ALLOCATE MODAL (Event Delegation: .btn-alloc, .cursorrules compliant) ──
   if (!(window as any).__adminAllocBound) {

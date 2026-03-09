@@ -1,5 +1,42 @@
 # Release Log
 
+## 2026-03-10 — Sprint 4: UX Avancada e Fecho de Alocacoes
+
+### Scope
+Global Tribe Selector dropdown for admins and Allocation Notification system.
+
+### Epic 1: Global Tribe Selector (Cross-Navigation)
+- **Before**: Tier 4+ admins without a tribe saw a static "Explorar Tribos" link
+  pointing to `/#tribes`. No way to jump directly to a specific tribe dashboard.
+- **After**: Interactive dropdown in both desktop nav and mobile drawer:
+  - Desktop: Click "Explorar Tribos ▾" to reveal a positioned dropdown listing all
+    active tribes with direct `/tribe/{id}` links. Click outside or press Escape to close.
+  - Mobile nav: Same dropdown behavior adapted for mobile layout.
+  - Profile Drawer: Expandable tribe list with chevron toggle and lazy-loaded tribe data.
+  - Regular members (Tier 1-3) continue seeing their personal "Minha Tribo" link.
+  - Tribes are fetched once and cached (`_tribesCache`) to avoid redundant queries.
+- **Files**: `src/components/nav/Nav.astro`
+
+### Epic 2: Allocation Notification Module
+- **Edge Function**: `send-allocation-notify` created with:
+  - Dry-run mode: Returns preview of all allocated members grouped by tribe
+  - Send mode: Groups members by tribe, sends personalized emails per tribe with:
+    - Tribe name and direct portal link (`/tribe/{id}`)
+    - WhatsApp group button (green CTA) if tribe has `whatsapp_url`
+    - Dynamic GP signature (name, phone, LinkedIn from caller's member record)
+  - Sandbox mode: Forces recipient to `vitor.rodovalho@outlook.com` when using test domain
+  - All sends logged to `broadcast_log` table
+  - Security: Restricted to superadmin/manager/deputy_manager
+- **Admin UI** (`/admin/index.astro`):
+  - "Notificar Alocacoes" card in Tribes tab (visible when allocated members > 0)
+  - Shows member count and tribe count summary
+  - "Pre-visualizar" button: Opens confirmation modal with dry-run preview
+  - "Notificar Membros" button: Same flow via modal
+  - Confirmation modal: Lists all members grouped by tribe with warning banner
+  - "Confirmar e Enviar" button with loading state and error handling
+- **Files**: `supabase/functions/send-allocation-notify/index.ts`, `src/pages/admin/index.astro`
+
+
 ## 2026-03-10 — Sprint 2+3: Knowledge Hub Tags + Leader Tools Validation
 
 ### Scope
