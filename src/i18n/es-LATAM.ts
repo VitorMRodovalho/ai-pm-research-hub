@@ -88,6 +88,7 @@ const esLATAM: Record<string, string> = {
   'tribes.label': 'Dream Team — 8 Líderes',
   'tribes.title': 'Elige tu Línea de Investigación',
   'tribes.open': 'SELECCIÓN ABIERTA',
+  'tribes.deadlinePrefix': 'Cierra',
   'tribes.deadline': 'Cierra Sáb 08/Mar 12h BRT',
   'tribes.deadlineNotice': 'Después del plazo, no podrás cambiar de línea.',
   'tribes.slots': 'Mín. 3 · Máx. 6 investigadores por línea.',
