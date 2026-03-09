@@ -779,6 +779,7 @@ const enUS: Record<string, string> = {
   'admin.announcements.statusExpired': 'Expired',
   'admin.announcements.statusActive': 'Active',
   'admin.tab.knowledge': '📚 Resources',
+  'admin.tab.analytics': 'Analytics',
   'admin.knowledge.title': 'Resource Repository',
   'admin.knowledge.subtitle': 'Courses, references and webinars linked to tribes. Base for the Knowledge Hub.',
   'admin.knowledge.labelTitle': 'Title',

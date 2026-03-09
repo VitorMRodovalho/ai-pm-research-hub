@@ -4,6 +4,8 @@ import Toast from '../../components/ui/Toast.astro';
 import AdminNav from '../../components/nav/AdminNav.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
+const PRODUCT_DASHBOARD_URL = import.meta.env.PUBLIC_POSTHOG_PRODUCT_DASHBOARD_URL || '';
+const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL || '';
 const ADMIN_I18N = {
   loadError: t('admin.msg.loadError', lang),
   selectTribe: t('admin.msg.selectTribe', lang),
@@ -162,6 +164,7 @@ const ADMIN_I18N = {
         <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500" data-tab="members" onclick="switchAdmTab(this,'members')">{t('admin.tab.members', lang)}</button>
         <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500" data-tab="reports" onclick="switchAdmTab(this,'reports')">{t('admin.tab.reports', lang)}</button>
         <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500" data-tab="knowledge" onclick="switchAdmTab(this,'knowledge')">{t('admin.tab.knowledge', lang)}</button>
+        <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500" data-tab="analytics" onclick="switchAdmTab(this,'analytics')">{t('admin.tab.analytics', lang)}</button>
       </div>
 
       <div id="panel-tribes">
@@ -594,6 +597,45 @@ const ADMIN_I18N = {
         </div>
       </div>
 
+      <!-- Analytics panel (merged from /admin/analytics) -->
+      <div id="panel-analytics" class="hidden space-y-4">
+        <div class="bg-white border border-slate-200 rounded-xl p-4">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <div class="text-[.75rem] font-semibold text-slate-500 mb-1">{t('admin.analytics.consentTitle', lang)}</div>
+              <p class="text-[.72rem] text-slate-500">{t('admin.analytics.consentBody', lang)}</p>
+              <p class="text-[.68rem] text-slate-400 mt-1" id="consent-status-inline">{t('admin.analytics.consentUnknown', lang)}</p>
+            </div>
+            <div class="flex gap-2">
+              <button id="btn-consent-grant-inline" class="px-3 py-2 bg-emerald-600 text-white rounded-lg text-[.72rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">{t('admin.analytics.consentGrant', lang)}</button>
+              <button id="btn-consent-revoke-inline" class="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-[.72rem] font-semibold cursor-pointer border border-slate-200 hover:bg-slate-200 transition-all">{t('admin.analytics.consentRevoke', lang)}</button>
+            </div>
+          </div>
+        </div>
+        <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div class="px-4 py-3 border-b border-slate-200">
+            <h2 class="text-sm font-bold text-navy">{t('admin.analytics.productTitle', lang)}</h2>
+            <p class="text-[.68rem] text-slate-400">{t('admin.analytics.productSubtitle', lang)}</p>
+          </div>
+          {PRODUCT_DASHBOARD_URL ? (
+            <iframe src={PRODUCT_DASHBOARD_URL} title="Product Analytics" class="w-full min-h-[640px] border-0" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+          ) : (
+            <div class="p-4 text-[.72rem] text-slate-500">{t('admin.analytics.missingConfig', lang)} <code class="bg-slate-100 px-1 py-0.5 rounded">PUBLIC_POSTHOG_PRODUCT_DASHBOARD_URL</code></div>
+          )}
+        </section>
+        <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div class="px-4 py-3 border-b border-slate-200">
+            <h2 class="text-sm font-bold text-navy">{t('admin.analytics.commsTitle', lang)}</h2>
+            <p class="text-[.68rem] text-slate-400">{t('admin.analytics.commsSubtitle', lang)}</p>
+          </div>
+          {COMMS_DASHBOARD_URL ? (
+            <iframe src={COMMS_DASHBOARD_URL} title="Comms Analytics" class="w-full min-h-[640px] border-0" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
+          ) : (
+            <div class="p-4 text-[.72rem] text-slate-500">{t('admin.analytics.missingConfig', lang)} <code class="bg-slate-100 px-1 py-0.5 rounded">PUBLIC_LOOKER_COMMS_DASHBOARD_URL</code></div>
+          )}
+        </section>
+      </div>
+
       <!-- Leader Tier: My Tribe panel -->
       <div id="panel-my-tribe" class="hidden">
         <!-- Tribe Settings (editable by leader) -->
@@ -957,7 +999,7 @@ const ADMIN_I18N = {
 
   // ── TABS ──
   (window as any).switchAdmTab = (el: HTMLElement, tab: string) => {
-    if (['tribes', 'members', 'reports', 'knowledge'].includes(tab) && !ensureAdminAction()) return;
+    if (['tribes', 'members', 'reports', 'knowledge', 'analytics'].includes(tab) && !ensureAdminAction()) return;
     document.querySelectorAll('.adm-tab').forEach(t => {
       t.classList.remove('bg-navy', 'text-white', 'border-navy');
       t.classList.add('bg-white', 'text-slate-500', 'border-slate-200');
@@ -968,10 +1010,29 @@ const ADMIN_I18N = {
     document.getElementById('panel-members')?.classList.toggle('hidden', tab !== 'members');
     document.getElementById('panel-reports')?.classList.toggle('hidden', tab !== 'reports');
     document.getElementById('panel-knowledge')?.classList.toggle('hidden', tab !== 'knowledge');
+    document.getElementById('panel-analytics')?.classList.toggle('hidden', tab !== 'analytics');
     if (tab === 'members') loadMembersList();
     if (tab === 'reports') initReports();
     if (tab === 'knowledge') loadKnowledgeAssets();
+    if (tab === 'analytics') initAnalyticsConsent();
   };
+
+  function initAnalyticsConsent() {
+    const CK = 'analytics_consent';
+    const statusEl = document.getElementById('consent-status-inline');
+    function renderC() {
+      const v = localStorage.getItem(CK);
+      if (!statusEl) return;
+      if (v === 'granted') { statusEl.textContent = 'Consentimento ativo'; statusEl.className = 'text-[.68rem] text-emerald-600 mt-1'; }
+      else if (v === 'denied') { statusEl.textContent = 'Consentimento revogado'; statusEl.className = 'text-[.68rem] text-crimson mt-1'; }
+      else { statusEl.textContent = 'Nao consentido'; statusEl.className = 'text-[.68rem] text-slate-400 mt-1'; }
+    }
+    const gBtn = document.getElementById('btn-consent-grant-inline');
+    const rBtn = document.getElementById('btn-consent-revoke-inline');
+    if (gBtn && !gBtn.dataset.bound) { gBtn.dataset.bound = '1'; gBtn.addEventListener('click', () => { localStorage.setItem(CK, 'granted'); renderC(); }); }
+    if (rBtn && !rBtn.dataset.bound) { rBtn.dataset.bound = '1'; rBtn.addEventListener('click', () => { localStorage.setItem(CK, 'denied'); renderC(); }); }
+    renderC();
+  }
 
   // ══════════════════════════════════════════
   // TRIBE MANAGEMENT

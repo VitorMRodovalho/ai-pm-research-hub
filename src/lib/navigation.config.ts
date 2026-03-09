@@ -64,7 +64,6 @@ export const NAV_ITEMS: NavItem[] = [
 
   // ─── Admin area ───
   { key: 'admin',           labelKey: 'nav.admin',          href: '/admin',           minTier: 'observer', requiresAuth: true, section: 'both',   group: 'admin', badge: 'purple' },
-  { key: 'admin-analytics', labelKey: 'nav.adminAnalytics', href: '/admin/analytics', minTier: 'admin',    requiresAuth: true, section: 'drawer', group: 'admin-sub' },
   { key: 'admin-comms',     labelKey: 'nav.adminComms',     href: '/admin/comms',     minTier: 'admin',    requiresAuth: true, section: 'drawer', group: 'admin-sub', allowedDesignations: ['comms_leader', 'comms_member'] },
   { key: 'admin-webinars', labelKey: 'nav.adminWebinars', href: '/admin/webinars', minTier: 'admin',    requiresAuth: true, section: 'drawer', group: 'admin-sub' },
   { key: 'admin-curatorship', labelKey: 'nav.adminCuratorship', href: '/admin/curatorship', minTier: 'observer', requiresAuth: true, section: 'drawer', group: 'admin-sub' },

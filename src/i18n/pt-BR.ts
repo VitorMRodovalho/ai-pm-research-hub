@@ -779,6 +779,7 @@ const ptBR: Record<string, string> = {
   'admin.announcements.statusExpired': 'Expirado',
   'admin.announcements.statusActive': 'Ativo',
   'admin.tab.knowledge': '📚 Recursos',
+  'admin.tab.analytics': 'Analytics',
   'admin.knowledge.title': 'Repositório de Recursos',
   'admin.knowledge.subtitle': 'Cursos, referências e webinars vinculados às tribos. Base para o Knowledge Hub.',
   'admin.knowledge.labelTitle': 'Título',

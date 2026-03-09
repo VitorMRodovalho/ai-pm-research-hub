@@ -779,6 +779,7 @@ const esLATAM: Record<string, string> = {
   'admin.announcements.statusExpired': 'Expirado',
   'admin.announcements.statusActive': 'Activo',
   'admin.tab.knowledge': '📚 Recursos',
+  'admin.tab.analytics': 'Analytics',
   'admin.knowledge.title': 'Repositorio de Recursos',
   'admin.knowledge.subtitle': 'Cursos, referencias y webinars vinculados a las líneas. Base para el Knowledge Hub.',
   'admin.knowledge.labelTitle': 'Título',

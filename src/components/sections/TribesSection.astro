@@ -247,11 +247,15 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
     });
   });
 
-  // ── Load tribe selection counts ──
+  // ── Load tribe member counts (researchers, current cycle only) ──
   async function loadTribeCounts() {
     const sb = getSb();
     if (!sb) return;
-    const { data, error } = await sb.from('tribe_selections').select('tribe_id');
+    const { data, error } = await sb.from('public_members')
+      .select('tribe_id')
+      .eq('operational_role', 'researcher')
+      .eq('current_cycle_active', true)
+      .not('tribe_id', 'is', null);
     if (error) {
       console.error('tribes.loadTribeCounts failed', error);
       return;
@@ -263,20 +267,28 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
     updateUI();
   }
 
-  // ── Load leader photos ──
+  // ── Load leader photos (with fallback for tribes without a tribe_leader) ──
   async function loadLeaderPhotos() {
     const sb = getSb();
     if (!sb) return;
     const { data } = await sb.from('public_members')
-      .select('tribe_id, photo_url')
-      .eq('operational_role', 'tribe_leader')
+      .select('tribe_id, photo_url, operational_role')
+      .in('operational_role', ['tribe_leader', 'deputy_manager', 'manager'])
       .not('photo_url', 'is', null);
     if (!data) return;
+    const ROLE_PRIO = { tribe_leader: 0, deputy_manager: 1, manager: 2 };
+    const best = {};
     data.forEach((m) => {
       if (!m.tribe_id || !m.photo_url) return;
-      const el = document.getElementById(`tp-${m.tribe_id}`);
+      const prio = ROLE_PRIO[m.operational_role] ?? 9;
+      if (!best[m.tribe_id] || prio < best[m.tribe_id].prio) {
+        best[m.tribe_id] = { photo_url: m.photo_url, prio };
+      }
+    });
+    Object.entries(best).forEach(([tid, info]) => {
+      const el = document.getElementById('tp-' + tid);
       if (el) {
-        el.innerHTML = `<img src="${m.photo_url}" class="w-[42px] h-[42px] rounded-full object-cover" alt="">`;
+        el.innerHTML = '<img src="' + info.photo_url + '" class="w-[42px] h-[42px] rounded-full object-cover" alt="">';
         el.className = 'flex-shrink-0';
       }
     });
