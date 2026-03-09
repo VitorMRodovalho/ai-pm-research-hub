@@ -88,6 +88,7 @@ const ptBR: Record<string, string> = {
   'tribes.label': 'Dream Team — 8 Líderes',
   'tribes.title': 'Escolha sua Tribo',
   'tribes.open': 'SELEÇÃO ABERTA',
+  'tribes.deadlinePrefix': 'Encerra',
   'tribes.deadline': 'Encerra Sáb 08/Mar 12h BRT',
   'tribes.deadlineNotice': 'Após o prazo, não será possível trocar de tribo.',
   'tribes.slots': 'Mín. 3 · Máx. 6 pesquisadores por tribo.',

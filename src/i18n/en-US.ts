@@ -88,6 +88,7 @@ const enUS: Record<string, string> = {
   'tribes.label': 'Dream Team — 8 Leaders',
   'tribes.title': 'Choose Your Research Stream',
   'tribes.open': 'SELECTION OPEN',
+  'tribes.deadlinePrefix': 'Closes',
   'tribes.deadline': 'Closes Sat 03/08 12PM BRT',
   'tribes.deadlineNotice': 'After the deadline, you will not be able to switch streams.',
   'tribes.slots': 'Min. 3 · Max. 6 researchers per stream.',

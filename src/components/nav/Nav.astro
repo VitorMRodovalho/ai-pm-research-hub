@@ -150,12 +150,14 @@ const jsI18n = JSON.stringify({
       window.dispatchEvent(new CustomEvent('nav:member', { detail: _member }));
     }
     sb.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN') {
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
         _user = session?.user ?? null;
-        const { data } = await sb.rpc('get_member_by_auth');
-        _member = data;
-        renderAuth();
-        window.dispatchEvent(new CustomEvent('nav:member', { detail: _member }));
+        if (_user && !_member) {
+          const { data } = await sb.rpc('get_member_by_auth');
+          _member = data;
+          renderAuth();
+          window.dispatchEvent(new CustomEvent('nav:member', { detail: _member }));
+        }
       }
       if (event === 'SIGNED_OUT') {
         _member = null; _user = null;
