@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Toast from '../../components/ui/Toast.astro';
+import AdminNav from '../../components/nav/AdminNav.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 const ADMIN_I18N = {
@@ -116,6 +117,9 @@ const ADMIN_I18N = {
 ---
 <BaseLayout title={t('admin.meta', lang)} activePage="admin">
   <Toast />
+  <div class="max-w-[1400px] mx-auto px-4 pt-6">
+    <AdminNav activeSub="panel" lang={lang} />
+  </div>
   <div class="max-w-[1200px] mx-auto px-4 py-8">
     <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
       <div>

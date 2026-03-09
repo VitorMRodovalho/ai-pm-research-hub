@@ -1,6 +1,14 @@
 ---
-import { t, localePath, type Lang } from '../../i18n/utils';
+/**
+ * GOVERNANÇA: A atualização da árvore de navegação neste arquivo é
+ * Critério de Aceite obrigatório para qualquer nova feature ou página.
+ *
+ * A estrutura de menus é lida de src/lib/navigation.config.ts.
+ * Não hardcode regras de acesso aqui — use minTier e allowedDesignations no config.
+ */
+import { t, type Lang } from '../../i18n/utils';
 import LangSwitcher from './LangSwitcher.astro';
+import { NAV_ITEMS, type NavItem } from '../../lib/navigation.config';
 
 interface Props { activePage?: string; lang?: Lang; }
 const { activePage = '', lang = 'pt-BR' } = Astro.props;
@@ -8,33 +16,56 @@ const currentPath = Astro.url.pathname;
 
 const base = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
-const links = [
-  { href: base + '/#agenda',     label: t('nav.agenda', lang) },
-  { href: base + '/#quadrants',  label: t('nav.quadrants', lang) },
-  { href: base + '/#tribes',     label: t('nav.tribes', lang) },
-  { href: base + '/#kpis',       label: t('nav.kpis', lang) },
-  { href: base + '/#breakout',   label: t('nav.networking', lang) },
-  { href: base + '/#rules',      label: t('nav.rules', lang) },
-  { href: base + '/#trail',      label: t('nav.trail', lang) },
-  { href: base + '/#team',       label: t('nav.team', lang) },
-  { href: base + '/#vision',     label: t('nav.vision', lang) },
-  { href: base + '/#resources',  label: t('nav.resources', lang) },
-  { href: base + '/workspace',   label: t('nav.workspace', lang) },
-  { href: base + '/onboarding',  label: t('nav.onboarding', lang) },
-  { href: base + '/artifacts',   label: t('nav.artifacts', lang) },
-  { href: base + '/gamification', label: t('nav.gamification', lang) },
-];
+const mainItems = NAV_ITEMS.filter(i => i.section === 'main' || i.section === 'both');
+const publicMainItems = mainItems.filter(i => !i.requiresAuth);
+const authMainItems = mainItems.filter(i => i.requiresAuth);
 
-// Pre-compute translated strings for client-side JS
+function resolveLabel(item: NavItem): string {
+  return t(item.labelKey, lang);
+}
+
+function resolveHref(item: NavItem): string {
+  if (item.dynamic) return '#';
+  return base + item.href;
+}
+
+function badgeClasses(item: NavItem, isActive: boolean): string {
+  const map: Record<string, { active: string; inactive: string }> = {
+    crimson: {
+      active:   'bg-crimson/30 border border-crimson/50 text-white',
+      inactive: 'bg-crimson/20 border border-crimson/40 text-white hover:bg-crimson/30',
+    },
+    purple: {
+      active:   'bg-purple/30 border border-purple/50 text-white',
+      inactive: 'bg-purple/20 border border-purple/40 text-white hover:bg-purple/30',
+    },
+    teal: {
+      active:   'bg-teal/30 border border-teal/50 text-white',
+      inactive: 'bg-teal/20 border border-teal/40 text-white hover:bg-teal/30',
+    },
+  };
+  const badge = item.badge;
+  if (!badge || !map[badge]) {
+    return 'text-white/70 hover:text-white hover:bg-white/10';
+  }
+  return isActive ? map[badge].active : map[badge].inactive;
+}
+
 const jsI18n = JSON.stringify({
   login: t('nav.login', lang),
   profile: t('nav.profile', lang),
   attendance: t('nav.attendanceLink', lang),
   admin: t('nav.adminLink', lang),
+  adminPanel: t('nav.adminPanel', lang),
+  adminAnalytics: t('nav.adminAnalytics', lang),
+  adminComms: t('nav.adminComms', lang),
+  myTribe: t('nav.myTribe', lang),
   logout: t('nav.logout', lang),
   user: t('nav.user', lang),
   guestNotFound: t('guest.navNotFound', lang),
 });
+
+const navConfigJson = JSON.stringify(NAV_ITEMS);
 ---
 
 <nav class="sticky top-0 z-[200] bg-navy/97 backdrop-blur-md border-b-2 border-orange
@@ -45,28 +76,21 @@ const jsI18n = JSON.stringify({
 
   <!-- Desktop links -->
   <div class="hidden lg:flex items-center gap-0.5" id="nav-links">
-    {links.map(l => (
-      <a href={l.href}
-         class="text-white/70 no-underline text-[.73rem] font-medium px-2 py-1.5 rounded-md
-                hover:text-white hover:bg-white/10 transition-all duration-150">
-        {l.label}
+    {publicMainItems.map(item => (
+      <a href={resolveHref(item)}
+         class={`text-[.73rem] font-medium px-2 py-1.5 rounded-md no-underline transition-all duration-150 ${badgeClasses(item, false)}`}>
+        {resolveLabel(item)}
       </a>
     ))}
-    <a href={base + "/attendance"}
-       class:list={["text-[.73rem] font-semibold px-2 py-1.5 rounded-md no-underline transition-all",
-         activePage === 'attendance'
-           ? "bg-crimson/30 border border-crimson/50 text-white"
-           : "bg-crimson/20 border border-crimson/40 text-white hover:bg-crimson/30"]}>
-      {t('nav.attendance', lang)}
-    </a>
-    <!-- Admin link: injected by client script if superadmin -->
-    <a href={base + "/admin"} id="nav-admin-link" style="display:none"
-       class:list={["text-[.73rem] font-semibold px-2 py-1.5 rounded-md no-underline transition-all",
-         activePage === 'admin'
-           ? "bg-purple/30 border border-purple/50 text-white"
-           : "bg-purple/20 border border-purple/40 text-white hover:bg-purple/30"]}>
-      {t('nav.admin', lang)}
-    </a>
+    {authMainItems.map(item => (
+      <a href={resolveHref(item)}
+         id={`nav-item-${item.key}`}
+         style="display:none"
+         data-nav-key={item.key}
+         class={`text-[.73rem] font-semibold px-2 py-1.5 rounded-md no-underline transition-all ${badgeClasses(item, activePage === item.key)}`}>
+        {resolveLabel(item)}
+      </a>
+    ))}
   </div>
 
   <div class="flex items-center gap-2">
@@ -74,7 +98,7 @@ const jsI18n = JSON.stringify({
 
     <!-- Auth area: populated by client script -->
     <div id="nav-auth" class="flex items-center gap-2 flex-shrink-0">
-      <button onclick="document.dispatchEvent(new CustomEvent('open-auth'))"
+      <button data-action="open-auth"
               class="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20
                      text-white text-[.78rem] font-semibold hover:bg-white/20 transition-all cursor-pointer"
               id="nav-login-btn">
@@ -86,7 +110,6 @@ const jsI18n = JSON.stringify({
     <button id="mobile-menu-btn"
             class="lg:hidden flex items-center justify-center w-9 h-9 rounded-lg bg-white/10 border border-white/20
                    text-white hover:bg-white/20 transition-all cursor-pointer"
-            onclick="toggleMobileMenu()"
             aria-label={t('nav.menu', lang)}>
       <svg id="hamburger-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
@@ -99,49 +122,317 @@ const jsI18n = JSON.stringify({
 </nav>
 
 <!-- Mobile menu overlay -->
-<div id="mobile-menu-overlay" class="hidden fixed inset-0 bg-black/50 z-[199] lg:hidden" onclick="closeMobileMenu()"></div>
+<div id="mobile-menu-overlay" class="hidden fixed inset-0 bg-black/50 z-[199] lg:hidden"></div>
 
 <!-- Mobile menu drawer -->
 <div id="mobile-menu" class="hidden fixed top-14 left-0 right-0 z-[199] bg-navy border-b-2 border-orange
                               max-h-[calc(100vh-3.5rem)] overflow-y-auto lg:hidden">
   <div class="p-4 flex flex-col gap-1">
-    {links.map(l => (
-      <a href={l.href}
-         onclick="closeMobileMenu()"
+    {publicMainItems.map(item => (
+      <a href={resolveHref(item)}
+         data-action="close-mobile"
          class="text-white/80 no-underline text-sm font-medium px-3 py-2.5 rounded-lg
                 hover:text-white hover:bg-white/10 transition-all">
-        {l.label}
+        {resolveLabel(item)}
       </a>
     ))}
     <hr class="border-white/10 my-2">
-    <a href={base + "/attendance"}
-       onclick="closeMobileMenu()"
-       class="text-white no-underline text-sm font-semibold px-3 py-2.5 rounded-lg bg-crimson/20 border border-crimson/40 hover:bg-crimson/30 transition-all">
-      {t('nav.attendance', lang)}
-    </a>
-    <a href={base + "/admin"} id="mobile-admin-link" style="display:none"
-       onclick="closeMobileMenu()"
-       class="text-white no-underline text-sm font-semibold px-3 py-2.5 rounded-lg bg-purple/20 border border-purple/40 hover:bg-purple/30 transition-all">
-      {t('nav.admin', lang)}
-    </a>
+    {authMainItems.map(item => (
+      <a href={resolveHref(item)}
+         id={`mobile-item-${item.key}`}
+         data-action="close-mobile"
+         data-nav-key={item.key}
+         style="display:none"
+         class={`text-white no-underline text-sm font-semibold px-3 py-2.5 rounded-lg transition-all ${
+           item.badge === 'crimson' ? 'bg-crimson/20 border border-crimson/40 hover:bg-crimson/30' :
+           item.badge === 'purple'  ? 'bg-purple/20 border border-purple/40 hover:bg-purple/30' :
+           item.badge === 'teal'    ? 'bg-teal/20 border border-teal/40 hover:bg-teal/30' :
+           'hover:bg-white/10'
+         }`}>
+        {resolveLabel(item)}
+      </a>
+    ))}
   </div>
 </div>
 
-<!-- Hidden element to pass i18n to client JS -->
+<!-- Pass config and i18n to client -->
 <script id="nav-i18n-data" type="application/json" set:html={jsI18n}></script>
+<script id="nav-config-data" type="application/json" set:html={navConfigJson}></script>
 
 <script>
   import { getSupabase, ROLE_COLORS } from '../../lib/supabase';
   import { getMemberRole } from '../../lib/routing';
+  import { resolveTierFromMember, hasMinimumTier, type AccessTier } from '../../lib/admin/constants';
+  import { TIER_RANK } from '../../lib/navigation.config';
 
   const sb = getSupabase();
   let _member: any = null;
   let _user: any = null;
 
-  // Read i18n strings from hidden element
   const i18nEl = document.getElementById('nav-i18n-data');
   const i18n = i18nEl ? JSON.parse(i18nEl.textContent || '{}') : {};
 
+  const configEl = document.getElementById('nav-config-data');
+  const navConfig: any[] = configEl ? JSON.parse(configEl.textContent || '[]') : [];
+
+  function isItemVisibleClient(item: any, tier: AccessTier, designations: string[]): boolean {
+    const meetsMinTier = (TIER_RANK[tier] ?? 0) >= (TIER_RANK[item.minTier as AccessTier] ?? 0);
+    if (item.allowedDesignations?.length) {
+      const hasDesig = item.allowedDesignations.some((d: string) => designations.includes(d));
+      return meetsMinTier || hasDesig;
+    }
+    return meetsMinTier;
+  }
+
+  function resolveMyTribeHref(): string | null {
+    if (!_member) return null;
+    const tribeId = _member.tribe_id || _member.selected_tribe_id;
+    if (!tribeId) return null;
+    const base = document.documentElement.lang === 'pt-BR' || document.documentElement.lang === 'pt' ? '' :
+                 document.documentElement.lang === 'en' ? '/en' : '/es';
+    return `${base}/tribe/${tribeId}`;
+  }
+
+  function updateNavVisibility() {
+    if (!_member) return;
+    const tier = resolveTierFromMember(_member);
+    const desigs: string[] = _member.designations || [];
+
+    navConfig.forEach((item: any) => {
+      if (!item.requiresAuth) return;
+
+      const visible = isItemVisibleClient(item, tier, desigs);
+
+      const desktopEl = document.getElementById(`nav-item-${item.key}`);
+      const mobileEl = document.getElementById(`mobile-item-${item.key}`);
+
+      if (desktopEl) desktopEl.style.display = visible ? 'inline-flex' : 'none';
+      if (mobileEl) mobileEl.style.display = visible ? 'block' : 'none';
+
+      if (visible && item.dynamic && item.resolver === 'resolveMyTribeHref') {
+        const href = resolveMyTribeHref();
+        if (href) {
+          if (desktopEl) desktopEl.setAttribute('href', href);
+          if (mobileEl) mobileEl.setAttribute('href', href);
+        } else {
+          if (desktopEl) desktopEl.style.display = 'none';
+          if (mobileEl) mobileEl.style.display = 'none';
+        }
+      }
+    });
+  }
+
+  function getRoleLabel(role: string): string {
+    const roleLabelsEl = document.getElementById('role-labels-data');
+    if (roleLabelsEl) {
+      const labels = JSON.parse(roleLabelsEl.textContent || '{}');
+      return labels[role] || role;
+    }
+    return role;
+  }
+
+  function renderAuth() {
+    if (!_member || getMemberRole(_member) === 'guest') {
+      if (_user) { renderGuestWithSession(); } else { renderLoggedOut(); }
+      return;
+    }
+    const name = _member.name || i18n.user || 'User';
+    const first = name.split(' ')[0];
+    const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0,2).toUpperCase();
+    const pic = _user?.user_metadata?.avatar_url;
+    const r = getMemberRole(_member);
+    const color = ROLE_COLORS[r] || '#64748B';
+    const label = getRoleLabel(r);
+
+    const el = document.getElementById('nav-auth');
+    if (!el) return;
+    el.innerHTML = `
+      <button data-action="toggle-pd"
+        class="flex items-center gap-1.5 px-1.5 py-1 rounded-lg hover:bg-white/10 transition-all cursor-pointer border-0 bg-transparent">
+        ${pic
+          ? `<img src="${pic}" class="w-7 h-7 rounded-full object-cover" onerror="this.style.display='none'">`
+          : `<div class="w-7 h-7 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.65rem]">${initials}</div>`
+        }
+        <span class="text-white text-[.8rem] font-semibold hidden sm:inline">${first}</span>
+        <span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded uppercase hidden sm:inline" style="background:${color}33;color:${color}">${label}</span>
+        <span class="text-white/40 text-[.6rem]">▾</span>
+      </button>`;
+
+    updateNavVisibility();
+    buildDrawer();
+  }
+
+  function renderLoggedOut() {
+    const el = document.getElementById('nav-auth');
+    if (el) el.innerHTML = `
+      <button data-action="open-auth"
+        class="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-[.78rem] font-semibold hover:bg-white/20 transition-all cursor-pointer">
+        ${i18n.login || 'Sign In'}
+      </button>`;
+  }
+
+  function renderGuestWithSession() {
+    const el = document.getElementById('nav-auth');
+    if (!el) return;
+    el.innerHTML = `
+      <div class="flex items-center gap-2">
+        <span class="text-amber-400 text-[.73rem] font-semibold hidden sm:inline">${i18n.guestNotFound || 'Conta não cadastrada'}</span>
+        <button data-action="logout"
+          class="px-2.5 py-1 rounded-lg bg-white/10 border border-white/20 text-white text-[.7rem] font-semibold hover:bg-white/20 transition-all cursor-pointer">
+          ${i18n.logout || '↩ Sair'}
+        </button>
+      </div>`;
+  }
+
+  function buildDrawer() {
+    const el = document.getElementById('pd-inner');
+    if (!el || !_member) return;
+
+    const name = _member.name || i18n.user || 'User';
+    const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0,2).toUpperCase();
+    const pic = _user?.user_metadata?.avatar_url;
+    const r = getMemberRole(_member);
+    const color = ROLE_COLORS[r] || '#64748B';
+    const tier = resolveTierFromMember(_member);
+    const desigs: string[] = _member.designations || [];
+    const base = document.documentElement.lang === 'pt-BR' || document.documentElement.lang === 'pt' ? '' :
+                 document.documentElement.lang === 'en' ? '/en' : '/es';
+
+    const drawerItems = navConfig.filter((item: any) =>
+      (item.section === 'drawer' || item.section === 'both') &&
+      item.requiresAuth &&
+      isItemVisibleClient(item, tier, desigs)
+    );
+
+    const profileItems = drawerItems.filter((i: any) => i.group === 'profile');
+    const memberItems = drawerItems.filter((i: any) => i.group === 'member');
+    const adminItems = drawerItems.filter((i: any) => i.group === 'admin');
+    const adminSubItems = drawerItems.filter((i: any) => i.group === 'admin-sub');
+
+    function drawerLink(item: any, extraClass: string = ''): string {
+      let href = base + item.href;
+      if (item.dynamic && item.resolver === 'resolveMyTribeHref') {
+        const resolved = resolveMyTribeHref();
+        if (!resolved) return '';
+        href = resolved;
+      }
+      const label = i18n[toCamelKey(item.key)] || item.labelKey;
+      return `<a href="${href}" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold no-underline transition-all ${extraClass}">${label}</a>`;
+    }
+
+    function toCamelKey(key: string): string {
+      return key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    }
+
+    let html = `
+      <div class="flex items-center gap-3 mb-2">
+        ${pic
+          ? `<img src="${pic}" class="w-12 h-12 rounded-full object-cover flex-shrink-0">`
+          : `<div class="w-12 h-12 rounded-full bg-teal flex items-center justify-center text-white font-bold text-sm flex-shrink-0">${initials}</div>`
+        }
+        <div class="min-w-0">
+          <div class="font-bold text-[.9rem] text-navy">${name}</div>
+          <span class="text-[.62rem] font-bold px-1.5 py-0.5 rounded inline-block mt-0.5" style="background:${color}22;color:${color}">${getRoleLabel(r)}</span>
+          <div class="text-[.67rem] text-slate-500 truncate mt-0.5">${_member.email||''}</div>
+        </div>
+      </div>
+      <hr class="border-slate-100 my-2">`;
+
+    profileItems.forEach((item: any) => { html += drawerLink(item, 'text-slate-800 hover:bg-slate-50'); });
+    memberItems.forEach((item: any) => { html += drawerLink(item, 'text-slate-800 hover:bg-slate-50'); });
+
+    if (adminItems.length || adminSubItems.length) {
+      html += '<hr class="border-slate-100 my-2">';
+      adminItems.forEach((item: any) => { html += drawerLink(item, 'text-purple hover:bg-purple/5'); });
+      adminSubItems.forEach((item: any) => { html += drawerLink(item, 'text-slate-600 hover:bg-slate-50 pl-4'); });
+    }
+
+    html += `<hr class="border-slate-100 my-2">
+      <button data-action="logout" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-crimson hover:bg-red-50 cursor-pointer border-0 bg-transparent transition-all">${i18n.logout || '↩ Sign Out'}</button>`;
+
+    el.innerHTML = html;
+  }
+
+  // ── Event delegation (no inline onclick per .cursorrules) ──
+  document.addEventListener('click', (e: MouseEvent) => {
+    const target = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
+    if (!target) return;
+    const action = target.dataset.action;
+
+    if (action === 'open-auth') {
+      document.dispatchEvent(new CustomEvent('open-auth'));
+    }
+    if (action === 'toggle-pd') {
+      (window as any).togglePD?.();
+    }
+    if (action === 'close-mobile') {
+      (window as any).closeMobileMenu?.();
+    }
+    if (action === 'toggle-mobile') {
+      (window as any).toggleMobileMenu?.();
+    }
+    if (action === 'logout') {
+      (window as any).doLogout?.();
+    }
+  });
+
+  // ── Mobile menu ──
+  document.getElementById('mobile-menu-btn')?.addEventListener('click', () => {
+    (window as any).toggleMobileMenu?.();
+  });
+  document.getElementById('mobile-menu-overlay')?.addEventListener('click', () => {
+    (window as any).closeMobileMenu?.();
+  });
+
+  (window as any).toggleMobileMenu = () => {
+    const menu = document.getElementById('mobile-menu');
+    const overlay = document.getElementById('mobile-menu-overlay');
+    const hamburger = document.getElementById('hamburger-icon');
+    const closeIcon = document.getElementById('close-icon');
+    if (!menu) return;
+    const isOpen = !menu.classList.contains('hidden');
+    menu.classList.toggle('hidden', isOpen);
+    overlay?.classList.toggle('hidden', isOpen);
+    hamburger?.classList.toggle('hidden', !isOpen);
+    closeIcon?.classList.toggle('hidden', isOpen);
+  };
+  (window as any).closeMobileMenu = () => {
+    document.getElementById('mobile-menu')?.classList.add('hidden');
+    document.getElementById('mobile-menu-overlay')?.classList.add('hidden');
+    document.getElementById('hamburger-icon')?.classList.remove('hidden');
+    document.getElementById('close-icon')?.classList.add('hidden');
+  };
+
+  // ── Profile drawer globals ──
+  (window as any).togglePD = () => {
+    const d = document.getElementById('pd-drawer');
+    const o = document.getElementById('pd-overlay');
+    if (!d) return;
+    const on = d.dataset.open !== 'true';
+    d.dataset.open = String(on);
+    o?.classList.toggle('hidden', !on);
+  };
+  (window as any).closePD = () => {
+    const d = document.getElementById('pd-drawer');
+    const o = document.getElementById('pd-overlay');
+    if (d) d.dataset.open = 'false';
+    o?.classList.add('hidden');
+  };
+  document.getElementById('pd-overlay')?.addEventListener('click', () => {
+    (window as any).closePD?.();
+  });
+  (window as any).doLogout = async () => {
+    await sb.auth.signOut();
+    location.href = '/';
+  };
+  (window as any).openAuthModal = () => {
+    document.getElementById('auth-modal')?.classList.remove('hidden');
+  };
+  (window as any).navGetMember = () => _member;
+  (window as any).navGetUser = () => _user;
+  (window as any).navGetSb = () => sb;
+
+  // ── Boot ──
   async function bootNav() {
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
@@ -174,152 +465,6 @@ const jsI18n = JSON.stringify({
       }
     });
   }
-
-  // Read role labels from i18n data attribute on body (set by BaseLayout)
-  function getRoleLabel(role: string): string {
-    const roleLabelsEl = document.getElementById('role-labels-data');
-    if (roleLabelsEl) {
-      const labels = JSON.parse(roleLabelsEl.textContent || '{}');
-      return labels[role] || role;
-    }
-    return role;
-  }
-
-  function renderAuth() {
-    if (!_member || getMemberRole(_member) === 'guest') {
-      if (_user) { renderGuestWithSession(); } else { renderLoggedOut(); }
-      return;
-    }
-    const name = _member.name || i18n.user || 'User';
-    const first = name.split(' ')[0];
-    const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0,2).toUpperCase();
-    const pic = _user?.user_metadata?.avatar_url;
-    const r = getMemberRole(_member);
-    const color = ROLE_COLORS[r] || '#64748B';
-    const label = getRoleLabel(r);
-
-    const el = document.getElementById('nav-auth');
-    if (!el) return;
-    el.innerHTML = `
-      <button onclick="togglePD()"
-        class="flex items-center gap-1.5 px-1.5 py-1 rounded-lg hover:bg-white/10 transition-all cursor-pointer border-0 bg-transparent">
-        ${pic
-          ? `<img src="${pic}" class="w-7 h-7 rounded-full object-cover" onerror="this.style.display='none'">`
-          : `<div class="w-7 h-7 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.65rem]">${initials}</div>`
-        }
-        <span class="text-white text-[.8rem] font-semibold hidden sm:inline">${first}</span>
-        <span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded uppercase hidden sm:inline" style="background:${color}33;color:${color}">${label}</span>
-        <span class="text-white/40 text-[.6rem]">▾</span>
-      </button>`;
-
-    if (_member.is_superadmin) {
-      const adminLink = document.getElementById('nav-admin-link');
-      if (adminLink) adminLink.style.display = 'inline-flex';
-      const mobileAdmin = document.getElementById('mobile-admin-link');
-      if (mobileAdmin) mobileAdmin.style.display = 'block';
-    }
-    buildDrawer();
-  }
-
-  function renderLoggedOut() {
-    const el = document.getElementById('nav-auth');
-    if (el) el.innerHTML = `
-      <button onclick="document.dispatchEvent(new CustomEvent('open-auth'))"
-        class="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-[.78rem] font-semibold hover:bg-white/20 transition-all cursor-pointer">
-        ${i18n.login || 'Sign In'}
-      </button>`;
-  }
-
-  function renderGuestWithSession() {
-    const el = document.getElementById('nav-auth');
-    if (!el) return;
-    el.innerHTML = `
-      <div class="flex items-center gap-2">
-        <span class="text-amber-400 text-[.73rem] font-semibold hidden sm:inline">${i18n.guestNotFound || 'Conta não cadastrada'}</span>
-        <button onclick="doLogout()"
-          class="px-2.5 py-1 rounded-lg bg-white/10 border border-white/20 text-white text-[.7rem] font-semibold hover:bg-white/20 transition-all cursor-pointer">
-          ${i18n.logout || '↩ Sair'}
-        </button>
-      </div>`;
-  }
-
-  function buildDrawer() {
-    const el = document.getElementById('pd-inner');
-    if (!el || !_member) return;
-    const name = _member.name || i18n.user || 'User';
-    const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0,2).toUpperCase();
-    const pic = _user?.user_metadata?.avatar_url;
-    const r = getMemberRole(_member);
-    const color = ROLE_COLORS[r] || '#64748B';
-    const isAdmin = _member.is_superadmin === true;
-    const base = document.documentElement.lang === 'pt-BR' || document.documentElement.lang === 'pt' ? '' :
-                 document.documentElement.lang === 'en' ? '/en' : '/es';
-
-    el.innerHTML = `
-      <div class="flex items-center gap-3 mb-2">
-        ${pic
-          ? `<img src="${pic}" class="w-12 h-12 rounded-full object-cover flex-shrink-0">`
-          : `<div class="w-12 h-12 rounded-full bg-teal flex items-center justify-center text-white font-bold text-sm flex-shrink-0">${initials}</div>`
-        }
-        <div class="min-w-0">
-          <div class="font-bold text-[.9rem] text-navy">${name}</div>
-          <span class="text-[.62rem] font-bold px-1.5 py-0.5 rounded inline-block mt-0.5" style="background:${color}22;color:${color}">${getRoleLabel(r)}</span>
-          <div class="text-[.67rem] text-slate-500 truncate mt-0.5">${_member.email||''}</div>
-        </div>
-      </div>
-      <hr class="border-slate-100 my-2">
-      <a href="${base}/profile" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-slate-800 hover:bg-slate-50 no-underline transition-all">${i18n.profile || '👤 Profile'}</a>
-      <a href="${base}/attendance" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-slate-800 hover:bg-slate-50 no-underline transition-all">${i18n.attendance || '⏱ Attendance'}</a>
-      ${isAdmin ? `<hr class="border-slate-100 my-2"><a href="${base}/admin" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-purple hover:bg-purple/5 no-underline transition-all">${i18n.admin || '⚙️ Admin'}</a>` : ''}
-      <hr class="border-slate-100 my-2">
-      <button onclick="doLogout()" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-crimson hover:bg-red-50 cursor-pointer border-0 bg-transparent transition-all">${i18n.logout || '↩ Sign Out'}</button>`;
-  }
-
-  // ── Mobile menu toggle ──
-  (window as any).toggleMobileMenu = () => {
-    const menu = document.getElementById('mobile-menu');
-    const overlay = document.getElementById('mobile-menu-overlay');
-    const hamburger = document.getElementById('hamburger-icon');
-    const closeIcon = document.getElementById('close-icon');
-    if (!menu) return;
-    const isOpen = !menu.classList.contains('hidden');
-    menu.classList.toggle('hidden', isOpen);
-    overlay?.classList.toggle('hidden', isOpen);
-    hamburger?.classList.toggle('hidden', !isOpen);
-    closeIcon?.classList.toggle('hidden', isOpen);
-  };
-  (window as any).closeMobileMenu = () => {
-    document.getElementById('mobile-menu')?.classList.add('hidden');
-    document.getElementById('mobile-menu-overlay')?.classList.add('hidden');
-    document.getElementById('hamburger-icon')?.classList.remove('hidden');
-    document.getElementById('close-icon')?.classList.add('hidden');
-  };
-
-  // ── Globals ──
-  (window as any).togglePD = () => {
-    const d = document.getElementById('pd-drawer');
-    const o = document.getElementById('pd-overlay');
-    if (!d) return;
-    const on = d.dataset.open !== 'true';
-    d.dataset.open = String(on);
-    o?.classList.toggle('hidden', !on);
-  };
-  (window as any).closePD = () => {
-    const d = document.getElementById('pd-drawer');
-    const o = document.getElementById('pd-overlay');
-    if (d) d.dataset.open = 'false';
-    o?.classList.add('hidden');
-  };
-  (window as any).doLogout = async () => {
-    await sb.auth.signOut();
-    location.href = '/';
-  };
-  (window as any).openAuthModal = () => {
-    document.getElementById('auth-modal')?.classList.remove('hidden');
-  };
-  (window as any).navGetMember = () => _member;
-  (window as any).navGetUser = () => _user;
-  (window as any).navGetSb = () => sb;
 
   bootNav();
 </script>

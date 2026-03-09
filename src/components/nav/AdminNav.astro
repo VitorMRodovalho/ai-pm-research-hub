@@ -1,0 +1,71 @@
+---
+/**
+ * AdminNav.astro — Sidebar de navegação interna do painel Admin.
+ * Lê permissões de navigation.config.ts via tier + designations do membro.
+ * Renderiza links para sub-rotas do admin com destaque na página ativa.
+ */
+import { t, type Lang } from '../../i18n/utils';
+
+interface Props { activeSub?: string; lang?: Lang; }
+const { activeSub = 'panel', lang = 'pt-BR' } = Astro.props;
+
+const ADMIN_LINKS = [
+  { key: 'panel',     labelKey: 'nav.adminPanel',     href: '/admin',           minTier: 'observer' as const },
+  { key: 'analytics', labelKey: 'nav.adminAnalytics',  href: '/admin/analytics', minTier: 'admin' as const },
+  { key: 'comms',     labelKey: 'nav.adminComms',      href: '/admin/comms',     minTier: 'admin' as const, allowedDesignations: ['comms_leader', 'comms_member'] },
+];
+
+const adminLinksJson = JSON.stringify(ADMIN_LINKS);
+---
+
+<nav class="flex gap-2 mb-6 flex-wrap" id="admin-subnav">
+  {ADMIN_LINKS.map(link => (
+    <a href={link.href}
+       id={`admin-nav-${link.key}`}
+       data-admin-nav={link.key}
+       style={link.minTier !== 'observer' ? 'display:none' : ''}
+       class:list={[
+         "px-4 py-2 rounded-xl text-[13px] font-semibold no-underline transition-all",
+         activeSub === link.key
+           ? "bg-navy text-white"
+           : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+       ]}>
+      {t(link.labelKey, lang)}
+    </a>
+  ))}
+</nav>
+
+<script is:inline define:vars={{ adminLinksJson }}>
+  window.__ADMIN_LINKS = JSON.parse(adminLinksJson);
+</script>
+<script>
+  import { resolveTierFromMember, hasMinimumTier, type AccessTier } from '../../lib/admin/constants';
+  import { TIER_RANK } from '../../lib/navigation.config';
+
+  function updateAdminNav() {
+    const member = (window as any).navGetMember?.();
+    if (!member) return;
+    const tier = resolveTierFromMember(member);
+    const desigs: string[] = member.designations || [];
+    const links: any[] = (window as any).__ADMIN_LINKS || [];
+
+    links.forEach((link: any) => {
+      const el = document.getElementById(`admin-nav-${link.key}`);
+      if (!el) return;
+      const meetsMinTier = (TIER_RANK[tier] ?? 0) >= (TIER_RANK[link.minTier as AccessTier] ?? 0);
+      const hasDesig = link.allowedDesignations?.some((d: string) => desigs.includes(d)) ?? false;
+      el.style.display = (meetsMinTier || hasDesig) ? '' : 'none';
+    });
+  }
+
+  function bootAdminNav() {
+    const m = (window as any).navGetMember?.();
+    if (m) { updateAdminNav(); return; }
+    window.addEventListener('nav:member', () => updateAdminNav());
+    setTimeout(() => {
+      if ((window as any).navGetMember?.()) updateAdminNav();
+    }, 500);
+  }
+
+  bootAdminNav();
+</script>

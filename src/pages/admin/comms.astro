@@ -5,13 +5,17 @@
  */
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import AdminNav from '../../components/nav/AdminNav.astro';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL || '';
 ---
 
 <BaseLayout title={t('admin.comms.meta', lang)} activePage="admin">
-  <div class="max-w-[1200px] mx-auto px-4 py-8">
+  <div class="max-w-[1200px] mx-auto px-4 pt-6">
+    <AdminNav activeSub="comms" lang={lang} />
+  </div>
+  <div class="max-w-[1200px] mx-auto px-4 pb-8">
     <div class="mb-6">
       <h1 class="text-2xl font-extrabold text-navy">{t('admin.comms.title', lang)}</h1>
       <p class="text-sm text-slate-500">{t('admin.comms.subtitle', lang)}</p>
