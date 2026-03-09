@@ -1,0 +1,209 @@
+# Permissions Matrix (RBAC)
+
+> **Governança**: Este documento é a fonte de verdade para permissões do sistema.
+> Qualquer alteração de acesso deve ser refletida aqui, no `navigation.config.ts`,
+> e nas RLS policies do Supabase antes de ser deployada.
+>
+> Última atualização: 2026-03-09 (Wave 4)
+
+---
+
+## 1. Tier Model
+
+O sistema usa um modelo de 6 níveis (tiers) hierárquicos, onde cada tier
+herda todas as permissões dos tiers inferiores.
+
+| Rank | Tier        | Quem é                                         | Função `has_min_tier()` |
+|------|-------------|-------------------------------------------------|------------------------|
+| 5    | superadmin  | `is_superadmin = true`                          | `has_min_tier(5)`      |
+| 4    | admin       | `manager`, `deputy_manager`, ou `co_gp`         | `has_min_tier(4)`      |
+| 3    | leader      | `tribe_leader`                                   | `has_min_tier(3)`      |
+| 2    | observer    | `sponsor`, `curator`, `chapter_liaison`           | `has_min_tier(2)`      |
+| 1    | member      | `researcher`, `facilitator`, `communicator`       | `has_min_tier(1)`      |
+| 0    | visitor     | Sem role, sem designação, ou não autenticado       | —                      |
+
+**Implementação backend**: `get_my_member_record()` → `has_min_tier(N)` (SECURITY DEFINER).
+**Implementação frontend**: `resolveTierFromMember(member)` → `hasMinimumTier(tier, required)`.
+
+---
+
+## 2. Designations (Eixo Complementar)
+
+Designações são atribuições **adicionais** ao tier. Um `researcher` (tier 1)
+pode ter a designação `comms_member`, ganhando acesso ao dashboard de comunicação
+sem subir de tier.
+
+| Designação       | Acesso Extra                                   |
+|------------------|-------------------------------------------------|
+| `comms_leader`   | `/admin/comms`, métricas de comunicação, painel editorial |
+| `comms_member`   | `/admin/comms`, métricas de comunicação (read-only)        |
+| `co_gp`          | Eleva tier para `admin` (rank 4)               |
+| `sponsor`        | Eleva tier para `observer` (rank 2)            |
+| `curator`        | Eleva tier para `observer` (rank 2)            |
+| `chapter_liaison`| Eleva tier para `observer` (rank 2)            |
+| `ambassador`     | Sem elevação de tier; listado no Staff          |
+| `founder`        | Sem elevação de tier; listado no Staff          |
+
+---
+
+## 3. Matriz de Permissões por Funcionalidade
+
+Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Sem acesso
+
+### 3.1 Navegação e Páginas
+
+| Funcionalidade             | Visitor | Member | Observer | Leader | Admin | Superadmin | Designações Extras              |
+|----------------------------|:-------:|:------:|:--------:|:------:|:-----:|:----------:|----------------------------------|
+| Home (index, KPIs, agenda) |    V    |   V    |    V     |   V    |   V   |     V      |                                  |
+| Workspace                  |    V    |   V    |    V     |   V    |   V   |     V      |                                  |
+| Onboarding                 |    V    |   V    |    V     |   V    |   V   |     V      |                                  |
+| Artifacts                  |    V    |  V/A   |   V/A    |  V/A   |  V/A  |    V/A     |                                  |
+| Gamification               |    V    |   V    |    V     |   V    |   V   |     V      |                                  |
+| Attendance                 |    —    |  V/A   |   V/A    |  V/A   |  V/A  |    V/A     |                                  |
+| Minha Tribo `/tribe/[id]`  |    —    |   V    |    V     |  V/A   |  V/A  |    V/A     |                                  |
+| Profile                    |    —    |  V/A   |   V/A    |  V/A   |  V/A  |    V/A     |                                  |
+| Admin Panel `/admin`       |    —    |   —    |    V     |   V    |  V/A  |    V/A     |                                  |
+| Admin Analytics            |    —    |   —    |    —     |   —    |   V   |     V      |                                  |
+| Admin Comms Dashboard      |    —    |   —    |    —     |   —    |   V   |     V      | `comms_leader`, `comms_member`: V |
+| Admin Help (Guia do Líder) |    —    |   —    |    —     |   V    |   V   |     V      |                                  |
+| Admin Member Edit          |    —    |   —    |    —     |   —    |   —   |    V/A     |                                  |
+
+### 3.2 Comunicação (Wave 3)
+
+| Funcionalidade                     | Visitor | Member | Observer | Leader | Admin | Superadmin | Notas                                |
+|------------------------------------|:-------:|:------:|:--------:|:------:|:-----:|:----------:|--------------------------------------|
+| Broadcast de E-mail — Enviar       |    —    |   —    |    —     |   A¹   |   A   |     A      | ¹ Apenas para sua própria tribo      |
+| Broadcast de E-mail — Ver Histórico|    —    |   —    |    —     |   V¹   |   V   |     V      | ¹ Apenas da sua tribo                |
+| WhatsApp Grupo — Ver CTA           |    —    |   V²   |    —     |   V    |   V   |     V      | ² Apenas se alocado na tribo         |
+| WhatsApp Peer-to-Peer — Ver botão  |    —    |   V³   |    —     |   V    |   V   |     V      | ³ Apenas se peer optou-in + mesma tribo |
+| WhatsApp — Opt-in toggle           |    —    |   A    |    A     |   A    |   A   |     A      | Cada membro controla o seu           |
+
+### 3.3 Dados e Segurança (Wave 1 — LGPD)
+
+| Funcionalidade                     | Visitor | Member | Observer | Leader | Admin | Superadmin | Backend (RLS)                        |
+|------------------------------------|:-------:|:------:|:--------:|:------:|:-----:|:----------:|--------------------------------------|
+| `members` (tabela completa c/ PII) |    —    |  self  |   self   | tribo¹ |   V   |    V/A     | `get_my_member_record()` based       |
+| `public_members` (VIEW sem PII)    |    V    |   V    |    V     |   V    |   V   |     V      | `security_invoker = false`           |
+| Editar próprio perfil              |    —    |   A    |    A     |   A    |   A   |     A      | `members_update_own` policy          |
+| Editar qualquer membro             |    —    |   —    |    —     |   —    |   A   |     A      | `members_update_admin` policy        |
+| Deletar membro                     |    —    |   —    |    —     |   —    |   —   |     A      | `members_delete_superadmin` policy   |
+| ¹ Leader vê dados dos membros da sua tribo via RLS `members_select_tribe_leader` |
+
+### 3.4 Métricas de Comunicação
+
+| Funcionalidade                     | Visitor | Member | Observer | Leader | Admin | Superadmin | Designações Extras                   |
+|------------------------------------|:-------:|:------:|:--------:|:------:|:-----:|:----------:|--------------------------------------|
+| `comms_metrics_daily` — Leitura    |    —    |   —    |    —     |   —    |   V   |     V      | `comms_leader`, `comms_member`: V    |
+| `comms_metrics_daily` — Escrita    |    —    |   —    |    —     |   —    |   A   |     A      | `comms_leader`: A                    |
+| `comms_metrics_ingestion_log`      |    —    |   —    |    —     |   —    |   V   |     V      | `comms_leader`, `comms_member`: V    |
+
+### 3.5 Gamificação e Presença
+
+| Funcionalidade                     | Visitor | Member | Observer | Leader | Admin | Superadmin |
+|------------------------------------|:-------:|:------:|:--------:|:------:|:-----:|:----------:|
+| Ver leaderboard / ranking          |    V    |   V    |    V     |   V    |   V   |     V      |
+| Ver próprio XP / achievements      |    —    |   V    |    V     |   V    |   V   |     V      |
+| Registrar presença (própria)       |    —    |   A    |    A     |   A    |   A   |     A      |
+| Criar evento                       |    —    |   —    |    —     |   A    |   A   |     A      |
+| Sync Attendance Points             |    —    |   —    |    —     |   —    |   A   |     A      |
+| Sync Credly Badges                 |    —    |   —    |    —     |   —    |   A   |     A      |
+| Verificar Credly (próprio)         |    —    |   A    |    A     |   A    |   A   |     A      |
+
+### 3.6 Staff Section (TeamSection)
+
+| Funcionalidade                     | Visitor | Member | Observer | Leader | Admin | Superadmin |
+|------------------------------------|:-------:|:------:|:--------:|:------:|:-----:|:----------:|
+| Ver listagem de Staff              |    V    |   V    |    V     |   V    |   V   |     V      |
+| Aparecer como Staff                |    —    |   —    |    —     |   V    |   V   |     V      |
+| Editar roles/designações do time   |    —    |   —    |    —     |   —    |   —   |     A      |
+
+> **Quem aparece**: Membros com `operational_role` != guest e `current_cycle_active = true`,
+> agrupados por: GP/Deputy → Comms Team → Tribe Leaders → Researchers → Ambassadors →
+> Curators → Sponsors/Chapter Liaisons → Founders.
+
+### 3.7 Knowledge Hub (Wave 5 — Planejado)
+
+| Funcionalidade                     | Visitor | Member | Observer | Leader | Admin | Superadmin |
+|------------------------------------|:-------:|:------:|:--------:|:------:|:-----:|:----------:|
+| Consumir artigos/recursos          |    V    |   V    |    V     |   V    |   V   |     V      |
+| Publicar artigo                    |    —    |   A    |    A     |   A    |   A   |     A      |
+| Curar/aprovar artigos              |    —    |   —    |    A¹    |   —    |   A   |     A      |
+| Administrar tags/categorias        |    —    |   —    |    —     |   —    |   A   |     A      |
+| ¹ Observers com designação `curator` |
+
+### 3.8 Configurações de Sistema
+
+| Funcionalidade                     | Visitor | Member | Observer | Leader | Admin | Superadmin |
+|------------------------------------|:-------:|:------:|:--------:|:------:|:-----:|:----------:|
+| Secrets/API Keys (Resend, etc.)    |    —    |   —    |    —     |   —    |   —   |     A      |
+| Domínios e DNS                     |    —    |   —    |    —     |   —    |   —   |     A      |
+| Supabase Dashboard                 |    —    |   —    |    —     |   —    |   —   |     A      |
+| Cycles (criar/editar ciclos)       |    —    |   —    |    —     |   —    |   A   |     A      |
+| Announcements (banners)            |    —    |   —    |    —     |   —    |   A   |     A      |
+| Hub Resources (CRUD)               |    —    |   —    |    —     |   —    |   A   |     A      |
+
+---
+
+## 4. Mapeamento Código ↔ Matriz
+
+### Frontend (`navigation.config.ts`)
+
+| `key`            | `minTier`  | `allowedDesignations`            | Coerente? |
+|------------------|------------|----------------------------------|-----------|
+| `attendance`     | `member`   | —                                | ✅         |
+| `my-tribe`       | `member`   | —                                | ✅         |
+| `profile`        | `member`   | —                                | ✅         |
+| `admin`          | `observer` | —                                | ✅         |
+| `admin-analytics`| `admin`    | —                                | ✅         |
+| `admin-comms`    | `admin`    | `['comms_leader', 'comms_member']`| ✅         |
+| `admin-help`     | `leader`   | —                                | ✅         |
+
+### Backend (`has_min_tier` / RLS)
+
+| Tabela / RPC                 | Policy                          | Tier Req | Coerente? |
+|------------------------------|---------------------------------|----------|-----------|
+| `members` SELECT             | `members_select_own`            | self     | ✅         |
+| `members` SELECT             | `members_select_admin`          | 4 (admin)| ✅         |
+| `members` SELECT             | `members_select_tribe_leader`   | 3 (leader, own tribe)| ✅ |
+| `members` UPDATE             | `members_update_own`            | self     | ✅         |
+| `members` UPDATE             | `members_update_admin`          | 4 (admin)| ✅         |
+| `members` DELETE             | `members_delete_superadmin`     | 5 (SA)   | ✅         |
+| `broadcast_log` SELECT       | `broadcast_log_read_sender`     | self     | ✅         |
+| `broadcast_log` SELECT       | `broadcast_log_read_tribe_leader`| 3 (leader, own tribe)| ✅ |
+| `broadcast_log` SELECT       | `broadcast_log_read_admin`      | 4 (admin)| ✅         |
+| `broadcast_log` INSERT       | service_role only               | —        | ✅         |
+| `comms_metrics_daily` SELECT | `comms_metrics_admin_read`      | 4 OR comms desig | ✅ |
+| `comms_metrics_daily` WRITE  | `can_manage_comms_metrics()`    | 4 OR comms desig | ✅ |
+
+### Edge Functions
+
+| Function                | Auth                          | Autorização                        | Coerente? |
+|-------------------------|-------------------------------|------------------------------------|-----------|
+| `send-tribe-broadcast`  | JWT via `getUser()`           | SA, manager, deputy OR tribe_leader of target tribe | ✅ |
+| `sync-attendance-points`| Bearer token                  | Authenticated (admin-triggered)    | ✅         |
+| `sync-credly-all`       | Bearer token                  | Authenticated (admin-triggered)    | ✅         |
+| `verify-credly`         | Bearer token                  | Authenticated (self)               | ✅         |
+
+---
+
+## 5. Divergências Identificadas
+
+Nenhuma divergência crítica encontrada. O `navigation.config.ts`, as RLS policies,
+e as Edge Functions estão alinhados com esta matriz.
+
+**Observações menores**:
+1. `TeamSection.astro` filtra comms team por designação `comms_team` (legada),
+   enquanto o RBAC usa `comms_leader`/`comms_member`. Recomendação: atualizar o
+   filtro para `comms_leader || comms_member` quando o backfill de designações
+   for executado (S-COM1).
+2. `sync-attendance-points` e `sync-credly-all` aceitam qualquer Bearer token
+   autenticado, mas na prática são invocados apenas por admins via UI. Considerar
+   adicionar verificação `has_min_tier(4)` se necessário.
+
+---
+
+## 6. Changelog
+
+| Data       | Alteração                                              |
+|------------|--------------------------------------------------------|
+| 2026-03-09 | Documento criado (Wave 4). Cobertura: W1–W3 + W4.10.  |
