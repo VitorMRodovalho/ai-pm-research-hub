@@ -1123,6 +1123,13 @@ const esLATAM: Record<string, string> = {
   'gamification.tribeName.6': 'ROI & Portafolio',
   'gamification.tribeName.7': 'Gobernanza & IA Confiable',
   'gamification.tribeName.8': 'Inclusión & Colaboración',
+
+  // ── Guest (authenticated but not registered) ──
+  'guest.notRegistered': 'Tu cuenta fue autenticada, pero aún no está registrada en el Núcleo.',
+  'guest.contactAdmin': 'Contacta al gestor del proyecto para ser incluido como miembro.',
+  'guest.contactEmail': 'nucleoiagp@gmail.com',
+  'guest.limitedAccess': 'Tienes acceso limitado. Regístrate como miembro para participar.',
+  'guest.navNotFound': 'Cuenta no registrada',
 };
 
 export default esLATAM;

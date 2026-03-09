@@ -32,6 +32,7 @@ const jsI18n = JSON.stringify({
   admin: t('nav.adminLink', lang),
   logout: t('nav.logout', lang),
   user: t('nav.user', lang),
+  guestNotFound: t('guest.navNotFound', lang),
 });
 ---
 
@@ -148,6 +149,9 @@ const jsI18n = JSON.stringify({
       _member = data;
       renderAuth();
       window.dispatchEvent(new CustomEvent('nav:member', { detail: _member }));
+      if (!_member || getMemberRole(_member) === 'guest') {
+        window.dispatchEvent(new CustomEvent('nav:guest-with-session', { detail: { user: _user } }));
+      }
     }
     sb.auth.onAuthStateChange(async (event, session) => {
       if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
@@ -157,6 +161,9 @@ const jsI18n = JSON.stringify({
           _member = data;
           renderAuth();
           window.dispatchEvent(new CustomEvent('nav:member', { detail: _member }));
+          if (!_member || getMemberRole(_member) === 'guest') {
+            window.dispatchEvent(new CustomEvent('nav:guest-with-session', { detail: { user: _user } }));
+          }
         }
       }
       if (event === 'SIGNED_OUT') {
@@ -178,7 +185,10 @@ const jsI18n = JSON.stringify({
   }
 
   function renderAuth() {
-    if (!_member || getMemberRole(_member) === 'guest') { renderLoggedOut(); return; }
+    if (!_member || getMemberRole(_member) === 'guest') {
+      if (_user) { renderGuestWithSession(); } else { renderLoggedOut(); }
+      return;
+    }
     const name = _member.name || i18n.user || 'User';
     const first = name.split(' ')[0];
     const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0,2).toUpperCase();
@@ -217,6 +227,19 @@ const jsI18n = JSON.stringify({
         class="px-3 py-1.5 rounded-lg bg-white/10 border border-white/20 text-white text-[.78rem] font-semibold hover:bg-white/20 transition-all cursor-pointer">
         ${i18n.login || 'Sign In'}
       </button>`;
+  }
+
+  function renderGuestWithSession() {
+    const el = document.getElementById('nav-auth');
+    if (!el) return;
+    el.innerHTML = `
+      <div class="flex items-center gap-2">
+        <span class="text-amber-400 text-[.73rem] font-semibold hidden sm:inline">${i18n.guestNotFound || 'Conta não cadastrada'}</span>
+        <button onclick="doLogout()"
+          class="px-2.5 py-1 rounded-lg bg-white/10 border border-white/20 text-white text-[.7rem] font-semibold hover:bg-white/20 transition-all cursor-pointer">
+          ${i18n.logout || '↩ Sair'}
+        </button>
+      </div>`;
   }
 
   function buildDrawer() {
@@ -294,6 +317,7 @@ const jsI18n = JSON.stringify({
     document.getElementById('auth-modal')?.classList.remove('hidden');
   };
   (window as any).navGetMember = () => _member;
+  (window as any).navGetUser = () => _user;
   (window as any).navGetSb = () => sb;
 
   bootNav();

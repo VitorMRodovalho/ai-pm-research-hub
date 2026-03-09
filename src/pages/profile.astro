@@ -102,6 +102,18 @@ const PROFILE_I18N = {
     <div id="profile-content" class="space-y-5">
       <div class="text-center text-slate-400 py-8">{t('profile.loading', lang)}</div>
     </div>
+
+    <div id="profile-not-registered" class="hidden">
+      <div class="bg-white rounded-2xl border border-slate-200 p-8 text-center">
+        <div class="text-4xl mb-3">🔒</div>
+        <h2 class="text-lg font-bold text-navy mb-2">{t('guest.notRegistered', lang)}</h2>
+        <p class="text-slate-500 text-sm mb-4">{t('guest.contactAdmin', lang)}</p>
+        <a href={`mailto:${t('guest.contactEmail', lang)}`}
+           class="inline-block px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm no-underline hover:opacity-90 transition-all">
+          ✉️ {t('guest.contactEmail', lang)}
+        </a>
+      </div>
+    </div>
   </div>
 </BaseLayout>
 
@@ -143,12 +155,17 @@ const PROFILE_I18N = {
     window.addEventListener('nav:member', (async (evt: Event) => {
       const e = evt as CustomEvent;
       if (shouldRedirectFromProfile(e.detail)) {
-        location.href = '/?auth=required';
+        const user = (window as any).navGetUser?.();
+        if (user) { renderNotRegistered(); } else { location.href = '/?auth=required'; }
         return;
       }
       currentMember = e.detail;
       await loadExtras(sb);
       renderProfile(currentMember);
+    }) as EventListener);
+
+    window.addEventListener('nav:guest-with-session', (() => {
+      renderNotRegistered();
     }) as EventListener);
 
     const m = (window as any).navGetMember?.();
@@ -168,8 +185,15 @@ const PROFILE_I18N = {
         renderProfile(data);
         return;
       }
+      renderNotRegistered();
+      return;
     }
     location.href = '/?auth=required';
+  }
+
+  function renderNotRegistered() {
+    document.getElementById('profile-content')?.classList.add('hidden');
+    document.getElementById('profile-not-registered')?.classList.remove('hidden');
   }
 
   async function loadExtras(sb: any) {

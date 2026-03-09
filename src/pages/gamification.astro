@@ -139,6 +139,17 @@ const GAM_I18N = {
       </button>
     </div>
 
+    <!-- Guest banner (authenticated but not registered) -->
+    <div id="guest-banner" class="hidden mb-6">
+      <div class="bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 flex items-center gap-3">
+        <span class="text-amber-600 text-lg flex-shrink-0">ℹ️</span>
+        <p class="text-amber-800 text-[.78rem] font-medium flex-1">
+          {t('guest.limitedAccess', lang)}
+          <a href={`mailto:${t('guest.contactEmail', lang)}`} class="text-amber-800 font-semibold underline ml-1">{t('guest.contactEmail', lang)}</a>
+        </p>
+      </div>
+    </div>
+
     <!-- XP Level Legend -->
     <div class="bg-gradient-to-r from-navy/5 to-orange/5 rounded-xl border border-slate-200 p-5 mb-6">
       <h3 class="text-sm font-bold text-navy mb-3">{t('gamification.levels.title', lang)}</h3>
@@ -1049,6 +1060,10 @@ const GAM_I18N = {
       }
     }) as EventListener);
 
+    window.addEventListener('nav:guest-with-session', (() => {
+      document.getElementById('guest-banner')?.classList.remove('hidden');
+    }) as EventListener);
+
     const m = (window as any).navGetMember?.();
     if (m && getMemberRole(m) !== 'guest') {
       MEMBER = m;
@@ -1064,9 +1079,10 @@ const GAM_I18N = {
         setupUI();
         return;
       }
+      document.getElementById('guest-banner')?.classList.remove('hidden');
     }
 
-    // Not logged in — show leaderboard only
+    // Not logged in or guest — show leaderboard only
     loadLeaderboard();
   }
 

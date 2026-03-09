@@ -21,11 +21,16 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       <div class="text-4xl mb-3">⏱️</div>
       <h2 class="text-navy font-bold text-xl mb-2">{t('attendance.authTitle', lang)}</h2>
       <p class="text-slate-500 text-sm mb-6">{t('attendance.authDesc', lang)}</p>
-      <button class="w-full py-3 rounded-lg bg-navy text-white font-semibold text-sm border-0 cursor-pointer hover:bg-navy/90 transition-colors"
+      <button id="attendance-auth-btn"
+              class="w-full py-3 rounded-lg bg-navy text-white font-semibold text-sm border-0 cursor-pointer hover:bg-navy/90 transition-colors"
               data-action="open-auth">
         {t('attendance.authBtn', lang)}
       </button>
-      <p id="auth-not-found-msg" class="hidden mt-4 text-[13px] text-red-600"></p>
+      <p id="auth-not-found-msg" class="hidden mt-4 text-[13px] text-amber-700">
+        {t('guest.notRegistered', lang)} {t('guest.contactAdmin', lang)}
+        <br />
+        <a href={`mailto:${t('guest.contactEmail', lang)}`} class="text-amber-800 font-semibold underline">{t('guest.contactEmail', lang)}</a>
+      </p>
     </div>
   </div>
 
@@ -675,6 +680,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     document.getElementById('app')!.classList.add('hidden');
   }
 
+  function showGuestNotRegistered() {
+    showAuthGate();
+    document.getElementById('auth-not-found-msg')?.classList.remove('hidden');
+    const authBtn = document.getElementById('attendance-auth-btn');
+    if (authBtn) authBtn.style.display = 'none';
+  }
+
   async function onMemberReady() {
     CAN_MANAGE = MEMBER.is_superadmin || getMemberRole(MEMBER) === 'tribe_leader';
     if (CAN_MANAGE) {
@@ -700,6 +712,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       }
     }) as EventListener);
 
+    window.addEventListener('nav:guest-with-session', (() => {
+      showGuestNotRegistered();
+    }) as EventListener);
+
     // 1) Check if nav already has a member loaded
     const m = (window as any).navGetMember?.();
     if (m && getMemberRole(m) !== 'guest') {
@@ -717,6 +733,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         onMemberReady();
         return;
       }
+      // Authenticated but not registered as member
+      showGuestNotRegistered();
+      return;
     }
 
     // 3) No session at all — show auth gate

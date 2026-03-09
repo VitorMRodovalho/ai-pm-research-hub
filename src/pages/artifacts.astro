@@ -60,6 +60,17 @@ const ARTIFACTS_I18N = {
       </button>
     </div>
 
+    <!-- Guest banner (authenticated but not registered) -->
+    <div id="guest-banner" class="hidden mb-6">
+      <div class="bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 flex items-center gap-3">
+        <span class="text-amber-600 text-lg flex-shrink-0">ℹ️</span>
+        <p class="text-amber-800 text-[.78rem] font-medium flex-1">
+          {t('guest.limitedAccess', lang)}
+          <a href={`mailto:${t('guest.contactEmail', lang)}`} class="text-amber-800 font-semibold underline ml-1">{t('guest.contactEmail', lang)}</a>
+        </p>
+      </div>
+    </div>
+
     <!-- Tabs -->
     <div class="flex gap-2 mb-6 flex-wrap">
       <button class="art-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white"
@@ -536,6 +547,10 @@ const ARTIFACTS_I18N = {
       }
     }) as EventListener);
 
+    window.addEventListener('nav:guest-with-session', (() => {
+      document.getElementById('guest-banner')?.classList.remove('hidden');
+    }) as EventListener);
+
     const m = (window as any).navGetMember?.();
     if (m && getMemberRole(m) !== 'guest') {
       MEMBER = m;
@@ -551,8 +566,9 @@ const ARTIFACTS_I18N = {
         setupUI();
         return;
       }
+      document.getElementById('guest-banner')?.classList.remove('hidden');
     }
-    // Not logged in — catalog only
+    // Not logged in or guest — catalog only
     loadCatalog();
   }
 

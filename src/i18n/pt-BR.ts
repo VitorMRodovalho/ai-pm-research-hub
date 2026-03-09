@@ -1123,6 +1123,13 @@ const ptBR: Record<string, string> = {
   'gamification.tribeName.6': 'ROI & Portfólio',
   'gamification.tribeName.7': 'Governança & Trustworthy AI',
   'gamification.tribeName.8': 'Inclusão & Colaboração',
+
+  // ── Guest (authenticated but not registered) ──
+  'guest.notRegistered': 'Sua conta foi autenticada, mas ainda não está cadastrada no Núcleo.',
+  'guest.contactAdmin': 'Entre em contato com o gestor do projeto para ser incluído como membro.',
+  'guest.contactEmail': 'nucleoiagp@gmail.com',
+  'guest.limitedAccess': 'Você tem acesso limitado. Cadastre-se como membro para participar.',
+  'guest.navNotFound': 'Conta não cadastrada',
 };
 
 export default ptBR;

@@ -1123,6 +1123,13 @@ const enUS: Record<string, string> = {
   'gamification.tribeName.6': 'ROI & Portfolio',
   'gamification.tribeName.7': 'Governance & Trustworthy AI',
   'gamification.tribeName.8': 'Inclusion & Collaboration',
+
+  // ── Guest (authenticated but not registered) ──
+  'guest.notRegistered': 'Your account was authenticated, but is not yet registered in the Hub.',
+  'guest.contactAdmin': 'Contact the project manager to be added as a member.',
+  'guest.contactEmail': 'nucleoiagp@gmail.com',
+  'guest.limitedAccess': 'You have limited access. Register as a member to participate.',
+  'guest.navNotFound': 'Account not registered',
 };
 
 export default enUS;
