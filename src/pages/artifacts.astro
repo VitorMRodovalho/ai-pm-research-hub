@@ -549,6 +549,7 @@ const ARTIFACTS_I18N = {
 
     window.addEventListener('nav:guest-with-session', (() => {
       document.getElementById('guest-banner')?.classList.remove('hidden');
+      loadCatalog();
     }) as EventListener);
 
     const m = (window as any).navGetMember?.();
@@ -558,17 +559,20 @@ const ARTIFACTS_I18N = {
       return;
     }
 
-    const { data: { session } } = await sb.auth.getSession();
-    if (session) {
-      const { data } = await sb.rpc('get_member_by_auth');
-      if (data && getMemberRole(data) !== 'guest') {
-        MEMBER = data;
-        setupUI();
-        return;
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        const { data } = await sb.rpc('get_member_by_auth');
+        if (data && getMemberRole(data) !== 'guest') {
+          MEMBER = data;
+          setupUI();
+          return;
+        }
+        document.getElementById('guest-banner')?.classList.remove('hidden');
       }
-      document.getElementById('guest-banner')?.classList.remove('hidden');
+    } catch (e) {
+      console.warn('Artifacts: session check failed, loading public catalog:', e);
     }
-    // Not logged in or guest — catalog only
     loadCatalog();
   }
 

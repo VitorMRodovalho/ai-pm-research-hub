@@ -54,6 +54,7 @@ const ptBR: Record<string, string> = {
   'hero.joinMeet': 'Entrar no Meet',
 
   // ── Agenda ──
+  'agenda.unit': 'min',
   'agenda.label': 'Pauta do Evento',
   'agenda.title': 'O que acontece hoje',
   'agenda.subtitle': '1h30 de alinhamento, conhecimento e conexão.',

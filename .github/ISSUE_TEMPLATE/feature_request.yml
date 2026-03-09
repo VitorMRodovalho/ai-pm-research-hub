@@ -1,0 +1,73 @@
+name: Feature Request
+description: Suggest a new feature or improvement for the AI & PM Research Hub
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement! Please describe the problem and your proposed solution so we can evaluate it.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What problem does this feature solve? Is it related to a frustration with the current experience?
+      placeholder: "As a [role], I want to [goal] so that [benefit]..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the solution you'd like. Be as specific as possible.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe any alternative solutions or workarounds you've considered.
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How will we know this feature is complete? List testable criteria.
+      placeholder: |
+        - [ ] Criterion 1
+        - [ ] Criterion 2
+        - [ ] Criterion 3
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Affected area
+      description: Which part of the Hub does this relate to?
+      multiple: true
+      options:
+        - Public pages (tribes, gamification, artifacts)
+        - Member profile / onboarding
+        - Attendance tracking
+        - Admin panel
+        - Governance / documentation
+        - Database / backend
+        - CI / DevOps
+        - i18n / localization
+        - Other
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add any mockups, screenshots, references, or related issues.
+    validations:
+      required: false

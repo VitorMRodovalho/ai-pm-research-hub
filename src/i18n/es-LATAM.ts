@@ -54,6 +54,7 @@ const esLATAM: Record<string, string> = {
   'hero.joinMeet': 'Entrar al Meet',
 
   // ── Agenda ──
+  'agenda.unit': 'min',
   'agenda.label': 'Agenda del Evento',
   'agenda.title': 'Qué Sucede Hoy',
   'agenda.subtitle': '1h30 de alineación, conocimiento y conexión.',

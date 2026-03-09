@@ -1,0 +1,105 @@
+name: Bug Report
+description: Report a bug in the AI & PM Research Hub
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill out the sections below so we can reproduce and fix the issue.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of the bug.
+      placeholder: What happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Detailed steps to reproduce the behavior.
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Scroll down to '...'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened. Include console errors or screenshots if available.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      description: Which browser(s) are affected?
+      multiple: true
+      options:
+        - Chrome
+        - Firefox
+        - Safari
+        - Edge
+        - Mobile Safari (iOS)
+        - Chrome (Android)
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      description: "e.g. Windows 11, macOS 15, Ubuntu 24.04, iOS 18, Android 15"
+      placeholder: macOS 15
+    validations:
+      required: false
+
+  - type: dropdown
+    id: language
+    attributes:
+      label: Interface language
+      description: Which language was the interface set to?
+      options:
+        - Português (PT-BR)
+        - English (EN)
+        - Español (ES)
+    validations:
+      required: false
+
+  - type: dropdown
+    id: auth-state
+    attributes:
+      label: Authentication state
+      description: Were you logged in when the bug occurred?
+      options:
+        - Logged in (registered member)
+        - Logged in (guest / not registered)
+        - Not logged in (anonymous)
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add any other context, screenshots, or console logs.
+    validations:
+      required: false
