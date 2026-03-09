@@ -1,0 +1,171 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Toast from '../components/ui/Toast.astro';
+import { t, type Lang } from '../i18n/utils';
+
+const lang: Lang = 'pt-BR';
+const PRES_I18N = {
+  pageTitle: t('pres.pageTitle', lang),
+  filterAll: t('pres.filterAll', lang),
+  filterGeneral: t('pres.filterGeneral', lang),
+  filterTribe: t('pres.filterTribe', lang),
+  noResults: t('pres.noResults', lang),
+  deliberations: t('pres.deliberations', lang),
+  recording: t('pres.recording', lang),
+};
+---
+<BaseLayout title={PRES_I18N.pageTitle} activePage="presentations" lang={lang}>
+  <Toast />
+  <section class="max-w-5xl mx-auto px-4 pt-24 pb-16">
+    <h1 class="text-2xl font-extrabold text-navy mb-6">{PRES_I18N.pageTitle}</h1>
+
+    <div class="flex gap-2 mb-6 flex-wrap" id="pres-filter-tabs">
+      <button data-filter="all"
+        class="px-4 py-1.5 text-[.78rem] font-bold rounded-full border-2 cursor-pointer transition-all border-navy bg-navy text-white">{PRES_I18N.filterAll}</button>
+      <button data-filter="general"
+        class="px-4 py-1.5 text-[.78rem] font-bold rounded-full border-2 cursor-pointer transition-all border-slate-200 bg-white text-slate-600 hover:border-navy/30">{PRES_I18N.filterGeneral}</button>
+    </div>
+
+    <div id="pres-tribe-chips" class="flex gap-2 mb-6 flex-wrap"></div>
+
+    <div id="pres-loading" class="text-center py-12">
+      <div class="inline-block w-6 h-6 border-2 border-navy/20 border-t-navy rounded-full animate-spin"></div>
+    </div>
+
+    <div id="pres-empty" class="hidden text-center py-12 text-slate-400 text-sm">{PRES_I18N.noResults}</div>
+
+    <div id="pres-list" class="space-y-4 hidden"></div>
+  </section>
+</BaseLayout>
+
+<script is:inline define:vars={{ PRES_I18N }}>
+  window.__PRES_PAGE_I18N = typeof PRES_I18N !== 'undefined' ? PRES_I18N : {};
+</script>
+<script>
+  const PI = (window as any).__PRES_PAGE_I18N || {};
+  let allArtifacts: any[] = [];
+  let currentFilter = 'all';
+  let tribes: any[] = [];
+  let sb: any = null;
+
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 300); return; }
+
+    const [{ data: artifacts }, { data: tribeData }] = await Promise.all([
+      sb.rpc('list_meeting_artifacts', { p_limit: 100 }),
+      sb.from('tribes').select('id, name').order('id'),
+    ]);
+
+    allArtifacts = artifacts || [];
+    tribes = tribeData || [];
+    renderTribeChips();
+    renderList();
+    document.getElementById('pres-loading')?.classList.add('hidden');
+  }
+
+  function renderTribeChips() {
+    const container = document.getElementById('pres-tribe-chips');
+    if (!container) return;
+    const tribsWithArtifacts = new Set(
+      allArtifacts.filter((a: any) => a.tribe_id).map((a: any) => a.tribe_id)
+    );
+    container.innerHTML = tribes
+      .filter((t: any) => tribsWithArtifacts.has(t.id))
+      .map((t: any) =>
+        '<button data-filter="tribe-' + t.id + '" class="px-3 py-1 text-[.72rem] font-semibold rounded-full border cursor-pointer transition-all border-slate-200 bg-white text-slate-600 hover:border-purple/30">'
+        + 'T' + t.id + ': ' + escapeHtml(t.name)
+        + '</button>'
+      ).join('');
+    container.querySelectorAll('button').forEach((btn: Element) => {
+      btn.addEventListener('click', () => {
+        currentFilter = btn.getAttribute('data-filter') || 'all';
+        updateFilterUI();
+        renderList();
+      });
+    });
+  }
+
+  function updateFilterUI() {
+    document.querySelectorAll('#pres-filter-tabs button, #pres-tribe-chips button').forEach((btn: Element) => {
+      const f = btn.getAttribute('data-filter');
+      const isActive = f === currentFilter;
+      btn.className = 'px-4 py-1.5 text-[.78rem] font-bold rounded-full border-2 cursor-pointer transition-all '
+        + (isActive ? 'border-navy bg-navy text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-navy/30');
+    });
+  }
+
+  function renderList() {
+    const listEl = document.getElementById('pres-list');
+    const emptyEl = document.getElementById('pres-empty');
+    if (!listEl || !emptyEl) return;
+
+    let filtered = allArtifacts;
+    if (currentFilter === 'general') {
+      filtered = allArtifacts.filter((a: any) => !a.tribe_id);
+    } else if (currentFilter.startsWith('tribe-')) {
+      const tId = parseInt(currentFilter.replace('tribe-', ''), 10);
+      filtered = allArtifacts.filter((a: any) => a.tribe_id === tId);
+    }
+
+    if (filtered.length === 0) {
+      listEl.classList.add('hidden');
+      emptyEl.classList.remove('hidden');
+      return;
+    }
+    emptyEl.classList.add('hidden');
+    listEl.classList.remove('hidden');
+    listEl.innerHTML = filtered.map(cardHtml).join('');
+  }
+
+  function cardHtml(a: any): string {
+    const date = a.meeting_date || '';
+    const tribe = a.tribe_id ? tribes.find((t: any) => t.id === a.tribe_id) : null;
+    const tribeLabel = tribe ? 'T' + tribe.id + ': ' + escapeHtml(tribe.name) : 'Geral';
+    const deliberations = (a.deliberations || []) as string[];
+
+    return '<div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 hover:shadow-md transition-shadow">'
+      + '<div class="flex items-start justify-between gap-4 mb-3">'
+      + '<div>'
+      + '<h3 class="text-sm font-extrabold text-navy">' + escapeHtml(a.title) + '</h3>'
+      + '<div class="flex items-center gap-2 mt-1">'
+      + '<span class="text-[.68rem] text-slate-400">' + date + '</span>'
+      + '<span class="px-2 py-0.5 text-[.6rem] font-bold rounded-full '
+      + (tribe ? 'bg-purple/10 text-purple' : 'bg-navy/10 text-navy') + '">' + tribeLabel + '</span>'
+      + '</div></div>'
+      + (a.recording_url
+        ? '<a href="' + escapeHtml(a.recording_url) + '" target="_blank" rel="noopener" '
+          + 'class="flex items-center gap-1.5 px-3 py-1.5 text-[.72rem] font-semibold text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors no-underline shrink-0">'
+          + '<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M21.582 6.186a2.506 2.506 0 00-1.768-1.768C18.254 4 12 4 12 4s-6.254 0-7.814.418A2.506 2.506 0 002.418 6.186C2 7.746 2 12 2 12s0 4.254.418 5.814a2.506 2.506 0 001.768 1.768C5.746 20 12 20 12 20s6.254 0 7.814-.418a2.506 2.506 0 001.768-1.768C22 16.254 22 12 22 12s0-4.254-.418-5.814zM10 15.464V8.536L16 12l-6 3.464z"/></svg>'
+          + (PI.recording || 'Gravacao')
+          + '</a>' : '')
+      + '</div>'
+      + (deliberations.length > 0
+        ? '<div class="mt-2 pt-2 border-t border-slate-100">'
+          + '<h4 class="text-[.68rem] font-bold text-slate-500 uppercase tracking-wider mb-1.5">'
+          + (PI.deliberations || 'Deliberacoes') + '</h4>'
+          + '<ul class="space-y-1">'
+          + deliberations.map((d: string) =>
+              '<li class="flex items-start gap-1.5 text-[.75rem] text-slate-600">'
+              + '<span class="text-[#05BFE0] mt-0.5">&bull;</span>'
+              + '<span>' + escapeHtml(d) + '</span></li>'
+            ).join('')
+          + '</ul></div>' : '')
+      + '</div>';
+  }
+
+  function escapeHtml(s: string): string {
+    return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  document.querySelectorAll('#pres-filter-tabs button').forEach((btn: Element) => {
+    btn.addEventListener('click', () => {
+      currentFilter = btn.getAttribute('data-filter') || 'all';
+      updateFilterUI();
+      renderList();
+    });
+  });
+
+  boot();
+</script>

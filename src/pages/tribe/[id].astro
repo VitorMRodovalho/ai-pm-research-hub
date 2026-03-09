@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Toast from '../../components/ui/Toast.astro';
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import PresentationLayer from '../../components/ui/PresentationLayer.astro';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 const { id } = Astro.params;
 const tribeId = parseInt(id || '0', 10);
@@ -190,6 +191,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
       </form>
     </div>
   </div>
+  <PresentationLayer context="tribe" tribeId={tribeId} lang={lang} />
 </BaseLayout>
 
 <script is:inline define:vars={{ TRIBE_I18N, tribeId }}>

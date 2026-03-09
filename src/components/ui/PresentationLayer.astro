@@ -1,0 +1,267 @@
+---
+/**
+ * PresentationLayer.astro — Shared presentation mode toggle + end-session modal.
+ * ACL:
+ *   Home (context='home'): admin+ only (Tier 4/5)
+ *   Tribe (context='tribe'): admin+ OR tribe_leader of that tribe
+ *
+ * On deactivation: modal captures recording link, deliberations, publish flag.
+ * Data Overlay (tribe context): injects presence + pending deliverables widgets.
+ */
+import { t, type Lang } from '../../i18n/utils';
+
+interface Props {
+  context: 'home' | 'tribe';
+  tribeId?: number;
+  lang?: Lang;
+}
+
+const { context = 'home', tribeId, lang = 'pt-BR' } = Astro.props;
+
+const PRES_I18N = {
+  toggleOn: t('pres.toggleOn', lang),
+  toggleOff: t('pres.toggleOff', lang),
+  modalTitle: t('pres.modalTitle', lang),
+  modalSubtitle: t('pres.modalSubtitle', lang),
+  labelRecording: t('pres.labelRecording', lang),
+  labelDeliberations: t('pres.labelDeliberations', lang),
+  placeholderRecording: t('pres.placeholderRecording', lang),
+  placeholderDeliberations: t('pres.placeholderDeliberations', lang),
+  btnSave: t('pres.btnSave', lang),
+  btnSkip: t('pres.btnSkip', lang),
+  saved: t('pres.saved', lang),
+  error: t('pres.error', lang),
+  layerPresence: t('pres.layerPresence', lang),
+  layerPending: t('pres.layerPending', lang),
+  publishLabel: t('pres.publishLabel', lang),
+};
+---
+
+<!-- Presentation Toggle -->
+<div id="pres-toggle-container" class="hidden fixed bottom-6 right-6 z-50">
+  <button id="pres-toggle-btn"
+    class="flex items-center gap-2 px-4 py-2.5 bg-navy text-white rounded-xl text-[.78rem] font-bold shadow-lg cursor-pointer border-2 border-[#05BFE0]/30 hover:border-[#05BFE0] transition-all">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+    <span id="pres-toggle-label">{PRES_I18N.toggleOn}</span>
+  </button>
+</div>
+
+<!-- End-Presentation Modal -->
+<div id="pres-end-modal" class="fixed inset-0 z-[60] hidden">
+  <div class="absolute inset-0 bg-black/50" id="pres-end-backdrop"></div>
+  <div class="relative mx-auto mt-[12vh] max-w-lg bg-white rounded-2xl shadow-2xl p-6 z-10">
+    <h2 class="text-lg font-extrabold text-navy mb-1">{PRES_I18N.modalTitle}</h2>
+    <p class="text-[.72rem] text-slate-400 mb-4">{PRES_I18N.modalSubtitle}</p>
+    <div class="space-y-3">
+      <div>
+        <label class="text-[.72rem] font-semibold text-slate-600 block mb-1">{PRES_I18N.labelRecording}</label>
+        <input type="url" id="pres-recording-url" placeholder={PRES_I18N.placeholderRecording}
+          class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]" />
+      </div>
+      <div>
+        <label class="text-[.72rem] font-semibold text-slate-600 block mb-1">{PRES_I18N.labelDeliberations}</label>
+        <textarea id="pres-deliberations" rows={4} placeholder={PRES_I18N.placeholderDeliberations}
+          class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem] resize-y"></textarea>
+      </div>
+      <label class="flex items-center gap-2 cursor-pointer">
+        <input type="checkbox" id="pres-publish-check" class="w-4 h-4 accent-navy rounded" />
+        <span class="text-[.78rem] text-slate-600 font-medium">{PRES_I18N.publishLabel}</span>
+      </label>
+    </div>
+    <div class="flex justify-end gap-2 mt-4">
+      <button id="pres-btn-skip" class="px-4 py-2 text-sm font-semibold text-slate-500 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all">{PRES_I18N.btnSkip}</button>
+      <button id="pres-btn-save" class="px-4 py-2 text-sm font-semibold text-white bg-navy rounded-lg cursor-pointer hover:opacity-90 transition-all">{PRES_I18N.btnSave}</button>
+    </div>
+  </div>
+</div>
+
+<!-- Data overlay (tribe context) — presence + pending deliverables -->
+<div id="pres-data-overlay" class="hidden fixed top-20 left-4 z-40 w-72 space-y-3 pointer-events-none">
+  <div class="bg-navy/95 backdrop-blur-sm rounded-xl p-4 text-white pointer-events-auto shadow-xl border border-[#05BFE0]/20">
+    <h4 class="text-[.7rem] font-bold uppercase tracking-wider text-[#05BFE0] mb-2">{PRES_I18N.layerPresence}</h4>
+    <div id="pres-layer-presence" class="text-[.75rem] text-white/80 space-y-1"></div>
+  </div>
+  <div class="bg-navy/95 backdrop-blur-sm rounded-xl p-4 text-white pointer-events-auto shadow-xl border border-[#05BFE0]/20">
+    <h4 class="text-[.7rem] font-bold uppercase tracking-wider text-amber-400 mb-2">{PRES_I18N.layerPending}</h4>
+    <div id="pres-layer-pending" class="text-[.75rem] text-white/80 space-y-1"></div>
+  </div>
+</div>
+
+<script is:inline define:vars={{ PRES_I18N, context, tribeId }}>
+  window.__PRES_CTX = { context: context || 'home', tribeId: tribeId || null, i18n: PRES_I18N || {} };
+</script>
+<script>
+  const CTX = (window as any).__PRES_CTX || { context: 'home', tribeId: null, i18n: {} };
+  const PI = CTX.i18n;
+  let presActive = false;
+  let sb: any = null;
+
+  function canShowToggle(member: any): boolean {
+    if (!member) return false;
+    const isAdmin = member.is_superadmin === true
+      || member.operational_role === 'manager'
+      || member.operational_role === 'deputy_manager';
+
+    if (CTX.context === 'home') return isAdmin;
+
+    if (CTX.context === 'tribe') {
+      if (isAdmin) return true;
+      return member.operational_role === 'tribe_leader'
+        && member.tribe_id === CTX.tribeId;
+    }
+    return false;
+  }
+
+  function showToggle(member: any) {
+    if (!canShowToggle(member)) return;
+    document.getElementById('pres-toggle-container')?.classList.remove('hidden');
+  }
+
+  function activatePresentation() {
+    presActive = true;
+    document.body.classList.add('presentation-mode');
+    const label = document.getElementById('pres-toggle-label');
+    if (label) label.textContent = PI.toggleOff || 'Exit';
+    const btn = document.getElementById('pres-toggle-btn');
+    if (btn) {
+      btn.classList.add('bg-[#05BFE0]', 'text-navy');
+      btn.classList.remove('bg-navy', 'text-white');
+    }
+    if (CTX.context === 'tribe' && CTX.tribeId) loadTribeDataLayer();
+  }
+
+  function deactivatePresentation() {
+    presActive = false;
+    document.body.classList.remove('presentation-mode');
+    const label = document.getElementById('pres-toggle-label');
+    if (label) label.textContent = PI.toggleOn || 'Presentation Mode';
+    const btn = document.getElementById('pres-toggle-btn');
+    if (btn) {
+      btn.classList.remove('bg-[#05BFE0]', 'text-navy');
+      btn.classList.add('bg-navy', 'text-white');
+    }
+    document.getElementById('pres-data-overlay')?.classList.add('hidden');
+    document.getElementById('pres-end-modal')?.classList.remove('hidden');
+  }
+
+  function closeModal() {
+    document.getElementById('pres-end-modal')?.classList.add('hidden');
+    const recEl = document.getElementById('pres-recording-url') as HTMLInputElement;
+    const delEl = document.getElementById('pres-deliberations') as HTMLTextAreaElement;
+    const pubEl = document.getElementById('pres-publish-check') as HTMLInputElement;
+    if (recEl) recEl.value = '';
+    if (delEl) delEl.value = '';
+    if (pubEl) pubEl.checked = false;
+  }
+
+  async function saveArtifact() {
+    if (!sb) { closeModal(); return; }
+    const recUrl = (document.getElementById('pres-recording-url') as HTMLInputElement)?.value.trim();
+    const rawDelibs = (document.getElementById('pres-deliberations') as HTMLTextAreaElement)?.value.trim();
+    const isPublished = (document.getElementById('pres-publish-check') as HTMLInputElement)?.checked ?? false;
+    const deliberations = rawDelibs ? rawDelibs.split('\n').map((s: string) => s.trim()).filter(Boolean) : [];
+
+    const today = new Date().toISOString().split('T')[0];
+    const title = CTX.context === 'tribe'
+      ? 'Reuniao de Tribo ' + (CTX.tribeId || '') + ' - ' + today
+      : 'Reuniao Geral - ' + today;
+
+    try {
+      const { error } = await sb.rpc('save_presentation_snapshot', {
+        p_title: title,
+        p_meeting_date: today,
+        p_recording_url: recUrl || null,
+        p_agenda_items: [],
+        p_snapshot: {},
+        p_event_id: null,
+        p_tribe_id: CTX.tribeId || null,
+        p_deliberations: deliberations,
+        p_is_published: isPublished,
+      });
+      if (error) throw new Error(error.message);
+      (window as any).toast?.(PI.saved || 'Salvo!', 'success');
+    } catch (e: any) {
+      console.warn('save artifact error:', e);
+      (window as any).toast?.(PI.error || 'Erro ao salvar', 'error');
+    }
+    closeModal();
+  }
+
+  async function loadTribeDataLayer() {
+    if (!sb || !CTX.tribeId) return;
+    const overlay = document.getElementById('pres-data-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('hidden');
+
+    try {
+      const [{ data: members }, { data: deliverables }] = await Promise.all([
+        sb.from('public_members')
+          .select('name, operational_role, current_cycle_active')
+          .eq('tribe_id', CTX.tribeId)
+          .eq('current_cycle_active', true),
+        sb.rpc('list_tribe_deliverables', { p_tribe_id: CTX.tribeId, p_status: 'in_progress' }),
+      ]);
+
+      const presEl = document.getElementById('pres-layer-presence');
+      if (presEl && members) {
+        presEl.innerHTML = members.map((m: any) =>
+          '<div class="flex items-center gap-1.5">'
+          + '<span class="w-1.5 h-1.5 rounded-full '
+          + (m.current_cycle_active ? 'bg-green-400' : 'bg-slate-500') + '"></span>'
+          + '<span>' + esc(m.name) + '</span>'
+          + (m.operational_role === 'tribe_leader'
+            ? ' <span class="text-[.6rem] text-amber-300">(Lider)</span>' : '')
+          + '</div>'
+        ).join('') || '<div class="text-white/40">&mdash;</div>';
+      }
+
+      const pendEl = document.getElementById('pres-layer-pending');
+      if (pendEl && deliverables) {
+        pendEl.innerHTML = (deliverables as any[]).map((d: any) =>
+          '<div class="flex items-center gap-1.5">'
+          + '<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>'
+          + '<span class="truncate">' + esc(d.title) + '</span>'
+          + '</div>'
+        ).join('') || '<div class="text-white/40">Nenhuma pendencia</div>';
+      }
+    } catch (e) { console.warn('pres layer:', e); }
+  }
+
+  function esc(s: string): string {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  document.getElementById('pres-toggle-btn')?.addEventListener('click', () => {
+    if (presActive) deactivatePresentation();
+    else activatePresentation();
+  });
+  document.getElementById('pres-btn-save')?.addEventListener('click', saveArtifact);
+  document.getElementById('pres-btn-skip')?.addEventListener('click', closeModal);
+  document.getElementById('pres-end-backdrop')?.addEventListener('click', closeModal);
+
+  (function bootPres() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(bootPres, 300); return; }
+    const m = (window as any).navGetMember?.();
+    if (m) showToggle(m);
+    window.addEventListener('nav:member', (e: any) => showToggle(e.detail));
+  })();
+</script>
+
+<style is:global>
+  .presentation-mode section,
+  .presentation-mode [id^="panel-"] {
+    border: 2px solid rgba(5, 191, 224, 0.15);
+    border-radius: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 0 30px rgba(5, 191, 224, 0.05);
+    transition: all 0.3s ease;
+  }
+  .presentation-mode section:hover,
+  .presentation-mode [id^="panel-"]:hover {
+    border-color: rgba(5, 191, 224, 0.35);
+    box-shadow: 0 0 40px rgba(5, 191, 224, 0.1);
+  }
+  .presentation-mode nav { opacity: 0.4; transition: opacity 0.3s; }
+  .presentation-mode nav:hover { opacity: 1; }
+</style>

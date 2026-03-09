@@ -247,20 +247,16 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
     });
   });
 
-  // ── Load tribe slot counts from tribe_selections ──
-  // Researchers have tribe_id=null in members; their tribe choice is in tribe_selections
+  // ── Load tribe slot counts via RPC (SECURITY DEFINER, works for anon) ──
   async function loadTribeCounts() {
     const sb = getSb();
     if (!sb) return;
-    const { data, error } = await sb.from('tribe_selections').select('tribe_id');
+    const { data, error } = await sb.rpc('count_tribe_slots');
     if (error) {
       console.error('tribes.loadTribeCounts failed', error);
       return;
     }
-    tribeCounts = {};
-    if (data) data.forEach((s) => {
-      tribeCounts[s.tribe_id] = (tribeCounts[s.tribe_id] || 0) + 1;
-    });
+    tribeCounts = data || {};
     updateUI();
   }
 
