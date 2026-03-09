@@ -182,9 +182,11 @@ const PROFILE_I18N = {
         .order('cycle_start', { ascending: true });
       cycleHistory = normalizeMemberCycleHistory(hist);
       journeyStats = buildJourneyStats(cycleHistory);
-    } catch {
+    } catch (e) {
+      console.warn('Profile: failed to load cycle history:', e);
       cycleHistory = [];
       journeyStats = buildJourneyStats([]);
+      (window as any).toast?.('Could not load cycle history. Some data may be incomplete.', 'error');
     }
 
     // Load stats for current cycle
@@ -231,7 +233,9 @@ const PROFILE_I18N = {
         }
       };
     } catch (e) {
+      console.warn('Profile: failed to load cycle stats:', e);
       cycleStats = null;
+      (window as any).toast?.('Could not load cycle statistics. Some data may be incomplete.', 'error');
     }
   }
 

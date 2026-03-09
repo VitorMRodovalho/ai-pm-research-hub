@@ -301,25 +301,31 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
   // ── KPIs ──
   async function loadKPIs() {
-    const { data } = await sb.from('impact_hours_total').select('*').single();
-    if (!data) return;
-    const hrs = parseFloat(data.total_impact_hours || 0).toFixed(1);
-    const pct = parseFloat(data.percent_of_target || 0);
-    const el = (id: string) => document.getElementById(id);
-    el('kpi-hours')!.textContent = hrs + 'h';
-    el('kpi-pct')!.textContent = pct + '%';
-    el('kpi-events')!.textContent = data.total_events || '0';
-    el('kpi-att')!.textContent = data.total_attendances || '0';
-    const bar = el('kpi-bar')!;
-    bar.style.width = Math.min(pct, 100) + '%';
-    bar.className = 'h-full rounded-full transition-all duration-600 ' +
-      (pct >= 70 ? 'bg-emerald-500' : pct >= 35 ? 'bg-yellow-500' : 'bg-red-500');
+    try {
+      const { data } = await sb.from('impact_hours_total').select('*').single();
+      if (!data) return;
+      const hrs = parseFloat(data.total_impact_hours || 0).toFixed(1);
+      const pct = parseFloat(data.percent_of_target || 0);
+      const el = (id: string) => document.getElementById(id);
+      el('kpi-hours')!.textContent = hrs + 'h';
+      el('kpi-pct')!.textContent = pct + '%';
+      el('kpi-events')!.textContent = data.total_events || '0';
+      el('kpi-att')!.textContent = data.total_attendances || '0';
+      const bar = el('kpi-bar')!;
+      bar.style.width = Math.min(pct, 100) + '%';
+      bar.className = 'h-full rounded-full transition-all duration-600 ' +
+        (pct >= 70 ? 'bg-emerald-500' : pct >= 35 ? 'bg-yellow-500' : 'bg-red-500');
+    } catch (e) {
+      console.warn('Attendance: failed to load KPIs:', e);
+      toast('Failed to load KPI data.', 'error');
+    }
   }
 
   // ── EVENTS LIST ──
   async function loadEvents() {
     const el = document.getElementById('events-list')!;
     el.innerHTML = loadingRows(3);
+    try {
     const { data } = await sb.rpc('get_events_with_attendance', { p_limit: 40, p_offset: 0 });
     if (!data?.length) {
       const cta = CAN_MANAGE
@@ -394,6 +400,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         </div>
       </div>`;
     }).join('');
+    } catch (e) {
+      console.warn('Attendance: failed to load events:', e);
+      el.innerHTML = `<div class="text-center py-8 text-red-500 text-sm">Failed to load events. Please try again later.</div>`;
+      toast('Failed to load events.', 'error');
+    }
   }
 
   if (!(window as any).__attendanceDelegationBound) {
@@ -616,31 +627,37 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   async function loadRanking() {
     const el = document.getElementById('ranking-list')!;
     el.innerHTML = loadingRows(4);
-    const { data } = await sb.from('member_attendance_summary').select('*').limit(50);
-    if (!data?.length) {
-      el.innerHTML = `
-        <div class="text-center py-8">
-          <div class="text-3xl mb-2">📊</div>
-          <div class="font-semibold text-slate-600 text-sm">${I18N.rankingNoData}</div>
-          <p class="text-slate-400 text-[12px] mt-1">${I18N.rankingNoDataHint}</p>
-        </div>
-      `;
-      return;
+    try {
+      const { data } = await sb.from('member_attendance_summary').select('*').limit(50);
+      if (!data?.length) {
+        el.innerHTML = `
+          <div class="text-center py-8">
+            <div class="text-3xl mb-2">📊</div>
+            <div class="font-semibold text-slate-600 text-sm">${I18N.rankingNoData}</div>
+            <p class="text-slate-400 text-[12px] mt-1">${I18N.rankingNoDataHint}</p>
+          </div>
+        `;
+        return;
+      }
+      const max = Math.max(...data.map((m: any) => parseFloat(m.hours_attended || 0)), 1);
+      el.innerHTML = data.map((m: any, i: number) => `
+        <div class="flex items-center gap-2.5 py-2 border-b border-slate-100 last:border-b-0">
+          <div class="text-[13px] font-bold text-slate-500 w-6 text-center flex-shrink-0">${i + 1}</div>
+          <img class="w-8 h-8 rounded-full object-cover bg-slate-100 flex-shrink-0" src="${m.photo_url || ''}" data-hide-on-error alt="">
+          <div class="flex-1 min-w-0">
+            <div class="text-[13px] font-semibold truncate">${m.name}</div>
+            <div>${roleBadges(rolesFromMember(m))}</div>
+          </div>
+          <div class="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden flex-shrink-0">
+            <div class="h-full bg-crimson rounded-full" style="width:${(m.hours_attended / max * 100).toFixed(1)}%"></div>
+          </div>
+          <div class="text-[13px] text-navy font-bold flex-shrink-0">${m.hours_attended || 0}h</div>
+        </div>`).join('');
+    } catch (e) {
+      console.warn('Attendance: failed to load ranking:', e);
+      el.innerHTML = `<div class="text-center py-8 text-red-500 text-sm">Failed to load ranking. Please try again later.</div>`;
+      toast('Failed to load ranking.', 'error');
     }
-    const max = Math.max(...data.map((m: any) => parseFloat(m.hours_attended || 0)), 1);
-    el.innerHTML = data.map((m: any, i: number) => `
-      <div class="flex items-center gap-2.5 py-2 border-b border-slate-100 last:border-b-0">
-        <div class="text-[13px] font-bold text-slate-500 w-6 text-center flex-shrink-0">${i + 1}</div>
-        <img class="w-8 h-8 rounded-full object-cover bg-slate-100 flex-shrink-0" src="${m.photo_url || ''}" data-hide-on-error alt="">
-        <div class="flex-1 min-w-0">
-          <div class="text-[13px] font-semibold truncate">${m.name}</div>
-          <div>${roleBadges(rolesFromMember(m))}</div>
-        </div>
-        <div class="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden flex-shrink-0">
-          <div class="h-full bg-crimson rounded-full" style="width:${(m.hours_attended / max * 100).toFixed(1)}%"></div>
-        </div>
-        <div class="text-[13px] text-navy font-bold flex-shrink-0">${m.hours_attended || 0}h</div>
-      </div>`).join('');
   }
 
   // ── BOOT ──
