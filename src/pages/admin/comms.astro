@@ -1,7 +1,7 @@
 ---
 /**
  * admin/comms.astro — S-COM6 Dashboard Central de Mídia
- * Dedicated route for communications metrics: Looker iframe or native table from comms_metrics_latest_by_channel.
+ * Sections: Channel metrics (native/Looker), Tribe Impact Ranking, Broadcast History.
  */
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
@@ -15,8 +15,8 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
   <div class="max-w-[1200px] mx-auto px-4 pt-6">
     <AdminNav activeSub="comms" lang={lang} />
   </div>
-  <div class="max-w-[1200px] mx-auto px-4 pb-8">
-    <div class="mb-6">
+  <div class="max-w-[1200px] mx-auto px-4 pb-8 space-y-6">
+    <div class="mb-2">
       <h1 class="text-2xl font-extrabold text-navy">{t('admin.comms.title', lang)}</h1>
       <p class="text-sm text-slate-500">{t('admin.comms.subtitle', lang)}</p>
     </div>
@@ -24,60 +24,89 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
     <div id="comms-loading" class="text-center py-10 text-slate-400">{t('admin.comms.loading', lang)}</div>
 
     <div id="comms-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
-      <div class="text-2xl mb-2">🔒</div>
+      <div class="text-2xl mb-2">&#x1f512;</div>
       <p class="font-semibold text-amber-800">{t('admin.comms.denied', lang)}</p>
       <a href="/admin" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
         {t('admin.comms.backAdmin', lang)}
       </a>
     </div>
 
-    <div id="comms-panel" class="hidden space-y-4" data-comms-mode={COMMS_DASHBOARD_URL ? 'iframe' : 'native'}>
-      {COMMS_DASHBOARD_URL ? (
-        <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-            <div>
-              <h2 class="text-sm font-bold text-navy">{t('admin.comms.lookerTitle', lang)}</h2>
-              <p class="text-[.68rem] text-slate-400">{t('admin.comms.lookerSubtitle', lang)}</p>
-            </div>
-            <a href={COMMS_DASHBOARD_URL} target="_blank" rel="noopener noreferrer" class="text-[.72rem] font-semibold text-teal no-underline hover:underline">
-              {t('admin.analytics.openExternal', lang)}
-            </a>
-          </div>
-          <iframe
-            src={COMMS_DASHBOARD_URL}
-            title="Communications Analytics Dashboard"
-            class="w-full min-h-[640px] border-0"
-            loading="lazy"
-            referrerpolicy="strict-origin-when-cross-origin"
-            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
-          ></iframe>
-        </section>
-      ) : (
-        <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <div class="px-4 py-3 border-b border-slate-200">
-            <h2 class="text-sm font-bold text-navy">{t('admin.comms.nativeTitle', lang)}</h2>
-            <p class="text-[.68rem] text-slate-400">{t('admin.comms.nativeSubtitle', lang)}</p>
-          </div>
-          <div id="comms-table-container" class="p-4 overflow-x-auto">
-            <div id="comms-table-loading" class="text-center py-8 text-slate-400 text-sm">{t('admin.comms.tableLoading', lang)}</div>
-            <div id="comms-table-empty" class="hidden text-center py-8 text-slate-500 text-sm">{t('admin.comms.tableEmpty', lang)}</div>
-            <table id="comms-table" class="hidden w-full text-[.72rem] border-collapse">
-              <thead>
-                <tr class="border-b border-slate-200 text-left">
-                  <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colDate', lang)}</th>
-                  <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colChannel', lang)}</th>
-                  <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colAudience', lang)}</th>
-                  <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colReach', lang)}</th>
-                  <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colEngagement', lang)}</th>
-                  <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colLeads', lang)}</th>
-                </tr>
-              </thead>
-              <tbody id="comms-table-body"></tbody>
-            </table>
-          </div>
-          <p class="px-4 pb-4 text-[.65rem] text-slate-400">{t('admin.comms.configNote', lang)}</p>
-        </section>
-      )}
+    <div id="comms-panel" class="hidden space-y-6" data-comms-mode={COMMS_DASHBOARD_URL ? 'iframe' : 'native'}>
+
+      <!-- Section 1: Tribe Impact Ranking -->
+      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-200">
+          <h2 class="text-sm font-bold text-navy">{t('admin.comms.rankingTitle', lang)}</h2>
+          <p class="text-[.68rem] text-slate-400">{t('admin.comms.rankingSubtitle', lang)}</p>
+        </div>
+        <div id="ranking-container" class="p-4 overflow-x-auto">
+          <div id="ranking-loading" class="text-center py-6 text-slate-400 text-sm">{t('admin.comms.tableLoading', lang)}</div>
+          <div id="ranking-empty" class="hidden text-center py-6 text-slate-500 text-sm">{t('admin.comms.rankingEmpty', lang)}</div>
+          <table id="ranking-table" class="hidden w-full text-[.72rem] border-collapse">
+            <thead>
+              <tr class="border-b border-slate-200 text-left">
+                <th class="px-3 py-2 font-semibold text-slate-600">#</th>
+                <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colTribe', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600 text-right">{t('admin.comms.colEvents', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600 text-right">{t('admin.comms.colHours', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600 text-right">{t('admin.comms.colAvgAttendance', lang)}</th>
+              </tr>
+            </thead>
+            <tbody id="ranking-body"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Section 2: Channel Metrics -->
+      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-200">
+          <h2 class="text-sm font-bold text-navy">{t('admin.comms.nativeTitle', lang)}</h2>
+          <p class="text-[.68rem] text-slate-400">{t('admin.comms.nativeSubtitle', lang)}</p>
+        </div>
+        <div id="comms-table-container" class="p-4 overflow-x-auto">
+          <div id="comms-table-loading" class="text-center py-8 text-slate-400 text-sm">{t('admin.comms.tableLoading', lang)}</div>
+          <div id="comms-table-empty" class="hidden text-center py-8 text-slate-500 text-sm">{t('admin.comms.tableEmpty', lang)}</div>
+          <table id="comms-table" class="hidden w-full text-[.72rem] border-collapse">
+            <thead>
+              <tr class="border-b border-slate-200 text-left">
+                <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colDate', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colChannel', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colAudience', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colReach', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colEngagement', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colLeads', lang)}</th>
+              </tr>
+            </thead>
+            <tbody id="comms-table-body"></tbody>
+          </table>
+        </div>
+        <p class="px-4 pb-4 text-[.65rem] text-slate-400">{t('admin.comms.configNote', lang)}</p>
+      </section>
+
+      <!-- Section 3: Broadcast History -->
+      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-200">
+          <h2 class="text-sm font-bold text-navy">{t('admin.comms.broadcastTitle', lang)}</h2>
+          <p class="text-[.68rem] text-slate-400">{t('admin.comms.broadcastSubtitle', lang)}</p>
+        </div>
+        <div id="broadcast-container" class="p-4 overflow-x-auto">
+          <div id="broadcast-loading" class="text-center py-6 text-slate-400 text-sm">{t('admin.comms.tableLoading', lang)}</div>
+          <div id="broadcast-empty" class="hidden text-center py-6 text-slate-500 text-sm">{t('admin.comms.broadcastEmpty', lang)}</div>
+          <table id="broadcast-table" class="hidden w-full text-[.72rem] border-collapse">
+            <thead>
+              <tr class="border-b border-slate-200 text-left">
+                <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colSubject', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colTribe', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600 text-right">{t('admin.comms.colRecipients', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colSentAt', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.comms.colSentBy', lang)}</th>
+              </tr>
+            </thead>
+            <tbody id="broadcast-body"></tbody>
+          </table>
+        </div>
+      </section>
+
     </div>
   </div>
 </BaseLayout>
@@ -86,10 +115,11 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
   import { canAccessAdminRoute } from '../../lib/admin/constants';
 
   let sb: any = null;
-  let MEMBER: any = null;
 
-  function allowAccess(m: any): boolean {
-    return canAccessAdminRoute(m, 'admin_comms');
+  function escapeHtml(s: string): string {
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
   }
 
   function showDenied() {
@@ -102,8 +132,42 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
     document.getElementById('comms-loading')?.classList.add('hidden');
     document.getElementById('comms-denied')?.classList.add('hidden');
     document.getElementById('comms-panel')?.classList.remove('hidden');
+    loadRanking();
+    loadBroadcasts();
     if (document.getElementById('comms-panel')?.dataset.commsMode === 'native') {
       loadNativeTable();
+    }
+  }
+
+  async function loadRanking() {
+    const loading = document.getElementById('ranking-loading');
+    const empty = document.getElementById('ranking-empty');
+    const table = document.getElementById('ranking-table');
+    const tbody = document.getElementById('ranking-body');
+    if (!loading || !empty || !table || !tbody) return;
+
+    try {
+      const { data, error } = await sb.rpc('tribe_impact_ranking');
+      loading.classList.add('hidden');
+      if (error || !data?.length) {
+        empty.classList.remove('hidden');
+        return;
+      }
+      const medals = ['\u{1F947} ', '\u{1F948} ', '\u{1F949} '];
+      tbody.innerHTML = data.map((r: any, i: number) => {
+        const medal = medals[i] || '';
+        return '<tr class="border-b border-slate-50 hover:bg-slate-50">'
+          + '<td class="px-3 py-2 text-center font-bold text-slate-400">' + (i + 1) + '</td>'
+          + '<td class="px-3 py-2 font-medium">' + medal + escapeHtml(r.tribe_name || '\u2014') + '</td>'
+          + '<td class="px-3 py-2 text-right">' + (r.total_events ?? 0) + '</td>'
+          + '<td class="px-3 py-2 text-right font-semibold text-navy">' + Number(r.total_hours || 0).toFixed(1) + 'h</td>'
+          + '<td class="px-3 py-2 text-right">' + Number(r.avg_attendance || 0).toFixed(1) + '</td>'
+          + '</tr>';
+      }).join('');
+      table.classList.remove('hidden');
+    } catch (e: any) {
+      loading.classList.add('hidden');
+      if (empty) { empty.textContent = e?.message || 'Error'; empty.classList.remove('hidden'); }
     }
   }
 
@@ -122,37 +186,50 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
         empty.classList.remove('hidden');
         return;
       }
-      if (!data?.length) {
-        empty.classList.remove('hidden');
-        return;
-      }
-      tbody.innerHTML = data.map((r: any) => `
-        <tr class="border-b border-slate-50 hover:bg-slate-50">
-          <td class="px-3 py-2">${r.metric_date || '—'}</td>
-          <td class="px-3 py-2 font-medium">${escapeHtml(r.channel || '—')}</td>
-          <td class="px-3 py-2 text-right">${r.audience ?? '—'}</td>
-          <td class="px-3 py-2 text-right">${r.reach ?? '—'}</td>
-          <td class="px-3 py-2 text-right">${r.engagement != null ? (Number(r.engagement) * 100).toFixed(2) + '%' : '—'}</td>
-          <td class="px-3 py-2 text-right">${r.leads ?? '—'}</td>
-        </tr>
-      `).join('');
+      if (!data?.length) { empty.classList.remove('hidden'); return; }
+      tbody.innerHTML = data.map((r: any) =>
+        '<tr class="border-b border-slate-50 hover:bg-slate-50">'
+        + '<td class="px-3 py-2">' + (r.metric_date || '\u2014') + '</td>'
+        + '<td class="px-3 py-2 font-medium">' + escapeHtml(r.channel || '\u2014') + '</td>'
+        + '<td class="px-3 py-2 text-right">' + (r.audience ?? '\u2014') + '</td>'
+        + '<td class="px-3 py-2 text-right">' + (r.reach ?? '\u2014') + '</td>'
+        + '<td class="px-3 py-2 text-right">' + (r.engagement != null ? (Number(r.engagement) * 100).toFixed(2) + '%' : '\u2014') + '</td>'
+        + '<td class="px-3 py-2 text-right">' + (r.leads ?? '\u2014') + '</td>'
+        + '</tr>'
+      ).join('');
       table.classList.remove('hidden');
     } catch (e: any) {
       loading.classList.add('hidden');
-      empty.textContent = (e?.message || 'Error loading data');
-      empty.classList.remove('hidden');
+      if (empty) { empty.textContent = (e?.message || 'Error loading data'); empty.classList.remove('hidden'); }
     }
   }
 
-  function escapeHtml(s: string): string {
-    const div = document.createElement('div');
-    div.textContent = s;
-    return div.innerHTML;
-  }
+  async function loadBroadcasts() {
+    const loading = document.getElementById('broadcast-loading');
+    const empty = document.getElementById('broadcast-empty');
+    const table = document.getElementById('broadcast-table');
+    const tbody = document.getElementById('broadcast-body');
+    if (!loading || !empty || !table || !tbody) return;
 
-  function applyGate(m: any) {
-    if (m && allowAccess(m)) showPanel();
-    else showDenied();
+    try {
+      const { data, error } = await sb.rpc('broadcast_history', { p_limit: 20 });
+      loading.classList.add('hidden');
+      if (error || !data?.length) { empty.classList.remove('hidden'); return; }
+      tbody.innerHTML = data.map((r: any) => {
+        const dt = r.sent_at ? new Date(r.sent_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '\u2014';
+        return '<tr class="border-b border-slate-50 hover:bg-slate-50">'
+          + '<td class="px-3 py-2 font-medium">' + escapeHtml(r.subject || '\u2014') + '</td>'
+          + '<td class="px-3 py-2">' + escapeHtml(r.tribe_name || '\u2014') + '</td>'
+          + '<td class="px-3 py-2 text-right">' + (r.recipient_count ?? '\u2014') + '</td>'
+          + '<td class="px-3 py-2">' + dt + '</td>'
+          + '<td class="px-3 py-2">' + escapeHtml(r.sent_by_name || '\u2014') + '</td>'
+          + '</tr>';
+      }).join('');
+      table.classList.remove('hidden');
+    } catch (e: any) {
+      loading.classList.add('hidden');
+      if (empty) { empty.textContent = e?.message || 'Error'; empty.classList.remove('hidden'); }
+    }
   }
 
   async function boot() {
@@ -160,21 +237,24 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
     if (!sb) { setTimeout(boot, 200); return; }
 
     window.addEventListener('nav:member', ((e: CustomEvent) => {
-      if (e.detail) { MEMBER = e.detail; applyGate(MEMBER); }
+      if (e.detail && canAccessAdminRoute(e.detail, 'admin_comms')) showPanel();
+      else showDenied();
     }) as EventListener);
 
     const m = (window as any).navGetMember?.();
-    if (m) { MEMBER = m; applyGate(MEMBER); return; }
+    if (m) {
+      if (canAccessAdminRoute(m, 'admin_comms')) showPanel();
+      else showDenied();
+      return;
+    }
 
     try {
       const { data: { session } } = await sb.auth.getSession();
       if (session) {
         const { data } = await sb.rpc('get_member_by_auth');
-        MEMBER = data;
-        applyGate(MEMBER);
-        return;
+        if (data && canAccessAdminRoute(data, 'admin_comms')) { showPanel(); return; }
       }
-    } catch (e) { console.warn('Comms boot session check:', e); }
+    } catch (e) { console.warn('Comms boot:', e); }
 
     showDenied();
   }

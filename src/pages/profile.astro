@@ -978,10 +978,20 @@ const PROFILE_I18N = {
     const btn = document.getElementById('btn-credly-verify') as HTMLButtonElement;
     if (btn) { btn.disabled = true; btn.textContent = PROFILE_I18N.credlyVerifying; }
     try {
-      const { data, error } = await sb.functions.invoke('verify-credly', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: { member_id: currentMember.id, credly_url: credlyNormalized },
-      });
+      const supabaseUrl = (sb as any).supabaseUrl || (sb as any).rest?.url?.replace('/rest/v1', '') || '';
+      const anonKey = (sb as any).supabaseKey || (sb as any).realtime?.params?.apikey || '';
+      let data: any = null;
+      let error: any = null;
+      try {
+        const vResp = await fetch(supabaseUrl + '/functions/v1/verify-credly', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token, 'apikey': anonKey },
+          body: JSON.stringify({ member_id: currentMember.id, credly_url: credlyNormalized }),
+        });
+        const vBody = await vResp.json();
+        if (!vResp.ok) { error = new Error(vBody.error || vResp.statusText); }
+        else { data = vBody; }
+      } catch (e: any) { error = e; }
       if (error) throw new Error(await describeFnError(error));
       if (data?.success) {
         const matched = data.all_matched || 0;

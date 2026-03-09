@@ -978,9 +978,21 @@ const GAM_I18N = {
         throw new Error(I.msgInvalidSession);
       }
       let attendanceSummary = '';
-      const { data: attendanceData, error: attendanceError } = await sb.functions.invoke('sync-attendance-points', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
+      const supabaseUrl = (sb as any).supabaseUrl || (sb as any).rest?.url?.replace('/rest/v1', '') || '';
+      const anonKey = (sb as any).supabaseKey || (sb as any).realtime?.params?.apikey || '';
+
+      let attendanceData: any = null;
+      let attendanceError: any = null;
+      try {
+        const aResp = await fetch(supabaseUrl + '/functions/v1/sync-attendance-points', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token, 'apikey': anonKey },
+          body: '{}',
+        });
+        const aBody = await aResp.json();
+        if (!aResp.ok) { attendanceError = { message: aBody.error || aResp.statusText }; }
+        else { attendanceData = aBody; }
+      } catch (e: any) { attendanceError = { message: e.message }; }
       if (attendanceError || !attendanceData?.success) {
         const attendanceMsg = attendanceError
           ? await describeFnError(attendanceError)
@@ -991,9 +1003,18 @@ const GAM_I18N = {
       }
 
       let credlySummary = '';
-      const { data: credlyData, error: credlyError } = await sb.functions.invoke('sync-credly-all', {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
+      let credlyData: any = null;
+      let credlyError: any = null;
+      try {
+        const cResp = await fetch(supabaseUrl + '/functions/v1/sync-credly-all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token, 'apikey': anonKey },
+          body: '{}',
+        });
+        const cBody = await cResp.json();
+        if (!cResp.ok) { credlyError = { message: cBody.error || cResp.statusText }; }
+        else { credlyData = cBody; }
+      } catch (e: any) { credlyError = { message: e.message }; }
       if (!credlyError && credlyData?.success) {
         credlySummary = I.syncCredlySuccess.replace('{success}', String(credlyData.success_count)).replace('{total}', String(credlyData.total_candidates)).replace('{fail}', String(credlyData.fail_count));
       } else if (credlyError) {

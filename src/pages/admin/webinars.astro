@@ -1,0 +1,325 @@
+---
+/**
+ * admin/webinars.astro — Webinar Calendar & Partnership Management
+ * Admin can schedule, edit, and track webinars with PMI chapters (CE, DF, GO, MG, RS).
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import AdminNav from '../../components/nav/AdminNav.astro';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+const CHAPTERS = ['CE', 'DF', 'GO', 'MG', 'RS', 'ALL'];
+const STATUSES = ['planned', 'confirmed', 'completed', 'cancelled'];
+---
+
+<BaseLayout title={t('admin.webinars.meta', lang)} activePage="admin">
+  <div class="max-w-[1200px] mx-auto px-4 pt-6">
+    <AdminNav activeSub="webinars" lang={lang} />
+  </div>
+  <div class="max-w-[1200px] mx-auto px-4 pb-8 space-y-6">
+    <div class="flex items-center justify-between mb-2">
+      <div>
+        <h1 class="text-2xl font-extrabold text-navy">{t('admin.webinars.title', lang)}</h1>
+        <p class="text-sm text-slate-500">{t('admin.webinars.subtitle', lang)}</p>
+      </div>
+      <button id="btn-add-webinar" class="hidden px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity">
+        {t('admin.webinars.addBtn', lang)}
+      </button>
+    </div>
+
+    <div id="wb-loading" class="text-center py-10 text-slate-400">{t('admin.webinars.loading', lang)}</div>
+
+    <div id="wb-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
+      <div class="text-2xl mb-2">&#x1f512;</div>
+      <p class="font-semibold text-amber-800">{t('admin.webinars.denied', lang)}</p>
+      <a href="/admin" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
+        {t('admin.webinars.backAdmin', lang)}
+      </a>
+    </div>
+
+    <div id="wb-panel" class="hidden">
+      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div id="wb-empty" class="hidden text-center py-10 text-slate-500 text-sm">{t('admin.webinars.empty', lang)}</div>
+        <div id="wb-table-wrap" class="overflow-x-auto">
+          <table id="wb-table" class="hidden w-full text-[.75rem] border-collapse">
+            <thead>
+              <tr class="border-b border-slate-200 text-left bg-slate-50">
+                <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.webinars.colTitle', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.webinars.colDate', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.webinars.colChapter', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.webinars.colTribe', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.webinars.colStatus', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600">{t('admin.webinars.colActions', lang)}</th>
+              </tr>
+            </thead>
+            <tbody id="wb-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- Modal -->
+    <div id="wb-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+        <h2 id="wb-modal-title" class="text-lg font-bold text-navy mb-4">{t('admin.webinars.modal.addTitle', lang)}</h2>
+        <form id="wb-form" class="space-y-3">
+          <input type="hidden" id="wb-id" />
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">{t('admin.webinars.modal.labelTitle', lang)}</label>
+            <input id="wb-title" type="text" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-navy/30 outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">{t('admin.webinars.modal.labelDesc', lang)}</label>
+            <textarea id="wb-desc" rows="2" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-navy/30 outline-none"></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">{t('admin.webinars.modal.labelDate', lang)}</label>
+              <input id="wb-date" type="datetime-local" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-navy/30 outline-none" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">{t('admin.webinars.modal.labelDuration', lang)}</label>
+              <input id="wb-duration" type="number" min="15" max="480" value="60" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-navy/30 outline-none" />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">{t('admin.webinars.modal.labelChapter', lang)}</label>
+              <select id="wb-chapter" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-navy/30 outline-none">
+                <option value="">{t('admin.webinars.modal.selectChapter', lang)}</option>
+                {CHAPTERS.map(c => <option value={c}>{c === 'ALL' ? 'Todos os capitulos' : `PMI ${c}`}</option>)}
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">{t('admin.webinars.modal.labelTribe', lang)}</label>
+              <select id="wb-tribe" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-navy/30 outline-none">
+                <option value="">{t('admin.webinars.modal.selectTribe', lang)}</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">{t('admin.webinars.modal.labelStatus', lang)}</label>
+            <select id="wb-status" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-navy/30 outline-none">
+              {STATUSES.map(s => <option value={s}>{t(`admin.webinars.status${s.charAt(0).toUpperCase() + s.slice(1)}` as any, lang)}</option>)}
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">{t('admin.webinars.modal.labelLink', lang)}</label>
+            <input id="wb-link" type="url" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-navy/30 outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">{t('admin.webinars.modal.labelYoutube', lang)}</label>
+            <input id="wb-youtube" type="url" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-navy/30 outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">{t('admin.webinars.modal.labelNotes', lang)}</label>
+            <textarea id="wb-notes" rows="2" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-navy/30 outline-none"></textarea>
+          </div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" id="wb-cancel" class="px-4 py-2 text-sm rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold">
+              {t('admin.webinars.modal.cancel', lang)}
+            </button>
+            <button type="submit" class="px-4 py-2 text-sm rounded-xl bg-navy text-white hover:opacity-90 font-semibold">
+              {t('admin.webinars.modal.save', lang)}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { canAccessAdminRoute } from '../../lib/admin/constants';
+
+  let sb: any = null;
+  let tribes: any[] = [];
+  const STATUS_COLORS: Record<string, string> = {
+    planned: 'bg-blue-100 text-blue-800',
+    confirmed: 'bg-green-100 text-green-800',
+    completed: 'bg-slate-100 text-slate-600',
+    cancelled: 'bg-red-100 text-red-700',
+  };
+
+  function escapeHtml(s: string): string {
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  function toast(msg: string, type: string = 'info') {
+    (window as any).toast?.(msg, type);
+  }
+
+  function showDenied() {
+    document.getElementById('wb-loading')?.classList.add('hidden');
+    document.getElementById('wb-denied')?.classList.remove('hidden');
+  }
+
+  function showPanel() {
+    document.getElementById('wb-loading')?.classList.add('hidden');
+    document.getElementById('wb-panel')?.classList.remove('hidden');
+    document.getElementById('btn-add-webinar')?.classList.remove('hidden');
+    loadTribes();
+    loadWebinars();
+  }
+
+  async function loadTribes() {
+    try {
+      const { data } = await sb.from('tribes').select('id, name').order('name');
+      tribes = data || [];
+      const sel = document.getElementById('wb-tribe') as HTMLSelectElement;
+      if (!sel) return;
+      const first = sel.options[0];
+      sel.innerHTML = '';
+      sel.appendChild(first);
+      tribes.forEach((t: any) => {
+        const o = document.createElement('option');
+        o.value = String(t.id);
+        o.textContent = t.name;
+        sel.appendChild(o);
+      });
+    } catch {}
+  }
+
+  async function loadWebinars() {
+    const empty = document.getElementById('wb-empty');
+    const table = document.getElementById('wb-table');
+    const tbody = document.getElementById('wb-body');
+    if (!empty || !table || !tbody) return;
+
+    try {
+      const { data, error } = await sb.rpc('list_webinars');
+      if (error || !data?.length) {
+        empty.classList.remove('hidden');
+        table.classList.add('hidden');
+        return;
+      }
+      empty.classList.add('hidden');
+      const tribeLookup = Object.fromEntries(tribes.map((t: any) => [t.id, t.name]));
+      tbody.innerHTML = data.map((w: any) => {
+        const dt = w.scheduled_at ? new Date(w.scheduled_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '\u2014';
+        const cls = STATUS_COLORS[w.status] || 'bg-slate-100 text-slate-600';
+        const tribeName = w.tribe_id ? (tribeLookup[w.tribe_id] || 'Tribe #' + w.tribe_id) : '\u2014';
+        return '<tr class="border-b border-slate-50 hover:bg-slate-50">'
+          + '<td class="px-3 py-2 font-medium">' + escapeHtml(w.title) + '</td>'
+          + '<td class="px-3 py-2">' + dt + '</td>'
+          + '<td class="px-3 py-2"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-teal/10 text-teal">' + escapeHtml(w.chapter_code) + '</span></td>'
+          + '<td class="px-3 py-2">' + escapeHtml(tribeName) + '</td>'
+          + '<td class="px-3 py-2"><span class="px-2 py-0.5 rounded-full text-xs font-semibold ' + cls + '">' + escapeHtml(w.status) + '</span></td>'
+          + '<td class="px-3 py-2"><button data-edit-webinar="' + w.id + '" class="text-navy text-xs font-semibold hover:underline">Editar</button></td>'
+          + '</tr>';
+      }).join('');
+      table.classList.remove('hidden');
+    } catch (e: any) {
+      empty.textContent = e?.message || 'Error';
+      empty.classList.remove('hidden');
+    }
+  }
+
+  function openModal(webinar?: any) {
+    const modal = document.getElementById('wb-modal');
+    const title = document.getElementById('wb-modal-title');
+    if (!modal) return;
+
+    (document.getElementById('wb-id') as HTMLInputElement).value = webinar?.id || '';
+    (document.getElementById('wb-title') as HTMLInputElement).value = webinar?.title || '';
+    (document.getElementById('wb-desc') as HTMLTextAreaElement).value = webinar?.description || '';
+    (document.getElementById('wb-date') as HTMLInputElement).value = webinar?.scheduled_at ? new Date(webinar.scheduled_at).toISOString().slice(0, 16) : '';
+    (document.getElementById('wb-duration') as HTMLInputElement).value = String(webinar?.duration_min || 60);
+    (document.getElementById('wb-chapter') as HTMLSelectElement).value = webinar?.chapter_code || '';
+    (document.getElementById('wb-tribe') as HTMLSelectElement).value = webinar?.tribe_id ? String(webinar.tribe_id) : '';
+    (document.getElementById('wb-status') as HTMLSelectElement).value = webinar?.status || 'planned';
+    (document.getElementById('wb-link') as HTMLInputElement).value = webinar?.meeting_link || '';
+    (document.getElementById('wb-youtube') as HTMLInputElement).value = webinar?.youtube_url || '';
+    (document.getElementById('wb-notes') as HTMLTextAreaElement).value = webinar?.notes || '';
+
+    if (title) title.textContent = webinar ? 'Editar Webinar' : 'Agendar Webinar';
+    modal.classList.remove('hidden');
+  }
+
+  function closeModal() {
+    document.getElementById('wb-modal')?.classList.add('hidden');
+  }
+
+  async function saveWebinar(e: Event) {
+    e.preventDefault();
+    const id = (document.getElementById('wb-id') as HTMLInputElement).value;
+    const payload: any = {
+      title: (document.getElementById('wb-title') as HTMLInputElement).value.trim(),
+      description: (document.getElementById('wb-desc') as HTMLTextAreaElement).value.trim() || null,
+      scheduled_at: (document.getElementById('wb-date') as HTMLInputElement).value,
+      duration_min: parseInt((document.getElementById('wb-duration') as HTMLInputElement).value) || 60,
+      chapter_code: (document.getElementById('wb-chapter') as HTMLSelectElement).value,
+      tribe_id: (document.getElementById('wb-tribe') as HTMLSelectElement).value ? parseInt((document.getElementById('wb-tribe') as HTMLSelectElement).value) : null,
+      status: (document.getElementById('wb-status') as HTMLSelectElement).value,
+      meeting_link: (document.getElementById('wb-link') as HTMLInputElement).value.trim() || null,
+      youtube_url: (document.getElementById('wb-youtube') as HTMLInputElement).value.trim() || null,
+      notes: (document.getElementById('wb-notes') as HTMLTextAreaElement).value.trim() || null,
+    };
+
+    try {
+      if (id) {
+        const { error } = await sb.from('webinars').update(payload).eq('id', id);
+        if (error) throw error;
+      } else {
+        const { error } = await sb.from('webinars').insert([payload]);
+        if (error) throw error;
+      }
+      toast('Webinar salvo com sucesso', 'success');
+      closeModal();
+      loadWebinars();
+    } catch (err: any) {
+      toast(err?.message || 'Erro ao salvar', 'error');
+    }
+  }
+
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    if (target.id === 'btn-add-webinar') { openModal(); return; }
+    if (target.id === 'wb-cancel') { closeModal(); return; }
+    if (target.id === 'wb-modal' && target === e.currentTarget) { closeModal(); return; }
+    const editBtn = target.closest('[data-edit-webinar]') as HTMLElement;
+    if (editBtn) {
+      const wbId = editBtn.dataset.editWebinar;
+      sb.from('webinars').select('*').eq('id', wbId).single().then(({ data }: any) => {
+        if (data) openModal(data);
+      });
+    }
+  });
+
+  document.getElementById('wb-modal')?.addEventListener('click', (e) => {
+    if (e.target === document.getElementById('wb-modal')) closeModal();
+  });
+
+  document.getElementById('wb-form')?.addEventListener('submit', saveWebinar);
+
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail && canAccessAdminRoute(e.detail, 'admin_comms')) showPanel();
+      else showDenied();
+    }) as EventListener);
+
+    const m = (window as any).navGetMember?.();
+    if (m) {
+      if (canAccessAdminRoute(m, 'admin_comms')) showPanel();
+      else showDenied();
+      return;
+    }
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        const { data } = await sb.rpc('get_member_by_auth');
+        if (data && canAccessAdminRoute(data, 'admin_comms')) { showPanel(); return; }
+      }
+    } catch (e) { console.warn('Webinars boot:', e); }
+
+    showDenied();
+  }
+
+  boot();
+</script>
