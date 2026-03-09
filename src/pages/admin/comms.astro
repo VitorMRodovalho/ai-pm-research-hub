@@ -114,7 +114,7 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
       const { data, error } = await sb.rpc('comms_metrics_latest_by_channel', { p_days: 14 });
       loading.classList.add('hidden');
       if (error) {
-        empty.textContent = 'Erro ao carregar: ' + (error.message || 'desconhecido');
+        empty.textContent = (error.message || 'Unknown error');
         empty.classList.remove('hidden');
         return;
       }
@@ -135,7 +135,7 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
       table.classList.remove('hidden');
     } catch (e: any) {
       loading.classList.add('hidden');
-      empty.textContent = 'Erro: ' + (e?.message || 'falha');
+      empty.textContent = (e?.message || 'Error loading data');
       empty.classList.remove('hidden');
     }
   }
