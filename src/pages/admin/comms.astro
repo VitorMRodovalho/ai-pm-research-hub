@@ -136,6 +136,9 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
     loadBroadcasts();
     if (document.getElementById('comms-panel')?.dataset.commsMode === 'native') {
       loadNativeTable();
+    } else {
+      document.getElementById('comms-table-loading')?.classList.add('hidden');
+      document.getElementById('comms-table-empty')?.classList.remove('hidden');
     }
   }
 

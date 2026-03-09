@@ -22,3 +22,12 @@ nav_section_inspect.sh
 supabase/migrations.skip/
 *.bak
 *.skip
+
+# Legacy binary assets (too large for git; serve from CDN/Storage)
+public/legacy-assets/photos/
+public/legacy-assets/infographics/
+public/legacy-assets/presentations/*.pptx
+public/legacy-assets/logos/
+data/legacy-imports/calendar/
+data/legacy-imports/docs/*.pdf
+data/legacy-imports/docs/*.docx

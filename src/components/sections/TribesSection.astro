@@ -256,7 +256,12 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
       console.error('tribes.loadTribeCounts failed', error);
       return;
     }
-    tribeCounts = data || {};
+    tribeCounts = {};
+    if (data && typeof data === 'object') {
+      Object.entries(data).forEach(function(pair) {
+        tribeCounts[Number(pair[0])] = pair[1];
+      });
+    }
     updateUI();
   }
 

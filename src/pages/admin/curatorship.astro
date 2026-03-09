@@ -216,23 +216,14 @@ const CUR_I18N = {
     render();
   });
 
-  async function boot() {
-    sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(boot, 200); return; }
-    const m = (window as any).navGetMember?.();
-    if (!m) {
-      try { const { data: { session } } = await sb.auth.getSession(); if (!session) throw new Error('x'); } catch {
-        document.getElementById('cur-loading')?.classList.add('hidden');
-        document.getElementById('cur-denied')?.classList.remove('hidden'); return;
-      }
-    }
-    const member = m || {};
-    const isAdmin = member.is_superadmin || ['manager','deputy_manager'].includes(member.operational_role);
+  function hasAccess(m: any): boolean {
+    if (!m) return false;
+    return m.is_superadmin || ['manager','deputy_manager','tribe_leader'].includes(m.operational_role);
+  }
+
+  async function showPanel(m: any) {
+    const isAdmin = m.is_superadmin || ['manager','deputy_manager'].includes(m.operational_role);
     canAct = isAdmin;
-    if (!isAdmin && member.operational_role !== 'tribe_leader') {
-      document.getElementById('cur-loading')?.classList.add('hidden');
-      document.getElementById('cur-denied')?.classList.remove('hidden'); return;
-    }
     try {
       const [ir, tr] = await Promise.all([sb.rpc('list_pending_curation', { p_table: 'all' }), sb.rpc('list_taxonomy_tags')]);
       allItems = Array.isArray(ir.data) ? ir.data : (ir.data || []);
@@ -241,6 +232,36 @@ const CUR_I18N = {
     document.getElementById('cur-loading')?.classList.add('hidden');
     document.getElementById('cur-panel')?.classList.remove('hidden');
     render();
+  }
+
+  function showDenied() {
+    document.getElementById('cur-loading')?.classList.add('hidden');
+    document.getElementById('cur-denied')?.classList.remove('hidden');
+  }
+
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail && hasAccess(e.detail)) showPanel(e.detail);
+      else showDenied();
+    }) as EventListener);
+
+    const m = (window as any).navGetMember?.();
+    if (m) {
+      if (hasAccess(m)) { showPanel(m); return; }
+      showDenied(); return;
+    }
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        const { data } = await sb.rpc('get_member_by_auth');
+        if (data && hasAccess(data)) { showPanel(data); return; }
+      }
+    } catch (e) { console.warn('Curatorship boot:', e); }
+    showDenied();
   }
   boot();
 </script>

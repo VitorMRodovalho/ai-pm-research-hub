@@ -1,5 +1,81 @@
 # Release Log
 
+## 2026-03-09 — Critical Bugfix Sprint + Legacy Asset Ingestion + Presentation Module
+
+### Scope
+Production P0 bugfixes, Presentation Module with democratic ACL, legacy asset organization,
+and file-system onboarding of governance documents from Cycles 1-3.
+
+### P0 Bugfixes (CRITICAL_BUG_FIX.md)
+
+#### Bug 1: Tribe Counter showing 0/6 for all tribes
+- **Root cause**: `count_tribe_slots()` RPC returns JSON with **string** keys (e.g. `"1": 5`)
+  but `TRIBE_IDS` array contains **numbers** (`[1,2,3...]`). JavaScript strict-equality lookup
+  `tribeCounts[1]` on key `"1"` yields `undefined`, rendering as 0.
+- **Fix**: Added `Object.entries(data).forEach()` with `Number(pair[0])` coercion in
+  `TribesSection.astro` so numeric `TRIBE_IDS` correctly match the parsed counts.
+
+#### Bug 2: /admin/curatorship forced logout
+- **Root cause**: Boot function checked `navGetMember()` synchronously; if Nav.astro hadn't
+  fired yet, it fell through to `getSession()` which could fail, showing denied state prematurely.
+  No `nav:member` event listener existed (unlike comms.astro pattern).
+- **Fix**: Refactored boot to mirror comms.astro: registers `nav:member` listener first,
+  then checks cached member, then falls back to session. Denied state now shows the "back to admin"
+  link instead of a dead-end.
+
+#### Bug 3: Comms Dashboard "CARREGANDO" infinite
+- **Root cause**: When `PUBLIC_LOOKER_COMMS_DASHBOARD_URL` is set (iframe mode), `showPanel()`
+  skipped `loadNativeTable()` but never hid the `comms-table-loading` spinner, leaving it spinning forever.
+- **Fix**: In `showPanel()`, when mode is iframe, explicitly hide native table loader and show empty state.
+
+### S-PRES1: Presentation Module (Democracy + Data Layers)
+
+#### Governance (ACL)
+- Home (/): Toggle visible to admin+ only (Tier 4/5)
+- Tribe (/tribe/[id]): Toggle visible to admin+ OR tribe_leader of that specific tribe
+- Implemented in shared `PresentationLayer.astro` component
+
+#### Data Layers
+- `PresentationLayer.astro`: shared component with ACL-gated toggle, end-session modal
+  (recording link, deliberations, publish checkbox), and tribe-context KPI overlays
+  (sprint presence + pending deliverables)
+- `save_presentation_snapshot` RPC: leader-scoped with `p_tribe_id` guard,
+  `deliberations` column, `p_is_published` flag
+- `list_meeting_artifacts` RPC: optional `p_tribe_id` filter
+- `count_tribe_slots()` RPC: SECURITY DEFINER, bypasses RLS, grants to anon+authenticated
+
+#### UX
+- End-presentation modal: recording link, key deliberations (one per line), publish checkbox
+- /presentations page: filterable history (All / General / By Tribe)
+- i18n: 22 `pres.*` keys in PT/EN/ES
+
+### ACAO ZERO: Legacy Asset Organization
+Organized 106 files from ~/Downloads into project structure:
+- `public/legacy-assets/governance/` — 6 files (Acordos PMI, Manual, LATAM Award)
+- `public/legacy-assets/presentations/` — 3 files (Kickoff PDF/PPTX, Template)
+- `public/legacy-assets/infographics/` — 7 files (roadmap/KPI PNGs)
+- `public/legacy-assets/logos/` — 10 files (PMI chapter logos)
+- `public/legacy-assets/photos/` — 66 files (member photos)
+- `public/legacy-assets/roadmap-planning/` — 8 files (product vision docs)
+- `data/legacy-imports/calendar/` — 1 file (iCal export)
+- `data/legacy-imports/docs/` — 2 files (consolidated analysis, project list)
+- `docs/sprints/` — 3 files (CRITICAL_BUG_FIX, UX_GOVERNANCE_REFACTOR, SPRINT_KNOWLEDGE_INGESTION)
+
+### DB Migration Applied
+- `20260309200000_presentation_refinements.sql`: count_tribe_slots RPC, deliberations column,
+  leader-scoped save_presentation_snapshot, list_meeting_artifacts with tribe filter
+
+### Validation
+- `npx astro build` passed
+- `supabase db push` confirmed all migrations applied
+- All files copied and verified
+
+### Pending (Next Sprint — P2/P3)
+- P2: UX Governance Refactor (Minha Tribo for Superadmin, LGPD mask, native analytics charts)
+- P3: Knowledge Ingestion (Trello/Calendar import execution, PDF upload, Webinar pipeline)
+
+---
+
 ## 2026-03-09 — Wave 4: Governance, Lifecycle & Global Onboarding (Major Release)
 
 ### Scope

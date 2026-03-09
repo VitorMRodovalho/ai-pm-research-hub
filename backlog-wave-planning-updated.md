@@ -6,6 +6,27 @@
 
 ---
 
+## 🔄 LATEST UPDATE (2026-03-09 — Critical Bugfix Sprint)
+
+### Completed
+- **P0 Bug: Tribe Counter 0/6** — Root cause: JSON string keys vs numeric TRIBE_IDS. Fixed with key coercion.
+- **P0 Bug: Curatorship forced logout** — Refactored auth boot to use nav:member event pattern.
+- **P0 Bug: Comms Dashboard infinite loading** — Fixed iframe/native mode loader state.
+- **S-PRES1: Presentation Module** — Democratic ACL (admin+ on Home, leader+ on tribe), end-session modal, /presentations page.
+- **ACAO ZERO: Legacy Assets** — 106 files organized into public/legacy-assets/ and data/legacy-imports/.
+
+### In Progress (P2 — UX Governance Refactor)
+- Minha Tribo link for Superadmin (Tier 4+) → "Explorar Tribos" or tribe selector
+- LGPD visual mask for non-authorized users in tribe view
+- Replace PostHog iframes with native Tailwind analytics from RPCs
+
+### Queued (P3 — Knowledge Ingestion)
+- Execute import-trello-legacy and import-calendar-legacy with real Cycle 1/2 data
+- PDF upload field in /admin with Supabase Storage → hub_resources
+- Webinar pipeline: tag-based artifact → webinar sync with YouTube metrics
+
+---
+
 ## 🧭 ROADMAP REORGANIZATION (2026-03-08)
 
 Para eliminar execução fora de sequência e reduzir regressões, o backlog passa a operar com pacote pai -> atividades filhas.
