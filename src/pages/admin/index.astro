@@ -330,6 +330,98 @@ const ADMIN_I18N = {
           </div>
         </div>
 
+        <!-- Lifecycle Management (Superadmin only) -->
+        <div id="lifecycle-section" class="hidden mt-5">
+          <h2 class="text-lg font-extrabold text-navy mb-3">Gestao de Ciclo de Vida</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+
+            <!-- Move Member -->
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div class="px-5 py-3.5 border-b border-slate-200">
+                <h3 class="text-sm font-bold text-navy">Movimentar Pesquisador</h3>
+                <p class="text-[.68rem] text-slate-400">Transferir membro para outra tribo</p>
+              </div>
+              <div class="p-4 space-y-3">
+                <select id="lc-move-member" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+                  <option value="">Selecione o membro...</option>
+                </select>
+                <select id="lc-move-tribe" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+                  <option value="">Selecione a tribo destino...</option>
+                </select>
+                <input id="lc-move-reason" type="text" placeholder="Motivo da transferencia" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />
+                <button id="btn-move-member" class="w-full px-4 py-2 bg-navy text-white rounded-lg text-sm font-semibold hover:opacity-90">Transferir</button>
+              </div>
+            </div>
+
+            <!-- Change Leader -->
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div class="px-5 py-3.5 border-b border-slate-200">
+                <h3 class="text-sm font-bold text-navy">Substituir Lider de Tribo</h3>
+                <p class="text-[.68rem] text-slate-400">Promover novo lider e rebaixar o atual</p>
+              </div>
+              <div class="p-4 space-y-3">
+                <select id="lc-leader-tribe" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+                  <option value="">Selecione a tribo...</option>
+                </select>
+                <select id="lc-leader-member" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+                  <option value="">Selecione o novo lider...</option>
+                </select>
+                <input id="lc-leader-reason" type="text" placeholder="Motivo da substituicao" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />
+                <button id="btn-change-leader" class="w-full px-4 py-2 bg-purple-700 text-white rounded-lg text-sm font-semibold hover:opacity-90">Substituir Lider</button>
+              </div>
+            </div>
+
+            <!-- Deactivate Member -->
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div class="px-5 py-3.5 border-b border-slate-200">
+                <h3 class="text-sm font-bold text-navy">Desligar Pesquisador</h3>
+                <p class="text-[.68rem] text-slate-400">Inativar membro com registro de historico</p>
+              </div>
+              <div class="p-4 space-y-3">
+                <select id="lc-deact-member" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+                  <option value="">Selecione o membro...</option>
+                </select>
+                <input id="lc-deact-reason" type="text" placeholder="Motivo do desligamento" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />
+                <button id="btn-deact-member" class="w-full px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:opacity-90">Desligar</button>
+              </div>
+            </div>
+
+            <!-- Deactivate Tribe -->
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div class="px-5 py-3.5 border-b border-slate-200">
+                <h3 class="text-sm font-bold text-navy">Encerrar Tribo</h3>
+                <p class="text-[.68rem] text-slate-400">Inativar tribo e todos os membros vinculados</p>
+              </div>
+              <div class="p-4 space-y-3">
+                <select id="lc-deact-tribe" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm">
+                  <option value="">Selecione a tribo...</option>
+                </select>
+                <input id="lc-deact-tribe-reason" type="text" placeholder="Motivo do encerramento" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm" />
+                <button id="btn-deact-tribe" class="w-full px-4 py-2 bg-red-800 text-white rounded-lg text-sm font-semibold hover:opacity-90">Encerrar Tribo</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Onboarding Broadcast -->
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-slate-200">
+              <h3 class="text-sm font-bold text-navy">Broadcast de Boas-vindas (Global)</h3>
+              <p class="text-[.68rem] text-slate-400">Enviar e-mail de onboarding para todos os membros ativos, agrupado por tribo</p>
+            </div>
+            <div class="p-4 space-y-3">
+              <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-[.72rem] text-blue-800">
+                Este disparo envia um e-mail padronizado para cada tribo em BCC, copiando a gerencia do projeto.
+                Inclui instrucoes de login, preenchimento de perfil, sincronizacao de Credly e mencao a Tribo 3 (TMO/PMO).
+              </div>
+              <div class="flex gap-3">
+                <button id="btn-onboarding-dry" class="flex-1 px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-300">Simular (Dry Run)</button>
+                <button id="btn-onboarding-send" class="flex-1 px-4 py-2 bg-teal text-white rounded-lg text-sm font-semibold hover:opacity-90">Enviar para Todos</button>
+              </div>
+              <div id="onboarding-result" class="hidden text-[.72rem] bg-slate-50 rounded-lg p-3 overflow-auto max-h-48"></div>
+            </div>
+          </div>
+        </div>
+
         <!-- Leadership Training Snapshot -->
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-5">
           <div class="px-5 py-3.5 border-b border-slate-200">
@@ -2671,6 +2763,7 @@ const ADMIN_I18N = {
       document.getElementById('panel-executive')?.classList.remove('hidden');
       loadExecutiveOverview();
       loadAdminLinks();
+      initLifecycleControls();
     }
   }
 
@@ -2720,7 +2813,196 @@ const ADMIN_I18N = {
     }
   }
 
-  async function boot() {
+  // ═══════════════════════════════════════════════════════════════
+  // Lifecycle Management (Superadmin only)
+  // ═══════════════════════════════════════════════════════════════
+
+  async function initLifecycleControls() {
+    const section = document.getElementById('lifecycle-section');
+    if (!section || !sb) return;
+
+    const m = (window as any).navGetMember?.() || MEMBER;
+    if (!m || !m.is_superadmin) return;
+
+    section.classList.remove('hidden');
+
+    const { data: members } = await sb.from('members')
+      .select('id, name, tribe_id, operational_role, current_cycle_active')
+      .eq('current_cycle_active', true)
+      .order('name');
+
+    const { data: tribes } = await sb.from('tribes')
+      .select('id, name')
+      .order('id');
+
+    const activeMembers = members || [];
+    const allTribes = tribes || [];
+
+    function populateSelect(id: string, items: {value: string; label: string}[], placeholder: string) {
+      const el = document.getElementById(id) as HTMLSelectElement;
+      if (!el) return;
+      el.innerHTML = '<option value="">' + placeholder + '</option>'
+        + items.map(i => '<option value="' + i.value + '">' + i.label + '</option>').join('');
+    }
+
+    const memberOpts = activeMembers.map((m: any) => ({
+      value: m.id,
+      label: m.name + (m.operational_role ? ' (' + m.operational_role + ')' : '')
+    }));
+    const tribeOpts = allTribes.map((t: any) => ({ value: String(t.id), label: t.name }));
+
+    populateSelect('lc-move-member', memberOpts, 'Selecione o membro...');
+    populateSelect('lc-move-tribe', tribeOpts, 'Selecione a tribo destino...');
+    populateSelect('lc-leader-tribe', tribeOpts, 'Selecione a tribo...');
+    populateSelect('lc-deact-member', memberOpts, 'Selecione o membro...');
+    populateSelect('lc-deact-tribe', tribeOpts, 'Selecione a tribo...');
+
+    const leaderTribeSel = document.getElementById('lc-leader-tribe') as HTMLSelectElement;
+    if (leaderTribeSel) {
+      leaderTribeSel.addEventListener('change', function() {
+        const tid = Number(this.value);
+        const tribeMembers = activeMembers
+          .filter((m: any) => m.tribe_id === tid)
+          .map((m: any) => ({
+            value: m.id,
+            label: m.name + (m.operational_role === 'tribe_leader' ? ' (lider atual)' : '')
+          }));
+        populateSelect('lc-leader-member', tribeMembers, 'Selecione o novo lider...');
+      });
+    }
+
+    async function callRpc(fnName: string, params: Record<string, any>, btn: HTMLButtonElement) {
+      const origText = btn.textContent || '';
+      btn.disabled = true;
+      btn.textContent = 'Processando...';
+      try {
+        const { data, error } = await sb.rpc(fnName, params);
+        if (error) throw new Error(error.message);
+        alert('Sucesso! ' + JSON.stringify(data, null, 2));
+        if (data?.draft_email_subject) {
+          showDraftEmail(data.draft_email_subject, data.draft_email_body);
+        }
+        initLifecycleControls();
+      } catch (e: any) {
+        alert('Erro: ' + (e.message || e));
+      } finally {
+        btn.disabled = false;
+        btn.textContent = origText;
+      }
+    }
+
+    function showDraftEmail(subject: string, body: string) {
+      const resultEl = document.getElementById('onboarding-result');
+      if (!resultEl) return;
+      resultEl.classList.remove('hidden');
+      resultEl.innerHTML = '<div class="mb-2"><strong>Rascunho de e-mail gerado:</strong></div>'
+        + '<div class="bg-white p-3 rounded border border-slate-200 mb-2">'
+        + '<div class="text-xs text-slate-500 mb-1">Assunto:</div>'
+        + '<div class="text-sm font-semibold">' + subject + '</div></div>'
+        + '<div class="bg-white p-3 rounded border border-slate-200">'
+        + '<div class="text-xs text-slate-500 mb-1">Corpo:</div>'
+        + '<pre class="text-sm whitespace-pre-wrap">' + body + '</pre></div>';
+    }
+
+    document.getElementById('btn-move-member')?.addEventListener('click', function() {
+      const mid = (document.getElementById('lc-move-member') as HTMLSelectElement).value;
+      const tid = Number((document.getElementById('lc-move-tribe') as HTMLSelectElement).value);
+      const reason = (document.getElementById('lc-move-reason') as HTMLInputElement).value.trim();
+      if (!mid || !tid) { alert('Selecione membro e tribo.'); return; }
+      if (!confirm('Transferir este membro para a tribo selecionada?')) return;
+      callRpc('admin_move_member_tribe', { p_member_id: mid, p_new_tribe_id: tid, p_reason: reason || 'Administrative transfer' }, this as HTMLButtonElement);
+    });
+
+    document.getElementById('btn-change-leader')?.addEventListener('click', function() {
+      const tid = Number((document.getElementById('lc-leader-tribe') as HTMLSelectElement).value);
+      const mid = (document.getElementById('lc-leader-member') as HTMLSelectElement).value;
+      const reason = (document.getElementById('lc-leader-reason') as HTMLInputElement).value.trim();
+      if (!tid || !mid) { alert('Selecione tribo e novo lider.'); return; }
+      if (!confirm('Substituir o lider desta tribo? O lider atual sera rebaixado.')) return;
+      callRpc('admin_change_tribe_leader', { p_tribe_id: tid, p_new_leader_id: mid, p_reason: reason || 'Leadership transition' }, this as HTMLButtonElement);
+    });
+
+    document.getElementById('btn-deact-member')?.addEventListener('click', function() {
+      const mid = (document.getElementById('lc-deact-member') as HTMLSelectElement).value;
+      const reason = (document.getElementById('lc-deact-reason') as HTMLInputElement).value.trim();
+      if (!mid) { alert('Selecione o membro.'); return; }
+      if (!confirm('ATENCAO: Esta acao ira desligar o pesquisador do ciclo ativo. Confirma?')) return;
+      callRpc('admin_deactivate_member', { p_member_id: mid, p_reason: reason || 'Administrative deactivation' }, this as HTMLButtonElement);
+    });
+
+    document.getElementById('btn-deact-tribe')?.addEventListener('click', function() {
+      const tid = Number((document.getElementById('lc-deact-tribe') as HTMLSelectElement).value);
+      const reason = (document.getElementById('lc-deact-tribe-reason') as HTMLInputElement).value.trim();
+      if (!tid) { alert('Selecione a tribo.'); return; }
+      if (!confirm('ATENCAO: Todos os membros desta tribo serao inativados. Esta acao e irreversivel. Confirma?')) return;
+      callRpc('admin_deactivate_tribe', { p_tribe_id: tid, p_reason: reason || 'Tribe deactivated' }, this as HTMLButtonElement);
+    });
+
+    // Onboarding broadcast buttons
+    async function sendOnboarding(dryRun: boolean) {
+      const btn = document.getElementById(dryRun ? 'btn-onboarding-dry' : 'btn-onboarding-send') as HTMLButtonElement;
+      const resultEl = document.getElementById('onboarding-result');
+      if (!btn) return;
+
+      const origText = btn.textContent || '';
+      btn.disabled = true;
+      btn.textContent = dryRun ? 'Simulando...' : 'Enviando...';
+
+      try {
+        const session = (await sb.auth.getSession()).data.session;
+        if (!session) throw new Error('Not authenticated');
+
+        const resp = await fetch(
+          sb.supabaseUrl + '/functions/v1/send-global-onboarding',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + session.access_token,
+              'apikey': sb.supabaseKey,
+            },
+            body: JSON.stringify({ dry_run: dryRun }),
+          }
+        );
+
+        const data = await resp.json();
+
+        if (resultEl) {
+          resultEl.classList.remove('hidden');
+          if (data.success) {
+            resultEl.innerHTML = '<div class="text-teal font-semibold mb-2">'
+              + (dryRun ? 'Simulacao concluida' : 'Envio realizado!') + '</div>'
+              + '<div class="text-xs">Tribos processadas: ' + data.tribes_processed + '</div>'
+              + '<div class="text-xs mb-2">Total de destinatarios: ' + data.total_recipients + '</div>'
+              + '<div class="space-y-1">' + (data.details || []).map(function(d: any) {
+                return '<div class="flex items-center gap-2 text-xs">'
+                  + '<span class="w-2 h-2 rounded-full ' + (d.status === 'sent' ? 'bg-teal' : d.status === 'failed' ? 'bg-red-500' : 'bg-blue-400') + '"></span>'
+                  + '<span class="font-medium">' + d.tribe + '</span>'
+                  + '<span class="text-slate-400">' + d.recipients + ' destinatarios</span>'
+                  + (d.emails_sample ? '<span class="text-slate-400 truncate">' + d.emails_sample.join(', ') + '</span>' : '')
+                  + '</div>';
+              }).join('') + '</div>';
+          } else {
+            resultEl.innerHTML = '<div class="text-red-600 font-semibold">Erro: ' + (data.error || 'Unknown') + '</div>'
+              + (data.detail ? '<div class="text-xs text-slate-500">' + data.detail + '</div>' : '');
+          }
+        }
+      } catch (e: any) {
+        alert('Erro: ' + (e.message || e));
+      } finally {
+        btn.disabled = false;
+        btn.textContent = origText;
+      }
+    }
+
+    document.getElementById('btn-onboarding-dry')?.addEventListener('click', function() { sendOnboarding(true); });
+    document.getElementById('btn-onboarding-send')?.addEventListener('click', function() {
+      if (!confirm('Enviar e-mail de boas-vindas para TODOS os membros ativos? Esta acao disparara e-mails reais.')) return;
+      sendOnboarding(false);
+    });
+  }
+
+    async function boot() {
     sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(boot, 200); return; }
 
