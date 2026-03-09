@@ -1,0 +1,246 @@
+---
+/**
+ * admin/curatorship.astro — Wave 5: Knowledge Curation (Human-in-the-Loop)
+ * Lists imported items from Trello/Calendar/YouTube pending GP review.
+ * Actions: Approve (with auto-suggested tags), Edit Tags, Discard.
+ * Access: admin+ or tribe_leader (read), admin+ (actions).
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import AdminNav from '../../components/nav/AdminNav.astro';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+
+const CUR_I18N = {
+  title: t('admin.curatorship.title', lang),
+  subtitle: t('admin.curatorship.subtitle', lang),
+  loading: t('admin.curatorship.loading', lang),
+  denied: t('admin.curatorship.denied', lang),
+  empty: t('admin.curatorship.empty', lang),
+  filterAll: t('admin.curatorship.filterAll', lang),
+  filterArtifacts: t('admin.curatorship.filterArtifacts', lang),
+  filterResources: t('admin.curatorship.filterResources', lang),
+  approve: t('admin.curatorship.approve', lang),
+  reject: t('admin.curatorship.reject', lang),
+  editTags: t('admin.curatorship.editTags', lang),
+  saveTags: t('admin.curatorship.saveTags', lang),
+  source: t('admin.curatorship.source', lang),
+  suggestedTags: t('admin.curatorship.suggestedTags', lang),
+  currentTags: t('admin.curatorship.currentTags', lang),
+  approved: t('admin.curatorship.approved', lang),
+  rejected: t('admin.curatorship.rejected', lang),
+  tagsSaved: t('admin.curatorship.tagsSaved', lang),
+  backAdmin: t('admin.curatorship.backAdmin', lang),
+  meta: t('admin.curatorship.meta', lang),
+};
+---
+
+<BaseLayout title={CUR_I18N.meta} activePage="admin">
+  <div class="max-w-[1200px] mx-auto px-4 pt-6">
+    <AdminNav activeSub="curatorship" lang={lang} />
+  </div>
+  <div class="max-w-[1200px] mx-auto px-4 pb-8 space-y-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-extrabold text-navy">{CUR_I18N.title}</h1>
+        <p class="text-sm text-slate-500">{CUR_I18N.subtitle}</p>
+      </div>
+      <div id="cur-count" class="hidden px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-bold"></div>
+    </div>
+
+    <div id="cur-loading" class="text-center py-10 text-slate-400">{CUR_I18N.loading}</div>
+
+    <div id="cur-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
+      <div class="text-2xl mb-2">&#x1f512;</div>
+      <p class="font-semibold text-amber-800">{CUR_I18N.denied}</p>
+      <a href="/admin" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">{CUR_I18N.backAdmin}</a>
+    </div>
+
+    <div id="cur-panel" class="hidden space-y-4">
+      <div class="flex gap-2">
+        <button class="cur-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white" data-filter="all">{CUR_I18N.filterAll}</button>
+        <button class="cur-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500" data-filter="artifacts">{CUR_I18N.filterArtifacts}</button>
+        <button class="cur-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500" data-filter="hub_resources">{CUR_I18N.filterResources}</button>
+      </div>
+
+      <div id="cur-empty" class="hidden bg-green-50 border border-green-200 rounded-2xl p-8 text-center">
+        <div class="text-3xl mb-2">&#x2705;</div>
+        <p class="font-semibold text-green-800">{CUR_I18N.empty}</p>
+      </div>
+
+      <div id="cur-list" class="space-y-3"></div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script is:inline define:vars={{ CUR_I18N }}>
+  window.__CUR_I18N = typeof CUR_I18N !== 'undefined' ? CUR_I18N : {};
+</script>
+<script>
+  const I = (typeof window !== 'undefined' && (window as any).__CUR_I18N) || {};
+  let sb: any = null;
+  let allItems: any[] = [];
+  let allTags: any[] = [];
+  let activeFilter = 'all';
+  let canAct = false;
+
+  const TAG_COLORS: Record<string, string> = {
+    research: 'bg-blue-100 text-blue-800', education: 'bg-purple-100 text-purple-800',
+    community: 'bg-teal-100 text-teal-800', innovation: 'bg-amber-100 text-amber-800',
+    impact: 'bg-green-100 text-green-800', governance: 'bg-slate-100 text-slate-700',
+  };
+
+  const SOURCE_LABELS: Record<string, string> = {
+    trello: 'Trello', calendar: 'Calendar', youtube: 'YouTube', social: 'Social Media', manual: 'Manual',
+  };
+
+  function tagColor(tagKey: string): string {
+    const t = allTags.find((x: any) => x.tag_key === tagKey);
+    return t ? TAG_COLORS[t.category] || 'bg-slate-100 text-slate-600' : 'bg-slate-100 text-slate-600';
+  }
+
+  function escapeHtml(s: string): string {
+    const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+  }
+
+  function renderItem(item: any): string {
+    const tags = (item.tags || []).map((t: string) =>
+      '<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold ' + tagColor(t) + '">' + escapeHtml(t) + '</span>'
+    ).join(' ');
+    const suggested = (item.suggested_tags || []).map((t: string) =>
+      '<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold border border-dashed border-teal-400 text-teal-700">' + escapeHtml(t) + '</span>'
+    ).join(' ');
+    const src = SOURCE_LABELS[item.source] || item.source || '?';
+    const tbl = item._table === 'artifacts' ? 'Artifact' : 'Resource';
+
+    return '<div class="bg-white rounded-xl border border-slate-200 p-4 cur-item" data-table="' + item._table + '" data-id="' + item.id + '">'
+      + '<div class="flex items-start justify-between gap-4"><div class="flex-1 min-w-0">'
+      + '<div class="flex items-center gap-2 mb-1">'
+      + '<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ' + (item._table === 'artifacts' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700') + '">' + tbl + '</span>'
+      + '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500">' + escapeHtml(src) + '</span>'
+      + (item.tribe_name ? '<span class="text-[11px] text-slate-400">' + escapeHtml(item.tribe_name) + '</span>' : '')
+      + '</div>'
+      + '<h3 class="text-sm font-bold text-navy truncate">' + escapeHtml(item.title || 'Sem titulo') + '</h3>'
+      + (item.author_name ? '<p class="text-[12px] text-slate-400">' + escapeHtml(item.author_name) + '</p>' : '')
+      + (item.url ? '<a href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener" class="text-[12px] text-teal-600 hover:underline truncate block">' + escapeHtml(item.url) + '</a>' : '')
+      + '<div class="mt-2 space-y-1">'
+      + (tags ? '<div class="flex flex-wrap gap-1"><span class="text-[10px] text-slate-400 mr-1">' + (I.currentTags || 'Tags:') + '</span>' + tags + '</div>' : '')
+      + (suggested ? '<div class="flex flex-wrap gap-1"><span class="text-[10px] text-teal-500 mr-1">' + (I.suggestedTags || 'Sugeridas:') + '</span>' + suggested + '</div>' : '')
+      + '</div></div>'
+      + (canAct ? '<div class="flex flex-col gap-1.5 shrink-0">'
+        + '<button class="cur-btn-approve px-3 py-1.5 bg-green-600 text-white rounded-lg text-[12px] font-semibold hover:opacity-90">' + (I.approve || 'Aprovar') + '</button>'
+        + '<button class="cur-btn-tags px-3 py-1.5 bg-navy text-white rounded-lg text-[12px] font-semibold hover:opacity-90">' + (I.editTags || 'Tags') + '</button>'
+        + '<button class="cur-btn-reject px-3 py-1.5 bg-red-500 text-white rounded-lg text-[12px] font-semibold hover:opacity-90">' + (I.reject || 'Descartar') + '</button>'
+        + '</div>' : '')
+      + '</div><div class="cur-tag-editor hidden mt-3 p-3 bg-slate-50 rounded-lg"></div></div>';
+  }
+
+  function render() {
+    const list = document.getElementById('cur-list');
+    const empty = document.getElementById('cur-empty');
+    const count = document.getElementById('cur-count');
+    if (!list) return;
+    const filtered = activeFilter === 'all' ? allItems : allItems.filter(i => i._table === activeFilter);
+    list.innerHTML = filtered.map(renderItem).join('');
+    if (empty) empty.classList.toggle('hidden', filtered.length > 0);
+    if (count) { count.classList.toggle('hidden', allItems.length === 0); count.textContent = allItems.length + ' pendente' + (allItems.length !== 1 ? 's' : ''); }
+  }
+
+  async function callCurate(table: string, id: string, action: string, tags?: string[]) {
+    if (!sb) return;
+    try {
+      const { data, error } = await sb.rpc('curate_item', { p_table: table, p_id: id, p_action: action, p_tags: tags || null });
+      if (error) throw new Error(error.message);
+      allItems = allItems.filter(i => !(i.id === id && i._table === table));
+      render();
+      const msg = action === 'approve' ? I.approved : action === 'reject' ? I.rejected : I.tagsSaved;
+      (window as any).toast?.(msg || 'OK', 'success');
+    } catch (e: any) { (window as any).toast?.(e.message || 'Error', 'error'); }
+  }
+
+  function showTagEditor(el: HTMLElement, item: any) {
+    const editor = el.querySelector('.cur-tag-editor') as HTMLElement;
+    if (!editor) return;
+    const wasHidden = editor.classList.contains('hidden');
+    document.querySelectorAll('.cur-tag-editor').forEach(e => (e as HTMLElement).classList.add('hidden'));
+    if (!wasHidden) return;
+    const current = [...new Set([...(item.tags || []), ...(item.suggested_tags || [])])];
+    editor.innerHTML = '<div class="flex flex-wrap gap-1.5 mb-2">'
+      + allTags.map((t: any) => {
+        const ck = current.includes(t.tag_key);
+        return '<label class="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] cursor-pointer ' + (ck ? tagColor(t.tag_key) : 'bg-white border border-slate-200 text-slate-500') + '">'
+          + '<input type="checkbox" value="' + t.tag_key + '"' + (ck ? ' checked' : '') + ' class="w-3 h-3 rounded" />' + t.label_pt + '</label>';
+      }).join('') + '</div>'
+      + '<div class="flex gap-2">'
+      + '<button class="cur-save-tags px-3 py-1.5 bg-teal text-white rounded-lg text-[12px] font-semibold">' + (I.saveTags || 'Salvar') + '</button>'
+      + '<button class="cur-approve-tags px-3 py-1.5 bg-green-600 text-white rounded-lg text-[12px] font-semibold">' + (I.approve || 'Aprovar') + ' + Tags</button></div>';
+    editor.classList.remove('hidden');
+  }
+
+  function getSelectedTags(el: HTMLElement): string[] {
+    return Array.from(el.querySelectorAll('.cur-tag-editor input:checked')).map(i => (i as HTMLInputElement).value);
+  }
+
+  document.addEventListener('click', function(e) {
+    const target = e.target as HTMLElement;
+    const itemEl = target.closest('.cur-item') as HTMLElement;
+    if (!itemEl) return;
+    const table = itemEl.dataset.table || '';
+    const id = itemEl.dataset.id || '';
+    if (target.closest('.cur-btn-approve')) {
+      const item = allItems.find(i => i.id === id && i._table === table);
+      if (!confirm('Aprovar este item com as tags sugeridas?')) return;
+      callCurate(table, id, 'approve', item?.suggested_tags || item?.tags);
+    } else if (target.closest('.cur-btn-reject')) {
+      if (!confirm('Descartar este item?')) return;
+      callCurate(table, id, 'reject');
+    } else if (target.closest('.cur-btn-tags')) {
+      const item = allItems.find(i => i.id === id && i._table === table);
+      showTagEditor(itemEl, item);
+    } else if (target.closest('.cur-save-tags')) {
+      callCurate(table, id, 'update_tags', getSelectedTags(itemEl));
+    } else if (target.closest('.cur-approve-tags')) {
+      callCurate(table, id, 'approve', getSelectedTags(itemEl));
+    }
+  });
+
+  document.addEventListener('click', function(e) {
+    const btn = (e.target as HTMLElement).closest('.cur-filter') as HTMLElement;
+    if (!btn) return;
+    activeFilter = btn.dataset.filter || 'all';
+    document.querySelectorAll('.cur-filter').forEach(b => {
+      const el = b as HTMLElement;
+      el.className = 'cur-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 '
+        + (el.dataset.filter === activeFilter ? 'border-navy bg-navy text-white' : 'border-slate-200 bg-white text-slate-500');
+    });
+    render();
+  });
+
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+    const m = (window as any).navGetMember?.();
+    if (!m) {
+      try { const { data: { session } } = await sb.auth.getSession(); if (!session) throw new Error('x'); } catch {
+        document.getElementById('cur-loading')?.classList.add('hidden');
+        document.getElementById('cur-denied')?.classList.remove('hidden'); return;
+      }
+    }
+    const member = m || {};
+    const isAdmin = member.is_superadmin || ['manager','deputy_manager'].includes(member.operational_role);
+    canAct = isAdmin;
+    if (!isAdmin && member.operational_role !== 'tribe_leader') {
+      document.getElementById('cur-loading')?.classList.add('hidden');
+      document.getElementById('cur-denied')?.classList.remove('hidden'); return;
+    }
+    try {
+      const [ir, tr] = await Promise.all([sb.rpc('list_pending_curation', { p_table: 'all' }), sb.rpc('list_taxonomy_tags')]);
+      allItems = Array.isArray(ir.data) ? ir.data : (ir.data || []);
+      allTags = tr.data || [];
+    } catch (e: any) { console.warn('Curation load:', e); }
+    document.getElementById('cur-loading')?.classList.add('hidden');
+    document.getElementById('cur-panel')?.classList.remove('hidden');
+    render();
+  }
+  boot();
+</script>

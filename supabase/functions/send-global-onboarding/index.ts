@@ -1,17 +1,42 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const GP_SIGNATURE = [
-  '',
-  'Atenciosamente,',
-  'Vitor Maia Rodovalho',
-  '+1 267-874-8329 | https://www.linkedin.com/in/vitor-rodovalho-pmp/',
-  'Gerente de Projeto do Nucleo IA & GP',
-].join('\n')
+function buildDynamicSignature(sender: Record<string, any>, cycleName: string): string {
+  const name = sender.name || 'Gerencia do Projeto'
+  const phone = sender.phone || ''
+  const linkedin = sender.linkedin_url || ''
+  const role = sender.operational_role === 'manager' ? 'Gerente de Projeto'
+    : sender.operational_role === 'deputy_manager' ? 'Vice-Gerente de Projeto'
+    : sender.is_superadmin ? 'Superadmin' : 'Gerencia do Projeto'
+
+  let sig = 'Atenciosamente,\n' + name
+  if (phone) sig += '\n' + phone
+  if (linkedin) sig += ' | ' + linkedin
+  sig += '\n' + role + ' do Nucleo IA & GP'
+  if (cycleName) sig += ' (' + cycleName + ')'
+  return sig
+}
+
+function buildSignatureHtml(sender: Record<string, any>, cycleName: string): string {
+  const name = sender.name || 'Gerencia do Projeto'
+  const phone = sender.phone || ''
+  const linkedin = sender.linkedin_url || ''
+  const role = sender.operational_role === 'manager' ? 'Gerente de Projeto'
+    : sender.operational_role === 'deputy_manager' ? 'Vice-Gerente de Projeto'
+    : sender.is_superadmin ? 'Superadmin' : 'Gerencia do Projeto'
+
+  let sig = '<p style="color:#64748B;font-size:12px;line-height:1.6">Atenciosamente,<br><strong>' + name + '</strong>'
+  if (phone) sig += '<br>' + phone
+  if (linkedin) sig += ' | <a href="' + linkedin + '" style="color:#0D9488">LinkedIn</a>'
+  sig += '<br>' + role + ' - Nucleo IA &amp; GP'
+  if (cycleName) sig += ' (' + cycleName + ')'
+  sig += '</p>'
+  return sig
+}
 
 const HELP_URL = 'https://ai-pm-research-hub.pages.dev/admin/help'
 const HUB_URL = 'https://ai-pm-research-hub.pages.dev'
 
-function buildOnboardingHtml(tribeName: string, memberNames: string[]): string {
+function buildOnboardingHtml(tribeName: string, memberNames: string[], signatureHtml: string): string {
   const greeting = memberNames.length > 3
     ? 'Prezados pesquisadores da Tribo ' + tribeName
     : 'Prezados ' + memberNames.join(', ')
@@ -47,8 +72,7 @@ function buildOnboardingHtml(tribeName: string, memberNames: string[]): string {
     + 'para tutoriais sobre LGPD, comunicados, WhatsApp e mais.</p></div>'
 
     + '<hr style="border:none;border-top:1px solid #E2E8F0;margin:24px 0 16px">'
-    + '<pre style="color:#64748B;font-size:12px;line-height:1.6;font-family:sans-serif;white-space:pre-wrap">'
-    + GP_SIGNATURE + '</pre>'
+    + signatureHtml
     + '</div></div>'
 }
 
@@ -83,10 +107,14 @@ Deno.serve(async (req) => {
     let callerId: string | null = null
     let callerName = 'Sistema (Automated)'
 
+    let senderData: Record<string, any> = {}
+
     if (cliSecret && expectedCliSecret && cliSecret === expectedCliSecret) {
-      const gp = await sb.from('members').select('id, name').eq('is_superadmin', true).limit(1).single()
+      const gp = await sb.from('members').select('id, name, phone, linkedin_url, operational_role, is_superadmin')
+        .eq('is_superadmin', true).limit(1).single()
       callerId = gp.data?.id ?? null
       callerName = gp.data?.name ?? 'GP Automatico'
+      senderData = gp.data || {}
     } else {
       const ah = req.headers.get('Authorization') ?? ''
       const tk = ah.replace(/^Bearer\s+/i, '').trim()
@@ -96,7 +124,7 @@ Deno.serve(async (req) => {
       const ur = await uc.auth.getUser()
       if (ur.error || !ur.data?.user) return json({ error: 'Bad token' }, 401)
 
-      const cr = await sb.from('members').select('id, is_superadmin, operational_role, name')
+      const cr = await sb.from('members').select('id, is_superadmin, operational_role, name, phone, linkedin_url')
         .eq('auth_id', ur.data.user.id).single()
       if (!cr.data) return json({ error: 'No member' }, 403)
 
@@ -107,6 +135,7 @@ Deno.serve(async (req) => {
 
       callerId = cr.data.id
       callerName = cr.data.name || 'Admin'
+      senderData = cr.data
     }
 
     let opts: { dry_run?: boolean; subject_override?: string } = {}
@@ -148,8 +177,12 @@ Deno.serve(async (req) => {
     const results: any[] = []
     let totalSent = 0
 
+    const { data: cycle } = await sb.from('cycles').select('cycle_label').eq('is_current', true).limit(1).single()
+    const cycleName = cycle?.cycle_label || 'Ciclo 3'
+    const signatureHtml = buildSignatureHtml(senderData, cycleName)
+
     for (const [tribeIdStr, group] of Object.entries(grouped)) {
-      const html = buildOnboardingHtml(group.name, group.names)
+      const html = buildOnboardingHtml(group.name, group.names, signatureHtml)
       const allBcc = [...new Set([...group.emails, ...mgmtEmails])]
 
       const finalTo = sandbox ? ['vitor.rodovalho@outlook.com'] : [from]

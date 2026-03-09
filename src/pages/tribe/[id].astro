@@ -83,6 +83,7 @@ const TRIBE_I18N = {
     historyRecipients: t('tribe.broadcast.historyRecipients', lang),
     subjectRequired: t('tribe.broadcast.subjectRequired', lang),
     bodyRequired: t('tribe.broadcast.bodyRequired', lang),
+    ccMgmt: t('tribe.broadcast.ccMgmt', lang),
     rateLimit: t('tribe.broadcast.rateLimit', lang),
   },
   commsHub: {
@@ -861,6 +862,13 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
               <textarea id="bc-body" rows="6" placeholder="${BC.bodyPlaceholder || ''}"
                 class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40 resize-y"></textarea>
             </div>
+            <div class="flex items-center gap-3 pt-2">
+              <label class="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" id="bc-cc-mgmt" checked
+                  class="w-4 h-4 rounded border-slate-300 text-purple focus:ring-purple/40" />
+                <span class="text-[12px] text-slate-500">${BC.ccMgmt || 'Enviar copia para o time de gestao'}</span>
+              </label>
+            </div>
             <div class="flex justify-end">
               <button data-action="send-broadcast" id="btn-send-broadcast"
                 class="px-5 py-2.5 bg-purple text-white rounded-xl text-[14px] font-bold cursor-pointer border-0 hover:opacity-90 transition-all">
@@ -938,7 +946,12 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
       const res = await fetch(fnUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt, 'apikey': ak },
-        body: JSON.stringify({ tribe_id: TRIBE_ID, subject: subject, body: body }),
+        body: JSON.stringify({
+          tribe_id: TRIBE_ID,
+          subject: subject,
+          body: body,
+          cc_management: (document.getElementById('bc-cc-mgmt') as HTMLInputElement)?.checked !== false,
+        }),
       });
 
       const txt = await res.text();

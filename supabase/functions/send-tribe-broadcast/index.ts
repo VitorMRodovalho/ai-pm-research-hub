@@ -1,5 +1,23 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+function buildSignatureHtml(sender: Record<string, any>, cycleName: string): string {
+  const name = sender.name || 'Lider'
+  const phone = sender.phone || ''
+  const linkedin = sender.linkedin_url || ''
+  const role = sender.operational_role === 'tribe_leader' ? 'Lider de Tribo'
+    : sender.operational_role === 'manager' ? 'Gerente de Projeto'
+    : sender.operational_role === 'deputy_manager' ? 'Vice-Gerente de Projeto'
+    : sender.is_superadmin ? 'Superadmin' : 'Equipe de Gestao'
+
+  let sig = '<p style="color:#64748B;font-size:12px;line-height:1.6">Atenciosamente,<br><strong>' + name + '</strong>'
+  if (phone) sig += '<br>' + phone
+  if (linkedin) sig += ' | <a href="' + linkedin + '" style="color:#0D9488">LinkedIn</a>'
+  sig += '<br>' + role + ' - Nucleo IA &amp; GP'
+  if (cycleName) sig += ' (' + cycleName + ')'
+  sig += '</p>'
+  return sig
+}
+
 Deno.serve(async (req) => {
   const cors = {
     'Access-Control-Allow-Origin': '*',
@@ -23,7 +41,6 @@ Deno.serve(async (req) => {
 
     if (!rkey) return json({ error: 'No RESEND key' }, 500)
 
-    // Auth
     const ah = req.headers.get('Authorization') ?? ''
     const tk = ah.replace(/^Bearer\s+/i, '').trim()
     if (!tk) return json({ error: 'No token' }, 401)
@@ -33,38 +50,50 @@ Deno.serve(async (req) => {
     if (ur.error || !ur.data?.user) return json({ error: 'Bad token', d: ur.error?.message }, 401)
     const uid = ur.data.user.id
 
-    // Service client
     const sb = createClient(url, srk)
 
-    // Caller
-    const cr = await sb.from('members').select('id,tribe_id,operational_role,is_superadmin,name').eq('auth_id', uid).single()
+    const cr = await sb.from('members')
+      .select('id, tribe_id, operational_role, is_superadmin, name, phone, linkedin_url')
+      .eq('auth_id', uid).single()
     if (!cr.data) return json({ error: 'No member', d: cr.error?.message }, 403)
     const c = cr.data
 
-    // Payload
     let p: Record<string, unknown> = {}
     try { p = JSON.parse(raw) } catch (_) { return json({ error: 'Bad JSON', raw_len: raw.length }, 400) }
 
     const tid = Number(p.tribe_id) || 0
     const subj = String(p.subject || '').trim()
     const bd = String(p.body || '').trim()
-    if (!tid || !subj || !bd) return json({ error: 'Missing fields', tid: tid, subj_len: subj.length, bd_len: bd.length }, 400)
+    const ccMgmt = p.cc_management !== false
+    if (!tid || !subj || !bd) return json({ error: 'Missing fields', tid, subj_len: subj.length, bd_len: bd.length }, 400)
 
-    // Authz
     const adm = c.is_superadmin === true || c.operational_role === 'manager' || c.operational_role === 'deputy_manager'
     const tl = c.operational_role === 'tribe_leader' && c.tribe_id === tid
     if (!adm && !tl) return json({ error: 'Forbidden' }, 403)
 
-    // Emails
     const mr = await sb.from('members').select('email').eq('tribe_id', tid).eq('current_cycle_active', true).not('email', 'is', null)
     const emails = (mr.data || []).map((m: Record<string, string>) => m.email).filter((e: string) => e && e.includes('@'))
     if (!emails.length) return json({ error: 'No emails found' }, 400)
 
-    // Tribe
+    // CC management if toggled on
+    let mgmtEmails: string[] = []
+    if (ccMgmt) {
+      const { data: mgmt } = await sb.from('members')
+        .select('email')
+        .or('is_superadmin.eq.true,operational_role.in.(manager,deputy_manager)')
+        .not('email', 'is', null)
+      mgmtEmails = (mgmt || []).map((m: any) => m.email).filter((e: string) => e && e.includes('@'))
+    }
+    const allBcc = [...new Set([...emails, ...mgmtEmails])]
+
     const tr = await sb.from('tribes').select('name').eq('id', tid).single()
     const tn = tr.data?.name || 'Tribo ' + tid
 
-    // Send
+    const { data: cycle } = await sb.from('cycles').select('cycle_label').eq('is_current', true).limit(1).single()
+    const cycleName = cycle?.cycle_label || 'Ciclo 3'
+
+    const signature = buildSignatureHtml(c, cycleName)
+
     const from = Deno.env.get('RESEND_FROM_ADDRESS') || 'onboarding@resend.dev'
     const html = '<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px">'
       + '<div style="background:#0F172A;color:#fff;padding:16px 20px;border-radius:12px 12px 0 0"><strong>Nucleo IA e GP</strong> - ' + tn + '</div>'
@@ -73,33 +102,32 @@ Deno.serve(async (req) => {
       + '<h2 style="color:#0F172A;font-size:18px">' + subj + '</h2>'
       + '<div style="color:#334155;font-size:14px;line-height:1.7;white-space:pre-wrap">' + bd + '</div>'
       + '<hr style="border:none;border-top:1px solid #E2E8F0;margin:24px 0 16px">'
-      + '<p style="color:#94A3B8;font-size:11px">Enviado pelo Nucleo IA e GP.</p></div></div>'
+      + signature + '</div></div>'
 
-    // Sandbox mode: when using Resend test domain, only send to the verified test email
     const sandbox = from.includes('onboarding@resend.dev')
     const finalTo = sandbox ? ['vitor.rodovalho@outlook.com'] : [from]
-    const finalBcc = sandbox ? [] : emails
-    console.log('[broadcast] sandbox:', sandbox, 'to:', finalTo.length, 'bcc:', finalBcc.length)
+    const finalBcc = sandbox ? [] : allBcc
+    console.log('[broadcast] sandbox:', sandbox, 'to:', finalTo.length, 'bcc:', finalBcc.length, 'cc_mgmt:', ccMgmt)
 
     const rr = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + rkey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: from, to: finalTo, bcc: finalBcc.length ? finalBcc : undefined, subject: '[' + tn + '] ' + subj, html: html }),
+      body: JSON.stringify({ from, to: finalTo, bcc: finalBcc.length ? finalBcc : undefined, subject: '[' + tn + '] ' + subj, html }),
     })
 
     const rt = await rr.text()
     console.log('[broadcast] resend:', rr.status, rt)
 
     if (!rr.ok) {
-      const { error: logErr1 } = await sb.from('broadcast_log').insert([{ tribe_id: tid, sender_id: c.id, subject: subj, body: bd, recipient_count: emails.length, status: 'failed', error_detail: 'Resend ' + rr.status + ': ' + rt }])
-      if (logErr1) console.error('[broadcast] log insert err:', logErr1.message)
+      const { error: logErr1 } = await sb.from('broadcast_log').insert([{ tribe_id: tid, sender_id: c.id, subject: subj, body: bd, recipient_count: allBcc.length, status: 'failed', error_detail: 'Resend ' + rr.status + ': ' + rt }])
+      if (logErr1) console.error('[broadcast] log err:', logErr1.message)
       return json({ success: false, error: 'Resend failed', status: rr.status, detail: rt }, 502)
     }
 
-    const { error: logErr2 } = await sb.from('broadcast_log').insert([{ tribe_id: tid, sender_id: c.id, subject: subj, body: bd, recipient_count: emails.length, status: 'sent', error_detail: null }])
-    if (logErr2) console.error('[broadcast] log insert err:', logErr2.message)
+    const { error: logErr2 } = await sb.from('broadcast_log').insert([{ tribe_id: tid, sender_id: c.id, subject: subj, body: bd, recipient_count: allBcc.length, status: 'sent', error_detail: null }])
+    if (logErr2) console.error('[broadcast] log err:', logErr2.message)
 
-    return json({ success: true, recipient_count: emails.length, tribe: tn })
+    return json({ success: true, recipient_count: allBcc.length, tribe: tn, cc_management: ccMgmt })
 
   } catch (e) {
     const m = e instanceof Error ? e.message : String(e)
