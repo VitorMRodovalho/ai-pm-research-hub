@@ -1,0 +1,739 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Toast from '../../components/ui/Toast.astro';
+import LoadingSkeleton from '../../components/ui/LoadingSkeleton.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+const { id } = Astro.params;
+const tribeId = parseInt(id || '0', 10);
+if (tribeId < 1 || tribeId > 8) return Astro.redirect('/');
+const TRIBE_I18N = {
+  membersTab: t('tribe.membersTab', lang),
+  deliverablesTab: t('tribe.deliverablesTab', lang),
+  resourcesTab: t('tribe.resourcesTab', lang),
+  meetingSchedule: t('tribe.meetingSchedule', lang),
+  noMembers: t('tribe.noMembers', lang),
+  noDeliverables: t('tribe.noDeliverables', lang),
+  noResources: t('tribe.noResources', lang),
+  addDeliverable: t('tribe.addDeliverable', lang),
+  statusPlanned: t('tribe.statusPlanned', lang),
+  statusInProgress: t('tribe.statusInProgress', lang),
+  statusCompleted: t('tribe.statusCompleted', lang),
+  statusCancelled: t('tribe.statusCancelled', lang),
+  loading: t('tribe.loading', lang),
+  notFound: t('tribe.notFound', lang),
+  leader: t('tribe.leader', lang),
+  quadrant: t('tribe.quadrant', lang),
+  dueDate: t('tribe.dueDate', lang),
+  noDueDate: t('tribe.noDueDate', lang),
+  assignee: t('tribe.assignee', lang),
+  unassigned: t('tribe.unassigned', lang),
+  openLink: t('tribe.openLink', lang),
+  dateLocale: t('tribe.dateLocale', lang),
+  error: t('tribe.error', lang),
+  tribeName: t(`data.tribe${tribeId}.name`, lang),
+  tribeDesc: t(`data.tribe${tribeId}.desc`, lang),
+  quadrantLabel: t(`data.tribe${tribeId}.quadrantLabel`, lang),
+  modalAddTitle: t('tribe.modal.addTitle', lang),
+  modalEditTitle: t('tribe.modal.editTitle', lang),
+  modalLabelTitle: t('tribe.modal.labelTitle', lang),
+  modalLabelDescription: t('tribe.modal.labelDescription', lang),
+  modalLabelStatus: t('tribe.modal.labelStatus', lang),
+  modalLabelAssignee: t('tribe.modal.labelAssignee', lang),
+  modalLabelDueDate: t('tribe.modal.labelDueDate', lang),
+  modalLabelArtifact: t('tribe.modal.labelArtifact', lang),
+  modalSelectMember: t('tribe.modal.selectMember', lang),
+  modalSelectArtifact: t('tribe.modal.selectArtifact', lang),
+  modalCancel: t('tribe.modal.cancel', lang),
+  modalSave: t('tribe.modal.save', lang),
+  modalTitleRequired: t('tribe.modal.titleRequired', lang),
+  msgSaved: t('tribe.msg.saved', lang),
+  msgSaveError: t('tribe.msg.saveError', lang),
+  msgStatusUpdated: t('tribe.msg.statusUpdated', lang),
+  msgStatusError: t('tribe.msg.statusError', lang),
+  progressCompleted: t('tribe.progress.completed', lang),
+  progressInProgress: t('tribe.progress.inProgress', lang),
+  progressPlanned: t('tribe.progress.planned', lang),
+  editDeliverable: t('tribe.editDeliverable', lang),
+  moveToInProgress: t('tribe.moveTo.in_progress', lang),
+  moveToCompleted: t('tribe.moveTo.completed', lang),
+  moveToPlanned: t('tribe.moveTo.planned', lang),
+  moveToCancelled: t('tribe.moveTo.cancelled', lang),
+  oproleLabels: {
+    manager: t('profile.oprole.manager', lang),
+    deputy_manager: t('profile.oprole.deputyManager', lang),
+    tribe_leader: t('profile.oprole.tribeLeader', lang),
+    researcher: t('profile.oprole.researcher', lang),
+    facilitator: t('profile.oprole.facilitator', lang),
+    communicator: t('profile.oprole.communicator', lang),
+    none: t('profile.oprole.none', lang),
+    guest: t('profile.oprole.guest', lang),
+  },
+  dayNames: [
+    t('common.days.sun', lang), t('common.days.mon', lang), t('common.days.tue', lang),
+    t('common.days.wed', lang), t('common.days.thu', lang), t('common.days.fri', lang),
+    t('common.days.sat', lang),
+  ],
+};
+const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
+---
+<BaseLayout title={pageTitle} activePage="tribes">
+  <Toast />
+  <div class="max-w-[1100px] mx-auto px-4 py-8">
+    <!-- Header -->
+    <div id="tribe-header" class="mb-6">
+      <LoadingSkeleton variant="profile" />
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-2 mb-5 flex-wrap">
+      <button class="tribe-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white transition-all"
+              data-tab="members" data-action="switch-tab">{t('tribe.membersTab', lang)}</button>
+      <button class="tribe-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+              data-tab="deliverables" data-action="switch-tab">{t('tribe.deliverablesTab', lang)}</button>
+      <button class="tribe-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+              data-tab="resources" data-action="switch-tab">{t('tribe.resourcesTab', lang)}</button>
+    </div>
+
+    <!-- Tab panels -->
+    <div id="panel-members">
+      <LoadingSkeleton variant="card" count={4} />
+    </div>
+    <div id="panel-deliverables" class="hidden">
+      <LoadingSkeleton variant="card" count={3} />
+    </div>
+    <div id="panel-resources" class="hidden">
+      <LoadingSkeleton variant="card" count={3} />
+    </div>
+  </div>
+
+  <!-- Deliverable Modal -->
+  <div id="deliverable-modal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/40" data-action="close-deliverable-modal"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+      <h2 id="deliverable-modal-title" class="text-lg font-extrabold text-navy mb-4"></h2>
+      <form id="deliverable-form" class="flex flex-col gap-3">
+        <input type="hidden" id="dlv-id" />
+        <div>
+          <label for="dlv-title" class="text-[13px] font-semibold text-slate-600 mb-1 block" id="lbl-dlv-title"></label>
+          <input type="text" id="dlv-title" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
+        </div>
+        <div>
+          <label for="dlv-description" class="text-[13px] font-semibold text-slate-600 mb-1 block" id="lbl-dlv-description"></label>
+          <textarea id="dlv-description" rows="3" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="dlv-status" class="text-[13px] font-semibold text-slate-600 mb-1 block" id="lbl-dlv-status"></label>
+            <select id="dlv-status" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></select>
+          </div>
+          <div>
+            <label for="dlv-due-date" class="text-[13px] font-semibold text-slate-600 mb-1 block" id="lbl-dlv-due-date"></label>
+            <input type="date" id="dlv-due-date" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
+          </div>
+        </div>
+        <div>
+          <label for="dlv-assignee" class="text-[13px] font-semibold text-slate-600 mb-1 block" id="lbl-dlv-assignee"></label>
+          <select id="dlv-assignee" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></select>
+        </div>
+        <div>
+          <label for="dlv-artifact" class="text-[13px] font-semibold text-slate-600 mb-1 block" id="lbl-dlv-artifact"></label>
+          <select id="dlv-artifact" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></select>
+        </div>
+        <div class="flex justify-end gap-3 mt-2">
+          <button type="button" data-action="close-deliverable-modal" class="px-4 py-2 text-sm font-semibold text-slate-500 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all" id="btn-dlv-cancel"></button>
+          <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-navy rounded-lg cursor-pointer border-0 hover:opacity-90 transition-all" id="btn-dlv-save"></button>
+        </div>
+      </form>
+    </div>
+  </div>
+</BaseLayout>
+
+<script is:inline define:vars={{ TRIBE_I18N, tribeId }}>
+  window.__TRIBE_I18N = typeof TRIBE_I18N !== 'undefined' ? TRIBE_I18N : {};
+  window.__TRIBE_ID = typeof tribeId !== 'undefined' ? tribeId : 0;
+</script>
+<script>
+  const I18N = (typeof window !== 'undefined' && (window as any).__TRIBE_I18N) || {};
+  const TRIBE_ID: number = (typeof window !== 'undefined' && (window as any).__TRIBE_ID) || 0;
+
+  const OPROLE_LABELS: Record<string, string> = I18N.oproleLabels || {};
+  const OPROLE_COLORS: Record<string, string> = {
+    manager: '#FF610F', deputy_manager: '#FF610F', tribe_leader: '#4F17A8', researcher: '#EC4899',
+    facilitator: '#06B6D4', communicator: '#8B5CF6', none: '#94A3B8', guest: '#94A3B8'
+  };
+  const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
+    planned:     { bg: 'bg-slate-100', text: 'text-slate-600' },
+    in_progress: { bg: 'bg-blue-50', text: 'text-blue-700' },
+    completed:   { bg: 'bg-emerald-50', text: 'text-emerald-700' },
+    cancelled:   { bg: 'bg-red-50', text: 'text-red-600' },
+  };
+  const STATUS_LABELS: Record<string, string> = {
+    planned: I18N.statusPlanned, in_progress: I18N.statusInProgress,
+    completed: I18N.statusCompleted, cancelled: I18N.statusCancelled,
+  };
+  const TYPE_ICONS: Record<string, string> = {
+    'Curso': '🎓', 'Referência': '📘', 'Webinar': '▶️', 'Outro': '📎',
+    'Course': '🎓', 'Reference': '📘',
+  };
+  const DAY_NAMES: string[] = I18N.dayNames || ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+  function escapeHtml(s: string): string {
+    return String(s || '')
+      .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  let sb: any = null;
+  let currentMember: any = null;
+  let membersMap: Map<string, any> = new Map();
+  let canEdit = false;
+  let allDeliverables: any[] = [];
+  let publishedArtifacts: any[] = [];
+
+  // ── Tab switching ──
+  function switchTab(tabName: string) {
+    const panels = ['members', 'deliverables', 'resources'];
+    panels.forEach(p => {
+      const el = document.getElementById(`panel-${p}`);
+      if (el) el.classList.toggle('hidden', p !== tabName);
+    });
+    document.querySelectorAll('.tribe-tab').forEach(btn => {
+      const isActive = (btn as HTMLElement).dataset.tab === tabName;
+      btn.classList.toggle('bg-navy', isActive);
+      btn.classList.toggle('text-white', isActive);
+      btn.classList.toggle('border-navy', isActive);
+      btn.classList.toggle('bg-white', !isActive);
+      btn.classList.toggle('text-slate-500', !isActive);
+      btn.classList.toggle('border-slate-200', !isActive);
+    });
+  }
+
+  // ── Header render ──
+  function renderHeader(_tribe: any, leader: any, slots: any[]) {
+    const el = document.getElementById('tribe-header');
+    if (!el) return;
+
+    const leaderName = leader ? escapeHtml(leader.name) : '—';
+    const leaderPhoto = leader?.photo_url
+      ? `<img src="${escapeHtml(leader.photo_url)}" class="w-8 h-8 rounded-full object-cover border border-slate-100" alt="">`
+      : leader
+        ? `<div class="w-8 h-8 rounded-full bg-purple/20 flex items-center justify-center text-purple text-xs font-bold">${escapeHtml(leader.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase())}</div>`
+        : '';
+
+    let scheduleHtml = '';
+    if (slots?.length) {
+      scheduleHtml = slots.map(s => {
+        const day = DAY_NAMES[s.day_of_week] || '?';
+        const start = s.time_start?.substring(0, 5) || '';
+        const end = s.time_end?.substring(0, 5) || '';
+        return `${day} ${start}–${end}`;
+      }).join(' · ');
+    } else {
+      scheduleHtml = '<span class="text-slate-400 italic">—</span>';
+    }
+
+    el.innerHTML = `
+      <div class="bg-white rounded-2xl border border-slate-200 p-6">
+        <div class="flex items-start gap-4 flex-wrap">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+              <h1 class="text-xl font-extrabold text-navy">T${TRIBE_ID}: ${escapeHtml(I18N.tribeName)}</h1>
+              <span class="px-2 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide bg-purple/10 text-purple">${escapeHtml(I18N.quadrantLabel)}</span>
+            </div>
+            <p class="text-[13px] text-slate-500 leading-relaxed mb-3">${escapeHtml(I18N.tribeDesc)}</p>
+            <div class="flex flex-wrap gap-x-5 gap-y-2 text-[13px]">
+              <div class="flex items-center gap-2">
+                ${leaderPhoto}
+                <span class="text-slate-400 font-semibold">${I18N.leader}:</span>
+                <span class="font-semibold text-navy">${leaderName}</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-slate-400 font-semibold">📅 ${I18N.meetingSchedule}:</span>
+                <span class="text-navy font-medium">${scheduleHtml}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // ── Members tab ──
+  function renderMembers(members: any[]) {
+    const el = document.getElementById('panel-members');
+    if (!el) return;
+
+    if (!members.length) {
+      el.innerHTML = `
+        <div class="text-center py-14">
+          <div class="text-4xl mb-3">👥</div>
+          <div class="font-semibold text-slate-500 text-sm">${I18N.noMembers}</div>
+        </div>`;
+      return;
+    }
+
+    el.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">${members.map(memberCardHtml).join('')}</div>`;
+  }
+
+  function memberCardHtml(m: any): string {
+    const initials = (m.name || '?').split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+    const photo = m.photo_url
+      ? `<img src="${escapeHtml(m.photo_url)}" class="w-12 h-12 rounded-full object-cover border-2 border-slate-100" alt="">`
+      : `<div class="w-12 h-12 rounded-full bg-teal/20 flex items-center justify-center text-teal text-sm font-bold">${escapeHtml(initials)}</div>`;
+
+    const opRole = m.operational_role || 'researcher';
+    const roleColor = OPROLE_COLORS[opRole] || '#94A3B8';
+    const roleLabel = OPROLE_LABELS[opRole] || opRole;
+    const roleBadge = opRole !== 'none' && opRole !== 'guest'
+      ? `<span class="inline-block px-2 py-0.5 rounded-md text-[.6rem] font-bold uppercase" style="background:${roleColor}22;color:${roleColor}">${escapeHtml(roleLabel)}</span>`
+      : '';
+
+    const desigs: string[] = m.designations || [];
+    const desigBadges = desigs.map((d: string) =>
+      `<span class="inline-block px-2 py-0.5 rounded-md text-[.6rem] font-bold uppercase bg-slate-100 text-slate-500">${escapeHtml(d)}</span>`
+    ).join(' ');
+
+    return `
+      <div class="bg-white rounded-2xl border border-slate-100 p-5 flex items-start gap-3 hover:border-slate-300 hover:shadow-sm transition-all">
+        ${photo}
+        <div class="flex-1 min-w-0">
+          <div class="font-bold text-[15px] text-navy leading-tight mb-1">${escapeHtml(m.name || '—')}</div>
+          <div class="text-[12px] text-slate-400 mb-1.5">${escapeHtml(m.chapter || '')}</div>
+          <div class="flex flex-wrap gap-1">${roleBadge} ${desigBadges}</div>
+        </div>
+      </div>`;
+  }
+
+  // ── Progress bar ──
+  function progressBarHtml(items: any[]): string {
+    const total = items.length;
+    if (total === 0) return '';
+
+    const completed = items.filter(d => d.status === 'completed').length;
+    const inProgress = items.filter(d => d.status === 'in_progress').length;
+    const planned = items.filter(d => d.status === 'planned').length;
+    const pctCompleted = Math.round((completed / total) * 100);
+    const pctInProgress = Math.round((inProgress / total) * 100);
+
+    return `
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 mb-4">
+        <div class="flex items-center gap-3 text-[13px] font-semibold mb-2 flex-wrap">
+          <span class="text-emerald-700">${completed}/${total} ${I18N.progressCompleted}</span>
+          <span class="text-slate-300">|</span>
+          <span class="text-blue-700">${inProgress} ${I18N.progressInProgress}</span>
+          <span class="text-slate-300">|</span>
+          <span class="text-slate-500">${planned} ${I18N.progressPlanned}</span>
+        </div>
+        <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden flex">
+          <div class="h-full bg-emerald-500 transition-all" style="width:${pctCompleted}%"></div>
+          <div class="h-full bg-blue-400 transition-all" style="width:${pctInProgress}%"></div>
+        </div>
+      </div>`;
+  }
+
+  // ── Deliverables tab ──
+  function renderDeliverables(items: any[]) {
+    const el = document.getElementById('panel-deliverables');
+    if (!el) return;
+
+    allDeliverables = items;
+
+    const addBtn = canEdit
+      ? `<div class="flex justify-end mb-4"><button data-action="add-deliverable" class="px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">${I18N.addDeliverable}</button></div>`
+      : '';
+
+    if (!items.length) {
+      el.innerHTML = `
+        ${addBtn}
+        <div class="text-center py-14">
+          <div class="text-4xl mb-3">📦</div>
+          <div class="font-semibold text-slate-500 text-sm">${I18N.noDeliverables}</div>
+        </div>`;
+      return;
+    }
+
+    el.innerHTML = `
+      ${addBtn}
+      ${progressBarHtml(items)}
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">${items.map(deliverableCardHtml).join('')}</div>`;
+  }
+
+  const STATUS_TRANSITIONS: Record<string, string[]> = {
+    planned:     ['in_progress', 'cancelled'],
+    in_progress: ['completed', 'planned'],
+    completed:   ['in_progress'],
+    cancelled:   ['planned'],
+  };
+  const MOVE_LABELS: Record<string, string> = {
+    in_progress: I18N.moveToInProgress || 'Start',
+    completed: I18N.moveToCompleted || 'Complete',
+    planned: I18N.moveToPlanned || 'Replan',
+    cancelled: I18N.moveToCancelled || 'Cancel',
+  };
+  const MOVE_STYLES: Record<string, string> = {
+    in_progress: 'bg-blue-50 text-blue-700 hover:bg-blue-100',
+    completed: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
+    planned: 'bg-slate-50 text-slate-600 hover:bg-slate-100',
+    cancelled: 'bg-red-50 text-red-600 hover:bg-red-100',
+  };
+
+  function deliverableCardHtml(d: any): string {
+    const status = d.status || 'planned';
+    const sc = STATUS_COLORS[status] || STATUS_COLORS.planned;
+    const statusLabel = STATUS_LABELS[status] || status;
+
+    const assignee = d.assigned_member_id && membersMap.has(d.assigned_member_id)
+      ? escapeHtml(membersMap.get(d.assigned_member_id)?.name || '')
+      : `<span class="text-slate-400">${I18N.unassigned}</span>`;
+
+    const dueDateStr = d.due_date
+      ? new Date(d.due_date + 'T00:00:00').toLocaleDateString(I18N.dateLocale || 'pt-BR', { day: '2-digit', month: 'short' })
+      : I18N.noDueDate;
+
+    let actionsHtml = '';
+    if (canEdit) {
+      const transitions = STATUS_TRANSITIONS[status] || [];
+      const toggleBtns = transitions.map(s =>
+        `<button data-action="status-toggle" data-deliverable-id="${d.id}" data-new-status="${s}" class="px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer border-0 transition-all ${MOVE_STYLES[s] || ''}">${MOVE_LABELS[s] || s}</button>`
+      ).join('');
+      actionsHtml = `
+        <div class="flex items-center gap-1.5 flex-wrap mt-2 pt-2 border-t border-slate-100">
+          <button data-action="edit-deliverable" data-deliverable-id="${d.id}" class="px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer border-0 bg-purple/10 text-purple hover:bg-purple/20 transition-all">${I18N.editDeliverable || 'Edit'}</button>
+          ${toggleBtns}
+        </div>`;
+    }
+
+    return `
+      <div class="bg-white rounded-2xl border border-slate-100 p-5 flex flex-col hover:border-slate-300 hover:shadow-sm transition-all">
+        <div class="flex items-center justify-between gap-2 mb-2">
+          <span class="text-[11px] font-bold uppercase tracking-wide text-slate-400">${I18N.dueDate}: ${escapeHtml(dueDateStr)}</span>
+          <span class="${sc.bg} ${sc.text} px-2.5 py-0.5 rounded-full text-[11px] font-bold">${escapeHtml(statusLabel)}</span>
+        </div>
+        <h3 class="text-[15px] font-bold text-navy leading-snug mb-1">${escapeHtml(d.title)}</h3>
+        ${d.description ? `<p class="text-[12.5px] text-slate-500 leading-relaxed mb-2">${escapeHtml(d.description.length > 140 ? d.description.slice(0, 137) + '…' : d.description)}</p>` : ''}
+        <div class="mt-auto pt-3 text-[12px] text-slate-400">
+          <span class="font-semibold">${I18N.assignee}:</span> ${assignee}
+        </div>
+        ${actionsHtml}
+      </div>`;
+  }
+
+  // ── Resources tab ──
+  function renderResources(items: any[]) {
+    const el = document.getElementById('panel-resources');
+    if (!el) return;
+
+    if (!items.length) {
+      el.innerHTML = `
+        <div class="text-center py-14">
+          <div class="text-4xl mb-3">📚</div>
+          <div class="font-semibold text-slate-500 text-sm">${I18N.noResources}</div>
+        </div>`;
+      return;
+    }
+
+    el.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">${items.map(resourceCardHtml).join('')}</div>`;
+  }
+
+  function resourceCardHtml(r: any): string {
+    const icon = TYPE_ICONS[r.asset_type] || '📎';
+    const desc = r.description
+      ? escapeHtml(r.description.length > 120 ? r.description.slice(0, 117) + '…' : r.description)
+      : '';
+    const link = r.url
+      ? `<a href="${escapeHtml(r.url)}" target="_blank" rel="noopener"
+            class="inline-flex items-center gap-1 text-teal text-[13px] font-semibold no-underline hover:underline mt-auto pt-3">${I18N.openLink}</a>`
+      : '';
+    return `
+      <div class="bg-white rounded-2xl border border-slate-100 p-5 flex flex-col hover:border-slate-300 hover:shadow-sm transition-all">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xl leading-none">${icon}</span>
+          <span class="text-[11px] font-bold uppercase tracking-wide text-slate-400">${escapeHtml(r.asset_type)}</span>
+        </div>
+        <h3 class="text-[15px] font-bold text-navy leading-snug mb-1">${escapeHtml(r.title)}</h3>
+        ${desc ? `<p class="text-[12.5px] text-slate-500 leading-relaxed mb-0">${desc}</p>` : ''}
+        ${link}
+      </div>`;
+  }
+
+  // ── Modal helpers ──
+  function openDeliverableModal(deliverable?: any) {
+    const modal = document.getElementById('deliverable-modal');
+    if (!modal) return;
+
+    const titleEl = document.getElementById('deliverable-modal-title') as HTMLElement;
+    const idInput = document.getElementById('dlv-id') as HTMLInputElement;
+    const titleInput = document.getElementById('dlv-title') as HTMLInputElement;
+    const descInput = document.getElementById('dlv-description') as HTMLTextAreaElement;
+    const statusSelect = document.getElementById('dlv-status') as HTMLSelectElement;
+    const dueDateInput = document.getElementById('dlv-due-date') as HTMLInputElement;
+    const assigneeSelect = document.getElementById('dlv-assignee') as HTMLSelectElement;
+    const artifactSelect = document.getElementById('dlv-artifact') as HTMLSelectElement;
+
+    // Labels
+    titleEl.textContent = deliverable ? I18N.modalEditTitle : I18N.modalAddTitle;
+    (document.getElementById('lbl-dlv-title') as HTMLElement).textContent = I18N.modalLabelTitle;
+    (document.getElementById('lbl-dlv-description') as HTMLElement).textContent = I18N.modalLabelDescription;
+    (document.getElementById('lbl-dlv-status') as HTMLElement).textContent = I18N.modalLabelStatus;
+    (document.getElementById('lbl-dlv-due-date') as HTMLElement).textContent = I18N.modalLabelDueDate;
+    (document.getElementById('lbl-dlv-assignee') as HTMLElement).textContent = I18N.modalLabelAssignee;
+    (document.getElementById('lbl-dlv-artifact') as HTMLElement).textContent = I18N.modalLabelArtifact;
+    (document.getElementById('btn-dlv-cancel') as HTMLElement).textContent = I18N.modalCancel;
+    (document.getElementById('btn-dlv-save') as HTMLElement).textContent = I18N.modalSave;
+
+    // Status dropdown
+    statusSelect.innerHTML = [
+      { v: 'planned', l: I18N.statusPlanned },
+      { v: 'in_progress', l: I18N.statusInProgress },
+      { v: 'completed', l: I18N.statusCompleted },
+      { v: 'cancelled', l: I18N.statusCancelled },
+    ].map(o => `<option value="${o.v}">${escapeHtml(o.l)}</option>`).join('');
+
+    // Assignee dropdown
+    assigneeSelect.innerHTML = `<option value="">${escapeHtml(I18N.modalSelectMember)}</option>` +
+      Array.from(membersMap.values())
+        .sort((a: any, b: any) => (a.name || '').localeCompare(b.name || ''))
+        .map((m: any) => `<option value="${m.id}">${escapeHtml(m.name)}</option>`)
+        .join('');
+
+    // Artifact dropdown
+    artifactSelect.innerHTML = `<option value="">${escapeHtml(I18N.modalSelectArtifact)}</option>` +
+      publishedArtifacts
+        .map((a: any) => `<option value="${a.id}">${escapeHtml(a.title)}</option>`)
+        .join('');
+
+    // Fill values
+    idInput.value = deliverable?.id || '';
+    titleInput.value = deliverable?.title || '';
+    descInput.value = deliverable?.description || '';
+    statusSelect.value = deliverable?.status || 'planned';
+    dueDateInput.value = deliverable?.due_date || '';
+    assigneeSelect.value = deliverable?.assigned_member_id || '';
+    artifactSelect.value = deliverable?.artifact_id || '';
+
+    modal.classList.remove('hidden');
+  }
+
+  function closeDeliverableModal() {
+    document.getElementById('deliverable-modal')?.classList.add('hidden');
+  }
+
+  async function saveDeliverable() {
+    const idInput = document.getElementById('dlv-id') as HTMLInputElement;
+    const titleInput = document.getElementById('dlv-title') as HTMLInputElement;
+    const descInput = document.getElementById('dlv-description') as HTMLTextAreaElement;
+    const statusSelect = document.getElementById('dlv-status') as HTMLSelectElement;
+    const dueDateInput = document.getElementById('dlv-due-date') as HTMLInputElement;
+    const assigneeSelect = document.getElementById('dlv-assignee') as HTMLSelectElement;
+    const artifactSelect = document.getElementById('dlv-artifact') as HTMLSelectElement;
+
+    const title = titleInput.value.trim();
+    if (!title) {
+      (window as any).toast?.(I18N.modalTitleRequired, 'error');
+      return;
+    }
+
+    const params: any = {
+      p_tribe_id: TRIBE_ID,
+      p_cycle_code: 'cycle_3',
+      p_title: title,
+      p_description: descInput.value.trim() || null,
+      p_status: statusSelect.value,
+      p_assigned_member_id: assigneeSelect.value || null,
+      p_artifact_id: artifactSelect.value || null,
+      p_due_date: dueDateInput.value || null,
+    };
+
+    if (idInput.value) params.p_id = idInput.value;
+
+    const { error } = await sb.rpc('upsert_tribe_deliverable', params);
+    if (error) {
+      console.error('upsert_tribe_deliverable error:', error);
+      (window as any).toast?.(I18N.msgSaveError, 'error');
+      return;
+    }
+
+    (window as any).toast?.(I18N.msgSaved, 'success');
+    closeDeliverableModal();
+    await reloadDeliverables();
+  }
+
+  async function toggleDeliverableStatus(deliverableId: string, newStatus: string) {
+    const d = allDeliverables.find((x: any) => x.id === deliverableId);
+    if (!d) return;
+
+    const { error } = await sb.rpc('upsert_tribe_deliverable', {
+      p_id: deliverableId,
+      p_tribe_id: TRIBE_ID,
+      p_cycle_code: d.cycle_code || 'cycle_3',
+      p_title: d.title,
+      p_description: d.description,
+      p_status: newStatus,
+      p_assigned_member_id: d.assigned_member_id,
+      p_artifact_id: d.artifact_id,
+      p_due_date: d.due_date,
+    });
+
+    if (error) {
+      console.error('status toggle error:', error);
+      (window as any).toast?.(I18N.msgStatusError, 'error');
+      return;
+    }
+
+    (window as any).toast?.(I18N.msgStatusUpdated, 'success');
+    await reloadDeliverables();
+  }
+
+  async function reloadDeliverables() {
+    const { data } = await sb.rpc('list_tribe_deliverables', { p_tribe_id: TRIBE_ID, p_cycle_code: 'cycle_3' });
+    renderDeliverables(Array.isArray(data) ? data : []);
+  }
+
+  // ── Event delegation ──
+  if (!(window as any).__tribeDelegationBound) {
+    (window as any).__tribeDelegationBound = true;
+    document.addEventListener('click', (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
+      if (!target) return;
+      const action = target.dataset.action;
+
+      if (action === 'switch-tab') {
+        const tab = target.dataset.tab;
+        if (tab) switchTab(tab);
+      }
+
+      if (action === 'add-deliverable') {
+        openDeliverableModal();
+      }
+
+      if (action === 'edit-deliverable') {
+        const dId = target.dataset.deliverableId;
+        const d = allDeliverables.find((x: any) => x.id === dId);
+        if (d) openDeliverableModal(d);
+      }
+
+      if (action === 'status-toggle') {
+        const dId = target.dataset.deliverableId;
+        const newStatus = target.dataset.newStatus;
+        if (dId && newStatus) toggleDeliverableStatus(dId, newStatus);
+      }
+
+      if (action === 'close-deliverable-modal') {
+        closeDeliverableModal();
+      }
+    });
+
+    document.addEventListener('submit', (e: SubmitEvent) => {
+      if ((e.target as HTMLElement)?.id === 'deliverable-form') {
+        e.preventDefault();
+        saveDeliverable();
+      }
+    });
+
+    document.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeDeliverableModal();
+    });
+  }
+
+  // ── Boot ──
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    try {
+      // Resolve current user for edit permissions
+      const m = (window as any).navGetMember?.();
+      if (m) {
+        currentMember = m;
+      } else {
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) {
+          const { data } = await sb.rpc('get_member_by_auth');
+          if (data) currentMember = data;
+        }
+      }
+
+      // Also listen for async member resolution
+      window.addEventListener('nav:member', ((evt: Event) => {
+        const e = evt as CustomEvent;
+        currentMember = e.detail;
+        checkEditPermission();
+      }) as EventListener);
+
+      checkEditPermission();
+
+      // Load all tribe data in parallel
+      const [tribeRes, slotsRes, membersRes, selectionsRes, delivRes, resourcesRes, artifactsRes] = await Promise.all([
+        sb.from('tribes').select('*').eq('id', TRIBE_ID).single(),
+        sb.from('tribe_meeting_slots').select('day_of_week, time_start, time_end').eq('tribe_id', TRIBE_ID).eq('is_active', true).order('day_of_week'),
+        sb.from('members').select('id, name, email, photo_url, chapter, operational_role, designations, tribe_id').eq('tribe_id', TRIBE_ID),
+        sb.from('tribe_selections').select('member_id').eq('tribe_id', TRIBE_ID),
+        sb.rpc('list_tribe_deliverables', { p_tribe_id: TRIBE_ID, p_cycle_code: 'cycle_3' }),
+        sb.from('hub_resources').select('*').eq('tribe_id', TRIBE_ID).eq('is_active', true).order('created_at', { ascending: false }),
+        sb.from('artifacts').select('id, title').eq('status', 'published').order('title'),
+      ]);
+
+      publishedArtifacts = artifactsRes.data || [];
+
+      // Find tribe leader
+      const allDirectMembers: any[] = membersRes.data || [];
+      const leader = allDirectMembers.find((m: any) => m.operational_role === 'tribe_leader') || null;
+
+      // Render header
+      renderHeader(tribeRes.data, leader, slotsRes.data || []);
+
+      // Merge members: direct (tribe_id set) + selections
+      const directIds = new Set(allDirectMembers.map((m: any) => m.id));
+      const selectionMemberIds = (selectionsRes.data || [])
+        .map((s: any) => s.member_id)
+        .filter((id: string) => !directIds.has(id));
+
+      let selectionMembers: any[] = [];
+      if (selectionMemberIds.length > 0) {
+        const { data } = await sb.from('members')
+          .select('id, name, email, photo_url, chapter, operational_role, designations, tribe_id')
+          .in('id', selectionMemberIds);
+        selectionMembers = data || [];
+      }
+
+      const allMembers = [...allDirectMembers, ...selectionMembers];
+      allMembers.sort((a: any, b: any) => {
+        if (a.operational_role === 'tribe_leader') return -1;
+        if (b.operational_role === 'tribe_leader') return 1;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+
+      // Build members map for deliverable assignee lookup
+      allMembers.forEach((m: any) => membersMap.set(m.id, m));
+
+      renderMembers(allMembers);
+
+      // Deliverables
+      const deliverables = Array.isArray(delivRes.data) ? delivRes.data : [];
+      renderDeliverables(deliverables);
+
+      // Resources
+      renderResources(resourcesRes.data || []);
+
+    } catch (e: any) {
+      console.error('Tribe dashboard error:', e);
+      (window as any).toast?.(I18N.error, 'error');
+      const header = document.getElementById('tribe-header');
+      if (header) {
+        header.innerHTML = `
+          <div class="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+            <div class="text-2xl mb-2">⚠️</div>
+            <p class="font-semibold text-red-700 text-sm">${I18N.error}</p>
+          </div>`;
+      }
+    }
+  }
+
+  function checkEditPermission() {
+    if (!currentMember) return;
+    canEdit = currentMember.is_superadmin === true ||
+      (currentMember.operational_role === 'tribe_leader' && currentMember.tribe_id === TRIBE_ID);
+  }
+
+  boot();
+</script>
