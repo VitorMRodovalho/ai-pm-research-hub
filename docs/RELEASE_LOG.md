@@ -1,5 +1,63 @@
 # Release Log
 
+## 2026-03-09 — Tribe Kickoff Readiness (Major Release)
+
+### Scope
+Complete platform preparation for tribe operations starting 2026-03-10.
+
+### Features delivered
+- **Tribe Dashboard** `/tribe/[id]` — per-tribe view with members, deliverables, resources tabs (PT/EN/ES)
+- **Deliverables Tracker** — CRUD modal, status toggle, progress bar in tribe dashboard
+- **Researcher Weekly View** — "My Week" summary cards on profile (next meeting, trail progress, pending deliverables, weekly XP)
+- **Onboarding Page** `/onboarding` — 8-step checklist for new researchers (PT/EN/ES)
+- **Knowledge Hub** `/workspace` — public resource browser from hub_resources DB
+- **KPI Section** — live data from kpi_summary() RPC (replaces static values)
+- **ResourcesSection** — loads from hub_resources with static fallback
+- **Guest UX** — meaningful messages for authenticated non-members across all pages
+- **Open-source** — CONTRIBUTING.md, issue templates (bug_report, feature_request)
+- **Public artifacts catalog** — accessible to unauthenticated visitors
+
+### Bug fixes
+- **TribesSection SSR crash** — variable `t` shadowed i18n function in .map() template; renamed to `tr`; all 12 sections now render
+- **Login detection** — `INITIAL_SESSION` event handled in Nav.astro onAuthStateChange
+- **Deadline** — formatted from DB `home_schedule.selection_deadline_at` instead of hardcoded i18n string
+- **select_tribe** — server-side deadline enforcement, capacity check, tribe_leader block
+- **admin_update_member** — PostgREST ambiguity resolved (5-param overload dropped)
+- **artifacts** — `author_id` → `member_id` (column didn't exist)
+- **attendance i18n** — literal `{t(...)}` strings replaced with define:vars injection
+
+### DB migrations (15 total, 8 new this session)
+- `restore_legacy_role_columns` — role/roles + trigger sync
+- `admin_update_member_v2` + `_full` + `_ambiguity_fix`
+- `cycles_table` — cycles config with seed + RPCs
+- `kpi_summary_rpc` — live KPI aggregation
+- `select_tribe_deadline_check` — server-side enforcement + deadline extension to 2026-03-14
+- `tribe_meeting_slots_complete` — slots for tribes 3,4,6
+- `tribe_deliverables` — per-tribe deliverable tracking + RLS
+- `deliverable_crud_rpcs` — upsert RPC with auth
+- `announcements_tribe_filter` — tribe_id column for targeted announcements
+
+### Code quality
+- 42 inline onclick handlers removed (event delegation across all pages)
+- ~400+ i18n keys added (PT/EN/ES) — gamification, artifacts, profile, attendance, all sections
+- Error handling with try/catch + user feedback on 6 pages
+- Dynamic tribe iteration (no hardcoded `for 1..8` loops)
+- Zero raw PT strings remaining in client scripts
+
+### New routes
+- `/onboarding` (+en, +es)
+- `/workspace` (+en, +es)
+- `/tribe/[id]` (+en, +es)
+
+### Docs
+- `docs/project-governance/PROJECT_ON_TRACK.md`
+- `docs/wireframes/WIREFRAME_SPECS.md`
+- `AGENTS.md` with agent team structure
+- `CONTRIBUTING.md` with dev setup and PR workflow
+- `.github/ISSUE_TEMPLATE/` bug_report + feature_request
+
+---
+
 ## 2026-03-08 — Fix critical: restore role/roles columns + admin_update_member v2
 
 ### Problema
