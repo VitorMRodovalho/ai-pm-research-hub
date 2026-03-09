@@ -81,6 +81,8 @@ const PROFILE_I18N = {
   phonePlaceholder: t('profile.phonePlaceholder', lang),
   linkedinPlaceholder: t('profile.linkedinPlaceholder', lang),
   credlyPlaceholder: t('profile.credlyPlaceholder', lang),
+  shareWhatsApp: t('profile.shareWhatsApp', lang),
+  shareWhatsAppHint: t('profile.shareWhatsAppHint', lang),
   invalidCredlyUrl: t('profile.invalidCredlyUrl', lang),
   dataSaved: t('profile.dataSaved', lang),
   invalidEmail: t('profile.invalidEmail', lang),
@@ -852,11 +854,13 @@ const PROFILE_I18N = {
       const credlyField = document.getElementById('self-credly') as HTMLInputElement;
       if (credlyField) credlyField.value = credlyNormalized;
     }
+    const shareWaEl = document.getElementById('self-share-wa') as HTMLInputElement | null;
     const { data } = await sb.rpc('member_self_update', {
       p_pmi_id: (document.getElementById('self-pmi') as HTMLInputElement)?.value.trim() || null,
       p_phone: (document.getElementById('self-phone') as HTMLInputElement)?.value.trim() || null,
       p_linkedin_url: (document.getElementById('self-li') as HTMLInputElement)?.value.trim() || null,
       p_credly_url: credlyNormalized,
+      p_share_whatsapp: shareWaEl?.checked ?? false,
     });
     if (data?.error) (window as any).toast?.(data.error, 'error');
     else {

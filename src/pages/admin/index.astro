@@ -43,6 +43,7 @@ const ADMIN_I18N = {
   knwBtnAdd: t('admin.knowledge.btnAdd', lang),
   knwBtnSave: t('admin.knowledge.btnSave', lang),
   knwCancel: t('common.cancel', lang),
+  invalidWhatsAppUrl: t('admin.invalidWhatsAppUrl', lang),
   selectDates: t('admin.msg.selectDates', lang),
   noExportData: t('admin.msg.noExportData', lang),
   csvDownloaded: t('admin.msg.csvDownloaded', lang),
@@ -2357,9 +2358,14 @@ const ADMIN_I18N = {
 
   (window as any).saveTribeSettings = async (tribeId: number) => {
     if (!ensureLeaderAction()) return;
+    const waVal = (document.getElementById('tribe-wa') as HTMLInputElement).value.trim();
+    if (waVal && !waVal.startsWith('https://chat.whatsapp.com/')) {
+      toast(ADMIN_I18N.invalidWhatsAppUrl, 'error');
+      return;
+    }
     const { error } = await sb.from('tribes').update({
       meeting_link: (document.getElementById('tribe-meeting-link') as HTMLInputElement).value.trim() || null,
-      whatsapp_url: (document.getElementById('tribe-wa') as HTMLInputElement).value.trim() || null,
+      whatsapp_url: waVal || null,
       drive_url: (document.getElementById('tribe-drive') as HTMLInputElement).value.trim() || null,
       miro_url: (document.getElementById('tribe-miro') as HTMLInputElement).value.trim() || null,
       notes: (document.getElementById('tribe-notes') as HTMLInputElement).value.trim() || null,

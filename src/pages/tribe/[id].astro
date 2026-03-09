@@ -60,6 +60,8 @@ const TRIBE_I18N = {
   moveToCompleted: t('tribe.moveTo.completed', lang),
   moveToPlanned: t('tribe.moveTo.planned', lang),
   moveToCancelled: t('tribe.moveTo.cancelled', lang),
+  joinWhatsApp: t('tribe.joinWhatsApp', lang),
+  chatWhatsApp: t('tribe.chatWhatsApp', lang),
   commsHub: {
     title: t('tribe.commsHub.title', lang),
     subtitle: t('tribe.commsHub.subtitle', lang),
@@ -209,6 +211,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
   let currentMember: any = null;
   let membersMap: Map<string, any> = new Map();
   let canEdit = false;
+  let tribeData: any = null;
   let allDeliverables: any[] = [];
   let publishedArtifacts: any[] = [];
   let commsHubShown = false;
@@ -350,7 +353,27 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
             </div>
           </div>
         </div>
-      </div>`;
+      </div>
+      <div id="tribe-wa-cta" class="hidden mt-3"></div>`;
+
+    // WhatsApp CTA: show only if tribe has whatsapp_url AND user belongs to tribe (or is admin)
+    if (_tribe?.whatsapp_url && currentMember) {
+      const isTribeMember = currentMember.tribe_id === TRIBE_ID
+        || membersMap.has(currentMember.id);
+      const isAdmin = isHighManagement(currentMember);
+      if (isTribeMember || isAdmin) {
+        const ctaEl = document.getElementById('tribe-wa-cta');
+        if (ctaEl) {
+          ctaEl.classList.remove('hidden');
+          ctaEl.innerHTML = `
+            <a href="${escapeHtml(_tribe.whatsapp_url)}" target="_blank" rel="noopener noreferrer"
+               class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#25D366] text-white rounded-xl text-[14px] font-bold no-underline hover:bg-[#1FAD53] transition-all shadow-sm">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              ${I18N.joinWhatsApp || 'Entrar no Grupo do WhatsApp'}
+            </a>`;
+        }
+      }
+    }
   }
 
   // ── Members tab ──
@@ -395,8 +418,26 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
           <div class="font-bold text-[15px] text-navy leading-tight mb-1">${escapeHtml(m.name || '—')}</div>
           <div class="text-[12px] text-slate-400 mb-1.5">${escapeHtml(m.chapter || '')}</div>
           <div class="flex flex-wrap gap-1">${roleBadge} ${desigBadges}</div>
+          ${waButton(m)}
         </div>
       </div>`;
+  }
+
+  function waButton(m: any): string {
+    if (!m.share_whatsapp) return '';
+    if (!currentMember) return '';
+    const isSelf = currentMember.id === m.id;
+    if (isSelf) return '';
+    const isPeer = currentMember.tribe_id === TRIBE_ID
+      || membersMap.has(currentMember.id)
+      || isHighManagement(currentMember);
+    if (!isPeer) return '';
+    return `<a href="#" data-action="open-wa" data-member-id="${m.id}"
+      class="inline-flex items-center gap-1 mt-1.5 px-2 py-1 rounded-lg bg-[#25D366]/10 text-[#25D366] text-[.65rem] font-bold no-underline hover:bg-[#25D366]/20 transition-all"
+      title="${I18N.chatWhatsApp || 'WhatsApp'}">
+      <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      ${I18N.chatWhatsApp || 'WhatsApp'}
+    </a>`;
   }
 
   // ── Progress bar ──
@@ -716,6 +757,20 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
       if (action === 'close-deliverable-modal') {
         closeDeliverableModal();
       }
+
+      if (action === 'open-wa') {
+        e.preventDefault();
+        const memberId = target.dataset.memberId;
+        if (!memberId || !sb) return;
+        (async () => {
+          const { data } = await sb.rpc('resolve_whatsapp_link', { p_member_id: memberId });
+          if (data?.success && data?.url) {
+            window.open(data.url, '_blank', 'noopener');
+          } else {
+            (window as any).toast?.(data?.error || 'Error', 'error');
+          }
+        })();
+      }
     });
 
     document.addEventListener('submit', (e: SubmitEvent) => {
@@ -763,7 +818,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
       const [tribeRes, slotsRes, membersRes, selectionsRes, delivRes, resourcesRes, artifactsRes] = await Promise.all([
         sb.from('tribes').select('*').eq('id', TRIBE_ID).single(),
         sb.from('tribe_meeting_slots').select('day_of_week, time_start, time_end').eq('tribe_id', TRIBE_ID).eq('is_active', true).order('day_of_week'),
-        sb.from('public_members').select('id, name, photo_url, chapter, operational_role, designations, tribe_id').eq('tribe_id', TRIBE_ID),
+        sb.from('public_members').select('id, name, photo_url, chapter, operational_role, designations, tribe_id, share_whatsapp').eq('tribe_id', TRIBE_ID),
         sb.from('tribe_selections').select('member_id').eq('tribe_id', TRIBE_ID),
         sb.rpc('list_tribe_deliverables', { p_tribe_id: TRIBE_ID, p_cycle_code: 'cycle_3' }),
         sb.from('hub_resources').select('*').eq('tribe_id', TRIBE_ID).eq('is_active', true).order('created_at', { ascending: false }),
@@ -771,6 +826,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
       ]);
 
       publishedArtifacts = artifactsRes.data || [];
+
+      tribeData = tribeRes.data;
 
       // Find tribe leader
       const allDirectMembers: any[] = membersRes.data || [];
@@ -788,7 +845,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
       let selectionMembers: any[] = [];
       if (selectionMemberIds.length > 0) {
         const { data } = await sb.from('public_members')
-          .select('id, name, photo_url, chapter, operational_role, designations, tribe_id')
+          .select('id, name, photo_url, chapter, operational_role, designations, tribe_id, share_whatsapp')
           .in('id', selectionMemberIds);
         selectionMembers = data || [];
       }
