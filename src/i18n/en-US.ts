@@ -667,6 +667,10 @@ const enUS: Record<string, string> = {
   'artifacts.msg.updated': 'Artifact updated ✅',
   'artifacts.msg.submitted': 'Artifact submitted ✅',
   'artifacts.msg.reviewSaved': 'Review saved ✅',
+  'artifacts.search': 'Search by title, author or tag...',
+  'artifacts.filterAll': 'All',
+  'artifacts.tagAll': 'All Tags',
+  'artifacts.results': '{n} artifact(s)',
   'artifacts.dateLocale': 'en-US',
 
   // ── Admin page ──

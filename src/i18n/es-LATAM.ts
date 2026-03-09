@@ -667,6 +667,10 @@ const esLATAM: Record<string, string> = {
   'artifacts.msg.updated': 'Artefacto actualizado ✅',
   'artifacts.msg.submitted': 'Artefacto enviado ✅',
   'artifacts.msg.reviewSaved': 'Revisión guardada ✅',
+  'artifacts.search': 'Buscar por titulo, autor o tag...',
+  'artifacts.filterAll': 'Todos',
+  'artifacts.tagAll': 'Todas las Tags',
+  'artifacts.results': '{n} artefacto(s)',
   'artifacts.dateLocale': 'es-419',
 
   // ── Admin page ──

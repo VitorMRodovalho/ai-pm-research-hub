@@ -667,6 +667,10 @@ const ptBR: Record<string, string> = {
   'artifacts.msg.updated': 'Artefato atualizado ✅',
   'artifacts.msg.submitted': 'Artefato submetido ✅',
   'artifacts.msg.reviewSaved': 'Revisão salva ✅',
+  'artifacts.search': 'Buscar por titulo, autor ou tag...',
+  'artifacts.filterAll': 'Todos',
+  'artifacts.tagAll': 'Todas as Tags',
+  'artifacts.results': '{n} artefato(s)',
   'artifacts.dateLocale': 'pt-BR',
 
   // ── Admin page ──

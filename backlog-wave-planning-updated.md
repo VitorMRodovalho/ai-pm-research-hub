@@ -217,6 +217,11 @@ Use Looker Studio for YouTube, LinkedIn, and Instagram funnel style KPIs through
 2. Consolidar query de auditoria recorrente para duplicatas e pontos legados Credly.  
 3. Registrar evidências no `docs/RELEASE_LOG.md` para cada correção com validação pós deploy.  
 
+### Completed Sprint 2+3 -- 2026-03-10 (Knowledge Hub + Leader Tools)
+1. S-KNW3: Artifact tag filtering with taxonomy_tags, type/tribe/search - DONE
+2. Deliverables progress bar + CRUD + RLS already operational - VALIDATED
+3. My Week 4-card dashboard already operational - VALIDATED
+
 ### Completed Sprint 1 -- 2026-03-10 (Wave 3: Trilha e Gamificacao)
 1. S-UX1: Trail per-course status view (8 cursos PMI) - DONE
 2. S-RM3: Cycle-aware leaderboard VIEW (cycle_points vs total_points) - DONE

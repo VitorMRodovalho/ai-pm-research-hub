@@ -1,5 +1,43 @@
 # Release Log
 
+## 2026-03-10 — Sprint 2+3: Knowledge Hub Tags + Leader Tools Validation
+
+### Scope
+Artifact tag filtering (Sprint 2 completion) and validation of existing
+deliverable/My Week features (Sprint 3).
+
+### S-KNW3: Artifact Tag Filtering (/artifacts.astro)
+- **Before**: No filtering on the artifacts catalog. No tag display. Type filter
+  buttons did not exist.
+- **After**: Full filtering system with:
+  - Text search (debounced 250ms) across title, author name, and tags
+  - Type filter chips (article, ebook, framework, presentation, video, toolkit, other)
+  - Tribe dropdown filter
+  - Taxonomy tag chips (loaded from `list_taxonomy_tags` RPC, color-coded by category)
+  - Results counter
+  - Tags displayed as colored pills on each artifact card
+- **Files**: `src/pages/artifacts.astro`, `src/i18n/pt-BR.ts`, `en-US.ts`, `es-LATAM.ts`
+
+### Sprint 3 Validation: Deliverables Progress Bar
+- **Status**: Already implemented in `tribe/[id].astro` (`progressBarHtml()`)
+- Green bar (completed %) + blue bar (in_progress %) with counters
+- CRUD via `upsert_tribe_deliverable` RPC with proper RLS (superadmin or tribe_leader)
+- Status transitions: planned -> in_progress -> completed (with cancel/revert)
+
+### Sprint 3 Validation: My Week (profile.astro)
+- **Status**: Already implemented with 4 cards:
+  1. Next Meeting (from `tribe_meeting_slots` + `tribes.meeting_link`)
+  2. Trail Progress (X/8 courses from `course_progress`)
+  3. Pending Deliverables (from `list_tribe_deliverables` filtered by assignee)
+  4. Weekly XP (from `gamification_points` last 7 days)
+- Full i18n support in PT/EN/ES
+
+### Gate validation
+- `npx astro build` passed with 0 errors.
+- No new SQL migrations required (tags column already exists on artifacts).
+
+---
+
 ## 2026-03-10 — Sprint 1: Trilha de Inteligencia e Gamificacao (Wave 3)
 
 ### Scope

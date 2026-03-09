@@ -47,6 +47,10 @@ const ARTIFACTS_I18N = {
   msgSubmitted: t('artifacts.msg.submitted', lang),
   msgReviewSaved: t('artifacts.msg.reviewSaved', lang),
   dateLocale: t('artifacts.dateLocale', lang),
+  search: t('artifacts.search', lang),
+  filterAll: t('artifacts.filterAll', lang),
+  tagAll: t('artifacts.tagAll', lang),
+  results: t('artifacts.results', lang),
 };
 ---
 <BaseLayout title={t('artifacts.title', lang)} activePage="artifacts">
@@ -79,6 +83,22 @@ const ARTIFACTS_I18N = {
               id="tab-my" data-tab="mine" data-action="switch-tab">{t('artifacts.tab.mine', lang)}</button>
       <button class="art-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
               id="tab-review" data-tab="review" data-action="switch-tab">{t('artifacts.tab.review', lang)}</button>
+    </div>
+
+    <!-- Search + Filters (catalog only) -->
+    <div id="catalog-filters" class="space-y-3 mb-4">
+      <input id="art-search" type="text"
+             class="w-full px-4 py-2.5 rounded-xl border-[1.5px] border-slate-200 text-sm bg-white focus:outline-none focus:border-navy transition-colors"
+             placeholder={t('artifacts.search', lang)} />
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="flex gap-1.5 flex-wrap" id="art-type-filters"></div>
+        <select id="art-tribe-filter"
+                class="ml-auto px-3 py-1.5 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy cursor-pointer">
+          <option value="">{t('workspace.tribeAll', lang)}</option>
+        </select>
+      </div>
+      <div id="art-tag-bar" class="flex flex-wrap gap-1.5"></div>
+      <div id="art-results" class="text-[.7rem] text-slate-400"></div>
     </div>
 
     <!-- Catalog tab -->
@@ -207,6 +227,12 @@ const ARTIFACTS_I18N = {
 
   let sb: any = null;
   let MEMBER: any = null;
+  let allTags: any[] = [];
+  let catalogData: any[] = [];
+  let activeType = '';
+  let activeTribe = '';
+  let activeTag = '';
+  let searchQuery = '';
   let CAN_MANAGE = false;
 
   const TYPE_LABELS: Record<string, string> = I18N.typeLabels || {
@@ -289,20 +315,23 @@ const ARTIFACTS_I18N = {
     const el = document.getElementById('catalog-list')!;
     el.innerHTML = loadingRows(3);
     try {
-      const { data } = await sb.from('artifacts')
-        .select('*, members!artifacts_member_id_fkey(name, photo_url)')
-        .eq('status', 'published')
-        .order('published_at', { ascending: false });
-      if (!data?.length) {
-        el.innerHTML = MEMBER
-          ? emptyStateHtml('📚', I18N.emptyCatalogTitle, I18N.emptyCatalogMsgAuth, I18N.emptyCatalogCtaAuth, 'open-submit-modal')
-          : emptyStateHtml('📚', I18N.emptyCatalogTitle, I18N.emptyCatalogMsgAnon, I18N.emptyCatalogCtaAnon, 'open-auth');
-        return;
-      }
-      el.innerHTML = data.map((a: any) => artifactCard(a, false)).join('');
-    } catch (e) {
+      const [artResp, tagsResp] = await Promise.all([
+        sb.from('artifacts')
+          .select('*, members!artifacts_member_id_fkey(name, photo_url)')
+          .eq('status', 'published')
+          .order('published_at', { ascending: false }),
+        allTags.length ? Promise.resolve({ data: allTags }) : sb.rpc('list_taxonomy_tags'),
+      ]);
+      catalogData = artResp.data || [];
+      if (!allTags.length && tagsResp.data) allTags = tagsResp.data;
+
+      buildTypeFilters();
+      buildTribeSelect();
+      buildArtifactTagBar();
+      renderCatalogFiltered();
+    } catch (e: any) {
       console.warn('Artifacts: failed to load catalog:', e);
-      el.innerHTML = `<div class="text-center py-8 text-red-500 text-sm">Failed to load catalog. Please try again later.</div>`;
+      el.innerHTML = '<div class="text-center py-8 text-red-500 text-sm">Failed to load catalog.</div>';
       toast('Failed to load artifact catalog.', 'error');
     }
   }
@@ -352,6 +381,95 @@ const ARTIFACTS_I18N = {
 
   const esc = (s: string) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+  const TAG_COLORS: Record<string, string> = {
+    research:   'bg-purple-50 text-purple-700 border-purple-200',
+    education:  'bg-blue-50 text-blue-700 border-blue-200',
+    community:  'bg-green-50 text-green-700 border-green-200',
+    innovation: 'bg-amber-50 text-amber-700 border-amber-200',
+    impact:     'bg-rose-50 text-rose-700 border-rose-200',
+    governance: 'bg-slate-100 text-slate-700 border-slate-200',
+  };
+
+  function tagColor(tagKey: string): string {
+    var tag = allTags.find(function(t: any) { return t.tag_key === tagKey; });
+    return tag ? (TAG_COLORS[tag.category] || TAG_COLORS.governance) : 'bg-slate-50 text-slate-600 border-slate-200';
+  }
+
+  function getFilteredCatalog(): any[] {
+    var filtered = catalogData;
+    if (activeType) filtered = filtered.filter(function(a) { return a.type === activeType; });
+    if (activeTribe) filtered = filtered.filter(function(a) { return String(a.tribe_id) === activeTribe; });
+    if (activeTag) filtered = filtered.filter(function(a) { return (a.tags || []).includes(activeTag); });
+    if (searchQuery) {
+      var q = searchQuery.toLowerCase();
+      filtered = filtered.filter(function(a) {
+        return (a.title || '').toLowerCase().includes(q)
+          || (a.members?.name || '').toLowerCase().includes(q)
+          || (a.tags || []).some(function(t: string) { return t.toLowerCase().includes(q); });
+      });
+    }
+    return filtered;
+  }
+
+  function renderCatalogFiltered() {
+    var el = document.getElementById('catalog-list')!;
+    var filtered = getFilteredCatalog();
+    var resultsEl = document.getElementById('art-results');
+    if (resultsEl) resultsEl.textContent = (I18N.results || '{n} artefato(s)').replace('{n}', String(filtered.length));
+    if (!filtered.length) {
+      el.innerHTML = MEMBER
+        ? emptyStateHtml('&#x1F4DA;', I18N.emptyCatalogTitle, I18N.emptyCatalogMsgAuth, I18N.emptyCatalogCtaAuth, 'open-submit-modal')
+        : emptyStateHtml('&#x1F4DA;', I18N.emptyCatalogTitle, I18N.emptyCatalogMsgAnon, I18N.emptyCatalogCtaAnon, 'open-auth');
+      return;
+    }
+    el.innerHTML = filtered.map(function(a: any) { return artifactCard(a, false); }).join('');
+  }
+
+  function buildArtifactTagBar() {
+    var bar = document.getElementById('art-tag-bar');
+    if (!bar || !allTags.length) return;
+    var usedTags = new Set<string>();
+    catalogData.forEach(function(a) { (a.tags || []).forEach(function(t: string) { usedTags.add(t); }); });
+    if (!usedTags.size) { bar.innerHTML = ''; return; }
+    bar.innerHTML = allTags
+      .filter(function(t: any) { return usedTags.has(t.tag_key); })
+      .map(function(t: any) {
+        var color = TAG_COLORS[t.category] || TAG_COLORS.governance;
+        var activeClass = activeTag === t.tag_key ? ' ring-2 ring-navy ring-offset-1' : '';
+        return '<button class="art-tag-chip px-2 py-1 rounded-lg text-[.65rem] font-semibold border cursor-pointer transition-all '
+          + color + activeClass + '" data-action="art-filter-tag" data-tag="' + esc(t.tag_key) + '">'
+          + esc(t.label_pt || t.tag_key) + '</button>';
+      }).join('');
+  }
+
+  function buildTypeFilters() {
+    var el = document.getElementById('art-type-filters');
+    if (!el) return;
+    var types = ['article', 'ebook', 'framework', 'presentation', 'video', 'toolkit', 'other'];
+    el.innerHTML = '<button class="art-type-btn px-3 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 '
+      + (!activeType ? 'border-navy bg-navy text-white' : 'border-slate-200 bg-white text-slate-500')
+      + ' transition-all" data-action="art-filter-type" data-type="">' + (I18N.filterAll || 'Todos') + '</button>'
+      + types.map(function(t) {
+        var active = activeType === t;
+        return '<button class="art-type-btn px-3 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 '
+          + (active ? 'border-navy bg-navy text-white' : 'border-slate-200 bg-white text-slate-500')
+          + ' transition-all" data-action="art-filter-type" data-type="' + t + '">' + (TYPE_LABELS[t] || t) + '</button>';
+      }).join('');
+  }
+
+  function buildTribeSelect() {
+    var sel = document.getElementById('art-tribe-filter') as HTMLSelectElement;
+    if (!sel) return;
+    var tribeIds = [...new Set(catalogData.map(function(a) { return a.tribe_id; }).filter(Boolean))].sort(function(a: number, b: number) { return a - b; });
+    while (sel.options.length > 1) sel.remove(1);
+    tribeIds.forEach(function(id) {
+      var opt = document.createElement('option');
+      opt.value = String(id);
+      opt.textContent = String(id).padStart(2, '0') + ' — ' + (TRIBE_NAMES[id] || 'Tribo ' + id);
+      sel.appendChild(opt);
+    });
+  }
+
   function artifactCard(a: any, showEdit = false, showReview = false): string {
     (window as any).__artifactsById = (window as any).__artifactsById || {};
     (window as any).__artifactsById[a.id] = a;
@@ -376,6 +494,7 @@ const ARTIFACTS_I18N = {
           </div>
           ${a.description ? `<div class="text-[12px] text-slate-500 mt-1">${a.description}</div>` : ''}
           ${a.review_notes ? `<div class="text-[12px] text-amber-700 bg-amber-50 px-2 py-1 rounded mt-1">💬 ${a.review_notes}</div>` : ''}
+          ${(a.tags || []).length ? '<div class="flex flex-wrap gap-1 mt-1.5">' + (a.tags || []).map(function(t: string) { return '<span class="px-1.5 py-0.5 rounded text-[.6rem] font-semibold border ' + tagColor(t) + '">' + esc(t) + '</span>'; }).join('') + '</div>' : ''}
         </div>
         <div class="flex gap-1.5 flex-shrink-0">
           ${showEdit && a.status === 'draft' ? `<button type="button" class="btn-edit-artifact px-2.5 py-1.5 text-[12px] bg-slate-50 border border-slate-200 rounded-md cursor-pointer font-semibold" data-artifact-id="${esc(a.id)}">✏️</button>` : ''}
@@ -536,6 +655,46 @@ const ARTIFACTS_I18N = {
   }
 
   // ── BOOT ──
+  // ── Filter event wiring ──
+  if (!(window as any).__artifactFiltersBound) {
+    (window as any).__artifactFiltersBound = true;
+    document.addEventListener('click', function(e: MouseEvent) {
+      var target = e.target as HTMLElement;
+      var actionEl = target.closest('[data-action]') as HTMLElement | null;
+      if (!actionEl) return;
+      var action = actionEl.dataset.action;
+      if (action === 'art-filter-type') {
+        activeType = (actionEl as HTMLElement).dataset.type || '';
+        buildTypeFilters();
+        renderCatalogFiltered();
+      }
+      if (action === 'art-filter-tag') {
+        var tag = (actionEl as HTMLElement).dataset.tag || '';
+        activeTag = activeTag === tag ? '' : tag;
+        buildArtifactTagBar();
+        renderCatalogFiltered();
+      }
+    });
+    document.addEventListener('change', function(e: Event) {
+      var target = e.target as HTMLElement;
+      if (target.id === 'art-tribe-filter') {
+        activeTribe = (target as HTMLSelectElement).value;
+        renderCatalogFiltered();
+      }
+    });
+    var artSearchTimer: ReturnType<typeof setTimeout> | null = null;
+    document.addEventListener('input', function(e: Event) {
+      var target = e.target as HTMLElement;
+      if (target.id === 'art-search') {
+        if (artSearchTimer) clearTimeout(artSearchTimer);
+        artSearchTimer = setTimeout(function() {
+          searchQuery = (target as HTMLInputElement).value.trim();
+          renderCatalogFiltered();
+        }, 250);
+      }
+    });
+  }
+
   async function boot() {
     sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(boot, 200); return; }
