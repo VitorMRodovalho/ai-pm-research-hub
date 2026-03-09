@@ -863,12 +863,15 @@ const enUS: Record<string, string> = {
   'common.notFound': 'Not found',
 
   // ── Data: KPI labels ──
-  'data.kpi.chapters': 'Chapters',
+  'data.kpi.chapters': 'PMI Chapters',
+  'data.kpi.activeMembers': 'Active Members',
+  'data.kpi.tribes': 'Active Tribes',
+  'data.kpi.events': 'Events Held',
   'data.kpi.articles': 'Articles',
   'data.kpi.webinars': 'Webinars',
   'data.kpi.pilots': 'AI Pilots',
-  'data.kpi.impact': 'Impact',
-  'data.kpi.cert': 'AI Mini Cert.',
+  'data.kpi.impact': 'Impact Hours',
+  'data.kpi.cert': 'AI Certification',
 
   // ── Data: Quadrant labels ──
   'data.q1.label': 'QUADRANT 1',

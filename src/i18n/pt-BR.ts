@@ -863,12 +863,15 @@ const ptBR: Record<string, string> = {
   'common.notFound': 'Não encontrado',
 
   // ── Data: KPI labels ──
-  'data.kpi.chapters': 'Capítulos',
+  'data.kpi.chapters': 'Capítulos PMI',
+  'data.kpi.activeMembers': 'Membros ativos',
+  'data.kpi.tribes': 'Tribos ativas',
+  'data.kpi.events': 'Eventos realizados',
   'data.kpi.articles': 'Artigos',
   'data.kpi.webinars': 'Webinars',
   'data.kpi.pilots': 'Pilotos IA',
-  'data.kpi.impact': 'Impacto',
-  'data.kpi.cert': 'Mini cert. IA',
+  'data.kpi.impact': 'Horas de impacto',
+  'data.kpi.cert': 'Certificação IA',
 
   // ── Data: Quadrant labels ──
   'data.q1.label': 'QUADRANTE 1',
