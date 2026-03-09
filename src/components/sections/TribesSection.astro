@@ -299,7 +299,13 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
       window.toast?.(TRIBES_MSG.leadersAssigned, 'info');
       return;
     }
-    if (new Date() > DEADLINE) {
+    // R3: QA bypass — high management can select tribes past deadline
+    var isHighMgmt = member && (
+      member.is_superadmin === true ||
+      member.operational_role === 'manager' ||
+      member.operational_role === 'deputy_manager'
+    );
+    if (new Date() > DEADLINE && !isHighMgmt) {
       window.toast?.(TRIBES_MSG.selectionClosed, 'error');
       return;
     }

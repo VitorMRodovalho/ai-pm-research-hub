@@ -1221,6 +1221,17 @@ const enUS: Record<string, string> = {
   'tribe.moveTo.completed': 'Complete',
   'tribe.moveTo.planned': 'Replan',
   'tribe.moveTo.cancelled': 'Cancel',
+  'tribe.commsHubTab': '📡 Comms Hub',
+  'tribe.commsHub.title': 'Communications Metrics',
+  'tribe.commsHub.subtitle': 'Consolidated data from the Hub communication channels.',
+  'tribe.commsHub.loading': 'Loading metrics...',
+  'tribe.commsHub.empty': 'No metrics available.',
+  'tribe.commsHub.colDate': 'Date',
+  'tribe.commsHub.colChannel': 'Channel',
+  'tribe.commsHub.colAudience': 'Audience',
+  'tribe.commsHub.colReach': 'Reach',
+  'tribe.commsHub.colEngagement': 'Engagement',
+  'tribe.commsHub.colLeads': 'Leads',
 
   // ── Guest (authenticated but not registered) ──
   'guest.notRegistered': 'Your account was authenticated, but is not yet registered in the Hub.',

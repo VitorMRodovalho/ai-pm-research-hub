@@ -1221,6 +1221,17 @@ const esLATAM: Record<string, string> = {
   'tribe.moveTo.completed': 'Completar',
   'tribe.moveTo.planned': 'Replanificar',
   'tribe.moveTo.cancelled': 'Cancelar',
+  'tribe.commsHubTab': '📡 Comms Hub',
+  'tribe.commsHub.title': 'Métricas de Comunicación',
+  'tribe.commsHub.subtitle': 'Datos consolidados de los canales de comunicación del Núcleo.',
+  'tribe.commsHub.loading': 'Cargando métricas...',
+  'tribe.commsHub.empty': 'Ninguna métrica disponible.',
+  'tribe.commsHub.colDate': 'Fecha',
+  'tribe.commsHub.colChannel': 'Canal',
+  'tribe.commsHub.colAudience': 'Audiencia',
+  'tribe.commsHub.colReach': 'Alcance',
+  'tribe.commsHub.colEngagement': 'Engagement',
+  'tribe.commsHub.colLeads': 'Leads',
 
   // ── Guest (authenticated but not registered) ──
   'guest.notRegistered': 'Tu cuenta fue autenticada, pero aún no está registrada en el Núcleo.',

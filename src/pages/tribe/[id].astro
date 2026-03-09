@@ -11,6 +11,7 @@ const TRIBE_I18N = {
   membersTab: t('tribe.membersTab', lang),
   deliverablesTab: t('tribe.deliverablesTab', lang),
   resourcesTab: t('tribe.resourcesTab', lang),
+  commsHubTab: t('tribe.commsHubTab', lang),
   meetingSchedule: t('tribe.meetingSchedule', lang),
   noMembers: t('tribe.noMembers', lang),
   noDeliverables: t('tribe.noDeliverables', lang),
@@ -59,6 +60,18 @@ const TRIBE_I18N = {
   moveToCompleted: t('tribe.moveTo.completed', lang),
   moveToPlanned: t('tribe.moveTo.planned', lang),
   moveToCancelled: t('tribe.moveTo.cancelled', lang),
+  commsHub: {
+    title: t('tribe.commsHub.title', lang),
+    subtitle: t('tribe.commsHub.subtitle', lang),
+    loading: t('tribe.commsHub.loading', lang),
+    empty: t('tribe.commsHub.empty', lang),
+    colDate: t('tribe.commsHub.colDate', lang),
+    colChannel: t('tribe.commsHub.colChannel', lang),
+    colAudience: t('tribe.commsHub.colAudience', lang),
+    colReach: t('tribe.commsHub.colReach', lang),
+    colEngagement: t('tribe.commsHub.colEngagement', lang),
+    colLeads: t('tribe.commsHub.colLeads', lang),
+  },
   oproleLabels: {
     manager: t('profile.oprole.manager', lang),
     deputy_manager: t('profile.oprole.deputyManager', lang),
@@ -86,7 +99,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
     </div>
 
     <!-- Tabs -->
-    <div class="flex gap-2 mb-5 flex-wrap">
+    <div class="flex gap-2 mb-5 flex-wrap" id="tribe-tabs">
       <button class="tribe-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white transition-all"
               data-tab="members" data-action="switch-tab">{t('tribe.membersTab', lang)}</button>
       <button class="tribe-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
@@ -105,6 +118,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
     <div id="panel-resources" class="hidden">
       <LoadingSkeleton variant="card" count={3} />
     </div>
+    <!-- Comms Hub panel (conditionally shown for comms_team members) -->
+    <div id="panel-commshub" class="hidden"></div>
   </div>
 
   <!-- Deliverable Modal -->
@@ -177,6 +192,12 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
     'Course': '🎓', 'Reference': '📘',
   };
   const DAY_NAMES: string[] = I18N.dayNames || ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const HIGH_MGMT_ROLES = ['manager', 'deputy_manager'];
+
+  function isHighManagement(m: any): boolean {
+    if (!m) return false;
+    return m.is_superadmin === true || HIGH_MGMT_ROLES.includes(m.operational_role);
+  }
 
   function escapeHtml(s: string): string {
     return String(s || '')
@@ -190,10 +211,11 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
   let canEdit = false;
   let allDeliverables: any[] = [];
   let publishedArtifacts: any[] = [];
+  let commsHubShown = false;
 
   // ── Tab switching ──
   function switchTab(tabName: string) {
-    const panels = ['members', 'deliverables', 'resources'];
+    const panels = ['members', 'deliverables', 'resources', 'commshub'];
     panels.forEach(p => {
       const el = document.getElementById(`panel-${p}`);
       if (el) el.classList.toggle('hidden', p !== tabName);
@@ -207,6 +229,79 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
       btn.classList.toggle('text-slate-500', !isActive);
       btn.classList.toggle('border-slate-200', !isActive);
     });
+  }
+
+
+  // ── Comms Hub tab (R2: conditional for comms_team designation) ──
+  function showCommsHubTab() {
+    if (commsHubShown) return;
+    commsHubShown = true;
+    const tabsContainer = document.getElementById('tribe-tabs');
+    if (!tabsContainer) return;
+    const btn = document.createElement('button');
+    btn.className = 'tribe-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all';
+    btn.dataset.tab = 'commshub';
+    btn.dataset.action = 'switch-tab';
+    btn.textContent = I18N.commsHubTab || '\u{1F4E1} Comms Hub';
+    tabsContainer.appendChild(btn);
+  }
+
+  function renderCommsHub() {
+    const el = document.getElementById('panel-commshub');
+    if (!el) return;
+    const ch = I18N.commsHub || {};
+    el.innerHTML = `
+      <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100">
+          <h2 class="text-base font-extrabold text-navy">${escapeHtml(ch.title || 'Comms Hub')}</h2>
+          <p class="text-[13px] text-slate-500">${escapeHtml(ch.subtitle || '')}</p>
+        </div>
+        <div id="commshub-table-area" class="p-5">
+          <div class="text-center py-8 text-slate-400 text-sm" id="commshub-loading">${escapeHtml(ch.loading || 'Loading...')}</div>
+        </div>
+      </div>`;
+    loadCommsMetrics();
+  }
+
+  async function loadCommsMetrics() {
+    const ch = I18N.commsHub || {};
+    try {
+      const { data, error } = await sb.rpc('comms_metrics_latest_by_channel', { p_days: 14 });
+      const area = document.getElementById('commshub-table-area');
+      if (!area) return;
+      if (error || !data?.length) {
+        area.innerHTML = `<div class="text-center py-8 text-slate-500 text-sm">${escapeHtml(ch.empty || 'No data')}</div>`;
+        return;
+      }
+      const rows = data.map((r: any) => `
+        <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+          <td class="px-3 py-2.5 text-[13px]">${escapeHtml(r.metric_date || '\u2014')}</td>
+          <td class="px-3 py-2.5 text-[13px] font-medium">${escapeHtml(r.channel || '\u2014')}</td>
+          <td class="px-3 py-2.5 text-[13px] text-right">${r.audience ?? '\u2014'}</td>
+          <td class="px-3 py-2.5 text-[13px] text-right">${r.reach ?? '\u2014'}</td>
+          <td class="px-3 py-2.5 text-[13px] text-right">${r.engagement != null ? (Number(r.engagement) * 100).toFixed(2) + '%' : '\u2014'}</td>
+          <td class="px-3 py-2.5 text-[13px] text-right">${r.leads ?? '\u2014'}</td>
+        </tr>`).join('');
+      area.innerHTML = `
+        <div class="overflow-x-auto">
+          <table class="w-full text-[13px] border-collapse">
+            <thead>
+              <tr class="border-b border-slate-200 text-left">
+                <th class="px-3 py-2 font-semibold text-slate-600">${escapeHtml(ch.colDate || 'Date')}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600">${escapeHtml(ch.colChannel || 'Channel')}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600 text-right">${escapeHtml(ch.colAudience || 'Audience')}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600 text-right">${escapeHtml(ch.colReach || 'Reach')}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600 text-right">${escapeHtml(ch.colEngagement || 'Engagement')}</th>
+                <th class="px-3 py-2 font-semibold text-slate-600 text-right">${escapeHtml(ch.colLeads || 'Leads')}</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    } catch (e: any) {
+      const area = document.getElementById('commshub-table-area');
+      if (area) area.innerHTML = `<div class="text-center py-8 text-red-500 text-sm">${escapeHtml(e?.message || 'Error')}</div>`;
+    }
   }
 
   // ── Header render ──
@@ -658,9 +753,11 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
         const e = evt as CustomEvent;
         currentMember = e.detail;
         checkEditPermission();
+        checkCommsHubAccess();
       }) as EventListener);
 
       checkEditPermission();
+      checkCommsHubAccess();
 
       // Load all tribe data in parallel
       const [tribeRes, slotsRes, membersRes, selectionsRes, delivRes, resourcesRes, artifactsRes] = await Promise.all([
@@ -729,10 +826,21 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
     }
   }
 
+  // R1: Admin global — PM, Deputy PM and SuperAdmin can edit any tribe
   function checkEditPermission() {
     if (!currentMember) return;
-    canEdit = currentMember.is_superadmin === true ||
+    canEdit = isHighManagement(currentMember) ||
       (currentMember.operational_role === 'tribe_leader' && currentMember.tribe_id === TRIBE_ID);
+  }
+
+  // R2: Comms Hub tab — shown if member has comms_team designation or is high management
+  function checkCommsHubAccess() {
+    if (!currentMember) return;
+    const desigs: string[] = currentMember.designations || [];
+    if (desigs.includes('comms_team') || isHighManagement(currentMember)) {
+      showCommsHubTab();
+      renderCommsHub();
+    }
   }
 
   boot();

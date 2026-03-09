@@ -1221,6 +1221,17 @@ const ptBR: Record<string, string> = {
   'tribe.moveTo.completed': 'Concluir',
   'tribe.moveTo.planned': 'Replanejar',
   'tribe.moveTo.cancelled': 'Cancelar',
+  'tribe.commsHubTab': '📡 Comms Hub',
+  'tribe.commsHub.title': 'Métricas de Comunicação',
+  'tribe.commsHub.subtitle': 'Dados consolidados dos canais de comunicação do Núcleo.',
+  'tribe.commsHub.loading': 'Carregando métricas...',
+  'tribe.commsHub.empty': 'Nenhuma métrica disponível.',
+  'tribe.commsHub.colDate': 'Data',
+  'tribe.commsHub.colChannel': 'Canal',
+  'tribe.commsHub.colAudience': 'Audiência',
+  'tribe.commsHub.colReach': 'Alcance',
+  'tribe.commsHub.colEngagement': 'Engajamento',
+  'tribe.commsHub.colLeads': 'Leads',
 
   // ── Guest (authenticated but not registered) ──
   'guest.notRegistered': 'Sua conta foi autenticada, mas ainda não está cadastrada no Núcleo.',
