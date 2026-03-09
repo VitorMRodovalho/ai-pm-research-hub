@@ -1,5 +1,117 @@
 # Release Log
 
+## 2026-03-10 — Sprint 1: Trilha de Inteligencia e Gamificacao (Wave 3)
+
+### Scope
+Cycle-aware gamification, per-course trail status, and profile XP lifecycle differentiation.
+
+### Backend: Cycle-Aware Leaderboard (Migration 20260310010000)
+
+**Problem**: The `gamification_leaderboard` VIEW aggregated all-time points as `total_points`. Both "Cycle" and "Lifetime" leaderboard modes effectively showed the same data, making the ranking unfair for newcomers in Cycle 3.
+
+**Solution**: Recreated the VIEW with dual aggregation:
+- `total_points`: Sum of ALL `gamification_points` rows (lifetime)
+- `cycle_points`: Sum filtered by `created_at >= cycles.cycle_start WHERE is_current = true`
+- Added per-category cycle breakdowns: `cycle_attendance_points`, `cycle_course_points`, `cycle_artifact_points`, `cycle_bonus_points`
+
+**New RPC `get_member_cycle_xp(p_member_id uuid)`**:
+- Returns JSON with `lifetime_points`, `cycle_points`, and per-category cycle breakdown
+- Uses `SECURITY DEFINER` with cycle date from `cycles` table
+- Consumed by `profile.astro` Dashboard section
+
+### Frontend: Gamification Page
+
+**Leaderboard**:
+- Cycle mode now uses `m.cycle_points` (from rebuilt VIEW) instead of `m.total_points`
+- Lifetime mode uses `m.total_points` (true lifetime)
+- Tribe ranking also uses `cycle_points` for cycle mode
+
+**My Points Tab**:
+- Current cycle XP card now reads `cycle_points` from the VIEW
+- Category breakdown grid shows per-category totals above transaction list
+
+**Trail Clarity Card (S-UX1)**:
+- Replaced paragraph-style course listing with individual course rows
+- Each of the 8 PMI AI courses rendered with status icon: checkmark (completed), clock (in-progress), empty circle (pending)
+- Direct "Acessar curso" link to PMI e-learning portal per course
+- Responsive layout with truncated course names
+
+### Frontend: Profile Page
+
+**Dashboard "Current Cycle" Section**:
+- Points card now calls `get_member_cycle_xp` RPC to show cycle-scoped XP
+- Lifetime total displayed as secondary label below cycle XP
+- Falls back to lifetime total if RPC unavailable
+
+**Timeline with Per-Cycle XP**:
+- Each cycle card in the timeline shows XP earned during that period (from previous session)
+
+### Files changed
+- `supabase/migrations/20260310010000_cycle_aware_leaderboard.sql` (NEW)
+- `src/pages/gamification.astro` (leaderboard, trail, my points, escapeHtml)
+- `src/pages/profile.astro` (cycle XP RPC, dashboard display)
+- `src/i18n/pt-BR.ts`, `en-US.ts`, `es-LATAM.ts` (trail status + lifetime keys)
+
+### Gate validation
+- Migration pushed to production via `supabase db push`
+- `npx astro build` passed with 0 errors
+- RLS: VIEW reads from `members` + `gamification_points` (existing policies apply)
+- RPC uses `SECURITY DEFINER` (safe, no RLS recursion)
+
+---
+
+## 2026-03-09 — Bugfix: LGPD Contact Integration (tribe/[id].astro)
+
+### Scope
+QA identified that the LGPD contact data feature in the tribe dashboard
+was not reliably displaying member contact information for privileged users.
+
+### Root cause (3 issues)
+1. **JSON parse fragility**: The RPC `get_tribe_member_contacts` returns `json` type. Depending on the Supabase JS client version and transport, the `.data` field may arrive as a raw JSON string rather than a parsed object. The original check `typeof cd === 'object'` silently failed for string payloads, leaving `contactData` empty.
+2. **Async member resolution race**: When the user session resolves after the initial `boot()` member check (via the `nav:member` CustomEvent), the handler updated `currentMember` but never loaded `contactData` or re-rendered member cards. Superadmins whose session resolved late saw LGPD masks instead of real data.
+3. **No re-render path**: Even if `contactData` was eventually populated, there was no mechanism to re-render the member list with the newly available contact information.
+
+### Fix applied
+- **Robust JSON parsing**: Added `typeof cd === 'string' ? JSON.parse(cd) : cd` before the object type check.
+- **Late-bind contacts in `nav:member` handler**: The event listener now checks whether the newly resolved member has contact privileges. If so, it calls the RPC, populates `contactData`, and re-renders the member list with real email/phone data.
+- **Unchanged visual behavior for regular members**: Non-privileged users still see the `***-*** LGPD` mask with the explanatory tooltip.
+
+### Files changed
+- `src/pages/tribe/[id].astro` (boot sequence + nav:member handler)
+
+### Backlog addition
+- Added "Epico: Seletor Global de Tribos (Cross-Navigation)" to `backlog-wave-planning-updated.md` as a Wave 4 UX item, specifying the Dropdown/Modal pattern for Tier 4+ users navigating between multiple tribes.
+
+---
+
+## 2026-03-09 — Sprint 1: Trilha de Inteligencia e Gamificacao (Wave 3)
+
+### Scope
+Enhanced gamification trail visibility, XP lifecycle differentiation,
+and profile timeline enrichment with per-cycle XP data.
+
+### S-UX1: Trail Status Consolidated View
+- **Before**: Trail clarity card in `/gamification` showed a progress bar and paragraph listing missing/in-progress course names.
+- **After**: Each of the 8 PMI AI courses is now rendered individually with status icons (checkmark for completed, clock for in-progress, empty circle for pending), a direct "Acessar curso" link to the PMI e-learning portal, and truncated course names.
+- **Files**: `src/pages/gamification.astro`, `src/i18n/pt-BR.ts`, `en-US.ts`, `es-LATAM.ts`
+
+### S-RM3: Lifetime vs Current Cycle XP Differentiation
+- **Before**: My Points tab showed lifetime total and current cycle total as text.
+- **After**: Added a visual category breakdown grid (attendance, course, artifact, bonus, credly) showing points per category before the individual transaction list.
+- **Files**: `src/pages/gamification.astro`
+
+### S-RM2: Profile Timeline with Per-Cycle XP
+- **Before**: Profile timeline showed cycle history cards (role, tribe, chapter) but no quantitative data.
+- **After**: Each cycle card now displays the XP earned during that cycle period, calculated by date-range filtering gamification_points against cycle boundaries.
+- **Files**: `src/pages/profile.astro`
+
+### Gate validation
+- `npx astro build` passed with 0 errors.
+- No new SQL migrations required.
+- All queries use existing authenticated RLS paths.
+
+---
+
 ## 2026-03-09 — P3: Knowledge Ingestion Sprint
 
 ### Scope

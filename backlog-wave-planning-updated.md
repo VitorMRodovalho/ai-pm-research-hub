@@ -217,10 +217,10 @@ Use Looker Studio for YouTube, LinkedIn, and Instagram funnel style KPIs through
 2. Consolidar query de auditoria recorrente para duplicatas e pontos legados Credly.  
 3. Registrar evidências no `docs/RELEASE_LOG.md` para cada correção com validação pós deploy.  
 
-### Próxima sprint recomendada — 2026-03-12 to 2026-03-19 (Wave 3)
-1. Entregar `S-RM2` (Completeness Bar & Timeline) com dados 100% em `member_cycle_history`.  
-2. Avançar `S-RM3` (Gamification v2) com separação explícita de XP vitalício vs ciclo atual.  
-3. Iniciar `S-UX1` para explicitar “X de 8 cursos” + pendências individuais de trilha para pesquisador.  
+### Completed Sprint 1 -- 2026-03-10 (Wave 3: Trilha e Gamificacao)
+1. S-UX1: Trail per-course status view (8 cursos PMI) - DONE
+2. S-RM3: Cycle-aware leaderboard VIEW (cycle_points vs total_points) - DONE
+3. S-RM2: Profile timeline com XP por ciclo + Dashboard cycle XP via RPC - DONE
 
 ### Sessão 2 — Finish migration discipline
 1. Frontend reads from `operational_role` and `designations` only  
@@ -236,6 +236,47 @@ Use Looker Studio for YouTube, LinkedIn, and Instagram funnel style KPIs through
 1. Define knowledge asset schema  
 2. Design `/workspace` relational views  
 3. Preserve cross tribe visibility without turning the Hub into Miro chaos with prettier fonts
+
+---
+
+## Epico: Seletor Global de Tribos (Cross-Navigation) — Wave 4 UX
+
+**Status**: Planejado (nao iniciado)  
+**Prioridade**: Media  
+**Tier minimo para exibicao**: 4 (Admin+) OU membro com multiplas tribos/projetos  
+
+### Problema
+O fallback atual no `navigation.config.ts` transforma "Minha Tribo" em "Explorar Tribos" (link para `/#tribes`) para Superadmins e admins sem `tribe_id`. Isso forca a navegacao de volta a home para selecionar outra tribo, quebrando a fluidez da jornada de quem gerencia multiplos projetos.
+
+### Solucao proposta
+Transformar o link "Minha Tribo" em um **componente Dropdown/Modal** quando o usuario:
+- Possui Tier 4+ (Admin, Superadmin), OU
+- Participa de mais de uma tribo (via `tribe_selections` ou `member_cycle_history`)
+
+### Especificacao funcional
+1. **Trigger**: Ao clicar em "Minha Tribo" (desktop) ou no item correspondente no Drawer (mobile), em vez de navegar, abrir um dropdown/popover.
+2. **Conteudo do Dropdown**:
+   - Lista de todas as tribos ativas (`tribes` com `is_active = true`)
+   - Badge visual indicando a tribo principal do usuario (se houver)
+   - Badge "Lider" ao lado de tribos onde o usuario e `tribe_leader`
+   - Slot count (X/Y membros) ao lado de cada tribo
+   - Link direto para `/tribe/{id}` em cada item
+3. **Subprojetos**: Se o modelo evoluir para incluir "squads" ou subprojetos, o dropdown deve suportar agrupamento hierarquico.
+4. **Fallback gracioso**: Se o usuario nao tiver nenhuma associacao, manter o link para `/#tribes` como hoje.
+5. **Acessibilidade**: Navegacao por teclado (Tab/Enter/Escape) e ARIA labels.
+
+### Dependencias tecnicas
+- RPC `count_tribe_slots` (ja existe)
+- Tabela `tribes` (ja existe com `is_active`)
+- `navigation.config.ts` (resolver logico existente `resolveMyTribeHref`)
+
+### Criterio de aceite
+- [ ] Dropdown funciona em desktop e mobile (drawer)
+- [ ] Superadmin ve todas as tribos
+- [ ] Lider ve apenas suas tribos + link para explorar
+- [ ] Nao quebra a jornada de membros regulares com tribo unica
+- [ ] i18n em PT, EN, ES
+- [ ] Testes de acessibilidade (keyboard nav)
 
 ---
 

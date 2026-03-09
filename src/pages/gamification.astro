@@ -87,6 +87,12 @@ const GAM_I18N = {
   trailMissing: t('gamification.trail.missing', lang),
   trailInProgress: t('gamification.trail.inProgress', lang),
   trailError: t('gamification.trail.error', lang),
+  trailStatusCompleted: t('gamification.trail.statusCompleted', lang),
+  trailStatusInProgress: t('gamification.trail.statusInProgress', lang),
+  trailStatusPending: t('gamification.trail.statusPending', lang),
+  trailViewCourse: t('gamification.trail.viewCourse', lang),
+  mpCycleBreakdown: t('gamification.mp.cycleBreakdown', lang),
+  mpNoCycleData: t('gamification.mp.noCycleData', lang),
   credlyTierTitle: t('gamification.credly.tierTitle', lang),
   credlyTotalLabel: t('gamification.credly.totalLabel', lang),
   credlyTiersDesc: t('gamification.credly.tiersDesc', lang),
@@ -374,6 +380,12 @@ const GAM_I18N = {
   const TRAIL_TOTAL = 8;
   const PANEL_QUERY_TIMEOUT_MS = 15000;
 
+  function escapeHtml(s: string): string {
+    return String(s || '')
+      .replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
   const CATEGORY_META: Record<string, { icon: string; color: string; bg: string }> = {
     attendance: { icon: '📅', color: '#2563EB', bg: '#EFF6FF' },
     course:     { icon: '🎓', color: '#7C3AED', bg: '#F5F3FF' },
@@ -524,8 +536,8 @@ const GAM_I18N = {
     const rankedRows = (leaderboardData || [])
       .map((m: any) => ({
         ...m,
-        cycle_points: Number(m.total_points || 0),
-        lifetime_points: Number(lifetimePointsByMember[m.member_id] || m.total_points || 0),
+        cycle_points: Number(m.cycle_points || 0),
+        lifetime_points: Number(m.total_points || 0),
       }))
       .sort((a: any, b: any) => {
         const left = leaderboardMode === 'lifetime' ? a.lifetime_points : a.cycle_points;
@@ -657,8 +669,8 @@ const GAM_I18N = {
       const tid = memberTribe[m.member_id];
       if (tid && tribeStats[tid]) {
         const points = tribeMode === 'lifetime'
-          ? Number(lifetimePointsByMember[m.member_id] || m.total_points || 0)
-          : Number(m.total_points || 0);
+          ? Number(m.total_points || 0)
+          : Number(m.cycle_points || 0);
         tribeStats[tid].points += points;
         tribeStats[tid].members++;
         tribeStats[tid].names.push(m.name.split(' ')[0]);
@@ -756,7 +768,7 @@ const GAM_I18N = {
       );
       if (cyclesError) throw cyclesError;
 
-    const cyclePoints = leaderboardData.find((m: any) => m.member_id === MEMBER.id)?.total_points || 0;
+    const cyclePoints = leaderboardData.find((m: any) => m.member_id === MEMBER.id)?.cycle_points || 0;
     const myPoints = Number(lifetimePointsByMember[MEMBER.id] || cyclePoints || 0);
     const coursesCompleted = (courses || []).filter((c: any) => c.status === 'completed').length;
     const artifactsPublished = (artifacts || []).filter((a: any) => a.status === 'published').length;
@@ -847,7 +859,21 @@ const GAM_I18N = {
           <span class="px-2 py-1 rounded bg-navy text-white font-semibold">${I.credlyTotalLabel}: ${myCredly.total} ${I.mpPtsLabel}</span>
         </div>
       </div>` : ''}
-    ` + data.map((p: any) => {
+    `;
+
+    // Cycle breakdown: group by category
+    const catTotals: Record<string, number> = {};
+    data.forEach((p: any) => { catTotals[p.category] = (catTotals[p.category] || 0) + p.points; });
+    const catKeys = Object.keys(catTotals).sort((a, b) => catTotals[b] - catTotals[a]);
+    if (catKeys.length > 0) {
+      el.innerHTML += '<div class="mb-4 p-3 bg-slate-50 rounded-xl"><div class="text-[.72rem] font-bold text-slate-600 mb-2">' + (I.mpCycleBreakdown || 'Detalhamento') + '</div><div class="grid grid-cols-2 sm:grid-cols-4 gap-2">'
+        + catKeys.map((cat: string) => {
+          const meta = CATEGORY_META[cat] || CATEGORY_META.bonus;
+          return '<div class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-white border border-slate-100"><span class="text-sm">' + meta.icon + '</span><div><div class="text-[.65rem] text-slate-500">' + escapeHtml(cat) + '</div><div class="text-sm font-bold" style="color:' + meta.color + '">' + catTotals[cat] + ' pts</div></div></div>';
+        }).join('') + '</div></div>';
+    }
+
+    el.innerHTML += data.map((p: any) => {
       const cat = CATEGORY_META[p.category] || CATEGORY_META.bonus;
       const date = new Date(p.created_at).toLocaleDateString(I.locale || 'pt-BR', { year: 'numeric', month: 'short', day: '2-digit' });
       return `
@@ -942,26 +968,32 @@ const GAM_I18N = {
       const missing = courseList.filter((c: any) => !statusByCourseId.has(Number(c.id)));
       const pct = totalCourses > 0 ? Math.round((completed.length / totalCourses) * 100) : 0;
 
-      host.innerHTML = `
-        <div class="flex items-center justify-between gap-3 flex-wrap mb-2">
-          <div>
-            <div class="text-sm font-bold text-navy">${I.trailTitle}</div>
-            <div class="text-[12px] text-slate-500">${I.trailCoursesOf.replace('{completed}', String(completed.length)).replace('{total}', String(totalCourses))}</div>
-          </div>
-          <span class="text-[11px] font-bold px-2 py-1 rounded-full ${pct >= 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
-            ${I.trailPctComplete.replace('{pct}', String(pct))}
-          </span>
-        </div>
-        <div class="h-2 bg-slate-100 rounded-full overflow-hidden mb-3">
-          <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${pct >= 100 ? '#10B981' : '#FF610F'}"></div>
-        </div>
-        <div class="text-[12px] text-slate-500">
-          ${missing.length === 0
-            ? I.trailComplete
-            : `${I.trailMissing.replace('{n}', String(missing.length))} ${missing.map((c: any) => c.name).join(' · ')}`}
-          ${inProgress.length > 0 ? `<br>${I.trailInProgress}${inProgress.map((c: any) => c.name).join(' · ')}` : ''}
-        </div>
-      `;
+      const courseRows = courseList.map(function(course: any) {
+        const st = statusByCourseId.get(Number(course.id)) || 'pending';
+        const statusIcon = st === 'completed'
+          ? '<svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>'
+          : st === 'in_progress'
+          ? '<svg class="w-4 h-4 text-amber-500 animate-pulse shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+          : '<div class="w-4 h-4 rounded-full border-2 border-slate-300 shrink-0"></div>';
+        const statusLabel = st === 'completed' ? I.trailStatusCompleted : st === 'in_progress' ? I.trailStatusInProgress : I.trailStatusPending;
+        const statusColor = st === 'completed' ? 'text-emerald-600' : st === 'in_progress' ? 'text-amber-600' : 'text-slate-400';
+        const link = course.url ? '<a href="' + escapeHtml(course.url) + '" target="_blank" rel="noopener" class="text-[.6rem] text-teal font-semibold hover:underline no-underline shrink-0">' + (I.trailViewCourse || 'Acessar') + '</a>' : '';
+        return '<div class="flex items-center gap-2.5 py-1.5 border-b border-slate-50 last:border-b-0">'
+          + statusIcon
+          + '<div class="flex-1 min-w-0"><div class="text-[.75rem] font-medium truncate">' + escapeHtml(course.name) + '</div></div>'
+          + '<span class="text-[.6rem] font-semibold shrink-0 ' + statusColor + '">' + statusLabel + '</span>'
+          + link
+          + '</div>';
+      }).join('');
+
+      host.innerHTML = '<div class="flex items-center justify-between gap-3 flex-wrap mb-3">'
+        + '<div><div class="text-sm font-bold text-navy">' + I.trailTitle + '</div>'
+        + '<div class="text-[12px] text-slate-500">' + I.trailCoursesOf.replace('{completed}', String(completed.length)).replace('{total}', String(totalCourses)) + '</div></div>'
+        + '<span class="text-[11px] font-bold px-2 py-1 rounded-full ' + (pct >= 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700') + '">'
+        + I.trailPctComplete.replace('{pct}', String(pct)) + '</span></div>'
+        + '<div class="h-2.5 bg-slate-100 rounded-full overflow-hidden mb-4">'
+        + '<div class="h-full rounded-full transition-all duration-700" style="width:' + pct + '%;background:' + (pct >= 100 ? '#10B981' : '#FF610F') + '"></div></div>'
+        + '<div class="space-y-0">' + courseRows + '</div>';
     } catch (e: any) {
       host.innerHTML = `<p class="text-crimson text-sm text-center py-2">${I.trailError}${e?.message || I.msgFailUnexpected}</p>`;
     }

@@ -60,6 +60,7 @@ const PROFILE_I18N = {
   lastActivationLabel: t('profile.lastActivationLabel', lang),
   dashboardTitle: t('profile.dashboardTitle', lang),
   pointsLabel: t('profile.pointsLabel', lang),
+  lifetimeXP: t('profile.lifetimeXP', lang),
   attendanceLabel: t('profile.attendanceLabel', lang),
   trailLabel: t('profile.trailLabel', lang),
   artifactsLabel: t('profile.artifactsLabel', lang),
@@ -168,6 +169,8 @@ const PROFILE_I18N = {
   let cycleHistory: any[] = [];
   let cycleStats: any = null;
   let journeyStats: any = null;
+  let xpByCycle: Record<string, number> = {};
+  let cycleXpData: any = null;
   let currentCycleLabel: string = '';
   let weekData: {
     meetingSlots: any[]; tribeMeetingLink: string | null;
@@ -263,8 +266,14 @@ const PROFILE_I18N = {
 
       // Gamification points
       const { data: points } = await sb.from('gamification_points')
-        .select('points')
+        .select('points, created_at')
         .eq('member_id', currentMember.id);
+
+      // Cycle XP breakdown via RPC
+      try {
+        const { data: cxd } = await sb.rpc('get_member_cycle_xp', { p_member_id: currentMember.id });
+        cycleXpData = typeof cxd === 'string' ? JSON.parse(cxd) : cxd;
+      } catch (_) { cycleXpData = null; }
 
       // Artifacts
       const { data: artifacts } = await sb.from('artifacts')
@@ -274,6 +283,19 @@ const PROFILE_I18N = {
       const totalPoints = (points || []).reduce((s: number, p: any) => s + (p.points || 0), 0);
       const completedCourses = (courses || []).filter((c: any) => c.status === 'completed').length;
       const inProgressCourses = (courses || []).filter((c: any) => c.status === 'in_progress').length;
+
+      // XP per cycle for timeline
+      const allPoints = points || [];
+      xpByCycle = {};
+      cycleHistory.forEach(function(h: any) {
+        var start = h.cycle_start ? new Date(h.cycle_start).getTime() : 0;
+        var end = h.cycle_end ? new Date(h.cycle_end).getTime() : Date.now();
+        var cycleXp = allPoints.filter(function(p: any) {
+          var t = new Date(p.created_at).getTime();
+          return t >= start && t <= end;
+        }).reduce(function(s: number, p: any) { return s + (p.points || 0); }, 0);
+        xpByCycle[h.cycle_code] = cycleXp;
+      });
 
       cycleStats = {
         attendance: attendCount || 0,
@@ -481,6 +503,7 @@ const PROFILE_I18N = {
                   </div>
                   ${h.tribe_name ? `<div class="text-[.65rem] text-slate-400 mt-0.5">🏷️ ${h.tribe_name}</div>` : ''}
                   <div class="text-[.65rem] text-slate-400 mt-0.5">${h.chapter || ''}</div>
+                  ${xpByCycle[h.cycle_code] ? '<div class="text-[.65rem] font-semibold text-orange mt-1">&#x2B50; ' + xpByCycle[h.cycle_code] + ' XP</div>' : ''}
                 </div>
               </div>`;
           }).join('')}
@@ -630,8 +653,9 @@ const PROFILE_I18N = {
     let cardsHtml = `
       <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <div class="bg-slate-50 rounded-xl p-3 text-center">
-          <div class="text-lg font-black text-navy">${cycleStats.points}</div>
+          <div class="text-lg font-black text-navy">${cycleXpData?.cycle_points ?? cycleStats.points}</div>
           <div class="text-[.65rem] text-slate-400 font-semibold">${PROFILE_I18N.pointsLabel}</div>
+          ${cycleXpData ? '<div class="text-[.55rem] text-slate-300 mt-0.5">' + PROFILE_I18N.lifetimeXP + ': ' + cycleXpData.lifetime_points + '</div>' : ''}
         </div>`;
 
     if (isOperational) {
