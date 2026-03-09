@@ -2654,7 +2654,7 @@ const ADMIN_I18N = {
         for (const c of cyclesData) datesMap[c.cycle_code] = { start: c.cycle_start, end: c.cycle_end };
         (window as any).__CYCLE_DATES = datesMap;
       }
-    } catch (_) {}
+    } catch (_) { console.warn('Admin boot cycle check:', _); }
 
     window.addEventListener('nav:member', ((e: CustomEvent) => {
       if (e.detail && getMemberRole(e.detail) !== 'guest' && !MEMBER) {
@@ -2672,7 +2672,7 @@ const ADMIN_I18N = {
         const { data } = await sb.rpc('get_member_by_auth');
         if (data && getMemberRole(data) !== 'guest') { MEMBER = data; setup(); return; }
       }
-    } catch (e) {}
+    } catch (e) { console.warn('Admin boot session check:', e); }
 
     setTimeout(() => {
       if (MEMBER) return;

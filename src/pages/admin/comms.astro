@@ -170,7 +170,7 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
         applyGate(MEMBER);
         return;
       }
-    } catch {}
+    } catch (e) { console.warn('Comms boot session check:', e); }
 
     showDenied();
   }

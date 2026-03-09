@@ -220,7 +220,7 @@ const ANALYTICS_I18N = {
         applyGate(MEMBER);
         return;
       }
-    } catch {}
+    } catch (e) { console.warn('Analytics boot session check:', e); }
 
     showDenied();
   }

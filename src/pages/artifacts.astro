@@ -277,17 +277,23 @@ const ARTIFACTS_I18N = {
   async function loadCatalog() {
     const el = document.getElementById('catalog-list')!;
     el.innerHTML = loadingRows(3);
-    const { data } = await sb.from('artifacts')
-      .select('*, members!artifacts_member_id_fkey(name, photo_url)')
-      .eq('status', 'published')
-      .order('published_at', { ascending: false });
-    if (!data?.length) {
-      el.innerHTML = MEMBER
-        ? emptyStateHtml('📚', I18N.emptyCatalogTitle, I18N.emptyCatalogMsgAuth, I18N.emptyCatalogCtaAuth, 'open-submit-modal')
-        : emptyStateHtml('📚', I18N.emptyCatalogTitle, I18N.emptyCatalogMsgAnon, I18N.emptyCatalogCtaAnon, 'open-auth');
-      return;
+    try {
+      const { data } = await sb.from('artifacts')
+        .select('*, members!artifacts_member_id_fkey(name, photo_url)')
+        .eq('status', 'published')
+        .order('published_at', { ascending: false });
+      if (!data?.length) {
+        el.innerHTML = MEMBER
+          ? emptyStateHtml('📚', I18N.emptyCatalogTitle, I18N.emptyCatalogMsgAuth, I18N.emptyCatalogCtaAuth, 'open-submit-modal')
+          : emptyStateHtml('📚', I18N.emptyCatalogTitle, I18N.emptyCatalogMsgAnon, I18N.emptyCatalogCtaAnon, 'open-auth');
+        return;
+      }
+      el.innerHTML = data.map((a: any) => artifactCard(a, false)).join('');
+    } catch (e) {
+      console.warn('Artifacts: failed to load catalog:', e);
+      el.innerHTML = `<div class="text-center py-8 text-red-500 text-sm">Failed to load catalog. Please try again later.</div>`;
+      toast('Failed to load artifact catalog.', 'error');
     }
-    el.innerHTML = data.map((a: any) => artifactCard(a, false)).join('');
   }
 
   // ── MY ARTIFACTS ──
@@ -295,30 +301,42 @@ const ARTIFACTS_I18N = {
     if (!MEMBER) return;
     const el = document.getElementById('mine-list')!;
     el.innerHTML = loadingRows(3);
-    const { data } = await sb.from('artifacts')
-      .select('*')
-      .eq('member_id', MEMBER.id)
-      .order('created_at', { ascending: false });
-    if (!data?.length) {
-      el.innerHTML = emptyStateHtml('📝', I18N.emptyMineTitle, I18N.emptyMineMsg, I18N.emptyMineCta, 'open-submit-modal');
-      return;
+    try {
+      const { data } = await sb.from('artifacts')
+        .select('*')
+        .eq('member_id', MEMBER.id)
+        .order('created_at', { ascending: false });
+      if (!data?.length) {
+        el.innerHTML = emptyStateHtml('📝', I18N.emptyMineTitle, I18N.emptyMineMsg, I18N.emptyMineCta, 'open-submit-modal');
+        return;
+      }
+      el.innerHTML = data.map((a: any) => artifactCard(a, true)).join('');
+    } catch (e) {
+      console.warn('Artifacts: failed to load my artifacts:', e);
+      el.innerHTML = `<div class="text-center py-8 text-red-500 text-sm">Failed to load your artifacts. Please try again later.</div>`;
+      toast('Failed to load your artifacts.', 'error');
     }
-    el.innerHTML = data.map((a: any) => artifactCard(a, true)).join('');
   }
 
   // ── REVIEW QUEUE ──
   async function loadReviewQueue() {
     const el = document.getElementById('review-list')!;
     el.innerHTML = loadingRows(3);
-    const { data } = await sb.from('artifacts')
-      .select('*, members!artifacts_member_id_fkey(name, photo_url)')
-      .in('status', ['draft', 'review'])
-      .order('submitted_at', { ascending: true });
-    if (!data?.length) {
-      el.innerHTML = emptyStateHtml('✅', I18N.emptyReviewTitle, I18N.emptyReviewMsg);
-      return;
+    try {
+      const { data } = await sb.from('artifacts')
+        .select('*, members!artifacts_member_id_fkey(name, photo_url)')
+        .in('status', ['draft', 'review'])
+        .order('submitted_at', { ascending: true });
+      if (!data?.length) {
+        el.innerHTML = emptyStateHtml('✅', I18N.emptyReviewTitle, I18N.emptyReviewMsg);
+        return;
+      }
+      el.innerHTML = data.map((a: any) => artifactCard(a, false, true)).join('');
+    } catch (e) {
+      console.warn('Artifacts: failed to load review queue:', e);
+      el.innerHTML = `<div class="text-center py-8 text-red-500 text-sm">Failed to load review queue. Please try again later.</div>`;
+      toast('Failed to load review queue.', 'error');
     }
-    el.innerHTML = data.map((a: any) => artifactCard(a, false, true)).join('');
   }
 
   const esc = (s: string) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
