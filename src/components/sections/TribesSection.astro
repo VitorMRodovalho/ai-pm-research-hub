@@ -26,11 +26,24 @@ const viewWarnings = viewModel.warnings;
 // Deadline from home_schedule (passed by index); fallback far-future if not provided
 const TRIBE_SELECTION_DEADLINE_ISO = deadlineProp ?? '2030-12-31T23:59:59Z';
 
-const LOCALE_MAP: Record<string, string> = { 'pt-BR': 'pt-BR', 'en-US': 'en-US', 'es-LATAM': 'es-419' };
-const deadlineDate = new Date(TRIBE_SELECTION_DEADLINE_ISO);
-const deadlineFormatted = deadlineDate.getFullYear() < 2030
-  ? `${t('tribes.deadlinePrefix', lang)} ${deadlineDate.toLocaleDateString(LOCALE_MAP[lang] || 'pt-BR', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })} BRT`
-  : t('tribes.deadline', lang);
+function formatDeadline(iso: string, prefix: string, fallback: string): string {
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime()) || d.getFullYear() >= 2030) return fallback;
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const mon = months[d.getUTCMonth()];
+    const hh = String(d.getUTCHours() - 3 < 0 ? d.getUTCHours() - 3 + 24 : d.getUTCHours() - 3).padStart(2, '0');
+    return `${prefix} ${day}/${mon} ${hh}h BRT`;
+  } catch {
+    return fallback;
+  }
+}
+const deadlineFormatted = formatDeadline(
+  TRIBE_SELECTION_DEADLINE_ISO,
+  t('tribes.deadlinePrefix', lang),
+  t('tribes.deadline', lang)
+);
 // i18n for client-side toast/UI (inject via define:vars; no import in script per .cursorrules)
 const TRIBES_MSG = {
   onlyParticipants: t('tribes.onlyParticipants', lang),
@@ -85,7 +98,7 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
 
     <div id="tribesContainer">
       {safeQuadrants.map((quad) => {
-        const tribes = safeTribes.filter((t) => t.quadrant === quad.key);
+        const tribes = safeTribes.filter((tr) => tr.quadrant === quad.key);
         if (!tribes.length) return null;
         return (
           <>
@@ -100,81 +113,78 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
             </div>
 
             {/* Tribe cards */}
-            {tribes.map((t) => (
+            {tribes.map((tr) => (
               <div class="bg-white rounded-2xl overflow-hidden border border-black/5 mb-4
                           hover:shadow-md transition-all duration-300"
-                   id={`t-${t.id}`}
-                   data-quadrant={t.quadrant}>
+                   id={`t-${tr.id}`}
+                   data-quadrant={tr.quadrant}>
                 {/* Header — always visible */}
                 <div class="flex items-center gap-4 px-5 py-4 cursor-pointer"
-                     data-tribe-header={t.id}>
-                  {/* Leader photo placeholder / number badge */}
+                     data-tribe-header={tr.id}>
                   <div class="w-[42px] h-[42px] rounded-xl flex items-center justify-center
                               text-white font-extrabold text-base flex-shrink-0"
-                       id={`tp-${t.id}`}
-                       style={`background: ${QUAD_COLORS[t.quadrant]}`}>
-                    {String(t.id).padStart(2, '0')}
+                       id={`tp-${tr.id}`}
+                       style={`background: ${QUAD_COLORS[tr.quadrant]}`}>
+                    {String(tr.id).padStart(2, '0')}
                   </div>
 
                   <div class="flex-1 min-w-0">
-                    <h3 class="text-[.95rem] font-bold truncate">{t.name}</h3>
+                    <h3 class="text-[.95rem] font-bold truncate">{tr.name}</h3>
                     <div class="text-[.82rem] text-slate-500">
-                      {t.leader}
-                      {t.leaderLinkedIn && (
-                        <a href={t.leaderLinkedIn} target="_blank" rel="noopener"
+                      {tr.leader}
+                      {tr.leaderLinkedIn && (
+                        <a href={tr.leaderLinkedIn} target="_blank" rel="noopener"
                            class="text-teal no-underline text-[.75rem] ml-1"
                            onclick="event.stopPropagation()">🔗</a>
                       )}
                     </div>
                   </div>
 
-                  {/* Slot dots */}
                   <div class="flex-shrink-0 text-center">
-                    <div class="flex gap-[3px] mb-0.5" id={`sl-${t.id}`}>
+                    <div class="flex gap-[3px] mb-0.5" id={`sl-${tr.id}`}>
                       {Array.from({ length: MAX_SLOTS }).map((_, i) => (
                         <div class="w-3.5 h-3.5 rounded-full border-2 border-gray-300 transition-all duration-300"
-                             style={i < (initialCounts[t.id] || 0) ? 'background:#70AD47;border-color:#70AD47' : ''}></div>
+                             style={i < (initialCounts[tr.id] || 0) ? 'background:#70AD47;border-color:#70AD47' : ''}></div>
                       ))}
                     </div>
-                    <div class="text-[.68rem] text-slate-500 font-semibold" id={`st-${t.id}`}>
-                      {initialCounts[t.id] || 0}/{MAX_SLOTS}
+                    <div class="text-[.68rem] text-slate-500 font-semibold" id={`st-${tr.id}`}>
+                      {initialCounts[tr.id] || 0}/{MAX_SLOTS}
                     </div>
                   </div>
                 </div>
 
-                {/* Body — collapsible */}
                 <div class="max-h-0 overflow-hidden transition-all duration-400 px-5"
-                     id={`tb-${t.id}`}>
+                     id={`tb-${tr.id}`}>
                   <div class="pb-5 pt-3 border-t border-black/5">
-                    <p class="text-[.88rem] text-slate-500 mb-3">{t.description}</p>
+                    <p class="text-[.88rem] text-slate-500 mb-3">{tr.description}</p>
 
                     <div class="mb-3">
                       <strong class="text-[.85rem]">{t('tribes.deliverables', lang)}</strong>
                       <ul class="mt-1.5 ml-5 text-[.84rem] text-slate-500 list-disc">
-                        {(t.deliverables || []).map((d: string) => <li class="mb-1">{d}</li>)}
+                        {(tr.deliverables || []).map((d: string) => <li class="mb-1">{d}</li>)}
                       </ul>
                     </div>
 
-                    <p class="text-[.82rem] mb-3" id={`ms-${t.id}`}>
-                      <strong>{t('tribes.meetings', lang)}</strong> <span class="text-slate-400">{t.meetingSchedule || t('tribes.loading', lang)}</span>
+                    <p class="text-[.82rem] mb-3" id={`ms-${tr.id}`}>
+                      <strong>{t('tribes.meetings', lang)}</strong> <span class="text-slate-400">{tr.meetingSchedule || t('tribes.loading', lang)}</span>
                     </p>
 
                     <div class="flex gap-3 flex-wrap items-center mt-4">
-                      <a href={t.videoUrl} target="_blank" rel="noopener"
+                      <a href={tr.videoUrl} target="_blank" rel="noopener"
                          class="inline-flex items-center gap-1.5 bg-crimson text-white px-4 py-2
                                 rounded-xl no-underline text-[.82rem] font-semibold
                                 hover:opacity-85 transition-opacity"
                          onclick="event.stopPropagation()">
-                        ▶ Vídeo ({t.videoDuration})
+                        ▶ Vídeo ({tr.videoDuration})
                       </a>
                       <button class="tribe-select-btn w-full sm:w-auto px-4 py-2.5 rounded-xl
                                      text-[.82rem] font-semibold text-white bg-teal
                                      hover:bg-teal/80 transition-all cursor-pointer border-0
                                      disabled:opacity-50 disabled:cursor-not-allowed"
-                              id={`sb-${t.id}`}
-                              data-tribe-id={t.id}
+                              id={`sb-${tr.id}`}
+                              data-tribe-id={tr.id}
                               style="display:none">
-                        Escolher esta Tribo
+                        {t('tribes.select', lang)}
                       </button>
                     </div>
                   </div>
