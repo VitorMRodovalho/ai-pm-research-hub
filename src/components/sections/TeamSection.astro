@@ -321,7 +321,7 @@ const ROLE_COLORS: Record<string, string> = {
   async function bootTeam() {
     const sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(bootTeam, 200); return; }
-    const { data } = await sb.from('members')
+    const { data } = await sb.from('public_members')
       .select('name, chapter, operational_role, designations, photo_url, linkedin_url, tribe_id, current_cycle_active')
       .neq('operational_role', 'guest')
       .order('name');

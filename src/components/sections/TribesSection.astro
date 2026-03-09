@@ -267,7 +267,7 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
   async function loadLeaderPhotos() {
     const sb = getSb();
     if (!sb) return;
-    const { data } = await sb.from('members')
+    const { data } = await sb.from('public_members')
       .select('tribe_id, photo_url')
       .eq('operational_role', 'tribe_leader')
       .not('photo_url', 'is', null);

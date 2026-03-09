@@ -633,7 +633,7 @@ const GAM_I18N = {
       );
       if (selectionsError) throw selectionsError;
       const { data: leaders, error: leadersError } = await withTimeout(
-        sb.from('members').select('id, tribe_id').eq('operational_role', 'tribe_leader'),
+        sb.from('public_members').select('id, tribe_id').eq('operational_role', 'tribe_leader'),
       );
       if (leadersError) throw leadersError;
 
@@ -1037,7 +1037,7 @@ const GAM_I18N = {
 
   // ── LOAD MEMBERS FOR CERT DROPDOWN ──
   async function loadMembersDropdown() {
-    const { data } = await sb.from('members')
+    const { data } = await sb.from('public_members')
       .select('id, name')
       .eq('current_cycle_active', true)
       .order('name');

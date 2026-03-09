@@ -115,7 +115,7 @@ try {
     const [progressRes, coursesRes, membersRes] = await Promise.all([
       sb.from('course_progress').select('member_id, course_id, status'),
       sb.from('courses').select('id, code'),
-      sb.from('members').select('id, name, photo_url').eq('current_cycle_active', true).order('name'),
+      sb.from('public_members').select('id, name, photo_url').eq('current_cycle_active', true).order('name'),
     ]);
 
     const progress = progressRes.data;

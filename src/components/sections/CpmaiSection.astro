@@ -63,7 +63,7 @@ const { lang = 'pt-BR' } = Astro.props;
 
       // Query members with cpmai_certified = true OR who have CPMAI badges in credly_badges
       const { data: members, error } = await sb
-        .from('members')
+        .from('public_members')
         .select('id, name, photo_url, chapter, credly_badges, credly_url')
         .eq('current_cycle_active', true)
         .or('cpmai_certified.eq.true,credly_badges.cs.[{"category":"cpmai"}]')

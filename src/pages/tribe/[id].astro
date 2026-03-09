@@ -763,7 +763,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
       const [tribeRes, slotsRes, membersRes, selectionsRes, delivRes, resourcesRes, artifactsRes] = await Promise.all([
         sb.from('tribes').select('*').eq('id', TRIBE_ID).single(),
         sb.from('tribe_meeting_slots').select('day_of_week, time_start, time_end').eq('tribe_id', TRIBE_ID).eq('is_active', true).order('day_of_week'),
-        sb.from('members').select('id, name, email, photo_url, chapter, operational_role, designations, tribe_id').eq('tribe_id', TRIBE_ID),
+        sb.from('public_members').select('id, name, photo_url, chapter, operational_role, designations, tribe_id').eq('tribe_id', TRIBE_ID),
         sb.from('tribe_selections').select('member_id').eq('tribe_id', TRIBE_ID),
         sb.rpc('list_tribe_deliverables', { p_tribe_id: TRIBE_ID, p_cycle_code: 'cycle_3' }),
         sb.from('hub_resources').select('*').eq('tribe_id', TRIBE_ID).eq('is_active', true).order('created_at', { ascending: false }),
@@ -787,8 +787,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
 
       let selectionMembers: any[] = [];
       if (selectionMemberIds.length > 0) {
-        const { data } = await sb.from('members')
-          .select('id, name, email, photo_url, chapter, operational_role, designations, tribe_id')
+        const { data } = await sb.from('public_members')
+          .select('id, name, photo_url, chapter, operational_role, designations, tribe_id')
           .in('id', selectionMemberIds);
         selectionMembers = data || [];
       }
