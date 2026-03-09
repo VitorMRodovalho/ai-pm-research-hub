@@ -828,6 +828,23 @@ const enUS: Record<string, string> = {
   'artifacts.tribe': 'Stream',
   'artifacts.author': 'Author',
 
+  // ── Workspace (Knowledge Hub) ──
+  'nav.workspace': 'Workspace',
+  'workspace.meta': 'Workspace — AI & PM Hub',
+  'workspace.heading': 'Knowledge Hub',
+  'workspace.subtitle': 'Courses, references, webinars, and materials shared by research streams.',
+  'workspace.filterAll': 'All',
+  'workspace.filterCourse': 'Course',
+  'workspace.filterReference': 'Reference',
+  'workspace.filterWebinar': 'Webinar',
+  'workspace.filterOther': 'Other',
+  'workspace.empty': 'No resources found.',
+  'workspace.loading': 'Loading resources...',
+  'workspace.openLink': 'Open →',
+  'workspace.tribeAll': 'All Streams',
+  'workspace.tribePrefix': 'Stream',
+  'workspace.error': 'Failed to load resources. Please try again later.',
+
   // ── Gamification page ──
   'gamification.title': 'Gamification — AI & PM Hub',
   'gamification.heading': 'Gamification & Achievements',

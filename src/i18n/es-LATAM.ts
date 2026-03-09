@@ -828,6 +828,23 @@ const esLATAM: Record<string, string> = {
   'artifacts.tribe': 'Línea',
   'artifacts.author': 'Autor',
 
+  // ── Workspace (Knowledge Hub) ──
+  'nav.workspace': 'Workspace',
+  'workspace.meta': 'Workspace — Núcleo IA & GP',
+  'workspace.heading': 'Knowledge Hub',
+  'workspace.subtitle': 'Cursos, referencias, webinars y materiales compartidos por las líneas de investigación.',
+  'workspace.filterAll': 'Todos',
+  'workspace.filterCourse': 'Curso',
+  'workspace.filterReference': 'Referencia',
+  'workspace.filterWebinar': 'Webinar',
+  'workspace.filterOther': 'Otro',
+  'workspace.empty': 'No se encontraron recursos.',
+  'workspace.loading': 'Cargando recursos...',
+  'workspace.openLink': 'Abrir →',
+  'workspace.tribeAll': 'Todas las Líneas',
+  'workspace.tribePrefix': 'Línea',
+  'workspace.error': 'Error al cargar recursos. Intenta de nuevo más tarde.',
+
   // ── Gamification page ──
   'gamification.title': 'Gamificación — Núcleo IA & GP',
   'gamification.heading': 'Gamificación & Logros',

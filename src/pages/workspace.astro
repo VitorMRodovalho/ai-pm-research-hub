@@ -1,0 +1,196 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Toast from '../components/ui/Toast.astro';
+import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+const WORKSPACE_I18N = {
+  heading: t('workspace.heading', lang),
+  subtitle: t('workspace.subtitle', lang),
+  filterAll: t('workspace.filterAll', lang),
+  filterCourse: t('workspace.filterCourse', lang),
+  filterReference: t('workspace.filterReference', lang),
+  filterWebinar: t('workspace.filterWebinar', lang),
+  filterOther: t('workspace.filterOther', lang),
+  empty: t('workspace.empty', lang),
+  loading: t('workspace.loading', lang),
+  openLink: t('workspace.openLink', lang),
+  tribeAll: t('workspace.tribeAll', lang),
+  tribePrefix: t('workspace.tribePrefix', lang),
+  error: t('workspace.error', lang),
+  tribeNames: Object.fromEntries(
+    Array.from({length: 8}, (_, i) => [i + 1, t(`data.tribe${i + 1}.name`, lang)])
+  ),
+};
+---
+<BaseLayout title={t('workspace.meta', lang)} activePage="workspace">
+  <Toast />
+  <div class="max-w-[1100px] mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-2xl font-extrabold text-navy">{t('workspace.heading', lang)}</h1>
+      <p class="text-slate-500 text-sm mt-1">{t('workspace.subtitle', lang)}</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="flex flex-wrap items-center gap-2 mb-6">
+      <div class="flex gap-1.5 flex-wrap">
+        <button class="ws-type-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white transition-all"
+                data-filter-type="" data-action="filter-type">{t('workspace.filterAll', lang)}</button>
+        <button class="ws-type-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+                data-filter-type="Curso" data-action="filter-type">{t('workspace.filterCourse', lang)}</button>
+        <button class="ws-type-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+                data-filter-type="Referência" data-action="filter-type">{t('workspace.filterReference', lang)}</button>
+        <button class="ws-type-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+                data-filter-type="Webinar" data-action="filter-type">{t('workspace.filterWebinar', lang)}</button>
+        <button class="ws-type-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+                data-filter-type="Outro" data-action="filter-type">{t('workspace.filterOther', lang)}</button>
+      </div>
+      <select id="ws-tribe-filter"
+              class="ml-auto px-3 py-1.5 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy cursor-pointer"
+              data-action="filter-tribe">
+        <option value="">{t('workspace.tribeAll', lang)}</option>
+      </select>
+    </div>
+
+    <!-- Resource grid -->
+    <div id="ws-grid">
+      <LoadingSkeleton variant="card" count={6} />
+    </div>
+  </div>
+</BaseLayout>
+
+<script is:inline define:vars={{ WORKSPACE_I18N }}>
+  window.__WORKSPACE_I18N = typeof WORKSPACE_I18N !== 'undefined' ? WORKSPACE_I18N : {};
+</script>
+<script>
+  const I18N = (typeof window !== 'undefined' && (window as any).__WORKSPACE_I18N) || {};
+
+  const TYPE_ICONS: Record<string, string> = {
+    'Curso': '🎓',
+    'Referência': '📘',
+    'Webinar': '▶️',
+    'Outro': '📎',
+  };
+
+  const TRIBE_NAMES: Record<number, string> = I18N.tribeNames || {};
+
+  let sb: any = null;
+  let allResources: any[] = [];
+  let activeType = '';
+  let activeTribe = '';
+
+  const esc = (s: string) => String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  function renderCards(items: any[]) {
+    const grid = document.getElementById('ws-grid')!;
+    if (!items.length) {
+      grid.innerHTML = `
+        <div class="text-center py-14">
+          <div class="text-4xl mb-3">📭</div>
+          <div class="font-semibold text-slate-500 text-sm">${I18N.empty}</div>
+        </div>`;
+      return;
+    }
+    grid.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">${items.map(cardHtml).join('')}</div>`;
+  }
+
+  function cardHtml(r: any): string {
+    const icon = TYPE_ICONS[r.asset_type] || '📎';
+    const tribe = r.tribe_id ? TRIBE_NAMES[r.tribe_id] : null;
+    const desc = r.description
+      ? esc(r.description.length > 120 ? r.description.slice(0, 117) + '…' : r.description)
+      : '';
+    const link = r.url
+      ? `<a href="${esc(r.url)}" target="_blank" rel="noopener"
+            class="inline-flex items-center gap-1 text-teal text-[13px] font-semibold no-underline hover:underline mt-auto pt-3">${I18N.openLink}</a>`
+      : '';
+    return `
+      <div class="bg-white rounded-2xl border border-slate-100 p-5 flex flex-col hover:border-slate-300 hover:shadow-sm transition-all">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xl leading-none">${icon}</span>
+          <span class="text-[11px] font-bold uppercase tracking-wide text-slate-400">${esc(r.asset_type)}</span>
+        </div>
+        <h3 class="text-[15px] font-bold text-navy leading-snug mb-1">${esc(r.title)}</h3>
+        ${desc ? `<p class="text-[12.5px] text-slate-500 leading-relaxed mb-0">${desc}</p>` : ''}
+        ${tribe ? `<span class="inline-block mt-2 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-600 w-fit">${esc(tribe)}</span>` : ''}
+        ${link}
+      </div>`;
+  }
+
+  function applyFilters() {
+    let filtered = allResources;
+    if (activeType) filtered = filtered.filter(r => r.asset_type === activeType);
+    if (activeTribe) filtered = filtered.filter(r => String(r.tribe_id) === activeTribe);
+    renderCards(filtered);
+  }
+
+  function populateTribeSelect() {
+    const select = document.getElementById('ws-tribe-filter') as HTMLSelectElement;
+    if (!select) return;
+    const tribeIds = [...new Set(allResources.map(r => r.tribe_id).filter(Boolean))].sort((a, b) => a - b);
+    const currentOptions = select.querySelectorAll('option');
+    // Keep the "All" option, remove the rest
+    while (select.options.length > 1) select.remove(1);
+    tribeIds.forEach(id => {
+      const opt = document.createElement('option');
+      opt.value = String(id);
+      opt.textContent = `${String(id).padStart(2, '0')} — ${TRIBE_NAMES[id] || `${I18N.tribePrefix} ${id}`}`;
+      select.appendChild(opt);
+    });
+  }
+
+  if (!(window as any).__workspaceDelegationBound) {
+    (window as any).__workspaceDelegationBound = true;
+    document.addEventListener('click', (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const actionEl = target.closest('[data-action]') as HTMLElement | null;
+      if (!actionEl) return;
+      const action = actionEl.dataset.action;
+
+      if (action === 'filter-type') {
+        activeType = (actionEl as HTMLElement).dataset.filterType || '';
+        document.querySelectorAll('.ws-type-filter').forEach(btn => {
+          btn.classList.remove('bg-navy', 'text-white', 'border-navy');
+          btn.classList.add('bg-white', 'text-slate-500', 'border-slate-200');
+        });
+        actionEl.classList.remove('bg-white', 'text-slate-500', 'border-slate-200');
+        actionEl.classList.add('bg-navy', 'text-white', 'border-navy');
+        applyFilters();
+      }
+    });
+
+    document.addEventListener('change', (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (target.id === 'ws-tribe-filter') {
+        activeTribe = (target as HTMLSelectElement).value;
+        applyFilters();
+      }
+    });
+  }
+
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    const grid = document.getElementById('ws-grid')!;
+    try {
+      const { data, error } = await sb.from('hub_resources')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      allResources = data || [];
+      populateTribeSelect();
+      applyFilters();
+    } catch (e: any) {
+      console.warn('Workspace: failed to load resources:', e);
+      grid.innerHTML = `<div class="text-center py-10 text-red-500 text-sm">${I18N.error}</div>`;
+      (window as any).toast?.(I18N.error, 'error');
+    }
+  }
+
+  boot();
+</script>

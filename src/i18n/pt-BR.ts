@@ -828,6 +828,23 @@ const ptBR: Record<string, string> = {
   'artifacts.tribe': 'Tribo',
   'artifacts.author': 'Autor',
 
+  // ── Workspace (Knowledge Hub) ──
+  'nav.workspace': 'Workspace',
+  'workspace.meta': 'Workspace — Núcleo IA & GP',
+  'workspace.heading': 'Knowledge Hub',
+  'workspace.subtitle': 'Cursos, referências, webinars e materiais compartilhados pelas tribos.',
+  'workspace.filterAll': 'Todos',
+  'workspace.filterCourse': 'Curso',
+  'workspace.filterReference': 'Referência',
+  'workspace.filterWebinar': 'Webinar',
+  'workspace.filterOther': 'Outro',
+  'workspace.empty': 'Nenhum recurso encontrado.',
+  'workspace.loading': 'Carregando recursos...',
+  'workspace.openLink': 'Abrir →',
+  'workspace.tribeAll': 'Todas as Tribos',
+  'workspace.tribePrefix': 'Tribo',
+  'workspace.error': 'Erro ao carregar recursos. Tente novamente mais tarde.',
+
   // ── Gamification page ──
   'gamification.title': 'Gamificação — Núcleo IA & GP',
   'gamification.heading': 'Gamificação & Conquistas',
