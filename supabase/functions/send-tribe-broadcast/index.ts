@@ -75,21 +75,29 @@ Deno.serve(async (req) => {
       + '<hr style="border:none;border-top:1px solid #E2E8F0;margin:24px 0 16px">'
       + '<p style="color:#94A3B8;font-size:11px">Enviado pelo Nucleo IA e GP.</p></div></div>'
 
+    // Sandbox mode: when using Resend test domain, only send to the verified test email
+    const sandbox = from.includes('onboarding@resend.dev')
+    const finalTo = sandbox ? ['vitor.rodovalho@outlook.com'] : [from]
+    const finalBcc = sandbox ? [] : emails
+    console.log('[broadcast] sandbox:', sandbox, 'to:', finalTo.length, 'bcc:', finalBcc.length)
+
     const rr = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + rkey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: from, to: [from], bcc: emails, subject: '[' + tn + '] ' + subj, html: html }),
+      body: JSON.stringify({ from: from, to: finalTo, bcc: finalBcc.length ? finalBcc : undefined, subject: '[' + tn + '] ' + subj, html: html }),
     })
 
     const rt = await rr.text()
     console.log('[broadcast] resend:', rr.status, rt)
 
     if (!rr.ok) {
-      await sb.from('broadcast_log').insert({ tribe_id: tid, sender_id: c.id, subject: subj, body: bd, recipient_count: emails.length, status: 'failed', error_detail: 'Resend ' + rr.status + ': ' + rt }).catch(() => {})
+      const { error: logErr1 } = await sb.from('broadcast_log').insert([{ tribe_id: tid, sender_id: c.id, subject: subj, body: bd, recipient_count: emails.length, status: 'failed', error_detail: 'Resend ' + rr.status + ': ' + rt }])
+      if (logErr1) console.error('[broadcast] log insert err:', logErr1.message)
       return json({ success: false, error: 'Resend failed', status: rr.status, detail: rt }, 502)
     }
 
-    await sb.from('broadcast_log').insert({ tribe_id: tid, sender_id: c.id, subject: subj, body: bd, recipient_count: emails.length, status: 'sent', error_detail: null }).catch(() => {})
+    const { error: logErr2 } = await sb.from('broadcast_log').insert([{ tribe_id: tid, sender_id: c.id, subject: subj, body: bd, recipient_count: emails.length, status: 'sent', error_detail: null }])
+    if (logErr2) console.error('[broadcast] log insert err:', logErr2.message)
 
     return json({ success: true, recipient_count: emails.length, tribe: tn })
 

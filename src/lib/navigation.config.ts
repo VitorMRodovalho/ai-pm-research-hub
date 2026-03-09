@@ -66,6 +66,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'admin',           labelKey: 'nav.admin',          href: '/admin',           minTier: 'observer', requiresAuth: true, section: 'both',   group: 'admin', badge: 'purple' },
   { key: 'admin-analytics', labelKey: 'nav.adminAnalytics', href: '/admin/analytics', minTier: 'admin',    requiresAuth: true, section: 'drawer', group: 'admin-sub' },
   { key: 'admin-comms',     labelKey: 'nav.adminComms',     href: '/admin/comms',     minTier: 'admin',    requiresAuth: true, section: 'drawer', group: 'admin-sub', allowedDesignations: ['comms_leader', 'comms_member'] },
+  { key: 'admin-help',     labelKey: 'nav.adminHelp',     href: '/admin/help',     minTier: 'leader',   requiresAuth: true, section: 'drawer', group: 'admin-sub' },
 ];
 
 export function isItemVisible(item: NavItem, tier: AccessTier, designations: string[], isLoggedIn: boolean): boolean {
