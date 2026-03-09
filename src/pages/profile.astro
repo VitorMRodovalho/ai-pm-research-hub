@@ -146,11 +146,17 @@ const PROFILE_I18N = {
   let cycleHistory: any[] = [];
   let cycleStats: any = null;
   let journeyStats: any = null;
+  let currentCycleLabel: string = '';
 
   // ── Boot ──
   async function boot() {
     const sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(boot, 200); return; }
+
+    try {
+      const { data: curCycle } = await sb.rpc('get_current_cycle');
+      if (curCycle) currentCycleLabel = curCycle.cycle_label || '';
+    } catch (_) { /* fallback to i18n default */ }
 
     window.addEventListener('nav:member', (async (evt: Event) => {
       const e = evt as CustomEvent;
@@ -476,9 +482,12 @@ const PROFILE_I18N = {
         </div>
       </div>`;
 
+    const dashTitle = currentCycleLabel
+      ? `📊 ${currentCycleLabel}`
+      : PROFILE_I18N.dashboardTitle;
     return `
       <div class="bg-white rounded-2xl border border-slate-200 p-6">
-        <h2 class="text-sm font-bold text-navy mb-4">${PROFILE_I18N.dashboardTitle}</h2>
+        <h2 class="text-sm font-bold text-navy mb-4">${dashTitle}</h2>
         ${cardsHtml}
       </div>`;
   }
