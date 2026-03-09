@@ -595,6 +595,107 @@ const ADMIN_I18N = {
             <div id="knw-list"><p class="text-slate-400 text-[.72rem] text-center py-3">{t('admin.knowledge.loading', lang)}</p></div>
           </div>
         </div>
+
+        <!-- PDF Upload Section -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mt-4">
+          <div class="px-5 py-3.5 border-b border-slate-200">
+            <h3 class="text-sm font-bold text-navy">&#x1F4C4; Upload de PDFs (Atas e Referências)</h3>
+            <p class="text-[.68rem] text-slate-400 mt-0.5">Envie PDFs para o Supabase Storage e vincule automaticamente ao Workspace.</p>
+          </div>
+          <div class="p-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Título do Documento</label>
+                <input type="text" id="pdf-title" placeholder="Ex: Ata Reunião Geral - Mar/2026" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+              </div>
+              <div>
+                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Tipo</label>
+                <select id="pdf-type" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem] bg-white">
+                  <option value="reference">Referência Técnica</option>
+                  <option value="minutes">Ata de Reunião</option>
+                  <option value="governance">Documento de Governança</option>
+                  <option value="other">Outro</option>
+                </select>
+              </div>
+              <div class="sm:col-span-2">
+                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Arquivo PDF</label>
+                <input type="file" id="pdf-file" accept=".pdf" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem] bg-white">
+              </div>
+              <div>
+                <button type="button" id="pdf-upload-btn" class="px-4 py-2 bg-teal text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
+                  &#x2B06;&#xFE0F; Enviar PDF
+                </button>
+              </div>
+            </div>
+            <div id="pdf-upload-status" class="mt-3 text-[.72rem] text-slate-500 hidden"></div>
+          </div>
+        </div>
+
+        <!-- Trello Import Section -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mt-4">
+          <div class="px-5 py-3.5 border-b border-slate-200">
+            <h3 class="text-sm font-bold text-navy">&#x1F4CB; Importar Board do Trello</h3>
+            <p class="text-[.68rem] text-slate-400 mt-0.5">Exporte um board do Trello como JSON e faça o upload aqui para popular Artefatos ou Recursos.</p>
+          </div>
+          <div class="p-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Origem do Board</label>
+                <select id="trello-source" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem] bg-white">
+                  <option value="articles_c1">Artigos - Ciclo 1</option>
+                  <option value="articles_c2">Artigos - Ciclo 2</option>
+                  <option value="comms_c3">Comunicação - Ciclo 3</option>
+                  <option value="social_media">Mídias Sociais</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Tabela Destino</label>
+                <select id="trello-target" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem] bg-white">
+                  <option value="artifacts">Artefatos (artifacts)</option>
+                  <option value="hub_resources">Recursos (hub_resources)</option>
+                </select>
+              </div>
+              <div class="sm:col-span-2">
+                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Arquivo JSON do Trello</label>
+                <input type="file" id="trello-file" accept=".json" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem] bg-white">
+              </div>
+              <div class="flex gap-2">
+                <button type="button" id="trello-import-btn" class="px-4 py-2 bg-purple-600 text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
+                  &#x1F680; Importar
+                </button>
+                <button type="button" id="trello-dryrun-btn" class="px-4 py-2 bg-slate-200 text-slate-600 rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:bg-slate-300 transition-all">
+                  &#x1F50D; Dry Run
+                </button>
+              </div>
+            </div>
+            <div id="trello-import-status" class="mt-3 text-[.72rem] text-slate-500 hidden"></div>
+          </div>
+        </div>
+
+        <!-- Calendar Import Section -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mt-4">
+          <div class="px-5 py-3.5 border-b border-slate-200">
+            <h3 class="text-sm font-bold text-navy">&#x1F4C5; Importar Eventos do Google Calendar</h3>
+            <p class="text-[.68rem] text-slate-400 mt-0.5">Cole o JSON de eventos do Google Calendar API para popular a timeline de eventos.</p>
+          </div>
+          <div class="p-5">
+            <div class="grid grid-cols-1 gap-3">
+              <div>
+                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">JSON de Eventos (Google Calendar API formato)</label>
+                <textarea id="calendar-json" rows="4" placeholder='{"events": [{"id": "...", "summary": "Reunião Geral", "start": {"dateTime": "..."}, ...}]}' class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.72rem] font-mono bg-white"></textarea>
+              </div>
+              <div class="flex gap-2">
+                <button type="button" id="calendar-import-btn" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
+                  &#x1F4E5; Importar Eventos
+                </button>
+                <button type="button" id="calendar-dryrun-btn" class="px-4 py-2 bg-slate-200 text-slate-600 rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:bg-slate-300 transition-all">
+                  &#x1F50D; Dry Run
+                </button>
+              </div>
+            </div>
+            <div id="calendar-import-status" class="mt-3 text-[.72rem] text-slate-500 hidden"></div>
+          </div>
+        </div>
       </div>
 
       <!-- Analytics panel (merged from /admin/analytics) -->
@@ -1711,6 +1812,156 @@ const ADMIN_I18N = {
         (window as any).toggleKnowledgeAsset(toggleBtn.getAttribute('data-knw-id') || '', toggleBtn.getAttribute('data-knw-active') === 'true');
       }
     });
+  }
+
+  // ── P3: PDF Upload Handler ──
+  if (!(window as any).__pdfUploadBound) {
+    (window as any).__pdfUploadBound = true;
+    const pdfBtn = document.getElementById('pdf-upload-btn');
+    if (pdfBtn) {
+      pdfBtn.addEventListener('click', async () => {
+        if (!ensureAdminAction()) return;
+        const titleEl = document.getElementById('pdf-title') as HTMLInputElement;
+        const typeEl = document.getElementById('pdf-type') as HTMLSelectElement;
+        const fileEl = document.getElementById('pdf-file') as HTMLInputElement;
+        const statusEl = document.getElementById('pdf-upload-status')!;
+
+        const title = titleEl?.value.trim();
+        const file = fileEl?.files?.[0];
+        if (!title || !file) { toast('Preencha o titulo e selecione um arquivo PDF.', 'error'); return; }
+        if (!file.name.toLowerCase().endsWith('.pdf')) { toast('Apenas arquivos PDF sao aceitos.', 'error'); return; }
+
+        statusEl.classList.remove('hidden');
+        statusEl.textContent = 'Enviando...';
+        statusEl.className = 'mt-3 text-[.72rem] text-blue-600';
+
+        try {
+          const fileName = Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+          const storagePath = 'knowledge-pdfs/' + fileName;
+          const { error: uploadErr } = await sb.storage.from('documents').upload(storagePath, file, { contentType: 'application/pdf', upsert: false });
+          if (uploadErr) { statusEl.textContent = 'Erro no upload: ' + uploadErr.message; statusEl.className = 'mt-3 text-[.72rem] text-crimson'; return; }
+
+          const { data: urlData } = sb.storage.from('documents').getPublicUrl(storagePath);
+          const publicUrl = urlData?.publicUrl || '';
+
+          const { error: insertErr } = await sb.from('hub_resources').insert({
+            title: title,
+            asset_type: typeEl?.value || 'reference',
+            url: publicUrl,
+            source: 'pdf_upload',
+            is_active: true,
+            author_id: MEMBER?.id || null,
+          });
+          if (insertErr) { statusEl.textContent = 'Erro ao registrar: ' + insertErr.message; statusEl.className = 'mt-3 text-[.72rem] text-crimson'; return; }
+
+          statusEl.textContent = 'PDF enviado e vinculado com sucesso!';
+          statusEl.className = 'mt-3 text-[.72rem] text-emerald-600';
+          titleEl.value = ''; fileEl.value = '';
+          loadKnowledgeAssets();
+        } catch (e: any) {
+          statusEl.textContent = 'Erro: ' + (e.message || 'Desconhecido');
+          statusEl.className = 'mt-3 text-[.72rem] text-crimson';
+        }
+      });
+    }
+  }
+
+  // ── P3: Trello Import Handler ──
+  if (!(window as any).__trelloImportBound) {
+    (window as any).__trelloImportBound = true;
+
+    async function runTrelloImport(dryRun: boolean) {
+      if (!ensureAdminAction()) return;
+      const sourceEl = document.getElementById('trello-source') as HTMLSelectElement;
+      const targetEl = document.getElementById('trello-target') as HTMLSelectElement;
+      const fileEl = document.getElementById('trello-file') as HTMLInputElement;
+      const statusEl = document.getElementById('trello-import-status')!;
+
+      const file = fileEl?.files?.[0];
+      if (!file) { toast('Selecione o arquivo JSON exportado do Trello.', 'error'); return; }
+
+      statusEl.classList.remove('hidden');
+      statusEl.textContent = dryRun ? 'Executando Dry Run...' : 'Importando...';
+      statusEl.className = 'mt-3 text-[.72rem] text-blue-600';
+
+      try {
+        const text = await file.text();
+        const board = JSON.parse(text);
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) { statusEl.textContent = 'Sessao expirada. Faca login novamente.'; statusEl.className = 'mt-3 text-[.72rem] text-crimson'; return; }
+
+        const res = await fetch(sb.supabaseUrl + '/functions/v1/import-trello-legacy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+          body: JSON.stringify({
+            board: board,
+            board_source: sourceEl?.value || 'articles_c1',
+            target_table: targetEl?.value || 'artifacts',
+            dry_run: dryRun,
+          }),
+        });
+
+        const data = await res.json();
+        if (!data.success) { statusEl.textContent = 'Erro: ' + (data.error || 'Falha desconhecida'); statusEl.className = 'mt-3 text-[.72rem] text-crimson'; return; }
+
+        const label = dryRun ? 'DRY RUN' : 'IMPORTACAO';
+        statusEl.innerHTML = '<strong>' + label + ':</strong> ' + data.mapped + ' cards mapeados, ' + data.skipped + ' ignorados (total: ' + data.total + ')';
+        statusEl.className = 'mt-3 text-[.72rem] text-emerald-600';
+        if (!dryRun) { fileEl.value = ''; loadKnowledgeAssets(); }
+      } catch (e: any) {
+        statusEl.textContent = 'Erro: ' + (e.message || 'JSON invalido');
+        statusEl.className = 'mt-3 text-[.72rem] text-crimson';
+      }
+    }
+
+    document.getElementById('trello-import-btn')?.addEventListener('click', () => runTrelloImport(false));
+    document.getElementById('trello-dryrun-btn')?.addEventListener('click', () => runTrelloImport(true));
+  }
+
+  // ── P3: Calendar Import Handler ──
+  if (!(window as any).__calendarImportBound) {
+    (window as any).__calendarImportBound = true;
+
+    async function runCalendarImport(dryRun: boolean) {
+      if (!ensureAdminAction()) return;
+      const jsonEl = document.getElementById('calendar-json') as HTMLTextAreaElement;
+      const statusEl = document.getElementById('calendar-import-status')!;
+
+      const raw = jsonEl?.value.trim();
+      if (!raw) { toast('Cole o JSON de eventos do Google Calendar.', 'error'); return; }
+
+      statusEl.classList.remove('hidden');
+      statusEl.textContent = dryRun ? 'Executando Dry Run...' : 'Importando eventos...';
+      statusEl.className = 'mt-3 text-[.72rem] text-blue-600';
+
+      try {
+        let parsed = JSON.parse(raw);
+        const events = parsed.events || parsed.items || (Array.isArray(parsed) ? parsed : []);
+
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) { statusEl.textContent = 'Sessao expirada.'; statusEl.className = 'mt-3 text-[.72rem] text-crimson'; return; }
+
+        const res = await fetch(sb.supabaseUrl + '/functions/v1/import-calendar-legacy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+          body: JSON.stringify({ events: events, dry_run: dryRun }),
+        });
+
+        const data = await res.json();
+        if (!data.success) { statusEl.textContent = 'Erro: ' + (data.error || 'Falha'); statusEl.className = 'mt-3 text-[.72rem] text-crimson'; return; }
+
+        const label = dryRun ? 'DRY RUN' : 'IMPORTACAO';
+        statusEl.innerHTML = '<strong>' + label + ':</strong> ' + data.imported + ' eventos importados, ' + data.skipped + ' ignorados (total: ' + data.total + ')';
+        statusEl.className = 'mt-3 text-[.72rem] text-emerald-600';
+        if (!dryRun) jsonEl.value = '';
+      } catch (e: any) {
+        statusEl.textContent = 'Erro: ' + (e.message || 'JSON invalido');
+        statusEl.className = 'mt-3 text-[.72rem] text-crimson';
+      }
+    }
+
+    document.getElementById('calendar-import-btn')?.addEventListener('click', () => runCalendarImport(false));
+    document.getElementById('calendar-dryrun-btn')?.addEventListener('click', () => runCalendarImport(true));
   }
 
   // Event Delegation: members, cycle history, tribe slots (.cursorrules compliant)

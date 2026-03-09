@@ -20,10 +20,13 @@
 - LGPD visual mask for non-authorized users in tribe view
 - Replace PostHog iframes with native Tailwind analytics from RPCs
 
-### Queued (P3 — Knowledge Ingestion)
-- Execute import-trello-legacy and import-calendar-legacy with real Cycle 1/2 data
-- PDF upload field in /admin with Supabase Storage → hub_resources
-- Webinar pipeline: tag-based artifact → webinar sync with YouTube metrics
+### ✅ Completed (P3 — Knowledge Ingestion) [2026-03-09]
+- ✅ Trello JSON import UI in admin Knowledge tab (dry-run + real import)
+- ✅ Google Calendar import UI in admin Knowledge tab (JSON paste + import)
+- ✅ PDF upload to Supabase Storage (documents bucket) linked to hub_resources
+- ✅ Webinar artifact pipeline: artifacts/resources with tag "webinar" auto-display in /admin/webinars
+- ✅ Storage migration: documents bucket with public read, authenticated upload, admin delete
+- ⚠️ Pending: Actual Trello board JSON exports needed from user to execute real imports
 
 ---
 

@@ -1,5 +1,42 @@
 # Release Log
 
+## 2026-03-09 — P3: Knowledge Ingestion Sprint
+
+### Scope
+Admin UI for knowledge ingestion (Trello import, Calendar import, PDF upload),
+webinar artifact pipeline, and Supabase Storage provisioning.
+
+### P3.1: Trello Board Import
+- **Feature**: Added Trello JSON import section to admin Knowledge tab.
+- **UI**: File upload for exported Trello board JSON, source selector (C1/C2/C3/Social),
+  target table selector (artifacts/hub_resources), Dry Run and Import buttons.
+- **Backend**: Uses deployed `import-trello-legacy` Edge Function with admin auth,
+  status mapping, cycle inference, and tag defaults.
+
+### P3.2: Google Calendar Import
+- **Feature**: Added Calendar event import section to admin Knowledge tab.
+- **UI**: JSON textarea for Google Calendar API events, Dry Run and Import buttons.
+- **Backend**: Uses deployed `import-calendar-legacy` Edge Function with superadmin auth,
+  project keyword filtering, event type inference, and duration calculation.
+
+### P3.3: PDF Upload to Supabase Storage
+- **Feature**: Added PDF upload section to admin Knowledge tab.
+- **UI**: Title input, type selector (reference/minutes/governance/other), file picker.
+- **Backend**: Uploads to Supabase Storage `documents` bucket (`knowledge-pdfs/` folder),
+  creates `hub_resources` record with public URL link.
+- **Migration**: `20260309220000_storage_documents_bucket.sql` creates `documents` bucket
+  with public read, authenticated upload, and admin delete policies.
+
+### P3.4: Webinar Artifact Pipeline
+- **Feature**: Added "Artefatos vinculados a Webinars" section to `/admin/webinars`.
+- **Logic**: Queries `artifacts` and `hub_resources` with `tags @> ["webinar"]`,
+  merges and sorts by date, displays with icons and tag badges.
+- **Impact**: Any artifact or resource tagged "webinar" (from Trello import or manual creation)
+  now automatically appears in the webinar management dashboard.
+
+---
+
+
 ## 2026-03-09 — Critical Bugfix Sprint + Legacy Asset Ingestion + Presentation Module
 
 ### Scope
