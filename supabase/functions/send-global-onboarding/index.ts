@@ -55,7 +55,7 @@ function buildOnboardingHtml(tribeName: string, memberNames: string[]): string {
 Deno.serve(async (req) => {
   const cors = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cli-secret',
   }
   const json = (d: Record<string, unknown>, s = 200) =>
     new Response(JSON.stringify(d), { status: s, headers: { ...cors, 'Content-Type': 'application/json' } })
@@ -75,24 +75,39 @@ Deno.serve(async (req) => {
 
     if (!rkey) return json({ error: 'No RESEND key' }, 500)
 
-    const ah = req.headers.get('Authorization') ?? ''
-    const tk = ah.replace(/^Bearer\s+/i, '').trim()
-    if (!tk) return json({ error: 'No token' }, 401)
-
-    const uc = createClient(url, anon, { global: { headers: { Authorization: 'Bearer ' + tk } } })
-    const ur = await uc.auth.getUser()
-    if (ur.error || !ur.data?.user) return json({ error: 'Bad token' }, 401)
-
     const sb = createClient(url, srk)
 
-    const cr = await sb.from('members').select('id, is_superadmin, operational_role, name')
-      .eq('auth_id', ur.data.user.id).single()
-    if (!cr.data) return json({ error: 'No member' }, 403)
+    // CLI/automated invocation via dedicated secret in x-cli-secret header
+    const cliSecret = req.headers.get('x-cli-secret') ?? ''
+    const expectedCliSecret = Deno.env.get('ONBOARDING_CLI_SECRET') ?? ''
+    let callerId: string | null = null
+    let callerName = 'Sistema (Automated)'
 
-    const isAdmin = cr.data.is_superadmin === true
-      || cr.data.operational_role === 'manager'
-      || cr.data.operational_role === 'deputy_manager'
-    if (!isAdmin) return json({ error: 'Admin access required' }, 403)
+    if (cliSecret && expectedCliSecret && cliSecret === expectedCliSecret) {
+      const gp = await sb.from('members').select('id, name').eq('is_superadmin', true).limit(1).single()
+      callerId = gp.data?.id ?? null
+      callerName = gp.data?.name ?? 'GP Automatico'
+    } else {
+      const ah = req.headers.get('Authorization') ?? ''
+      const tk = ah.replace(/^Bearer\s+/i, '').trim()
+      if (!tk) return json({ error: 'No token' }, 401)
+
+      const uc = createClient(url, anon, { global: { headers: { Authorization: 'Bearer ' + tk } } })
+      const ur = await uc.auth.getUser()
+      if (ur.error || !ur.data?.user) return json({ error: 'Bad token' }, 401)
+
+      const cr = await sb.from('members').select('id, is_superadmin, operational_role, name')
+        .eq('auth_id', ur.data.user.id).single()
+      if (!cr.data) return json({ error: 'No member' }, 403)
+
+      const isAdmin = cr.data.is_superadmin === true
+        || cr.data.operational_role === 'manager'
+        || cr.data.operational_role === 'deputy_manager'
+      if (!isAdmin) return json({ error: 'Admin access required' }, 403)
+
+      callerId = cr.data.id
+      callerName = cr.data.name || 'Admin'
+    }
 
     let opts: { dry_run?: boolean; subject_override?: string } = {}
     try { opts = JSON.parse(raw) } catch { opts = {} }
@@ -158,6 +173,9 @@ Deno.serve(async (req) => {
         html: html,
       }
 
+      // Rate-limit safeguard: 1s delay between sends (Resend free tier = 2 req/sec)
+      await new Promise(r => setTimeout(r, 1000))
+
       const rr = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + rkey },
@@ -177,7 +195,7 @@ Deno.serve(async (req) => {
 
       const { error: logErr } = await sb.from('broadcast_log').insert([{
         tribe_id: Number(tribeIdStr),
-        sender_id: cr.data.id,
+        sender_id: callerId,
         subject: '[' + group.name + '] ' + subject,
         body: 'Global Onboarding Email (HTML template)',
         recipient_count: allBcc.length,
