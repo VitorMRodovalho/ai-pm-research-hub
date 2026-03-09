@@ -863,12 +863,15 @@ const esLATAM: Record<string, string> = {
   'common.notFound': 'No encontrado',
 
   // ── Data: KPI labels ──
-  'data.kpi.chapters': 'Capítulos',
+  'data.kpi.chapters': 'Capítulos PMI',
+  'data.kpi.activeMembers': 'Miembros activos',
+  'data.kpi.tribes': 'Tribus activas',
+  'data.kpi.events': 'Eventos realizados',
   'data.kpi.articles': 'Artículos',
   'data.kpi.webinars': 'Webinars',
   'data.kpi.pilots': 'Pilotos IA',
-  'data.kpi.impact': 'Impacto',
-  'data.kpi.cert': 'Mini cert. IA',
+  'data.kpi.impact': 'Horas de impacto',
+  'data.kpi.cert': 'Certificación IA',
 
   // ── Data: Quadrant labels ──
   'data.q1.label': 'CUADRANTE 1',

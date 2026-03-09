@@ -6,6 +6,15 @@ interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
 
 const safeKpis = Array.isArray(KPIS) ? KPIS : [];
+
+const kpiLabels = JSON.stringify({
+  chapters: t('data.kpi.chapters', lang),
+  activeMembers: t('data.kpi.activeMembers', lang) || t('data.kpi.chapters', lang),
+  tribes: t('data.kpi.tribes', lang) || 'Tribos ativas',
+  events: t('data.kpi.events', lang) || 'Eventos realizados',
+  impact: t('data.kpi.impact', lang),
+  cert: t('data.kpi.cert', lang),
+});
 ---
 
 <section class="py-16 px-6 bg-[#003B5C] text-white" id="kpis">
@@ -19,7 +28,7 @@ const safeKpis = Array.isArray(KPIS) ? KPIS : [];
     <p class="text-base text-white/60 max-w-[700px] mb-10">
       {t('kpis.subtitle', lang)}
     </p>
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
+    <div id="kpi-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
       {safeKpis.map((k) => (
         <div class="bg-white/6 border border-white/10 rounded-2xl p-7 text-center">
           <div class="text-[2.5rem] font-extrabold leading-none bg-gradient-to-br from-[#05BFE0] to-[#ED7D31] bg-clip-text text-transparent">
@@ -36,3 +45,36 @@ const safeKpis = Array.isArray(KPIS) ? KPIS : [];
     </div>
   </div>
 </section>
+
+<span id="kpi-labels-data" class="hidden" data-labels={kpiLabels}></span>
+
+<script>
+  (async () => {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    try {
+      const { data } = await sb.rpc('kpi_summary');
+      if (!data) return;
+      const labelsEl = document.getElementById('kpi-labels-data');
+      const labels = labelsEl ? JSON.parse(labelsEl.dataset.labels || '{}') : {};
+      const grid = document.getElementById('kpi-grid');
+      if (!grid) return;
+
+      const kpis = [
+        { value: String(data.chapters || 0), label: labels.chapters || 'Capítulos PMI' },
+        { value: String(data.active_members || 0), label: labels.activeMembers || 'Membros ativos' },
+        { value: String(data.tribes || 0), label: labels.tribes || 'Tribos ativas' },
+        { value: String(data.total_events || 0), label: labels.events || 'Eventos' },
+        { value: `${Math.round(data.impact_hours || 0)}h`, label: labels.impact || 'Horas de impacto' },
+        { value: `${Math.round(data.cert_pct || 0)}%`, label: labels.cert || 'Certificação IA' },
+      ];
+
+      grid.innerHTML = kpis.map(k => `
+        <div class="bg-white/6 border border-white/10 rounded-2xl p-7 text-center">
+          <div class="text-[2.5rem] font-extrabold leading-none bg-gradient-to-br from-[#05BFE0] to-[#ED7D31] bg-clip-text text-transparent">${k.value}</div>
+          <div class="text-[.82rem] text-white/60 mt-1">${k.label}</div>
+        </div>
+      `).join('');
+    } catch (_) {}
+  })();
+</script>
