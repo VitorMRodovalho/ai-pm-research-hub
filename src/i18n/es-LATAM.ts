@@ -198,6 +198,8 @@ const esLATAM: Record<string, string> = {
   // ── Resources ──
   'resources.label': 'Enlaces y Recursos',
   'resources.title': 'Próximos Pasos',
+  'resources.linkText': 'Abrir →',
+  'resources.noResources': 'No hay recursos disponibles en este momento.',
 
   // ── Footer ──
   'footer.line1': 'Núcleo de Estudios e Investigación en IA y GP · The AI & PM Study and Research Hub',

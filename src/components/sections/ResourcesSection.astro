@@ -54,18 +54,25 @@ const resources = [
     linkText: 'Portal →',
   },
 ];
+
+const iconMap: Record<string, { icon: string; bg: string }> = {
+  'Curso':      { icon: '🎓', bg: 'rgba(79,23,168,.1)' },
+  'Referência': { icon: '📘', bg: 'rgba(0,121,158,.1)' },
+  'Webinar':    { icon: '▶️', bg: 'rgba(213,52,11,.1)' },
+  'Outro':      { icon: '📎', bg: 'rgba(112,173,71,.1)' },
+};
 ---
 
 <section class="py-16 px-6 bg-[#f0f4f8]" id="resources">
   <div class="max-w-[1200px] mx-auto">
     <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-orange mb-2">
-      Links e Recursos
+      {t('resources.label', lang)}
     </div>
     <h2 class="text-[clamp(1.7rem,4vw,2.5rem)] font-extrabold leading-tight mb-10">
-      Próximos Passos
+      {t('resources.title', lang)}
     </h2>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+    <div id="resources-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
       {resources.map((r) => (
         <div class="bg-white rounded-2xl p-5 border border-black/5 flex items-start gap-3">
           <div class="w-11 h-11 rounded-xl flex items-center justify-center text-[1.3rem] flex-shrink-0"
@@ -85,3 +92,52 @@ const resources = [
     </div>
   </div>
 </section>
+
+<script define:vars={{ iconMap, linkText: t('resources.linkText', lang), noResources: t('resources.noResources', lang) }}>
+  (async () => {
+    const grid = document.getElementById('resources-grid');
+    if (!grid) return;
+
+    try {
+      const sb = window.navGetSb?.();
+      if (!sb) return;
+
+      const { data, error } = await sb
+        .from('hub_resources')
+        .select('id, asset_type, title, description, url')
+        .eq('is_active', true)
+        .order('created_at', { ascending: true });
+
+      if (error || !data || data.length === 0) return;
+
+      const defaultIcon = { icon: '📎', bg: 'rgba(112,173,71,.1)' };
+
+      const html = data.map((r) => {
+        const meta = iconMap[r.asset_type] || defaultIcon;
+        const desc = r.description
+          ? (r.description.length > 80 ? r.description.slice(0, 77) + '…' : r.description)
+          : '';
+        const href = r.url || '#';
+
+        return `<div class="bg-white rounded-2xl p-5 border border-black/5 flex items-start gap-3">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center text-[1.3rem] flex-shrink-0"
+               style="background:${meta.bg}">
+            ${meta.icon}
+          </div>
+          <div>
+            <h4 class="text-[.9rem] font-bold mb-0.5">${r.title}</h4>
+            <p class="text-[.78rem] text-slate-500">${desc}</p>
+            ${href !== '#' ? `<a href="${href}" target="_blank" rel="noopener"
+               class="text-teal text-[.78rem] font-semibold no-underline hover:underline">
+              ${linkText}
+            </a>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+
+      grid.innerHTML = html;
+    } catch (_) {
+      // keep static fallback visible
+    }
+  })();
+</script>

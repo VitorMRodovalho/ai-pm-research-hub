@@ -198,6 +198,8 @@ const ptBR: Record<string, string> = {
   // ── Resources ──
   'resources.label': 'Links e Recursos',
   'resources.title': 'Próximos Passos',
+  'resources.linkText': 'Abrir →',
+  'resources.noResources': 'Nenhum recurso disponível no momento.',
 
   // ── Footer ──
   'footer.line1': 'Núcleo de Estudos e Pesquisa em IA e GP · The AI & PM Study and Research Hub',

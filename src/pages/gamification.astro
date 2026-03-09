@@ -640,7 +640,7 @@ const GAM_I18N = {
 
     // Aggregate by tribe
     const tribeStats: Record<number, { points: number; members: number; names: string[] }> = {};
-    for (let t = 1; t <= 8; t++) tribeStats[t] = { points: 0, members: 0, names: [] };
+    for (const k of Object.keys(TRIBE_NAMES)) tribeStats[Number(k)] = { points: 0, members: 0, names: [] };
 
     leaderboardData.forEach((m: any) => {
       const tid = memberTribe[m.member_id];
