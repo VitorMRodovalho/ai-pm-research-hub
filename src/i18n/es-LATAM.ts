@@ -43,6 +43,16 @@ const esLATAM: Record<string, string> = {
   'hero.countdown.label': 'para elegir tu línea de investigación',
   'hero.scroll': '▼ Desplaza para comenzar',
 
+  // ── Hero (client-side script) ──
+  'hero.dateLocale': 'es-419',
+  'hero.watchRecording': 'Ver Grabación',
+  'hero.recurringMeeting': 'Reunión Recurrente · Jueves 19:30 BRT',
+  'hero.kickoffHeldOn': 'Kick-off realizado el',
+  'hero.kickoffDoneRecordingSoon': '✅ Kick-off realizado · Grabación próximamente',
+  'hero.nextGeneralMeeting': 'Próxima reunión general:',
+  'hero.meetingSchedule': 'Jueves · 19:30 → 20:30 BRT',
+  'hero.joinMeet': 'Entrar al Meet',
+
   // ── Agenda ──
   'agenda.label': 'Agenda del Evento',
   'agenda.title': 'Qué Sucede Hoy',
@@ -72,6 +82,7 @@ const esLATAM: Record<string, string> = {
   'quadrants.q3.sub': 'Estrategia, Personas, Cultura y Portafolio',
   'quadrants.q4.title': 'Futuro y Responsabilidad',
   'quadrants.q4.sub': 'Ética, Gobernanza y Sociedad',
+  'quadrants.unavailable': 'Cuadrantes temporalmente no disponibles.',
 
   // ── Tribes ──
   'tribes.label': 'Dream Team — 8 Líderes',
@@ -111,6 +122,7 @@ const esLATAM: Record<string, string> = {
   'kpis.pilots': 'Pilotos IA',
   'kpis.impact': 'Impacto',
   'kpis.cert': 'Mini cert. IA',
+  'kpis.unavailable': 'Metas temporalmente no disponibles.',
 
   // ── Networking ──
   'networking.label': 'Momento de Conexión',
@@ -155,6 +167,8 @@ const esLATAM: Record<string, string> = {
   'trail.ranking.avg': 'Promedio general',
   'trail.completed': 'completados',
   'trail.inProgress': 'en progreso',
+  'trail.coreUnavailable': 'Cursos core no disponibles por el momento.',
+  'trail.extraUnavailable': 'Cursos complementarios no disponibles por el momento.',
 
   // ── CPMAI Showcase (S9) ──
   'cpmai.label': 'Certificación PMI-CPMAI',
@@ -181,6 +195,13 @@ const esLATAM: Record<string, string> = {
   'team.founders': 'Fundadores',
   'team.founders.sub': 'la historia que trajo el Núcleo hasta aquí',
   'team.loading': 'Cargando equipo...',
+  'team.projectTeam': 'Equipo de Proyecto',
+  'team.projectTeam.sub': 'gestión, operaciones & comunicación · Ciclo 3',
+  'team.projectManagement': 'Gerencia de Proyecto (Nivel 2)',
+  'team.commsTeam': 'Equipo de Comunicación',
+  'team.otherChapter': 'Otros',
+  'team.gpLabel': 'GP',
+  'team.deputyPmLabel': 'Deputy PM',
 
   // ── Vision ──
   'vision.label': 'Visión de Futuro',
@@ -218,6 +239,9 @@ const esLATAM: Record<string, string> = {
   'role.facilitator': 'Facilitador',
   'role.communicator': 'Multiplicador',
   'role.guest': 'Visitante',
+  'role.comms_team': 'Comunicación',
+  'role.chapter_liaison': 'Punto Focal',
+  'role.deputy_manager': 'Deputy PM',
 
   // ── Attendance page ──
   'attendance.title': 'Asistencia & Horas de Impacto',

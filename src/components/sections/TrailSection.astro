@@ -52,7 +52,7 @@ try {
           </a>
         ))}
         {!core.length && (
-          <p class="text-[.82rem] text-slate-500">Cursos core indisponiveis no momento.</p>
+          <p class="text-[.82rem] text-slate-500">{t('trail.coreUnavailable', lang)}</p>
         )}
       </div>
 
@@ -72,7 +72,7 @@ try {
           </a>
         ))}
         {!extra.length && (
-          <p class="text-[.82rem] text-slate-500">Cursos extra indisponiveis no momento.</p>
+          <p class="text-[.82rem] text-slate-500">{t('trail.extraUnavailable', lang)}</p>
         )}
       </div>
     </div>
@@ -86,7 +86,7 @@ try {
         </div>
         <div id="trailKPI" class="text-center">
           <div class="text-[2rem] font-extrabold text-[#05BFE0]">--</div>
-          <div class="text-[.7rem] text-white/50">Média geral</div>
+          <div class="text-[.7rem] text-white/50">{t('trail.ranking.avg', lang)}</div>
         </div>
       </div>
 
@@ -98,8 +98,15 @@ try {
   </div>
 </section>
 
+<span id="trail-i18n-avg" class="hidden">{t('trail.ranking.avg', lang)}</span>
+<span id="trail-i18n-completed" class="hidden">{t('trail.completed', lang)}</span>
+<span id="trail-i18n-inprogress" class="hidden">{t('trail.inProgress', lang)}</span>
+
 <script>
   const TOTAL = 8;
+  const trailRankingAvg = document.getElementById('trail-i18n-avg')?.textContent || 'Overall average';
+  const trailCompleted = document.getElementById('trail-i18n-completed')?.textContent || 'completed';
+  const trailInProgress = document.getElementById('trail-i18n-inprogress')?.textContent || 'in progress';
 
   async function bootTrail() {
     const sb = (window as any).navGetSb?.();
@@ -140,7 +147,7 @@ try {
     const kpiEl = document.getElementById('trailKPI');
     if (kpiEl) {
       kpiEl.innerHTML = `<div style="font-size:2rem;font-weight:800;color:${kpiColor}">${avg}%</div>
-        <div style="font-size:.7rem;color:rgba(255,255,255,.5)">Média geral</div>`;
+        <div style="font-size:.7rem;color:rgba(255,255,255,.5)">${trailRankingAvg}</div>`;
     }
 
     // Ranking cards
@@ -160,7 +167,7 @@ try {
           <div class="bg-white/10 rounded h-1.5 mt-1 overflow-hidden">
             <div class="h-full rounded transition-all duration-500" style="width:${r.pct}%;background:${barColor}"></div>
           </div>
-          <div class="text-[.6rem] text-white/40 mt-0.5">${r.completed}/${TOTAL} concluídos${r.inProgress > 0 ? ` · ${r.inProgress} em andamento` : ''}</div>
+          <div class="text-[.6rem] text-white/40 mt-0.5">${r.completed}/${TOTAL} ${trailCompleted}${r.inProgress > 0 ? ` · ${r.inProgress} ${trailInProgress}` : ''}</div>
         </div>
         <div class="text-base font-extrabold" style="color:${barColor}">${r.pct}%</div>
       </div>`;

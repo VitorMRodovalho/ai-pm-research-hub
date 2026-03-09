@@ -49,7 +49,7 @@ const ROLE_COLORS: Record<string, string> = {
       ).map(([role, color]) => (
         <span class="inline-flex items-center gap-1">
           <span class="w-[9px] h-[9px] rounded-full inline-block" style={`background:${color}`}></span>
-          {role === 'comms_team' ? 'Comunicação' : role === 'chapter_liaison' ? 'Ponto Focal' : role === 'deputy_manager' ? 'Deputy PM' : t(`role.${role}`, lang)}
+          {t(`role.${role}`, lang)}
         </span>
       ))}
     </div>
@@ -70,6 +70,13 @@ const ROLE_COLORS: Record<string, string> = {
   sponsorsSub: t('team.sponsors.sub', lang),
   founders: t('team.founders', lang),
   foundersSub: t('team.founders.sub', lang),
+  projectTeam: t('team.projectTeam', lang),
+  projectTeamSub: t('team.projectTeam.sub', lang),
+  projectManagement: t('team.projectManagement', lang),
+  commsTeam: t('team.commsTeam', lang),
+  otherChapter: t('team.otherChapter', lang),
+  gpLabel: t('team.gpLabel', lang),
+  deputyPmLabel: t('team.deputyPmLabel', lang),
 })}></script>
 
 <script>
@@ -189,7 +196,7 @@ const ROLE_COLORS: Record<string, string> = {
     if (!sponsors.length) return '';
     const byChapter: Record<string, Member[]> = {};
     sponsors.forEach(m => {
-      const ch = m.chapter || 'Outros';
+      const ch = m.chapter || (i18n.otherChapter || 'Outros');
       if (!byChapter[ch]) byChapter[ch] = [];
       byChapter[ch].push(m);
     });
@@ -209,8 +216,8 @@ const ROLE_COLORS: Record<string, string> = {
 
     return `<div id="team-sponsors" class="mt-10 w-full">
       <div class="flex items-baseline gap-2.5 mb-3">
-        <h3 class="text-[1.05rem] font-extrabold" style="color:${HEADING_COLORS.crimson}">${i18n.sponsors || 'Patrocinadores & Pontos Focais'}</h3>
-        <span class="text-[.75rem] text-white/50">${i18n.sponsorsSub || 'liderança e representantes dos capítulos'}</span>
+        <h3 class="text-[1.05rem] font-extrabold" style="color:${HEADING_COLORS.crimson}">${i18n.sponsors}</h3>
+        <span class="text-[.75rem] text-white/50">${i18n.sponsorsSub}</span>
       </div>
       <div class="flex flex-wrap gap-4">${inner}</div>
     </div>`;
@@ -231,12 +238,12 @@ const ROLE_COLORS: Record<string, string> = {
       let gpIdx = 0;
       const gpCards = sorted.map(m => {
         const isMainGP = getOpRole(m) === 'manager';
-        const label = isMainGP ? 'GP · ' + (m.chapter || '') : 'Deputy PM · ' + (m.chapter || '');
+        const label = isMainGP ? (i18n.gpLabel || 'GP') + ' · ' + (m.chapter || '') : (i18n.deputyPmLabel || 'Deputy PM') + ' · ' + (m.chapter || '');
         gpIdx++;
         return memberCard(m, label);
       }).join('');
       inner += `<div class="mb-4">
-        <div class="text-[.7rem] font-bold text-white/40 uppercase tracking-wider mb-2">Gerência de Projeto (Nível 2)</div>
+        <div class="text-[.7rem] font-bold text-white/40 uppercase tracking-wider mb-2">${i18n.projectManagement}</div>
         <div class="flex flex-wrap gap-4 justify-center">${gpCards}</div>
       </div>`;
     }
@@ -244,15 +251,15 @@ const ROLE_COLORS: Record<string, string> = {
     // Comms team sub-section
     if (commsTeam.length) {
       inner += `<div>
-        <div class="text-[.7rem] font-bold text-white/40 uppercase tracking-wider mb-2">Time de Comunicação</div>
+        <div class="text-[.7rem] font-bold text-white/40 uppercase tracking-wider mb-2">${i18n.commsTeam}</div>
         <div class="flex flex-wrap gap-4 justify-center">${commsTeam.map(m => memberCard(m)).join('')}</div>
       </div>`;
     }
 
     return `<div id="team-project" class="mt-10 w-full">
       <div class="flex items-baseline gap-2.5 mb-3">
-        <h3 class="text-[1.05rem] font-extrabold" style="color:${HEADING_COLORS.purple}">Equipe de Projeto</h3>
-        <span class="text-[.75rem] text-white/50">gestão, operações & comunicação · Ciclo 3</span>
+        <h3 class="text-[1.05rem] font-extrabold" style="color:${HEADING_COLORS.purple}">${i18n.projectTeam}</h3>
+        <span class="text-[.75rem] text-white/50">${i18n.projectTeamSub}</span>
       </div>
       <div class="bg-white/5 border border-white/10 rounded-2xl px-5 py-4">${inner}</div>
     </div>`;
@@ -302,12 +309,12 @@ const ROLE_COLORS: Record<string, string> = {
 
     el.innerHTML =
       projectTeamSection(gp, commsTeam)
-      + teamSection('team-leaders', i18n.leaders || 'Líderes de Tribo', i18n.leadersSub || 'pesquisadores-chefe & mentoria · Ciclo 3', HEADING_COLORS.purple, tribeLeaders)
-      + teamSection('team-researchers', i18n.researchers || 'Pesquisadores', i18n.researchersSub || 'participantes ativos · Ciclo 3', HEADING_COLORS.pink, researchers)
-      + teamSection('team-ambassadors', i18n.ambassadors || 'Embaixadores', i18n.ambassadorsSub || 'representação & multiplicação', HEADING_COLORS.emerald, ambassadors)
-      + teamSection('team-curators', i18n.curators || 'Comitê de Curadoria', i18n.curatorsSub || 'peer review & qualidade', HEADING_COLORS.amber, curators)
+      + teamSection('team-leaders', i18n.leaders, i18n.leadersSub, HEADING_COLORS.purple, tribeLeaders)
+      + teamSection('team-researchers', i18n.researchers, i18n.researchersSub, HEADING_COLORS.pink, researchers)
+      + teamSection('team-ambassadors', i18n.ambassadors, i18n.ambassadorsSub, HEADING_COLORS.emerald, ambassadors)
+      + teamSection('team-curators', i18n.curators, i18n.curatorsSub, HEADING_COLORS.amber, curators)
       + sponsorsSection(sponsors)
-      + teamSection('team-founders', i18n.founders || 'Fundadores', i18n.foundersSub || 'a história que trouxe o Núcleo até aqui', HEADING_COLORS.violet, founders);
+      + teamSection('team-founders', i18n.founders, i18n.foundersSub, HEADING_COLORS.violet, founders);
   }
 
   // ── Boot ──
