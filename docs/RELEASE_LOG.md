@@ -1,5 +1,107 @@
 # Release Log
 
+## 2026-03-09 — Wave 4: Governance, Lifecycle & Global Onboarding (Major Release)
+
+### Scope
+Complete operational governance toolkit: member lifecycle management, global onboarding broadcast,
+legacy data ingestion infrastructure, LGPD hardening, and navigation consolidation.
+
+### S-COM7: Global Onboarding Broadcast Engine
+- New Edge Function `send-global-onboarding`: groups active members by tribe, sends BCC onboarding emails
+  with Credly tutorial (public URL instructions), login guidance, profile completion steps, and TMO/PMO
+  (Tribo 3) alternative for schedule conflicts
+- GP signature embedded: Vitor Maia Rodovalho (+1 267-874-8329 / LinkedIn)
+- Dry-run mode for pre-send simulation; sandbox mode for Resend test domain
+- Management (Tier 3/4) copied on every tribe dispatch
+
+### S-ADM3: Member Lifecycle Management
+- 4 SECURITY DEFINER RPCs:
+  - `admin_move_member_tribe` — transfer with member_cycle_history log
+  - `admin_deactivate_member` — soft-delete with draft email generation
+  - `admin_change_tribe_leader` — demote old + promote new + dual history log
+  - `admin_deactivate_tribe` — bulk inactivation of all tribe members + draft email
+- All mutations require `is_superadmin = true` (Tier 5)
+- Every action auto-logs to `member_cycle_history` with: reason, timestamp, actor name
+- Admin UI: lifecycle controls in Reports panel (select-based, Superadmin gated)
+
+### S-COM1: Communications Team Integration
+- SQL backfill: Mayanna Duarte -> comms_leader; Leticia/Andressa -> comms_member
+- TeamSection.astro: recognizes comms_leader/comms_member (backward compat with comms_team)
+- Profile.astro: comms designation labels and colors
+- RPC hardening: sync-attendance-points and sync-credly-all gated to Tier 4+
+
+### Wave 4 Expansion: Product & UX (Agent 1)
+- `/admin/comms`: expanded with Tribe Impact Ranking (RPC), Broadcast History (RPC), native metrics
+- `/admin/webinars`: full CRUD for PMI chapter webinar calendar (table + RLS + UI)
+- Navigation.config.ts fully integrated into Nav.astro (dynamic rendering by tier/designation)
+
+### Wave 4 Expansion: Data Ingestion (Agent 2)
+- Edge Function `import-trello-legacy`: Trello JSON -> artifacts/hub_resources with dedup
+- Edge Function `import-calendar-legacy`: Google Calendar -> events with keyword filtering
+- `trello_import_log` audit table; extended artifacts/hub_resources with source/tags/trello_card_id
+- `docs/WAVE5_KNOWLEDGE_HUB_PLAN.md`: taxonomy, tag system, KPI alignment
+
+### Wave 4 Expansion: Admin Governance (Agent 3)
+- `admin_links` table with Tier 4+ RLS; seeded with Pasta Administrativa
+- `list_admin_links` RPC; UI in admin Reports panel
+- Git hygiene: removed migrations.skip/, .bak files; added patterns to .gitignore
+
+### LGPD & Security (Wave 1-3 Foundation)
+- RLS on `members` table with SECURITY DEFINER helpers (get_my_member_record, has_min_tier)
+- `public_members` VIEW (no email/phone) used in all non-admin pages
+- WhatsApp opt-in (share_whatsapp boolean), peer-to-peer wa.me via RPC
+- Email broadcast via Edge Function with BCC (no frontend email exposure)
+
+### Edge Functions Deployed (11 total, all --no-verify-jwt)
+| Function | Status | Purpose |
+|---|---|---|
+| send-tribe-broadcast | ACTIVE | Per-tribe email broadcast |
+| send-global-onboarding | ACTIVE | Global onboarding email |
+| sync-attendance-points | ACTIVE | Attendance XP sync |
+| sync-credly-all | ACTIVE | Bulk Credly badge sync |
+| verify-credly | ACTIVE | Individual Credly verification |
+| sync-comms-metrics | ACTIVE | Communications KPI ingestion |
+| sync-knowledge-insights | ACTIVE | Knowledge hub insights |
+| import-trello-legacy | ACTIVE | Trello board data import |
+| import-calendar-legacy | ACTIVE | Google Calendar event import |
+| get-comms-metrics | ACTIVE | Comms metrics reader |
+| sync-knowledge-youtube | ACTIVE | YouTube knowledge sync |
+
+### DB Migrations Applied (this wave)
+- `20260309070000` — Admin global access + timelock bypass
+- `20260309080000` — Members RLS + public_members VIEW
+- `20260309090000` — share_whatsapp column + RPCs
+- `20260309100000` — broadcast_log table + RLS
+- `20260309110000` — RLS recursion fix (SECURITY DEFINER helpers)
+- `20260309120000` — comms_metrics RLS stabilization
+- `20260309130000` — Comms designations backfill
+- `20260309140000` — Webinars schema + RPC security hardening
+- `20260309150000` — Legacy ingestion + admin_links
+- `20260309160000` — Member lifecycle RPCs
+
+### Navigation Config (all routes covered)
+- Home anchors: agenda, quadrants, tribes, kpis, networking, rules, trail, team, vision, resources
+- Tools: workspace, onboarding, artifacts, gamification
+- Authenticated: attendance (member+), my-tribe (member+, dynamic)
+- Profile: profile (member+, drawer)
+- Admin: admin (observer+), analytics (admin+), comms (admin+ or comms designation),
+  webinars (admin+), help (leader+)
+- Redirect stubs: /rank -> /gamification, /ranks -> /gamification, /teams -> /#team
+
+### Git Hygiene
+- Removed `supabase/migrations.skip/` (3 legacy files)
+- Added `.bak`, `.skip`, `migrations.skip/` to .gitignore
+- No PII in client-facing code; sandbox emails only in server-side Edge Functions
+
+### Validation
+- `npm run build` passed
+- `supabase db push` confirmed all migrations applied
+- All 11 Edge Functions confirmed ACTIVE via `supabase functions list`
+- `navigation.config.ts` covers all 17 page routes + 5 admin sub-routes
+
+---
+
+
 ## 2026-03-09 — Tribe Kickoff Readiness (Major Release)
 
 ### Scope
