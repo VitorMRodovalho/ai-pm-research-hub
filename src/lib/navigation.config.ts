@@ -54,6 +54,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'onboarding',   labelKey: 'nav.onboarding',   href: '/onboarding',   minTier: 'visitor', requiresAuth: false, section: 'main', group: 'tools' },
   { key: 'artifacts',    labelKey: 'nav.artifacts',     href: '/artifacts',    minTier: 'visitor', requiresAuth: false, section: 'main', group: 'tools' },
   { key: 'gamification', labelKey: 'nav.gamification',  href: '/gamification', minTier: 'visitor', requiresAuth: false, section: 'main', group: 'tools' },
+  { key: 'presentations', labelKey: 'nav.presentations', href: '/presentations', minTier: 'member', requiresAuth: true, section: 'both', group: 'tools' },
 
   // ─── Authenticated pages ───
   { key: 'attendance', labelKey: 'nav.attendance',  href: '/attendance', minTier: 'member', requiresAuth: true, section: 'both', group: 'member', badge: 'crimson' },

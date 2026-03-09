@@ -247,15 +247,12 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
     });
   });
 
-  // ── Load tribe member counts (researchers, current cycle only) ──
+  // ── Load tribe slot counts from tribe_selections ──
+  // Researchers have tribe_id=null in members; their tribe choice is in tribe_selections
   async function loadTribeCounts() {
     const sb = getSb();
     if (!sb) return;
-    const { data, error } = await sb.from('public_members')
-      .select('tribe_id')
-      .eq('operational_role', 'researcher')
-      .eq('current_cycle_active', true)
-      .not('tribe_id', 'is', null);
+    const { data, error } = await sb.from('tribe_selections').select('tribe_id');
     if (error) {
       console.error('tribes.loadTribeCounts failed', error);
       return;

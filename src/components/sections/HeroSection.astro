@@ -46,7 +46,7 @@ const { deadline = '2030-12-31T23:59:59Z', lang = 'pt-BR' } = Astro.props;
       ))}
     </div>
 
-    <!-- Countdown / Post-event area -->
+    <!-- Countdown / Cycle Status area -->
     <div id="hero-countdown-area">
       <div class="mt-8 bg-white/6 border border-white/10 rounded-2xl px-6 py-4 inline-flex items-center gap-5 flex-wrap justify-center" id="countdown-bar">
         <div class="text-center">
@@ -72,7 +72,21 @@ const { deadline = '2030-12-31T23:59:59Z', lang = 'pt-BR' } = Astro.props;
       </div>
     </div>
 
-    <!-- Recurring meeting (shown for logged-in users, after kickoff) -->
+    <!-- Cycle Status bar (replaces countdown after kickoff) -->
+    <div id="hero-cycle-status" class="hidden mt-6">
+      <div class="bg-white/6 border border-[#05BFE0]/20 rounded-2xl px-6 py-4 inline-flex items-center gap-4 flex-wrap justify-center">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse"></span>
+          <span class="text-[.85rem] font-bold text-white" id="cycle-label">{t('hero.cycleActive', lang)}</span>
+        </div>
+        <span class="text-white/20">|</span>
+        <span class="text-[.78rem] text-white/60" id="cycle-tribe-count"></span>
+        <span class="text-white/20">|</span>
+        <span class="text-[.78rem] text-white/60" id="cycle-member-count"></span>
+      </div>
+    </div>
+
+    <!-- Next Meeting bar (shown after kickoff for logged-in users) -->
     <div id="hero-meeting-bar" class="hidden mt-4"></div>
   </div>
 
@@ -91,6 +105,9 @@ const { deadline = '2030-12-31T23:59:59Z', lang = 'pt-BR' } = Astro.props;
   nextGeneralMeeting: t('hero.nextGeneralMeeting', lang),
   meetingSchedule: t('hero.meetingSchedule', lang),
   joinMeet: t('hero.joinMeet', lang),
+  cycleActive: t('hero.cycleActive', lang),
+  cycleTribes: t('hero.cycleTribes', lang),
+  cycleMembers: t('hero.cycleMembers', lang),
 })}></script>
 
 <script define:vars={{ deadline }}>
@@ -198,6 +215,34 @@ const { deadline = '2030-12-31T23:59:59Z', lang = 'pt-BR' } = Astro.props;
   }
 
   loadHeroEvent();
+
+  async function loadCycleStatus() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(loadCycleStatus, 400); return; }
+
+    const cdArea = document.getElementById('hero-countdown-area');
+    const csArea = document.getElementById('hero-cycle-status');
+    const bar = document.getElementById('countdown-bar');
+
+    if (bar && bar.style.display === 'none' && csArea) {
+      csArea.classList.remove('hidden');
+      if (cdArea) cdArea.classList.add('hidden');
+    }
+
+    try {
+      const [{ count: tribeCount }, { count: memberCount }] = await Promise.all([
+        sb.from('tribes').select('id', { count: 'exact', head: true }),
+        sb.from('public_members').select('id', { count: 'exact', head: true })
+          .eq('current_cycle_active', true),
+      ]);
+      const tribesEl = document.getElementById('cycle-tribe-count');
+      const membersEl = document.getElementById('cycle-member-count');
+      if (tribesEl) tribesEl.textContent = (tribeCount || 0) + ' ' + (hi18n.cycleTribes || 'tribos ativas');
+      if (membersEl) membersEl.textContent = (memberCount || 0) + ' ' + (hi18n.cycleMembers || 'pesquisadores');
+    } catch (e) { console.warn('cycle status:', e); }
+  }
+
+  setTimeout(loadCycleStatus, 1500);
 </script>
 
 <style>

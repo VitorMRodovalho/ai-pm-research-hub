@@ -33,6 +33,60 @@ const deadlineIso = await getSelectionDeadlineIso();
   <TeamSection lang={lang} />
   <VisionSection lang={lang} />
   <ResourcesSection lang={lang} />
+  <!-- Presentation Toggle (Tier 4+ only) -->
+  <div id="pres-toggle-container" class="hidden fixed bottom-6 right-6 z-50">
+    <button id="pres-toggle-btn"
+      class="flex items-center gap-2 px-4 py-2.5 bg-navy text-white rounded-xl text-[.78rem] font-bold shadow-lg cursor-pointer border-2 border-[#05BFE0]/30 hover:border-[#05BFE0] transition-all">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+      <span id="pres-toggle-label">Presentation Mode</span>
+    </button>
+  </div>
+
+  <script>
+    (function initPresToggle() {
+      var m = (window as any).navGetMember?.();
+      function show(member: any) {
+        if (!member) return;
+        var isAdmin = member.is_superadmin === true
+          || member.operational_role === 'manager'
+          || member.operational_role === 'deputy_manager';
+        if (!isAdmin) return;
+        var c = document.getElementById('pres-toggle-container');
+        if (c) c.classList.remove('hidden');
+      }
+      if (m) show(m);
+      window.addEventListener('nav:member', function(e: any) { show(e.detail); });
+
+      var active = false;
+      document.getElementById('pres-toggle-btn')?.addEventListener('click', function() {
+        active = !active;
+        document.body.classList.toggle('presentation-mode', active);
+        var label = document.getElementById('pres-toggle-label');
+        if (label) label.textContent = active ? 'Exit Presentation' : 'Presentation Mode';
+        (this as HTMLElement).classList.toggle('bg-[#05BFE0]', active);
+        (this as HTMLElement).classList.toggle('text-navy', active);
+        (this as HTMLElement).classList.toggle('bg-navy', !active);
+        (this as HTMLElement).classList.toggle('text-white', !active);
+      });
+    })();
+  </script>
+
+  <style is:global>
+    .presentation-mode section {
+      border: 2px solid rgba(5, 191, 224, 0.15);
+      border-radius: 1.5rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 0 30px rgba(5, 191, 224, 0.05);
+      transition: all 0.3s ease;
+    }
+    .presentation-mode section:hover {
+      border-color: rgba(5, 191, 224, 0.35);
+      box-shadow: 0 0 40px rgba(5, 191, 224, 0.1);
+    }
+    .presentation-mode nav { opacity: 0.4; transition: opacity 0.3s; }
+    .presentation-mode nav:hover { opacity: 1; }
+  </style>
+
   <footer class="bg-[#200F3B] text-white/40 py-10 px-6 text-center text-[.78rem]">
     <p>{t('footer.line1', lang)}</p>
     <p class="mt-1">{t('footer.chapters', lang)}</p>
