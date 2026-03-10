@@ -1,5 +1,21 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 23: Hero Kickoff Runtime Truth
+
+### Decisions
+
+1. **`home_schedule` should decide when kickoff is over, not the latest `events` row**: The hero already depended on `home_schedule` for public schedule messaging, but its post-kickoff state still flipped based on the latest global event date. Wave 23 moves that state transition to `kickoffAt`, which is the intended public schedule contract.
+
+2. **Legacy event reads remain acceptable only as optional enrichment**: Replay links and meeting links can still come from `events`, but the public home should no longer wait on or trust that table to know whether kickoff already happened.
+
+### Process Lessons Learned
+
+1. **Runtime source-of-truth work often needs a second pass on client scripts**: Server-rendered copy had already moved toward `home_schedule`, but one client-side branch still encoded operational truth via `events`. Hydration paths need the same audit discipline as SSR props.
+
+2. **Validation failures can be environmental without invalidating the slice**: The first smoke rerun failed due to `ENOSPC` from orphaned `astro dev` watchers, while browser validation for the actual behavior had already passed. Cleaning the stale processes and rerunning smoke was enough to confirm the tranche.
+
+---
+
 ## 2026-03-11 — Wave 22: Public Cycle Copy Cleanup
 
 ### Decisions

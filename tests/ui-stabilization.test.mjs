@@ -107,3 +107,13 @@ test('public home locale copy no longer hardcodes cycle 3 labels', () => {
   assert.equal(en.includes('management, operations & communications · Cycle 3'), false);
   assert.equal(es.includes('gestión, operaciones & comunicación · Ciclo 3'), false);
 });
+
+test('hero post-kickoff state now uses runtime kickoff metadata before optional event enrichment', () => {
+  const hero = read('src/components/sections/HeroSection.astro');
+
+  assert.equal(hero.includes("kickoffAt: schedule?.kickoffAt ?? null"), true);
+  assert.equal(hero.includes("platformLabel: schedule?.platformLabel ?? null"), true);
+  assert.equal(hero.includes("const heroKickoffPassed ="), true);
+  assert.equal(hero.includes("const evDate = new Date(ev.date + 'T22:30:00Z');"), false);
+  assert.equal(hero.includes("eventArea.innerHTML = kickoffFallbackHtml(dateStr);"), true);
+});

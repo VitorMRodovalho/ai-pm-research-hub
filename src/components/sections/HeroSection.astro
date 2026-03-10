@@ -141,6 +141,8 @@ const recurringMeeting = `${t('hero.recurringMeetingPrefix', lang)} · ${recurri
 <script id="hero-i18n" type="application/json" set:html={JSON.stringify({
   dateLocale: t('hero.dateLocale', lang),
   hasDeadline,
+  kickoffAt: schedule?.kickoffAt ?? null,
+  platformLabel: schedule?.platformLabel ?? null,
   watchRecording: t('hero.watchRecording', lang),
   recurringMeeting,
   kickoffHeldOn: t('hero.kickoffHeldOn', lang),
@@ -186,6 +188,34 @@ const recurringMeeting = `${t('hero.recurringMeetingPrefix', lang)} · ${recurri
   const heroI18nEl = document.getElementById('hero-i18n');
   const hi18n = heroI18nEl ? JSON.parse(heroI18nEl.textContent || '{}') : {};
   const heroHasDeadline = hi18n.hasDeadline === true;
+  const heroKickoffDate = typeof hi18n.kickoffAt === 'string' ? new Date(hi18n.kickoffAt) : null;
+  const heroKickoffPassed = !!heroKickoffDate
+    && !Number.isNaN(heroKickoffDate.getTime())
+    && heroKickoffDate.getTime() < Date.now();
+
+  function formatKickoffDateLabel() {
+    if (!heroKickoffDate || Number.isNaN(heroKickoffDate.getTime())) return null;
+    const dateLocale = hi18n.dateLocale || 'pt-BR';
+    return heroKickoffDate.toLocaleDateString(dateLocale, {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    });
+  }
+
+  function kickoffFallbackHtml(dateStr: string | null): string {
+    return `
+      <div class="flex flex-wrap gap-3 justify-center">
+        <div class="inline-flex items-center gap-2 bg-white/6 border border-white/10 px-5 py-2.5 rounded-xl text-white text-[.9rem] font-medium">
+          ${hi18n.kickoffDoneRecordingSoon || '✅ Kick-off realizado · Gravação em breve'}
+        </div>
+        ${hi18n.platformLabel ? `
+        <div class="inline-flex items-center gap-2 bg-white/6 border border-white/10 px-5 py-2.5 rounded-xl text-white text-[.9rem] font-medium">
+          📅 ${hi18n.platformLabel}
+        </div>` : ''}
+      </div>
+      ${dateStr ? `<div class="text-[.72rem] text-white/40 mt-2">${hi18n.kickoffHeldOn || 'Kick-off realizado em'} ${dateStr}</div>` : ''}`;
+  }
 
   function meetingBarHtml(meetLink: string): string {
     return `
@@ -200,67 +230,66 @@ const recurringMeeting = `${t('hero.recurringMeetingPrefix', lang)} · ${recurri
   }
 
   async function loadHeroEvent() {
-    const sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(loadHeroEvent, 300); return; }
-
-    const { data: events } = await sb.from('events')
-      .select('id, title, date, meeting_link, youtube_url, is_recorded, duration_minutes, duration_actual')
-      .is('tribe_id', null)
-      .order('date', { ascending: false })
-      .limit(1);
-
-    if (!events?.length) return;
-    const ev = events[0];
-    const evDate = new Date(ev.date + 'T22:30:00Z');
-    const isPast = evDate < new Date();
-
     const eventArea = document.getElementById('hero-event-area');
     if (!eventArea) return;
 
-    const dateLocale = hi18n.dateLocale || 'pt-BR';
-
-    if (isPast && ev.youtube_url) {
-      const dateStr = new Date(ev.date).toLocaleDateString(dateLocale, { day: '2-digit', month: 'long', year: 'numeric' });
-      const duration = ev.duration_actual || ev.duration_minutes || 90;
-      eventArea.innerHTML = `
-        <div class="flex flex-wrap gap-3 justify-center">
-          <a href="${ev.youtube_url}" target="_blank" rel="noopener"
-            class="inline-flex items-center gap-2 bg-red-600/90 hover:bg-red-600 text-white px-5 py-2.5 rounded-xl text-[.9rem] font-semibold no-underline transition-all">
-            ▶️ ${hi18n.watchRecording || 'Assistir Gravação'} · ${Math.round(duration)}min
-          </a>
-          ${ev.meeting_link ? `
-          <a href="${ev.meeting_link}" target="_blank" rel="noopener"
-            class="inline-flex items-center gap-2 bg-white/6 border border-white/10 hover:bg-white/12 text-white px-5 py-2.5 rounded-xl text-[.9rem] font-medium no-underline transition-all">
-            📅 ${hi18n.recurringMeeting || 'Reunião recorrente do ciclo'}
-          </a>` : ''}
-        </div>
-        <div class="text-[.72rem] text-white/40 mt-2">${hi18n.kickoffHeldOn || 'Kick-off realizado em'} ${dateStr}</div>`;
-    } else if (isPast) {
-      eventArea.innerHTML = `
-        <div class="inline-flex items-center gap-2 bg-white/6 border border-white/10 px-5 py-2.5 rounded-xl text-white text-[.9rem] font-medium">
-          ${hi18n.kickoffDoneRecordingSoon || '✅ Kick-off realizado · Gravação em breve'}
-        </div>`;
+    const dateStr = formatKickoffDateLabel();
+    if (heroKickoffPassed) {
+      eventArea.innerHTML = kickoffFallbackHtml(dateStr);
     }
 
-    const member = (window as any).navGetMember?.();
-    if (member && ev.meeting_link && isPast) {
-      const meetBar = document.getElementById('hero-meeting-bar');
-      if (meetBar) {
-        meetBar.classList.remove('hidden');
-        meetBar.innerHTML = meetingBarHtml(ev.meeting_link);
+    const sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(loadHeroEvent, 300); return; }
+
+    try {
+      const { data: events } = await sb.from('events')
+        .select('id, date, meeting_link, youtube_url, duration_minutes, duration_actual')
+        .is('tribe_id', null)
+        .order('date', { ascending: false })
+        .limit(1);
+
+      const ev = events?.[0];
+      if (!ev) return;
+
+      if (heroKickoffPassed && ev.youtube_url) {
+        const duration = ev.duration_actual || ev.duration_minutes || 90;
+        eventArea.innerHTML = `
+          <div class="flex flex-wrap gap-3 justify-center">
+            <a href="${ev.youtube_url}" target="_blank" rel="noopener"
+              class="inline-flex items-center gap-2 bg-red-600/90 hover:bg-red-600 text-white px-5 py-2.5 rounded-xl text-[.9rem] font-semibold no-underline transition-all">
+              ▶️ ${hi18n.watchRecording || 'Assistir Gravação'} · ${Math.round(duration)}min
+            </a>
+            ${ev.meeting_link ? `
+            <a href="${ev.meeting_link}" target="_blank" rel="noopener"
+              class="inline-flex items-center gap-2 bg-white/6 border border-white/10 hover:bg-white/12 text-white px-5 py-2.5 rounded-xl text-[.9rem] font-medium no-underline transition-all">
+              📅 ${hi18n.recurringMeeting || 'Reunião recorrente do ciclo'}
+            </a>` : ''}
+          </div>
+          ${dateStr ? `<div class="text-[.72rem] text-white/40 mt-2">${hi18n.kickoffHeldOn || 'Kick-off realizado em'} ${dateStr}</div>` : ''}`;
       }
-    }
 
-    window.addEventListener('nav:member', () => {
-      const m = (window as any).navGetMember?.();
-      if (m && ev.meeting_link && isPast) {
+      const member = (window as any).navGetMember?.();
+      if (member && ev.meeting_link && heroKickoffPassed) {
         const meetBar = document.getElementById('hero-meeting-bar');
-        if (meetBar && meetBar.classList.contains('hidden')) {
+        if (meetBar) {
           meetBar.classList.remove('hidden');
           meetBar.innerHTML = meetingBarHtml(ev.meeting_link);
         }
       }
-    });
+
+      window.addEventListener('nav:member', () => {
+        const m = (window as any).navGetMember?.();
+        if (m && ev.meeting_link && heroKickoffPassed) {
+          const meetBar = document.getElementById('hero-meeting-bar');
+          if (meetBar && meetBar.classList.contains('hidden')) {
+            meetBar.classList.remove('hidden');
+            meetBar.innerHTML = meetingBarHtml(ev.meeting_link);
+          }
+        }
+      });
+    } catch (error) {
+      console.warn('hero event:', error);
+    }
   }
 
   loadHeroEvent();

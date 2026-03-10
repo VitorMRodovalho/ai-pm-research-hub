@@ -1,5 +1,28 @@
 # Release Log
 
+## 2026-03-11 — v0.21.0 Wave 23: Hero Kickoff Runtime Truth
+
+### Scope
+Wave 23 reduces another public-home legacy dependency by making `home_schedule.kickoffAt` the primary truth for the post-kickoff hero state, while keeping `events` only as optional enrichment for recording and meeting links.
+
+### Hero Runtime Hardening
+- **`src/components/sections/HeroSection.astro`**: The hero client payload now receives `kickoffAt` and `platformLabel` from the server-side `home_schedule` read. Post-kickoff fallback state is rendered from that runtime contract before any client-side `events` query completes.
+- **Legacy event reads reduced**: The `events` lookup no longer decides whether kickoff already happened; it now only upgrades the UI with replay CTA and meeting-link enrichment when those records exist.
+
+### Governance / Regression
+- **`tests/ui-stabilization.test.mjs`**: Added a regression check ensuring the hero injects kickoff runtime metadata and no longer derives post-kickoff state from `ev.date + 'T22:30:00Z'`.
+- **Backlog / governance / permissions / README** updated to reflect this public runtime follow-through with no ACL or site-hierarchy impact.
+
+### Files Changed
+- `src/components/sections/HeroSection.astro`
+- `tests/ui-stabilization.test.mjs`
+- `backlog-wave-planning-updated.md`, `docs/RELEASE_LOG.md`, `docs/GOVERNANCE_CHANGELOG.md`, `docs/PERMISSIONS_MATRIX.md`, `README.md`
+
+### Audit Results
+- Build: clean | Tests: 25/25 | Browser guard: OK | Smoke: routes OK
+
+---
+
 ## 2026-03-11 — v0.20.0 Wave 22: Public Cycle Copy Cleanup
 
 ### Scope

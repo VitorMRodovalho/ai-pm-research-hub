@@ -8,6 +8,11 @@
 
 ## LATEST UPDATE (2026-03-11)
 
+### Entregue em Wave 23
+- **W23.1 Hero Kickoff Runtime Truth**: `HeroSection.astro` passa a derivar o estado pós-kickoff de `home_schedule.kickoffAt`, em vez de depender da data do último registro em `events`.
+- **W23.2 Optional Event Enrichment**: a leitura de `events` no hero permanece apenas como enriquecimento para replay/link de reunião, sem ser mais pré-requisito para a home pública sair do estado de kickoff agendado.
+- **W23.3 Regression Lock**: `tests/ui-stabilization.test.mjs` agora trava a injeção de `kickoffAt`/`platformLabel` no payload do hero e a remoção do cálculo legado baseado em `ev.date`.
+
 ### Entregue em Wave 22
 - **W22.1 Public Cycle Copy Cleanup**: labels visíveis da home (`hero.badge`, `cpmai.noCerts`, subtítulos de `TeamSection`) deixam de mencionar `Ciclo 3` e passam a usar wording genérico do ciclo atual.
 - **W22.2 Regression Lock**: `tests/ui-stabilization.test.mjs` agora trava explicitamente a ausência das variantes antigas de `Cycle/Ciclo 3` nos textos públicos tocados nesta tranche.
@@ -54,6 +59,9 @@
 - **W14.1 Doc Divergence Cleanup**: README, MIGRATION e CONTRIBUTING alinhados com produção atual (Chart.js nativo, smoke routes, 5-phase, repo/path corretos).
 - **W14.2 Admin Hygiene**: Removidas referências antigas a PostHog/Looker do admin atual; primeira tranche de event delegation aplicada em `admin/index.astro` e shared UI.
 - **W14.3 Deferred Structuring**: S23, S24, S-KNW7 e Webinars reclassificados por lane, dependências e critérios de saída do deferred.
+
+### Wave 23 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 25/25 | **Browser guard**: OK | **Routes**: smoke OK
 
 ### Wave 22 Audit Results (2026-03-11)
 - **Build**: clean | **Tests**: 24/24 | **Browser guard**: OK | **Routes**: smoke OK
