@@ -9,6 +9,7 @@ Este documento descreve como habilitar o assistente de IA a consultar a arquitet
 | Ação | Comando / Método | Status |
 |------|------------------|--------|
 | **Introspectar schema (gerar tipos)** | `supabase gen types typescript --linked` | ✅ Funciona |
+| **Auditar migrations local vs remoto** | `supabase migration list` | ✅ Funciona |
 | **Consultas REST API** | `curl` + `source .env` + `PUBLIC_SUPABASE_URL` e `PUBLIC_SUPABASE_ANON_KEY` | ✅ Funciona |
 | **Ler migrações locais** | Arquivos em `supabase/migrations/` | ✅ Sempre |
 | **Escrever novas migrações** | Criar arquivos `.sql` em `supabase/migrations/` | ✅ Sempre |
@@ -16,6 +17,7 @@ Este documento descreve como habilitar o assistente de IA a consultar a arquitet
 
 O assistente consegue:
 - Gerar tipos do schema remoto e ler a estrutura (tabelas, colunas, FKs)
+- Confirmar `Local == Remote` no histórico de migrations do projeto linkado
 - Executar consultas via REST API (com `source .env` antes; sujeito a RLS da chave anon)
 - Criar migrações idempotentes
 - Propor limpeza de estrutura legada com base no schema conhecido

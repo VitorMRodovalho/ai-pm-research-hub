@@ -146,10 +146,10 @@ The current production pattern is to keep communications metrics in Supabase-bac
 ## Immediate Engineering Priorities
 
 1. Continue stabilizing older member/admin surfaces that still depend on rerender/rebind or mutable callback patterns.
-2. Restore a fully repeatable live Supabase audit path on this workstation (`migration list` / DB auth) before the next schema-touching wave.
-3. Expand Playwright coverage for internal modal/ACL flows now that attendance, profile, and selection stabilization is underway.
+2. Expand browser coverage from the new `/admin/selection` ACL guard into additional modal and authenticated internal flows.
+3. Finish replacing remaining static home-cycle copy and older compatibility fallbacks with runtime schedule/config sources.
 4. Keep site hierarchy, access tiers, and LGPD visibility rules aligned across nav, pages, and docs.
-5. Replace deadline fallbacks with `home_schedule` as the single source before advancing new operational flows.
+5. Extend `home_schedule`-driven behavior beyond selection gating into the remaining home/event messaging that still uses static copy.
 
 ---
 

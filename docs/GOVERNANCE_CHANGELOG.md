@@ -1,5 +1,25 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 17: Home Schedule Hardening And Browser Guard Base
+
+### Decisions
+
+1. **Missing schedule config should no longer look like an open window**: The old far-future fallback (`2030-12-31`) kept the home selection surfaces in a fake "still open" state when `home_schedule.selection_deadline_at` was absent. The landing flow now treats that condition explicitly as `pending`, which is safer and more honest than inventing a date.
+
+2. **Hero and Tribes should derive availability from the same runtime schedule source**: `schedule.ts`, `HeroSection.astro`, and `TribesSection.astro` now share the same operational truth: valid deadline means countdown/open window, past deadline means closed, no deadline means pending configuration.
+
+3. **Touched legacy links should leave inline handlers behind**: While hardening `TribesSection.astro`, the remaining `onclick="event.stopPropagation()"` links were migrated to explicit listeners so the touched surface keeps following the delegated/no-inline direction adopted in later waves.
+
+4. **Browser guard coverage starts with ACL, not UI polish**: The first Playwright-backed check targets `/admin/selection` access denial for anonymous users. This gives immediate regression value on LGPD-sensitive access control before broader modal or authenticated flows are added.
+
+### Process Lessons Learned
+
+1. **A restored CLI audit path should be re-validated immediately**: After the earlier transient auth failure, rerunning `supabase migration list` in the next slice confirmed the live path is healthy again and reduced the operational uncertainty left over from Wave 16.
+
+2. **Standalone browser scripts are a better first step than forcing a full browser test runner**: Reusing the smoke-test pattern (`start dev server → exercise real browser → shut down`) is enough to start browser coverage without adding extra framework overhead.
+
+---
+
 ## 2026-03-11 — Wave 16: Supabase Audit, Profile And Selection Stabilization
 
 ### Decisions

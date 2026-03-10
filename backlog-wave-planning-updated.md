@@ -8,6 +8,12 @@
 
 ## LATEST UPDATE (2026-03-11)
 
+### Entregue em Wave 17
+- **W17.1 Live Supabase Audit Restored**: `supabase migration list` voltou a responder sem `--debug`; confirmado `44/44 local == remote` no projeto linkado.
+- **W17.2 Home Schedule Hardening**: `schedule.ts` deixa de inventar o sentinel `2030`; home passa a tratar o prazo de seleção como estado real (`open` / `closed` / `pending`) vindo de `home_schedule`.
+- **W17.3 Tribes UX Guardrail**: `TribesSection.astro` deixa de manter seleção artificialmente aberta sem cronograma; badges/notice refletem configuração real e links tocados saem de `onclick` inline.
+- **W17.4 Browser Guard Coverage Base**: criada a primeira verificação browser real com Playwright para garantir que `/admin/selection` nega acesso a visitantes anônimos.
+
 ### Entregue em Wave 16
 - **W16.1 Supabase Audit & Drift Fix**: contagem documental de migrations corrigida para `44`; `database.gen.ts` regenerado a partir do projeto linkado; nenhum schema novo aberto nesta tranche.
 - **W16.2 Profile Stabilization**: `profile.astro` deixa de depender de rebinding pós-`renderProfile(...)` para normalização do campo Credly, usando listeners delegados.
@@ -378,6 +384,24 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 - **Supabase audit**: repo em `44` migrations; schema linkado regenerado com sucesso em `src/lib/database.gen.ts`; `supabase migration list` nesta máquina requer refresh de credencial DB antes da próxima wave com write path de schema
 - **Stabilization**: `profile` sem rebinding dedicado de Credly; `/admin/selection` cycle-aware; `ConfirmDialog` sem `btn.onclick` mutável
 - **Site hierarchy / ACL**: `/admin/selection` continua `admin` + `lgpdSensitive`; sem regressão de visibilidade
+
+---
+
+## WAVE 17: Home Schedule Hardening & Browser Guard Base — CONCLUIDA
+**Foco:** trocar fallbacks artificiais de prazo por estado runtime real na home e iniciar cobertura browser para guards internos sem abrir nova frente de schema.
+
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| W17.1 | Live Supabase Audit Restore | High | Done | `supabase migration list` voltou a funcionar normalmente no projeto linkado; estado confirmado em `44/44 local == remote`. |
+| W17.2 | Home Schedule Hardening | High | Done | `src/lib/schedule.ts` passa a retornar `null` quando `home_schedule.selection_deadline_at` não está configurado; `HeroSection` e `TribesSection` deixam de depender do sentinel `2030`. |
+| W17.3 | Tribes Availability Hygiene | High | Done | `TribesSection.astro` exibe estados `aberta` / `encerrada` / `pendente`, bloqueia seleção artificialmente aberta sem cronograma e remove os `onclick` inline ainda presentes nos links tocados. |
+| W17.4 | Browser ACL Guard Base | Medium | Done | Novo script browser com Playwright valida que `/admin/selection` permanece negado para visitantes anônimos. |
+
+### Wave 17 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 20/20 | **Browser guard**: OK | **Smoke**: routes OK
+- **Supabase audit**: `supabase migration list` restaurado e confirmando `44/44 local == remote`
+- **Home schedule**: sem deadline fictício `2030`; home usa estado real de cronograma
+- **Site hierarchy / ACL**: `/admin/selection` continua `admin` + `lgpdSensitive`; novo teste browser trava esse guard
 
 ---
 

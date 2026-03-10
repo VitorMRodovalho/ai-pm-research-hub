@@ -3,11 +3,12 @@ import { CHAPTER_CODES } from '../../data/chapters';
 import { t, type Lang } from '../../i18n/utils';
 
 interface Props {
-  deadline?: string;
+  deadline?: string | null;
   lang?: Lang;
 }
 
-const { deadline = '2030-12-31T23:59:59Z', lang = 'pt-BR' } = Astro.props;
+const { deadline = null, lang = 'pt-BR' } = Astro.props;
+const hasDeadline = typeof deadline === 'string' && !Number.isNaN(new Date(deadline).getTime());
 ---
 
 <section class="hero relative min-h-screen flex items-center justify-center overflow-hidden pt-14" id="hero">
@@ -47,7 +48,7 @@ const { deadline = '2030-12-31T23:59:59Z', lang = 'pt-BR' } = Astro.props;
     </div>
 
     <!-- Countdown / Cycle Status area -->
-    <div id="hero-countdown-area">
+    <div id="hero-countdown-area" class:list={{ hidden: !hasDeadline }}>
       <div class="mt-8 bg-white/6 border border-white/10 rounded-2xl px-6 py-4 inline-flex items-center gap-5 flex-wrap justify-center" id="countdown-bar">
         <div class="text-center">
           <div class="text-3xl font-extrabold text-[#05BFE0] leading-none" id="cd-d">--</div>
@@ -110,10 +111,15 @@ const { deadline = '2030-12-31T23:59:59Z', lang = 'pt-BR' } = Astro.props;
   cycleMembers: t('hero.cycleMembers', lang),
 })}></script>
 
-<script define:vars={{ deadline }}>
+<script define:vars={{ deadline, hasDeadline }}>
   // ── Countdown (for tribe selection deadline) ──
-  var dl = new Date(deadline);
+  var dl = hasDeadline ? new Date(deadline) : null;
   function tick() {
+    if (!dl) {
+      var noDeadlineBar = document.getElementById('countdown-bar');
+      if (noDeadlineBar) noDeadlineBar.style.display = 'none';
+      return;
+    }
     var diff = dl - new Date();
     if (diff <= 0) {
       var bar = document.getElementById('countdown-bar');
@@ -130,7 +136,7 @@ const { deadline = '2030-12-31T23:59:59Z', lang = 'pt-BR' } = Astro.props;
     if (s) s.textContent = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
   }
   tick();
-  setInterval(tick, 1000);
+  if (dl) setInterval(tick, 1000);
 </script>
 
 <script>
@@ -224,7 +230,7 @@ const { deadline = '2030-12-31T23:59:59Z', lang = 'pt-BR' } = Astro.props;
     const csArea = document.getElementById('hero-cycle-status');
     const bar = document.getElementById('countdown-bar');
 
-    if (bar && bar.style.display === 'none' && csArea) {
+    if (csArea && (!hasDeadline || (bar && bar.style.display === 'none'))) {
       csArea.classList.remove('hidden');
       if (cdArea) cdArea.classList.add('hidden');
     }

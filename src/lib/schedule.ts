@@ -4,9 +4,13 @@
  */
 import { getSupabase } from './supabase';
 
-const FALLBACK_DEADLINE_ISO = '2030-12-31T23:59:59Z'; // far future — avoid blocking if DB empty
+function normalizeScheduleIso(value: unknown): string | null {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : value;
+}
 
-export async function getSelectionDeadlineIso(): Promise<string> {
+export async function getSelectionDeadlineIso(): Promise<string | null> {
   try {
     const sb = getSupabase();
     const { data, error } = await sb
@@ -14,9 +18,9 @@ export async function getSelectionDeadlineIso(): Promise<string> {
       .select('selection_deadline_at')
       .limit(1)
       .maybeSingle();
-    if (error || !data?.selection_deadline_at) return FALLBACK_DEADLINE_ISO;
-    return data.selection_deadline_at;
+    if (error) return null;
+    return normalizeScheduleIso(data?.selection_deadline_at);
   } catch {
-    return FALLBACK_DEADLINE_ISO;
+    return null;
   }
 }

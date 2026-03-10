@@ -9,7 +9,7 @@ import { MAX_SLOTS, MIN_SLOTS } from '../../data/tribes';
 import { buildTribesViewModel } from '../../data/tribesViewModel';
 import { t, type Lang } from '../../i18n/utils';
 
-interface Props { lang?: Lang; deadline?: string; }
+interface Props { lang?: Lang; deadline?: string | null; }
 const { lang = 'pt-BR', deadline: deadlineProp } = Astro.props;
 
 const QUAD_COLORS: Record<string, string> = {
@@ -23,27 +23,47 @@ const viewModel = buildTribesViewModel(lang);
 const safeQuadrants = viewModel.quadrants;
 const safeTribes = viewModel.tribes;
 const viewWarnings = viewModel.warnings;
-// Deadline from home_schedule (passed by index); fallback far-future if not provided
-const TRIBE_SELECTION_DEADLINE_ISO = deadlineProp ?? '2030-12-31T23:59:59Z';
+const parsedDeadline = typeof deadlineProp === 'string' && !Number.isNaN(new Date(deadlineProp).getTime())
+  ? deadlineProp
+  : null;
+const TRIBE_SELECTION_DEADLINE_ISO = parsedDeadline;
+const selectionState = !parsedDeadline
+  ? 'pending'
+  : new Date(parsedDeadline) > new Date()
+    ? 'open'
+    : 'closed';
 
-function formatDeadline(iso: string, prefix: string, fallback: string): string {
+function formatDeadline(iso: string, prefix: string): string | null {
   try {
     const d = new Date(iso);
-    if (isNaN(d.getTime()) || d.getFullYear() >= 2030) return fallback;
+    if (isNaN(d.getTime())) return null;
     const day = String(d.getUTCDate()).padStart(2, '0');
     const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
     const mon = months[d.getUTCMonth()];
     const hh = String(d.getUTCHours() - 3 < 0 ? d.getUTCHours() - 3 + 24 : d.getUTCHours() - 3).padStart(2, '0');
     return `${prefix} ${day}/${mon} ${hh}h BRT`;
   } catch {
-    return fallback;
+    return null;
   }
 }
-const deadlineFormatted = formatDeadline(
-  TRIBE_SELECTION_DEADLINE_ISO,
-  t('tribes.deadlinePrefix', lang),
-  t('tribes.deadline', lang)
-);
+const deadlineFormatted = TRIBE_SELECTION_DEADLINE_ISO
+  ? formatDeadline(TRIBE_SELECTION_DEADLINE_ISO, t('tribes.deadlinePrefix', lang))
+  : null;
+const selectionStateLabel = selectionState === 'open'
+  ? t('tribes.open', lang)
+  : selectionState === 'closed'
+    ? t('tribes.closed', lang)
+    : t('tribes.pending', lang);
+const selectionStateClasses = selectionState === 'open'
+  ? 'bg-green-100 text-green-700 animate-pulse'
+  : selectionState === 'closed'
+    ? 'bg-slate-200 text-slate-700'
+    : 'bg-amber-100 text-amber-700';
+const selectionNotice = selectionState === 'open'
+  ? t('tribes.deadlineNotice', lang)
+  : selectionState === 'closed'
+    ? t('tribes.deadlineNoticeClosed', lang)
+    : t('tribes.deadlineNoticePending', lang);
 // i18n for client-side toast/UI (inject via define:vars; no import in script per .cursorrules)
 const TRIBES_MSG = {
   onlyParticipants: t('tribes.onlyParticipants', lang),
@@ -54,6 +74,7 @@ const TRIBES_MSG = {
   errorRemove: t('tribes.errorRemove', lang),
   errorSelect: t('tribes.errorSelect', lang),
   selectedSuccess: t('tribes.selectedSuccess', lang),
+  selectionUnavailable: t('tribes.selectionUnavailable', lang),
   selectBtn: t('tribes.select', lang),
   selected: t('tribes.selected', lang),
   fullCaps: t('tribes.fullCaps', lang),
@@ -75,14 +96,14 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
       {t('tribes.title', lang)}
     </h2>
     <div class="text-base text-slate-500 max-w-[700px] mb-2">
-      <span class="inline-block px-2.5 py-0.5 rounded-md text-[.68rem] font-bold bg-green-100 text-green-700 animate-pulse">
-        {t('tribes.open', lang)}
+      <span class:list={['inline-block px-2.5 py-0.5 rounded-md text-[.68rem] font-bold', selectionStateClasses]}>
+        {selectionStateLabel}
       </span>
       <span class="inline-block px-2.5 py-0.5 rounded-md text-[.68rem] font-bold bg-red-50 text-red-600 ml-1">
-        {deadlineFormatted}
+        {deadlineFormatted || t('tribes.deadlinePending', lang)}
       </span>
       <span class="block mt-2 text-[.75rem] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
-        {t('tribes.deadlineNotice', lang)}
+        {selectionNotice}
       </span>
       <br>
       {t('tribes.slots', lang)}
@@ -135,7 +156,7 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
                       {tr.leaderLinkedIn && (
                         <a href={tr.leaderLinkedIn} target="_blank" rel="noopener"
                            class="text-teal no-underline text-[.75rem] ml-1"
-                           onclick="event.stopPropagation()">🔗</a>
+                           data-stop-propagation>🔗</a>
                       )}
                     </div>
                   </div>
@@ -174,7 +195,7 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
                          class="inline-flex items-center gap-1.5 bg-crimson text-white px-4 py-2
                                 rounded-xl no-underline text-[.82rem] font-semibold
                                 hover:opacity-85 transition-opacity"
-                         onclick="event.stopPropagation()">
+                         data-stop-propagation>
                         ▶ Vídeo ({tr.videoDuration})
                       </a>
                       <button class="tribe-select-btn w-full sm:w-auto px-4 py-2.5 rounded-xl
@@ -211,12 +232,24 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
   </div>
 </section>
 
-<script define:vars={{ tribeSelectionDeadline: TRIBE_SELECTION_DEADLINE_ISO, TRIBES_MSG, MAX_SLOTS, MIN_SLOTS, TRIBE_IDS }}>
+<script define:vars={{ tribeSelectionDeadline: TRIBE_SELECTION_DEADLINE_ISO, hasSelectionDeadline: !!TRIBE_SELECTION_DEADLINE_ISO, TRIBES_MSG, MAX_SLOTS, MIN_SLOTS, TRIBE_IDS }}>
   // ── Tribe selection logic ──
   // Uses window.navGetSb() and nav:member event per established Astro patterns.
   // MAX_SLOTS, MIN_SLOTS from data/tribes via define:vars (single source of truth)
 
-  const DEADLINE = new Date(tribeSelectionDeadline);
+  const DEADLINE = hasSelectionDeadline ? new Date(tribeSelectionDeadline) : null;
+
+  function isHighMgmt(member) {
+    return !!(member && (
+      member.is_superadmin === true ||
+      member.operational_role === 'manager' ||
+      member.operational_role === 'deputy_manager'
+    ));
+  }
+
+  document.querySelectorAll('[data-stop-propagation]').forEach((el) => {
+    el.addEventListener('click', (event) => event.stopPropagation());
+  });
 
   let tribeCounts = {};
   let userTribe = null;
@@ -310,12 +343,12 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
       return;
     }
     // R3: QA bypass — high management can select tribes past deadline
-    var isHighMgmt = member && (
-      member.is_superadmin === true ||
-      member.operational_role === 'manager' ||
-      member.operational_role === 'deputy_manager'
-    );
-    if (new Date() > DEADLINE && !isHighMgmt) {
+    var canBypassSchedule = isHighMgmt(member);
+    if (!DEADLINE && !canBypassSchedule) {
+      window.toast?.(TRIBES_MSG.selectionUnavailable, 'error');
+      return;
+    }
+    if (DEADLINE && new Date() > DEADLINE && !canBypassSchedule) {
       window.toast?.(TRIBES_MSG.selectionClosed, 'error');
       return;
     }
@@ -399,10 +432,12 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
         const isSelected = userTribe === tid;
         const isFull = count >= MAX_SLOTS && !isSelected;
         const role = getRole(member);
+        const canBypassSchedule = isHighMgmt(member);
         const canSelect = member
           && role !== 'guest'
           && role !== 'tribe_leader'
-          && member.is_active !== false;
+          && member.is_active !== false
+          && (hasSelectionDeadline || canBypassSchedule);
 
         if (isSelected) {
           btn.textContent = TRIBES_MSG.selected;
@@ -516,7 +551,7 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
 
       // Add WhatsApp link if available
       const waLink = waMap[tid]
-        ? ` <a href="${waMap[tid]}" target="_blank" rel="noopener" class="text-emerald-600 no-underline text-[.75rem] ml-1" onclick="event.stopPropagation()">💬 WhatsApp</a>`
+        ? ` <a href="${waMap[tid]}" target="_blank" rel="noopener" class="text-emerald-600 no-underline text-[.75rem] ml-1" data-stop-propagation>💬 WhatsApp</a>`
         : '';
 
       el.innerHTML = `<strong>📅 Encontros:</strong> ${scheduleHtml}${waLink}`;

@@ -1,5 +1,35 @@
 # Release Log
 
+## 2026-03-11 — v0.15.0 Wave 17: Home Schedule Hardening & Browser Guard Base
+
+### Scope
+Wave 17 removes the artificial far-future deadline fallback from the home selection flow, restores the live Supabase migration audit path on this workstation, and adds the first browser-based ACL regression check.
+
+### Home Schedule Hardening
+- **`src/lib/schedule.ts`**: Selection deadline now resolves to a real value or `null`; the landing flow no longer treats a fake `2030-12-31` timestamp as operational truth.
+- **`src/components/sections/HeroSection.astro`**: Countdown only renders when a valid schedule deadline exists; cycle status takes over cleanly when the deadline is absent or already closed.
+- **`src/components/sections/TribesSection.astro`**: Selection status now reflects runtime schedule state (`open`, `closed`, `pending`), and regular members are no longer kept artificially in an always-open path when `home_schedule` is missing.
+
+### Browser Guard Base
+- **`tests/browser-guards.test.mjs`**: New Playwright-backed browser smoke verifies that `/admin/selection` still denies anonymous visitors.
+- **`package.json`**: Added `npm run test:browser:guards` as the first dedicated browser validation entrypoint.
+
+### Operational / Governance
+- **Supabase CLI**: `supabase migration list` now succeeds again without the earlier auth/debug workaround, confirming `44/44 local == remote`.
+- **Docs**: Backlog, governance, README, permissions, and DB access notes updated for the new schedule behavior and restored live audit path.
+
+### Files Changed
+- `src/lib/schedule.ts`
+- `src/components/sections/HeroSection.astro`, `src/components/sections/TribesSection.astro`
+- `src/i18n/pt-BR.ts`, `src/i18n/en-US.ts`, `src/i18n/es-LATAM.ts`
+- `tests/ui-stabilization.test.mjs`, `tests/browser-guards.test.mjs`, `package.json`
+- `backlog-wave-planning-updated.md`, `docs/RELEASE_LOG.md`, `docs/GOVERNANCE_CHANGELOG.md`, `docs/PERMISSIONS_MATRIX.md`, `docs/AI_DB_ACCESS_SETUP.md`, `README.md`
+
+### Audit Results
+- Build: clean | Tests: 20/20 | Browser guard: OK | Smoke: routes OK
+
+---
+
 ## 2026-03-11 — v0.14.0 Wave 16: Supabase Audit, Attendance/Profile/Selection Stabilization
 
 ### Scope
