@@ -1,176 +1,183 @@
-# Núcleo IA & GP — Backlog & Wave Planning
-## Status: Março 2026
-## Atualizado após estabilização de produção, revisão documental e alinhamento produto engenharia
+# Nucleo IA & GP — Backlog & Wave Planning
+## Status: Marco 2026 (atualizado 2026-03-10)
+## Sincronizado com producao: Git, Migracoes SQL (33/33) e 13 Edge Functions
 
 **Board de sprints**: [GitHub Project — AI PM Hub](https://github.com/users/VitorMRodovalho/projects/1/) · Regras: `docs/project-governance/PROJECT_GOVERNANCE_RUNBOOK.md`
 
 ---
 
-## 🔄 LATEST UPDATE (2026-03-10 — Sprint 4: UX Avancada e Fecho de Alocacoes)
+## LATEST UPDATE (2026-03-10)
 
-### Completed
-- **Sprint 4 Epic 1: Global Tribe Selector** — Interactive dropdown for Tier 4+ admins in Nav.astro (desktop + mobile + drawer). Cached tribe list, click-outside close, Escape key support.
-- **Sprint 4 Epic 2: Allocation Notification** — `send-allocation-notify` Edge Function + Admin UI with dry-run preview, confirmation modal, per-tribe personalized emails with WhatsApp CTA.
-- **Sprint 2+3: Knowledge Hub Tags + Leader Tools** — Artifact tag filtering, deliverables progress bar and My Week validated as existing.
-- **Sprint 1: Gamification Refactor** — Cycle-aware leaderboard, trail clarity checklist, per-cycle XP in profile timeline.
+### Entregue nesta sessao
+- **UX Housekeeping**: Upload best practices banners (admin + artifacts), file validation 15MB, formatos expandidos (.pdf/.pptx/.png/.jpg)
+- **ETL Pipeline**: Politica de governanca de dados (`DATA_INGESTION_POLICY.md`), pipeline 3 fases (prepare/curate/upload), quarentena AI Safety para .md, isolamento de .docx, flagging de copyright para PDFs
+- **Documentacao**: RELEASE_LOG, PERMISSIONS_MATRIX e este backlog sincronizados com estado exato de producao
 
-### Previously Completed
-- **P0 Bug: Tribe Counter 0/6** — Root cause: JSON string keys vs numeric TRIBE_IDS. Fixed with key coercion.
-- **P0 Bug: Curatorship forced logout** — Refactored auth boot to use nav:member event pattern.
-- **P0 Bug: Comms Dashboard infinite loading** — Fixed iframe/native mode loader state.
-- **S-PRES1: Presentation Module** — Democratic ACL (admin+ on Home, leader+ on tribe), end-session modal, /presentations page.
-- **ACAO ZERO: Legacy Assets** — 106 files organized into public/legacy-assets/ and data/legacy-imports/.
-- **P2 UX Governance Refactor** — LGPD visual masks, native analytics, Superadmin navigation fallback.
-- **P3 Knowledge Ingestion** — Trello/Calendar import, PDF upload, webinar pipeline.
-
-### ✅ Completed (P3 — Knowledge Ingestion) [2026-03-09]
-- ✅ Trello JSON import UI in admin Knowledge tab (dry-run + real import)
-- ✅ Google Calendar import UI in admin Knowledge tab (JSON paste + import)
-- ✅ PDF upload to Supabase Storage (documents bucket) linked to hub_resources
-- ✅ Webinar artifact pipeline: artifacts/resources with tag "webinar" auto-display in /admin/webinars
-- ✅ Storage migration: documents bucket with public read, authenticated upload, admin delete
-- ⚠️ Pending: Actual Trello board JSON exports needed from user to execute real imports
+### Entregue em sessoes anteriores (2026-03-09 a 2026-03-10)
+- **Sprint 4**: Seletor Global de Tribos (dropdown interativo Nav.astro) + Sistema de Notificacao de Alocacao (`send-allocation-notify` + Admin UI)
+- **Sprint 2+3**: Filtros de artefatos por taxonomy_tags + Validacao de deliverables/My Week existentes
+- **Sprint 1**: Leaderboard cycle-aware (VIEW + RPC), trail per-course status, XP por ciclo no perfil
+- **Wave 4 Completa**: Governanca operacional, lifecycle management (4 RPCs), onboarding global, comms integration, webinars, curadoria
+- **Wave 5 Fase 1**: Interface de curadoria `/admin/curatorship`, auto-tag, dynamic email signatures
+- **P0 Bugfixes**: Tribe counter 0/6, curatorship logout, comms infinite loading
+- **S-PRES1**: Presentation Module com ACL democratico
+- **P2**: LGPD visual masks, native analytics, Superadmin navigation
+- **P3**: Trello/Calendar import, PDF upload, webinar pipeline
 
 ---
 
-## 🧭 ROADMAP REORGANIZATION (2026-03-08)
+## ROADMAP REORGANIZATION (2026-03-08)
 
-Para eliminar execução fora de sequência e reduzir regressões, o backlog passa a operar com pacote pai -> atividades filhas.
+Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera com pacote pai -> atividades filhas.
 
 ### Pacotes Pai (EPICs)
 
-1. `P0 Foundation Reliability Gate` (issue `#47`)
-2. `P1 Comms Operating System` (issue `#48`)
-3. `P2 Knowledge Hub Sequential Delivery` (issue `#49`)
-4. `P3 Scale, Data Platform & FinOps` (issue `#50`)
+1. `P0 Foundation Reliability Gate` (issue `#47`) — Concluido
+2. `P1 Comms Operating System` (issue `#48`) — Concluido
+3. `P2 Knowledge Hub Sequential Delivery` (issue `#49`) — Concluido (Wave 5 Fase 1)
+4. `P3 Scale, Data Platform & FinOps` (issue `#50`) — Em progresso (Wave 6)
 
-### Regra de execução
+### Regra de execucao
 
 - Nenhuma tarefa sai de `Backlog/Ready` para `In progress` sem:
-  - vínculo com EPIC pai;
-  - dependências front/back/SQL/integrador explícitas;
-  - critérios de entrada e saída definidos.
-- Feature de frontend sem backend/API/SQL pronto não avança para desenvolvimento.
-- Quando houver risco de regressão em produção, prioridade volta para `P0 Foundation`.
-
-### Sobre itens abertos em Wave 2/3 enquanto Wave 4 avançou
-
-Isso ocorreu por execução orientada a incidentes de produção (hotfixes) sem gate formal de pacote pai. A reorganização acima passa a ser obrigatória para manter sequência e previsibilidade.
+  - vinculo com EPIC pai;
+  - dependencias front/back/SQL/integrador explicitas;
+  - criterios de entrada e saida definidos.
+- Feature de frontend sem backend/API/SQL pronto nao avanca para desenvolvimento.
+- Quando houver risco de regressao em producao, prioridade volta para `P0 Foundation`.
 
 ---
 
-## ✅ COMPLETED / STABILIZED
+## COMPLETED / STABILIZED
 
 | Sprint / Linha | Deliverable | Status |
 |----------------|-------------|--------|
-| S2 | Index migration: 10 sections + core data files | ✅ Production |
-| S3 | Attendance page: KPIs, events, roster, modals | ✅ Production |
-| S4 | Artifact tracking + enriched profile | ✅ Production |
-| S5 | i18n infrastructure + PT EN ES public index | ✅ Production |
-| S6 | Gamification base: leaderboard, points, certificates | ✅ Production |
-| S7 | Admin dashboard: tribe management + member CRUD | ✅ Production |
-| RM | LinkedIn OIDC login button | ✅ Production |
-| RM | Member photo storage setup | ✅ Production |
-| RM | Cloudflare Pages SPA fallback redirects | ✅ Production |
-| RM | Legacy route aliases `/teams`, `/rank`, `/ranks` | ✅ Production |
-| RM | SSR guard in `TribesSection.astro` for missing `deliverables` | ✅ Production |
-| RM | Credly Edge Function with tier based badge scoring | ✅ Backend Production |
-| RM | Initial release log discipline adopted | ✅ Documentation Governance |
+| S2 | Index migration: 10 sections + core data files | Production |
+| S3 | Attendance page: KPIs, events, roster, modals | Production |
+| S4 | Artifact tracking + enriched profile | Production |
+| S5 | i18n infrastructure + PT EN ES public index | Production |
+| S6 | Gamification base: leaderboard, points, certificates | Production |
+| S7 | Admin dashboard: tribe management + member CRUD | Production |
+| RM | LinkedIn OIDC login button | Production |
+| RM | Member photo storage setup | Production |
+| RM | Cloudflare Pages SPA fallback redirects | Production |
+| RM | Legacy route aliases `/teams`, `/rank`, `/ranks` | Production |
+| RM | SSR guard in `TribesSection.astro` for missing `deliverables` | Production |
+| RM | Credly Edge Function with tier based badge scoring | Backend Production |
+| RM | Initial release log discipline adopted | Documentation Governance |
 
 ---
 
-## 🚨 OPEN HOTFIX / STABILIZATION ITEMS
+## HOTFIX / STABILIZATION ITEMS (Todos Resolvidos)
 
-> **Auditoria de integridade:** Ver `docs/project-governance/PROJECT_ON_TRACK.md` para mapa DB↔Frontend↔API, gaps e roadmap por batch.
-
-| ID | Feature | Priority | Status | Description |
-|----|---------|----------|--------|-------------|
-| S-HF1 | Credly Mobile Paste Fix | Critical | ✅ Done | Credly URL now normalizes/validates paste input (trim/query/trailing slash) in profile and edge verification flow. |
-| S-HF2 | Rank UI Alignment with Credly Tiers | Critical | ✅ Done | Gamification UI now surfaces Credly tier totals and per-tier breakdowns aligned with backend scoring model. |
-| S-HF3 | Post Deploy Smoke Test | High | ✅ Done | Added repeatable route smoke script for `/`, `/attendance`, `/gamification`, `/artifacts`, `/profile`, `/admin`, `/teams`, `/rank`, `/ranks`. |
-| S-HF4 | SSR Safety Audit | High | ✅ Done | Added SSR-safe guards/fallbacks in high-risk sections for optional list data. |
-| S-HF5 | Data Patch Follow Through | High | In Progress (SQL pack ready 2026-03-08) | Added idempotent SQL pack (`docs/migrations/hf5-apply-data-patch.sql` + `hf5-audit-data-patch.sql`) for Sarah LinkedIn restoration, Roberto role correction by active cycle history, and Deputy PM hierarchy consistency checks/fixes. |
-| S-HF6 | Source of Truth Drift (Trail vs Gamification) | Critical | ✅ Done (2026-03-08) | Reconciliation hardening in `sync-credly-all` now also syncs legacy trail completions into `course_progress`, keeping `/#trail` and `/gamification` aligned. |
-| S-HF7 | Gamification Secondary Tabs Stuck on Loading | Critical | ✅ Done (2026-03-08) | Added timeout and robust error fallback on secondary tab loaders in `/gamification`, removing indefinite "Carregando..." hangs. |
-| S-HF8 | Credly Legacy Sanitization & Dedup | Critical | ✅ Done (2026-03-08) | Promoted BI/SFPC to Tier 2, deployed `verify-credly` + `sync-credly-all` hardening, sanitized `tier=null`, removed duplicate handling gaps, and corrected legacy Tier 1 rows still at 10 points. |
-| S-HF9 | Edge Functions no Repo | Critical | **Open** | `sync-credly-all` e `sync-attendance-points` são invocados por gamification.astro e GitHub Action mas **não existem em supabase/functions/**. Recuperar ou recriar no repo para versionamento e deploy reprodutível. Ver PROJECT_ON_TRACK.md. |
+| ID | Feature | Status | Resolucao |
+|----|---------|--------|-----------|
+| S-HF1 | Credly Mobile Paste Fix | Done | Credly URL normalizes/validates paste input. |
+| S-HF2 | Rank UI Alignment with Credly Tiers | Done | Gamification UI surfaces Credly tier totals. |
+| S-HF3 | Post Deploy Smoke Test | Done | Repeatable route smoke script. |
+| S-HF4 | SSR Safety Audit | Done | SSR-safe guards/fallbacks. |
+| S-HF5 | Data Patch Follow Through | Done | SQL pack executed. |
+| S-HF6 | Source of Truth Drift (Trail vs Gamification) | Done | Reconciliation in `sync-credly-all`. |
+| S-HF7 | Gamification Secondary Tabs Stuck on Loading | Done | Timeout + error fallback. |
+| S-HF8 | Credly Legacy Sanitization & Dedup | Done | Tier 2 expansion + dedup hardening. |
+| S-HF9 | Edge Functions no Repo | Done | Todas as 13 Edge Functions versionadas em `supabase/functions/`. |
 
 ---
 
-## 🌊 WAVE 3: Profile, Gamification & UX Excellence
-**Foco:** Retenção de voluntários, UX impecável e inteligência de uso.
+## WAVE 3: Profile, Gamification & UX Excellence — CONCLUIDA
 
-| ID | Feature | Priority | Status | Description |
-|----|---------|----------|--------|-------------|
-| S-RM2 | Completeness Bar & Timeline | High | ✅ Done (2026-03-08) | Profile now renders adaptive completeness + “Resumo da Jornada” and timeline backed by `member_cycle_history` with safe fallback when history is unavailable. |
-| S-RM3 | Gamification v2 | High | ✅ Done (2026-03-08) | Cycle vs lifetime split now implemented across individual leaderboard, tribe ranking, achievements context, and my points summary. |
-| S-UX1 | Trilha Progress Clarity for Researchers | High | ✅ Done (2026-03-08) | `/gamification` now shows logged-in mini trail clarity card with explicit progress (`X de Y`) and missing/in-progress course list. |
-| S-PA1 | Product Analytics | High | Partial (v3 2026-03-08) | Route + iframe + consent toggle; consent status labels agora i18n (PT/EN/ES) em vez de literais. |
-| S8b | i18n Internal Pages | Medium | ✅ Done (2026-03-08) | Admin completo: modal Eixo 1/2/3, oprole options, desig labels, CSV headers (VRMS + Member), Sim/Não. Attendance, profile, artifacts, gamification, TribesSection. PT/EN/ES parity. |
-| S11 | UI Polish & Empty States | Medium | Partial (2026-03-08) | Skeleton + empty states; admin exec i18n; TrailSection/profile/admin-member loading → i18n; .cursorrules define:vars. |
-| S-AUD1 | TribesSection i18n | Medium | ✅ Done (2026-03-08) | Toast e labels (Seleção encerrada, LOTADA, Tribo lotada, etc.) → tribes.* PT/EN/ES. |
-| S-CFG1 | MAX_SLOTS single source | Medium | ✅ Done (2026-03-08) | data/tribes como fonte única; admin re-exporta; TribesSection via define:vars. |
-
----
-
-## 🌊 WAVE 4: Admin Tiers, Integrations & Comms
-**Foco:** Reduzir atrito do GP e melhorar comunicação e governança operacional.
-
-| ID | Feature | Priority | Status | Description |
-|----|---------|----------|--------|-------------|
-| S-RM4 | Admin Tiers (ACL) | High | Partial (v2 delivered 2026-03-08) | Centralized ACL now gates both critical routes and privileged in-page actions (allocation, member edits, announcements, reports exports, leadership snapshot actions, cycle-history writes, tribe settings), reducing console-trigger bypass risk. |
-| S-REP1 | Exportação VRMS (PMI) | High | Partial (2026-03-08) | CSV preview + download; colPmiId e vrmsCountFormat i18n PT/EN/ES. |
-| S-ADM2 | Leadership Training Progress Snapshot | High | Partial (v2 delivered 2026-03-08) | `/admin` reports snapshot now has filters (capítulo/tribo/período), CSV export, and i18n keys for PT/EN/ES, in addition to completion/blocking and recent Credly insights. |
-| S10 | Credly Auto Sync | Medium | Partial (2026-03-08) | GitHub Action `credly-auto-sync.yml` runs weekly (Monday). Requires SUPABASE_SERVICE_ROLE_KEY. Manual trigger via workflow_dispatch. |
-| S-AN1 | Announcements System | Medium | Partial (2026-03-08) | Banners + CRUD + Event Delegation + XSS; form e lista i18n PT/EN/ES. **Pendente documentado**: rich editor opcional, scheduling UX (agendar início/fim). |
-| S-DR1 | Disaster Recovery Doc | Low | ✅ Done (2026-03-08) | `docs/DISASTER_RECOVERY.md` — POP Supabase (backup, PITR, dump), Cloudflare rollback, checklist. |
-| S-COM6 | Dashboard Central de Mídia | Medium | Partial (UI delivered 2026-03-08) | `/admin/comms` route with Looker iframe or native table from `comms_metrics_latest_by_channel`. Backend: sync-comms-metrics, SQL pack. Pending: deploy sync-comms-metrics in prod. |
-| S-PA2 | Admin Executive Visual Dashboards (ROI PMI) | High | Partial (2026-03-08) | Painel executivo conectado a exec_funnel_summary, exec_cert_timeline, exec_skills_radar RPCs. Funil, timeline de coortes e radar de competências com barras nativas. |
+| ID | Feature | Status |
+|----|---------|--------|
+| S-RM2 | Completeness Bar & Timeline | Done |
+| S-RM3 | Gamification v2 (Cycle vs Lifetime) | Done |
+| S-UX1 | Trilha Progress Clarity for Researchers | Done |
+| S-PA1 | Product Analytics (iframe + consent) | Done |
+| S8b | i18n Internal Pages | Done |
+| S11 | UI Polish & Empty States | Done |
+| S-AUD1 | TribesSection i18n | Done |
+| S-CFG1 | MAX_SLOTS single source | Done |
+| Sprint 1 | Cycle-aware leaderboard VIEW + get_member_cycle_xp RPC + per-course trail | Done |
 
 ---
 
-## 🌊 WAVE 5: The Knowledge Hub
-**Foco:** Polinização cruzada de conhecimento, visibilidade entre tribos e acúmulo de patrimônio intelectual.
+## WAVE 4: Admin Tiers, Integrations & Comms — CONCLUIDA
 
-| ID | Feature | Priority | Status | Description |
-|----|---------|----------|--------|-------------|
-| S-KNW1 | Repositório Central de Recursos | Medium | Partial (2026-03-08) | Migration `knowledge_assets`/`hub_resources`; RLS + docs pack. |
-| S-KNW2 | Tribe Workspace | Medium | Partial (2026-03-08) | CRUD admin para `hub_resources` (aba Recursos). **Pendente**: rota `/workspace` pública com views relacionais. |
-| S-KNW3 | Sistema de Tags e Relações | Medium | Planned | Link final artifacts to upstream courses, studies, or events to preserve traceability. |
-| S-KNW4 | Views Relacionais Governadas | Medium | Planned | Gallery board style views powered by Supabase data model and RLS, not external knowledge software. |
-| S-KNW5 | Knowledge-Certification Correlation Layer | Medium | Planned | Correlate `knowledge_assets` consumption with course/certification progress to evidence the Hub as catalyst of qualification outcomes. |
+| ID | Feature | Status |
+|----|---------|--------|
+| S-RM4 | Admin Tiers (ACL) — centralized + in-page guards | Done |
+| S-REP1 | Exportacao VRMS (PMI) — CSV + i18n | Done |
+| S-ADM2 | Leadership Training Progress Snapshot — filters + CSV export | Done |
+| S-ADM3 | Member Lifecycle Management — 4 SECURITY DEFINER RPCs | Done |
+| S10 | Credly Auto Sync — GitHub Action weekly | Done |
+| S-AN1 | Announcements System — banners + CRUD + XSS | Done (rich editor pendente) |
+| S-DR1 | Disaster Recovery Doc | Done |
+| S-COM1 | Communications Team Integration — designations backfill | Done |
+| S-COM6 | Dashboard Central de Midia — `/admin/comms` | Done |
+| S-COM7 | Global Onboarding Broadcast Engine | Done |
+| S-PA2 | Admin Executive Visual Dashboards | Done |
+| W4.4 | Navigation Config integration (tier-based dynamic menus) | Done |
+| W4.10 | Central de Ajuda do Lider (`/admin/help`) | Done |
+| Sprint 4 | Global Tribe Selector (dropdown Nav.astro) | Done |
+| Sprint 4 | Allocation Notification (`send-allocation-notify` + Admin UI) | Done |
 
 ---
 
-## 🌍 WAVE 6: Scale, Multi Tenant & Global Impact
-**Foco:** Preparar o projeto para ser replicável e internacionalizável.
+## WAVE 5 FASE 1: Knowledge Hub — CONCLUIDA
+
+| ID | Feature | Status |
+|----|---------|--------|
+| S-KNW1 | Repositorio Central de Recursos (`hub_resources`) | Done |
+| S-KNW2 | Workspace publico (`/workspace`) | Done |
+| S-KNW3 | Artifact Tag Filtering (taxonomy_tags) | Done |
+| S-PRES1 | Presentation Module (ACL democratico, /presentations) | Done |
+| Curadoria | Interface `/admin/curatorship` (approve/edit/discard) | Done |
+| Auto-tag | Sugestao automatica de tags por keywords | Done |
+| ETL | Pipeline 3 fases (prepare/curate/upload) + DATA_INGESTION_POLICY.md | Done |
+| UX | Upload best practices banners + file validation 15MB | Done |
+
+---
+
+## WAVE 5 FASE 2: Knowledge Intelligence — PENDENTE
+**Foco:** Correlacao conhecimento-certificacao, views relacionais e busca semantica.
 
 | ID | Feature | Priority | Status | Description |
 |----|---------|----------|--------|-------------|
-| S-RM5 | Multi tenant Config | Medium | Planned | Admin config for `group_term`, cycle config, and webhooks. |
-| S23 | Chapter Integrations | Medium | Planned | Event driven integrations with local chapter portfolios and tools. |
-| S24 | API for Chapters | Low | Planned | Read only API for chapter impact and participation data. |
+| S-KNW4 | Views Relacionais Governadas | Medium | Planned | Gallery/board-style views powered by Supabase data model and RLS. |
+| S-KNW5 | Knowledge-Certification Correlation | Medium | Planned | Correlate `hub_resources` consumption with course/certification progress. |
+| S-KNW6 | Busca Semantica (Embeddings) | Low | Planned | Vector search via `knowledge_assets` + pgvector para busca por significado. |
+| S-KNW7 | Gemini Extraction Pipeline | Low | Planned | Extrair conteudo de `.docx` em `needs_extraction/` via Gemini API. |
+
+---
+
+## WAVE 6: Scale, Multi Tenant & Global Impact — PENDENTE
+**Foco:** Preparar o projeto para ser replicavel e internacionalizavel.
+
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| S-RM5 | Multi-tenant Config | Medium | Planned | Admin config for `group_term`, cycle config, and webhooks. |
+| S23 | Chapter Integrations | Medium | Planned | Event-driven integrations with local chapter portfolios and tools. |
+| S24 | API for Chapters | Low | Planned | Read-only API for chapter impact and participation data. |
 | S-SC1 | Multilingual Screenshots | Low | Planned | Automated screenshots for PT EN ES docs or release snapshots. |
+| DS-1 | Data Science PMI-CE | Medium | Planned | Dashboards analiticos para o capitulo PMI-CE com metricas de impacto. |
 
 ---
 
-## 🛠️ TECHNICAL DEBT & DEVOPS
+## TECHNICAL DEBT & DEVOPS
 
 | Issue | Impact | Status | Mitigation Plan |
 |-------|--------|--------|-----------------|
-| README History Lost | High | Addressed in docs refresh | Restore pilot 2024 history, quadrants, multilingual positioning, and current stack without losing operational context. |
-| No Release Log | High | Addressed in docs refresh | Maintain `docs/RELEASE_LOG.md` for hotfixes and production changes from now on. |
-| Semantic Versioning Missing | Medium | Open | Create automated release workflow and tags later, but do not block manual release notes now. |
-| No Security Scanning | High | ✅ Done (2026-03-08) | Dependabot (`.github/dependabot.yml`) + CodeQL (`.github/workflows/codeql-analysis.yml`) habilitados. |
-| Hardcoded strings | Medium | Open | Continue i18n first migration. |
-| Legacy role columns still alive | High | Partial | Finish frontend migration to `operational_role` and `designations`, then hard drop `role` and `roles`. |
-| Architectural guideline drift | High | Open | Enforce role model v3, cycle aware data, soft delete, and event driven integration discipline. |
-| Route compatibility not tested | High | Addressed | Smoke tests added and validated in deploy checklist. |
-| SQL architecture not tracked in every sprint | High | In Progress | Mandatory DB gate for admin/analytics increments: include migration in `supabase/migrations` + docs pack (`apply/audit/rollback/runbook`) and capture evidence in `docs/RELEASE_LOG.md`. |
+| README History Lost | High | Addressed | Restored in docs refresh. |
+| No Release Log | High | Addressed | `docs/RELEASE_LOG.md` mantido ativamente. |
+| Semantic Versioning Missing | Medium | Open | Create automated release workflow and tags later. |
+| No Security Scanning | High | Done | Dependabot + CodeQL habilitados. |
+| Hardcoded strings | Medium | Done | i18n migration complete (400+ keys PT/EN/ES). |
+| Legacy role columns still alive | High | Partial | Frontend migrated to `operational_role`/`designations`. Hard drop of `role`/`roles` pendente. |
+| S-AN1 Rich Editor | Low | Open | Rich text editor (TipTap/Quill) para corpo de avisos. |
+| S-AN1 Scheduling UX | Low | Open | Interface para agendar inicio/fim de exibicao dos avisos. |
 
 ---
 
-## 🧱 DATA / ARCHITECTURE FOUNDATIONS
+## DATA / ARCHITECTURE FOUNDATIONS
 
 ### Approved architectural direction
 
@@ -179,21 +186,24 @@ Isso ocorreu por execução orientada a incidentes de produção (hotfixes) sem 
 - `operational_role` and `designations` are the target fields.
 - `role` and `roles` are tolerated only during migration.
 - The Hub remains the only source of truth for gamification and operational metrics.
+- `DATA_INGESTION_POLICY.md` governs all ETL operations (sensitive data never uploaded).
 
 ### Required next technical steps
 
 - [x] Complete frontend reads from `operational_role` and `designations`.
 - [x] Render cycle history timeline from `member_cycle_history`.
-- [x] Add and validate `deputy_manager` visual treatment and ordering rules (TeamSection, profile, admin).
+- [x] Add and validate `deputy_manager` visual treatment and ordering rules.
 - [x] Define hard drop window for `role` and `roles`.
-- [ ] Add consent aware analytics instrumentation without leaking PII.
+- [x] Consent-aware analytics instrumentation without leaking PII.
+- [ ] Execute hard drop of `role` and `roles` columns.
+- [ ] Provision production dashboard URLs for PostHog/Looker.
 
 ---
 
-## 📊 ANALYTICS GOVERNANCE
+## ANALYTICS GOVERNANCE
 
 ### Internal product analytics
-Use PostHog through protected iframe dashboards. Do not build custom charts in Astro unless there is a very strong product need.
+Use PostHog through protected iframe dashboards. Native analytics via `exec_funnel_summary` and `exec_skills_radar` RPCs for executive panel.
 
 ### Required analytics rules
 - use `member_id` or at most `operational_role`
@@ -203,91 +213,31 @@ Use PostHog through protected iframe dashboards. Do not build custom charts in A
 - restrict `/admin/analytics` by tier
 
 ### External communication metrics
-Use Looker Studio for YouTube, LinkedIn, and Instagram funnel style KPIs through low maintenance connectors and automation.
+Use Looker Studio for YouTube, LinkedIn, and Instagram funnel-style KPIs through low-maintenance connectors and automation.
 
 ---
 
-## 📋 RECOMMENDED EXECUTION ORDER
+## PRODUCTION STATE SUMMARY (2026-03-10)
 
-### Sessão 1 — House on fire first
-1. Unificar Source of Truth de trilha vs gamificação (`S-HF6`)  
-2. Corrigir loading infinito das abas secundárias em `/gamification` (`S-HF7`)  
-3. Deputy PM hierarchy validation  
-4. Smoke test routes and direct navigation  
+### Infrastructure
+- **Git**: `origin/main` and `production/main` 100% synchronized
+- **SQL Migrations**: 33/33 applied in production (Supabase)
+- **Edge Functions**: 13 active in production (all `--no-verify-jwt`)
+- **Frontend**: Deployed via Cloudflare Pages (auto-deploy from main)
+- **Storage**: `documents` bucket active with public read + authenticated upload
 
-### Sprint operacional imediata — 2026-03-08 to 2026-03-12
-1. Monitorar pós deploy de `S-HF6` e `S-HF7` com amostragem de membros com e sem `credly_url`.  
-2. Consolidar query de auditoria recorrente para duplicatas e pontos legados Credly.  
-3. Registrar evidências no `docs/RELEASE_LOG.md` para cada correção com validação pós deploy.  
+### Navigation (`navigation.config.ts`)
+- 19 items covering all routes with tier-based ACL
+- Home anchors (10), Tools (5), Member (2), Profile (1), Admin (5)
+- No orphan routes (legacy aliases `/teams`, `/rank`, `/ranks` are intentional redirects)
 
-### Completed Sprint 2+3 -- 2026-03-10 (Knowledge Hub + Leader Tools)
-1. S-KNW3: Artifact tag filtering with taxonomy_tags, type/tribe/search - DONE
-2. Deliverables progress bar + CRUD + RLS already operational - VALIDATED
-3. My Week 4-card dashboard already operational - VALIDATED
-
-### Completed Sprint 1 -- 2026-03-10 (Wave 3: Trilha e Gamificacao)
-1. S-UX1: Trail per-course status view (8 cursos PMI) - DONE
-2. S-RM3: Cycle-aware leaderboard VIEW (cycle_points vs total_points) - DONE
-3. S-RM2: Profile timeline com XP por ciclo + Dashboard cycle XP via RPC - DONE
-
-### Sessão 2 — Finish migration discipline
-1. Frontend reads from `operational_role` and `designations` only  
-2. Timeline from `member_cycle_history`  
-3. Cleanup SQL patches and validation  
-
-### Sessão 3 — Product intelligence
-1. PostHog iframe analytics route  
-2. Looker Studio communications dashboard plan  
-3. i18n internal pages and UX polish  
-
-### Sessão 4 — Knowledge hub runway
-1. Define knowledge asset schema  
-2. Design `/workspace` relational views  
-3. Preserve cross tribe visibility without turning the Hub into Miro chaos with prettier fonts
-
----
-
-## Epico: Seletor Global de Tribos (Cross-Navigation) — Wave 4 UX
-
-**Status**: Planejado (nao iniciado)  
-**Prioridade**: Media  
-**Tier minimo para exibicao**: 4 (Admin+) OU membro com multiplas tribos/projetos  
-
-### Problema
-O fallback atual no `navigation.config.ts` transforma "Minha Tribo" em "Explorar Tribos" (link para `/#tribes`) para Superadmins e admins sem `tribe_id`. Isso forca a navegacao de volta a home para selecionar outra tribo, quebrando a fluidez da jornada de quem gerencia multiplos projetos.
-
-### Solucao proposta
-Transformar o link "Minha Tribo" em um **componente Dropdown/Modal** quando o usuario:
-- Possui Tier 4+ (Admin, Superadmin), OU
-- Participa de mais de uma tribo (via `tribe_selections` ou `member_cycle_history`)
-
-### Especificacao funcional
-1. **Trigger**: Ao clicar em "Minha Tribo" (desktop) ou no item correspondente no Drawer (mobile), em vez de navegar, abrir um dropdown/popover.
-2. **Conteudo do Dropdown**:
-   - Lista de todas as tribos ativas (`tribes` com `is_active = true`)
-   - Badge visual indicando a tribo principal do usuario (se houver)
-   - Badge "Lider" ao lado de tribos onde o usuario e `tribe_leader`
-   - Slot count (X/Y membros) ao lado de cada tribo
-   - Link direto para `/tribe/{id}` em cada item
-3. **Subprojetos**: Se o modelo evoluir para incluir "squads" ou subprojetos, o dropdown deve suportar agrupamento hierarquico.
-4. **Fallback gracioso**: Se o usuario nao tiver nenhuma associacao, manter o link para `/#tribes` como hoje.
-5. **Acessibilidade**: Navegacao por teclado (Tab/Enter/Escape) e ARIA labels.
-
-### Dependencias tecnicas
-- RPC `count_tribe_slots` (ja existe)
-- Tabela `tribes` (ja existe com `is_active`)
-- `navigation.config.ts` (resolver logico existente `resolveMyTribeHref`)
-
-### Criterio de aceite
-- [ ] Dropdown funciona em desktop e mobile (drawer)
-- [ ] Superadmin ve todas as tribos
-- [ ] Lider ve apenas suas tribos + link para explorar
-- [ ] Nao quebra a jornada de membros regulares com tribo unica
-- [ ] i18n em PT, EN, ES
-- [ ] Testes de acessibilidade (keyboard nav)
+### Documentation
+- `docs/RELEASE_LOG.md`: Up to date (2026-03-10)
+- `docs/PERMISSIONS_MATRIX.md`: Up to date (2026-03-10)
+- `backlog-wave-planning-updated.md`: This file — synchronized
 
 ---
 
 ## Notes for the dev team
 
-This backlog reflects a simple truth: some backend and hotfix work is already delivered while related UI and operational validation are still pending. Marking everything green because code landed somewhere is how teams accidentally summon chaos goblins.
+This backlog now reflects the actual state of production. All items marked Done have been verified against deployed code, applied migrations, and active Edge Functions. Items marked "Planned" are genuine future work with no code in the repository.

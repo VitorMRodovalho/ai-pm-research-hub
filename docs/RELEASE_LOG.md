@@ -1,5 +1,102 @@
 # Release Log
 
+## 2026-03-10 — UX Housekeeping: Upload Best Practices & File Validation
+
+### Scope
+Educate users on R&D sharing best practices without bureaucratizing the upload flow.
+
+### Admin Knowledge Tab (`/admin/index.astro`)
+- **Best Practices Banner**: Amber gradient callout panel above the PDF upload section with 4 rules:
+  - Maximum file size: 15 MB per file
+  - Compression recommendation (ILovePDF, SmallPDF)
+  - Copyright policy: prefer sharing Original Link for protected books/articles
+  - Accepted formats: PDF, PPTX, PNG, JPG
+- **Expanded file input**: `accept` attribute now includes `.pdf,.pptx,.png,.jpg,.jpeg` (was `.pdf` only)
+- **Live validation**: On file selection, validates size (15MB) and type. On violation:
+  - Error message appears below input
+  - Upload button disabled with `opacity-50` + `cursor-not-allowed`
+  - File input cleared automatically
+- **Dynamic MIME**: Upload handler resolves content type from extension (was hardcoded `application/pdf`)
+
+### Artifacts Modal (`/artifacts.astro`)
+- **Best Practices Callout**: Emerald gradient panel inside the submit/edit modal:
+  - Valid artifacts: Frameworks, Tribe Presentations, R&D Summaries, Published Articles
+  - Invalid artifacts: Unformatted Word drafts, legacy .doc files, personal notes
+  - Tip: Always prefer sharing a link (Google Docs, Drive) instead of uploading
+- **New file input**: `type="file"` with same `accept` and 15MB validation as admin
+- **Upload integration**: If file is attached, `saveArtifact()` uploads to Supabase Storage
+  (`documents` bucket, `knowledge-pdfs/` folder) before creating the artifact record.
+  The public URL is automatically set as the artifact's URL.
+
+### i18n
+- 13 new keys added to PT-BR, EN-US, ES-LATAM:
+  - `upload.bestPractices.*` (title, maxSize, compress, copyright, formats)
+  - `upload.validation.*` (tooLarge, invalidType)
+  - `upload.label.*` (file, orFile)
+  - `artifacts.bestPractices.*` (title, valid, invalid, tip)
+
+### Files changed
+- `src/pages/admin/index.astro` (banner HTML + validation JS)
+- `src/pages/artifacts.astro` (callout HTML + file input + upload logic)
+- `src/i18n/pt-BR.ts`, `en-US.ts`, `es-LATAM.ts` (13 keys each)
+
+### Validation
+- `npx astro build` passed with 0 errors
+- Committed and pushed to origin/main + production/main
+
+---
+
+## 2026-03-10 — Data Governance & ETL Pipeline (Bulk Knowledge Ingestion)
+
+### Scope
+Architect and execute a 3-phase ETL pipeline for ingesting 2 years of Google Drive
+historical data (712 files across `geral` and `adm` categories) into the Knowledge Hub,
+with strict LGPD compliance and AI safety guardrails.
+
+### ACAO 1: Data Governance Manifest
+- Created `docs/project-governance/DATA_INGESTION_POLICY.md` (private, gitignored)
+- Establishes rules for:
+  - **Data classification**: `sensitive` (never uploaded), `geral` (public knowledge), `adm` (governance)
+  - **PII isolation**: VRMS, Excel attendance, WhatsApp exports processed locally only
+  - **Mandatory audit trail**: All mutations logged to `broadcast_log` or local logs
+  - **Allowed/blocked file types**: Explicit whitelist for Storage uploads
+
+### ACAO 2: 3-Phase ETL Pipeline (`scripts/bulk_knowledge_ingestion/`)
+
+**Phase 1 — `1_prepare_files.ts`**:
+- Reads `geral/` and `adm/` folders recursively from `data/raw-drive-exports/`
+- SHA-256 hash deduplication (712 files -> unique set)
+- Filename sanitization to kebab-case ASCII
+- Tag inference from folder paths (e.g., `tribo-0X`, `ciclo-Y`, `meeting_minutes`, `governance`)
+- Copies unique files to `data/staging-knowledge/`
+- Generates `upload_manifest.json` with metadata, tags, and asset types
+
+**Phase 1.5 — `1.5_curate_manifest.ts`** (AI Safety & Copyright Triage):
+- **Markdown quarantine**: `.md`/`.markdown` files removed from upload manifest,
+  tagged `raw_notes`, moved to `quarantine_md/`. Prevents "prompt poisoning" of
+  downstream LLM pipelines reading the Storage bucket.
+- **Docx/Doc isolation**: `.doc`/`.docx` files removed from manifest, moved to
+  `needs_extraction/` for future Gemini-assisted content extraction.
+- **Copyright flagging**: PDFs > 15MB or with names suggesting external books/articles
+  (keywords: "book", "guide", "harvard", etc.) marked `pending_copyright_review`.
+- Outputs `upload_manifest_curated.json` with only approved/flagged files.
+
+**Phase 2 — `2_execute_upload.ts`**:
+- Reads manifest (supports `--manifest` flag for curated version)
+- Uploads to Supabase Storage `documents` bucket
+- Inserts records into `hub_resources` with `source='bulk-drive-import'`
+- Concurrency control with sleep between batches
+- Full audit logging
+
+### .gitignore updates
+- `data/raw-drive-exports/`, `data/staging-knowledge/`, `data/ingestion-logs/`
+- `docs/project-governance/DATA_INGESTION_POLICY.md`
+- `scripts/bulk_knowledge_ingestion/upload_manifest.json`
+- `scripts/bulk_knowledge_ingestion/upload_manifest_curated.json`
+
+---
+
+
 ## 2026-03-10 — Sprint 4: UX Avancada e Fecho de Alocacoes
 
 ### Scope

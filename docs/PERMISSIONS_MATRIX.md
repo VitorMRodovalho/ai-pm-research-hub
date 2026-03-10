@@ -4,7 +4,7 @@
 > Qualquer alteração de acesso deve ser refletida aqui, no `navigation.config.ts`,
 > e nas RLS policies do Supabase antes de ser deployada.
 >
-> Última atualização: 2026-03-09 (Wave 4)
+> Última atualização: 2026-03-10 (Sprint 4 + ETL Pipeline + UX Housekeeping)
 
 ---
 
@@ -141,6 +141,44 @@ Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Se
 | Cycles (criar/editar ciclos)       |    —    |   —    |    —     |   —    |   A   |     A      |
 | Announcements (banners)            |    —    |   —    |    —     |   —    |   A   |     A      |
 | Hub Resources (CRUD)               |    —    |   —    |    —     |   —    |   A   |     A      |
+
+### 3.9 Supabase Storage (`documents` bucket)
+
+|| Funcionalidade                     | Visitor | Member | Observer | Leader | Admin | Superadmin | Backend (RLS)                        |
+||------------------------------------|:-------:|:------:|:--------:|:------:|:-----:|:----------:|--------------------------------------|
+|| Ler ficheiros públicos             |    V    |   V    |    V     |   V    |   V   |     V      | `documents_public_read` policy       |
+|| Upload (`knowledge-pdfs/`)         |    —    |   A    |    A     |   A    |   A   |     A      | `documents_auth_upload` (authenticated) |
+|| Deletar ficheiros                  |    —    |   —    |    —     |   —    |   A   |     A      | `documents_admin_delete` policy      |
+
+> Bucket criado via migration `20260309220000_storage_documents_bucket.sql`.
+> Upload validado no frontend com limite de 15MB e formatos `.pdf,.pptx,.png,.jpg,.jpeg`.
+
+### 3.10 LGPD Contact Data
+
+|| Funcionalidade                     | Visitor | Member | Observer | Leader | Admin | Superadmin | Backend                              |
+||------------------------------------|:-------:|:------:|:--------:|:------:|:-----:|:----------:|--------------------------------------|
+|| `get_tribe_member_contacts` RPC    |    —    |   —    |    —     |  V¹    |   V   |     V      | SECURITY DEFINER, ¹ leader da tribo  |
+|| Ver email/telefone em `/tribe/[id]`|    —    |   —    |    —     |  V¹    |   V   |     V      | Frontend consome RPC acima           |
+|| Máscara LGPD (`***-*** LGPD`)      |    —    |   V    |    V     |   —    |   —   |     —      | Membros sem privilégio veem máscara  |
+
+### 3.11 Lifecycle Management (S-ADM3)
+
+|| Funcionalidade                     | Visitor | Member | Observer | Leader | Admin | Superadmin | Backend                              |
+||------------------------------------|:-------:|:------:|:--------:|:------:|:-----:|:----------:|--------------------------------------|
+|| `admin_move_member_tribe` RPC      |    —    |   —    |    —     |   —    |   —   |     A      | SECURITY DEFINER, `is_superadmin`    |
+|| `admin_deactivate_member` RPC      |    —    |   —    |    —     |   —    |   —   |     A      | SECURITY DEFINER, `is_superadmin`    |
+|| `admin_change_tribe_leader` RPC    |    —    |   —    |    —     |   —    |   —   |     A      | SECURITY DEFINER, `is_superadmin`    |
+|| `admin_deactivate_tribe` RPC       |    —    |   —    |    —     |   —    |   —   |     A      | SECURITY DEFINER, `is_superadmin`    |
+
+### 3.12 Presentation Module (S-PRES1)
+
+|| Funcionalidade                     | Visitor | Member | Observer | Leader | Admin | Superadmin | Notas                                |
+||------------------------------------|:-------:|:------:|:--------:|:------:|:-----:|:----------:|--------------------------------------|
+|| Presentation Toggle (Home)         |    —    |   —    |    —     |   —    |   A   |     A      | Tier 4+ only on index.astro          |
+|| Presentation Toggle (Tribe)        |    —    |   —    |    —     |   A¹   |   A   |     A      | ¹ tribe_leader of that tribe only    |
+|| `save_presentation_snapshot` RPC   |    —    |   —    |    —     |   A¹   |   A   |     A      | ¹ leader-scoped with p_tribe_id      |
+|| `list_meeting_artifacts` RPC       |    —    |   V    |    V     |   V    |   V   |     V      | Optional p_tribe_id filter           |
+|| Ver `/presentations` histórico     |    —    |   V    |    V     |   V    |   V   |     V      | Filterable by tribe                  |
 
 ---
 
