@@ -147,6 +147,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   rosterLoading: t('attendance.roster.loading', lang),
   rosterNoParticipants: t('attendance.roster.noParticipants', lang),
   rosterCount: t('attendance.roster.count', lang),
+  rosterVisible: t('attendance.modal.visible', lang),
   rankingNoData: t('attendance.ranking.noData', lang),
   rankingNoDataHint: t('attendance.ranking.noDataHint', lang),
 }) }}>
@@ -159,6 +160,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   // Uses window.navGetSb() and nav:member event from Nav.astro
   // ════════════════════════════════════════════════════════════════
 
+  import { hasMinimumTier, resolveTierFromMember } from '../lib/admin/constants';
   import { ROLE_LABELS, ROLE_COLORS } from '../lib/supabase';
   import { getMemberRole } from '../lib/routing';
 
@@ -210,6 +212,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     rosterLoading: 'Carregando...',
     rosterNoParticipants: 'Nenhum participante encontrado.',
     rosterCount: '✅ {present}/{total} presentes',
+    rosterVisible: 'visíveis',
     rankingNoData: 'Sem dados de ranking ainda',
     rankingNoDataHint: 'Quando os eventos tiverem presença registrada, o ranking aparecerá aqui.',
   };
@@ -281,14 +284,30 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   }
 
   // ── MODAL HELPERS ──
-  (window as any).closeModal = (id: string) => {
+  function closeModal(id: string) {
     const el = document.getElementById(id);
     if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
-  };
+  }
 
   function openModal(id: string) {
     const el = document.getElementById(id);
     if (el) { el.classList.remove('hidden'); el.classList.add('flex'); }
+  }
+
+  function rosterFilter(query: string) {
+    const rows = document.querySelectorAll('#roster-body tr[data-name]') as NodeListOf<HTMLElement>;
+    const q = query.toLowerCase().trim();
+    let visible = 0;
+    rows.forEach(row => {
+      const name = row.dataset.name || '';
+      const match = !q || name.includes(q);
+      row.style.display = match ? '' : 'none';
+      if (match) visible++;
+    });
+    const countEl = document.getElementById('roster-count');
+    if (countEl) {
+      countEl.textContent = q ? `${visible}/${rows.length} ${I18N.rosterVisible}` : (countEl.dataset.full || '');
+    }
   }
 
   // ── TABS ──
@@ -367,9 +386,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     el.innerHTML = data.map((ev: any) => {
       const attIcon = ev.i_attended === true ? '✅' : ev.i_attended === false ? '❌' : '—';
       const attBg = ev.i_attended === true ? 'bg-green-100 text-green-800' : ev.i_attended === false ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-500';
-      const role = getMemberRole(MEMBER);
-      const canEdit = MEMBER.is_superadmin || role === 'tribe_leader' || ev.created_by === MEMBER.auth_id;
-      const canRoster = MEMBER.is_superadmin || role === 'tribe_leader';
+      const canEdit = CAN_MANAGE || ev.created_by === MEMBER.auth_id;
+      const canRoster = CAN_MANAGE;
 
       const isPast = new Date(ev.date + 'T23:59:59') < new Date();
       const linkHtml = ev.meeting_link && !isPast
@@ -423,32 +441,65 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         case 'open-auth':
           document.dispatchEvent(new CustomEvent('open-auth'));
           break;
+        case 'close-modal':
+          closeModal(target.dataset.modalId || '');
+          break;
         case 'switch-tab':
           switchTab(target, target.dataset.tab || '');
           break;
         case 'open-new-event':
-          (window as any).openNewEventModal();
+          openNewEventModal();
           break;
         case 'open-recurring':
-          (window as any).openRecurringModal();
+          openRecurringModal();
           break;
         case 'refresh-events':
           loadEvents();
           break;
         case 'check-in':
-          (window as any).checkIn(target.dataset.eventId || '');
+          checkIn(target.dataset.eventId || '');
           break;
         case 'open-roster':
-          (window as any).openRoster(target.dataset.eventId || '', target.dataset.eventTitle || '');
+          openRoster(target.dataset.eventId || '', target.dataset.eventTitle || '');
           break;
         case 'edit-event': {
           const ev = (window as any).__attendanceEventsById?.[target.dataset.eventId || ''];
-          if (ev) (window as any).openEditEvent(ev);
+          if (ev) openEditEvent(ev);
           break;
         }
         case 'toggle-presence':
-          (window as any).togglePresence(target.dataset.eventId || '', target.dataset.memberId || '', target);
+          togglePresence(target.dataset.eventId || '', target.dataset.memberId || '', target);
           break;
+      }
+    });
+
+    document.addEventListener('change', (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      if (!(target instanceof HTMLSelectElement)) return;
+      if (target.id === 'ev-type') updateAudienceFromType('ev-audience', 'ev-type');
+      if (target.id === 'rec-type') updateAudienceFromType('rec-audience', 'rec-type');
+    });
+
+    document.addEventListener('input', (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      if (!(target instanceof HTMLInputElement)) return;
+      if (target.id === 'roster-search') rosterFilter(target.value);
+    });
+
+    document.addEventListener('submit', (e: SubmitEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (target.id === 'new-event-form') {
+        e.preventDefault();
+        createEvent();
+      }
+      if (target.id === 'recurring-event-form') {
+        e.preventDefault();
+        createRecurring();
+      }
+      if (target.id === 'edit-event-form') {
+        e.preventDefault();
+        saveEventEdit();
       }
     });
 
@@ -460,27 +511,27 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   }
 
   // ── CHECK-IN ──
-  (window as any).checkIn = async (eventId: string) => {
+  async function checkIn(eventId: string) {
     const { data } = await sb.rpc('register_own_presence', { p_event_id: eventId });
     if (data?.success) { toast(I18N.msgCheckedIn, 'success'); loadEvents(); loadKPIs(); }
     else toast(data?.error || I18N.msgCheckInError, 'error');
-  };
+  }
 
   // ── AUDIENCE HELPER ──
-  (window as any).updateAudienceFromType = (audienceId: string, typeId: string) => {
+  function updateAudienceFromType(audienceId: string, typeId: string) {
     const type = (document.getElementById(typeId) as HTMLSelectElement).value;
     const map: Record<string, string> = { tribe_meeting: 'tribe', general_meeting: 'all', webinar: 'all', other: 'all' };
     (document.getElementById(audienceId) as HTMLSelectElement).value = map[type] || 'all';
-  };
+  }
 
   // ── NEW EVENT ──
-  (window as any).openNewEventModal = () => {
+  function openNewEventModal() {
     (document.getElementById('ev-date') as HTMLInputElement).value = today();
     (document.getElementById('ev-link') as HTMLInputElement).value = '';
     openModal('modal-new-event');
-  };
+  }
 
-  (window as any).createEvent = async () => {
+  async function createEvent() {
     const title = (document.getElementById('ev-title') as HTMLInputElement).value.trim();
     const type = (document.getElementById('ev-type') as HTMLSelectElement).value;
     const date = (document.getElementById('ev-date') as HTMLInputElement).value;
@@ -500,19 +551,19 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       if (link || recorded) {
         await sb.rpc('update_event', { p_event_id: data.event_id, p_meeting_link: link, p_is_recorded: recorded });
       }
-      (window as any).closeModal('modal-new-event');
+      closeModal('modal-new-event');
       toast(I18N.msgEventCreated, 'success');
       loadEvents(); loadKPIs();
     } else toast(data?.error || I18N.msgEventCreateError, 'error');
-  };
+  }
 
   // ── RECURRING ──
-  (window as any).openRecurringModal = () => {
+  function openRecurringModal() {
     (document.getElementById('rec-start') as HTMLInputElement).value = today();
     openModal('modal-recurring');
-  };
+  }
 
-  (window as any).createRecurring = async () => {
+  async function createRecurring() {
     const titleTpl = (document.getElementById('rec-title') as HTMLInputElement).value.trim();
     const type = (document.getElementById('rec-type') as HTMLSelectElement).value;
     const start = (document.getElementById('rec-start') as HTMLInputElement).value;
@@ -532,14 +583,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       p_audience_level: audience
     });
     if (data?.success) {
-      (window as any).closeModal('modal-recurring');
+      closeModal('modal-recurring');
       toast(I18N.msgEventsCreated.replace('{n}', data.events_created), 'success');
       loadEvents(); loadKPIs();
     } else toast(data?.error || I18N.msgRecurringError, 'error');
-  };
+  }
 
   // ── EDIT EVENT ──
-  (window as any).openEditEvent = (ev: any) => {
+  function openEditEvent(ev: any) {
     (document.getElementById('edit-ev-id') as HTMLInputElement).value = ev.id;
     (document.getElementById('edit-ev-title') as HTMLInputElement).value = ev.title || '';
     (document.getElementById('edit-ev-date') as HTMLInputElement).value = ev.date || '';
@@ -549,9 +600,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     (document.getElementById('edit-ev-recorded') as HTMLInputElement).checked = ev.is_recorded || false;
     (document.getElementById('edit-ev-audience') as HTMLSelectElement).value = ev.audience_level || 'all';
     openModal('modal-edit-event');
-  };
+  }
 
-  (window as any).saveEventEdit = async () => {
+  async function saveEventEdit() {
     const id = (document.getElementById('edit-ev-id') as HTMLInputElement).value;
     const title = (document.getElementById('edit-ev-title') as HTMLInputElement).value.trim();
     const date = (document.getElementById('edit-ev-date') as HTMLInputElement).value;
@@ -568,14 +619,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       p_audience_level: audience
     });
     if (data?.success) {
-      (window as any).closeModal('modal-edit-event');
+      closeModal('modal-edit-event');
       toast(I18N.msgEventUpdated, 'success');
       loadEvents(); loadKPIs();
     } else toast(data?.error || I18N.msgEventSaveError, 'error');
-  };
+  }
 
   // ── ROSTER ──
-  (window as any).openRoster = async (eventId: string, title: string) => {
+  async function openRoster(eventId: string, title: string) {
     CURRENT_EVENT_ID = eventId;
     document.getElementById('roster-title')!.textContent = '📋 ' + title;
     // Reset search
@@ -619,14 +670,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           }
         </td>
       </tr>`).join('');
-  };
+  }
 
-  (window as any).togglePresence = async (eventId: string, memberId: string, btn: HTMLElement) => {
+  async function togglePresence(eventId: string, memberId: string, btn: HTMLElement) {
     const isOn = btn.classList.contains('on');
     const { data } = await sb.rpc('mark_member_present', { p_event_id: eventId, p_member_id: memberId, p_present: !isOn });
     if (data?.success) { btn.classList.toggle('on', !isOn); btn.classList.toggle('off', isOn); loadKPIs(); }
     else toast(data?.error || I18N.msgError, 'error');
-  };
+  }
 
   // ── RANKING ──
   async function loadRanking() {
@@ -688,7 +739,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   }
 
   async function onMemberReady() {
-    CAN_MANAGE = MEMBER.is_superadmin || getMemberRole(MEMBER) === 'tribe_leader';
+    CAN_MANAGE = hasMinimumTier(resolveTierFromMember(MEMBER), 'leader');
     if (CAN_MANAGE) {
       document.getElementById('tab-new-event')?.classList.remove('hidden');
       document.getElementById('tab-recurring')?.classList.remove('hidden');

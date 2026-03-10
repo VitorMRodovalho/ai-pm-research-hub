@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 
-const PORT = Number(process.env.SMOKE_PORT || 4329);
+const PORT = Number(process.env.SMOKE_PORT || (4300 + Math.floor(Math.random() * 400)));
 const BASE = `http://127.0.0.1:${PORT}`;
 const START_TIMEOUT_MS = 45_000;
 
@@ -55,8 +55,11 @@ async function run() {
     await assertOk('/gamification');
     await assertOk('/artifacts');
     await assertOk('/profile');
+    await assertOk('/help');
     await assertOk('/admin');
+    await assertOk('/admin/selection');
     await assertOk('/admin/comms');
+    await assertOk('/admin/webinars');
     await assertOk('/en');
     await assertOk('/es');
 

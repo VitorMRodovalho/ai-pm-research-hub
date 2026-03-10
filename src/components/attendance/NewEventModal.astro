@@ -11,9 +11,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   <div class="bg-white rounded-2xl w-full max-w-[560px] overflow-hidden max-h-[90vh] flex flex-col">
     <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center flex-shrink-0">
       <h3 class="text-base font-bold text-navy">{t('attendance.modal.newEventTitle', lang)}</h3>
-      <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" onclick="closeModal('modal-new-event')">✕</button>
+      <button type="button" class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" data-action="close-modal" data-modal-id="modal-new-event">✕</button>
     </div>
-    <div class="p-5 overflow-y-auto flex-1">
+    <form id="new-event-form" class="p-5 overflow-y-auto flex-1">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
         <div class="flex flex-col gap-1.5 sm:col-span-2">
           <label class="text-[12px] font-semibold text-slate-500">{t('attendance.modal.title', lang)}</label>
@@ -22,7 +22,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         </div>
         <div class="flex flex-col gap-1.5">
           <label class="text-[12px] font-semibold text-slate-500">{t('attendance.modal.type', lang)}</label>
-          <select id="ev-type" onchange="updateAudienceFromType('ev-audience','ev-type')"
+          <select id="ev-type"
                   class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
             <option value="tribe_meeting">{t('attendance.modal.typeTribe', lang)}</option>
             <option value="general_meeting">{t('attendance.modal.typeGeneral', lang)}</option>
@@ -62,10 +62,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           </label>
         </div>
       </div>
-    </div>
+    </form>
     <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2 flex-shrink-0">
-      <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer" onclick="closeModal('modal-new-event')">{t('attendance.modal.cancel', lang)}</button>
-      <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer" onclick="createEvent()">{t('attendance.modal.createEvent', lang)}</button>
+      <button type="button" class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer" data-action="close-modal" data-modal-id="modal-new-event">{t('attendance.modal.cancel', lang)}</button>
+      <button type="submit" form="new-event-form" class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer">{t('attendance.modal.createEvent', lang)}</button>
     </div>
   </div>
 </div>

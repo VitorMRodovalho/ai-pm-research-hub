@@ -1,5 +1,23 @@
 # Governance Changelog
 
+## 2026-03-11 — Post Wave 15: Attendance ACL And Modal Delegation
+
+### Decisions
+
+1. **`/attendance` remains member-visible, but management is `leader+`**: The page itself still supports self-service member actions such as own presence/check-in, but event creation, recurring scheduling, roster management, and administrative presence toggles now align with the tier rule already described in `PERMISSIONS_MATRIX`: `leader`, `admin`, and `superadmin`.
+
+2. **Attendance modal flows should use delegated events, not inline handlers**: The remaining modal cluster in attendance (`NewEventModal`, `RecurringModal`, `EditEventModal`, `RosterModal`) has been moved off `onclick` / `onchange` / `oninput` and into delegated `click` / `change` / `input` / `submit` handling inside `attendance.astro`.
+
+3. **No new event library is required yet**: A lightweight library like `delegate-it` remains a valid option if event sprawl grows again, but for the current Astro inline-script footprint the local delegated handlers remain simpler than adding a new dependency. For regression coverage, Playwright is the strongest next candidate because it already exists in the repo and matches the modal/ACL interaction needs better than a lower-level DOM helper.
+
+### Process Lessons Learned
+
+1. **ACL drift often hides in page-level guards, not route config**: Even when navigation and matrix docs are mostly correct, page-local `CAN_MANAGE` shortcuts can silently narrow permissions. Tier helpers should be reused on operational pages, not only admin pages.
+
+2. **Textual regression tests are acceptable for UI debt cleanup**: A small file-level test preventing inline handlers from returning is a cheap way to lock in this style migration before broader browser automation is added.
+
+---
+
 ## 2026-03-11 — Wave 15: Cycle-Config Hardening
 
 ### Decisions

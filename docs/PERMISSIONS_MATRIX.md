@@ -59,7 +59,7 @@ Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Se
 | Onboarding (Profile Drawer)|    —    |   V    |    V     |   V    |   V   |     V      | Drawer only (not main nav)       |
 | Artifacts                  |    V    |  V/A   |   V/A    |  V/A   |  V/A  |    V/A     |                                  |
 | Gamification               |    V    |   V    |    V     |   V    |   V   |     V      |                                  |
-| Attendance                 |    —    |  V/A   |   V/A    |  V/A   |  V/A  |    V/A     |                                  |
+| Attendance                 |    —    |  V/A   |    V     |  V/A   |  V/A  |    V/A     | Member: check-in próprio; gestão de eventos/roster via leader+ |
 | Minha Tribo `/tribe/[id]`  |    —    |   V    |    V     |  V/A   |  V/A  |    V/A     |                                  |
 | Profile                    |    —    |  V/A   |   V/A    |  V/A   |  V/A  |    V/A     |                                  |
 | Admin Panel `/admin`       |    —    |   —    |    V     |   V    |  V/A  |    V/A     |                                  |
@@ -284,3 +284,4 @@ e as Edge Functions estão alinhados com esta matriz.
 | 2026-03-11 | Wave 11: Section 3.16 Site Config (admin-settings superadmin). Wave 12: Agent docs, release workflow, screenshot script. |
 | 2026-03-11 | Wave 14 audit: site hierarchy/ACL revalidated after admin hygiene; `admin_webinars` route key aligned in shared constants. |
 | 2026-03-11 | Wave 15 audit: cycle-config hardening in admin/profile/tribe completed with no tier or visibility regression; matrix remains aligned with current routes. |
+| 2026-03-11 | Attendance ACL clarified: `/attendance` remains member-visible, but event/roster management aligns to tier `leader+`; modal interactions migrated away from inline handlers. |
