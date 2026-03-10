@@ -1,5 +1,64 @@
 # Release Log
 
+## 2026-03-10 — Data Science: Unified Temporal Conversion KPI + DB Enrichment (1.2 v2)
+
+### Scope
+Complete rewrite of conversion analysis using a unified temporal dimension. All VRMS CSV exports (6 files across 3 cycles) and Excel-embedded sheets (4 sheets) are merged into a single timeline per person. For each active member per cycle in Supabase, the script compares their **oldest** VRMS snapshot vs **newest** to detect real membership and chapter conversions.
+
+### Business model clarification (from CPO)
+- VRMS opportunity = 1 year (2 semesters). C1 expired end-2025, C2 active until mid-2026, C3 is new.
+- C1 member reapplying in C3 = retention success.
+- Conversion = person had no PMI membership or no partner chapter at earliest snapshot, but has it at latest snapshot or `pmi_id_verified=true` in DB.
+
+### What was changed
+- **`scripts/data_science/1.2_kpi_and_enrichment.ts`** — Full rewrite:
+  - **Unified timeline**: 6 CSVs + 4 Excel sheets → 217 records, 71 unique emails, sorted by date per person
+  - **Per-cycle analysis**: For each DB member in cycle, find oldest→newest VRMS snapshot, compare membership status
+  - **Retention tracking**: C1→C3 and C2→C3 member continuity
+  - **Enrichment**: Missing pmi_id, state, name in Supabase recoverable from VRMS
+
+### Results (2026-03-10)
+
+**Ciclo 3 (45 members, 43 with VRMS data):**
+- **8 Novos Membros PMI**: Thiago Freire, Erick Oliveira, Ana Carla Cavalcante, Fabricia Maciel, Ricardo Santos (reactivation as Retiree), Gerson Albuquerque Neto, Paulo Alves De Oliveira Junior, Guilherme Matricarde
+- **10 Novos Filiados ao Capítulo**: Same 8 above + Rodolfo Santana (had Individual Membership, added PMI-MG) + Jefferson Pinto (had Portugal Chapter, added PMI-DF)
+- 2 members without VRMS data (Maria Luiza, Vitor Rodovalho)
+
+**Ciclos 1-2 (3 + 24 members):**
+- C1: 3 members, all without VRMS data (pilot members, no CSV exports available)
+- C2: 24 members, 13 with VRMS data, 11 without (PMI-CE CSVs pending from CPO)
+- 0 conversions detected in available C2 data (all 13 matched members already had membership+chapter at signup)
+
+**Retenção:**
+- C1 → C3: 1/3 retained (Vitor Rodovalho)
+- C2 → C3: 12/24 continued
+
+**Enrichment (5 actionable updates):**
+- Lucas Vasconcelos: pmi_id=9925958, state=CE
+- Herlon Sousa: pmi_id=5592639, state=CE, fuller name
+- Werley Miranda: pmi_id=6570792, state=GO
+- Letícia Vieira: fuller name (LETÍCIA RODRIGUES VIEIRA)
+- Guilherme Matricarde: name correction
+
+### Outputs
+- `data/ingestion-logs/kpi_cycle3_exact_conversion.json`
+- `data/ingestion-logs/kpi_cycle1_2_heuristic_conversion.json`
+- `data/ingestion-logs/db_missing_data_enrichment.json`
+
+### How to run
+```bash
+npx tsx scripts/data_science/1.2_kpi_and_enrichment.ts
+```
+
+### Files changed
+- `scripts/data_science/1.2_kpi_and_enrichment.ts` (rewritten)
+
+### Pending
+- CSVs do capítulo CE para Ciclos 1-2 (CPO fornecerá futuramente)
+- Mesma análise será repetida no semestre seguinte para C2→C4
+
+---
+
 ## 2026-03-10 — UX Housekeeping: Upload Best Practices & File Validation
 
 ### Scope

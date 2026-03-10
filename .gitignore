@@ -38,6 +38,9 @@ data/staging-knowledge/
 data/ingestion-logs/
 docs/project-governance/DATA_INGESTION_POLICY.md
 
+# Data Science: local-only analysis scripts and sensitive inputs
+scripts/data_science/
+
 # ETL manifests and local outputs
 scripts/bulk_knowledge_ingestion/upload_manifest.json
 scripts/bulk_knowledge_ingestion/upload_manifest_curated.json
