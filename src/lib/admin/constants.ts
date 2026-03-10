@@ -77,17 +77,6 @@ const ROUTE_MIN_TIER: Record<AdminRouteKey, AccessTier> = {
   admin_settings: 'superadmin',
 };
 
-/** @deprecated Use loadCycles() from src/lib/cycles.ts — data now in DB `cycles` table */
-export const CYCLE_META: Record<string, { label: string; abbr: string; color: string }> = {
-  pilot:   { label: 'Piloto 2024', abbr: 'P24', color: '#F59E0B' },
-  cycle_1: { label: 'Ciclo 1 (2025/1)', abbr: 'C1', color: '#3B82F6' },
-  cycle_2: { label: 'Ciclo 2 (2025/2)', abbr: 'C2', color: '#8B5CF6' },
-  cycle_3: { label: 'Ciclo 3 (2026/1)', abbr: 'C3', color: '#10B981' },
-};
-
-/** @deprecated Use loadCycles() from src/lib/cycles.ts — data now in DB `cycles` table */
-export const CYCLE_ORDER = ['pilot', 'cycle_1', 'cycle_2', 'cycle_3'];
-
 export { MAX_SLOTS } from '../../data/tribes';
 export const ELIGIBLE_ROLES = ['researcher', 'facilitator', 'communicator'];
 

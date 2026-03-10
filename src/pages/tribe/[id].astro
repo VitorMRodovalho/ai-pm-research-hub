@@ -255,6 +255,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
   window.__TRIBE_ID = typeof tribeId !== 'undefined' ? tribeId : 0;
 </script>
 <script>
+  import { getCurrentCycle, loadCycles } from '../../lib/cycles';
+
   const I18N = (typeof window !== 'undefined' && (window as any).__TRIBE_I18N) || {};
   const TRIBE_ID: number = (typeof window !== 'undefined' && (window as any).__TRIBE_ID) || 0;
 
@@ -296,10 +298,15 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
   let membersMap: Map<string, any> = new Map();
   let canEdit = false;
   let tribeData: any = null;
+  let currentCycleCode = '';
   let allDeliverables: any[] = [];
   let publishedArtifacts: any[] = [];
   let commsHubShown = false;
   let contactData: Record<string, {email?:string, phone?:string}> = {};
+
+  function getActiveCycleCode(): string {
+    return currentCycleCode || allDeliverables.find((item: any) => item?.cycle_code)?.cycle_code || '';
+  }
 
   // ── Tab switching ──
   function switchTab(tabName: string) {
@@ -770,9 +777,15 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
       return;
     }
 
+    const activeCycleCode = getActiveCycleCode();
+    if (!activeCycleCode) {
+      (window as any).toast?.(I18N.error, 'error');
+      return;
+    }
+
     const params: any = {
       p_tribe_id: TRIBE_ID,
-      p_cycle_code: 'cycle_3',
+      p_cycle_code: activeCycleCode,
       p_title: title,
       p_description: descInput.value.trim() || null,
       p_status: statusSelect.value,
@@ -802,7 +815,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
     const { error } = await sb.rpc('upsert_tribe_deliverable', {
       p_id: deliverableId,
       p_tribe_id: TRIBE_ID,
-      p_cycle_code: d.cycle_code || 'cycle_3',
+      p_cycle_code: d.cycle_code || getActiveCycleCode(),
       p_title: d.title,
       p_description: d.description,
       p_status: newStatus,
@@ -822,7 +835,12 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
   }
 
   async function reloadDeliverables() {
-    const { data } = await sb.rpc('list_tribe_deliverables', { p_tribe_id: TRIBE_ID, p_cycle_code: 'cycle_3' });
+    const activeCycleCode = getActiveCycleCode();
+    if (!activeCycleCode) {
+      renderDeliverables([]);
+      return;
+    }
+    const { data } = await sb.rpc('list_tribe_deliverables', { p_tribe_id: TRIBE_ID, p_cycle_code: activeCycleCode });
     renderDeliverables(Array.isArray(data) ? data : []);
   }
 
@@ -1059,6 +1077,9 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
     if (!sb) { setTimeout(boot, 200); return; }
 
     try {
+      const cycles = await loadCycles(sb);
+      currentCycleCode = getCurrentCycle(cycles)?.cycle_code || '';
+
       // Resolve current user for edit permissions
       const m = (window as any).navGetMember?.();
       if (m) {
@@ -1105,12 +1126,15 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
       checkBroadcastAccess();
 
       // Load all tribe data in parallel
+      const activeCycleCode = getActiveCycleCode();
       const [tribeRes, slotsRes, membersRes, selectionsRes, delivRes, resourcesRes, artifactsRes] = await Promise.all([
         sb.from('tribes').select('*').eq('id', TRIBE_ID).single(),
         sb.from('tribe_meeting_slots').select('day_of_week, time_start, time_end').eq('tribe_id', TRIBE_ID).eq('is_active', true).order('day_of_week'),
         sb.from('public_members').select('id, name, photo_url, chapter, operational_role, designations, tribe_id, share_whatsapp').eq('tribe_id', TRIBE_ID),
         sb.from('tribe_selections').select('member_id').eq('tribe_id', TRIBE_ID),
-        sb.rpc('list_tribe_deliverables', { p_tribe_id: TRIBE_ID, p_cycle_code: 'cycle_3' }),
+        activeCycleCode
+          ? sb.rpc('list_tribe_deliverables', { p_tribe_id: TRIBE_ID, p_cycle_code: activeCycleCode })
+          : Promise.resolve({ data: [] }),
         sb.from('hub_resources').select('*').eq('tribe_id', TRIBE_ID).eq('is_active', true).order('created_at', { ascending: false }),
         sb.from('artifacts').select('id, title').eq('status', 'published').order('title'),
       ]);

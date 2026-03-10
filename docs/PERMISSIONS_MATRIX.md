@@ -4,7 +4,7 @@
 > Qualquer alteração de acesso deve ser refletida aqui, no `navigation.config.ts`,
 > e nas RLS policies do Supabase antes de ser deployada.
 >
-> Última atualização: 2026-03-11 (Wave 8-10: Curatorship Kanban, Selection, Analytics nav, Progressive disclosure)
+> Última atualização: 2026-03-11 (Wave 15 audit: cycle-config hardening revalidated against current ACL/site hierarchy)
 
 ---
 
@@ -283,3 +283,4 @@ e as Edge Functions estão alinhados com esta matriz.
 | 2026-03-11 | Wave 8-10: Admin Curatorship, Admin Selection, Admin Analytics nav. Sections 3.13-3.15 (Tribe Kanban, Selection LGPD, Progressive disclosure). Code mapping table complete. |
 | 2026-03-11 | Wave 11: Section 3.16 Site Config (admin-settings superadmin). Wave 12: Agent docs, release workflow, screenshot script. |
 | 2026-03-11 | Wave 14 audit: site hierarchy/ACL revalidated after admin hygiene; `admin_webinars` route key aligned in shared constants. |
+| 2026-03-11 | Wave 15 audit: cycle-config hardening in admin/profile/tribe completed with no tier or visibility regression; matrix remains aligned with current routes. |

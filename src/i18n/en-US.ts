@@ -536,7 +536,7 @@ const enUS: Record<string, string> = {
   'profile.currentCycleLabel': 'Current cycle',
   'profile.joinedLabel': 'Joined',
   'profile.lastActivationLabel': 'Last activation',
-  'profile.dashboardTitle': '📊 Cycle 3 (2026/1)',
+  'profile.dashboardTitle': '📊 Current cycle',
   'profile.lifetimeXP': 'Lifetime',
   'profile.pointsLabel': '🏆 Points',
   'profile.attendanceLabel': '📅 Attendance',

@@ -64,8 +64,8 @@
 |-------|----------|
 | gamification.astro | Invoca `sync-attendance-points` e `sync-credly-all` — ✅ funções presentes no repo |
 | ResourcesSection.astro | Array hardcoded; deveria usar `hub_resources` ou `global_links` |
-| data/tribes.ts, data/kpis.ts, data/trail.ts | Fonte estática; ciclos/datas em `admin/constants.ts` |
-| admin/index.astro | Filtros `'2026-01-01'` e mapa de ciclos hardcoded |
+| data/tribes.ts, data/kpis.ts, data/trail.ts | Fonte estática; ainda precisam estratégia explícita para configuração dinâmica quando aplicável |
+| admin/index.astro, profile.astro, tribe/[id].astro | ✅ leituras prioritárias migradas para `list_cycles`; restam apenas fallbacks compartilhados/compatibilidade |
 
 ---
 
@@ -76,10 +76,10 @@
 | verify-credly | profile.astro | ✅ |
 | sync-comms-metrics | GitHub Action, external | ✅ |
 | sync-knowledge-insights | GitHub Action | ✅ |
-| **sync-credly-all** | gamification.astro, credly-auto-sync.yml | ❌ **ausente** |
-| **sync-attendance-points** | gamification.astro | ❌ **ausente** |
+| **sync-credly-all** | gamification.astro, credly-auto-sync.yml | ✅ |
+| **sync-attendance-points** | gamification.astro | ✅ |
 
-**Impacto:** Botões em /gamification disparam funções que podem estar deployadas em produção mas não versionadas. Regressão e auditoria impossíveis.
+**Status:** lacuna de versionamento corrigida; o risco atual é apenas drift documental caso este quadro não seja mantido sincronizado.
 
 ---
 
@@ -91,7 +91,7 @@
 | Item | Descrição | Owner sugerido |
 |------|-----------|----------------|
 | F1 | ~~Trazer sync-credly-all e sync-attendance-points~~ — ✅ Concluído | — |
-| F2 | Tabela `config_cycles` ou `group_cycles`: `code`, `label`, `start`, `end`; migrar hardcode de admin/constants | Dados |
+| F2 | `cycles` já existe; concluir migração dos consumidores remanescentes e remover fallbacks desnecessários | Dados + Frontend |
 | F3 | `home_schedule` como fonte única para deadline; validar `select_tribe` no RPC com `selection_deadline_at` | Backend |
 | F4 | Revisar `author_id` vs `member_id` em artifacts; unificar schema | Dados |
 
@@ -127,8 +127,8 @@
 ## 5. Pontos Frágeis por Batch
 
 ### Batch 1 (Foundation)
-- **sync-credly-all / sync-attendance-points fora do repo:** risco de perda, rollback impossível.
-- **Hardcode de ciclo:** admin, TribesSection, HeroSection, profile — mudança de ciclo exige toque em 5+ arquivos.
+- **Edge functions críticas já versionadas:** manter deploy auditado e evitar regressão documental sobre o que está ou não no repo.
+- **Hardcode de ciclo residual:** admin/profile/tribe já migrados; ainda restam fallbacks compartilhados e conteúdo estático em superfícies não-prioritárias.
 - **Fallback 2030-12-31:** mascara ausência de `home_schedule`; usuário vê "disponível" quando deveria ver erro.
 
 ### Batch 2 (Comms)
@@ -164,8 +164,8 @@
 
 ## 8. Próximos Passos Imediatos
 
-1. **Alta prioridade:** Recuperar ou recriar `sync-credly-all` e `sync-attendance-points` no repo; validar deploy.
-2. **Média:** Criar `config_cycles` (migration) e migrar constantes de ciclo.
+1. **Alta prioridade:** Remover a próxima tranche de handlers inline nas superfícies de attendance e member ops.
+2. **Média:** Fechar hardcodes residuais de ciclo/config em fallbacks compartilhados e conteúdo estático não-prioritário.
 3. **Baixa:** Documentar decisão sobre `change_requests`, `presentations`, `global_links` e executar em batch 4.
 
 ---

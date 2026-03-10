@@ -1,5 +1,37 @@
 # Release Log
 
+## 2026-03-11 — v0.13.0 Wave 15: Cycle-Config Hardening
+
+### Scope
+Wave 15 removes the highest-impact cycle/date hardcodes from active operational surfaces, moving admin, profile, and tribe flows to the DB-backed `list_cycles` model before the next stabilization tranche.
+
+### Cycle-Config Hardening
+- **`src/pages/profile.astro`**: My Week and cycle timeline now resolve the active cycle from `loadCycles()` / `getCurrentCycle()` instead of hardcoding `cycle_3`; dashboard fallback title is generic per locale.
+- **`src/pages/tribe/[id].astro`**: Deliverable reads and writes now use the active cycle resolved at runtime, eliminating direct `cycle_3` coupling in the tribe workspace flow.
+- **`src/pages/admin/index.astro`**: Cycle history, add-record actions, and default date filters now derive from `list_cycles` maps instead of deprecated local cycle constants or `'2026-01-01'`.
+
+### Compatibility Cleanup
+- **`src/lib/admin/constants.ts`**: Legacy `CYCLE_META` / `CYCLE_ORDER` exports removed from the active admin path.
+- **`src/lib/cycles.ts`**: Helper now uses the correct Supabase client type, removing the previous build warning.
+- **`src/lib/cycle-history.js`**: Keeps a bounded label fallback for sparse legacy records/tests while operational reads prefer DB-backed cycle data.
+
+### Governance / Docs
+- **Backlog**: Wave 15 marked complete with audit notes in `backlog-wave-planning-updated.md`.
+- **Governance**: `docs/GOVERNANCE_CHANGELOG.md`, `docs/PERMISSIONS_MATRIX.md`, and `docs/project-governance/PROJECT_ON_TRACK.md` now reflect the current cycle-config status and remaining residual debt.
+- **README**: Immediate priorities updated after moving the main cycle-aware surfaces to `list_cycles`.
+
+### Files Changed
+- `src/pages/profile.astro`, `src/pages/tribe/[id].astro`, `src/pages/admin/index.astro`
+- `src/lib/cycles.ts`, `src/lib/cycle-history.js`, `src/lib/admin/constants.ts`
+- `src/i18n/pt-BR.ts`, `src/i18n/en-US.ts`, `src/i18n/es-LATAM.ts`
+- `README.md`, `backlog-wave-planning-updated.md`
+- `docs/GOVERNANCE_CHANGELOG.md`, `docs/PERMISSIONS_MATRIX.md`, `docs/project-governance/PROJECT_ON_TRACK.md`
+
+### Audit Results
+- Build: clean | Tests: 13/13 | Smoke: routes OK (`SMOKE_PORT=4335`)
+
+---
+
 ## 2026-03-11 — v0.12.0 Wave 14: Divergence Cleanup, Gap Audit & Deferred Structuring
 
 ### Scope

@@ -536,7 +536,7 @@ const esLATAM: Record<string, string> = {
   'profile.currentCycleLabel': 'Ciclo actual',
   'profile.joinedLabel': 'Ingreso',
   'profile.lastActivationLabel': 'Última activación',
-  'profile.dashboardTitle': '📊 Ciclo 3 (2026/1)',
+  'profile.dashboardTitle': '📊 Ciclo actual',
   'profile.lifetimeXP': 'Lifetime',
   'profile.pointsLabel': '🏆 Puntos',
   'profile.attendanceLabel': '📅 Asistencias',

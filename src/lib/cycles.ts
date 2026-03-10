@@ -1,4 +1,4 @@
-import { createClient } from './supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export interface Cycle {
   cycle_code: string;
@@ -13,9 +13,9 @@ export interface Cycle {
 
 let _cache: Cycle[] | null = null;
 
-export async function loadCycles(sb?: ReturnType<typeof createClient>): Promise<Cycle[]> {
+export async function loadCycles(sb?: SupabaseClient): Promise<Cycle[]> {
   if (_cache) return _cache;
-  const client = sb || (window as any).navGetSb?.();
+  const client = sb || (typeof window !== 'undefined' ? (window as any).navGetSb?.() : null);
   if (!client) return getFallbackCycles();
   const { data } = await client.rpc('list_cycles');
   if (Array.isArray(data) && data.length > 0) {

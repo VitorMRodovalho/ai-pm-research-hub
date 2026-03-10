@@ -1117,12 +1117,11 @@ const ADMIN_I18N = {
   window.__ADMIN_I18N = typeof ADMIN_I18N !== 'undefined' ? ADMIN_I18N : {};
 </script>
 <script>
+  import { getCurrentCycle, getCycleDates, getCycleMeta, getCycleOrder, loadCycles } from '../../lib/cycles';
   import { ROLE_COLORS, ROLE_LABELS } from '../../lib/supabase';
   import { getMemberRole } from '../../lib/routing';
   import { normalizeMemberCycleHistory, uniqueSortedCycleCodes } from '../../lib/cycle-history';
   import {
-    CYCLE_META,
-    CYCLE_ORDER,
     DESIG_COLORS,
     DESIG_LABELS,
     ELIGIBLE_ROLES,
@@ -1143,6 +1142,18 @@ const ADMIN_I18N = {
   let sb: any = null;
   let MEMBER: any = null;
   let allMembers: any[] = [];
+  let cycleMeta: Record<string, { label: string; abbr: string; color: string }> = {};
+  let cycleOrder: string[] = [];
+  let cycleDatesMap: Record<string, { start: string; end: string | null }> = {};
+  let currentCycleStart = '';
+
+  function getCycleDisplayMeta(code: string): { label: string; abbr: string; color: string } {
+    return cycleMeta[code] || { label: code, abbr: code, color: '#94A3B8' };
+  }
+
+  function getFallbackCycleStart(): string {
+    return currentCycleStart || new Date().toISOString().split('T')[0];
+  }
 
   async function adminUpdateMemberCompat(payload: {
     memberId: string;
@@ -1688,11 +1699,9 @@ const ADMIN_I18N = {
 
   function cycleDots(memberId: string): string {
     const memberCycles = allCycleHistory.filter((h: any) => h.member_id === memberId);
-    const cycleOrder = (window as any).__CYCLE_ORDER || CYCLE_ORDER;
-    const cycleMeta = (window as any).__CYCLE_META || CYCLE_META;
     return cycleOrder.map((code: string) => {
       const record = memberCycles.find((h: any) => h.cycle_code === code);
-      const meta = cycleMeta[code] || CYCLE_META[code] || { label: code, abbr: code, color: '#94A3B8' };
+      const meta = getCycleDisplayMeta(code);
       if (!record) return `<span class="w-[18px] h-[14px] rounded text-[.5rem] font-bold inline-flex items-center justify-center bg-slate-100 text-slate-300" title="${meta.label}: não participou">${meta.abbr}</span>`;
       const opLabel = OPROLE_LABELS[record.operational_role] || record.operational_role || '';
       const desigLabels = (record.designations || []).map((d: string) => DESIG_LABELS[d] || d).join(', ');
@@ -2488,7 +2497,7 @@ const ADMIN_I18N = {
     // Set default date range: current cycle start → today
     const fromEl = document.getElementById('vrms-from') as HTMLInputElement;
     const toEl = document.getElementById('vrms-to') as HTMLInputElement;
-    const cycleStart = (window as any).__CURRENT_CYCLE_START || '2026-01-01';
+    const cycleStart = getFallbackCycleStart();
     if (fromEl && !fromEl.value) fromEl.value = cycleStart;
     if (toEl && !toEl.value) toEl.value = new Date().toISOString().split('T')[0];
     const lsFrom = document.getElementById('ls-from') as HTMLInputElement;
@@ -2903,12 +2912,9 @@ const ADMIN_I18N = {
     const area = document.getElementById('ch-cycles-area')!;
     const existingCodes = (records || []).map((r: any) => r.cycle_code);
 
-    const cycleMeta = (window as any).__CYCLE_META || CYCLE_META;
-    const cycleOrder = (window as any).__CYCLE_ORDER || CYCLE_ORDER;
-
     area.innerHTML = `
       ${(records || []).map((r: any) => {
-        const meta = cycleMeta[r.cycle_code] || CYCLE_META[r.cycle_code] || { label: r.cycle_code, color: '#94A3B8' };
+        const meta = getCycleDisplayMeta(r.cycle_code);
         const opLabel = OPROLE_LABELS[r.operational_role] || r.operational_role || 'none';
         const desigLabels = (r.designations || []).map((d: string) => DESIG_LABELS[d] || d);
         return `
@@ -2938,7 +2944,7 @@ const ADMIN_I18N = {
         <div class="text-[.72rem] font-semibold text-slate-500 mb-2">${ADMIN_I18N.addCycleRecordSection}</div>
         <div class="flex gap-2 flex-wrap">
           ${cycleOrder.filter((c: string) => !existingCodes.includes(c)).map((c: string) => {
-            const meta = cycleMeta[c] || CYCLE_META[c] || { label: c, color: '#94A3B8' };
+            const meta = getCycleDisplayMeta(c);
             return `<button type="button" class="btn-add-cycle-record px-3 py-1.5 text-[.68rem] font-bold rounded-lg border-0 cursor-pointer text-white hover:opacity-90 transition-all" style="background:${meta.color}" data-cycle-code="${escapeAttr(c)}">${meta.label}</button>`;
           }).join('')}
         </div>
@@ -2956,10 +2962,8 @@ const ADMIN_I18N = {
 
   (window as any).addCycleRecord = async (cycleCode: string) => {
     if (!canAccessAdminRoute(MEMBER, 'admin_member_edit') || !chMemberId) return;
-    const cycleMeta = (window as any).__CYCLE_META || CYCLE_META;
-    const meta = cycleMeta[cycleCode] || CYCLE_META[cycleCode] || { label: cycleCode, color: '#94A3B8' };
-    const cycleDatesMap = (window as any).__CYCLE_DATES || {};
-    const d = cycleDatesMap[cycleCode] || { start: '2026-01-01', end: null };
+    const meta = getCycleDisplayMeta(cycleCode);
+    const d = cycleDatesMap[cycleCode] || { start: getFallbackCycleStart(), end: null };
 
     // Get member name for snapshot
     const member = memberListCache?.find((m: any) => m.id === chMemberId) || {};
@@ -3797,22 +3801,11 @@ const ADMIN_I18N = {
     if (!sb) { setTimeout(boot, 200); return; }
 
     try {
-      const { data: cyclesData } = await sb.rpc('list_cycles');
-      if (Array.isArray(cyclesData) && cyclesData.length > 0) {
-        const current = cyclesData.find((c: any) => c.is_current) || cyclesData[cyclesData.length - 1];
-        (window as any).__CURRENT_CYCLE_START = current.cycle_start;
-        const datesMap: Record<string, { start: string; end: string | null }> = {};
-        const dbCycleMeta: Record<string, { label: string; abbr: string; color: string }> = {};
-        const dbCycleOrder: string[] = [];
-        for (const c of cyclesData) {
-          datesMap[c.cycle_code] = { start: c.cycle_start, end: c.cycle_end };
-          dbCycleMeta[c.cycle_code] = { label: c.cycle_label, abbr: c.cycle_abbr, color: c.cycle_color };
-          dbCycleOrder.push(c.cycle_code);
-        }
-        (window as any).__CYCLE_DATES = datesMap;
-        (window as any).__CYCLE_META = dbCycleMeta;
-        (window as any).__CYCLE_ORDER = dbCycleOrder;
-      }
+      const cyclesData = await loadCycles(sb);
+      cycleDatesMap = getCycleDates(cyclesData);
+      cycleMeta = getCycleMeta(cyclesData);
+      cycleOrder = getCycleOrder(cyclesData);
+      currentCycleStart = getCurrentCycle(cyclesData)?.cycle_start || getFallbackCycleStart();
     } catch (_) { console.warn('Admin boot cycle check:', _); }
 
     window.addEventListener('nav:member', ((e: CustomEvent) => {

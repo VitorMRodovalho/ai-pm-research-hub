@@ -146,10 +146,10 @@ The current production pattern is to keep communications metrics in Supabase-bac
 ## Immediate Engineering Priorities
 
 1. Eliminate documentation drift between README, migration notes, backlog, and governance docs.
-2. Continue removing legacy inline event handlers from older admin/shared UI surfaces.
-3. Reduce cycle/date hardcodes by preferring `list_cycles` and config-driven reads over local constants.
+2. Continue removing legacy inline event handlers from attendance and older member/admin surfaces.
+3. Finish the remaining cycle/config hardcodes in fallback or static content after Wave 15 moved admin/profile/tribe to `list_cycles`.
 4. Keep site hierarchy, access tiers, and LGPD visibility rules aligned across nav, pages, and docs.
-5. Structure deferred items with clear ownership before new large feature work begins.
+5. Replace deadline fallbacks with `home_schedule` as the single source before advancing new operational flows.
 
 ---
 

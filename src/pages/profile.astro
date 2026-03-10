@@ -145,6 +145,7 @@ const PROFILE_I18N = {
 </script>
 <script>
   import { ROLE_COLORS } from '../lib/supabase';
+  import { getCurrentCycle, getCycleMeta, loadCycles } from '../lib/cycles';
   import { shouldRedirectFromProfile } from '../lib/routing';
   import { normalizeCredlyUrl } from '../lib/credly';
   import { normalizeMemberCycleHistory } from '../lib/cycle-history';
@@ -171,7 +172,9 @@ const PROFILE_I18N = {
   let journeyStats: any = null;
   let xpByCycle: Record<string, number> = {};
   let cycleXpData: any = null;
+  let currentCycleCode: string = '';
   let currentCycleLabel: string = '';
+  let cycleMeta: Record<string, { label: string; abbr: string; color: string }> = {};
   let weekData: {
     meetingSlots: any[]; tribeMeetingLink: string | null;
     pendingDeliverables: number; weeklyPoints: number; tribeId: number | null;
@@ -183,8 +186,11 @@ const PROFILE_I18N = {
     if (!sb) { setTimeout(boot, 200); return; }
 
     try {
-      const { data: curCycle } = await sb.rpc('get_current_cycle');
-      if (curCycle) currentCycleLabel = curCycle.cycle_label || '';
+      const cycles = await loadCycles(sb);
+      const currentCycle = getCurrentCycle(cycles);
+      cycleMeta = getCycleMeta(cycles);
+      currentCycleCode = currentCycle?.cycle_code || '';
+      currentCycleLabel = currentCycle?.cycle_label || '';
     } catch (_) { /* fallback to i18n default */ }
 
     window.addEventListener('nav:member', (async (evt: Event) => {
@@ -229,6 +235,10 @@ const PROFILE_I18N = {
   function renderNotRegistered() {
     document.getElementById('profile-content')?.classList.add('hidden');
     document.getElementById('profile-not-registered')?.classList.remove('hidden');
+  }
+
+  function getActiveCycleCode(): string {
+    return currentCycleCode || cycleHistory.find((entry: any) => !!entry?.is_active)?.cycle_code || '';
   }
 
   async function loadExtras(sb: any) {
@@ -326,14 +336,18 @@ const PROFILE_I18N = {
 
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const activeCycleCode = getActiveCycleCode();
 
       if (tribeId) {
+        const deliverablesPromise = activeCycleCode
+          ? sb.rpc('list_tribe_deliverables', { p_tribe_id: tribeId, p_cycle_code: activeCycleCode })
+          : Promise.resolve({ data: [] });
         const [slotsRes, tribeRes, delivRes, weekPtsRes] = await Promise.all([
           sb.from('tribe_meeting_slots')
             .select('day_of_week, time_start, time_end')
             .eq('tribe_id', tribeId).eq('is_active', true).order('day_of_week'),
           sb.from('tribes').select('meeting_link').eq('id', tribeId).single(),
-          sb.rpc('list_tribe_deliverables', { p_tribe_id: tribeId, p_cycle_code: 'cycle_3' }),
+          deliverablesPromise,
           sb.from('gamification_points').select('points')
             .eq('member_id', currentMember.id).gte('created_at', sevenDaysAgo.toISOString()),
         ]);
@@ -472,15 +486,12 @@ const PROFILE_I18N = {
           <p class="text-[.78rem] text-slate-500">${PROFILE_I18N.noHistory}</p>
         </div>`;
     }
-    const CYCLE_COLORS: Record<string, string> = {
-      pilot: '#D97706', cycle_1: '#4F17A8', cycle_2: '#00799E', cycle_3: '#FF610F'
-    };
     return `
       <div class="bg-white rounded-2xl border border-slate-200 p-6">
         <h2 class="text-sm font-bold text-navy mb-4">${PROFILE_I18N.journeyTitle}</h2>
         <div class="relative pl-6 border-l-2 border-slate-200 space-y-4">
           ${cycleHistory.map(h => {
-            const color = CYCLE_COLORS[h.cycle_code] || '#94A3B8';
+            const color = cycleMeta[h.cycle_code]?.color || '#94A3B8';
             const isCurrent = !h.cycle_end;
             const opLabel = OPROLE_LABELS[h.operational_role] || h.operational_role;
             const dLabels = (h.designations || []).map((d: string) => DESIG_LABELS[d] || d);

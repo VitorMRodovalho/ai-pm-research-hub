@@ -1,5 +1,23 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 15: Cycle-Config Hardening
+
+### Decisions
+
+1. **Cycle reads should prefer `list_cycles`, not local constants**: The repo already had `cycles` table + RPC helpers, but `profile.astro`, `tribe/[id].astro`, and parts of `admin/index.astro` still depended on `cycle_3`, `2026-01-01`, or deprecated constants. Wave 15 moves these operational surfaces to runtime cycle resolution.
+
+2. **Legacy cycle constants are no longer the admin source of truth**: `CYCLE_META` and `CYCLE_ORDER` were still exported from `src/lib/admin/constants.ts` even after the DB-backed cycle model existed. They are removed from the active path so admin history, filters, and add-record flows derive from `list_cycles`.
+
+3. **Compatibility fallbacks remain allowed when they are explicitly bounded**: `src/lib/cycles.ts` keeps the shared fallback dataset for offline/RPC-failure scenarios, and `src/lib/cycle-history.js` keeps a small label fallback for backward compatibility with tests and sparse records. The important rule is that operational reads must prefer DB-backed cycle data first.
+
+### Process Lessons Learned
+
+1. **A completed migration still needs consumer cleanup**: Having the `cycles` table in production was not enough while UI surfaces still queried `cycle_3` directly. Migration closure must include consumer audits.
+
+2. **Warnings count as doc-drift signals too**: The old `cycles.ts` import warning was a small but useful indicator that the helper layer still needed cleanup while being adopted more widely.
+
+---
+
 ## 2026-03-11 — Wave 14: Divergence Cleanup, Gap Audit & Deferred Structuring
 
 ### Decisions

@@ -536,7 +536,7 @@ const ptBR: Record<string, string> = {
   'profile.currentCycleLabel': 'Ciclo atual',
   'profile.joinedLabel': 'Ingresso',
   'profile.lastActivationLabel': 'Última ativação',
-  'profile.dashboardTitle': '📊 Ciclo 3 (2026/1)',
+  'profile.dashboardTitle': '📊 Ciclo atual',
   'profile.lifetimeXP': 'Lifetime',
   'profile.pointsLabel': '🏆 Pontos',
   'profile.attendanceLabel': '📅 Presenças',

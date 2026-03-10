@@ -8,6 +8,11 @@
 
 ## LATEST UPDATE (2026-03-11)
 
+### Entregue em Wave 15
+- **W15.1 Cycle-Config Hardening**: `profile.astro` e `tribe/[id].astro` deixam de depender de `cycle_3` fixo e passam a resolver o ciclo corrente via `list_cycles`.
+- **W15.2 Admin Cycle Hygiene**: `admin/index.astro` usa `loadCycles()`/maps locais em vez de `CYCLE_META`/`CYCLE_ORDER`; `src/lib/admin/constants.ts` deixa de manter mapas de ciclo legados.
+- **W15.3 Docs & Compatibility Cleanup**: fallback genérico do dashboard de perfil, `cycles.ts` sem warning de import, e `PROJECT_ON_TRACK` realinhado com o estado atual.
+
 ### Entregue em Wave 14
 - **W14.1 Doc Divergence Cleanup**: README, MIGRATION e CONTRIBUTING alinhados com produção atual (Chart.js nativo, smoke routes, 5-phase, repo/path corretos).
 - **W14.2 Admin Hygiene**: Removidas referências antigas a PostHog/Looker do admin atual; primeira tranche de event delegation aplicada em `admin/index.astro` e shared UI.
@@ -332,6 +337,23 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 - **Docs**: README, MIGRATION, CONTRIBUTING alinhados com produção
 - **Site hierarchy / ACL**: rotas admin verificadas; `admin_webinars` alinhado em `AdminRouteKey`; sem rotas órfãs
 - **Admin hygiene**: refs antigas removidas; tranche de event delegation aplicada em admin/shared UI
+
+---
+
+## WAVE 15: Cycle-Config Hardening — CONCLUIDA
+**Foco:** reduzir hardcodes de ciclo nas superfícies operacionais mais sensíveis e consolidar `list_cycles` como fonte preferencial para leituras de ciclo.
+
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| W15.1 | Profile / Tribe Cycle Reads | High | Done | `profile.astro` e `tribe/[id].astro` agora resolvem ciclo corrente via `loadCycles()`/`getCurrentCycle()`, removendo dependência direta de `cycle_3` para My Week e deliverables. |
+| W15.2 | Admin Cycle Hygiene | High | Done | `admin/index.astro` passa a usar meta/order/dates derivados de `list_cycles`; filtros e cycle history deixam de depender de datas fixas e de `CYCLE_META`/`CYCLE_ORDER`. |
+| W15.3 | Compatibility + Docs Cleanup | Medium | Done | `profile.dashboardTitle` fica genérico por locale, `cycles.ts` usa tipo correto de client sem warning de build, e `PROJECT_ON_TRACK` corrige drift sobre edge functions e hardcodes de ciclo. |
+
+### Wave 15 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 13/13 | **Smoke**: routes OK (`SMOKE_PORT=4335`)
+- **Cycle config**: admin, profile e tribe leem ciclo corrente por `list_cycles`; sem `cycle_3` hardcoded nessas superfícies
+- **Residual fallback**: permanecem apenas o fallback compartilhado em `src/lib/cycles.ts` e o label-compat em `src/lib/cycle-history.js`
+- **Site hierarchy / ACL**: sem mudanças de tier; rotas auditadas continuam coerentes com `PERMISSIONS_MATRIX` e navegação atual
 
 ---
 
