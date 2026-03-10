@@ -797,28 +797,38 @@ const ADMIN_I18N = {
             </div>
           </div>
         </div>
-        <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <div class="px-4 py-3 border-b border-slate-200">
-            <h2 class="text-sm font-bold text-navy">{t('admin.analytics.productTitle', lang)}</h2>
-            <p class="text-[.68rem] text-slate-400">{t('admin.analytics.productSubtitle', lang)}</p>
-          </div>
-          {PRODUCT_DASHBOARD_URL ? (
-            <iframe src={PRODUCT_DASHBOARD_URL} title="Product Analytics" class="w-full min-h-[640px] border-0" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
-          ) : (
-            <div class="p-4 text-[.72rem] text-slate-500">{t('admin.analytics.missingConfig', lang)} <code class="bg-slate-100 px-1 py-0.5 rounded">PUBLIC_POSTHOG_PRODUCT_DASHBOARD_URL</code></div>
-          )}
-        </section>
-        <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <div class="px-4 py-3 border-b border-slate-200">
-            <h2 class="text-sm font-bold text-navy">{t('admin.analytics.commsTitle', lang)}</h2>
-            <p class="text-[.68rem] text-slate-400">{t('admin.analytics.commsSubtitle', lang)}</p>
-          </div>
-          {COMMS_DASHBOARD_URL ? (
-            <iframe src={COMMS_DASHBOARD_URL} title="Comms Analytics" class="w-full min-h-[640px] border-0" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"></iframe>
-          ) : (
-            <div class="p-4 text-[.72rem] text-slate-500">{t('admin.analytics.missingConfig', lang)} <code class="bg-slate-100 px-1 py-0.5 rounded">PUBLIC_LOOKER_COMMS_DASHBOARD_URL</code></div>
-          )}
-        </section>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-200">
+              <h2 class="text-sm font-bold text-navy">Funil de Engajamento</h2>
+              <p class="text-[.68rem] text-slate-400">Progresso dos membros por indicador</p>
+            </div>
+            <div class="p-4" style="height:280px"><canvas id="chart-funnel"></canvas></div>
+          </section>
+          <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-200">
+              <h2 class="text-sm font-bold text-navy">Radar por Tribo</h2>
+              <p class="text-[.68rem] text-slate-400">Completude por indicador em cada tribo</p>
+            </div>
+            <div class="p-4" style="height:280px"><canvas id="chart-radar"></canvas></div>
+          </section>
+          <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-200">
+              <h2 class="text-sm font-bold text-navy">Horas de Impacto</h2>
+              <p class="text-[.68rem] text-slate-400">Meta anual vs realizado por tribo</p>
+            </div>
+            <div class="p-4" style="height:280px"><canvas id="chart-impact"></canvas></div>
+          </section>
+          <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-200">
+              <h2 class="text-sm font-bold text-navy">KPIs Executivos</h2>
+              <p class="text-[.68rem] text-slate-400">Indicadores-chave do núcleo</p>
+            </div>
+            <div class="p-4" id="kpi-cards">
+              <div class="text-center py-6 text-slate-400 text-sm animate-pulse">Carregando...</div>
+            </div>
+          </section>
+        </div>
       </div>
 
       <!-- Leader Tier: My Tribe panel -->
@@ -1221,8 +1231,83 @@ const ADMIN_I18N = {
     if (tab === 'members') loadMembersList();
     if (tab === 'reports') initReports();
     if (tab === 'knowledge') loadKnowledgeAssets();
-    if (tab === 'analytics') initAnalyticsConsent();
+    if (tab === 'analytics') { initAnalyticsConsent(); loadAnalyticsCharts(); }
   };
+
+  let chartsLoaded = false;
+  async function loadAnalyticsCharts() {
+    if (chartsLoaded || !sb) return;
+    chartsLoaded = true;
+    const { Chart, BarController, RadarController, DoughnutController, CategoryScale, LinearScale, RadialLinearScale, BarElement, PointElement, LineElement, ArcElement, Filler, Legend, Tooltip } = await import('chart.js');
+    Chart.register(BarController, RadarController, DoughnutController, CategoryScale, LinearScale, RadialLinearScale, BarElement, PointElement, LineElement, ArcElement, Filler, Legend, Tooltip);
+    const PALETTE = ['#0d9488', '#7c3aed', '#2563eb', '#e11d48', '#ea580c', '#65a30d', '#0891b2', '#6366f1'];
+
+    try {
+      const { data: funnel } = await sb.rpc('exec_funnel_summary');
+      if (funnel && funnel.total_members) {
+        const funnelCanvas = document.getElementById('chart-funnel') as HTMLCanvasElement;
+        if (funnelCanvas) new Chart(funnelCanvas, {
+          type: 'bar',
+          data: {
+            labels: ['Com Tribo', 'Credly', 'Com Foto', 'Com LinkedIn'],
+            datasets: [{
+              data: [funnel.with_tribe, funnel.with_credly, funnel.with_photo, funnel.with_linkedin],
+              backgroundColor: PALETTE.slice(0, 4),
+              borderRadius: 6, barPercentage: 0.7,
+            }]
+          },
+          options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c: any) => c.raw + ' / ' + funnel.total_members } } }, scales: { x: { max: funnel.total_members, grid: { color: '#f1f5f9' } }, y: { grid: { display: false } } } }
+        });
+      }
+    } catch (e) { console.warn('Funnel chart:', e); }
+
+    try {
+      const { data: radar } = await sb.rpc('exec_skills_radar');
+      if (Array.isArray(radar) && radar.length) {
+        const radarCanvas = document.getElementById('chart-radar') as HTMLCanvasElement;
+        if (radarCanvas) new Chart(radarCanvas, {
+          type: 'radar',
+          data: {
+            labels: radar.map((t: any) => t.tribe_name?.substring(0, 12)),
+            datasets: [
+              { label: 'Credly', data: radar.map((t: any) => t.credly_count || 0), borderColor: PALETTE[1], backgroundColor: PALETTE[1] + '30', fill: true },
+              { label: 'Foto', data: radar.map((t: any) => t.photo_count || 0), borderColor: PALETTE[2], backgroundColor: PALETTE[2] + '30', fill: true },
+              { label: 'LinkedIn', data: radar.map((t: any) => t.linkedin_count || 0), borderColor: PALETTE[0], backgroundColor: PALETTE[0] + '30', fill: true },
+            ]
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } }, scales: { r: { ticks: { font: { size: 9 } }, pointLabels: { font: { size: 9 } } } } }
+        });
+      }
+    } catch (e) { console.warn('Radar chart:', e); }
+
+    try {
+      const { data: impact } = await sb.from('impact_hours_summary').select('*');
+      const { data: total } = await sb.from('impact_hours_total').select('*').single();
+      if (Array.isArray(impact) && impact.length) {
+        const impactCanvas = document.getElementById('chart-impact') as HTMLCanvasElement;
+        if (impactCanvas) new Chart(impactCanvas, {
+          type: 'doughnut',
+          data: {
+            labels: impact.map((t: any) => 'Tribo ' + t.tribe_id),
+            datasets: [{ data: impact.map((t: any) => Number(t.impact_hours || 0)), backgroundColor: PALETTE, borderWidth: 2, borderColor: '#fff' }]
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } }, tooltip: { callbacks: { label: (c: any) => c.label + ': ' + c.raw.toFixed(1) + 'h' } } } }
+        });
+      }
+      if (total) {
+        const kpiEl = document.getElementById('kpi-cards');
+        if (kpiEl) {
+          const pct = total.percent_of_target ? Number(total.percent_of_target).toFixed(1) : '0';
+          kpiEl.innerHTML = '<div class="grid grid-cols-2 gap-3">'
+            + '<div class="bg-slate-50 rounded-xl p-3 text-center"><div class="text-xl font-extrabold text-navy">' + Number(total.total_impact_hours || 0).toFixed(0) + 'h</div><div class="text-[.65rem] text-slate-500">Horas de Impacto</div></div>'
+            + '<div class="bg-slate-50 rounded-xl p-3 text-center"><div class="text-xl font-extrabold text-teal">' + pct + '%</div><div class="text-[.65rem] text-slate-500">da Meta Anual</div></div>'
+            + '<div class="bg-slate-50 rounded-xl p-3 text-center"><div class="text-xl font-extrabold text-navy">' + (total.total_events || 0) + '</div><div class="text-[.65rem] text-slate-500">Eventos</div></div>'
+            + '<div class="bg-slate-50 rounded-xl p-3 text-center"><div class="text-xl font-extrabold text-navy">' + (total.total_attendances || 0) + '</div><div class="text-[.65rem] text-slate-500">Presenças</div></div>'
+            + '</div>';
+        }
+      }
+    } catch (e) { console.warn('Impact chart:', e); }
+  }
 
   function initAnalyticsConsent() {
     const CK = 'analytics_consent';

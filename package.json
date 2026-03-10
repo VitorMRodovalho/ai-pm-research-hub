@@ -16,6 +16,7 @@
     "@supabase/supabase-js": "^2.98.0",
     "@tailwindcss/vite": "^4.2.1",
     "astro": "^5.17.1",
+    "chart.js": "^4.5.1",
     "tailwindcss": "^4.2.1"
   },
   "devDependencies": {

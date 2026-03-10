@@ -1,5 +1,75 @@
 # Release Log
 
+## 2026-03-10 — v0.4.0 Four Options Sprint: Knowledge, Kanban, Onboarding NLP, Analytics 2.0
+
+### Scope
+Four parallel feature tracks: Knowledge Hub sanitization and UX, Kanban curatorship board,
+onboarding intelligence from WhatsApp NLP analysis, and native Chart.js analytics replacing
+external iframe dashboards.
+
+### Changes
+
+**Option 1: Knowledge Hub Sanitization (S-KNW4)**
+- Created `scripts/knowledge_file_detective.ts`: scans `data/staging-knowledge/` for orphaned
+  presentation files, cross-references with `artifacts` table, outputs JSON report
+- `artifacts.astro`: Added category sub-tabs "Artefatos Produzidos" (article, framework, ebook,
+  toolkit) vs "Materiais de Referencia" (presentation, video, other)
+- `artifacts.astro`: Inline tag edit buttons for leaders/curators on catalog cards, using
+  existing `curate_item` RPC with `p_action: 'update_tags'`
+
+**Option 2: Kanban Curatorship Board (S-KNW5)**
+- `admin/curatorship.astro`: Full rewrite from flat list to 4-column Kanban board
+  (Pendente / Em Revisao / Aprovado / Descartado)
+- HTML5 Drag and Drop API for card movement between columns
+- New migration: `20260311000000_curatorship_kanban_rpc.sql` with `list_curation_board` RPC
+  returning items from both `artifacts` and `hub_resources` across all statuses
+- Graceful fallback to `list_pending_curation` if new RPC not yet applied
+
+**Option 3: Onboarding Intelligence (S-OB1)**
+- Created `scripts/onboarding_whatsapp_analysis.ts`: parses WhatsApp group export,
+  extracts FAQ/pain points via keyword + question detection, timeline analysis,
+  sender participation, themed insights
+- `onboarding.astro`: Complete redesign with:
+  - Progress tracker bar with localStorage persistence
+  - 4 phases: Boas-vindas, Configuracao, Integracao, Producao
+  - Accordion-style expandable step cards
+  - Data-driven tips from WhatsApp analysis insights
+  - Smart deadline countdown banner
+  - Completion celebration banner
+
+**Option 4: Analytics 2.0 (S-AN1)**
+- Installed `chart.js` v4 (~71KB gzip, tree-shaken)
+- `admin/index.astro` Analytics tab: Replaced PostHog + Looker iframes with 4 native Chart.js
+  panels (Funnel horizontal bar, Radar spider, Impact doughnut, KPI cards)
+- `admin/analytics.astro`: Full rewrite with Chart.js charts (funnel bar, radar spider,
+  certification timeline line chart) replacing HTML progress bars
+- `admin/comms.astro`: Added channel metrics bar chart above existing tables
+
+### Files changed
+- `src/pages/artifacts.astro` (category sub-tabs + inline tag editor)
+- `src/pages/admin/curatorship.astro` (Kanban rewrite)
+- `src/pages/onboarding.astro` (progress tracker redesign)
+- `src/pages/admin/analytics.astro` (Chart.js upgrade)
+- `src/pages/admin/index.astro` (native charts replacing iframes)
+- `src/pages/admin/comms.astro` (channel metrics chart)
+- `package.json` + `package-lock.json` (chart.js dependency)
+- `backlog-wave-planning-updated.md` (sprint entries)
+
+### Files created
+- `scripts/knowledge_file_detective.ts`
+- `scripts/onboarding_whatsapp_analysis.ts`
+- `supabase/migrations/20260311000000_curatorship_kanban_rpc.sql`
+
+### Migrations
+- `20260311000000_curatorship_kanban_rpc.sql`: `list_curation_board(p_status)` RPC
+
+### Validation
+- `npm test`: 13/13 passing
+- `npm run build`: 0 errors
+- Tag: `v0.4.0`
+
+---
+
 ## 2026-03-10 — v0.3.0 CPO Production Audit: Profile, Gamification, Nav & IA Hotfixes
 
 ### Scope

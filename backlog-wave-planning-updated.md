@@ -8,7 +8,13 @@
 
 ## LATEST UPDATE (2026-03-10)
 
-### Entregue nesta sessao (CPO Production Audit)
+### Entregue nesta sessao (Four Options Sprint)
+- **S-KNW4 File Detective & Knowledge Sanitization**: Script `knowledge_file_detective.ts` para detectar apresentacoes orfas em `data/staging-knowledge/`. Artifacts page separada em "Artefatos Produzidos" vs "Materiais de Referencia". Botoes inline de edicao de tags para lideres/curadores via `curate_item` RPC.
+- **S-KNW5 Kanban Curatorship Board**: `/admin/curatorship` refatorado de lista plana para board Kanban com 4 colunas (Pendente, Em Revisao, Aprovado, Descartado). Drag-and-drop com HTML5 API. Nova migration `list_curation_board` RPC.
+- **S-OB1 Onboarding Intelligence**: Script `onboarding_whatsapp_analysis.ts` para NLP do chat WhatsApp de integracao (keyword extraction, FAQ detection, timeline analysis). Onboarding page redesenhada com progress tracker, accordion steps, fases (Boas-vindas/Configuracao/Integracao/Producao), e dicas data-driven.
+- **S-AN1 Analytics 2.0**: Chart.js instalado. PostHog/Looker iframes substituidos por graficos nativos (Funnel bar, Radar spider, Impact doughnut, KPI cards, Cert Timeline line). Comms dashboard com bar chart de metricas por canal.
+
+### Entregue anteriormente (CPO Production Audit)
 - **S-HF10 Credly URL Persistence**: `saveSelf()` agora preserva `credly_url` existente quando campo nao e modificado; `verifyCredly()` persiste URL via `member_self_update` antes da verificacao. Fluxo completo: inserir URL → verificar → salvar funciona sem perda.
 - **S-HF11 Gamification Toggle XP Vitalicio**: `setLeaderboardMode()` agora chama `ensureLifetimePointsLoaded()` antes de re-render; fix de conflito `bg-transparent`/`bg-navy` nos botoes de toggle (leaderboard + tribe ranking).
 - **S-UX2 Explorar Tribos Universal**: Dropdown de tribos (desktop/drawer/mobile) carrega TODAS as tribos; tribos inativas aparecem com opacidade reduzida + icone de cadeado + tooltip "Tribo Fechada".
@@ -95,6 +101,10 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 | S-IA1 | Help Publico (`/help`) | Done | Migrado de `/admin/help`; LGPD oculto para nao-admins; redirect 301. |
 | S-IA2 | Onboarding no Drawer | Done | Removido da navbar principal; movido para Profile Drawer. |
 | S-IA3 | Webinars Placeholder | Done | UI "Em Breve" com access check admin. |
+| S-KNW4 | File Detective & Knowledge Sanitization | Done | Script + Produced/Reference sub-tabs + leader inline tag edit. |
+| S-KNW5 | Kanban Curatorship Board | Done | 4-column Kanban com drag-and-drop + `list_curation_board` RPC. |
+| S-OB1 | Onboarding Intelligence (WhatsApp NLP) | Done | Chat parser + redesigned onboarding com progress tracker. |
+| S-AN1 | Analytics 2.0 (Chart.js) | Done | PostHog/Looker → native charts (funnel, radar, impact, cert timeline, comms). |
 
 ---
 

@@ -70,25 +70,40 @@ const ANALYTICS_I18N = {
         </div>
       </div>
 
-      <!-- Funnel Section -->
-      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-        <div class="px-4 py-3 border-b border-slate-200">
-          <h2 class="text-sm font-bold text-navy" id="funnel-title"></h2>
-          <p class="text-[.68rem] text-slate-400" id="funnel-desc"></p>
-        </div>
-        <div id="funnel-body" class="p-4">
-          <div class="text-center py-6 text-slate-400 text-sm animate-pulse">Carregando...</div>
-        </div>
-      </section>
+      <!-- KPI Stats -->
+      <div id="stats-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
 
-      <!-- Radar Section -->
+      <!-- Charts Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div class="px-4 py-3 border-b border-slate-200">
+            <h2 class="text-sm font-bold text-navy" id="funnel-title"></h2>
+            <p class="text-[.68rem] text-slate-400" id="funnel-desc"></p>
+          </div>
+          <div class="p-4" style="height:300px">
+            <canvas id="funnel-chart"></canvas>
+          </div>
+        </section>
+
+        <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div class="px-4 py-3 border-b border-slate-200">
+            <h2 class="text-sm font-bold text-navy" id="radar-title"></h2>
+            <p class="text-[.68rem] text-slate-400" id="radar-desc"></p>
+          </div>
+          <div class="p-4" style="height:300px">
+            <canvas id="radar-chart"></canvas>
+          </div>
+        </section>
+      </div>
+
+      <!-- Cert Timeline -->
       <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
         <div class="px-4 py-3 border-b border-slate-200">
-          <h2 class="text-sm font-bold text-navy" id="radar-title"></h2>
-          <p class="text-[.68rem] text-slate-400" id="radar-desc"></p>
+          <h2 class="text-sm font-bold text-navy">Linha do Tempo de Certificações</h2>
+          <p class="text-[.68rem] text-slate-400">Progressão de certificações por cohort mensal</p>
         </div>
-        <div id="radar-body" class="p-4">
-          <div class="text-center py-6 text-slate-400 text-sm animate-pulse">Carregando...</div>
+        <div class="p-4" style="height:280px">
+          <canvas id="cert-chart"></canvas>
         </div>
       </section>
     </div>
@@ -105,6 +120,7 @@ const ANALYTICS_I18N = {
   let sb: any = null;
   let MEMBER: any = null;
   const L = (typeof window !== 'undefined' && (window as any).__ANALYTICS_I18N) || {};
+  const PALETTE = ['#0d9488', '#7c3aed', '#2563eb', '#0a66c2', '#e11d48', '#ea580c', '#65a30d', '#0891b2'];
 
   function allowAnalytics(m: any): boolean {
     return canAccessAdminRoute(m, 'admin_analytics');
@@ -121,8 +137,7 @@ const ANALYTICS_I18N = {
     document.getElementById('analytics-denied')?.classList.add('hidden');
     document.getElementById('analytics-panel')?.classList.remove('hidden');
     setupConsentUi();
-    loadFunnel();
-    loadRadar();
+    loadCharts();
   }
 
   function consentValue(): 'granted' | 'denied' | 'unknown' {
@@ -147,20 +162,16 @@ const ANALYTICS_I18N = {
     }
   }
 
-  function broadcastConsent() {
-    window.dispatchEvent(new CustomEvent('analytics:consent-changed', { detail: { consent: consentValue() } }));
-  }
-
   function setupConsentUi() {
     const grantBtn = document.getElementById('btn-consent-grant');
     const revokeBtn = document.getElementById('btn-consent-revoke');
     if (grantBtn && !grantBtn.dataset.bound) {
       grantBtn.dataset.bound = '1';
-      grantBtn.addEventListener('click', () => { localStorage.setItem(CONSENT_KEY, 'granted'); renderConsentStatus(); broadcastConsent(); });
+      grantBtn.addEventListener('click', () => { localStorage.setItem(CONSENT_KEY, 'granted'); renderConsentStatus(); });
     }
     if (revokeBtn && !revokeBtn.dataset.bound) {
       revokeBtn.dataset.bound = '1';
-      revokeBtn.addEventListener('click', () => { localStorage.setItem(CONSENT_KEY, 'denied'); renderConsentStatus(); broadcastConsent(); });
+      revokeBtn.addEventListener('click', () => { localStorage.setItem(CONSENT_KEY, 'denied'); renderConsentStatus(); });
     }
     renderConsentStatus();
   }
@@ -169,119 +180,104 @@ const ANALYTICS_I18N = {
     return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  function progressBar(label: string, value: number, total: number, color: string): string {
-    const pct = total > 0 ? Math.round((value / total) * 100) : 0;
-    return '<div class="flex items-center gap-3 py-2">' +
-      '<div class="w-40 text-[.72rem] font-semibold text-slate-600 truncate">' + escapeHtml(label) + '</div>' +
-      '<div class="flex-1 h-3 bg-slate-100 rounded-full overflow-hidden">' +
-        '<div class="h-full rounded-full transition-all duration-700" style="width:' + pct + '%;background:' + color + '"></div>' +
-      '</div>' +
-      '<div class="w-20 text-right text-[.72rem] font-bold" style="color:' + color + '">' + value + '/' + total + ' (' + pct + '%)</div>' +
-    '</div>';
-  }
+  async function loadCharts() {
+    const { Chart, BarController, RadarController, LineController, CategoryScale, LinearScale, RadialLinearScale, BarElement, PointElement, LineElement, Filler, Legend, Tooltip } = await import('chart.js');
+    Chart.register(BarController, RadarController, LineController, CategoryScale, LinearScale, RadialLinearScale, BarElement, PointElement, LineElement, Filler, Legend, Tooltip);
 
-  async function loadFunnel() {
-    const titleEl = document.getElementById('funnel-title');
-    const descEl = document.getElementById('funnel-desc');
-    const bodyEl = document.getElementById('funnel-body');
-    if (titleEl) titleEl.textContent = L.funnelTitle || 'Funil de Engajamento';
-    if (descEl) descEl.textContent = L.funnelDesc || '';
-    if (!bodyEl || !sb) return;
+    const funnelTitle = document.getElementById('funnel-title');
+    const funnelDesc = document.getElementById('funnel-desc');
+    const radarTitle = document.getElementById('radar-title');
+    const radarDesc = document.getElementById('radar-desc');
+    if (funnelTitle) funnelTitle.textContent = L.funnelTitle || 'Funil de Engajamento';
+    if (funnelDesc) funnelDesc.textContent = L.funnelDesc || '';
+    if (radarTitle) radarTitle.textContent = L.radarTitle || 'Radar por Tribo';
+    if (radarDesc) radarDesc.textContent = L.radarDesc || '';
 
     try {
       const { data, error } = await sb.rpc('exec_funnel_summary');
-      if (error || !data || typeof data !== 'object' || !data.total_members) {
-        bodyEl.innerHTML = '<div class="text-center py-6 text-slate-400 text-sm">' + escapeHtml(L.noData || 'Sem dados') + '</div>';
-        return;
-      }
-      const total = data.total_members;
-      const rows = [
-        { label: L.withTribe || 'Com Tribo', value: data.with_tribe, color: '#0d9488' },
-        { label: L.withCredly || 'Credly Sincronizado', value: data.with_credly, color: '#7c3aed' },
-        { label: L.withPhoto || 'Com Foto', value: data.with_photo, color: '#2563eb' },
-        { label: L.withLinkedin || 'Com LinkedIn', value: data.with_linkedin, color: '#0a66c2' },
-      ];
-
-      let html = '<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">';
-      const stats = [
-        { label: L.totalMembers || 'Membros Ativos', value: data.total_members, icon: '&#x1F465;' },
-        { label: L.tribeLeaders || 'Lideres', value: data.tribe_leaders, icon: '&#x1F451;' },
-        { label: L.totalArtifacts || 'Artefatos', value: data.total_artifacts, icon: '&#x1F4C4;' },
-        { label: L.totalBroadcasts || 'Broadcasts', value: data.total_broadcasts, icon: '&#x1F4E7;' },
-      ];
-      stats.forEach(s => {
-        html += '<div class="bg-slate-50 rounded-xl p-3 text-center">' +
-          '<div class="text-lg">' + s.icon + '</div>' +
-          '<div class="text-xl font-extrabold text-navy">' + s.value + '</div>' +
-          '<div class="text-[.65rem] text-slate-500 font-semibold">' + escapeHtml(s.label) + '</div>' +
-        '</div>';
-      });
-      html += '</div>';
-
-      html += '<div class="space-y-1">';
-      rows.forEach(r => { html += progressBar(r.label, r.value, total, r.color); });
-      html += '</div>';
-
-      bodyEl.innerHTML = html;
-    } catch (e) {
-      console.warn('Funnel load error:', e);
-      bodyEl.innerHTML = '<div class="text-center py-6 text-slate-400 text-sm">' + escapeHtml(L.noData || 'Sem dados') + '</div>';
-    }
-  }
-
-  async function loadRadar() {
-    const titleEl = document.getElementById('radar-title');
-    const descEl = document.getElementById('radar-desc');
-    const bodyEl = document.getElementById('radar-body');
-    if (titleEl) titleEl.textContent = L.radarTitle || 'Radar por Tribo';
-    if (descEl) descEl.textContent = L.radarDesc || '';
-    if (!bodyEl || !sb) return;
-
-    try {
-      const { data, error } = await sb.rpc('exec_skills_radar');
-      if (error || !Array.isArray(data) || !data.length) {
-        bodyEl.innerHTML = '<div class="text-center py-6 text-slate-400 text-sm">' + escapeHtml(L.noData || 'Sem dados') + '</div>';
-        return;
-      }
-
-      const COLORS = ['#0d9488', '#7c3aed', '#2563eb', '#e11d48', '#ea580c', '#65a30d', '#0891b2'];
-      let html = '<div class="overflow-x-auto"><table class="w-full text-left text-[.72rem]">' +
-        '<thead><tr class="border-b border-slate-200 text-slate-500 font-bold">' +
-        '<th class="px-3 py-2">Tribo</th>' +
-        '<th class="px-3 py-2 text-center">' + escapeHtml(L.members || 'Membros') + '</th>' +
-        '<th class="px-3 py-2 text-center">' + escapeHtml(L.credly || 'Credly') + '</th>' +
-        '<th class="px-3 py-2 text-center">' + escapeHtml(L.photos || 'Fotos') + '</th>' +
-        '<th class="px-3 py-2 text-center">' + escapeHtml(L.linkedin || 'LinkedIn') + '</th>' +
-        '<th class="px-3 py-2 text-center">' + escapeHtml(L.artifacts || 'Artefatos') + '</th>' +
-        '</tr></thead><tbody>';
-
-      data.forEach((tribe: any, idx: number) => {
-        const color = COLORS[idx % COLORS.length];
-        const mc = tribe.member_count || 0;
-
-        function miniBar(val: number, max: number): string {
-          const pct = max > 0 ? Math.round((val / max) * 100) : 0;
-          return '<div class="flex items-center gap-1">' +
-            '<div class="w-16 h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:' + pct + '%;background:' + color + '"></div></div>' +
-            '<span class="text-[.65rem] font-bold" style="color:' + color + '">' + val + '</span></div>';
+      if (!error && data?.total_members) {
+        const total = data.total_members;
+        const statsGrid = document.getElementById('stats-grid');
+        if (statsGrid) {
+          const stats = [
+            { label: L.totalMembers || 'Membros Ativos', value: total, icon: '&#x1F465;' },
+            { label: L.tribeLeaders || 'Líderes', value: data.tribe_leaders, icon: '&#x1F451;' },
+            { label: L.totalArtifacts || 'Artefatos', value: data.total_artifacts, icon: '&#x1F4C4;' },
+            { label: L.totalBroadcasts || 'Broadcasts', value: data.total_broadcasts, icon: '&#x1F4E7;' },
+          ];
+          statsGrid.innerHTML = stats.map(s =>
+            '<div class="bg-white border border-slate-200 rounded-xl p-3 text-center">'
+            + '<div class="text-lg">' + s.icon + '</div>'
+            + '<div class="text-xl font-extrabold text-navy">' + s.value + '</div>'
+            + '<div class="text-[.65rem] text-slate-500 font-semibold">' + escapeHtml(s.label) + '</div>'
+            + '</div>'
+          ).join('');
         }
 
-        html += '<tr class="border-b border-slate-50 hover:bg-slate-50">' +
-          '<td class="px-3 py-2.5 font-semibold" style="color:' + color + '">' + escapeHtml(tribe.tribe_name) + '</td>' +
-          '<td class="px-3 py-2.5 text-center font-bold text-navy">' + mc + '</td>' +
-          '<td class="px-3 py-2.5">' + miniBar(tribe.credly_count, mc) + '</td>' +
-          '<td class="px-3 py-2.5">' + miniBar(tribe.photo_count, mc) + '</td>' +
-          '<td class="px-3 py-2.5">' + miniBar(tribe.linkedin_count, mc) + '</td>' +
-          '<td class="px-3 py-2.5 text-center font-bold text-slate-700">' + (tribe.artifacts_count || 0) + '</td>' +
-        '</tr>';
-      });
+        const funnelCanvas = document.getElementById('funnel-chart') as HTMLCanvasElement;
+        if (funnelCanvas) new Chart(funnelCanvas, {
+          type: 'bar',
+          data: {
+            labels: [L.withTribe || 'Com Tribo', L.withCredly || 'Credly', L.withPhoto || 'Com Foto', L.withLinkedin || 'LinkedIn'],
+            datasets: [{
+              data: [data.with_tribe, data.with_credly, data.with_photo, data.with_linkedin],
+              backgroundColor: PALETTE.slice(0, 4),
+              borderRadius: 6, barPercentage: 0.65,
+            }]
+          },
+          options: {
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c: any) => c.raw + ' / ' + total + ' (' + Math.round(c.raw / total * 100) + '%)' } } },
+            scales: { x: { max: total, grid: { color: '#f1f5f9' } }, y: { grid: { display: false } } }
+          }
+        });
+      }
+    } catch (e) { console.warn('Funnel chart:', e); }
 
-      html += '</tbody></table></div>';
-      bodyEl.innerHTML = html;
-    } catch (e) {
-      console.warn('Radar load error:', e);
-      bodyEl.innerHTML = '<div class="text-center py-6 text-slate-400 text-sm">' + escapeHtml(L.noData || 'Sem dados') + '</div>';
-    }
+    try {
+      const { data } = await sb.rpc('exec_skills_radar');
+      if (Array.isArray(data) && data.length) {
+        const radarCanvas = document.getElementById('radar-chart') as HTMLCanvasElement;
+        if (radarCanvas) new Chart(radarCanvas, {
+          type: 'radar',
+          data: {
+            labels: data.map((t: any) => (t.tribe_name || '').substring(0, 14)),
+            datasets: [
+              { label: L.credly || 'Credly', data: data.map((t: any) => t.credly_count || 0), borderColor: PALETTE[1], backgroundColor: PALETTE[1] + '25', fill: true, pointRadius: 3 },
+              { label: L.photos || 'Fotos', data: data.map((t: any) => t.photo_count || 0), borderColor: PALETTE[2], backgroundColor: PALETTE[2] + '25', fill: true, pointRadius: 3 },
+              { label: L.linkedin || 'LinkedIn', data: data.map((t: any) => t.linkedin_count || 0), borderColor: PALETTE[0], backgroundColor: PALETTE[0] + '25', fill: true, pointRadius: 3 },
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, usePointStyle: true } } },
+            scales: { r: { ticks: { font: { size: 9 } }, pointLabels: { font: { size: 9 } } } }
+          }
+        });
+      }
+    } catch (e) { console.warn('Radar chart:', e); }
+
+    try {
+      const { data } = await sb.rpc('exec_cert_timeline', { p_months: 12 });
+      if (Array.isArray(data) && data.length) {
+        const certCanvas = document.getElementById('cert-chart') as HTMLCanvasElement;
+        if (certCanvas) new Chart(certCanvas, {
+          type: 'line',
+          data: {
+            labels: data.map((d: any) => d.cohort_month),
+            datasets: [
+              { label: 'Tier 1 (%)', data: data.map((d: any) => d.pct_with_tier1 || 0), borderColor: PALETTE[0], backgroundColor: PALETTE[0] + '20', fill: true, tension: 0.3, pointRadius: 4 },
+              { label: 'Tier 2+ (%)', data: data.map((d: any) => d.pct_with_tier2 || 0), borderColor: PALETTE[1], backgroundColor: PALETTE[1] + '20', fill: true, tension: 0.3, pointRadius: 4 },
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, usePointStyle: true } } },
+            scales: { y: { beginAtZero: true, max: 100, ticks: { callback: (v: any) => v + '%' }, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+          }
+        });
+      }
+    } catch (e) { console.warn('Cert timeline chart:', e); }
   }
 
   function applyGate(m: any) {

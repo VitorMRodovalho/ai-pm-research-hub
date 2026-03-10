@@ -57,7 +57,18 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
         </div>
       </section>
 
-      <!-- Section 2: Channel Metrics -->
+      <!-- Section 2: Channel Metrics Chart -->
+      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-200">
+          <h2 class="text-sm font-bold text-navy">Métricas por Canal (Visual)</h2>
+          <p class="text-[.68rem] text-slate-400">Alcance e engajamento dos últimos 14 dias</p>
+        </div>
+        <div class="p-4" style="height:220px">
+          <canvas id="comms-bar-chart"></canvas>
+        </div>
+      </section>
+
+      <!-- Section 3: Channel Metrics Table -->
       <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
         <div class="px-4 py-3 border-b border-slate-200">
           <h2 class="text-sm font-bold text-navy">{t('admin.comms.nativeTitle', lang)}</h2>
@@ -134,12 +145,32 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
     document.getElementById('comms-panel')?.classList.remove('hidden');
     loadRanking();
     loadBroadcasts();
-    if (document.getElementById('comms-panel')?.dataset.commsMode === 'native') {
-      loadNativeTable();
-    } else {
-      document.getElementById('comms-table-loading')?.classList.add('hidden');
-      document.getElementById('comms-table-empty')?.classList.remove('hidden');
-    }
+    loadNativeTable();
+    loadCommsChart();
+  }
+
+  async function loadCommsChart() {
+    try {
+      const { data, error } = await sb.rpc('comms_metrics_latest_by_channel', { p_days: 14 });
+      if (error || !data?.length) return;
+      const { Chart, BarController, CategoryScale, LinearScale, BarElement, Legend, Tooltip } = await import('chart.js');
+      Chart.register(BarController, CategoryScale, LinearScale, BarElement, Legend, Tooltip);
+      const canvas = document.getElementById('comms-bar-chart') as HTMLCanvasElement;
+      if (!canvas) return;
+      const channels = [...new Set(data.map((r: any) => r.channel))];
+      const PALETTE = ['#0d9488', '#7c3aed', '#2563eb', '#e11d48', '#ea580c'];
+      new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: channels,
+          datasets: [
+            { label: 'Alcance', data: channels.map(ch => data.filter((r: any) => r.channel === ch).reduce((s: number, r: any) => s + (r.reach || 0), 0)), backgroundColor: PALETTE[0], borderRadius: 4 },
+            { label: 'Audiência', data: channels.map(ch => data.filter((r: any) => r.channel === ch).reduce((s: number, r: any) => s + (r.audience || 0), 0)), backgroundColor: PALETTE[1], borderRadius: 4 },
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } }, scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } }
+      });
+    } catch (e) { console.warn('Comms chart:', e); }
   }
 
   async function loadRanking() {

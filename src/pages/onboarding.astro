@@ -4,124 +4,355 @@ import { t, getLangFromURL, type Lang } from '../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 const base = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
-const steps = [
+const phases = [
   {
-    icon: '📋',
-    title: t('onboarding.step1.title', lang),
-    desc: t('onboarding.step1.desc', lang),
-    link: t('onboarding.step1.link', lang),
-    linkText: t('onboarding.step1.linkText', lang),
-    external: true,
+    id: 'welcome',
+    title: 'Boas-vindas',
+    icon: '👋',
+    color: 'from-blue-500 to-indigo-500',
+    steps: [
+      {
+        id: 'step1',
+        icon: '📋',
+        title: t('onboarding.step1.title', lang),
+        desc: t('onboarding.step1.desc', lang),
+        link: t('onboarding.step1.link', lang),
+        linkText: t('onboarding.step1.linkText', lang),
+        external: true,
+        tip: 'Dica: Reserve 15 minutos para preencher com calma. As respostas ajudam na sua alocação.',
+      },
+      {
+        id: 'step2',
+        icon: '✉️',
+        title: t('onboarding.step2.title', lang),
+        desc: t('onboarding.step2.desc', lang),
+        link: 'mailto:nucleoiagp@gmail.com',
+        linkText: t('onboarding.step2.linkText', lang),
+        external: true,
+        tip: 'Aguarde até 48h para confirmação. Verifique sua pasta de spam.',
+      },
+    ],
   },
   {
-    icon: '✉️',
-    title: t('onboarding.step2.title', lang),
-    desc: t('onboarding.step2.desc', lang),
-    link: 'mailto:nucleoiagp@gmail.com',
-    linkText: t('onboarding.step2.linkText', lang),
-    external: true,
+    id: 'setup',
+    title: 'Configuração',
+    icon: '⚙️',
+    color: 'from-teal-500 to-emerald-500',
+    steps: [
+      {
+        id: 'step3',
+        icon: '🔑',
+        title: t('onboarding.step3.title', lang),
+        desc: t('onboarding.step3.desc', lang),
+        tip: 'Dica: Use o mesmo email do cadastro. Se tiver problemas, entre em contato no grupo do WhatsApp.',
+      },
+      {
+        id: 'step4',
+        icon: '👤',
+        title: t('onboarding.step4.title', lang),
+        desc: t('onboarding.step4.desc', lang),
+        link: base + '/profile',
+        linkText: t('onboarding.step4.linkText', lang),
+        tip: 'Adicione foto profissional e LinkedIn. Esses dados ajudam na visibilidade do seu perfil.',
+      },
+    ],
   },
   {
-    icon: '🔑',
-    title: t('onboarding.step3.title', lang),
-    desc: t('onboarding.step3.desc', lang),
+    id: 'engage',
+    title: 'Integração',
+    icon: '🤝',
+    color: 'from-purple-500 to-pink-500',
+    steps: [
+      {
+        id: 'step5',
+        icon: '🏷️',
+        title: t('onboarding.step5.title', lang),
+        desc: t('onboarding.step5.desc', lang),
+        link: base + '/#tribes',
+        linkText: t('onboarding.step5.linkText', lang),
+        hasDeadline: true,
+        tip: 'Dica: Veja a descrição de cada tribo e escolha com base no seu interesse de pesquisa principal.',
+      },
+      {
+        id: 'step6',
+        icon: '🎓',
+        title: t('onboarding.step6.title', lang),
+        desc: t('onboarding.step6.desc', lang),
+        link: t('onboarding.step6.link', lang),
+        linkText: t('onboarding.step6.linkText', lang),
+        external: true,
+        tip: 'Configure seu perfil Credly para sincronizar badges automaticamente com a gamificação.',
+      },
+    ],
   },
   {
-    icon: '👤',
-    title: t('onboarding.step4.title', lang),
-    desc: t('onboarding.step4.desc', lang),
-    link: base + '/profile',
-    linkText: t('onboarding.step4.linkText', lang),
-  },
-  {
-    icon: '🏷️',
-    title: t('onboarding.step5.title', lang),
-    desc: t('onboarding.step5.desc', lang),
-    link: base + '/#tribes',
-    linkText: t('onboarding.step5.linkText', lang),
-    hasDeadline: true,
-  },
-  {
-    icon: '🎓',
-    title: t('onboarding.step6.title', lang),
-    desc: t('onboarding.step6.desc', lang),
-    link: t('onboarding.step6.link', lang),
-    linkText: t('onboarding.step6.linkText', lang),
-    external: true,
-  },
-  {
-    icon: '📅',
-    title: t('onboarding.step7.title', lang),
-    desc: t('onboarding.step7.desc', lang),
-  },
-  {
-    icon: '📄',
-    title: t('onboarding.step8.title', lang),
-    desc: t('onboarding.step8.desc', lang),
-    link: base + '/artifacts',
-    linkText: t('onboarding.step8.linkText', lang),
+    id: 'produce',
+    title: 'Produção',
+    icon: '🚀',
+    color: 'from-amber-500 to-orange-500',
+    steps: [
+      {
+        id: 'step7',
+        icon: '📅',
+        title: t('onboarding.step7.title', lang),
+        desc: t('onboarding.step7.desc', lang),
+        tip: 'As reuniões de tribo acontecem semanalmente. Sua presença conta pontos na gamificação!',
+      },
+      {
+        id: 'step8',
+        icon: '📄',
+        title: t('onboarding.step8.title', lang),
+        desc: t('onboarding.step8.desc', lang),
+        link: base + '/artifacts',
+        linkText: t('onboarding.step8.linkText', lang),
+        tip: 'Comece com um resumo de artigo ou framework. Artefatos publicados geram pontos XP.',
+      },
+    ],
   },
 ];
 
 const deadlinePrefix = t('onboarding.step5.deadlinePrefix', lang);
+const totalSteps = phases.reduce((sum, p) => sum + p.steps.length, 0);
 ---
 <BaseLayout title={t('onboarding.title', lang)} activePage="onboarding" lang={lang}>
-  <div class="max-w-2xl mx-auto px-4 py-10">
-    <h1 class="text-2xl font-extrabold text-navy mb-2">{t('onboarding.heading', lang)}</h1>
-    <p class="text-slate-500 text-sm mb-8">{t('onboarding.subtitle', lang)}</p>
+  <div class="max-w-3xl mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-2xl font-extrabold text-navy mb-2">{t('onboarding.heading', lang)}</h1>
+      <p class="text-slate-500 text-sm mb-4">{t('onboarding.subtitle', lang)}</p>
 
-    <div class="space-y-4">
-      {steps.map((step, i) => (
-        <div class="bg-white rounded-2xl border border-slate-200 p-5 flex gap-4 items-start">
-          <div class="flex-shrink-0 w-10 h-10 rounded-xl bg-navy/5 border border-navy/10 flex items-center justify-center">
-            <span class="text-lg font-black text-navy">{i + 1}</span>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 mb-1">
-              <span class="text-base">{step.icon}</span>
-              <h2 class="text-sm font-bold text-navy">{step.title}</h2>
+      <!-- Progress Bar -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[12px] font-bold text-slate-600">Seu Progresso</span>
+          <span id="progress-label" class="text-[12px] font-bold text-navy">0 / {totalSteps} etapas</span>
+        </div>
+        <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+          <div id="progress-bar" class="h-full rounded-full bg-gradient-to-r from-teal to-emerald-500 transition-all duration-500" style="width:0%"></div>
+        </div>
+        <div class="flex justify-between mt-3">
+          {phases.map((phase) => (
+            <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400" data-phase={phase.id}>
+              <span>{phase.icon}</span>
+              <span class="hidden sm:inline">{phase.title}</span>
             </div>
-            <p class="text-[.78rem] text-slate-500 mb-2">{step.desc}</p>
-            {step.hasDeadline && (
-              <p class="text-[.72rem] font-semibold text-orange mb-2" id="onboarding-deadline">
-                {deadlinePrefix} <span id="onboarding-deadline-value" class="text-slate-400">…</span>
-              </p>
-            )}
-            {step.link && (
-              <a
-                href={step.link}
-                class="inline-block text-[.75rem] font-semibold text-teal hover:text-teal/80 no-underline transition-all"
-                target={step.external ? '_blank' : undefined}
-                rel={step.external ? 'noopener noreferrer' : undefined}
-              >
-                {step.linkText}
-              </a>
-            )}
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <!-- Deadline Countdown -->
+    <div id="deadline-banner" class="hidden mb-6 bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-4">
+      <div class="flex items-center gap-3">
+        <div class="text-2xl">⏰</div>
+        <div>
+          <p class="text-[12px] font-bold text-orange-800">{deadlinePrefix}</p>
+          <p id="deadline-countdown" class="text-lg font-extrabold text-orange-600"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase Sections -->
+    <div class="space-y-6">
+      {phases.map((phase, pi) => (
+        <div class="phase-section" data-phase={phase.id}>
+          <div class="flex items-center gap-3 mb-3">
+            <div class={`w-8 h-8 rounded-lg bg-gradient-to-br ${phase.color} flex items-center justify-center`}>
+              <span class="text-white text-sm">{phase.icon}</span>
+            </div>
+            <div>
+              <h2 class="text-[15px] font-bold text-navy">{phase.title}</h2>
+              <p class="text-[11px] text-slate-400">Fase {pi + 1} de {phases.length}</p>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            {phase.steps.map((step, si) => {
+              const globalIndex = phases.slice(0, pi).reduce((s, p) => s + p.steps.length, 0) + si;
+              return (
+                <div class="step-card bg-white rounded-xl border border-slate-200 overflow-hidden transition-all" data-step={step.id}>
+                  <button class="step-toggle w-full flex items-center gap-3 p-4 text-left cursor-pointer bg-transparent border-0" data-step-idx={String(globalIndex)}>
+                    <div class="step-check w-7 h-7 rounded-full border-2 border-slate-200 flex items-center justify-center flex-shrink-0 transition-colors" data-step-idx={String(globalIndex)}>
+                      <span class="text-[11px] font-bold text-slate-400">{globalIndex + 1}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-2">
+                        <span class="text-base">{step.icon}</span>
+                        <h3 class="text-[13px] font-bold text-navy">{step.title}</h3>
+                      </div>
+                    </div>
+                    <svg class="step-chevron w-4 h-4 text-slate-400 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                  </button>
+
+                  <div class="step-body hidden px-4 pb-4 pl-14">
+                    <p class="text-[.78rem] text-slate-500 mb-3">{step.desc}</p>
+                    {step.hasDeadline && (
+                      <p class="text-[.72rem] font-semibold text-orange mb-2" id="onboarding-deadline">
+                        {deadlinePrefix} <span id="onboarding-deadline-value" class="text-slate-400">…</span>
+                      </p>
+                    )}
+                    {step.tip && (
+                      <div class="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 mb-3">
+                        <p class="text-[11px] text-blue-700">💡 {step.tip}</p>
+                      </div>
+                    )}
+                    {step.link && (
+                      <a
+                        href={step.link}
+                        class="inline-flex items-center gap-1 text-[.75rem] font-semibold text-teal hover:text-teal/80 no-underline transition-all"
+                        target={step.external ? '_blank' : undefined}
+                        rel={step.external ? 'noopener noreferrer' : undefined}
+                      >
+                        {step.linkText}
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                      </a>
+                    )}
+                    <div class="mt-3 flex items-center gap-2">
+                      <button class="mark-done-btn px-3 py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer border-0 bg-emerald-600 text-white hover:opacity-90 transition-all"
+                              data-step-idx={String(globalIndex)}>
+                        ✓ Marcar como concluído
+                      </button>
+                      <button class="mark-undone-btn hidden px-3 py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition-all"
+                              data-step-idx={String(globalIndex)}>
+                        Desfazer
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       ))}
     </div>
+
+    <!-- Completion Banner -->
+    <div id="completion-banner" class="hidden mt-8 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-6 text-center">
+      <div class="text-4xl mb-2">🎉</div>
+      <h3 class="text-lg font-extrabold text-emerald-800 mb-1">Parabéns! Onboarding Completo!</h3>
+      <p class="text-[.78rem] text-emerald-600">Você completou todas as etapas. Agora é hora de contribuir com sua tribo!</p>
+      <a href={base + '/gamification'} class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
+        Ver Gamificação
+      </a>
+    </div>
   </div>
 </BaseLayout>
 
+<script define:vars={{ totalSteps }}>
+  window.__ONBOARDING_TOTAL = totalSteps;
+</script>
 <script>
   import { getSupabase } from '../lib/supabase';
 
+  const STORAGE_KEY = 'onboarding_progress';
+  const TOTAL = (window as any).__ONBOARDING_TOTAL || 8;
+
+  function getCompleted(): Set<number> {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch { return new Set(); }
+  }
+
+  function saveCompleted(completed: Set<number>) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...completed]));
+  }
+
+  function updateUI() {
+    const completed = getCompleted();
+    const pct = Math.round((completed.size / TOTAL) * 100);
+
+    const bar = document.getElementById('progress-bar');
+    const label = document.getElementById('progress-label');
+    if (bar) bar.style.width = pct + '%';
+    if (label) label.textContent = completed.size + ' / ' + TOTAL + ' etapas';
+
+    document.querySelectorAll('.step-check').forEach(el => {
+      const idx = parseInt((el as HTMLElement).dataset.stepIdx || '-1');
+      if (completed.has(idx)) {
+        el.classList.remove('border-slate-200');
+        el.classList.add('border-emerald-500', 'bg-emerald-500');
+        el.innerHTML = '<svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>';
+      } else {
+        el.classList.remove('border-emerald-500', 'bg-emerald-500');
+        el.classList.add('border-slate-200');
+        el.innerHTML = '<span class="text-[11px] font-bold text-slate-400">' + (idx + 1) + '</span>';
+      }
+    });
+
+    document.querySelectorAll('.mark-done-btn').forEach(btn => {
+      const idx = parseInt((btn as HTMLElement).dataset.stepIdx || '-1');
+      const undone = btn.nextElementSibling as HTMLElement;
+      if (completed.has(idx)) {
+        (btn as HTMLElement).classList.add('hidden');
+        undone?.classList.remove('hidden');
+      } else {
+        (btn as HTMLElement).classList.remove('hidden');
+        undone?.classList.add('hidden');
+      }
+    });
+
+    const banner = document.getElementById('completion-banner');
+    if (banner) banner.classList.toggle('hidden', completed.size < TOTAL);
+  }
+
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+
+    const toggle = target.closest('.step-toggle');
+    if (toggle) {
+      const card = toggle.closest('.step-card');
+      const body = card?.querySelector('.step-body');
+      const chevron = card?.querySelector('.step-chevron');
+      if (body) body.classList.toggle('hidden');
+      if (chevron) chevron.classList.toggle('rotate-180');
+      return;
+    }
+
+    const doneBtn = target.closest('.mark-done-btn') as HTMLElement;
+    if (doneBtn) {
+      const idx = parseInt(doneBtn.dataset.stepIdx || '-1');
+      const completed = getCompleted();
+      completed.add(idx);
+      saveCompleted(completed);
+      updateUI();
+      return;
+    }
+
+    const undoBtn = target.closest('.mark-undone-btn') as HTMLElement;
+    if (undoBtn) {
+      const idx = parseInt(undoBtn.dataset.stepIdx || '-1');
+      const completed = getCompleted();
+      completed.delete(idx);
+      saveCompleted(completed);
+      updateUI();
+    }
+  });
+
   async function loadDeadline() {
     const el = document.getElementById('onboarding-deadline-value');
-    if (!el) return;
+    const banner = document.getElementById('deadline-banner');
+    const countdown = document.getElementById('deadline-countdown');
     try {
       const sb = getSupabase();
       const { data } = await sb.rpc('get_current_cycle') as { data: any };
       if (data?.cycle_end) {
         const d = new Date(data.cycle_end);
         const locale = document.documentElement.lang || 'pt-BR';
-        el.textContent = d.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
-      } else if (data?.cycle_label) {
+        if (el) el.textContent = d.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
+        const daysLeft = Math.ceil((d.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        if (daysLeft > 0 && daysLeft < 60 && banner && countdown) {
+          countdown.textContent = daysLeft + ' dias restantes';
+          banner.classList.remove('hidden');
+        }
+      } else if (data?.cycle_label && el) {
         el.textContent = data.cycle_label;
       }
     } catch (_) { /* keep placeholder */ }
   }
 
+  updateUI();
   loadDeadline();
 </script>

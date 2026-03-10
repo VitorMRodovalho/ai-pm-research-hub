@@ -1,8 +1,8 @@
 ---
 /**
- * admin/curatorship.astro — Wave 5: Knowledge Curation (Human-in-the-Loop)
- * Lists imported items from Trello/Calendar/YouTube pending GP review.
- * Actions: Approve (with auto-suggested tags), Edit Tags, Discard.
+ * admin/curatorship.astro — Wave 5: Knowledge Curation Kanban Board
+ * Kanban-style board with columns: Pendente, Em Revisão, Aprovado, Descartado.
+ * Drag-and-drop between columns triggers curate_item RPC.
  * Access: admin+ or tribe_leader (read), admin+ (actions).
  */
 import BaseLayout from '../../layouts/BaseLayout.astro';
@@ -36,16 +36,23 @@ const CUR_I18N = {
 ---
 
 <BaseLayout title={CUR_I18N.meta} activePage="admin">
-  <div class="max-w-[1200px] mx-auto px-4 pt-6">
+  <div class="max-w-[1400px] mx-auto px-4 pt-6">
     <AdminNav activeSub="curatorship" lang={lang} />
   </div>
-  <div class="max-w-[1200px] mx-auto px-4 pb-8 space-y-6">
-    <div class="flex items-center justify-between">
+  <div class="max-w-[1400px] mx-auto px-4 pb-8 space-y-4">
+    <div class="flex items-center justify-between flex-wrap gap-3">
       <div>
         <h1 class="text-2xl font-extrabold text-navy">{CUR_I18N.title}</h1>
         <p class="text-sm text-slate-500">{CUR_I18N.subtitle}</p>
       </div>
-      <div id="cur-count" class="hidden px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-bold"></div>
+      <div class="flex gap-2 items-center">
+        <div id="cur-count" class="hidden px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-bold"></div>
+        <div class="flex gap-1">
+          <button class="cur-filter px-3 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white" data-filter="all">{CUR_I18N.filterAll}</button>
+          <button class="cur-filter px-3 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500" data-filter="artifacts">{CUR_I18N.filterArtifacts}</button>
+          <button class="cur-filter px-3 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500" data-filter="hub_resources">{CUR_I18N.filterResources}</button>
+        </div>
+      </div>
     </div>
 
     <div id="cur-loading" class="text-center py-10 text-slate-400">{CUR_I18N.loading}</div>
@@ -56,19 +63,40 @@ const CUR_I18N = {
       <a href="/admin" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">{CUR_I18N.backAdmin}</a>
     </div>
 
-    <div id="cur-panel" class="hidden space-y-4">
-      <div class="flex gap-2">
-        <button class="cur-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white" data-filter="all">{CUR_I18N.filterAll}</button>
-        <button class="cur-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500" data-filter="artifacts">{CUR_I18N.filterArtifacts}</button>
-        <button class="cur-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500" data-filter="hub_resources">{CUR_I18N.filterResources}</button>
+    <!-- Kanban Board -->
+    <div id="cur-board" class="hidden grid grid-cols-1 md:grid-cols-4 gap-4" style="min-height:400px">
+      <div class="kanban-col" data-status="draft">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-3 h-3 rounded-full bg-slate-400"></div>
+          <h3 class="text-[13px] font-bold text-slate-600">Pendente</h3>
+          <span class="col-count text-[11px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold">0</span>
+        </div>
+        <div class="kanban-drop space-y-2 min-h-[200px] p-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 transition-colors" data-status="draft"></div>
       </div>
-
-      <div id="cur-empty" class="hidden bg-green-50 border border-green-200 rounded-2xl p-8 text-center">
-        <div class="text-3xl mb-2">&#x2705;</div>
-        <p class="font-semibold text-green-800">{CUR_I18N.empty}</p>
+      <div class="kanban-col" data-status="review">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-3 h-3 rounded-full bg-amber-400"></div>
+          <h3 class="text-[13px] font-bold text-amber-700">Em Revisão</h3>
+          <span class="col-count text-[11px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">0</span>
+        </div>
+        <div class="kanban-drop space-y-2 min-h-[200px] p-2 rounded-xl border-2 border-dashed border-amber-200 bg-amber-50/30 transition-colors" data-status="review"></div>
       </div>
-
-      <div id="cur-list" class="space-y-3"></div>
+      <div class="kanban-col" data-status="approved">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+          <h3 class="text-[13px] font-bold text-emerald-700">Aprovado</h3>
+          <span class="col-count text-[11px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">0</span>
+        </div>
+        <div class="kanban-drop space-y-2 min-h-[200px] p-2 rounded-xl border-2 border-dashed border-emerald-200 bg-emerald-50/30 transition-colors" data-status="approved"></div>
+      </div>
+      <div class="kanban-col" data-status="rejected">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-3 h-3 rounded-full bg-red-400"></div>
+          <h3 class="text-[13px] font-bold text-red-600">Descartado</h3>
+          <span class="col-count text-[11px] bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold">0</span>
+        </div>
+        <div class="kanban-drop space-y-2 min-h-[200px] p-2 rounded-xl border-2 border-dashed border-red-200 bg-red-50/30 transition-colors" data-status="rejected"></div>
+      </div>
     </div>
   </div>
 </BaseLayout>
@@ -94,6 +122,14 @@ const CUR_I18N = {
     trello: 'Trello', calendar: 'Calendar', youtube: 'YouTube', social: 'Social Media', manual: 'Manual',
   };
 
+  const STATUS_MAP: Record<string, string> = {
+    draft: 'draft', pending: 'draft', submitted: 'review',
+    review: 'review', approved: 'approved', published: 'approved',
+    rejected: 'rejected',
+  };
+
+  function normalizeStatus(s: string): string { return STATUS_MAP[s] || 'draft'; }
+
   function tagColor(tagKey: string): string {
     const t = allTags.find((x: any) => x.tag_key === tagKey);
     return t ? TAG_COLORS[t.category] || 'bg-slate-100 text-slate-600' : 'bg-slate-100 text-slate-600';
@@ -103,59 +139,130 @@ const CUR_I18N = {
     const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
   }
 
-  function renderItem(item: any): string {
+  function renderCard(item: any): string {
     const tags = (item.tags || []).map((t: string) =>
-      '<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold ' + tagColor(t) + '">' + escapeHtml(t) + '</span>'
+      '<span class="px-1.5 py-0.5 rounded-full text-[10px] font-semibold ' + tagColor(t) + '">' + escapeHtml(t) + '</span>'
     ).join(' ');
-    const suggested = (item.suggested_tags || []).map((t: string) =>
-      '<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold border border-dashed border-teal-400 text-teal-700">' + escapeHtml(t) + '</span>'
+    const suggested = (item.suggested_tags || []).filter((t: string) => !(item.tags || []).includes(t)).map((t: string) =>
+      '<span class="px-1.5 py-0.5 rounded-full text-[10px] font-semibold border border-dashed border-teal-400 text-teal-700">' + escapeHtml(t) + '</span>'
     ).join(' ');
-    const src = SOURCE_LABELS[item.source] || item.source || '?';
+    const src = SOURCE_LABELS[item.source] || item.source || '';
     const tbl = item._table === 'artifacts' ? 'Artifact' : 'Resource';
+    const tblClass = item._table === 'artifacts' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700';
 
-    return '<div class="bg-white rounded-xl border border-slate-200 p-4 cur-item" data-table="' + item._table + '" data-id="' + item.id + '">'
-      + '<div class="flex items-start justify-between gap-4"><div class="flex-1 min-w-0">'
-      + '<div class="flex items-center gap-2 mb-1">'
-      + '<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ' + (item._table === 'artifacts' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700') + '">' + tbl + '</span>'
-      + '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500">' + escapeHtml(src) + '</span>'
-      + (item.tribe_name ? '<span class="text-[11px] text-slate-400">' + escapeHtml(item.tribe_name) + '</span>' : '')
+    return '<div class="kanban-card bg-white rounded-lg border border-slate-200 p-3 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-shadow"'
+      + ' draggable="true" data-id="' + item.id + '" data-table="' + item._table + '" data-status="' + normalizeStatus(item.status) + '">'
+      + '<div class="flex items-center gap-1.5 mb-1.5">'
+      + '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ' + tblClass + '">' + tbl + '</span>'
+      + (src ? '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-500">' + escapeHtml(src) + '</span>' : '')
       + '</div>'
-      + '<h3 class="text-sm font-bold text-navy truncate">' + escapeHtml(item.title || 'Sem titulo') + '</h3>'
-      + (item.author_name ? '<p class="text-[12px] text-slate-400">' + escapeHtml(item.author_name) + '</p>' : '')
-      + (item.url ? '<a href="' + escapeHtml(item.url) + '" target="_blank" rel="noopener" class="text-[12px] text-teal-600 hover:underline truncate block">' + escapeHtml(item.url) + '</a>' : '')
-      + '<div class="mt-2 space-y-1">'
-      + (tags ? '<div class="flex flex-wrap gap-1"><span class="text-[10px] text-slate-400 mr-1">' + (I.currentTags || 'Tags:') + '</span>' + tags + '</div>' : '')
-      + (suggested ? '<div class="flex flex-wrap gap-1"><span class="text-[10px] text-teal-500 mr-1">' + (I.suggestedTags || 'Sugeridas:') + '</span>' + suggested + '</div>' : '')
-      + '</div></div>'
-      + (canAct ? '<div class="flex flex-col gap-1.5 shrink-0">'
-        + '<button class="cur-btn-approve px-3 py-1.5 bg-green-600 text-white rounded-lg text-[12px] font-semibold hover:opacity-90">' + (I.approve || 'Aprovar') + '</button>'
-        + '<button class="cur-btn-tags px-3 py-1.5 bg-navy text-white rounded-lg text-[12px] font-semibold hover:opacity-90">' + (I.editTags || 'Tags') + '</button>'
-        + '<button class="cur-btn-reject px-3 py-1.5 bg-red-500 text-white rounded-lg text-[12px] font-semibold hover:opacity-90">' + (I.reject || 'Descartar') + '</button>'
+      + '<h4 class="text-[12px] font-bold text-navy mb-1 line-clamp-2">' + escapeHtml(item.title || 'Sem título') + '</h4>'
+      + (item.author_name ? '<p class="text-[10px] text-slate-400 mb-1">' + escapeHtml(item.author_name) + '</p>' : '')
+      + (item.tribe_name ? '<p class="text-[10px] text-slate-400 mb-1">' + escapeHtml(item.tribe_name) + '</p>' : '')
+      + (tags || suggested ? '<div class="flex flex-wrap gap-0.5 mb-1.5">' + tags + ' ' + suggested + '</div>' : '')
+      + (canAct ? '<div class="flex gap-1 mt-2">'
+        + '<button class="cur-btn-approve px-2 py-1 bg-emerald-600 text-white rounded text-[10px] font-semibold hover:opacity-90 border-0 cursor-pointer">✓</button>'
+        + '<button class="cur-btn-tags px-2 py-1 bg-navy text-white rounded text-[10px] font-semibold hover:opacity-90 border-0 cursor-pointer">🏷️</button>'
+        + '<button class="cur-btn-reject px-2 py-1 bg-red-500 text-white rounded text-[10px] font-semibold hover:opacity-90 border-0 cursor-pointer">✕</button>'
         + '</div>' : '')
-      + '</div><div class="cur-tag-editor hidden mt-3 p-3 bg-slate-50 rounded-lg"></div></div>';
+      + '<div class="cur-tag-editor hidden mt-2 p-2 bg-slate-50 rounded-lg"></div>'
+      + '</div>';
+  }
+
+  function getFilteredItems(): any[] {
+    return activeFilter === 'all' ? allItems : allItems.filter(i => i._table === activeFilter);
   }
 
   function render() {
-    const list = document.getElementById('cur-list');
-    const empty = document.getElementById('cur-empty');
-    const count = document.getElementById('cur-count');
-    if (!list) return;
-    const filtered = activeFilter === 'all' ? allItems : allItems.filter(i => i._table === activeFilter);
-    list.innerHTML = filtered.map(renderItem).join('');
-    if (empty) empty.classList.toggle('hidden', filtered.length > 0);
-    if (count) { count.classList.toggle('hidden', allItems.length === 0); count.textContent = allItems.length + ' pendente' + (allItems.length !== 1 ? 's' : ''); }
+    const items = getFilteredItems();
+    const columns: Record<string, any[]> = { draft: [], review: [], approved: [], rejected: [] };
+    items.forEach(i => {
+      const status = normalizeStatus(i.status);
+      if (columns[status]) columns[status].push(i);
+      else columns.draft.push(i);
+    });
+
+    for (const [status, arr] of Object.entries(columns)) {
+      const drop = document.querySelector(`.kanban-drop[data-status="${status}"]`);
+      const count = document.querySelector(`.kanban-col[data-status="${status}"] .col-count`);
+      if (drop) drop.innerHTML = arr.length ? arr.map(renderCard).join('') : '<div class="text-center py-8 text-slate-300 text-[11px]">Vazio</div>';
+      if (count) count.textContent = String(arr.length);
+    }
+
+    const totalCount = document.getElementById('cur-count');
+    if (totalCount) {
+      totalCount.classList.toggle('hidden', items.length === 0);
+      totalCount.textContent = items.length + ' item' + (items.length !== 1 ? 's' : '');
+    }
+    setupDragDrop();
+  }
+
+  // Drag-and-drop
+  function setupDragDrop() {
+    document.querySelectorAll('.kanban-card').forEach(card => {
+      card.addEventListener('dragstart', (e) => {
+        const el = card as HTMLElement;
+        (e as DragEvent).dataTransfer!.setData('text/plain', JSON.stringify({
+          id: el.dataset.id, table: el.dataset.table, status: el.dataset.status
+        }));
+        el.classList.add('opacity-50');
+      });
+      card.addEventListener('dragend', () => (card as HTMLElement).classList.remove('opacity-50'));
+    });
+
+    document.querySelectorAll('.kanban-drop').forEach(zone => {
+      zone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        (zone as HTMLElement).classList.add('border-navy', 'bg-navy/5');
+      });
+      zone.addEventListener('dragleave', () => {
+        (zone as HTMLElement).classList.remove('border-navy', 'bg-navy/5');
+      });
+      zone.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        (zone as HTMLElement).classList.remove('border-navy', 'bg-navy/5');
+        if (!canAct) return;
+        const raw = (e as DragEvent).dataTransfer?.getData('text/plain');
+        if (!raw) return;
+        const { id, table, status: oldStatus } = JSON.parse(raw);
+        const newStatus = (zone as HTMLElement).dataset.status || '';
+        if (oldStatus === newStatus) return;
+        await moveCard(table, id, oldStatus, newStatus);
+      });
+    });
+  }
+
+  async function moveCard(table: string, id: string, _from: string, to: string) {
+    let action = 'update_tags';
+    if (to === 'approved') action = 'approve';
+    else if (to === 'rejected') action = 'reject';
+
+    try {
+      const item = allItems.find(i => i.id === id && i._table === table);
+      const tags = item?.suggested_tags || item?.tags || [];
+      const { error } = await sb.rpc('curate_item', { p_table: table, p_id: id, p_action: action, p_tags: tags });
+      if (error) throw new Error(error.message);
+      if (item) item.status = to;
+      render();
+      (window as any).toast?.('Item movido!', 'success');
+    } catch (e: any) {
+      (window as any).toast?.(e.message || 'Erro', 'error');
+    }
   }
 
   async function callCurate(table: string, id: string, action: string, tags?: string[]) {
-    if (!sb) return;
     try {
-      const { data, error } = await sb.rpc('curate_item', { p_table: table, p_id: id, p_action: action, p_tags: tags || null });
+      const { error } = await sb.rpc('curate_item', { p_table: table, p_id: id, p_action: action, p_tags: tags || null });
       if (error) throw new Error(error.message);
-      allItems = allItems.filter(i => !(i.id === id && i._table === table));
+      const item = allItems.find(i => i.id === id && i._table === table);
+      if (action === 'approve' && item) item.status = 'approved';
+      if (action === 'reject' && item) item.status = 'rejected';
       render();
       const msg = action === 'approve' ? I.approved : action === 'reject' ? I.rejected : I.tagsSaved;
       (window as any).toast?.(msg || 'OK', 'success');
-    } catch (e: any) { (window as any).toast?.(e.message || 'Error', 'error'); }
+    } catch (e: any) {
+      (window as any).toast?.(e.message || 'Error', 'error');
+    }
   }
 
   function showTagEditor(el: HTMLElement, item: any) {
@@ -165,15 +272,16 @@ const CUR_I18N = {
     document.querySelectorAll('.cur-tag-editor').forEach(e => (e as HTMLElement).classList.add('hidden'));
     if (!wasHidden) return;
     const current = [...new Set([...(item.tags || []), ...(item.suggested_tags || [])])];
-    editor.innerHTML = '<div class="flex flex-wrap gap-1.5 mb-2">'
+    editor.innerHTML = '<div class="flex flex-wrap gap-1 mb-2">'
       + allTags.map((t: any) => {
         const ck = current.includes(t.tag_key);
-        return '<label class="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] cursor-pointer ' + (ck ? tagColor(t.tag_key) : 'bg-white border border-slate-200 text-slate-500') + '">'
-          + '<input type="checkbox" value="' + t.tag_key + '"' + (ck ? ' checked' : '') + ' class="w-3 h-3 rounded" />' + t.label_pt + '</label>';
+        return '<label class="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] cursor-pointer '
+          + (ck ? tagColor(t.tag_key) : 'bg-white border border-slate-200 text-slate-500') + '">'
+          + '<input type="checkbox" value="' + t.tag_key + '"' + (ck ? ' checked' : '') + ' class="w-3 h-3" />' + t.label_pt + '</label>';
       }).join('') + '</div>'
-      + '<div class="flex gap-2">'
-      + '<button class="cur-save-tags px-3 py-1.5 bg-teal text-white rounded-lg text-[12px] font-semibold">' + (I.saveTags || 'Salvar') + '</button>'
-      + '<button class="cur-approve-tags px-3 py-1.5 bg-green-600 text-white rounded-lg text-[12px] font-semibold">' + (I.approve || 'Aprovar') + ' + Tags</button></div>';
+      + '<div class="flex gap-1">'
+      + '<button class="cur-save-tags px-2 py-1 bg-teal text-white rounded text-[10px] font-semibold border-0 cursor-pointer">' + (I.saveTags || 'Salvar') + '</button>'
+      + '<button class="cur-approve-tags px-2 py-1 bg-emerald-600 text-white rounded text-[10px] font-semibold border-0 cursor-pointer">' + (I.approve || 'Aprovar') + ' + Tags</button></div>';
     editor.classList.remove('hidden');
   }
 
@@ -183,54 +291,55 @@ const CUR_I18N = {
 
   document.addEventListener('click', function(e) {
     const target = e.target as HTMLElement;
-    const itemEl = target.closest('.cur-item') as HTMLElement;
-    if (!itemEl) return;
-    const table = itemEl.dataset.table || '';
-    const id = itemEl.dataset.id || '';
+    const card = target.closest('.kanban-card') as HTMLElement;
+    if (!card) {
+      const filterBtn = target.closest('.cur-filter') as HTMLElement;
+      if (filterBtn) {
+        activeFilter = filterBtn.dataset.filter || 'all';
+        document.querySelectorAll('.cur-filter').forEach(b => {
+          const el = b as HTMLElement;
+          el.className = 'cur-filter px-3 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 '
+            + (el.dataset.filter === activeFilter ? 'border-navy bg-navy text-white' : 'border-slate-200 bg-white text-slate-500');
+        });
+        render();
+      }
+      return;
+    }
+
+    const table = card.dataset.table || '';
+    const id = card.dataset.id || '';
+    const item = allItems.find(i => i.id === id && i._table === table);
+
     if (target.closest('.cur-btn-approve')) {
-      const item = allItems.find(i => i.id === id && i._table === table);
-      if (!confirm('Aprovar este item com as tags sugeridas?')) return;
       callCurate(table, id, 'approve', item?.suggested_tags || item?.tags);
     } else if (target.closest('.cur-btn-reject')) {
-      if (!confirm('Descartar este item?')) return;
       callCurate(table, id, 'reject');
-    } else if (target.closest('.cur-btn-tags')) {
-      const item = allItems.find(i => i.id === id && i._table === table);
-      showTagEditor(itemEl, item);
+    } else if (target.closest('.cur-btn-tags') && item) {
+      showTagEditor(card, item);
     } else if (target.closest('.cur-save-tags')) {
-      callCurate(table, id, 'update_tags', getSelectedTags(itemEl));
+      callCurate(table, id, 'update_tags', getSelectedTags(card));
     } else if (target.closest('.cur-approve-tags')) {
-      callCurate(table, id, 'approve', getSelectedTags(itemEl));
+      callCurate(table, id, 'approve', getSelectedTags(card));
     }
-  });
-
-  document.addEventListener('click', function(e) {
-    const btn = (e.target as HTMLElement).closest('.cur-filter') as HTMLElement;
-    if (!btn) return;
-    activeFilter = btn.dataset.filter || 'all';
-    document.querySelectorAll('.cur-filter').forEach(b => {
-      const el = b as HTMLElement;
-      el.className = 'cur-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 '
-        + (el.dataset.filter === activeFilter ? 'border-navy bg-navy text-white' : 'border-slate-200 bg-white text-slate-500');
-    });
-    render();
   });
 
   function hasAccess(m: any): boolean {
     if (!m) return false;
-    return m.is_superadmin || ['manager','deputy_manager','tribe_leader'].includes(m.operational_role);
+    return m.is_superadmin || ['manager', 'deputy_manager', 'tribe_leader'].includes(m.operational_role);
   }
 
   async function showPanel(m: any) {
-    const isAdmin = m.is_superadmin || ['manager','deputy_manager'].includes(m.operational_role);
-    canAct = isAdmin;
+    canAct = m.is_superadmin || ['manager', 'deputy_manager'].includes(m.operational_role);
     try {
-      const [ir, tr] = await Promise.all([sb.rpc('list_pending_curation', { p_table: 'all' }), sb.rpc('list_taxonomy_tags')]);
+      const [ir, tr] = await Promise.all([
+        sb.rpc('list_curation_board').then((r: any) => r).catch(() => sb.rpc('list_pending_curation', { p_table: 'all' })),
+        sb.rpc('list_taxonomy_tags'),
+      ]);
       allItems = Array.isArray(ir.data) ? ir.data : (ir.data || []);
       allTags = tr.data || [];
     } catch (e: any) { console.warn('Curation load:', e); }
     document.getElementById('cur-loading')?.classList.add('hidden');
-    document.getElementById('cur-panel')?.classList.remove('hidden');
+    document.getElementById('cur-board')?.classList.remove('hidden');
     render();
   }
 
