@@ -145,9 +145,9 @@ The current production pattern is to keep communications metrics in Supabase-bac
 
 ## Immediate Engineering Priorities
 
-1. Eliminate documentation drift between README, migration notes, backlog, and governance docs.
-2. Continue removing legacy inline event handlers from attendance and older member/admin surfaces.
-3. Finish the remaining cycle/config hardcodes in fallback or static content after Wave 15 moved admin/profile/tribe to `list_cycles`.
+1. Continue stabilizing older member/admin surfaces that still depend on rerender/rebind or mutable callback patterns.
+2. Restore a fully repeatable live Supabase audit path on this workstation (`migration list` / DB auth) before the next schema-touching wave.
+3. Expand Playwright coverage for internal modal/ACL flows now that attendance, profile, and selection stabilization is underway.
 4. Keep site hierarchy, access tiers, and LGPD visibility rules aligned across nav, pages, and docs.
 5. Replace deadline fallbacks with `home_schedule` as the single source before advancing new operational flows.
 

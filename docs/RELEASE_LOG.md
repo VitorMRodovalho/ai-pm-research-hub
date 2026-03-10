@@ -1,5 +1,37 @@
 # Release Log
 
+## 2026-03-11 — v0.14.0 Wave 16: Supabase Audit, Attendance/Profile/Selection Stabilization
+
+### Scope
+Wave 16 closes the next stabilization tranche after v0.13.0: it carries forward the attendance ACL/modal cleanup already merged on `main`, refreshes linked Supabase schema types, corrects migration-count drift, and reduces fragile UI wiring in `profile` and `admin/selection`.
+
+### Supabase Audit / Drift Fix
+- **Repo + linked schema**: `supabase/migrations/` now documented as `44` tracked migrations; `npm run db:types` refreshed `src/lib/database.gen.ts` from the linked project and re-synced generated types with the current remote schema.
+- **Operational note**: This wave ships **no new migration**. `supabase migration list` on this workstation currently requires DB credential refresh, so the live schema proof for this sprint comes from linked type generation plus the tracked migration set.
+
+### Stabilization
+- **`src/pages/attendance.astro` + attendance modals**: Management actions remain `leader+`, modal interactions stay on delegated handlers, and regression coverage protects against inline-handler reintroduction.
+- **`src/pages/profile.astro`**: Credly normalization now uses delegated listeners (`focusout`, `paste`, `input`) instead of re-binding handlers after each `renderProfile(...)`.
+- **`src/pages/admin/selection.astro`**: Cycle tabs and snapshot title now resolve from runtime cycle metadata via `loadCycles()` / `getCurrentCycle()`, preserving the existing `admin_selection` and LGPD gate while removing fixed cycle copy.
+- **`src/components/ui/ConfirmDialog.astro`**: Confirm actions now use a static button listener plus stored callback state, eliminating mutable `btn.onclick` rewiring.
+
+### Governance / Docs
+- **Docs drift corrected**: `AGENTS.md`, `backlog-wave-planning-updated.md`, `README.md`, `docs/PERMISSIONS_MATRIX.md`, and `docs/GOVERNANCE_CHANGELOG.md` updated for Wave 16, current priorities, and the real migration count.
+- **Regression tests**: Added textual stabilization checks for profile delegation, selection cycle hardcodes, and confirm dialog callback wiring.
+
+### Files Changed
+- `src/pages/profile.astro`, `src/pages/admin/selection.astro`
+- `src/components/ui/ConfirmDialog.astro`
+- `src/lib/database.gen.ts`
+- `tests/ui-stabilization.test.mjs`, `package.json`
+- `AGENTS.md`, `README.md`, `backlog-wave-planning-updated.md`
+- `docs/RELEASE_LOG.md`, `docs/GOVERNANCE_CHANGELOG.md`, `docs/PERMISSIONS_MATRIX.md`
+
+### Audit Results
+- Build: clean | Tests: 18/18 | Smoke: routes OK
+
+---
+
 ## 2026-03-11 — v0.13.0 Wave 15: Cycle-Config Hardening
 
 ### Scope

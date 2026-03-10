@@ -40,6 +40,13 @@
     onConfirm: () => void;
   }
 
+  function closeConfirm() {
+    const dialog = document.getElementById('confirm-dialog')!;
+    dialog.classList.add('hidden');
+    dialog.classList.remove('flex');
+    _confirmCallback = null;
+  }
+
   (window as any).showConfirm = (opts: ConfirmOptions) => {
     const dialog = document.getElementById('confirm-dialog')!;
     document.getElementById('confirm-icon')!.textContent = opts.icon || '⚠️';
@@ -49,20 +56,19 @@
     btn.textContent = opts.confirmText || 'Confirmar';
     btn.className = `px-4 py-2 rounded-lg text-[13px] font-semibold text-white border-0 hover:opacity-90 cursor-pointer ${opts.confirmClass || 'bg-crimson'}`;
     _confirmCallback = opts.onConfirm;
-    btn.onclick = () => { // @ts-ignore
-      closeConfirm(); _confirmCallback?.(); };
     dialog.classList.remove('hidden');
     dialog.classList.add('flex');
   };
 
-  (window as any).closeConfirm = () => {
-    const dialog = document.getElementById('confirm-dialog')!;
-    dialog.classList.add('hidden');
-    dialog.classList.remove('flex');
-    _confirmCallback = null;
-  };
+  (window as any).closeConfirm = closeConfirm;
 
   document.getElementById('confirm-cancel-btn')?.addEventListener('click', () => {
-    (window as any).closeConfirm();
+    closeConfirm();
+  });
+
+  document.getElementById('confirm-btn')?.addEventListener('click', () => {
+    const callback = _confirmCallback;
+    closeConfirm();
+    callback?.();
   });
 </script>

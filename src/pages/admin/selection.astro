@@ -16,7 +16,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         <h1 class="text-2xl font-extrabold text-navy">Processo Seletivo</h1>
         <span class="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full uppercase">LGPD</span>
       </div>
-      <p class="text-sm text-slate-500 mt-1">Dados de voluntários PMI — Ciclos 1, 2 e 3</p>
+      <p class="text-sm text-slate-500 mt-1">Dados de voluntários PMI por ciclo sincronizado</p>
     </div>
 
     <div id="sel-loading" class="text-center py-10 text-slate-400">Carregando...</div>
@@ -29,12 +29,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
     <div id="sel-panel" class="hidden space-y-5">
       <!-- Cycle tabs -->
-      <div class="flex gap-2 flex-wrap" id="sel-cycle-tabs">
-        <button class="sel-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white transition-all" data-cycle="all">Todos</button>
-        <button class="sel-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all" data-cycle="1">Ciclo 1</button>
-        <button class="sel-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all" data-cycle="2">Ciclo 2</button>
-        <button class="sel-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all" data-cycle="3">Ciclo 3</button>
-      </div>
+      <div class="flex gap-2 flex-wrap" id="sel-cycle-tabs"></div>
 
       <!-- KPI cards -->
       <div id="sel-kpis" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
@@ -42,6 +37,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       <!-- Search -->
       <div class="flex gap-3 items-center">
         <input type="text" id="sel-search" placeholder="Buscar por nome, estado, certificação..."
+          data-action="selection-search"
           class="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
         <span id="sel-count" class="text-[12px] text-slate-400 font-semibold whitespace-nowrap"></span>
       </div>
@@ -65,15 +61,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           </table>
         </div>
         <div id="sel-pagination" class="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-          <button id="sel-prev" class="px-3 py-1.5 text-[12px] font-semibold bg-slate-100 text-slate-600 rounded-lg cursor-pointer border-0 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-default" disabled>Anterior</button>
+          <button id="sel-prev" data-action="selection-prev" class="px-3 py-1.5 text-[12px] font-semibold bg-slate-100 text-slate-600 rounded-lg cursor-pointer border-0 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-default" disabled>Anterior</button>
           <span id="sel-page-info" class="text-[12px] text-slate-400"></span>
-          <button id="sel-next" class="px-3 py-1.5 text-[12px] font-semibold bg-slate-100 text-slate-600 rounded-lg cursor-pointer border-0 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-default" disabled>Próximo</button>
+          <button id="sel-next" data-action="selection-next" class="px-3 py-1.5 text-[12px] font-semibold bg-slate-100 text-slate-600 rounded-lg cursor-pointer border-0 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-default" disabled>Próximo</button>
         </div>
       </div>
 
       <!-- Snapshot comparison -->
       <div id="sel-snapshot-section" class="hidden">
-        <h3 class="text-[15px] font-bold text-navy mb-3">Comparação de Snapshots — Ciclo 3</h3>
+        <h3 id="sel-snapshot-title" class="text-[15px] font-bold text-navy mb-3">Comparação de Snapshots</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="sel-snapshot-cards"></div>
       </div>
 
@@ -94,6 +90,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
 <script>
   import { canAccessAdminRoute } from '../../lib/admin/constants';
+  import { getCurrentCycle, loadCycles } from '../../lib/cycles';
 
   let sb: any = null;
   let MEMBER: any = null;
@@ -101,6 +98,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   let currentSearch = '';
   let currentPage = 0;
   const PAGE_SIZE = 30;
+  let latestSelectionCycle: number | null = null;
+  let cycleLabelByNumber: Record<number, string> = {};
 
   function escapeHtml(s: string): string {
     return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -115,6 +114,40 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     document.getElementById('sel-loading')?.classList.add('hidden');
     document.getElementById('sel-panel')?.classList.remove('hidden');
     loadData();
+  }
+
+  function selectionDisplayLabel(cycleNumber: number): string {
+    return cycleLabelByNumber[cycleNumber] || `Ciclo ${cycleNumber}`;
+  }
+
+  function renderCycleTabs() {
+    const host = document.getElementById('sel-cycle-tabs');
+    if (!host) return;
+    const entries = Object.entries(cycleLabelByNumber)
+      .map(([cycle, label]) => ({ cycle: Number(cycle), label }))
+      .sort((a, b) => a.cycle - b.cycle);
+    host.innerHTML = [
+      `<button class="sel-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white transition-all" data-action="switch-cycle" data-cycle="all">Todos</button>`,
+      ...entries.map(({ cycle, label }) => `
+        <button class="sel-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+          data-action="switch-cycle" data-cycle="${cycle}" title="${escapeHtml(label)}">${escapeHtml(label)}</button>
+      `),
+    ].join('');
+  }
+
+  async function loadSelectionCycles() {
+    const cycles = await loadCycles(sb);
+    const current = getCurrentCycle(cycles);
+    cycleLabelByNumber = {};
+    cycles.forEach((cycle: any) => {
+      const match = String(cycle.cycle_code || '').match(/^cycle_(\d+)$/);
+      if (!match) return;
+      cycleLabelByNumber[Number(match[1])] = cycle.cycle_label || `Ciclo ${match[1]}`;
+    });
+    const sorted = Object.keys(cycleLabelByNumber).map(Number).sort((a, b) => a - b);
+    const parsedCurrent = String(current?.cycle_code || '').match(/^cycle_(\d+)$/);
+    latestSelectionCycle = parsedCurrent ? Number(parsedCurrent[1]) : (sorted[sorted.length - 1] || null);
+    renderCycleTabs();
   }
 
   async function loadData() {
@@ -155,15 +188,19 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         ).join('');
       }
 
-      // Snapshot comparison for Ciclo 3
-      const c3 = byCycle.find((c: any) => c.cycle === 3);
+      const snapshotCycle = currentCycle ?? latestSelectionCycle;
+      const snapshotCycleData = byCycle.find((c: any) => c.cycle === snapshotCycle);
       const snapSection = document.getElementById('sel-snapshot-section');
       const snapCards = document.getElementById('sel-snapshot-cards');
-      if (c3 && c3.earliest_snapshot !== c3.latest_snapshot && snapSection && snapCards) {
+      const snapTitle = document.getElementById('sel-snapshot-title');
+      if (snapshotCycleData && snapshotCycleData.earliest_snapshot !== snapshotCycleData.latest_snapshot && snapSection && snapCards) {
         snapSection.classList.remove('hidden');
+        if (snapTitle && snapshotCycle !== null) {
+          snapTitle.textContent = `Comparação de Snapshots — ${selectionDisplayLabel(snapshotCycle)}`;
+        }
         snapCards.innerHTML = [
-          { label: `Snapshot ${c3.earliest_snapshot}`, total: '—', unique: '—', note: 'Primeiro snapshot' },
-          { label: `Snapshot ${c3.latest_snapshot}`, total: c3.total_applications, unique: c3.unique_applicants, note: 'Último snapshot' },
+          { label: `Snapshot ${snapshotCycleData.earliest_snapshot}`, total: '—', unique: '—', note: 'Primeiro snapshot' },
+          { label: `Snapshot ${snapshotCycleData.latest_snapshot}`, total: snapshotCycleData.total_applications, unique: snapshotCycleData.unique_applicants, note: 'Último snapshot' },
         ].map(s => `<div class="bg-white border border-slate-200 rounded-xl p-4">
           <h4 class="text-[13px] font-bold text-navy mb-2">${escapeHtml(s.label)}</h4>
           <p class="text-[11px] text-slate-400 mb-2">${escapeHtml(s.note)}</p>
@@ -261,6 +298,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   async function boot() {
     sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(boot, 200); return; }
+    try {
+      await loadSelectionCycles();
+    } catch (e) {
+      console.warn('Selection cycles:', e);
+    }
 
     window.addEventListener('nav:member', ((e: CustomEvent) => {
       if (e.detail) { MEMBER = e.detail; applyGate(MEMBER); }
@@ -282,30 +324,36 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     showDenied();
   }
 
-  document.addEventListener('click', (e: MouseEvent) => {
-    const target = (e.target as HTMLElement).closest<HTMLElement>('[data-cycle]');
-    if (target?.classList.contains('sel-tab')) {
-      switchCycle(target.dataset.cycle || 'all');
-    }
-  });
+  if (!(window as any).__selectionDelegationBound) {
+    (window as any).__selectionDelegationBound = true;
+    document.addEventListener('click', (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
+      if (!target) return;
+      switch (target.dataset.action) {
+        case 'switch-cycle':
+          switchCycle(target.dataset.cycle || 'all');
+          break;
+        case 'selection-prev':
+          if (currentPage > 0) { currentPage--; loadTable(); }
+          break;
+        case 'selection-next':
+          currentPage++;
+          loadTable();
+          break;
+      }
+    });
 
-  document.getElementById('sel-search')?.addEventListener('input', (e: Event) => {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-      currentSearch = (e.target as HTMLInputElement).value.trim();
-      currentPage = 0;
-      loadTable();
-    }, 400);
-  });
-
-  document.getElementById('sel-prev')?.addEventListener('click', () => {
-    if (currentPage > 0) { currentPage--; loadTable(); }
-  });
-
-  document.getElementById('sel-next')?.addEventListener('click', () => {
-    currentPage++;
-    loadTable();
-  });
+    document.addEventListener('input', (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      if (!(target instanceof HTMLInputElement) || target.dataset.action !== 'selection-search') return;
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        currentSearch = target.value.trim();
+        currentPage = 0;
+        loadTable();
+      }, 400);
+    });
+  }
 
   boot();
 </script>

@@ -1,5 +1,25 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 16: Supabase Audit, Profile And Selection Stabilization
+
+### Decisions
+
+1. **Migration drift must be corrected in docs even when no new schema ships**: The repo currently carries 44 migration files, and regenerating `src/lib/database.gen.ts` from the linked project confirms the remote schema already includes the latest tracked objects (`site_config`, `project_boards`, `board_items`, `volunteer_applications`, and related RPCs). This wave ships no new migration, but it does correct the stale `42/42` documentation.
+
+2. **Profile field hygiene should survive rerenders without rebinding**: `profile.astro` still rebuilt its card cluster through `innerHTML`, so field normalization tied to the newly created Credly input was fragile. The normalization path now uses delegated `focusout` / `paste` / `input` listeners instead of a per-render binding helper.
+
+3. **Selection cycle UX should follow runtime metadata, not fixed cycle copy**: `/admin/selection` keeps the same `admin_selection` and LGPD guard, but cycle tabs and snapshot titles now derive from `loadCycles()` / `getCurrentCycle()` instead of hardcoded `Ciclo 1/2/3` copy.
+
+4. **Shared confirm dialogs should keep static listeners and mutable state separate**: `ConfirmDialog.astro` no longer rewires `btn.onclick` for each open. The dialog updates its state on `showConfirm(...)`, while the confirm button now uses a single listener that consumes the stored callback.
+
+### Process Lessons Learned
+
+1. **Linked schema generation is a practical read-only audit fallback**: When `supabase migration list` is blocked locally by stale DB auth, refreshing generated types from the linked project still provides strong evidence that the remote schema contains the expected tracked objects. Before the next schema-writing sprint, the CLI DB credential path on this workstation should be refreshed.
+
+2. **Textual tests remain useful for stabilization waves**: Small regression checks for dynamic cycle copy, delegated binding patterns, and mutable `onclick` usage are cheap safeguards while broader browser coverage is still being expanded.
+
+---
+
 ## 2026-03-11 — Post Wave 15: Attendance ACL And Modal Delegation
 
 ### Decisions

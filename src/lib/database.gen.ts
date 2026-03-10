@@ -449,6 +449,102 @@ export type Database = {
           },
         ]
       }
+      board_items: {
+        Row: {
+          assignee_id: string | null
+          attachments: Json | null
+          board_id: string
+          checklist: Json | null
+          created_at: string
+          cycle: number | null
+          description: string | null
+          due_date: string | null
+          id: string
+          labels: Json | null
+          position: number
+          source_board: string | null
+          source_card_id: string | null
+          status: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          attachments?: Json | null
+          board_id: string
+          checklist?: Json | null
+          created_at?: string
+          cycle?: number | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          labels?: Json | null
+          position?: number
+          source_board?: string | null
+          source_card_id?: string | null
+          status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string | null
+          attachments?: Json | null
+          board_id?: string
+          checklist?: Json | null
+          created_at?: string
+          cycle?: number | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          labels?: Json | null
+          position?: number
+          source_board?: string | null
+          source_card_id?: string | null
+          status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "board_items_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_items_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_items_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_items_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_items_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "project_boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       broadcast_log: {
         Row: {
           body: string
@@ -1861,8 +1957,6 @@ export type Database = {
           pmi_id: string | null
           pmi_id_encrypted: string | null
           pmi_id_verified: boolean | null
-          role: string | null
-          roles: string[] | null
           secondary_emails: string[] | null
           share_whatsapp: boolean
           state: string | null
@@ -1897,8 +1991,6 @@ export type Database = {
           pmi_id?: string | null
           pmi_id_encrypted?: string | null
           pmi_id_verified?: boolean | null
-          role?: string | null
-          roles?: string[] | null
           secondary_emails?: string[] | null
           share_whatsapp?: boolean
           state?: string | null
@@ -1933,8 +2025,6 @@ export type Database = {
           pmi_id?: string | null
           pmi_id_encrypted?: string | null
           pmi_id_verified?: boolean | null
-          role?: string | null
-          roles?: string[] | null
           secondary_emails?: string[] | null
           share_whatsapp?: boolean
           state?: string | null
@@ -2002,6 +2092,128 @@ export type Database = {
           {
             foreignKeyName: "presentations_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_boards: {
+        Row: {
+          board_name: string
+          columns: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          source: string
+          tribe_id: number | null
+          updated_at: string
+        }
+        Insert: {
+          board_name: string
+          columns?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          source?: string
+          tribe_id?: number | null
+          updated_at?: string
+        }
+        Update: {
+          board_name?: string
+          columns?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          source?: string
+          tribe_id?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_boards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "project_boards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "project_boards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_boards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_boards_tribe_id_fkey"
+            columns: ["tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_config: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "site_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "site_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_config_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
@@ -2377,6 +2589,119 @@ export type Database = {
           },
         ]
       }
+      volunteer_applications: {
+        Row: {
+          app_status: string | null
+          application_id: string
+          areas_of_interest: string | null
+          certifications: string[] | null
+          city: string | null
+          country: string | null
+          created_at: string
+          cycle: number
+          email: string
+          essay_answers: Json | null
+          first_name: string
+          id: string
+          industry: string | null
+          is_existing_member: boolean
+          label: string | null
+          last_name: string
+          member_id: string | null
+          membership_status: string | null
+          opportunity_id: string | null
+          pmi_id: string | null
+          reason_for_applying: string | null
+          resume_url: string | null
+          snapshot_date: string
+          specialty: string | null
+          state: string | null
+        }
+        Insert: {
+          app_status?: string | null
+          application_id: string
+          areas_of_interest?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          cycle: number
+          email: string
+          essay_answers?: Json | null
+          first_name: string
+          id?: string
+          industry?: string | null
+          is_existing_member?: boolean
+          label?: string | null
+          last_name: string
+          member_id?: string | null
+          membership_status?: string | null
+          opportunity_id?: string | null
+          pmi_id?: string | null
+          reason_for_applying?: string | null
+          resume_url?: string | null
+          snapshot_date: string
+          specialty?: string | null
+          state?: string | null
+        }
+        Update: {
+          app_status?: string | null
+          application_id?: string
+          areas_of_interest?: string | null
+          certifications?: string[] | null
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          cycle?: number
+          email?: string
+          essay_answers?: Json | null
+          first_name?: string
+          id?: string
+          industry?: string | null
+          is_existing_member?: boolean
+          label?: string | null
+          last_name?: string
+          member_id?: string | null
+          membership_status?: string | null
+          opportunity_id?: string | null
+          pmi_id?: string | null
+          reason_for_applying?: string | null
+          resume_url?: string | null
+          snapshot_date?: string
+          specialty?: string | null
+          state?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_applications_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "volunteer_applications_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "volunteer_applications_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_applications_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       webinars: {
         Row: {
           chapter_code: string
@@ -2486,7 +2811,6 @@ export type Database = {
           name: string | null
           operational_role: string | null
           photo_url: string | null
-          role: string | null
           total_points: number | null
         }
         Relationships: []
@@ -2838,6 +3162,7 @@ export type Database = {
           tribe_id: number
         }[]
       }
+      get_site_config: { Args: never; Returns: Json }
       get_tribe_counts: {
         Args: never
         Returns: {
@@ -2943,6 +3268,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      list_board_items: {
+        Args: { p_board_id: string; p_status?: string }
+        Returns: Json[]
+      }
       list_curation_board: { Args: { p_status?: string }; Returns: Json[] }
       list_cycles: { Args: never; Returns: Json }
       list_meeting_artifacts: {
@@ -2971,6 +3300,7 @@ export type Database = {
         }
       }
       list_pending_curation: { Args: { p_table?: string }; Returns: Json }
+      list_project_boards: { Args: { p_tribe_id?: number }; Returns: Json[] }
       list_taxonomy_tags: {
         Args: never
         Returns: {
@@ -3011,6 +3341,15 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      list_volunteer_applications: {
+        Args: {
+          p_cycle?: number
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+        }
+        Returns: Json
       }
       list_webinars: {
         Args: { p_status?: string }
@@ -3070,6 +3409,11 @@ export type Database = {
             }
             Returns: Json
           }
+      move_board_item: {
+        Args: { p_item_id: string; p_new_status: string; p_position?: number }
+        Returns: undefined
+      }
+      platform_activity_summary: { Args: never; Returns: Json }
       publish_comms_metrics_batch: {
         Args: { p_metric_date?: string; p_source?: string }
         Returns: {
@@ -3099,6 +3443,10 @@ export type Database = {
       select_tribe: { Args: { p_tribe_id: number }; Returns: Json }
       set_progress: {
         Args: { p_code: string; p_email: string; p_status: string }
+        Returns: undefined
+      }
+      set_site_config: {
+        Args: { p_key: string; p_value: Json }
         Returns: undefined
       }
       show_limit: { Args: never; Returns: number }
@@ -3163,6 +3511,7 @@ export type Database = {
         }
         Returns: Json
       }
+      volunteer_funnel_summary: { Args: { p_cycle?: number }; Returns: Json }
     }
     Enums: {
       [_ in never]: never

@@ -1,12 +1,18 @@
 # Nucleo IA & GP — Backlog & Wave Planning
 ## Status: Marco 2026 (atualizado 2026-03-11)
-## Sincronizado com producao: Git, Migracoes SQL (42/42) e 13 Edge Functions
+## Sincronizado com producao: Git, Migracoes SQL (44/44 no repo + schema linkado auditado) e 13 Edge Functions
 
 **Board de sprints**: [GitHub Project — AI PM Hub](https://github.com/users/VitorMRodovalho/projects/1/) · Regras: `docs/project-governance/PROJECT_GOVERNANCE_RUNBOOK.md`
 
 ---
 
 ## LATEST UPDATE (2026-03-11)
+
+### Entregue em Wave 16
+- **W16.1 Supabase Audit & Drift Fix**: contagem documental de migrations corrigida para `44`; `database.gen.ts` regenerado a partir do projeto linkado; nenhum schema novo aberto nesta tranche.
+- **W16.2 Profile Stabilization**: `profile.astro` deixa de depender de rebinding pós-`renderProfile(...)` para normalização do campo Credly, usando listeners delegados.
+- **W16.3 Selection Cycle Hardening**: `/admin/selection` troca tabs/título hardcoded por leitura runtime de ciclos via `loadCycles()`/`getCurrentCycle()`, preservando ACL `admin_selection` + `lgpdSensitive`.
+- **W16.4 Shared Dialog Hygiene**: `ConfirmDialog.astro` remove o padrão mutável `btn.onclick` e passa a usar listener estável + callback armazenado.
 
 ### Entregue em Wave 15
 - **W15.1 Cycle-Config Hardening**: `profile.astro` e `tribe/[id].astro` deixam de depender de `cycle_3` fixo e passam a resolver o ciclo corrente via `list_cycles`.
@@ -357,6 +363,24 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 
 ---
 
+## WAVE 16: Supabase Audit, Attendance/Profile/Selection Stabilization — CONCLUIDA
+**Foco:** comprovar o estado atual de schema/migrations sem abrir nova frente SQL, reduzir wiring frágil em superfícies antigas e manter ACL/LGPD alinhados.
+
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| W16.1 | Supabase Audit & Migration Drift Fix | High | Done | `supabase/migrations/` recontado em `44`; `npm run db:types` regenerou `src/lib/database.gen.ts` a partir do projeto linkado e confirmou a presença dos objetos mais recentes no schema remoto. |
+| W16.2 | Profile Stabilization | High | Done | `profile.astro` remove o helper de rebinding do campo Credly e passa a usar normalização delegada (`focusout`, `paste`, `input`) resiliente a `renderProfile(...)`. |
+| W16.3 | Selection Cycle Hardening | High | Done | `/admin/selection` carrega tabs e título de snapshots a partir de metadados runtime de ciclo, sem `Ciclo 1/2/3` hardcoded e sem alterar o guard `admin_selection` / `lgpdSensitive`. |
+| W16.4 | Shared Dialog Callback Hygiene | Medium | Done | `ConfirmDialog.astro` deixa de mutar `btn.onclick`; callback é armazenado e consumido por um listener estável. |
+
+### Wave 16 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 18/18 | **Smoke**: routes OK
+- **Supabase audit**: repo em `44` migrations; schema linkado regenerado com sucesso em `src/lib/database.gen.ts`; `supabase migration list` nesta máquina requer refresh de credencial DB antes da próxima wave com write path de schema
+- **Stabilization**: `profile` sem rebinding dedicado de Credly; `/admin/selection` cycle-aware; `ConfirmDialog` sem `btn.onclick` mutável
+- **Site hierarchy / ACL**: `/admin/selection` continua `admin` + `lgpdSensitive`; sem regressão de visibilidade
+
+---
+
 ## TECHNICAL DEBT & DEVOPS
 
 | Issue | Impact | Status | Mitigation Plan |
@@ -422,7 +446,7 @@ Native Supabase-based comms metrics replaced external Looker dependency. YouTube
 
 ### Infrastructure
 - **Git**: `origin/main` and `production/main` 100% synchronized
-- **SQL Migrations**: 42/42 applied in production (Supabase) — Wave 7-9 data/RPCs, Wave 11 site_config
+- **SQL Migrations**: 44 tracked in repo / linked schema refreshed from Supabase — Wave 7-9 data/RPCs, Wave 11 site_config
 - **Edge Functions**: 13 active in production (all `--no-verify-jwt`)
 - **Frontend**: Deployed via Cloudflare Pages (auto-deploy from main)
 - **Storage**: `documents` bucket active with public read + authenticated upload

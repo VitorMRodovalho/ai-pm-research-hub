@@ -179,6 +179,7 @@ const PROFILE_I18N = {
     meetingSlots: any[]; tribeMeetingLink: string | null;
     pendingDeliverables: number; weeklyPoints: number; tribeId: number | null;
   } | null = null;
+  let credlyNormalizeTimer: ReturnType<typeof setTimeout> | null = null;
 
   // ── Boot ──
   async function boot() {
@@ -839,33 +840,18 @@ const PROFILE_I18N = {
         </div>
       </div>
     `;
-    bindCredlyField();
   }
 
-  function bindCredlyField() {
-    const input = document.getElementById('self-credly') as HTMLInputElement | null;
+  function normalizeCredlyFieldValue(input?: HTMLInputElement | null) {
     if (!input) return;
-
-    const normalize = () => {
-      const raw = input.value || '';
-      const trimmed = raw.trim();
-      if (!trimmed) {
-        input.value = '';
-        return;
-      }
-      const normalized = normalizeCredlyUrl(trimmed);
-      if (normalized) input.value = normalized;
-    };
-
-    input.addEventListener('blur', normalize);
-    // Mobile (iOS Safari/Chrome): paste can fire before value is in input; delay allows DOM to settle
-    input.addEventListener('paste', () => setTimeout(normalize, 100));
-    // Fallback: some mobile browsers don't reliably fire paste; debounced input catches pasted content
-    let inputDebounce: ReturnType<typeof setTimeout>;
-    input.addEventListener('input', () => {
-      clearTimeout(inputDebounce);
-      inputDebounce = setTimeout(normalize, 300);
-    });
+    const raw = input.value || '';
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      input.value = '';
+      return;
+    }
+    const normalized = normalizeCredlyUrl(trimmed);
+    if (normalized) input.value = normalized;
   }
 
   // ── Toggle password field visibility ──
@@ -979,6 +965,28 @@ const PROFILE_I18N = {
         case 'verify-credly':
           verifyCredly();
           break;
+      }
+    });
+
+    document.addEventListener('focusout', (e: FocusEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target instanceof HTMLInputElement && target.id === 'self-credly') {
+        normalizeCredlyFieldValue(target);
+      }
+    });
+
+    document.addEventListener('paste', (e: ClipboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target instanceof HTMLInputElement && target.id === 'self-credly') {
+        setTimeout(() => normalizeCredlyFieldValue(target), 100);
+      }
+    });
+
+    document.addEventListener('input', (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      if (target instanceof HTMLInputElement && target.id === 'self-credly') {
+        if (credlyNormalizeTimer) clearTimeout(credlyNormalizeTimer);
+        credlyNormalizeTimer = setTimeout(() => normalizeCredlyFieldValue(target), 300);
       }
     });
   }

@@ -7,7 +7,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "test": "node --test tests/credly.test.mjs tests/cycle-history.test.mjs tests/gamification.test.mjs tests/routing.test.mjs tests/attendance-ui.test.mjs",
+    "test": "node --test tests/credly.test.mjs tests/cycle-history.test.mjs tests/gamification.test.mjs tests/routing.test.mjs tests/attendance-ui.test.mjs tests/ui-stabilization.test.mjs",
     "smoke:routes": "node scripts/smoke-routes.mjs",
     "screenshots:multilang": "node scripts/screenshots-multilang.mjs",
     "screenshots:setup": "npx playwright install chromium",
