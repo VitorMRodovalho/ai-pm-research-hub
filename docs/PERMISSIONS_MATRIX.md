@@ -4,7 +4,7 @@
 > Qualquer alteração de acesso deve ser refletida aqui, no `navigation.config.ts`,
 > e nas RLS policies do Supabase antes de ser deployada.
 >
-> Última atualização: 2026-03-10 (Sprint 4 + ETL Pipeline + UX Housekeeping + CPO Production Audit)
+> Última atualização: 2026-03-11 (Wave 8-10: Curatorship Kanban, Selection, Analytics nav, Progressive disclosure)
 
 ---
 
@@ -181,6 +181,26 @@ Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Se
 || `list_meeting_artifacts` RPC       |    —    |   V    |    V     |   V    |   V   |     V      | Optional p_tribe_id filter           |
 || Ver `/presentations` histórico     |    —    |   V    |    V     |   V    |   V   |     V      | Filterable by tribe                  |
 
+### 3.13 Tribe Project Boards (Wave 8)
+
+|| Funcionalidade                     | Visitor | Member | Observer | Leader | Admin | Superadmin | Notas                                |
+||------------------------------------|:-------:|:------:|:--------:|:------:|:-----:|:----------:|--------------------------------------|
+|| Ver Quadro de Projeto em `/tribe/[id]` | —  |   V    |    V     |   V    |   V   |     V      | 5 colunas Kanban                     |
+|| Criar board / mover itens          |    —    |   —    |    —     |   A¹   |   A   |     A      | ¹ leader da tribo                   |
+|| `list_board_items`, `move_board_item` | —    |   —    |    —     |   V/A¹ |  V/A  |    V/A     | RPCs com RLS                         |
+
+### 3.14 Selection Process (Wave 9 — LGPD)
+
+|| Funcionalidade                     | Visitor | Member | Observer | Leader | Admin | Superadmin | Backend                              |
+||------------------------------------|:-------:|:------:|:--------:|:------:|:-----:|:----------:|--------------------------------------|
+|| `/admin/selection` página          |    —    |   —    |    —     |   —    |   V   |     V      | lgpdSensitive — oculto se não-admin  |
+|| `list_volunteer_applications` RPC  |    —    |   —    |    —     |   —    |   V   |     V      | SECURITY DEFINER, admin check        |
+|| `volunteer_funnel_summary` RPC     |    —    |   —    |    —     |   —    |   V   |     V      | Agregados sem PII em analytics       |
+
+### 3.15 Progressive Disclosure (Wave 8)
+
+Itens de navegação com tier insuficiente: visíveis mas desabilitados (opacidade + ícone cadeado + tooltip "Requer [tier]"). Itens com `lgpdSensitive: true` permanecem completamente ocultos para não-autorizados.
+
 ---
 
 ## 4. Mapeamento Código ↔ Matriz
@@ -193,9 +213,11 @@ Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Se
 | `my-tribe`       | `member`   | —                                | ✅         |
 | `profile`        | `member`   | —                                | ✅         |
 | `admin`          | `observer` | —                                | ✅         |
-| `admin-analytics`| `admin`    | —                                | ✅         |
-| `admin-comms`    | `admin`    | `['comms_leader', 'comms_member']`| ✅         |
-| `help`           | `member`   | —                                | ✅         |
+| `admin-analytics`   | `admin`    | —                                | ✅         |
+| `admin-comms`      | `admin`    | `['comms_leader', 'comms_member']`| ✅ (lgpdSensitive) |
+| `admin-curatorship`| `observer` | —                                | ✅         |
+| `admin-selection`  | `admin`    | —                                | ✅ (lgpdSensitive) |
+| `help`             | `member`   | —                                | ✅         |
 | `onboarding`     | `member`   | —                                | ✅ (drawer) |
 | `admin-webinars` | `admin`    | —                                | ✅ (placeholder) |
 
@@ -248,3 +270,4 @@ e as Edge Functions estão alinhados com esta matriz.
 | 2026-03-09 | Wave 4 Expansion: /admin/comms (ranking + broadcasts), /admin/webinars, webinars schema, sb.functions.invoke eliminated. |
 | 2026-03-09 | S-COM1: Divergências #1 e #2 resolvidas. Backfill de designações + blindagem de Edge Functions. |
 | 2026-03-09 | Documento criado (Wave 4). Cobertura: W1–W3 + W4.10.  |
+| 2026-03-11 | Wave 8-10: Admin Curatorship, Admin Selection, Admin Analytics nav. Sections 3.13-3.15 (Tribe Kanban, Selection LGPD, Progressive disclosure). Code mapping table complete. |

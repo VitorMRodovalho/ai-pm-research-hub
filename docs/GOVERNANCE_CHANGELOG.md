@@ -1,5 +1,25 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 10: Site-Hierarchy Integrity & UX Polish
+
+### Decisions
+
+1. **Admin Analytics was a nav orphan**: The `/admin/analytics` page existed and had a route key in constants.ts, but no entry in navigation.config.ts or AdminNav.astro. This was a site-hierarchy gap — users could access via direct URL or admin index link but not via the drawer. Added full nav integration.
+
+2. **PERMISSIONS_MATRIX is the audit checklist**: Every new route and designation must be reflected in PERMISSIONS_MATRIX. Sections 3.13-3.15 formalize Wave 8-9 features (Tribe Kanban, Selection LGPD, Progressive disclosure) that were missing.
+
+3. **Announcement scheduling uses existing schema**: The `announcements` table already had `starts_at` and `ends_at`; only the frontend form was missing the starts_at picker. No migration required.
+
+4. **Markdown preview is lightweight**: Implemented inline with a minimal regex-based renderer (bold, italic, code, line breaks) — no new dependency. Announcement body changed from single-line input to textarea.
+
+### Process Lessons Learned
+
+1. **Site-hierarchy audits catch orphan pages**: When adding pages, always add the corresponding nav entry. A periodic audit (nav config vs. pages) prevents drift.
+
+2. **PERMISSIONS_MATRIX should be updated in the same sprint as feature delivery**: Deferring permission docs creates a maintenance backlog.
+
+---
+
 ## 2026-03-11 — Wave 9: Intelligence & Cross-Source Analytics
 
 ### Decisions

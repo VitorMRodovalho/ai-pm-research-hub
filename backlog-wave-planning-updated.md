@@ -222,16 +222,26 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 
 ---
 
-## WAVE 10: Scale, Multi Tenant & Global Impact — PENDENTE
-**Foco:** Preparar o projeto para ser replicavel e internacionalizavel.
+## WAVE 10: Site-Hierarchy Integrity & UX Polish — CONCLUIDA
+**Foco:** Correção de gaps de navegação, PERMISSIONS_MATRIX atualizada, scheduling e preview de avisos.
 
 | ID | Feature | Priority | Status | Description |
 |----|---------|----------|--------|-------------|
+| W10.1 | Admin Analytics Nav | High | Done | Entrada `/admin/analytics` em navigation.config.ts, AdminNav.astro, Nav.astro drawer, i18n. |
+| W10.2 | Admin Curatorship Route Key | Medium | Done | `admin_curatorship` adicionado a AdminRouteKey e ROUTE_MIN_TIER. |
+| W10.3 | PERMISSIONS_MATRIX Update | High | Done | Secções 3.13-3.15 (Tribe Kanban, Selection LGPD, Progressive disclosure). Mapeamento completo. |
+| W10.4 | Announcement Scheduling UX | Medium | Done | Date-time pickers para `starts_at` e `ends_at`, validação start < end, badge "Agendado". |
+| W10.5 | Announcement Markdown Preview | Low | Done | Toggle Editar/Visualizar, textarea + preview com **bold** *italic* `code` e quebras de linha. |
 | S-RM5 | Multi-tenant Config | Medium | Planned | Admin config for `group_term`, cycle config, and webhooks. |
 | S23 | Chapter Integrations | Medium | Planned | Event-driven integrations with local chapter portfolios and tools. |
 | S24 | API for Chapters | Low | Planned | Read-only API for chapter impact and participation data. |
 | S-SC1 | Multilingual Screenshots | Low | Planned | Automated screenshots for PT EN ES docs or release snapshots. |
 | S-KNW7 | Gemini Extraction Pipeline | Low | Deferred | Extrair conteudo de `.docx` em `needs_extraction/` via Gemini API. |
+
+### Wave 10 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 13/13 | **Lint**: 0 errors
+- **Site hierarchy**: admin-analytics nav entry added, admin_curatorship route key added
+- **Announcements**: starts_at picker, start<end validation, scheduled badge, markdown preview toggle
 
 ---
 
@@ -312,8 +322,8 @@ Native Supabase-based comms metrics replaced external Looker dependency. YouTube
 - `scripts/miro_links_importer.ts`: CSV → 51 links in `hub_resources` (source=miro_import)
 
 ### Navigation (`navigation.config.ts`)
-- 20 items covering all routes with tier-based ACL
-- Home anchors (10), Tools (5), Member (2), Profile (1), Admin (6)
+- 21 items covering all routes with tier-based ACL
+- Home anchors (10), Tools (5), Member (2), Profile (1), Admin (7)
 - Progressive disclosure: disabled items with lock icon + tooltip for insufficient tier
 - LGPD-sensitive items fully hidden for non-authorized (new `lgpdSensitive` flag)
 - No orphan routes (legacy aliases `/teams`, `/rank`, `/ranks` are intentional redirects)

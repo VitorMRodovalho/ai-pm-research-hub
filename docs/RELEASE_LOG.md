@@ -1,5 +1,37 @@
 # Release Log
 
+## 2026-03-11 — v0.8.0 Wave 10: Site-Hierarchy Integrity & UX Polish
+
+### Scope
+Wave 10 fixes site-hierarchy gaps (missing nav entries), updates PERMISSIONS_MATRIX, and delivers announcement scheduling UX plus markdown preview.
+
+### Site-Hierarchy Fixes
+- **Admin Analytics Nav**: Added `admin-analytics` to navigation.config.ts, AdminNav.astro (between panel and comms), Nav.astro drawer icons, i18n keys.
+- **Admin Curatorship Route Key**: Added `admin_curatorship` to AdminRouteKey type and ROUTE_MIN_TIER (observer) in constants.ts.
+
+### PERMISSIONS_MATRIX
+- Sections 3.13 (Tribe Project Boards), 3.14 (Selection Process LGPD), 3.15 (Progressive Disclosure).
+- Code mapping table updated with admin-curatorship, admin-selection, admin-analytics.
+
+### Announcement UX (S-AN1)
+- **Scheduling**: Date-time pickers for `starts_at` and `ends_at`; validation that start < end; "Agendado" badge when `starts_at` is in the future.
+- **Markdown Preview**: Toggle Editar/Visualizar for message body; textarea + inline preview with **bold**, *italic*, `code`, and line breaks.
+
+### Files Changed
+- `src/lib/navigation.config.ts` (admin-analytics nav item)
+- `src/components/nav/AdminNav.astro` (analytics link)
+- `src/components/nav/Nav.astro` (admin-analytics icon, adminAnalytics i18n)
+- `src/lib/admin/constants.ts` (admin_curatorship route key)
+- `src/pages/admin/index.astro` (announcement scheduling, markdown preview)
+- `src/i18n/pt-BR.ts`, `en-US.ts`, `es-LATAM.ts` (labelStarts, statusScheduled, previewToggle, editToggle)
+- `docs/PERMISSIONS_MATRIX.md` (Wave 8-9-10 sections)
+- `backlog-wave-planning-updated.md` (Wave 10 CONCLUIDA)
+
+### Audit Results
+- Build: clean | Tests: 13/13 | Lint: 0 errors
+
+---
+
 ## 2026-03-11 — v0.7.0 Wave 9: Intelligence & Cross-Source Analytics
 
 ### Scope

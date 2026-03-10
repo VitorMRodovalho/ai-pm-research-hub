@@ -69,6 +69,7 @@ const ROUTE_MIN_TIER: Record<AdminRouteKey, AccessTier> = {
   admin_panel: 'observer',
   admin_analytics: 'admin',
   admin_comms: 'admin',
+  admin_curatorship: 'observer',
   admin_member_edit: 'superadmin',
   admin_manage_actions: 'admin',
   admin_selection: 'admin',
