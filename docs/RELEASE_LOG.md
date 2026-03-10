@@ -44,10 +44,40 @@ Comprehensive data ingestion sprint to consolidate all decentralized data source
 - `docs/RELEASE_LOG.md` (this file)
 - `docs/GOVERNANCE_CHANGELOG.md` (updated)
 
-### Validation
-- Migrations applied via `supabase db push`
-- All 4 importer scripts compile and support `--dry-run` mode
-- Backlog and release docs synchronized
+### Execution Results (Production Audit 2026-03-11)
+
+**Trello Import**: 5 boards created, 119/123 cards imported (4 closed skipped)
+- Comunicacao Ciclo 3: 17 cards
+- Articles (cross-tribe): 28 cards (1 duplicate skipped)
+- Artigos ProjectManagement.com: 3 cards
+- Tribo 3 Priorizacao: 34 cards (1 closed skipped)
+- Midias Sociais: 37 cards (2 closed skipped)
+- Board items by status: backlog (43), done (27), review (22), todo (18), in_progress (9)
+
+**Calendar Import**: 593 ICS events parsed, 87 Nucleo/PMI-relevant, 67 imported (20 dedup/existing)
+
+**Volunteer Import**: 143/143 rows imported (0 errors)
+- Ciclo 1: 8 applications (6 matched to members)
+- Ciclo 2: 16 applications (11 matched)
+- Ciclo 3: 119 applications (75 matched)
+- Overall member match rate: 64% (92/143)
+- Top certifications: PMP (59), DASM (9), PMI-RMP (5), PMI-CPMAI (5)
+- Geographic: MG (27), CE (20), GO (20), DF (16), US (10), PT (2)
+
+**Miro Import**: 51/51 unique URLs imported into hub_resources
+- By section: artigo ciclo 2 (32), noticias (6), cronograma (4), tribo 3 (2), others (7)
+
+**Audit Checklist**: All green
+- Build: clean | Tests: 13/13 pass | Routes: 16/16 return 200
+- Migrations: 39/39 applied | RPCs: all healthy | Git: clean
+
+### Lessons Learned
+
+1. **CSV row counts mislead**: Multi-line essay answers cause `wc -l` to overcount (779 lines vs 143 actual rows). Always use proper CSV parsers, never line counting.
+2. **Calendar keyword filters need both include and exclude lists**: Generic "PMI" matches global conferences. The exclude list (PMI Annual, PMI in Portunol, TED@PMI) correctly filtered noise.
+3. **Miro board is asymmetric**: 63% of links came from one section (artigo ciclo 2). The board was being used as an article reference tracker, not a balanced resource library. This insight should inform hub_resources curation.
+4. **Member matching by email is reliable; by name is fragile**: Volunteer CSVs match by email (64% hit rate). Trello boards only have usernames (no emails), so name matching is best-effort. Future imports should prioritize email-based matching.
+5. **Service role key via CLI is the safest pattern**: Using `npx supabase projects api-keys` avoids storing secrets in .env files.
 
 ---
 

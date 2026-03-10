@@ -1,6 +1,6 @@
 # Governance Changelog
 
-## 2026-03-11 — Wave 7: Data Ingestion Platform and Roadmap Reorganization
+## 2026-03-11 — Wave 7: Data Ingestion Platform -- Execution and Lessons Learned
 
 ### Decisions
 
@@ -14,10 +14,32 @@
 
 5. **Tier-aware progressive disclosure planned for Wave 8**: Navigation items will be visible to all tiers but disabled (with lock icon) for insufficient permissions. Sensitive DATA remains hidden per LGPD. This architectural decision affects `navigation.config.ts` and all rendering components.
 
+### Execution Results
+
+All 4 importers executed successfully against production database:
+- 119 Trello cards across 5 boards
+- 67 calendar events from ICS export
+- 143 volunteer applications across 3 cycles (64% matched to existing members)
+- 51 Miro board links
+
+### Process Lessons Learned
+
+1. **Import scripts must always support `--dry-run` and dedup/upsert**: All 4 scripts are idempotent. Re-running produces zero duplicate rows. This is now a mandatory pattern for all future data import scripts.
+
+2. **Service role key should never be stored in `.env`**: Use `npx supabase projects api-keys` at runtime and pass via environment variable. This is now the standard practice documented here.
+
+3. **CSV line counts are unreliable for multi-line content**: PMI volunteer CSVs contain essay answers with embedded newlines. `wc -l` reported 779 lines but actual data rows were 143. Always use a proper CSV parser, never line counting, for estimating import sizes.
+
+4. **Calendar keyword filters need both include AND exclude lists**: "PMI" as a keyword matches global conferences (PMI Annual Summit, TED@PMI). Future calendar imports must maintain an exclude list for known false positives.
+
+5. **Member matching priority**: Email is reliable (64% match rate). Name matching is fragile (Trello only has usernames). Future data sources should export email whenever possible.
+
+6. **Cross-tribe boards are common**: 4 of 5 Trello boards had `tribe_id: null` because they serve the comms team or cross-tribe functions. Wave 8 Kanban component must support both tribe-scoped and cross-tribe boards.
+
 ### Affected governance documents
 
-- `backlog-wave-planning-updated.md` updated (Waves 7-10, production state summary)
-- `docs/RELEASE_LOG.md` updated (v0.5.0 entry)
+- `backlog-wave-planning-updated.md` updated (Wave 7 marked CONCLUIDA with actual counts)
+- `docs/RELEASE_LOG.md` updated (v0.5.0 with execution results and lessons)
 - `docs/GOVERNANCE_CHANGELOG.md` updated (this entry)
 
 ---

@@ -161,17 +161,25 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 
 ---
 
-## WAVE 7: Data Ingestion Platform — EM PROGRESSO
+## WAVE 7: Data Ingestion Platform — CONCLUIDA
 **Foco:** Ingerir todas as fontes de dados descentralizadas (Trello, Calendar, CSV Voluntarios, Miro) na plataforma como single source of truth.
 
 | ID | Feature | Priority | Status | Description |
 |----|---------|----------|--------|-------------|
-| W7.1 | Trello 5-Board Historical Import | High | Done | `trello_board_importer.ts`: 5 boards (123 cards) → `project_boards` + `board_items` com member matching. |
-| W7.2 | Google Calendar ICS Import | High | Done | `calendar_event_importer.ts`: ICS → `events` com filtro Nucleo/PMI e dedup via `calendar_event_id`. |
-| W7.3 | Volunteer CSV Data Pipeline | High | Done | `volunteer_csv_importer.ts`: 6 CSVs (Ciclos 1-3) → `volunteer_applications` com cross-ref `members` por email. |
-| W7.4 | Miro Board Links Import | Medium | Done | `miro_links_importer.ts`: 445 linhas → `hub_resources` com categorias (Videos, Cursos, Artigos, etc.) e URL dedup. |
+| W7.1 | Trello 5-Board Historical Import | High | Done | 5 boards → 119 cards imported (4 closed skipped). Boards: Comunicacao C3 (17), Articles (28), Artigos PM.com (3), Tribo 3 (34), Midias Sociais (37). |
+| W7.2 | Google Calendar ICS Import | High | Done | 593 ICS events parsed → 87 Nucleo/PMI relevant → 67 imported (20 deduplicados). |
+| W7.3 | Volunteer CSV Data Pipeline | High | Done | 6 CSVs → 143 aplicacoes (Ciclo 1: 8, Ciclo 2: 16, Ciclo 3: 119). 92 matched com membros existentes (64%). |
+| W7.4 | Miro Board Links Import | Medium | Done | 445 linhas → 51 URLs unicas importadas para `hub_resources` (32 artigos ciclo 2, 6 noticias, 1 video, 1 curso, etc.). |
 | W7.5 | Project Boards Schema | High | Done | Migration: `project_boards` + `board_items` tables com RLS, RPCs (`list_board_items`, `move_board_item`, `list_project_boards`). |
 | W7.6 | Volunteer Applications Schema | High | Done | Migration: `volunteer_applications` table com RLS admin-only + `volunteer_funnel_summary` RPC. |
+
+### Wave 7 Audit Results (2026-03-11)
+- **Data totals**: 119 board items, 67 calendar events, 143 volunteer applications, 51 Miro links
+- **RPC health**: `list_project_boards` (5 boards), `list_board_items` (OK), `volunteer_funnel_summary` (3 cycles)
+- **Build**: clean | **Tests**: 13/13 | **Routes**: 16/16 → 200 | **Migrations**: 39/39 applied
+- **Member matching**: 134 entries loaded, 92/143 volunteer apps matched (64%), Trello member match by name
+- **Top certifications**: PMP (59), DASM (9), PMI-RMP (5), PMI-CPMAI (5)
+- **Geographic spread**: MG (27), CE (20), GO (20), DF (16), 8 US-based, 2 Portugal
 
 ---
 
@@ -271,16 +279,16 @@ Use Looker Studio for YouTube, LinkedIn, and Instagram funnel-style KPIs through
 
 ### Infrastructure
 - **Git**: `origin/main` and `production/main` 100% synchronized
-- **SQL Migrations**: 39/39 applied in production (Supabase) — +2 new tables (Wave 7)
+- **SQL Migrations**: 39/39 applied in production (Supabase) — +2 new tables (Wave 7), data imported
 - **Edge Functions**: 13 active in production (all `--no-verify-jwt`)
 - **Frontend**: Deployed via Cloudflare Pages (auto-deploy from main)
 - **Storage**: `documents` bucket active with public read + authenticated upload
 
-### Data Ingestion Scripts (Wave 7)
-- `scripts/trello_board_importer.ts`: 5 Trello boards → project_boards + board_items
-- `scripts/calendar_event_importer.ts`: Google Calendar ICS → events
-- `scripts/volunteer_csv_importer.ts`: 6 PMI volunteer CSVs → volunteer_applications
-- `scripts/miro_links_importer.ts`: Miro board CSV → hub_resources
+### Data Ingestion Scripts (Wave 7) — Executed 2026-03-11
+- `scripts/trello_board_importer.ts`: 5 boards → 119 cards in `project_boards` + `board_items`
+- `scripts/calendar_event_importer.ts`: ICS → 67 events in `events` (source=calendar_import)
+- `scripts/volunteer_csv_importer.ts`: 6 CSVs → 143 applications in `volunteer_applications` (92 matched)
+- `scripts/miro_links_importer.ts`: CSV → 51 links in `hub_resources` (source=miro_import)
 
 ### Navigation (`navigation.config.ts`)
 - 19 items covering all routes with tier-based ACL
