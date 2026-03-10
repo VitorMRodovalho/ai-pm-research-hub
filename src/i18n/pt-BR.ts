@@ -135,7 +135,7 @@ const ptBR: Record<string, string> = {
   'nav.menu': 'Menu',
 
   // ── Hero ──
-  'hero.badge': 'KICK-OFF OFICIAL — CICLO 03 (2026/1)',
+  'hero.badge': 'KICK-OFF OFICIAL — CICLO ATUAL',
   'hero.title.line1': 'Núcleo de Estudos e Pesquisa em',
   'hero.title.accent': 'Inteligência Artificial',
   'hero.title.line3': 'e Gerenciamento de Projetos',
@@ -290,7 +290,7 @@ const ptBR: Record<string, string> = {
   'cpmai.title': 'Colaboradores Certificados',
   'cpmai.subtitle': 'Profissionais do Núcleo que obtiveram a certificação em Gestão de Projetos de IA.',
   'cpmai.badge': 'Verificado via Credly',
-  'cpmai.noCerts': 'Em breve — os primeiros certificados do Ciclo 3 serão exibidos aqui.',
+  'cpmai.noCerts': 'Em breve — as primeiras certificações do ciclo atual serão exibidas aqui.',
   'cpmai.viewBadge': 'Ver badge →',
 
   // ── Team ──
@@ -298,9 +298,9 @@ const ptBR: Record<string, string> = {
   'team.title': 'Nosso Time',
   'team.subtitle': 'Pesquisadores, líderes e gestores unidos pela interseção IA + GP.',
   'team.leaders': 'Líderes de Tribo & Gestão',
-  'team.leaders.sub': 'coordenação e governança · Ciclo 3',
+  'team.leaders.sub': 'coordenação e governança do ciclo atual',
   'team.researchers': 'Pesquisadores',
-  'team.researchers.sub': 'participantes ativos · Ciclo 3',
+  'team.researchers.sub': 'participantes ativos do ciclo atual',
   'team.ambassadors': 'Embaixadores',
   'team.ambassadors.sub': 'representação & multiplicação',
   'team.curators': 'Comitê de Curadoria',
@@ -311,7 +311,7 @@ const ptBR: Record<string, string> = {
   'team.founders.sub': 'a história que trouxe o Núcleo até aqui',
   'team.loading': 'Carregando time...',
   'team.projectTeam': 'Equipe de Projeto',
-  'team.projectTeam.sub': 'gestão, operações & comunicação · Ciclo 3',
+  'team.projectTeam.sub': 'gestão, operações e comunicação do ciclo atual',
   'team.projectManagement': 'Gerência de Projeto (Nível 2)',
   'team.commsTeam': 'Time de Comunicação',
   'team.otherChapter': 'Outros',

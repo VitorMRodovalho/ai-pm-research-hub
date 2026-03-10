@@ -8,6 +8,10 @@
 
 ## LATEST UPDATE (2026-03-11)
 
+### Entregue em Wave 22
+- **W22.1 Public Cycle Copy Cleanup**: labels visíveis da home (`hero.badge`, `cpmai.noCerts`, subtítulos de `TeamSection`) deixam de mencionar `Ciclo 3` e passam a usar wording genérico do ciclo atual.
+- **W22.2 Regression Lock**: `tests/ui-stabilization.test.mjs` agora trava explicitamente a ausência das variantes antigas de `Cycle/Ciclo 3` nos textos públicos tocados nesta tranche.
+
 ### Entregue em Wave 21
 - **W21.1 Resources Deadline Wiring**: `ResourcesSection.astro` passa a receber `deadlineIso` nas três home pages, mantendo o card fallback da playlist coerente com o mesmo cronograma runtime já usado por Hero, Agenda e Tribes.
 - **W21.2 Localized Resource Fallbacks**: os cards fallback de recursos deixam de carregar textos fixos em português dentro do componente e passam a usar i18n nas locales PT/EN/ES.
@@ -50,6 +54,9 @@
 - **W14.1 Doc Divergence Cleanup**: README, MIGRATION e CONTRIBUTING alinhados com produção atual (Chart.js nativo, smoke routes, 5-phase, repo/path corretos).
 - **W14.2 Admin Hygiene**: Removidas referências antigas a PostHog/Looker do admin atual; primeira tranche de event delegation aplicada em `admin/index.astro` e shared UI.
 - **W14.3 Deferred Structuring**: S23, S24, S-KNW7 e Webinars reclassificados por lane, dependências e critérios de saída do deferred.
+
+### Wave 22 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 24/24 | **Browser guard**: OK | **Routes**: smoke OK
 
 ### Wave 21 Audit Results (2026-03-11)
 - **Build**: clean | **Tests**: 23/23 | **Browser guard**: OK | **Routes**: smoke OK

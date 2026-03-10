@@ -135,7 +135,7 @@ const enUS: Record<string, string> = {
   'nav.menu': 'Menu',
 
   // ── Hero ──
-  'hero.badge': 'OFFICIAL KICK-OFF — CYCLE 03 (2026/1)',
+  'hero.badge': 'OFFICIAL KICK-OFF — CURRENT CYCLE',
   'hero.title.line1': 'Study and Research Hub in',
   'hero.title.accent': 'Artificial Intelligence',
   'hero.title.line3': 'and Project Management',
@@ -290,7 +290,7 @@ const enUS: Record<string, string> = {
   'cpmai.title': 'Certified Collaborators',
   'cpmai.subtitle': 'Hub professionals who earned the AI Project Management certification.',
   'cpmai.badge': 'Verified via Credly',
-  'cpmai.noCerts': 'Coming soon — the first Cycle 3 certifications will be displayed here.',
+  'cpmai.noCerts': 'Coming soon — the first certifications of the current cycle will be displayed here.',
   'cpmai.viewBadge': 'View badge →',
 
   // ── Team ──
@@ -298,9 +298,9 @@ const enUS: Record<string, string> = {
   'team.title': 'Our Team',
   'team.subtitle': 'Researchers, leaders, and managers united at the intersection of AI + PM.',
   'team.leaders': 'Stream Leaders & Management',
-  'team.leaders.sub': 'coordination and governance · Cycle 3',
+  'team.leaders.sub': 'coordination and governance for the current cycle',
   'team.researchers': 'Researchers',
-  'team.researchers.sub': 'active participants · Cycle 3',
+  'team.researchers.sub': 'active participants in the current cycle',
   'team.ambassadors': 'Ambassadors',
   'team.ambassadors.sub': 'representation & outreach',
   'team.curators': 'Curation Committee',
@@ -311,7 +311,7 @@ const enUS: Record<string, string> = {
   'team.founders.sub': 'the history that brought the Hub to life',
   'team.loading': 'Loading team...',
   'team.projectTeam': 'Project Team',
-  'team.projectTeam.sub': 'management, operations & communications · Cycle 3',
+  'team.projectTeam.sub': 'management, operations, and communications for the current cycle',
   'team.projectManagement': 'Project Management (Level 2)',
   'team.commsTeam': 'Communications Team',
   'team.otherChapter': 'Others',

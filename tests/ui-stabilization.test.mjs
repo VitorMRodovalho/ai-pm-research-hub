@@ -85,3 +85,25 @@ test('resources fallback playlist no longer hardcodes saturday deadline copy', (
   assert.equal(en.includes("'resources.playlist.descPrefix'"), true);
   assert.equal(es.includes("'resources.playlist.descPrefix'"), true);
 });
+
+test('public home locale copy no longer hardcodes cycle 3 labels', () => {
+  const pt = read('src/i18n/pt-BR.ts');
+  const en = read('src/i18n/en-US.ts');
+  const es = read('src/i18n/es-LATAM.ts');
+
+  assert.equal(pt.includes('KICK-OFF OFICIAL — CICLO 03 (2026/1)'), false);
+  assert.equal(en.includes('OFFICIAL KICK-OFF — CYCLE 03 (2026/1)'), false);
+  assert.equal(es.includes('KICK-OFF OFICIAL — CICLO 03 (2026/1)'), false);
+  assert.equal(pt.includes('os primeiros certificados do Ciclo 3 serão exibidos aqui.'), false);
+  assert.equal(en.includes('the first Cycle 3 certifications will be displayed here.'), false);
+  assert.equal(es.includes('las primeras certificaciones del Ciclo 3 se mostrarán aquí.'), false);
+  assert.equal(pt.includes('coordenação e governança · Ciclo 3'), false);
+  assert.equal(en.includes('coordination and governance · Cycle 3'), false);
+  assert.equal(es.includes('coordinación y gobernanza · Ciclo 3'), false);
+  assert.equal(pt.includes('participantes ativos · Ciclo 3'), false);
+  assert.equal(en.includes('active participants · Cycle 3'), false);
+  assert.equal(es.includes('participantes activos · Ciclo 3'), false);
+  assert.equal(pt.includes('gestão, operações & comunicação · Ciclo 3'), false);
+  assert.equal(en.includes('management, operations & communications · Cycle 3'), false);
+  assert.equal(es.includes('gestión, operaciones & comunicación · Ciclo 3'), false);
+});

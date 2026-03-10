@@ -1,5 +1,21 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 22: Public Cycle Copy Cleanup
+
+### Decisions
+
+1. **Public labels should prefer generic current-cycle wording until cycle metadata is runtime-driven**: The home hero badge and supporting sections still exposed `Cycle 3` even after schedule-sensitive text had been cleaned up. Where runtime cycle metadata is not yet available, generic current-cycle copy is safer than a stale cycle number.
+
+2. **Visible public drift matters even when behavior is correct**: The schedule flow, ACL, and page wiring were already aligned, but visitors could still read copy that implied an older cohort. Copy-only cleanup remains valid engineering work when it prevents misleading public state.
+
+### Process Lessons Learned
+
+1. **Runtime hardening exposes neighboring static labels**: Once date and deadline strings are cleaned up, fixed cycle labels stand out immediately. Public-home audits should check both schedule references and cohort/cycle wording together.
+
+2. **Regression tests should target the exact literals removed**: File-wide bans on `Cycle 3` can overreach into unrelated surfaces. The safer pattern is to lock the exact public strings touched in the current slice.
+
+---
+
 ## 2026-03-11 — Wave 21: Resources Runtime Fallback Alignment
 
 ### Decisions

@@ -135,7 +135,7 @@ const esLATAM: Record<string, string> = {
   'nav.menu': 'Menú',
 
   // ── Hero ──
-  'hero.badge': 'KICK-OFF OFICIAL — CICLO 03 (2026/1)',
+  'hero.badge': 'KICK-OFF OFICIAL — CICLO ACTUAL',
   'hero.title.line1': 'Núcleo de Estudios e Investigación en',
   'hero.title.accent': 'Inteligencia Artificial',
   'hero.title.line3': 'y Gestión de Proyectos',
@@ -290,7 +290,7 @@ const esLATAM: Record<string, string> = {
   'cpmai.title': 'Colaboradores Certificados',
   'cpmai.subtitle': 'Profesionales del Núcleo que obtuvieron la certificación en Gestión de Proyectos de IA.',
   'cpmai.badge': 'Verificado vía Credly',
-  'cpmai.noCerts': 'Próximamente — las primeras certificaciones del Ciclo 3 se mostrarán aquí.',
+  'cpmai.noCerts': 'Próximamente — las primeras certificaciones del ciclo actual se mostrarán aquí.',
   'cpmai.viewBadge': 'Ver badge →',
 
   // ── Team ──
@@ -298,9 +298,9 @@ const esLATAM: Record<string, string> = {
   'team.title': 'Nuestro Equipo',
   'team.subtitle': 'Investigadores, líderes y gestores unidos en la intersección IA + GP.',
   'team.leaders': 'Líderes de Línea & Gestión',
-  'team.leaders.sub': 'coordinación y gobernanza · Ciclo 3',
+  'team.leaders.sub': 'coordinación y gobernanza del ciclo actual',
   'team.researchers': 'Investigadores',
-  'team.researchers.sub': 'participantes activos · Ciclo 3',
+  'team.researchers.sub': 'participantes activos del ciclo actual',
   'team.ambassadors': 'Embajadores',
   'team.ambassadors.sub': 'representación y multiplicación',
   'team.curators': 'Comité de Curaduría',
@@ -311,7 +311,7 @@ const esLATAM: Record<string, string> = {
   'team.founders.sub': 'la historia que trajo el Núcleo hasta aquí',
   'team.loading': 'Cargando equipo...',
   'team.projectTeam': 'Equipo de Proyecto',
-  'team.projectTeam.sub': 'gestión, operaciones & comunicación · Ciclo 3',
+  'team.projectTeam.sub': 'gestión, operaciones y comunicación del ciclo actual',
   'team.projectManagement': 'Gerencia de Proyecto (Nivel 2)',
   'team.commsTeam': 'Equipo de Comunicación',
   'team.otherChapter': 'Otros',

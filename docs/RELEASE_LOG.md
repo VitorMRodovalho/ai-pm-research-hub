@@ -1,5 +1,27 @@
 # Release Log
 
+## 2026-03-11 — v0.20.0 Wave 22: Public Cycle Copy Cleanup
+
+### Scope
+Wave 22 closes another small public-home drift point by removing the last fixed `Cycle 3` labels from visible home copy where runtime cycle metadata is not yet available.
+
+### Public Home Copy Cleanup
+- **`src/i18n/pt-BR.ts`**, **`src/i18n/en-US.ts`**, **`src/i18n/es-LATAM.ts`**: The hero badge, CPMAI empty-state message, and Team section subtitles now refer generically to the current cycle instead of hardcoding `Cycle 3`.
+
+### Governance / Regression
+- **`tests/ui-stabilization.test.mjs`**: Added a regression check ensuring the old public `Cycle/Ciclo 3` strings removed in this wave do not return.
+- **Backlog / governance / permissions / README** updated to reflect that this wave changes public copy only, with no ACL or site-hierarchy impact.
+
+### Files Changed
+- `src/i18n/pt-BR.ts`, `src/i18n/en-US.ts`, `src/i18n/es-LATAM.ts`
+- `tests/ui-stabilization.test.mjs`
+- `backlog-wave-planning-updated.md`, `docs/RELEASE_LOG.md`, `docs/GOVERNANCE_CHANGELOG.md`, `docs/PERMISSIONS_MATRIX.md`, `README.md`
+
+### Audit Results
+- Build: clean | Tests: 24/24 | Browser guard: OK | Smoke: routes OK
+
+---
+
 ## 2026-03-11 — v0.19.0 Wave 21: Resources Runtime Fallback Alignment
 
 ### Scope
