@@ -20,14 +20,13 @@
 
 ### Visão do Frontend Sênior
 - **Dados estáticos demais:** `data/tribes.ts`, `data/kpis.ts`, `data/trail.ts`, `ResourcesSection.astro` inline — quebram ao mudar ciclo.
-- **Edge functions ausentes no repo:** `sync-credly-all` e `sync-attendance-points` são invocados mas não existem em `supabase/functions/` — risco de deploy irreproduzível.
+- **Edge functions:** `sync-credly-all` e `sync-attendance-points` presentes em `supabase/functions/` (verificado 2026-03-11).
 - **Fallbacks perigosos:** `2030-12-31` como deadline quando `home_schedule` vazio.
 - **Ação:** Tudo que muda com ciclo/deadline vem de DB ou config injetável; edge functions versionadas no repo.
 
 ### Visão do Backend / DevOps
 - **Integração incompleta:** Knowledge Hub (tabelas + sync) sem UI; Comms dashboard parcial.
-- **Workflows órfãos:** `sync-credly-all` chamado por GitHub Action e gamification.astro mas código não está no repositório.
-- **Ação:** Trazer `sync-credly-all` e `sync-attendance-points` para o repo; garantir deploy via CI.
+- **Workflows:** `sync-credly-all` e `sync-attendance-points` agora versionados em `supabase/functions/` (Wave 13 doc hygiene).
 
 ---
 
@@ -63,7 +62,7 @@
 
 | Local | Problema |
 |-------|----------|
-| gamification.astro | Invoca `sync-attendance-points` e `sync-credly-all` — funções **não existem no repo** |
+| gamification.astro | Invoca `sync-attendance-points` e `sync-credly-all` — ✅ funções presentes no repo |
 | ResourcesSection.astro | Array hardcoded; deveria usar `hub_resources` ou `global_links` |
 | data/tribes.ts, data/kpis.ts, data/trail.ts | Fonte estática; ciclos/datas em `admin/constants.ts` |
 | admin/index.astro | Filtros `'2026-01-01'` e mapa de ciclos hardcoded |
@@ -91,7 +90,7 @@
 
 | Item | Descrição | Owner sugerido |
 |------|-----------|----------------|
-| F1 | Trazer `sync-credly-all` e `sync-attendance-points` para `supabase/functions/` (ou documentar deploy externo) | Backend |
+| F1 | ~~Trazer sync-credly-all e sync-attendance-points~~ — ✅ Concluído | — |
 | F2 | Tabela `config_cycles` ou `group_cycles`: `code`, `label`, `start`, `end`; migrar hardcode de admin/constants | Dados |
 | F3 | `home_schedule` como fonte única para deadline; validar `select_tribe` no RPC com `selection_deadline_at` | Backend |
 | F4 | Revisar `author_id` vs `member_id` em artifacts; unificar schema | Dados |

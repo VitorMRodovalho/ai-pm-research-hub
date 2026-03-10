@@ -8,6 +8,9 @@
 
 ## LATEST UPDATE (2026-03-11)
 
+### Entregue em Wave 13
+- **W13.1 Doc Hygiene**: AGENTS.md Edge functions atualizado (sync-credly-all, sync-attendance-points presentes). PROJECT_ON_TRACK seção 3 e F1 atualizados; última verificação 2026-03-11.
+
 ### Entregue em Wave 12
 - **W12.1**: AGENTS.md "Interação com agentes", SPRINT_IMPLEMENTATION_PRACTICES ref, AGENT_BOARD_SYNC repo (ai-pm-research-hub). Rotina 5-phase documentada para iniciar e encerrar sprint.
 - **W12.2**: Workflow `release-tag.yml` — workflow_dispatch para criar tag vX.Y.Z (Semantic Versioning).
@@ -275,6 +278,27 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 
 ---
 
+## WAVE 13: Doc Hygiene — CONCLUIDA
+**Foco:** Corrigir docs obsoletos (Edge functions, PROJECT_ON_TRACK).
+
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| W13.1 | Doc Hygiene | High | Done | AGENTS.md Edge functions; PROJECT_ON_TRACK seção 3 + F1; sync-credly-all e sync-attendance-points presentes. |
+
+### Backlog futuro (deferred)
+| ID | Feature | Status | Nota |
+|----|----------|--------|------|
+| S23 | Chapter Integrations | Deferred | Design pendente. |
+| S24 | API for Chapters | Deferred | Design pendente. |
+| S-KNW7 | Gemini Extraction Pipeline | Deferred | Baixa prioridade. |
+| W13.2 | ResourcesSection → hub_resources | Partial | Já usa `hub_resources` client-side; fallback estático para SSR. Melhoria SSR deferida. |
+
+### Wave 13 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 13/13
+- **Doc hygiene**: AGENTS.md, PROJECT_ON_TRACK atualizados
+
+---
+
 ## TECHNICAL DEBT & DEVOPS
 
 | Issue | Impact | Status | Mitigation Plan |
@@ -368,6 +392,7 @@ Native Supabase-based comms metrics replaced external Looker dependency. YouTube
 - `docs/PERMISSIONS_MATRIX.md`: Up to date (2026-03-11)
 - `AGENTS.md`: Reformed (2026-03-11) — stale conventions fixed, sprint closure routine added
 - `docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md`: 5-phase routine formalized
+- `docs/project-governance/PROJECT_ON_TRACK.md`: Edge functions verificadas (Wave 13)
 - `backlog-wave-planning-updated.md`: This file — synchronized
 
 ---

@@ -111,7 +111,7 @@ See `docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md` for the full De
 - **Pages**: `src/pages/` (including `en/`, `es/`, `admin/`).
 - **Components**: `src/components/` (sections, UI, nav, attendance).
 - **Data / lib**: `src/data/`, `src/lib/` (routing, Supabase, credly, gamification, trail, admin constants, navigation config).
-- **Edge functions**: `supabase/functions/` — `verify-credly`, `sync-comms-metrics`, `sync-knowledge-insights` present; `sync-credly-all` and `sync-attendance-points` invoked but absent (see `docs/project-governance/PROJECT_ON_TRACK.md`).
+- **Edge functions**: `supabase/functions/` — verify-credly, sync-comms-metrics, sync-knowledge-insights, sync-credly-all, sync-attendance-points (13 functions total); all invoked functions present in repo.
 - **Migrations**: `supabase/migrations/` (42 applied), with supporting SQL/docs in `docs/migrations/`.
 - **Scripts**: `scripts/` — data importers (Trello boards, Google Calendar ICS, PMI volunteer CSVs, Miro links), knowledge file detective, WhatsApp NLP analysis.
 - **Data staging**: `data/` — staging area for knowledge assets and ETL pipeline.

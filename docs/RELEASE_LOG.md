@@ -1,5 +1,26 @@
 # Release Log
 
+## 2026-03-11 — v0.11.0 Wave 13: Doc Hygiene (Edge Functions)
+
+### Scope
+Wave 13 corrects obsolete documentation: AGENTS.md and PROJECT_ON_TRACK now reflect that sync-credly-all and sync-attendance-points exist in the repo.
+
+### Doc Hygiene
+- **AGENTS.md**: "Where key things live" — Edge functions list updated; sync-credly-all and sync-attendance-points marked as present (13 functions total).
+- **PROJECT_ON_TRACK**: Section 3 (Edge Functions) — all 5 functions marked present; F1 (Batch 1) marked Concluído; Frontend sem API table updated (gamification.astro OK); última verificação 2026-03-11.
+
+### ResourcesSection Verification
+- **W13.2**: ResourcesSection.astro already fetches from `hub_resources` client-side; static array is SSR fallback. Documented as Partial; SSR improvement deferred.
+
+### Files Changed
+- `AGENTS.md`, `docs/project-governance/PROJECT_ON_TRACK.md`
+- `backlog-wave-planning-updated.md` (Wave 13, LATEST UPDATE)
+
+### Audit Results
+- Build: clean | Tests: 13/13
+
+---
+
 ## 2026-03-11 — v0.10.0 Wave 12: Agent Interaction Docs, Release Workflow & Screenshots
 
 ### Scope

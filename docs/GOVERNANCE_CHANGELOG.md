@@ -1,5 +1,21 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 13: Doc Hygiene (Edge Functions)
+
+### Decisions
+
+1. **AGENTS.md and PROJECT_ON_TRACK were stale on Edge Functions**: Both documents stated sync-credly-all and sync-attendance-points were "absent" or "not in repo." They have been in supabase/functions/ since at least Wave 8. Doc hygiene corrects this to prevent future confusion and redundant work.
+
+2. **ResourcesSection already uses hub_resources**: The component has a client-side fetch from hub_resources when Supabase is available; the static array is an SSR/visitor fallback. No code change needed for Wave 13; any SSR fetch improvement is deferred.
+
+3. **PROJECT_ON_TRACK F1 marked Concluído**: The Batch 1 item "Trazer sync-credly-all e sync-attendance-points" is done. Remaining F2–F4 items stay as-is.
+
+### Process Lessons Learned
+
+1. **Periodic doc audits catch drift**: Edge functions were added to the repo but PROJECT_ON_TRACK and AGENTS.md were not updated. Wave 13 reinforces that doc hygiene should include cross-checking "on track" and "where key things live" against actual repo state.
+
+---
+
 ## 2026-03-11 — Wave 12: Agent Interaction, Release Workflow & Screenshots
 
 ### Decisions
