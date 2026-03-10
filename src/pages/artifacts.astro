@@ -51,6 +51,8 @@ const ARTIFACTS_I18N = {
   filterAll: t('artifacts.filterAll', lang),
   tagAll: t('artifacts.tagAll', lang),
   results: t('artifacts.results', lang),
+  uploadValidationTooLarge: t('upload.validation.tooLarge', lang),
+  uploadValidationInvalidType: t('upload.validation.invalidType', lang),
 };
 ---
 <BaseLayout title={t('artifacts.title', lang)} activePage="artifacts">
@@ -168,6 +170,28 @@ const ARTIFACTS_I18N = {
             <label class="text-[12px] font-semibold text-slate-500">{t('artifacts.modal.labelDesc', lang)}</label>
             <textarea id="art-desc" rows="3" placeholder={t('artifacts.modal.placeholderDesc', lang)}
                       class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy resize-y"></textarea>
+          </div>
+          <div class="flex flex-col gap-1.5 sm:col-span-2">
+            <label class="text-[12px] font-semibold text-slate-500">{t('upload.label.orFile', lang)}</label>
+            <input type="file" id="art-file" accept=".pdf,.pptx,.png,.jpg,.jpeg"
+                   class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
+            <div id="art-file-error" class="hidden text-[11px] text-crimson font-semibold"></div>
+          </div>
+        </div>
+        <!-- Best Practices Callout -->
+        <div class="mt-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg p-3">
+          <div class="flex gap-2.5">
+            <div class="flex-shrink-0 w-6 h-6 bg-emerald-100 rounded-md flex items-center justify-center text-emerald-600">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+              <h4 class="text-[11px] font-bold text-emerald-800 mb-1">{t('artifacts.bestPractices.title', lang)}</h4>
+              <div class="text-[10.5px] text-emerald-700 space-y-0.5">
+                <p class="m-0"><span class="font-semibold text-emerald-600">&#x2713;</span> {t('artifacts.bestPractices.valid', lang)}</p>
+                <p class="m-0"><span class="font-semibold text-crimson">&#x2717;</span> {t('artifacts.bestPractices.invalid', lang)}</p>
+                <p class="m-0 mt-1 text-emerald-600 italic">{t('artifacts.bestPractices.tip', lang)}</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -505,6 +529,37 @@ const ARTIFACTS_I18N = {
   }
 
   // ── SUBMIT / EDIT MODAL ──
+  const ART_MAX_FILE_SIZE = 15 * 1024 * 1024;
+  const ART_ALLOWED_EXTS = ['.pdf', '.pptx', '.png', '.jpg', '.jpeg'];
+  const ART_MIME_MAP: Record<string, string> = {
+    '.pdf': 'application/pdf',
+    '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+  };
+
+  function validateArtFile(file: File): string | null {
+    const ext = '.' + file.name.split('.').pop()!.toLowerCase();
+    if (!ART_ALLOWED_EXTS.includes(ext)) return I18N.uploadValidationInvalidType || 'Invalid file type.';
+    if (file.size > ART_MAX_FILE_SIZE) return I18N.uploadValidationTooLarge || 'File exceeds 15 MB.';
+    return null;
+  }
+
+  const artFileInput = document.getElementById('art-file') as HTMLInputElement | null;
+  const artFileError = document.getElementById('art-file-error') as HTMLElement | null;
+  if (artFileInput) {
+    artFileInput.addEventListener('change', () => {
+      const file = artFileInput.files?.[0];
+      if (!file) { artFileError?.classList.add('hidden'); return; }
+      const err = validateArtFile(file);
+      if (err) {
+        if (artFileError) { artFileError.textContent = err; artFileError.classList.remove('hidden'); }
+        artFileInput.value = '';
+      } else {
+        artFileError?.classList.add('hidden');
+      }
+    });
+  }
+
   function openSubmitModal() {
     (document.getElementById('art-id') as HTMLInputElement).value = '';
     (document.getElementById('art-title') as HTMLInputElement).value = '';
@@ -512,6 +567,8 @@ const ARTIFACTS_I18N = {
     (document.getElementById('art-tribe') as HTMLSelectElement).value = MEMBER?.tribe_id?.toString() || '';
     (document.getElementById('art-url') as HTMLInputElement).value = '';
     (document.getElementById('art-desc') as HTMLTextAreaElement).value = '';
+    if (artFileInput) artFileInput.value = '';
+    artFileError?.classList.add('hidden');
     document.getElementById('modal-artifact-title')!.textContent = I18N.modalSubmitTitle;
     const modal = document.getElementById('modal-artifact')!;
     modal.classList.remove('hidden');
@@ -580,10 +637,28 @@ const ARTIFACTS_I18N = {
     const title = (document.getElementById('art-title') as HTMLInputElement).value.trim();
     const type = (document.getElementById('art-type') as HTMLSelectElement).value;
     const tribeVal = (document.getElementById('art-tribe') as HTMLSelectElement).value;
-    const url = (document.getElementById('art-url') as HTMLInputElement).value.trim() || null;
+    let url: string | null = (document.getElementById('art-url') as HTMLInputElement).value.trim() || null;
     const desc = (document.getElementById('art-desc') as HTMLTextAreaElement).value.trim() || null;
+    const fileInput = document.getElementById('art-file') as HTMLInputElement | null;
+    const file = fileInput?.files?.[0] || null;
 
     if (!title) { toast(I18N.msgTitleRequired, 'error'); return; }
+
+    if (file) {
+      const validationErr = validateArtFile(file);
+      if (validationErr) { toast(validationErr, 'error'); return; }
+
+      const ext = '.' + file.name.split('.').pop()!.toLowerCase();
+      const contentType = ART_MIME_MAP[ext] || 'application/octet-stream';
+      const fileName = Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const storagePath = 'knowledge-pdfs/' + fileName;
+
+      const { error: uploadErr } = await sb.storage.from('documents').upload(storagePath, file, { contentType, upsert: false });
+      if (uploadErr) { toast(I18N.msgErrorPrefix + uploadErr.message, 'error'); return; }
+
+      const { data: urlData } = sb.storage.from('documents').getPublicUrl(storagePath);
+      url = urlData?.publicUrl || url;
+    }
 
     const payload = {
       title, type, url, description: desc,
@@ -594,7 +669,6 @@ const ARTIFACTS_I18N = {
 
     let error;
     if (id) {
-      // Update existing
       const res = await sb.from('artifacts').update({
         title, type, url, description: desc,
         tribe_id: tribeVal ? parseInt(tribeVal) : null,
@@ -602,7 +676,6 @@ const ARTIFACTS_I18N = {
       }).eq('id', id);
       error = res.error;
     } else {
-      // Insert new
       const res = await sb.from('artifacts').insert(payload);
       error = res.error;
     }

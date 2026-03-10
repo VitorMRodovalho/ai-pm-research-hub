@@ -116,6 +116,8 @@ const ADMIN_I18N = {
   tierMyTribe: t('admin.tier.myTribe', lang),
   tierExecTitle: t('admin.tier.execTitle', lang),
   tierExecSubtitle: t('admin.tier.execSubtitle', lang),
+  uploadValidationTooLarge: t('upload.validation.tooLarge', lang),
+  uploadValidationInvalidType: t('upload.validation.invalidType', lang),
 };
 ---
 <BaseLayout title={t('admin.meta', lang)} activePage="admin">
@@ -617,8 +619,26 @@ const ADMIN_I18N = {
           </div>
         </div>
 
+        <!-- Best Practices Banner -->
+        <div class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 mt-4 mb-4">
+          <div class="flex gap-3">
+            <div class="flex-shrink-0 w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center text-amber-600">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div>
+              <h4 class="text-[.78rem] font-bold text-amber-800 mb-1.5">{t('upload.bestPractices.title', lang)}</h4>
+              <ul class="text-[.68rem] text-amber-700 space-y-1 list-none p-0 m-0">
+                <li class="flex items-start gap-1.5"><span class="text-amber-500 mt-0.5">&#x2022;</span> <span>{t('upload.bestPractices.maxSize', lang)}</span></li>
+                <li class="flex items-start gap-1.5"><span class="text-amber-500 mt-0.5">&#x2022;</span> <span>{t('upload.bestPractices.compress', lang)}</span></li>
+                <li class="flex items-start gap-1.5"><span class="text-amber-500 mt-0.5">&#x2022;</span> <span>{t('upload.bestPractices.copyright', lang)}</span></li>
+                <li class="flex items-start gap-1.5"><span class="text-amber-500 mt-0.5">&#x2022;</span> <span>{t('upload.bestPractices.formats', lang)}</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
         <!-- PDF Upload Section -->
-        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mt-4">
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <div class="px-5 py-3.5 border-b border-slate-200">
             <h3 class="text-sm font-bold text-navy">&#x1F4C4; Upload de PDFs (Atas e Referências)</h3>
             <p class="text-[.68rem] text-slate-400 mt-0.5">Envie PDFs para o Supabase Storage e vincule automaticamente ao Workspace.</p>
@@ -639,8 +659,9 @@ const ADMIN_I18N = {
                 </select>
               </div>
               <div class="sm:col-span-2">
-                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Arquivo PDF</label>
-                <input type="file" id="pdf-file" accept=".pdf" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem] bg-white">
+                <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">{t('upload.label.file', lang)}</label>
+                <input type="file" id="pdf-file" accept=".pdf,.pptx,.png,.jpg,.jpeg" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem] bg-white">
+                <div id="pdf-file-error" class="hidden mt-1 text-[.65rem] text-crimson font-semibold"></div>
               </div>
               <div>
                 <button type="button" id="pdf-upload-btn" class="px-4 py-2 bg-teal text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
@@ -1969,12 +1990,48 @@ const ADMIN_I18N = {
     });
   }
 
-  // ── P3: PDF Upload Handler ──
+  // ── P3: PDF Upload Handler (with file validation) ──
+  const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
+  const ALLOWED_EXTS = ['.pdf', '.pptx', '.png', '.jpg', '.jpeg'];
+  const MIME_MAP: Record<string, string> = {
+    '.pdf': 'application/pdf',
+    '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+  };
+
+  function validateFileInput(file: File): string | null {
+    const ext = '.' + file.name.split('.').pop()!.toLowerCase();
+    if (!ALLOWED_EXTS.includes(ext)) return ADMIN_I18N.uploadValidationInvalidType || 'Invalid file type.';
+    if (file.size > MAX_FILE_SIZE) return ADMIN_I18N.uploadValidationTooLarge || 'File exceeds 15 MB.';
+    return null;
+  }
+
+  // Live validation on file input change
+  const pdfFileInput = document.getElementById('pdf-file') as HTMLInputElement | null;
+  const pdfFileError = document.getElementById('pdf-file-error') as HTMLElement | null;
+  const pdfUploadBtn = document.getElementById('pdf-upload-btn') as HTMLButtonElement | null;
+  if (pdfFileInput) {
+    pdfFileInput.addEventListener('change', () => {
+      const file = pdfFileInput.files?.[0];
+      if (!file) { pdfFileError?.classList.add('hidden'); if (pdfUploadBtn) pdfUploadBtn.disabled = false; return; }
+      const err = validateFileInput(file);
+      if (err) {
+        if (pdfFileError) { pdfFileError.textContent = err; pdfFileError.classList.remove('hidden'); }
+        if (pdfUploadBtn) { pdfUploadBtn.disabled = true; pdfUploadBtn.classList.add('opacity-50', 'cursor-not-allowed'); }
+        pdfFileInput.value = '';
+      } else {
+        if (pdfFileError) pdfFileError.classList.add('hidden');
+        if (pdfUploadBtn) { pdfUploadBtn.disabled = false; pdfUploadBtn.classList.remove('opacity-50', 'cursor-not-allowed'); }
+      }
+    });
+  }
+
   if (!(window as any).__pdfUploadBound) {
     (window as any).__pdfUploadBound = true;
-    const pdfBtn = document.getElementById('pdf-upload-btn');
-    if (pdfBtn) {
-      pdfBtn.addEventListener('click', async () => {
+    if (pdfUploadBtn) {
+      pdfUploadBtn.addEventListener('click', async () => {
         if (!ensureAdminAction()) return;
         const titleEl = document.getElementById('pdf-title') as HTMLInputElement;
         const typeEl = document.getElementById('pdf-type') as HTMLSelectElement;
@@ -1983,8 +2040,13 @@ const ADMIN_I18N = {
 
         const title = titleEl?.value.trim();
         const file = fileEl?.files?.[0];
-        if (!title || !file) { toast('Preencha o titulo e selecione um arquivo PDF.', 'error'); return; }
-        if (!file.name.toLowerCase().endsWith('.pdf')) { toast('Apenas arquivos PDF sao aceitos.', 'error'); return; }
+        if (!title || !file) { toast('Preencha o titulo e selecione um arquivo.', 'error'); return; }
+
+        const validationErr = validateFileInput(file);
+        if (validationErr) { toast(validationErr, 'error'); return; }
+
+        const ext = '.' + file.name.split('.').pop()!.toLowerCase();
+        const contentType = MIME_MAP[ext] || 'application/octet-stream';
 
         statusEl.classList.remove('hidden');
         statusEl.textContent = 'Enviando...';
@@ -1993,7 +2055,7 @@ const ADMIN_I18N = {
         try {
           const fileName = Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
           const storagePath = 'knowledge-pdfs/' + fileName;
-          const { error: uploadErr } = await sb.storage.from('documents').upload(storagePath, file, { contentType: 'application/pdf', upsert: false });
+          const { error: uploadErr } = await sb.storage.from('documents').upload(storagePath, file, { contentType, upsert: false });
           if (uploadErr) { statusEl.textContent = 'Erro no upload: ' + uploadErr.message; statusEl.className = 'mt-3 text-[.72rem] text-crimson'; return; }
 
           const { data: urlData } = sb.storage.from('documents').getPublicUrl(storagePath);
@@ -2009,7 +2071,7 @@ const ADMIN_I18N = {
           });
           if (insertErr) { statusEl.textContent = 'Erro ao registrar: ' + insertErr.message; statusEl.className = 'mt-3 text-[.72rem] text-crimson'; return; }
 
-          statusEl.textContent = 'PDF enviado e vinculado com sucesso!';
+          statusEl.textContent = 'Arquivo enviado e vinculado com sucesso!';
           statusEl.className = 'mt-3 text-[.72rem] text-emerald-600';
           titleEl.value = ''; fileEl.value = '';
           loadKnowledgeAssets();
