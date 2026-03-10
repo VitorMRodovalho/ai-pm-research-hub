@@ -37,7 +37,7 @@ interface FileRecord {
   extension: string;
   matchedKeywords: string[];
   suggestedType: string;
-  suggestedCycle: string;
+  suggestedCycle: number;
   suggestedTribeId: number | null;
   registeredInArtifacts: boolean;
   artifactId: string | null;
@@ -53,10 +53,10 @@ function inferTribeFromFilename(name: string): number | null {
   return null;
 }
 
-function inferCycleFromFilename(name: string): string {
-  if (/2024|ciclo[- _]?1/i.test(name)) return 'cycle_1';
-  if (/2025-0[1-6]|ciclo[- _]?2/i.test(name)) return 'cycle_2';
-  return 'cycle_3';
+function inferCycleFromFilename(name: string): number {
+  if (/2024|ciclo[- _]?1/i.test(name)) return 1;
+  if (/2025-0[1-6]|ciclo[- _]?2/i.test(name)) return 2;
+  return 3;
 }
 
 async function main() {
