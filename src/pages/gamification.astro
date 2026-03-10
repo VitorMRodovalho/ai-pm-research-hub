@@ -244,9 +244,9 @@ const GAM_I18N = {
         <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
           <h3 class="text-sm font-bold text-navy">{t('gamification.lb.title', lang)}</h3>
           <div class="inline-flex items-center gap-1.5 bg-slate-50 rounded-full p-1 border border-slate-200">
-            <button id="lb-mode-cycle" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-navy text-white border-0 cursor-pointer"
+            <button id="lb-mode-cycle" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-transparent text-slate-500 border-0 cursor-pointer"
                     data-action="set-leaderboard-mode" data-mode="cycle">{t('gamification.mode.cycle', lang)}</button>
-            <button id="lb-mode-lifetime" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-transparent text-slate-500 border-0 cursor-pointer"
+            <button id="lb-mode-lifetime" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-navy text-white border-0 cursor-pointer"
                     data-action="set-leaderboard-mode" data-mode="lifetime">{t('gamification.mode.lifetime', lang)}</button>
           </div>
         </div>
@@ -373,7 +373,7 @@ const GAM_I18N = {
   let sb: any = null;
   let MEMBER: any = null;
   let leaderboardData: any[] = [];
-  let leaderboardMode: 'cycle' | 'lifetime' = 'cycle';
+  let leaderboardMode: 'cycle' | 'lifetime' = 'lifetime';
   let tribeMode: 'cycle' | 'lifetime' = 'cycle';
   let lifetimePointsByMember: Record<string, number> = {};
   let trailProgressByMember = new Map();
@@ -477,19 +477,22 @@ const GAM_I18N = {
   ];
 
   // ── TABS ──
-  function setLeaderboardMode(mode: 'cycle' | 'lifetime') {
+  async function setLeaderboardMode(mode: 'cycle' | 'lifetime') {
     leaderboardMode = mode;
     const cycleBtn = document.getElementById('lb-mode-cycle');
     const lifeBtn = document.getElementById('lb-mode-lifetime');
     if (cycleBtn && lifeBtn) {
       const cycleOn = mode === 'cycle';
       cycleBtn.classList.toggle('bg-navy', cycleOn);
+      cycleBtn.classList.toggle('bg-transparent', !cycleOn);
       cycleBtn.classList.toggle('text-white', cycleOn);
       cycleBtn.classList.toggle('text-slate-500', !cycleOn);
       lifeBtn.classList.toggle('bg-navy', !cycleOn);
+      lifeBtn.classList.toggle('bg-transparent', cycleOn);
       lifeBtn.classList.toggle('text-white', !cycleOn);
       lifeBtn.classList.toggle('text-slate-500', cycleOn);
     }
+    await ensureLifetimePointsLoaded();
     renderLeaderboard();
   }
 
@@ -517,9 +520,11 @@ const GAM_I18N = {
     if (cycleBtn && lifeBtn) {
       const cycleOn = mode === 'cycle';
       cycleBtn.classList.toggle('bg-navy', cycleOn);
+      cycleBtn.classList.toggle('bg-transparent', !cycleOn);
       cycleBtn.classList.toggle('text-white', cycleOn);
       cycleBtn.classList.toggle('text-slate-500', !cycleOn);
       lifeBtn.classList.toggle('bg-navy', !cycleOn);
+      lifeBtn.classList.toggle('bg-transparent', cycleOn);
       lifeBtn.classList.toggle('text-white', !cycleOn);
       lifeBtn.classList.toggle('text-slate-500', cycleOn);
     }

@@ -1,5 +1,68 @@
 # Release Log
 
+## 2026-03-10 — v0.3.0 CPO Production Audit: Profile, Gamification, Nav & IA Hotfixes
+
+### Scope
+Six hotfixes and UX adjustments identified during CPO production audit, targeting
+profile data persistence, gamification toggle behavior, tribe discovery UX, and
+information architecture (help, onboarding, webinars).
+
+### Changes
+
+**S-HF10 — Credly URL Persistence (Profile)**
+- `saveSelf()` now preserves existing `credly_url` when the field is not modified
+- `verifyCredly()` persists URL via `member_self_update` RPC before invoking the edge function
+- Full flow: enter URL, verify, save — URL survives page navigation
+
+**S-HF11 — Gamification Toggle (XP Vitalicio vs Ciclo Atual)**
+- `setLeaderboardMode()` made async; calls `ensureLifetimePointsLoaded()` before re-render
+- Fixed `bg-transparent` / `bg-navy` toggle conflict on both leaderboard and tribe ranking buttons
+- Default view changed from "Ciclo Atual" to "XP Vitalicio" (lifetime)
+
+**S-UX2 — Universal Tribe Visibility**
+- Tribe dropdown (desktop, mobile, drawer) now queries ALL tribes (removed `.eq('is_active', true)`)
+- Inactive tribes render with `opacity-50`, lock icon, and tooltip "Tribo Fechada"
+- Active tribes remain fully interactive with WhatsApp links
+
+**S-IA1 — Help Page Made Public**
+- `/admin/help` migrated to `/help` with `minTier: 'member'`
+- LGPD/privacy topics hidden client-side for non-admin users
+- `/admin/help` returns 301 redirect to `/help`
+
+**S-IA2 — Onboarding Moved to Profile Drawer**
+- Removed from main navbar (`section: 'main'`)
+- Relocated to profile drawer (`section: 'drawer'`, `group: 'profile'`)
+- `requiresAuth: true`, `minTier: 'member'`
+
+**S-IA3 — Admin Webinars Placeholder**
+- `admin/webinars.astro` now renders "Em Breve / Módulo em Construção" UI
+- Three feature preview cards (live sessions, recordings, certificates)
+- Admin-gated access check
+
+### Files changed
+- `src/pages/profile.astro` (Credly persistence logic)
+- `src/pages/gamification.astro` (toggle fix + default mode)
+- `src/components/nav/Nav.astro` (universal tribes + drawer icons)
+- `src/components/nav/AdminNav.astro` (help link update)
+- `src/lib/navigation.config.ts` (help, onboarding, drawer routing)
+- `src/pages/help.astro` (NEW — public help page)
+- `src/pages/admin/help.astro` (301 redirect)
+- `src/pages/admin/webinars.astro` (coming soon UI)
+- `backlog-wave-planning-updated.md` (session log)
+- `.gitignore` (consolidated `data/` exclusion)
+- `docs/PERMISSIONS_MATRIX.md` (updated matrix + code mapping)
+- `docs/GOVERNANCE_CHANGELOG.md` (IA decisions)
+
+### Migrations
+None required. All changes are frontend/navigation only.
+
+### Validation
+- `npm test`: 13/13 passing
+- `npm run build`: 0 errors
+- Tag: `v0.3.0`
+
+---
+
 ## 2026-03-10 — Data Science: Unified Temporal Conversion KPI + DB Enrichment (1.2 v2)
 
 ### Scope

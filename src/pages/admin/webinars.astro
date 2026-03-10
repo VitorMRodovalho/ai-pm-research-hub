@@ -1,0 +1,80 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import AdminNav from '../../components/nav/AdminNav.astro';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+---
+
+<BaseLayout title={t('nav.adminWebinars', lang)} activePage="admin">
+  <div class="max-w-[1200px] mx-auto px-4 pt-6">
+    <AdminNav activeSub="webinars" lang={lang} />
+  </div>
+  <div id="webinars-content" class="max-w-[900px] mx-auto px-4 pb-12">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="p-10 text-center">
+        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-purple/10 flex items-center justify-center">
+          <svg class="w-10 h-10 text-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
+        </div>
+
+        <h1 class="text-2xl font-extrabold text-navy mb-2">Webinars</h1>
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-50 border border-amber-200 mb-4">
+          <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+          <span class="text-sm font-semibold text-amber-700">Em Breve</span>
+        </div>
+
+        <p class="text-slate-500 text-sm max-w-md mx-auto mb-8">
+          O modulo de Webinars esta em desenvolvimento. Em breve voce podera gerenciar,
+          agendar e acompanhar webinars diretamente pela plataforma.
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-lg mx-auto">
+          <div class="bg-slate-50 rounded-xl p-4 text-center">
+            <div class="text-2xl mb-2">📅</div>
+            <div class="text-[.75rem] font-semibold text-slate-600">Agendamento</div>
+            <div class="text-[.65rem] text-slate-400 mt-1">Planeje e agende webinars com calendario integrado</div>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-4 text-center">
+            <div class="text-2xl mb-2">📊</div>
+            <div class="text-[.75rem] font-semibold text-slate-600">Analytics</div>
+            <div class="text-[.65rem] text-slate-400 mt-1">Metricas de audiencia e engajamento</div>
+          </div>
+          <div class="bg-slate-50 rounded-xl p-4 text-center">
+            <div class="text-2xl mb-2">🎓</div>
+            <div class="text-[.75rem] font-semibold text-slate-600">Certificados</div>
+            <div class="text-[.65rem] text-slate-400 mt-1">Emissao automatica de certificados de participacao</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="webinars-denied" class="hidden max-w-[900px] mx-auto px-4 py-16 text-center">
+    <div class="text-4xl mb-3">🔒</div>
+    <p class="font-semibold text-slate-600">Acesso restrito a administradores.</p>
+    <a href="/" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
+      Voltar
+    </a>
+  </div>
+</BaseLayout>
+
+<script>
+  import { resolveTierFromMember, hasMinimumTier } from '../../lib/admin/constants';
+
+  function boot() {
+    const member = (window as any).navGetMember?.();
+    if (!member) { window.addEventListener('nav:member', () => boot()); return; }
+
+    const tier = resolveTierFromMember(member);
+    if (!hasMinimumTier(tier, 'admin')) {
+      document.getElementById('webinars-content')?.classList.add('hidden');
+      document.getElementById('webinars-denied')?.classList.remove('hidden');
+    }
+  }
+
+  boot();
+</script>

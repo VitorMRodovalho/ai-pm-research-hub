@@ -51,7 +51,7 @@ export const NAV_ITEMS: NavItem[] = [
 
   // ─── Tool pages (public) ───
   { key: 'workspace',    labelKey: 'nav.workspace',    href: '/workspace',    minTier: 'visitor', requiresAuth: false, section: 'main', group: 'tools' },
-  { key: 'onboarding',   labelKey: 'nav.onboarding',   href: '/onboarding',   minTier: 'visitor', requiresAuth: false, section: 'main', group: 'tools' },
+  { key: 'onboarding',   labelKey: 'nav.onboarding',   href: '/onboarding',   minTier: 'member',  requiresAuth: true,  section: 'drawer', group: 'profile' },
   { key: 'artifacts',    labelKey: 'nav.artifacts',     href: '/artifacts',    minTier: 'visitor', requiresAuth: false, section: 'main', group: 'tools' },
   { key: 'gamification', labelKey: 'nav.gamification',  href: '/gamification', minTier: 'visitor', requiresAuth: false, section: 'main', group: 'tools' },
   { key: 'presentations', labelKey: 'nav.presentations', href: '/presentations', minTier: 'member', requiresAuth: true, section: 'both', group: 'tools' },
@@ -68,7 +68,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'admin-comms',     labelKey: 'nav.adminComms',     href: '/admin/comms',     minTier: 'admin',    requiresAuth: true, section: 'drawer', group: 'admin-sub', allowedDesignations: ['comms_leader', 'comms_member'] },
   { key: 'admin-webinars', labelKey: 'nav.adminWebinars', href: '/admin/webinars', minTier: 'admin',    requiresAuth: true, section: 'drawer', group: 'admin-sub' },
   { key: 'admin-curatorship', labelKey: 'nav.adminCuratorship', href: '/admin/curatorship', minTier: 'observer', requiresAuth: true, section: 'drawer', group: 'admin-sub' },
-  { key: 'admin-help',     labelKey: 'nav.adminHelp',     href: '/admin/help',     minTier: 'leader',   requiresAuth: true, section: 'drawer', group: 'admin-sub' },
+  { key: 'help',            labelKey: 'nav.adminHelp',     href: '/help',           minTier: 'member',   requiresAuth: true, section: 'drawer', group: 'member' },
 ];
 
 export function isItemVisible(item: NavItem, tier: AccessTier, designations: string[], isLoggedIn: boolean): boolean {

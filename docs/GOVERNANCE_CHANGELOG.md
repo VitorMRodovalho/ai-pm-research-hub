@@ -1,5 +1,29 @@
 # Governance Changelog
 
+## 2026-03-10 — CPO Production Audit: Information Architecture restructure
+
+### Decisions
+
+1. **Help page made public**: `/admin/help` migrated to `/help` with `minTier: member`. LGPD-sensitive topics (privacy, data protection) are hidden client-side for non-admin users. The old `/admin/help` route returns a 301 redirect to `/help`.
+
+2. **Onboarding removed from main navbar**: Moved to the profile drawer (`section: 'drawer'`, `group: 'profile'`). Requires authentication (`minTier: member`). This reduces main nav clutter without removing the feature.
+
+3. **Universal tribe visibility**: The tribe dropdown now queries ALL tribes (active + inactive). Inactive or legacy tribes render with reduced opacity, a lock icon, and tooltip "Tribo Fechada". Members can discover tribes they cannot currently access.
+
+4. **Webinars placeholder**: `admin/webinars.astro` now renders a "Coming Soon / Módulo em Construção" UI with feature preview cards instead of a blank page. Admin-gated.
+
+### Why
+
+CPO audit revealed that the information architecture had UX friction: help was admin-locked despite being useful to all members, onboarding polluted the main nav, tribe discovery was limited to active tribes only, and the webinars page was blank in production.
+
+### Affected governance documents
+
+- `docs/PERMISSIONS_MATRIX.md` updated (help, onboarding, webinars rows + code mapping)
+- `backlog-wave-planning-updated.md` updated (S-HF10 through S-IA3)
+- `src/lib/navigation.config.ts` is the code source of truth for these changes
+
+---
+
 ## 2026-03-07 — Documentation and release governance reset
 
 ### Decision

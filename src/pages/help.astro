@@ -1,0 +1,143 @@
+---
+/**
+ * help.astro — Central de Ajuda (public for all logged-in members)
+ * LGPD and Privacy topics are hidden for non-admin users.
+ * Migrated from /admin/help (W4.10) to /help for universal access.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+
+interface HelpTopic {
+  icon: string;
+  titleKey: string;
+  items: { titleKey: string; bodyKey: string }[];
+  adminOnly?: boolean;
+}
+
+const topics: HelpTopic[] = [
+  {
+    icon: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>',
+    titleKey: 'admin.help.lgpd.title',
+    adminOnly: true,
+    items: [
+      { titleKey: 'admin.help.lgpd.q1', bodyKey: 'admin.help.lgpd.a1' },
+      { titleKey: 'admin.help.lgpd.q2', bodyKey: 'admin.help.lgpd.a2' },
+      { titleKey: 'admin.help.lgpd.q3', bodyKey: 'admin.help.lgpd.a3' },
+    ],
+  },
+  {
+    icon: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>',
+    titleKey: 'admin.help.broadcast.title',
+    items: [
+      { titleKey: 'admin.help.broadcast.q1', bodyKey: 'admin.help.broadcast.a1' },
+      { titleKey: 'admin.help.broadcast.q2', bodyKey: 'admin.help.broadcast.a2' },
+      { titleKey: 'admin.help.broadcast.q3', bodyKey: 'admin.help.broadcast.a3' },
+    ],
+  },
+  {
+    icon: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>',
+    titleKey: 'admin.help.whatsapp.title',
+    items: [
+      { titleKey: 'admin.help.whatsapp.q1', bodyKey: 'admin.help.whatsapp.a1' },
+      { titleKey: 'admin.help.whatsapp.q2', bodyKey: 'admin.help.whatsapp.a2' },
+    ],
+  },
+  {
+    icon: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>',
+    titleKey: 'admin.help.privacy.title',
+    adminOnly: true,
+    items: [
+      { titleKey: 'admin.help.privacy.q1', bodyKey: 'admin.help.privacy.a1' },
+      { titleKey: 'admin.help.privacy.q2', bodyKey: 'admin.help.privacy.a2' },
+    ],
+  },
+];
+
+const GP_CONTACT = 'https://wa.me/5562999999999';
+---
+
+<BaseLayout title={t('admin.help.meta', lang)} activePage="help">
+  <div class="max-w-[900px] mx-auto px-4 py-8 pb-12">
+    <div class="mb-8">
+      <h1 class="text-2xl font-extrabold text-navy">{t('admin.help.title', lang)}</h1>
+      <p class="text-sm text-slate-500 mt-1">{t('admin.help.subtitle', lang)}</p>
+    </div>
+
+    <div class="space-y-6" id="help-topics">
+      {topics.map((topic, ti) => (
+        <section
+          class={`bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm ${topic.adminOnly ? 'help-admin-only hidden' : ''}`}
+          data-admin-only={topic.adminOnly ? 'true' : undefined}
+        >
+          <div class="flex items-center gap-3 px-5 py-4 bg-slate-50 border-b border-slate-200">
+            <div class="text-navy" set:html={topic.icon} />
+            <h2 class="text-[15px] font-bold text-navy">{t(topic.titleKey, lang)}</h2>
+          </div>
+          <div class="divide-y divide-slate-100">
+            {topic.items.map((item, qi) => (
+              <details class="group" data-topic={`${ti}-${qi}`}>
+                <summary class="flex items-center justify-between px-5 py-3.5 cursor-pointer select-none hover:bg-slate-50 transition-colors">
+                  <span class="text-[13.5px] font-semibold text-slate-700 pr-4">{t(item.titleKey, lang)}</span>
+                  <svg class="w-4 h-4 text-slate-400 flex-shrink-0 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </summary>
+                <div class="px-5 pb-4 text-[13px] text-slate-600 leading-relaxed" set:html={t(item.bodyKey, lang)} />
+              </details>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+
+    <div class="mt-10 bg-gradient-to-r from-navy to-slate-800 rounded-2xl p-6 text-center">
+      <p class="text-white/80 text-sm mb-3">{t('admin.help.contactText', lang)}</p>
+      <a href={GP_CONTACT} target="_blank" rel="noopener noreferrer"
+         class="inline-flex items-center gap-2 px-5 py-2.5 bg-green-500 hover:bg-green-600 text-white font-semibold text-sm rounded-xl no-underline transition-all shadow-lg">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 01-4.257-1.223l-.306-.182-2.87.853.853-2.87-.182-.306A8 8 0 1112 20z"/></svg>
+        {t('admin.help.contactBtn', lang)}
+      </a>
+    </div>
+  </div>
+
+  <div id="help-denied" class="hidden max-w-[900px] mx-auto px-4 py-16 text-center">
+    <div class="text-4xl mb-3">🔒</div>
+    <p class="font-semibold text-slate-600">{t('admin.help.denied', lang)}</p>
+    <a href="/" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
+      {t('admin.help.backHome', lang)}
+    </a>
+  </div>
+</BaseLayout>
+
+<script>
+  import { resolveTierFromMember, hasMinimumTier } from '../lib/admin/constants';
+
+  function boot() {
+    const member = (window as any).navGetMember?.();
+    if (!member) { window.addEventListener('nav:member', () => boot()); return; }
+
+    const tier = resolveTierFromMember(member);
+    const isAdmin = hasMinimumTier(tier, 'admin');
+
+    const topics = document.getElementById('help-topics');
+    const denied = document.getElementById('help-denied');
+    const contact = topics?.parentElement?.querySelector('.bg-gradient-to-r');
+
+    if (!hasMinimumTier(tier, 'member')) {
+      topics?.classList.add('hidden');
+      (contact as HTMLElement)?.classList.add('hidden');
+      denied?.classList.remove('hidden');
+      return;
+    }
+
+    if (isAdmin) {
+      document.querySelectorAll('.help-admin-only').forEach(el => {
+        el.classList.remove('hidden');
+      });
+    }
+  }
+
+  boot();
+</script>

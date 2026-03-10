@@ -8,7 +8,15 @@
 
 ## LATEST UPDATE (2026-03-10)
 
-### Entregue nesta sessao
+### Entregue nesta sessao (CPO Production Audit)
+- **S-HF10 Credly URL Persistence**: `saveSelf()` agora preserva `credly_url` existente quando campo nao e modificado; `verifyCredly()` persiste URL via `member_self_update` antes da verificacao. Fluxo completo: inserir URL → verificar → salvar funciona sem perda.
+- **S-HF11 Gamification Toggle XP Vitalicio**: `setLeaderboardMode()` agora chama `ensureLifetimePointsLoaded()` antes de re-render; fix de conflito `bg-transparent`/`bg-navy` nos botoes de toggle (leaderboard + tribe ranking).
+- **S-UX2 Explorar Tribos Universal**: Dropdown de tribos (desktop/drawer/mobile) carrega TODAS as tribos; tribos inativas aparecem com opacidade reduzida + icone de cadeado + tooltip "Tribo Fechada".
+- **S-IA1 Help Publico**: `/admin/help` migrado para `/help` (publico para membros logados); topicos LGPD/Privacy ocultos para nao-admins; `/admin/help` redireciona 301 para `/help`.
+- **S-IA2 Onboarding no Drawer**: Removido da navbar principal; movido para o Profile Drawer (grupo 'profile', `requiresAuth: true`, `minTier: 'member'`).
+- **S-IA3 Webinars Placeholder**: `admin/webinars.astro` preenchido com UI "Em Breve" com 3 cards de features planejadas + access check admin.
+
+### Entregue em sessoes anteriores (2026-03-09 a 2026-03-10)
 - **UX Housekeeping**: Upload best practices banners (admin + artifacts), file validation 15MB, formatos expandidos (.pdf/.pptx/.png/.jpg)
 - **ETL Pipeline**: Politica de governanca de dados (`DATA_INGESTION_POLICY.md`), pipeline 3 fases (prepare/curate/upload), quarentena AI Safety para .md, isolamento de .docx, flagging de copyright para PDFs
 - **Documentacao**: RELEASE_LOG, PERMISSIONS_MATRIX e este backlog sincronizados com estado exato de producao
@@ -81,6 +89,12 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 | S-HF7 | Gamification Secondary Tabs Stuck on Loading | Done | Timeout + error fallback. |
 | S-HF8 | Credly Legacy Sanitization & Dedup | Done | Tier 2 expansion + dedup hardening. |
 | S-HF9 | Edge Functions no Repo | Done | Todas as 13 Edge Functions versionadas em `supabase/functions/`. |
+| S-HF10 | Credly URL Persistence | Done | `saveSelf()` preserva URL existente; `verifyCredly()` persiste via RPC antes da verificacao. |
+| S-HF11 | Gamification Toggle XP Vitalicio | Done | `ensureLifetimePointsLoaded()` pre-render + fix `bg-transparent` toggle conflict. |
+| S-UX2 | Explorar Tribos Universal | Done | Dropdown carrega todas as tribos; inativas com opacidade + cadeado + tooltip. |
+| S-IA1 | Help Publico (`/help`) | Done | Migrado de `/admin/help`; LGPD oculto para nao-admins; redirect 301. |
+| S-IA2 | Onboarding no Drawer | Done | Removido da navbar principal; movido para Profile Drawer. |
+| S-IA3 | Webinars Placeholder | Done | UI "Em Breve" com access check admin. |
 
 ---
 

@@ -4,7 +4,7 @@
 > Qualquer alteração de acesso deve ser refletida aqui, no `navigation.config.ts`,
 > e nas RLS policies do Supabase antes de ser deployada.
 >
-> Última atualização: 2026-03-10 (Sprint 4 + ETL Pipeline + UX Housekeeping)
+> Última atualização: 2026-03-10 (Sprint 4 + ETL Pipeline + UX Housekeeping + CPO Production Audit)
 
 ---
 
@@ -56,7 +56,7 @@ Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Se
 |----------------------------|:-------:|:------:|:--------:|:------:|:-----:|:----------:|----------------------------------|
 | Home (index, KPIs, agenda) |    V    |   V    |    V     |   V    |   V   |     V      |                                  |
 | Workspace                  |    V    |   V    |    V     |   V    |   V   |     V      |                                  |
-| Onboarding                 |    V    |   V    |    V     |   V    |   V   |     V      |                                  |
+| Onboarding (Profile Drawer)|    —    |   V    |    V     |   V    |   V   |     V      | Drawer only (not main nav)       |
 | Artifacts                  |    V    |  V/A   |   V/A    |  V/A   |  V/A  |    V/A     |                                  |
 | Gamification               |    V    |   V    |    V     |   V    |   V   |     V      |                                  |
 | Attendance                 |    —    |  V/A   |   V/A    |  V/A   |  V/A  |    V/A     |                                  |
@@ -65,7 +65,8 @@ Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Se
 | Admin Panel `/admin`       |    —    |   —    |    V     |   V    |  V/A  |    V/A     |                                  |
 | Admin Analytics            |    —    |   —    |    —     |   —    |   V   |     V      |                                  |
 | Admin Comms Dashboard      |    —    |   —    |    —     |   —    |   V   |     V      | `comms_leader`, `comms_member`: V |
-| Admin Help (Guia do Líder) |    —    |   —    |    —     |   V    |   V   |     V      |                                  |
+| Help `/help`               |    —    |   V    |    V     |   V    |   V   |     V      | LGPD topics hidden for non-admin |
+| Admin Webinars (Em Breve)  |    —    |   —    |    —     |   —    |   V   |     V      | Placeholder / Coming Soon        |
 | Admin Member Edit          |    —    |   —    |    —     |   —    |   —   |    V/A     |                                  |
 
 ### 3.2 Comunicação (Wave 3)
@@ -194,7 +195,9 @@ Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Se
 | `admin`          | `observer` | —                                | ✅         |
 | `admin-analytics`| `admin`    | —                                | ✅         |
 | `admin-comms`    | `admin`    | `['comms_leader', 'comms_member']`| ✅         |
-| `admin-help`     | `leader`   | —                                | ✅         |
+| `help`           | `member`   | —                                | ✅         |
+| `onboarding`     | `member`   | —                                | ✅ (drawer) |
+| `admin-webinars` | `admin`    | —                                | ✅ (placeholder) |
 
 ### Backend (`has_min_tier` / RLS)
 
