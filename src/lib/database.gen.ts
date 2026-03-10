@@ -72,6 +72,48 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_links: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          icon: string | null
+          id: number
+          is_active: boolean
+          sort_order: number | null
+          title: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: number
+          is_active?: boolean
+          sort_order?: number | null
+          title: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: number
+          is_active?: boolean
+          sort_order?: number | null
+          title?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           created_at: string | null
@@ -84,6 +126,7 @@ export type Database = {
           message: string | null
           starts_at: string | null
           title: string
+          tribe_id: number | null
           type: string | null
         }
         Insert: {
@@ -97,6 +140,7 @@ export type Database = {
           message?: string | null
           starts_at?: string | null
           title: string
+          tribe_id?: number | null
           type?: string | null
         }
         Update: {
@@ -110,6 +154,7 @@ export type Database = {
           message?: string | null
           starts_at?: string | null
           title?: string
+          tribe_id?: number | null
           type?: string | null
         }
         Relationships: [
@@ -141,11 +186,19 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "announcements_tribe_id_fkey"
+            columns: ["tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
+            referencedColumns: ["id"]
+          },
         ]
       }
       artifacts: {
         Row: {
           created_at: string | null
+          curation_status: string
           cycle: number | null
           description: string | null
           id: string
@@ -154,9 +207,12 @@ export type Database = {
           review_notes: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          source: string | null
           status: string | null
           submitted_at: string | null
+          tags: string[] | null
           title: string
+          trello_card_id: string | null
           tribe_id: number | null
           type: string
           updated_at: string | null
@@ -164,6 +220,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          curation_status?: string
           cycle?: number | null
           description?: string | null
           id?: string
@@ -172,9 +229,12 @@ export type Database = {
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          source?: string | null
           status?: string | null
           submitted_at?: string | null
+          tags?: string[] | null
           title: string
+          trello_card_id?: string | null
           tribe_id?: number | null
           type: string
           updated_at?: string | null
@@ -182,6 +242,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          curation_status?: string
           cycle?: number | null
           description?: string | null
           id?: string
@@ -190,9 +251,12 @@ export type Database = {
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          source?: string | null
           status?: string | null
           submitted_at?: string | null
+          tags?: string[] | null
           title?: string
+          trello_card_id?: string | null
           tribe_id?: number | null
           type?: string
           updated_at?: string | null
@@ -381,6 +445,78 @@ export type Database = {
             columns: ["registered_by"]
             isOneToOne: false
             referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      broadcast_log: {
+        Row: {
+          body: string
+          error_detail: string | null
+          id: string
+          recipient_count: number
+          sender_id: string
+          sent_at: string
+          status: string
+          subject: string
+          tribe_id: number
+        }
+        Insert: {
+          body: string
+          error_detail?: string | null
+          id?: string
+          recipient_count?: number
+          sender_id: string
+          sent_at?: string
+          status?: string
+          subject: string
+          tribe_id: number
+        }
+        Update: {
+          body?: string
+          error_detail?: string | null
+          id?: string
+          recipient_count?: number
+          sender_id?: string
+          sent_at?: string
+          status?: string
+          subject?: string
+          tribe_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "broadcast_log_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "broadcast_log_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "broadcast_log_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcast_log_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcast_log_tribe_id_fkey"
+            columns: ["tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
             referencedColumns: ["id"]
           },
         ]
@@ -678,6 +814,45 @@ export type Database = {
         }
         Relationships: []
       }
+      communication_templates: {
+        Row: {
+          body_html_tpl: string
+          created_at: string
+          id: number
+          is_active: boolean
+          label: string
+          signature_tpl: string
+          slug: string
+          subject_tpl: string
+          updated_at: string
+          variables: string[]
+        }
+        Insert: {
+          body_html_tpl?: string
+          created_at?: string
+          id?: number
+          is_active?: boolean
+          label: string
+          signature_tpl?: string
+          slug: string
+          subject_tpl?: string
+          updated_at?: string
+          variables?: string[]
+        }
+        Update: {
+          body_html_tpl?: string
+          created_at?: string
+          id?: number
+          is_active?: boolean
+          label?: string
+          signature_tpl?: string
+          slug?: string
+          subject_tpl?: string
+          updated_at?: string
+          variables?: string[]
+        }
+        Relationships: []
+      }
       course_progress: {
         Row: {
           completed_at: string | null
@@ -771,11 +946,49 @@ export type Database = {
         }
         Relationships: []
       }
+      cycles: {
+        Row: {
+          created_at: string
+          cycle_abbr: string
+          cycle_code: string
+          cycle_color: string
+          cycle_end: string | null
+          cycle_label: string
+          cycle_start: string
+          is_current: boolean
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          cycle_abbr: string
+          cycle_code: string
+          cycle_color?: string
+          cycle_end?: string | null
+          cycle_label: string
+          cycle_start: string
+          is_current?: boolean
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          cycle_abbr?: string
+          cycle_code?: string
+          cycle_color?: string
+          cycle_end?: string | null
+          cycle_label?: string
+          cycle_start?: string
+          is_current?: boolean
+          sort_order?: number
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           audience_level: string | null
+          calendar_event_id: string | null
           created_at: string | null
           created_by: string | null
+          curation_status: string
           date: string
           duration_actual: number | null
           duration_minutes: number
@@ -783,6 +996,7 @@ export type Database = {
           is_recorded: boolean | null
           meeting_link: string | null
           recurrence_group: string | null
+          source: string | null
           title: string
           tribe_id: number | null
           type: string
@@ -791,8 +1005,10 @@ export type Database = {
         }
         Insert: {
           audience_level?: string | null
+          calendar_event_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          curation_status?: string
           date: string
           duration_actual?: number | null
           duration_minutes?: number
@@ -800,6 +1016,7 @@ export type Database = {
           is_recorded?: boolean | null
           meeting_link?: string | null
           recurrence_group?: string | null
+          source?: string | null
           title: string
           tribe_id?: number | null
           type: string
@@ -808,8 +1025,10 @@ export type Database = {
         }
         Update: {
           audience_level?: string | null
+          calendar_event_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          curation_status?: string
           date?: string
           duration_actual?: number | null
           duration_minutes?: number
@@ -817,6 +1036,7 @@ export type Database = {
           is_recorded?: boolean | null
           meeting_link?: string | null
           recurrence_group?: string | null
+          source?: string | null
           title?: string
           tribe_id?: number | null
           type?: string
@@ -940,6 +1160,106 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      hub_resources: {
+        Row: {
+          asset_type: string
+          author_id: string | null
+          course_id: number | null
+          created_at: string
+          curation_status: string
+          cycle_code: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          source: string | null
+          tags: string[] | null
+          title: string
+          trello_card_id: string | null
+          tribe_id: number | null
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          asset_type: string
+          author_id?: string | null
+          course_id?: number | null
+          created_at?: string
+          curation_status?: string
+          cycle_code?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          source?: string | null
+          tags?: string[] | null
+          title: string
+          trello_card_id?: string | null
+          tribe_id?: number | null
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          asset_type?: string
+          author_id?: string | null
+          course_id?: number | null
+          created_at?: string
+          curation_status?: string
+          cycle_code?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          source?: string | null
+          tags?: string[] | null
+          title?: string
+          trello_card_id?: string | null
+          tribe_id?: number | null
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hub_resources_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "hub_resources_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "hub_resources_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hub_resources_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hub_resources_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hub_resources_tribe_id_fkey"
+            columns: ["tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       knowledge_assets: {
         Row: {
@@ -1258,6 +1578,100 @@ export type Database = {
         }
         Relationships: []
       }
+      meeting_artifacts: {
+        Row: {
+          agenda_items: string[] | null
+          created_at: string
+          created_by: string | null
+          cycle_code: string | null
+          deliberations: string[] | null
+          event_id: string | null
+          id: string
+          is_published: boolean
+          meeting_date: string
+          page_data_snapshot: Json | null
+          recording_url: string | null
+          title: string
+          tribe_id: number | null
+          updated_at: string
+        }
+        Insert: {
+          agenda_items?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          cycle_code?: string | null
+          deliberations?: string[] | null
+          event_id?: string | null
+          id?: string
+          is_published?: boolean
+          meeting_date: string
+          page_data_snapshot?: Json | null
+          recording_url?: string | null
+          title: string
+          tribe_id?: number | null
+          updated_at?: string
+        }
+        Update: {
+          agenda_items?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          cycle_code?: string | null
+          deliberations?: string[] | null
+          event_id?: string | null
+          id?: string
+          is_published?: boolean
+          meeting_date?: string
+          page_data_snapshot?: Json | null
+          recording_url?: string | null
+          title?: string
+          tribe_id?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_artifacts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "meeting_artifacts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "meeting_artifacts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_artifacts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_artifacts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_artifacts_tribe_id_fkey"
+            columns: ["tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       member_chapter_affiliations: {
         Row: {
           affiliated_since: string | null
@@ -1447,7 +1861,10 @@ export type Database = {
           pmi_id: string | null
           pmi_id_encrypted: string | null
           pmi_id_verified: boolean | null
+          role: string | null
+          roles: string[] | null
           secondary_emails: string[] | null
+          share_whatsapp: boolean
           state: string | null
           tribe_id: number | null
           updated_at: string | null
@@ -1480,7 +1897,10 @@ export type Database = {
           pmi_id?: string | null
           pmi_id_encrypted?: string | null
           pmi_id_verified?: boolean | null
+          role?: string | null
+          roles?: string[] | null
           secondary_emails?: string[] | null
+          share_whatsapp?: boolean
           state?: string | null
           tribe_id?: number | null
           updated_at?: string | null
@@ -1513,7 +1933,10 @@ export type Database = {
           pmi_id?: string | null
           pmi_id_encrypted?: string | null
           pmi_id_verified?: boolean | null
+          role?: string | null
+          roles?: string[] | null
           secondary_emails?: string[] | null
+          share_whatsapp?: boolean
           state?: string | null
           tribe_id?: number | null
           updated_at?: string | null
@@ -1581,6 +2004,170 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      taxonomy_tags: {
+        Row: {
+          category: string
+          id: number
+          is_active: boolean
+          kpi_ref: string | null
+          label_en: string
+          label_es: string
+          label_pt: string
+          tag_key: string
+        }
+        Insert: {
+          category: string
+          id?: number
+          is_active?: boolean
+          kpi_ref?: string | null
+          label_en?: string
+          label_es?: string
+          label_pt: string
+          tag_key: string
+        }
+        Update: {
+          category?: string
+          id?: number
+          is_active?: boolean
+          kpi_ref?: string | null
+          label_en?: string
+          label_es?: string
+          label_pt?: string
+          tag_key?: string
+        }
+        Relationships: []
+      }
+      trello_import_log: {
+        Row: {
+          board_name: string
+          board_source: string
+          cards_mapped: number
+          cards_skipped: number
+          cards_total: number
+          id: number
+          imported_at: string
+          imported_by: string | null
+          notes: string | null
+          target_table: string
+        }
+        Insert: {
+          board_name: string
+          board_source: string
+          cards_mapped?: number
+          cards_skipped?: number
+          cards_total?: number
+          id?: number
+          imported_at?: string
+          imported_by?: string | null
+          notes?: string | null
+          target_table: string
+        }
+        Update: {
+          board_name?: string
+          board_source?: string
+          cards_mapped?: number
+          cards_skipped?: number
+          cards_total?: number
+          id?: number
+          imported_at?: string
+          imported_by?: string | null
+          notes?: string | null
+          target_table?: string
+        }
+        Relationships: []
+      }
+      tribe_deliverables: {
+        Row: {
+          artifact_id: string | null
+          assigned_member_id: string | null
+          created_at: string
+          cycle_code: string
+          description: string | null
+          due_date: string | null
+          id: string
+          status: string
+          title: string
+          tribe_id: number
+          updated_at: string
+        }
+        Insert: {
+          artifact_id?: string | null
+          assigned_member_id?: string | null
+          created_at?: string
+          cycle_code: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          status?: string
+          title: string
+          tribe_id: number
+          updated_at?: string
+        }
+        Update: {
+          artifact_id?: string | null
+          assigned_member_id?: string | null
+          created_at?: string
+          cycle_code?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          status?: string
+          title?: string
+          tribe_id?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tribe_deliverables_artifact_id_fkey"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribe_deliverables_assigned_member_id_fkey"
+            columns: ["assigned_member_id"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tribe_deliverables_assigned_member_id_fkey"
+            columns: ["assigned_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tribe_deliverables_assigned_member_id_fkey"
+            columns: ["assigned_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribe_deliverables_assigned_member_id_fkey"
+            columns: ["assigned_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribe_deliverables_cycle_code_fkey"
+            columns: ["cycle_code"]
+            isOneToOne: false
+            referencedRelation: "cycles"
+            referencedColumns: ["cycle_code"]
+          },
+          {
+            foreignKeyName: "tribe_deliverables_tribe_id_fkey"
+            columns: ["tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
             referencedColumns: ["id"]
           },
         ]
@@ -1790,6 +2377,96 @@ export type Database = {
           },
         ]
       }
+      webinars: {
+        Row: {
+          chapter_code: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          duration_min: number
+          id: string
+          meeting_link: string | null
+          notes: string | null
+          organizer_id: string | null
+          scheduled_at: string
+          status: string
+          title: string
+          tribe_id: number | null
+          updated_at: string
+          youtube_url: string | null
+        }
+        Insert: {
+          chapter_code: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_min?: number
+          id?: string
+          meeting_link?: string | null
+          notes?: string | null
+          organizer_id?: string | null
+          scheduled_at: string
+          status?: string
+          title: string
+          tribe_id?: number | null
+          updated_at?: string
+          youtube_url?: string | null
+        }
+        Update: {
+          chapter_code?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_min?: number
+          id?: string
+          meeting_link?: string | null
+          notes?: string | null
+          organizer_id?: string | null
+          scheduled_at?: string
+          status?: string
+          title?: string
+          tribe_id?: number | null
+          updated_at?: string
+          youtube_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webinars_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "webinars_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "webinars_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webinars_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webinars_tribe_id_fkey"
+            columns: ["tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       gamification_leaderboard: {
@@ -1799,6 +2476,11 @@ export type Database = {
           bonus_points: number | null
           chapter: string | null
           course_points: number | null
+          cycle_artifact_points: number | null
+          cycle_attendance_points: number | null
+          cycle_bonus_points: number | null
+          cycle_course_points: number | null
+          cycle_points: number | null
           designations: string[] | null
           member_id: string | null
           name: string | null
@@ -1846,38 +2528,68 @@ export type Database = {
       public_members: {
         Row: {
           chapter: string | null
+          country: string | null
+          cpmai_certified: boolean | null
+          cpmai_certified_at: string | null
+          created_at: string | null
+          credly_badges: Json | null
+          credly_url: string | null
+          credly_verified_at: string | null
           current_cycle_active: boolean | null
+          cycles: string[] | null
           designations: string[] | null
           id: string | null
+          is_active: boolean | null
           linkedin_url: string | null
           name: string | null
           operational_role: string | null
           photo_url: string | null
-          role: string | null
+          share_whatsapp: boolean | null
+          state: string | null
           tribe_id: number | null
         }
         Insert: {
           chapter?: string | null
+          country?: string | null
+          cpmai_certified?: boolean | null
+          cpmai_certified_at?: string | null
+          created_at?: string | null
+          credly_badges?: Json | null
+          credly_url?: string | null
+          credly_verified_at?: string | null
           current_cycle_active?: boolean | null
+          cycles?: string[] | null
           designations?: string[] | null
           id?: string | null
+          is_active?: boolean | null
           linkedin_url?: string | null
           name?: string | null
           operational_role?: string | null
           photo_url?: string | null
-          role?: never
+          share_whatsapp?: boolean | null
+          state?: string | null
           tribe_id?: number | null
         }
         Update: {
           chapter?: string | null
+          country?: string | null
+          cpmai_certified?: boolean | null
+          cpmai_certified_at?: string | null
+          created_at?: string | null
+          credly_badges?: Json | null
+          credly_url?: string | null
+          credly_verified_at?: string | null
           current_cycle_active?: boolean | null
+          cycles?: string[] | null
           designations?: string[] | null
           id?: string | null
+          is_active?: boolean | null
           linkedin_url?: string | null
           name?: string | null
           operational_role?: string | null
           photo_url?: string | null
-          role?: never
+          share_whatsapp?: boolean | null
+          state?: string | null
           tribe_id?: number | null
         }
         Relationships: []
@@ -1935,6 +2647,18 @@ export type Database = {
       }
     }
     Functions: {
+      admin_change_tribe_leader: {
+        Args: { p_new_leader_id: string; p_reason?: string; p_tribe_id: number }
+        Returns: Json
+      }
+      admin_deactivate_member: {
+        Args: { p_member_id: string; p_reason?: string }
+        Returns: Json
+      }
+      admin_deactivate_tribe: {
+        Args: { p_reason?: string; p_tribe_id: number }
+        Returns: Json
+      }
       admin_force_tribe_selection: {
         Args: { p_member_id: string; p_tribe_id: number }
         Returns: Json
@@ -1955,6 +2679,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_move_member_tribe: {
+        Args: { p_member_id: string; p_new_tribe_id: number; p_reason?: string }
+        Returns: Json
+      }
       admin_reactivate_member: { Args: { p_member_id: string }; Returns: Json }
       admin_remove_tribe_selection: {
         Args: { p_member_id: string }
@@ -1964,11 +2692,30 @@ export type Database = {
         Args: {
           p_chapter?: string
           p_current_cycle_active?: boolean
+          p_designations?: string[]
+          p_email?: string
+          p_linkedin_url?: string
           p_member_id: string
-          p_role?: string
-          p_roles?: string[]
+          p_name?: string
+          p_operational_role?: string
+          p_phone?: string
+          p_pmi_id?: string
+          p_tribe_id?: number
         }
         Returns: Json
+      }
+      broadcast_count_today: { Args: { p_tribe_id: number }; Returns: number }
+      broadcast_history: {
+        Args: { p_limit?: number; p_tribe_id?: number }
+        Returns: {
+          id: string
+          recipient_count: number
+          sent_at: string
+          sent_by_name: string
+          subject: string
+          tribe_id: number
+          tribe_name: string
+        }[]
       }
       can_manage_comms_metrics: { Args: never; Returns: boolean }
       can_manage_knowledge: { Args: never; Returns: boolean }
@@ -2005,6 +2752,7 @@ export type Database = {
         Args: { p_desigs: string[]; p_op_role: string }
         Returns: string[]
       }
+      count_tribe_slots: { Args: never; Returns: Json }
       create_event:
         | {
             Args: {
@@ -2040,6 +2788,15 @@ export type Database = {
         }
         Returns: Json
       }
+      curate_item: {
+        Args: {
+          p_action: string
+          p_id: string
+          p_table: string
+          p_tags?: string[]
+        }
+        Returns: Json
+      }
       current_member_tier_rank: { Args: never; Returns: number }
       decrypt_sensitive: { Args: { val: string }; Returns: string }
       deselect_tribe: { Args: never; Returns: Json }
@@ -2057,35 +2814,30 @@ export type Database = {
           pct_with_tier2: number
         }[]
       }
-      exec_funnel_summary: {
-        Args: never
-        Returns: {
-          active_members: number
-          members_with_credly_url: number
-          members_with_full_core_trail: number
-          members_with_published_artifact: number
-          members_with_tier1: number
-          members_with_tier2_plus: number
-          snapshot_date: string
-          total_members: number
-          total_published_artifacts: number
-        }[]
+      exec_funnel_summary: { Args: never; Returns: Json }
+      exec_skills_radar: { Args: never; Returns: Json }
+      get_communication_template: {
+        Args: { p_slug: string; p_vars?: Json }
+        Returns: Json
       }
-      exec_skills_radar: {
-        Args: never
-        Returns: {
-          avg_points: number
-          badges_count: number
-          members_with_signal: number
-          radar_axis: string
-          total_points: number
-        }[]
-      }
+      get_current_cycle: { Args: never; Returns: Json }
       get_events_with_attendance: {
         Args: { p_limit?: number; p_offset?: number }
         Returns: Json
       }
+      get_executive_kpis: { Args: never; Returns: Json }
       get_member_by_auth: { Args: never; Returns: Json }
+      get_member_cycle_xp: { Args: { p_member_id: string }; Returns: Json }
+      get_my_member_record: {
+        Args: never
+        Returns: {
+          designations: string[]
+          id: string
+          is_superadmin: boolean
+          operational_role: string
+          tribe_id: number
+        }[]
+      }
       get_tribe_counts: {
         Args: never
         Returns: {
@@ -2094,6 +2846,7 @@ export type Database = {
         }[]
       }
       get_tribe_event_roster: { Args: { p_event_id: string }; Returns: Json }
+      get_tribe_member_contacts: { Args: { p_tribe_id: number }; Returns: Json }
       has_min_tier: { Args: { required_rank: number }; Returns: boolean }
       knowledge_assets_latest: {
         Args: { p_limit?: number; p_source?: string }
@@ -2167,6 +2920,124 @@ export type Database = {
           title: string
         }[]
       }
+      kpi_summary: { Args: never; Returns: Json }
+      list_admin_links: {
+        Args: never
+        Returns: {
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          icon: string | null
+          id: number
+          is_active: boolean
+          sort_order: number | null
+          title: string
+          updated_at: string
+          url: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "admin_links"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      list_curation_board: { Args: { p_status?: string }; Returns: Json[] }
+      list_cycles: { Args: never; Returns: Json }
+      list_meeting_artifacts: {
+        Args: { p_limit?: number; p_tribe_id?: number }
+        Returns: {
+          agenda_items: string[] | null
+          created_at: string
+          created_by: string | null
+          cycle_code: string | null
+          deliberations: string[] | null
+          event_id: string | null
+          id: string
+          is_published: boolean
+          meeting_date: string
+          page_data_snapshot: Json | null
+          recording_url: string | null
+          title: string
+          tribe_id: number | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "meeting_artifacts"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      list_pending_curation: { Args: { p_table?: string }; Returns: Json }
+      list_taxonomy_tags: {
+        Args: never
+        Returns: {
+          category: string
+          id: number
+          is_active: boolean
+          kpi_ref: string | null
+          label_en: string
+          label_es: string
+          label_pt: string
+          tag_key: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "taxonomy_tags"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      list_tribe_deliverables: {
+        Args: { p_cycle_code?: string; p_tribe_id: number }
+        Returns: {
+          artifact_id: string | null
+          assigned_member_id: string | null
+          created_at: string
+          cycle_code: string
+          description: string | null
+          due_date: string | null
+          id: string
+          status: string
+          title: string
+          tribe_id: number
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "tribe_deliverables"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      list_webinars: {
+        Args: { p_status?: string }
+        Returns: {
+          chapter_code: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          duration_min: number
+          id: string
+          meeting_link: string | null
+          notes: string | null
+          organizer_id: string | null
+          scheduled_at: string
+          status: string
+          title: string
+          tribe_id: number | null
+          updated_at: string
+          youtube_url: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "webinars"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       mark_member_present: {
         Args: { p_event_id: string; p_member_id: string; p_present?: boolean }
         Returns: Json
@@ -2189,6 +3060,16 @@ export type Database = {
             }
             Returns: Json
           }
+        | {
+            Args: {
+              p_credly_url?: string
+              p_linkedin_url?: string
+              p_phone?: string
+              p_pmi_id?: string
+              p_share_whatsapp?: boolean
+            }
+            Returns: Json
+          }
       publish_comms_metrics_batch: {
         Args: { p_metric_date?: string; p_source?: string }
         Returns: {
@@ -2200,6 +3081,21 @@ export type Database = {
         }[]
       }
       register_own_presence: { Args: { p_event_id: string }; Returns: Json }
+      resolve_whatsapp_link: { Args: { p_member_id: string }; Returns: Json }
+      save_presentation_snapshot: {
+        Args: {
+          p_agenda_items?: string[]
+          p_deliberations?: string[]
+          p_event_id?: string
+          p_is_published?: boolean
+          p_meeting_date: string
+          p_recording_url?: string
+          p_snapshot?: Json
+          p_title: string
+          p_tribe_id?: number
+        }
+        Returns: string
+      }
       select_tribe: { Args: { p_tribe_id: number }; Returns: Json }
       set_progress: {
         Args: { p_code: string; p_email: string; p_status: string }
@@ -2207,8 +3103,22 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      suggest_tags: {
+        Args: { p_cycle_code?: string; p_title: string; p_type?: string }
+        Returns: string[]
+      }
       sync_attendance_points: { Args: never; Returns: Json }
       title_case: { Args: { input: string }; Returns: string }
+      tribe_impact_ranking: {
+        Args: never
+        Returns: {
+          avg_attendance: number
+          total_events: number
+          total_hours: number
+          tribe_id: number
+          tribe_name: string
+        }[]
+      }
       update_event:
         | {
             Args: {
@@ -2237,6 +3147,20 @@ export type Database = {
           }
       update_event_duration: {
         Args: { p_duration_minutes: number; p_event_id: string }
+        Returns: Json
+      }
+      upsert_tribe_deliverable: {
+        Args: {
+          p_artifact_id?: string
+          p_assigned_member_id?: string
+          p_cycle_code?: string
+          p_description?: string
+          p_due_date?: string
+          p_id?: string
+          p_status?: string
+          p_title?: string
+          p_tribe_id?: number
+        }
         Returns: Json
       }
     }

@@ -9,7 +9,11 @@
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 import { readdirSync, writeFileSync, mkdirSync } from 'fs';
-import { join, extname, basename } from 'path';
+import { join, extname, basename, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const STAGING_DIR = join(__dirname, '..', 'data', 'staging-knowledge');
 const OUTPUT_DIR = join(__dirname, '..', 'data', 'ingestion-logs');
