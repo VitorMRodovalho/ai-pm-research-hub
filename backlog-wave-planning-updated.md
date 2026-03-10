@@ -1,14 +1,18 @@
 # Nucleo IA & GP — Backlog & Wave Planning
 ## Status: Marco 2026 (atualizado 2026-03-11)
-## Sincronizado com producao: Git, Migracoes SQL (41/41) e 13 Edge Functions
+## Sincronizado com producao: Git, Migracoes SQL (42/42) e 13 Edge Functions
 
 **Board de sprints**: [GitHub Project — AI PM Hub](https://github.com/users/VitorMRodovalho/projects/1/) · Regras: `docs/project-governance/PROJECT_GOVERNANCE_RUNBOOK.md`
 
 ---
 
-## LATEST UPDATE (2026-03-10)
+## LATEST UPDATE (2026-03-11)
 
-### Entregue nesta sessao (Four Options Sprint)
+### Entregue em Waves 9-10
+- **Wave 9**: `/admin/selection` (processo seletivo, LGPD), dashboards cross-source em analytics, RPCs `list_volunteer_applications` e `platform_activity_summary`. Reforma AGENTS.md, SPRINT_IMPLEMENTATION_PRACTICES (5-phase), DEPLOY_CHECKLIST.
+- **Wave 10**: Nav `/admin/analytics`, route key `admin_curatorship`, PERMISSIONS_MATRIX secções 3.13-3.15. Announcement scheduling (starts_at/ends_at pickers, validacao, badge Agendado). Markdown preview toggle para corpo de avisos.
+
+### Entregue em sessoes anteriores (Four Options Sprint)
 - **S-KNW4 File Detective & Knowledge Sanitization**: Script `knowledge_file_detective.ts` para detectar apresentacoes orfas em `data/staging-knowledge/`. Artifacts page separada em "Artefatos Produzidos" vs "Materiais de Referencia". Botoes inline de edicao de tags para lideres/curadores via `curate_item` RPC.
 - **S-KNW5 Kanban Curatorship Board**: `/admin/curatorship` refatorado de lista plana para board Kanban com 4 colunas (Pendente, Em Revisao, Aprovado, Descartado). Drag-and-drop com HTML5 API. Nova migration `list_curation_board` RPC.
 - **S-OB1 Onboarding Intelligence**: Script `onboarding_whatsapp_analysis.ts` para NLP do chat WhatsApp de integracao (keyword extraction, FAQ detection, timeline analysis). Onboarding page redesenhada com progress tracker, accordion steps, fases (Boas-vindas/Configuracao/Integracao/Producao), e dicas data-driven.
@@ -232,7 +236,11 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 | W10.3 | PERMISSIONS_MATRIX Update | High | Done | Secções 3.13-3.15 (Tribe Kanban, Selection LGPD, Progressive disclosure). Mapeamento completo. |
 | W10.4 | Announcement Scheduling UX | Medium | Done | Date-time pickers para `starts_at` e `ends_at`, validação start < end, badge "Agendado". |
 | W10.5 | Announcement Markdown Preview | Low | Done | Toggle Editar/Visualizar, textarea + preview com **bold** *italic* `code` e quebras de linha. |
-| S-RM5 | Multi-tenant Config | Medium | Planned | Admin config for `group_term`, cycle config, and webhooks. |
+| W11.1 | Doc Hygiene | High | Done | Tech debt S-AN1 Scheduling=Done, LATEST UPDATE Waves 9-10, AGENTS 41 migrations, PERMISSIONS_MATRIX date. |
+| W11.2 | Site Hierarchy Checkpoint | Medium | Done | Fase 2 Audit em SPRINT_IMPLEMENTATION_PRACTICES com checklist de rotas. |
+| W11.3 | S-RM5 Site Config | High | Done | Tabela `site_config`, RPCs `get_site_config`/`set_site_config`, pagina `/admin/settings` superadmin. |
+| W11.4 | S-AN1 Rich Editor Partial | Low | Done | Fechado como Partial (markdown preview W10.5). |
+| S-RM5 | Multi-tenant Config | Medium | Done | Entregue como W11.3 (site_config minimo). |
 | S23 | Chapter Integrations | Medium | Planned | Event-driven integrations with local chapter portfolios and tools. |
 | S24 | API for Chapters | Low | Planned | Read-only API for chapter impact and participation data. |
 | S-SC1 | Multilingual Screenshots | Low | Planned | Automated screenshots for PT EN ES docs or release snapshots. |
@@ -242,6 +250,12 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 - **Build**: clean | **Tests**: 13/13 | **Lint**: 0 errors
 - **Site hierarchy**: admin-analytics nav entry added, admin_curatorship route key added
 - **Announcements**: starts_at picker, start<end validation, scheduled badge, markdown preview toggle
+
+### Wave 11 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 13/13 | **Migrations**: 42/42
+- **Doc hygiene**: Tech debt S-AN1 atualizado, LATEST UPDATE, AGENTS 41, site hierarchy checkpoint
+- **S-RM5**: site_config table, get/set RPCs, /admin/settings (superadmin)
+- **Nav**: admin-settings (minTier superadmin), PERMISSIONS_MATRIX 3.16
 
 ---
 
@@ -256,8 +270,8 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 | Hardcoded strings | Medium | Done | i18n migration complete (400+ keys PT/EN/ES). |
 | Legacy role columns | High | Done | `role`/`roles` dropped in Wave 8 (migration `20260312020000`). Frontend 100% on `operational_role`/`designations`. |
 | PostHog/Looker dashboards | Medium | Superseded | Native Chart.js analytics replaced external iframes (S-AN1 + W8.3). |
-| S-AN1 Rich Editor | Low | Open | Rich text editor (TipTap/Quill) para corpo de avisos. |
-| S-AN1 Scheduling UX | Low | Open | Interface para agendar inicio/fim de exibicao dos avisos. |
+| S-AN1 Rich Editor | Low | Partial | Markdown preview (W10.5) cobre **bold** *italic* `code`; WYSIWYG tipTap/Quill deferido. |
+| S-AN1 Scheduling UX | Low | Done | Date-time pickers starts_at/ends_at, validacao, badge Agendado (W10.4). |
 
 ---
 
@@ -310,7 +324,7 @@ Native Supabase-based comms metrics replaced external Looker dependency. YouTube
 
 ### Infrastructure
 - **Git**: `origin/main` and `production/main` 100% synchronized
-- **SQL Migrations**: 41/41 applied in production (Supabase) — Wave 7 data, Wave 8 cleanup, Wave 9 RPCs
+- **SQL Migrations**: 42/42 applied in production (Supabase) — Wave 7-9 data/RPCs, Wave 11 site_config
 - **Edge Functions**: 13 active in production (all `--no-verify-jwt`)
 - **Frontend**: Deployed via Cloudflare Pages (auto-deploy from main)
 - **Storage**: `documents` bucket active with public read + authenticated upload
@@ -322,8 +336,8 @@ Native Supabase-based comms metrics replaced external Looker dependency. YouTube
 - `scripts/miro_links_importer.ts`: CSV → 51 links in `hub_resources` (source=miro_import)
 
 ### Navigation (`navigation.config.ts`)
-- 21 items covering all routes with tier-based ACL
-- Home anchors (10), Tools (5), Member (2), Profile (1), Admin (7)
+- 22 items covering all routes with tier-based ACL
+- Home anchors (10), Tools (5), Member (2), Profile (1), Admin (8)
 - Progressive disclosure: disabled items with lock icon + tooltip for insufficient tier
 - LGPD-sensitive items fully hidden for non-authorized (new `lgpdSensitive` flag)
 - No orphan routes (legacy aliases `/teams`, `/rank`, `/ranks` are intentional redirects)
@@ -335,7 +349,7 @@ Native Supabase-based comms metrics replaced external Looker dependency. YouTube
 
 ### Documentation
 - `docs/RELEASE_LOG.md`: Up to date (2026-03-11)
-- `docs/PERMISSIONS_MATRIX.md`: Up to date (2026-03-10)
+- `docs/PERMISSIONS_MATRIX.md`: Up to date (2026-03-11)
 - `AGENTS.md`: Reformed (2026-03-11) — stale conventions fixed, sprint closure routine added
 - `docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md`: 5-phase routine formalized
 - `backlog-wave-planning-updated.md`: This file — synchronized

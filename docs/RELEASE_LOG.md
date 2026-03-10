@@ -1,5 +1,43 @@
 # Release Log
 
+## 2026-03-11 — v0.9.0 Wave 11: Doc Hygiene, Site Config & S-AN1 Closure
+
+### Scope
+Wave 11 corrects documentation staleness, adds site hierarchy checkpoint to sprint closure, delivers S-RM5 site config (multi-tenant base), and closes S-AN1 Rich Editor as partial.
+
+### Doc Hygiene
+- **Backlog**: Tech debt S-AN1 Scheduling UX → Done (W10.4); S-AN1 Rich Editor → Partial (markdown preview W10.5). LATEST UPDATE updated for Waves 9-10.
+- **AGENTS.md**: Migrations count 40+ → 41 applied.
+- **PERMISSIONS_MATRIX**: Date 2026-03-10 → 2026-03-11 in backlog Production State.
+- **SPRINT_IMPLEMENTATION_PRACTICES**: Site hierarchy checkpoint added to Phase 2 Audit.
+
+### S-RM5 Site Config
+- **Migration** `20260312040000_site_config.sql`: Table `site_config` (key, value JSONB, updated_at, updated_by). RLS: admin read, superadmin write.
+- **RPCs**: `get_site_config()` (admin+), `set_site_config(p_key, p_value)` (superadmin only).
+- **Page**: `/admin/settings` — fields group_term, cycle_default, webhook_url. Superadmin only.
+- **Nav**: `admin-settings` in navigation.config.ts, AdminNav.astro, Nav.astro (minTier: superadmin).
+- **PERMISSIONS_MATRIX**: Section 3.16 Site Config.
+
+### Files Changed
+- `supabase/migrations/20260312040000_site_config.sql` (new)
+- `src/pages/admin/settings.astro` (new)
+- `src/lib/navigation.config.ts` (admin-settings)
+- `src/components/nav/AdminNav.astro` (settings link)
+- `src/components/nav/Nav.astro` (admin-settings icon, adminSettings i18n)
+- `src/lib/admin/constants.ts` (admin_settings in AdminRouteKey, ROUTE_MIN_TIER)
+- `src/i18n/pt-BR.ts`, `en-US.ts`, `es-LATAM.ts` (nav.adminSettings)
+- `backlog-wave-planning-updated.md` (doc hygiene, Wave 11 CONCLUIDA)
+- `AGENTS.md` (migrations 41)
+- `docs/PERMISSIONS_MATRIX.md` (3.16, admin-settings in code mapping)
+- `docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md` (site hierarchy checkpoint)
+- `docs/GOVERNANCE_CHANGELOG.md` (Wave 11 decisions)
+- `docs/RELEASE_LOG.md` (this entry)
+
+### Audit Results
+- Build: clean | Tests: 13/13 | Migrations: 42/42
+
+---
+
 ## 2026-03-11 — v0.8.0 Wave 10: Site-Hierarchy Integrity & UX Polish
 
 ### Scope

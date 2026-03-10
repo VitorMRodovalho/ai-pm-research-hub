@@ -77,6 +77,7 @@ const ptBR: Record<string, string> = {
   'nav.adminHelp': 'Ajuda / Guia',
   'nav.adminCuratorship': 'Curadoria',
   'nav.adminSelection': 'Processo Seletivo',
+  'nav.adminSettings': 'Configurações',
   'admin.curatorship.title': 'Curadoria de Conhecimento',
   'admin.curatorship.subtitle': 'Revise e aprove itens importados de fontes externas antes da publicacao',
   'admin.curatorship.loading': 'Carregando itens pendentes...',

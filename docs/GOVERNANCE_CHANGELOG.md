@@ -1,5 +1,21 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 11: Doc Hygiene, Site Config & S-AN1 Closure
+
+### Decisions
+
+1. **S-AN1 Rich Editor closed as partial**: The markdown preview toggle (W10.5) provides **bold**, *italic*, `code`, and line breaks. A full WYSIWYG (TipTap/Quill) would add a dependency and scope. The tech debt item is closed as "Partial" with a note that WYSIWYG can be revisited if there is explicit demand.
+
+2. **S-RM5 Site Config uses key-value table**: A single `site_config` table with `key TEXT PRIMARY KEY` and `value JSONB` supports flexible, extensible configuration without schema changes for new keys. Seed keys: `group_term`, `cycle_default`, `webhook_url`. Admin tier can read; only superadmin can write via `set_site_config` RPC.
+
+3. **Site hierarchy checkpoint added to sprint closure**: Phase 2 Audit in SPRINT_IMPLEMENTATION_PRACTICES.md now explicitly includes verification that every nav href has a matching page and that AdminNav is aligned.
+
+### Process Lessons Learned
+
+1. **Tech debt table must be updated when features partially address items**: S-AN1 Scheduling was delivered in W10.4 but remained "Open" until W11 doc hygiene. Updating the tech debt table should be part of the same sprint that delivers the feature.
+
+---
+
 ## 2026-03-11 — Wave 10: Site-Hierarchy Integrity & UX Polish
 
 ### Decisions

@@ -201,6 +201,15 @@ Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Se
 
 Itens de navegação com tier insuficiente: visíveis mas desabilitados (opacidade + ícone cadeado + tooltip "Requer [tier]"). Itens com `lgpdSensitive: true` permanecem completamente ocultos para não-autorizados.
 
+### 3.16 Site Config (Wave 11 — S-RM5)
+
+| Funcionalidade                     | Visitor | Member | Observer | Leader | Admin | Superadmin | Backend                              |
+|------------------------------------|:-------:|:------:|:--------:|:------:|:-----:|:----------:|--------------------------------------|
+| `/admin/settings` página           |    —    |   —    |    —     |   —    |   —   |     V/A    | Superadmin only                      |
+| `get_site_config` RPC (leitura)    |    —    |   —    |    —     |   —    |   V   |     V      | Admin tier pode ler                  |
+| `set_site_config` RPC (escrita)    |    —    |   —    |    —     |   —    |   —   |     A      | Superadmin only, SECURITY DEFINER    |
+| `site_config` tabela               |    —    |   —    |    —     |   —    |   V   |    V/A     | RLS: admin read, superadmin write    |
+
 ---
 
 ## 4. Mapeamento Código ↔ Matriz
@@ -217,6 +226,7 @@ Itens de navegação com tier insuficiente: visíveis mas desabilitados (opacida
 | `admin-comms`      | `admin`    | `['comms_leader', 'comms_member']`| ✅ (lgpdSensitive) |
 | `admin-curatorship`| `observer` | —                                | ✅         |
 | `admin-selection`  | `admin`    | —                                | ✅ (lgpdSensitive) |
+| `admin-settings`   | `superadmin` | —                             | ✅ (S-RM5)         |
 | `help`             | `member`   | —                                | ✅         |
 | `onboarding`     | `member`   | —                                | ✅ (drawer) |
 | `admin-webinars` | `admin`    | —                                | ✅ (placeholder) |

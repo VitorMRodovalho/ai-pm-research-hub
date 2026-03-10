@@ -1,0 +1,145 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import AdminNav from '../../components/nav/AdminNav.astro';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+---
+
+<BaseLayout title={t('nav.adminSettings', lang)} activePage="admin">
+  <div class="max-w-[1200px] mx-auto px-4 pt-6">
+    <AdminNav activeSub="settings" lang={lang} />
+  </div>
+  <div class="max-w-[700px] mx-auto px-4 pb-12">
+    <div id="settings-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
+      <div class="text-3xl mb-3">&#x1F512;</div>
+      <p class="font-semibold text-amber-800">Acesso restrito a Superadmin</p>
+      <a href="/admin" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">Voltar ao Admin</a>
+    </div>
+
+    <div id="settings-panel" class="hidden space-y-6">
+      <div class="mb-6">
+        <h1 class="text-2xl font-extrabold text-navy">Configurações do Site</h1>
+        <p class="text-sm text-slate-500 mt-1">Configurações globais para replicação multi-tenant (S-RM5)</p>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-slate-200">
+          <h2 class="text-sm font-bold text-navy">Parâmetros</h2>
+          <p class="text-[.68rem] text-slate-400 mt-0.5">Altere e salve. Apenas Superadmin pode editar.</p>
+        </div>
+        <div class="p-5 space-y-4">
+          <div>
+            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Termo do grupo</label>
+            <input type="text" id="cfg-group-term" placeholder="Núcleo" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+            <p class="text-[.6rem] text-slate-400 mt-1">Ex: Núcleo, Chapter, Chapter PMI</p>
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Ciclo padrão (ID)</label>
+            <input type="text" id="cfg-cycle-default" placeholder="—" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+            <p class="text-[.6rem] text-slate-400 mt-1">ID do ciclo padrão quando não definido (opcional)</p>
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Webhook URL</label>
+            <input type="url" id="cfg-webhook-url" placeholder="https://..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
+            <p class="text-[.6rem] text-slate-400 mt-1">URL para notificações externas (opcional)</p>
+          </div>
+          <button id="cfg-save" class="w-full px-4 py-2.5 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
+            Salvar configurações
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="settings-loading" class="text-center py-16 text-slate-400">Carregando...</div>
+  </div>
+</BaseLayout>
+
+<script>
+  let sb: any = null;
+  let MEMBER: any = null;
+
+  function escapeHtml(s: string): string {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function showDenied() {
+    document.getElementById('settings-loading')?.classList.add('hidden');
+    document.getElementById('settings-panel')?.classList.add('hidden');
+    document.getElementById('settings-denied')?.classList.remove('hidden');
+  }
+
+  function showPanel() {
+    document.getElementById('settings-loading')?.classList.add('hidden');
+    document.getElementById('settings-denied')?.classList.add('hidden');
+    document.getElementById('settings-panel')?.classList.remove('hidden');
+    loadConfig();
+  }
+
+  async function loadConfig() {
+    if (!sb) return;
+    try {
+      const { data, error } = await sb.rpc('get_site_config');
+      if (error) throw error;
+      const cfg = data || {};
+      (document.getElementById('cfg-group-term') as HTMLInputElement).value = cfg.group_term ?? 'Núcleo';
+      (document.getElementById('cfg-cycle-default') as HTMLInputElement).value = cfg.cycle_default ?? '';
+      (document.getElementById('cfg-webhook-url') as HTMLInputElement).value = cfg.webhook_url ?? '';
+    } catch (e: any) {
+      console.error('Load config:', e);
+    }
+  }
+
+  async function saveConfig() {
+    if (!sb || !MEMBER?.is_superadmin) return;
+    const btn = document.getElementById('cfg-save') as HTMLButtonElement;
+    if (btn) btn.disabled = true;
+    try {
+      const groupTerm = (document.getElementById('cfg-group-term') as HTMLInputElement).value.trim() || 'Núcleo';
+      const cycleDefault = (document.getElementById('cfg-cycle-default') as HTMLInputElement).value.trim();
+      const webhookUrl = (document.getElementById('cfg-webhook-url') as HTMLInputElement).value.trim();
+
+      await sb.rpc('set_site_config', { p_key: 'group_term', p_value: groupTerm });
+      await sb.rpc('set_site_config', { p_key: 'cycle_default', p_value: cycleDefault || null });
+      await sb.rpc('set_site_config', { p_key: 'webhook_url', p_value: webhookUrl || null });
+    } catch (e: any) {
+      console.error('Save config:', e);
+      alert('Erro ao salvar: ' + (e.message || 'desconhecido'));
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail) { MEMBER = e.detail; applyGate(MEMBER); }
+    }) as EventListener);
+
+    const m = (window as any).navGetMember?.();
+    if (m) { MEMBER = m; applyGate(MEMBER); return; }
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        const { data } = await sb.rpc('get_member_by_auth');
+        MEMBER = data;
+        applyGate(MEMBER);
+        return;
+      }
+    } catch (e) { console.warn('Settings boot:', e); }
+
+    showDenied();
+  }
+
+  function applyGate(m: any) {
+    if (m?.is_superadmin) showPanel();
+    else showDenied();
+  }
+
+  document.getElementById('cfg-save')?.addEventListener('click', saveConfig);
+
+  boot();
+</script>

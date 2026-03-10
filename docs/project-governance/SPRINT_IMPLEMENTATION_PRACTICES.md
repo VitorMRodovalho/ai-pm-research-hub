@@ -33,6 +33,7 @@ Toda sprint DEVE completar esta sequência antes de iniciar a próxima. Este pro
 - Lint check nos arquivos editados (0 erros introduzidos).
 - Smoke test de rotas — verificar que todas as rotas retornam HTTP 200.
 - Verificação de RPCs — confirmar que novas RPCs retornam dados corretos.
+- **Site hierarchy**: verificar que todo href em `navigation.config.ts` possui página correspondente em `src/pages/`; AdminNav.astro alinhado; sem rotas órfãs.
 
 ### Fase 3: Fix
 - Corrigir qualquer problema encontrado na Fase 2.
