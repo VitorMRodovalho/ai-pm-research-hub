@@ -1,5 +1,29 @@
 # Release Log
 
+## 2026-03-11 — v0.22.0 Wave 24: Tribes Deadline Formatting Cleanup
+
+### Scope
+Wave 24 closes another small public-home schedule gap by aligning `TribesSection` deadline formatting with the same locale-aware runtime pattern already used in other home sections and by removing stale fixed fallback date strings.
+
+### Tribes Runtime Follow-Through
+- **`src/components/sections/TribesSection.astro`**: The selection deadline badge now formats through `Intl.DateTimeFormat(..., { timeZone: 'America/Sao_Paulo' })` instead of using manual UTC subtraction and a hardcoded Portuguese month array.
+- **i18n**: The dormant `tribes.deadline` fallback strings in PT/EN/ES now use generic current-schedule wording instead of the old March deadline.
+
+### Governance / Regression
+- **`tests/ui-stabilization.test.mjs`**: Added regression coverage to ensure the manual UTC math is gone and the old fixed `tribes.deadline` strings do not return.
+- **Backlog / governance / permissions / README** updated to reflect this smaller public runtime cleanup with no ACL or site-hierarchy impact.
+
+### Files Changed
+- `src/components/sections/TribesSection.astro`
+- `src/i18n/pt-BR.ts`, `src/i18n/en-US.ts`, `src/i18n/es-LATAM.ts`
+- `tests/ui-stabilization.test.mjs`
+- `backlog-wave-planning-updated.md`, `docs/RELEASE_LOG.md`, `docs/GOVERNANCE_CHANGELOG.md`, `docs/PERMISSIONS_MATRIX.md`, `README.md`
+
+### Audit Results
+- Build: clean | Tests: 26/26 | Browser guard: OK | Smoke: routes OK
+
+---
+
 ## 2026-03-11 — v0.21.0 Wave 23: Hero Kickoff Runtime Truth
 
 ### Scope

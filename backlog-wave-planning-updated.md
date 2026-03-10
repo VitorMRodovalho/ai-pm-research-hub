@@ -8,6 +8,11 @@
 
 ## LATEST UPDATE (2026-03-11)
 
+### Entregue em Wave 24
+- **W24.1 Tribes Deadline Formatting**: `TribesSection.astro` passa a formatar o prazo de seleção com `Intl.DateTimeFormat` e timezone `America/Sao_Paulo`, em vez de manter cálculo manual de mês/hora.
+- **W24.2 Stale Deadline Fallback Cleanup**: as strings `tribes.deadline` em PT/EN/ES deixam de guardar a data fixa antiga e passam a usar wording genérico do cronograma atual.
+- **W24.3 Regression Lock**: `tests/ui-stabilization.test.mjs` agora trava a remoção do UTC math manual e dos fallbacks antigos de `tribes.deadline`.
+
 ### Entregue em Wave 23
 - **W23.1 Hero Kickoff Runtime Truth**: `HeroSection.astro` passa a derivar o estado pós-kickoff de `home_schedule.kickoffAt`, em vez de depender da data do último registro em `events`.
 - **W23.2 Optional Event Enrichment**: a leitura de `events` no hero permanece apenas como enriquecimento para replay/link de reunião, sem ser mais pré-requisito para a home pública sair do estado de kickoff agendado.
@@ -59,6 +64,9 @@
 - **W14.1 Doc Divergence Cleanup**: README, MIGRATION e CONTRIBUTING alinhados com produção atual (Chart.js nativo, smoke routes, 5-phase, repo/path corretos).
 - **W14.2 Admin Hygiene**: Removidas referências antigas a PostHog/Looker do admin atual; primeira tranche de event delegation aplicada em `admin/index.astro` e shared UI.
 - **W14.3 Deferred Structuring**: S23, S24, S-KNW7 e Webinars reclassificados por lane, dependências e critérios de saída do deferred.
+
+### Wave 24 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 26/26 | **Browser guard**: OK | **Routes**: smoke OK
 
 ### Wave 23 Audit Results (2026-03-11)
 - **Build**: clean | **Tests**: 25/25 | **Browser guard**: OK | **Routes**: smoke OK

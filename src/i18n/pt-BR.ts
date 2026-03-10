@@ -199,7 +199,7 @@ const ptBR: Record<string, string> = {
   'tribes.closed': 'SELEÇÃO ENCERRADA',
   'tribes.pending': 'CRONOGRAMA PENDENTE',
   'tribes.deadlinePrefix': 'Encerra',
-  'tribes.deadline': 'Encerra Sáb 08/Mar 12h BRT',
+  'tribes.deadline': 'Prazo publicado no cronograma atual do ciclo',
   'tribes.deadlinePending': 'Prazo será publicado em breve',
   'tribes.deadlineNotice': 'Após o prazo, não será possível trocar de tribo.',
   'tribes.deadlineNoticeClosed': 'O prazo de escolha já foi encerrado para os participantes.',

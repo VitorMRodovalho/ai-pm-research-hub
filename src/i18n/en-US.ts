@@ -199,7 +199,7 @@ const enUS: Record<string, string> = {
   'tribes.closed': 'SELECTION CLOSED',
   'tribes.pending': 'SCHEDULE PENDING',
   'tribes.deadlinePrefix': 'Closes',
-  'tribes.deadline': 'Closes Sat 03/08 12PM BRT',
+  'tribes.deadline': 'Deadline published in the current cycle schedule',
   'tribes.deadlinePending': 'Deadline will be published soon',
   'tribes.deadlineNotice': 'After the deadline, you will not be able to switch streams.',
   'tribes.deadlineNoticeClosed': 'The selection window is already closed for participants.',

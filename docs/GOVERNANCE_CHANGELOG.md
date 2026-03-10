@@ -1,5 +1,21 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 24: Tribes Deadline Formatting Cleanup
+
+### Decisions
+
+1. **Public deadline formatting should use the same locale-aware runtime path across sections**: `AgendaSection` and `ResourcesSection` had already moved to `Intl.DateTimeFormat` with the Sao Paulo timezone, but `TribesSection` still rendered the selection deadline through a manual UTC-3 adjustment and a Portuguese-only month array. This wave aligns that formatting path.
+
+2. **Dormant fixed-date locale strings are still drift risk**: Even if `tribes.deadline` was no longer the active render path, leaving the old March date in locale bundles kept stale copy one refactor away from resurfacing. Generic fallback wording is safer.
+
+### Process Lessons Learned
+
+1. **Formatting debt can hide inside “working” runtime flows**: A surface may already be runtime-driven while still formatting the resulting timestamp through brittle hand-written logic. Runtime adoption is not complete until formatting paths are normalized too.
+
+2. **Dead fallback copy deserves regression coverage once cleaned**: When a locale key becomes effectively dormant, removing stale literals is only half the job. A small textual test is enough to keep them from coming back unnoticed.
+
+---
+
 ## 2026-03-11 — Wave 23: Hero Kickoff Runtime Truth
 
 ### Decisions

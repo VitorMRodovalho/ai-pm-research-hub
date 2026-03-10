@@ -199,7 +199,7 @@ const esLATAM: Record<string, string> = {
   'tribes.closed': 'SELECCIÓN CERRADA',
   'tribes.pending': 'CRONOGRAMA PENDIENTE',
   'tribes.deadlinePrefix': 'Cierra',
-  'tribes.deadline': 'Cierra Sáb 08/Mar 12h BRT',
+  'tribes.deadline': 'Fecha publicada en el cronograma actual del ciclo',
   'tribes.deadlinePending': 'La fecha límite se publicará pronto',
   'tribes.deadlineNotice': 'Después del plazo, no podrás cambiar de línea.',
   'tribes.deadlineNoticeClosed': 'La ventana de selección ya se cerró para los participantes.',

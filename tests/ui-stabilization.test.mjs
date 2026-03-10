@@ -117,3 +117,17 @@ test('hero post-kickoff state now uses runtime kickoff metadata before optional 
   assert.equal(hero.includes("const evDate = new Date(ev.date + 'T22:30:00Z');"), false);
   assert.equal(hero.includes("eventArea.innerHTML = kickoffFallbackHtml(dateStr);"), true);
 });
+
+test('tribes deadline formatting no longer relies on manual UTC math or stale fixed fallback copy', () => {
+  const tribes = read('src/components/sections/TribesSection.astro');
+  const pt = read('src/i18n/pt-BR.ts');
+  const en = read('src/i18n/en-US.ts');
+  const es = read('src/i18n/es-LATAM.ts');
+
+  assert.equal(tribes.includes("const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];"), false);
+  assert.equal(tribes.includes("d.getUTCHours() - 3"), false);
+  assert.equal(tribes.includes("new Intl.DateTimeFormat(currentLang"), true);
+  assert.equal(pt.includes("'tribes.deadline': 'Encerra Sáb 08/Mar 12h BRT'"), false);
+  assert.equal(en.includes("'tribes.deadline': 'Closes Sat 03/08 12PM BRT'"), false);
+  assert.equal(es.includes("'tribes.deadline': 'Cierra Sáb 08/Mar 12h BRT'"), false);
+});

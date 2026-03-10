@@ -33,21 +33,25 @@ const selectionState = !parsedDeadline
     ? 'open'
     : 'closed';
 
-function formatDeadline(iso: string, prefix: string): string | null {
+function formatDeadline(iso: string, prefix: string, currentLang: Lang): string | null {
   try {
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return null;
-    const day = String(d.getUTCDate()).padStart(2, '0');
-    const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-    const mon = months[d.getUTCMonth()];
-    const hh = String(d.getUTCHours() - 3 < 0 ? d.getUTCHours() - 3 + 24 : d.getUTCHours() - 3).padStart(2, '0');
-    return `${prefix} ${day}/${mon} ${hh}h BRT`;
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return null;
+    const formatted = new Intl.DateTimeFormat(currentLang, {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: currentLang !== 'pt-BR',
+      timeZone: 'America/Sao_Paulo',
+    }).format(date);
+    return `${prefix} ${formatted} BRT`;
   } catch {
     return null;
   }
 }
 const deadlineFormatted = TRIBE_SELECTION_DEADLINE_ISO
-  ? formatDeadline(TRIBE_SELECTION_DEADLINE_ISO, t('tribes.deadlinePrefix', lang))
+  ? formatDeadline(TRIBE_SELECTION_DEADLINE_ISO, t('tribes.deadlinePrefix', lang), lang)
   : null;
 const selectionStateLabel = selectionState === 'open'
   ? t('tribes.open', lang)
