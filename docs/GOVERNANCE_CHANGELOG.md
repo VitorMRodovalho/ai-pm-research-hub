@@ -1,5 +1,21 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 20: Generic Home Fallback Cleanup
+
+### Decisions
+
+1. **Public fallback copy should degrade generically, not lie precisely**: Once the home moved to runtime `home_schedule`, leftover literal fallback strings such as fixed March kickoff dates or recurring Thursday times became a reliability risk. When schedule runtime is missing or partial, generic cycle-oriented messaging is safer than stale precision.
+
+2. **Localized runtime hardening includes inline script defaults, not only locale files**: Updating the i18n bundles alone would still leave the hero client script capable of showing old fixed meeting times if its payload was incomplete. The remaining inline defaults were therefore normalized in the same wave.
+
+### Process Lessons Learned
+
+1. **Small copy debt can still be operational debt**: Even when behavior and ACL are correct, stale public dates erode trust quickly. Small cleanup waves are justified when they remove misleading operational messaging.
+
+2. **Textual regression checks are effective for fallback hygiene**: A lightweight test that asserts old literals are absent is enough to keep these stale schedule strings from quietly reappearing.
+
+---
+
 ## 2026-03-11 — Wave 19: Agenda Runtime Deadline Sync
 
 ### Decisions

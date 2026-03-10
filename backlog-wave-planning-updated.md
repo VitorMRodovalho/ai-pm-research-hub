@@ -8,6 +8,11 @@
 
 ## LATEST UPDATE (2026-03-11)
 
+### Entregue em Wave 20
+- **W20.1 Home Fallback Copy Cleanup**: os fallbacks localizados da home (`hero.date`, `hero.meetingSchedule`, `hero.recurringMeeting`, `agenda.item3.desc`) deixam de embutir datas/horarios de Marco e passam a apontar genericamente para o cronograma atual do ciclo.
+- **W20.2 Hero Inline Fallback Hygiene**: `HeroSection.astro` remove os ultimos defaults inline com horario fixo de reuniao, reduzindo a chance de a home publica exibir informacao antiga quando `home_schedule` vier incompleto.
+- **W20.3 Regression Lock**: `tests/ui-stabilization.test.mjs` agora trava explicitamente a ausencia das strings antigas de kickoff/reuniao nas locales e no fallback inline do hero.
+
 ### Entregue em Wave 19
 - **W19.1 Agenda Runtime Deadline**: `AgendaSection.astro` passa a receber o deadline real da wave e remove a data fixa do item "Dinâmica das Tribos".
 - **W19.2 Home Page Wiring**: `index` PT/EN/ES reaproveitam o mesmo `deadlineIso` runtime também na agenda, mantendo Hero e Agenda sincronizados.
@@ -40,6 +45,9 @@
 - **W14.1 Doc Divergence Cleanup**: README, MIGRATION e CONTRIBUTING alinhados com produção atual (Chart.js nativo, smoke routes, 5-phase, repo/path corretos).
 - **W14.2 Admin Hygiene**: Removidas referências antigas a PostHog/Looker do admin atual; primeira tranche de event delegation aplicada em `admin/index.astro` e shared UI.
 - **W14.3 Deferred Structuring**: S23, S24, S-KNW7 e Webinars reclassificados por lane, dependências e critérios de saída do deferred.
+
+### Wave 20 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 22/22 | **Browser guard**: OK | **Routes**: smoke OK
 
 ### Entregue em Wave 13
 - **W13.1 Doc Hygiene**: AGENTS.md Edge functions atualizado (sync-credly-all, sync-attendance-points presentes). PROJECT_ON_TRACK seção 3 e F1 atualizados; última verificação 2026-03-11.

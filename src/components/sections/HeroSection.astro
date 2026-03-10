@@ -191,7 +191,7 @@ const recurringMeeting = `${t('hero.recurringMeetingPrefix', lang)} · ${recurri
     return `
       <div class="bg-white/6 border border-[#05BFE0]/20 rounded-xl px-5 py-3 inline-flex items-center gap-3 flex-wrap justify-center">
         <span class="text-[.78rem] text-white/60">📅 ${hi18n.nextGeneralMeeting || 'Próxima reunião geral:'}</span>
-        <span class="text-[.85rem] font-semibold text-[#05BFE0]">${hi18n.meetingSchedule || 'Quintas · 19:30 → 20:30 BRT'}</span>
+        <span class="text-[.85rem] font-semibold text-[#05BFE0]">${hi18n.meetingSchedule || 'Cronograma recorrente do ciclo'}</span>
         <a href="${meetLink}" target="_blank" rel="noopener"
           class="px-4 py-1.5 bg-[#05BFE0] text-navy rounded-lg text-[.78rem] font-bold no-underline hover:opacity-90 transition-all">
           ${hi18n.joinMeet || 'Entrar no Meet'}
@@ -231,7 +231,7 @@ const recurringMeeting = `${t('hero.recurringMeetingPrefix', lang)} · ${recurri
           ${ev.meeting_link ? `
           <a href="${ev.meeting_link}" target="_blank" rel="noopener"
             class="inline-flex items-center gap-2 bg-white/6 border border-white/10 hover:bg-white/12 text-white px-5 py-2.5 rounded-xl text-[.9rem] font-medium no-underline transition-all">
-            📅 ${hi18n.recurringMeeting || 'Reunião Recorrente · Quintas 19:30 BRT'}
+            📅 ${hi18n.recurringMeeting || 'Reunião recorrente do ciclo'}
           </a>` : ''}
         </div>
         <div class="text-[.72rem] text-white/40 mt-2">${hi18n.kickoffHeldOn || 'Kick-off realizado em'} ${dateStr}</div>`;

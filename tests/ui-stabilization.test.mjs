@@ -54,3 +54,19 @@ test('home pages resolve shared home schedule instead of fetching only the deadl
     assert.equal(content.includes('AgendaSection deadline={deadlineIso}'), true);
   }
 });
+
+test('home fallback copy no longer hardcodes kickoff dates or recurring meeting times', () => {
+  const pt = read('src/i18n/pt-BR.ts');
+  const en = read('src/i18n/en-US.ts');
+  const es = read('src/i18n/es-LATAM.ts');
+  const hero = read('src/components/sections/HeroSection.astro');
+
+  assert.equal(pt.includes('5 de Março de 2026 · 19:30 BRT · Google Meet'), false);
+  assert.equal(en.includes('March 5, 2026 · 7:30 PM BRT · Google Meet'), false);
+  assert.equal(es.includes('5 de Marzo de 2026 · 19:30 BRT · Google Meet'), false);
+  assert.equal(pt.includes('Quintas · 19:30 → 20:30 BRT'), false);
+  assert.equal(en.includes('Thursdays · 7:30 → 8:30 PM BRT'), false);
+  assert.equal(es.includes('Jueves · 19:30 → 20:30 BRT'), false);
+  assert.equal(hero.includes("hi18n.meetingSchedule || 'Quintas · 19:30 → 20:30 BRT'"), false);
+  assert.equal(hero.includes("hi18n.recurringMeeting || 'Reunião Recorrente · Quintas 19:30 BRT'"), false);
+});

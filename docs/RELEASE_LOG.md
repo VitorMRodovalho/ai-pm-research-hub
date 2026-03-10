@@ -1,5 +1,29 @@
 # Release Log
 
+## 2026-03-11 — v0.18.0 Wave 20: Generic Home Fallback Cleanup
+
+### Scope
+Wave 20 closes another small public-home reliability gap by removing the last fixed kickoff and recurring-meeting fallback copy that could resurface outdated March dates when runtime schedule data is missing or partial.
+
+### Home Fallback Hardening
+- **`src/i18n/pt-BR.ts`**, **`src/i18n/en-US.ts`**, **`src/i18n/es-LATAM.ts`**: Hero and agenda fallback strings now point generically to the current cycle agenda/schedule instead of embedding fixed kickoff dates or recurring meeting times.
+- **`src/components/sections/HeroSection.astro`**: The remaining inline client-side defaults for meeting labels now fall back to generic cycle wording rather than `Thursdays 19:30 BRT` style literals.
+
+### Governance / Regression
+- **`tests/ui-stabilization.test.mjs`**: Added a regression check ensuring the old hardcoded kickoff dates and recurring time strings do not reappear in locale bundles or in the hero fallback shell.
+- **Backlog / governance / permissions / README** updated to reflect that this wave changes public fallback copy only, with no ACL or site-hierarchy impact.
+
+### Files Changed
+- `src/components/sections/HeroSection.astro`
+- `src/i18n/pt-BR.ts`, `src/i18n/en-US.ts`, `src/i18n/es-LATAM.ts`
+- `tests/ui-stabilization.test.mjs`
+- `backlog-wave-planning-updated.md`, `docs/RELEASE_LOG.md`, `docs/GOVERNANCE_CHANGELOG.md`, `docs/PERMISSIONS_MATRIX.md`, `README.md`
+
+### Audit Results
+- Build: clean | Tests: 22/22 | Browser guard: OK | Smoke: routes OK
+
+---
+
 ## 2026-03-11 — v0.17.0 Wave 19: Agenda Runtime Deadline Sync
 
 ### Scope
