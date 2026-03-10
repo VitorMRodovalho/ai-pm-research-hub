@@ -8,6 +8,11 @@
 
 ## LATEST UPDATE (2026-03-11)
 
+### Entregue em Wave 14
+- **W14.1 Doc Divergence Cleanup**: README, MIGRATION e CONTRIBUTING alinhados com produção atual (Chart.js nativo, smoke routes, 5-phase, repo/path corretos).
+- **W14.2 Admin Hygiene**: Removidas referências antigas a PostHog/Looker do admin atual; primeira tranche de event delegation aplicada em `admin/index.astro` e shared UI.
+- **W14.3 Deferred Structuring**: S23, S24, S-KNW7 e Webinars reclassificados por lane, dependências e critérios de saída do deferred.
+
 ### Entregue em Wave 13
 - **W13.1 Doc Hygiene**: AGENTS.md Edge functions atualizado (sync-credly-all, sync-attendance-points presentes). PROJECT_ON_TRACK seção 3 e F1 atualizados; última verificação 2026-03-11.
 
@@ -296,6 +301,37 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 ### Wave 13 Audit Results (2026-03-11)
 - **Build**: clean | **Tests**: 13/13
 - **Doc hygiene**: AGENTS.md, PROJECT_ON_TRACK atualizados
+
+---
+
+## WAVE 14: Divergence Cleanup, Gap Audit & Deferred Structuring — CONCLUIDA
+**Foco:** Corrigir divergência entre docs/guidelines e produção, limpar resquícios técnicos no admin e estruturar o backlog futuro por lane.
+
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| W14.1 | Doc Divergence Cleanup | High | Done | `README.md`, `docs/MIGRATION.md`, `CONTRIBUTING.md` atualizados para refletir Chart.js nativo, smoke routes, 5-phase e repo atual. |
+| W14.2 | Admin Hygiene | High | Done | `admin/index.astro` sem refs antigas de PostHog/Looker; primeira tranche de event delegation aplicada; shared UI (`LangSwitcher`, `AuthModal`, `ConfirmDialog`) sem `onclick` inline; `admin_webinars` alinhado em `AdminRouteKey`. |
+| W14.3 | Deferred Structuring | Medium | Done | S23, S24, S-KNW7 e `admin/webinars` classificados por lane, dependências e critério de saída do deferred. |
+
+### Deferred backlog by lane
+
+| ID | Item | Lane owner | Dependencies | Exit criteria from deferred |
+|----|------|------------|--------------|-----------------------------|
+| S23 | Chapter Integrations | Planning + Product | Definir casos de uso por chapter, entidades, ownership, integrações alvo | PRD curto aprovado + mapa de integrações + critérios de sucesso + decisão de fonte de verdade |
+| S24 | API for Chapters | Planning + Backend | Resultado de S23, definição de escopo read-only, autenticação e filtros | Contrato API definido (resources, auth, filters, rate/ACL) + schema/RPC plan |
+| S-KNW7 | Gemini Extraction Pipeline | Product + Data Governance + Integration | Política para `.docx`, revisão LGPD/copyright, pipeline staging | Prompt contract + governance approval + desenho de ingestão/curation/rollback |
+| W14.4 | Webinars Module Discovery | Product + UI | Placeholder atual em `src/pages/admin/webinars.astro`, definição do fluxo operacional | Escopo aprovado para agenda, speakers, attendance, certificates e analytics antes de qualquer schema |
+
+### Benchmark notes (lightweight, not for cloning)
+- **RBAC / admin**: `hubbleai/supabase-user-management-dashboard`, `point-source/supabase-tenant-rbac`
+- **Knowledge hub / workspace**: `airbnb/knowledge-repo`, `jfmartinz/resourcehub`
+- **Webinars / event ops**: `pretalx/pretalx`, `eventschedule/eventschedule`
+
+### Wave 14 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 13/13 | **Smoke**: routes OK
+- **Docs**: README, MIGRATION, CONTRIBUTING alinhados com produção
+- **Site hierarchy / ACL**: rotas admin verificadas; `admin_webinars` alinhado em `AdminRouteKey`; sem rotas órfãs
+- **Admin hygiene**: refs antigas removidas; tranche de event delegation aplicada em admin/shared UI
 
 ---
 

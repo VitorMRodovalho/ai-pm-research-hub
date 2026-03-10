@@ -119,8 +119,8 @@ Legacy columns and compatibility layers may exist temporarily to avoid breaking 
 | Database | Supabase PostgreSQL | Relational data model, auth, storage, RLS |
 | Server Logic | Supabase Edge Functions | Lightweight backend logic and integrations |
 | Docs | Markdown in repo | Version controlled operational and governance docs |
-| Analytics | PostHog via iframe strategy | Internal product analytics with low frontend friction |
-| External Media Metrics | Looker Studio + Sheets + automation | External funnel and communications dashboard |
+| Analytics | Chart.js + Supabase RPCs | Native internal dashboards in protected admin routes |
+| External Media Metrics | Supabase + admin dashboards | Communications metrics managed inside the Hub |
 
 ---
 
@@ -128,34 +128,28 @@ Legacy columns and compatibility layers may exist temporarily to avoid breaking 
 
 ### Internal analytics
 
-The recommended pattern for product analytics is to use **PostHog shared dashboards embedded via iframe** in restricted admin routes instead of building charts directly into Astro.
+The current production pattern is to use **native Chart.js dashboards** powered by Supabase RPCs in restricted admin routes.
 
 Guidelines:
 
-- use `member_id` or at most `operational_role`, not email or full name, in analytics identity payloads
-- mask all input fields in session replay
-- enforce role based visibility for analytics
-- maintain a right to be forgotten operational procedure across both Supabase and analytics tooling
+- use `member_id` or at most `operational_role`, not email or full name
+- keep LGPD-sensitive analytics admin-only
+- enforce tier based visibility for analytics routes
+- maintain a right to be forgotten operational delete path
 
 ### External communications analytics
 
-For YouTube, LinkedIn, and Instagram performance, the preferred pattern is:
-
-- YouTube via native Looker Studio connector
-- LinkedIn and Instagram via weekly Make.com or n8n automation into Google Sheets
-- Looker Studio iframe embedded in an internal admin communications route
-
-This avoids brittle direct social API integrations inside Astro or Supabase.
+The current production pattern is to keep communications metrics in Supabase-backed admin dashboards, avoiding brittle direct social API integrations in core Astro flows.
 
 ---
 
 ## Immediate Engineering Priorities
 
-1. Complete UI integration for tier based Credly scoring in rank and gamification flows.
-2. ~~Validate and fix the mobile Credly URL paste experience~~ — Paste 100ms + input debounce fallback em `Profile.astro`.
-3. Continue frontend migration: Event Delegation **complete** (admin, attendance, profile, artifacts, admin/member). `operational_role`/`designations` migration ongoing.
-4. ~~Add smoke checks for direct navigation and legacy aliases~~ — Smoke inclui /en, /es, legacy redirects.
-5. Keep documentation in sync with every production hotfix and architectural decision.
+1. Eliminate documentation drift between README, migration notes, backlog, and governance docs.
+2. Continue removing legacy inline event handlers from older admin/shared UI surfaces.
+3. Reduce cycle/date hardcodes by preferring `list_cycles` and config-driven reads over local constants.
+4. Keep site hierarchy, access tiers, and LGPD visibility rules aligned across nav, pages, and docs.
+5. Structure deferred items with clear ownership before new large feature work begins.
 
 ---
 
@@ -192,6 +186,8 @@ This avoids brittle direct social API integrations inside Astro or Supabase.
 npm install
 npm run build
 npm run dev -- --host 0.0.0.0 --port 4321
+npm test
+npm run smoke:routes
 ```
 
 ---

@@ -282,3 +282,4 @@ e as Edge Functions estão alinhados com esta matriz.
 | 2026-03-09 | Documento criado (Wave 4). Cobertura: W1–W3 + W4.10.  |
 | 2026-03-11 | Wave 8-10: Admin Curatorship, Admin Selection, Admin Analytics nav. Sections 3.13-3.15 (Tribe Kanban, Selection LGPD, Progressive disclosure). Code mapping table complete. |
 | 2026-03-11 | Wave 11: Section 3.16 Site Config (admin-settings superadmin). Wave 12: Agent docs, release workflow, screenshot script. |
+| 2026-03-11 | Wave 14 audit: site hierarchy/ACL revalidated after admin hygiene; `admin_webinars` route key aligned in shared constants. |

@@ -16,7 +16,7 @@
       <p class="text-sm text-slate-500" id="confirm-message">Tem certeza?</p>
     </div>
     <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2">
-      <button onclick="closeConfirm()"
+      <button id="confirm-cancel-btn"
         class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-slate-200 text-slate-600 bg-transparent hover:bg-slate-50 cursor-pointer">
         Cancelar
       </button>
@@ -61,4 +61,8 @@
     dialog.classList.remove('flex');
     _confirmCallback = null;
   };
+
+  document.getElementById('confirm-cancel-btn')?.addEventListener('click', () => {
+    (window as any).closeConfirm();
+  });
 </script>

@@ -1,5 +1,25 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 14: Divergence Cleanup, Gap Audit & Deferred Structuring
+
+### Decisions
+
+1. **Docs must reflect production, not old strategy**: `README.md`, `docs/MIGRATION.md`, and `CONTRIBUTING.md` still described PostHog/Looker as the preferred analytics pattern and had outdated setup guidance. Wave 14 realigns them with native Chart.js + Supabase RPC dashboards, smoke routes, and the current repo/workflow.
+
+2. **Event delegation remains the target pattern, but migration is incremental**: The repo still contained legacy inline handlers in older surfaces. Rather than claiming the migration is complete, Wave 14 updates the guidelines to say new work must use delegated events and touched legacy surfaces should be refactored progressively. The first focused tranche was applied to `admin/index.astro` and shared UI components.
+
+3. **Deferred items now need lane ownership before implementation**: `S23`, `S24`, `S-KNW7`, and webinars were not ready for execution because they lacked requirement ownership. They are now classified by lane (`planning`, `product`, `backend`, `integration`, `ui`) with dependencies and explicit exit criteria from deferred.
+
+4. **Site hierarchy audits should include route metadata, not only pages**: The page `/admin/webinars` already existed and was present in nav and permissions docs, but `AdminRouteKey` had no `admin_webinars` entry. Wave 14 adds that route key so nav, route metadata, and ACL constants stay synchronized.
+
+### Process Lessons Learned
+
+1. **Guidelines can drift even when the product evolves correctly**: The code had already moved to native dashboards, while README/MIGRATION still documented the old embed strategy. Sprint doc hygiene should cross-check product docs, migration notes, and contributor docs together.
+
+2. **Deferred is not enough without a re-entry rule**: A backlog item marked deferred needs a lane owner, dependencies, and a condition for returning to implementation; otherwise it remains invisible work.
+
+---
+
 ## 2026-03-11 — Wave 13: Doc Hygiene (Edge Functions)
 
 ### Decisions

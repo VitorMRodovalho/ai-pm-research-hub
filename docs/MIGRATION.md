@@ -17,17 +17,17 @@ This document tracks active technical transition points so the team can distingu
 - Cloudflare Pages SPA fallback redirects introduced.
 - Legacy aliases restored for `/teams`, `/rank`, and `/ranks`.
 - `TribesSection.astro` guarded against missing `deliverables` during SSR.
+- Repeatable smoke tests added with `npm run smoke:routes`.
+- Sprint audit now includes an explicit site hierarchy checklist.
 
 ### Still needed
-- repeatable post deploy smoke tests
-- explicit route compatibility checklist
 - validation that production propagation matches local behavior after deploy
 
 ---
 
 ## 2. Role model migration
 
-### Legacy fields still alive
+### Legacy fields removed
 - `role`
 - `roles`
 
@@ -40,10 +40,12 @@ The current platform may still use fallback behavior in some places, but new wor
 
 ### Required next steps
 1. Frontend reads have been migrated in core and admin pages to consume `operational_role` and `designations`.
-2. Remaining compatibility is concentrated in admin RPC fallback logic (`p_role`, `p_roles`) during transition.
-3. After RPC contract cleanup and validation, hard drop `role` and `roles`.
+2. Remaining compatibility is concentrated in transitional RPC contracts and historical documentation cleanup.
+3. New work must not reintroduce `role` / `roles` assumptions anywhere in frontend or docs.
 
 ### Final cleanup target
+Achieved in Wave 8 (`20260312020000`):
+
 ```sql
 ALTER TABLE public.members DROP COLUMN role;
 ALTER TABLE public.members DROP COLUMN roles;
@@ -94,7 +96,7 @@ must read from historical fact tables instead of overloading `members`.
 Tier based scoring logic has already advanced in backend verification behavior.
 
 ### Current issue
-Frontend rank and gamification surfaces do not yet fully reflect the new scoring model.
+Core leaderboard and gamification flows now reflect the tier-based model, but historical recalculation and long-tail UI consistency should still be validated over time.
 
 ### Migration note
 Treat this as a partial migration, not a completed feature.
@@ -108,30 +110,22 @@ Treat this as a partial migration, not a completed feature.
 
 ## 6. Mobile profile input hardening
 
-### Current issue
-Credly URL entry on iOS needs validation against real mobile paste behavior.
-
-### Suspected causes
-- regex too strict for pasted public URLs with trailing slash or benign params
-- paste or focus handling on mobile
-- save button enablement not responding correctly after paste
+### Applied
+Paste normalization, debounce fallback, and validation hardening were shipped in `Profile.astro`.
 
 ### Required next steps
-- test on iOS Safari and Chrome
-- trim and normalize URL before submit
-- accept valid public profile variants without needless form drama
+- keep validating on real iOS Safari and Chrome when regressions are reported
+- preserve normalization for valid public profile variants without tightening regex again
 
 ---
 
 ## 7. Analytics architecture
 
 ### Internal analytics
-Recommended route is PostHog shared dashboards embedded via iframe in protected admin routes.
+Current production route is native Chart.js dashboards backed by Supabase RPCs in protected admin routes.
 
 ### External media analytics
-Recommended route is Looker Studio via iframe, fed by:
-- YouTube native connector
-- LinkedIn and Instagram through Google Sheets plus automation
+Current production route is Supabase-backed admin communications dashboards. External connectors may still feed source data, but Looker/PostHog iframes are no longer the primary product pattern.
 
 ### Migration constraint
 Do not build brittle direct social API integrations into core Astro or Supabase flows unless absolutely necessary.

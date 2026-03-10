@@ -1,5 +1,43 @@
 # Release Log
 
+## 2026-03-11 — v0.12.0 Wave 14: Divergence Cleanup, Gap Audit & Deferred Structuring
+
+### Scope
+Wave 14 removes documentation drift, cleans residual PostHog/Looker references from the admin surface, starts a focused event delegation cleanup, and turns deferred items into actionable backlog lanes.
+
+### Doc Divergence Cleanup
+- **README.md**: Analytics stack and priorities updated to match native Chart.js + Supabase RPC dashboards, current engineering priorities, and local workflow with tests and smoke routes.
+- **docs/MIGRATION.md**: Role drop, smoke routes, site hierarchy audit, and native analytics migration now reflect the current production state.
+- **CONTRIBUTING.md**: Repository path fixed (`ai-pm-research-hub`), local workflow updated, PR checklist aligned with site hierarchy and 5-phase sprint closure.
+
+### Admin Hygiene
+- **`src/pages/admin/index.astro`**: Removed stale PostHog/Looker env refs and replaced the main batch of inline handlers with delegated `data-action` dispatch.
+- **`src/pages/admin/comms.astro`**: Removed legacy Looker mode toggle from the current UI path.
+- **Shared UI**: `LangSwitcher`, `AuthModal`, and `ConfirmDialog` no longer use inline `onclick` attributes.
+- **i18n**: Comms/admin labels now describe native platform dashboards instead of Looker/PostHog embeds.
+
+### Deferred Structuring
+- **Backlog**: `S23`, `S24`, `S-KNW7`, and webinar discovery now have lane ownership, dependencies, and clear exit criteria from deferred.
+- **Benchmark notes**: Added lightweight references for RBAC/admin, knowledge hub, and webinars/event ops to support future requirement discovery.
+
+### Site Hierarchy / Access Audit
+- Verified current routes in `navigation.config.ts` still map to existing pages.
+- Aligned `admin_webinars` in `AdminRouteKey` / route tier constants so navigation, route metadata, and permissions stay consistent.
+- `PERMISSIONS_MATRIX.md` changelog updated after the Wave 14 audit.
+
+### Files Changed
+- `README.md`, `docs/MIGRATION.md`, `CONTRIBUTING.md`
+- `src/pages/admin/index.astro`, `src/pages/admin/comms.astro`
+- `src/components/nav/LangSwitcher.astro`, `src/components/ui/AuthModal.astro`, `src/components/ui/ConfirmDialog.astro`
+- `src/i18n/pt-BR.ts`, `src/i18n/en-US.ts`, `src/i18n/es-LATAM.ts`
+- `src/lib/admin/constants.ts`
+- `backlog-wave-planning-updated.md`, `docs/PERMISSIONS_MATRIX.md`, `docs/GOVERNANCE_CHANGELOG.md`
+
+### Audit Results
+- Build: clean | Tests: 13/13 | Smoke: routes OK
+
+---
+
 ## 2026-03-11 — v0.11.0 Wave 13: Doc Hygiene (Edge Functions)
 
 ### Scope

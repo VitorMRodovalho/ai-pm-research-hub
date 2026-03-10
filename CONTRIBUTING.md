@@ -15,8 +15,8 @@ Welcome! The **AI & PM Research Hub** is the operational platform for the *Núcl
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/VitorMRodovalho/ai-pm-hub-v2.git
-cd ai-pm-hub-v2/pve
+git clone https://github.com/VitorMRodovalho/ai-pm-research-hub.git
+cd ai-pm-research-hub
 npm install
 
 # 2. Configure environment
@@ -24,7 +24,7 @@ cp .env.example .env
 # Edit .env with your Supabase credentials (see .env.example for docs)
 
 # 3. Start the dev server
-npm run dev
+npm run dev -- --host 0.0.0.0 --port 4321
 ```
 
 The dev server runs at `http://localhost:4321` by default. Use `npm run dev -- --host 0.0.0.0 --port 4321` to expose it on the network.
@@ -54,7 +54,7 @@ All three must pass before you open a PR.
 
 ### Rules
 
-1. **Event delegation only.** Never use inline event handlers like `onclick="fn('${var}')"`. Attach listeners via `document.addEventListener` and read `data-*` attributes. See `.cursorrules` for the rationale.
+1. **Prefer event delegation for all new work.** Do not add new inline event handlers like `onclick="fn('${var}')"`. Some legacy surfaces still use them and should be refactored when touched; new code should attach listeners via `document.addEventListener` and read `data-*` attributes.
 
 2. **Tailwind utility classes only.** Do not create standalone `.css` files unless they contain complex global animations.
 
@@ -98,11 +98,23 @@ docs: add March 2026 stabilization notes to RELEASE_LOG
 - [ ] `npm test` passes
 - [ ] `npm run build` succeeds
 - [ ] `npm run smoke:routes` passes (if routes were changed)
+- [ ] Site hierarchy still matches `navigation.config.ts`, `AdminNav.astro`, and route files
 - [ ] i18n keys added for any new user-facing strings
 - [ ] Production-impacting changes documented in `docs/RELEASE_LOG.md`
 - [ ] DB changes include a migration in `supabase/migrations/`
+- [ ] Sprint docs updated when closing a sprint (`backlog-wave-planning-updated.md`, `docs/GOVERNANCE_CHANGELOG.md`)
 
 CI runs automatically on PRs to `main`. All checks must be green before merge.
+
+### Sprint closure discipline
+
+Every sprint follows the 5-phase routine documented in `AGENTS.md` and `docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md`:
+
+1. Execute
+2. Audit
+3. Fix
+4. Docs
+5. Deploy
 
 ---
 

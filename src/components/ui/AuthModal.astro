@@ -26,7 +26,7 @@ const ui = {
 <div id="auth-modal"
   class="hidden fixed inset-0 z-[300] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
   <div class="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl relative">
-    <button onclick="document.getElementById('auth-modal').classList.add('hidden')"
+    <button id="auth-close-btn"
             class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 cursor-pointer border-0 bg-transparent text-xl">✕</button>
     <div class="text-3xl mb-3 text-center">🔐</div>
     <h2 class="text-xl font-extrabold text-center text-navy mb-1">{ui.title}</h2>
@@ -61,6 +61,10 @@ const ui = {
 <script define:vars={{ redirectTo, ui }}>
   document.addEventListener('open-auth', function() {
     document.getElementById('auth-modal').classList.remove('hidden');
+  });
+
+  document.getElementById('auth-close-btn')?.addEventListener('click', function() {
+    document.getElementById('auth-modal')?.classList.add('hidden');
   });
 
   document.getElementById('btn-google').addEventListener('click', async function() {

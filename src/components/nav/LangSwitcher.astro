@@ -19,7 +19,7 @@ function buildHref(prefix: string): string {
 ---
 
 <div class="relative" id="lang-switcher">
-  <button onclick="document.getElementById('lang-menu').classList.toggle('hidden')"
+  <button id="lang-toggle"
           class="flex items-center gap-1 px-2 py-1 rounded-md bg-white/10 border border-white/20
                  text-white text-[.72rem] font-semibold hover:bg-white/20 transition-all cursor-pointer">
     {LANGUAGES.find(l => l.code === currentLang)?.flag}
@@ -44,6 +44,11 @@ function buildHref(prefix: string): string {
 </div>
 
 <script>
+  const toggle = document.getElementById('lang-toggle');
+  toggle?.addEventListener('click', () => {
+    document.getElementById('lang-menu')?.classList.toggle('hidden');
+  });
+
   // Close dropdown when clicking outside
   document.addEventListener('click', (e) => {
     const switcher = document.getElementById('lang-switcher');

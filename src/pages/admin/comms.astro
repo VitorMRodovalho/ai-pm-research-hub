@@ -1,14 +1,13 @@
 ---
 /**
  * admin/comms.astro — S-COM6 Dashboard Central de Mídia
- * Sections: Channel metrics (native/Looker), Tribe Impact Ranking, Broadcast History.
+ * Sections: native channel metrics, tribe impact ranking, and broadcast history.
  */
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import AdminNav from '../../components/nav/AdminNav.astro';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
-const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL || '';
 ---
 
 <BaseLayout title={t('admin.comms.meta', lang)} activePage="admin">
@@ -31,7 +30,7 @@ const COMMS_DASHBOARD_URL = import.meta.env.PUBLIC_LOOKER_COMMS_DASHBOARD_URL ||
       </a>
     </div>
 
-    <div id="comms-panel" class="hidden space-y-6" data-comms-mode={COMMS_DASHBOARD_URL ? 'iframe' : 'native'}>
+    <div id="comms-panel" class="hidden space-y-6">
 
       <!-- Section 1: Tribe Impact Ranking -->
       <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
