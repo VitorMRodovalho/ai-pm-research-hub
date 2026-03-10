@@ -161,19 +161,45 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 
 ---
 
-## WAVE 5 FASE 2: Knowledge Intelligence — PENDENTE
-**Foco:** Correlacao conhecimento-certificacao, views relacionais e busca semantica.
+## WAVE 7: Data Ingestion Platform — EM PROGRESSO
+**Foco:** Ingerir todas as fontes de dados descentralizadas (Trello, Calendar, CSV Voluntarios, Miro) na plataforma como single source of truth.
 
 | ID | Feature | Priority | Status | Description |
 |----|---------|----------|--------|-------------|
-| S-KNW4 | Views Relacionais Governadas | Medium | Planned | Gallery/board-style views powered by Supabase data model and RLS. |
-| S-KNW5 | Knowledge-Certification Correlation | Medium | Planned | Correlate `hub_resources` consumption with course/certification progress. |
-| S-KNW6 | Busca Semantica (Embeddings) | Low | Planned | Vector search via `knowledge_assets` + pgvector para busca por significado. |
-| S-KNW7 | Gemini Extraction Pipeline | Low | Planned | Extrair conteudo de `.docx` em `needs_extraction/` via Gemini API. |
+| W7.1 | Trello 5-Board Historical Import | High | Done | `trello_board_importer.ts`: 5 boards (123 cards) → `project_boards` + `board_items` com member matching. |
+| W7.2 | Google Calendar ICS Import | High | Done | `calendar_event_importer.ts`: ICS → `events` com filtro Nucleo/PMI e dedup via `calendar_event_id`. |
+| W7.3 | Volunteer CSV Data Pipeline | High | Done | `volunteer_csv_importer.ts`: 6 CSVs (Ciclos 1-3) → `volunteer_applications` com cross-ref `members` por email. |
+| W7.4 | Miro Board Links Import | Medium | Done | `miro_links_importer.ts`: 445 linhas → `hub_resources` com categorias (Videos, Cursos, Artigos, etc.) e URL dedup. |
+| W7.5 | Project Boards Schema | High | Done | Migration: `project_boards` + `board_items` tables com RLS, RPCs (`list_board_items`, `move_board_item`, `list_project_boards`). |
+| W7.6 | Volunteer Applications Schema | High | Done | Migration: `volunteer_applications` table com RLS admin-only + `volunteer_funnel_summary` RPC. |
 
 ---
 
-## WAVE 6: Scale, Multi Tenant & Global Impact — PENDENTE
+## WAVE 8: Reusable Kanban & Journeys — PENDENTE
+**Foco:** Componente Kanban universal, boards por tribo, analytics de selecao, e revisao UX tier-aware.
+
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| W8.1 | Universal Kanban Component | High | Planned | Extrair e generalizar Kanban de curatorship para componente reutilizavel. Substitui S-KNW4. |
+| W8.2 | Tribe Project Boards | High | Planned | Aba "Quadro de Projeto" em `/tribe/[id]` com boards populados por Trello import. |
+| W8.3 | Selection Process Analytics | Medium | Planned | Dashboard analytics com Chart.js: funnel, comparacao ciclos, snapshot diff, geo, certs. Absorve DS-1. |
+| W8.4 | Tier-Aware Progressive Disclosure | Medium | Planned | Menus nao ocultos mas desabilitados com lock icon para tiers inferiores. |
+
+---
+
+## WAVE 9: Intelligence & Governance — PENDENTE
+**Foco:** Frontend processo seletivo, journal de governanca, busca semantica, dashboards cross-source.
+
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| W9.1 | Selection Process Frontend | High | Planned | Pagina `/admin/selection` com import CSV, lista candidatos, comparacao snapshots. |
+| W9.2 | Governance Change Request Journal | Medium | Planned | Frontend `/admin/governance` com CRUD de change requests e workflow de aprovacao. |
+| W9.3 | Busca Semantica (Embeddings) | Low | Planned | pgvector sobre `artifacts`, `hub_resources`, `board_items`. Herdado de S-KNW6. |
+| W9.4 | Cross-Source Analytics Dashboards | Medium | Planned | Visao unificada: volunteer pipeline + Kanban + comms + attendance + gamification. |
+
+---
+
+## WAVE 10: Scale, Multi Tenant & Global Impact — PENDENTE
 **Foco:** Preparar o projeto para ser replicavel e internacionalizavel.
 
 | ID | Feature | Priority | Status | Description |
@@ -182,7 +208,7 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 | S23 | Chapter Integrations | Medium | Planned | Event-driven integrations with local chapter portfolios and tools. |
 | S24 | API for Chapters | Low | Planned | Read-only API for chapter impact and participation data. |
 | S-SC1 | Multilingual Screenshots | Low | Planned | Automated screenshots for PT EN ES docs or release snapshots. |
-| DS-1 | Data Science PMI-CE | Medium | Planned | Dashboards analiticos para o capitulo PMI-CE com metricas de impacto. |
+| S-KNW7 | Gemini Extraction Pipeline | Low | Deferred | Extrair conteudo de `.docx` em `needs_extraction/` via Gemini API. |
 
 ---
 
@@ -241,14 +267,20 @@ Use Looker Studio for YouTube, LinkedIn, and Instagram funnel-style KPIs through
 
 ---
 
-## PRODUCTION STATE SUMMARY (2026-03-10)
+## PRODUCTION STATE SUMMARY (2026-03-11)
 
 ### Infrastructure
 - **Git**: `origin/main` and `production/main` 100% synchronized
-- **SQL Migrations**: 33/33 applied in production (Supabase)
+- **SQL Migrations**: 39/39 applied in production (Supabase) — +2 new tables (Wave 7)
 - **Edge Functions**: 13 active in production (all `--no-verify-jwt`)
 - **Frontend**: Deployed via Cloudflare Pages (auto-deploy from main)
 - **Storage**: `documents` bucket active with public read + authenticated upload
+
+### Data Ingestion Scripts (Wave 7)
+- `scripts/trello_board_importer.ts`: 5 Trello boards → project_boards + board_items
+- `scripts/calendar_event_importer.ts`: Google Calendar ICS → events
+- `scripts/volunteer_csv_importer.ts`: 6 PMI volunteer CSVs → volunteer_applications
+- `scripts/miro_links_importer.ts`: Miro board CSV → hub_resources
 
 ### Navigation (`navigation.config.ts`)
 - 19 items covering all routes with tier-based ACL
@@ -256,7 +288,7 @@ Use Looker Studio for YouTube, LinkedIn, and Instagram funnel-style KPIs through
 - No orphan routes (legacy aliases `/teams`, `/rank`, `/ranks` are intentional redirects)
 
 ### Documentation
-- `docs/RELEASE_LOG.md`: Up to date (2026-03-10)
+- `docs/RELEASE_LOG.md`: Up to date (2026-03-11)
 - `docs/PERMISSIONS_MATRIX.md`: Up to date (2026-03-10)
 - `backlog-wave-planning-updated.md`: This file — synchronized
 

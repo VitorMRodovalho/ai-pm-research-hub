@@ -1,5 +1,56 @@
 # Release Log
 
+## 2026-03-11 — v0.5.0 Wave 7: Data Ingestion Platform
+
+### Scope
+Comprehensive data ingestion sprint to consolidate all decentralized data sources (Trello, Google Calendar, PMI Volunteer CSVs, Miro board) into the platform database as single source of truth. Includes new DB tables, RLS policies, RPCs, and 4 importer scripts.
+
+### New Database Tables
+- `project_boards`: Kanban-style project boards for tribes and subprojects (source: manual/trello/notion/miro/planner)
+- `board_items`: Cards within project boards with full Kanban workflow (backlog/todo/in_progress/review/done/archived)
+- `volunteer_applications`: PMI volunteer application data per cycle/snapshot with LGPD admin-only access
+
+### New Migrations
+- `20260312000000_project_boards.sql`: project_boards + board_items tables, RLS, RPCs (list_board_items, move_board_item, list_project_boards), updated trello_import_log constraints
+- `20260312010000_volunteer_applications.sql`: volunteer_applications table, RLS (admin-only), volunteer_funnel_summary RPC
+
+### New RPCs
+- `list_board_items(p_board_id, p_status)`: Returns board items with assignee info, ordered by position
+- `move_board_item(p_item_id, p_new_status, p_position)`: Moves items with permission checks
+- `list_project_boards(p_tribe_id)`: Lists active boards with item counts
+- `volunteer_funnel_summary(p_cycle)`: Returns analytics by cycle, certifications, and geography
+
+### New Scripts
+- `scripts/trello_board_importer.ts`: Parses 5 Trello JSON exports (123 cards total), maps lists to status, labels to tags, Trello members to DB members by name match, inserts into project_boards + board_items, logs to trello_import_log
+- `scripts/calendar_event_importer.ts`: Parses Google Calendar ICS export, filters ~30 Nucleo/PMI events, inserts into events table with source=calendar_import and dedup via calendar_event_id
+- `scripts/volunteer_csv_importer.ts`: Parses 6 PMI volunteer CSVs (Ciclos 1-3, ~779 rows), cross-references with members by email, stores with cycle + snapshot_date metadata for diff analysis
+- `scripts/miro_links_importer.ts`: Parses Miro board CSV (445 lines), extracts categorized links (Videos, Courses, Articles, Books, News), inserts into hub_resources with URL dedup
+
+### Backlog Reconciliation
+- Created Wave 7 (Data Ingestion), Wave 8 (Reusable Kanban), Wave 9 (Intelligence & Governance), Wave 10 (Scale)
+- S-KNW4 (Views Relacionais) reframed as W8.1+W8.2 (Universal Kanban + Tribe Boards)
+- DS-1 (Data Science PMI-CE) absorbed into W8.3 + W9.4
+- P3 Trello/Calendar Import accelerated from Wave 6 to Wave 7
+- S-KNW5 → W9.4, S-KNW6 → W9.3, S-KNW7 → Deferred to Wave 10
+
+### Files Changed
+- `supabase/migrations/20260312000000_project_boards.sql` (new)
+- `supabase/migrations/20260312010000_volunteer_applications.sql` (new)
+- `scripts/trello_board_importer.ts` (new)
+- `scripts/calendar_event_importer.ts` (new)
+- `scripts/volunteer_csv_importer.ts` (new)
+- `scripts/miro_links_importer.ts` (new)
+- `backlog-wave-planning-updated.md` (updated: Wave 7-10 roadmap)
+- `docs/RELEASE_LOG.md` (this file)
+- `docs/GOVERNANCE_CHANGELOG.md` (updated)
+
+### Validation
+- Migrations applied via `supabase db push`
+- All 4 importer scripts compile and support `--dry-run` mode
+- Backlog and release docs synchronized
+
+---
+
 ## 2026-03-10 — v0.4.0 Four Options Sprint: Knowledge, Kanban, Onboarding NLP, Analytics 2.0
 
 ### Scope

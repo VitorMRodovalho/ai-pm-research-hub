@@ -1,5 +1,27 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 7: Data Ingestion Platform and Roadmap Reorganization
+
+### Decisions
+
+1. **Roadmap waves reorganized**: The previous Wave 5 Phase 2 and Wave 6 have been restructured into Waves 7-10 to reflect the new data-driven strategy. Wave numbering continues sequentially from the last completed wave.
+
+2. **Data ingestion as prerequisite**: All external data sources (Trello boards, Google Calendar, PMI volunteer CSVs, Miro board) must be ingested into the platform DB before building frontend features that consume them. This follows the established rule: "Feature de frontend sem backend/API/SQL pronto nao avanca para desenvolvimento."
+
+3. **New tables follow architecture doctrine**: `project_boards` and `board_items` extend the existing data model without replacing it. `volunteer_applications` is LGPD-sensitive with admin-only RLS. No existing tables were modified.
+
+4. **Backlog items absorbed or reframed**: S-KNW4 (Views Relacionais) is now W8.1+W8.2 (Universal Kanban). DS-1 (Data Science PMI-CE) is now W8.3+W9.4 (Selection Analytics + Cross-Source Dashboards). S-KNW7 (Gemini Extraction) is deferred to Wave 10.
+
+5. **Tier-aware progressive disclosure planned for Wave 8**: Navigation items will be visible to all tiers but disabled (with lock icon) for insufficient permissions. Sensitive DATA remains hidden per LGPD. This architectural decision affects `navigation.config.ts` and all rendering components.
+
+### Affected governance documents
+
+- `backlog-wave-planning-updated.md` updated (Waves 7-10, production state summary)
+- `docs/RELEASE_LOG.md` updated (v0.5.0 entry)
+- `docs/GOVERNANCE_CHANGELOG.md` updated (this entry)
+
+---
+
 ## 2026-03-10 — CPO Production Audit: Information Architecture restructure
 
 ### Decisions
