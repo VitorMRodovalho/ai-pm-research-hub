@@ -31,3 +31,13 @@ public/legacy-assets/logos/
 data/legacy-imports/calendar/
 data/legacy-imports/docs/*.pdf
 data/legacy-imports/docs/*.docx
+
+# Data Governance: raw exports, staging, logs (LGPD compliance)
+data/raw-drive-exports/
+data/staging-knowledge/
+data/ingestion-logs/
+docs/project-governance/DATA_INGESTION_POLICY.md
+
+# ETL manifests and local outputs
+scripts/bulk_knowledge_ingestion/upload_manifest.json
+scripts/bulk_knowledge_ingestion/upload_manifest_curated.json
