@@ -187,6 +187,13 @@ async function run() {
     assert.match(await page.locator('#webinars-publication').textContent() || '', /Workspace: pendente/);
     assert.match(await page.locator('#webinars-upcoming').textContent() || '', /Autonomous Agents Deep Dive/);
     assert.match(await page.locator('#webinars-followup').textContent() || '', /AI Delivery Review|Research Ops Retrospective/);
+    const contextualAttendanceHref = await page.locator('#webinars-content a[href*="/attendance?"]').first().getAttribute('href');
+    const contextualCommsHref = await page.locator('#webinars-content a[href*="/admin/comms?"]').first().getAttribute('href');
+    assert.match(contextualAttendanceHref || '', /type=webinar/);
+    assert.match(contextualAttendanceHref || '', /eventId=webinar/);
+    assert.match(contextualCommsHref || '', /focus=broadcasts/);
+    assert.match(contextualCommsHref || '', /context=webinar/);
+    assert.match(contextualCommsHref || '', /eventId=webinar/);
 
     await page.close();
     console.log('Browser guard, home runtime, and webinars admin test passed.');

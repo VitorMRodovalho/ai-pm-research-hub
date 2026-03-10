@@ -51,6 +51,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
     <section id="webinars-stats" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"></section>
 
+    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200">
+        <h2 class="text-sm font-bold text-navy">Acoes rapidas prioritarias</h2>
+        <p class="text-[.72rem] text-slate-400">Proxima acao sugerida por webinar, usando apenas os modulos ja existentes</p>
+      </div>
+      <div id="webinars-actions" class="p-5"></div>
+    </section>
+
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-200">
@@ -225,6 +233,104 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       : `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600">${label}: pendente</span>`;
   }
 
+  function buildPresentationsHref(ev: any): string {
+    const params = new URLSearchParams();
+    if (ev.tribe_id) params.set('tribe', String(ev.tribe_id));
+    else params.set('filter', 'general');
+    if (ev.title) params.set('q', String(ev.title));
+    return `/presentations?${params.toString()}`;
+  }
+
+  function buildAttendanceHref(ev: any, action = '', openEdit = false): string {
+    const params = new URLSearchParams();
+    params.set('tab', 'events');
+    params.set('type', 'webinar');
+    if (ev.id) params.set('eventId', String(ev.id));
+    if (ev.title) params.set('q', String(ev.title));
+    if (action) params.set('action', action);
+    if (openEdit) params.set('edit', '1');
+    return `/attendance?${params.toString()}`;
+  }
+
+  function buildCommsHref(ev: any, stage = 'invite'): string {
+    const params = new URLSearchParams();
+    params.set('focus', 'broadcasts');
+    params.set('context', 'webinar');
+    params.set('stage', stage);
+    if (ev.id) params.set('eventId', String(ev.id));
+    if (ev.title) {
+      params.set('q', String(ev.title));
+      params.set('title', String(ev.title));
+    }
+    if (ev.date) params.set('date', String(ev.date));
+    return `/admin/comms?${params.toString()}`;
+  }
+
+  function buildWorkspaceHref(ev: any): string {
+    const params = new URLSearchParams();
+    params.set('type', 'webinar');
+    if (ev.tribe_id) params.set('tribe', String(ev.tribe_id));
+    if (ev.title) params.set('q', String(ev.title));
+    return `/workspace?${params.toString()}`;
+  }
+
+  function operatorAction(ev: any): { label: string; href: string; note: string; tone: string; done?: boolean; priority: number } {
+    const past = isPastEvent(ev.date);
+    if (!past && !ev.meeting_link) {
+      return {
+        label: 'Completar link da sessao',
+        href: buildAttendanceHref(ev, 'meeting-link', true),
+        note: 'Webinar futuro ainda sem meeting link operacional.',
+        tone: 'bg-amber-50 text-amber-700 border-amber-200',
+        priority: 1,
+      };
+    }
+    if (past && ev.is_recorded && !ev.youtube_url) {
+      return {
+        label: 'Publicar replay no Attendance',
+        href: buildAttendanceHref(ev, 'youtube-url', true),
+        note: 'A sessao foi marcada como gravada, mas ainda nao recebeu `youtube_url`.',
+        tone: 'bg-amber-50 text-amber-700 border-amber-200',
+        priority: 2,
+      };
+    }
+    if (past && ev.youtube_url && !ev.presentationPublished) {
+      return {
+        label: 'Publicar em Presentations',
+        href: buildPresentationsHref(ev),
+        note: 'O replay existe, mas ainda nao apareceu na trilha de apresentacoes.',
+        tone: 'bg-purple-50 text-purple-700 border-purple-200',
+        priority: 3,
+      };
+    }
+    if (past && ev.youtube_url && !ev.workspacePublished) {
+      return {
+        label: 'Adicionar no Workspace',
+        href: buildWorkspaceHref(ev),
+        note: 'O replay ainda nao foi refletido na biblioteca de recursos.',
+        tone: 'bg-teal-50 text-teal-700 border-teal-200',
+        priority: 4,
+      };
+    }
+    if (!past) {
+      return {
+        label: 'Preparar divulgacao',
+        href: buildCommsHref(ev, 'invite'),
+        note: 'Sessao futura com dados minimos prontos para convite e lembrete.',
+        tone: 'bg-blue-50 text-blue-700 border-blue-200',
+        priority: 5,
+      };
+    }
+    return {
+      label: 'Fluxo completo',
+      href: '/admin/webinars',
+      note: 'Replay e publicacao ja estao alinhados nas superficies atuais.',
+      tone: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      done: true,
+      priority: 6,
+    };
+  }
+
   function enrichWebinar(ev: any): any {
     const artifact = webinarArtifactsByEventId.get(ev.id) || null;
     const workspaceResource = webinarWorkspaceByKey.get(normalizeUrl(ev.youtube_url))
@@ -236,6 +342,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       workspaceResource,
       presentationPublished: !!artifact,
       workspacePublished: !!workspaceResource,
+      action: operatorAction({
+        ...ev,
+        artifact,
+        workspaceResource,
+        presentationPublished: !!artifact,
+        workspacePublished: !!workspaceResource,
+      }),
     };
   }
 
@@ -262,6 +375,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
   function webinarCard(ev: any): string {
     const isPast = isPastEvent(ev.date);
+    const attendanceHref = buildAttendanceHref(ev);
+    const commsHref = buildCommsHref(ev, 'invite');
+    const presentationsHref = buildPresentationsHref(ev);
+    const workspaceHref = buildWorkspaceHref(ev);
     const replayStatus = ev.youtube_url
       ? '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-50 text-red-700">Replay publicado</span>'
       : (ev.is_recorded && isPast
@@ -274,11 +391,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       ? `<a href="${escapeHtml(ev.youtube_url)}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 text-[.72rem] font-semibold no-underline hover:bg-red-100 transition-all">Replay</a>`
       : '';
     const presentationsLink = ev.artifact
-      ? `<a href="${escapeHtml(ev.artifact.recording_url || ev.youtube_url || '/presentations')}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-[.72rem] font-semibold no-underline hover:bg-slate-50 transition-all">Presentations</a>`
+      ? `<a href="${escapeHtml(presentationsHref)}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-[.72rem] font-semibold no-underline hover:bg-slate-50 transition-all">Presentations</a>`
       : '';
     const workspaceLink = ev.workspaceResource?.url
-      ? `<a href="${escapeHtml(ev.workspaceResource.url)}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-[.72rem] font-semibold no-underline hover:bg-slate-50 transition-all">Workspace</a>`
+      ? `<a href="${escapeHtml(workspaceHref)}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-[.72rem] font-semibold no-underline hover:bg-slate-50 transition-all">Workspace</a>`
       : '';
+    const nextAction = ev.action || operatorAction(ev);
 
     return `
       <article class="rounded-2xl border border-slate-200 p-4">
@@ -300,10 +418,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
             <div class="flex items-center gap-2 flex-wrap mt-2">
               ${publicationBadge('Presentations', ev.presentationPublished)}
               ${publicationBadge('Workspace', ev.workspacePublished)}
+              <span class="px-2 py-0.5 rounded-full text-[11px] font-bold border ${nextAction.tone}">Proxima acao: ${nextAction.label}</span>
             </div>
+            <p class="text-[.74rem] text-slate-500 mt-2">${escapeHtml(nextAction.note)}</p>
           </div>
           <div class="flex items-center gap-2 flex-wrap">
-            <a href="/attendance" class="px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold no-underline hover:opacity-90 transition-all">Gerenciar</a>
+            <a href="${escapeHtml(attendanceHref)}" class="px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold no-underline hover:opacity-90 transition-all">Gerenciar</a>
+            <a href="${escapeHtml(nextAction.href)}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-[.72rem] font-semibold no-underline hover:bg-slate-50 transition-all">${nextAction.label}</a>
+            ${!isPast ? `<a href="${escapeHtml(commsHref)}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-[.72rem] font-semibold no-underline hover:bg-slate-50 transition-all">Comms</a>` : ''}
             ${meetLink}
             ${replayLink}
             ${presentationsLink}
@@ -352,6 +474,48 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       return;
     }
     container.innerHTML = `<div class="space-y-3">${followups.map(webinarCard).join('')}</div>`;
+  }
+
+  function renderActions(webinars: any[]) {
+    const container = document.getElementById('webinars-actions');
+    if (!container) return;
+    const actionItems = [...webinars]
+      .sort((a: any, b: any) => {
+        const prioDiff = Number(a.action?.priority || 99) - Number(b.action?.priority || 99);
+        if (prioDiff !== 0) return prioDiff;
+        return String(a.date).localeCompare(String(b.date));
+      })
+      .slice(0, 6);
+    if (!actionItems.length) {
+      container.innerHTML = `
+        <div class="rounded-2xl border border-dashed border-slate-200 p-5 text-center">
+          <div class="text-3xl mb-2">🧭</div>
+          <div class="text-sm font-semibold text-slate-600">Nenhuma acao prioritaria no momento.</div>
+        </div>
+      `;
+      return;
+    }
+    container.innerHTML = `
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        ${actionItems.map((ev: any) => `
+          <article class="rounded-2xl border border-slate-200 p-4">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="text-sm font-bold text-navy">${escapeHtml(ev.title || 'Webinar')}</div>
+                <div class="text-[.72rem] text-slate-400 mt-1">${formatDateLabel(ev.date)} · ${Number(ev.attendee_count || 0)} presentes</div>
+                <div class="mt-2 inline-flex items-center gap-2 px-2.5 py-1 rounded-full border text-[.68rem] font-bold ${ev.action.tone}">
+                  ${escapeHtml(ev.action.label)}
+                </div>
+                <p class="text-[.74rem] text-slate-500 mt-2">${escapeHtml(ev.action.note)}</p>
+              </div>
+              <a href="${escapeHtml(ev.action.href)}" class="shrink-0 px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold no-underline hover:opacity-90 transition-all">
+                Abrir
+              </a>
+            </div>
+          </article>
+        `).join('')}
+      </div>
+    `;
   }
 
   function renderPublication(webinars: any[]) {
@@ -421,6 +585,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       .map((ev: any) => enrichWebinar(ev))
       .sort((a: any, b: any) => String(b.date).localeCompare(String(a.date)));
     renderStats(webinars);
+    renderActions(webinars);
     renderUpcoming(webinars);
     renderFollowup(webinars);
     renderPublication(webinars);

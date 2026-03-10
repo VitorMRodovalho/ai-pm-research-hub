@@ -15,6 +15,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     </div>
     <form id="edit-event-form" class="p-5 overflow-y-auto flex-1">
       <input type="hidden" id="edit-ev-id">
+      <div id="edit-ev-context" class="hidden mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[.78rem] text-amber-900"></div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
         <div class="flex flex-col gap-1.5 sm:col-span-2">
           <label class="text-[12px] font-semibold text-slate-500">{t('attendance.modal.title', lang)}</label>

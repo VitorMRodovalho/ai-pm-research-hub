@@ -62,9 +62,9 @@ Status: discovery complete, with the first admin orchestration surface now imple
 
 ## Next Implementation Slice
 
-- Replace the `/admin/webinars` placeholder with an events-first orchestration surface that reads and filters webinar sessions already stored in `events`.
-- Define how replay publication should split between `presentations` and `workspace` so webinar content does not fragment across surfaces.
+- If the team still wants less operator effort, evolve the new contextual aids into lightweight reusable helpers for message drafting or event QA without cloning the underlying workflows locally.
 - Decide whether the existing `webinars` table should be converged into `events`, kept as non-authoritative metadata, or retired before any broader webinar schema work begins.
+- Keep avoiding webinar-local CRUD until there is an approved need that the current event, content, and comms stack cannot cover safely.
 
 ## Follow-Through Already Applied
 
@@ -73,3 +73,8 @@ Status: discovery complete, with the first admin orchestration surface now imple
   - `Presentations` via `list_meeting_artifacts` and `meeting_artifacts.event_id`
   - `Workspace` via active `hub_resources` with `asset_type='webinar'`
 - This keeps the replay follow-up path visible to operators without introducing a dedicated webinar publishing schema.
+- The admin panel now also derives a recommended next action per webinar, so operators can move directly to the right existing module (`Attendance`, `Admin Comms`, `Presentations`, or `Workspace`) instead of inferring the handoff manually.
+- `Presentations` and `Workspace` now accept URL-driven filters (`q`, `tribe`, `type`) so `/admin/webinars` can hand operators off into a pre-filtered follow-through view instead of a generic destination page.
+- `Attendance` now accepts webinar handoff state (`tab`, `type`, `q`, `eventId`, `action`, `edit`) so operators can land on the right event, with the intended context and optional edit modal already open.
+- `Admin Comms` now accepts webinar handoff state (`focus`, `context`, `stage`, `q`, `title`, `date`) so the broadcast history view can open already scoped to the current webinar follow-through.
+- `Attendance` now also exposes a small edit-time assistant for webinar-specific tasks such as filling the meeting link or replay URL, while `Admin Comms` exposes a contextual playbook with reusable subject/body suggestions and copy actions.

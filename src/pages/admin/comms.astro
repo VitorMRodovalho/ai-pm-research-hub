@@ -31,6 +31,30 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     </div>
 
     <div id="comms-panel" class="hidden space-y-6">
+      <section id="comms-context" class="hidden bg-blue-50 border border-blue-200 rounded-2xl p-5">
+        <div class="flex items-start justify-between gap-4 flex-wrap">
+          <div class="max-w-3xl">
+            <h2 class="text-sm font-bold text-navy">Handoff contextual</h2>
+            <p id="comms-context-copy" class="text-[.76rem] text-slate-600 mt-1"></p>
+          </div>
+          <div class="flex gap-2 flex-wrap">
+            <a id="comms-context-attendance" href="/attendance" class="hidden px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-[.78rem] font-semibold no-underline hover:bg-slate-50 transition-all">
+              Abrir Attendance
+            </a>
+            <a href="/admin/webinars" class="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-[.78rem] font-semibold no-underline hover:bg-slate-50 transition-all">
+              Voltar para Webinars
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section id="comms-playbook" class="hidden bg-white border border-slate-200 rounded-2xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-200">
+          <h2 class="text-sm font-bold text-navy">Playbook rapido do webinar</h2>
+          <p class="text-[.68rem] text-slate-400">Assunto e copy-base para acelerar a comunicação sem criar um editor paralelo aqui.</p>
+        </div>
+        <div id="comms-playbook-body" class="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
+      </section>
 
       <!-- Section 1: Tribe Impact Ranking -->
       <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
@@ -94,10 +118,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       </section>
 
       <!-- Section 3: Broadcast History -->
-      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-        <div class="px-4 py-3 border-b border-slate-200">
-          <h2 class="text-sm font-bold text-navy">{t('admin.comms.broadcastTitle', lang)}</h2>
-          <p class="text-[.68rem] text-slate-400">{t('admin.comms.broadcastSubtitle', lang)}</p>
+      <section id="broadcast-section" class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h2 class="text-sm font-bold text-navy">{t('admin.comms.broadcastTitle', lang)}</h2>
+            <p class="text-[.68rem] text-slate-400">{t('admin.comms.broadcastSubtitle', lang)}</p>
+          </div>
+          <input id="comms-broadcast-search" type="text"
+                 class="w-full sm:w-[280px] px-3 py-2 rounded-xl border-[1.5px] border-slate-200 text-sm bg-white focus:outline-none focus:border-navy transition-colors"
+                 placeholder="Buscar assunto, tribo ou remetente" />
         </div>
         <div id="broadcast-container" class="p-4 overflow-x-auto">
           <div id="broadcast-loading" class="text-center py-6 text-slate-400 text-sm">{t('admin.comms.tableLoading', lang)}</div>
@@ -125,11 +154,80 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   import { canAccessAdminRoute } from '../../lib/admin/constants';
 
   let sb: any = null;
+  let allBroadcasts: any[] = [];
+  const COMMS_ROUTE = {
+    focus: '',
+    context: '',
+    stage: '',
+    q: '',
+    title: '',
+    date: '',
+    eventId: '',
+    broadcastScrolled: false,
+  };
 
   function escapeHtml(s: string): string {
     const div = document.createElement('div');
     div.textContent = s;
     return div.innerHTML;
+  }
+
+  function parseCommsRoute() {
+    const params = new URLSearchParams(window.location.search);
+    COMMS_ROUTE.focus = params.get('focus') || '';
+    COMMS_ROUTE.context = params.get('context') || '';
+    COMMS_ROUTE.stage = params.get('stage') || '';
+    COMMS_ROUTE.q = (params.get('q') || '').trim();
+    COMMS_ROUTE.title = (params.get('title') || COMMS_ROUTE.q).trim();
+    COMMS_ROUTE.date = params.get('date') || '';
+    COMMS_ROUTE.eventId = params.get('eventId') || '';
+    const searchInput = document.getElementById('comms-broadcast-search') as HTMLInputElement | null;
+    if (searchInput) searchInput.value = COMMS_ROUTE.q;
+  }
+
+  function formatRouteDate(dateIso: string): string {
+    if (!dateIso) return '';
+    const date = new Date(`${dateIso}T12:00:00`);
+    if (Number.isNaN(date.getTime())) return dateIso;
+    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  function renderCommsContext() {
+    const box = document.getElementById('comms-context');
+    const copy = document.getElementById('comms-context-copy');
+    const attendanceLink = document.getElementById('comms-context-attendance') as HTMLAnchorElement | null;
+    if (!box || !copy) return;
+    const hasContext = !!(COMMS_ROUTE.context || COMMS_ROUTE.q || COMMS_ROUTE.stage);
+    if (!hasContext) {
+      box.classList.add('hidden');
+      copy.innerHTML = '';
+      if (attendanceLink) attendanceLink.classList.add('hidden');
+      return;
+    }
+    const stageLabel: Record<string, string> = {
+      invite: 'preparar convite e lembrete',
+      reminder: 'revisar lembrete operacional',
+      followup: 'organizar follow-up e divulgação posterior',
+    };
+    const pieces = [
+      COMMS_ROUTE.context === 'webinar'
+        ? `Contexto atual: ${stageLabel[COMMS_ROUTE.stage] || 'revisar a comunicação'} do webinar <strong>${escapeHtml(COMMS_ROUTE.title || 'selecionado')}</strong>.`
+        : 'Contexto atual: revisar a comunicação relacionada ao item selecionado.',
+    ];
+    if (COMMS_ROUTE.date) pieces.push(`Data de referência: ${escapeHtml(formatRouteDate(COMMS_ROUTE.date))}.`);
+    if (COMMS_ROUTE.q) pieces.push('O histórico de disparos abaixo foi filtrado automaticamente para reduzir busca manual.');
+    copy.innerHTML = pieces.join(' ');
+    if (attendanceLink && COMMS_ROUTE.context === 'webinar') {
+      attendanceLink.href = buildAttendanceFromCommsHref();
+      attendanceLink.classList.remove('hidden');
+    }
+    box.classList.remove('hidden');
+    if (COMMS_ROUTE.focus === 'broadcasts' && !COMMS_ROUTE.broadcastScrolled) {
+      COMMS_ROUTE.broadcastScrolled = true;
+      requestAnimationFrame(() => {
+        document.getElementById('broadcast-section')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      });
+    }
   }
 
   function showDenied() {
@@ -139,6 +237,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   }
 
   function showPanel() {
+    parseCommsRoute();
+    renderCommsContext();
+    renderCommsPlaybook();
     document.getElementById('comms-loading')?.classList.add('hidden');
     document.getElementById('comms-denied')?.classList.add('hidden');
     document.getElementById('comms-panel')?.classList.remove('hidden');
@@ -247,22 +348,165 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     try {
       const { data, error } = await sb.rpc('broadcast_history', { p_limit: 20 });
       loading.classList.add('hidden');
-      if (error || !data?.length) { empty.classList.remove('hidden'); return; }
-      tbody.innerHTML = data.map((r: any) => {
-        const dt = r.sent_at ? new Date(r.sent_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '\u2014';
-        return '<tr class="border-b border-slate-50 hover:bg-slate-50">'
-          + '<td class="px-3 py-2 font-medium">' + escapeHtml(r.subject || '\u2014') + '</td>'
-          + '<td class="px-3 py-2">' + escapeHtml(r.tribe_name || '\u2014') + '</td>'
-          + '<td class="px-3 py-2 text-right">' + (r.recipient_count ?? '\u2014') + '</td>'
-          + '<td class="px-3 py-2">' + dt + '</td>'
-          + '<td class="px-3 py-2">' + escapeHtml(r.sent_by_name || '\u2014') + '</td>'
-          + '</tr>';
-      }).join('');
-      table.classList.remove('hidden');
+      if (error) { empty.classList.remove('hidden'); return; }
+      allBroadcasts = data || [];
+      renderBroadcasts();
     } catch (e: any) {
       loading.classList.add('hidden');
       if (empty) { empty.textContent = e?.message || 'Error'; empty.classList.remove('hidden'); }
     }
+  }
+
+  function buildAttendanceFromCommsHref(): string {
+    const params = new URLSearchParams();
+    params.set('tab', 'events');
+    params.set('type', 'webinar');
+    if (COMMS_ROUTE.q) params.set('q', COMMS_ROUTE.q);
+    if (COMMS_ROUTE.eventId) params.set('eventId', COMMS_ROUTE.eventId);
+    if (COMMS_ROUTE.stage === 'followup') {
+      params.set('action', 'youtube-url');
+      params.set('edit', '1');
+    }
+    return `/attendance?${params.toString()}`;
+  }
+
+  function buildCommsPlaybook(): Array<{ title: string; tone: string; subject: string; body: string }> {
+    const title = COMMS_ROUTE.title || 'Webinar';
+    const date = formatRouteDate(COMMS_ROUTE.date) || 'data a confirmar';
+    const invite = {
+      title: 'Convite base',
+      tone: 'bg-blue-50 border-blue-200',
+      subject: `[Webinar] ${title} — ${date}`,
+      body: `Olá, pessoal.\n\nTemos o webinar "${title}" programado para ${date}.\n\nSe possível, reforcem a participação do público-alvo e utilizem o link operacional já validado no Attendance.\n\nEm breve seguimos com novos lembretes.`,
+    };
+    const reminder = {
+      title: 'Lembrete base',
+      tone: 'bg-amber-50 border-amber-200',
+      subject: `[Lembrete] ${title} acontece em ${date}`,
+      body: `Olá, pessoal.\n\nPassando para lembrar do webinar "${title}", marcado para ${date}.\n\nConfiram o link da sessão, a audiência pretendida e a orientação de presença antes do início.\n\nNos vemos lá.`,
+    };
+    const followup = {
+      title: 'Follow-up base',
+      tone: 'bg-emerald-50 border-emerald-200',
+      subject: `[Replay] ${title} — material disponível`,
+      body: `Olá, pessoal.\n\nO webinar "${title}" já foi realizado e estamos fechando a publicação do replay e dos materiais relacionados.\n\nAssim que o conteúdo estiver confirmado nas superfícies finais, podemos divulgar o acesso e próximos passos ao público.`,
+    };
+    if (COMMS_ROUTE.stage === 'followup') return [followup, invite];
+    if (COMMS_ROUTE.stage === 'reminder') return [reminder, invite];
+    return [invite, reminder];
+  }
+
+  function renderCommsPlaybook() {
+    const section = document.getElementById('comms-playbook');
+    const body = document.getElementById('comms-playbook-body');
+    if (!section || !body) return;
+    if (COMMS_ROUTE.context !== 'webinar') {
+      section.classList.add('hidden');
+      body.innerHTML = '';
+      return;
+    }
+    const templates = buildCommsPlaybook();
+    body.innerHTML = templates.map((template, index) => `
+      <article class="rounded-2xl border ${template.tone} p-4">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-bold text-navy">${escapeHtml(template.title)}</h3>
+            <p class="text-[.72rem] text-slate-500 mt-1">Use como base rápida e ajuste no canal/ferramenta final.</p>
+          </div>
+          <div class="flex gap-2 flex-wrap justify-end">
+            <button type="button" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-[.72rem] font-semibold cursor-pointer hover:bg-slate-50" data-action="copy-template" data-copy-label="assunto" data-copy-value="${escapeHtml(template.subject)}">Copiar assunto</button>
+            <button type="button" class="px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold border-0 cursor-pointer hover:opacity-90" data-action="copy-template" data-copy-label="mensagem" data-copy-value="${escapeHtml(template.body)}">Copiar mensagem</button>
+          </div>
+        </div>
+        <div class="mt-3 space-y-3">
+          <div>
+            <div class="text-[.68rem] font-semibold uppercase tracking-wide text-slate-500">Assunto sugerido</div>
+            <div class="mt-1 text-[.8rem] text-slate-700">${escapeHtml(template.subject)}</div>
+          </div>
+          <div>
+            <div class="text-[.68rem] font-semibold uppercase tracking-wide text-slate-500">Mensagem base</div>
+            <pre class="mt-1 whitespace-pre-wrap text-[.76rem] text-slate-700 font-sans">${escapeHtml(template.body)}</pre>
+          </div>
+        </div>
+      </article>
+    `).join('');
+    section.classList.remove('hidden');
+  }
+
+  async function copyTemplate(value: string, label: string) {
+    try {
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(value);
+      else {
+        const area = document.createElement('textarea');
+        area.value = value;
+        area.setAttribute('readonly', 'true');
+        area.style.position = 'absolute';
+        area.style.left = '-9999px';
+        document.body.appendChild(area);
+        area.select();
+        document.execCommand('copy');
+        document.body.removeChild(area);
+      }
+      (window as any).toast?.(`${label} copiado.`, 'success');
+    } catch (error) {
+      console.warn('Copy template:', error);
+      (window as any).toast?.(`Nao foi possivel copiar ${label}.`, 'error');
+    }
+  }
+
+  function renderBroadcasts() {
+    const empty = document.getElementById('broadcast-empty');
+    const table = document.getElementById('broadcast-table');
+    const tbody = document.getElementById('broadcast-body');
+    if (!empty || !table || !tbody) return;
+    if (!allBroadcasts.length) {
+      empty.classList.remove('hidden');
+      table.classList.add('hidden');
+      return;
+    }
+    const query = COMMS_ROUTE.q.toLowerCase();
+    const filtered = allBroadcasts.filter((r: any) => {
+      if (!query) return true;
+      return (r.subject || '').toLowerCase().includes(query)
+        || (r.tribe_name || '').toLowerCase().includes(query)
+        || (r.sent_by_name || '').toLowerCase().includes(query);
+    });
+    if (!filtered.length) {
+      empty.textContent = 'Nenhum disparo encontrado para o contexto atual.';
+      empty.classList.remove('hidden');
+      table.classList.add('hidden');
+      return;
+    }
+    empty.classList.add('hidden');
+    tbody.innerHTML = filtered.map((r: any) => {
+      const dt = r.sent_at ? new Date(r.sent_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '\u2014';
+      return '<tr class="border-b border-slate-50 hover:bg-slate-50">'
+        + '<td class="px-3 py-2 font-medium">' + escapeHtml(r.subject || '\u2014') + '</td>'
+        + '<td class="px-3 py-2">' + escapeHtml(r.tribe_name || '\u2014') + '</td>'
+        + '<td class="px-3 py-2 text-right">' + (r.recipient_count ?? '\u2014') + '</td>'
+        + '<td class="px-3 py-2">' + dt + '</td>'
+        + '<td class="px-3 py-2">' + escapeHtml(r.sent_by_name || '\u2014') + '</td>'
+        + '</tr>';
+    }).join('');
+    table.classList.remove('hidden');
+  }
+
+  if (!(window as any).__commsDelegationBound) {
+    (window as any).__commsDelegationBound = true;
+    document.addEventListener('click', (e: Event) => {
+      const target = (e.target as HTMLElement).closest('[data-action="copy-template"]') as HTMLElement | null;
+      if (!target) return;
+      copyTemplate(target.dataset.copyValue || '', target.dataset.copyLabel || 'texto');
+    });
+    document.addEventListener('input', (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      if (!(target instanceof HTMLInputElement)) return;
+      if (target.id === 'comms-broadcast-search') {
+        COMMS_ROUTE.q = target.value.trim();
+        renderCommsContext();
+        renderBroadcasts();
+      }
+    });
   }
 
   async function boot() {

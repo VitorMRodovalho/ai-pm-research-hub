@@ -4,7 +4,7 @@
 > Qualquer alteração de acesso deve ser refletida aqui, no `navigation.config.ts`,
 > e nas RLS policies do Supabase antes de ser deployada.
 >
-> Última atualização: 2026-03-11 (Wave 29 audit: webinars browser coverage revalidated against current ACL/site hierarchy)
+> Última atualização: 2026-03-11 (Wave 33 audit: webinars authoring aids revalidated against current ACL/site hierarchy)
 
 ---
 
@@ -66,7 +66,7 @@ Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Se
 | Admin Analytics            |    —    |   —    |    —     |   —    |   V   |     V      |                                  |
 | Admin Comms Dashboard      |    —    |   —    |    —     |   —    |   V   |     V      | `comms_leader`, `comms_member`: V |
 | Help `/help`               |    —    |   V    |    V     |   V    |   V   |     V      | LGPD topics hidden for non-admin |
-| Admin Webinars             |    —    |   —    |    —     |   —    |   V   |     V      | Admin-only orchestration over events/attendance/comms/replay; external registration out of scope |
+| Admin Webinars             |    —    |   —    |    —     |   —    |   V   |     V      | Admin-only orchestration over events/attendance/comms/replay, now with contextual handoffs and lightweight authoring aids in reuse surfaces; external registration out of scope |
 | Admin Member Edit          |    —    |   —    |    —     |   —    |   —   |    V/A     |                                  |
 
 ### 3.2 Comunicação (Wave 3)
@@ -229,7 +229,7 @@ Itens de navegação com tier insuficiente: visíveis mas desabilitados (opacida
 | `admin-settings`   | `superadmin` | —                             | ✅ (S-RM5)         |
 | `help`             | `member`   | —                                | ✅         |
 | `onboarding`     | `member`   | —                                | ✅ (drawer) |
-| `admin-webinars` | `admin`    | —                                | ✅ (placeholder) |
+| `admin-webinars` | `admin`    | —                                | ✅ (admin-only webinar orchestrator with contextual handoffs and aids) |
 
 ### Backend (`has_min_tier` / RLS)
 
@@ -297,4 +297,8 @@ e as Edge Functions estão alinhados com esta matriz.
 | 2026-03-11 | Wave 26 audit: `/admin/webinars` remains admin-only; recommended MVP reuses member-first attendance/content flows and keeps external registration or speaker CRM out of scope pending a new ACL/RLS design. |
 | 2026-03-11 | Wave 27 audit: `/admin/webinars` now exposes an admin-only operational surface backed by `events.type='webinar'`; route visibility and tier rules remain unchanged while the webinar MVP stays internal/member-first. |
 | 2026-03-11 | Wave 28 audit: `/admin/webinars` now also reads replay publication state from `meeting_artifacts` and `hub_resources`; this adds operational visibility only, with no tier, route, or LGPD-scope change. |
+| 2026-03-11 | Wave 31 audit: webinar follow-through now deep-links into filtered `Presentations` and `Workspace` views, but route visibility, tiers, and LGPD-sensitive behavior remain unchanged. |
+| 2026-03-11 | Wave 32 audit: webinar follow-through now also lands in focused `Attendance` and `Admin Comms` states, with no tier, route, or LGPD-sensitive behavior change. |
+| 2026-03-11 | Wave 33 audit: `Attendance` and `Admin Comms` gained webinar-specific contextual aids inside their existing admin/member surfaces, with no new route exposure, tier shift, or LGPD-scope change. |
 | 2026-03-11 | Wave 29 audit: browser coverage now validates anonymous denial and mocked admin rendering for `/admin/webinars`; route visibility and tier rules remain unchanged, but anonymous behavior is now explicitly fail-closed. |
+| 2026-03-11 | Wave 30 audit: `/admin/webinars` now derives recommended next actions from existing operational state; no access scope changed, only admin guidance on top of the current events-first workflow. |

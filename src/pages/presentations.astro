@@ -19,6 +19,12 @@ const PRES_I18N = {
   <section class="max-w-5xl mx-auto px-4 pt-24 pb-16">
     <h1 class="text-2xl font-extrabold text-navy mb-6">{PRES_I18N.pageTitle}</h1>
 
+    <div class="mb-4">
+      <input id="pres-search" type="text"
+        class="w-full px-4 py-2.5 rounded-xl border-[1.5px] border-slate-200 text-sm bg-white focus:outline-none focus:border-navy transition-colors"
+        placeholder="Buscar apresentacao ou replay" />
+    </div>
+
     <div class="flex gap-2 mb-6 flex-wrap" id="pres-filter-tabs">
       <button data-filter="all"
         class="px-4 py-1.5 text-[.78rem] font-bold rounded-full border-2 cursor-pointer transition-all border-navy bg-navy text-white">{PRES_I18N.filterAll}</button>
@@ -45,8 +51,21 @@ const PRES_I18N = {
   const PI = (window as any).__PRES_PAGE_I18N || {};
   let allArtifacts: any[] = [];
   let currentFilter = 'all';
+  let searchQuery = '';
   let tribes: any[] = [];
   let sb: any = null;
+
+  function applyRouteState() {
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q');
+    const filter = params.get('filter');
+    const tribe = params.get('tribe');
+    if (q) searchQuery = q.trim();
+    if (tribe) currentFilter = `tribe-${tribe}`;
+    else if (filter === 'general' || filter === 'all') currentFilter = filter;
+    const searchInput = document.getElementById('pres-search') as HTMLInputElement | null;
+    if (searchInput) searchInput.value = searchQuery;
+  }
 
   async function boot() {
     sb = (window as any).navGetSb?.();
@@ -59,7 +78,9 @@ const PRES_I18N = {
 
     allArtifacts = artifacts || [];
     tribes = tribeData || [];
+    applyRouteState();
     renderTribeChips();
+    updateFilterUI();
     renderList();
     document.getElementById('pres-loading')?.classList.add('hidden');
   }
@@ -106,6 +127,14 @@ const PRES_I18N = {
     } else if (currentFilter.startsWith('tribe-')) {
       const tId = parseInt(currentFilter.replace('tribe-', ''), 10);
       filtered = allArtifacts.filter((a: any) => a.tribe_id === tId);
+    }
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter((a: any) =>
+        (a.title || '').toLowerCase().includes(q)
+        || (a.recording_url || '').toLowerCase().includes(q)
+        || (a.deliberations || []).some((d: string) => d.toLowerCase().includes(q))
+      );
     }
 
     if (filtered.length === 0) {
@@ -165,6 +194,11 @@ const PRES_I18N = {
       updateFilterUI();
       renderList();
     });
+  });
+
+  document.getElementById('pres-search')?.addEventListener('input', (event: Event) => {
+    searchQuery = ((event.target as HTMLInputElement).value || '').trim();
+    renderList();
   });
 
   boot();

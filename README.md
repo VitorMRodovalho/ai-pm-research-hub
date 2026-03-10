@@ -147,7 +147,7 @@ The current production pattern is to keep communications metrics in Supabase-bac
 
 1. Continue stabilizing older member/admin surfaces that still depend on rerender/rebind or mutable callback patterns.
 2. Expand browser coverage from the current anonymous guard/home runtime checks into richer internal workflows beyond the new `/admin/webinars` coverage, especially modal and authenticated operator paths.
-3. Add richer operator follow-through to the webinars MVP, especially clearer publish-path actions and next operational handoffs, without opening new schema yet.
+3. Continue sharpening the webinars operator flow on top of `events`, now deciding whether the new in-module contextual aids should mature into reusable drafting and QA helpers before any schema expansion.
 4. Keep site hierarchy, access tiers, and LGPD visibility rules aligned across nav, pages, and docs.
 5. Decide whether the existing `webinars` table should be converged, kept as non-authoritative metadata, or retired before any external registration or speaker model is introduced.
 

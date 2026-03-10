@@ -8,6 +8,31 @@
 
 ## LATEST UPDATE (2026-03-11)
 
+### Entregue em Wave 33
+- **W33.1 Attendance Edit Assistant**: o handoff contextual em `attendance.astro` agora ajuda o operador dentro do modal de edição, focando o campo certo e exibindo orientação curta para meeting link ou replay.
+- **W33.2 Comms Playbook Assist**: `admin/comms.astro` agora mostra um playbook rápido com assunto/mensagem-base copiáveis quando o contexto vier de um webinar.
+- **W33.3 Regression Lock + Audit**: testes e docs foram atualizados para manter a nova camada de auxílio de autoria sem criar editor ou workflow paralelo.
+
+### Entregue em Wave 32
+- **W32.1 Attendance Contextual Landing**: `attendance.astro` agora aceita handoff por URL para webinars, com filtro, foco visual no evento e abertura opcional do modal de edição.
+- **W32.2 Admin Comms Contextual Landing**: `admin/comms.astro` agora aceita contexto de webinar por URL, mostra banner orientado ao estágio de comunicação e filtra o histórico de broadcasts.
+- **W32.3 Browser + Regression Lock**: `tests/ui-stabilization.test.mjs` e `tests/browser-guards.test.mjs` agora travam os handoffs contextuais para `Attendance` e `Admin Comms`.
+
+### Wave 33 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 29/29 | **Browser guard**: OK | **Smoke**: routes OK
+- **In-module aids**: `Attendance` e `Admin Comms` agora ajudam o operador a concluir a tarefa do webinar dentro do modulo de destino, sem criar fluxo paralelo
+- **Site hierarchy / ACL**: nenhuma rota, tier ou exposicao LGPD mudou; a tranche adiciona apenas assistencia contextual em superficies ja existentes
+
+### Entregue em Wave 31
+- **W31.1 Contextual Webinar Handoffs**: `/admin/webinars` agora envia o operador para `Presentations` e `Workspace` com filtros de contexto do webinar, em vez de abrir destinos genéricos.
+- **W31.2 Query-Driven Reuse Surfaces**: `presentations.astro` e `workspace.astro` passam a aceitar `q` e filtros via URL para suportar follow-through mais direto sem schema novo.
+- **W31.3 Regression Lock**: `tests/ui-stabilization.test.mjs` trava os deep links contextuais entre `admin/webinars`, `presentations` e `workspace`.
+
+### Wave 32 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 29/29 | **Browser guard**: OK | **Smoke**: routes OK
+- **Focused reuse surfaces**: `/admin/webinars` agora tambem aterrissa `Attendance` e `Admin Comms` em estados contextualizados para o webinar selecionado
+- **Site hierarchy / ACL**: as rotas continuam com os mesmos tiers e visibilidade; a tranche adiciona apenas estado inicial por URL e filtros locais, sem schema ou RLS novos
+
 ### Entregue em Wave 25
 - **W25.1 Browser Coverage Expansion**: `tests/browser-guards.test.mjs` passa a validar não só o `HeroSection`, mas também os badges/notices runtime de `TribesSection` na home pública.
 - **W25.2 Stable Browser Hooks**: `TribesSection.astro` recebe ids estáveis para o estado de seleção, badge de deadline e notice, permitindo regressão browser menos frágil.
@@ -69,6 +94,11 @@
 - **W14.1 Doc Divergence Cleanup**: README, MIGRATION e CONTRIBUTING alinhados com produção atual (Chart.js nativo, smoke routes, 5-phase, repo/path corretos).
 - **W14.2 Admin Hygiene**: Removidas referências antigas a PostHog/Looker do admin atual; primeira tranche de event delegation aplicada em `admin/index.astro` e shared UI.
 - **W14.3 Deferred Structuring**: S23, S24, S-KNW7 e Webinars reclassificados por lane, dependências e critérios de saída do deferred.
+
+### Wave 31 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 28/28 | **Browser guard**: OK | **Smoke**: routes OK
+- **Contextual handoffs**: `/admin/webinars` agora abre `Presentations` e `Workspace` em visoes ja filtradas para o webinar selecionado
+- **Site hierarchy / ACL**: rotas continuam com os mesmos tiers e visibilidade; a tranche adiciona apenas interoperabilidade via filtros de URL, sem schema ou RLS novos
 
 ### Wave 25 Audit Results (2026-03-11)
 - **Build**: clean | **Tests**: 26/26 | **Browser guard**: OK | **Routes**: smoke OK
@@ -558,6 +588,70 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 - **Build**: clean | **Tests**: 27/27 | **Browser guard**: OK | **Smoke**: routes OK
 - **Browser coverage**: `/admin/webinars` agora esta coberto para denial anonimo e rendering admin mockado com sinais de publication status
 - **Site hierarchy / ACL**: rota continua `admin`; a melhoria foi de validacao e fail-closed para anonimos, sem mudanca de tier, schema ou RLS
+
+---
+
+## WAVE 30: Webinars Operator Actions — CONCLUIDA
+**Foco:** reduzir o custo operacional do fluxo de webinars com proximas acoes explicitas, mantendo o painel como orquestrador leve sobre os modulos ja existentes.
+
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| W30.1 | Per-Webinar Next Action | High | Done | Cada card de webinar agora deriva a “proxima acao” com base no estado do evento, replay e publicacao, apontando para o modulo certo sem precisar de inferencia manual. |
+| W30.2 | Prioritized Quick Actions | High | Done | O topo do painel agora mostra uma fila priorizada de acoes rapidas, destacando handoffs como completar meeting link, publicar replay ou refletir o conteudo em `Presentations` / `Workspace`. |
+| W30.3 | Regression Lock + Docs | Medium | Done | Testes e docs atualizados para manter a camada de operator guidance em cima do modelo `events`-first, sem abrir novo schema ou CRUD paralelo. |
+
+### Wave 30 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 27/27 | **Smoke**: routes OK
+- **Operator guidance**: `/admin/webinars` agora transforma status em proxima acao sugerida, reduzindo contexto manual entre `Attendance`, `Admin Comms`, `Presentations` e `Workspace`
+- **Site hierarchy / ACL**: rota continua `admin`; nenhuma mudanca de tier, visibilidade, schema ou RLS nesta tranche
+
+---
+
+## WAVE 31: Webinars Contextual Handoffs — CONCLUIDA
+**Foco:** reduzir mais uma camada de context switching no fluxo de webinars fazendo os handoffs cairem em views ja filtradas nos modulos reutilizados.
+
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| W31.1 | Filtered Presentations Handoff | High | Done | `admin/webinars` agora monta deep links para `presentations` com `q` e contexto de tribo/filtro, permitindo abrir o replay ja no subconjunto relevante. |
+| W31.2 | Filtered Workspace Handoff | High | Done | `admin/webinars` passa a apontar para `workspace?type=webinar&q=...`, e `workspace.astro` aceita estado inicial por URL para reduzir busca manual. |
+| W31.3 | Query-State Regression Lock + Docs | Medium | Done | `presentations.astro`, `workspace.astro`, testes e docs foram atualizados para manter o padrao de handoff contextual sem abrir schema ou CRUD paralelo. |
+
+### Wave 31 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 28/28 | **Browser guard**: OK | **Smoke**: routes OK
+- **Contextual handoffs**: os atalhos de `/admin/webinars` agora levam o operador para listas ja filtradas em `Presentations` e `Workspace`, reduzindo busca manual
+- **Site hierarchy / ACL**: rotas continuam com os mesmos tiers e visibilidade; nao houve mudanca de schema, RLS ou exposicao publica nesta tranche
+
+---
+
+## WAVE 32: Webinars Attendance And Comms Handoffs — CONCLUIDA
+**Foco:** reduzir o context switching nas duas superficies operacionais restantes do fluxo de webinars, mantendo o modelo `events`-first e sem abrir workflow local paralelo.
+
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| W32.1 | Focused Attendance Handoff | High | Done | `admin/webinars` agora envia o operador para `attendance` com tipo `webinar`, busca, `eventId` e opcionalmente `edit=1`, enquanto `attendance.astro` filtra, destaca e pode abrir o modal certo. |
+| W32.2 | Focused Admin Comms Handoff | High | Done | `admin/webinars` agora envia o operador para `admin/comms` com foco contextual de webinar, e `admin/comms.astro` consome esse estado para orientar o estágio da comunicação e filtrar o histórico relevante. |
+| W32.3 | Browser / Regression Lock + Docs | Medium | Done | Testes e docs foram expandidos para manter o padrão de handoff contextual também em `Attendance` e `Admin Comms`, sem abrir schema ou CRUD paralelo. |
+
+### Wave 32 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 29/29 | **Browser guard**: OK | **Smoke**: routes OK
+- **Focused reuse surfaces**: `/admin/webinars` agora aterrissa `Attendance` e `Admin Comms` em estados contextualizados para o webinar selecionado, reduzindo mais uma camada de busca manual
+- **Site hierarchy / ACL**: rotas continuam com os mesmos tiers e visibilidade; nao houve mudanca de schema, RLS ou exposicao publica nesta tranche
+
+---
+
+## WAVE 33: Webinars In-Module Authoring Aids — CONCLUIDA
+**Foco:** reduzir o esforco operacional dentro dos modulos de destino com auxilios de autoria e QA contextual, sem duplicar fluxo nem criar schema novo.
+
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| W33.1 | Attendance Edit Assistant | High | Done | O fluxo contextual de `attendance` agora permite abrir o modal do webinar focado com orientacao especifica para completar meeting link ou `youtube_url`, incluindo foco no campo relevante. |
+| W33.2 | Admin Comms Draft Playbook | High | Done | `admin/comms` agora renderiza um playbook rapido por contexto de webinar, com assunto e mensagem-base copiaveis para convite, lembrete ou follow-up. |
+| W33.3 | Audit / Regression Lock + Docs | Medium | Done | Testes e docs foram expandidos para manter a nova camada de assistencia dentro de `Attendance` e `Admin Comms`, sem abrir editor paralelo nem alterar ACL. |
+
+### Wave 33 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 29/29 | **Browser guard**: OK | **Smoke**: routes OK
+- **In-module aids**: `Attendance` e `Admin Comms` agora ajudam o operador a concluir a tarefa do webinar dentro do proprio modulo de destino, sem criar fluxo paralelo
+- **Site hierarchy / ACL**: nenhuma rota, tier ou exposicao LGPD mudou; a tranche adiciona apenas assistencia contextual em superficies ja existentes
 
 ---
 

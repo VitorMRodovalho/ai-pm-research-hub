@@ -43,6 +43,52 @@ test('admin webinars now reuses the events stack instead of staying a placeholde
   assert.equal(content.includes('Publicacao de replay'), true);
   assert.equal(content.includes("publicationBadge('Presentations'"), true);
   assert.equal(content.includes("publicationBadge('Workspace'"), true);
+  assert.equal(content.includes('Acoes rapidas prioritarias'), true);
+  assert.equal(content.includes('function operatorAction(ev: any)'), true);
+  assert.equal(content.includes('buildAttendanceHref(ev: any'), true);
+  assert.equal(content.includes('buildCommsHref(ev: any'), true);
+  assert.equal(content.includes('buildPresentationsHref(ev: any)'), true);
+  assert.equal(content.includes('buildWorkspaceHref(ev: any)'), true);
+  assert.equal(content.includes("params.set('eventId', String(ev.id))"), true);
+  assert.equal(content.includes("params.set('focus', 'broadcasts')"), true);
+  assert.equal(content.includes("params.set('tab', 'events')"), true);
+  assert.equal(content.includes("params.set('type', 'webinar')"), true);
+  assert.equal(content.includes('Proxima acao:'), true);
+  assert.equal(content.includes('renderActions(webinars);'), true);
+});
+
+test('presentations and workspace accept deep-link query filters for webinar follow-through', () => {
+  const presentations = read('src/pages/presentations.astro');
+  const workspace = read('src/pages/workspace.astro');
+  assert.equal(presentations.includes("new URLSearchParams(window.location.search)"), true);
+  assert.equal(presentations.includes("const q = params.get('q')"), true);
+  assert.equal(presentations.includes("const tribe = params.get('tribe')"), true);
+  assert.equal(presentations.includes("document.getElementById('pres-search')"), true);
+  assert.equal(workspace.includes("new URLSearchParams(window.location.search)"), true);
+  assert.equal(workspace.includes("activeType = params.get('type') || ''"), true);
+  assert.equal(workspace.includes("searchQuery = (params.get('q') || '').trim()"), true);
+  assert.equal(workspace.includes('syncTypeButtons();'), true);
+});
+
+test('attendance and admin comms accept contextual webinar handoff state from URL', () => {
+  const attendance = read('src/pages/attendance.astro');
+  const comms = read('src/pages/admin/comms.astro');
+  assert.equal(attendance.includes("new URLSearchParams(window.location.search)"), true);
+  assert.equal(attendance.includes("ATTENDANCE_ROUTE.eventId = params.get('eventId') || ''"), true);
+  assert.equal(attendance.includes("ATTENDANCE_ROUTE.edit = params.get('edit') === '1'"), true);
+  assert.equal(attendance.includes("document.getElementById('attendance-search')"), true);
+  assert.equal(attendance.includes("openEditEvent(focused);"), true);
+  assert.equal(attendance.includes("document.getElementById('edit-ev-context')"), true);
+  assert.equal(attendance.includes('buildAttendanceCommsHref(ev: any)'), true);
+  assert.equal(attendance.includes("data-action=\"open-focused-edit\""), true);
+  assert.equal(comms.includes("new URLSearchParams(window.location.search)"), true);
+  assert.equal(comms.includes("COMMS_ROUTE.focus = params.get('focus') || ''"), true);
+  assert.equal(comms.includes("COMMS_ROUTE.context = params.get('context') || ''"), true);
+  assert.equal(comms.includes("document.getElementById('comms-broadcast-search')"), true);
+  assert.equal(comms.includes("document.getElementById('broadcast-section')?.scrollIntoView"), true);
+  assert.equal(comms.includes('buildCommsPlaybook()'), true);
+  assert.equal(comms.includes('navigator.clipboard?.writeText'), true);
+  assert.equal(comms.includes('data-action="copy-template"'), true);
 });
 
 test('schedule flow no longer depends on far-future deadline sentinel', () => {

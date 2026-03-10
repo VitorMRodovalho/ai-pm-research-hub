@@ -1,5 +1,130 @@
 # Release Log
 
+## 2026-03-11 — v0.31.0 Wave 33: Webinars In-Module Authoring Aids
+
+### Scope
+Wave 33 deepens the webinars reuse flow again, this time by adding lightweight authoring and QA assistance inside `Attendance` and `Admin Comms` instead of only improving landing-state routing.
+
+### In-Module Assistance Upgrade
+- **`src/pages/attendance.astro`** and **`src/components/attendance/EditEventModal.astro`**: The focused webinar edit flow now includes contextual guidance, quick follow-through actions, and field targeting for the specific operator task such as filling the meeting link or replay URL.
+- **`src/pages/admin/comms.astro`**: The webinar handoff now renders a small contextual playbook with reusable subject/body suggestions and copy actions, while preserving the page as an analytics/history surface rather than a parallel comms editor.
+- **`src/pages/admin/webinars.astro`**: Webinar comms links now include the event id needed to keep the focused round-trip between webinars, comms, and attendance coherent.
+
+### Governance / Regression
+- **`tests/ui-stabilization.test.mjs`**: Regression coverage now locks the presence of the webinar-specific authoring aids in `Attendance` and `Admin Comms`.
+- **`tests/browser-guards.test.mjs`**: Browser coverage keeps the contextual-link chain protected as the webinar flow emits richer route state.
+- **Backlog / governance / permissions / README / discovery note** updated to reflect this next layer of operator assistance.
+
+### Files Changed
+- `src/components/attendance/EditEventModal.astro`
+- `src/pages/attendance.astro`
+- `src/pages/admin/comms.astro`
+- `src/pages/admin/webinars.astro`
+- `tests/ui-stabilization.test.mjs`
+- `tests/browser-guards.test.mjs`
+- `README.md`
+- `docs/WEBINARS_MODULE_DISCOVERY.md`
+- `backlog-wave-planning-updated.md`, `docs/GOVERNANCE_CHANGELOG.md`, `docs/PERMISSIONS_MATRIX.md`, `docs/RELEASE_LOG.md`
+
+### Audit Results
+- Build: clean
+- Tests: 29/29
+- Browser guard: OK
+- Smoke: routes OK
+
+---
+
+## 2026-03-11 — v0.30.0 Wave 32: Webinars Attendance And Comms Handoffs
+
+### Scope
+Wave 32 extends the webinars contextual-handoff line into `Attendance` and `Admin Comms`, so operators no longer land on generic destination pages for the most operational next steps.
+
+### Contextual Handoff Upgrade
+- **`src/pages/admin/webinars.astro`**: Attendance and comms quick actions now generate webinar-aware URLs, including focused event, stage, and edit intent where relevant.
+- **`src/pages/attendance.astro`**: Added URL-driven webinar context (`tab`, `type`, `q`, `eventId`, `action`, `edit`), local filtering, focus highlighting, and optional edit-modal opening for the targeted event.
+- **`src/pages/admin/comms.astro`**: Added URL-driven webinar context (`focus`, `context`, `stage`, `q`, `title`, `date`), a contextual banner, and filtered broadcast-history search so webinar promotion follow-through starts in a narrower state.
+
+### Governance / Regression
+- **`tests/ui-stabilization.test.mjs`**: Regression coverage now locks the new route-state pattern across `admin/webinars`, `attendance`, and `admin/comms`.
+- **`tests/browser-guards.test.mjs`**: Browser coverage now also verifies that `/admin/webinars` emits contextual attendance/comms links instead of generic destinations.
+- **Backlog / governance / permissions / README / discovery note** updated to reflect this deeper reuse-surface interoperability.
+
+### Files Changed
+- `src/pages/admin/webinars.astro`
+- `src/pages/attendance.astro`
+- `src/pages/admin/comms.astro`
+- `tests/ui-stabilization.test.mjs`
+- `tests/browser-guards.test.mjs`
+- `README.md`
+- `docs/WEBINARS_MODULE_DISCOVERY.md`
+- `backlog-wave-planning-updated.md`, `docs/GOVERNANCE_CHANGELOG.md`, `docs/PERMISSIONS_MATRIX.md`, `docs/RELEASE_LOG.md`
+
+### Audit Results
+- Build: clean
+- Tests: 29/29
+- Browser guard: OK
+- Smoke: routes OK
+
+---
+
+## 2026-03-11 — v0.29.0 Wave 31: Webinars Contextual Handoffs
+
+### Scope
+Wave 31 reduces webinar follow-through friction by turning the `Presentations` and `Workspace` destinations into pre-filtered handoffs from `/admin/webinars`, still without adding webinar-specific schema.
+
+### Contextual Handoff Upgrade
+- **`src/pages/admin/webinars.astro`**: Quick actions and publication links now deep-link into filtered `Presentations` and `Workspace` views tailored to the current webinar title and tribe context.
+- **`src/pages/presentations.astro`**: Added URL-driven `q`, `filter`, and `tribe` initialization plus local search so webinar replay follow-through can open directly in a narrowed result set.
+- **`src/pages/workspace.astro`**: Added URL-driven `type`, `q`, `tribe`, and `tag` initialization so operators can land in the webinar slice of the knowledge library instead of the full workspace list.
+
+### Governance / Regression
+- **`tests/ui-stabilization.test.mjs`**: Regression coverage now locks the query-param handoff pattern on `admin/webinars`, `presentations`, and `workspace`.
+- **Backlog / governance / permissions / README / discovery note** updated to reflect this interoperability-focused follow-through.
+
+### Files Changed
+- `src/pages/admin/webinars.astro`
+- `src/pages/presentations.astro`
+- `src/pages/workspace.astro`
+- `tests/ui-stabilization.test.mjs`
+- `README.md`
+- `docs/WEBINARS_MODULE_DISCOVERY.md`
+- `backlog-wave-planning-updated.md`, `docs/GOVERNANCE_CHANGELOG.md`, `docs/PERMISSIONS_MATRIX.md`, `docs/RELEASE_LOG.md`
+
+### Audit Results
+- Build: clean
+- Tests: 28/28
+- Browser guard: OK
+- Smoke: routes OK
+
+---
+
+## 2026-03-11 — v0.28.0 Wave 30: Webinars Operator Actions
+
+### Scope
+Wave 30 adds a new operator-guidance layer to `/admin/webinars`, turning status signals into direct next actions while keeping the page anchored to the current events-first stack.
+
+### Operator Guidance Upgrade
+- **`src/pages/admin/webinars.astro`**: The panel now computes a recommended next action per webinar, renders a prioritized quick-actions section, and adds per-card “Proxima acao” guidance based on meeting link, replay, and publication status.
+- **No new schema or write path**: The implementation continues to orchestrate the existing `Attendance`, `Admin Comms`, `Presentations`, and `Workspace` surfaces instead of introducing webinar-local CRUD.
+
+### Governance / Regression
+- **`tests/ui-stabilization.test.mjs`**: Regression coverage now locks the new operator-action layer so the webinars panel keeps deriving next-step guidance from the current events-first model.
+- **Backlog / governance / README / discovery note** updated to reflect this operator-flow follow-through.
+
+### Files Changed
+- `src/pages/admin/webinars.astro`
+- `tests/ui-stabilization.test.mjs`
+- `docs/WEBINARS_MODULE_DISCOVERY.md`
+- `README.md`
+- `backlog-wave-planning-updated.md`, `docs/GOVERNANCE_CHANGELOG.md`, `docs/RELEASE_LOG.md`
+
+### Audit Results
+- Build: clean
+- Tests: 27/27
+- Smoke: routes OK
+
+---
+
 ## 2026-03-11 — v0.27.0 Wave 29: Webinars Browser Coverage
 
 ### Scope

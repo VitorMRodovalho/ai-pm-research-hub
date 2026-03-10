@@ -1,5 +1,69 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 33: Webinars In-Module Authoring Aids
+
+### Decisions
+
+1. **Reuse surfaces can expose contextual aids without becoming webinar-specific products**: `Attendance` now offers webinar-aware edit guidance, and `Admin Comms` now offers webinar-aware draft snippets, but both remain their original modules rather than sprouting a second CRUD flow.
+
+2. **Drafting and QA assistance are valid steps before any deeper workflow build-out**: The new aids reduce operator effort by focusing attention and seeding communication copy, which delivers value without schema changes or new backend actions.
+
+### Process Lessons Learned
+
+1. **Interoperability can evolve from navigation into task assistance**: Once contextual landing states exist, the next meaningful improvement is helping the operator perform the intended task faster inside the destination module.
+
+2. **Keep helper scope intentionally thin**: Subject lines, body seeds, field focus, and targeted reminders are enough to improve execution without duplicating the final authoring or send workflow.
+
+---
+
+## 2026-03-11 — Wave 32: Webinars Attendance And Comms Handoffs
+
+### Decisions
+
+1. **The contextual-handoff pattern should include the highest-friction operator destinations, not only content surfaces**: After `Presentations` and `Workspace` accepted query-driven context, the remaining friction lived in `Attendance` and `Admin Comms`. Those destinations now understand webinar handoff state too.
+
+2. **Focused route state is still preferable to webinar-local workflow duplication**: `Attendance` now lands on the right webinar context and can optionally open the edit modal, while `Admin Comms` can open with webinar-oriented history focus. This preserves reuse and avoids creating a second operational UI inside `/admin/webinars`.
+
+### Process Lessons Learned
+
+1. **A handoff is stronger when it reaches the action surface, not only the reporting surface**: Operators save more time when the destination is ready for the intended task, not just filtered to the right record family.
+
+2. **Browser checks can still protect interoperability indirectly**: Even without full end-to-end coverage for each destination page, validating that `/admin/webinars` emits the expected contextual links helps keep the flow coherent.
+
+---
+
+## 2026-03-11 — Wave 31: Webinars Contextual Handoffs
+
+### Decisions
+
+1. **Cross-module handoffs should land in filtered views, not generic destination pages**: Once `/admin/webinars` began recommending actions, the next friction point was that `Presentations` and `Workspace` still opened in broad list mode. They now accept URL-driven filters so operators land closer to the relevant webinar.
+
+2. **Shareable query-based context is a good intermediate step before more workflow-specific UI**: Search and filter parameters reduce context switching without adding schema, local write paths, or webinar-specific duplicates of existing modules.
+
+### Process Lessons Learned
+
+1. **Thin orchestration gets better when the target surface also understands the context**: Linking to the right module helps, but linking with the right filter helps more. Small deep-link improvements can materially reduce operator effort.
+
+2. **Reused modules benefit from small interoperability passes**: Even when a module is not webinar-specific, adding stable query-driven entry points makes it more useful as part of a broader operational flow.
+
+---
+
+## 2026-03-11 — Wave 30: Webinars Operator Actions
+
+### Decisions
+
+1. **The webinars panel should recommend the next operator step, not just report status**: Publication and attendance signals were already visible, but the operator still had to infer which module to open next. The panel now derives a recommended action per webinar and links directly to the existing operational surface.
+
+2. **Guidance should stay on top of the current modules instead of creating local write paths**: Quick actions now route users toward `Attendance`, `Admin Comms`, `Presentations`, or `Workspace` according to the webinar state, preserving the events-first model and avoiding premature CRUD sprawl inside `/admin/webinars`.
+
+### Process Lessons Learned
+
+1. **Operator UX improves when status is paired with a concrete handoff**: “Pending” alone still leaves work ambiguous. Pairing state with a recommended destination makes the panel materially more useful without backend changes.
+
+2. **Small orchestration improvements are valid sprint slices**: The page does not need new schema or new mutations to deliver value; reducing context switching for admins is already meaningful product progress.
+
+---
+
 ## 2026-03-11 — Wave 29: Webinars Browser Coverage
 
 ### Decisions

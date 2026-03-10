@@ -72,6 +72,23 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
             <button class="px-3 py-1.5 rounded-lg text-[12px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer"
                     data-action="refresh-events">{t('attendance.refresh', lang)}</button>
           </div>
+          <div class="px-5 py-4 border-b border-slate-100 space-y-3">
+            <div id="attendance-context-note" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[.75rem] text-amber-900"></div>
+            <div id="attendance-context-actions" class="hidden flex gap-2 flex-wrap"></div>
+            <div class="flex gap-2 flex-wrap items-center">
+              <input id="attendance-search" type="text"
+                     class="flex-1 min-w-[220px] px-4 py-2.5 rounded-xl border-[1.5px] border-slate-200 text-sm bg-white focus:outline-none focus:border-navy transition-colors"
+                     placeholder="Buscar evento, replay ou link" />
+              <select id="attendance-type-filter"
+                      class="px-3 py-2.5 rounded-xl border-[1.5px] border-slate-200 text-sm bg-white focus:outline-none focus:border-navy cursor-pointer">
+                <option value="">Todos os tipos</option>
+                <option value="webinar">Webinar</option>
+                <option value="tribe_meeting">Tribo</option>
+                <option value="general_meeting">Geral</option>
+                <option value="other">Outro</option>
+              </select>
+            </div>
+          </div>
           <div class="p-5" id="events-list">
             <LoadingSkeleton variant="row" count={3} />
           </div>
@@ -221,6 +238,17 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   let MEMBER: any = null;
   let CAN_MANAGE = false;
   let CURRENT_EVENT_ID: string | null = null;
+  let ALL_EVENTS: any[] = [];
+  const ATTENDANCE_ROUTE = {
+    tab: 'events',
+    query: '',
+    type: '',
+    eventId: '',
+    action: '',
+    edit: false,
+    autoOpened: false,
+    scrolled: false,
+  };
 
   function escapeAttr(s: string): string {
     return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -263,6 +291,21 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   function toast(msg: string, type = '') {
     (window as any).toast?.(msg, type);
   }
+
+  function parseAttendanceRoute() {
+    const params = new URLSearchParams(window.location.search);
+    ATTENDANCE_ROUTE.tab = params.get('tab') === 'ranking' ? 'ranking' : 'events';
+    ATTENDANCE_ROUTE.query = (params.get('q') || '').trim();
+    ATTENDANCE_ROUTE.type = params.get('type') || '';
+    ATTENDANCE_ROUTE.eventId = params.get('eventId') || '';
+    ATTENDANCE_ROUTE.action = params.get('action') || '';
+    ATTENDANCE_ROUTE.edit = params.get('edit') === '1';
+    const searchInput = document.getElementById('attendance-search') as HTMLInputElement | null;
+    const typeSelect = document.getElementById('attendance-type-filter') as HTMLSelectElement | null;
+    if (searchInput) searchInput.value = ATTENDANCE_ROUTE.query;
+    if (typeSelect) typeSelect.value = ATTENDANCE_ROUTE.type;
+  }
+
   function loadingRows(count = 3): string {
     return Array.from({ length: count }).map(() => `
       <div class="flex items-center gap-3 px-1 py-3 border-b border-slate-100 last:border-b-0 animate-pulse">
@@ -281,6 +324,136 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   function fmtDate(d: string): string {
     if (!d) return '';
     return new Date(d + 'T12:00:00').toLocaleDateString(I18N.dateLocale, { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  function renderAttendanceContext(filteredCount: number, totalCount: number) {
+    const note = document.getElementById('attendance-context-note');
+    const actions = document.getElementById('attendance-context-actions');
+    if (!note || !actions) return;
+    const hasContext = !!(ATTENDANCE_ROUTE.query || ATTENDANCE_ROUTE.type || ATTENDANCE_ROUTE.eventId || ATTENDANCE_ROUTE.action);
+    if (!hasContext) {
+      note.classList.add('hidden');
+      note.innerHTML = '';
+      actions.classList.add('hidden');
+      actions.innerHTML = '';
+      return;
+    }
+    const actionCopy: Record<string, string> = {
+      'meeting-link': 'Handoff contextual: completar o meeting link operacional deste webinar.',
+      'youtube-url': 'Handoff contextual: registrar o replay deste webinar no evento correspondente.',
+    };
+    const parts = [
+      actionCopy[ATTENDANCE_ROUTE.action] || 'Handoff contextual: abrir o fluxo de eventos no contexto do webinar selecionado.',
+    ];
+    if (ATTENDANCE_ROUTE.query) parts.push(`Filtro atual: "${escapeAttr(ATTENDANCE_ROUTE.query)}".`);
+    if (ATTENDANCE_ROUTE.type) parts.push(`Tipo: ${escapeAttr(ATTENDANCE_ROUTE.type)}.`);
+    if (filteredCount !== totalCount) parts.push(`Mostrando ${filteredCount} de ${totalCount} evento(s).`);
+    note.innerHTML = parts.join(' ');
+    note.classList.remove('hidden');
+
+    const focused = currentFocusedEvent();
+    const commsHref = focused ? buildAttendanceCommsHref(focused) : '';
+    actions.innerHTML = `
+      ${focused && CAN_MANAGE
+        ? '<button type="button" class="px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold border-0 cursor-pointer hover:opacity-90" data-action="open-focused-edit">Editar webinar focado</button>'
+        : ''}
+      ${commsHref
+        ? `<a href="${escapeAttr(commsHref)}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-[.72rem] font-semibold no-underline hover:bg-slate-50 transition-all">Abrir Comms contextual</a>`
+        : ''}
+      <button type="button" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-[.72rem] font-semibold cursor-pointer hover:bg-slate-50" data-action="clear-event-filters">Limpar contexto</button>
+    `;
+    actions.classList.remove('hidden');
+  }
+
+  function filteredEvents(): any[] {
+    const query = ATTENDANCE_ROUTE.query.toLowerCase();
+    return ALL_EVENTS.filter((ev: any) => {
+      const matchesType = !ATTENDANCE_ROUTE.type || ev.type === ATTENDANCE_ROUTE.type;
+      const matchesQuery = !query
+        || (ev.title || '').toLowerCase().includes(query)
+        || (ev.meeting_link || '').toLowerCase().includes(query)
+        || (ev.youtube_url || '').toLowerCase().includes(query);
+      const matchesFocus = !ATTENDANCE_ROUTE.eventId || ev.id === ATTENDANCE_ROUTE.eventId;
+      return (matchesType && matchesQuery) || matchesFocus;
+    });
+  }
+
+  function currentFocusedEvent(): any | null {
+    if (!ATTENDANCE_ROUTE.eventId) return null;
+    return ALL_EVENTS.find((ev: any) => ev.id === ATTENDANCE_ROUTE.eventId) || null;
+  }
+
+  function buildAttendanceCommsHref(ev: any): string {
+    const params = new URLSearchParams();
+    params.set('focus', 'broadcasts');
+    params.set('context', 'webinar');
+    params.set('stage', ATTENDANCE_ROUTE.action === 'youtube-url' ? 'followup' : 'invite');
+    if (ev.id) params.set('eventId', String(ev.id));
+    if (ev.title) {
+      params.set('q', String(ev.title));
+      params.set('title', String(ev.title));
+    }
+    if (ev.date) params.set('date', String(ev.date));
+    return `/admin/comms?${params.toString()}`;
+  }
+
+  function maybeHandleFocusedEvent(events: any[]) {
+    if (!ATTENDANCE_ROUTE.eventId) return;
+    const focused = events.find((ev: any) => ev.id === ATTENDANCE_ROUTE.eventId);
+    if (!focused) return;
+    if (!ATTENDANCE_ROUTE.scrolled) {
+      ATTENDANCE_ROUTE.scrolled = true;
+      requestAnimationFrame(() => {
+        document.getElementById(`attendance-event-${focused.id}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      });
+    }
+    if (ATTENDANCE_ROUTE.edit && CAN_MANAGE && !ATTENDANCE_ROUTE.autoOpened) {
+      ATTENDANCE_ROUTE.autoOpened = true;
+      openEditEvent(focused);
+    }
+  }
+
+  function clearAttendanceFilters() {
+    ATTENDANCE_ROUTE.query = '';
+    ATTENDANCE_ROUTE.type = '';
+    ATTENDANCE_ROUTE.eventId = '';
+    ATTENDANCE_ROUTE.action = '';
+    ATTENDANCE_ROUTE.edit = false;
+    ATTENDANCE_ROUTE.autoOpened = true;
+    ATTENDANCE_ROUTE.scrolled = true;
+    const searchInput = document.getElementById('attendance-search') as HTMLInputElement | null;
+    const typeSelect = document.getElementById('attendance-type-filter') as HTMLSelectElement | null;
+    if (searchInput) searchInput.value = '';
+    if (typeSelect) typeSelect.value = '';
+    renderEvents();
+  }
+
+  function applyEditContext(ev: any) {
+    const box = document.getElementById('edit-ev-context');
+    if (!box) return;
+    if (ev.id !== ATTENDANCE_ROUTE.eventId || !ATTENDANCE_ROUTE.action) {
+      box.classList.add('hidden');
+      box.innerHTML = '';
+      return;
+    }
+    if (ATTENDANCE_ROUTE.action === 'meeting-link') {
+      box.innerHTML = 'Assistente contextual: adicione ou confirme o meeting link desta sessao, revise data/duracao e salve para liberar a divulgacao no fluxo de webinars.';
+      box.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        (document.getElementById('edit-ev-link') as HTMLInputElement | null)?.focus();
+      });
+      return;
+    }
+    if (ATTENDANCE_ROUTE.action === 'youtube-url') {
+      box.innerHTML = 'Assistente contextual: cole o replay em `youtube_url`, confirme a flag de gravacao e salve para que o proximo handoff de publicacao possa seguir.';
+      box.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        (document.getElementById('edit-ev-youtube') as HTMLInputElement | null)?.focus();
+      });
+      return;
+    }
+    box.classList.add('hidden');
+    box.innerHTML = '';
   }
 
   // ── MODAL HELPERS ──
@@ -346,12 +519,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   }
 
   // ── EVENTS LIST ──
-  async function loadEvents() {
+  function renderEvents() {
     const el = document.getElementById('events-list')!;
-    el.innerHTML = loadingRows(3);
-    try {
-    const { data } = await sb.rpc('get_events_with_attendance', { p_limit: 40, p_offset: 0 });
-    if (!data?.length) {
+    const filtered = filteredEvents();
+    renderAttendanceContext(filtered.length, ALL_EVENTS.length);
+    if (!ALL_EVENTS.length) {
       const cta = CAN_MANAGE
         ? `<button class="mt-3 px-4 py-2 bg-navy text-white rounded-xl text-[12px] font-semibold border-0 cursor-pointer hover:opacity-90" data-action="open-new-event">${I18N.emptyNewEvent}</button>`
         : `<button class="mt-3 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[12px] font-semibold cursor-pointer hover:bg-slate-50" data-action="refresh-events">${I18N.emptyRefresh}</button>`;
@@ -361,6 +533,16 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           <div class="font-semibold text-slate-600 text-sm">${I18N.noEvents}</div>
           <p class="text-slate-400 text-[12px] mt-1">${CAN_MANAGE ? I18N.emptyManagerHint : I18N.emptyMemberHint}</p>
           ${cta}
+        </div>
+      `;
+      return;
+    }
+    if (!filtered.length) {
+      el.innerHTML = `
+        <div class="text-center py-8">
+          <div class="text-3xl mb-2">🔎</div>
+          <div class="font-semibold text-slate-600 text-sm">Nenhum evento corresponde ao filtro atual.</div>
+          <button class="mt-3 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[12px] font-semibold cursor-pointer hover:bg-slate-50" data-action="clear-event-filters">Limpar filtros</button>
         </div>
       `;
       return;
@@ -377,17 +559,24 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
     function eventBadges(ev: any): string {
       const rec = ev.is_recorded ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-50 text-red-700">${I18N.badgeRecorded}</span>` : '';
+      const focus = ev.id === ATTENDANCE_ROUTE.eventId
+        ? '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">Foco atual</span>'
+        : '';
       if (ev.audience_level && audienceLabel[ev.audience_level]) {
-        return `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-green-50 text-green-800">${audienceLabel[ev.audience_level]}</span>${rec}`;
+        return `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-green-50 text-green-800">${audienceLabel[ev.audience_level]}</span>${rec}${focus}`;
       }
-      return `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${badgeClass[ev.type] || 'bg-blue-50 text-navy'}">${typeLabel[ev.type] || ev.type}</span>${rec}`;
+      return `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${badgeClass[ev.type] || 'bg-blue-50 text-navy'}">${typeLabel[ev.type] || ev.type}</span>${rec}${focus}`;
     }
 
-    el.innerHTML = data.map((ev: any) => {
+    el.innerHTML = filtered.map((ev: any) => {
       const attIcon = ev.i_attended === true ? '✅' : ev.i_attended === false ? '❌' : '—';
       const attBg = ev.i_attended === true ? 'bg-green-100 text-green-800' : ev.i_attended === false ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-500';
       const canEdit = CAN_MANAGE || ev.created_by === MEMBER.auth_id;
       const canRoster = CAN_MANAGE;
+      const isFocused = ev.id === ATTENDANCE_ROUTE.eventId;
+      const wrapperClass = isFocused
+        ? 'rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-3.5 my-2'
+        : 'py-3.5 border-b border-slate-100 last:border-b-0';
 
       const isPast = new Date(ev.date + 'T23:59:59') < new Date();
       const linkHtml = ev.meeting_link && !isPast
@@ -399,7 +588,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
       ((window as any).__attendanceEventsById = (window as any).__attendanceEventsById || {})[ev.id] = ev;
       return `
-      <div class="py-3.5 border-b border-slate-100 last:border-b-0">
+      <div id="attendance-event-${escapeAttr(ev.id)}" class="${wrapperClass}">
         <div class="flex items-center gap-2.5">
           <div class="w-7 h-7 rounded-full flex items-center justify-center text-[13px] flex-shrink-0 ${attBg}">${attIcon}</div>
           <div class="flex-1 min-w-0">
@@ -423,6 +612,17 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         </div>
       </div>`;
     }).join('');
+
+    maybeHandleFocusedEvent(filtered);
+  }
+
+  async function loadEvents() {
+    const el = document.getElementById('events-list')!;
+    el.innerHTML = loadingRows(3);
+    try {
+      const { data } = await sb.rpc('get_events_with_attendance', { p_limit: 40, p_offset: 0 });
+      ALL_EVENTS = data || [];
+      renderEvents();
     } catch (e) {
       console.warn('Attendance: failed to load events:', e);
       el.innerHTML = `<div class="text-center py-8 text-red-500 text-sm">Failed to load events. Please try again later.</div>`;
@@ -456,6 +656,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         case 'refresh-events':
           loadEvents();
           break;
+        case 'open-focused-edit': {
+          const focused = currentFocusedEvent();
+          if (focused) openEditEvent(focused);
+          break;
+        }
+        case 'clear-event-filters':
+          clearAttendanceFilters();
+          break;
         case 'check-in':
           checkIn(target.dataset.eventId || '');
           break;
@@ -478,12 +686,20 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       if (!(target instanceof HTMLSelectElement)) return;
       if (target.id === 'ev-type') updateAudienceFromType('ev-audience', 'ev-type');
       if (target.id === 'rec-type') updateAudienceFromType('rec-audience', 'rec-type');
+      if (target.id === 'attendance-type-filter') {
+        ATTENDANCE_ROUTE.type = target.value;
+        renderEvents();
+      }
     });
 
     document.addEventListener('input', (e: Event) => {
       const target = e.target as HTMLElement | null;
       if (!(target instanceof HTMLInputElement)) return;
       if (target.id === 'roster-search') rosterFilter(target.value);
+      if (target.id === 'attendance-search') {
+        ATTENDANCE_ROUTE.query = target.value.trim();
+        renderEvents();
+      }
     });
 
     document.addEventListener('submit', (e: SubmitEvent) => {
@@ -599,6 +815,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     (document.getElementById('edit-ev-youtube') as HTMLInputElement).value = ev.youtube_url || '';
     (document.getElementById('edit-ev-recorded') as HTMLInputElement).checked = ev.is_recorded || false;
     (document.getElementById('edit-ev-audience') as HTMLSelectElement).value = ev.audience_level || 'all';
+    applyEditContext(ev);
     openModal('modal-edit-event');
   }
 
@@ -739,12 +956,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   }
 
   async function onMemberReady() {
+    parseAttendanceRoute();
     CAN_MANAGE = hasMinimumTier(resolveTierFromMember(MEMBER), 'leader');
     if (CAN_MANAGE) {
       document.getElementById('tab-new-event')?.classList.remove('hidden');
       document.getElementById('tab-recurring')?.classList.remove('hidden');
     }
     showApp();
+    const routeTabBtn = document.querySelector(`[data-tab="${ATTENDANCE_ROUTE.tab}"]`) as HTMLElement | null;
+    if (routeTabBtn) switchTab(routeTabBtn, ATTENDANCE_ROUTE.tab);
     loadKPIs();
     loadEvents();
   }
