@@ -169,6 +169,7 @@ const ptBR: Record<string, string> = {
   'agenda.item2.title': 'Mapa Estratégico e Objetivos',
   'agenda.item2.desc': '4 Quadrantes. KPIs 2026. Estrutura do Núcleo.',
   'agenda.item3.title': 'Dinâmica das Tribos',
+  'agenda.item3.descPrefix': '8 vídeos. Escolha sua tribo até',
   'agenda.item3.desc': '8 vídeos. Escolha sua tribo até Sáb 08/Mar 12h BRT.',
   'agenda.item4.title': 'Networking — Breakout Rooms',
   'agenda.item4.desc': 'Salas de 4-5 pessoas. Pergunta quebra-gelo.',

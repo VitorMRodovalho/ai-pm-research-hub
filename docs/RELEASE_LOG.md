@@ -1,5 +1,31 @@
 # Release Log
 
+## 2026-03-11 — v0.17.0 Wave 19: Agenda Runtime Deadline Sync
+
+### Scope
+Wave 19 closes the next small home-runtime gap by replacing the fixed tribe-selection date inside `AgendaSection` with the same runtime deadline already used by the landing hero and tribes surfaces.
+
+### Home Runtime Follow-Through
+- **`src/components/sections/AgendaSection.astro`**: The "Research Streams / Dinâmica das Tribos" agenda item now formats the runtime selection deadline instead of embedding a fixed March date in localized copy.
+- **`src/pages/index.astro`**, **`src/pages/en/index.astro`**, **`src/pages/es/index.astro`**: The existing `deadlineIso` flow is now passed into `AgendaSection`, keeping the public home timeline surfaces consistent.
+- **i18n**: Added lightweight `agenda.item3.descPrefix` keys so the runtime deadline can remain localized without hardcoding a specific date into copy.
+
+### Governance / Regression
+- **`tests/ui-stabilization.test.mjs`**: Regression test expanded to ensure all home pages wire `deadlineIso` into `AgendaSection`.
+- **Backlog / governance / README** updated to reflect this smaller Wave 19 follow-through on the home-runtime track.
+
+### Files Changed
+- `src/components/sections/AgendaSection.astro`
+- `src/pages/index.astro`, `src/pages/en/index.astro`, `src/pages/es/index.astro`
+- `src/i18n/pt-BR.ts`, `src/i18n/en-US.ts`, `src/i18n/es-LATAM.ts`
+- `tests/ui-stabilization.test.mjs`
+- `backlog-wave-planning-updated.md`, `docs/RELEASE_LOG.md`, `docs/GOVERNANCE_CHANGELOG.md`, `README.md`
+
+### Audit Results
+- Build: clean | Tests: 21/21 | Browser guard: OK | Smoke: routes OK
+
+---
+
 ## 2026-03-11 — v0.16.0 Wave 18: Home Runtime Messaging & Browser Coverage Expansion
 
 ### Scope

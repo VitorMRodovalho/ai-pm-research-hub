@@ -169,6 +169,7 @@ const esLATAM: Record<string, string> = {
   'agenda.item2.title': 'Mapa Estratégico y Objetivos',
   'agenda.item2.desc': '4 Cuadrantes. KPIs 2026. Estructura del Núcleo.',
   'agenda.item3.title': 'Dinámica de las Líneas de Investigación',
+  'agenda.item3.descPrefix': '8 videos. Elige tu línea hasta',
   'agenda.item3.desc': '8 videos. Elige tu línea hasta Sáb 08/Mar 12h BRT.',
   'agenda.item4.title': 'Networking — Salas de Grupo',
   'agenda.item4.desc': 'Salas de 4-5 personas. Pregunta rompehielos.',

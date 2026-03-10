@@ -1,5 +1,19 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 19: Agenda Runtime Deadline Sync
+
+### Decisions
+
+1. **Runtime schedule consistency matters even in supporting sections**: After Hero and Tribes moved to runtime `home_schedule`, the agenda still announced the tribe-selection deadline through a fixed locale string. Wave 19 aligns that supporting section with the same runtime source to avoid split-brain messaging on the landing page.
+
+2. **Localized runtime copy should prefer composable prefixes over duplicated date strings**: Instead of hardcoding another date variant per locale, the agenda now combines a translated prefix with the formatted runtime deadline. This keeps localization intact while reducing future date churn.
+
+### Process Lessons Learned
+
+1. **Small follow-through waves are worth closing cleanly**: Once the larger runtime home model existed, this agenda drift was a small but visible inconsistency. Treating it as its own closure step avoids leaving low-grade copy debt behind.
+
+---
+
 ## 2026-03-11 — Wave 18: Home Runtime Messaging And Browser Expansion
 
 ### Decisions

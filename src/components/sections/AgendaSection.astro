@@ -1,13 +1,36 @@
 ---
 import { t, type Lang } from '../../i18n/utils';
 
-interface Props { lang?: Lang; }
-const { lang = 'pt-BR' } = Astro.props;
+interface Props { lang?: Lang; deadline?: string | null; }
+const { lang = 'pt-BR', deadline = null } = Astro.props;
+
+function formatAgendaDeadline(iso: string, currentLang: Lang): string | null {
+  try {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return null;
+    const formatted = new Intl.DateTimeFormat(currentLang, {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: currentLang !== 'pt-BR',
+      timeZone: 'America/Sao_Paulo',
+    }).format(date);
+    return `${formatted} BRT`;
+  } catch {
+    return null;
+  }
+}
+
+const agendaDeadline = typeof deadline === 'string' ? formatAgendaDeadline(deadline, lang) : null;
+const agendaItem3Desc = agendaDeadline
+  ? `${t('agenda.item3.descPrefix', lang)} ${agendaDeadline}.`
+  : t('agenda.item3.desc', lang);
 
 const AGENDA = [
   { time: '00-15', unit: t('agenda.unit', lang), title: t('agenda.item1.title', lang), desc: t('agenda.item1.desc', lang) },
   { time: '15-30', unit: t('agenda.unit', lang), title: t('agenda.item2.title', lang), desc: t('agenda.item2.desc', lang) },
-  { time: '30-45', unit: t('agenda.unit', lang), title: t('agenda.item3.title', lang), desc: t('agenda.item3.desc', lang) },
+  { time: '30-45', unit: t('agenda.unit', lang), title: t('agenda.item3.title', lang), desc: agendaItem3Desc },
   { time: '45-60', unit: t('agenda.unit', lang), title: t('agenda.item4.title', lang), desc: t('agenda.item4.desc', lang) },
   { time: '60-75', unit: t('agenda.unit', lang), title: t('agenda.item5.title', lang), desc: t('agenda.item5.desc', lang) },
   { time: '75-90', unit: t('agenda.unit', lang), title: t('agenda.item6.title', lang), desc: t('agenda.item6.desc', lang) },

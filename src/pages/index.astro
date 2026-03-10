@@ -24,7 +24,7 @@ const deadlineIso = homeSchedule?.selectionDeadlineAt ?? null;
 <BaseLayout title={t('meta.title', lang)} activePage="home" lang={lang}>
   <Toast />
   <HeroSection deadline={deadlineIso} schedule={homeSchedule} lang={lang} />
-  <AgendaSection lang={lang} />
+  <AgendaSection deadline={deadlineIso} lang={lang} />
   <QuadrantsSection lang={lang} />
   <TribesSection deadline={deadlineIso} lang={lang} />
   <KpiSection lang={lang} />

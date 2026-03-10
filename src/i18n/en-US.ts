@@ -169,6 +169,7 @@ const enUS: Record<string, string> = {
   'agenda.item2.title': 'Strategic Map & Objectives',
   'agenda.item2.desc': '4 Quadrants. 2026 KPIs. Hub Structure.',
   'agenda.item3.title': 'Research Streams Showcase',
+  'agenda.item3.descPrefix': '8 videos. Choose your stream by',
   'agenda.item3.desc': '8 videos. Choose your stream by Sat 03/08 12PM BRT.',
   'agenda.item4.title': 'Networking — Breakout Rooms',
   'agenda.item4.desc': 'Rooms of 4-5 people. Icebreaker question.',

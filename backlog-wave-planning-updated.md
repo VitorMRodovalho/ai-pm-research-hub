@@ -8,6 +8,11 @@
 
 ## LATEST UPDATE (2026-03-11)
 
+### Entregue em Wave 19
+- **W19.1 Agenda Runtime Deadline**: `AgendaSection.astro` passa a receber o deadline real da wave e remove a data fixa do item "Dinâmica das Tribos".
+- **W19.2 Home Page Wiring**: `index` PT/EN/ES reaproveitam o mesmo `deadlineIso` runtime também na agenda, mantendo Hero e Agenda sincronizados.
+- **W19.3 Regression Lock**: os testes textuais agora travam explicitamente que `AgendaSection` usa o deadline runtime nas três home pages.
+
 ### Entregue em Wave 18
 - **W18.1 Runtime Home Schedule Reads**: `index` PT/EN/ES passam a resolver o objeto completo de `home_schedule`, não apenas o deadline.
 - **W18.2 Hero Runtime Messaging**: `HeroSection.astro` usa `kickoff_at`, `platform_label` e metadados recorrentes do `home_schedule` para reduzir copy estático no badge inicial e nas mensagens de reunião.
@@ -426,6 +431,22 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 - **Home runtime**: badge e labels principais da home passam a refletir `home_schedule` real, não só fallback i18n
 - **Post-deadline UX**: `hero-cycle-status` aparece sem depender de `navGetSb()` já estar pronto
 - **Site hierarchy / ACL**: sem mudança de tier/visibilidade; `/admin/selection` continua protegido e agora também revalidado junto à home pública
+
+---
+
+## WAVE 19: Agenda Runtime Deadline Sync — CONCLUIDA
+**Foco:** remover o próximo bolso de prazo fixo na home pública, mantendo Hero e Agenda alinhados ao mesmo `home_schedule`.
+
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| W19.1 | Agenda Runtime Deadline | High | Done | `src/components/sections/AgendaSection.astro` agora formata a deadline real da seleção e usa prefixos i18n em vez da data fixa anterior. |
+| W19.2 | Home Wiring Reuse | High | Done | `src/pages/index.astro`, `src/pages/en/index.astro` e `src/pages/es/index.astro` passam `deadlineIso` também para `AgendaSection`, mantendo a home pública coesa em torno da mesma fonte runtime. |
+| W19.3 | Regression Lock | Medium | Done | `tests/ui-stabilization.test.mjs` valida que as três home pages usam `AgendaSection deadline={deadlineIso}`. |
+
+### Wave 19 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 21/21
+- **Home runtime**: Hero e Agenda passam a compartilhar o mesmo deadline vindo de `home_schedule`
+- **Scope**: nenhuma mudança de ACL, navegação ou schema nesta tranche
 
 ---
 

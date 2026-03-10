@@ -51,5 +51,6 @@ test('home pages resolve shared home schedule instead of fetching only the deadl
   for (const content of [pt, en, es]) {
     assert.equal(content.includes('getHomeSchedule'), true);
     assert.equal(content.includes('schedule={homeSchedule}'), true);
+    assert.equal(content.includes('AgendaSection deadline={deadlineIso}'), true);
   }
 });
