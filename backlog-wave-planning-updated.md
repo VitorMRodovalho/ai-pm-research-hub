@@ -8,6 +8,11 @@
 
 ## LATEST UPDATE (2026-03-11)
 
+### Entregue em Wave 21
+- **W21.1 Resources Deadline Wiring**: `ResourcesSection.astro` passa a receber `deadlineIso` nas três home pages, mantendo o card fallback da playlist coerente com o mesmo cronograma runtime já usado por Hero, Agenda e Tribes.
+- **W21.2 Localized Resource Fallbacks**: os cards fallback de recursos deixam de carregar textos fixos em português dentro do componente e passam a usar i18n nas locales PT/EN/ES.
+- **W21.3 Regression Lock**: `tests/ui-stabilization.test.mjs` agora trava o repasse de `deadlineIso` para `ResourcesSection` e a remoção do texto legado `Sáb 12h`.
+
 ### Entregue em Wave 20
 - **W20.1 Home Fallback Copy Cleanup**: os fallbacks localizados da home (`hero.date`, `hero.meetingSchedule`, `hero.recurringMeeting`, `agenda.item3.desc`) deixam de embutir datas/horarios de Marco e passam a apontar genericamente para o cronograma atual do ciclo.
 - **W20.2 Hero Inline Fallback Hygiene**: `HeroSection.astro` remove os ultimos defaults inline com horario fixo de reuniao, reduzindo a chance de a home publica exibir informacao antiga quando `home_schedule` vier incompleto.
@@ -45,6 +50,9 @@
 - **W14.1 Doc Divergence Cleanup**: README, MIGRATION e CONTRIBUTING alinhados com produção atual (Chart.js nativo, smoke routes, 5-phase, repo/path corretos).
 - **W14.2 Admin Hygiene**: Removidas referências antigas a PostHog/Looker do admin atual; primeira tranche de event delegation aplicada em `admin/index.astro` e shared UI.
 - **W14.3 Deferred Structuring**: S23, S24, S-KNW7 e Webinars reclassificados por lane, dependências e critérios de saída do deferred.
+
+### Wave 21 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 23/23 | **Browser guard**: OK | **Routes**: smoke OK
 
 ### Wave 20 Audit Results (2026-03-11)
 - **Build**: clean | **Tests**: 22/22 | **Browser guard**: OK | **Routes**: smoke OK

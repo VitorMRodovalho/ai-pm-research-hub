@@ -52,6 +52,7 @@ test('home pages resolve shared home schedule instead of fetching only the deadl
     assert.equal(content.includes('getHomeSchedule'), true);
     assert.equal(content.includes('schedule={homeSchedule}'), true);
     assert.equal(content.includes('AgendaSection deadline={deadlineIso}'), true);
+    assert.equal(content.includes('ResourcesSection deadline={deadlineIso}'), true);
   }
 });
 
@@ -69,4 +70,18 @@ test('home fallback copy no longer hardcodes kickoff dates or recurring meeting 
   assert.equal(es.includes('Jueves · 19:30 → 20:30 BRT'), false);
   assert.equal(hero.includes("hi18n.meetingSchedule || 'Quintas · 19:30 → 20:30 BRT'"), false);
   assert.equal(hero.includes("hi18n.recurringMeeting || 'Reunião Recorrente · Quintas 19:30 BRT'"), false);
+});
+
+test('resources fallback playlist no longer hardcodes saturday deadline copy', () => {
+  const resources = read('src/components/sections/ResourcesSection.astro');
+  const pt = read('src/i18n/pt-BR.ts');
+  const en = read('src/i18n/en-US.ts');
+  const es = read('src/i18n/es-LATAM.ts');
+
+  assert.equal(resources.includes('8 vídeos. Escolha até Sáb 12h.'), false);
+  assert.equal(resources.includes("title: 'Playlist YouTube'"), false);
+  assert.equal(resources.includes("t('resources.playlist.descPrefix', lang)"), true);
+  assert.equal(pt.includes("'resources.playlist.descPrefix'"), true);
+  assert.equal(en.includes("'resources.playlist.descPrefix'"), true);
+  assert.equal(es.includes("'resources.playlist.descPrefix'"), true);
 });

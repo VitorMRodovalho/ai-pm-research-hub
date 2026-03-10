@@ -1,5 +1,21 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 21: Resources Runtime Fallback Alignment
+
+### Decisions
+
+1. **Shared home schedule inputs should feed every visible schedule-adjacent fallback card**: After Hero, Agenda, Tribes, and generic home copy were aligned, `ResourcesSection` still exposed a playlist card with the old Saturday-noon deadline. Passing the same `deadlineIso` into that section keeps the public home from splitting its runtime truth across components.
+
+2. **Shared public components should not ship one-language fallback copy**: `ResourcesSection.astro` served Portuguese-only fallback card labels even on English and Spanish pages. Fallback content now lives in locale keys so the component degrades consistently in every language.
+
+### Process Lessons Learned
+
+1. **Runtime consistency work often reveals latent localization debt**: A schedule-related cleanup in one card quickly exposed that the entire fallback list was still hardcoded in a single language. Small runtime slices should still scan for neighboring localization drift.
+
+2. **Textual tests are enough to lock prop wiring between home sections**: Verifying that all localized pages pass `deadlineIso` into another section is a cheap way to prevent copy drift from reappearing as new runtime-aware sections are added.
+
+---
+
 ## 2026-03-11 — Wave 20: Generic Home Fallback Cleanup
 
 ### Decisions

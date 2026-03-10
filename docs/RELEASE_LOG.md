@@ -1,5 +1,31 @@
 # Release Log
 
+## 2026-03-11 — v0.19.0 Wave 21: Resources Runtime Fallback Alignment
+
+### Scope
+Wave 21 closes the next public-home runtime gap by aligning `ResourcesSection` fallback content with the same selection deadline already passed through the landing page and by removing Portuguese-only fallback copy from the shared component.
+
+### Resources Runtime Follow-Through
+- **`src/components/sections/ResourcesSection.astro`**: The YouTube playlist fallback card now formats the runtime selection deadline instead of embedding the old `Sáb 12h` text, and the rest of the fallback resource cards now resolve their titles/descriptions through locale keys.
+- **`src/pages/index.astro`**, **`src/pages/en/index.astro`**, **`src/pages/es/index.astro`**: The existing `deadlineIso` flow is now also passed into `ResourcesSection`, keeping another public home surface aligned with `home_schedule`.
+- **i18n**: Added localized fallback keys for the resources cards so the shared component no longer defaults to Portuguese copy on English or Spanish pages.
+
+### Governance / Regression
+- **`tests/ui-stabilization.test.mjs`**: Regression coverage expanded to ensure the home pages wire `deadlineIso` into `ResourcesSection` and that the old playlist fallback string does not return.
+- **Backlog / governance / permissions / README** updated to reflect this smaller Wave 21 follow-through on the public runtime track.
+
+### Files Changed
+- `src/components/sections/ResourcesSection.astro`
+- `src/pages/index.astro`, `src/pages/en/index.astro`, `src/pages/es/index.astro`
+- `src/i18n/pt-BR.ts`, `src/i18n/en-US.ts`, `src/i18n/es-LATAM.ts`
+- `tests/ui-stabilization.test.mjs`
+- `backlog-wave-planning-updated.md`, `docs/RELEASE_LOG.md`, `docs/GOVERNANCE_CHANGELOG.md`, `docs/PERMISSIONS_MATRIX.md`, `README.md`
+
+### Audit Results
+- Build: clean | Tests: 23/23 | Browser guard: OK | Smoke: routes OK
+
+---
+
 ## 2026-03-11 — v0.18.0 Wave 20: Generic Home Fallback Cleanup
 
 ### Scope

@@ -4,7 +4,7 @@
 > Qualquer alteração de acesso deve ser refletida aqui, no `navigation.config.ts`,
 > e nas RLS policies do Supabase antes de ser deployada.
 >
-> Última atualização: 2026-03-11 (Wave 20 audit: public home fallback cleanup revalidated against current ACL/site hierarchy)
+> Última atualização: 2026-03-11 (Wave 21 audit: resources runtime fallback alignment revalidated against current ACL/site hierarchy)
 
 ---
 
@@ -289,3 +289,4 @@ e as Edge Functions estão alinhados com esta matriz.
 | 2026-03-11 | Wave 17 audit: `/admin/selection` guard validated in a real browser for anonymous visitors; home schedule hardening changed selection availability copy, not route visibility or tier mapping. |
 | 2026-03-11 | Wave 18 audit: home runtime messaging moved closer to `home_schedule` without changing public/admin visibility; browser validation now covers both `/admin/selection` denial and public home post-deadline behavior. |
 | 2026-03-11 | Wave 20 audit: generic home fallback cleanup touched only public copy and hero fallback defaults; route visibility, tiers, and LGPD-sensitive behavior remain unchanged. |
+| 2026-03-11 | Wave 21 audit: `ResourcesSection` now receives the shared public deadline and localized fallback copy, with no change to route visibility, tiers, or LGPD-sensitive behavior. |

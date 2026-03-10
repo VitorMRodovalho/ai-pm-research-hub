@@ -1,57 +1,80 @@
 ---
 import { t, type Lang } from '../../i18n/utils';
 
-interface Props { lang?: Lang; }
-const { lang = 'pt-BR' } = Astro.props;
+interface Props { lang?: Lang; deadline?: string | null; }
+const { lang = 'pt-BR', deadline = null } = Astro.props;
+
+function formatPlaylistDeadline(iso: string, currentLang: Lang): string | null {
+  try {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return null;
+    const formatted = new Intl.DateTimeFormat(currentLang, {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: currentLang !== 'pt-BR',
+      timeZone: 'America/Sao_Paulo',
+    }).format(date);
+    return `${formatted} BRT`;
+  } catch {
+    return null;
+  }
+}
+
+const playlistDeadline = typeof deadline === 'string' ? formatPlaylistDeadline(deadline, lang) : null;
+const playlistDescription = playlistDeadline
+  ? `${t('resources.playlist.descPrefix', lang)} ${playlistDeadline}.`
+  : t('resources.playlist.desc', lang);
 
 const resources = [
   {
     icon: '▶️',
     iconBg: 'rgba(213,52,11,.1)',
-    title: 'Playlist YouTube',
-    text: '8 vídeos. Escolha até Sáb 12h.',
+    title: t('resources.playlist.title', lang),
+    text: playlistDescription,
     url: 'https://youtube.com/playlist?list=PLQJVKrw1fcrx3fD2ug1hnps6TklcMT1dc',
-    linkText: 'Abrir →',
+    linkText: t('resources.playlist.linkText', lang),
   },
   {
     icon: '📘',
     iconBg: 'rgba(0,121,158,.1)',
-    title: 'Manual de Governança',
-    text: 'Leitura obrigatória (documento vivo).',
+    title: t('resources.manual.title', lang),
+    text: t('resources.manual.text', lang),
     url: 'https://www.canva.com/design/DAG1Nc3jhC4/gWGhQCJyv7axeCbKozD1gg/view',
-    linkText: 'Abrir Manual →',
+    linkText: t('resources.manual.linkText', lang),
   },
   {
     icon: '🎓',
     iconBg: 'rgba(79,23,168,.1)',
-    title: 'Mini Cursos IA — PMI',
-    text: 'Trilha gratuita.',
+    title: t('resources.courses.title', lang),
+    text: t('resources.courses.text', lang),
     url: 'https://www.pmi.org/learning/ai-in-project-management',
-    linkText: 'PMI.org →',
+    linkText: t('resources.courses.linkText', lang),
   },
   {
     icon: '💻',
     iconBg: 'rgba(112,173,71,.1)',
-    title: 'GitHub',
-    text: 'Repositório + CRs.',
+    title: t('resources.github.title', lang),
+    text: t('resources.github.text', lang),
     url: 'https://github.com/VitorMRodovalho/ai-pm-research-hub',
-    linkText: 'Abrir →',
+    linkText: t('resources.github.linkText', lang),
   },
   {
     icon: '📧',
     iconBg: 'rgba(255,97,15,.1)',
-    title: 'Email do Núcleo',
-    text: 'Comunicações oficiais.',
+    title: t('resources.email.title', lang),
+    text: t('resources.email.text', lang),
     url: 'mailto:nucleoiagp@gmail.com',
-    linkText: 'nucleoiagp@gmail.com',
+    linkText: t('resources.email.linkText', lang),
   },
   {
     icon: '✅',
     iconBg: 'rgba(0,121,158,.1)',
-    title: 'volunteer.pmi.org',
-    text: 'Aceite sua posição.',
+    title: t('resources.portal.title', lang),
+    text: t('resources.portal.text', lang),
     url: 'https://volunteer.pmi.org',
-    linkText: 'Portal →',
+    linkText: t('resources.portal.linkText', lang),
   },
 ];
 
