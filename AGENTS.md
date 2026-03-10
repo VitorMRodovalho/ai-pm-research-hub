@@ -10,6 +10,7 @@ This file orients the AI assistant (Cursor) on the project so it can work effect
 | Plan work             | backlog-wave-planning-updated.md |
 | Check governance      | docs/GOVERNANCE_CHANGELOG.md |
 | Migration / legacy    | docs/MIGRATION.md |
+| Webinar scope         | docs/WEBINARS_MODULE_DISCOVERY.md |
 | Log a release         | docs/RELEASE_LOG.md |
 | Member fields         | `operational_role`, `designations` (`role`/`roles` dropped in Wave 8) |
 | History               | `member_cycle_history` |
@@ -49,6 +50,7 @@ This file orients the AI assistant (Cursor) on the project so it can work effect
 - **backlog-wave-planning-updated.md** — Wave planning, completed work, debt, next priorities, execution order.
 - **docs/GOVERNANCE_CHANGELOG.md** — Governance and product/engineering decisions.
 - **docs/MIGRATION.md** — Technical transitions (roles, Credly, analytics, etc.).
+- **docs/WEBINARS_MODULE_DISCOVERY.md** — Approved webinars discovery scope and MVP boundaries.
 - **docs/RELEASE_LOG.md** — Release and hotfix history; update on every production change.
 - **docs/project-governance/** — Runbooks, roadmap, sprint practices, sprint closure routine.
 - **docs/REPLICATION_GUIDE.md** — How to replicate the Hub for another chapter/project.
@@ -81,6 +83,9 @@ Before changing behavior or schema, check these for constraints and current stat
 
 8. **Navigation & access control**  
    All route visibility is governed by `src/lib/navigation.config.ts`. Items use `minTier` and `allowedDesignations`. LGPD-sensitive items use `lgpdSensitive: true` to remain fully hidden. Other restricted items show as disabled with lock icon (progressive disclosure).
+
+9. **Webinars MVP direction**  
+   Until a convergence plan says otherwise, webinars should be implemented on top of `events.type='webinar'` plus existing attendance/comms/content flows. Do not create a second operational source of truth casually.
 
 ## Local workflow
 

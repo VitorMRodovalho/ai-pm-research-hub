@@ -137,3 +137,27 @@ Do not build brittle direct social API integrations into core Astro or Supabase 
 The project remains viable on a zero cost or free tier oriented stack so long as heavy binary storage and unnecessary frontend complexity are avoided.
 
 This is not a hack. It is a deliberate operating principle.
+
+---
+
+## 9. Webinar operational model
+
+### Current state
+The repo currently exposes two overlapping webinar paths:
+
+- `events` already supports `type='webinar'` and is connected to attendance and current event operations
+- `webinars` / `list_webinars` exist in schema, but are not yet the primary operational flow
+
+### Current issue
+Without an explicit rule, the platform risks splitting webinar scheduling, attendance, replay publishing, and reporting across two different sources of truth.
+
+### Governing rule
+For the first webinar MVP, webinar operations should remain **events-first** and reuse the existing attendance, content, communications, and analytics stack.
+
+### Required next steps
+- Keep the next implementation slice on top of `events` + `attendance`, not a new webinar-specific schema.
+- Treat the standalone `webinars` table as non-authoritative until a convergence or retirement decision is approved.
+- If the product later approves external registration, reusable speaker entities, or webinar-specific certificate automation, define the new data model and migration path before adding more schema.
+
+### Supporting reference
+See `docs/WEBINARS_MODULE_DISCOVERY.md` for the approved discovery scope, non-goals, and recommended rollout path.

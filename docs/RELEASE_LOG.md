@@ -1,5 +1,113 @@
 # Release Log
 
+## 2026-03-11 — v0.27.0 Wave 29: Webinars Browser Coverage
+
+### Scope
+Wave 29 extends browser coverage to the new `/admin/webinars` surface, validating both admin ACL denial for anonymous visitors and the operational publication-state UI under a mocked admin context.
+
+### Browser Coverage Expansion
+- **`tests/browser-guards.test.mjs`**: The browser suite now picks a truly free local port, validates anonymous denial on `/admin/webinars`, and injects a controlled admin/webinar dataset to assert publication-state signals across `Presentations` and `Workspace`.
+- **`src/pages/admin/webinars.astro`**: The page now fails closed for anonymous visitors instead of remaining stuck in loading while still listening for a later `nav:member` handoff.
+
+### Governance / Regression
+- **`tests/ui-stabilization.test.mjs`**: Keeps the file-level lock on the events-first webinars direction and the anonymous-session guard path.
+- **Backlog / governance / permissions / README** updated to reflect the new browser validation for the webinars admin workflow.
+
+### Files Changed
+- `tests/browser-guards.test.mjs`
+- `src/pages/admin/webinars.astro`
+- `tests/ui-stabilization.test.mjs`
+- `README.md`
+- `backlog-wave-planning-updated.md`, `docs/GOVERNANCE_CHANGELOG.md`, `docs/PERMISSIONS_MATRIX.md`, `docs/RELEASE_LOG.md`
+
+### Audit Results
+- Build: clean
+- Tests: 27/27
+- Browser guard: OK
+- Smoke: routes OK
+
+---
+
+## 2026-03-11 — v0.26.0 Wave 28: Webinars Replay Publication Follow-Through
+
+### Scope
+Wave 28 deepens the new admin webinars MVP by making replay publication status visible across `Presentations` and `Workspace`, still without adding new webinar schema.
+
+### Replay Publication Visibility
+- **`src/pages/admin/webinars.astro`**: The panel now loads `list_meeting_artifacts` and webinar entries from `hub_resources`, correlates them to webinar events, and shows whether each replay has reached `Presentations`, `Workspace`, both, or neither.
+- **Operator guidance improved**: Admin users can now identify replay publication gaps from the webinar surface itself instead of checking multiple modules manually.
+
+### Governance / Regression
+- **`tests/ui-stabilization.test.mjs`**: Regression coverage now locks the replay-publication wiring so `/admin/webinars` continues to read both `list_meeting_artifacts` and `hub_resources` instead of drifting back to a placeholder or isolated webinar path.
+- **Backlog / governance / README / discovery note** updated to reflect this follow-through on the events-first webinars line.
+
+### Files Changed
+- `src/pages/admin/webinars.astro`
+- `tests/ui-stabilization.test.mjs`
+- `docs/WEBINARS_MODULE_DISCOVERY.md`
+- `README.md`
+- `backlog-wave-planning-updated.md`, `docs/GOVERNANCE_CHANGELOG.md`, `docs/RELEASE_LOG.md`, `docs/PERMISSIONS_MATRIX.md`
+
+### Audit Results
+- Build: clean
+- Tests: 27/27
+- Smoke: routes OK
+
+---
+
+## 2026-03-11 — v0.25.0 Wave 27: Admin Webinars Events-First MVP
+
+### Scope
+Wave 27 replaces the `/admin/webinars` placeholder with a thin operational surface that reuses the current event, attendance, comms, and replay stack instead of opening a new webinar-specific CRUD or schema path.
+
+### Admin Webinars Surface
+- **`src/pages/admin/webinars.astro`**: The page now loads webinar sessions through `get_events_with_attendance`, filters `events.type='webinar'`, renders KPI cards, highlights upcoming sessions, surfaces replay follow-up, and links operators to `Attendance`, `Admin Comms`, `Presentations`, and `Workspace`.
+- **No new SQL or RLS changes**: The implementation stays on the approved events-first path documented in the discovery and migration notes.
+
+### Governance / Regression
+- **`tests/ui-stabilization.test.mjs`**: Added a regression check ensuring the admin webinars page no longer stays in placeholder mode and continues to use the existing events stack instead of `list_webinars`.
+- **Backlog / governance / permissions / README** updated to reflect that the webinars MVP now has a real admin orchestration surface while remaining admin-only and member-first.
+
+### Files Changed
+- `src/pages/admin/webinars.astro`
+- `tests/ui-stabilization.test.mjs`
+- `docs/WEBINARS_MODULE_DISCOVERY.md`
+- `README.md`
+- `backlog-wave-planning-updated.md`, `docs/GOVERNANCE_CHANGELOG.md`, `docs/PERMISSIONS_MATRIX.md`, `docs/RELEASE_LOG.md`
+
+### Audit Results
+- Build: clean
+- Tests: 27/27
+- Smoke: routes OK
+
+---
+
+## 2026-03-11 — v0.24.0 Wave 26: Webinars Module Discovery
+
+### Scope
+Wave 26 closes the deferred webinars discovery item by defining the MVP source of truth, scope boundaries, and rollout path before any new schema is added.
+
+### Discovery Outcome
+- **`docs/WEBINARS_MODULE_DISCOVERY.md`**: New decision note defining the recommended webinars MVP as `events`-first, member-first, and heavily based on reuse of the current attendance, content, communications, and analytics stack.
+- **`docs/MIGRATION.md`**: Added an explicit transition rule so the repo does not drift into a dual-source webinar model between `events` and the standalone `webinars` table.
+
+### Governance / ACL Alignment
+- **`docs/PERMISSIONS_MATRIX.md`**: Revalidated that `/admin/webinars` remains admin-only and documented that external registration or speaker CRM are still out of scope.
+- **`README.md` and `AGENTS.md`**: Updated the doc map and immediate priorities so the next implementation slice follows the approved webinars direction.
+
+### Files Changed
+- `docs/WEBINARS_MODULE_DISCOVERY.md`
+- `docs/MIGRATION.md`
+- `README.md`, `AGENTS.md`
+- `backlog-wave-planning-updated.md`, `docs/GOVERNANCE_CHANGELOG.md`, `docs/PERMISSIONS_MATRIX.md`, `docs/RELEASE_LOG.md`
+
+### Audit Results
+- Build: clean
+- Tests: 26/26
+- Smoke: routes OK
+
+---
+
 ## 2026-03-11 — v0.23.0 Wave 25: Public Home Browser Coverage Expansion
 
 ### Scope

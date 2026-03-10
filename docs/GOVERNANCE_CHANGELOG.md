@@ -1,5 +1,73 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 29: Webinars Browser Coverage
+
+### Decisions
+
+1. **`/admin/webinars` now deserves real browser coverage, not only file-level guards**: Once the page became an actual operational surface with ACL behavior and publication signals, textual regression checks alone were no longer enough. The browser suite now validates both anonymous denial and a mocked admin rendering path.
+
+2. **Lightweight mock injection is acceptable for internal browser coverage when credentials are unavailable**: The browser test now injects a controlled admin member and Supabase-like responses into the page so the operational webinar UI can be validated without depending on real login credentials or production data.
+
+3. **Anonymous admin routes should fail closed, not hang in loading**: Browser coverage exposed that `/admin/webinars` could stay stuck in loading for anonymous visitors because it only waited for `nav:member`. The page now resolves anonymous sessions to denied state explicitly while still listening for future authenticated handoff.
+
+### Process Lessons Learned
+
+1. **Browser tests can expose guard bugs that textual tests miss completely**: The loading-state bug in `/admin/webinars` was not visible through file-level checks. Real browser execution surfaced it immediately.
+
+2. **Test harness resilience matters too**: The browser test script now claims an actually free port before starting Astro, which makes the suite more reliable under repeated local runs.
+
+---
+
+## 2026-03-11 — Wave 28: Webinars Replay Publication Follow-Through
+
+### Decisions
+
+1. **Replay publication status should be visible from the webinar admin surface itself**: Once `/admin/webinars` started orchestrating sessions on top of `events`, operators still had to infer manually whether a replay had reached `Presentations` or `Workspace`. The panel now reads both surfaces and exposes that state directly.
+
+2. **Cross-surface matching can remain heuristic while the model stays schema-light**: `Presentations` can be matched through `meeting_artifacts.event_id`, while `Workspace` can be inferred from active `hub_resources` webinar entries keyed by replay URL or title context. That is good enough for an events-first MVP and avoids premature schema expansion.
+
+### Process Lessons Learned
+
+1. **Operational reuse becomes stronger when publication gaps are explicit**: Reusing existing modules is not only about linking to them; it is also about making the missing handoff visible so operators know what still needs to be published.
+
+2. **A thin admin orchestrator can still provide meaningful observability**: Even without direct write actions, the webinar panel now helps teams understand replay coverage across the Hub in one place.
+
+---
+
+## 2026-03-11 — Wave 27: Admin Webinars Events-First MVP
+
+### Decisions
+
+1. **`/admin/webinars` should orchestrate the existing event workflow, not create a parallel webinar CRUD**: The new admin surface now reads webinar sessions from `get_events_with_attendance`, filters `type='webinar'`, and points operators back to the modules already responsible for scheduling, comms, replay, and content publication.
+
+2. **Webinar-specific operator visibility can ship before webinar-specific schema**: Upcoming sessions, replay backlog, attendance totals, and quick operational links are already derivable from the current event stack. The platform can expose webinar-focused guidance without committing to new tables.
+
+### Process Lessons Learned
+
+1. **Deferred discovery work should convert quickly into a thin operational surface**: Once the source of truth and scope boundaries were defined, the next useful step was not more planning but a small admin UI that makes the approved model visible and actionable.
+
+2. **Cross-module orchestration is a legitimate MVP outcome**: An admin page does not need to own every create or edit action to be valuable. In this case, linking `attendance`, `admin/comms`, `presentations`, and `workspace` produced a coherent operational hub with minimal implementation risk.
+
+---
+
+## 2026-03-11 — Wave 26: Webinars Module Discovery
+
+### Decisions
+
+1. **Webinars should be implemented on top of the current event stack before new schema is introduced**: The repo already supports `events.type='webinar'`, authenticated attendance, replay publication, comms, and aggregated analytics. The next MVP should reuse those paths instead of opening a parallel operational model prematurely.
+
+2. **The existing `webinars` table is not yet the operational source of truth**: Because it overlaps with `events` but does not sit on the current attendance and reporting path, promoting it now would create dual-source drift. A convergence or retirement decision must come before any broader webinar build-out.
+
+3. **The first webinars slice remains internal/member-first**: External registration, reusable speaker records, automated certificates, and provider integrations remain out of scope until product and governance explicitly approve the extra ACL, LGPD, and data-model requirements.
+
+### Process Lessons Learned
+
+1. **Discovery needs to settle source of truth before UI or schema expansion**: The repo already had enough webinar-related assets to start building, but not enough agreement on which model should drive them. Clarifying that first avoids rework across attendance, analytics, and comms.
+
+2. **Cross-module reuse is often the fastest gap-closure path**: Existing attendance, workspace, presentations, comms, and analytics surfaces already cover most webinar MVP requirements. A focused reuse decision can move the product forward faster than creating more tables.
+
+---
+
 ## 2026-03-11 — Wave 25: Public Home Browser Coverage Expansion
 
 ### Decisions

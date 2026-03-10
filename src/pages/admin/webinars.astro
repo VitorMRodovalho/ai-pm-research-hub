@@ -10,47 +10,142 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   <div class="max-w-[1200px] mx-auto px-4 pt-6">
     <AdminNav activeSub="webinars" lang={lang} />
   </div>
-  <div id="webinars-content" class="max-w-[900px] mx-auto px-4 pb-12">
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-      <div class="p-10 text-center">
-        <div class="w-20 h-20 mx-auto mb-6 rounded-2xl bg-purple/10 flex items-center justify-center">
-          <svg class="w-10 h-10 text-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-          </svg>
-        </div>
+  <div id="webinars-loading" class="max-w-[1200px] mx-auto px-4 py-12 text-center text-slate-400">
+    Carregando painel de webinars...
+  </div>
 
-        <h1 class="text-2xl font-extrabold text-navy mb-2">Webinars</h1>
-        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-50 border border-amber-200 mb-4">
-          <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-          </svg>
-          <span class="text-sm font-semibold text-amber-700">Em Breve</span>
-        </div>
-
-        <p class="text-slate-500 text-sm max-w-md mx-auto mb-8">
-          O modulo de Webinars esta em desenvolvimento. Em breve voce podera gerenciar,
-          agendar e acompanhar webinars diretamente pela plataforma.
-        </p>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-lg mx-auto">
-          <div class="bg-slate-50 rounded-xl p-4 text-center">
-            <div class="text-2xl mb-2">📅</div>
-            <div class="text-[.75rem] font-semibold text-slate-600">Agendamento</div>
-            <div class="text-[.65rem] text-slate-400 mt-1">Planeje e agende webinars com calendario integrado</div>
+  <div id="webinars-content" class="hidden max-w-[1200px] mx-auto px-4 pb-12 space-y-6">
+    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="p-6 sm:p-8">
+        <div class="flex items-start justify-between gap-4 flex-wrap">
+          <div class="max-w-3xl">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[.72rem] font-semibold text-emerald-700 mb-3">
+              <span>Events-first MVP</span>
+              <span class="text-emerald-400">•</span>
+              <span>Member-first</span>
+            </div>
+            <h1 class="text-2xl font-extrabold text-navy mb-2">Webinars</h1>
+            <p class="text-sm text-slate-500 leading-relaxed">
+              Esta area agora orquestra webinars internos usando o stack ja existente da plataforma:
+              agenda e presenca via eventos, comunicacao via painel de comms, replay em apresentacoes
+              e biblioteca no workspace. Registro externo, speaker CRM e schema novo seguem fora de escopo.
+            </p>
           </div>
-          <div class="bg-slate-50 rounded-xl p-4 text-center">
-            <div class="text-2xl mb-2">📊</div>
-            <div class="text-[.75rem] font-semibold text-slate-600">Analytics</div>
-            <div class="text-[.65rem] text-slate-400 mt-1">Metricas de audiencia e engajamento</div>
-          </div>
-          <div class="bg-slate-50 rounded-xl p-4 text-center">
-            <div class="text-2xl mb-2">🎓</div>
-            <div class="text-[.75rem] font-semibold text-slate-600">Certificados</div>
-            <div class="text-[.65rem] text-slate-400 mt-1">Emissao automatica de certificados de participacao</div>
+          <div class="grid grid-cols-2 gap-2 min-w-[280px]">
+            <a href="/attendance" class="px-4 py-2.5 rounded-xl bg-navy text-white text-[.78rem] font-semibold no-underline text-center hover:opacity-90 transition-all">
+              Agenda & Presenca
+            </a>
+            <a href="/admin/comms" class="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-[.78rem] font-semibold no-underline text-center hover:bg-slate-50 transition-all">
+              Comms
+            </a>
+            <a href="/presentations" class="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-[.78rem] font-semibold no-underline text-center hover:bg-slate-50 transition-all">
+              Replays
+            </a>
+            <a href="/workspace" class="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-[.78rem] font-semibold no-underline text-center hover:bg-slate-50 transition-all">
+              Biblioteca
+            </a>
           </div>
         </div>
       </div>
-    </div>
+    </section>
+
+    <section id="webinars-stats" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"></section>
+
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-200">
+          <h2 class="text-sm font-bold text-navy">Proximos webinars</h2>
+          <p class="text-[.72rem] text-slate-400">Sessões futuras ja cadastradas como `events.type='webinar'`</p>
+        </div>
+        <div id="webinars-upcoming" class="p-5"></div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-200">
+          <h2 class="text-sm font-bold text-navy">Fila de follow-up</h2>
+          <p class="text-[.72rem] text-slate-400">Webinars concluidos que ainda precisam de replay ou fechamento operacional</p>
+        </div>
+        <div id="webinars-followup" class="p-5"></div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200">
+        <h2 class="text-sm font-bold text-navy">Publicacao de replay</h2>
+        <p class="text-[.72rem] text-slate-400">Status do replay entre `Presentations` e `Workspace` para webinars ja realizados</p>
+      </div>
+      <div id="webinars-publication" class="p-5"></div>
+    </section>
+
+    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200">
+        <h2 class="text-sm font-bold text-navy">Fluxo operacional do MVP</h2>
+        <p class="text-[.72rem] text-slate-400">Sem schema novo: apenas orquestracao sobre modulos existentes</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 p-5">
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div class="text-lg mb-2">1. 📅</div>
+          <h3 class="text-[.82rem] font-bold text-navy mb-1">Planejar</h3>
+          <p class="text-[.74rem] text-slate-500">Crie a sessão em `Attendance` como webinar e defina data, duracao, audiencia e link.</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div class="text-lg mb-2">2. 📣</div>
+          <h3 class="text-[.82rem] font-bold text-navy mb-1">Promover</h3>
+          <p class="text-[.74rem] text-slate-500">Use `Admin Comms` para convites e lembretes, sem abrir uma trilha paralela de registro externo.</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div class="text-lg mb-2">3. ✅</div>
+          <h3 class="text-[.82rem] font-bold text-navy mb-1">Registrar presenca</h3>
+          <p class="text-[.74rem] text-slate-500">Capture presenca com check-in autenticado e correcao de roster por lideranca ou admin.</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <div class="text-lg mb-2">4. ▶️</div>
+          <h3 class="text-[.82rem] font-bold text-navy mb-1">Publicar replay</h3>
+          <p class="text-[.74rem] text-slate-500">Feche o webinar com `youtube_url`, materiais e distribuicao em `Presentations` ou `Workspace`.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-200">
+          <h2 class="text-sm font-bold text-navy">Incluido agora</h2>
+        </div>
+        <ul class="p-5 space-y-2 text-[.8rem] text-slate-600">
+          <li>Agenda e sessao operacional sobre `events.type='webinar'`</li>
+          <li>Presenca autenticada com `attendance`</li>
+          <li>Replay com `youtube_url` e artefatos existentes</li>
+          <li>Comunicacao usando `Admin Comms`</li>
+          <li>Analytics agregados com eventos e presenca</li>
+        </ul>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-200">
+          <h2 class="text-sm font-bold text-navy">Fora de escopo desta fase</h2>
+        </div>
+        <ul class="p-5 space-y-2 text-[.8rem] text-slate-600">
+          <li>Registro anonimo ou publico dentro do Hub</li>
+          <li>CRM de speakers e perfis reutilizaveis</li>
+          <li>Integracoes nativas com Zoom, Meet ou YouTube</li>
+          <li>Certificados automaticos em lote</li>
+          <li>Nova trilha SQL para `webinar_*` sem convergencia aprovada</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h2 class="text-sm font-bold text-navy">Sessoes cadastradas</h2>
+          <p class="text-[.72rem] text-slate-400">Visao consolidada dos webinars ja presentes no fluxo atual de eventos</p>
+        </div>
+        <a href="/attendance" class="text-[.78rem] font-semibold text-teal no-underline hover:underline">
+          Abrir gestao de eventos
+        </a>
+      </div>
+      <div id="webinars-list" class="p-5"></div>
+    </section>
   </div>
 
   <div id="webinars-denied" class="hidden max-w-[900px] mx-auto px-4 py-16 text-center">
@@ -63,16 +158,322 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 </BaseLayout>
 
 <script>
-  import { resolveTierFromMember, hasMinimumTier } from '../../lib/admin/constants';
+  import { canAccessAdminRoute } from '../../lib/admin/constants';
 
-  function boot() {
+  let sb: any = null;
+  let webinarArtifactsByEventId = new Map<string, any>();
+  let webinarWorkspaceByKey = new Map<string, any>();
+
+  function showDenied() {
+    document.getElementById('webinars-loading')?.classList.add('hidden');
+    document.getElementById('webinars-content')?.classList.add('hidden');
+    document.getElementById('webinars-denied')?.classList.remove('hidden');
+  }
+
+  function showPanel() {
+    document.getElementById('webinars-loading')?.classList.add('hidden');
+    document.getElementById('webinars-denied')?.classList.add('hidden');
+    document.getElementById('webinars-content')?.classList.remove('hidden');
+  }
+
+  function escapeHtml(value: string): string {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function formatDateLabel(dateIso: string): string {
+    const date = new Date(`${dateIso}T12:00:00`);
+    if (Number.isNaN(date.getTime())) return dateIso;
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  }
+
+  function isPastEvent(dateIso: string): boolean {
+    const date = new Date(`${dateIso}T23:59:59`);
+    return !Number.isNaN(date.getTime()) && date.getTime() < Date.now();
+  }
+
+  function audienceLabel(audience: string | null | undefined): string {
+    if (audience === 'leadership') return 'Lideranca';
+    if (audience === 'tribe') return 'Tribo';
+    if (audience === 'curators') return 'Curadoria';
+    return 'Geral';
+  }
+
+  function normalizeUrl(url: string | null | undefined): string {
+    return String(url || '').trim().replace(/\/+$/, '').toLowerCase();
+  }
+
+  function normalizeTitle(title: string | null | undefined): string {
+    return String(title || '').trim().toLowerCase();
+  }
+
+  function workspaceKey(title: string | null | undefined, tribeId: number | null | undefined): string {
+    return `${normalizeTitle(title)}::${tribeId || 0}`;
+  }
+
+  function publicationBadge(label: string, published: boolean): string {
+    return published
+      ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700">${label}: publicado</span>`
+      : `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600">${label}: pendente</span>`;
+  }
+
+  function enrichWebinar(ev: any): any {
+    const artifact = webinarArtifactsByEventId.get(ev.id) || null;
+    const workspaceResource = webinarWorkspaceByKey.get(normalizeUrl(ev.youtube_url))
+      || webinarWorkspaceByKey.get(workspaceKey(ev.title, ev.tribe_id))
+      || null;
+    return {
+      ...ev,
+      artifact,
+      workspaceResource,
+      presentationPublished: !!artifact,
+      workspacePublished: !!workspaceResource,
+    };
+  }
+
+  function renderStats(webinars: any[]) {
+    const statsEl = document.getElementById('webinars-stats');
+    if (!statsEl) return;
+    const upcoming = webinars.filter((ev: any) => !isPastEvent(ev.date)).length;
+    const completed = webinars.filter((ev: any) => isPastEvent(ev.date)).length;
+    const replayPending = webinars.filter((ev: any) => isPastEvent(ev.date) && ev.is_recorded && !ev.youtube_url).length;
+    const fullyPublished = webinars.filter((ev: any) => ev.youtube_url && ev.presentationPublished && ev.workspacePublished).length;
+    const cards = [
+      { label: 'Proximos webinars', value: upcoming, tone: 'bg-blue-50 text-blue-700 border-blue-200' },
+      { label: 'Ja realizados', value: completed, tone: 'bg-slate-50 text-slate-700 border-slate-200' },
+      { label: 'Replay pendente', value: replayPending, tone: 'bg-amber-50 text-amber-700 border-amber-200' },
+      { label: 'Replay em 2 superficies', value: fullyPublished, tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    ];
+    statsEl.innerHTML = cards.map((card) => `
+      <div class="rounded-2xl border ${card.tone} p-4">
+        <div class="text-[.72rem] font-semibold uppercase tracking-wide opacity-75">${card.label}</div>
+        <div class="text-2xl font-extrabold mt-2">${card.value}</div>
+      </div>
+    `).join('');
+  }
+
+  function webinarCard(ev: any): string {
+    const isPast = isPastEvent(ev.date);
+    const replayStatus = ev.youtube_url
+      ? '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-50 text-red-700">Replay publicado</span>'
+      : (ev.is_recorded && isPast
+        ? '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700">Replay pendente</span>'
+        : '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600">Sem replay</span>');
+    const meetLink = ev.meeting_link && !isPast
+      ? `<a href="${escapeHtml(ev.meeting_link)}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-[.72rem] font-semibold no-underline hover:bg-blue-100 transition-all">Entrar</a>`
+      : '';
+    const replayLink = ev.youtube_url
+      ? `<a href="${escapeHtml(ev.youtube_url)}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 text-[.72rem] font-semibold no-underline hover:bg-red-100 transition-all">Replay</a>`
+      : '';
+    const presentationsLink = ev.artifact
+      ? `<a href="${escapeHtml(ev.artifact.recording_url || ev.youtube_url || '/presentations')}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-[.72rem] font-semibold no-underline hover:bg-slate-50 transition-all">Presentations</a>`
+      : '';
+    const workspaceLink = ev.workspaceResource?.url
+      ? `<a href="${escapeHtml(ev.workspaceResource.url)}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-[.72rem] font-semibold no-underline hover:bg-slate-50 transition-all">Workspace</a>`
+      : '';
+
+    return `
+      <article class="rounded-2xl border border-slate-200 p-4">
+        <div class="flex items-start justify-between gap-3 flex-wrap">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 flex-wrap mb-1">
+              <h3 class="text-sm font-bold text-navy">${escapeHtml(ev.title || 'Webinar')}</h3>
+              <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-orange-50 text-amber-800">Webinar</span>
+              <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-green-50 text-green-800">${escapeHtml(audienceLabel(ev.audience_level))}</span>
+              ${replayStatus}
+            </div>
+            <div class="text-[.76rem] text-slate-500 flex items-center gap-2 flex-wrap">
+              <span>${formatDateLabel(ev.date)}</span>
+              <span>·</span>
+              <span>${Number(ev.duration_minutes || 0)} min</span>
+              <span>·</span>
+              <span>${Number(ev.attendee_count || 0)} presentes</span>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap mt-2">
+              ${publicationBadge('Presentations', ev.presentationPublished)}
+              ${publicationBadge('Workspace', ev.workspacePublished)}
+            </div>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <a href="/attendance" class="px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold no-underline hover:opacity-90 transition-all">Gerenciar</a>
+            ${meetLink}
+            ${replayLink}
+            ${presentationsLink}
+            ${workspaceLink}
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  function renderUpcoming(webinars: any[]) {
+    const container = document.getElementById('webinars-upcoming');
+    if (!container) return;
+    const upcoming = webinars
+      .filter((ev: any) => !isPastEvent(ev.date))
+      .sort((a: any, b: any) => String(a.date).localeCompare(String(b.date)))
+      .slice(0, 5);
+    if (!upcoming.length) {
+      container.innerHTML = `
+        <div class="rounded-2xl border border-dashed border-slate-200 p-5 text-center">
+          <div class="text-3xl mb-2">📭</div>
+          <div class="text-sm font-semibold text-slate-600">Nenhum webinar futuro cadastrado.</div>
+          <p class="text-[.75rem] text-slate-400 mt-1">Use o fluxo de eventos em Attendance para abrir a proxima sessao.</p>
+        </div>
+      `;
+      return;
+    }
+    container.innerHTML = `<div class="space-y-3">${upcoming.map(webinarCard).join('')}</div>`;
+  }
+
+  function renderFollowup(webinars: any[]) {
+    const container = document.getElementById('webinars-followup');
+    if (!container) return;
+    const followups = webinars
+      .filter((ev: any) => isPastEvent(ev.date) && (ev.is_recorded || !ev.youtube_url))
+      .sort((a: any, b: any) => String(b.date).localeCompare(String(a.date)))
+      .slice(0, 5);
+    if (!followups.length) {
+      container.innerHTML = `
+        <div class="rounded-2xl border border-dashed border-emerald-200 bg-emerald-50 p-5 text-center">
+          <div class="text-3xl mb-2">✅</div>
+          <div class="text-sm font-semibold text-emerald-700">Sem fila critica no momento.</div>
+          <p class="text-[.75rem] text-emerald-600 mt-1">Os webinars recentes ja estao com replay ou nao dependem de fechamento adicional.</p>
+        </div>
+      `;
+      return;
+    }
+    container.innerHTML = `<div class="space-y-3">${followups.map(webinarCard).join('')}</div>`;
+  }
+
+  function renderPublication(webinars: any[]) {
+    const container = document.getElementById('webinars-publication');
+    if (!container) return;
+    const replayWebinars = webinars
+      .filter((ev: any) => isPastEvent(ev.date) && !!ev.youtube_url)
+      .sort((a: any, b: any) => String(b.date).localeCompare(String(a.date)))
+      .slice(0, 8);
+    if (!replayWebinars.length) {
+      container.innerHTML = `
+        <div class="rounded-2xl border border-dashed border-slate-200 p-5 text-center">
+          <div class="text-3xl mb-2">📼</div>
+          <div class="text-sm font-semibold text-slate-600">Ainda nao ha webinars com replay publicado.</div>
+          <p class="text-[.75rem] text-slate-400 mt-1">Quando um webinar ganhar replay publicado, esta trilha mostrara se ele chegou em Presentations e Workspace.</p>
+        </div>
+      `;
+      return;
+    }
+    container.innerHTML = `<div class="space-y-3">${replayWebinars.map(webinarCard).join('')}</div>`;
+  }
+
+  function renderList(webinars: any[]) {
+    const listEl = document.getElementById('webinars-list');
+    if (!listEl) return;
+    if (!webinars.length) {
+      listEl.innerHTML = `
+        <div class="rounded-2xl border border-dashed border-slate-200 p-10 text-center">
+          <div class="text-4xl mb-3">🎥</div>
+          <div class="text-sm font-semibold text-slate-600">Ainda nao existem webinars no fluxo atual.</div>
+          <p class="text-[.78rem] text-slate-400 mt-1 mb-4">A partir desta wave, o modulo passa a usar o mesmo backbone operacional de eventos e presenca.</p>
+          <a href="/attendance" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold no-underline hover:opacity-90 transition-all">
+            Abrir Attendance
+          </a>
+        </div>
+      `;
+      return;
+    }
+    listEl.innerHTML = `<div class="space-y-3">${webinars.map(webinarCard).join('')}</div>`;
+  }
+
+  async function loadWebinars() {
+    const [{ data: events, error: eventsError }, { data: artifacts, error: artifactsError }, { data: resources, error: resourcesError }] = await Promise.all([
+      sb.rpc('get_events_with_attendance', { p_limit: 60, p_offset: 0 }),
+      sb.rpc('list_meeting_artifacts', { p_limit: 100 }),
+      sb.from('hub_resources').select('*').eq('is_active', true).eq('asset_type', 'webinar').order('created_at', { ascending: false }),
+    ]);
+    if (eventsError) throw eventsError;
+    if (artifactsError) throw artifactsError;
+    if (resourcesError) throw resourcesError;
+
+    webinarArtifactsByEventId = new Map(
+      (artifacts || [])
+        .filter((artifact: any) => artifact?.event_id)
+        .map((artifact: any) => [artifact.event_id, artifact])
+    );
+    webinarWorkspaceByKey = new Map();
+    (resources || []).forEach((resource: any) => {
+      const urlKey = normalizeUrl(resource.url);
+      const titleKey = workspaceKey(resource.title, resource.tribe_id);
+      if (urlKey && !webinarWorkspaceByKey.has(urlKey)) webinarWorkspaceByKey.set(urlKey, resource);
+      if (titleKey && !webinarWorkspaceByKey.has(titleKey)) webinarWorkspaceByKey.set(titleKey, resource);
+    });
+
+    const webinars = (events || [])
+      .filter((ev: any) => ev.type === 'webinar')
+      .map((ev: any) => enrichWebinar(ev))
+      .sort((a: any, b: any) => String(b.date).localeCompare(String(a.date)));
+    renderStats(webinars);
+    renderUpcoming(webinars);
+    renderFollowup(webinars);
+    renderPublication(webinars);
+    renderList(webinars);
+  }
+
+  async function boot() {
     const member = (window as any).navGetMember?.();
-    if (!member) { window.addEventListener('nav:member', () => boot()); return; }
+    if (!member) {
+      if (!(window as any).__webinarsWaitForMember) {
+        (window as any).__webinarsWaitForMember = true;
+        window.addEventListener('nav:member', () => {
+          (window as any).__webinarsWaitForMember = false;
+          boot();
+        }, { once: true });
+      }
+      const navSb = (window as any).navGetSb?.();
+      if (navSb?.auth?.getSession) {
+        const { data: { session } } = await navSb.auth.getSession();
+        if (!session) {
+          showDenied();
+          return;
+        }
+      }
+      return;
+    }
 
-    const tier = resolveTierFromMember(member);
-    if (!hasMinimumTier(tier, 'admin')) {
-      document.getElementById('webinars-content')?.classList.add('hidden');
-      document.getElementById('webinars-denied')?.classList.remove('hidden');
+    if (!canAccessAdminRoute(member, 'admin_webinars')) {
+      showDenied();
+      return;
+    }
+
+    sb = (window as any).navGetSb?.();
+    if (!sb) {
+      setTimeout(boot, 300);
+      return;
+    }
+
+    try {
+      await loadWebinars();
+      showPanel();
+    } catch (error) {
+      console.warn('Webinars panel:', error);
+      showPanel();
+      const listEl = document.getElementById('webinars-list');
+      if (listEl) {
+        listEl.innerHTML = `
+          <div class="rounded-2xl border border-red-200 bg-red-50 p-5 text-center">
+            <div class="text-sm font-semibold text-red-700">Nao foi possivel carregar os webinars agora.</div>
+            <p class="text-[.75rem] text-red-600 mt-1">Tente novamente em instantes ou abra o fluxo de eventos em Attendance.</p>
+          </div>
+        `;
+      }
     }
   }
 

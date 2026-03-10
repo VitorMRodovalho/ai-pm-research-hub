@@ -146,10 +146,10 @@ The current production pattern is to keep communications metrics in Supabase-bac
 ## Immediate Engineering Priorities
 
 1. Continue stabilizing older member/admin surfaces that still depend on rerender/rebind or mutable callback patterns.
-2. Expand browser coverage from the current anonymous guard/home runtime checks into additional modal and authenticated internal flows, after the new public hero/tribes runtime assertions.
-3. Finish replacing the remaining static home-cycle and event messaging with runtime schedule/config sources, especially the remaining legacy event-link reads and any future need for explicit runtime cycle metadata on public surfaces.
+2. Expand browser coverage from the current anonymous guard/home runtime checks into richer internal workflows beyond the new `/admin/webinars` coverage, especially modal and authenticated operator paths.
+3. Add richer operator follow-through to the webinars MVP, especially clearer publish-path actions and next operational handoffs, without opening new schema yet.
 4. Keep site hierarchy, access tiers, and LGPD visibility rules aligned across nav, pages, and docs.
-5. Move the next public runtime checks toward event/meeting cards and then widen Playwright coverage to richer interaction paths.
+5. Decide whether the existing `webinars` table should be converged, kept as non-authoritative metadata, or retired before any external registration or speaker model is introduced.
 
 ---
 
@@ -171,6 +171,7 @@ The current production pattern is to keep communications metrics in Supabase-bac
 - `docs/GOVERNANCE_CHANGELOG.md` → governance and product engineering decisions
 - `docs/MIGRATION.md` → technical transition notes and compatibility guidance
 - `docs/RELEASE_LOG.md` → operational release and hotfix history
+- `docs/WEBINARS_MODULE_DISCOVERY.md` → webinars MVP scope, source-of-truth decision, and rollout boundaries
 - `docs/CURSOR_SETUP.md` → first-use checklist for Cursor IDE
 - `docs/REPLICATION_GUIDE.md` → how to replicate the Hub for another project
 - `DEBUG_HOLISTIC_PLAYBOOK.md` → holistic debugging and troubleshooting guide

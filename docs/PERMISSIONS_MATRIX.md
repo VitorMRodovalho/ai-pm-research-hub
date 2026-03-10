@@ -4,7 +4,7 @@
 > Qualquer alteração de acesso deve ser refletida aqui, no `navigation.config.ts`,
 > e nas RLS policies do Supabase antes de ser deployada.
 >
-> Última atualização: 2026-03-11 (Wave 25 audit: public home browser coverage expansion revalidated against current ACL/site hierarchy)
+> Última atualização: 2026-03-11 (Wave 29 audit: webinars browser coverage revalidated against current ACL/site hierarchy)
 
 ---
 
@@ -66,7 +66,7 @@ Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Se
 | Admin Analytics            |    —    |   —    |    —     |   —    |   V   |     V      |                                  |
 | Admin Comms Dashboard      |    —    |   —    |    —     |   —    |   V   |     V      | `comms_leader`, `comms_member`: V |
 | Help `/help`               |    —    |   V    |    V     |   V    |   V   |     V      | LGPD topics hidden for non-admin |
-| Admin Webinars (Em Breve)  |    —    |   —    |    —     |   —    |   V   |     V      | Placeholder / Coming Soon        |
+| Admin Webinars             |    —    |   —    |    —     |   —    |   V   |     V      | Admin-only orchestration over events/attendance/comms/replay; external registration out of scope |
 | Admin Member Edit          |    —    |   —    |    —     |   —    |   —   |    V/A     |                                  |
 
 ### 3.2 Comunicação (Wave 3)
@@ -294,3 +294,7 @@ e as Edge Functions estão alinhados com esta matriz.
 | 2026-03-11 | Wave 23 audit: `HeroSection` now uses `home_schedule.kickoffAt` as the public post-kickoff truth; `events` remains enrichment-only and no route visibility or tier rule changed. |
 | 2026-03-11 | Wave 24 audit: `TribesSection` deadline formatting and dormant fallback copy were normalized with no change to route visibility, tiers, or LGPD-sensitive behavior. |
 | 2026-03-11 | Wave 25 audit: browser validation now covers public `HeroSection` and `TribesSection` runtime summaries without changing route visibility, tiers, or LGPD-sensitive behavior. |
+| 2026-03-11 | Wave 26 audit: `/admin/webinars` remains admin-only; recommended MVP reuses member-first attendance/content flows and keeps external registration or speaker CRM out of scope pending a new ACL/RLS design. |
+| 2026-03-11 | Wave 27 audit: `/admin/webinars` now exposes an admin-only operational surface backed by `events.type='webinar'`; route visibility and tier rules remain unchanged while the webinar MVP stays internal/member-first. |
+| 2026-03-11 | Wave 28 audit: `/admin/webinars` now also reads replay publication state from `meeting_artifacts` and `hub_resources`; this adds operational visibility only, with no tier, route, or LGPD-scope change. |
+| 2026-03-11 | Wave 29 audit: browser coverage now validates anonymous denial and mocked admin rendering for `/admin/webinars`; route visibility and tier rules remain unchanged, but anonymous behavior is now explicitly fail-closed. |

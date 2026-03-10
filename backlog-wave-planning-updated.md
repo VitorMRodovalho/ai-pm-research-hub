@@ -395,7 +395,7 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 | S23 | Chapter Integrations | Planning + Product | Definir casos de uso por chapter, entidades, ownership, integrações alvo | PRD curto aprovado + mapa de integrações + critérios de sucesso + decisão de fonte de verdade |
 | S24 | API for Chapters | Planning + Backend | Resultado de S23, definição de escopo read-only, autenticação e filtros | Contrato API definido (resources, auth, filters, rate/ACL) + schema/RPC plan |
 | S-KNW7 | Gemini Extraction Pipeline | Product + Data Governance + Integration | Política para `.docx`, revisão LGPD/copyright, pipeline staging | Prompt contract + governance approval + desenho de ingestão/curation/rollback |
-| W14.4 | Webinars Module Discovery | Product + UI | Placeholder atual em `src/pages/admin/webinars.astro`, definição do fluxo operacional | Escopo aprovado para agenda, speakers, attendance, certificates e analytics antes de qualquer schema |
+| W14.4 | Webinars Module Discovery | Product + UI | Placeholder atual em `src/pages/admin/webinars.astro`, definição do fluxo operacional | Concluído em Wave 26: escopo aprovado em `docs/WEBINARS_MODULE_DISCOVERY.md`, com MVP `events`-first antes de qualquer schema novo |
 
 ### Benchmark notes (lightweight, not for cloning)
 - **RBAC / admin**: `hubbleai/supabase-user-management-dashboard`, `point-source/supabase-tenant-rbac`
@@ -494,6 +494,70 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 - **Build**: clean | **Tests**: 21/21
 - **Home runtime**: Hero e Agenda passam a compartilhar o mesmo deadline vindo de `home_schedule`
 - **Scope**: nenhuma mudança de ACL, navegação ou schema nesta tranche
+
+---
+
+## WAVE 26: Webinars Module Discovery — CONCLUIDA
+**Foco:** retirar `W14.4` do deferred definindo fonte de verdade, escopo MVP e limites operacionais antes de qualquer expansão de schema.
+
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| W26.1 | Webinars Source-of-Truth Decision | High | Done | O MVP recomendado passa a ser `events.type='webinar'`, reaproveitando `attendance` e evitando abrir uma segunda trilha operacional em cima da tabela `webinars`. |
+| W26.2 | Scope / Non-Goals Definition | High | Done | Discovery formaliza agenda, speakers, attendance, recordings, certificates e analytics para a primeira entrega, deixando registro externo, speaker CRM e automações fora de escopo. |
+| W26.3 | Governance / ACL / Migration Pack | Medium | Done | `docs/WEBINARS_MODULE_DISCOVERY.md`, `docs/MIGRATION.md`, `README.md`, `AGENTS.md` e `PERMISSIONS_MATRIX.md` alinhados ao caminho aprovado. |
+
+### Wave 26 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 26/26 | **Smoke**: routes OK
+- **Discovery outcome**: webinars seguem caminho `events`-first, member-first, com reuso de `attendance`, `presentations`, `workspace`, `comms` e analytics já existentes
+- **Site hierarchy / ACL**: `/admin/webinars` continua `admin`; registro externo, speaker CRM e novas entidades LGPD-sensitive permanecem fora de escopo nesta fase
+
+---
+
+## WAVE 27: Admin Webinars Events-First MVP — CONCLUIDA
+**Foco:** transformar `/admin/webinars` em superficie operacional real usando o backbone atual de eventos, presenca, replay e comms sem abrir schema novo.
+
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| W27.1 | Admin Webinars Operational Panel | High | Done | O placeholder foi substituido por um painel que carrega webinars via `get_events_with_attendance`, filtra `type='webinar'` e exibe sessoes atuais com KPIs e backlog operacional. |
+| W27.2 | Cross-Module Orchestration | High | Done | A pagina agora aponta explicitamente para `Attendance`, `Admin Comms`, `Presentations` e `Workspace`, reforcando o MVP sobre o stack existente em vez de abrir CRUD paralelo. |
+| W27.3 | Regression Lock + Docs | Medium | Done | `tests/ui-stabilization.test.mjs` trava a direcao `events`-first; backlog, governance, permissions, release log e README atualizados para refletir a nova surface. |
+
+### Wave 27 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 27/27 | **Smoke**: routes OK
+- **Webinars MVP**: `/admin/webinars` deixa de ser placeholder e passa a operar em cima de `events.type='webinar'`, com metricas, fila de follow-up e atalhos para os modulos existentes
+- **Site hierarchy / ACL**: rota continua `admin`; nao houve mudanca de tier, visibilidade ou schema/RLS nesta tranche
+
+---
+
+## WAVE 28: Webinars Replay Publication Follow-Through — CONCLUIDA
+**Foco:** tornar visivel no admin/webinars se o replay de cada webinar ja chegou em `Presentations` e `Workspace`, ainda sem abrir schema novo.
+
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| W28.1 | Replay Publication Correlation | High | Done | `admin/webinars` agora cruza `get_events_with_attendance` com `list_meeting_artifacts` e `hub_resources` para mostrar o status de publicacao do replay entre as superficies existentes. |
+| W28.2 | Operator Visibility Upgrade | High | Done | O painel passa a explicitar lacunas de handoff entre eventos, replay e biblioteca, reduzindo checagem manual entre modulos. |
+| W28.3 | Regression Lock + Docs | Medium | Done | Testes e docs atualizados para manter o caminho `events`-first e a leitura de publication status sem derivar para schema/CRUD paralelo. |
+
+### Wave 28 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 27/27 | **Smoke**: routes OK
+- **Replay follow-through**: `/admin/webinars` agora mostra se o replay do webinar ja foi encontrado em `Presentations`, `Workspace`, em ambos ou ainda em nenhum
+- **Site hierarchy / ACL**: continua `admin`; nenhuma mudanca de tier, visibilidade, schema ou RLS nesta tranche
+
+---
+
+## WAVE 29: Webinars Browser Coverage — CONCLUIDA
+**Foco:** validar em browser o novo fluxo `/admin/webinars`, cobrindo ACL admin e os sinais visuais de publication status do replay.
+
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| W29.1 | Webinars Anonymous Guard | High | Done | `tests/browser-guards.test.mjs` agora valida que `/admin/webinars` nega visitantes anonimos e `webinars.astro` deixa de ficar preso em loading sem sessao. |
+| W29.2 | Mocked Admin Browser Path | High | Done | O suite browser injeta contexto admin controlado e dados fake de webinars, artefatos e workspace para validar os sinais de publication status em `Presentations` e `Workspace`. |
+| W29.3 | Browser Harness Hardening | Medium | Done | O runner browser passou a reservar uma porta realmente livre antes de subir o Astro, reduzindo falhas espurias por conflito de porta em execucoes repetidas. |
+
+### Wave 29 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 27/27 | **Browser guard**: OK | **Smoke**: routes OK
+- **Browser coverage**: `/admin/webinars` agora esta coberto para denial anonimo e rendering admin mockado com sinais de publication status
+- **Site hierarchy / ACL**: rota continua `admin`; a melhoria foi de validacao e fail-closed para anonimos, sem mudanca de tier, schema ou RLS
 
 ---
 

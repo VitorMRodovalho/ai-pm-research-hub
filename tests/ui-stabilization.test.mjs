@@ -28,6 +28,23 @@ test('confirm dialog no longer mutates confirm button onclick directly', () => {
   assert.equal(content.includes("document.getElementById('confirm-btn')?.addEventListener('click'"), true);
 });
 
+test('admin webinars now reuses the events stack instead of staying a placeholder', () => {
+  const content = read('src/pages/admin/webinars.astro');
+  assert.equal(content.includes('Em Breve'), false);
+  assert.equal(content.includes("sb.rpc('get_events_with_attendance'"), true);
+  assert.equal(content.includes("sb.rpc('list_meeting_artifacts'"), true);
+  assert.equal(content.includes("sb.from('hub_resources').select('*').eq('is_active', true).eq('asset_type', 'webinar')"), true);
+  assert.equal(content.includes("ev.type === 'webinar'"), true);
+  assert.equal(content.includes("canAccessAdminRoute(member, 'admin_webinars')"), true);
+  assert.equal(content.includes("navSb?.auth?.getSession"), true);
+  assert.equal(content.includes('list_webinars'), false);
+  assert.equal(content.includes('Agenda & Presenca'), true);
+  assert.equal(content.includes('/admin/comms'), true);
+  assert.equal(content.includes('Publicacao de replay'), true);
+  assert.equal(content.includes("publicationBadge('Presentations'"), true);
+  assert.equal(content.includes("publicationBadge('Workspace'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');
