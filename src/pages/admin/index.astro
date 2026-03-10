@@ -161,6 +161,48 @@ const ADMIN_I18N = {
         <div class="bg-white border border-slate-200 rounded-xl p-4"><div class="text-2xl font-black text-purple" id="stat-noauth">—</div><div class="text-[.68rem] text-slate-400 font-semibold mt-0.5">{t('admin.stat.noLogin', lang)}</div></div>
       </div>
 
+      <!-- Executive Overview KPI Cards (loaded via get_executive_kpis RPC) -->
+      <div id="exec-kpi-overview" class="hidden mb-5">
+        <div class="flex items-center gap-2 mb-3">
+          <svg class="w-5 h-5 text-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          <h2 class="text-sm font-bold text-navy">Executive Overview</h2>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200/60 rounded-xl p-4">
+            <div class="flex items-center gap-2 mb-1">
+              <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              <span class="text-[.65rem] font-semibold text-emerald-700 uppercase tracking-wide">Membros Ativos</span>
+            </div>
+            <div class="text-2xl font-black text-emerald-700" id="ekpi-active">—</div>
+            <div class="text-[.6rem] text-emerald-600/70 mt-0.5"><span id="ekpi-chapters">—</span> capitulos</div>
+          </div>
+          <div class="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200/60 rounded-xl p-4">
+            <div class="flex items-center gap-2 mb-1">
+              <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              <span class="text-[.65rem] font-semibold text-blue-700 uppercase tracking-wide">Retencao</span>
+            </div>
+            <div class="text-2xl font-black text-blue-700" id="ekpi-retention">—</div>
+            <div class="text-[.6rem] text-blue-600/70 mt-0.5"><span id="ekpi-multi">—</span> em mais de 1 ciclo</div>
+          </div>
+          <div class="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/60 rounded-xl p-4">
+            <div class="flex items-center gap-2 mb-1">
+              <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+              <span class="text-[.65rem] font-semibold text-amber-700 uppercase tracking-wide">PMI Verificados</span>
+            </div>
+            <div class="text-2xl font-black text-amber-700" id="ekpi-verified">—</div>
+            <div class="text-[.6rem] text-amber-600/70 mt-0.5"><span id="ekpi-verified-pct">—</span>% do total ativo</div>
+          </div>
+          <div class="bg-gradient-to-br from-purple-50 to-fuchsia-50 border border-purple-200/60 rounded-xl p-4">
+            <div class="flex items-center gap-2 mb-1">
+              <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+              <span class="text-[.65rem] font-semibold text-purple-700 uppercase tracking-wide">Artefatos</span>
+            </div>
+            <div class="text-2xl font-black text-purple-700" id="ekpi-artifacts">—</div>
+            <div class="text-[.6rem] text-purple-600/70 mt-0.5"><span id="ekpi-tribes">—</span> tribos ativas · <span id="ekpi-avg">—</span> membros/tribo</div>
+          </div>
+        </div>
+      </div>
+
       <div class="flex gap-2 mb-5 flex-wrap">
         <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white" data-tab="tribes" onclick="switchAdmTab(this,'tribes')">{t('admin.tab.tribes', lang)}</button>
         <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500" data-tab="members" onclick="switchAdmTab(this,'members')">{t('admin.tab.members', lang)}</button>
@@ -1451,6 +1493,7 @@ const ADMIN_I18N = {
       (window as any).closeAllocate();
       toast(`${ADMIN_I18N.allocatedPrefix} ${String(tribeId).padStart(2, '0')}!`, 'success');
       loadTribes();
+      loadExecutiveKpis();
     } else {
       toast(data?.error || ADMIN_I18N.allocateError, 'error');
     }
@@ -3531,7 +3574,36 @@ const ADMIN_I18N = {
     });
   }
 
-    async function boot() {
+  
+  // ══════════════════════════════════════════
+  // EXECUTIVE KPI OVERVIEW (get_executive_kpis RPC)
+  // ══════════════════════════════════════════
+  async function loadExecutiveKpis() {
+    const panel = document.getElementById('exec-kpi-overview');
+    if (!panel) return;
+    try {
+      const { data, error } = await sb.rpc('get_executive_kpis');
+      if (error) throw error;
+      const kpi = typeof data === 'string' ? JSON.parse(data) : data;
+      if (!kpi) return;
+
+      panel.classList.remove('hidden');
+      document.getElementById('ekpi-active').textContent = String(kpi.total_active || 0);
+      document.getElementById('ekpi-chapters').textContent = String(kpi.chapters || 0);
+      document.getElementById('ekpi-retention').textContent = (kpi.retention_pct || 0) + '%';
+      document.getElementById('ekpi-multi').textContent = String(kpi.multi_cycle || 0);
+      document.getElementById('ekpi-verified').textContent = String(kpi.pmi_verified || 0);
+      const verPct = kpi.total_active > 0 ? Math.round((kpi.pmi_verified / kpi.total_active) * 100) : 0;
+      document.getElementById('ekpi-verified-pct').textContent = String(verPct);
+      document.getElementById('ekpi-artifacts').textContent = String(kpi.published_artifacts || 0);
+      document.getElementById('ekpi-tribes').textContent = String(kpi.active_tribes || 0);
+      document.getElementById('ekpi-avg').textContent = String(kpi.avg_per_tribe || 0);
+    } catch (e) {
+      console.warn('Executive KPIs load error:', e);
+    }
+  }
+
+  async function boot() {
     sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(boot, 200); return; }
 
