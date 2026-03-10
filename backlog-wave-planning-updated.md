@@ -8,6 +8,11 @@
 
 ## LATEST UPDATE (2026-03-11)
 
+### Entregue em Wave 25
+- **W25.1 Browser Coverage Expansion**: `tests/browser-guards.test.mjs` passa a validar não só o `HeroSection`, mas também os badges/notices runtime de `TribesSection` na home pública.
+- **W25.2 Stable Browser Hooks**: `TribesSection.astro` recebe ids estáveis para o estado de seleção, badge de deadline e notice, permitindo regressão browser menos frágil.
+- **W25.3 Runtime Guardrail**: o teste browser agora trava que o deadline badge não regride para o fallback fixo antigo e que o visitante continua vendo o prompt de login na área de tribos.
+
 ### Entregue em Wave 24
 - **W24.1 Tribes Deadline Formatting**: `TribesSection.astro` passa a formatar o prazo de seleção com `Intl.DateTimeFormat` e timezone `America/Sao_Paulo`, em vez de manter cálculo manual de mês/hora.
 - **W24.2 Stale Deadline Fallback Cleanup**: as strings `tribes.deadline` em PT/EN/ES deixam de guardar a data fixa antiga e passam a usar wording genérico do cronograma atual.
@@ -64,6 +69,9 @@
 - **W14.1 Doc Divergence Cleanup**: README, MIGRATION e CONTRIBUTING alinhados com produção atual (Chart.js nativo, smoke routes, 5-phase, repo/path corretos).
 - **W14.2 Admin Hygiene**: Removidas referências antigas a PostHog/Looker do admin atual; primeira tranche de event delegation aplicada em `admin/index.astro` e shared UI.
 - **W14.3 Deferred Structuring**: S23, S24, S-KNW7 e Webinars reclassificados por lane, dependências e critérios de saída do deferred.
+
+### Wave 25 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 26/26 | **Browser guard**: OK | **Routes**: smoke OK
 
 ### Wave 24 Audit Results (2026-03-11)
 - **Build**: clean | **Tests**: 26/26 | **Browser guard**: OK | **Routes**: smoke OK

@@ -46,7 +46,18 @@ async function run() {
     await page.waitForTimeout(1800);
     assert.equal(await page.locator('#hero-cycle-status').isVisible(), true);
     assert.equal(await page.locator('#hero-countdown-area').isVisible(), false);
-    assert.match(await page.locator('#hero-event-area').textContent() || '', /Google Meet|Meet/);
+    assert.match(await page.locator('#hero-event-area').textContent() || '', /Kick-off|Gravação|Recording|Google Meet|Meet/);
+    const tribesState = page.locator('#tribes-selection-state');
+    const tribesDeadline = page.locator('#tribes-deadline-badge');
+    const tribesNotice = page.locator('#tribes-selection-notice');
+    await tribesState.waitFor({ state: 'visible' });
+    await tribesDeadline.waitFor({ state: 'visible' });
+    await tribesNotice.waitFor({ state: 'visible' });
+    assert.match(await tribesState.textContent() || '', /SELEÇÃO ABERTA|SELEÇÃO ENCERRADA|CRONOGRAMA PENDENTE/);
+    assert.equal(((await tribesDeadline.textContent()) || '').trim().length > 0, true);
+    assert.equal(((await tribesNotice.textContent()) || '').trim().length > 0, true);
+    assert.equal(((await tribesDeadline.textContent()) || '').includes('Encerra Sáb 08/Mar 12h BRT'), false);
+    assert.equal(await page.locator('#loginPrompt').isVisible(), true);
 
     await page.close();
     console.log('Browser guard and home runtime test passed.');

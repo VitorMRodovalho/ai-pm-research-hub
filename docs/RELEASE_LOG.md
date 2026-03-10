@@ -1,5 +1,27 @@
 # Release Log
 
+## 2026-03-11 — v0.23.0 Wave 25: Public Home Browser Coverage Expansion
+
+### Scope
+Wave 25 expands browser validation for the public home so the new runtime-driven `Hero` and `Tribes` states are covered by real-page assertions instead of relying only on textual regression checks.
+
+### Browser Coverage Expansion
+- **`tests/browser-guards.test.mjs`**: The home browser scenario now validates runtime hero content plus `TribesSection` state badge, deadline badge, notice visibility, and anonymous login prompt behavior.
+- **`src/components/sections/TribesSection.astro`**: Added stable DOM ids for the public runtime summary elements so browser assertions can target the selection state without depending on brittle text layout selectors.
+
+### Governance / Regression
+- **Backlog / governance / permissions / README** updated to reflect this browser-focused follow-through with no ACL or site-hierarchy impact.
+
+### Files Changed
+- `tests/browser-guards.test.mjs`
+- `src/components/sections/TribesSection.astro`
+- `backlog-wave-planning-updated.md`, `docs/RELEASE_LOG.md`, `docs/GOVERNANCE_CHANGELOG.md`, `docs/PERMISSIONS_MATRIX.md`, `README.md`
+
+### Audit Results
+- Build: clean | Tests: 26/26 | Browser guard: OK | Smoke: routes OK
+
+---
+
 ## 2026-03-11 — v0.22.0 Wave 24: Tribes Deadline Formatting Cleanup
 
 ### Scope

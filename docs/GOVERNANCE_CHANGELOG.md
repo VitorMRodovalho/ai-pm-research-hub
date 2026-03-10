@@ -1,5 +1,21 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 25: Public Home Browser Coverage Expansion
+
+### Decisions
+
+1. **Runtime home work now deserves browser assertions, not only file-level locks**: After several waves moved public-home behavior from fixed literals to runtime schedule state, textual checks alone were no longer enough. The public browser suite now covers the key `Hero` and `Tribes` runtime signals on a real page.
+
+2. **Stable browser hooks are preferable to brittle selector guesswork**: `TribesSection` now exposes explicit ids for the state, deadline, and notice summary elements so browser tests can verify behavior directly without coupling to incidental DOM structure.
+
+### Process Lessons Learned
+
+1. **Browser coverage should grow alongside runtime complexity**: Once `Hero` and `Tribes` both depended on runtime schedule state, asserting only one public element left a meaningful gap. Lightweight end-to-end checks continue to provide strong value here.
+
+2. **Public anonymous behavior is a valid regression surface on its own**: Even without authenticated flows, the anonymous home path already exercises schedule state, visibility transitions, and call-to-action behavior worth protecting in browser tests.
+
+---
+
 ## 2026-03-11 — Wave 24: Tribes Deadline Formatting Cleanup
 
 ### Decisions

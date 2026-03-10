@@ -100,13 +100,13 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
       {t('tribes.title', lang)}
     </h2>
     <div class="text-base text-slate-500 max-w-[700px] mb-2">
-      <span class:list={['inline-block px-2.5 py-0.5 rounded-md text-[.68rem] font-bold', selectionStateClasses]}>
+      <span id="tribes-selection-state" class:list={['inline-block px-2.5 py-0.5 rounded-md text-[.68rem] font-bold', selectionStateClasses]}>
         {selectionStateLabel}
       </span>
-      <span class="inline-block px-2.5 py-0.5 rounded-md text-[.68rem] font-bold bg-red-50 text-red-600 ml-1">
+      <span id="tribes-deadline-badge" class="inline-block px-2.5 py-0.5 rounded-md text-[.68rem] font-bold bg-red-50 text-red-600 ml-1">
         {deadlineFormatted || t('tribes.deadlinePending', lang)}
       </span>
-      <span class="block mt-2 text-[.75rem] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
+      <span id="tribes-selection-notice" class="block mt-2 text-[.75rem] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
         {selectionNotice}
       </span>
       <br>

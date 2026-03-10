@@ -146,7 +146,7 @@ The current production pattern is to keep communications metrics in Supabase-bac
 ## Immediate Engineering Priorities
 
 1. Continue stabilizing older member/admin surfaces that still depend on rerender/rebind or mutable callback patterns.
-2. Expand browser coverage from the current anonymous guard/home runtime checks into additional modal and authenticated internal flows.
+2. Expand browser coverage from the current anonymous guard/home runtime checks into additional modal and authenticated internal flows, after the new public hero/tribes runtime assertions.
 3. Finish replacing the remaining static home-cycle and event messaging with runtime schedule/config sources, especially the remaining legacy event-link reads and any future need for explicit runtime cycle metadata on public surfaces.
 4. Keep site hierarchy, access tiers, and LGPD visibility rules aligned across nav, pages, and docs.
 5. Move the next public runtime checks toward event/meeting cards and then widen Playwright coverage to richer interaction paths.

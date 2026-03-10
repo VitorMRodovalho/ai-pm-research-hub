@@ -4,7 +4,7 @@
 > Qualquer alteração de acesso deve ser refletida aqui, no `navigation.config.ts`,
 > e nas RLS policies do Supabase antes de ser deployada.
 >
-> Última atualização: 2026-03-11 (Wave 24 audit: tribes deadline formatting cleanup revalidated against current ACL/site hierarchy)
+> Última atualização: 2026-03-11 (Wave 25 audit: public home browser coverage expansion revalidated against current ACL/site hierarchy)
 
 ---
 
@@ -293,3 +293,4 @@ e as Edge Functions estão alinhados com esta matriz.
 | 2026-03-11 | Wave 22 audit: public cycle labels in hero/CPMAI/team copy were generalized without changing route visibility, tiers, or LGPD-sensitive behavior. |
 | 2026-03-11 | Wave 23 audit: `HeroSection` now uses `home_schedule.kickoffAt` as the public post-kickoff truth; `events` remains enrichment-only and no route visibility or tier rule changed. |
 | 2026-03-11 | Wave 24 audit: `TribesSection` deadline formatting and dormant fallback copy were normalized with no change to route visibility, tiers, or LGPD-sensitive behavior. |
+| 2026-03-11 | Wave 25 audit: browser validation now covers public `HeroSection` and `TribesSection` runtime summaries without changing route visibility, tiers, or LGPD-sensitive behavior. |
