@@ -76,6 +76,7 @@ const esLATAM: Record<string, string> = {
   'nav.adminComms': '📡 Comunicaciones',
   'nav.adminHelp': 'Ayuda / Guía',
   'nav.adminCuratorship': 'Curaduria',
+  'nav.adminSelection': 'Proceso Selectivo',
   'admin.curatorship.title': 'Curaduria de Conocimiento',
   'admin.curatorship.subtitle': 'Revise y apruebe elementos importados de fuentes externas antes de publicar',
   'admin.curatorship.loading': 'Cargando elementos pendientes...',

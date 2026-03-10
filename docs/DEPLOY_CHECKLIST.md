@@ -94,10 +94,10 @@ Em Cloudflare Pages → Settings → Environment variables:
 |----------|-------------|-----------|
 | `PUBLIC_SUPABASE_URL` | Sim | URL do Supabase |
 | `PUBLIC_SUPABASE_ANON_KEY` | Sim | Chave anônima |
-| `PUBLIC_POSTHOG_PRODUCT_DASHBOARD_URL` | Não | URL do dashboard PostHog (embed em `/admin/analytics`) |
-| `PUBLIC_LOOKER_COMMS_DASHBOARD_URL` | Não | URL do dashboard Looker (embed em `/admin/analytics` e `/admin/comms`) |
+| `PUBLIC_POSTHOG_PRODUCT_DASHBOARD_URL` | ~~Não~~ Superseded | ~~URL do dashboard PostHog~~ — Substituído por Chart.js nativo (S-AN1, Wave 4-8) |
+| `PUBLIC_LOOKER_COMMS_DASHBOARD_URL` | ~~Não~~ Superseded | ~~URL do dashboard Looker~~ — Substituído por Chart.js nativo (S-AN1, Wave 4-8) |
 
-Sem as URLs de dashboard, as rotas mostram placeholder ou tabela nativa.
+**Nota (Wave 8):** Dashboards PostHog e Looker foram completamente substituídos por gráficos nativos Chart.js. As variáveis acima não são mais necessárias.
 
 ---
 

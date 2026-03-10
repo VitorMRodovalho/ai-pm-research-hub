@@ -11,17 +11,18 @@ This file orients the AI assistant (Cursor) on the project so it can work effect
 | Check governance      | docs/GOVERNANCE_CHANGELOG.md |
 | Migration / legacy    | docs/MIGRATION.md |
 | Log a release         | docs/RELEASE_LOG.md |
-| Member fields         | `operational_role`, `designations` (not `role`/`roles`) |
+| Member fields         | `operational_role`, `designations` (`role`/`roles` dropped in Wave 8) |
 | History               | `member_cycle_history` |
 | Edge functions        | supabase/functions/ (verify-credly, sync-comms-metrics, sync-knowledge-insights) |
 | DB schema / types     | `src/lib/database.gen.ts` (run `npm run db:types` to refresh) |
 | AI DB access setup   | docs/AI_DB_ACCESS_SETUP.md |
+| Data import scripts   | `scripts/` (trello, calendar, volunteer CSV, miro importers) |
 | Pre-push              | `npm test` + `npm run build` |
 | Debug / troubleshoot  | `DEBUG_HOLISTIC_PLAYBOOK.md` |
 | Project board / sprints | [GitHub Project](https://github.com/users/VitorMRodovalho/projects/1/) |
-| Board ↔ docs sync      | docs/AGENT_BOARD_SYNC.md — checklist para manter board e documentação atrelados |
-| Sprint implementation  | docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md — ordem de prioridade, gates, checklist |
-| QA/QC release         | docs/QA_RELEASE_VALIDATION.md — console F12, cross-browser (Win/Mac/iPhone/Android) |
+| Board ↔ docs sync      | docs/AGENT_BOARD_SYNC.md |
+| Sprint implementation  | docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md |
+| QA/QC release         | docs/QA_RELEASE_VALIDATION.md |
 
 ---
 
@@ -36,6 +37,7 @@ This file orients the AI assistant (Cursor) on the project so it can work effect
 | Layer      | Tech                  |
 |-----------|------------------------|
 | Frontend  | Astro + Tailwind CSS   |
+| Charts    | Chart.js v4 (native)   |
 | Hosting   | Cloudflare Pages       |
 | Database  | Supabase (PostgreSQL, auth, RLS) |
 | Backend   | Supabase Edge Functions |
@@ -48,15 +50,16 @@ This file orients the AI assistant (Cursor) on the project so it can work effect
 - **docs/GOVERNANCE_CHANGELOG.md** — Governance and product/engineering decisions.
 - **docs/MIGRATION.md** — Technical transitions (roles, Credly, analytics, etc.).
 - **docs/RELEASE_LOG.md** — Release and hotfix history; update on every production change.
-- **docs/project-governance/** — Runbooks, roadmap, snapshots.
+- **docs/project-governance/** — Runbooks, roadmap, sprint practices, sprint closure routine.
 - **docs/REPLICATION_GUIDE.md** — How to replicate the Hub for another chapter/project.
+- **docs/PERMISSIONS_MATRIX.md** — RBAC tier model, designations, route access matrix.
 
 Before changing behavior or schema, check these for constraints and current state.
 
 ## Conventions and rules
 
-1. **Role model v3**  
-   Use `operational_role` and `designations`. Legacy `role`/`roles` are transitional only; new code must not rely on them for long-term behavior.
+1. **Role model v3 (finalized)**  
+   Use `operational_role` and `designations`. Legacy `role`/`roles` columns were **dropped** in Wave 8 (migration `20260312020000`). No code should reference them.
 
 2. **Members vs history**  
    `members` = current snapshot. Historical roles, tribes, cycles live in `member_cycle_history` and related fact tables. Timeline and reporting must read from history tables.
@@ -71,10 +74,13 @@ Before changing behavior or schema, check these for constraints and current stat
    DB-impacting work must have migrations in `supabase/migrations/` and, when non-trivial, a docs pack (apply/audit/rollback/runbook). Document in `docs/RELEASE_LOG.md` what changed and how it was validated.
 
 6. **Analytics**  
-   No PII in analytics identity; mask inputs; restrict admin analytics by tier; prefer iframe dashboards (PostHog, Looker) over custom charts in Astro.
+   No PII in analytics identity; mask inputs; restrict admin analytics by tier. Use **native Chart.js dashboards** powered by Supabase RPCs. PostHog/Looker iframes have been superseded.
 
 7. **i18n**  
    User-facing strings belong in `src/i18n/` (pt-BR, en-US, es-LATAM). Prefer locale keys over hardcoded text.
+
+8. **Navigation & access control**  
+   All route visibility is governed by `src/lib/navigation.config.ts`. Items use `minTier` and `allowedDesignations`. LGPD-sensitive items use `lgpdSensitive: true` to remain fully hidden. Other restricted items show as disabled with lock icon (progressive disclosure).
 
 ## Local workflow
 
@@ -88,21 +94,33 @@ npm run smoke:routes
 
 Validate with `npm test` and `npm run build` before pushing. For production-impact changes, add or update an entry in `docs/RELEASE_LOG.md`.
 
+## Sprint closure routine (5-phase)
+
+Every sprint ends with this mandatory sequence:
+
+1. **Execute** — All code changes complete
+2. **Audit** — `supabase db push` + `npm run build` + `npm test` + lint check on edited files + route smoke test
+3. **Fix** — Address any issues found in audit
+4. **Docs** — Update `backlog-wave-planning-updated.md` (wave marked CONCLUIDA with audit results), `docs/RELEASE_LOG.md` (new version entry), `docs/GOVERNANCE_CHANGELOG.md` (decisions and lessons)
+5. **Deploy** — `git add -A && git commit && git push && git tag vX.Y.Z` + verify production deployment
+
+See `docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md` for the full Definition of Done.
+
 ## Where key things live
 
 - **Pages**: `src/pages/` (including `en/`, `es/`, `admin/`).
 - **Components**: `src/components/` (sections, UI, nav, attendance).
-- **Data / lib**: `src/data/`, `src/lib/` (routing, Supabase, credly, gamification, trail, admin constants).
-- **Edge functions**: `supabase/functions/` — `verify-credly`, `sync-comms-metrics`, `sync-knowledge-insights` presentes; `sync-credly-all` e `sync-attendance-points` invocados mas ausentes no repo (ver `docs/project-governance/PROJECT_ON_TRACK.md`).
-- **Migrations**: `supabase/migrations/`, with supporting SQL/docs in `docs/migrations/`.
+- **Data / lib**: `src/data/`, `src/lib/` (routing, Supabase, credly, gamification, trail, admin constants, navigation config).
+- **Edge functions**: `supabase/functions/` — `verify-credly`, `sync-comms-metrics`, `sync-knowledge-insights` present; `sync-credly-all` and `sync-attendance-points` invoked but absent (see `docs/project-governance/PROJECT_ON_TRACK.md`).
+- **Migrations**: `supabase/migrations/` (40+ applied), with supporting SQL/docs in `docs/migrations/`.
+- **Scripts**: `scripts/` — data importers (Trello boards, Google Calendar ICS, PMI volunteer CSVs, Miro links), knowledge file detective, WhatsApp NLP analysis.
+- **Data staging**: `data/` — staging area for knowledge assets and ETL pipeline.
 
 When adding features, respect the existing structure and the governance/release discipline above.
 
 ## Agent team structure
 
 Specialized agents operate within strict boundaries. An agent must NOT work outside its lane.
-
-### Active agents
 
 | Agent | Scope | Can modify | Cannot touch |
 |-------|-------|------------|-------------|
@@ -112,14 +130,6 @@ Specialized agents operate within strict boundaries. An agent must NOT work outs
 | **Governance** | Docs, backlog, release log, runbooks | `docs/`, `AGENTS.md`, `backlog-*.md`, `README.md` | Code files |
 | **DevOps** | CI/CD, workflows, deploy config | `.github/`, `wrangler.toml`, `package.json` scripts | Application code, DB |
 
-### Disabled / blocked until foundation is stable
-
-| Agent | Why blocked |
-|-------|------------|
-| Knowledge Hub UI | DB tables exist (`knowledge_assets`, `hub_resources`) but no frontend route; blocked on P2 gate |
-| Multi-tenant / Scale | P3 — requires P2 stable |
-| Custom analytics charts | Use PostHog/Looker iframes instead |
-
 ### Agent rules
 
 1. **No frontend without backend:** A frontend change that calls a new RPC/table MUST have the corresponding migration merged first.
@@ -127,3 +137,4 @@ Specialized agents operate within strict boundaries. An agent must NOT work outs
 3. **Break the build = revert:** If CI fails after merge, revert before doing anything else.
 4. **One concern per commit:** Don't mix DB migrations with UI changes in the same commit.
 5. **Gate checks before merge:** `npm test` + `npm run build` + `npm run smoke:routes` must pass.
+6. **Sprint closure is mandatory:** Every sprint must complete the 5-phase closure routine before the next sprint begins.

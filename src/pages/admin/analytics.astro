@@ -70,6 +70,36 @@ const ANALYTICS_I18N = {
         </div>
       </div>
 
+      <!-- Cross-Source Platform Overview -->
+      <div class="border-b-2 border-slate-200 pb-6 mb-6">
+        <h2 class="text-lg font-extrabold text-navy mb-1">Visão Geral da Plataforma</h2>
+        <p class="text-[.72rem] text-slate-400 mb-4">Dados consolidados de todas as fontes integradas</p>
+
+        <div id="platform-kpis" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4"></div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-200">
+              <h3 class="text-sm font-bold text-navy">Saúde da Plataforma</h3>
+              <p class="text-[.68rem] text-slate-400">Completude dos dados de membros</p>
+            </div>
+            <div class="p-4" style="height:260px">
+              <canvas id="platform-health-chart"></canvas>
+            </div>
+          </section>
+
+          <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+            <div class="px-4 py-3 border-b border-slate-200">
+              <h3 class="text-sm font-bold text-navy">Atividade Mensal</h3>
+              <p class="text-[.68rem] text-slate-400">Eventos, artefatos e comunicados por mês</p>
+            </div>
+            <div class="p-4" style="height:260px">
+              <canvas id="activity-timeline-chart"></canvas>
+            </div>
+          </section>
+        </div>
+      </div>
+
       <!-- KPI Stats -->
       <div id="stats-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
 
@@ -235,8 +265,91 @@ const ANALYTICS_I18N = {
   }
 
   async function loadCharts() {
-    const { Chart, BarController, RadarController, LineController, CategoryScale, LinearScale, RadialLinearScale, BarElement, PointElement, LineElement, Filler, Legend, Tooltip } = await import('chart.js');
-    Chart.register(BarController, RadarController, LineController, CategoryScale, LinearScale, RadialLinearScale, BarElement, PointElement, LineElement, Filler, Legend, Tooltip);
+    const { Chart, BarController, RadarController, LineController, DoughnutController, CategoryScale, LinearScale, RadialLinearScale, BarElement, PointElement, LineElement, ArcElement, Filler, Legend, Tooltip } = await import('chart.js');
+    Chart.register(BarController, RadarController, LineController, DoughnutController, CategoryScale, LinearScale, RadialLinearScale, BarElement, PointElement, LineElement, ArcElement, Filler, Legend, Tooltip);
+
+    // ── Cross-source platform overview ──
+    try {
+      const { data: pData, error: pErr } = await sb.rpc('platform_activity_summary');
+      if (!pErr && pData) {
+        const m = pData.members || {};
+        const a = pData.artifacts || {};
+        const e = pData.events || {};
+        const b = pData.boards || {};
+        const cm = pData.comms || {};
+        const va = pData.volunteer_apps || {};
+
+        const kpiEl = document.getElementById('platform-kpis');
+        if (kpiEl) {
+          const kpis = [
+            { icon: '&#x1F465;', val: m.active || 0, label: 'Membros Ativos' },
+            { icon: '&#x1F4C4;', val: a.total || 0, label: 'Artefatos' },
+            { icon: '&#x1F4C5;', val: e.total || 0, label: 'Eventos' },
+            { icon: '&#x1F4CB;', val: b.total_items || 0, label: 'Itens Kanban' },
+            { icon: '&#x1F4E2;', val: cm.total_reach || 0, label: 'Alcance Comms' },
+            { icon: '&#x1F4E8;', val: va.total || 0, label: 'Candidaturas' },
+          ];
+          kpiEl.innerHTML = kpis.map(k =>
+            `<div class="bg-white border border-slate-200 rounded-xl p-3 text-center">
+              <div class="text-base">${k.icon}</div>
+              <div class="text-lg font-extrabold text-navy">${k.val}</div>
+              <div class="text-[.6rem] text-slate-500 font-semibold">${escapeHtml(k.label)}</div>
+            </div>`
+          ).join('');
+        }
+
+        // Platform health doughnut
+        const healthCanvas = document.getElementById('platform-health-chart') as HTMLCanvasElement;
+        if (healthCanvas && m.total) {
+          new Chart(healthCanvas, {
+            type: 'doughnut',
+            data: {
+              labels: ['Com Tribo', 'Com Credly', 'Com Foto', 'Com LinkedIn'],
+              datasets: [{
+                data: [m.with_tribe || 0, m.with_credly || 0, m.with_photo || 0, m.with_linkedin || 0],
+                backgroundColor: [PALETTE[0], PALETTE[1], PALETTE[2], PALETTE[3]],
+                borderWidth: 0,
+              }]
+            },
+            options: {
+              responsive: true, maintainAspectRatio: false, cutout: '55%',
+              plugins: {
+                legend: { position: 'bottom', labels: { font: { size: 10 }, usePointStyle: true, padding: 12 } },
+                tooltip: { callbacks: { label: (c: any) => c.label + ': ' + c.raw + '/' + m.total + ' (' + Math.round(c.raw / m.total * 100) + '%)' } }
+              }
+            }
+          });
+        }
+
+        // Activity timeline line chart
+        const monthly = pData.monthly_activity || [];
+        if (monthly.length) {
+          const timelineCanvas = document.getElementById('activity-timeline-chart') as HTMLCanvasElement;
+          if (timelineCanvas) {
+            const labels = monthly.map((d: any) => {
+              const dt = new Date(d.month_label);
+              return dt.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+            });
+            new Chart(timelineCanvas, {
+              type: 'line',
+              data: {
+                labels,
+                datasets: [
+                  { label: 'Eventos', data: monthly.map((d: any) => d.events), borderColor: PALETTE[0], backgroundColor: PALETTE[0] + '20', fill: true, tension: 0.3, pointRadius: 4 },
+                  { label: 'Artefatos', data: monthly.map((d: any) => d.artifacts), borderColor: PALETTE[1], backgroundColor: PALETTE[1] + '20', fill: true, tension: 0.3, pointRadius: 4 },
+                  { label: 'Comunicados', data: monthly.map((d: any) => d.broadcasts), borderColor: PALETTE[5], backgroundColor: PALETTE[5] + '20', fill: true, tension: 0.3, pointRadius: 4 },
+                ]
+              },
+              options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, usePointStyle: true } } },
+                scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+              }
+            });
+          }
+        }
+      }
+    } catch (e) { console.warn('Platform overview:', e); }
 
     const funnelTitle = document.getElementById('funnel-title');
     const funnelDesc = document.getElementById('funnel-desc');

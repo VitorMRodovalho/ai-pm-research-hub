@@ -76,6 +76,7 @@ const enUS: Record<string, string> = {
   'nav.adminComms': '📡 Communications',
   'nav.adminHelp': 'Help / Guide',
   'nav.adminCuratorship': 'Curatorship',
+  'nav.adminSelection': 'Selection Process',
   'admin.curatorship.title': 'Knowledge Curatorship',
   'admin.curatorship.subtitle': 'Review and approve items imported from external sources before publishing',
   'admin.curatorship.loading': 'Loading pending items...',

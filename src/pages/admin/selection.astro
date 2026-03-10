@@ -1,0 +1,311 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import AdminNav from '../../components/nav/AdminNav.astro';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+---
+
+<BaseLayout title="Processo Seletivo — Admin" activePage="admin">
+  <div class="max-w-[1200px] mx-auto px-4 pt-6">
+    <AdminNav activeSub="selection" lang={lang} />
+  </div>
+  <div class="max-w-[1200px] mx-auto px-4 pb-8">
+    <div class="mb-6">
+      <div class="flex items-center gap-3">
+        <h1 class="text-2xl font-extrabold text-navy">Processo Seletivo</h1>
+        <span class="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full uppercase">LGPD</span>
+      </div>
+      <p class="text-sm text-slate-500 mt-1">Dados de voluntários PMI — Ciclos 1, 2 e 3</p>
+    </div>
+
+    <div id="sel-loading" class="text-center py-10 text-slate-400">Carregando...</div>
+
+    <div id="sel-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
+      <div class="text-2xl mb-2">&#x1F512;</div>
+      <p class="font-semibold text-amber-800">Acesso restrito a administradores</p>
+      <a href="/admin" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">Voltar ao Admin</a>
+    </div>
+
+    <div id="sel-panel" class="hidden space-y-5">
+      <!-- Cycle tabs -->
+      <div class="flex gap-2 flex-wrap" id="sel-cycle-tabs">
+        <button class="sel-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white transition-all" data-cycle="all">Todos</button>
+        <button class="sel-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all" data-cycle="1">Ciclo 1</button>
+        <button class="sel-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all" data-cycle="2">Ciclo 2</button>
+        <button class="sel-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all" data-cycle="3">Ciclo 3</button>
+      </div>
+
+      <!-- KPI cards -->
+      <div id="sel-kpis" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+
+      <!-- Search -->
+      <div class="flex gap-3 items-center">
+        <input type="text" id="sel-search" placeholder="Buscar por nome, estado, certificação..."
+          class="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
+        <span id="sel-count" class="text-[12px] text-slate-400 font-semibold whitespace-nowrap"></span>
+      </div>
+
+      <!-- Table -->
+      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-[13px]">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200">
+                <th class="px-4 py-2.5 font-bold text-slate-600">Nome</th>
+                <th class="px-4 py-2.5 font-bold text-slate-600">Ciclo</th>
+                <th class="px-4 py-2.5 font-bold text-slate-600">Status</th>
+                <th class="px-4 py-2.5 font-bold text-slate-600">Certificações</th>
+                <th class="px-4 py-2.5 font-bold text-slate-600">Local</th>
+                <th class="px-4 py-2.5 font-bold text-slate-600">Membro?</th>
+                <th class="px-4 py-2.5 font-bold text-slate-600">Snapshot</th>
+              </tr>
+            </thead>
+            <tbody id="sel-tbody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+        <div id="sel-pagination" class="flex items-center justify-between px-4 py-3 border-t border-slate-100">
+          <button id="sel-prev" class="px-3 py-1.5 text-[12px] font-semibold bg-slate-100 text-slate-600 rounded-lg cursor-pointer border-0 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-default" disabled>Anterior</button>
+          <span id="sel-page-info" class="text-[12px] text-slate-400"></span>
+          <button id="sel-next" class="px-3 py-1.5 text-[12px] font-semibold bg-slate-100 text-slate-600 rounded-lg cursor-pointer border-0 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-default" disabled>Próximo</button>
+        </div>
+      </div>
+
+      <!-- Snapshot comparison -->
+      <div id="sel-snapshot-section" class="hidden">
+        <h3 class="text-[15px] font-bold text-navy mb-3">Comparação de Snapshots — Ciclo 3</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="sel-snapshot-cards"></div>
+      </div>
+
+      <!-- Import guide -->
+      <details class="bg-slate-50 border border-slate-200 rounded-xl">
+        <summary class="px-4 py-3 cursor-pointer text-[13px] font-semibold text-slate-600 hover:text-navy">Como importar novos dados CSV</summary>
+        <div class="px-4 pb-4 text-[12px] text-slate-500 space-y-2">
+          <p>1. Exporte os dados de voluntários da plataforma PMI (formato CSV)</p>
+          <p>2. Coloque o arquivo em <code class="bg-slate-200 px-1 rounded">/Downloads/data/raw-drive-exports/Sensitive/Export voluntarios inscritos plataforma PMI/</code></p>
+          <p>3. Execute o script de importação:</p>
+          <pre class="bg-slate-800 text-slate-100 px-3 py-2 rounded-lg overflow-x-auto">SUPABASE_URL="..." SUPABASE_SERVICE_ROLE_KEY="..." npx tsx scripts/volunteer_csv_importer.ts</pre>
+          <p>4. O script é idempotente — re-executar não cria duplicatas.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import { canAccessAdminRoute } from '../../lib/admin/constants';
+
+  let sb: any = null;
+  let MEMBER: any = null;
+  let currentCycle: number | null = null;
+  let currentSearch = '';
+  let currentPage = 0;
+  const PAGE_SIZE = 30;
+
+  function escapeHtml(s: string): string {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function showDenied() {
+    document.getElementById('sel-loading')?.classList.add('hidden');
+    document.getElementById('sel-denied')?.classList.remove('hidden');
+  }
+
+  function showPanel() {
+    document.getElementById('sel-loading')?.classList.add('hidden');
+    document.getElementById('sel-panel')?.classList.remove('hidden');
+    loadData();
+  }
+
+  async function loadData() {
+    await Promise.all([loadKpis(), loadTable()]);
+  }
+
+  async function loadKpis() {
+    if (!sb) return;
+    try {
+      const args: any = {};
+      if (currentCycle !== null) args.p_cycle = currentCycle;
+      const { data, error } = await sb.rpc('volunteer_funnel_summary', args);
+      if (error || !data) return;
+
+      const byCycle = data.by_cycle || [];
+      let total = 0, unique = 0, matched = 0, active = 0;
+      byCycle.forEach((c: any) => {
+        total += c.total_applications || 0;
+        unique += c.unique_applicants || 0;
+        matched += c.matched_members || 0;
+        active += c.active_applications || 0;
+      });
+
+      const kpiEl = document.getElementById('sel-kpis');
+      if (kpiEl) {
+        const kpis = [
+          { label: 'Candidaturas', value: total, icon: '&#x1F4CB;' },
+          { label: 'Únicos', value: unique, icon: '&#x1F464;' },
+          { label: 'Membros Existentes', value: matched, icon: '&#x1F91D;' },
+          { label: 'Ativos', value: active, icon: '&#x2705;' },
+        ];
+        kpiEl.innerHTML = kpis.map(k =>
+          `<div class="bg-white border border-slate-200 rounded-xl p-3 text-center">
+            <div class="text-lg">${k.icon}</div>
+            <div class="text-xl font-extrabold text-navy">${k.value}</div>
+            <div class="text-[.65rem] text-slate-500 font-semibold">${escapeHtml(k.label)}</div>
+          </div>`
+        ).join('');
+      }
+
+      // Snapshot comparison for Ciclo 3
+      const c3 = byCycle.find((c: any) => c.cycle === 3);
+      const snapSection = document.getElementById('sel-snapshot-section');
+      const snapCards = document.getElementById('sel-snapshot-cards');
+      if (c3 && c3.earliest_snapshot !== c3.latest_snapshot && snapSection && snapCards) {
+        snapSection.classList.remove('hidden');
+        snapCards.innerHTML = [
+          { label: `Snapshot ${c3.earliest_snapshot}`, total: '—', unique: '—', note: 'Primeiro snapshot' },
+          { label: `Snapshot ${c3.latest_snapshot}`, total: c3.total_applications, unique: c3.unique_applicants, note: 'Último snapshot' },
+        ].map(s => `<div class="bg-white border border-slate-200 rounded-xl p-4">
+          <h4 class="text-[13px] font-bold text-navy mb-2">${escapeHtml(s.label)}</h4>
+          <p class="text-[11px] text-slate-400 mb-2">${escapeHtml(s.note)}</p>
+          <div class="flex gap-4">
+            <div><div class="text-lg font-extrabold text-navy">${s.total}</div><div class="text-[10px] text-slate-400">Total</div></div>
+            <div><div class="text-lg font-extrabold text-navy">${s.unique}</div><div class="text-[10px] text-slate-400">Únicos</div></div>
+          </div>
+        </div>`).join('');
+      } else if (snapSection) {
+        snapSection.classList.add('hidden');
+      }
+    } catch (e) { console.warn('Selection KPIs:', e); }
+  }
+
+  async function loadTable() {
+    if (!sb) return;
+    const tbody = document.getElementById('sel-tbody');
+    const countEl = document.getElementById('sel-count');
+    const pageInfo = document.getElementById('sel-page-info');
+    if (!tbody) return;
+
+    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-slate-400">Carregando...</td></tr>';
+
+    try {
+      const args: any = { p_limit: PAGE_SIZE, p_offset: currentPage * PAGE_SIZE };
+      if (currentCycle !== null) args.p_cycle = currentCycle;
+      if (currentSearch) args.p_search = currentSearch;
+
+      const { data, error } = await sb.rpc('list_volunteer_applications', args);
+      if (error) throw error;
+
+      const total = data?.total || 0;
+      const rows = data?.rows || [];
+
+      if (countEl) countEl.textContent = `${total} resultado${total !== 1 ? 's' : ''}`;
+      if (pageInfo) pageInfo.textContent = `Página ${currentPage + 1} de ${Math.max(1, Math.ceil(total / PAGE_SIZE))}`;
+
+      const prevBtn = document.getElementById('sel-prev') as HTMLButtonElement;
+      const nextBtn = document.getElementById('sel-next') as HTMLButtonElement;
+      if (prevBtn) prevBtn.disabled = currentPage === 0;
+      if (nextBtn) nextBtn.disabled = (currentPage + 1) * PAGE_SIZE >= total;
+
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-slate-400">Nenhum voluntário encontrado</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rows.map((r: any) => {
+        const certs = (r.certifications || []).slice(0, 3).map((c: string) => `<span class="text-[10px] bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded font-medium">${escapeHtml(c)}</span>`).join(' ');
+        const location = [r.city, r.state, r.country].filter(Boolean).join(', ');
+        const matchBadge = r.is_existing_member
+          ? `<span class="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold">Sim</span>`
+          : `<span class="text-[10px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded">Não</span>`;
+        const statusColor = r.app_status === 'Active' ? 'text-emerald-600' : 'text-slate-500';
+        return `<tr class="hover:bg-slate-50/50">
+          <td class="px-4 py-2.5 font-semibold text-navy">${escapeHtml(r.first_name)} ${escapeHtml(r.last_name)}</td>
+          <td class="px-4 py-2.5"><span class="text-[11px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-bold">C${r.cycle}</span></td>
+          <td class="px-4 py-2.5 ${statusColor} font-medium text-[12px]">${escapeHtml(r.app_status || '—')}</td>
+          <td class="px-4 py-2.5">${certs || '<span class="text-slate-300">—</span>'}</td>
+          <td class="px-4 py-2.5 text-[12px] text-slate-500">${escapeHtml(location) || '—'}</td>
+          <td class="px-4 py-2.5">${matchBadge}</td>
+          <td class="px-4 py-2.5 text-[11px] text-slate-400">${r.snapshot_date || '—'}</td>
+        </tr>`;
+      }).join('');
+    } catch (e: any) {
+      console.error('Selection table:', e);
+      tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-red-500">Erro: ${escapeHtml(e.message || 'desconhecido')}</td></tr>`;
+    }
+  }
+
+  function switchCycle(cycle: string) {
+    currentCycle = cycle === 'all' ? null : parseInt(cycle, 10);
+    currentPage = 0;
+
+    document.querySelectorAll('.sel-tab').forEach(btn => {
+      const isActive = (btn as HTMLElement).dataset.cycle === cycle;
+      btn.classList.toggle('bg-navy', isActive);
+      btn.classList.toggle('text-white', isActive);
+      btn.classList.toggle('border-navy', isActive);
+      btn.classList.toggle('bg-white', !isActive);
+      btn.classList.toggle('text-slate-500', !isActive);
+      btn.classList.toggle('border-slate-200', !isActive);
+    });
+
+    loadData();
+  }
+
+  let searchTimeout: any = null;
+
+  function applyGate(m: any) {
+    if (m && canAccessAdminRoute(m, 'admin_selection')) showPanel();
+    else showDenied();
+  }
+
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail) { MEMBER = e.detail; applyGate(MEMBER); }
+    }) as EventListener);
+
+    const m = (window as any).navGetMember?.();
+    if (m) { MEMBER = m; applyGate(MEMBER); return; }
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        const { data } = await sb.rpc('get_member_by_auth');
+        MEMBER = data;
+        applyGate(MEMBER);
+        return;
+      }
+    } catch (e) { console.warn('Selection boot:', e); }
+
+    showDenied();
+  }
+
+  document.addEventListener('click', (e: MouseEvent) => {
+    const target = (e.target as HTMLElement).closest<HTMLElement>('[data-cycle]');
+    if (target?.classList.contains('sel-tab')) {
+      switchCycle(target.dataset.cycle || 'all');
+    }
+  });
+
+  document.getElementById('sel-search')?.addEventListener('input', (e: Event) => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      currentSearch = (e.target as HTMLInputElement).value.trim();
+      currentPage = 0;
+      loadTable();
+    }, 400);
+  });
+
+  document.getElementById('sel-prev')?.addEventListener('click', () => {
+    if (currentPage > 0) { currentPage--; loadTable(); }
+  });
+
+  document.getElementById('sel-next')?.addEventListener('click', () => {
+    currentPage++;
+    loadTable();
+  });
+
+  boot();
+</script>

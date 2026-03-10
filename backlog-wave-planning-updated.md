@@ -1,6 +1,6 @@
 # Nucleo IA & GP — Backlog & Wave Planning
 ## Status: Marco 2026 (atualizado 2026-03-11)
-## Sincronizado com producao: Git, Migracoes SQL (40/40) e 13 Edge Functions
+## Sincronizado com producao: Git, Migracoes SQL (41/41) e 13 Edge Functions
 
 **Board de sprints**: [GitHub Project — AI PM Hub](https://github.com/users/VitorMRodovalho/projects/1/) · Regras: `docs/project-governance/PROJECT_GOVERNANCE_RUNBOOK.md`
 
@@ -202,15 +202,23 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 
 ---
 
-## WAVE 9: Intelligence & Governance — PENDENTE
-**Foco:** Frontend processo seletivo, journal de governanca, busca semantica, dashboards cross-source.
+## WAVE 9: Intelligence & Cross-Source Analytics — CONCLUIDA
+**Foco:** Frontend processo seletivo, dashboards cross-source, reforma documental.
 
 | ID | Feature | Priority | Status | Description |
 |----|---------|----------|--------|-------------|
-| W9.1 | Selection Process Frontend | High | Planned | Pagina `/admin/selection` com import CSV, lista candidatos, comparacao snapshots. |
-| W9.2 | Governance Change Request Journal | Medium | Planned | Frontend `/admin/governance` com CRUD de change requests e workflow de aprovacao. |
-| W9.3 | Busca Semantica (Embeddings) | Low | Planned | pgvector sobre `artifacts`, `hub_resources`, `board_items`. Herdado de S-KNW6. |
-| W9.4 | Cross-Source Analytics Dashboards | Medium | Planned | Visao unificada: volunteer pipeline + Kanban + comms + attendance + gamification. |
+| W9.1 | Selection Process Frontend | High | Done | `/admin/selection` com tabs por ciclo, KPI cards, tabela paginada com busca, snapshot comparison, guia de importacao CSV. Migration: `list_volunteer_applications` RPC. |
+| W9.2 | Governance Change Request Journal | Medium | Deferred | Deferido — user chose `governance_later`. Sem schema pronto. |
+| W9.3 | Busca Semantica (Embeddings) | Low | Deferred | pgvector sobre `artifacts`, `hub_resources`, `board_items`. Deferido para Wave 10+. |
+| W9.4 | Cross-Source Analytics Dashboards | High | Done | "Visao Geral da Plataforma" em `/admin/analytics`: 6 KPI cards (membros, artefatos, eventos, Kanban, comms, candidaturas), doughnut de saude da plataforma, timeline de atividade mensal. Migration: `platform_activity_summary` RPC. |
+| W9.5 | Documentation Reform | Medium | Done | AGENTS.md reformado (PostHog→Chart.js, role dropped, blocked agents removed, sprint closure added). SPRINT_IMPLEMENTATION_PRACTICES.md com 5-phase routine formalizada. DEPLOY_CHECKLIST.md atualizado. |
+
+### Wave 9 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 13/13 | **Lint**: 0 errors | **Migrations**: 41/41
+- **New pages**: `/admin/selection` (selection process management)
+- **New RPCs**: `list_volunteer_applications` (paginated list), `platform_activity_summary` (cross-source)
+- **New charts**: Platform health doughnut, Activity timeline, 6 cross-source KPIs
+- **Docs reformed**: AGENTS.md, SPRINT_IMPLEMENTATION_PRACTICES.md, DEPLOY_CHECKLIST.md
 
 ---
 
@@ -292,7 +300,7 @@ Native Supabase-based comms metrics replaced external Looker dependency. YouTube
 
 ### Infrastructure
 - **Git**: `origin/main` and `production/main` 100% synchronized
-- **SQL Migrations**: 40/40 applied in production (Supabase) — Wave 7 data, Wave 8 schema cleanup
+- **SQL Migrations**: 41/41 applied in production (Supabase) — Wave 7 data, Wave 8 cleanup, Wave 9 RPCs
 - **Edge Functions**: 13 active in production (all `--no-verify-jwt`)
 - **Frontend**: Deployed via Cloudflare Pages (auto-deploy from main)
 - **Storage**: `documents` bucket active with public read + authenticated upload
@@ -304,19 +312,22 @@ Native Supabase-based comms metrics replaced external Looker dependency. YouTube
 - `scripts/miro_links_importer.ts`: CSV → 51 links in `hub_resources` (source=miro_import)
 
 ### Navigation (`navigation.config.ts`)
-- 19 items covering all routes with tier-based ACL
-- Home anchors (10), Tools (5), Member (2), Profile (1), Admin (5)
+- 20 items covering all routes with tier-based ACL
+- Home anchors (10), Tools (5), Member (2), Profile (1), Admin (6)
 - Progressive disclosure: disabled items with lock icon + tooltip for insufficient tier
 - LGPD-sensitive items fully hidden for non-authorized (new `lgpdSensitive` flag)
 - No orphan routes (legacy aliases `/teams`, `/rank`, `/ranks` are intentional redirects)
 
-### Schema Changes (Wave 8)
+### Schema Changes (Wave 8-9)
 - Dropped `role`, `roles` columns and `trg_sync_legacy_role` trigger from `members`
 - New `NavItem.lgpdSensitive` flag and `ItemAccessibility` interface in `navigation.config.ts`
+- New RPCs: `list_volunteer_applications`, `platform_activity_summary`
 
 ### Documentation
 - `docs/RELEASE_LOG.md`: Up to date (2026-03-11)
 - `docs/PERMISSIONS_MATRIX.md`: Up to date (2026-03-10)
+- `AGENTS.md`: Reformed (2026-03-11) — stale conventions fixed, sprint closure routine added
+- `docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md`: 5-phase routine formalized
 - `backlog-wave-planning-updated.md`: This file — synchronized
 
 ---

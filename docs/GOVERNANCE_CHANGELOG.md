@@ -1,5 +1,29 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 9: Intelligence & Cross-Source Analytics
+
+### Decisions
+
+1. **Selection Process frontend is admin-only and LGPD-classified**: The `/admin/selection` page shows volunteer names and locations but deliberately omits email addresses from the list view. The `lgpdSensitive: true` flag ensures the nav item is fully hidden from non-admin users, not just disabled.
+
+2. **Cross-source analytics uses a single aggregation RPC**: Rather than making 6 separate API calls from the frontend, `platform_activity_summary()` consolidates all metrics into one JSON response. This reduces network overhead and ensures atomic consistency of the dashboard numbers.
+
+3. **Documentation reform is a sprint-worthy deliverable**: AGENTS.md, SPRINT_IMPLEMENTATION_PRACTICES.md, and DEPLOY_CHECKLIST.md had drifted significantly from the actual system state. Treating doc reform as a formal sprint item (W9.5) ensures it gets the attention it deserves.
+
+4. **5-phase sprint closure routine is now mandatory**: The routine (Execute, Audit, Fix, Docs, Deploy) has been formalized in SPRINT_IMPLEMENTATION_PRACTICES.md and AGENTS.md. Every future sprint must follow this sequence.
+
+5. **W9.2 (Governance Journal) and W9.3 (Semantic Search) deferred**: Governance journal has no DB schema yet and the user explicitly chose `governance_later`. Semantic search requires pgvector extension and has low immediate impact. Both move to Wave 10+.
+
+### Process Lessons Learned
+
+1. **Aggregation RPCs outperform multiple frontend calls**: The `platform_activity_summary` pattern of bundling 7 queries into one RPC should be the default for dashboard-type pages.
+
+2. **LGPD classification should be decided at nav config level**: The `lgpdSensitive` flag on NavItem is the right abstraction -- it's auditable, centralized, and doesn't require per-page logic.
+
+3. **Documentation drift compounds**: After 8 waves of rapid delivery, AGENTS.md had multiple contradictions with the actual codebase. Regular doc audits should be part of sprint closure.
+
+---
+
 ## 2026-03-11 — Wave 8: Reusable Kanban & UX Architecture
 
 ### Decisions

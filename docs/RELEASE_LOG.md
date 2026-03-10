@@ -1,5 +1,51 @@
 # Release Log
 
+## 2026-03-11 — v0.7.0 Wave 9: Intelligence & Cross-Source Analytics
+
+### Scope
+Wave 9 delivers the Selection Process frontend, cross-source analytics dashboard, and comprehensive documentation reform including the formalized 5-phase sprint closure routine.
+
+### New Pages
+- **`/admin/selection`**: Full Selection Process management page with cycle filter tabs (All/C1/C2/C3), KPI summary cards, paginated searchable applicant table (LGPD admin-only), Ciclo 3 snapshot comparison, and CSV import guide. Powered by new `list_volunteer_applications` RPC.
+
+### New RPCs (migration `20260312030000`)
+- `list_volunteer_applications(p_cycle, p_search, p_limit, p_offset)`: Paginated, searchable volunteer applications list with member match info. Admin-only permission check.
+- `platform_activity_summary()`: Cross-source analytics aggregating members, artifacts, events, boards, comms, volunteer apps, and monthly activity timeline. Admin-only.
+
+### Analytics Enhancements
+- **Cross-source "Visao Geral da Plataforma"** section in `/admin/analytics`: 6 KPI cards, platform health doughnut (member data completeness), activity timeline line chart (events/artifacts/broadcasts per month over 6 months).
+
+### Documentation Reform
+- **AGENTS.md**: Full refresh -- role model convention updated (dropped, not transitional), analytics convention fixed (Chart.js native, not PostHog iframes), blocked agents section removed, sprint closure routine added, Quick Reference and "Where key things live" updated with scripts/ and data/ folders.
+- **SPRINT_IMPLEMENTATION_PRACTICES.md**: 5-phase sprint closure routine formalized (Execute, Audit, Fix, Docs, Deploy) with detailed checklists per phase.
+- **DEPLOY_CHECKLIST.md**: PostHog/Looker dashboard URLs marked as superseded.
+
+### Navigation
+- New `admin-selection` nav item with `lgpdSensitive: true` in navigation.config.ts
+- AdminNav.astro updated with selection link
+- i18n keys added for PT-BR, EN-US, ES-LATAM
+
+### Files Changed
+- `src/pages/admin/selection.astro` (new)
+- `src/pages/admin/analytics.astro` (cross-source dashboard)
+- `src/lib/admin/constants.ts` (admin_selection route key)
+- `src/lib/navigation.config.ts` (admin-selection nav item)
+- `src/components/nav/AdminNav.astro` (selection link)
+- `src/components/nav/Nav.astro` (selection drawer icon + i18n key)
+- `src/i18n/pt-BR.ts`, `src/i18n/en-US.ts`, `src/i18n/es-LATAM.ts` (nav.adminSelection)
+- `supabase/migrations/20260312030000_list_volunteer_applications_rpc.sql` (new)
+- `AGENTS.md` (reformed)
+- `docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md` (5-phase routine)
+- `docs/DEPLOY_CHECKLIST.md` (PostHog/Looker superseded)
+- `backlog-wave-planning-updated.md` (Wave 9 CONCLUIDA)
+- `docs/RELEASE_LOG.md` (this entry)
+- `docs/GOVERNANCE_CHANGELOG.md` (Wave 9 decisions)
+
+### Audit Results
+- Build: clean | Tests: 13/13 | Lint: 0 errors | Migrations: 41/41
+
+---
+
 ## 2026-03-11 — v0.6.0 Wave 8: Reusable Kanban & UX Architecture
 
 ### Scope
