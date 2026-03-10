@@ -151,6 +151,7 @@ const esLATAM: Record<string, string> = {
   // ── Hero (client-side script) ──
   'hero.dateLocale': 'es-419',
   'hero.watchRecording': 'Ver Grabación',
+  'hero.recurringMeetingPrefix': 'Reunión Recurrente',
   'hero.recurringMeeting': 'Reunión Recurrente · Jueves 19:30 BRT',
   'hero.kickoffHeldOn': 'Kick-off realizado el',
   'hero.kickoffDoneRecordingSoon': '✅ Kick-off realizado · Grabación próximamente',

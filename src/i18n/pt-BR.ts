@@ -151,6 +151,7 @@ const ptBR: Record<string, string> = {
   // ── Hero (client-side script) ──
   'hero.dateLocale': 'pt-BR',
   'hero.watchRecording': 'Assistir Gravação',
+  'hero.recurringMeetingPrefix': 'Reunião Recorrente',
   'hero.recurringMeeting': 'Reunião Recorrente · Quintas 19:30 BRT',
   'hero.kickoffHeldOn': 'Kick-off realizado em',
   'hero.kickoffDoneRecordingSoon': '✅ Kick-off realizado · Gravação em breve',

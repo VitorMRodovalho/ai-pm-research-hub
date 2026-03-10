@@ -287,3 +287,4 @@ e as Edge Functions estão alinhados com esta matriz.
 | 2026-03-11 | Attendance ACL clarified: `/attendance` remains member-visible, but event/roster management aligns to tier `leader+`; modal interactions migrated away from inline handlers. |
 | 2026-03-11 | Wave 16 audit: `/admin/selection` remains `admin` + `lgpdSensitive`; cycle filters/titles now resolve from runtime cycle metadata with no visibility change. |
 | 2026-03-11 | Wave 17 audit: `/admin/selection` guard validated in a real browser for anonymous visitors; home schedule hardening changed selection availability copy, not route visibility or tier mapping. |
+| 2026-03-11 | Wave 18 audit: home runtime messaging moved closer to `home_schedule` without changing public/admin visibility; browser validation now covers both `/admin/selection` denial and public home post-deadline behavior. |

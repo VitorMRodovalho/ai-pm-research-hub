@@ -41,8 +41,15 @@ async function run() {
     await denied.waitFor({ state: 'visible' });
     assert.match(await denied.textContent() || '', /Acesso restrito a administradores/);
     assert.equal(await page.locator('#sel-panel').isVisible(), false);
+
+    await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
+    await page.waitForTimeout(1800);
+    assert.equal(await page.locator('#hero-cycle-status').isVisible(), true);
+    assert.equal(await page.locator('#hero-countdown-area').isVisible(), false);
+    assert.match(await page.locator('#hero-event-area').textContent() || '', /Google Meet|Meet/);
+
     await page.close();
-    console.log('Browser ACL guard test passed.');
+    console.log('Browser guard and home runtime test passed.');
   } finally {
     await browser.close();
     devServer?.kill('SIGTERM');

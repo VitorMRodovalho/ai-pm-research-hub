@@ -43,3 +43,13 @@ test('tribes section touched links no longer use inline onclick handlers', () =>
   assert.equal(content.includes('onclick='), false);
   assert.equal(content.includes('data-stop-propagation'), true);
 });
+
+test('home pages resolve shared home schedule instead of fetching only the deadline', () => {
+  const pt = read('src/pages/index.astro');
+  const en = read('src/pages/en/index.astro');
+  const es = read('src/pages/es/index.astro');
+  for (const content of [pt, en, es]) {
+    assert.equal(content.includes('getHomeSchedule'), true);
+    assert.equal(content.includes('schedule={homeSchedule}'), true);
+  }
+});

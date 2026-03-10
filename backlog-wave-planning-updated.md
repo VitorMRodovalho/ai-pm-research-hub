@@ -8,6 +8,12 @@
 
 ## LATEST UPDATE (2026-03-11)
 
+### Entregue em Wave 18
+- **W18.1 Runtime Home Schedule Reads**: `index` PT/EN/ES passam a resolver o objeto completo de `home_schedule`, não apenas o deadline.
+- **W18.2 Hero Runtime Messaging**: `HeroSection.astro` usa `kickoff_at`, `platform_label` e metadados recorrentes do `home_schedule` para reduzir copy estático no badge inicial e nas mensagens de reunião.
+- **W18.3 Post-Deadline Hero UX**: o status de ciclo na home aparece mesmo antes da inicialização do client Supabase, evitando a área vazia no estado pós-deadline.
+- **W18.4 Browser Coverage Expansion**: a suíte browser agora valida tanto o guard anônimo de `/admin/selection` quanto o comportamento runtime principal da home pública.
+
 ### Entregue em Wave 17
 - **W17.1 Live Supabase Audit Restored**: `supabase migration list` voltou a responder sem `--debug`; confirmado `44/44 local == remote` no projeto linkado.
 - **W17.2 Home Schedule Hardening**: `schedule.ts` deixa de inventar o sentinel `2030`; home passa a tratar o prazo de seleção como estado real (`open` / `closed` / `pending`) vindo de `home_schedule`.
@@ -402,6 +408,24 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 - **Supabase audit**: `supabase migration list` restaurado e confirmando `44/44 local == remote`
 - **Home schedule**: sem deadline fictício `2030`; home usa estado real de cronograma
 - **Site hierarchy / ACL**: `/admin/selection` continua `admin` + `lgpdSensitive`; novo teste browser trava esse guard
+
+---
+
+## WAVE 18: Home Runtime Messaging & Browser Coverage Expansion — CONCLUIDA
+**Foco:** reduzir mais copy estático de cronograma na landing e consolidar cobertura browser para a home pública e guards sensíveis.
+
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| W18.1 | Home Schedule Runtime Model | High | Done | `src/lib/schedule.ts` expõe o objeto completo de `home_schedule`; `src/pages/index.astro`, `src/pages/en/index.astro` e `src/pages/es/index.astro` passam a compartilhar esse read único. |
+| W18.2 | Hero Runtime Messaging | High | Done | `HeroSection.astro` deixa de depender apenas de strings estáticas para badge e schedule labels e passa a montar a mensagem inicial com `kickoff_at`, `platform_label`, `recurring_weekday`, `recurring_start_brt` e `recurring_end_brt`. |
+| W18.3 | Post-Deadline Hero Visibility Fix | Medium | Done | O estado de ciclo é mostrado imediatamente quando a contagem já terminou, sem depender do bootstrap do Supabase client para trocar a UI. |
+| W18.4 | Browser Coverage Expansion | Medium | Done | `tests/browser-guards.test.mjs` agora cobre `/admin/selection` anônimo e a home pública com runtime schedule ativo; `npm run test:browser:guards` permanece como entrada dedicada. |
+
+### Wave 18 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 21/21 | **Browser guard**: OK | **Smoke**: routes OK
+- **Home runtime**: badge e labels principais da home passam a refletir `home_schedule` real, não só fallback i18n
+- **Post-deadline UX**: `hero-cycle-status` aparece sem depender de `navGetSb()` já estar pronto
+- **Site hierarchy / ACL**: sem mudança de tier/visibilidade; `/admin/selection` continua protegido e agora também revalidado junto à home pública
 
 ---
 

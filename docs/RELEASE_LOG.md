@@ -1,5 +1,36 @@
 # Release Log
 
+## 2026-03-11 — v0.16.0 Wave 18: Home Runtime Messaging & Browser Coverage Expansion
+
+### Scope
+Wave 18 extends the home schedule hardening work by replacing more static kickoff/meeting copy with runtime `home_schedule` data and by widening browser validation to cover both the public home state and the LGPD-sensitive selection guard.
+
+### Home Runtime Messaging
+- **`src/lib/schedule.ts`**: Added shared `getHomeSchedule()` so landing pages can read the full schedule contract once instead of resolving only the selection deadline.
+- **`src/pages/index.astro`**, **`src/pages/en/index.astro`**, **`src/pages/es/index.astro`**: Home pages now pass the shared runtime schedule object into `HeroSection`.
+- **`src/components/sections/HeroSection.astro`**: The initial event badge and recurring meeting labels now derive from `kickoff_at`, `platform_label`, `recurring_weekday`, `recurring_start_brt`, and `recurring_end_brt`. The cycle-status shell also becomes visible immediately after the deadline state flips, even before Supabase counts load.
+
+### Browser Coverage Expansion
+- **`tests/browser-guards.test.mjs`**: Browser smoke now checks two critical behaviors in one run: anonymous denial on `/admin/selection` and public home runtime behavior after the configured deadline.
+- **`tests/ui-stabilization.test.mjs`**: Added a regression check that all localized home pages use the shared `getHomeSchedule()` flow.
+
+### Governance / Docs
+- **Backlog / governance / permissions / README** updated to reflect Wave 18 scope and the new home-runtime direction.
+- **i18n**: Added lightweight prefix keys so runtime meeting labels stay localized while using DB-backed schedule values.
+
+### Files Changed
+- `src/lib/schedule.ts`
+- `src/pages/index.astro`, `src/pages/en/index.astro`, `src/pages/es/index.astro`
+- `src/components/sections/HeroSection.astro`
+- `src/i18n/pt-BR.ts`, `src/i18n/en-US.ts`, `src/i18n/es-LATAM.ts`
+- `tests/ui-stabilization.test.mjs`, `tests/browser-guards.test.mjs`
+- `backlog-wave-planning-updated.md`, `docs/RELEASE_LOG.md`, `docs/GOVERNANCE_CHANGELOG.md`, `docs/PERMISSIONS_MATRIX.md`, `README.md`
+
+### Audit Results
+- Build: clean | Tests: 21/21 | Browser guard: OK | Smoke: routes OK
+
+---
+
 ## 2026-03-11 — v0.15.0 Wave 17: Home Schedule Hardening & Browser Guard Base
 
 ### Scope

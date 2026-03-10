@@ -151,6 +151,7 @@ const enUS: Record<string, string> = {
   // ── Hero (client-side script) ──
   'hero.dateLocale': 'en-US',
   'hero.watchRecording': 'Watch Recording',
+  'hero.recurringMeetingPrefix': 'Recurring Meeting',
   'hero.recurringMeeting': 'Recurring Meeting · Thursdays 7:30 PM BRT',
   'hero.kickoffHeldOn': 'Kick-off held on',
   'hero.kickoffDoneRecordingSoon': '✅ Kick-off completed · Recording coming soon',

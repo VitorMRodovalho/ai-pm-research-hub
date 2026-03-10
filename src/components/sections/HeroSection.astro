@@ -1,14 +1,55 @@
 ---
 import { CHAPTER_CODES } from '../../data/chapters';
 import { t, type Lang } from '../../i18n/utils';
+import type { HomeScheduleConfig } from '../../lib/schedule';
 
 interface Props {
   deadline?: string | null;
+  schedule?: HomeScheduleConfig | null;
   lang?: Lang;
 }
 
-const { deadline = null, lang = 'pt-BR' } = Astro.props;
+const { deadline = null, schedule = null, lang = 'pt-BR' } = Astro.props;
 const hasDeadline = typeof deadline === 'string' && !Number.isNaN(new Date(deadline).getTime());
+
+const WEEKDAY_LABELS: Record<Lang, string[]> = {
+  'pt-BR': ['Domingos', 'Segundas', 'Terças', 'Quartas', 'Quintas', 'Sextas', 'Sábados'],
+  'en-US': ['Sundays', 'Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays'],
+  'es-LATAM': ['Domingos', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábados'],
+};
+
+function formatKickoffBadge(homeSchedule: HomeScheduleConfig | null, currentLang: Lang): string | null {
+  if (!homeSchedule?.kickoffAt) return null;
+  try {
+    const formatted = new Intl.DateTimeFormat(currentLang, {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'America/Sao_Paulo',
+    }).format(new Date(homeSchedule.kickoffAt));
+    return `${formatted} BRT${homeSchedule.platformLabel ? ` · ${homeSchedule.platformLabel}` : ''}`;
+  } catch {
+    return null;
+  }
+}
+
+function formatRecurringSchedule(homeSchedule: HomeScheduleConfig | null, currentLang: Lang): string | null {
+  if (
+    homeSchedule?.recurringWeekday === null ||
+    homeSchedule?.recurringWeekday === undefined ||
+    !homeSchedule.recurringStartBrt ||
+    !homeSchedule.recurringEndBrt
+  ) return null;
+  const weekday = WEEKDAY_LABELS[currentLang]?.[homeSchedule.recurringWeekday];
+  if (!weekday) return null;
+  return `${weekday} · ${homeSchedule.recurringStartBrt} → ${homeSchedule.recurringEndBrt} BRT`;
+}
+
+const kickoffBadge = formatKickoffBadge(schedule, lang) || t('hero.date', lang);
+const recurringSchedule = formatRecurringSchedule(schedule, lang) || t('hero.meetingSchedule', lang);
+const recurringMeeting = `${t('hero.recurringMeetingPrefix', lang)} · ${recurringSchedule}`;
 ---
 
 <section class="hero relative min-h-screen flex items-center justify-center overflow-hidden pt-14" id="hero">
@@ -35,7 +76,7 @@ const hasDeadline = typeof deadline === 'string' && !Number.isNaN(new Date(deadl
     <!-- Event info area (populated by JS) -->
     <div id="hero-event-area">
       <div class="inline-flex items-center gap-2 bg-white/6 border border-white/10 px-5 py-2.5 rounded-xl text-white text-[.9rem] font-medium">
-        📅 {t('hero.date', lang)}
+        📅 {kickoffBadge}
       </div>
     </div>
 
@@ -99,12 +140,13 @@ const hasDeadline = typeof deadline === 'string' && !Number.isNaN(new Date(deadl
 <!-- i18n for client JS -->
 <script id="hero-i18n" type="application/json" set:html={JSON.stringify({
   dateLocale: t('hero.dateLocale', lang),
+  hasDeadline,
   watchRecording: t('hero.watchRecording', lang),
-  recurringMeeting: t('hero.recurringMeeting', lang),
+  recurringMeeting,
   kickoffHeldOn: t('hero.kickoffHeldOn', lang),
   kickoffDoneRecordingSoon: t('hero.kickoffDoneRecordingSoon', lang),
   nextGeneralMeeting: t('hero.nextGeneralMeeting', lang),
-  meetingSchedule: t('hero.meetingSchedule', lang),
+  meetingSchedule: recurringSchedule,
   joinMeet: t('hero.joinMeet', lang),
   cycleActive: t('hero.cycleActive', lang),
   cycleTribes: t('hero.cycleTribes', lang),
@@ -143,6 +185,7 @@ const hasDeadline = typeof deadline === 'string' && !Number.isNaN(new Date(deadl
   // ── Dynamic event info from DB ──
   const heroI18nEl = document.getElementById('hero-i18n');
   const hi18n = heroI18nEl ? JSON.parse(heroI18nEl.textContent || '{}') : {};
+  const heroHasDeadline = hi18n.hasDeadline === true;
 
   function meetingBarHtml(meetLink: string): string {
     return `
@@ -223,17 +266,17 @@ const hasDeadline = typeof deadline === 'string' && !Number.isNaN(new Date(deadl
   loadHeroEvent();
 
   async function loadCycleStatus() {
-    const sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(loadCycleStatus, 400); return; }
-
     const cdArea = document.getElementById('hero-countdown-area');
     const csArea = document.getElementById('hero-cycle-status');
     const bar = document.getElementById('countdown-bar');
 
-    if (csArea && (!hasDeadline || (bar && bar.style.display === 'none'))) {
+    if (csArea && (!heroHasDeadline || (bar && bar.style.display === 'none'))) {
       csArea.classList.remove('hidden');
       if (cdArea) cdArea.classList.add('hidden');
     }
+
+    const sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(loadCycleStatus, 400); return; }
 
     try {
       const [{ count: tribeCount }, { count: memberCount }] = await Promise.all([

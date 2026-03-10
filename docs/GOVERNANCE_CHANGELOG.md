@@ -1,5 +1,25 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 18: Home Runtime Messaging And Browser Expansion
+
+### Decisions
+
+1. **Home schedule should feed user-facing copy, not only lock rules**: After Wave 17 moved selection availability off the `2030` sentinel, the next gap was that the landing page still introduced the kickoff and recurring meeting cadence through static locale strings. Wave 18 promotes `home_schedule` from a gate-only source to a presentation input for the home hero.
+
+2. **One shared schedule read is preferable to multiple narrow reads**: The three localized home pages now load the same `getHomeSchedule()` contract and pass it down, instead of each surface or helper fetching only one field. This keeps runtime messaging and deadline logic aligned.
+
+3. **Visibility transitions should not wait for analytics/count fetches**: The hero's cycle-status shell should become visible as soon as the schedule state says the countdown is over. Fetching counts can remain asynchronous, but the layout transition itself should not depend on `navGetSb()` timing.
+
+4. **Browser coverage should pair public-state checks with ACL checks**: Testing only the admin guard was useful but incomplete. The browser suite now also validates a public home behavior driven by runtime schedule state, giving coverage to both access control and post-deadline UX in one lightweight path.
+
+### Process Lessons Learned
+
+1. **Runtime-driven copy often reveals hidden script-scope assumptions**: The `HeroSection` post-deadline state still depended on a variable defined in a separate script block. Browser validation exposed that gap quickly, and the fix was to pass the state explicitly through the client payload.
+
+2. **Public browser checks provide fast value without credentials**: Before tackling authenticated modal flows, there is still substantial regression value in verifying anonymous guards and public runtime UI states against real pages.
+
+---
+
 ## 2026-03-11 — Wave 17: Home Schedule Hardening And Browser Guard Base
 
 ### Decisions
