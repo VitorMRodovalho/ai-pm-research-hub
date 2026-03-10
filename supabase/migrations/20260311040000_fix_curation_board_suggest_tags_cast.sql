@@ -1,6 +1,4 @@
--- Curatorship Kanban Board RPC
--- Returns items from both artifacts and hub_resources across all statuses
--- for the Kanban-style curation UI.
+-- Fix list_curation_board: cast a.cycle (integer) to text for suggest_tags(text,text,text)
 
 CREATE OR REPLACE FUNCTION public.list_curation_board(
   p_status TEXT DEFAULT NULL
@@ -67,8 +65,3 @@ BEGIN
   ) r;
 END;
 $$;
-
-COMMENT ON FUNCTION public.list_curation_board(TEXT) IS
-  'Returns artifacts + hub_resources for the Kanban curatorship board. Optional p_status filter.';
-
-GRANT EXECUTE ON FUNCTION public.list_curation_board(text) TO authenticated;

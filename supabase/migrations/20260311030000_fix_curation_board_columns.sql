@@ -1,6 +1,5 @@
--- Curatorship Kanban Board RPC
--- Returns items from both artifacts and hub_resources across all statuses
--- for the Kanban-style curation UI.
+-- Fix list_curation_board: remove references to non-existent suggested_tags column
+-- and use suggest_tags() function instead (matching list_pending_curation pattern).
 
 CREATE OR REPLACE FUNCTION public.list_curation_board(
   p_status TEXT DEFAULT NULL
@@ -67,8 +66,3 @@ BEGIN
   ) r;
 END;
 $$;
-
-COMMENT ON FUNCTION public.list_curation_board(TEXT) IS
-  'Returns artifacts + hub_resources for the Kanban curatorship board. Optional p_status filter.';
-
-GRANT EXECUTE ON FUNCTION public.list_curation_board(text) TO authenticated;
