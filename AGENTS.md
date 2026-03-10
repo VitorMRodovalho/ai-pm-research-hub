@@ -112,7 +112,7 @@ See `docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md` for the full De
 - **Components**: `src/components/` (sections, UI, nav, attendance).
 - **Data / lib**: `src/data/`, `src/lib/` (routing, Supabase, credly, gamification, trail, admin constants, navigation config).
 - **Edge functions**: `supabase/functions/` — `verify-credly`, `sync-comms-metrics`, `sync-knowledge-insights` present; `sync-credly-all` and `sync-attendance-points` invoked but absent (see `docs/project-governance/PROJECT_ON_TRACK.md`).
-- **Migrations**: `supabase/migrations/` (41 applied), with supporting SQL/docs in `docs/migrations/`.
+- **Migrations**: `supabase/migrations/` (42 applied), with supporting SQL/docs in `docs/migrations/`.
 - **Scripts**: `scripts/` — data importers (Trello boards, Google Calendar ICS, PMI volunteer CSVs, Miro links), knowledge file detective, WhatsApp NLP analysis.
 - **Data staging**: `data/` — staging area for knowledge assets and ETL pipeline.
 
@@ -138,3 +138,19 @@ Specialized agents operate within strict boundaries. An agent must NOT work outs
 4. **One concern per commit:** Don't mix DB migrations with UI changes in the same commit.
 5. **Gate checks before merge:** `npm test` + `npm run build` + `npm run smoke:routes` must pass.
 6. **Sprint closure is mandatory:** Every sprint must complete the 5-phase closure routine before the next sprint begins.
+
+## Interação com agentes (obrigatório)
+
+### Ao iniciar trabalho
+1. Ler `backlog-wave-planning-updated.md` — prioridades e estado da wave atual.
+2. Se adicionar rota/nav: garantir que `navigation.config.ts` + página em `src/pages/` + `AdminNav.astro` (se admin) estejam alinhados; atualizar `PERMISSIONS_MATRIX.md` e `constants.ts` (AdminRouteKey, ROUTE_MIN_TIER).
+3. Respeitar visibilidade e grupos de acesso: `minTier`, `allowedDesignations`, `lgpdSensitive` conforme matriz.
+
+### Ao encerrar sprint (5-phase — não pular)
+1. **Execute** — código completo.
+2. **Audit** — `supabase db push`, `npm run build`, `npm test`, lint, smoke routes, **site hierarchy**.
+3. **Fix** — corrigir problemas encontrados.
+4. **Docs** — backlog (CONCLUIDA + audit), RELEASE_LOG (vX.Y.Z), GOVERNANCE_CHANGELOG.
+5. **Deploy** — commit + push + tag + verificar produção.
+
+Detalhes em `docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md`.

@@ -1,5 +1,34 @@
 # Release Log
 
+## 2026-03-11 — v0.10.0 Wave 12: Agent Interaction Docs, Release Workflow & Screenshots
+
+### Scope
+Wave 12 documents the 5-phase routine for agent interaction, adds Semantic Versioning release workflow, and delivers S-SC1 multilingual screenshot script.
+
+### Agent Interaction Docs
+- **AGENTS.md**: New "Interação com agentes" — checklist ao iniciar (backlog, site hierarchy, PERMISSIONS) e ao encerrar (5-phase). Migrations count 42.
+- **SPRINT_IMPLEMENTATION_PRACTICES**: Cross-ref to AGENTS.md agent interaction.
+- **AGENT_BOARD_SYNC**: Repo corrected from `ai-pm-hub-v2` to `ai-pm-research-hub`.
+
+### Release Workflow (Semantic Versioning)
+- **`.github/workflows/release-tag.yml`**: `workflow_dispatch` with version input; creates and pushes tag vX.Y.Z. Tech debt Semantic Versioning → Addressed.
+
+### S-SC1 Multilingual Screenshots
+- **`scripts/screenshots-multilang.mjs`**: Playwright script captures /, /en, /es (index, workspace, artifacts, gamification). Saves to `docs/screenshots/`.
+- **`npm run screenshots:multilang`**, **`npm run screenshots:setup`** (playwright install chromium).
+
+### Files Changed
+- `AGENTS.md`, `docs/AGENT_BOARD_SYNC.md`, `docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md`
+- `.github/workflows/release-tag.yml` (new)
+- `scripts/screenshots-multilang.mjs` (new)
+- `package.json` (playwright devDep, screenshots scripts)
+- `backlog-wave-planning-updated.md`, `docs/PERMISSIONS_MATRIX.md`, `docs/GOVERNANCE_CHANGELOG.md`
+
+### Audit Results
+- Build: clean | Tests: 13/13 | Site hierarchy: OK
+
+---
+
 ## 2026-03-11 — v0.9.0 Wave 11: Doc Hygiene, Site Config & S-AN1 Closure
 
 ### Scope

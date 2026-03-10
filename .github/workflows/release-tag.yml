@@ -1,0 +1,44 @@
+# Release Tag — manual workflow para criar e enviar tag semântica
+# Uso: Actions → Release Tag → Run workflow → informar version (ex: 0.10.0)
+name: Release Tag
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (ex: 0.10.0)'
+        required: true
+        type: string
+      message:
+        description: 'Tag message'
+        required: false
+        default: 'Release v%version%'
+        type: string
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate version format
+        run: |
+          V="${{ inputs.version }}"
+          if [[ ! "$V" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-z0-9]+)?(\+[a-z0-9]+)?$ ]]; then
+            echo "Invalid semver: $V"
+            exit 1
+          fi
+
+      - name: Create and push tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ inputs.version }}"
+          MSG="${{ inputs.message }}"
+          MSG="${MSG//%version%/$VERSION}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v${VERSION}" -m "$MSG"
+          git push origin "v${VERSION}"

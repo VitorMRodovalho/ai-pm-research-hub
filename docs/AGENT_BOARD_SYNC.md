@@ -31,8 +31,8 @@ Ao concluir uma tarefa com impacto (feature, fix, migração):
 ### Criar issue e adicionar ao project
 
 ```bash
-gh issue create --repo VitorMRodovalho/ai-pm-hub-v2 --title "Título" --body "Descrição"
-gh project item-add 1 --owner VitorMRodovalho --url https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/NN
+gh issue create --repo VitorMRodovalho/ai-pm-research-hub --title "Título" --body "Descrição"
+gh project item-add 1 --owner VitorMRodovalho --url https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/NN
 ```
 
 ### Mover card para Done (após obter item-id)

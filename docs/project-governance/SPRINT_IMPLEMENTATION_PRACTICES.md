@@ -20,7 +20,7 @@ Para considerar um item de Sprint ou Hotfix tecnicamente concluído, os seguinte
 
 ## Rotina de Encerramento de Sprint (5 Fases)
 
-Toda sprint DEVE completar esta sequência antes de iniciar a próxima. Este processo foi formalizado a partir da Wave 7 e é obrigatório.
+Toda sprint DEVE completar esta sequência antes de iniciar a próxima. Este processo foi formalizado a partir da Wave 7 e é obrigatório. **Agentes**: ver também `AGENTS.md` → "Interação com agentes" (checklist ao iniciar e ao encerrar).
 
 ### Fase 1: Execute
 - Todas as alterações de código da sprint estão completas.

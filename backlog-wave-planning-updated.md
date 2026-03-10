@@ -8,7 +8,12 @@
 
 ## LATEST UPDATE (2026-03-11)
 
-### Entregue em Waves 9-10
+### Entregue em Wave 12
+- **W12.1**: AGENTS.md "Interação com agentes", SPRINT_IMPLEMENTATION_PRACTICES ref, AGENT_BOARD_SYNC repo (ai-pm-research-hub). Rotina 5-phase documentada para iniciar e encerrar sprint.
+- **W12.2**: Workflow `release-tag.yml` — workflow_dispatch para criar tag vX.Y.Z (Semantic Versioning).
+- **W12.3**: Script `screenshots-multilang.mjs` (S-SC1) — Playwright captura /, /en, /es (index, workspace, artifacts, gamification).
+
+### Entregue em Waves 9-11
 - **Wave 9**: `/admin/selection` (processo seletivo, LGPD), dashboards cross-source em analytics, RPCs `list_volunteer_applications` e `platform_activity_summary`. Reforma AGENTS.md, SPRINT_IMPLEMENTATION_PRACTICES (5-phase), DEPLOY_CHECKLIST.
 - **Wave 10**: Nav `/admin/analytics`, route key `admin_curatorship`, PERMISSIONS_MATRIX secções 3.13-3.15. Announcement scheduling (starts_at/ends_at pickers, validacao, badge Agendado). Markdown preview toggle para corpo de avisos.
 
@@ -236,15 +241,6 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 | W10.3 | PERMISSIONS_MATRIX Update | High | Done | Secções 3.13-3.15 (Tribe Kanban, Selection LGPD, Progressive disclosure). Mapeamento completo. |
 | W10.4 | Announcement Scheduling UX | Medium | Done | Date-time pickers para `starts_at` e `ends_at`, validação start < end, badge "Agendado". |
 | W10.5 | Announcement Markdown Preview | Low | Done | Toggle Editar/Visualizar, textarea + preview com **bold** *italic* `code` e quebras de linha. |
-| W11.1 | Doc Hygiene | High | Done | Tech debt S-AN1 Scheduling=Done, LATEST UPDATE Waves 9-10, AGENTS 41 migrations, PERMISSIONS_MATRIX date. |
-| W11.2 | Site Hierarchy Checkpoint | Medium | Done | Fase 2 Audit em SPRINT_IMPLEMENTATION_PRACTICES com checklist de rotas. |
-| W11.3 | S-RM5 Site Config | High | Done | Tabela `site_config`, RPCs `get_site_config`/`set_site_config`, pagina `/admin/settings` superadmin. |
-| W11.4 | S-AN1 Rich Editor Partial | Low | Done | Fechado como Partial (markdown preview W10.5). |
-| S-RM5 | Multi-tenant Config | Medium | Done | Entregue como W11.3 (site_config minimo). |
-| S23 | Chapter Integrations | Medium | Planned | Event-driven integrations with local chapter portfolios and tools. |
-| S24 | API for Chapters | Low | Planned | Read-only API for chapter impact and participation data. |
-| S-SC1 | Multilingual Screenshots | Low | Planned | Automated screenshots for PT EN ES docs or release snapshots. |
-| S-KNW7 | Gemini Extraction Pipeline | Low | Deferred | Extrair conteudo de `.docx` em `needs_extraction/` via Gemini API. |
 
 ### Wave 10 Audit Results (2026-03-11)
 - **Build**: clean | **Tests**: 13/13 | **Lint**: 0 errors
@@ -259,13 +255,33 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 
 ---
 
+## WAVE 12: Doc Agent Interaction, Release Workflow & Screenshots — CONCLUIDA
+**Foco:** Rotina 5-phase documentada para agentes, workflow de release, screenshots multilíngues.
+
+| ID | Feature | Priority | Status | Description |
+|----|---------|----------|--------|-------------|
+| W12.1 | Agent Interaction Docs | High | Done | AGENTS.md "Interação com agentes", SPRINT_IMPLEMENTATION_PRACTICES ref, AGENT_BOARD_SYNC repo fix. |
+| W12.2 | Semantic Versioning Workflow | Medium | Done | GitHub Actions `release-tag.yml` workflow_dispatch para criar tag vX.Y.Z. |
+| W12.3 | S-SC1 Multilingual Screenshots | Low | Done | Script `screenshots-multilang.mjs` + `npm run screenshots:multilang`, Playwright. |
+| S23 | Chapter Integrations | Medium | Deferred | Event-driven integrations; design pendente. |
+| S24 | API for Chapters | Low | Deferred | Read-only API; design pendente. |
+| S-KNW7 | Gemini Extraction Pipeline | Low | Deferred | Extrair `.docx` via Gemini API. |
+
+### Wave 12 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 13/13 | **Site hierarchy**: OK (admin/* pages aligned)
+- **Agent docs**: Interação com agentes, AGENT_BOARD_SYNC repo fix
+- **Release workflow**: release-tag.yml workflow_dispatch
+- **S-SC1**: screenshots-multilang.mjs, Playwright devDep
+
+---
+
 ## TECHNICAL DEBT & DEVOPS
 
 | Issue | Impact | Status | Mitigation Plan |
 |-------|--------|--------|-----------------|
 | README History Lost | High | Addressed | Restored in docs refresh. |
 | No Release Log | High | Addressed | `docs/RELEASE_LOG.md` mantido ativamente. |
-| Semantic Versioning Missing | Medium | Open | Create automated release workflow and tags later. |
+| Semantic Versioning Missing | Medium | Addressed | Workflow `release-tag.yml` (workflow_dispatch) cria tag vX.Y.Z (W12.2). |
 | No Security Scanning | High | Done | Dependabot + CodeQL habilitados. |
 | Hardcoded strings | Medium | Done | i18n migration complete (400+ keys PT/EN/ES). |
 | Legacy role columns | High | Done | `role`/`roles` dropped in Wave 8 (migration `20260312020000`). Frontend 100% on `operational_role`/`designations`. |

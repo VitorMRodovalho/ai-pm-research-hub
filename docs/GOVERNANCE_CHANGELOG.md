@@ -1,5 +1,23 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 12: Agent Interaction, Release Workflow & Screenshots
+
+### Decisions
+
+1. **Agent interaction formalized**: AGENTS.md now has a mandatory "Interação com agentes" section. At sprint start: read backlog, check site hierarchy and PERMISSIONS when adding routes. At sprint end: execute 5-phase routine without skipping. SPRINT_IMPLEMENTATION_PRACTICES references this section.
+
+2. **Release workflow over postinstall scripts**: Semantic Versioning tech debt addressed via GitHub Actions `workflow_dispatch` rather than a local npm script. Agents and humans can create tags from the Actions UI with version input. Avoids local git push permissions and keeps release traceable.
+
+3. **AGENT_BOARD_SYNC repo corrected**: Document referenced `ai-pm-hub-v2` but the actual repo is `ai-pm-research-hub`. Updated gh commands and URLs.
+
+4. **S-SC1 Screenshots use Playwright**: Playwright chosen over Puppeteer for screenshots: modern API, good Chromium support, `npx playwright install chromium` for CI. Script assumes preview server is running; first-run requires `npm run screenshots:setup`.
+
+### Process Lessons Learned
+
+1. **5-phase routine must be discoverable by agents**: Adding an explicit "ao iniciar" and "ao encerrar" checklist in AGENTS.md ensures agents don't skip the closure routine when continuing development.
+
+---
+
 ## 2026-03-11 — Wave 11: Doc Hygiene, Site Config & S-AN1 Closure
 
 ### Decisions
