@@ -1,5 +1,44 @@
 # Release Log
 
+## 2026-03-11 — v0.6.0 Wave 8: Reusable Kanban & UX Architecture
+
+### Scope
+Wave 8 delivers tribe project boards, selection process analytics, tier-aware progressive disclosure, and legacy schema cleanup. Closes all high-priority items from the reorganized backlog.
+
+### New Features
+- **Tribe Project Boards (W8.2)**: New "Quadro de Projeto" tab in `/tribe/[id]` with 5-column Kanban (backlog, todo, in_progress, review, done), HTML5 drag-and-drop for leaders, create-board for empty tribes. Powered by `list_project_boards`, `list_board_items`, `move_board_item` RPCs.
+- **Selection Process Analytics (W8.3)**: 4 new Chart.js charts in `/admin/analytics`: cycle funnel (grouped bars), certification distribution (horizontal bars), geographic treemap, Ciclo 3 snapshot comparison. Calls `volunteer_funnel_summary` RPC. Admin-only (LGPD).
+- **Tier-Aware Progressive Disclosure (W8.4)**: New `getItemAccessibility()` function returns `{visible, enabled, requiredTier}`. Nav items for insufficient tiers show as disabled with lock icon, opacity, and tooltip. LGPD-sensitive items fully hidden via `lgpdSensitive` flag. Applied to both desktop nav, mobile menu, and profile drawer.
+
+### Schema Changes
+- **Migration `20260312020000_drop_legacy_role_columns.sql`**: Drops `role`, `roles` columns and `trg_sync_legacy_role` trigger from `members` table. Frontend fully migrated to `operational_role` + `designations`.
+
+### Architecture Changes
+- `NavItem` interface: added `lgpdSensitive?: boolean` property
+- New `ItemAccessibility` interface exported from `navigation.config.ts`
+- New `getItemAccessibility()` function (backward-compatible, `isItemVisible` now delegates to it)
+- Nav.astro: `getItemAccessClient()` + `TIER_LABELS` for client-side tier name resolution
+
+### Tech Debt Resolved
+- Legacy `role`/`roles` columns fully dropped (migration + types cleanup)
+- PostHog/Looker references in backlog marked as superseded by native Chart.js
+- Analytics governance section updated to reflect current native architecture
+
+### Files Changed
+- `src/pages/tribe/[id].astro` (board tab + Kanban panel + drag-drop + create board)
+- `src/pages/admin/analytics.astro` (4 selection process charts)
+- `src/lib/navigation.config.ts` (lgpdSensitive, ItemAccessibility, getItemAccessibility)
+- `src/components/nav/Nav.astro` (progressive disclosure rendering)
+- `supabase/migrations/20260312020000_drop_legacy_role_columns.sql` (new)
+- `backlog-wave-planning-updated.md` (Wave 8 marked CONCLUIDA, tech debt cleaned)
+- `docs/RELEASE_LOG.md` (this entry)
+- `docs/GOVERNANCE_CHANGELOG.md` (Wave 8 decisions)
+
+### Audit Results
+- Build: clean | Tests: 13/13 | Lint: 0 errors | Migrations: 40/40
+
+---
+
 ## 2026-03-11 — v0.5.0 Wave 7: Data Ingestion Platform
 
 ### Scope

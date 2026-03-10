@@ -25,6 +25,13 @@ export interface NavItem {
   badge?: 'crimson' | 'purple' | 'teal';
   dynamic?: boolean;
   resolver?: string;
+  lgpdSensitive?: boolean;
+}
+
+export interface ItemAccessibility {
+  visible: boolean;
+  enabled: boolean;
+  requiredTier: AccessTier;
 }
 
 export const TIER_RANK: Record<AccessTier, number> = {
@@ -65,20 +72,41 @@ export const NAV_ITEMS: NavItem[] = [
 
   // ─── Admin area ───
   { key: 'admin',           labelKey: 'nav.admin',          href: '/admin',           minTier: 'observer', requiresAuth: true, section: 'both',   group: 'admin', badge: 'purple' },
-  { key: 'admin-comms',     labelKey: 'nav.adminComms',     href: '/admin/comms',     minTier: 'admin',    requiresAuth: true, section: 'drawer', group: 'admin-sub', allowedDesignations: ['comms_leader', 'comms_member'] },
+  { key: 'admin-comms',     labelKey: 'nav.adminComms',     href: '/admin/comms',     minTier: 'admin',    requiresAuth: true, section: 'drawer', group: 'admin-sub', allowedDesignations: ['comms_leader', 'comms_member'], lgpdSensitive: true },
   { key: 'admin-webinars', labelKey: 'nav.adminWebinars', href: '/admin/webinars', minTier: 'admin',    requiresAuth: true, section: 'drawer', group: 'admin-sub' },
   { key: 'admin-curatorship', labelKey: 'nav.adminCuratorship', href: '/admin/curatorship', minTier: 'observer', requiresAuth: true, section: 'drawer', group: 'admin-sub' },
   { key: 'help',            labelKey: 'nav.adminHelp',     href: '/help',           minTier: 'member',   requiresAuth: true, section: 'drawer', group: 'member' },
 ];
 
-export function isItemVisible(item: NavItem, tier: AccessTier, designations: string[], isLoggedIn: boolean): boolean {
-  if (item.requiresAuth && !isLoggedIn) return false;
-  const meetsMinTier = TIER_RANK[tier] >= TIER_RANK[item.minTier];
-  if (item.allowedDesignations?.length) {
-    const hasDesig = item.allowedDesignations.some(d => designations.includes(d));
-    return meetsMinTier || hasDesig;
+export function getItemAccessibility(
+  item: NavItem,
+  tier: AccessTier,
+  designations: string[],
+  isLoggedIn: boolean
+): ItemAccessibility {
+  if (item.requiresAuth && !isLoggedIn) {
+    return { visible: false, enabled: false, requiredTier: item.minTier };
   }
-  return meetsMinTier;
+
+  const meetsMinTier = TIER_RANK[tier] >= TIER_RANK[item.minTier];
+  const hasDesig = item.allowedDesignations?.length
+    ? item.allowedDesignations.some(d => designations.includes(d))
+    : false;
+  const enabled = meetsMinTier || hasDesig;
+
+  if (item.lgpdSensitive && !enabled) {
+    return { visible: false, enabled: false, requiredTier: item.minTier };
+  }
+
+  if (isLoggedIn && item.requiresAuth) {
+    return { visible: true, enabled, requiredTier: item.minTier };
+  }
+
+  return { visible: enabled, enabled, requiredTier: item.minTier };
+}
+
+export function isItemVisible(item: NavItem, tier: AccessTier, designations: string[], isLoggedIn: boolean): boolean {
+  return getItemAccessibility(item, tier, designations, isLoggedIn).visible;
 }
 
 export function getVisibleItems(

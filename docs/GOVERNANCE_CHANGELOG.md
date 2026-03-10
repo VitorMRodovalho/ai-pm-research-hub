@@ -1,5 +1,29 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 8: Reusable Kanban & UX Architecture
+
+### Decisions
+
+1. **Tier-aware progressive disclosure implemented**: `getItemAccessibility()` now returns `{visible, enabled, requiredTier}`. Items above a user's tier appear disabled with lock icon and tooltip, rather than hidden. Exception: LGPD-sensitive items remain hidden via `lgpdSensitive` flag. This ensures users can discover features they can aspire to unlock.
+
+2. **Legacy role columns dropped**: Migration `20260312020000` removes `role`, `roles` columns and `sync_legacy_role_columns` trigger from `members`. All frontend code has been verified to use `operational_role` + `designations` exclusively. This closes a long-standing tech debt item.
+
+3. **Universal Kanban Component deferred**: W8.1 (extracting a reusable Kanban component from curatorship) was deferred because there is no second consumer with identical requirements yet. The tribe board reuses the same visual pattern but with different data sources and column definitions. Extraction will happen when a third board instance is needed.
+
+4. **PostHog/Looker fully superseded**: Native Chart.js analytics now cover all use cases previously handled by external iframes. PostHog session replay and Looker Studio references in backlog have been marked as superseded.
+
+5. **Selection process analytics uses aggregated data only**: The `volunteer_funnel_summary` RPC returns statistical aggregates (counts, distributions) -- never individual PII. Individual-level data access is gated by RLS admin-only policy on `volunteer_applications`.
+
+### Process Lessons Learned
+
+1. **Progressive disclosure requires careful LGPD classification**: Not all restricted items should be "visible but disabled." Data pages with LGPD-sensitive content must remain fully hidden. The `lgpdSensitive` flag on `NavItem` provides a clear, auditable mechanism.
+
+2. **5-phase sprint closure routine validated**: Execute → Audit → Fix → Docs → Deploy cycle ensures no regressions reach production. Build + test + lint + route smoke before every commit.
+
+3. **Schema cleanup should be a dedicated sprint item**: Dropping legacy columns sounds trivial but requires verifying every frontend file, generated type, and migration dependency. Treating it as a sprint item ensures it gets proper attention.
+
+---
+
 ## 2026-03-11 — Wave 7: Data Ingestion Platform -- Execution and Lessons Learned
 
 ### Decisions

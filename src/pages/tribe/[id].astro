@@ -135,6 +135,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
               data-tab="deliverables" data-action="switch-tab">{t('tribe.deliverablesTab', lang)}</button>
       <button class="tribe-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
               data-tab="resources" data-action="switch-tab">{t('tribe.resourcesTab', lang)}</button>
+      <button class="tribe-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+              data-tab="board" data-action="switch-tab">Quadro de Projeto</button>
     </div>
 
     <!-- Tab panels -->
@@ -146,6 +148,58 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
     </div>
     <div id="panel-resources" class="hidden">
       <LoadingSkeleton variant="card" count={3} />
+    </div>
+    <!-- Project Board panel -->
+    <div id="panel-board" class="hidden">
+      <div id="board-loading" class="text-center py-10 text-slate-400">Carregando quadro...</div>
+      <div id="board-empty" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-8 text-center">
+        <div class="text-4xl mb-3 opacity-50">&#x1f4cb;</div>
+        <p class="font-semibold text-slate-600 mb-2">Nenhum quadro de projeto</p>
+        <p class="text-sm text-slate-400 mb-4">Esta tribo ainda não possui um quadro de projeto.</p>
+        <button id="board-create-btn" class="hidden px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity">Criar Quadro</button>
+      </div>
+      <div id="board-kanban" class="hidden grid grid-cols-1 md:grid-cols-5 gap-3" style="min-height:350px">
+        <div class="board-col" data-col="backlog">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-2.5 h-2.5 rounded-full bg-slate-400"></div>
+            <h4 class="text-[12px] font-bold text-slate-600 uppercase">Backlog</h4>
+            <span class="bcol-count text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-bold">0</span>
+          </div>
+          <div class="board-drop space-y-2 min-h-[150px] p-1.5 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50" data-col="backlog"></div>
+        </div>
+        <div class="board-col" data-col="todo">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-2.5 h-2.5 rounded-full bg-blue-400"></div>
+            <h4 class="text-[12px] font-bold text-blue-600 uppercase">To Do</h4>
+            <span class="bcol-count text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full font-bold">0</span>
+          </div>
+          <div class="board-drop space-y-2 min-h-[150px] p-1.5 rounded-xl border-2 border-dashed border-blue-200 bg-blue-50/30" data-col="todo"></div>
+        </div>
+        <div class="board-col" data-col="in_progress">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
+            <h4 class="text-[12px] font-bold text-amber-700 uppercase">Em Progresso</h4>
+            <span class="bcol-count text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">0</span>
+          </div>
+          <div class="board-drop space-y-2 min-h-[150px] p-1.5 rounded-xl border-2 border-dashed border-amber-200 bg-amber-50/30" data-col="in_progress"></div>
+        </div>
+        <div class="board-col" data-col="review">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-2.5 h-2.5 rounded-full bg-purple-400"></div>
+            <h4 class="text-[12px] font-bold text-purple-600 uppercase">Revisão</h4>
+            <span class="bcol-count text-[10px] bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full font-bold">0</span>
+          </div>
+          <div class="board-drop space-y-2 min-h-[150px] p-1.5 rounded-xl border-2 border-dashed border-purple-200 bg-purple-50/30" data-col="review"></div>
+        </div>
+        <div class="board-col" data-col="done">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+            <h4 class="text-[12px] font-bold text-emerald-700 uppercase">Concluído</h4>
+            <span class="bcol-count text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-bold">0</span>
+          </div>
+          <div class="board-drop space-y-2 min-h-[150px] p-1.5 rounded-xl border-2 border-dashed border-emerald-200 bg-emerald-50/30" data-col="done"></div>
+        </div>
+      </div>
     </div>
     <!-- Comms Hub panel (conditionally shown for comms_team members) -->
     <div id="panel-commshub" class="hidden"></div>
@@ -249,7 +303,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
 
   // ── Tab switching ──
   function switchTab(tabName: string) {
-    const panels = ['members', 'deliverables', 'resources', 'commshub', 'broadcast'];
+    const panels = ['members', 'deliverables', 'resources', 'board', 'commshub', 'broadcast'];
     panels.forEach(p => {
       const el = document.getElementById(`panel-${p}`);
       if (el) el.classList.toggle('hidden', p !== tabName);
@@ -1114,6 +1168,9 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
       // Resources
       renderResources(resourcesRes.data || []);
 
+      // Project Board
+      loadProjectBoard();
+
     } catch (e: any) {
       console.error('Tribe dashboard error:', e);
       (window as any).toast?.(I18N.error, 'error');
@@ -1144,6 +1201,126 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
       renderCommsHub();
     }
   }
+
+  // ── Project Board (Kanban) ──
+  let currentBoardId: number | null = null;
+  const BOARD_COLS = ['backlog', 'todo', 'in_progress', 'review', 'done'] as const;
+
+  async function loadProjectBoard() {
+    if (!sb) return;
+    const loadEl = document.getElementById('board-loading');
+    const emptyEl = document.getElementById('board-empty');
+    const kanbanEl = document.getElementById('board-kanban');
+    const createBtn = document.getElementById('board-create-btn');
+
+    try {
+      const { data: boards } = await sb.rpc('list_project_boards', { p_tribe_id: TRIBE_ID });
+      if (!boards || boards.length === 0) {
+        if (loadEl) loadEl.classList.add('hidden');
+        if (emptyEl) emptyEl.classList.remove('hidden');
+        if (createBtn && canEdit) createBtn.classList.remove('hidden');
+        return;
+      }
+
+      currentBoardId = boards[0].id;
+      const { data: items } = await sb.rpc('list_board_items', { p_board_id: currentBoardId });
+      renderBoardItems(items || []);
+    } catch (e: any) {
+      console.error('Board load error:', e);
+      if (loadEl) loadEl.innerHTML = '<span class="text-red-500 text-sm">Erro ao carregar quadro</span>';
+    }
+  }
+
+  function renderBoardItems(items: any[]) {
+    const loadEl = document.getElementById('board-loading');
+    const kanbanEl = document.getElementById('board-kanban');
+    if (loadEl) loadEl.classList.add('hidden');
+    if (kanbanEl) kanbanEl.classList.remove('hidden');
+
+    BOARD_COLS.forEach(col => {
+      const drop = kanbanEl?.querySelector(`.board-drop[data-col="${col}"]`);
+      const countEl = kanbanEl?.querySelector(`.board-col[data-col="${col}"] .bcol-count`);
+      if (!drop) return;
+      const colItems = items.filter((i: any) => i.status === col);
+      if (countEl) countEl.textContent = String(colItems.length);
+      drop.innerHTML = colItems.map((item: any) => boardCardHtml(item)).join('');
+    });
+
+    if (canEdit) setupBoardDragDrop();
+  }
+
+  function boardCardHtml(item: any) {
+    const tags = (item.tags || []).map((t: string) => `<span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">${escapeHtml(t)}</span>`).join('');
+    const assignee = item.assignee_name ? `<span class="text-[11px] text-slate-400">${escapeHtml(item.assignee_name)}</span>` : '';
+    const due = item.due_date ? `<span class="text-[10px] text-slate-400">${new Date(item.due_date).toLocaleDateString(I18N.dateLocale || 'pt-BR')}</span>` : '';
+    const priorityColors: Record<string, string> = { high: 'border-l-red-400', medium: 'border-l-amber-400', low: 'border-l-blue-300' };
+    const borderClass = priorityColors[item.priority] || 'border-l-slate-300';
+    return `<div class="board-card bg-white rounded-xl border border-slate-200 border-l-4 ${borderClass} p-3 shadow-sm cursor-grab select-none hover:shadow-md transition-shadow"
+                 draggable="${canEdit}" data-item-id="${item.id}">
+      <p class="text-[13px] font-semibold text-navy leading-tight mb-1">${escapeHtml(item.title)}</p>
+      ${item.description ? `<p class="text-[11px] text-slate-400 mb-1.5 line-clamp-2">${escapeHtml(item.description)}</p>` : ''}
+      <div class="flex flex-wrap items-center gap-1">${tags}${assignee}${due}</div>
+    </div>`;
+  }
+
+  function setupBoardDragDrop() {
+    const kanbanEl = document.getElementById('board-kanban');
+    if (!kanbanEl) return;
+    let dragId: number | null = null;
+
+    kanbanEl.querySelectorAll('.board-card').forEach(card => {
+      card.addEventListener('dragstart', (e: Event) => {
+        const ev = e as DragEvent;
+        dragId = parseInt((card as HTMLElement).dataset.itemId || '0', 10);
+        (card as HTMLElement).classList.add('opacity-40');
+        ev.dataTransfer?.setData('text/plain', String(dragId));
+      });
+      card.addEventListener('dragend', () => {
+        (card as HTMLElement).classList.remove('opacity-40');
+        dragId = null;
+      });
+    });
+
+    kanbanEl.querySelectorAll('.board-drop').forEach(zone => {
+      zone.addEventListener('dragover', (e: Event) => { e.preventDefault(); (zone as HTMLElement).classList.add('bg-purple-50'); });
+      zone.addEventListener('dragleave', () => { (zone as HTMLElement).classList.remove('bg-purple-50'); });
+      zone.addEventListener('drop', async (e: Event) => {
+        e.preventDefault();
+        (zone as HTMLElement).classList.remove('bg-purple-50');
+        const col = (zone as HTMLElement).dataset.col;
+        if (!dragId || !col || !sb) return;
+        try {
+          await sb.rpc('move_board_item', { p_item_id: dragId, p_new_status: col });
+          loadProjectBoard();
+        } catch (err: any) {
+          console.error('Board move error:', err);
+          (window as any).toast?.('Erro ao mover item', 'error');
+        }
+      });
+    });
+  }
+
+  document.getElementById('board-create-btn')?.addEventListener('click', async () => {
+    if (!sb || !canEdit) return;
+    const btn = document.getElementById('board-create-btn') as HTMLButtonElement;
+    if (btn) { btn.disabled = true; btn.textContent = 'Criando...'; }
+    try {
+      const { error } = await sb.from('project_boards').insert({
+        tribe_id: TRIBE_ID,
+        board_name: I18N.tribeName + ' – Quadro',
+        created_by: currentMember?.id,
+      });
+      if (error) throw error;
+      loadProjectBoard();
+      const emptyEl = document.getElementById('board-empty');
+      if (emptyEl) emptyEl.classList.add('hidden');
+    } catch (e: any) {
+      console.error('Board create error:', e);
+      (window as any).toast?.('Erro ao criar quadro', 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Criar Quadro'; }
+    }
+  });
 
   boot();
 </script>

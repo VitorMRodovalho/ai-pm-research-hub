@@ -192,13 +192,23 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
   const configEl = document.getElementById('nav-config-data');
   const navConfig: any[] = configEl ? JSON.parse(configEl.textContent || '[]') : [];
 
-  function isItemVisibleClient(item: any, tier: AccessTier, designations: string[]): boolean {
+  const TIER_LABELS: Record<string, string> = {
+    visitor: 'Visitante', member: 'Membro', observer: 'Observador',
+    leader: 'Líder', admin: 'Admin', superadmin: 'Superadmin',
+  };
+
+  function getItemAccessClient(item: any, tier: AccessTier, designations: string[]): { visible: boolean, enabled: boolean } {
     const meetsMinTier = (TIER_RANK[tier] ?? 0) >= (TIER_RANK[item.minTier as AccessTier] ?? 0);
-    if (item.allowedDesignations?.length) {
-      const hasDesig = item.allowedDesignations.some((d: string) => designations.includes(d));
-      return meetsMinTier || hasDesig;
-    }
-    return meetsMinTier;
+    const hasDesig = item.allowedDesignations?.length
+      ? item.allowedDesignations.some((d: string) => designations.includes(d))
+      : false;
+    const enabled = meetsMinTier || hasDesig;
+    if (item.lgpdSensitive && !enabled) return { visible: false, enabled: false };
+    return { visible: true, enabled };
+  }
+
+  function isItemVisibleClient(item: any, tier: AccessTier, designations: string[]): boolean {
+    return getItemAccessClient(item, tier, designations).visible;
   }
 
   function resolveMyTribeHref(): string | null {
@@ -218,15 +228,34 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
     navConfig.forEach((item: any) => {
       if (!item.requiresAuth) return;
 
-      const visible = isItemVisibleClient(item, tier, desigs);
+      const access = getItemAccessClient(item, tier, desigs);
 
       const desktopEl = document.getElementById(`nav-item-${item.key}`);
       const mobileEl = document.getElementById(`mobile-item-${item.key}`);
 
-      if (desktopEl) desktopEl.style.display = visible ? 'inline-flex' : 'none';
-      if (mobileEl) mobileEl.style.display = visible ? 'block' : 'none';
+      if (desktopEl) {
+        desktopEl.style.display = access.visible ? 'inline-flex' : 'none';
+        if (access.visible && !access.enabled) {
+          desktopEl.classList.add('opacity-40', 'pointer-events-none');
+          desktopEl.setAttribute('title', `Requer ${TIER_LABELS[item.minTier] || item.minTier}`);
+          desktopEl.setAttribute('aria-disabled', 'true');
+          desktopEl.innerHTML = (desktopEl.textContent || '') + ' <svg class="w-3 h-3 inline-block ml-0.5 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>';
+        } else if (access.visible && access.enabled) {
+          desktopEl.classList.remove('opacity-40', 'pointer-events-none');
+          desktopEl.removeAttribute('aria-disabled');
+        }
+      }
+      if (mobileEl) {
+        mobileEl.style.display = access.visible ? 'block' : 'none';
+        if (access.visible && !access.enabled) {
+          mobileEl.classList.add('opacity-40', 'pointer-events-none');
+          mobileEl.setAttribute('title', `Requer ${TIER_LABELS[item.minTier] || item.minTier}`);
+        } else if (access.visible && access.enabled) {
+          mobileEl.classList.remove('opacity-40', 'pointer-events-none');
+        }
+      }
 
-      if (visible && item.dynamic && item.resolver === 'resolveMyTribeHref') {
+      if (access.visible && access.enabled && item.dynamic && item.resolver === 'resolveMyTribeHref') {
         const href = resolveMyTribeHref();
         const isHighTier = (TIER_RANK[tier] ?? 0) >= (TIER_RANK['admin' as AccessTier] ?? 4);
         if (href) {
@@ -356,7 +385,7 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
     const drawerItems = navConfig.filter((item: any) =>
       (item.section === 'drawer' || item.section === 'both') &&
       item.requiresAuth &&
-      isItemVisibleClient(item, tier, desigs)
+      getItemAccessClient(item, tier, desigs).visible
     );
 
     const profileItems = drawerItems.filter((i: any) => i.group === 'profile');
@@ -378,9 +407,15 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
     };
 
     function drawerLink(item: any, extraClass: string = ''): string {
+      const access = getItemAccessClient(item, tier, desigs);
       let href = base + item.href;
       let disabledClass = '';
       let labelOverride = '';
+      let lockSuffix = '';
+      if (access.visible && !access.enabled) {
+        disabledClass = ' opacity-40 pointer-events-none';
+        lockSuffix = ' <svg class="w-3 h-3 inline-block ml-auto opacity-50 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>';
+      }
       if (item.dynamic && item.resolver === 'resolveMyTribeHref') {
         const resolved = resolveMyTribeHref();
         if (!resolved) {
@@ -404,7 +439,8 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
       }
       const label = labelOverride || i18n[toCamelKey(item.key)] || item.labelKey;
       const icon = DRAWER_ICONS[item.key] || '';
-      return '<a href="' + href + '" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold no-underline transition-all ' + extraClass + disabledClass + '">' + icon + '<span>' + label + '</span></a>';
+      const titleAttr = !access.enabled ? ' title="Requer ' + (TIER_LABELS[item.minTier] || item.minTier) + '"' : '';
+      return '<a href="' + href + '"' + titleAttr + ' class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold no-underline transition-all ' + extraClass + disabledClass + '">' + icon + '<span>' + label + '</span>' + lockSuffix + '</a>';
     }
 
     function toCamelKey(key: string): string {

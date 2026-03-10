@@ -1,6 +1,6 @@
 # Nucleo IA & GP — Backlog & Wave Planning
-## Status: Marco 2026 (atualizado 2026-03-10)
-## Sincronizado com producao: Git, Migracoes SQL (33/33) e 13 Edge Functions
+## Status: Marco 2026 (atualizado 2026-03-11)
+## Sincronizado com producao: Git, Migracoes SQL (40/40) e 13 Edge Functions
 
 **Board de sprints**: [GitHub Project — AI PM Hub](https://github.com/users/VitorMRodovalho/projects/1/) · Regras: `docs/project-governance/PROJECT_GOVERNANCE_RUNBOOK.md`
 
@@ -183,15 +183,22 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 
 ---
 
-## WAVE 8: Reusable Kanban & Journeys — PENDENTE
-**Foco:** Componente Kanban universal, boards por tribo, analytics de selecao, e revisao UX tier-aware.
+## WAVE 8: Reusable Kanban & UX Architecture — CONCLUIDA
+**Foco:** Boards por tribo, analytics de processo seletivo, progressive disclosure tier-aware, legacy cleanup.
 
 | ID | Feature | Priority | Status | Description |
 |----|---------|----------|--------|-------------|
-| W8.1 | Universal Kanban Component | High | Planned | Extrair e generalizar Kanban de curatorship para componente reutilizavel. Substitui S-KNW4. |
-| W8.2 | Tribe Project Boards | High | Planned | Aba "Quadro de Projeto" em `/tribe/[id]` com boards populados por Trello import. |
-| W8.3 | Selection Process Analytics | Medium | Planned | Dashboard analytics com Chart.js: funnel, comparacao ciclos, snapshot diff, geo, certs. Absorve DS-1. |
-| W8.4 | Tier-Aware Progressive Disclosure | Medium | Planned | Menus nao ocultos mas desabilitados com lock icon para tiers inferiores. |
+| W8.1 | Universal Kanban Component | Low | Deferred | Refator para componente reutilizavel deferido ate segundo consumidor existir (tribo board reutiliza padrao visual). |
+| W8.2 | Tribe Project Boards | High | Done | Aba "Quadro de Projeto" em `/tribe/[id]` com Kanban 5 colunas (backlog/todo/in_progress/review/done), drag-and-drop, create board. RPCs: `list_project_boards`, `list_board_items`, `move_board_item`. |
+| W8.3 | Selection Process Analytics | High | Done | 4 graficos Chart.js na `/admin/analytics`: funil por ciclo, certs horizontais, geo treemap, snapshot diff Ciclo 3. Chama `volunteer_funnel_summary` RPC. |
+| W8.4 | Tier-Aware Progressive Disclosure | Medium | Done | `getItemAccessibility()` retorna `{visible, enabled, requiredTier}`. Nav items desabilitados com opacity + lock icon + tooltip "Requer [tier]". LGPD-sensitive items permanecem ocultos. |
+| W8.5 | Legacy Role Column Hard Drop | High | Done | Migration `20260312020000`: drop `role`, `roles` columns e `sync_legacy_role_columns` trigger. Frontend 100% em `operational_role` + `designations`. |
+
+### Wave 8 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 13/13 | **Migrations**: 40/40
+- **New features**: Tribe project boards (Kanban), Selection analytics (4 charts), Progressive disclosure (lock icons)
+- **Tech debt resolved**: Legacy `role`/`roles` columns dropped, PostHog/Looker references superseded
+- **Architecture**: `NavItem.lgpdSensitive` flag added, `ItemAccessibility` interface exported
 
 ---
 
@@ -229,7 +236,8 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 | Semantic Versioning Missing | Medium | Open | Create automated release workflow and tags later. |
 | No Security Scanning | High | Done | Dependabot + CodeQL habilitados. |
 | Hardcoded strings | Medium | Done | i18n migration complete (400+ keys PT/EN/ES). |
-| Legacy role columns still alive | High | Partial | Frontend migrated to `operational_role`/`designations`. Hard drop of `role`/`roles` pendente. |
+| Legacy role columns | High | Done | `role`/`roles` dropped in Wave 8 (migration `20260312020000`). Frontend 100% on `operational_role`/`designations`. |
+| PostHog/Looker dashboards | Medium | Superseded | Native Chart.js analytics replaced external iframes (S-AN1 + W8.3). |
 | S-AN1 Rich Editor | Low | Open | Rich text editor (TipTap/Quill) para corpo de avisos. |
 | S-AN1 Scheduling UX | Low | Open | Interface para agendar inicio/fim de exibicao dos avisos. |
 
@@ -242,7 +250,7 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 - `members` is the current snapshot for identity, contact, auth, and current state.
 - `member_cycle_history` is the historical fact table for role, tribe, and cycle participation.
 - `operational_role` and `designations` are the target fields.
-- `role` and `roles` are tolerated only during migration.
+- `role` and `roles` have been dropped (Wave 8, migration `20260312020000`).
 - The Hub remains the only source of truth for gamification and operational metrics.
 - `DATA_INGESTION_POLICY.md` governs all ETL operations (sensitive data never uploaded).
 
@@ -253,25 +261,30 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 - [x] Add and validate `deputy_manager` visual treatment and ordering rules.
 - [x] Define hard drop window for `role` and `roles`.
 - [x] Consent-aware analytics instrumentation without leaking PII.
-- [ ] Execute hard drop of `role` and `roles` columns.
-- [ ] Provision production dashboard URLs for PostHog/Looker.
+- [x] Execute hard drop of `role` and `roles` columns (Wave 8, migration `20260312020000`).
+- [x] Provision production analytics (PostHog/Looker superseded by native Chart.js — S-AN1 + W8.3).
 
 ---
 
 ## ANALYTICS GOVERNANCE
 
 ### Internal product analytics
-Use PostHog through protected iframe dashboards. Native analytics via `exec_funnel_summary` and `exec_skills_radar` RPCs for executive panel.
+Native Chart.js dashboards powered by Supabase RPCs:
+- **Executive panel**: `exec_funnel_summary` (member engagement), `exec_skills_radar` (tribe comparison), `exec_cert_timeline` (cert progression)
+- **Selection process**: `volunteer_funnel_summary` (cycle funnel, certs, geography) — LGPD admin-only
+- **Communications**: Comms metrics bar charts in `/admin/comms`
+- PostHog iframes **superseded** by native charts (S-AN1, Wave 8)
 
 ### Required analytics rules
 - use `member_id` or at most `operational_role`
 - do not send email or full name unless strictly required
-- mask all input fields in session replay
+- selection process data (`volunteer_applications`) restricted to admin tier via RLS + RPC guard
 - maintain operational delete path for right to be forgotten
 - restrict `/admin/analytics` by tier
+- `lgpdSensitive` nav items remain fully hidden for non-authorized users
 
 ### External communication metrics
-Use Looker Studio for YouTube, LinkedIn, and Instagram funnel-style KPIs through low-maintenance connectors and automation.
+Native Supabase-based comms metrics replaced external Looker dependency. YouTube/LinkedIn/Instagram metrics managed via `comms_metrics` table and admin dashboard.
 
 ---
 
@@ -279,7 +292,7 @@ Use Looker Studio for YouTube, LinkedIn, and Instagram funnel-style KPIs through
 
 ### Infrastructure
 - **Git**: `origin/main` and `production/main` 100% synchronized
-- **SQL Migrations**: 39/39 applied in production (Supabase) — +2 new tables (Wave 7), data imported
+- **SQL Migrations**: 40/40 applied in production (Supabase) — Wave 7 data, Wave 8 schema cleanup
 - **Edge Functions**: 13 active in production (all `--no-verify-jwt`)
 - **Frontend**: Deployed via Cloudflare Pages (auto-deploy from main)
 - **Storage**: `documents` bucket active with public read + authenticated upload
@@ -293,7 +306,13 @@ Use Looker Studio for YouTube, LinkedIn, and Instagram funnel-style KPIs through
 ### Navigation (`navigation.config.ts`)
 - 19 items covering all routes with tier-based ACL
 - Home anchors (10), Tools (5), Member (2), Profile (1), Admin (5)
+- Progressive disclosure: disabled items with lock icon + tooltip for insufficient tier
+- LGPD-sensitive items fully hidden for non-authorized (new `lgpdSensitive` flag)
 - No orphan routes (legacy aliases `/teams`, `/rank`, `/ranks` are intentional redirects)
+
+### Schema Changes (Wave 8)
+- Dropped `role`, `roles` columns and `trg_sync_legacy_role` trigger from `members`
+- New `NavItem.lgpdSensitive` flag and `ItemAccessibility` interface in `navigation.config.ts`
 
 ### Documentation
 - `docs/RELEASE_LOG.md`: Up to date (2026-03-11)
