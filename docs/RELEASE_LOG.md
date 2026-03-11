@@ -3142,3 +3142,32 @@ Align governance docs to the current single-remote deployment reality and publis
 ### Validation captured
 - `git remote -v` checked: only `origin` configured in this clone
 - Documentation cross-check completed for stale references and sync flow
+
+---
+
+## 2026-03-11 — W34-W43 execution pack (dark mode + kanban UX + CI hardening)
+
+### Scope
+Execute the next 10-sprint queue with incremental pushes, including direct UX requirements for dark mode and tribe kanban fluidity.
+
+### Delivered
+- **W34-W35**
+  - Sync/deploy governance aligned to `origin/main` canonical flow.
+  - Dark mode foundation with profile drawer toggle and persisted preference (`ui_theme`).
+- **W36-W39**
+  - New backend RPC `upsert_board_item` with project-management ACL.
+  - Tribe board modal for create/edit/archive card flows.
+  - Kanban metadata support: labels and checklist with progress badge rendering.
+  - Dark mode coverage expanded on `teams`, `webinars`, and board modal surfaces.
+- **W40-W43**
+  - Epic doc for Kanban UX + Dark Mode with Astro Islands (`dnd-kit`) direction.
+  - CI browser guard hardening via Playwright cache + retry wrapper script.
+  - QA release protocol expanded for operational UX checks.
+  - Assisted bus-factor runbook published for secondary operator validation.
+
+### Validation captured
+- `npm test` passed (79/79)
+- `npm run build` passed
+- `supabase db push` applied:
+  - `20260314153000_board_item_editor_rpc.sql`
+- Incremental push cadence completed across all sprint commits on `origin/main`

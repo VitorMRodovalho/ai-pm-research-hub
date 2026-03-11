@@ -726,3 +726,19 @@ The Hub is the only source of truth for gamification and project operational met
 External tools may feed or visualize data, but they do not own business truth.
 
 This rule exists to stop the project from dissolving into a swamp of disconnected tools pretending to be architecture.
+
+---
+
+## 2026-03-11 — UX operational governance (dark mode + kanban)
+
+### Decision
+Dark mode and kanban UX evolution become governed operational concerns, not ad-hoc frontend tweaks.
+
+### Rules
+- Theme preference is user-level runtime state (`ui_theme`) and must persist across sessions.
+- Kanban card removal must remain soft-delete/archive only (no hard delete path).
+- Card edit/create flows must be enforced by backend ACL (manager/deputy/tribe leader) through RPCs.
+- Complex drag/drop evolution should follow Astro Islands strategy with mature DnD libraries, avoiding large vanilla JS reimplementation debt.
+
+### Implication
+UX velocity can increase while preserving safety, auditability, and maintainability boundaries.

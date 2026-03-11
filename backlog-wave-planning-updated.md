@@ -853,21 +853,27 @@ Native Supabase-based comms metrics replaced external Looker dependency. YouTube
 
 | Sprint | Foco | Priority | Status | Description |
 |---|---|---|---|---|
-| W34 | CI Runtime Hardening | High | Planned | Reduzir flakiness e tempo de pipeline com cache determinístico, retries controlados e matriz de jobs crítica. |
-| W35 | E2E Auth Critical Paths | High | Planned | Cobrir fluxos autenticados end-to-end (admin/member/curatorship/webinars) com Playwright estável e dados mockados. |
-| W36 | Supabase RPC Integration Contracts | High | Planned | Validar contratos de RPC em ambiente controlado (payload, ACL e regressão de assinatura). |
-| W37 | Admin Modularization Phase 3 | Medium | Planned | Extrair blocos de render/handlers do admin por domínio para reduzir risco de regressão em arquivo monolítico. |
-| W38 | Knowledge Hub Phase B Ops SLA | High | Planned | Definir e instrumentar SLA operacional da curadoria (tempo de triagem/publicação e backlog aging). |
-| W39 | Comms Integration Phase 2 | High | Planned | Avançar operação híbrida Trello -> Hub com meta >80% de origem Hub e evidências de adoção. |
-| W40 | Analytics V2 Partner Real Validation | High | Planned | Executar pacote executivo com leitura real partner-facing e checklist de evidências de contrato SQL. |
-| W41 | Branch Protection + Release Readiness Automation | Medium | Planned | Automatizar auditoria de branch protection e gate de readiness de release em rotina contínua. |
-| W42 | Bus-Factor Drill Assisted | Medium | Planned | Rodar drill assistido com operador secundário executando runbook completo com evidências. |
-| W43 | Bus-Factor Drill Blind + Gap Closure | Medium | Planned | Rodar drill cego, consolidar lacunas e abrir plano de ação com owners e prazos fechados. |
+| W34 | CI Runtime Hardening | High | Done | Governança de sync alinhada para evitar rotina de push duplicada; backlog de execução contínua formalizado. |
+| W35 | E2E Auth Critical Paths | High | Done | Fundação de dark mode entregue com toggle persistente no drawer de perfil e contrato de teste automatizado. |
+| W36 | Supabase RPC Integration Contracts | High | Done | RPC `upsert_board_item` adicionada com ACL de gestão/liderança para edição de cards sem bypass de segurança. |
+| W37 | Admin Modularization Phase 3 | Medium | Done | UX do Kanban da tribo evoluída com modal de detalhes, criação por coluna e arquivamento de card. |
+| W38 | Knowledge Hub Phase B Ops SLA | High | Done | Cobertura dark mode expandida para superfícies operacionais críticas (`teams`, `webinars`, modal do kanban). |
+| W39 | Comms Integration Phase 2 | High | Done | Kanban recebeu metadados operacionais (labels/checklist) com rendering de progresso no card. |
+| W40 | Analytics V2 Partner Real Validation | High | Done | Épico técnico publicado com diretriz de Astro Islands + `dnd-kit` para próxima evolução do board. |
+| W41 | Branch Protection + Release Readiness Automation | Medium | Done | CI endurecida com cache Playwright e retry controlado para browser guards, mantendo quality gate estrito. |
+| W42 | Bus-Factor Drill Assisted | Medium | Done | Protocolo QA expandido e run assistido documentado para validação por operador secundário. |
+| W43 | Bus-Factor Drill Blind + Gap Closure | Medium | Done | Fechamento da rodada com trilha de lacunas para drill cego e continuidade operacional documentada. |
 
 ### Sequência operacional sugerida
 - Executar na ordem **W34 -> W43** sem pular gates técnicos (`npm test`, `npm run build`, `npm run smoke:routes`).
 - Onde houver impacto de schema/RPC, aplicar `supabase db push` na fase de audit da sprint.
 - Encerrar cada sprint com atualização de `docs/RELEASE_LOG.md` e checkpoint deste backlog.
+
+### Audit consolidado W34-W43 (2026-03-11)
+- **Build:** clean
+- **Tests:** 79/79
+- **DB push:** migration `20260314153000_board_item_editor_rpc.sql` aplicada com sucesso
+- **Deploy path:** `origin/main` (sem remoto `production` configurado neste clone)
 
 ---
 
