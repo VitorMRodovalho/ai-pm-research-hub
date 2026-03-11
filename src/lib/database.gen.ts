@@ -5330,6 +5330,10 @@ export type Database = {
         Args: { p_window_days?: number }
         Returns: Json
       }
+      exec_readiness_slo_by_source: {
+        Args: { p_window_days?: number }
+        Returns: Json
+      }
       exec_readiness_slo_dashboard: {
         Args: { p_window_days?: number }
         Returns: Json

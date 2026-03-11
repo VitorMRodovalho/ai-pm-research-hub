@@ -564,6 +564,16 @@ test('slo drill-down by source aggregates ingestion file outcomes', () => {
   assert.equal(script.includes("sb.rpc('exec_readiness_slo_by_source'"), true);
 });
 
+test('rollback simulation harness scores risk without mutating state', () => {
+  const migration = read('supabase/migrations/20260314040000_rollback_simulation_harness.sql');
+  const script = read('scripts/run_rollback_simulation.ts');
+
+  assert.equal(migration.includes('create or replace function public.admin_simulate_ingestion_rollback('), true);
+  assert.equal(migration.includes("'risk_score'"), true);
+  assert.equal(migration.includes("'recommended'"), true);
+  assert.equal(script.includes("sb.rpc('admin_simulate_ingestion_rollback'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');
