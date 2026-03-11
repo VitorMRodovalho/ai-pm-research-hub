@@ -3218,6 +3218,74 @@ export type Database = {
           },
         ]
       }
+      release_readiness_history: {
+        Row: {
+          context_label: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          mode: string
+          open_alerts: Json
+          ready: boolean
+          reasons: Json
+          snapshot: Json | null
+          thresholds: Json
+        }
+        Insert: {
+          context_label?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mode: string
+          open_alerts?: Json
+          ready: boolean
+          reasons?: Json
+          snapshot?: Json | null
+          thresholds?: Json
+        }
+        Update: {
+          context_label?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mode?: string
+          open_alerts?: Json
+          ready?: boolean
+          reasons?: Json
+          snapshot?: Json | null
+          thresholds?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "release_readiness_history_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "release_readiness_history_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "release_readiness_history_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "release_readiness_history_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       release_readiness_policies: {
         Row: {
           max_open_warnings: number
@@ -4441,6 +4509,10 @@ export type Database = {
         Returns: Json
       }
       admin_reactivate_member: { Args: { p_member_id: string }; Returns: Json }
+      admin_record_release_readiness_decision: {
+        Args: { p_context_label?: string; p_mode?: string }
+        Returns: Json
+      }
       admin_register_ingestion_run: {
         Args: {
           p_manifest_hash: string

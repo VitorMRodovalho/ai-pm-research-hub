@@ -413,6 +413,16 @@ test('release readiness timeline persists go-no-go decisions', () => {
   assert.equal(script.includes("sb.rpc('admin_record_release_readiness_decision'"), true);
 });
 
+test('partner governance rpc pack includes trend contracts', () => {
+  const migration = read('supabase/migrations/20260313130000_partner_governance_trends.sql');
+  const script = read('scripts/run_partner_governance_trends.ts');
+
+  assert.equal(migration.includes('create or replace function public.exec_partner_governance_trends('), true);
+  assert.equal(migration.includes('from public.release_readiness_history h'), true);
+  assert.equal(migration.includes('from public.ingestion_alerts a'), true);
+  assert.equal(script.includes("sb.rpc('exec_partner_governance_trends'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');
