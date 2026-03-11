@@ -213,12 +213,21 @@ test('publications global board route and curatorship enqueue toggle are wired',
 
 test('publications workflow enrichment keeps submission event contracts in backend', () => {
   const migration = read('supabase/migrations/20260314194000_publications_submission_workflow_enrichment.sql');
+  const migrationGap = read('supabase/migrations/20260314201000_publications_external_link_and_effective_publish.sql');
   const island = read('src/components/boards/PublicationsBoardIsland.tsx');
   assert.equal(migration.includes('create table if not exists public.publication_submission_events'), true);
   assert.equal(migration.includes('create or replace function public.upsert_publication_submission_event('), true);
   assert.equal(migration.includes("outcome in ('pending', 'submitted', 'approved', 'rejected', 'withdrawn')"), true);
+  assert.equal(migrationGap.includes('add column if not exists external_link text null'), true);
+  assert.equal(migrationGap.includes('add column if not exists published_at timestamptz null'), true);
+  assert.equal(migrationGap.includes('p_external_link text default null'), true);
+  assert.equal(migrationGap.includes('p_published_at timestamptz default null'), true);
   assert.equal(island.includes("sb.rpc('upsert_publication_submission_event'"), true);
   assert.equal(island.includes('Metadados de submissão PMI'), true);
+  assert.equal(island.includes('URL de publicação externa'), true);
+  assert.equal(island.includes('Data de publicação efetiva'), true);
+  assert.equal(island.includes('item.status === \'done\' && item.external_link'), true);
+  assert.equal(island.includes('<ExternalLink size={12} />'), true);
 });
 
 test('astro island foundation includes React and dnd-kit for kanban evolution', () => {
@@ -906,6 +915,16 @@ test('portfolio and board governance admin pages are wired', () => {
   const commsOps = read('src/pages/admin/comms-ops.astro');
   assert.equal(portfolio.includes("sb.rpc('exec_portfolio_board_summary'"), true);
   assert.equal(portfolio.includes('id="portfolio-denied"'), true);
+  assert.equal(portfolio.includes('id="portfolio-macros"'), true);
+  assert.equal(portfolio.includes('Total de Membros Ativos'), true);
+  assert.equal(portfolio.includes('Total de Tribos Ativas'), true);
+  assert.equal(portfolio.includes('Total de Boards Operando'), true);
+  assert.equal(portfolio.includes('Total de Cards Atrasados'), true);
+  assert.equal(portfolio.includes('🟢 Tribos de Pesquisa'), true);
+  assert.equal(portfolio.includes('⚙️ Operações'), true);
+  assert.equal(portfolio.includes('🌍 Global'), true);
+  assert.equal(portfolio.includes('text-red-600 font-bold'), true);
+  assert.equal(portfolio.includes('⚠️'), true);
   assert.equal(boardGov.includes("sb.rpc('admin_list_archived_board_items'"), true);
   assert.equal(boardGov.includes("sb.rpc('admin_restore_board_item'"), true);
   assert.equal(boardGov.includes('id="boardgov-denied"'), true);

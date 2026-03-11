@@ -1,5 +1,33 @@
 # Release Log
 
+## 2026-03-11 — Gap closure W77-W79 (UI executive impact + permissions regression lock)
+
+### Scope
+Fechamento de gaps da rodada W77-W79 para aderência 100% ao briefing original de UX gerencial e blindagem de permissões.
+
+### Delivered
+- **W79 UI executiva (`/admin/portfolio`)**
+  - macro cards de topo: membros ativos, tribos ativas, boards operando, cards atrasados;
+  - agrupamento visual em 3 blocos: Pesquisa, Operações e Global;
+  - alertas visuais: atrasos em vermelho (`text-red-600 font-bold`) e badge `⚠️` para boards sem cards ativos.
+- **W78 publicações**
+  - modal de submissão inclui `external_link` e `published_at`;
+  - cards na coluna `done` exibem ícone/link externo quando houver publicação efetiva.
+- **Persistência backend (event-sourcing mantido)**
+  - migration `20260314201000_publications_external_link_and_effective_publish.sql`;
+  - `publication_submission_events` recebe colunas `external_link` e `published_at`;
+  - RPC `upsert_publication_submission_event` expandida para os novos campos.
+- **W77 regressão dedicada**
+  - novo teste `tests/permissions-matrix.test.mjs` com perfis simulados (`guest`, `researcher`, `admin/comms/curator`) contra regras do `navigation.config.ts`;
+  - `npm test` atualizado para incluir o novo lock.
+
+### Validation captured
+- `supabase db push`
+- `npm test`
+- `npm run build`
+
+---
+
 ## 2026-03-11 — W77-W89: Admin governance expansion + portfolio operations
 
 ### Scope

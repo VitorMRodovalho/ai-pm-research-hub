@@ -13,11 +13,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     <section id="portfolio-panel" class="hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <h1 class="text-xl font-extrabold text-navy mb-3">Portfólio Executivo</h1>
       <p class="text-sm text-slate-500 mb-4">Visão consolidada por escopo/domínio para priorização de gestão.</p>
+      <div id="portfolio-macros" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-4"></div>
       <div class="flex flex-wrap gap-2 mb-4">
         <button id="portfolio-run-taxonomy-alerts" class="px-3 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50">Rodar detecção de drift taxonomy</button>
         <button id="portfolio-run-sanity" class="px-3 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50">Rodar data sanity v2</button>
       </div>
-      <div id="portfolio-summary" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+      <div id="portfolio-summary" class="space-y-5"></div>
     </section>
   </div>
 </BaseLayout>
@@ -33,12 +34,46 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   }
 
   function cardHtml(entry: any): string {
+    const hasNoActiveCards = Number(entry.total_cards || 0) === 0;
+    const overdueClass = Number(entry.overdue_cards || 0) > 0 ? 'text-red-600 font-bold' : 'text-slate-600';
     return `
       <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-        <div class="text-xs font-bold uppercase tracking-wide text-slate-500">${entry.board_scope} · ${entry.domain_key}</div>
+        <div class="text-xs font-bold uppercase tracking-wide text-slate-500">${entry.board_scope} · ${entry.domain_key} ${hasNoActiveCards ? '<span class="ml-1 text-amber-600">⚠️</span>' : ''}</div>
         <div class="mt-1 text-sm text-slate-700">Cards: <strong>${entry.total_cards || 0}</strong></div>
-        <div class="text-xs text-slate-500 mt-1">Atrasados: ${entry.overdue_cards || 0} · Órfãos: ${entry.orphan_cards || 0}</div>
+        <div class="text-xs text-slate-500 mt-1">Atrasados: <span class="${overdueClass}">${entry.overdue_cards || 0}</span> · Órfãos: ${entry.orphan_cards || 0}</div>
       </article>
+    `;
+  }
+
+  function macroHtml(title: string, value: string | number, accentClass = 'text-slate-800'): string {
+    return `
+      <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+        <div class="text-[11px] uppercase tracking-wide font-semibold text-slate-500">${title}</div>
+        <div class="text-2xl font-extrabold ${accentClass}">${value}</div>
+      </article>
+    `;
+  }
+
+  function toMacroCounts(rows: any[]) {
+    const totalOverdue = rows.reduce((sum, row) => sum + Number(row?.overdue_cards || 0), 0);
+    const totalBoardsOperating = rows.length;
+    return { totalOverdue, totalBoardsOperating };
+  }
+
+  function classifyBlock(row: any): 'research' | 'operations' | 'global' {
+    const scope = String(row?.board_scope || '');
+    const domain = String(row?.domain_key || '');
+    if (scope === 'global' || domain.includes('publications') || domain.includes('governance')) return 'global';
+    if (scope === 'operational' || domain.includes('communication') || domain.includes('webinar')) return 'operations';
+    return 'research';
+  }
+
+  function sectionHtml(title: string, rows: any[]): string {
+    return `
+      <section>
+        <h2 class="text-sm font-bold uppercase tracking-wide text-slate-600 mb-2">${title}</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">${rows.map((row: any) => cardHtml(row)).join('')}</div>
+      </section>
     `;
   }
 
@@ -47,6 +82,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const denied = document.getElementById('portfolio-denied');
     const panel = document.getElementById('portfolio-panel');
     const summary = document.getElementById('portfolio-summary');
+    const macros = document.getElementById('portfolio-macros');
     const member = (window as any).navGetMember?.();
     const sb = (window as any).navGetSb?.();
 
@@ -60,15 +96,41 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       return;
     }
 
-    const { data, error } = await sb.rpc('exec_portfolio_board_summary', { p_include_inactive: false });
+    const [{ data, error }, membersQuery, tribesQuery] = await Promise.all([
+      sb.rpc('exec_portfolio_board_summary', { p_include_inactive: false }),
+      sb.from('public_members').select('member_id', { count: 'exact', head: true }).eq('current_cycle_active', true),
+      sb.from('tribes').select('id', { count: 'exact', head: true }).eq('is_active', true),
+    ]);
     if (error) {
       denied?.classList.remove('hidden');
       denied!.textContent = 'Falha ao carregar visão executiva de portfólio.';
       return;
     }
     const rows = Array.isArray(data?.by_lane) ? data.by_lane : [];
+    const grouped = rows.reduce((acc: any, row: any) => {
+      const key = classifyBlock(row);
+      acc[key].push(row);
+      return acc;
+    }, { research: [], operations: [], global: [] });
+    const { totalOverdue, totalBoardsOperating } = toMacroCounts(rows);
+    const totalMembers = Number(membersQuery?.count || 0);
+    const totalTribes = Number(tribesQuery?.count || 0);
     panel?.classList.remove('hidden');
-    if (summary) summary.innerHTML = rows.map((row: any) => cardHtml(row)).join('');
+    if (macros) {
+      macros.innerHTML = [
+        macroHtml('Total de Membros Ativos', totalMembers),
+        macroHtml('Total de Tribos Ativas', totalTribes),
+        macroHtml('Total de Boards Operando', totalBoardsOperating),
+        macroHtml('Total de Cards Atrasados', totalOverdue, totalOverdue > 0 ? 'text-red-600' : 'text-slate-800'),
+      ].join('');
+    }
+    if (summary) {
+      summary.innerHTML = [
+        sectionHtml('🟢 Tribos de Pesquisa', grouped.research),
+        sectionHtml('⚙️ Operações', grouped.operations),
+        sectionHtml('🌍 Global', grouped.global),
+      ].join('');
+    }
   }
 
   document.getElementById('portfolio-run-taxonomy-alerts')?.addEventListener('click', async () => {

@@ -7,7 +7,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "test": "node --test tests/credly.test.mjs tests/cycle-history.test.mjs tests/gamification.test.mjs tests/routing.test.mjs tests/attendance-ui.test.mjs tests/ui-stabilization.test.mjs",
+    "test": "node --test tests/credly.test.mjs tests/cycle-history.test.mjs tests/gamification.test.mjs tests/routing.test.mjs tests/attendance-ui.test.mjs tests/permissions-matrix.test.mjs tests/ui-stabilization.test.mjs",
     "test:browser:guards": "node tests/browser-guards.test.mjs",
     "smoke:routes": "node scripts/smoke-routes.mjs",
     "qa:kanban": "./scripts/qa_kanban_dark_release_gate.sh",

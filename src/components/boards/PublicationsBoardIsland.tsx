@@ -12,6 +12,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { ExternalLink } from 'lucide-react';
 
 type BoardItem = {
   id: string;
@@ -21,6 +22,8 @@ type BoardItem = {
   due_date?: string | null;
   assignee_name?: string | null;
   tags?: string[] | null;
+  external_link?: string | null;
+  published_at?: string | null;
 };
 
 type Lane = { key: string; label: string };
@@ -93,6 +96,19 @@ function SortableCard({
               </span>
             ))
           : null}
+        {item.status === 'done' && item.external_link ? (
+          <a
+            href={item.external_link}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 hover:opacity-90"
+            onClick={(event) => event.stopPropagation()}
+            aria-label="Abrir publicação externa"
+          >
+            <ExternalLink size={12} />
+            Publicado
+          </a>
+        ) : null}
       </div>
     </article>
   );
@@ -109,6 +125,8 @@ export default function PublicationsBoardIsland() {
   const [metaSubmittedAt, setMetaSubmittedAt] = useState('');
   const [metaOutcome, setMetaOutcome] = useState('pending');
   const [metaNotes, setMetaNotes] = useState('');
+  const [metaExternalLink, setMetaExternalLink] = useState('');
+  const [metaPublishedAt, setMetaPublishedAt] = useState('');
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const windowRef = globalThis as any;
@@ -146,7 +164,35 @@ export default function PublicationsBoardIsland() {
     });
     if (itemsError) throw new Error(itemsError.message);
     const normalized = (Array.isArray(boardItems) ? boardItems : []).filter((row: any) => row.status !== 'archived');
-    setItems(normalized);
+    const baseItems = normalized.map((row: any) => ({
+      ...row,
+      external_link: null,
+      published_at: null,
+    }));
+    const itemIds = baseItems.map((row: any) => row.id).filter(Boolean);
+    if (itemIds.length) {
+      const { data: eventsData } = await sb
+        .from('publication_submission_events')
+        .select('board_item_id,external_link,published_at,updated_at')
+        .in('board_item_id', itemIds)
+        .order('updated_at', { ascending: false });
+      const latestByItem: Record<string, { external_link: string | null; published_at: string | null }> = {};
+      (Array.isArray(eventsData) ? eventsData : []).forEach((row: any) => {
+        const itemId = String(row?.board_item_id || '');
+        if (!itemId || latestByItem[itemId]) return;
+        latestByItem[itemId] = {
+          external_link: row?.external_link ? String(row.external_link) : null,
+          published_at: row?.published_at ? String(row.published_at) : null,
+        };
+      });
+      setItems(baseItems.map((row: any) => ({
+        ...row,
+        external_link: latestByItem[row.id]?.external_link ?? null,
+        published_at: latestByItem[row.id]?.published_at ?? null,
+      })));
+    } else {
+      setItems(baseItems);
+    }
     setLoading(false);
   }
 
@@ -216,13 +262,28 @@ export default function PublicationsBoardIsland() {
       p_submitted_at: metaSubmittedAt ? new Date(metaSubmittedAt).toISOString() : null,
       p_outcome: metaOutcome,
       p_notes: metaNotes || null,
+      p_external_link: metaExternalLink || null,
+      p_published_at: metaPublishedAt ? new Date(metaPublishedAt).toISOString() : null,
     });
     if (error) {
       windowRef?.toast?.(error.message || 'Falha ao salvar metadados de submissão', 'error');
       return;
     }
+    setItems((prev) => prev.map((row) => (row.id === modalItem.id
+      ? { ...row, external_link: metaExternalLink || null, published_at: metaPublishedAt || null }
+      : row)));
     setModalItem(null);
     windowRef?.toast?.('Metadados de submissão atualizados', 'success');
+  }
+
+  function openSubmissionModal(item: BoardItem) {
+    setModalItem(item);
+    setMetaChannel('projectmanagement_com');
+    setMetaSubmittedAt('');
+    setMetaOutcome('pending');
+    setMetaNotes('');
+    setMetaExternalLink(item.external_link || '');
+    setMetaPublishedAt(item.published_at ? String(item.published_at).slice(0, 16) : '');
   }
 
   if (loading) {
@@ -259,7 +320,7 @@ export default function PublicationsBoardIsland() {
             >
               <div id={lane.key} className="min-h-[220px] space-y-2">
                 {itemsByLane[lane.key].map((item) => (
-                  <SortableCard key={item.id} item={item} onLaneKeyboardMove={moveViaKeyboard} onOpen={setModalItem} />
+                  <SortableCard key={item.id} item={item} onLaneKeyboardMove={moveViaKeyboard} onOpen={openSubmissionModal} />
                 ))}
                 {itemsByLane[lane.key].length === 0 ? (
                   <div className="text-[11px] text-slate-400 dark:text-slate-500 py-6 text-center">
@@ -299,6 +360,25 @@ export default function PublicationsBoardIsland() {
             <div>
               <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Notas</label>
               <textarea value={metaNotes} onChange={(e) => setMetaNotes(e.target.value)} rows={4} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">URL de publicação externa</label>
+              <input
+                type="url"
+                value={metaExternalLink}
+                onChange={(e) => setMetaExternalLink(e.target.value)}
+                placeholder="https://..."
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Data de publicação efetiva</label>
+              <input
+                type="datetime-local"
+                value={metaPublishedAt}
+                onChange={(e) => setMetaPublishedAt(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800"
+              />
             </div>
           </div>
           <div className="mt-4 flex justify-end gap-2">
