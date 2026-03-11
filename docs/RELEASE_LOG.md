@@ -1,5 +1,21 @@
 # Release Log
 
+## 2026-03-11 — Sprint W41.3-W41.4: Rank/Credly Alignment + Profile Verify Retry
+
+### Scope
+Endurecer o eixo critico de gamificacao/Credly com alinhamento de pontuacao lifetime nas superficies de rank e mitigacao de regressao recorrente no verify Credly com retry de sessao quando houver 401 transitorio.
+
+### Delivered
+- **`src/pages/gamification.astro`**: ranking individual e de tribos passam a priorizar `lifetimePointsByMember` (agregado real) antes de fallback em `total_points`, reduzindo drift de exibicao entre backend e UI.
+- **`src/pages/gamification.astro`**: render de nomes iniciais no leaderboard/tribes agora usa fallback seguro para evitar quebra com dados incompletos.
+- **`src/pages/profile.astro`**: `verifyCredly()` ganhou retry unico em resposta `401`, com `refreshSession()` e nova tentativa autenticada antes de falhar.
+- **`tests/ui-stabilization.test.mjs`**: novos locks textuais para garantir retry de credly e uso da fonte lifetime agregada no ranking.
+
+### Audit Results
+- Validacao local prevista nesta tranche: `npm test`, `npm run build`, `npm run smoke:routes`.
+
+---
+
 ## 2026-03-11 — Sprint W41.1-W41.2: Secrets Hygiene + Admin Allocation Crash Guard
 
 ### Scope

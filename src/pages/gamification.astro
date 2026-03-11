@@ -557,7 +557,7 @@ const GAM_I18N = {
       .map((m: any) => ({
         ...m,
         cycle_points: Number(m.cycle_points || 0),
-        lifetime_points: Number(m.total_points || 0),
+        lifetime_points: Number(lifetimePointsByMember[m.member_id] ?? m.total_points ?? 0),
       }))
       .sort((a: any, b: any) => {
         const left = leaderboardMode === 'lifetime' ? a.lifetime_points : a.cycle_points;
@@ -569,7 +569,8 @@ const GAM_I18N = {
     const modeLabel = leaderboardMode === 'lifetime' ? I.modeLifetime : I.modeCycle;
 
     el.innerHTML = rankedRows.map((m: any, i: number) => {
-      const initials = m.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+      const safeMemberName = String(m.name || 'Membro sem nome');
+      const initials = safeMemberName.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
       const photo = m.photo_url
         ? `<img src="${m.photo_url}" class="w-10 h-10 rounded-full object-cover flex-shrink-0" alt="">`
         : `<div class="w-10 h-10 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.7rem] flex-shrink-0">${initials}</div>`;
@@ -596,7 +597,7 @@ const GAM_I18N = {
         ${photo}
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-1.5">
-            <span class="text-[13px] font-semibold truncate">${m.name.split(' ').slice(0, 3).join(' ')}</span>
+            <span class="text-[13px] font-semibold truncate">${safeMemberName.split(' ').slice(0, 3).join(' ')}</span>
             <span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-slate-100">${level.emoji} ${level.name}</span>
             ${isMe ? `<span class="text-[.55rem] font-bold px-1 py-0.5 rounded bg-orange/10 text-orange">${I.lbYou}</span>` : ''}
           </div>
@@ -689,11 +690,11 @@ const GAM_I18N = {
       const tid = memberTribe[m.member_id];
       if (tid && tribeStats[tid]) {
         const points = tribeMode === 'lifetime'
-          ? Number(m.total_points || 0)
+          ? Number(lifetimePointsByMember[m.member_id] ?? m.total_points ?? 0)
           : Number(m.cycle_points || 0);
         tribeStats[tid].points += points;
         tribeStats[tid].members++;
-        tribeStats[tid].names.push(m.name.split(' ')[0]);
+        tribeStats[tid].names.push(String(m.name || 'Membro').split(' ')[0]);
       }
     });
 

@@ -1030,17 +1030,32 @@ const PROFILE_I18N = {
     try {
       const supabaseUrl = (sb as any).supabaseUrl || (sb as any).rest?.url?.replace('/rest/v1', '') || '';
       const anonKey = (sb as any).supabaseKey || (sb as any).realtime?.params?.apikey || '';
+      const callVerifyCredly = async (accessToken: string) => {
+        const response = await fetch(supabaseUrl + '/functions/v1/verify-credly', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken, 'apikey': anonKey },
+          body: JSON.stringify({ member_id: currentMember.id, credly_url: credlyNormalized }),
+        });
+        const body = await response.json().catch(() => ({}));
+        return { response, body };
+      };
       let data: any = null;
       let error: any = null;
       try {
-        const vResp = await fetch(supabaseUrl + '/functions/v1/verify-credly', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token, 'apikey': anonKey },
-          body: JSON.stringify({ member_id: currentMember.id, credly_url: credlyNormalized }),
-        });
-        const vBody = await vResp.json();
-        if (!vResp.ok) { error = new Error(vBody.error || vResp.statusText); }
-        else { data = vBody; }
+        let accessToken = session.access_token;
+        let { response, body } = await callVerifyCredly(accessToken);
+        if (response.status === 401) {
+          // Retry once with fresh session to reduce transient auth regressions.
+          await sb.auth.refreshSession();
+          const refreshed = await sb.auth.getSession();
+          accessToken = refreshed?.data?.session?.access_token || '';
+          if (!accessToken) {
+            throw new Error(PROFILE_I18N.credlyInvalidSession);
+          }
+          ({ response, body } = await callVerifyCredly(accessToken));
+        }
+        if (!response.ok) { error = new Error(body?.error || response.statusText); }
+        else { data = body; }
       } catch (e: any) { error = e; }
       if (error) throw new Error(await describeFnError(error));
       if (data?.success) {

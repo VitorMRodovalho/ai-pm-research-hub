@@ -15,6 +15,19 @@ test('profile uses delegated credly normalization instead of per-render rebind h
   assert.equal(content.includes("target.id === 'self-credly'"), true);
 });
 
+test('profile credly verification retries once on 401 with refreshed session', () => {
+  const content = read('src/pages/profile.astro');
+  assert.equal(content.includes('const callVerifyCredly = async (accessToken: string)'), true);
+  assert.equal(content.includes('if (response.status === 401)'), true);
+  assert.equal(content.includes('await sb.auth.refreshSession();'), true);
+});
+
+test('gamification lifetime ranking uses aggregated points map before fallback', () => {
+  const content = read('src/pages/gamification.astro');
+  assert.equal(content.includes('lifetime_points: Number(lifetimePointsByMember[m.member_id] ?? m.total_points ?? 0)'), true);
+  assert.equal(content.includes('? Number(lifetimePointsByMember[m.member_id] ?? m.total_points ?? 0)'), true);
+});
+
 test('selection page no longer hardcodes cycle tabs or snapshot cycle title', () => {
   const content = read('src/pages/admin/selection.astro');
   assert.equal(content.includes('data-cycle="3"'), false);
