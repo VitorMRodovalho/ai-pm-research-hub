@@ -1,41 +1,53 @@
 #!/usr/bin/env node
 /**
- * Post-build patch: injects a MessageChannel polyfill into the Worker
- * entry point. Cloudflare Workers' publish validation runs top-level
- * module code in an environment where MessageChannel may not be
- * available (even with nodejs_compat). React 19's browser build of
- * react-dom/server requires it for scheduling.
+ * Post-build patch: injects a MessageChannel polyfill into Worker chunks
+ * that reference it. Cloudflare Pages' publish validation evaluates ES
+ * module top-level code in an environment where MessageChannel is
+ * unavailable. React 19's browser build of react-dom/server calls
+ * new MessageChannel() during module init.
  *
- * The polyfill uses setTimeout as the scheduling mechanism, which is
- * always available in Workers.
+ * Because ES modules evaluate imports before the importing module's
+ * own top-level code, the polyfill must live inside each chunk that
+ * references MessageChannel — not just in the entry index.js.
  */
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
+import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const workerEntry = resolve(__dirname, '..', 'dist', '_worker.js', 'index.js');
+const workerDir = resolve(__dirname, '..', 'dist', '_worker.js');
+const chunksDir = join(workerDir, 'chunks');
+const entryFile = join(workerDir, 'index.js');
 
-if (!existsSync(workerEntry)) {
-  console.warn('[patch-worker] _worker.js/index.js not found — skipping polyfill.');
-  process.exit(0);
+const POLYFILL = 'if(typeof globalThis.MessageChannel==="undefined"){globalThis.MessageChannel=class{constructor(){let a=null,b=null;this.port1={set onmessage(f){a=f},get onmessage(){return a},postMessage(d){if(b)setTimeout(()=>b({data:d}),0)},close(){}};this.port2={set onmessage(f){b=f},get onmessage(){return b},postMessage(d){if(a)setTimeout(()=>a({data:d}),0)},close(){}}}}}\n';
+
+const MARKER = 'if(typeof globalThis.MessageChannel';
+
+let patched = 0;
+
+function patchFile(filePath) {
+  const code = readFileSync(filePath, 'utf8');
+  if (code.startsWith(MARKER)) return;
+  if (!code.includes('MessageChannel')) return;
+  writeFileSync(filePath, POLYFILL + code);
+  patched++;
+  console.log(`[patch-worker] polyfill → ${filePath.replace(workerDir + '/', '')}`);
 }
 
-const POLYFILL = [
-  'if(typeof globalThis.MessageChannel==="undefined"){',
-  'globalThis.MessageChannel=class{constructor(){',
-  'let a=null,b=null;',
-  'this.port1={set onmessage(f){a=f},get onmessage(){return a},postMessage(d){if(b)setTimeout(()=>b({data:d}),0)},close(){}};',
-  'this.port2={set onmessage(f){b=f},get onmessage(){return b},postMessage(d){if(a)setTimeout(()=>a({data:d}),0)},close(){}};',
-  '}}}\n',
-].join('');
-
-const original = readFileSync(workerEntry, 'utf8');
-
-if (original.startsWith('if(typeof globalThis.MessageChannel')) {
-  console.log('[patch-worker] Polyfill already present — skipping.');
-  process.exit(0);
+if (existsSync(entryFile)) {
+  patchFile(entryFile);
 }
 
-writeFileSync(workerEntry, POLYFILL + original);
-console.log('[patch-worker] MessageChannel polyfill injected into _worker.js/index.js');
+if (existsSync(chunksDir)) {
+  for (const name of readdirSync(chunksDir)) {
+    if (name.endsWith('.mjs') || name.endsWith('.js')) {
+      patchFile(join(chunksDir, name));
+    }
+  }
+}
+
+if (patched === 0) {
+  console.log('[patch-worker] No files needed patching.');
+} else {
+  console.log(`[patch-worker] Done — ${patched} file(s) patched.`);
+}
