@@ -1,5 +1,22 @@
 # Release Log
 
+## 2026-03-11 — DB Hotfix: Curadoria com Segmentacao por Tribo e Audiencia
+
+### Scope
+Aplicar no banco remoto a correcao da funcao `public.curate_item` para suportar curadoria de `knowledge_assets` com segmentacao por tribo e para permitir atualizacao de `audience_level` em `events` no mesmo fluxo de moderacao.
+
+### Delivered
+- **`supabase/migrations/20260314060000_curate_item_knowledge_and_visibility_fix.sql`** aplicada em producao via `supabase db push`.
+- A assinatura da funcao passa a aceitar `p_tribe_id` e `p_audience_level`, mantendo controle de acesso administrativo (`superadmin`, `manager`, `deputy_manager`).
+- O fluxo cobre `knowledge_assets`, `artifacts`, `hub_resources` e `events`, com validacao de acao e erro explicito quando item nao e encontrado.
+
+### Audit Results
+- `supabase migration list`: `20260314060000` estava pendente no remoto antes da aplicacao.
+- `supabase db push`: migration aplicada sem erro.
+- `supabase migration list` (pos-push): `Local` e `Remote` alinhados para `20260314060000`.
+
+---
+
 ## 2026-03-12 — v0.34.0 Waves 36-40: Analytics V2 Read-Only Rollout
 
 ### Scope
