@@ -1,5 +1,23 @@
 # Release Log
 
+## 2026-03-15 — fix: resolve board-governance ENOENT blocking Cloudflare build
+
+### Scope
+Incidente crítico: build falhando no Cloudflare com ENOENT em `board-governance.astro`. Correção de pathing e verificação pré-build.
+
+### Delivered
+- **board-governance.astro**: arquivo verificado no Git (lowercase), comentário de rota adicionado.
+- **scripts/verify-build-pages.mjs**: verificação pré-build para garantir presença de páginas críticas antes do Astro.
+- **package.json**: hook `prebuild` para falhar cedo com mensagem clara se arquivos faltando.
+- **Auditoria**: Migrations 20260315000003, 20260315000004, 20260315000005 confirmadas aplicadas no Supabase remoto.
+- **Pauta**: index.astro não renderiza AgendaSection; apenas i18n e componente órfão restam (não usados na home).
+
+### Validation captured
+- `supabase migration list --linked` — todas aplicadas
+- `npm run build` — sucesso local
+
+---
+
 ## 2026-03-15 — Wire up modern UI, merge legacy data, meeting schedule editor
 
 ### Scope
