@@ -9,5 +9,11 @@ export default defineConfig({
   integrations: [react()],
   vite: {
     plugins: [tailwindcss()],
+    ssr: {
+      resolve: {
+        conditions: ['workerd', 'worker', 'node'],
+        externalConditions: ['workerd', 'worker', 'node'],
+      },
+    },
   },
 });
