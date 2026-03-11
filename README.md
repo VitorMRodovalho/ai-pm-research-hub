@@ -179,6 +179,7 @@ The current production pattern is to keep communications metrics in Supabase-bac
 - `docs/WEBINARS_CONVERGENCE_PROPOSAL.md` → recommended path for deprecating or converging the standalone `webinars` table
 - `docs/project-governance/KNOWLEDGE_HUB_DESIGN_SPEC.md` → specification for phased Knowledge Hub implementation
 - `docs/project-governance/KNOWLEDGE_HUB_PHASE_A_CONTRACTS.md` → phase A contracts and operational acceptance checklist
+- `docs/project-governance/KANBAN_UX_DARKMODE_EPIC.md` → incremental UX/accessibility epic and Astro Islands direction for Kanban evolution
 - `docs/CURSOR_SETUP.md` → first-use checklist for Cursor IDE
 - `docs/REPLICATION_GUIDE.md` → how to replicate the Hub for another project
 - `DEBUG_HOLISTIC_PLAYBOOK.md` → holistic debugging and troubleshooting guide
