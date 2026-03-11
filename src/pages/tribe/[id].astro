@@ -122,10 +122,19 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
 <BaseLayout title={pageTitle} activePage="tribes">
   <Toast />
   <div class="max-w-[1100px] mx-auto px-4 py-8">
+    <div id="tribe-loading" class="text-center py-10 text-slate-400">{t('tribe.loading', lang)}</div>
+    <div id="tribe-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
+      <div class="text-2xl mb-2">🔒</div>
+      <p class="font-semibold text-amber-800">Acesso restrito a membros ativos da plataforma.</p>
+      <p class="text-sm text-amber-700 mt-1">Tribos ativas podem ser exploradas em modo leitura por membros ativos; ações seguem restritas pela liderança e gestão.</p>
+      <a href="/profile" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90 transition-all">Abrir perfil</a>
+    </div>
+    <div id="tribe-shell" class="hidden">
     <!-- Header -->
     <div id="tribe-header" class="mb-6">
       <LoadingSkeleton variant="profile" />
     </div>
+    <div id="tribe-access-note" class="hidden mb-4"></div>
 
     <!-- Tabs -->
     <div class="flex gap-2 mb-5 flex-wrap" id="tribe-tabs">
@@ -205,6 +214,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
     <div id="panel-commshub" class="hidden"></div>
     <!-- Broadcast panel (conditionally shown for tribe leader + admin) -->
     <div id="panel-broadcast" class="hidden"></div>
+    </div>
   </div>
 
   <!-- Deliverable Modal -->
@@ -256,6 +266,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
 </script>
 <script>
   import { getCurrentCycle, loadCycles } from '../../lib/cycles';
+  import { canExploreTribes, canManageTribeLifecycle, canSeeInactiveTribes } from '../../lib/tribes/access';
 
   const I18N = (typeof window !== 'undefined' && (window as any).__TRIBE_I18N) || {};
   const TRIBE_ID: number = (typeof window !== 'undefined' && (window as any).__TRIBE_ID) || 0;
@@ -283,8 +294,48 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
   const HIGH_MGMT_ROLES = ['manager', 'deputy_manager'];
 
   function isHighManagement(m: any): boolean {
+    return canManageTribeLifecycle(m);
+  }
+
+  function isAssignedToCurrentTribe(m: any): boolean {
     if (!m) return false;
-    return m.is_superadmin === true || HIGH_MGMT_ROLES.includes(m.operational_role);
+    return Number(m.tribe_id || 0) === TRIBE_ID || Number(m.selected_tribe_id || 0) === TRIBE_ID;
+  }
+
+  function showDenied(message?: string) {
+    document.getElementById('tribe-loading')?.classList.add('hidden');
+    document.getElementById('tribe-shell')?.classList.add('hidden');
+    const denied = document.getElementById('tribe-denied');
+    if (!denied) return;
+    denied.classList.remove('hidden');
+    if (message) {
+      const body = denied.querySelector('p');
+      if (body) body.textContent = message;
+    }
+  }
+
+  function revealTribeShell() {
+    document.getElementById('tribe-loading')?.classList.add('hidden');
+    document.getElementById('tribe-denied')?.classList.add('hidden');
+    document.getElementById('tribe-shell')?.classList.remove('hidden');
+  }
+
+  function renderAccessNote() {
+    const note = document.getElementById('tribe-access-note');
+    if (!note || !currentMember) return;
+    if (isAssignedToCurrentTribe(currentMember)) {
+      note.classList.add('hidden');
+      note.innerHTML = '';
+      return;
+    }
+    note.classList.remove('hidden');
+    if (canEdit) {
+      note.className = 'mb-4 rounded-2xl border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-800';
+      note.innerHTML = 'Modo gestão cruzada: você está em outra tribo com permissão de coordenação. Edições continuam restritas aos controles de gestão e liderança.';
+      return;
+    }
+    note.className = 'mb-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700';
+    note.innerHTML = 'Modo exploração: você pode consultar os membros ativos, recursos e quadro desta tribo, mas as ações seguem restritas à liderança local e à gestão.';
   }
 
   function escapeHtml(s: string): string {
@@ -1092,13 +1143,26 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
         }
       }
 
+      if (!canExploreTribes(currentMember)) {
+        showDenied('Acesso restrito a membros ativos da plataforma.');
+        return;
+      }
+
+      revealTribeShell();
+
       // Also listen for async member resolution — reload contacts if privileged
       window.addEventListener('nav:member', (async (evt: Event) => {
         const e = evt as CustomEvent;
         currentMember = e.detail;
+        if (!canExploreTribes(currentMember)) {
+          showDenied('Acesso restrito a membros ativos da plataforma.');
+          return;
+        }
+        revealTribeShell();
         checkEditPermission();
         checkCommsHubAccess();
         checkBroadcastAccess();
+        renderAccessNote();
         // Late-bind LGPD contacts if the member turns out to be privileged
         if (currentMember && !Object.keys(contactData).length
             && (isHighManagement(currentMember)
@@ -1124,13 +1188,18 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
       checkEditPermission();
       checkCommsHubAccess();
       checkBroadcastAccess();
+      renderAccessNote();
 
       // Load all tribe data in parallel
       const activeCycleCode = getActiveCycleCode();
       const [tribeRes, slotsRes, membersRes, selectionsRes, delivRes, resourcesRes, artifactsRes] = await Promise.all([
         sb.from('tribes').select('*').eq('id', TRIBE_ID).single(),
         sb.from('tribe_meeting_slots').select('day_of_week, time_start, time_end').eq('tribe_id', TRIBE_ID).eq('is_active', true).order('day_of_week'),
-        sb.from('public_members').select('id, name, photo_url, chapter, operational_role, designations, tribe_id, share_whatsapp').eq('tribe_id', TRIBE_ID),
+        sb.from('public_members')
+          .select('id, name, photo_url, chapter, operational_role, designations, tribe_id, share_whatsapp, current_cycle_active, is_active')
+          .eq('tribe_id', TRIBE_ID)
+          .eq('current_cycle_active', true)
+          .eq('is_active', true),
         sb.from('tribe_selections').select('member_id').eq('tribe_id', TRIBE_ID),
         activeCycleCode
           ? sb.rpc('list_tribe_deliverables', { p_tribe_id: TRIBE_ID, p_cycle_code: activeCycleCode })
@@ -1159,12 +1228,18 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
       let selectionMembers: any[] = [];
       if (selectionMemberIds.length > 0) {
         const { data } = await sb.from('public_members')
-          .select('id, name, photo_url, chapter, operational_role, designations, tribe_id, share_whatsapp')
-          .in('id', selectionMemberIds);
+          .select('id, name, photo_url, chapter, operational_role, designations, tribe_id, share_whatsapp, current_cycle_active, is_active')
+          .in('id', selectionMemberIds)
+          .eq('current_cycle_active', true)
+          .eq('is_active', true);
         selectionMembers = data || [];
       }
 
       const allMembers = [...allDirectMembers, ...selectionMembers];
+      if (!canSeeInactiveTribes(currentMember) && allMembers.length === 0 && !isAssignedToCurrentTribe(currentMember)) {
+        showDenied('Esta tribo não está ativa no ciclo atual para exploração geral.');
+        return;
+      }
       allMembers.sort((a: any, b: any) => {
         if (a.operational_role === 'tribe_leader') return -1;
         if (b.operational_role === 'tribe_leader') return 1;

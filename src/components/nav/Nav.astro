@@ -174,6 +174,7 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
   import { getMemberRole } from '../../lib/routing';
   import { resolveTierFromMember, hasMinimumTier, type AccessTier } from '../../lib/admin/constants';
   import { TIER_RANK } from '../../lib/navigation.config';
+  import { canExploreTribes, canSeeInactiveTribes } from '../../lib/tribes/access';
 
   const sb = getSupabase();
   let _member: any = null;
@@ -183,9 +184,35 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
   async function loadTribesForDropdown(): Promise<any[]> {
     if (_tribesCache) return _tribesCache;
     try {
-      const { data } = await sb.from('tribes').select('id, name, whatsapp_url, is_active').order('id');
-      _tribesCache = data || [];
-    } catch (_) { _tribesCache = []; }
+      const currentTribeId = Number(_member?.tribe_id || _member?.selected_tribe_id || 0);
+      const [{ data: tribes, error: tribesError }, { data: members, error: membersError }] = await Promise.all([
+        sb.from('tribes').select('id, name, whatsapp_url').order('id'),
+        sb.from('public_members')
+          .select('tribe_id, current_cycle_active, is_active')
+          .eq('current_cycle_active', true)
+          .eq('is_active', true),
+      ]);
+      if (tribesError) throw tribesError;
+      if (membersError) throw membersError;
+      const activeCounts = new Map<number, number>();
+      (members || []).forEach((member: any) => {
+        const tribeId = Number(member?.tribe_id || 0);
+        if (tribeId > 0) {
+          activeCounts.set(tribeId, (activeCounts.get(tribeId) || 0) + 1);
+        }
+      });
+      _tribesCache = (tribes || []).map((tribe: any) => {
+        const activeMembers = activeCounts.get(tribe.id) || 0;
+        return {
+          ...tribe,
+          active_members: activeMembers,
+          derived_active: activeMembers > 0 || (currentTribeId > 0 && currentTribeId === tribe.id),
+        };
+      });
+    } catch (error) {
+      console.warn('tribe dropdown load failed', error);
+      _tribesCache = [];
+    }
     return _tribesCache;
   }
 
@@ -218,9 +245,91 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
     if (!_member) return null;
     const tribeId = _member.tribe_id || _member.selected_tribe_id;
     if (!tribeId) return null;
-    const base = document.documentElement.lang === 'pt-BR' || document.documentElement.lang === 'pt' ? '' :
-                 document.documentElement.lang === 'en' ? '/en' : '/es';
-    return `${base}/tribe/${tribeId}`;
+    return `${getNavBase()}/tribe/${tribeId}`;
+  }
+
+  function getNavBase(): string {
+    return document.documentElement.lang === 'pt-BR' || document.documentElement.lang === 'pt' ? '' :
+      document.documentElement.lang === 'en' ? '/en' : '/es';
+  }
+
+  function getVisibleTribesForMember(tribes: any[]): any[] {
+    if (canSeeInactiveTribes(_member)) return tribes;
+    return tribes.filter((tribe: any) => tribe.derived_active !== false);
+  }
+
+  function tribeLabel(tribe: any): string {
+    return tribe.name || `${i18n.tribePrefix || 'Tribo'} ${tribe.id}`;
+  }
+
+  function renderDesktopTribeDropdown(tribes: any[]): string {
+    const visibleTribes = getVisibleTribesForMember(tribes);
+    if (!visibleTribes.length) {
+      return '<div class="px-3 py-2 text-slate-400 text-xs">Nenhuma tribo ativa disponível.</div>';
+    }
+    const base = getNavBase();
+    return visibleTribes.map((tribe: any) => {
+      const isInactive = tribe.derived_active === false;
+      const countBadge = tribe.active_members > 0
+        ? '<span class="ml-auto text-[.62rem] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full shrink-0">' + tribe.active_members + '</span>'
+        : '';
+      if (isInactive) {
+        return '<div class="flex items-center gap-2 px-3 py-2 text-[.78rem] text-slate-400 font-medium opacity-60 cursor-default" title="Tribo sem membros ativos neste ciclo">'
+          + '<span class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[.6rem] font-bold text-slate-500 shrink-0">' + tribe.id + '</span>'
+          + '<span class="truncate">' + tribeLabel(tribe) + '</span>'
+          + '<span class="ml-auto text-[.7rem] shrink-0">&#x1F512;</span>'
+          + '</div>';
+      }
+      return '<a href="' + base + '/tribe/' + tribe.id + '" class="flex items-center gap-2 px-3 py-2 text-[.78rem] text-slate-700 font-medium hover:bg-slate-50 no-underline transition-all">'
+        + '<span class="w-5 h-5 rounded-full bg-navy/10 flex items-center justify-center text-[.6rem] font-bold text-navy shrink-0">' + tribe.id + '</span>'
+        + '<span class="truncate">' + tribeLabel(tribe) + '</span>'
+        + countBadge
+        + '</a>';
+    }).join('') + '<hr class="border-slate-100 my-1"><a href="' + base + '/#tribes" class="flex items-center gap-2 px-3 py-2 text-[.7rem] text-slate-400 font-medium hover:bg-slate-50 no-underline transition-all"><span class="w-5 h-5 flex items-center justify-center text-[.7rem]">&#x1F30D;</span>' + (i18n.exploreTribes || 'Ver todas') + '</a>';
+  }
+
+  function renderDrawerTribeDropdown(tribes: any[]): string {
+    const visibleTribes = getVisibleTribesForMember(tribes);
+    if (!visibleTribes.length) {
+      return '<div class="px-2 py-1.5 text-[.7rem] text-slate-400">Nenhuma tribo ativa disponível.</div>';
+    }
+    const base = getNavBase();
+    return visibleTribes.map((tribe: any) => {
+      const isInactive = tribe.derived_active === false;
+      if (isInactive) {
+        return '<div class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[.73rem] text-slate-400 font-medium opacity-60 cursor-default" title="Tribo sem membros ativos neste ciclo">'
+          + '<span class="w-4 h-4 rounded-full bg-slate-200 flex items-center justify-center text-[.55rem] font-bold text-slate-500 shrink-0">' + tribe.id + '</span>'
+          + tribeLabel(tribe)
+          + ' &#x1F512;'
+          + '</div>';
+      }
+      return '<a href="' + base + '/tribe/' + tribe.id + '" class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[.73rem] text-slate-600 font-medium no-underline hover:bg-slate-50 transition-all">'
+        + '<span class="w-4 h-4 rounded-full bg-navy/10 flex items-center justify-center text-[.55rem] font-bold text-navy shrink-0">' + tribe.id + '</span>'
+        + tribeLabel(tribe)
+        + '</a>';
+    }).join('');
+  }
+
+  function renderMobileTribeDropdown(tribes: any[]): string {
+    const visibleTribes = getVisibleTribesForMember(tribes);
+    if (!visibleTribes.length) {
+      return '<div class="px-4 py-2.5 text-white/50 text-sm">Nenhuma tribo ativa disponível.</div>';
+    }
+    const base = getNavBase();
+    return visibleTribes.map((tribe: any) => {
+      const isInactive = tribe.derived_active === false;
+      if (isInactive) {
+        return '<div class="flex items-center gap-2 px-4 py-2.5 text-white/30 text-sm font-medium opacity-50 cursor-default" title="Tribo sem membros ativos neste ciclo">'
+          + '<span class="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[.6rem] font-bold shrink-0">' + tribe.id + '</span>'
+          + tribeLabel(tribe)
+          + ' &#x1F512;'
+          + '</div>';
+      }
+      return '<a href="' + base + '/tribe/' + tribe.id + '" data-action="close-mobile" class="flex items-center gap-2 px-4 py-2.5 text-white/80 text-sm font-medium no-underline hover:bg-white/10 transition-all">'
+        + '<span class="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[.6rem] font-bold shrink-0">' + tribe.id + '</span>'
+        + tribeLabel(tribe)
+        + '</a>';
+    }).join('');
   }
 
   function updateNavVisibility() {
@@ -260,11 +369,11 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
 
       if (access.visible && access.enabled && item.dynamic && item.resolver === 'resolveMyTribeHref') {
         const href = resolveMyTribeHref();
-        const isHighTier = (TIER_RANK[tier] ?? 0) >= (TIER_RANK['admin' as AccessTier] ?? 4);
+        const canBrowseTribes = canExploreTribes(_member);
         if (href) {
           if (desktopEl) { desktopEl.setAttribute('href', href); desktopEl.classList.remove('opacity-50', 'pointer-events-none'); desktopEl.textContent = i18n.myTribe || 'Minha Tribo'; }
           if (mobileEl) { mobileEl.setAttribute('href', href); mobileEl.classList.remove('opacity-50', 'pointer-events-none'); if (mobileEl.querySelector('span')) { mobileEl.querySelector('span')!.textContent = i18n.myTribe || 'Minha Tribo'; } }
-        } else if (isHighTier) {
+        } else if (canBrowseTribes) {
           // Desktop: inject dropdown trigger
           if (desktopEl) {
             desktopEl.style.display = 'inline-flex';
@@ -426,9 +535,7 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
         const resolved = resolveMyTribeHref();
         if (!resolved) {
           href = '/#tribes';
-          const tier = _member ? resolveTierFromMember(_member) : 'visitor';
-          const isHighTier = (TIER_RANK[tier] ?? 0) >= (TIER_RANK['admin' as AccessTier] ?? 4);
-          if (isHighTier) {
+          if (canExploreTribes(_member)) {
             labelOverride = i18n.exploreTribes || 'Explorar Tribos';
             const icon = DRAWER_ICONS[item.key] || '';
             return '<div class="drawer-tribe-group">'
@@ -497,21 +604,7 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
       target.setAttribute('aria-expanded', String(!isOpen));
       if (!isOpen) {
         loadTribesForDropdown().then(function(tribes) {
-          var base = document.documentElement.lang === 'pt-BR' || document.documentElement.lang === 'pt' ? '' : document.documentElement.lang === 'en' ? '/en' : '/es';
-          dd!.innerHTML = tribes.map(function(t: any) {
-            var active = t.is_active !== false;
-            if (active) {
-              return '<a href="' + base + '/tribe/' + t.id + '" class="flex items-center gap-2 px-3 py-2 text-[.78rem] text-slate-700 font-medium hover:bg-slate-50 no-underline transition-all">'
-                + '<span class="w-5 h-5 rounded-full bg-navy/10 flex items-center justify-center text-[.6rem] font-bold text-navy shrink-0">' + t.id + '</span>'
-                + '<span class="truncate">' + (t.name || (i18n.tribePrefix || 'Tribo') + ' ' + t.id) + '</span>'
-                + '</a>';
-            }
-            return '<div class="flex items-center gap-2 px-3 py-2 text-[.78rem] text-slate-400 font-medium opacity-50 cursor-default" title="Tribo Fechada">'
-              + '<span class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[.6rem] font-bold text-slate-400 shrink-0">' + t.id + '</span>'
-              + '<span class="truncate">' + (t.name || (i18n.tribePrefix || 'Tribo') + ' ' + t.id) + '</span>'
-              + '<span class="ml-auto text-[.7rem] shrink-0">&#x1F512;</span>'
-              + '</div>';
-          }).join('') + '<hr class="border-slate-100 my-1"><a href="' + base + '/#tribes" class="flex items-center gap-2 px-3 py-2 text-[.7rem] text-slate-400 font-medium hover:bg-slate-50 no-underline transition-all"><span class="w-5 h-5 flex items-center justify-center text-[.7rem]">&#x1F30D;</span>' + (i18n.exploreTribes || 'Ver todas') + '</a>';
+          dd!.innerHTML = renderDesktopTribeDropdown(tribes);
         });
       }
     }
@@ -526,21 +619,7 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
       if (!isOpenD && !dtl.dataset.loaded) {
         dtl.dataset.loaded = '1';
         loadTribesForDropdown().then(function(tribes) {
-          var base = document.documentElement.lang === 'pt-BR' || document.documentElement.lang === 'pt' ? '' : document.documentElement.lang === 'en' ? '/en' : '/es';
-          dtl!.innerHTML = tribes.map(function(t: any) {
-            var active = t.is_active !== false;
-            if (active) {
-              return '<a href="' + base + '/tribe/' + t.id + '" class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[.73rem] text-slate-600 font-medium no-underline hover:bg-slate-50 transition-all">'
-                + '<span class="w-4 h-4 rounded-full bg-navy/10 flex items-center justify-center text-[.55rem] font-bold text-navy shrink-0">' + t.id + '</span>'
-                + (t.name || 'Tribo ' + t.id)
-                + '</a>';
-            }
-            return '<div class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[.73rem] text-slate-400 font-medium opacity-50 cursor-default" title="Tribo Fechada">'
-              + '<span class="w-4 h-4 rounded-full bg-slate-200 flex items-center justify-center text-[.55rem] font-bold text-slate-400 shrink-0">' + t.id + '</span>'
-              + (t.name || 'Tribo ' + t.id)
-              + ' &#x1F512;'
-              + '</div>';
-          }).join('');
+          dtl!.innerHTML = renderDrawerTribeDropdown(tribes);
         });
       }
     }
@@ -552,21 +631,7 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
       ddm.classList.toggle('hidden');
       if (!isOpenM) {
         loadTribesForDropdown().then(function(tribes) {
-          var base = document.documentElement.lang === 'pt-BR' || document.documentElement.lang === 'pt' ? '' : document.documentElement.lang === 'en' ? '/en' : '/es';
-          ddm!.innerHTML = tribes.map(function(t: any) {
-            var active = t.is_active !== false;
-            if (active) {
-              return '<a href="' + base + '/tribe/' + t.id + '" data-action="close-mobile" class="flex items-center gap-2 px-4 py-2.5 text-white/80 text-sm font-medium no-underline hover:bg-white/10 transition-all">'
-                + '<span class="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[.6rem] font-bold shrink-0">' + t.id + '</span>'
-                + (t.name || (i18n.tribePrefix || 'Tribo') + ' ' + t.id)
-                + '</a>';
-            }
-            return '<div class="flex items-center gap-2 px-4 py-2.5 text-white/30 text-sm font-medium opacity-50 cursor-default" title="Tribo Fechada">'
-              + '<span class="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[.6rem] font-bold shrink-0">' + t.id + '</span>'
-              + (t.name || (i18n.tribePrefix || 'Tribo') + ' ' + t.id)
-              + ' &#x1F512;'
-              + '</div>';
-          }).join('');
+          ddm!.innerHTML = renderMobileTribeDropdown(tribes);
         });
       }
     }

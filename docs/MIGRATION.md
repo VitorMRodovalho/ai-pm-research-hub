@@ -160,4 +160,4 @@ For the first webinar MVP, webinar operations should remain **events-first** and
 - If the product later approves external registration, reusable speaker entities, or webinar-specific certificate automation, define the new data model and migration path before adding more schema.
 
 ### Supporting reference
-See `docs/WEBINARS_MODULE_DISCOVERY.md` for the approved discovery scope, non-goals, and recommended rollout path.
+See `docs/WEBINARS_MODULE_DISCOVERY.md` for the approved discovery scope and rollout boundaries, and `docs/WEBINARS_CONVERGENCE_PROPOSAL.md` for the recommended path on deprecating or converging the standalone `webinars` table.

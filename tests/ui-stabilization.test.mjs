@@ -91,6 +91,30 @@ test('attendance and admin comms accept contextual webinar handoff state from UR
   assert.equal(comms.includes('data-action="copy-template"'), true);
 });
 
+test('tribe exploration and lifecycle management honor active-member access plus project management controls', () => {
+  const nav = read('src/components/nav/Nav.astro');
+  const tribe = read('src/pages/tribe/[id].astro');
+  const admin = read('src/pages/admin/index.astro');
+  const tribeAccess = read('src/lib/tribes/access.ts');
+  const migration = read('supabase/migrations/20260311123000_expand_tribe_lifecycle_management_access.sql');
+
+  assert.equal(tribeAccess.includes('export function canExploreTribes'), true);
+  assert.equal(tribeAccess.includes('export function canManageTribeLifecycle'), true);
+  assert.equal(nav.includes("sb.from('public_members')"), true);
+  assert.equal(nav.includes('derived_active'), true);
+  assert.equal(nav.includes('canExploreTribes(_member)'), true);
+  assert.equal(tribe.includes('id="tribe-denied"'), true);
+  assert.equal(tribe.includes('id="tribe-shell" class="hidden"'), true);
+  assert.equal(tribe.includes('canExploreTribes(currentMember)'), true);
+  assert.equal(tribe.includes('Modo exploração:'), true);
+  assert.equal(tribe.includes(".eq('current_cycle_active', true)"), true);
+  assert.equal(admin.includes("canManageTribeLifecycle(m)"), true);
+  assert.equal(admin.includes("bindLifecycleButton('btn-move-member'"), true);
+  assert.equal(admin.includes(".from('public_members')"), true);
+  assert.equal(migration.includes("Project management access required"), true);
+  assert.equal(migration.includes("operational_role in ('manager', 'deputy_manager')"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

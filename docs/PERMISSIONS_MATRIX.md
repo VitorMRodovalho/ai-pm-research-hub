@@ -4,7 +4,7 @@
 > Qualquer alteração de acesso deve ser refletida aqui, no `navigation.config.ts`,
 > e nas RLS policies do Supabase antes de ser deployada.
 >
-> Última atualização: 2026-03-11 (Wave 33 audit: webinars authoring aids revalidated against current ACL/site hierarchy)
+> Última atualização: 2026-03-11 (Wave 34 audit: tribe exploration ACL and project-management lifecycle access revalidated against current site hierarchy)
 
 ---
 
@@ -60,7 +60,7 @@ Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Se
 | Artifacts                  |    V    |  V/A   |   V/A    |  V/A   |  V/A  |    V/A     |                                  |
 | Gamification               |    V    |   V    |    V     |   V    |   V   |     V      |                                  |
 | Attendance                 |    —    |  V/A   |    V     |  V/A   |  V/A  |    V/A     | Member: check-in próprio; gestão de eventos/roster via leader+ |
-| Minha Tribo `/tribe/[id]`  |    —    |   V    |    V     |  V/A   |  V/A  |    V/A     |                                  |
+| Minha Tribo `/tribe/[id]`  |    —    |   V    |    V     |  V/A   |  V/A  |    V/A     | Membros ativos+ podem explorar tribos ativas em modo leitura; ações locais seguem restritas à liderança/gestão |
 | Profile                    |    —    |  V/A   |   V/A    |  V/A   |  V/A  |    V/A     |                                  |
 | Admin Panel `/admin`       |    —    |   —    |    V     |   V    |  V/A  |    V/A     |                                  |
 | Admin Analytics            |    —    |   —    |    —     |   —    |   V   |     V      |                                  |
@@ -166,10 +166,10 @@ Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Se
 
 || Funcionalidade                     | Visitor | Member | Observer | Leader | Admin | Superadmin | Backend                              |
 ||------------------------------------|:-------:|:------:|:--------:|:------:|:-----:|:----------:|--------------------------------------|
-|| `admin_move_member_tribe` RPC      |    —    |   —    |    —     |   —    |   —   |     A      | SECURITY DEFINER, `is_superadmin`    |
-|| `admin_deactivate_member` RPC      |    —    |   —    |    —     |   —    |   —   |     A      | SECURITY DEFINER, `is_superadmin`    |
-|| `admin_change_tribe_leader` RPC    |    —    |   —    |    —     |   —    |   —   |     A      | SECURITY DEFINER, `is_superadmin`    |
-|| `admin_deactivate_tribe` RPC       |    —    |   —    |    —     |   —    |   —   |     A      | SECURITY DEFINER, `is_superadmin`    |
+|| `admin_move_member_tribe` RPC      |    —    |   —    |    —     |   —    |   A   |     A      | SECURITY DEFINER, gestão de projeto (`manager`, `deputy_manager`, `co_gp`) + `is_superadmin` |
+|| `admin_deactivate_member` RPC      |    —    |   —    |    —     |   —    |   A   |     A      | SECURITY DEFINER, gestão de projeto (`manager`, `deputy_manager`, `co_gp`) + `is_superadmin` |
+|| `admin_change_tribe_leader` RPC    |    —    |   —    |    —     |   —    |   A   |     A      | SECURITY DEFINER, gestão de projeto (`manager`, `deputy_manager`, `co_gp`) + `is_superadmin` |
+|| `admin_deactivate_tribe` RPC       |    —    |   —    |    —     |   —    |   A   |     A      | SECURITY DEFINER, gestão de projeto (`manager`, `deputy_manager`, `co_gp`) + `is_superadmin` |
 
 ### 3.12 Presentation Module (S-PRES1)
 
@@ -300,5 +300,6 @@ e as Edge Functions estão alinhados com esta matriz.
 | 2026-03-11 | Wave 31 audit: webinar follow-through now deep-links into filtered `Presentations` and `Workspace` views, but route visibility, tiers, and LGPD-sensitive behavior remain unchanged. |
 | 2026-03-11 | Wave 32 audit: webinar follow-through now also lands in focused `Attendance` and `Admin Comms` states, with no tier, route, or LGPD-sensitive behavior change. |
 | 2026-03-11 | Wave 33 audit: `Attendance` and `Admin Comms` gained webinar-specific contextual aids inside their existing admin/member surfaces, with no new route exposure, tier shift, or LGPD-scope change. |
+| 2026-03-11 | Wave 34 audit: `Explorar Tribos` now opens for active members+ via active-roster discovery, `/tribe/[id]` now fails closed for visitors/inactive users, and tribe lifecycle RPC actions expand from superadmin-only to project-management tier (`manager`, `deputy_manager`, `co_gp`) plus superadmin. |
 | 2026-03-11 | Wave 29 audit: browser coverage now validates anonymous denial and mocked admin rendering for `/admin/webinars`; route visibility and tier rules remain unchanged, but anonymous behavior is now explicitly fail-closed. |
 | 2026-03-11 | Wave 30 audit: `/admin/webinars` now derives recommended next actions from existing operational state; no access scope changed, only admin guidance on top of the current events-first workflow. |

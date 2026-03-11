@@ -149,7 +149,7 @@ The current production pattern is to keep communications metrics in Supabase-bac
 2. Expand browser coverage from the current anonymous guard/home runtime checks into richer internal workflows beyond the new `/admin/webinars` coverage, especially modal and authenticated operator paths.
 3. Continue sharpening the webinars operator flow on top of `events`, now deciding whether the new in-module contextual aids should mature into reusable drafting and QA helpers before any schema expansion.
 4. Keep site hierarchy, access tiers, and LGPD visibility rules aligned across nav, pages, and docs.
-5. Decide whether the existing `webinars` table should be converged, kept as non-authoritative metadata, or retired before any external registration or speaker model is introduced.
+5. Approve the prepared webinar convergence direction before any external registration or speaker model is introduced: `docs/WEBINARS_CONVERGENCE_PROPOSAL.md`.
 
 ---
 
@@ -172,6 +172,7 @@ The current production pattern is to keep communications metrics in Supabase-bac
 - `docs/MIGRATION.md` → technical transition notes and compatibility guidance
 - `docs/RELEASE_LOG.md` → operational release and hotfix history
 - `docs/WEBINARS_MODULE_DISCOVERY.md` → webinars MVP scope, source-of-truth decision, and rollout boundaries
+- `docs/WEBINARS_CONVERGENCE_PROPOSAL.md` → recommended path for deprecating or converging the standalone `webinars` table
 - `docs/CURSOR_SETUP.md` → first-use checklist for Cursor IDE
 - `docs/REPLICATION_GUIDE.md` → how to replicate the Hub for another project
 - `DEBUG_HOLISTIC_PLAYBOOK.md` → holistic debugging and troubleshooting guide

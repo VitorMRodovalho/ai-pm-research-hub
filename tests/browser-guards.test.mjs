@@ -82,6 +82,12 @@ async function run() {
     assert.equal(((await tribesDeadline.textContent()) || '').includes('Encerra Sáb 08/Mar 12h BRT'), false);
     assert.equal(await page.locator('#loginPrompt').isVisible(), true);
 
+    await page.goto(`${base}/tribe/1`, { waitUntil: 'networkidle' });
+    const tribeDenied = page.locator('#tribe-denied');
+    await tribeDenied.waitFor({ state: 'visible' });
+    assert.match(await tribeDenied.textContent() || '', /Acesso restrito a membros ativos da plataforma/);
+    assert.equal(await page.locator('#tribe-shell').isVisible(), false);
+
     await page.goto(`${base}/admin/webinars`, { waitUntil: 'networkidle' });
     const webinarsDenied = page.locator('#webinars-denied');
     await webinarsDenied.waitFor({ state: 'visible' });

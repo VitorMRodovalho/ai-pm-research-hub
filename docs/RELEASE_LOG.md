@@ -1,5 +1,38 @@
 # Release Log
 
+## 2026-03-11 — v0.32.0 Wave 34: Tribe Exploration Access And Lifecycle Expansion
+
+### Scope
+Wave 34 fixes the broken `Explorar Tribos` experience for active members, closes the implicit public gap on `/tribe/[id]`, and expands the existing tribe lifecycle operations from superadmin-only to the project-management layer.
+
+### Access / Lifecycle Upgrade
+- **`src/components/nav/Nav.astro`**: The tribe directory no longer depends on a non-existent `tribes.is_active` flag. It now derives visible tribes from the active member roster and exposes `Explorar Tribos` to active members and above even when they are not allocated to a tribe.
+- **`src/pages/tribe/[id].astro`** and **`src/lib/tribes/access.ts`**: Tribe pages now fail closed for visitors/inactive accounts, allow active members to explore other active tribes in read-only mode, and keep editing/broadcast controls restricted to local leadership or project management.
+- **`src/pages/admin/index.astro`** and **`supabase/migrations/20260311123000_expand_tribe_lifecycle_management_access.sql`**: The existing move-member, change-leader, deactivate-member, and deactivate-tribe flows now open to GP / Deputy Manager / `co_gp` in addition to superadmin, while the admin UI avoids duplicate lifecycle event binding on refresh.
+
+### Governance / Regression
+- **`tests/ui-stabilization.test.mjs`**: Regression coverage now locks the active-member tribe exploration path, the tribe page guard, and the widened lifecycle-management path.
+- **`tests/browser-guards.test.mjs`**: Browser coverage now asserts that `/tribe/1` fails closed for anonymous visitors, alongside the existing admin/webinars ACL checks.
+- **Backlog / governance / permissions** updated to reflect the hierarchy and ACL shift. Dynamic tribe creation remains intentionally deferred because the current route/catalog layer is still bounded to `1..8`.
+
+### Files Changed
+- `src/lib/tribes/access.ts`
+- `src/components/nav/Nav.astro`
+- `src/pages/tribe/[id].astro`
+- `src/pages/admin/index.astro`
+- `supabase/migrations/20260311123000_expand_tribe_lifecycle_management_access.sql`
+- `tests/ui-stabilization.test.mjs`
+- `tests/browser-guards.test.mjs`
+- `backlog-wave-planning-updated.md`, `docs/GOVERNANCE_CHANGELOG.md`, `docs/PERMISSIONS_MATRIX.md`, `docs/RELEASE_LOG.md`
+
+### Audit Results
+- Build: clean
+- Tests: 30/30
+- Browser guard: OK
+- Smoke: routes OK
+
+---
+
 ## 2026-03-11 — v0.31.0 Wave 33: Webinars In-Module Authoring Aids
 
 ### Scope

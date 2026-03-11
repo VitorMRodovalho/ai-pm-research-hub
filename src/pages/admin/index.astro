@@ -399,9 +399,10 @@ const ADMIN_I18N = {
           </div>
         </div>
 
-        <!-- Lifecycle Management (Superadmin only) -->
+        <!-- Lifecycle Management (Project management + superadmin) -->
         <div id="lifecycle-section" class="hidden mt-5">
-          <h2 class="text-lg font-extrabold text-navy mb-3">Gestao de Ciclo de Vida</h2>
+          <h2 class="text-lg font-extrabold text-navy mb-1">Gestao de Ciclo de Vida</h2>
+          <p class="text-[.72rem] text-slate-400 mb-3">GP, Deputy Manager e Superadmin podem realocar pessoas, substituir lideranca e encerrar tribos atuais. Historico completo e visao de ciclos passados continuam centralizados no painel admin e no Superadmin.</p>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
 
             <!-- Move Member -->
@@ -1137,6 +1138,7 @@ const ADMIN_I18N = {
     hasMinimumTier,
     resolveTierFromMember,
   } from '../../lib/admin/constants';
+  import { canManageTribeLifecycle } from '../../lib/tribes/access';
 
   const ADMIN_I18N = (typeof window !== 'undefined' && (window as any).__ADMIN_I18N) || {};
   let sb: any = null;
@@ -3540,7 +3542,7 @@ const ADMIN_I18N = {
 
     const m = (window as any).navGetMember?.() || MEMBER;
     if (!m) return;
-    const isAdmin = m.is_superadmin || m.operational_role === 'manager' || m.operational_role === 'deputy_manager' || m.operational_role === 'co_gp';
+    const isAdmin = canManageTribeLifecycle(m);
     if (!isAdmin) return;
 
     section.classList.remove('hidden');
@@ -3579,7 +3581,7 @@ const ADMIN_I18N = {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // Lifecycle Management (Superadmin only)
+  // Lifecycle Management (Project management + superadmin)
   // ═══════════════════════════════════════════════════════════════
 
   async function initLifecycleControls() {
@@ -3587,13 +3589,14 @@ const ADMIN_I18N = {
     if (!section || !sb) return;
 
     const m = (window as any).navGetMember?.() || MEMBER;
-    if (!m || !m.is_superadmin) return;
+    if (!m || !canManageTribeLifecycle(m)) return;
 
     section.classList.remove('hidden');
 
-    const { data: members } = await sb.from('members')
-      .select('id, name, tribe_id, operational_role, current_cycle_active')
+    const { data: members } = await sb.from('public_members')
+      .select('id, name, tribe_id, operational_role, current_cycle_active, is_active')
       .eq('current_cycle_active', true)
+      .eq('is_active', true)
       .order('name');
 
     const { data: tribes } = await sb.from('tribes')
@@ -3623,7 +3626,8 @@ const ADMIN_I18N = {
     populateSelect('lc-deact-tribe', tribeOpts, 'Selecione a tribo...');
 
     const leaderTribeSel = document.getElementById('lc-leader-tribe') as HTMLSelectElement;
-    if (leaderTribeSel) {
+    if (leaderTribeSel && !leaderTribeSel.dataset.bound) {
+      leaderTribeSel.dataset.bound = '1';
       leaderTribeSel.addEventListener('change', function() {
         const tid = Number(this.value);
         const tribeMembers = activeMembers
@@ -3669,38 +3673,45 @@ const ADMIN_I18N = {
         + '<pre class="text-sm whitespace-pre-wrap">' + body + '</pre></div>';
     }
 
-    document.getElementById('btn-move-member')?.addEventListener('click', function() {
+    const bindLifecycleButton = (id: string, handler: (btn: HTMLButtonElement) => void) => {
+      const btn = document.getElementById(id) as HTMLButtonElement | null;
+      if (!btn || btn.dataset.bound) return;
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', () => handler(btn));
+    };
+
+    bindLifecycleButton('btn-move-member', (btn) => {
       const mid = (document.getElementById('lc-move-member') as HTMLSelectElement).value;
       const tid = Number((document.getElementById('lc-move-tribe') as HTMLSelectElement).value);
       const reason = (document.getElementById('lc-move-reason') as HTMLInputElement).value.trim();
       if (!mid || !tid) { alert('Selecione membro e tribo.'); return; }
       if (!confirm('Transferir este membro para a tribo selecionada?')) return;
-      callRpc('admin_move_member_tribe', { p_member_id: mid, p_new_tribe_id: tid, p_reason: reason || 'Administrative transfer' }, this as HTMLButtonElement);
+      callRpc('admin_move_member_tribe', { p_member_id: mid, p_new_tribe_id: tid, p_reason: reason || 'Administrative transfer' }, btn);
     });
 
-    document.getElementById('btn-change-leader')?.addEventListener('click', function() {
+    bindLifecycleButton('btn-change-leader', (btn) => {
       const tid = Number((document.getElementById('lc-leader-tribe') as HTMLSelectElement).value);
       const mid = (document.getElementById('lc-leader-member') as HTMLSelectElement).value;
       const reason = (document.getElementById('lc-leader-reason') as HTMLInputElement).value.trim();
       if (!tid || !mid) { alert('Selecione tribo e novo lider.'); return; }
       if (!confirm('Substituir o lider desta tribo? O lider atual sera rebaixado.')) return;
-      callRpc('admin_change_tribe_leader', { p_tribe_id: tid, p_new_leader_id: mid, p_reason: reason || 'Leadership transition' }, this as HTMLButtonElement);
+      callRpc('admin_change_tribe_leader', { p_tribe_id: tid, p_new_leader_id: mid, p_reason: reason || 'Leadership transition' }, btn);
     });
 
-    document.getElementById('btn-deact-member')?.addEventListener('click', function() {
+    bindLifecycleButton('btn-deact-member', (btn) => {
       const mid = (document.getElementById('lc-deact-member') as HTMLSelectElement).value;
       const reason = (document.getElementById('lc-deact-reason') as HTMLInputElement).value.trim();
       if (!mid) { alert('Selecione o membro.'); return; }
       if (!confirm('ATENCAO: Esta acao ira desligar o pesquisador do ciclo ativo. Confirma?')) return;
-      callRpc('admin_deactivate_member', { p_member_id: mid, p_reason: reason || 'Administrative deactivation' }, this as HTMLButtonElement);
+      callRpc('admin_deactivate_member', { p_member_id: mid, p_reason: reason || 'Administrative deactivation' }, btn);
     });
 
-    document.getElementById('btn-deact-tribe')?.addEventListener('click', function() {
+    bindLifecycleButton('btn-deact-tribe', (btn) => {
       const tid = Number((document.getElementById('lc-deact-tribe') as HTMLSelectElement).value);
       const reason = (document.getElementById('lc-deact-tribe-reason') as HTMLInputElement).value.trim();
       if (!tid) { alert('Selecione a tribo.'); return; }
       if (!confirm('ATENCAO: Todos os membros desta tribo serao inativados. Esta acao e irreversivel. Confirma?')) return;
-      callRpc('admin_deactivate_tribe', { p_tribe_id: tid, p_reason: reason || 'Tribe deactivated' }, this as HTMLButtonElement);
+      callRpc('admin_deactivate_tribe', { p_tribe_id: tid, p_reason: reason || 'Tribe deactivated' }, btn);
     });
 
     // Onboarding broadcast buttons

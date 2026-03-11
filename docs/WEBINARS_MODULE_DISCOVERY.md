@@ -63,7 +63,7 @@ Status: discovery complete, with the first admin orchestration surface now imple
 ## Next Implementation Slice
 
 - If the team still wants less operator effort, evolve the new contextual aids into lightweight reusable helpers for message drafting or event QA without cloning the underlying workflows locally.
-- Decide whether the existing `webinars` table should be converged into `events`, kept as non-authoritative metadata, or retired before any broader webinar schema work begins.
+- Review `docs/WEBINARS_CONVERGENCE_PROPOSAL.md` and approve whether the existing `webinars` table should be converged into `events` or retired before any broader webinar schema work begins.
 - Keep avoiding webinar-local CRUD until there is an approved need that the current event, content, and comms stack cannot cover safely.
 
 ## Follow-Through Already Applied

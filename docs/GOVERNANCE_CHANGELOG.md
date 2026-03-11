@@ -1,5 +1,25 @@
 # Governance Changelog
 
+## 2026-03-11 — Wave 34: Tribe Exploration Access And Lifecycle Expansion
+
+### Decisions
+
+1. **Tribe discovery should be available to active members even without a current tribe allocation**: The platform now treats active membership as sufficient to explore active tribes in read-only mode, instead of hiding tribe navigation behind personal allocation only.
+
+2. **Viewing another tribe and managing another tribe are separate concerns**: `/tribe/[id]` now allows broader read access for active members, but editing, broadcast, and other management actions remain restricted to local leadership or the project-management layer.
+
+3. **Project management must be able to operate tribe lifecycle flows without waiting on superadmin**: The existing lifecycle RPCs for moving members, replacing tribe leaders, and deactivating members/tribes now extend to GP / Deputy Manager / `co_gp`, while superadmin remains the broader historical and inactive-state authority.
+
+### Process Lessons Learned
+
+1. **Navigation bugs can hide source-of-truth drift**: The broken `Explorar Tribos` flow surfaced that the frontend still assumed a `tribes.is_active` field that is not present in the typed schema. Deriving visibility from the active roster is safer than relying on a phantom flag.
+
+2. **Quick fixes should still close the security side of the loop**: Fixing the menu alone would have left `/tribe/[id]` loosely exposed. The route guard had to be tightened in the same slice so discovery and protection stayed aligned.
+
+3. **Not every adjacent ask belongs in the same sprint**: Dynamic tribe creation was intentionally left for a later slice because the route, catalog, and i18n layers are still hard-bounded to the current `1..8` tribe set.
+
+---
+
 ## 2026-03-11 — Wave 33: Webinars In-Module Authoring Aids
 
 ### Decisions

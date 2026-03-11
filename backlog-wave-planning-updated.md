@@ -8,6 +8,16 @@
 
 ## LATEST UPDATE (2026-03-11)
 
+### Entregue em Wave 34
+- **W34.1 Explore Tribes Active Access**: `Nav.astro` deixa de depender de `tribes.is_active` e passa a liberar `Explorar Tribos` para membros ativos+ usando o diretório atual de tribos + membros ativos do ciclo.
+- **W34.2 Tribe Exploration Guardrails**: `tribe/[id].astro` agora falha fechada para visitantes/inativos, libera exploração view-only para membros ativos e mantém ações locais restritas à liderança/gestão.
+- **W34.3 Lifecycle Access Expansion**: as operações de realocação, troca de liderança e encerramento de tribo foram reabertas para GP / Deputy Manager / `co_gp` no painel admin e nas RPCs de lifecycle já existentes.
+
+### Wave 34 Audit Results (2026-03-11)
+- **Build**: clean | **Tests**: 30/30 | **Browser guard**: OK | **Smoke**: routes OK
+- **Site hierarchy / ACL**: `Explorar Tribos` agora respeita o requisito de exploração para membros ativos+; `/tribe/[id]` deixa de ficar implicitamente público; lifecycle operacional sobe de superadmin-only para a camada de gestão do projeto
+- **Known follow-through**: abertura dinâmica de novas tribos ainda fica pendente, porque a rota `tribe/[id]` e parte do catálogo/i18n continuam ancorados no conjunto atual `1..8`
+
 ### Entregue em Wave 33
 - **W33.1 Attendance Edit Assistant**: o handoff contextual em `attendance.astro` agora ajuda o operador dentro do modal de edição, focando o campo certo e exibindo orientação curta para meeting link ou replay.
 - **W33.2 Comms Playbook Assist**: `admin/comms.astro` agora mostra um playbook rápido com assunto/mensagem-base copiáveis quando o contexto vier de um webinar.
