@@ -399,22 +399,23 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
     el.innerHTML = `
       <div class="rounded-2xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700">
-        <div class="relative px-6 py-6" style="background: linear-gradient(135deg, ${qColor} 0%, ${qColor}CC 100%)">
-          <div class="flex items-center gap-5 flex-wrap">
+        <div class="relative px-6 py-6" style="background: linear-gradient(135deg, ${qColor} 0%, ${qColor}DD 50%, ${qColor}AA 100%)">
+          <div class="absolute inset-0 bg-black/30"></div>
+          <div class="relative flex items-center gap-5 flex-wrap">
             <div class="relative">
               ${leaderPhotoLarge}
               <div class="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg flex items-center justify-center text-white text-[11px] font-extrabold shadow-sm" style="background:${qColor}">T${TRIBE_ID}</div>
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap mb-1">
-                <h1 class="text-xl font-extrabold text-white drop-shadow-sm">${escapeHtml(tribeName)}</h1>
+                <h1 class="text-xl font-extrabold text-white" style="text-shadow: 0 1px 3px rgba(0,0,0,0.4)">${escapeHtml(tribeName)}</h1>
                 ${quadrantLabel ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/20 text-white backdrop-blur-sm">${escapeHtml(quadrantLabel)}</span>` : ''}
-                <button data-action="toggle-context-switch" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white/15 text-white/80 border border-white/20 hover:bg-white/25 transition-all cursor-pointer backdrop-blur-sm">
+                <button data-action="toggle-context-switch" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white/15 text-white border border-white/25 hover:bg-white/25 transition-all cursor-pointer backdrop-blur-sm">
                   Trocar ▾
                 </button>
               </div>
               <div id="tribe-context-switch" class="hidden mt-2 rounded-xl border border-slate-200 bg-white shadow-lg p-3 max-w-xl absolute z-20 left-6 right-6"></div>
-              <p class="text-[13px] text-white/80 leading-relaxed line-clamp-2">${escapeHtml(tribeDescription)}</p>
+              <p class="text-[13px] text-white/90 leading-relaxed line-clamp-2" style="text-shadow: 0 1px 2px rgba(0,0,0,0.3)">${escapeHtml(tribeDescription)}</p>
             </div>
           </div>
         </div>

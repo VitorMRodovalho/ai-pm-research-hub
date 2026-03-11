@@ -495,6 +495,7 @@ Para eliminar execucao fora de sequencia e reduzir regressoes, o backlog opera c
 | S24 | API for Chapters | Deferred | Design pendente. |
 | S-KNW7 | Gemini Extraction Pipeline | Deferred | Baixa prioridade. |
 | W13.2 | ResourcesSection → hub_resources | Partial | Já usa `hub_resources` client-side; fallback estático para SSR. Melhoria SSR deferida. |
+| S-LEG1 | Legacy Tribes UI — Tier 3 Tables | Deferred | As páginas "Legado (Read-only)" estão vazias porque o frontend não consome `legacy_member_links`, `tribe_lineage`, `legacy_tribe_board_links`, `board_source_tribe_map`, `board_lifecycle_events`. Diagnóstico: tabelas populadas, UI desconectada. Ação: criar componentes de visualização histórica em `/teams` e no context-switch da tribo, consumindo Tier 3. Depende de decisão de produto sobre escopo visual. |
 
 ### Wave 13 Audit Results (2026-03-11)
 - **Build**: clean | **Tests**: 13/13

@@ -43,6 +43,9 @@ type BoardItem = {
   checklist?: ChecklistItem[] | string | null;
   attachments?: AttachmentItem[] | string | null;
   updated_at?: string | null;
+  origin_tribe_id?: number | null;
+  origin_tribe_name?: string | null;
+  is_legacy?: boolean;
 };
 
 type Lane = { key: string; label: string };
@@ -188,7 +191,12 @@ function SortableCard({
         }
       }}
     >
-      <h4 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 mb-2 line-clamp-2">{item.title || 'Sem titulo'}</h4>
+      <h4 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 mb-1 line-clamp-2">{item.title || 'Sem titulo'}</h4>
+      {item.is_legacy && item.origin_tribe_name ? (
+        <span className="inline-block text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 font-bold mb-1">
+          Legado: {item.origin_tribe_name}
+        </span>
+      ) : null}
       <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-300">
         {assigneePhoto ? (
           <img src={assigneePhoto} className="w-5 h-5 rounded-full object-cover" alt="assignee" />
@@ -335,16 +343,24 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
     setBoardId(String(activeBoard.id));
     setCanEdit(canEditBoard(member, tribeData));
 
-    const [{ data: boardItems }, { data: tribeMembers }] = await Promise.all([
+    const [{ data: boardItems }, { data: tribeMembers }, { data: legacyItems }] = await Promise.all([
       sb.rpc('list_board_items', { p_board_id: activeBoard.id, p_status: null }),
       sb.from('public_members').select('id,name,photo_url').eq('tribe_id', tribeId).eq('current_cycle_active', true).eq('is_active', true),
+      sb.rpc('list_legacy_board_items_for_tribe', { p_current_tribe_id: tribeId }).catch(() => ({ data: [] })),
     ]);
 
     setMembers(Array.isArray(tribeMembers) ? tribeMembers : []);
     setTribeData(tribeData);
     setCurrentMember(member);
     const raw = (Array.isArray(boardItems) ? boardItems : []).filter((item: any) => item.status !== 'archived');
-    setItems(raw.map((row: any) => ({ ...row, curation_status: row.curation_status || 'draft' })));
+    const legacyRaw = (Array.isArray(legacyItems) ? legacyItems : [])
+      .filter((item: any) => item.status !== 'archived')
+      .map((row: any) => ({ ...row, is_legacy: true, curation_status: row.curation_status || 'draft' }));
+    const combined = [
+      ...raw.map((row: any) => ({ ...row, curation_status: row.curation_status || 'draft' })),
+      ...legacyRaw,
+    ];
+    setItems(combined);
     setLoading(false);
   }
 
