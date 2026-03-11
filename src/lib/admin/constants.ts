@@ -191,6 +191,18 @@ export function isAnalyticsReadonlyAudience(member: any): boolean {
   return canReadInternalAnalytics(member) && !canManageAdminActions(member);
 }
 
+export function canAccessWebinarsWorkspace(member: any): boolean {
+  if (!member) return false;
+  if (member.is_superadmin) return true;
+
+  const opRole = String(member.operational_role || 'guest');
+  const designations: string[] = Array.isArray(member.designations) ? member.designations : [];
+  const allowedRoles = ['manager', 'deputy_manager', 'tribe_leader', 'facilitator', 'guest'];
+  if (allowedRoles.includes(opRole)) return true;
+
+  return ['comms_leader', 'comms_member', 'curator', 'co_gp'].some((d) => designations.includes(d));
+}
+
 export function getTier(m: any): string {
   return resolveTierFromMember(m);
 }

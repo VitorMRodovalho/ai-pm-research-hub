@@ -3089,3 +3089,35 @@ When backend truth and frontend experience diverge, the release log must say so 
 Every production affecting hotfix, stabilization batch, or materially visible backend change should create or update an entry in this file.
 
 Automated semantic versioning can come later. Team memory cannot.
+
+---
+
+## 2026-03-11 — Navigation taxonomy + webinars emancipation + tribe context switch
+
+### Scope
+Restructure project navigation to distinguish research vs operational fronts, expose webinars outside strict admin navigation, and add in-page context switching for multi-tribe operators.
+
+### Delivered
+- New authenticated navigation items:
+  - `Projetos/Equipes` (`/teams`)
+  - `Webinars` (`/webinars`) with role/designation-aware access
+- Webinars route emancipated from admin-only gate:
+  - `src/pages/admin/webinars.astro` now uses `canAccessWebinarsWorkspace(member)`
+  - non-admin personas (leadership/comms/curator/facilitator/guest) can operate the panel by contract
+  - `src/pages/webinars.astro` added as the public route entrypoint
+- Admin subnav cleaned up to remove webinars from strict admin navigation (`AdminNav.astro`)
+- Tribe page got a context-switch menu in header (`src/pages/tribe/[id].astro`) with grouped jump links:
+  - Ativas (Pesquisa)
+  - Subprojetos (Operação)
+  - Legado (Read-only)
+- Taxonomy persisted in DB:
+  - migration `20260314152000_tribes_workstream_type_taxonomy.sql`
+  - adds `tribes.workstream_type` with constraint (`research | operational | legacy`)
+  - marks operational tribes (incl. comms mapping)
+- Legacy `/teams` route no longer redirects to home anchor; now renders grouped project catalog UI.
+
+### Validation captured
+- `npm test` passed (75/75)
+- `npm run build` passed
+- `supabase db push` applied:
+  - `20260314152000_tribes_workstream_type_taxonomy.sql`

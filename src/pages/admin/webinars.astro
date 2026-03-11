@@ -1,15 +1,12 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
-import AdminNav from '../../components/nav/AdminNav.astro';
+import { canAccessWebinarsWorkspace } from '../../lib/admin/constants';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
-<BaseLayout title={t('nav.adminWebinars', lang)} activePage="admin">
-  <div class="max-w-[1200px] mx-auto px-4 pt-6">
-    <AdminNav activeSub="webinars" lang={lang} />
-  </div>
+<BaseLayout title={t('nav.adminWebinars', lang)} activePage="webinars">
   <div id="webinars-loading" class="max-w-[1200px] mx-auto px-4 py-12 text-center text-slate-400">
     Carregando painel de webinars...
   </div>
@@ -158,7 +155,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
   <div id="webinars-denied" class="hidden max-w-[900px] mx-auto px-4 py-16 text-center">
     <div class="text-4xl mb-3">🔒</div>
-    <p class="font-semibold text-slate-600">Acesso restrito a administradores.</p>
+    <p class="font-semibold text-slate-600">Acesso restrito a liderancas, comms, curadoria e facilitadores convidados.</p>
     <a href="/" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
       Voltar
     </a>
@@ -166,8 +163,6 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 </BaseLayout>
 
 <script>
-  import { canAccessAdminRoute } from '../../lib/admin/constants';
-
   let sb: any = null;
   let webinarArtifactsByEventId = new Map<string, any>();
   let webinarWorkspaceByKey = new Map<string, any>();
@@ -323,7 +318,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     }
     return {
       label: 'Fluxo completo',
-      href: '/admin/webinars',
+      href: '/webinars',
       note: 'Replay e publicacao ja estao alinhados nas superficies atuais.',
       tone: 'bg-emerald-50 text-emerald-700 border-emerald-200',
       done: true,
@@ -613,7 +608,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       return;
     }
 
-    if (!canAccessAdminRoute(member, 'admin_webinars')) {
+    if (!canAccessWebinarsWorkspace(member)) {
       showDenied();
       return;
     }

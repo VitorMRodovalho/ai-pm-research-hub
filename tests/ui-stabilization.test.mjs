@@ -61,12 +61,13 @@ test('confirm dialog no longer mutates confirm button onclick directly', () => {
 
 test('admin webinars now reuses the events stack instead of staying a placeholder', () => {
   const content = read('src/pages/admin/webinars.astro');
+  const publicRoute = read('src/pages/webinars.astro');
   assert.equal(content.includes('Em Breve'), false);
   assert.equal(content.includes("sb.rpc('get_events_with_attendance'"), true);
   assert.equal(content.includes("sb.rpc('list_meeting_artifacts'"), true);
   assert.equal(content.includes("sb.from('hub_resources').select('*').eq('is_active', true).eq('asset_type', 'webinar')"), true);
   assert.equal(content.includes("ev.type === 'webinar'"), true);
-  assert.equal(content.includes("canAccessAdminRoute(member, 'admin_webinars')"), true);
+  assert.equal(content.includes('canAccessWebinarsWorkspace(member)'), true);
   assert.equal(content.includes("navSb?.auth?.getSession"), true);
   assert.equal(content.includes('list_webinars'), false);
   assert.equal(content.includes('Agenda & Presenca'), true);
@@ -86,6 +87,7 @@ test('admin webinars now reuses the events stack instead of staying a placeholde
   assert.equal(content.includes("params.set('type', 'webinar')"), true);
   assert.equal(content.includes('Proxima acao:'), true);
   assert.equal(content.includes('renderActions(webinars);'), true);
+  assert.equal(publicRoute.includes("import WebinarsPanel from './admin/webinars.astro';"), true);
 });
 
 test('presentations and workspace accept deep-link query filters for webinar follow-through', () => {
@@ -203,6 +205,7 @@ test('tribe catalog supports dynamic runtime entries and explicit active status'
   assert.equal(admin.includes("data-action=\"create-tribe\""), true);
   assert.equal(admin.includes("data-action=\"toggle-tribe-active\""), true);
   assert.equal(nav.includes("select('id, name, whatsapp_url, quadrant, quadrant_name, is_active')"), true);
+  assert.equal(tribe.includes('id="tribe-context-switch"'), true);
   assert.equal(workspace.includes("sb.from('tribes').select('id, name, is_active').order('id')"), true);
   assert.equal(artifacts.includes("sb.from('tribes').select('id, name, is_active').order('id')"), true);
   assert.equal(gamification.includes("sb.from('tribes').select('id, name, quadrant').eq('is_active', true).order('id')"), true);
@@ -649,6 +652,17 @@ test('board lifecycle and source-to-tribe integrity contracts are backend-enforc
   assert.equal(migration.includes('create or replace function public.admin_restore_project_board('), true);
   assert.equal(migration.includes('create or replace function public.admin_archive_board_item('), true);
   assert.equal(migration.includes('create or replace function public.admin_restore_board_item('), true);
+});
+
+test('tribe taxonomy includes workstream classification for navigation grouping', () => {
+  const migration = read('supabase/migrations/20260314152000_tribes_workstream_type_taxonomy.sql');
+  const teams = read('src/pages/teams.astro');
+  assert.equal(migration.includes('add column if not exists workstream_type text not null default'), true);
+  assert.equal(migration.includes("check (workstream_type in ('research', 'operational', 'legacy'))"), true);
+  assert.equal(teams.includes('Ativas (Pesquisa)'), true);
+  assert.equal(teams.includes('Subprojetos (Operação)'), true);
+  assert.equal(teams.includes('Legado (Read-only)'), true);
+  assert.equal(teams.includes("select('id, name, quadrant_name, is_active, workstream_type')"), true);
 });
 
 test('schedule flow no longer depends on far-future deadline sentinel', () => {

@@ -359,6 +359,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   let publishedArtifacts: any[] = [];
   let commsHubShown = false;
   let contactData: Record<string, {email?:string, phone?:string}> = {};
+  let contextSwitchLoaded = false;
+  let contextCatalog: { active: any[]; operational: any[]; legacy: any[] } = { active: [], operational: [], legacy: [] };
 
   function getActiveCycleCode(): string {
     return currentCycleCode || allDeliverables.find((item: any) => item?.cycle_code)?.cycle_code || '';
@@ -489,8 +491,12 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap mb-1">
               <h1 class="text-xl font-extrabold text-navy">T${TRIBE_ID}: ${escapeHtml(tribeName)}</h1>
+              <button data-action="toggle-context-switch" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all cursor-pointer">
+                Trocar contexto ▾
+              </button>
               ${quadrantLabel ? `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide bg-purple/10 text-purple">${escapeHtml(quadrantLabel)}</span>` : ''}
             </div>
+            <div id="tribe-context-switch" class="hidden mt-2 rounded-xl border border-slate-200 bg-white shadow-sm p-3 max-w-xl"></div>
             <p class="text-[13px] text-slate-500 leading-relaxed mb-3">${escapeHtml(tribeDescription)}</p>
             <div class="flex flex-wrap gap-x-5 gap-y-2 text-[13px]">
               <div class="flex items-center gap-2">
@@ -526,6 +532,62 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         }
       }
     }
+  }
+
+  function renderContextSection(title: string, items: string[]): string {
+    if (!items.length) return '';
+    return `<div class="mb-2">
+      <div class="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1">${title}</div>
+      <div class="space-y-1">${items.join('')}</div>
+    </div>`;
+  }
+
+  function renderContextSwitchMenu() {
+    const el = document.getElementById('tribe-context-switch');
+    if (!el) return;
+    const activeLinks = contextCatalog.active.map((tribe: any) => `
+      <a href="/tribe/${tribe.id}" class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-medium text-slate-700 hover:bg-slate-50 no-underline transition-all">
+        <span class="w-4 h-4 rounded-full bg-navy/10 text-navy text-[10px] flex items-center justify-center font-bold">${tribe.id}</span>
+        ${escapeHtml(buildTribeLabel(tribe, { prefix: I18N.tribePrefix || 'Tribo' }))}
+      </a>
+    `);
+
+    const opLinks = contextCatalog.operational.map((tribe: any) => `
+      <a href="/tribe/${tribe.id}" class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-medium text-slate-700 hover:bg-slate-50 no-underline transition-all">
+        <span class="w-4 h-4 rounded-full bg-purple/10 text-purple text-[10px] flex items-center justify-center font-bold">${tribe.id}</span>
+        ${escapeHtml(buildTribeLabel(tribe, { prefix: I18N.tribePrefix || 'Tribo' }))}
+      </a>
+    `);
+    const webinars = `<a href="/webinars" class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-medium text-slate-700 hover:bg-slate-50 no-underline transition-all">🎙️ Webinars</a>`;
+    const opWithWebinars = [webinars, ...opLinks];
+
+    const legacyLinks = contextCatalog.legacy.map((legacy: any) => `
+      <a href="/#team" class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] font-medium text-slate-500 hover:bg-slate-50 no-underline transition-all">
+        <span class="text-[10px]">🏛️</span>
+        ${escapeHtml(legacy.legacy_name || `Legado #${legacy.id}`)}
+      </a>
+    `);
+
+    el.innerHTML = [
+      renderContextSection('Ativas (Pesquisa)', activeLinks),
+      renderContextSection('Subprojetos (Operação)', opWithWebinars),
+      renderContextSection('Legado (Read-only)', legacyLinks),
+    ].join('');
+  }
+
+  async function ensureContextSwitchData() {
+    if (contextSwitchLoaded || !sb) return;
+    const [{ data: tribes }, { data: legacy }] = await Promise.all([
+      sb.from('tribes').select('id, name, is_active, workstream_type').order('id'),
+      sb.from('legacy_tribes').select('id, legacy_name').order('id'),
+    ]);
+
+    const visibleTribes = (tribes || []).filter((tribe: any) => canSeeInactiveTribes(currentMember) || tribe.is_active !== false);
+    contextCatalog.active = visibleTribes.filter((tribe: any) => String(tribe.workstream_type || 'research') === 'research');
+    contextCatalog.operational = visibleTribes.filter((tribe: any) => String(tribe.workstream_type || '') === 'operational');
+    contextCatalog.legacy = legacy || [];
+    contextSwitchLoaded = true;
+    renderContextSwitchMenu();
   }
 
   // ── Members tab ──
@@ -953,6 +1015,16 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
             (window as any).toast?.(data?.error || 'Error', 'error');
           }
         })();
+      }
+
+      if (action === 'toggle-context-switch') {
+        const switcher = document.getElementById('tribe-context-switch');
+        if (!switcher) return;
+        const opening = switcher.classList.contains('hidden');
+        switcher.classList.toggle('hidden');
+        if (opening) {
+          ensureContextSwitchData();
+        }
       }
     });
 
@@ -1435,6 +1507,16 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       (window as any).toast?.('Erro ao criar quadro', 'error');
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = 'Criar Quadro'; }
+    }
+  });
+
+  document.addEventListener('click', (e: MouseEvent) => {
+    const panel = document.getElementById('tribe-context-switch');
+    if (!panel || panel.classList.contains('hidden')) return;
+    const trigger = (e.target as HTMLElement).closest('[data-action="toggle-context-switch"]');
+    if (trigger) return;
+    if (!panel.contains(e.target as Node)) {
+      panel.classList.add('hidden');
     }
   });
 

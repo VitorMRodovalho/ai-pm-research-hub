@@ -171,10 +171,10 @@ async function run() {
     assert.match(await tribeDenied.textContent() || '', /Acesso restrito a membros ativos da plataforma/);
     assert.equal(await page.locator('#tribe-shell').isVisible(), false);
 
-    await page.goto(`${base}/admin/webinars`, { waitUntil: 'networkidle' });
+    await page.goto(`${base}/webinars`, { waitUntil: 'networkidle' });
     const webinarsDenied = page.locator('#webinars-denied');
     await webinarsDenied.waitFor({ state: 'visible' });
-    assert.match(await webinarsDenied.textContent() || '', /Acesso restrito a administradores/);
+    assert.match(await webinarsDenied.textContent() || '', /Acesso restrito a liderancas, comms, curadoria e facilitadores convidados/);
     assert.equal(await page.locator('#webinars-content').isVisible(), false);
 
     await page.goto(`${base}/admin/curatorship`, { waitUntil: 'networkidle' });
@@ -257,7 +257,7 @@ async function run() {
     assert.equal(await curatorshipPage.locator('.kanban-card').count(), 0);
     await curatorshipPage.close();
 
-    await page.goto(`${base}/admin/webinars`, { waitUntil: 'networkidle' });
+    await page.goto(`${base}/webinars`, { waitUntil: 'networkidle' });
     await page.evaluate(() => {
       const fakeMember = {
         auth_id: 'admin-browser-test',

@@ -19,6 +19,7 @@ export interface NavItem {
   href: string;
   minTier: AccessTier;
   allowedDesignations?: string[];
+  allowedOperationalRoles?: string[];
   requiresAuth: boolean;
   section: 'main' | 'drawer' | 'both';
   group?: string;
@@ -66,6 +67,8 @@ export const NAV_ITEMS: NavItem[] = [
   // ─── Authenticated pages ───
   { key: 'attendance', labelKey: 'nav.attendance',  href: '/attendance', minTier: 'member', requiresAuth: true, section: 'both', group: 'member', badge: 'crimson' },
   { key: 'my-tribe',   labelKey: 'nav.myTribe',    href: '/tribe/',     minTier: 'member', requiresAuth: true, section: 'both', group: 'member', badge: 'teal', dynamic: true, resolver: 'resolveMyTribeHref' },
+  { key: 'projects',   labelKey: 'nav.exploreTribes', href: '/teams',   minTier: 'member', requiresAuth: true, section: 'both', group: 'member' },
+  { key: 'webinars',   labelKey: 'nav.adminWebinars', href: '/webinars', minTier: 'leader', requiresAuth: true, section: 'both', group: 'subprojects', allowedDesignations: ['comms_leader', 'comms_member', 'curator', 'co_gp'], allowedOperationalRoles: ['facilitator', 'guest'] },
 
   // ─── Profile drawer only ───
   { key: 'profile', labelKey: 'nav.profile', href: '/profile', minTier: 'member', requiresAuth: true, section: 'drawer', group: 'profile' },
@@ -74,7 +77,6 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'admin',           labelKey: 'nav.admin',          href: '/admin',           minTier: 'observer', requiresAuth: true, section: 'both',   group: 'admin', badge: 'purple' },
   { key: 'admin-analytics', labelKey: 'nav.adminAnalytics', href: '/admin/analytics', minTier: 'admin',    requiresAuth: true, section: 'drawer', group: 'admin-sub', allowedDesignations: ['sponsor', 'chapter_liaison', 'curator'] },
   { key: 'admin-comms',     labelKey: 'nav.adminComms',     href: '/admin/comms',     minTier: 'admin',    requiresAuth: true, section: 'drawer', group: 'admin-sub', allowedDesignations: ['comms_leader', 'comms_member'], lgpdSensitive: true },
-  { key: 'admin-webinars', labelKey: 'nav.adminWebinars', href: '/admin/webinars', minTier: 'admin',    requiresAuth: true, section: 'drawer', group: 'admin-sub' },
   { key: 'admin-curatorship', labelKey: 'nav.adminCuratorship', href: '/admin/curatorship', minTier: 'observer', requiresAuth: true, section: 'drawer', group: 'admin-sub' },
   { key: 'admin-selection', labelKey: 'nav.adminSelection', href: '/admin/selection', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'admin-sub', lgpdSensitive: true },
   { key: 'admin-settings',  labelKey: 'nav.adminSettings',  href: '/admin/settings', minTier: 'superadmin', requiresAuth: true, section: 'drawer', group: 'admin-sub' },
@@ -85,7 +87,8 @@ export function getItemAccessibility(
   item: NavItem,
   tier: AccessTier,
   designations: string[],
-  isLoggedIn: boolean
+  isLoggedIn: boolean,
+  operationalRole?: string
 ): ItemAccessibility {
   if (item.requiresAuth && !isLoggedIn) {
     return { visible: false, enabled: false, requiredTier: item.minTier };
@@ -95,7 +98,10 @@ export function getItemAccessibility(
   const hasDesig = item.allowedDesignations?.length
     ? item.allowedDesignations.some(d => designations.includes(d))
     : false;
-  const enabled = meetsMinTier || hasDesig;
+  const hasOperationalRole = item.allowedOperationalRoles?.length
+    ? item.allowedOperationalRoles.includes(operationalRole || '')
+    : false;
+  const enabled = meetsMinTier || hasDesig || hasOperationalRole;
 
   if (item.lgpdSensitive && !enabled) {
     return { visible: false, enabled: false, requiredTier: item.minTier };
