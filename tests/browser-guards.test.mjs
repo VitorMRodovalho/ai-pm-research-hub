@@ -182,13 +182,13 @@ async function run() {
     assert.match(await curDenied.textContent() || '', /Acesso restrito a administradores e lideres/);
     assert.equal(await page.locator('#cur-board').isVisible(), false);
 
-    await page.goto(`${base}/admin/board-governance`, { waitUntil: 'networkidle' });
+    await page.goto(`${base}/admin/governance-v2`, { waitUntil: 'networkidle' });
     const boardGovDenied = page.locator('#boardgov-denied');
     await boardGovDenied.waitFor({ state: 'visible' });
     assert.match(await boardGovDenied.textContent() || '', /Acesso restrito a gestão de projeto/);
 
     const boardGovPage = await browser.newPage();
-    await boardGovPage.goto(`${base}/admin/board-governance`, { waitUntil: 'networkidle' });
+    await boardGovPage.goto(`${base}/admin/governance-v2`, { waitUntil: 'networkidle' });
     await boardGovPage.evaluate(() => {
       const fakeMember = {
         auth_id: 'board-gov-admin-test',

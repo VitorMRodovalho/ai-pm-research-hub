@@ -11,7 +11,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
 
 const CRITICAL_PAGES = [
-  'src/pages/admin/board-governance.astro',
+  'src/pages/admin/governance-v2.astro',
   'src/pages/admin/comms-ops.astro',
   'src/pages/admin/portfolio.astro',
   'src/pages/index.astro',

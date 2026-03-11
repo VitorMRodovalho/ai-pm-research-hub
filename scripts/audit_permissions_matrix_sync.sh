@@ -13,7 +13,7 @@ required_keys=(
   "admin-comms"
   "admin-comms-ops"
   "admin-portfolio"
-  "admin-board-governance"
+  "admin-governance-v2"
 )
 
 for key in "${required_keys[@]}"; do

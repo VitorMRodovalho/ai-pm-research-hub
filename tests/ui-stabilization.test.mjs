@@ -900,14 +900,14 @@ test('route smoke script validates anonymous deny markers on protected routes', 
   const smoke = read('scripts/smoke-routes.mjs');
   assert.equal(smoke.includes("assertOk('/publications')"), true);
   assert.equal(smoke.includes("assertOk('/admin/portfolio')"), true);
-  assert.equal(smoke.includes("assertOk('/admin/board-governance')"), true);
+  assert.equal(smoke.includes("assertOk('/admin/governance-v2')"), true);
   assert.equal(smoke.includes("assertOk('/admin/comms-ops')"), true);
   assert.equal(smoke.includes("assertContains('/admin/selection', 'id=\"sel-denied\"')"), true);
   assert.equal(smoke.includes("assertContains('/admin/analytics', 'id=\"analytics-denied\"')"), true);
   assert.equal(smoke.includes("assertContains('/admin/curatorship', 'id=\"cur-denied\"')"), true);
   assert.equal(smoke.includes("assertContains('/admin/comms', 'id=\"comms-denied\"')"), true);
   assert.equal(smoke.includes("assertContains('/admin/portfolio', 'id=\"portfolio-denied\"')"), true);
-  assert.equal(smoke.includes("assertContains('/admin/board-governance', 'id=\"boardgov-denied\"')"), true);
+  assert.equal(smoke.includes("assertContains('/admin/governance-v2', 'id=\"boardgov-denied\"')"), true);
   assert.equal(smoke.includes("assertContains('/admin/comms-ops', 'id=\"commsops-denied\"')"), true);
   assert.equal(smoke.includes("assertContains('/webinars', 'id=\"webinars-denied\"')"), true);
   assert.equal(smoke.includes("assertContains('/tribe/1', 'id=\"tribe-denied\"')"), true);
@@ -920,17 +920,17 @@ test('permissions matrix stays aligned with navigation config', () => {
   const pkg = read('package.json');
   assert.equal(navConfig.includes("key: 'admin-comms-ops'"), true);
   assert.equal(navConfig.includes("key: 'admin-portfolio'"), true);
-  assert.equal(navConfig.includes("key: 'admin-board-governance'"), true);
+  assert.equal(navConfig.includes("key: 'admin-governance-v2'"), true);
   assert.equal(matrix.includes('admin-comms-ops'), true);
   assert.equal(matrix.includes('admin-portfolio'), true);
-  assert.equal(matrix.includes('admin-board-governance'), true);
+  assert.equal(matrix.includes('admin-governance-v2'), true);
   assert.equal(script.includes('[permissions-sync] PASS'), true);
   assert.equal(pkg.includes('"audit:permissions"'), true);
 });
 
 test('portfolio and board governance admin pages are wired', () => {
   const portfolio = read('src/pages/admin/portfolio.astro');
-  const boardGov = read('src/pages/admin/board-governance.astro');
+  const boardGov = read('src/pages/admin/governance-v2.astro');
   const commsOps = read('src/pages/admin/comms-ops.astro');
   assert.equal(portfolio.includes("sb.rpc('exec_portfolio_board_summary'"), true);
   assert.equal(portfolio.includes('id="portfolio-denied"'), true);

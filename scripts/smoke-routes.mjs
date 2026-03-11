@@ -71,7 +71,7 @@ async function run() {
     await assertOk('/admin/curatorship');
     await assertOk('/admin/analytics');
     await assertOk('/admin/portfolio');
-    await assertOk('/admin/board-governance');
+    await assertOk('/admin/governance-v2');
     await assertOk('/admin/comms-ops');
     await assertOk('/admin/selection');
     await assertOk('/admin/comms');
@@ -86,7 +86,7 @@ async function run() {
     await assertContains('/admin/curatorship', 'id="cur-denied"');
     await assertContains('/admin/comms', 'id="comms-denied"');
     await assertContains('/admin/portfolio', 'id="portfolio-denied"');
-    await assertContains('/admin/board-governance', 'id="boardgov-denied"');
+    await assertContains('/admin/governance-v2', 'id="boardgov-denied"');
     await assertContains('/admin/comms-ops', 'id="commsops-denied"');
     await assertContains('/webinars', 'id="webinars-denied"');
     await assertContains('/tribe/1', 'id="tribe-denied"');

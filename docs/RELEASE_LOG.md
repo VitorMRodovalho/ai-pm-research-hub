@@ -1,5 +1,22 @@
 # Release Log
 
+## 2026-03-15 — fix: aggressive rename to bypass cloudflare fs cache issues
+
+### Scope
+Build Cloudflare continuou falhando com ENOENT em `board-governance.astro` mesmo após fix de case-sensitivity. Purga completa: ficheiro removido, nova página `governance-v2.astro` criada com nome totalmente novo para evitar conflitos de cache do sistema de ficheiros no Linux.
+
+### Delivered
+- **board-governance.astro**: eliminado fisicamente.
+- **governance-v2.astro**: nova página com a mesma funcionalidade em `/admin/governance-v2`.
+- **navigation.config.ts**: item `admin-governance-v2` com href `/admin/governance-v2`.
+- **Nav.astro, scripts, testes, PERMISSIONS_MATRIX.md**: todas as referências atualizadas.
+
+### Validation
+- `npm run build` — sucesso local
+- `npm test` — sucesso
+
+---
+
 ## 2026-03-15 — fix: resolve board-governance ENOENT blocking Cloudflare build
 
 ### Scope

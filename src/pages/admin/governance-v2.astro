@@ -1,5 +1,5 @@
 ---
-// Route: /admin/board-governance — lowercase path for Linux case-sensitive FS (Cloudflare)
+// Route: /admin/governance-v2 (renamed from board-governance to bypass Cloudflare FS cache)
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
