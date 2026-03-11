@@ -1,5 +1,26 @@
 # Governance Changelog
 
+## 2026-03-11 — ADR Baseline For Durable Technical Decisions
+
+### Decisions
+
+1. **Decisões arquiteturais passam a ter trilha dedicada em ADR**: foi criado `docs/adr/` para registrar decisões técnicas de longo prazo separadas do changelog operacional.
+
+2. **Baseline inicial de ADR cobre pilares estruturais atuais**:
+   - fonte de verdade e separação snapshot/histórico;
+   - role model v3 (`operational_role` + `designations`);
+   - analytics admin como superfície read-only interna.
+
+3. **Índice ADR entra no fluxo de manutenção com auditoria automática**: `scripts/audit_adr_index.sh` valida referências do índice para evitar drift documental.
+
+### Process Lessons Learned
+
+1. **Governança e arquitetura precisam camadas distintas de documentação**: separar ADR de changelog melhora rastreabilidade de "decisão técnica" versus "evento operacional".
+
+2. **Índice sem validação tende a envelhecer rápido**: lock automatizado reduz risco de referências quebradas durante evolução contínua.
+
+---
+
 ## 2026-03-11 — Docs Index Integrity Automation
 
 ### Decisions

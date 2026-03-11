@@ -31,9 +31,10 @@ Ordem recomendada:
 1. `AGENTS.md`
 2. `CONTRIBUTING.md`
 3. `docs/project-governance/BRANCH_ENFORCEMENT.md`
-4. `docs/project-governance/PROJECT_AUTOMATION_SHORT_GUIDE.md`
-5. `docs/MIGRATION.md`
-6. `docs/RELEASE_PROCESS.md`
+4. `docs/adr/README.md`
+5. `docs/project-governance/PROJECT_AUTOMATION_SHORT_GUIDE.md`
+6. `docs/MIGRATION.md`
+7. `docs/RELEASE_PROCESS.md`
 
 ## 4) Sponsor / Chapter Liaison (leitura executiva)
 
@@ -48,6 +49,7 @@ Ordem recomendada:
 ## 5) Rotas de referência por tema
 
 - **Governança**: `docs/project-governance/`
+- **Decisões arquiteturais (ADR)**: `docs/adr/README.md`
 - **Migrations e runbooks SQL**: `docs/migrations/`
 - **Sprints específicas**: `docs/sprints/`
 - **Webinars**: `docs/WEBINARS_MODULE_DISCOVERY.md` e `docs/WEBINARS_CONVERGENCE_PROPOSAL.md`
@@ -67,4 +69,8 @@ Para garantir que os links/referências do índice continuam válidos:
 
 ```bash
 ./scripts/audit_docs_index_links.sh
+```
+
+```bash
+./scripts/audit_adr_index.sh
 ```

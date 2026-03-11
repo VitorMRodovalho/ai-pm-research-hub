@@ -1,5 +1,29 @@
 # Release Log
 
+## 2026-03-11 — Sprint 37 (Dev): ADR Baseline Extraction
+
+### Scope
+Separar decisões técnicas duráveis em ADRs curtos, evitando mistura de arquitetura com log operacional de governança.
+
+### Delivered
+- Novo pacote `docs/adr/`:
+  - `docs/adr/README.md` (índice e processo)
+  - `docs/adr/ADR-0001-source-of-truth-and-cycle-history.md`
+  - `docs/adr/ADR-0002-role-model-v3-operational-role-and-designations.md`
+  - `docs/adr/ADR-0003-admin-analytics-internal-readonly-surface.md`
+- Novo script `scripts/audit_adr_index.sh` para validar integridade do índice ADR.
+- `docs/INDEX.md` atualizado com rota de ADR e comando de auditoria.
+- `README.md` atualizado no mapa documental.
+- `tests/ui-stabilization.test.mjs` com lock de regressão para baseline ADR.
+
+### Audit Results
+- `./scripts/audit_adr_index.sh`
+- `./scripts/audit_docs_index_links.sh`
+- `npm test`
+- `npm run build`
+
+---
+
 ## 2026-03-11 — Sprint 36 (Dev): Docs Index Execution Pass
 
 ### Scope

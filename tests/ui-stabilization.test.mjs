@@ -774,6 +774,22 @@ test('docs index exposes persona map and has audit script for reference integrit
   assert.equal(auditScript.includes('broken references'), true);
 });
 
+test('adr baseline exists and index audit script validates referenced ADR files', () => {
+  const adrIndex = read('docs/adr/README.md');
+  const adr1 = read('docs/adr/ADR-0001-source-of-truth-and-cycle-history.md');
+  const adr2 = read('docs/adr/ADR-0002-role-model-v3-operational-role-and-designations.md');
+  const adr3 = read('docs/adr/ADR-0003-admin-analytics-internal-readonly-surface.md');
+  const adrAudit = read('scripts/audit_adr_index.sh');
+  assert.equal(adrIndex.includes('ADR-0001-source-of-truth-and-cycle-history.md'), true);
+  assert.equal(adrIndex.includes('ADR-0002-role-model-v3-operational-role-and-designations.md'), true);
+  assert.equal(adrIndex.includes('ADR-0003-admin-analytics-internal-readonly-surface.md'), true);
+  assert.equal(adr1.includes('`members` representa snapshot atual'), true);
+  assert.equal(adr2.includes('operational_role'), true);
+  assert.equal(adr3.includes('/admin/analytics'), true);
+  assert.equal(adrAudit.includes('docs/adr/README.md'), true);
+  assert.equal(adrAudit.includes('ADR index has broken references'), true);
+});
+
 test('home pages resolve shared home schedule instead of fetching only the deadline', () => {
   const pt = read('src/pages/index.astro');
   const en = read('src/pages/en/index.astro');
