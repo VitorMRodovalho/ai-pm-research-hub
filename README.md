@@ -166,6 +166,7 @@ The current production pattern is to keep communications metrics in Supabase-bac
 
 ## Repository Documentation Map
 
+- `docs/INDEX.md` → entrypoint por persona para navegação de documentação
 - `README.md` → project entry point, product context, stack, and current status
 - `AGENTS.md` → context for AI assistants (Cursor) and contributors; conventions and doc map
 - `CONTRIBUTING.md` → how to contribute, quality gates, release discipline

@@ -1,5 +1,22 @@
 # Release Log
 
+## 2026-03-11 — Sprint 18 (Dev): Documentation Index by Persona
+
+### Scope
+Reduzir fricção de onboarding e navegação documental com um índice orientado por persona e integração no mapa oficial do repositório.
+
+### Delivered
+- `docs/INDEX.md`:
+  - trilhas de leitura por persona (GP/PM, liderança operacional, contributor, sponsor/chapter liaison);
+  - atalhos por tema e regra operacional de atualização documental.
+- `README.md`:
+  - `docs/INDEX.md` adicionado ao `Repository Documentation Map`.
+
+### Audit Results
+- Validado com `npm run build`.
+
+---
+
 ## 2026-03-11 — Sprint 17 (Dev): CI/Branch Hardening Operational Gate
 
 ### Scope
