@@ -182,6 +182,47 @@ async function run() {
     assert.match(await curDenied.textContent() || '', /Acesso restrito a administradores e lideres/);
     assert.equal(await page.locator('#cur-board').isVisible(), false);
 
+    await page.goto(`${base}/admin/board-governance`, { waitUntil: 'networkidle' });
+    const boardGovDenied = page.locator('#boardgov-denied');
+    await boardGovDenied.waitFor({ state: 'visible' });
+    assert.match(await boardGovDenied.textContent() || '', /Acesso restrito a gestão de projeto/);
+
+    const boardGovPage = await browser.newPage();
+    await boardGovPage.goto(`${base}/admin/board-governance`, { waitUntil: 'networkidle' });
+    await boardGovPage.evaluate(() => {
+      const fakeMember = {
+        auth_id: 'board-gov-admin-test',
+        operational_role: 'manager',
+        designations: ['co_gp'],
+        is_superadmin: false,
+        name: 'Board Governance Admin',
+      };
+      const fakeRows = [
+        {
+          id: '00000000-0000-0000-0000-000000000001',
+          board_id: 1,
+          board_name: 'Quadro Geral',
+          board_scope: 'tribe',
+          domain_key: 'research_delivery',
+          title: 'Card Arquivado Teste',
+        },
+      ];
+      const fakeSb = {
+        rpc(name) {
+          if (name === 'admin_list_archived_board_items') return Promise.resolve({ data: fakeRows, error: null });
+          if (name === 'admin_restore_board_item') return Promise.resolve({ data: { success: true }, error: null });
+          return Promise.resolve({ data: [], error: null });
+        },
+      };
+      window.navGetMember = () => fakeMember;
+      window.navGetSb = () => fakeSb;
+      window.dispatchEvent(new CustomEvent('nav:member', { detail: fakeMember }));
+    });
+    await boardGovPage.locator('#boardgov-panel').waitFor({ state: 'visible' });
+    assert.equal(await boardGovPage.locator('[data-action="restore-archived-item"]').count() > 0, true);
+    await boardGovPage.locator('[data-action="restore-archived-item"]').first().click();
+    await boardGovPage.close();
+
     const curatorshipPage = await browser.newPage();
     await curatorshipPage.goto(`${base}/admin/curatorship`, { waitUntil: 'networkidle' });
     await curatorshipPage.evaluate(() => {

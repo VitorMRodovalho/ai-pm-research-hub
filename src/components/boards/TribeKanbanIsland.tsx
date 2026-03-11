@@ -110,11 +110,13 @@ function SortableCard({
   canEdit,
   assigneePhoto,
   onOpen,
+  onLaneKeyboardMove,
 }: {
   item: BoardItem;
   canEdit: boolean;
   assigneePhoto?: string;
   onOpen: (item: BoardItem) => void;
+  onLaneKeyboardMove: (item: BoardItem, direction: -1 | 1) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
@@ -139,6 +141,16 @@ function SortableCard({
       className={`rounded-xl border p-3 shadow-sm transition-all ${canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900`}
       onClick={() => onOpen(item)}
       onKeyDown={(e) => {
+        if (e.shiftKey && e.key === 'ArrowLeft') {
+          e.preventDefault();
+          onLaneKeyboardMove(item, -1);
+          return;
+        }
+        if (e.shiftKey && e.key === 'ArrowRight') {
+          e.preventDefault();
+          onLaneKeyboardMove(item, 1);
+          return;
+        }
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           onOpen(item);
@@ -255,6 +267,16 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
     windowRef?.toast?.('Status atualizado', 'success');
   }
 
+  async function moveViaKeyboard(item: BoardItem, direction: -1 | 1) {
+    if (!canEdit) return;
+    const laneIdx = LANES.findIndex((lane) => lane.key === item.status);
+    if (laneIdx < 0) return;
+    const targetLane = LANES[laneIdx + direction];
+    if (!targetLane || targetLane.key === item.status) return;
+    setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, status: targetLane.key } : row)));
+    await persistMove(item.id, targetLane.key, item.status);
+  }
+
   async function onDragEnd(event: DragEndEvent) {
     setActiveId('');
     if (!canEdit) return;
@@ -364,6 +386,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
                       canEdit={canEdit}
                       assigneePhoto={members.find((m) => m.id === item.assignee_id)?.photo_url || undefined}
                       onOpen={setModalItem}
+                      onLaneKeyboardMove={moveViaKeyboard}
                     />
                   ))}
                   {itemsByLane[lane.key].length === 0 ? (

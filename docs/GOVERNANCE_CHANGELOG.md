@@ -925,3 +925,18 @@ O board de tribo deixa de depender do motor vanilla no painel principal e adota 
 
 ### Implication
 Reduzimos fricção operacional, facilitamos manutenção futura e criamos base sustentável para concluir paridade entre board de tribo e board de publicações.
+
+---
+
+## 2026-03-11 — Admin portfolio governance surfaces
+
+### Decision
+Superfícies administrativas de governança de board passam a ser first-class no produto (`portfolio`, `board-governance`, `comms-ops`) com acesso orientado por tier/designação e contratos RPC explícitos.
+
+### Rules
+- Leituras executivas de portfólio devem ocorrer por RPC consolidada (`exec_portfolio_board_summary`).
+- Detecção de drift taxonomy e sanity devem gerar trilha de execução/auditoria em tabelas próprias.
+- Restore de cards arquivados deve ser operado por superfície administrativa dedicada, mantendo soft-delete.
+
+### Implication
+O ciclo de governança deixa de depender de queries ad-hoc e ganha rotina operacional reproduzível para gestão e auditoria contínuas.

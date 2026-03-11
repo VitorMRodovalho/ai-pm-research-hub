@@ -65,6 +65,9 @@ Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Se
 | Admin Panel `/admin`       |    —    |   —    |    V     |   V    |  V/A  |    V/A     |                                  |
 | Admin Analytics            |    —    |   —    |    V     |   —    |   V   |     V      | `sponsor`, `curator`, `chapter_liaison`: V read-only only |
 | Admin Comms Dashboard      |    —    |   —    |    —     |   —    |   V   |     V      | `comms_leader`, `comms_member`: V |
+| Admin Comms Ops `/admin/comms-ops` | — | — | — | — | V | V | `comms_leader`, `comms_member`: V |
+| Admin Portfolio `/admin/portfolio` | — | — | V | — | V | V | `sponsor`, `chapter_liaison`, `curator`, `co_gp`: V |
+| Admin Board Governance `/admin/board-governance` | — | — | — | — | V/A | V/A | `curator`, `co_gp`: V/A |
 | Help `/help`               |    —    |   V    |    V     |   V    |   V   |     V      | LGPD topics hidden for non-admin |
 | Webinars `/webinars`       |    —    |   —    |    —     |  V/A   |  V/A  |    V/A     | Também acessível por `comms_leader`, `comms_member`, `curator`, `co_gp`, `facilitator`, `guest` |
 | Publicações `/publications`|    —    |   —    |    —     |  V/A   |  V/A  |    V/A     | Também acessível por `curator`, `co_gp`, `comms_leader`, `comms_member`, `communicator` |
@@ -228,6 +231,9 @@ Itens de navegação com tier insuficiente: visíveis mas desabilitados (opacida
 | `admin`          | `observer` | —                                | ✅         |
 | `admin-analytics`   | `admin`    | `['sponsor', 'chapter_liaison', 'curator']` | ✅ (read-only analytics audience) |
 | `admin-comms`      | `admin`    | `['comms_leader', 'comms_member']`| ✅ (lgpdSensitive) |
+| `admin-comms-ops`  | `admin`    | `['comms_leader', 'comms_member']`| ✅ (ops dashboard, lgpdSensitive) |
+| `admin-portfolio`  | `admin`    | `['sponsor','chapter_liaison','curator']` | ✅ (executive read surface) |
+| `admin-board-governance` | `admin` | `['curator','co_gp']` | ✅ (restore/lifecycle governance) |
 | `admin-curatorship`| `observer` | —                                | ✅         |
 | `admin-selection`  | `admin`    | —                                | ✅ (lgpdSensitive) |
 | `admin-settings`   | `superadmin` | —                             | ✅ (S-RM5)         |
@@ -309,3 +315,4 @@ e as Edge Functions estão alinhados com esta matriz.
 | 2026-03-11 | Wave 34 audit: `Explorar Tribos` now opens for active members+ via active-roster discovery, `/tribe/[id]` now fails closed for visitors/inactive users, and tribe lifecycle RPC actions expand from superadmin-only to project-management tier (`manager`, `deputy_manager`, `co_gp`) plus superadmin. |
 | 2026-03-11 | Wave 29 audit: browser coverage now validates anonymous denial and mocked admin rendering for `/admin/webinars`; route visibility and tier rules remain unchanged, but anonymous behavior is now explicitly fail-closed. |
 | 2026-03-11 | Wave 30 audit: `/admin/webinars` now derives recommended next actions from existing operational state; no access scope changed, only admin guidance on top of the current events-first workflow. |
+| 2026-03-11 | Wave W77 audit: `admin-comms-ops`, `admin-portfolio` e `admin-board-governance` adicionados na matriz e sincronizados com `navigation.config.ts` via `audit_permissions_matrix_sync.sh`. |

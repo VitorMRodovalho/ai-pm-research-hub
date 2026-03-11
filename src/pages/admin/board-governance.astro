@@ -1,0 +1,95 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+---
+
+<BaseLayout title={t('nav.adminBoardGovernance', lang)} activePage="admin">
+  <div class="max-w-[1100px] mx-auto px-4 py-8 space-y-4">
+    <div id="boardgov-loading" class="text-slate-400 text-sm">Carregando governança de boards...</div>
+    <div id="boardgov-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
+      Acesso restrito a gestão de projeto.
+    </div>
+    <section id="boardgov-panel" class="hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h1 class="text-xl font-extrabold text-navy mb-3">Governança de Boards Arquivados</h1>
+      <div id="boardgov-list" class="space-y-2"></div>
+    </section>
+  </div>
+</BaseLayout>
+
+<script>
+  function hasBoardGovAccess(member: any): boolean {
+    if (!member) return false;
+    if (member.is_superadmin) return true;
+    const role = String(member.operational_role || '');
+    const designations: string[] = Array.isArray(member.designations) ? member.designations : [];
+    return ['manager', 'deputy_manager'].includes(role)
+      || ['co_gp', 'curator', 'comms_leader'].some((d) => designations.includes(d));
+  }
+
+  function rowHtml(row: any): string {
+    return `
+      <article class="rounded-xl border border-slate-200 bg-slate-50 p-3 flex items-center gap-3">
+        <div class="min-w-0 flex-1">
+          <div class="text-sm font-semibold text-slate-800 truncate">${row.title || 'Sem título'}</div>
+          <div class="text-xs text-slate-500">${row.board_name || 'Board'} · ${row.board_scope || 'scope'} · ${row.domain_key || 'domain'}</div>
+        </div>
+        <button data-action="restore-archived-item" data-item-id="${row.id}" class="px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 text-xs font-semibold hover:bg-emerald-50">Restaurar</button>
+      </article>
+    `;
+  }
+
+  async function loadArchived() {
+    const sb = (window as any).navGetSb?.();
+    const { data, error } = await sb.rpc('admin_list_archived_board_items', { p_board_id: null, p_limit: 200 });
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  }
+
+  async function restoreItem(itemId: string) {
+    const sb = (window as any).navGetSb?.();
+    const { error } = await sb.rpc('admin_restore_board_item', {
+      p_item_id: itemId,
+      p_reason: 'Restored from board governance page',
+    });
+    if (error) throw error;
+  }
+
+  async function bootBoardGovPage() {
+    const loading = document.getElementById('boardgov-loading');
+    const denied = document.getElementById('boardgov-denied');
+    const panel = document.getElementById('boardgov-panel');
+    const list = document.getElementById('boardgov-list');
+    const member = (window as any).navGetMember?.();
+    const sb = (window as any).navGetSb?.();
+    if (!member || !sb) {
+      window.addEventListener('nav:member', () => bootBoardGovPage(), { once: true });
+      return;
+    }
+    loading?.classList.add('hidden');
+    if (!hasBoardGovAccess(member)) {
+      denied?.classList.remove('hidden');
+      return;
+    }
+    panel?.classList.remove('hidden');
+    const rows = await loadArchived();
+    if (list) list.innerHTML = rows.length ? rows.map((r: any) => rowHtml(r)).join('') : '<p class="text-sm text-slate-500">Nenhum card arquivado.</p>';
+  }
+
+  document.addEventListener('click', async (event) => {
+    const target = (event.target as HTMLElement).closest<HTMLElement>('[data-action="restore-archived-item"]');
+    if (!target) return;
+    const itemId = target.dataset.itemId || '';
+    if (!itemId) return;
+    try {
+      await restoreItem(itemId);
+      (window as any).toast?.('Card restaurado com sucesso.', 'success');
+      await bootBoardGovPage();
+    } catch (error) {
+      console.error(error);
+      (window as any).toast?.('Falha ao restaurar card.', 'error');
+    }
+  });
+
+  bootBoardGovPage();
+</script>

@@ -915,16 +915,38 @@ This backlog now reflects the actual state of production. All items marked Done 
 |---|---|---|---|---|
 | W75 | Tribe board island migration phase 1 | High | Done | `TribeKanbanIsland` criada em React com DnD, sensores de teclado e integração RPC de movimentação. |
 | W76 | Tribe board island migration phase 2 | High | Done | Modal rico de card (descrição/checklist/responsável/prazo/arquivamento) conectado a `upsert_board_item` e `admin_archive_board_item`. |
-| W77 | Board permissions matrix sync | High | Planned | Alinhar `navigation.config`, PERMISSIONS_MATRIX e validações automatizadas de acesso por rota. |
-| W78 | Publications workflow UI metadata | Medium | Planned | Expor captura de `channel/submitted_at/outcome` no fluxo do board global de publicações. |
-| W79 | Executive portfolio page | Medium | Planned | Nova superfície frontend consumindo `exec_portfolio_board_summary` para leitura de diretoria. |
-| W80 | Taxonomy drift alerts | Medium | Planned | Alertas automáticos para inconsistências de board taxonomy e compliance operacional. |
-| W81 | Archived board governance UX | Medium | Planned | Tela administrativa para restore/lifecycle de cards e boards arquivados com trilha de auditoria. |
-| W82 | Kanban keyboard accessibility v2 | Medium | Planned | Expandir navegação por teclado para board da tribo e atalhos de foco/edição. |
-| W83 | Dark mode contrast QA automation | Medium | Planned | Automatizar checklist visual com snapshots principais em light/dark por persona. |
-| W84 | i18n sweep kanban + nav | Medium | Planned | Cobrir strings residuais de Kanban/nav em PT/EN/ES com lock de regressão. |
-| W85 | Comms operational dashboard | Medium | Planned | Painel de SLA e throughput específico para comunicação usando contratos backend. |
-| W86 | Portfolio data sanity v2 | High | Planned | Rotinas de saneamento incremental para legado órfão sem hard delete. |
-| W87 | End-to-end board lifecycle guards | High | Planned | Browser guards focados em create/edit/archive/restore por perfil e designação. |
-| W88 | Governance docs refresh | Medium | Planned | Atualizar runbooks, changelog e playbooks pós-migração total para islands. |
-| W89 | Roadmap vNext checkpoint | High | Planned | Decisão de próxima onda arquitetural com gap analysis fechado e métricas de UX/ops. |
+| W77 | Board permissions matrix sync | High | Done | Novas rotas admin (`admin-comms-ops`, `admin-portfolio`, `admin-board-governance`) sincronizadas entre `navigation.config.ts` e `PERMISSIONS_MATRIX.md` com auditoria automatizada (`audit_permissions_matrix_sync.sh`). |
+| W78 | Publications workflow UI metadata | Medium | Done | `PublicationsBoardIsland` agora permite registrar metadados de submissão (`channel`, `submitted_at`, `outcome`, `notes`) via RPC `upsert_publication_submission_event`. |
+| W79 | Executive portfolio page | Medium | Done | Nova página `/admin/portfolio` consumindo `exec_portfolio_board_summary` e oferecendo comandos operacionais para drift/sanity. |
+| W80 | Taxonomy drift alerts | Medium | Done | Migration `20260314195000_board_taxonomy_alerts.sql` cria ledger de alertas e RPC `admin_detect_board_taxonomy_drift`. |
+| W81 | Archived board governance UX | Medium | Done | Nova página `/admin/board-governance` + RPC `admin_list_archived_board_items` para restore governado de cards arquivados. |
+| W82 | Kanban keyboard accessibility v2 | Medium | Done | `TribeKanbanIsland` expandida com atalhos `Shift + ArrowLeft/ArrowRight` para movimentar cards por teclado. |
+| W83 | Dark mode contrast QA automation | Medium | Done | Script `audit_dark_mode_contrast_snapshots.sh` e comando `npm run audit:dark:contrast` adicionados ao pipeline QA. |
+| W84 | i18n sweep kanban + nav | Medium | Done | Chaves i18n novas em PT/EN/ES para superfícies de publicações e novas entradas de navegação admin. |
+| W85 | Comms operational dashboard | Medium | Done | Nova página `/admin/comms-ops` com KPIs de impressões/engajamento/conversões e tabela operacional recente. |
+| W86 | Portfolio data sanity v2 | High | Done | Migration `20260314197000_portfolio_data_sanity_v2.sql` com ledger e RPC `admin_run_portfolio_data_sanity`. |
+| W87 | End-to-end board lifecycle guards | High | Done | `browser-guards.test.mjs` expandido para cenário de governança de boards (deny + restore flow simulado). |
+| W88 | Governance docs refresh | Medium | Done | QA/permissions/runbooks atualizados para refletir novas superfícies admin e guardrails operacionais. |
+| W89 | Roadmap vNext checkpoint | High | Done | Checkpoint operacional concluído com backlog atualizado e fila seguinte preparada para execução contínua. |
+
+---
+
+## PRÓXIMAS 15 SPRINTS (W90-W104)
+
+| Sprint | Foco | Priority | Status | Description |
+|---|---|---|---|---|
+| W90 | Tribe island parity hardening | High | Planned | Fechar lacunas de UX entre board de tribo e publicações (filtros avançados e restore contextual). |
+| W91 | Portfolio alert inbox | Medium | Planned | Surface para alertas abertos de taxonomy com resolução assistida. |
+| W92 | Governance restore audit timeline | Medium | Planned | Timeline de restaurações de cards/boards com export CSV de auditoria. |
+| W93 | Comms ops trend charts | Medium | Planned | Evoluir `comms-ops` com tendências semanais/mensais em gráficos nativos. |
+| W94 | Submission workflow board badges | Medium | Planned | Exibir badges de status de submissão diretamente nos cards de publicações. |
+| W95 | Route policy contract tests | High | Planned | Testes contratuais para matriz de permissões por rota e designação. |
+| W96 | Dark mode screenshot diff gate | Medium | Planned | Gate automatizado de regressão visual por diff de screenshot. |
+| W97 | Data sanity remediation runbook | High | Planned | Playbook de correção para cada tipo de inconsistência detectada em sanity. |
+| W98 | Cross-board transfer UI | Medium | Planned | UI administrativa para `move_board_item_to_board` com validação de domínio/escopo. |
+| W99 | Admin productivity command palette | Low | Planned | Atalhos rápidos para ações recorrentes no painel administrativo. |
+| W100 | i18n completeness audit automation | Medium | Planned | Auditoria automática de strings hardcoded residuais em páginas críticas. |
+| W101 | Browser guard flake reduction v2 | Medium | Planned | Estabilização adicional dos testes E2E com retries por etapa crítica. |
+| W102 | Governance API docs pack | Medium | Planned | Documentação técnica das RPCs de governança/portfolio para onboarding. |
+| W103 | Portfolio KPI calibration | High | Planned | Ajuste de limiares de risco e severidade por coluna/domínio de board. |
+| W104 | Roadmap closure checkpoint v2 | High | Planned | Revisão executiva do ciclo W90-W104 e definição da próxima onda. |

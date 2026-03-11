@@ -45,9 +45,11 @@ function canAccessPublicationsWorkspace(member: any): boolean {
 function SortableCard({
   item,
   onLaneKeyboardMove,
+  onOpen,
 }: {
   item: BoardItem;
   onLaneKeyboardMove: (item: BoardItem, direction: -1 | 1) => void;
+  onOpen: (item: BoardItem) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const style: React.CSSProperties = {
@@ -73,6 +75,7 @@ function SortableCard({
           onLaneKeyboardMove(item, 1);
         }
       }}
+      onDoubleClick={() => onOpen(item)}
       className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-sm cursor-grab active:cursor-grabbing"
     >
       <h3 className="text-[12px] font-bold text-navy dark:text-slate-100 mb-1">{item.title || 'Sem título'}</h3>
@@ -101,6 +104,11 @@ export default function PublicationsBoardIsland() {
   const [boardId, setBoardId] = useState<string>('');
   const [items, setItems] = useState<BoardItem[]>([]);
   const [draggingId, setDraggingId] = useState<string>('');
+  const [modalItem, setModalItem] = useState<BoardItem | null>(null);
+  const [metaChannel, setMetaChannel] = useState('projectmanagement_com');
+  const [metaSubmittedAt, setMetaSubmittedAt] = useState('');
+  const [metaOutcome, setMetaOutcome] = useState('pending');
+  const [metaNotes, setMetaNotes] = useState('');
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const windowRef = globalThis as any;
@@ -198,6 +206,25 @@ export default function PublicationsBoardIsland() {
     windowRef?.toast?.(`Card movido para ${targetLane.label}`, 'success');
   }
 
+  async function saveSubmissionMetadata() {
+    if (!modalItem) return;
+    const sb = windowRef?.navGetSb?.();
+    if (!sb) return;
+    const { error } = await sb.rpc('upsert_publication_submission_event', {
+      p_board_item_id: modalItem.id,
+      p_channel: metaChannel,
+      p_submitted_at: metaSubmittedAt ? new Date(metaSubmittedAt).toISOString() : null,
+      p_outcome: metaOutcome,
+      p_notes: metaNotes || null,
+    });
+    if (error) {
+      windowRef?.toast?.(error.message || 'Falha ao salvar metadados de submissão', 'error');
+      return;
+    }
+    setModalItem(null);
+    windowRef?.toast?.('Metadados de submissão atualizados', 'success');
+  }
+
   if (loading) {
     return <div className="text-center py-10 text-slate-400">Carregando quadro global...</div>;
   }
@@ -210,6 +237,7 @@ export default function PublicationsBoardIsland() {
   }
 
   return (
+    <>
     <DndContext
       sensors={sensors}
       onDragStart={(event: DragStartEvent) => setDraggingId(String(event.active.id))}
@@ -231,7 +259,7 @@ export default function PublicationsBoardIsland() {
             >
               <div id={lane.key} className="min-h-[220px] space-y-2">
                 {itemsByLane[lane.key].map((item) => (
-                  <SortableCard key={item.id} item={item} onLaneKeyboardMove={moveViaKeyboard} />
+                  <SortableCard key={item.id} item={item} onLaneKeyboardMove={moveViaKeyboard} onOpen={setModalItem} />
                 ))}
                 {itemsByLane[lane.key].length === 0 ? (
                   <div className="text-[11px] text-slate-400 dark:text-slate-500 py-6 text-center">
@@ -244,5 +272,42 @@ export default function PublicationsBoardIsland() {
         ))}
       </div>
     </DndContext>
+    {modalItem ? (
+      <div className="fixed inset-0 z-50">
+        <button type="button" className="absolute inset-0 bg-black/40 border-0 p-0 m-0" aria-label="close-modal-overlay" onClick={() => setModalItem(null)} />
+        <div className="absolute top-1/2 left-1/2 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-xl">
+          <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-3">Metadados de submissão PMI</h3>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Canal</label>
+              <input value={metaChannel} onChange={(e) => setMetaChannel(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Data da submissão</label>
+              <input type="datetime-local" value={metaSubmittedAt} onChange={(e) => setMetaSubmittedAt(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800" />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Resultado</label>
+              <select value={metaOutcome} onChange={(e) => setMetaOutcome(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800">
+                <option value="pending">pending</option>
+                <option value="submitted">submitted</option>
+                <option value="approved">approved</option>
+                <option value="rejected">rejected</option>
+                <option value="withdrawn">withdrawn</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Notas</label>
+              <textarea value={metaNotes} onChange={(e) => setMetaNotes(e.target.value)} rows={4} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800" />
+            </div>
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <button type="button" onClick={() => setModalItem(null)} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm">Cancelar</button>
+            <button type="button" onClick={saveSubmissionMetadata} className="px-3 py-2 rounded-lg bg-navy text-white text-sm">Salvar</button>
+          </div>
+        </div>
+      </div>
+    ) : null}
+    </>
   );
 }

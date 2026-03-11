@@ -60,3 +60,16 @@ npm run audit:dark:baseline
 ```
 
 Esse comando valida pré-requisitos de baseline visual e executa auditoria rápida de cobertura dark mode.
+
+## 8. Contraste + snapshots por persona
+
+Para gerar baseline visual completo (incluindo capturas multilíngue), execute:
+
+```bash
+npm run audit:dark:contrast
+```
+
+Esse fluxo roda:
+- `audit_dark_mode_a11y.sh`
+- `audit_dark_mode_visual_baseline.sh`
+- `screenshots:multilang`

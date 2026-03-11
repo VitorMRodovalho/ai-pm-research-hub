@@ -8,7 +8,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
 <BaseLayout title={t('nav.publications', lang)} activePage="publications">
   <div id="pub-loading" class="max-w-[1200px] mx-auto px-4 py-12 text-center text-slate-400">
-    Carregando painel global de publicações...
+    {t('publications.loading', lang)}
   </div>
 
   <div id="pub-content" class="hidden max-w-[1200px] mx-auto px-4 pb-10 space-y-4">
@@ -19,16 +19,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-[.72rem] font-semibold text-indigo-700 mb-3">
               <span>Governança global</span>
               <span class="text-indigo-400">•</span>
-              <span>Curadoria → Submissão externa</span>
+              <span>{t('publications.badgeFlow', lang)}</span>
             </div>
-            <h1 class="text-2xl font-extrabold text-navy dark:text-slate-100 mb-2">Publicações & Submissões</h1>
+            <h1 class="text-2xl font-extrabold text-navy dark:text-slate-100 mb-2">{t('publications.title', lang)}</h1>
             <p class="text-sm text-slate-500 dark:text-slate-300 leading-relaxed">
-              Quadro global para acompanhar artigos aprovados na Curadoria até o envio e publicação no ecossistema PMI.
-              Este fluxo não pertence a uma tribo específica.
+              {t('publications.subtitle', lang)}
             </p>
           </div>
           <a href="/admin/curatorship" class="px-4 py-2.5 rounded-xl bg-navy text-white text-[.78rem] font-semibold no-underline text-center hover:opacity-90 transition-all">
-            Abrir Curadoria
+            {t('publications.openCuratorship', lang)}
           </a>
         </div>
       </div>

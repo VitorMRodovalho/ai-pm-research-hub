@@ -213,9 +213,12 @@ test('publications global board route and curatorship enqueue toggle are wired',
 
 test('publications workflow enrichment keeps submission event contracts in backend', () => {
   const migration = read('supabase/migrations/20260314194000_publications_submission_workflow_enrichment.sql');
+  const island = read('src/components/boards/PublicationsBoardIsland.tsx');
   assert.equal(migration.includes('create table if not exists public.publication_submission_events'), true);
   assert.equal(migration.includes('create or replace function public.upsert_publication_submission_event('), true);
   assert.equal(migration.includes("outcome in ('pending', 'submitted', 'approved', 'rejected', 'withdrawn')"), true);
+  assert.equal(island.includes("sb.rpc('upsert_publication_submission_event'"), true);
+  assert.equal(island.includes('Metadados de submissão PMI'), true);
 });
 
 test('astro island foundation includes React and dnd-kit for kanban evolution', () => {
@@ -817,13 +820,16 @@ test('kanban dark release gate script and command are wired', () => {
   const pkg = read('package.json');
   const gate = read('scripts/qa_kanban_dark_release_gate.sh');
   const baseline = read('scripts/audit_dark_mode_visual_baseline.sh');
+  const contrast = read('scripts/audit_dark_mode_contrast_snapshots.sh');
   const qaDoc = read('docs/QA_RELEASE_VALIDATION.md');
   assert.equal(pkg.includes('"qa:kanban"'), true);
   assert.equal(pkg.includes('"audit:dark:baseline"'), true);
+  assert.equal(pkg.includes('"audit:dark:contrast"'), true);
   assert.equal(gate.includes('./scripts/audit_dark_mode_a11y.sh'), true);
   assert.equal(gate.includes('npm run smoke:routes'), true);
   assert.equal(baseline.includes('./scripts/audit_dark_mode_a11y.sh'), true);
   assert.equal(baseline.includes('screenshots-multilang.mjs'), true);
+  assert.equal(contrast.includes('npm run screenshots:multilang'), true);
   assert.equal(qaDoc.includes('npm run qa:kanban'), true);
 });
 
@@ -865,12 +871,57 @@ test('cloudflare public env parity runbook includes preview checks and local aud
 test('route smoke script validates anonymous deny markers on protected routes', () => {
   const smoke = read('scripts/smoke-routes.mjs');
   assert.equal(smoke.includes("assertOk('/publications')"), true);
+  assert.equal(smoke.includes("assertOk('/admin/portfolio')"), true);
+  assert.equal(smoke.includes("assertOk('/admin/board-governance')"), true);
+  assert.equal(smoke.includes("assertOk('/admin/comms-ops')"), true);
   assert.equal(smoke.includes("assertContains('/admin/selection', 'id=\"sel-denied\"')"), true);
   assert.equal(smoke.includes("assertContains('/admin/analytics', 'id=\"analytics-denied\"')"), true);
   assert.equal(smoke.includes("assertContains('/admin/curatorship', 'id=\"cur-denied\"')"), true);
   assert.equal(smoke.includes("assertContains('/admin/comms', 'id=\"comms-denied\"')"), true);
+  assert.equal(smoke.includes("assertContains('/admin/portfolio', 'id=\"portfolio-denied\"')"), true);
+  assert.equal(smoke.includes("assertContains('/admin/board-governance', 'id=\"boardgov-denied\"')"), true);
+  assert.equal(smoke.includes("assertContains('/admin/comms-ops', 'id=\"commsops-denied\"')"), true);
   assert.equal(smoke.includes("assertContains('/webinars', 'id=\"webinars-denied\"')"), true);
   assert.equal(smoke.includes("assertContains('/tribe/1', 'id=\"tribe-denied\"')"), true);
+});
+
+test('permissions matrix stays aligned with navigation config', () => {
+  const matrix = read('docs/PERMISSIONS_MATRIX.md');
+  const navConfig = read('src/lib/navigation.config.ts');
+  const script = read('scripts/audit_permissions_matrix_sync.sh');
+  const pkg = read('package.json');
+  assert.equal(navConfig.includes("key: 'admin-comms-ops'"), true);
+  assert.equal(navConfig.includes("key: 'admin-portfolio'"), true);
+  assert.equal(navConfig.includes("key: 'admin-board-governance'"), true);
+  assert.equal(matrix.includes('admin-comms-ops'), true);
+  assert.equal(matrix.includes('admin-portfolio'), true);
+  assert.equal(matrix.includes('admin-board-governance'), true);
+  assert.equal(script.includes('[permissions-sync] PASS'), true);
+  assert.equal(pkg.includes('"audit:permissions"'), true);
+});
+
+test('portfolio and board governance admin pages are wired', () => {
+  const portfolio = read('src/pages/admin/portfolio.astro');
+  const boardGov = read('src/pages/admin/board-governance.astro');
+  const commsOps = read('src/pages/admin/comms-ops.astro');
+  assert.equal(portfolio.includes("sb.rpc('exec_portfolio_board_summary'"), true);
+  assert.equal(portfolio.includes('id="portfolio-denied"'), true);
+  assert.equal(boardGov.includes("sb.rpc('admin_list_archived_board_items'"), true);
+  assert.equal(boardGov.includes("sb.rpc('admin_restore_board_item'"), true);
+  assert.equal(boardGov.includes('id="boardgov-denied"'), true);
+  assert.equal(commsOps.includes("from('comms_metrics_daily')"), true);
+  assert.equal(commsOps.includes('id="commsops-denied"'), true);
+});
+
+test('taxonomy alerting and data sanity migrations are present', () => {
+  const taxonomyAlerts = read('supabase/migrations/20260314195000_board_taxonomy_alerts.sql');
+  const archivedViews = read('supabase/migrations/20260314196000_archived_board_items_admin_views.sql');
+  const sanityV2 = read('supabase/migrations/20260314197000_portfolio_data_sanity_v2.sql');
+  assert.equal(taxonomyAlerts.includes('create table if not exists public.board_taxonomy_alerts'), true);
+  assert.equal(taxonomyAlerts.includes('create or replace function public.admin_detect_board_taxonomy_drift()'), true);
+  assert.equal(archivedViews.includes('create or replace function public.admin_list_archived_board_items('), true);
+  assert.equal(sanityV2.includes('create table if not exists public.portfolio_data_sanity_runs'), true);
+  assert.equal(sanityV2.includes('create or replace function public.admin_run_portfolio_data_sanity()'), true);
 });
 
 test('docs index exposes persona map and has audit script for reference integrity', () => {

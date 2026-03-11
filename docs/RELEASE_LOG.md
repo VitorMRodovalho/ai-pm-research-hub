@@ -1,5 +1,45 @@
 # Release Log
 
+## 2026-03-11 — W77-W89: Admin governance expansion + portfolio operations
+
+### Scope
+Executar o backlog restante (W77-W89) com foco em governança operacional de boards, superfícies executivas/admin e automações de QA.
+
+### Delivered
+- **Permissões e navegação (W77):**
+  - novas rotas admin: `/admin/comms-ops`, `/admin/portfolio`, `/admin/board-governance`;
+  - `navigation.config.ts` + `Nav.astro` + i18n alinhados;
+  - auditoria automática: `scripts/audit_permissions_matrix_sync.sh` (`npm run audit:permissions`).
+- **Publicações metadata (W78):**
+  - `PublicationsBoardIsland` com modal de metadados de submissão PMI;
+  - integração RPC: `upsert_publication_submission_event`.
+- **Portfólio executivo (W79):**
+  - página `src/pages/admin/portfolio.astro` consumindo `exec_portfolio_board_summary`.
+- **Taxonomy drift e sanity (W80/W86):**
+  - migrations:
+    - `20260314195000_board_taxonomy_alerts.sql`
+    - `20260314197000_portfolio_data_sanity_v2.sql`
+  - RPCs operacionais para detecção de drift e execução de data sanity.
+- **Boards arquivados governados (W81):**
+  - página `src/pages/admin/board-governance.astro`;
+  - migration `20260314196000_archived_board_items_admin_views.sql`;
+  - restore via `admin_restore_board_item`.
+- **Acessibilidade e QA (W82/W83/W87):**
+  - atalhos de teclado no `TribeKanbanIsland` (`Shift + ArrowLeft/ArrowRight`);
+  - `scripts/audit_dark_mode_contrast_snapshots.sh` (`npm run audit:dark:contrast`);
+  - browser guards cobrindo deny + restore em governança de board.
+- **i18n + docs + checkpoint (W84/W88/W89):**
+  - chaves i18n novas em PT/EN/ES para nav/admin/publicações;
+  - documentação de governança e backlog atualizada para fechamento do checkpoint.
+
+### Validation captured
+- `supabase db push`
+- `npm run audit:permissions`
+- `npm test`
+- `npm run build`
+
+---
+
 ## 2026-03-11 — W75-W76: Tribe Kanban migrado para Astro Island (React)
 
 ### Scope

@@ -1,0 +1,98 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+---
+
+<BaseLayout title={t('nav.adminPortfolio', lang)} activePage="admin">
+  <div class="max-w-[1100px] mx-auto px-4 py-8 space-y-4">
+    <div id="portfolio-loading" class="text-slate-400 text-sm">Carregando portfólio executivo...</div>
+    <div id="portfolio-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
+      Acesso restrito a administração e audiência executiva.
+    </div>
+    <section id="portfolio-panel" class="hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h1 class="text-xl font-extrabold text-navy mb-3">Portfólio Executivo</h1>
+      <p class="text-sm text-slate-500 mb-4">Visão consolidada por escopo/domínio para priorização de gestão.</p>
+      <div class="flex flex-wrap gap-2 mb-4">
+        <button id="portfolio-run-taxonomy-alerts" class="px-3 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50">Rodar detecção de drift taxonomy</button>
+        <button id="portfolio-run-sanity" class="px-3 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50">Rodar data sanity v2</button>
+      </div>
+      <div id="portfolio-summary" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+    </section>
+  </div>
+</BaseLayout>
+
+<script>
+  function hasPortfolioAccess(member: any): boolean {
+    if (!member) return false;
+    if (member.is_superadmin) return true;
+    const role = String(member.operational_role || '');
+    const designations: string[] = Array.isArray(member.designations) ? member.designations : [];
+    return ['manager', 'deputy_manager'].includes(role)
+      || ['sponsor', 'chapter_liaison', 'curator', 'co_gp'].some((d) => designations.includes(d));
+  }
+
+  function cardHtml(entry: any): string {
+    return `
+      <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+        <div class="text-xs font-bold uppercase tracking-wide text-slate-500">${entry.board_scope} · ${entry.domain_key}</div>
+        <div class="mt-1 text-sm text-slate-700">Cards: <strong>${entry.total_cards || 0}</strong></div>
+        <div class="text-xs text-slate-500 mt-1">Atrasados: ${entry.overdue_cards || 0} · Órfãos: ${entry.orphan_cards || 0}</div>
+      </article>
+    `;
+  }
+
+  async function bootPortfolioPage() {
+    const loading = document.getElementById('portfolio-loading');
+    const denied = document.getElementById('portfolio-denied');
+    const panel = document.getElementById('portfolio-panel');
+    const summary = document.getElementById('portfolio-summary');
+    const member = (window as any).navGetMember?.();
+    const sb = (window as any).navGetSb?.();
+
+    if (!member || !sb) {
+      window.addEventListener('nav:member', () => bootPortfolioPage(), { once: true });
+      return;
+    }
+    loading?.classList.add('hidden');
+    if (!hasPortfolioAccess(member)) {
+      denied?.classList.remove('hidden');
+      return;
+    }
+
+    const { data, error } = await sb.rpc('exec_portfolio_board_summary', { p_include_inactive: false });
+    if (error) {
+      denied?.classList.remove('hidden');
+      denied!.textContent = 'Falha ao carregar visão executiva de portfólio.';
+      return;
+    }
+    const rows = Array.isArray(data?.by_lane) ? data.by_lane : [];
+    panel?.classList.remove('hidden');
+    if (summary) summary.innerHTML = rows.map((row: any) => cardHtml(row)).join('');
+  }
+
+  document.getElementById('portfolio-run-taxonomy-alerts')?.addEventListener('click', async () => {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    const { data, error } = await sb.rpc('admin_detect_board_taxonomy_drift');
+    if (error) {
+      (window as any).toast?.('Falha ao detectar drift taxonomy.', 'error');
+      return;
+    }
+    (window as any).toast?.(`Detecção concluída. Alertas abertos: ${data?.open_alerts ?? 'n/a'}`, 'success');
+  });
+
+  document.getElementById('portfolio-run-sanity')?.addEventListener('click', async () => {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    const { data, error } = await sb.rpc('admin_run_portfolio_data_sanity');
+    if (error) {
+      (window as any).toast?.('Falha na execução do data sanity.', 'error');
+      return;
+    }
+    const summary = data?.summary || {};
+    (window as any).toast?.(`Sanity OK. Orfãos: ${summary.orphan_items ?? 0} · Inativos: ${summary.items_in_inactive_board ?? 0}`, 'success');
+  });
+
+  bootPortfolioPage();
+</script>

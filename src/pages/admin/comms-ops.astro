@@ -1,0 +1,89 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+---
+
+<BaseLayout title={t('nav.adminCommsOps', lang)} activePage="admin">
+  <div class="max-w-[1100px] mx-auto px-4 py-8 space-y-4">
+    <div id="commsops-loading" class="text-slate-400 text-sm">Carregando operações de comunicação...</div>
+    <div id="commsops-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
+      Acesso restrito à gestão/comunicação.
+    </div>
+    <section id="commsops-panel" class="hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h1 class="text-xl font-extrabold text-navy mb-3">Comms Ops Dashboard</h1>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div class="text-xs text-slate-500 uppercase font-semibold">Impressões</div>
+          <div id="commsops-impressions" class="text-lg font-extrabold text-slate-800">0</div>
+        </div>
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div class="text-xs text-slate-500 uppercase font-semibold">Engajamentos</div>
+          <div id="commsops-engagements" class="text-lg font-extrabold text-slate-800">0</div>
+        </div>
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div class="text-xs text-slate-500 uppercase font-semibold">Conversões</div>
+          <div id="commsops-conversions" class="text-lg font-extrabold text-slate-800">0</div>
+        </div>
+      </div>
+      <div id="commsops-table" class="text-sm text-slate-600"></div>
+    </section>
+  </div>
+</BaseLayout>
+
+<script>
+  function hasCommsOpsAccess(member: any): boolean {
+    if (!member) return false;
+    if (member.is_superadmin) return true;
+    const role = String(member.operational_role || '');
+    const designations: string[] = Array.isArray(member.designations) ? member.designations : [];
+    return ['manager', 'deputy_manager'].includes(role) || ['comms_leader', 'comms_member'].some((d) => designations.includes(d));
+  }
+
+  async function bootCommsOpsPage() {
+    const loading = document.getElementById('commsops-loading');
+    const denied = document.getElementById('commsops-denied');
+    const panel = document.getElementById('commsops-panel');
+    const member = (window as any).navGetMember?.();
+    const sb = (window as any).navGetSb?.();
+    if (!member || !sb) {
+      window.addEventListener('nav:member', () => bootCommsOpsPage(), { once: true });
+      return;
+    }
+    loading?.classList.add('hidden');
+    if (!hasCommsOpsAccess(member)) {
+      denied?.classList.remove('hidden');
+      return;
+    }
+
+    const { data, error } = await sb
+      .from('comms_metrics_daily')
+      .select('date, channel, impressions, engagements, conversions')
+      .order('date', { ascending: false })
+      .limit(30);
+    if (error) {
+      denied?.classList.remove('hidden');
+      denied!.textContent = 'Falha ao carregar métricas de comunicação.';
+      return;
+    }
+    panel?.classList.remove('hidden');
+    const rows = Array.isArray(data) ? data : [];
+    const totals = rows.reduce((acc: any, row: any) => {
+      acc.impressions += Number(row.impressions || 0);
+      acc.engagements += Number(row.engagements || 0);
+      acc.conversions += Number(row.conversions || 0);
+      return acc;
+    }, { impressions: 0, engagements: 0, conversions: 0 });
+    (document.getElementById('commsops-impressions') as HTMLElement).textContent = String(totals.impressions);
+    (document.getElementById('commsops-engagements') as HTMLElement).textContent = String(totals.engagements);
+    (document.getElementById('commsops-conversions') as HTMLElement).textContent = String(totals.conversions);
+    const table = document.getElementById('commsops-table');
+    if (table) {
+      table.innerHTML = rows.length
+        ? `<div class="divide-y divide-slate-100">${rows.map((row: any) => `<div class="py-2 flex gap-2"><span class="w-24 text-slate-400">${row.date || '-'}</span><span class="w-40">${row.channel || '-'}</span><span>imp ${row.impressions || 0}</span><span>eng ${row.engagements || 0}</span><span>conv ${row.conversions || 0}</span></div>`).join('')}</div>`
+        : '<p class="text-slate-500">Sem dados recentes.</p>';
+    }
+  }
+
+  bootCommsOpsPage();
+</script>
