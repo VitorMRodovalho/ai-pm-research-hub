@@ -18,6 +18,53 @@
 - **Site hierarchy / ACL**: `/admin/analytics` agora respeita audiencia interna read-only sem herdar permissao de escrita; `/admin/selection` e demais superficies LGPD continuam admin-only
 - **Known follow-through**: validar os graficos V2 com dados reais do projeto linkado, especialmente calibracao da janela de atribuicao de filiacao e leitura do onboarding completo por ciclo
 
+### Triagem de Diagnostico Externo (2026-03-11)
+Entrada recebida com foco em gaps de estabilizacao, seguranca e operacao. Validacao feita contra estado atual do repo/board.
+
+| Item do diagnostico | Leitura atual | Decisao |
+|---|---|---|
+| `.env` commitado no repo | **Confirmado** (`.env` esta versionado) | Tratar como **P0** imediato com hygiene de secrets + ajuste de CONTRIBUTING |
+| Issue `#19` Admin Tribe Allocation Crash | **Confirmado** (aberta, `priority:critical`) | Prioridade maxima na proxima wave de estabilizacao |
+| Issue `#1` Credly recorrente | **Confirmado** (aberta, `priority:critical`) | Priorizar junto com cobertura de regressao dedicada |
+| Issue `#11` Rank vs Credly tiers | **Confirmado** (aberta, `priority:critical`) | Prioridade maxima na mesma wave P0 |
+| Pipeline de PR parado (7 abertas; 3 Dependabot + 4 draft) | **Confirmado** | Tratar em wave de higiene de entrega/CI |
+| "Testes insuficientes (13)" | **Parcial** (baseline atual > 13; ainda sem cobertura plena E2E de fluxos criticos) | Tratar como gap real de cobertura critica, nao de contagem bruta |
+| SSR audit / data patch pendentes | **Parcial** (`#12` e `#13` seguem abertas, apesar de historico marcado como done) | Revalidar evidencias e fechar com checklist auditavel |
+| Sem milestones | **Confirmado** | Criar milestones operacionais para ciclo/wave |
+| Analytics V2 com validacao real pendente | **Confirmado** | Manter follow-through como prioridade de produto/operacao |
+
+### Fila Priorizada — Proximas Waves
+
+#### W41 — Stabilization Gate P0 (operacao primeiro)
+| ID | Item | Prioridade | Fonte | Criterio de saida |
+|---|---|---|---|---|
+| W41.1 | Hygiene de secrets (`.env`) | Critical | Triagem externa | `.env` fora do tracking, `.gitignore` validado, CONTRIBUTING atualizado, varredura historica concluida e registrada |
+| W41.2 | Fix crash alocacao de tribos | Critical | Issue `#19` | fluxo admin de alocacao sem crash + teste de regressao + smoke/manual validado |
+| W41.3 | Alinhamento rank vs Credly tiers | Critical | Issue `#11` | superficies de rank/gamification coerentes com scoring backend + lock de regressao |
+| W41.4 | Credly flow anti-recorrencia | Critical | Issue `#1` | save/verify estavel em teste dedicado (integration ou browser) e sem regressao no perfil |
+
+#### W42 — Delivery Hygiene & CI Guardrails
+| ID | Item | Prioridade | Fonte | Criterio de saida |
+|---|---|---|---|---|
+| W42.1 | Resolver PR backlog Dependabot (`#8,#9,#10`) | High | PR abertas | bumps avaliados/mergeados ou fechados com justificativa |
+| W42.2 | Definir gate de entrega (trunk vs PR) | High | Triagem externa + Issue `#14` | politica formalizada em docs/runbook e aplicada no fluxo |
+| W42.3 | Hardening CI em push/main | High | Issue `#14` | checks minimos (build, test, smoke) automatizados e executando de forma consistente |
+
+#### W43 — Reliability Audit Closure
+| ID | Item | Prioridade | Fonte | Criterio de saida |
+|---|---|---|---|---|
+| W43.1 | SSR safety audit revalidado | High | Issue `#12` | sweep concluido com evidencias, sem assumptions em SSR critico |
+| W43.2 | Data patch follow-through auditavel | High | Issue `#13` | patches aplicados/confirmados com evidencias SQL + nota em release/governanca |
+| W43.3 | Cobertura de regressao em fluxos operador | Medium | Triagem externa | checklist de fluxos criticos com testes automatizados minimos |
+
+#### W44 — Scale Readiness & Governance
+| ID | Item | Prioridade | Fonte | Criterio de saida |
+|---|---|---|---|---|
+| W44.1 | Milestones de ciclo e wave | Medium | Triagem externa | milestones criadas e vinculadas ao board |
+| W44.2 | Strategy doc de sync dev/prod repos | Medium | Triagem externa | fluxo oficial documentado (quem, como, quando) |
+| W44.3 | Analytics V2 validacao em dados reais | Medium | Follow-through W36-40 | validacao registrada com leitura partner-facing sem regressao de ACL |
+| W44.4 | Bus-factor mitigation drill | Medium | Triagem externa | runbook de recovery validado por segundo operador |
+
 ### Entregue em Wave 35
 - **W35.1 Dynamic Tribe Catalog Foundation**: `tribe/[id]` e os wrappers multilang deixam de bloquear ids acima de `8`, e o header da tribo passa a usar metadata runtime do banco com fallback estático apenas para o catálogo legado.
 - **W35.2 Explicit Tribe Status + Admin Catalog Controls**: nova migration adiciona `tribes.is_active`, RPCs seguras para listar/criar/ativar-inativar tribos e o painel admin ganha catálogo runtime, criação de novas tribos e toggles de status.
