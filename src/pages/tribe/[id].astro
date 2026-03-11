@@ -258,6 +258,14 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
             <label for="bi-tags" class="text-[13px] font-semibold text-slate-600 dark:text-slate-300 mb-1 block">Tags (separadas por vírgula)</label>
             <input type="text" id="bi-tags" placeholder="kanban, prioridade, ux" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
           </div>
+          <div>
+            <label for="bi-labels" class="text-[13px] font-semibold text-slate-600 dark:text-slate-300 mb-1 block">Labels (separadas por vírgula)</label>
+            <input type="text" id="bi-labels" placeholder="prioridade alta, bloqueado" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
+          </div>
+          <div>
+            <label for="bi-checklist" class="text-[13px] font-semibold text-slate-600 dark:text-slate-300 mb-1 block">Checklist (uma linha por item)</label>
+            <textarea id="bi-checklist" rows="3" placeholder="- Definir owner&#10;- Revisar copy final" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></textarea>
+          </div>
           <div class="flex justify-between items-center gap-3 mt-2">
             <button type="button" id="bi-delete-btn" data-action="delete-board-item" class="px-4 py-2 text-sm font-semibold text-red-600 border border-red-200 rounded-lg cursor-pointer hover:bg-red-50 transition-all hidden">🗑️ Arquivar card</button>
             <div class="flex gap-3 ml-auto">
@@ -1520,6 +1528,22 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
   function boardCardHtml(item: any) {
     const tags = (item.tags || []).map((t: string) => `<span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">${escapeHtml(t)}</span>`).join('');
+    const labelsRaw = Array.isArray(item.labels)
+      ? item.labels
+      : (typeof item.labels === 'string'
+        ? (() => { try { const parsed = JSON.parse(item.labels); return Array.isArray(parsed) ? parsed : []; } catch { return []; } })()
+        : []);
+    const labels = labelsRaw.map((label: any) => `<span class="text-[10px] bg-purple-50 text-purple px-1.5 py-0.5 rounded">${escapeHtml(String(label))}</span>`).join('');
+    const checklistRaw = Array.isArray(item.checklist)
+      ? item.checklist
+      : (typeof item.checklist === 'string'
+        ? (() => { try { const parsed = JSON.parse(item.checklist); return Array.isArray(parsed) ? parsed : []; } catch { return []; } })()
+        : []);
+    const checklistDone = checklistRaw.filter((c: any) => c && typeof c === 'object' && c.done === true).length;
+    const checklistTotal = checklistRaw.length;
+    const checklistBadge = checklistTotal > 0
+      ? `<span class="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">✓ ${checklistDone}/${checklistTotal}</span>`
+      : '';
     const assignee = item.assignee_name ? `<span class="text-[11px] text-slate-400">${escapeHtml(item.assignee_name)}</span>` : '';
     const due = item.due_date ? `<span class="text-[10px] text-slate-400">${new Date(item.due_date).toLocaleDateString(I18N.dateLocale || 'pt-BR')}</span>` : '';
     const priorityColors: Record<string, string> = { high: 'border-l-red-400', medium: 'border-l-amber-400', low: 'border-l-blue-300' };
@@ -1528,7 +1552,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
                  draggable="${canEdit}" data-item-id="${item.id}">
       <p class="text-[13px] font-semibold text-navy leading-tight mb-1">${escapeHtml(item.title)}</p>
       ${item.description ? `<p class="text-[11px] text-slate-400 mb-1.5 line-clamp-2">${escapeHtml(item.description)}</p>` : ''}
-      <div class="flex flex-wrap items-center gap-1">${tags}${assignee}${due}</div>
+      <div class="flex flex-wrap items-center gap-1">${tags}${labels}${checklistBadge}${assignee}${due}</div>
       ${canEdit ? `<button data-action="open-board-item" data-item-id="${item.id}" class="mt-2 text-[10px] font-bold text-purple hover:underline cursor-pointer border-0 bg-transparent p-0">Editar detalhes</button>` : ''}
     </div>`;
   }
@@ -1548,10 +1572,12 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     const dueDateInput = document.getElementById('bi-due-date') as HTMLInputElement;
     const assigneeSelect = document.getElementById('bi-assignee') as HTMLSelectElement;
     const tagsInput = document.getElementById('bi-tags') as HTMLInputElement;
+    const labelsInput = document.getElementById('bi-labels') as HTMLInputElement;
+    const checklistInput = document.getElementById('bi-checklist') as HTMLTextAreaElement;
     const seedInput = document.getElementById('bi-status-seed') as HTMLInputElement;
     const deleteBtn = document.getElementById('bi-delete-btn');
 
-    if (!modal || !titleEl || !idInput || !titleInput || !descriptionInput || !statusSelect || !dueDateInput || !assigneeSelect || !tagsInput || !seedInput || !deleteBtn) return;
+    if (!modal || !titleEl || !idInput || !titleInput || !descriptionInput || !statusSelect || !dueDateInput || !assigneeSelect || !tagsInput || !labelsInput || !checklistInput || !seedInput || !deleteBtn) return;
 
     titleEl.textContent = item ? 'Editar card' : 'Novo card';
     idInput.value = item?.id || '';
@@ -1561,6 +1587,18 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     statusSelect.value = item?.status || seedStatus || 'backlog';
     dueDateInput.value = item?.due_date ? String(item.due_date).slice(0, 10) : '';
     tagsInput.value = Array.isArray(item?.tags) ? item.tags.join(', ') : '';
+    const parsedLabels = Array.isArray(item?.labels)
+      ? item.labels
+      : (typeof item?.labels === 'string'
+        ? (() => { try { const parsed = JSON.parse(item.labels); return Array.isArray(parsed) ? parsed : []; } catch { return []; } })()
+        : []);
+    labelsInput.value = parsedLabels.join(', ');
+    const parsedChecklist = Array.isArray(item?.checklist)
+      ? item.checklist
+      : (typeof item?.checklist === 'string'
+        ? (() => { try { const parsed = JSON.parse(item.checklist); return Array.isArray(parsed) ? parsed : []; } catch { return []; } })()
+        : []);
+    checklistInput.value = parsedChecklist.map((c: any) => (typeof c?.text === 'string' ? c.text : String(c || ''))).join('\n');
     deleteBtn.classList.toggle('hidden', !item);
 
     assigneeSelect.innerHTML = `<option value="">Não atribuído</option>` +
@@ -1586,6 +1624,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     const dueDateInput = document.getElementById('bi-due-date') as HTMLInputElement;
     const assigneeSelect = document.getElementById('bi-assignee') as HTMLSelectElement;
     const tagsInput = document.getElementById('bi-tags') as HTMLInputElement;
+    const labelsInput = document.getElementById('bi-labels') as HTMLInputElement;
+    const checklistInput = document.getElementById('bi-checklist') as HTMLTextAreaElement;
 
     const title = titleInput.value.trim();
     if (!title) {
@@ -1597,6 +1637,15 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       .split(',')
       .map((tag: string) => tag.trim())
       .filter((tag: string) => !!tag);
+    const labels = labelsInput.value
+      .split(',')
+      .map((label: string) => label.trim())
+      .filter((label: string) => !!label);
+    const checklist = checklistInput.value
+      .split('\n')
+      .map((row: string) => row.trim())
+      .filter((row: string) => !!row)
+      .map((text: string) => ({ text, done: false }));
 
     const { error } = await sb.rpc('upsert_board_item', {
       p_item_id: idInput.value || null,
@@ -1607,8 +1656,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       p_assignee_id: assigneeSelect.value || null,
       p_due_date: dueDateInput.value || null,
       p_tags: tags.length ? tags : null,
-      p_labels: [],
-      p_checklist: [],
+      p_labels: labels,
+      p_checklist: checklist,
     });
     if (error) {
       console.error('upsert_board_item error', error);

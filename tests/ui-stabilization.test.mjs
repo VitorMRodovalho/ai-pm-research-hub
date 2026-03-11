@@ -697,6 +697,9 @@ test('tribe kanban supports modal edit/create and archive actions', () => {
   assert.equal(tribe.includes("sb.rpc('upsert_board_item'"), true);
   assert.equal(tribe.includes("sb.rpc('admin_archive_board_item'"), true);
   assert.equal(tribe.includes('id="board-item-form"'), true);
+  assert.equal(tribe.includes('id="bi-labels"'), true);
+  assert.equal(tribe.includes('id="bi-checklist"'), true);
+  assert.equal(tribe.includes('const checklistBadge = checklistTotal > 0'), true);
   assert.equal(migration.includes('create or replace function public.upsert_board_item('), true);
   assert.equal(migration.includes("raise exception 'Project management access required';"), true);
 });
