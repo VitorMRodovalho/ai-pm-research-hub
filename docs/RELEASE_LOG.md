@@ -1,5 +1,21 @@
 # Release Log
 
+## 2026-03-11 — Sprint 22 (Dev): Cloudflare Env Injection Validation Runbook
+
+### Scope
+Formalizar validação operacional de injeção de env no Cloudflare Pages para reduzir risco de regressão no bootstrap Supabase do frontend.
+
+### Delivered
+- `docs/project-governance/CLOUDFLARE_ENV_INJECTION_VALIDATION.md`:
+  - checklist de deploy/env;
+  - probes de runtime (`window.__PUBLIC_SUPABASE_*`);
+  - probe REST direto para distinguir erro de URL, credencial e RLS.
+
+### Audit Results
+- Validado com `npm run build`.
+
+---
+
 ## 2026-03-11 — Sprint 21 (Dev): Comms Integration Roadmap
 
 ### Scope
