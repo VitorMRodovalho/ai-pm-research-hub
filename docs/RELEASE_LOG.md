@@ -1,5 +1,21 @@
 # Release Log
 
+## 2026-03-11 — Sprint 10 (Dev): CI/Governance Closure Pass (`#14`)
+
+### Scope
+Concluir formalmente a trilha de hardening de pipeline/governanca com encerramento da issue S-CI1 baseada nas entregas de CI gate e policy operacional já publicadas.
+
+### Delivered
+- Issue `#14` encerrada com referência direta às evidências:
+  - atualização de workflows e policy trunk-based com gate mínimo
+  - job browser guard incorporado ao CI
+  - locks de regressão de superfícies operador/admin
+
+### Audit Results
+- Tranche de governança/issue management sem SQL novo.
+
+---
+
 ## 2026-03-11 — Sprint 9 (Dev): Reliability Closure Pass (`#12`, `#13`)
 
 ### Scope
