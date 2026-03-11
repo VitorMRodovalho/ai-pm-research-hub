@@ -504,6 +504,16 @@ test('provenance verification rpc validates stored signatures', () => {
   assert.equal(script.includes("sb.rpc('admin_verify_ingestion_provenance_batch'"), true);
 });
 
+test('readiness slo dashboard contracts aggregate SLO KPIs', () => {
+  const migration = read('supabase/migrations/20260313220000_slo_dashboard_contracts.sql');
+  const script = read('scripts/run_readiness_slo_dashboard.ts');
+
+  assert.equal(migration.includes('create or replace function public.exec_readiness_slo_dashboard('), true);
+  assert.equal(migration.includes('from public.readiness_slo_alerts'), true);
+  assert.equal(migration.includes("'mtbd_hours'"), true);
+  assert.equal(script.includes("sb.rpc('exec_readiness_slo_dashboard'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

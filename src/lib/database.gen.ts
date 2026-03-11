@@ -5076,6 +5076,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_verify_ingestion_provenance_batch: {
+        Args: { p_batch_id: string }
+        Returns: Json
+      }
       analytics_is_leadership_role: {
         Args: { p_designations: string[]; p_operational_role: string }
         Returns: boolean
