@@ -371,6 +371,17 @@ test('post-ingestion chain orchestrates healthcheck snapshot and gate', () => {
   assert.equal(script.includes("sb.rpc('admin_run_post_ingestion_chain'"), true);
 });
 
+test('partner-safe governance summary stays backend read-only', () => {
+  const migration = read('supabase/migrations/20260313090000_partner_governance_summary.sql');
+  const script = read('scripts/run_partner_governance_summary.ts');
+
+  assert.equal(migration.includes('create or replace function public.exec_partner_governance_summary('), true);
+  assert.equal(migration.includes("coalesce('sponsor' = any(v_caller.designations), false)"), true);
+  assert.equal(migration.includes("coalesce('chapter_liaison' = any(v_caller.designations), false)"), true);
+  assert.equal(migration.includes("public.admin_release_readiness_gate(null, null, 'advisory')"), true);
+  assert.equal(script.includes("sb.rpc('exec_partner_governance_summary'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

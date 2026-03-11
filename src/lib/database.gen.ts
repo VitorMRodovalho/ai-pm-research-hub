@@ -4276,6 +4276,14 @@ export type Database = {
         Args: { p_member_id: string }
         Returns: Json
       }
+      admin_run_post_ingestion_chain: {
+        Args: {
+          p_batch_id?: string
+          p_capture_snapshot?: boolean
+          p_gate_mode?: string
+        }
+        Returns: Json
+      }
       admin_run_post_ingestion_healthcheck: {
         Args: { p_batch_id?: string }
         Returns: Json
