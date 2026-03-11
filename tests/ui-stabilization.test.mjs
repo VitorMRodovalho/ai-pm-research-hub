@@ -317,6 +317,16 @@ test('data quality snapshots persist audit history in backend', () => {
   assert.equal(script.includes("sb.rpc('admin_capture_data_quality_snapshot'"), true);
 });
 
+test('release readiness gate centralizes alerts and snapshot checks', () => {
+  const migration = read('supabase/migrations/20260313040000_release_readiness_gate.sql');
+  const script = read('scripts/run_release_readiness_gate.ts');
+
+  assert.equal(migration.includes('create or replace function public.admin_release_readiness_gate('), true);
+  assert.equal(migration.includes('from public.data_quality_audit_snapshots'), true);
+  assert.equal(migration.includes('from public.ingestion_alerts'), true);
+  assert.equal(script.includes("sb.rpc('admin_release_readiness_gate'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

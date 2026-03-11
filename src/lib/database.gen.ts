@@ -4042,6 +4042,13 @@ export type Database = {
         Args: { p_holder: string; p_source: string }
         Returns: Json
       }
+      admin_release_readiness_gate: {
+        Args: {
+          p_max_open_warnings?: number
+          p_require_fresh_snapshot_hours?: number
+        }
+        Returns: Json
+      }
       admin_remove_tribe_selection: {
         Args: { p_member_id: string }
         Returns: Json
