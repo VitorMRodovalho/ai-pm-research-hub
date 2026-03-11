@@ -139,6 +139,19 @@ test('curatorship keeps operator filters and approval targeting wired to rpc pay
   assert.equal(curatorship.includes("sb.from('tribes').select('id,name,is_active').eq('is_active', true).order('id')"), true);
 });
 
+test('curatorship rpc contract keeps approve/reject payload keys stable', () => {
+  const curatorship = read('src/pages/admin/curatorship.astro');
+  assert.equal(curatorship.includes("const { error } = await sb.rpc('curate_item', {"), true);
+  assert.equal(curatorship.includes('p_table: table'), true);
+  assert.equal(curatorship.includes('p_id: id'), true);
+  assert.equal(curatorship.includes('p_action: action'), true);
+  assert.equal(curatorship.includes('p_tags: tags || null'), true);
+  assert.equal(curatorship.includes('p_tribe_id: extra?.tribeId ?? null'), true);
+  assert.equal(curatorship.includes('p_audience_level: extra?.audienceLevel ?? null'), true);
+  assert.equal(curatorship.includes("const audienceLevel = table === 'events' ? audienceRaw : null;"), true);
+  assert.equal(curatorship.includes("callCurate(table, id, 'reject');"), true);
+});
+
 test('tribe exploration and lifecycle management honor active-member access plus project management controls', () => {
   const nav = read('src/components/nav/Nav.astro');
   const tribe = read('src/pages/tribe/[id].astro');

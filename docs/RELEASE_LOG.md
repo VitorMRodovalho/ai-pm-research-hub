@@ -1,5 +1,20 @@
 # Release Log
 
+## 2026-03-11 — Sprint 25 (Dev): Curatorship RPC Contract Regression Coverage
+
+### Scope
+Fortalecer proteção contra regressão no contrato da RPC `curate_item` usado pela tela de curadoria admin.
+
+### Delivered
+- `tests/ui-stabilization.test.mjs`:
+  - novo teste garantindo estabilidade das chaves de payload (`p_table`, `p_id`, `p_action`, `p_tags`, `p_tribe_id`, `p_audience_level`);
+  - assert específico de regra de audiência para `events`.
+
+### Audit Results
+- Validado com `npm test` e `npm run build`.
+
+---
+
 ## 2026-03-11 — Sprint 24 (Dev): Authenticated Browser Guards Expansion
 
 ### Scope
