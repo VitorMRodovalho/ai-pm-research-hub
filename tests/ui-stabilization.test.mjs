@@ -514,6 +514,16 @@ test('readiness slo dashboard contracts aggregate SLO KPIs', () => {
   assert.equal(script.includes("sb.rpc('exec_readiness_slo_dashboard'"), true);
 });
 
+test('remediation effectiveness analytics summarize rule outcomes', () => {
+  const migration = read('supabase/migrations/20260313230000_remediation_effectiveness_analytics.sql');
+  const script = read('scripts/run_remediation_effectiveness.ts');
+
+  assert.equal(migration.includes('create or replace function public.exec_remediation_effectiveness('), true);
+  assert.equal(migration.includes('from public.ingestion_alert_remediation_runs'), true);
+  assert.equal(migration.includes("'success_rate'"), true);
+  assert.equal(script.includes("sb.rpc('exec_remediation_effectiveness'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

@@ -5247,6 +5247,10 @@ export type Database = {
         Args: { p_window_days?: number }
         Returns: Json
       }
+      exec_readiness_slo_dashboard: {
+        Args: { p_window_days?: number }
+        Returns: Json
+      }
       exec_role_transitions: {
         Args: { p_chapter?: string; p_cycle_code?: string; p_tribe_id?: number }
         Returns: Json
