@@ -2104,6 +2104,8 @@ export type Database = {
           columns: Json
           created_at: string
           created_by: string | null
+          cycle_scope: string | null
+          domain_key: string | null
           id: string
           is_active: boolean
           source: string
@@ -2115,6 +2117,8 @@ export type Database = {
           columns?: Json
           created_at?: string
           created_by?: string | null
+          cycle_scope?: string | null
+          domain_key?: string | null
           id?: string
           is_active?: boolean
           source?: string
@@ -2126,6 +2130,8 @@ export type Database = {
           columns?: Json
           created_at?: string
           created_by?: string | null
+          cycle_scope?: string | null
+          domain_key?: string | null
           id?: string
           is_active?: boolean
           source?: string
@@ -2380,6 +2386,122 @@ export type Database = {
             columns: ["tribe_id"]
             isOneToOne: false
             referencedRelation: "tribes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tribe_lineage: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          current_tribe_id: number
+          cycle_scope: string | null
+          id: number
+          is_active: boolean
+          legacy_tribe_id: number
+          metadata: Json
+          notes: string | null
+          relation_type: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          current_tribe_id: number
+          cycle_scope?: string | null
+          id?: number
+          is_active?: boolean
+          legacy_tribe_id: number
+          metadata?: Json
+          notes?: string | null
+          relation_type: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          current_tribe_id?: number
+          cycle_scope?: string | null
+          id?: number
+          is_active?: boolean
+          legacy_tribe_id?: number
+          metadata?: Json
+          notes?: string | null
+          relation_type?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tribe_lineage_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tribe_lineage_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tribe_lineage_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribe_lineage_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribe_lineage_current_tribe_id_fkey"
+            columns: ["current_tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribe_lineage_legacy_tribe_id_fkey"
+            columns: ["legacy_tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribe_lineage_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tribe_lineage_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tribe_lineage_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribe_lineage_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
         ]
@@ -2986,6 +3108,15 @@ export type Database = {
         Args: { p_reason?: string; p_tribe_id: number }
         Returns: Json
       }
+      admin_ensure_communication_tribe: {
+        Args: {
+          p_name?: string
+          p_notes?: string
+          p_quadrant?: number
+          p_quadrant_name?: string
+        }
+        Returns: Json
+      }
       admin_force_tribe_selection: {
         Args: { p_member_id: string; p_tribe_id: number }
         Returns: Json
@@ -2993,6 +3124,10 @@ export type Database = {
       admin_get_tribe_allocations: { Args: never; Returns: Json }
       admin_inactivate_member: {
         Args: { p_member_id: string; p_reason?: string }
+        Returns: Json
+      }
+      admin_link_communication_boards: {
+        Args: { p_tribe_id?: number }
         Returns: Json
       }
       admin_list_members: {
@@ -3005,6 +3140,22 @@ export type Database = {
           p_search?: string
         }
         Returns: Json
+      }
+      admin_list_tribe_lineage: {
+        Args: { p_include_inactive?: boolean }
+        Returns: {
+          current_tribe_id: number
+          current_tribe_name: string
+          cycle_scope: string
+          id: number
+          is_active: boolean
+          legacy_tribe_id: number
+          legacy_tribe_name: string
+          metadata: Json
+          notes: string
+          relation_type: string
+          updated_at: string
+        }[]
       }
       admin_list_tribes: {
         Args: { p_include_inactive?: boolean }
@@ -3062,6 +3213,19 @@ export type Database = {
           p_quadrant?: number
           p_quadrant_name?: string
           p_whatsapp_url?: string
+        }
+        Returns: Json
+      }
+      admin_upsert_tribe_lineage: {
+        Args: {
+          p_current_tribe_id?: number
+          p_cycle_scope?: string
+          p_id?: number
+          p_is_active?: boolean
+          p_legacy_tribe_id?: number
+          p_metadata?: Json
+          p_notes?: string
+          p_relation_type?: string
         }
         Returns: Json
       }

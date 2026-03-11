@@ -137,6 +137,7 @@ test('tribe catalog supports dynamic runtime entries and explicit active status'
   const catalog = read('src/lib/tribes/catalog.ts');
   const migration = read('supabase/migrations/20260312050000_dynamic_tribe_catalog_and_status.sql');
   const lineageMigration = read('supabase/migrations/20260312150000_tribe_lineage_and_legacy_links.sql');
+  const communicationMigration = read('supabase/migrations/20260312160000_communication_tribe_and_board_linking.sql');
 
   assert.equal(tribe.includes('tribeId < 1 || tribeId > 8'), false);
   assert.equal(tribeEn.includes('tribeId < 1 || tribeId > 8'), false);
@@ -163,6 +164,10 @@ test('tribe catalog supports dynamic runtime entries and explicit active status'
   assert.equal(lineageMigration.includes('create table if not exists public.tribe_lineage'), true);
   assert.equal(lineageMigration.includes('create or replace function public.admin_upsert_tribe_lineage('), true);
   assert.equal(lineageMigration.includes('create or replace function public.admin_list_tribe_lineage('), true);
+  assert.equal(communicationMigration.includes('alter table public.project_boards'), true);
+  assert.equal(communicationMigration.includes('add column if not exists domain_key text'), true);
+  assert.equal(communicationMigration.includes('create or replace function public.admin_ensure_communication_tribe('), true);
+  assert.equal(communicationMigration.includes('create or replace function public.admin_link_communication_boards('), true);
 });
 
 test('analytics v2 grants readonly access without widening admin actions and ships staged metric contracts', () => {
