@@ -423,6 +423,17 @@ test('partner governance rpc pack includes trend contracts', () => {
   assert.equal(script.includes("sb.rpc('exec_partner_governance_trends'"), true);
 });
 
+test('dry-run rehearsal chain validates governance without mutating ingestion', () => {
+  const migration = read('supabase/migrations/20260313140000_dry_run_rehearsal_chain.sql');
+  const script = read('scripts/run_dry_rehearsal_chain.ts');
+
+  assert.equal(migration.includes('create or replace function public.admin_run_dry_rehearsal_chain('), true);
+  assert.equal(migration.includes('v_audit := public.admin_data_quality_audit();'), true);
+  assert.equal(migration.includes('v_gate := public.admin_release_readiness_gate(null, null, p_gate_mode);'), true);
+  assert.equal(migration.includes("v_timeout_probe := public.admin_check_ingestion_source_timeout('mixed'"), true);
+  assert.equal(script.includes("sb.rpc('admin_run_dry_rehearsal_chain'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

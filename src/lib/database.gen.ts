@@ -4854,6 +4854,10 @@ export type Database = {
         Args: { p_window_days?: number }
         Returns: Json
       }
+      exec_partner_governance_trends: {
+        Args: { p_window_days?: number }
+        Returns: Json
+      }
       exec_role_transitions: {
         Args: { p_chapter?: string; p_cycle_code?: string; p_tribe_id?: number }
         Returns: Json
