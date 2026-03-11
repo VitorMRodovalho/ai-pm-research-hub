@@ -348,6 +348,18 @@ test('ingestion alerts have auditable lifecycle transitions', () => {
   assert.equal(script.includes("sb.rpc('admin_update_ingestion_alert_status'"), true);
 });
 
+test('readiness gate supports strict and advisory policy modes', () => {
+  const migration = read('supabase/migrations/20260313070000_release_readiness_policy_modes.sql');
+  const runScript = read('scripts/run_release_readiness_gate.ts');
+  const policyScript = read('scripts/set_release_readiness_policy.ts');
+
+  assert.equal(migration.includes('create table if not exists public.release_readiness_policies'), true);
+  assert.equal(migration.includes('create or replace function public.admin_set_release_readiness_policy('), true);
+  assert.equal(migration.includes("if v_mode = 'strict' then"), true);
+  assert.equal(runScript.includes('p_policy_mode: MODE || null'), true);
+  assert.equal(policyScript.includes("sb.rpc('admin_set_release_readiness_policy'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

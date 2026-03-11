@@ -1429,6 +1429,75 @@ export type Database = {
           },
         ]
       }
+      ingestion_alert_events: {
+        Row: {
+          alert_id: number
+          changed_at: string
+          changed_by: string | null
+          from_status: string | null
+          id: number
+          metadata: Json
+          reason: string | null
+          to_status: string
+        }
+        Insert: {
+          alert_id: number
+          changed_at?: string
+          changed_by?: string | null
+          from_status?: string | null
+          id?: number
+          metadata?: Json
+          reason?: string | null
+          to_status: string
+        }
+        Update: {
+          alert_id?: number
+          changed_at?: string
+          changed_by?: string | null
+          from_status?: string | null
+          id?: number
+          metadata?: Json
+          reason?: string | null
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingestion_alert_events_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "ingestion_alerts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_alert_events_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_alert_events_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_alert_events_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_alert_events_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingestion_alerts: {
         Row: {
           alert_key: string
@@ -4180,6 +4249,15 @@ export type Database = {
           suggested_board_id: string
           suggested_board_name: string
         }[]
+      }
+      admin_update_ingestion_alert_status: {
+        Args: {
+          p_alert_id: number
+          p_metadata?: Json
+          p_next_status: string
+          p_reason?: string
+        }
+        Returns: Json
       }
       admin_update_member: {
         Args: {
