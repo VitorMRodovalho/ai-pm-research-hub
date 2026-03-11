@@ -236,6 +236,16 @@ test('legacy tribe materialization uses explicit backend lineage/links', () => {
   assert.equal(script.includes("sb.rpc('admin_link_board_to_legacy_tribe'"), true);
 });
 
+test('data quality audit contract tracks tribe and legacy integrity', () => {
+  const migration = read('supabase/migrations/20260312190000_data_quality_audit_rpc.sql');
+  const script = read('scripts/run_data_quality_audit.ts');
+  assert.equal(migration.includes('create or replace function public.admin_data_quality_audit()'), true);
+  assert.equal(migration.includes("'tribe_6_without_boards'"), true);
+  assert.equal(migration.includes("'communication_tribe_missing'"), true);
+  assert.equal(migration.includes("'legacy_cycle_1_2_empty'"), true);
+  assert.equal(script.includes("sb.rpc('admin_data_quality_audit'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

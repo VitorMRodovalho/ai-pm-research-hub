@@ -1357,6 +1357,118 @@ export type Database = {
           },
         ]
       }
+      ingestion_batch_files: {
+        Row: {
+          batch_id: string
+          created_at: string
+          file_hash: string | null
+          file_path: string
+          file_size_bytes: number | null
+          id: number
+          result: Json
+          source_kind: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          file_hash?: string | null
+          file_path: string
+          file_size_bytes?: number | null
+          id?: number
+          result?: Json
+          source_kind: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          file_hash?: string | null
+          file_path?: string
+          file_size_bytes?: number | null
+          id?: number
+          result?: Json
+          source_kind?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingestion_batch_files_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "ingestion_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ingestion_batches: {
+        Row: {
+          finished_at: string | null
+          id: string
+          initiated_by: string | null
+          mode: string
+          notes: string | null
+          source: string
+          started_at: string
+          status: string
+          summary: Json
+        }
+        Insert: {
+          finished_at?: string | null
+          id?: string
+          initiated_by?: string | null
+          mode?: string
+          notes?: string | null
+          source: string
+          started_at?: string
+          status?: string
+          summary?: Json
+        }
+        Update: {
+          finished_at?: string | null
+          id?: string
+          initiated_by?: string | null
+          mode?: string
+          notes?: string | null
+          source?: string
+          started_at?: string
+          status?: string
+          summary?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingestion_batches_initiated_by_fkey"
+            columns: ["initiated_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_batches_initiated_by_fkey"
+            columns: ["initiated_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_batches_initiated_by_fkey"
+            columns: ["initiated_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_batches_initiated_by_fkey"
+            columns: ["initiated_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_assets: {
         Row: {
           created_at: string
@@ -1673,6 +1785,175 @@ export type Database = {
           status?: string
         }
         Relationships: []
+      }
+      legacy_tribe_board_links: {
+        Row: {
+          board_id: string
+          confidence_score: number
+          created_at: string
+          id: number
+          legacy_tribe_id: number
+          metadata: Json
+          notes: string | null
+          relation_type: string
+          updated_at: string
+        }
+        Insert: {
+          board_id: string
+          confidence_score?: number
+          created_at?: string
+          id?: number
+          legacy_tribe_id: number
+          metadata?: Json
+          notes?: string | null
+          relation_type?: string
+          updated_at?: string
+        }
+        Update: {
+          board_id?: string
+          confidence_score?: number
+          created_at?: string
+          id?: number
+          legacy_tribe_id?: number
+          metadata?: Json
+          notes?: string | null
+          relation_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legacy_tribe_board_links_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "project_boards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legacy_tribe_board_links_legacy_tribe_id_fkey"
+            columns: ["legacy_tribe_id"]
+            isOneToOne: false
+            referencedRelation: "legacy_tribes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      legacy_tribes: {
+        Row: {
+          chapter: string | null
+          created_at: string
+          created_by: string | null
+          cycle_code: string
+          cycle_label: string | null
+          display_name: string
+          id: number
+          legacy_key: string
+          metadata: Json
+          notes: string | null
+          quadrant: number | null
+          status: string
+          tribe_id: number | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          chapter?: string | null
+          created_at?: string
+          created_by?: string | null
+          cycle_code: string
+          cycle_label?: string | null
+          display_name: string
+          id?: number
+          legacy_key: string
+          metadata?: Json
+          notes?: string | null
+          quadrant?: number | null
+          status?: string
+          tribe_id?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          chapter?: string | null
+          created_at?: string
+          created_by?: string | null
+          cycle_code?: string
+          cycle_label?: string | null
+          display_name?: string
+          id?: number
+          legacy_key?: string
+          metadata?: Json
+          notes?: string | null
+          quadrant?: number | null
+          status?: string
+          tribe_id?: number | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legacy_tribes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "legacy_tribes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "legacy_tribes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legacy_tribes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legacy_tribes_tribe_id_fkey"
+            columns: ["tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legacy_tribes_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "legacy_tribes_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "legacy_tribes_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legacy_tribes_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       meeting_artifacts: {
         Row: {
@@ -3130,6 +3411,17 @@ export type Database = {
         Args: { p_member_id: string; p_reason?: string }
         Returns: Json
       }
+      admin_link_board_to_legacy_tribe: {
+        Args: {
+          p_board_id: string
+          p_confidence_score?: number
+          p_legacy_tribe_id: number
+          p_metadata?: Json
+          p_notes?: string
+          p_relation_type?: string
+        }
+        Returns: Json
+      }
       admin_link_communication_boards: {
         Args: { p_tribe_id?: number }
         Returns: Json
@@ -3204,6 +3496,22 @@ export type Database = {
           p_operational_role?: string
           p_phone?: string
           p_pmi_id?: string
+          p_tribe_id?: number
+        }
+        Returns: Json
+      }
+      admin_upsert_legacy_tribe: {
+        Args: {
+          p_chapter?: string
+          p_cycle_code?: string
+          p_cycle_label?: string
+          p_display_name?: string
+          p_id?: number
+          p_legacy_key?: string
+          p_metadata?: Json
+          p_notes?: string
+          p_quadrant?: number
+          p_status?: string
           p_tribe_id?: number
         }
         Returns: Json
