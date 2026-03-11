@@ -544,6 +544,16 @@ test('dual-control rollback audit trails are persisted in backend', () => {
   assert.equal(script.includes("sb.rpc('admin_append_rollback_audit_event'"), true);
 });
 
+test('provenance anomalies can emit critical governance alerts', () => {
+  const migration = read('supabase/migrations/20260314020000_provenance_anomaly_alerts.sql');
+  const script = read('scripts/raise_provenance_anomaly_alert.ts');
+
+  assert.equal(migration.includes('create or replace function public.admin_raise_provenance_anomaly_alert('), true);
+  assert.equal(migration.includes("public.admin_verify_ingestion_provenance_batch(p_batch_id)"), true);
+  assert.equal(migration.includes("'provenance_signature_anomaly'"), true);
+  assert.equal(script.includes("sb.rpc('admin_raise_provenance_anomaly_alert'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

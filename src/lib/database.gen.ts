@@ -3677,6 +3677,72 @@ export type Database = {
           },
         ]
       }
+      rollback_audit_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          details: Json
+          event_type: string
+          id: number
+          plan_id: string
+          reason: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          event_type: string
+          id?: number
+          plan_id: string
+          reason?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          event_type?: string
+          id?: number
+          plan_id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rollback_audit_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "rollback_audit_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "rollback_audit_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rollback_audit_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rollback_audit_events_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "ingestion_rollback_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_config: {
         Row: {
           key: string
