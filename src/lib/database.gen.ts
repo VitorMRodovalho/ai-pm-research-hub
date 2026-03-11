@@ -1498,6 +1498,134 @@ export type Database = {
           },
         ]
       }
+      ingestion_alert_remediation_rules: {
+        Row: {
+          action_type: string
+          alert_key: string
+          enabled: boolean
+          max_attempts: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          action_type?: string
+          alert_key: string
+          enabled?: boolean
+          max_attempts?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          action_type?: string
+          alert_key?: string
+          enabled?: boolean
+          max_attempts?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingestion_alert_remediation_rules_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_alert_remediation_rules_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_alert_remediation_rules_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_alert_remediation_rules_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ingestion_alert_remediation_runs: {
+        Row: {
+          action_type: string
+          alert_id: number
+          alert_key: string
+          attempt: number
+          created_at: string
+          created_by: string | null
+          details: Json
+          id: number
+          status: string
+        }
+        Insert: {
+          action_type: string
+          alert_id: number
+          alert_key: string
+          attempt: number
+          created_at?: string
+          created_by?: string | null
+          details?: Json
+          id?: number
+          status: string
+        }
+        Update: {
+          action_type?: string
+          alert_id?: number
+          alert_key?: string
+          attempt?: number
+          created_at?: string
+          created_by?: string | null
+          details?: Json
+          id?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingestion_alert_remediation_runs_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "ingestion_alerts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_alert_remediation_runs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_alert_remediation_runs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_alert_remediation_runs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_alert_remediation_runs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingestion_alerts: {
         Row: {
           alert_key: string
@@ -4339,6 +4467,10 @@ export type Database = {
         Args: { p_member_id: string }
         Returns: Json
       }
+      admin_run_ingestion_alert_remediation: {
+        Args: { p_alert_id: number }
+        Returns: Json
+      }
       admin_run_post_ingestion_chain: {
         Args: {
           p_batch_id?: string
@@ -4349,6 +4481,15 @@ export type Database = {
       }
       admin_run_post_ingestion_healthcheck: {
         Args: { p_batch_id?: string }
+        Returns: Json
+      }
+      admin_set_ingestion_alert_remediation_rule: {
+        Args: {
+          p_action_type?: string
+          p_alert_key: string
+          p_enabled?: boolean
+          p_max_attempts?: number
+        }
         Returns: Json
       }
       admin_set_ingestion_source_policy: {

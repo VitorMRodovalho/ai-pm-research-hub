@@ -403,6 +403,16 @@ test('ingestion alert remediation hooks are backend-governed and auditable', () 
   assert.equal(script.includes("sb.rpc('admin_run_ingestion_alert_remediation'"), true);
 });
 
+test('release readiness timeline persists go-no-go decisions', () => {
+  const migration = read('supabase/migrations/20260313120000_release_readiness_history.sql');
+  const script = read('scripts/record_release_readiness_decision.ts');
+
+  assert.equal(migration.includes('create table if not exists public.release_readiness_history'), true);
+  assert.equal(migration.includes('create or replace function public.admin_record_release_readiness_decision('), true);
+  assert.equal(migration.includes('v_gate := public.admin_release_readiness_gate(null, null, p_mode);'), true);
+  assert.equal(script.includes("sb.rpc('admin_record_release_readiness_decision'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');
