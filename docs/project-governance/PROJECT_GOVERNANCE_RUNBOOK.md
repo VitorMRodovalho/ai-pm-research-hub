@@ -29,6 +29,7 @@ Keep GitHub Project (`AI PM Hub - Wave Sprint Pipeline`) synchronized with real 
 - Draft cards are allowed only for long-horizon backlog ideation.
 - Critical commits must reference a sprint/issue id in the commit message/body.
 - SQL-impact sprints must include migration pack (`apply/audit/rollback`) before `Done`.
+- Delivery model: trunk-based on `main` with mandatory technical gate (`npm test`, `npm run build`, `npm run smoke:routes`) and explicit closure of stale dependency PRs.
 
 ## Weekly cadence
 1. `Backlog sync`: compare `backlog-wave-planning-updated.md` with project Sprint field.

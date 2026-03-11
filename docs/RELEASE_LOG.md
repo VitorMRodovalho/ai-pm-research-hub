@@ -1,5 +1,19 @@
 # Release Log
 
+## 2026-03-11 — Sprint W42.1-W42.2: PR Hygiene + Delivery Gate Policy
+
+### Scope
+Reduzir backlog operacional de PRs de dependencias/governanca e formalizar o modelo de entrega adotado pelo projeto para evitar fila parada e regressao por fluxo ambiguo.
+
+### Delivered
+- **Dependabot uplift incorporado em `main`**: workflows atualizados para `actions/checkout@v6` e `actions/setup-node@v6` nos pipelines internos.
+- **Policy formalizada** em `SPRINT_IMPLEMENTATION_PRACTICES.md` e `PROJECT_GOVERNANCE_RUNBOOK.md`: trunk-based em `main` com gate tecnico obrigatorio (`test`, `build`, `smoke`) e higiene ativa de PRs de dependencia.
+
+### Audit Results
+- Validacao local desta tranche: `npm test` + `npm run build` em andamento no fechamento do sprint.
+
+---
+
 ## 2026-03-11 — Sprint W41.3-W41.4: Rank/Credly Alignment + Profile Verify Retry
 
 ### Scope

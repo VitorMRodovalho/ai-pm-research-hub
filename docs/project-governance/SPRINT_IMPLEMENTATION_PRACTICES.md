@@ -16,6 +16,16 @@ Para considerar um item de Sprint ou Hotfix tecnicamente concluído, os seguinte
 5. **Gate de Integração:**
    - Feature de frontend sem backend/API/SQL pronto não avança para desenvolvimento. Ver `docs/project-governance/PROJECT_ON_TRACK.md`.
 
+## Modelo de entrega (trunk-based com gate obrigatório)
+
+- O fluxo oficial do projeto é **trunk-based em `main`**, com push frequente e lotes curtos.
+- PRs de feature podem existir para coordenação, mas não substituem o gate técnico.
+- O gate mínimo para considerar entrega válida continua obrigatório em `main`:
+  - `npm test`
+  - `npm run build`
+  - `npm run smoke:routes`
+- PRs de automação/dependências devem ser **mergeadas ou encerradas com justificativa** na sprint de higiene correspondente (sem backlog indefinido).
+
 ---
 
 ## Rotina de Encerramento de Sprint (5 Fases)
