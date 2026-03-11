@@ -4946,6 +4946,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_raise_provenance_anomaly_alert: {
+        Args: { p_batch_id: string }
+        Returns: Json
+      }
       admin_reactivate_member: { Args: { p_member_id: string }; Returns: Json }
       admin_record_release_readiness_decision: {
         Args: { p_context_label?: string; p_mode?: string }

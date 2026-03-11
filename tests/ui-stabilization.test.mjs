@@ -554,6 +554,16 @@ test('provenance anomalies can emit critical governance alerts', () => {
   assert.equal(script.includes("sb.rpc('admin_raise_provenance_anomaly_alert'"), true);
 });
 
+test('slo drill-down by source aggregates ingestion file outcomes', () => {
+  const migration = read('supabase/migrations/20260314030000_slo_drilldown_by_source.sql');
+  const script = read('scripts/run_readiness_slo_by_source.ts');
+
+  assert.equal(migration.includes('create or replace function public.exec_readiness_slo_by_source('), true);
+  assert.equal(migration.includes('from public.ingestion_batch_files f'), true);
+  assert.equal(migration.includes("'processed_rate'"), true);
+  assert.equal(script.includes("sb.rpc('exec_readiness_slo_by_source'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');
