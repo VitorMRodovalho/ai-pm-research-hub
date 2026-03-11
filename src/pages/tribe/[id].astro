@@ -177,6 +177,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
             <div class="w-2.5 h-2.5 rounded-full bg-slate-400"></div>
             <h4 class="text-[12px] font-bold text-slate-600 uppercase">Backlog</h4>
             <span class="bcol-count text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-bold">0</span>
+            <button data-action="add-board-card" data-col="backlog" class="ml-auto w-5 h-5 rounded-md bg-slate-100 text-slate-500 text-xs font-bold cursor-pointer border-0 hover:bg-slate-200 transition-all">+</button>
           </div>
           <div class="board-drop space-y-2 min-h-[150px] p-1.5 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50" data-col="backlog"></div>
         </div>
@@ -185,6 +186,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
             <div class="w-2.5 h-2.5 rounded-full bg-blue-400"></div>
             <h4 class="text-[12px] font-bold text-blue-600 uppercase">To Do</h4>
             <span class="bcol-count text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full font-bold">0</span>
+            <button data-action="add-board-card" data-col="todo" class="ml-auto w-5 h-5 rounded-md bg-blue-100 text-blue-700 text-xs font-bold cursor-pointer border-0 hover:bg-blue-200 transition-all">+</button>
           </div>
           <div class="board-drop space-y-2 min-h-[150px] p-1.5 rounded-xl border-2 border-dashed border-blue-200 bg-blue-50/30" data-col="todo"></div>
         </div>
@@ -193,6 +195,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
             <div class="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
             <h4 class="text-[12px] font-bold text-amber-700 uppercase">Em Progresso</h4>
             <span class="bcol-count text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">0</span>
+            <button data-action="add-board-card" data-col="in_progress" class="ml-auto w-5 h-5 rounded-md bg-amber-100 text-amber-700 text-xs font-bold cursor-pointer border-0 hover:bg-amber-200 transition-all">+</button>
           </div>
           <div class="board-drop space-y-2 min-h-[150px] p-1.5 rounded-xl border-2 border-dashed border-amber-200 bg-amber-50/30" data-col="in_progress"></div>
         </div>
@@ -201,6 +204,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
             <div class="w-2.5 h-2.5 rounded-full bg-purple-400"></div>
             <h4 class="text-[12px] font-bold text-purple-600 uppercase">Revisão</h4>
             <span class="bcol-count text-[10px] bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full font-bold">0</span>
+            <button data-action="add-board-card" data-col="review" class="ml-auto w-5 h-5 rounded-md bg-purple-100 text-purple-700 text-xs font-bold cursor-pointer border-0 hover:bg-purple-200 transition-all">+</button>
           </div>
           <div class="board-drop space-y-2 min-h-[150px] p-1.5 rounded-xl border-2 border-dashed border-purple-200 bg-purple-50/30" data-col="review"></div>
         </div>
@@ -209,9 +213,59 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
             <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
             <h4 class="text-[12px] font-bold text-emerald-700 uppercase">Concluído</h4>
             <span class="bcol-count text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-bold">0</span>
+            <button data-action="add-board-card" data-col="done" class="ml-auto w-5 h-5 rounded-md bg-emerald-100 text-emerald-700 text-xs font-bold cursor-pointer border-0 hover:bg-emerald-200 transition-all">+</button>
           </div>
           <div class="board-drop space-y-2 min-h-[150px] p-1.5 rounded-xl border-2 border-dashed border-emerald-200 bg-emerald-50/30" data-col="done"></div>
         </div>
+      </div>
+    </div>
+    <div id="board-item-modal" class="fixed inset-0 z-50 hidden">
+      <div class="absolute inset-0 bg-black/40" data-action="close-board-item-modal"></div>
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-xl w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto">
+        <h2 id="board-item-modal-title" class="text-lg font-extrabold text-navy mb-4">Detalhes do card</h2>
+        <form id="board-item-form" class="flex flex-col gap-3">
+          <input type="hidden" id="bi-id" />
+          <input type="hidden" id="bi-status-seed" />
+          <div>
+            <label for="bi-title" class="text-[13px] font-semibold text-slate-600 mb-1 block">Título</label>
+            <input type="text" id="bi-title" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
+          </div>
+          <div>
+            <label for="bi-description" class="text-[13px] font-semibold text-slate-600 mb-1 block">Descrição</label>
+            <textarea id="bi-description" rows="4" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="bi-status" class="text-[13px] font-semibold text-slate-600 mb-1 block">Status</label>
+              <select id="bi-status" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40">
+                <option value="backlog">Backlog</option>
+                <option value="todo">To Do</option>
+                <option value="in_progress">Em Progresso</option>
+                <option value="review">Revisão</option>
+                <option value="done">Concluído</option>
+              </select>
+            </div>
+            <div>
+              <label for="bi-due-date" class="text-[13px] font-semibold text-slate-600 mb-1 block">Prazo</label>
+              <input type="date" id="bi-due-date" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
+            </div>
+          </div>
+          <div>
+            <label for="bi-assignee" class="text-[13px] font-semibold text-slate-600 mb-1 block">Responsável</label>
+            <select id="bi-assignee" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></select>
+          </div>
+          <div>
+            <label for="bi-tags" class="text-[13px] font-semibold text-slate-600 mb-1 block">Tags (separadas por vírgula)</label>
+            <input type="text" id="bi-tags" placeholder="kanban, prioridade, ux" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
+          </div>
+          <div class="flex justify-between items-center gap-3 mt-2">
+            <button type="button" id="bi-delete-btn" data-action="delete-board-item" class="px-4 py-2 text-sm font-semibold text-red-600 border border-red-200 rounded-lg cursor-pointer hover:bg-red-50 transition-all hidden">🗑️ Arquivar card</button>
+            <div class="flex gap-3 ml-auto">
+              <button type="button" data-action="close-board-item-modal" class="px-4 py-2 text-sm font-semibold text-slate-500 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all">Cancelar</button>
+              <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-navy rounded-lg cursor-pointer border-0 hover:opacity-90 transition-all">Salvar</button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
     <!-- Comms Hub panel (conditionally shown for comms_team members) -->
@@ -361,6 +415,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   let contactData: Record<string, {email?:string, phone?:string}> = {};
   let contextSwitchLoaded = false;
   let contextCatalog: { active: any[]; operational: any[]; legacy: any[] } = { active: [], operational: [], legacy: [] };
+  let currentBoardItems: any[] = [];
 
   function getActiveCycleCode(): string {
     return currentCycleCode || allDeliverables.find((item: any) => item?.cycle_code)?.cycle_code || '';
@@ -999,6 +1054,26 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         closeDeliverableModal();
       }
 
+      if (action === 'open-board-item') {
+        const itemId = target.dataset.itemId;
+        if (!itemId) return;
+        const item = getBoardItemById(itemId);
+        if (item) openBoardItemModal(item);
+      }
+
+      if (action === 'add-board-card') {
+        const status = target.dataset.col || 'backlog';
+        openBoardItemModal(null, status);
+      }
+
+      if (action === 'close-board-item-modal') {
+        closeBoardItemModal();
+      }
+
+      if (action === 'delete-board-item') {
+        archiveBoardItemFromModal();
+      }
+
       if (action === 'send-broadcast') {
         sendBroadcast();
       }
@@ -1033,10 +1108,15 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         e.preventDefault();
         saveDeliverable();
       }
+      if ((e.target as HTMLElement)?.id === 'board-item-form') {
+        e.preventDefault();
+        saveBoardItemFromModal();
+      }
     });
 
     document.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeDeliverableModal();
+      if (e.key === 'Escape') closeBoardItemModal();
     });
   }
 
@@ -1425,6 +1505,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     if (loadEl) loadEl.classList.add('hidden');
     if (kanbanEl) kanbanEl.classList.remove('hidden');
 
+    currentBoardItems = Array.isArray(items) ? items : [];
     BOARD_COLS.forEach(col => {
       const drop = kanbanEl?.querySelector(`.board-drop[data-col="${col}"]`);
       const countEl = kanbanEl?.querySelector(`.board-col[data-col="${col}"] .bcol-count`);
@@ -1448,7 +1529,116 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       <p class="text-[13px] font-semibold text-navy leading-tight mb-1">${escapeHtml(item.title)}</p>
       ${item.description ? `<p class="text-[11px] text-slate-400 mb-1.5 line-clamp-2">${escapeHtml(item.description)}</p>` : ''}
       <div class="flex flex-wrap items-center gap-1">${tags}${assignee}${due}</div>
+      ${canEdit ? `<button data-action="open-board-item" data-item-id="${item.id}" class="mt-2 text-[10px] font-bold text-purple hover:underline cursor-pointer border-0 bg-transparent p-0">Editar detalhes</button>` : ''}
     </div>`;
+  }
+
+  function getBoardItemById(itemId: string): any | null {
+    return currentBoardItems.find((item: any) => String(item.id) === String(itemId)) || null;
+  }
+
+  function openBoardItemModal(item?: any, seedStatus?: string) {
+    if (!canEdit) return;
+    const modal = document.getElementById('board-item-modal');
+    const titleEl = document.getElementById('board-item-modal-title');
+    const idInput = document.getElementById('bi-id') as HTMLInputElement;
+    const titleInput = document.getElementById('bi-title') as HTMLInputElement;
+    const descriptionInput = document.getElementById('bi-description') as HTMLTextAreaElement;
+    const statusSelect = document.getElementById('bi-status') as HTMLSelectElement;
+    const dueDateInput = document.getElementById('bi-due-date') as HTMLInputElement;
+    const assigneeSelect = document.getElementById('bi-assignee') as HTMLSelectElement;
+    const tagsInput = document.getElementById('bi-tags') as HTMLInputElement;
+    const seedInput = document.getElementById('bi-status-seed') as HTMLInputElement;
+    const deleteBtn = document.getElementById('bi-delete-btn');
+
+    if (!modal || !titleEl || !idInput || !titleInput || !descriptionInput || !statusSelect || !dueDateInput || !assigneeSelect || !tagsInput || !seedInput || !deleteBtn) return;
+
+    titleEl.textContent = item ? 'Editar card' : 'Novo card';
+    idInput.value = item?.id || '';
+    seedInput.value = seedStatus || '';
+    titleInput.value = item?.title || '';
+    descriptionInput.value = item?.description || '';
+    statusSelect.value = item?.status || seedStatus || 'backlog';
+    dueDateInput.value = item?.due_date ? String(item.due_date).slice(0, 10) : '';
+    tagsInput.value = Array.isArray(item?.tags) ? item.tags.join(', ') : '';
+    deleteBtn.classList.toggle('hidden', !item);
+
+    assigneeSelect.innerHTML = `<option value="">Não atribuído</option>` +
+      Array.from(membersMap.values())
+        .sort((a: any, b: any) => (a.name || '').localeCompare(b.name || ''))
+        .map((m: any) => `<option value="${m.id}">${escapeHtml(m.name || '—')}</option>`)
+        .join('');
+    assigneeSelect.value = item?.assignee_id || '';
+
+    modal.classList.remove('hidden');
+  }
+
+  function closeBoardItemModal() {
+    document.getElementById('board-item-modal')?.classList.add('hidden');
+  }
+
+  async function saveBoardItemFromModal() {
+    if (!sb || !currentBoardId) return;
+    const idInput = document.getElementById('bi-id') as HTMLInputElement;
+    const titleInput = document.getElementById('bi-title') as HTMLInputElement;
+    const descriptionInput = document.getElementById('bi-description') as HTMLTextAreaElement;
+    const statusSelect = document.getElementById('bi-status') as HTMLSelectElement;
+    const dueDateInput = document.getElementById('bi-due-date') as HTMLInputElement;
+    const assigneeSelect = document.getElementById('bi-assignee') as HTMLSelectElement;
+    const tagsInput = document.getElementById('bi-tags') as HTMLInputElement;
+
+    const title = titleInput.value.trim();
+    if (!title) {
+      (window as any).toast?.('Título do card é obrigatório.', 'error');
+      return;
+    }
+
+    const tags = tagsInput.value
+      .split(',')
+      .map((tag: string) => tag.trim())
+      .filter((tag: string) => !!tag);
+
+    const { error } = await sb.rpc('upsert_board_item', {
+      p_item_id: idInput.value || null,
+      p_board_id: currentBoardId,
+      p_title: title,
+      p_description: descriptionInput.value.trim() || null,
+      p_status: statusSelect.value || 'backlog',
+      p_assignee_id: assigneeSelect.value || null,
+      p_due_date: dueDateInput.value || null,
+      p_tags: tags.length ? tags : null,
+      p_labels: [],
+      p_checklist: [],
+    });
+    if (error) {
+      console.error('upsert_board_item error', error);
+      (window as any).toast?.('Não foi possível salvar o card.', 'error');
+      return;
+    }
+    closeBoardItemModal();
+    await loadProjectBoard();
+    (window as any).toast?.('Card salvo com sucesso.', 'success');
+  }
+
+  async function archiveBoardItemFromModal() {
+    if (!sb) return;
+    const idInput = document.getElementById('bi-id') as HTMLInputElement;
+    const itemId = idInput?.value || '';
+    if (!itemId) return;
+    if (!confirm('Arquivar este card? Você poderá restaurar pelo painel de governança.')) return;
+
+    const { error } = await sb.rpc('admin_archive_board_item', {
+      p_item_id: itemId,
+      p_reason: 'Archived from tribe kanban modal',
+    });
+    if (error) {
+      console.error('admin_archive_board_item error', error);
+      (window as any).toast?.('Não foi possível arquivar o card.', 'error');
+      return;
+    }
+    closeBoardItemModal();
+    await loadProjectBoard();
+    (window as any).toast?.('Card arquivado.', 'success');
   }
 
   function setupBoardDragDrop() {

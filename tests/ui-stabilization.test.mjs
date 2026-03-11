@@ -677,6 +677,19 @@ test('tribe taxonomy includes workstream classification for navigation grouping'
   assert.equal(teams.includes("select('id, name, quadrant_name, is_active, workstream_type')"), true);
 });
 
+test('tribe kanban supports modal edit/create and archive actions', () => {
+  const tribe = read('src/pages/tribe/[id].astro');
+  const migration = read('supabase/migrations/20260314153000_board_item_editor_rpc.sql');
+  assert.equal(tribe.includes('id="board-item-modal"'), true);
+  assert.equal(tribe.includes('data-action="open-board-item"'), true);
+  assert.equal(tribe.includes('data-action="add-board-card"'), true);
+  assert.equal(tribe.includes("sb.rpc('upsert_board_item'"), true);
+  assert.equal(tribe.includes("sb.rpc('admin_archive_board_item'"), true);
+  assert.equal(tribe.includes('id="board-item-form"'), true);
+  assert.equal(migration.includes('create or replace function public.upsert_board_item('), true);
+  assert.equal(migration.includes("raise exception 'Project management access required';"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');
