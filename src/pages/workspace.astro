@@ -85,6 +85,7 @@ const WORKSPACE_I18N = {
   window.__WORKSPACE_I18N = typeof WORKSPACE_I18N !== 'undefined' ? WORKSPACE_I18N : {};
 </script>
 <script>
+  import { buildTribeLabel, isRuntimeTribeActive } from '../lib/tribes/catalog';
   const I18N = (typeof window !== 'undefined' && (window as any).__WORKSPACE_I18N) || {};
 
   const TYPE_ICONS: Record<string, string> = {
@@ -109,7 +110,7 @@ const WORKSPACE_I18N = {
     governance: 'bg-slate-100 text-slate-700 border-slate-200',
   };
 
-  const TRIBE_NAMES: Record<number, string> = I18N.tribeNames || {};
+  let TRIBE_NAMES: Record<number, string> = I18N.tribeNames || {};
   const PAGE_SIZE = 12;
 
   let sb: any = null;
@@ -261,9 +262,24 @@ const WORKSPACE_I18N = {
     tribeIds.forEach(function(id) {
       const opt = document.createElement('option');
       opt.value = String(id);
-      opt.textContent = String(id).padStart(2, '0') + ' — ' + (TRIBE_NAMES[id] || I18N.tribePrefix + ' ' + id);
+      opt.textContent = String(id).padStart(2, '0') + ' — ' + buildTribeLabel({ id, name: TRIBE_NAMES[id] }, { prefix: I18N.tribePrefix || 'Tribo', fallbackNames: TRIBE_NAMES });
       select.appendChild(opt);
     });
+  }
+
+  async function loadRuntimeTribes() {
+    if (!sb) return;
+    try {
+      const { data, error } = await sb.from('tribes').select('id, name, is_active').order('id');
+      if (error) throw error;
+      (data || []).forEach((tribe: any) => {
+        if (isRuntimeTribeActive(tribe)) {
+          TRIBE_NAMES[tribe.id] = buildTribeLabel(tribe, { prefix: I18N.tribePrefix || 'Tribo', fallbackNames: TRIBE_NAMES });
+        }
+      });
+    } catch (error) {
+      console.warn('workspace tribes:', error);
+    }
   }
 
   function buildTagBar() {
@@ -358,6 +374,7 @@ const WORKSPACE_I18N = {
 
       allResources = resourcesResp.data || [];
       allTags = tagsResp.data || [];
+      await loadRuntimeTribes();
 
       populateTribeSelect();
       applyRouteState();

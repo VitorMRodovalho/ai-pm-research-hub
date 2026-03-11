@@ -256,6 +256,7 @@ const ARTIFACTS_I18N = {
 </script>
 <script>
   import { getMemberRole } from '../lib/routing';
+  import { buildTribeLabel, isRuntimeTribeActive } from '../lib/tribes/catalog';
 
   const I18N = (typeof window !== 'undefined' && (window as any).__ARTIFACTS_I18N) || {};
 
@@ -269,6 +270,7 @@ const ARTIFACTS_I18N = {
   let searchQuery = '';
   let activeCategory = '';
   let CAN_MANAGE = false;
+  let runtimeTribesLoaded = false;
 
   const PRODUCED_TYPES = ['article', 'framework', 'ebook', 'toolkit'];
   const REFERENCE_TYPES = ['presentation', 'video', 'other'];
@@ -283,7 +285,7 @@ const ARTIFACTS_I18N = {
     approved:  { label: I18N.statusLabels?.approved  || 'Aprovado',   bg: '#D1FAE5', color: '#065F46' },
     published: { label: I18N.statusLabels?.published || 'Publicado',  bg: '#DBEAFE', color: '#1E40AF' },
   };
-  const TRIBE_NAMES: Record<number, string> = I18N.tribeNames || {
+  let TRIBE_NAMES: Record<number, string> = I18N.tribeNames || {
     1: 'Radar Tecnológico', 2: 'Agentes Autônomos', 3: 'TMO & PMO do Futuro',
     4: 'Cultura & Change', 5: 'Talentos & Upskilling', 6: 'ROI & Portfólio',
     7: 'Governança & Trustworthy AI', 8: 'Inclusão & Colaboração'
@@ -353,6 +355,10 @@ const ARTIFACTS_I18N = {
     const el = document.getElementById('catalog-list')!;
     el.innerHTML = loadingRows(3);
     try {
+      if (!runtimeTribesLoaded) {
+        await loadRuntimeTribes();
+        runtimeTribesLoaded = true;
+      }
       const [artResp, tagsResp] = await Promise.all([
         sb.from('artifacts')
           .select('*, members!artifacts_member_id_fkey(name, photo_url)')
@@ -505,9 +511,24 @@ const ARTIFACTS_I18N = {
     tribeIds.forEach(function(id) {
       var opt = document.createElement('option');
       opt.value = String(id);
-      opt.textContent = String(id).padStart(2, '0') + ' — ' + (TRIBE_NAMES[id] || 'Tribo ' + id);
+      opt.textContent = String(id).padStart(2, '0') + ' — ' + buildTribeLabel({ id, name: TRIBE_NAMES[id] }, { prefix: 'Tribo', fallbackNames: TRIBE_NAMES });
       sel.appendChild(opt);
     });
+  }
+
+  async function loadRuntimeTribes() {
+    if (!sb) return;
+    try {
+      const { data, error } = await sb.from('tribes').select('id, name, is_active').order('id');
+      if (error) throw error;
+      (data || []).forEach(function(tribe: any) {
+        if (isRuntimeTribeActive(tribe)) {
+          TRIBE_NAMES[tribe.id] = buildTribeLabel(tribe, { prefix: 'Tribo', fallbackNames: TRIBE_NAMES });
+        }
+      });
+    } catch (error) {
+      console.warn('artifacts tribes:', error);
+    }
   }
 
   function artifactCard(a: any, showEdit = false, showReview = false): string {

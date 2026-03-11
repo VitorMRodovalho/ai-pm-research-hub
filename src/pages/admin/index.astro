@@ -213,6 +213,35 @@ const ADMIN_I18N = {
       </div>
 
       <div id="panel-tribes">
+        <div class="grid grid-cols-1 xl:grid-cols-[1.5fr_.9fr] gap-4 mb-6">
+          <div class="bg-white border border-slate-200 rounded-2xl p-5">
+            <div class="flex items-start justify-between gap-3 flex-wrap">
+              <div>
+                <h3 class="text-sm font-bold text-navy">Catálogo de Tribos</h3>
+                <p class="text-[.72rem] text-slate-400 mt-1">O catálogo agora pode crescer além do conjunto fixo `01..08`. Gestão do projeto abre novas tribos ativas e o Superadmin também acompanha inativas.</p>
+              </div>
+              <div id="tribe-catalog-summary" class="text-[.72rem] text-slate-400">Carregando catálogo...</div>
+            </div>
+          </div>
+          <div class="bg-white border border-slate-200 rounded-2xl p-5">
+            <h3 class="text-sm font-bold text-navy">Abrir Nova Tribo</h3>
+            <p class="text-[.72rem] text-slate-400 mt-1 mb-3">Cria uma nova entrada no catálogo para permitir navegação, alocação e gestão operacional.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input id="new-tribe-name" type="text" placeholder="Nome da nova tribo" class="px-3 py-2 border border-slate-200 rounded-lg text-sm sm:col-span-2" />
+              <select id="new-tribe-quadrant" class="px-3 py-2 border border-slate-200 rounded-lg text-sm">
+                <option value="1">Q1</option>
+                <option value="2">Q2</option>
+                <option value="3">Q3</option>
+                <option value="4">Q4</option>
+              </select>
+              <input id="new-tribe-quadrant-name" type="text" placeholder="Label do quadrante" class="px-3 py-2 border border-slate-200 rounded-lg text-sm" />
+              <input id="new-tribe-notes" type="text" placeholder="Descrição curta / contexto" class="px-3 py-2 border border-slate-200 rounded-lg text-sm sm:col-span-2" />
+            </div>
+            <div class="mt-3 flex justify-end">
+              <button id="btn-create-tribe" data-action="create-tribe" class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-semibold hover:opacity-90">Criar Tribo</button>
+            </div>
+          </div>
+        </div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6" id="tribe-cards"></div>
 
         <!-- Notify Allocations Action Card -->
@@ -297,14 +326,6 @@ const ADMIN_I18N = {
             </select>
             <select id="f-tribe" data-action="apply-filters" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-[.72rem] bg-white">
               <option value="">{t('admin.filter.tribeAll', lang)}</option>
-              <option value="1">01 — Radar Tecnológico</option>
-              <option value="2">02 — Agentes Autônomos</option>
-              <option value="3">03 — TMO & PMO</option>
-              <option value="4">04 — Cultura & Change</option>
-              <option value="5">05 — Talentos</option>
-              <option value="6">06 — ROI & Portfólio</option>
-              <option value="7">07 — Governança</option>
-              <option value="8">08 — Inclusão</option>
               <option value="none">{t('admin.filter.noTribe', lang)}</option>
             </select>
             <button data-action="clear-filters" class="px-2.5 py-1.5 border border-slate-200 rounded-lg text-[.72rem] text-slate-400 hover:text-crimson hover:border-crimson bg-white cursor-pointer transition-all">{t('admin.filter.clear', lang)}</button>
@@ -1139,6 +1160,7 @@ const ADMIN_I18N = {
     resolveTierFromMember,
   } from '../../lib/admin/constants';
   import { canManageTribeLifecycle } from '../../lib/tribes/access';
+  import { buildTribeLabel, getQuadrantColor, getTribeColor, isRuntimeTribeActive } from '../../lib/tribes/catalog';
 
   const ADMIN_I18N = (typeof window !== 'undefined' && (window as any).__ADMIN_I18N) || {};
   let sb: any = null;
@@ -1148,6 +1170,7 @@ const ADMIN_I18N = {
   let cycleOrder: string[] = [];
   let cycleDatesMap: Record<string, { start: string; end: string | null }> = {};
   let currentCycleStart = '';
+  let tribeCatalogCache: any[] = [];
 
   function getCycleDisplayMeta(code: string): { label: string; abbr: string; color: string } {
     return cycleMeta[code] || { label: code, abbr: code, color: '#94A3B8' };
@@ -1277,6 +1300,8 @@ const ADMIN_I18N = {
           if (tab) switchAdmTab(target, tab);
           break;
         }
+        case 'create-tribe': createTribe(); break;
+        case 'toggle-tribe-active': toggleTribeActive(target); break;
         case 'clear-filters': clearFilters(); break;
         case 'preview-vrms': previewVRMS(); break;
         case 'download-vrms': downloadVRMS(); break;
@@ -1400,11 +1425,59 @@ const ADMIN_I18N = {
   // ══════════════════════════════════════════
   // TRIBE MANAGEMENT
   // ══════════════════════════════════════════
+  async function loadTribeCatalog(force = false) {
+    if (!sb) return [];
+    if (!force && tribeCatalogCache.length) return tribeCatalogCache;
+    const includeInactive = MEMBER?.is_superadmin === true;
+    const { data, error } = await sb.rpc('admin_list_tribes', { p_include_inactive: includeInactive });
+    if (error) {
+      console.warn('admin_list_tribes failed, falling back to direct read', error);
+      let fallbackQuery = sb.from('tribes')
+        .select('id, name, quadrant, quadrant_name, leader_member_id, is_active')
+        .order('id');
+      if (!includeInactive) fallbackQuery = fallbackQuery.eq('is_active', true);
+      const fallback = await fallbackQuery;
+      tribeCatalogCache = fallback.data || [];
+      return tribeCatalogCache;
+    }
+    tribeCatalogCache = Array.isArray(data) ? data : [];
+    return tribeCatalogCache;
+  }
+
+  function renderTribeCatalogSummary(tribes: any[]) {
+    const summaryEl = document.getElementById('tribe-catalog-summary');
+    if (!summaryEl) return;
+    const active = tribes.filter((tribe: any) => isRuntimeTribeActive(tribe)).length;
+    const inactive = tribes.length - active;
+    summaryEl.textContent = MEMBER?.is_superadmin
+      ? `${active} ativas · ${inactive} inativas`
+      : `${active} ativas no catálogo`;
+  }
+
+  function populateAdminTribeFilter(tribes: any[]) {
+    const select = document.getElementById('f-tribe') as HTMLSelectElement | null;
+    if (!select) return;
+    const currentValue = select.value;
+    const allLabel = select.querySelector('option[value=""]')?.textContent || 'Todas as tribos';
+    const noneLabel = select.querySelector('option[value="none"]')?.textContent || 'Sem tribo';
+    const dynamicOptions = tribes.map((tribe: any) =>
+      `<option value="${tribe.id}">${String(tribe.id).padStart(2, '0')} — ${escapeHtml(buildTribeLabel(tribe))}</option>`
+    ).join('');
+    select.innerHTML = `<option value="">${escapeHtml(allLabel)}</option>${dynamicOptions}<option value="none">${escapeHtml(noneLabel)}</option>`;
+    select.value = currentValue;
+  }
+
   async function loadTribes() {
     if (!ensureAdminAction(false)) return;
-    const { data } = await sb.rpc('admin_get_tribe_allocations');
+    const [catalog, allocationsRes] = await Promise.all([
+      loadTribeCatalog(),
+      sb.rpc('admin_get_tribe_allocations'),
+    ]);
+    const data = allocationsRes.data;
     if (!data || data.error) { toast(data?.error || ADMIN_I18N.loadError, 'error'); return; }
     allMembers = data;
+    populateAdminTribeFilter(catalog);
+    renderTribeCatalogSummary(catalog);
 
     const active = data.filter((m: any) => m.current_cycle_active);
     const eligible = active.filter((m: any) => ELIGIBLE_ROLES.includes(getMemberRole(m)));
@@ -1417,23 +1490,33 @@ const ADMIN_I18N = {
     const cardsEl = document.getElementById('tribe-cards')!;
     let cardsHtml = '';
 
-    const tribeIds = Object.keys(TRIBE_NAMES).map(Number).sort((a, b) => a - b);
-    for (const t of tribeIds) {
+    for (const tribe of catalog) {
+      const t = Number(tribe.id);
       const members = data.filter((m: any) =>
         m.selected_tribe_id === t || (m.fixed_tribe_id === t && getMemberRole(m) === 'tribe_leader')
       );
       const count = members.filter((m: any) => getMemberRole(m) !== 'tribe_leader').length;
-      const color = TRIBE_COLORS[t];
+      const color = getTribeColor(tribe);
       const pct = Math.round((count / MAX_SLOTS) * 100);
       const full = count >= MAX_SLOTS;
+      const isInactive = tribe.is_active === false;
+      const statusBadge = isInactive
+        ? '<span class="inline-block mt-1 text-[.58rem] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-slate-200 text-slate-600">Inativa</span>'
+        : '<span class="inline-block mt-1 text-[.58rem] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Ativa</span>';
+      const leaderName = tribe.leader_name || TRIBE_LEADERS[t] || 'Sem líder';
+      const toggleLabel = isInactive ? 'Reativar catálogo' : 'Marcar inativa';
+      const toggleClass = isInactive
+        ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+        : 'bg-slate-100 text-slate-600 hover:bg-slate-200';
 
       cardsHtml += `
       <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden">
         <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between" style="border-left:4px solid ${color}">
           <div>
             <div class="text-[.68rem] font-bold uppercase tracking-wider" style="color:${color}">Tribo ${String(t).padStart(2, '0')}</div>
-            <div class="text-sm font-bold text-navy">${TRIBE_NAMES[t]}</div>
-            <div class="text-[.68rem] text-slate-400">${TRIBE_LEADERS[t]}</div>
+            <div class="text-sm font-bold text-navy">${escapeHtml(buildTribeLabel(tribe))}</div>
+            <div class="text-[.68rem] text-slate-400">${escapeHtml(leaderName)}</div>
+            ${statusBadge}
           </div>
           <div class="text-right">
             <div class="text-lg font-black ${full ? 'text-crimson' : 'text-navy'}">${count}/${MAX_SLOTS}</div>
@@ -1453,6 +1536,12 @@ const ADMIN_I18N = {
           `).join('')}
           ${members.length === 0 ? '<span class="text-[.72rem] text-slate-300 italic">Nenhum pesquisador</span>' : ''}
         </div>
+        <div class="px-3 pb-3 flex items-center gap-2 flex-wrap">
+          <button type="button" data-action="toggle-tribe-active" class="btn-tribe-toggle px-3 py-1.5 rounded-lg text-[.7rem] font-semibold border-0 cursor-pointer transition-all ${toggleClass}"
+            data-tribe-id="${t}" data-next-active="${isInactive ? 'true' : 'false'}">
+            ${toggleLabel}
+          </button>
+        </div>
       </div>`;
     }
     cardsEl.innerHTML = cardsHtml;
@@ -1464,7 +1553,72 @@ const ADMIN_I18N = {
     if (notifyCard && allocatedCount > 0) {
       notifyCard.style.display = 'flex';
       const summaryEl = document.getElementById('notify-alloc-summary');
-      if (summaryEl) summaryEl.textContent = allocatedCount + ' membros alocados em ' + tribeIds.length + ' tribos';
+      if (summaryEl) summaryEl.textContent = allocatedCount + ' membros alocados em ' + catalog.length + ' tribos';
+    }
+  }
+
+  async function createTribe() {
+    if (!canManageTribeLifecycle(MEMBER)) return;
+    const name = (document.getElementById('new-tribe-name') as HTMLInputElement | null)?.value.trim() || '';
+    const quadrant = Number((document.getElementById('new-tribe-quadrant') as HTMLSelectElement | null)?.value || '0');
+    const quadrantName = (document.getElementById('new-tribe-quadrant-name') as HTMLInputElement | null)?.value.trim() || '';
+    const notes = (document.getElementById('new-tribe-notes') as HTMLInputElement | null)?.value.trim() || '';
+    const btn = document.getElementById('btn-create-tribe') as HTMLButtonElement | null;
+    if (!name || !quadrant || !quadrantName) {
+      toast('Preencha nome, quadrante e label do quadrante.', 'error');
+      return;
+    }
+    const original = btn?.textContent || 'Criar Tribo';
+    if (btn) { btn.disabled = true; btn.textContent = 'Criando...'; }
+    try {
+      const { data, error } = await sb.rpc('admin_upsert_tribe', {
+        p_name: name,
+        p_quadrant: quadrant,
+        p_quadrant_name: quadrantName,
+        p_notes: notes || null,
+        p_is_active: true,
+      });
+      if (error) throw error;
+      toast(`Tribo ${data?.tribe_id || ''} criada com sucesso.`, 'success');
+      (document.getElementById('new-tribe-name') as HTMLInputElement).value = '';
+      (document.getElementById('new-tribe-quadrant-name') as HTMLInputElement).value = '';
+      (document.getElementById('new-tribe-notes') as HTMLInputElement).value = '';
+      tribeCatalogCache = [];
+      await loadTribes();
+    } catch (error: any) {
+      toast(ADMIN_I18N.errorPrefix + (error?.message || error), 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = original; }
+    }
+  }
+
+  async function toggleTribeActive(target: HTMLElement) {
+    if (!canManageTribeLifecycle(MEMBER)) return;
+    const tribeId = Number(target.dataset.tribeId || '0');
+    const nextActive = target.dataset.nextActive === 'true';
+    if (!tribeId) return;
+    const confirmMsg = nextActive
+      ? 'Reativar esta tribo no catálogo atual?'
+      : 'Marcar esta tribo como inativa no catálogo atual?';
+    if (!confirm(confirmMsg)) return;
+    const btn = target as HTMLButtonElement;
+    const original = btn.textContent || '';
+    btn.disabled = true;
+    btn.textContent = nextActive ? 'Reativando...' : 'Inativando...';
+    try {
+      const { error } = await sb.rpc('admin_set_tribe_active', {
+        p_tribe_id: tribeId,
+        p_is_active: nextActive,
+        p_reason: nextActive ? 'Catálogo reativado' : 'Catálogo marcado como inativo',
+      });
+      if (error) throw error;
+      toast(nextActive ? 'Tribo reativada no catálogo.' : 'Tribo marcada como inativa.', 'success');
+      tribeCatalogCache = [];
+      await loadTribes();
+    } catch (error: any) {
+      toast(ADMIN_I18N.errorPrefix + (error?.message || error), 'error');
+      btn.disabled = false;
+      btn.textContent = original;
     }
   }
 
@@ -3599,12 +3753,8 @@ const ADMIN_I18N = {
       .eq('is_active', true)
       .order('name');
 
-    const { data: tribes } = await sb.from('tribes')
-      .select('id, name')
-      .order('id');
-
     const activeMembers = members || [];
-    const allTribes = tribes || [];
+    const allTribes = await loadTribeCatalog(true);
 
     function populateSelect(id: string, items: {value: string; label: string}[], placeholder: string) {
       const el = document.getElementById(id) as HTMLSelectElement;
@@ -3617,7 +3767,12 @@ const ADMIN_I18N = {
       value: m.id,
       label: m.name + (m.operational_role ? ' (' + m.operational_role + ')' : '')
     }));
-    const tribeOpts = allTribes.map((t: any) => ({ value: String(t.id), label: t.name }));
+    const tribeOpts = allTribes
+      .filter((tribe: any) => m.is_superadmin === true || tribe.is_active !== false)
+      .map((tribe: any) => ({
+        value: String(tribe.id),
+        label: buildTribeLabel(tribe) + (tribe.is_active === false ? ' (inativa)' : ''),
+      }));
 
     populateSelect('lc-move-member', memberOpts, 'Selecione o membro...');
     populateSelect('lc-move-tribe', tribeOpts, 'Selecione a tribo destino...');

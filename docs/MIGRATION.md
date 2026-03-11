@@ -119,7 +119,23 @@ Paste normalization, debounce fallback, and validation hardening were shipped in
 
 ---
 
-## 7. Analytics architecture
+## 7. Tribe catalog runtime migration
+
+### Applied
+`supabase/migrations/20260312050000_dynamic_tribe_catalog_and_status.sql` adds `public.tribes.is_active`, introduces runtime tribe catalog RPCs, removes the strongest frontend assumptions that tribe ids stop at `8`, and is already applied on the linked Supabase project.
+
+### Current transition state
+- admin, nav, tribe routes, workspace, artifacts, gamification, and hero counts now read runtime tribe metadata
+- `src/lib/database.gen.ts` was regenerated from the linked project after the migration
+
+### Required next steps
+1. Validate the new admin create/toggle tribe flows against the real linked environment.
+2. Decide whether the public/editorial tribe layer should remain partially curated in static i18n or move further into runtime metadata.
+3. Extend regression coverage once the public tribe layer starts consuming more runtime metadata.
+
+---
+
+## 8. Analytics architecture
 
 ### Internal analytics
 Current production route is native Chart.js dashboards backed by Supabase RPCs in protected admin routes.
@@ -132,7 +148,7 @@ Do not build brittle direct social API integrations into core Astro or Supabase 
 
 ---
 
-## 8. Architecture sustainability note
+## 9. Architecture sustainability note
 
 The project remains viable on a zero cost or free tier oriented stack so long as heavy binary storage and unnecessary frontend complexity are avoided.
 
@@ -140,7 +156,7 @@ This is not a hack. It is a deliberate operating principle.
 
 ---
 
-## 9. Webinar operational model
+## 10. Webinar operational model
 
 ### Current state
 The repo currently exposes two overlapping webinar paths:

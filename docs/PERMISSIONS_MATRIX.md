@@ -4,7 +4,7 @@
 > Qualquer alteração de acesso deve ser refletida aqui, no `navigation.config.ts`,
 > e nas RLS policies do Supabase antes de ser deployada.
 >
-> Última atualização: 2026-03-11 (Wave 34 audit: tribe exploration ACL and project-management lifecycle access revalidated against current site hierarchy)
+> Última atualização: 2026-03-12 (Wave 35 audit: dynamic tribe catalog, explicit active status, and admin catalog controls revalidated against current site hierarchy)
 
 ---
 
@@ -60,7 +60,7 @@ Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Se
 | Artifacts                  |    V    |  V/A   |   V/A    |  V/A   |  V/A  |    V/A     |                                  |
 | Gamification               |    V    |   V    |    V     |   V    |   V   |     V      |                                  |
 | Attendance                 |    —    |  V/A   |    V     |  V/A   |  V/A  |    V/A     | Member: check-in próprio; gestão de eventos/roster via leader+ |
-| Minha Tribo `/tribe/[id]`  |    —    |   V    |    V     |  V/A   |  V/A  |    V/A     | Membros ativos+ podem explorar tribos ativas em modo leitura; ações locais seguem restritas à liderança/gestão |
+| Minha Tribo `/tribe/[id]`  |    —    |   V    |    V     |  V/A   |  V/A  |    V/A     | Membros ativos+ podem explorar tribos ativas em modo leitura; tribos inativas ficam reservadas ao Superadmin; ações locais seguem restritas à liderança/gestão |
 | Profile                    |    —    |  V/A   |   V/A    |  V/A   |  V/A  |    V/A     |                                  |
 | Admin Panel `/admin`       |    —    |   —    |    V     |   V    |  V/A  |    V/A     |                                  |
 | Admin Analytics            |    —    |   —    |    —     |   —    |   V   |     V      |                                  |
@@ -170,6 +170,9 @@ Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Se
 || `admin_deactivate_member` RPC      |    —    |   —    |    —     |   —    |   A   |     A      | SECURITY DEFINER, gestão de projeto (`manager`, `deputy_manager`, `co_gp`) + `is_superadmin` |
 || `admin_change_tribe_leader` RPC    |    —    |   —    |    —     |   —    |   A   |     A      | SECURITY DEFINER, gestão de projeto (`manager`, `deputy_manager`, `co_gp`) + `is_superadmin` |
 || `admin_deactivate_tribe` RPC       |    —    |   —    |    —     |   —    |   A   |     A      | SECURITY DEFINER, gestão de projeto (`manager`, `deputy_manager`, `co_gp`) + `is_superadmin` |
+|| `admin_list_tribes` RPC            |    —    |   —    |    —     |   V¹   |   V   |     V      | SECURITY DEFINER; ¹ líder consome apenas para gestão local; Superadmin pode incluir inativas |
+|| `admin_upsert_tribe` RPC           |    —    |   —    |    —     |   —    |   A   |     A      | SECURITY DEFINER, abre/edita catálogo de tribos para `manager`, `deputy_manager`, `co_gp` e `is_superadmin` |
+|| `admin_set_tribe_active` RPC       |    —    |   —    |    —     |   —    |   A   |     A      | SECURITY DEFINER, marca tribo como ativa/inativa no catálogo atual |
 
 ### 3.12 Presentation Module (S-PRES1)
 

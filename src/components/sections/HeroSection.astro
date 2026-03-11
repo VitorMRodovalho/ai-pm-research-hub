@@ -309,7 +309,7 @@ const recurringMeeting = `${t('hero.recurringMeetingPrefix', lang)} · ${recurri
 
     try {
       const [{ count: tribeCount }, { count: memberCount }] = await Promise.all([
-        sb.from('tribes').select('id', { count: 'exact', head: true }),
+        sb.from('tribes').select('id', { count: 'exact', head: true }).eq('is_active', true),
         sb.from('public_members').select('id', { count: 'exact', head: true })
           .eq('current_cycle_active', true),
       ]);

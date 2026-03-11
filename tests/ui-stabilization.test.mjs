@@ -115,6 +115,40 @@ test('tribe exploration and lifecycle management honor active-member access plus
   assert.equal(migration.includes("operational_role in ('manager', 'deputy_manager')"), true);
 });
 
+test('tribe catalog supports dynamic runtime entries and explicit active status', () => {
+  const tribe = read('src/pages/tribe/[id].astro');
+  const tribeEn = read('src/pages/en/tribe/[id].astro');
+  const tribeEs = read('src/pages/es/tribe/[id].astro');
+  const admin = read('src/pages/admin/index.astro');
+  const nav = read('src/components/nav/Nav.astro');
+  const workspace = read('src/pages/workspace.astro');
+  const artifacts = read('src/pages/artifacts.astro');
+  const gamification = read('src/pages/gamification.astro');
+  const hero = read('src/components/sections/HeroSection.astro');
+  const catalog = read('src/lib/tribes/catalog.ts');
+  const migration = read('supabase/migrations/20260312050000_dynamic_tribe_catalog_and_status.sql');
+
+  assert.equal(tribe.includes('tribeId < 1 || tribeId > 8'), false);
+  assert.equal(tribeEn.includes('tribeId < 1 || tribeId > 8'), false);
+  assert.equal(tribeEs.includes('tribeId < 1 || tribeId > 8'), false);
+  assert.equal(tribe.includes('buildTribeLabel(_tribe'), true);
+  assert.equal(tribe.includes('tribeData.is_active === false'), true);
+  assert.equal(admin.includes("sb.rpc('admin_list_tribes'"), true);
+  assert.equal(admin.includes("data-action=\"create-tribe\""), true);
+  assert.equal(admin.includes("data-action=\"toggle-tribe-active\""), true);
+  assert.equal(nav.includes("select('id, name, whatsapp_url, quadrant, quadrant_name, is_active')"), true);
+  assert.equal(workspace.includes("sb.from('tribes').select('id, name, is_active').order('id')"), true);
+  assert.equal(artifacts.includes("sb.from('tribes').select('id, name, is_active').order('id')"), true);
+  assert.equal(gamification.includes("sb.from('tribes').select('id, name, quadrant').eq('is_active', true).order('id')"), true);
+  assert.equal(hero.includes(".eq('is_active', true)"), true);
+  assert.equal(catalog.includes('export function getTribeColor'), true);
+  assert.equal(catalog.includes('export function isRuntimeTribeActive'), true);
+  assert.equal(migration.includes('add column if not exists is_active boolean not null default true'), true);
+  assert.equal(migration.includes('create or replace function public.admin_upsert_tribe'), true);
+  assert.equal(migration.includes('create or replace function public.admin_list_tribes'), true);
+  assert.equal(migration.includes('create or replace function public.admin_set_tribe_active'), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

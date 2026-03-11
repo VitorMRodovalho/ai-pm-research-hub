@@ -2479,6 +2479,7 @@ export type Database = {
         Row: {
           drive_url: string | null
           id: number
+          is_active: boolean
           leader_member_id: string | null
           meeting_day: string | null
           meeting_link: string | null
@@ -2497,6 +2498,7 @@ export type Database = {
         Insert: {
           drive_url?: string | null
           id: number
+          is_active?: boolean
           leader_member_id?: string | null
           meeting_day?: string | null
           meeting_link?: string | null
@@ -2515,6 +2517,7 @@ export type Database = {
         Update: {
           drive_url?: string | null
           id?: number
+          is_active?: boolean
           leader_member_id?: string | null
           meeting_day?: string | null
           meeting_link?: string | null
@@ -3003,6 +3006,20 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_list_tribes: {
+        Args: { p_include_inactive?: boolean }
+        Returns: {
+          active_members: number
+          id: number
+          is_active: boolean
+          leader_member_id: string
+          leader_name: string
+          name: string
+          quadrant: number
+          quadrant_name: string
+          total_members: number
+        }[]
+      }
       admin_move_member_tribe: {
         Args: { p_member_id: string; p_new_tribe_id: number; p_reason?: string }
         Returns: Json
@@ -3010,6 +3027,10 @@ export type Database = {
       admin_reactivate_member: { Args: { p_member_id: string }; Returns: Json }
       admin_remove_tribe_selection: {
         Args: { p_member_id: string }
+        Returns: Json
+      }
+      admin_set_tribe_active: {
+        Args: { p_is_active: boolean; p_reason?: string; p_tribe_id: number }
         Returns: Json
       }
       admin_update_member: {
@@ -3025,6 +3046,22 @@ export type Database = {
           p_phone?: string
           p_pmi_id?: string
           p_tribe_id?: number
+        }
+        Returns: Json
+      }
+      admin_upsert_tribe: {
+        Args: {
+          p_drive_url?: string
+          p_id?: number
+          p_is_active?: boolean
+          p_leader_member_id?: string
+          p_meeting_link?: string
+          p_miro_url?: string
+          p_name?: string
+          p_notes?: string
+          p_quadrant?: number
+          p_quadrant_name?: string
+          p_whatsapp_url?: string
         }
         Returns: Json
       }

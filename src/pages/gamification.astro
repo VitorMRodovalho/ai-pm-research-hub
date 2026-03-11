@@ -367,6 +367,7 @@ const GAM_I18N = {
   import { getMemberRole } from '../lib/routing';
   import { aggregateCredlyByMember } from '../lib/gamification';
   import { buildTrailProgressByMember } from '../lib/trail-progress';
+  import { buildTribeLabel, getTribeColor } from '../lib/tribes/catalog';
 
   const I = (typeof window !== 'undefined' && (window as any).__GAMIFICATION_I18N) || {};
 
@@ -398,15 +399,29 @@ const GAM_I18N = {
     contribution: I.typeContribution, excellence: I.typeExcellence,
   };
 
-  const TRIBE_NAMES: Record<number, string> = {
+  let TRIBE_NAMES: Record<number, string> = {
     1: I.tribeName1, 2: I.tribeName2, 3: I.tribeName3,
     4: I.tribeName4, 5: I.tribeName5, 6: I.tribeName6,
     7: I.tribeName7, 8: I.tribeName8,
   };
-  const TRIBE_COLORS: Record<number, string> = {
+  let TRIBE_COLORS: Record<number, string> = {
     1: '#00799E', 2: '#00799E', 3: '#FF610F', 4: '#FF610F',
     5: '#4F17A8', 6: '#4F17A8', 7: '#10B981', 8: '#10B981'
   };
+  async function loadRuntimeTribes() {
+    if (!sb) return;
+    try {
+      const { data, error } = await sb.from('tribes').select('id, name, quadrant').eq('is_active', true).order('id');
+      if (error) throw error;
+      (data || []).forEach((tribe: any) => {
+        TRIBE_NAMES[tribe.id] = buildTribeLabel(tribe, { prefix: 'Tribo', fallbackNames: TRIBE_NAMES });
+        TRIBE_COLORS[tribe.id] = getTribeColor(tribe);
+      });
+    } catch (error) {
+      console.warn('gamification tribes:', error);
+    }
+  }
+
 
   function toast(msg: string, type = '') { (window as any).toast?.(msg, type); }
 
@@ -688,7 +703,7 @@ const GAM_I18N = {
         const t = Number(tid);
         const avg = s.members > 0 ? Math.round(s.points / s.members) : 0;
         const score = avg + (s.members * 10);
-        return { tid: t, name: TRIBE_NAMES[t], color: TRIBE_COLORS[t], avg, total: s.points, members: s.members, score, names: s.names };
+        return { tid: t, name: TRIBE_NAMES[t] || buildTribeLabel(t, { prefix: 'Tribo', fallbackNames: TRIBE_NAMES }), color: TRIBE_COLORS[t] || getTribeColor(t), avg, total: s.points, members: s.members, score, names: s.names };
       })
       .filter(t => t.members > 0)
       .sort((a, b) => b.score - a.score);
@@ -1110,6 +1125,7 @@ const GAM_I18N = {
   async function boot() {
     sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(boot, 200); return; }
+    await loadRuntimeTribes();
 
     window.addEventListener('nav:member', ((e: CustomEvent) => {
       if (e.detail && getMemberRole(e.detail) !== 'guest') {

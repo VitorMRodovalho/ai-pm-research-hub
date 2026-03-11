@@ -175,6 +175,7 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
   import { resolveTierFromMember, hasMinimumTier, type AccessTier } from '../../lib/admin/constants';
   import { TIER_RANK } from '../../lib/navigation.config';
   import { canExploreTribes, canSeeInactiveTribes } from '../../lib/tribes/access';
+  import { buildTribeLabel, isRuntimeTribeActive } from '../../lib/tribes/catalog';
 
   const sb = getSupabase();
   let _member: any = null;
@@ -186,7 +187,7 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
     try {
       const currentTribeId = Number(_member?.tribe_id || _member?.selected_tribe_id || 0);
       const [{ data: tribes, error: tribesError }, { data: members, error: membersError }] = await Promise.all([
-        sb.from('tribes').select('id, name, whatsapp_url').order('id'),
+        sb.from('tribes').select('id, name, whatsapp_url, quadrant, quadrant_name, is_active').order('id'),
         sb.from('public_members')
           .select('tribe_id, current_cycle_active, is_active')
           .eq('current_cycle_active', true)
@@ -203,10 +204,12 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
       });
       _tribesCache = (tribes || []).map((tribe: any) => {
         const activeMembers = activeCounts.get(tribe.id) || 0;
+        const explicitlyActive = isRuntimeTribeActive(tribe);
         return {
           ...tribe,
           active_members: activeMembers,
-          derived_active: activeMembers > 0 || (currentTribeId > 0 && currentTribeId === tribe.id),
+          derived_active: explicitlyActive && (activeMembers > 0 || (currentTribeId > 0 && currentTribeId === tribe.id)),
+          is_active: explicitlyActive,
         };
       });
     } catch (error) {
@@ -255,11 +258,11 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
 
   function getVisibleTribesForMember(tribes: any[]): any[] {
     if (canSeeInactiveTribes(_member)) return tribes;
-    return tribes.filter((tribe: any) => tribe.derived_active !== false);
+    return tribes.filter((tribe: any) => tribe.is_active !== false);
   }
 
   function tribeLabel(tribe: any): string {
-    return tribe.name || `${i18n.tribePrefix || 'Tribo'} ${tribe.id}`;
+    return buildTribeLabel(tribe, { prefix: i18n.tribePrefix || 'Tribo' });
   }
 
   function renderDesktopTribeDropdown(tribes: any[]): string {
@@ -269,12 +272,12 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
     }
     const base = getNavBase();
     return visibleTribes.map((tribe: any) => {
-      const isInactive = tribe.derived_active === false;
+      const isInactive = tribe.is_active === false;
       const countBadge = tribe.active_members > 0
         ? '<span class="ml-auto text-[.62rem] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full shrink-0">' + tribe.active_members + '</span>'
         : '';
       if (isInactive) {
-        return '<div class="flex items-center gap-2 px-3 py-2 text-[.78rem] text-slate-400 font-medium opacity-60 cursor-default" title="Tribo sem membros ativos neste ciclo">'
+        return '<div class="flex items-center gap-2 px-3 py-2 text-[.78rem] text-slate-400 font-medium opacity-60 cursor-default" title="Tribo inativa">'
           + '<span class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[.6rem] font-bold text-slate-500 shrink-0">' + tribe.id + '</span>'
           + '<span class="truncate">' + tribeLabel(tribe) + '</span>'
           + '<span class="ml-auto text-[.7rem] shrink-0">&#x1F512;</span>'
@@ -295,9 +298,9 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
     }
     const base = getNavBase();
     return visibleTribes.map((tribe: any) => {
-      const isInactive = tribe.derived_active === false;
+      const isInactive = tribe.is_active === false;
       if (isInactive) {
-        return '<div class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[.73rem] text-slate-400 font-medium opacity-60 cursor-default" title="Tribo sem membros ativos neste ciclo">'
+        return '<div class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[.73rem] text-slate-400 font-medium opacity-60 cursor-default" title="Tribo inativa">'
           + '<span class="w-4 h-4 rounded-full bg-slate-200 flex items-center justify-center text-[.55rem] font-bold text-slate-500 shrink-0">' + tribe.id + '</span>'
           + tribeLabel(tribe)
           + ' &#x1F512;'
@@ -317,9 +320,9 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
     }
     const base = getNavBase();
     return visibleTribes.map((tribe: any) => {
-      const isInactive = tribe.derived_active === false;
+      const isInactive = tribe.is_active === false;
       if (isInactive) {
-        return '<div class="flex items-center gap-2 px-4 py-2.5 text-white/30 text-sm font-medium opacity-50 cursor-default" title="Tribo sem membros ativos neste ciclo">'
+        return '<div class="flex items-center gap-2 px-4 py-2.5 text-white/30 text-sm font-medium opacity-50 cursor-default" title="Tribo inativa">'
           + '<span class="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[.6rem] font-bold shrink-0">' + tribe.id + '</span>'
           + tribeLabel(tribe)
           + ' &#x1F512;'

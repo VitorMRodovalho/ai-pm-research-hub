@@ -4,10 +4,12 @@ import Toast from '../../components/ui/Toast.astro';
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import PresentationLayer from '../../components/ui/PresentationLayer.astro';
+import { getStaticTribeFallback } from '../../lib/tribes/catalog';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 const { id } = Astro.params;
 const tribeId = parseInt(id || '0', 10);
-if (tribeId < 1 || tribeId > 8) return Astro.redirect('/');
+if (tribeId < 1) return Astro.redirect('/');
+const staticFallback = getStaticTribeFallback(tribeId, lang);
 const TRIBE_I18N = {
   membersTab: t('tribe.membersTab', lang),
   deliverablesTab: t('tribe.deliverablesTab', lang),
@@ -33,9 +35,11 @@ const TRIBE_I18N = {
   openLink: t('tribe.openLink', lang),
   dateLocale: t('tribe.dateLocale', lang),
   error: t('tribe.error', lang),
-  tribeName: t(`data.tribe${tribeId}.name`, lang),
-  tribeDesc: t(`data.tribe${tribeId}.desc`, lang),
-  quadrantLabel: t(`data.tribe${tribeId}.quadrantLabel`, lang),
+  tribeName: staticFallback?.name || '',
+  tribeDesc: staticFallback?.description || '',
+  quadrantLabel: staticFallback?.quadrantLabel || '',
+  tribePrefix: t('workspace.tribePrefix', lang),
+  noDescription: t('tribe.noResources', lang),
   modalAddTitle: t('tribe.modal.addTitle', lang),
   modalEditTitle: t('tribe.modal.editTitle', lang),
   modalLabelTitle: t('tribe.modal.labelTitle', lang),
@@ -117,7 +121,7 @@ const TRIBE_I18N = {
     t('common.days.sat', lang),
   ],
 };
-const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
+const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name || `T${tribeId}`);
 ---
 <BaseLayout title={pageTitle} activePage="tribes">
   <Toast />
@@ -267,6 +271,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
 <script>
   import { getCurrentCycle, loadCycles } from '../../lib/cycles';
   import { canExploreTribes, canManageTribeLifecycle, canSeeInactiveTribes } from '../../lib/tribes/access';
+  import { buildTribeLabel } from '../../lib/tribes/catalog';
 
   const I18N = (typeof window !== 'undefined' && (window as any).__TRIBE_I18N) || {};
   const TRIBE_ID: number = (typeof window !== 'undefined' && (window as any).__TRIBE_ID) || 0;
@@ -474,15 +479,19 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
       scheduleHtml = '<span class="text-slate-400 italic">—</span>';
     }
 
+    const tribeName = buildTribeLabel(_tribe, { prefix: I18N.tribePrefix || 'Tribo' });
+    const quadrantLabel = _tribe?.quadrant_name || I18N.quadrantLabel || '';
+    const tribeDescription = _tribe?.notes || I18N.tribeDesc || '—';
+
     el.innerHTML = `
       <div class="bg-white rounded-2xl border border-slate-200 p-6">
         <div class="flex items-start gap-4 flex-wrap">
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 flex-wrap mb-1">
-              <h1 class="text-xl font-extrabold text-navy">T${TRIBE_ID}: ${escapeHtml(I18N.tribeName)}</h1>
-              <span class="px-2 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide bg-purple/10 text-purple">${escapeHtml(I18N.quadrantLabel)}</span>
+              <h1 class="text-xl font-extrabold text-navy">T${TRIBE_ID}: ${escapeHtml(tribeName)}</h1>
+              ${quadrantLabel ? `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide bg-purple/10 text-purple">${escapeHtml(quadrantLabel)}</span>` : ''}
             </div>
-            <p class="text-[13px] text-slate-500 leading-relaxed mb-3">${escapeHtml(I18N.tribeDesc)}</p>
+            <p class="text-[13px] text-slate-500 leading-relaxed mb-3">${escapeHtml(tribeDescription)}</p>
             <div class="flex flex-wrap gap-x-5 gap-y-2 text-[13px]">
               <div class="flex items-center gap-2">
                 ${leaderPhoto}
@@ -1211,6 +1220,14 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
       publishedArtifacts = artifactsRes.data || [];
 
       tribeData = tribeRes.data;
+      if (!tribeData) {
+        showDenied(I18N.notFound || 'Tribo não encontrada.');
+        return;
+      }
+      if (!canSeeInactiveTribes(currentMember) && tribeData.is_active === false) {
+        showDenied('Esta tribo está inativa e visível apenas para Superadmin.');
+        return;
+      }
 
       // Find tribe leader
       const allDirectMembers: any[] = membersRes.data || [];
@@ -1236,7 +1253,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', `T${tribeId}`);
       }
 
       const allMembers = [...allDirectMembers, ...selectionMembers];
-      if (!canSeeInactiveTribes(currentMember) && allMembers.length === 0 && !isAssignedToCurrentTribe(currentMember)) {
+      if (!canSeeInactiveTribes(currentMember) && tribeData.is_active !== true && allMembers.length === 0 && !isAssignedToCurrentTribe(currentMember)) {
         showDenied('Esta tribo não está ativa no ciclo atual para exploração geral.');
         return;
       }

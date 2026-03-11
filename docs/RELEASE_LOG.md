@@ -1,5 +1,43 @@
 # Release Log
 
+## 2026-03-12 — v0.33.0 Wave 35: Dynamic Tribe Catalog Foundation
+
+### Scope
+Wave 35 removes the most brittle `01..08` tribe assumptions from the internal platform, introduces an explicit active/inactive flag in the tribe catalog, and opens admin controls to create and manage runtime tribes without reopening the ACL issues fixed in Wave 34.
+
+### Dynamic Tribe Upgrade
+- **`supabase/migrations/20260312050000_dynamic_tribe_catalog_and_status.sql`**: Adds `tribes.is_active`, introduces `admin_list_tribes`, `admin_upsert_tribe`, and `admin_set_tribe_active`, and updates `admin_deactivate_tribe` so closing a tribe also marks the catalog entry inactive.
+- **`src/pages/admin/index.astro`**: The tribes panel now loads a runtime catalog, populates filters dynamically, shows active/inactive badges, allows project management to create a new tribe, and lets the catalog mark tribes active/inactive without returning to hardcoded options.
+- **`src/pages/tribe/[id].astro`**, **`src/pages/en/tribe/[id].astro`**, **`src/pages/es/tribe/[id].astro`**, and **`src/components/nav/Nav.astro`**: Tribe routes and navigation stop blocking ids above `8`, use runtime tribe metadata when available, and keep inactive-tribe visibility reserved to superadmin.
+- **`src/pages/workspace.astro`**, **`src/pages/artifacts.astro`**, **`src/pages/gamification.astro`**, and **`src/components/sections/HeroSection.astro`**: Runtime tribe names/status now feed more of the internal surfaces so new tribes do not immediately fall back to broken labels or stale counts.
+
+### Governance / Regression
+- **`tests/ui-stabilization.test.mjs`**: Regression coverage now locks the removal of the `> 8` route bound, the new tribe catalog helpers, the runtime admin catalog flow, and the explicit `is_active` migration contract.
+- **Backlog / governance / permissions / migration notes / README** updated to reflect that the structural tribe-catalog tranche is now in progress and already applied on the linked database.
+
+### Files Changed
+- `src/lib/tribes/catalog.ts`
+- `src/components/nav/Nav.astro`
+- `src/pages/tribe/[id].astro`
+- `src/pages/en/tribe/[id].astro`
+- `src/pages/es/tribe/[id].astro`
+- `src/pages/admin/index.astro`
+- `src/pages/workspace.astro`
+- `src/pages/artifacts.astro`
+- `src/pages/gamification.astro`
+- `src/components/sections/HeroSection.astro`
+- `supabase/migrations/20260312050000_dynamic_tribe_catalog_and_status.sql`
+- `tests/ui-stabilization.test.mjs`
+- `backlog-wave-planning-updated.md`, `docs/GOVERNANCE_CHANGELOG.md`, `docs/PERMISSIONS_MATRIX.md`, `docs/RELEASE_LOG.md`, `docs/MIGRATION.md`, `README.md`
+
+### Audit Results
+- Build: clean
+- Tests: 31/31
+- Browser guard: OK
+- Smoke: not run in this slice
+
+---
+
 ## 2026-03-11 — v0.32.0 Wave 34: Tribe Exploration Access And Lifecycle Expansion
 
 ### Scope

@@ -4,7 +4,7 @@ import { t } from '../../../i18n/utils';
 const lang = 'en-US' as const;
 const { id } = Astro.params;
 const tribeId = parseInt(id || '0', 10);
-if (tribeId < 1 || tribeId > 8) return Astro.redirect('/en');
+if (tribeId < 1) return Astro.redirect('/en');
 ---
 <BaseLayout title={t('tribe.meta', lang).replace('{name}', `T${tribeId}`)} activePage="tribes" lang={lang}>
   <meta http-equiv="refresh" content={`0;url=/tribe/${id}?lang=en-US`}>

@@ -1,12 +1,22 @@
 # Nucleo IA & GP — Backlog & Wave Planning
-## Status: Marco 2026 (atualizado 2026-03-11)
-## Sincronizado com producao: Git, Migracoes SQL (44/44 no repo + schema linkado auditado) e 13 Edge Functions
+## Status: Marco 2026 (atualizado 2026-03-12)
+## Sincronizado com producao: Git, Migracoes SQL (45/45 no repo + schema linkado auditado) e 13 Edge Functions
 
 **Board de sprints**: [GitHub Project — AI PM Hub](https://github.com/users/VitorMRodovalho/projects/1/) · Regras: `docs/project-governance/PROJECT_GOVERNANCE_RUNBOOK.md`
 
 ---
 
-## LATEST UPDATE (2026-03-11)
+## LATEST UPDATE (2026-03-12)
+
+### Entregue em Wave 35
+- **W35.1 Dynamic Tribe Catalog Foundation**: `tribe/[id]` e os wrappers multilang deixam de bloquear ids acima de `8`, e o header da tribo passa a usar metadata runtime do banco com fallback estático apenas para o catálogo legado.
+- **W35.2 Explicit Tribe Status + Admin Catalog Controls**: nova migration adiciona `tribes.is_active`, RPCs seguras para listar/criar/ativar-inativar tribos e o painel admin ganha catálogo runtime, criação de novas tribos e toggles de status.
+- **W35.3 Runtime Name Fallbacks Across Surfaces**: `Nav`, `Workspace`, `Artifacts`, `Gamification` e `Hero` passam a consumir o catálogo runtime de tribos ou cair em fallback seguro, em vez de depender exclusivamente do conjunto fixo `01..08`.
+
+### Wave 35 Audit Results (2026-03-12)
+- **Build**: clean | **Tests**: 31/31 | **Browser guard**: OK | **Smoke**: não executado nesta tranche
+- **Site hierarchy / ACL**: membros ativos continuam vendo apenas tribos ativas; Superadmin passa a manter leitura de inativas; gestão de projeto ganha abertura do catálogo sem expor histórico inativo a perfis comuns
+- **Known follow-through**: a home pública (`TribesSection`) e o conteúdo editorial/i18n profundo das novas tribos ainda não foram convertidos integralmente para runtime
 
 ### Entregue em Wave 34
 - **W34.1 Explore Tribes Active Access**: `Nav.astro` deixa de depender de `tribes.is_active` e passa a liberar `Explorar Tribos` para membros ativos+ usando o diretório atual de tribos + membros ativos do ciclo.

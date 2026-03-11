@@ -1,5 +1,23 @@
 # Governance Changelog
 
+## 2026-03-12 — Wave 35: Dynamic Tribe Catalog Foundation
+
+### Decisions
+
+1. **Tribe routing and navigation can no longer be hard-bounded to the original `1..8` set**: the internal catalog now needs to accept runtime tribe ids so project management can open new workstreams without first editing route guards and static dropdowns.
+
+2. **Active/inactive tribe visibility must be explicit at the catalog level**: deriving “active tribe” only from current member rosters is not enough once the platform starts preserving inactive and historical tribes. `tribes.is_active` becomes the current-cycle visibility flag, while member history and past-cycle reads remain separate concerns.
+
+3. **Opening a new tribe belongs to project management, while inactive history remains a superadmin privilege**: GP / Deputy Manager / `co_gp` can now create and operate the runtime tribe catalog for the current cycle, but only superadmin should broadly browse inactive tribes in the general navigation and exploration surfaces.
+
+### Process Lessons Learned
+
+1. **A quick fix can become the blueprint for the structural slice**: once `Explorar Tribos` was reopened for active members, the next blocker surfaced immediately in the fixed catalog assumptions spread across admin, workspace, artifacts, and gamification.
+
+2. **Runtime catalog work needs both schema and UI passes**: adding `is_active` without replacing fixed dropdowns would still leave the admin surface partially trapped in the old `01..08` model. The structural slice had to move both the database contract and the client-side selectors together.
+
+---
+
 ## 2026-03-11 — Wave 34: Tribe Exploration Access And Lifecycle Expansion
 
 ### Decisions

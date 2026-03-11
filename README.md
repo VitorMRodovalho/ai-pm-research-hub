@@ -148,8 +148,9 @@ The current production pattern is to keep communications metrics in Supabase-bac
 1. Continue stabilizing older member/admin surfaces that still depend on rerender/rebind or mutable callback patterns.
 2. Expand browser coverage from the current anonymous guard/home runtime checks into richer internal workflows beyond the new `/admin/webinars` coverage, especially modal and authenticated operator paths.
 3. Continue sharpening the webinars operator flow on top of `events`, now deciding whether the new in-module contextual aids should mature into reusable drafting and QA helpers before any schema expansion.
-4. Keep site hierarchy, access tiers, and LGPD visibility rules aligned across nav, pages, and docs.
-5. Approve the prepared webinar convergence direction before any external registration or speaker model is introduced: `docs/WEBINARS_CONVERGENCE_PROPOSAL.md`.
+4. Finish the dynamic tribe-catalog rollout by validating the new admin catalog controls on the linked Supabase project and deciding how much of the public tribe editorial layer should move from static i18n into runtime metadata.
+5. Keep site hierarchy, access tiers, and LGPD visibility rules aligned across nav, pages, docs, and new tribe catalog controls.
+6. Approve the prepared webinar convergence direction before any external registration or speaker model is introduced: `docs/WEBINARS_CONVERGENCE_PROPOSAL.md`.
 
 ---
 
