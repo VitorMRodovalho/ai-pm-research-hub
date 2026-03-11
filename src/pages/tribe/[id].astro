@@ -1640,13 +1640,11 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     const checklistBadge = checklistTotal > 0
       ? `<span class="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded">✓ ${checklistDone}/${checklistTotal}</span>`
       : '';
-    const attachmentsRaw = Array.isArray(item.attachments)
-      ? item.attachments
-      : (typeof item.attachments === 'string'
-        ? (() => { try { const parsed = JSON.parse(item.attachments); return Array.isArray(parsed) ? parsed : []; } catch { return []; } })()
-        : []);
+    const attachmentsRaw = parseAttachmentsRows(item.attachments);
+    const attachmentHosts = Array.from(new Set(attachmentsRaw.map((entry: any) => String(entry?.host || '').trim()).filter((host: string) => !!host)));
+    const attachmentTooltip = attachmentHosts.length ? ` title="${escapeHtml(attachmentHosts.join(', '))}"` : '';
     const attachmentsBadge = attachmentsRaw.length > 0
-      ? `<span class="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded">📎 ${attachmentsRaw.length}</span>`
+      ? `<span class="text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded"${attachmentTooltip}>📎 ${attachmentsRaw.length}</span>`
       : '';
     const assignee = item.assignee_name ? `<span class="text-[11px] text-slate-400">${escapeHtml(item.assignee_name)}</span>` : '';
     const due = item.due_date ? `<span class="text-[10px] text-slate-400">${new Date(item.due_date).toLocaleDateString(I18N.dateLocale || 'pt-BR')}</span>` : '';
@@ -1663,6 +1661,88 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
   function getBoardItemById(itemId: string): any | null {
     return currentBoardItems.find((item: any) => String(item.id) === String(itemId)) || null;
+  }
+
+  function parseChecklistRows(rawChecklist: any): Array<{ text: string; done: boolean }> {
+    const asArray = Array.isArray(rawChecklist)
+      ? rawChecklist
+      : (typeof rawChecklist === 'string'
+        ? (() => { try { const parsed = JSON.parse(rawChecklist); return Array.isArray(parsed) ? parsed : []; } catch { return []; } })()
+        : []);
+    return asArray
+      .map((entry: any) => {
+        if (entry && typeof entry === 'object') {
+          const text = String(entry.text || '').trim();
+          return text ? { text, done: entry.done === true } : null;
+        }
+        const text = String(entry || '').trim();
+        return text ? { text, done: false } : null;
+      })
+      .filter((entry: any) => !!entry);
+  }
+
+  function serializeChecklistRows(rawText: string): Array<{ text: string; done: boolean }> {
+    return rawText
+      .split('\n')
+      .map((row: string) => row.trim())
+      .filter((row: string) => !!row)
+      .map((row: string) => {
+        if (row.startsWith('[x] ')) return { text: row.slice(4).trim(), done: true };
+        if (row.startsWith('[ ] ')) return { text: row.slice(4).trim(), done: false };
+        return { text: row.replace(/^- /, '').trim(), done: false };
+      })
+      .filter((entry: any) => !!entry.text);
+  }
+
+  function parseAttachmentsRows(rawAttachments: any): Array<{ url: string; host: string }> {
+    const asArray = Array.isArray(rawAttachments)
+      ? rawAttachments
+      : (typeof rawAttachments === 'string'
+        ? (() => { try { const parsed = JSON.parse(rawAttachments); return Array.isArray(parsed) ? parsed : []; } catch { return []; } })()
+        : []);
+    return asArray
+      .map((entry: any) => {
+        const url = typeof entry === 'string'
+          ? entry.trim()
+          : (entry && typeof entry === 'object' && typeof entry.url === 'string' ? entry.url.trim() : '');
+        if (!url) return null;
+        try {
+          const parsed = new URL(url);
+          return { url, host: parsed.hostname.replace(/^www\./, '') };
+        } catch {
+          return { url, host: '' };
+        }
+      })
+      .filter((entry: any) => !!entry);
+  }
+
+  function serializeAttachmentsRows(rawText: string): { valid: Array<{ url: string; host: string }>; invalid: string[] } {
+    const valid: Array<{ url: string; host: string }> = [];
+    const invalid: string[] = [];
+    const seen = new Set<string>();
+    rawText
+      .split('\n')
+      .map((row: string) => row.trim())
+      .filter((row: string) => !!row)
+      .forEach((row: string) => {
+        try {
+          const parsed = new URL(row);
+          if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+            invalid.push(row);
+            return;
+          }
+          const canonical = parsed.toString();
+          if (seen.has(canonical)) return;
+          seen.add(canonical);
+          valid.push({
+            url: canonical,
+            host: parsed.hostname.replace(/^www\./, ''),
+          });
+        } catch {
+          invalid.push(row);
+        }
+      });
+    return { valid, invalid };
   }
 
   function openBoardItemModal(item?: any, seedStatus?: string) {
@@ -1698,20 +1778,13 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         ? (() => { try { const parsed = JSON.parse(item.labels); return Array.isArray(parsed) ? parsed : []; } catch { return []; } })()
         : []);
     labelsInput.value = parsedLabels.join(', ');
-    const parsedChecklist = Array.isArray(item?.checklist)
-      ? item.checklist
-      : (typeof item?.checklist === 'string'
-        ? (() => { try { const parsed = JSON.parse(item.checklist); return Array.isArray(parsed) ? parsed : []; } catch { return []; } })()
-        : []);
-    checklistInput.value = parsedChecklist.map((c: any) => (typeof c?.text === 'string' ? c.text : String(c || ''))).join('\n');
-    const parsedAttachments = Array.isArray(item?.attachments)
-      ? item.attachments
-      : (typeof item?.attachments === 'string'
-        ? (() => { try { const parsed = JSON.parse(item.attachments); return Array.isArray(parsed) ? parsed : []; } catch { return []; } })()
-        : []);
+    const parsedChecklist = parseChecklistRows(item?.checklist);
+    checklistInput.value = parsedChecklist
+      .map((c: any) => `${c.done ? '[x]' : '[ ]'} ${c.text}`)
+      .join('\n');
+    const parsedAttachments = parseAttachmentsRows(item?.attachments);
     attachmentsInput.value = parsedAttachments
       .map((entry: any) => {
-        if (typeof entry === 'string') return entry;
         if (entry && typeof entry === 'object' && typeof entry.url === 'string') return entry.url;
         return '';
       })
@@ -1760,16 +1833,13 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       .split(',')
       .map((label: string) => label.trim())
       .filter((label: string) => !!label);
-    const checklist = checklistInput.value
-      .split('\n')
-      .map((row: string) => row.trim())
-      .filter((row: string) => !!row)
-      .map((text: string) => ({ text, done: false }));
-    const attachments = attachmentsInput.value
-      .split('\n')
-      .map((row: string) => row.trim())
-      .filter((row: string) => !!row)
-      .map((url: string) => ({ url }));
+    const checklist = serializeChecklistRows(checklistInput.value);
+    const attachmentInput = serializeAttachmentsRows(attachmentsInput.value);
+    if (attachmentInput.invalid.length) {
+      (window as any).toast?.('Existem links inválidos em anexos. Use URLs http/https válidas.', 'error');
+      return;
+    }
+    const attachments = attachmentInput.valid;
 
     const { error } = await sb.rpc('upsert_board_item', {
       p_item_id: idInput.value || null,

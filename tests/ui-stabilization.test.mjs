@@ -758,6 +758,15 @@ test('tribe kanban supports modal edit/create and archive actions', () => {
   assert.equal(migration.includes("raise exception 'Project management access required';"), true);
 });
 
+test('tribe kanban preserves checklist state and validates attachment urls', () => {
+  const tribe = read('src/pages/tribe/[id].astro');
+  assert.equal(tribe.includes('function serializeChecklistRows(rawText: string)'), true);
+  assert.equal(tribe.includes("row.startsWith('[x] ')"), true);
+  assert.equal(tribe.includes('function serializeAttachmentsRows(rawText: string)'), true);
+  assert.equal(tribe.includes('Existem links inválidos em anexos'), true);
+  assert.equal(tribe.includes('const attachmentHosts = Array.from(new Set('), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');
