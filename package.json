@@ -6,7 +6,7 @@
     "dev": "astro dev",
     "prebuild": "node scripts/verify-build-pages.mjs",
     "clean": "rm -rf dist",
-    "build": "npm run clean && astro build",
+    "build": "npm run clean && astro build && node scripts/patch-worker-polyfill.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "test": "node --test tests/credly.test.mjs tests/cycle-history.test.mjs tests/gamification.test.mjs tests/routing.test.mjs tests/attendance-ui.test.mjs tests/permissions-matrix.test.mjs tests/ui-stabilization.test.mjs",
