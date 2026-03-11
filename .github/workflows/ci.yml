@@ -38,3 +38,27 @@ jobs:
           PUBLIC_SUPABASE_ANON_KEY: 'mock-key-for-build'
         run: npm run smoke:routes
         timeout-minutes: 2
+
+  browser_guards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install chromium
+
+      - name: Run browser guards
+        env:
+          PUBLIC_SUPABASE_URL: 'https://mock.supabase.co'
+          PUBLIC_SUPABASE_ANON_KEY: 'mock-key-for-build'
+        run: npm run test:browser:guards

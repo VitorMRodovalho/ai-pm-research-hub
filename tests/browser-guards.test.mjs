@@ -100,6 +100,12 @@ async function run() {
     assert.match(await webinarsDenied.textContent() || '', /Acesso restrito a administradores/);
     assert.equal(await page.locator('#webinars-content').isVisible(), false);
 
+    await page.goto(`${base}/admin/curatorship`, { waitUntil: 'networkidle' });
+    const curDenied = page.locator('#cur-denied');
+    await curDenied.waitFor({ state: 'visible' });
+    assert.match(await curDenied.textContent() || '', /Acesso restrito a administradores e lideres/);
+    assert.equal(await page.locator('#cur-board').isVisible(), false);
+
     await page.goto(`${base}/admin/webinars`, { waitUntil: 'networkidle' });
     await page.evaluate(() => {
       const fakeMember = {
@@ -339,7 +345,7 @@ async function run() {
     await analyticsPage.close();
 
     await page.close();
-    console.log('Browser guard, home runtime, webinars admin, and analytics readonly test passed.');
+    console.log('Browser guard, home runtime, webinars/curatorship admin, and analytics readonly test passed.');
   } finally {
     await browser.close();
     devServer?.kill('SIGTERM');

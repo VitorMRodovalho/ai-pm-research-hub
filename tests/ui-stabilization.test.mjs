@@ -112,6 +112,17 @@ test('attendance and admin comms accept contextual webinar handoff state from UR
   assert.equal(webinarHelpers.includes('export function buildCommsPlaybookTemplates'), true);
 });
 
+test('curatorship keeps operator filters and approval targeting wired to rpc payload', () => {
+  const curatorship = read('src/pages/admin/curatorship.astro');
+  assert.equal(curatorship.includes('id="cur-search"'), true);
+  assert.equal(curatorship.includes('let searchQuery ='), true);
+  assert.equal(curatorship.includes("if (target && target.id === 'cur-search')"), true);
+  assert.equal(curatorship.includes('p_tribe_id: extra?.tribeId ?? null'), true);
+  assert.equal(curatorship.includes('p_audience_level: extra?.audienceLevel ?? null'), true);
+  assert.equal(curatorship.includes("class=\"cur-confirm-approve"), true);
+  assert.equal(curatorship.includes("sb.from('tribes').select('id,name,is_active').eq('is_active', true).order('id')"), true);
+});
+
 test('tribe exploration and lifecycle management honor active-member access plus project management controls', () => {
   const nav = read('src/components/nav/Nav.astro');
   const tribe = read('src/pages/tribe/[id].astro');

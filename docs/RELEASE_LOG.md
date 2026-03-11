@@ -1,5 +1,20 @@
 # Release Log
 
+## 2026-03-11 — Sprint W42.3-W43.3: CI Browser Gate + Operator Regression Locks
+
+### Scope
+Subir o gate de qualidade para incluir guarda browser no CI e expandir locks de regressao para fluxo operador/admin na curadoria.
+
+### Delivered
+- **`.github/workflows/ci.yml`**: novo job `browser_guards` executa Playwright (`npm run test:browser:guards`) com ambiente mock para bloquear regressao de ACL/SSR de rotas criticas.
+- **`tests/browser-guards.test.mjs`**: cobertura anonima expandida para `/admin/curatorship`, garantindo deny state e ausencia de board para visitante.
+- **`tests/ui-stabilization.test.mjs`**: novo lock de regressao textual para busca/targeting de aprovacao da curadoria (`searchQuery`, `p_tribe_id`, `p_audience_level`).
+
+### Audit Results
+- Validacao local desta tranche: `npm test`, `npm run test:browser:guards`, `npm run build`.
+
+---
+
 ## 2026-03-11 — Sprint W42.1-W42.2: PR Hygiene + Delivery Gate Policy
 
 ### Scope
