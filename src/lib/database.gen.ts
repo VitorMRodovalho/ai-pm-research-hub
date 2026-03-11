@@ -2370,6 +2370,97 @@ export type Database = {
         }
         Relationships: []
       }
+      notion_import_staging: {
+        Row: {
+          assignee_name: string | null
+          batch_id: string | null
+          chapter_hint: string | null
+          confidence_score: number
+          created_at: string
+          description: string | null
+          due_date: string | null
+          external_item_id: string | null
+          id: number
+          mapped_at: string | null
+          mapped_board_id: string | null
+          mapped_item_id: string | null
+          normalized: Json
+          source_file: string
+          source_page: string | null
+          status_raw: string | null
+          tags: string[]
+          title: string
+          tribe_hint: string | null
+          updated_at: string
+        }
+        Insert: {
+          assignee_name?: string | null
+          batch_id?: string | null
+          chapter_hint?: string | null
+          confidence_score?: number
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          external_item_id?: string | null
+          id?: number
+          mapped_at?: string | null
+          mapped_board_id?: string | null
+          mapped_item_id?: string | null
+          normalized?: Json
+          source_file: string
+          source_page?: string | null
+          status_raw?: string | null
+          tags?: string[]
+          title: string
+          tribe_hint?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assignee_name?: string | null
+          batch_id?: string | null
+          chapter_hint?: string | null
+          confidence_score?: number
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          external_item_id?: string | null
+          id?: number
+          mapped_at?: string | null
+          mapped_board_id?: string | null
+          mapped_item_id?: string | null
+          normalized?: Json
+          source_file?: string
+          source_page?: string | null
+          status_raw?: string | null
+          tags?: string[]
+          title?: string
+          tribe_hint?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notion_import_staging_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "ingestion_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notion_import_staging_mapped_board_id_fkey"
+            columns: ["mapped_board_id"]
+            isOneToOne: false
+            referencedRelation: "project_boards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notion_import_staging_mapped_item_id_fkey"
+            columns: ["mapped_item_id"]
+            isOneToOne: false
+            referencedRelation: "board_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       presentations: {
         Row: {
           created_at: string | null
@@ -3527,6 +3618,16 @@ export type Database = {
           quadrant_name: string
           total_members: number
         }[]
+      }
+      admin_map_notion_item_to_board: {
+        Args: {
+          p_apply_insert?: boolean
+          p_board_id: string
+          p_position?: number
+          p_staging_id: number
+          p_status?: string
+        }
+        Returns: Json
       }
       admin_move_member_tribe: {
         Args: { p_member_id: string; p_new_tribe_id: number; p_reason?: string }

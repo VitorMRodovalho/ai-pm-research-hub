@@ -251,6 +251,16 @@ test('data quality audit contract tracks tribe and legacy integrity', () => {
   assert.equal(script.includes("sb.rpc('admin_data_quality_audit'"), true);
 });
 
+test('notion normalization contracts are backend-mapped before board insertion', () => {
+  const migration = read('supabase/migrations/20260312210000_notion_normalization_and_board_mapping.sql');
+  const script = read('scripts/notion_normalize_import.ts');
+  assert.equal(migration.includes('create table if not exists public.notion_import_staging'), true);
+  assert.equal(migration.includes('create or replace function public.admin_map_notion_item_to_board('), true);
+  assert.equal(script.includes("sb.from('notion_import_staging').insert(payload)"), true);
+  assert.equal(script.includes("sb.rpc('admin_start_ingestion_batch'"), true);
+  assert.equal(script.includes("sb.rpc('admin_finalize_ingestion_batch'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');
