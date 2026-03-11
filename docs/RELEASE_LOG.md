@@ -1,5 +1,23 @@
 # Release Log
 
+## 2026-03-11 — Sprint 21 (Dev): Comms Integration Roadmap
+
+### Scope
+Definir roadmap oficial para integração do time de comunicação no Hub e substituição orientada de Trello em fases com mitigação de risco operacional.
+
+### Delivered
+- `docs/project-governance/COMMS_INTEGRATION_ROADMAP.md`:
+  - fases de execução (baseline, híbrido, cutover, estabilização);
+  - milestones por fase;
+  - matriz de riscos/dependências e critérios de aceite.
+- `README.md`:
+  - roadmap adicionado à seção de governança do projeto.
+
+### Audit Results
+- Validado com `npm run build`.
+
+---
+
 ## 2026-03-11 — Sprint 20 (Dev): Knowledge Hub Design Spec
 
 ### Scope

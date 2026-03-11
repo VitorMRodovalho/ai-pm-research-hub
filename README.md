@@ -161,6 +161,7 @@ The current production pattern is to keep communications metrics in Supabase-bac
 - How to work with the board: `docs/project-governance/PROJECT_GOVERNANCE_RUNBOOK.md`
 - Board ↔ docs sync (gestão à vista): `docs/AGENT_BOARD_SYNC.md`
 - Dev ↔ prod sync strategy: `docs/project-governance/REPO_SYNC_STRATEGY.md`
+- Comms integration roadmap: `docs/project-governance/COMMS_INTEGRATION_ROADMAP.md`
 
 ---
 
