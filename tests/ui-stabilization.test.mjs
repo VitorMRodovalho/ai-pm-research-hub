@@ -464,6 +464,16 @@ test('ingestion provenance signatures are generated and stored in backend', () =
   assert.equal(script.includes("sb.rpc('admin_sign_ingestion_file_provenance'"), true);
 });
 
+test('partner governance scorecards aggregate summary and trends', () => {
+  const migration = read('supabase/migrations/20260313180000_partner_governance_scorecards.sql');
+  const script = read('scripts/run_partner_governance_scorecards.ts');
+
+  assert.equal(migration.includes('create or replace function public.exec_partner_governance_scorecards('), true);
+  assert.equal(migration.includes('v_summary := public.exec_partner_governance_summary(p_window_days);'), true);
+  assert.equal(migration.includes('v_trends := public.exec_partner_governance_trends(p_window_days);'), true);
+  assert.equal(script.includes("sb.rpc('exec_partner_governance_scorecards'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

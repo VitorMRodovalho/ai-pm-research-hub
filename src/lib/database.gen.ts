@@ -1837,6 +1837,78 @@ export type Database = {
           },
         ]
       }
+      ingestion_provenance_signatures: {
+        Row: {
+          batch_id: string
+          file_hash: string
+          file_path: string
+          id: number
+          metadata: Json
+          signature: string
+          signed_at: string
+          signed_by: string | null
+          source_kind: string
+        }
+        Insert: {
+          batch_id: string
+          file_hash: string
+          file_path: string
+          id?: number
+          metadata?: Json
+          signature: string
+          signed_at?: string
+          signed_by?: string | null
+          source_kind: string
+        }
+        Update: {
+          batch_id?: string
+          file_hash?: string
+          file_path?: string
+          id?: number
+          metadata?: Json
+          signature?: string
+          signed_at?: string
+          signed_by?: string | null
+          source_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingestion_provenance_signatures_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "ingestion_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_provenance_signatures_signed_by_fkey"
+            columns: ["signed_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_provenance_signatures_signed_by_fkey"
+            columns: ["signed_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_provenance_signatures_signed_by_fkey"
+            columns: ["signed_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_provenance_signatures_signed_by_fkey"
+            columns: ["signed_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingestion_remediation_escalation_matrix: {
         Row: {
           action_type: string
@@ -4695,6 +4767,16 @@ export type Database = {
       }
       admin_set_tribe_active: {
         Args: { p_is_active: boolean; p_reason?: string; p_tribe_id: number }
+        Returns: Json
+      }
+      admin_sign_ingestion_file_provenance: {
+        Args: {
+          p_batch_id: string
+          p_file_hash: string
+          p_file_path: string
+          p_metadata?: Json
+          p_source_kind: string
+        }
         Returns: Json
       }
       admin_start_ingestion_batch: {
