@@ -17,8 +17,9 @@ Sim, continuamos a usar o **GitHub Project** para gestão de sprints e backlog.
 3. Leia `docs/project-governance/ROADMAP_SEQUENCIAL_AGRUPADO.md` para regras de pacote pai → filho.
 4. Leia `docs/project-governance/PROJECT_ON_TRACK.md` para integridade DB↔Frontend↔API e roadmap por batch.
 5. Leia `docs/project-governance/REPO_SYNC_STRATEGY.md` para o fluxo oficial de sincronização dev ↔ prod.
-6. Itens em `In progress` devem ser **GitHub Issues** no repositório (não Drafts). Crie a issue se ainda não existir.
-7. Ao commitar, referencie o sprint/issue (ex.: `fix: S-HF5 data patch (#XX)`).
+6. Para analytics partner-facing, usar o checklist em `docs/project-governance/ANALYTICS_V2_PARTNER_VALIDATION.md`.
+7. Itens em `In progress` devem ser **GitHub Issues** no repositório (não Drafts). Crie a issue se ainda não existir.
+8. Ao commitar, referencie o sprint/issue (ex.: `fix: S-HF5 data patch (#XX)`).
 
 ---
 
