@@ -474,6 +474,16 @@ test('partner governance scorecards aggregate summary and trends', () => {
   assert.equal(script.includes("sb.rpc('exec_partner_governance_scorecards'"), true);
 });
 
+test('controlled rollback contracts support planned and approved execution', () => {
+  const migration = read('supabase/migrations/20260313190000_controlled_rollback_contracts.sql');
+  const script = read('scripts/run_controlled_rollback.ts');
+
+  assert.equal(migration.includes('create table if not exists public.ingestion_rollback_plans'), true);
+  assert.equal(migration.includes('create or replace function public.admin_plan_ingestion_rollback('), true);
+  assert.equal(migration.includes('create or replace function public.admin_execute_ingestion_rollback('), true);
+  assert.equal(script.includes("sb.rpc('admin_execute_ingestion_rollback'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

@@ -5033,6 +5033,10 @@ export type Database = {
         Args: { p_chapter?: string; p_cycle_code?: string; p_tribe_id?: number }
         Returns: Json
       }
+      exec_partner_governance_scorecards: {
+        Args: { p_window_days?: number }
+        Returns: Json
+      }
       exec_partner_governance_summary: {
         Args: { p_window_days?: number }
         Returns: Json
