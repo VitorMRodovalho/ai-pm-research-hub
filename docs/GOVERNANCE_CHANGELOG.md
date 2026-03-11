@@ -1,5 +1,21 @@
 # Governance Changelog
 
+## 2026-03-11 — Docs Index Integrity Automation
+
+### Decisions
+
+1. **Índice por persona passa a ter auditoria automatizada de integridade**: criamos `scripts/audit_docs_index_links.sh` para validar referências e reduzir risco de onboarding com links quebrados.
+
+2. **Governança documental também precisa de contrato testável**: adicionamos lock em `ui-stabilization` para manter o índice e o script de auditoria como parte da baseline.
+
+### Process Lessons Learned
+
+1. **Auditoria manual de links escala mal com crescimento de docs**: automação simples em shell elimina erro recorrente de manutenção.
+
+2. **Globs no índice exigem validação específica**: o auditor passou a tratar padrões `*` explicitamente para evitar falso negativo.
+
+---
+
 ## 2026-03-11 — Auth Smoke Expansion For Protected Routes
 
 ### Decisions

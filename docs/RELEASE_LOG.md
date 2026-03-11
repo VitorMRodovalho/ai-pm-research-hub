@@ -1,5 +1,27 @@
 # Release Log
 
+## 2026-03-11 — Sprint 36 (Dev): Docs Index Execution Pass
+
+### Scope
+Consolidar o índice por persona com uma validação técnica automatizada, evitando drift de links quebrados na documentação de governança.
+
+### Delivered
+- Novo script: `scripts/audit_docs_index_links.sh`
+  - extrai referências em `docs/INDEX.md`;
+  - valida arquivos/diretórios e globs (`*`);
+  - falha quando houver referência inválida.
+- `docs/INDEX.md`:
+  - seção de verificação rápida com comando de auditoria.
+- `tests/ui-stabilization.test.mjs`:
+  - novo lock garantindo a presença do índice por persona e do script de auditoria.
+
+### Audit Results
+- `./scripts/audit_docs_index_links.sh`
+- `npm test`
+- `npm run build`
+
+---
+
 ## 2026-03-11 — Sprint 35 (Dev): Auth Route Smoke Expansion
 
 ### Scope

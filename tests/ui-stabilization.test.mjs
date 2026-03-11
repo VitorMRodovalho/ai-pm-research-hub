@@ -765,6 +765,15 @@ test('route smoke script validates anonymous deny markers on protected routes', 
   assert.equal(smoke.includes("assertContains('/tribe/1', 'id=\"tribe-denied\"')"), true);
 });
 
+test('docs index exposes persona map and has audit script for reference integrity', () => {
+  const index = read('docs/INDEX.md');
+  const auditScript = read('scripts/audit_docs_index_links.sh');
+  assert.equal(index.includes('# Docs Index por Persona'), true);
+  assert.equal(index.includes('./scripts/audit_docs_index_links.sh'), true);
+  assert.equal(auditScript.includes('docs/INDEX.md'), true);
+  assert.equal(auditScript.includes('broken references'), true);
+});
+
 test('home pages resolve shared home schedule instead of fetching only the deadline', () => {
   const pt = read('src/pages/index.astro');
   const en = read('src/pages/en/index.astro');

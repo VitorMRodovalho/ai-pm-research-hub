@@ -60,3 +60,11 @@ Qualquer mudança com impacto de produção deve refletir em:
 1. `docs/RELEASE_LOG.md` (o que mudou + validação)
 2. Documento de governança pertinente (`docs/project-governance/*`)
 3. Runbook/migration pertinente (`docs/migrations/*`) quando houver SQL
+
+## 7) Verificação rápida do índice
+
+Para garantir que os links/referências do índice continuam válidos:
+
+```bash
+./scripts/audit_docs_index_links.sh
+```
