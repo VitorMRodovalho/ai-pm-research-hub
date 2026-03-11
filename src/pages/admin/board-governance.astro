@@ -18,6 +18,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 </BaseLayout>
 
 <script>
+  let boardGovBootRetries = 0;
+
   function hasBoardGovAccess(member: any): boolean {
     if (!member) return false;
     if (member.is_superadmin) return true;
@@ -63,7 +65,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const member = (window as any).navGetMember?.();
     const sb = (window as any).navGetSb?.();
     if (!member || !sb) {
-      window.addEventListener('nav:member', () => bootBoardGovPage(), { once: true });
+      boardGovBootRetries += 1;
+      if (boardGovBootRetries >= 20) {
+        loading?.classList.add('hidden');
+        denied?.classList.remove('hidden');
+        denied!.textContent = 'Acesso restrito a gestão de projeto.';
+        return;
+      }
+      setTimeout(() => bootBoardGovPage(), 150);
       return;
     }
     loading?.classList.add('hidden');
