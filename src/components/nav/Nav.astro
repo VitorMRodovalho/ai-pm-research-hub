@@ -224,7 +224,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     try {
       const currentTribeId = Number(_member?.tribe_id || _member?.selected_tribe_id || 0);
       const [{ data: tribes, error: tribesError }, { data: members, error: membersError }] = await Promise.all([
-        sb.from('tribes').select('id, name, whatsapp_url, quadrant, quadrant_name, is_active').order('id'),
+        sb.from('tribes').select('id, name, whatsapp_url, quadrant, quadrant_name, is_active, workstream_type').order('id'),
         sb.from('public_members')
           .select('tribe_id, current_cycle_active, is_active')
           .eq('current_cycle_active', true)
@@ -301,12 +301,16 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     return tribes.filter((tribe: any) => tribe.is_active !== false);
   }
 
+  function getResearchTribes(tribes: any[]): any[] {
+    return getVisibleTribesForMember(tribes).filter((tribe: any) => String(tribe.workstream_type || 'research') === 'research');
+  }
+
   function tribeLabel(tribe: any): string {
     return buildTribeLabel(tribe, { prefix: i18n.tribePrefix || 'Tribo' });
   }
 
   function renderDesktopTribeDropdown(tribes: any[]): string {
-    const visibleTribes = getVisibleTribesForMember(tribes);
+    const visibleTribes = getResearchTribes(tribes);
     if (!visibleTribes.length) {
       return '<div class="px-3 py-2 text-slate-400 text-xs">Nenhuma tribo ativa disponível.</div>';
     }
@@ -332,7 +336,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
   }
 
   function renderDrawerTribeDropdown(tribes: any[]): string {
-    const visibleTribes = getVisibleTribesForMember(tribes);
+    const visibleTribes = getResearchTribes(tribes);
     if (!visibleTribes.length) {
       return '<div class="px-2 py-1.5 text-[.7rem] text-slate-400">Nenhuma tribo ativa disponível.</div>';
     }
@@ -354,7 +358,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
   }
 
   function renderMobileTribeDropdown(tribes: any[]): string {
-    const visibleTribes = getVisibleTribesForMember(tribes);
+    const visibleTribes = getResearchTribes(tribes);
     if (!visibleTribes.length) {
       return '<div class="px-4 py-2.5 text-white/50 text-sm">Nenhuma tribo ativa disponível.</div>';
     }
@@ -560,9 +564,11 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     );
 
     const profileItems = drawerItems.filter((i: any) => i.group === 'profile');
-    const memberItems = drawerItems.filter((i: any) => i.group === 'member');
+    const memberItems = drawerItems.filter((i: any) => i.group === 'member' && i.key !== 'publications');
     const adminItems = drawerItems.filter((i: any) => i.group === 'admin');
     const adminSubItems = drawerItems.filter((i: any) => i.group === 'admin-sub');
+    const operationsItems = drawerItems.filter((i: any) => i.key === 'admin-comms-ops');
+    const governanceItems = drawerItems.filter((i: any) => i.key === 'publications' || i.key === 'admin-portfolio');
 
     const DRAWER_ICONS: Record<string, string> = {
       profile: '<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>',
@@ -642,10 +648,19 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     profileItems.forEach((item: any) => { html += drawerLink(item, 'text-slate-800 hover:bg-slate-50'); });
     memberItems.forEach((item: any) => { html += drawerLink(item, 'text-slate-800 hover:bg-slate-50'); });
 
-    if (adminItems.length || adminSubItems.length) {
+    if (operationsItems.length) {
+      html += '<hr class="border-slate-100 my-2"><div class="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1 px-2">⚙️ Operações</div>';
+      operationsItems.forEach((item: any) => { html += drawerLink(item, 'text-slate-600 hover:bg-slate-50 pl-4'); });
+    }
+    if (governanceItems.length) {
+      html += '<hr class="border-slate-100 my-2"><div class="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1 px-2">🌍 Governança</div>';
+      governanceItems.forEach((item: any) => { html += drawerLink(item, 'text-slate-600 hover:bg-slate-50 pl-4'); });
+    }
+    const otherAdminSub = adminSubItems.filter((i: any) => i.key !== 'admin-comms-ops' && i.key !== 'admin-portfolio');
+    if (adminItems.length || otherAdminSub.length) {
       html += '<hr class="border-slate-100 my-2">';
       adminItems.forEach((item: any) => { html += drawerLink(item, 'text-purple hover:bg-purple/5'); });
-      adminSubItems.forEach((item: any) => { html += drawerLink(item, 'text-slate-600 hover:bg-slate-50 pl-4'); });
+      otherAdminSub.forEach((item: any) => { html += drawerLink(item, 'text-slate-600 hover:bg-slate-50 pl-4'); });
     }
 
     html += `<hr class="border-slate-100 dark:border-slate-700 my-2">

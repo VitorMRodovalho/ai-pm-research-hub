@@ -1,5 +1,31 @@
 # Release Log
 
+## 2026-03-15 — Wire up modern UI, merge legacy data, meeting schedule editor
+
+### Scope
+Task Force: conectar TribeKanbanIsland (dnd-kit) como UI única, refatorar Nav com seções Operações/Governança, merge de dados (T4, T6, T8) e editor de horário de reunião.
+
+### Delivered
+- **1. Front-end wire-up**
+  - Removido todo código Vanilla do Kanban em `tribe/[id].astro`; único board é `TribeKanbanIsland` (React dnd-kit).
+  - Tab "Quadro" com i18n (`tribe.boardTab`).
+- **2. Nav refatorado**
+  - Tribos de Pesquisa: dropdown mostra apenas tribos com `workstream_type = 'research'`.
+  - Seção "⚙️ Operações": Hub de Comunicação (`/admin/comms-ops`).
+  - Seção "🌍 Governança": Publicações (`/publications`), Portfólio Executivo (`/admin/portfolio`).
+  - Links ocultos se usuário não tiver permissão.
+- **3. Migration data merge healing**
+  - `20260315000005_data_merge_healing.sql`: T4 (Débora) quadro Cultura/Ciclo 2 atrelado; T6 (Fabrício) cards consolidados em um quadro; T8 (Ana) quadro oficial de entregas criado.
+- **4. Edição de horário de reunião**
+  - Botão lápis ao lado do horário (quando canEdit); modal para editar texto (ex: "Quintas, 19h"); `supabase.from('tribes').update({ meeting_schedule })`.
+
+### Validation captured
+- `supabase db push`
+- `npm test`
+- `npm run build`
+
+---
+
 ## 2026-03-15 — Clean-up & God Mode (UX + Data Sanity + Super Admin)
 
 ### Scope

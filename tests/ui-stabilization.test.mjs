@@ -301,7 +301,7 @@ test('tribe catalog supports dynamic runtime entries and explicit active status'
   assert.equal(admin.includes("sb.rpc('admin_list_tribes'"), true);
   assert.equal(admin.includes("data-action=\"create-tribe\""), true);
   assert.equal(admin.includes("data-action=\"toggle-tribe-active\""), true);
-  assert.equal(nav.includes("select('id, name, whatsapp_url, quadrant, quadrant_name, is_active')"), true);
+  assert.equal(nav.includes("select('id, name, whatsapp_url, quadrant, quadrant_name, is_active") && nav.includes('workstream_type'), true);
   assert.equal(tribe.includes('id="tribe-context-switch"'), true);
   assert.equal(workspace.includes("sb.from('tribes').select('id, name, is_active').order('id')"), true);
   assert.equal(artifacts.includes("sb.from('tribes').select('id, name, is_active').order('id')"), true);
