@@ -1,5 +1,21 @@
 # Release Log
 
+## 2026-03-11 — Sprint 27 (Dev): Analytics V2 Partner Validation Evidence Pack
+
+### Scope
+Fortalecer evidência operacional da validação partner-facing do Analytics V2, com modelo de coleta e probes SQL de conferência.
+
+### Delivered
+- `docs/project-governance/ANALYTICS_V2_PARTNER_VALIDATION.md`:
+  - modelo rápido de pacote de evidência;
+  - checklist de artefatos obrigatórios;
+  - bloco de probe SQL para os contratos V2.
+
+### Audit Results
+- Validado com `npm run build`.
+
+---
+
 ## 2026-03-11 — Sprint 26 (Dev): SSR Safety Sweep Final Pack
 
 ### Scope

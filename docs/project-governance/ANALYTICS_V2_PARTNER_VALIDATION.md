@@ -62,6 +62,34 @@ Validar retorno nao vazio (ou vazio justificado) dos RPCs:
 - print de ACL deny para perfil nao autorizado
 - referencia de commit e release log
 
+## Pacote de evidencia (modelo rapido)
+
+| Item | Evidencia |
+|---|---|
+| ACL partner | screenshot da tela `/admin/analytics` carregada com perfil partner |
+| ACL deny | screenshot de `#analytics-denied` com perfil nao autorizado |
+| Qualidade | screenshot do card/banner `analytics_v2_quality` |
+| Filtros | screenshot de ciclo + tribo + capitulo alterados |
+| Resumo executivo | texto gerado em copy summary anexado no registro |
+
+## Probe SQL operacional (quando aplicavel)
+
+Rodar no ambiente alvo (somente leitura):
+
+```sql
+select public.exec_funnel_v2(null, null, null);
+select public.exec_impact_hours_v2(null, null, null);
+select public.exec_certification_delta(null, null, null);
+select public.exec_chapter_roi(null, null, null);
+select public.exec_role_transitions(null, null, null);
+select public.exec_analytics_v2_quality(null, null, null);
+```
+
+Registrar para cada probe:
+
+- status (`ok`, `vazio esperado`, `erro`);
+- observacao curta de consistencia com UI.
+
 ## Resultado atual desta tranche
 
 - Governanca/fluxo preparados.
