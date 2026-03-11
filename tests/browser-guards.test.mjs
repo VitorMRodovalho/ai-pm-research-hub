@@ -210,6 +210,20 @@ async function run() {
     const analyticsPage = await browser.newPage();
     await analyticsPage.goto(`${base}/admin/analytics`, { waitUntil: 'networkidle' });
     await analyticsPage.evaluate(() => {
+      (window).__copiedSummary = '';
+      try {
+        Object.defineProperty(navigator, 'clipboard', {
+          value: {
+            writeText(value) {
+              (window).__copiedSummary = String(value || '');
+              return Promise.resolve();
+            },
+          },
+          configurable: true,
+        });
+      } catch {
+        // ignore clipboard override failures in strict environments
+      }
       const fakeMember = {
         auth_id: 'analytics-observer-test',
         operational_role: 'researcher',
@@ -272,6 +286,17 @@ async function run() {
               error: null,
             });
           }
+          if (name === 'exec_analytics_v2_quality') {
+            return Promise.resolve({
+              data: {
+                ok: true,
+                attribution_window: { before_days: 30, after_days: 90 },
+                issues: [],
+                warnings: [],
+              },
+              error: null,
+            });
+          }
           return Promise.resolve({ data: {}, error: null });
         },
         from(table) {
@@ -302,8 +327,15 @@ async function run() {
     await analyticsPage.locator('#analytics-panel').waitFor({ state: 'visible' });
     assert.equal(await analyticsPage.locator('#analytics-denied').isVisible(), false);
     assert.equal(await analyticsPage.locator('#analytics-filter-cycle').isVisible(), true);
+    assert.equal(await analyticsPage.locator('#analytics-quality-banner').isVisible(), true);
+    assert.equal(await analyticsPage.locator('#analytics-interpretation-card').isVisible(), true);
     assert.match(await analyticsPage.locator('#kpi-cohort-members').textContent() || '', /10/);
     assert.match(await analyticsPage.locator('#analytics-transition-matrix').textContent() || '', /researcher|tribe_leader/);
+    await analyticsPage.locator('#analytics-copy-summary').click();
+    const copiedSummary = await analyticsPage.evaluate(() => (window).__copiedSummary || '');
+    assert.match(copiedSummary, /Scope:/);
+    assert.match(copiedSummary, /Funnel => total: 10/);
+    assert.match(copiedSummary, /Quality => issues: 0, warnings: 0/);
     await analyticsPage.close();
 
     await page.close();
