@@ -16,8 +16,9 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { CalendarClock, Paperclip, Trash2, UserCircle2, X } from 'lucide-react';
+import { CalendarClock, Paperclip, Trash2, UserCircle2, X, Send, CheckCircle2, Award } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
+import * as Popover from '@radix-ui/react-popover';
 
 type Member = {
   id: string;
@@ -33,6 +34,9 @@ type BoardItem = {
   title: string;
   description?: string | null;
   status: string;
+  curation_status?: string | null;
+  reviewer_id?: string | null;
+  reviewer_name?: string | null;
   due_date?: string | null;
   assignee_id?: string | null;
   assignee_name?: string | null;
@@ -43,12 +47,12 @@ type BoardItem = {
 
 type Lane = { key: string; label: string };
 
-const LANES: Lane[] = [
-  { key: 'backlog', label: 'Backlog' },
-  { key: 'todo', label: 'To Do' },
-  { key: 'in_progress', label: 'Em Progresso' },
-  { key: 'review', label: 'Revisao' },
-  { key: 'done', label: 'Concluido' },
+const CURATION_LANES: Lane[] = [
+  { key: 'draft', label: 'Rascunho' },
+  { key: 'peer_review', label: 'Revisao por par' },
+  { key: 'leader_review', label: 'Revisao do lider' },
+  { key: 'curation_pending', label: 'Aguard. curadoria' },
+  { key: 'published', label: 'Publicado' },
 ];
 
 type TribeKanbanI18n = Record<string, any>;
@@ -113,12 +117,26 @@ function SortableCard({
   assigneePhoto,
   onOpen,
   onLaneKeyboardMove,
+  members,
+  currentMember,
+  tribeData,
+  onRequestReview,
+  onApprovePeer,
+  onApproveLeader,
+  i18n,
 }: {
   item: BoardItem;
   canEdit: boolean;
   assigneePhoto?: string;
   onOpen: (item: BoardItem) => void;
   onLaneKeyboardMove: (item: BoardItem, direction: -1 | 1) => void;
+  members: Member[];
+  currentMember: any;
+  tribeData: any;
+  onRequestReview: (item: BoardItem, reviewerId: string) => void;
+  onApprovePeer: (item: BoardItem) => void;
+  onApproveLeader: (item: BoardItem) => void;
+  i18n: Record<string, string>;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
@@ -131,7 +149,18 @@ function SortableCard({
   };
   const attachments = parseAttachments(item.attachments);
   const due = item.due_date ? new Date(item.due_date) : null;
-  const isOverdue = !!due && due.getTime() < Date.now() && item.status !== 'done';
+  const curation = item.curation_status || 'draft';
+  const isAuthor = currentMember?.id === item.assignee_id;
+  const isReviewer = currentMember?.id === item.reviewer_id;
+  const isLeader = currentMember?.operational_role === 'tribe_leader' && Number(currentMember?.tribe_id) === Number(tribeData?.id);
+  const isSuperAdmin = currentMember?.is_superadmin === true;
+  const isLeaderOrAdmin = isLeader || isSuperAdmin || ['manager', 'deputy_manager'].includes(String(currentMember?.operational_role || ''));
+
+  const showRequestReview = curation === 'draft' && isAuthor && members.length > 0;
+  const showApprovePeer = curation === 'peer_review' && isReviewer;
+  const showApproveLeader = curation === 'leader_review' && isLeaderOrAdmin;
+
+  const peers = members.filter((m) => m.id !== currentMember?.id && m.id !== item.assignee_id);
 
   return (
     <article
@@ -141,7 +170,7 @@ function SortableCard({
       {...listeners}
       tabIndex={0}
       className={`rounded-xl border p-3 shadow-sm transition-all ${canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900`}
-      onClick={() => onOpen(item)}
+      onClick={(e) => { if (!(e.target as HTMLElement).closest('button, [data-radix-collection-item]')) onOpen(item); }}
       onKeyDown={(e) => {
         if (e.shiftKey && e.key === 'ArrowLeft') {
           e.preventDefault();
@@ -168,16 +197,74 @@ function SortableCard({
         )}
         <span className="truncate">{item.assignee_name || 'Sem responsavel'}</span>
       </div>
-      <div className="mt-2 flex items-center gap-2 text-[11px]">
+      {item.reviewer_name && curation === 'peer_review' ? (
+        <div className="text-[10px] text-amber-600 mt-0.5">Revisor: {item.reviewer_name}</div>
+      ) : null}
+      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
         {attachments.length > 0 ? (
           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700">
             <Paperclip size={12} /> {attachments.length}
           </span>
         ) : null}
         {due ? (
-          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded ${isOverdue ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-600'}`}>
+          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded ${due.getTime() < Date.now() && curation !== 'published' ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-600'}`}>
             <CalendarClock size={12} /> {due.toLocaleDateString('pt-BR')}
           </span>
+        ) : null}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-1">
+        {showRequestReview ? (
+          <Popover.Root>
+            <Popover.Trigger asChild>
+              <button
+                type="button"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold bg-navy text-white hover:opacity-90"
+              >
+                <Send size={12} /> {i18n.requestReview || 'Solicitar Revisao'}
+              </button>
+            </Popover.Trigger>
+            <Popover.Portal>
+              <Popover.Content
+                className="rounded-lg border border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-700 p-2 shadow-lg z-50 max-h-48 overflow-y-auto"
+                sideOffset={4}
+                onOpenAutoFocus={(e) => e.preventDefault()}
+              >
+                <div className="text-[11px] font-semibold text-slate-600 mb-1.5">{i18n.selectReviewer || 'Selecionar revisor'}</div>
+                {peers.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => { onRequestReview(item, m.id); }}
+                    className="block w-full text-left px-2 py-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-sm"
+                  >
+                    {m.name || 'Membro'}
+                  </button>
+                ))}
+                {peers.length === 0 ? (
+                  <div className="px-2 py-1.5 text-slate-400 text-[11px]">Nenhum colega disponivel</div>
+                ) : null}
+              </Popover.Content>
+            </Popover.Portal>
+          </Popover.Root>
+        ) : null}
+        {showApprovePeer ? (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onApprovePeer(item); }}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold bg-emerald-600 text-white hover:opacity-90"
+          >
+            <CheckCircle2 size={12} /> {i18n.approvePeer || 'Aprovar (Peer)'}
+          </button>
+        ) : null}
+        {showApproveLeader ? (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onApproveLeader(item); }}
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10px] font-semibold bg-purple-600 text-white hover:opacity-90"
+          >
+            <Award size={12} /> {i18n.approveForCuration || 'Aprovar para Curadoria'}
+          </button>
         ) : null}
       </div>
     </article>
@@ -194,6 +281,8 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
   const [members, setMembers] = useState<Member[]>([]);
   const [activeId, setActiveId] = useState<string>('');
   const [modalItem, setModalItem] = useState<BoardItem | null>(null);
+  const [tribeData, setTribeData] = useState<any>(null);
+  const [currentMember, setCurrentMember] = useState<any>(null);
   const ui = {
     deniedBoard: i18n?.deniedBoard || 'Acesso restrito para este quadro.',
     checklist: i18n?.checklist || 'Checklist',
@@ -204,6 +293,10 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
     archiveCard: i18n?.archiveCard || 'Arquivar card',
     cancel: i18n?.cancel || 'Cancelar',
     save: i18n?.save || 'Salvar',
+    requestReview: i18n?.requestReview || 'Solicitar Revisao',
+    approvePeer: i18n?.approvePeer || 'Aprovar (Peer)',
+    approveForCuration: i18n?.approveForCuration || 'Aprovar para Curadoria',
+    selectReviewer: i18n?.selectReviewer || 'Selecionar revisor',
   };
 
   const sensors = useSensors(
@@ -212,8 +305,8 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
   );
 
   const itemsByLane = useMemo(() => {
-    return LANES.reduce<Record<string, BoardItem[]>>((acc, lane) => {
-      acc[lane.key] = items.filter((item) => item.status === lane.key);
+    return CURATION_LANES.reduce<Record<string, BoardItem[]>>((acc, lane) => {
+      acc[lane.key] = items.filter((item) => (item.curation_status || 'draft') === lane.key);
       return acc;
     }, {});
   }, [items]);
@@ -248,7 +341,10 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
     ]);
 
     setMembers(Array.isArray(tribeMembers) ? tribeMembers : []);
-    setItems((Array.isArray(boardItems) ? boardItems : []).filter((item: any) => item.status !== 'archived'));
+    setTribeData(tribeData);
+    setCurrentMember(member);
+    const raw = (Array.isArray(boardItems) ? boardItems : []).filter((item: any) => item.status !== 'archived');
+    setItems(raw.map((row: any) => ({ ...row, curation_status: row.curation_status || 'draft' })));
     setLoading(false);
   }
 
@@ -260,34 +356,119 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
     });
   }, []);
 
-  function rollbackMove(itemId: string, from: string) {
-    setItems((prev) => prev.map((row) => (row.id === itemId ? { ...row, status: from } : row)));
+  function rollbackCuration(itemId: string, from: string) {
+    setItems((prev) => prev.map((row) => (row.id === itemId ? { ...row, curation_status: from } : row)));
   }
 
-  async function persistMove(itemId: string, newLane: string, previousLane: string) {
+  async function persistMove(itemId: string, newCurationStatus: string, previousCurationStatus: string) {
     const sb = windowRef?.navGetSb?.();
     if (!sb || !boardId) return;
-    const { error } = await sb.rpc('move_board_item', {
-      p_item_id: itemId,
-      p_new_status: newLane,
-      p_position: 0,
-    });
-    if (error) {
-      rollbackMove(itemId, previousLane);
-      windowRef?.toast?.(error.message || 'Falha ao mover card', 'error');
+    const item = items.find((i) => i.id === itemId);
+    if (!item) return;
+    if (previousCurationStatus === newCurationStatus) {
+      // Same-lane reorder: use move_board_item to update position only
+      const { error } = await sb.rpc('move_board_item', {
+        p_item_id: itemId,
+        p_new_status: item.status || 'backlog',
+        p_position: 0,
+      });
+      if (error) {
+        rollbackCuration(itemId, previousCurationStatus);
+        windowRef?.toast?.(error.message || 'Falha ao reordenar', 'error');
+      }
       return;
     }
-    windowRef?.toast?.('Status atualizado', 'success');
+    if (previousCurationStatus === 'peer_review' && newCurationStatus === 'leader_review' && item.reviewer_id === currentMember?.id) {
+      const { error } = await sb.rpc('advance_board_item_curation', { p_item_id: itemId, p_action: 'approve_peer', p_reviewer_id: null });
+      if (error) {
+        rollbackCuration(itemId, previousCurationStatus);
+        windowRef?.toast?.(error.message || 'Falha', 'error');
+        return;
+      }
+      windowRef?.toast?.('Aprovado (Peer)', 'success');
+      return;
+    }
+    if (previousCurationStatus === 'leader_review' && newCurationStatus === 'curation_pending') {
+      const isLeader = currentMember?.operational_role === 'tribe_leader' && Number(currentMember?.tribe_id) === Number(tribeData?.id);
+      const isAdmin = currentMember?.is_superadmin || ['manager', 'deputy_manager'].includes(String(currentMember?.operational_role || ''));
+      if (isLeader || isAdmin) {
+        const { error } = await sb.rpc('advance_board_item_curation', { p_item_id: itemId, p_action: 'approve_leader', p_reviewer_id: null });
+        if (error) {
+          rollbackCuration(itemId, previousCurationStatus);
+          windowRef?.toast?.(error.message || 'Falha', 'error');
+          return;
+        }
+        windowRef?.toast?.('Enviado para curadoria', 'success');
+        return;
+      }
+    }
+    rollbackCuration(itemId, previousCurationStatus);
+    windowRef?.toast?.('Transicao nao permitida', 'error');
   }
 
   async function moveViaKeyboard(item: BoardItem, direction: -1 | 1) {
     if (!canEdit) return;
-    const laneIdx = LANES.findIndex((lane) => lane.key === item.status);
-    if (laneIdx < 0) return;
-    const targetLane = LANES[laneIdx + direction];
-    if (!targetLane || targetLane.key === item.status) return;
-    setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, status: targetLane.key } : row)));
-    await persistMove(item.id, targetLane.key, item.status);
+    const cur = item.curation_status || 'draft';
+    if (direction > 0 && cur === 'peer_review' && item.reviewer_id === currentMember?.id) {
+      await handleApprovePeer(item);
+      return;
+    }
+    if (direction > 0 && cur === 'leader_review') {
+      const isLeader = currentMember?.operational_role === 'tribe_leader' && Number(currentMember?.tribe_id) === Number(tribeData?.id);
+      const isAdmin = currentMember?.is_superadmin || ['manager', 'deputy_manager'].includes(String(currentMember?.operational_role || ''));
+      if (isLeader || isAdmin) {
+        await handleApproveLeader(item);
+      }
+    }
+  }
+
+  async function handleRequestReview(item: BoardItem, reviewerId: string) {
+    const sb = windowRef?.navGetSb?.();
+    if (!sb) return;
+    const { error } = await sb.rpc('advance_board_item_curation', {
+      p_item_id: item.id,
+      p_action: 'request_review',
+      p_reviewer_id: reviewerId,
+    });
+    if (error) {
+      windowRef?.toast?.(error.message || 'Falha ao solicitar revisao', 'error');
+      return;
+    }
+    const reviewer = members.find((m) => m.id === reviewerId);
+    setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, curation_status: 'peer_review', reviewer_id: reviewerId, reviewer_name: reviewer?.name } : row)));
+    windowRef?.toast?.('Revisao solicitada', 'success');
+  }
+
+  async function handleApprovePeer(item: BoardItem) {
+    const sb = windowRef?.navGetSb?.();
+    if (!sb) return;
+    const { error } = await sb.rpc('advance_board_item_curation', {
+      p_item_id: item.id,
+      p_action: 'approve_peer',
+      p_reviewer_id: null,
+    });
+    if (error) {
+      windowRef?.toast?.(error.message || 'Falha ao aprovar', 'error');
+      return;
+    }
+    setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, curation_status: 'leader_review' } : row)));
+    windowRef?.toast?.('Aprovado (Peer)', 'success');
+  }
+
+  async function handleApproveLeader(item: BoardItem) {
+    const sb = windowRef?.navGetSb?.();
+    if (!sb) return;
+    const { error } = await sb.rpc('advance_board_item_curation', {
+      p_item_id: item.id,
+      p_action: 'approve_leader',
+      p_reviewer_id: null,
+    });
+    if (error) {
+      windowRef?.toast?.(error.message || 'Falha ao aprovar para curadoria', 'error');
+      return;
+    }
+    setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, curation_status: 'curation_pending' } : row)));
+    windowRef?.toast?.('Enviado para curadoria', 'success');
   }
 
   async function onDragEnd(event: DragEndEvent) {
@@ -299,24 +480,36 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
     const overId = String(over.id);
     const current = items.find((item) => item.id === itemId);
     if (!current) return;
-    const directLane = LANES.find((lane) => lane.key === overId)?.key;
-    const targetLane = directLane || items.find((row) => row.id === overId)?.status;
-    if (!targetLane || targetLane === current.status) return;
+    const cur = current.curation_status || 'draft';
+    const directLane = CURATION_LANES.find((lane) => lane.key === overId)?.key;
+    const overItem = items.find((row) => row.id === overId);
+    const targetLane = directLane || (overItem ? (overItem.curation_status || 'draft') : null);
+    if (!targetLane) return;
 
-    const previousLane = current.status;
+    const isSameLane = targetLane === cur;
+    const isCrossLaneCuration = (cur === 'peer_review' && targetLane === 'leader_review') || (cur === 'leader_review' && targetLane === 'curation_pending');
+    const canCurationTransition = (cur === 'peer_review' && targetLane === 'leader_review' && current.reviewer_id === currentMember?.id)
+      || (cur === 'leader_review' && targetLane === 'curation_pending' && (currentMember?.operational_role === 'tribe_leader' || currentMember?.is_superadmin || ['manager', 'deputy_manager'].includes(String(currentMember?.operational_role || ''))));
+
+    if (!isSameLane && !(isCrossLaneCuration && canCurationTransition)) {
+      return;
+    }
+
     setItems((prev) => {
-      const next = prev.map((row) => (row.id === itemId ? { ...row, status: targetLane } : row));
-      const laneItems = next.filter((row) => row.status === targetLane);
-      const oldIndex = laneItems.findIndex((row) => row.id === itemId);
-      const overIndex = laneItems.findIndex((row) => row.id === overId);
-      if (oldIndex >= 0 && overIndex >= 0) {
-        const moved = arrayMove(laneItems, oldIndex, overIndex);
-        const others = next.filter((row) => row.status !== targetLane);
-        return [...others, ...moved];
+      const next = isSameLane ? prev : prev.map((row) => (row.id === itemId ? { ...row, curation_status: targetLane } : row));
+      if (overItem && targetLane === (overItem.curation_status || 'draft')) {
+        const laneItems = (isSameLane ? prev : next).filter((row) => (row.curation_status || 'draft') === targetLane);
+        const oldIndex = laneItems.findIndex((row) => row.id === itemId);
+        const overIndex = laneItems.findIndex((row) => row.id === overId);
+        if (oldIndex >= 0 && overIndex >= 0) {
+          const moved = arrayMove(laneItems, oldIndex, overIndex);
+          const others = (isSameLane ? prev : next).filter((row) => (row.curation_status || 'draft') !== targetLane);
+          return [...others, ...moved];
+        }
       }
-      return next;
+      return isSameLane ? prev : next;
     });
-    await persistMove(itemId, targetLane, previousLane);
+    await persistMove(itemId, targetLane, cur);
   }
 
   async function saveModal() {
@@ -328,7 +521,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       p_board_id: boardId,
       p_title: modalItem.title,
       p_description: modalItem.description || null,
-      p_status: modalItem.status || 'backlog',
+      p_status: modalItem.status || (modalItem.curation_status || 'draft'),
       p_assignee_id: modalItem.assignee_id || null,
       p_due_date: modalItem.due_date || null,
       p_tags: null,
@@ -378,7 +571,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
           onDragStart={(event: DragStartEvent) => setActiveId(String(event.active.id))}
           onDragEnd={onDragEnd}
         >
-          {LANES.map((lane) => (
+          {CURATION_LANES.map((lane) => (
             <section key={lane.key} className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-[12px] font-bold text-slate-700 dark:text-slate-200">{lane.label}</h3>
@@ -400,6 +593,13 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
                       assigneePhoto={members.find((m) => m.id === item.assignee_id)?.photo_url || undefined}
                       onOpen={setModalItem}
                       onLaneKeyboardMove={moveViaKeyboard}
+                      members={members}
+                      currentMember={currentMember}
+                      tribeData={tribeData}
+                      onRequestReview={handleRequestReview}
+                      onApprovePeer={handleApprovePeer}
+                      onApproveLeader={handleApproveLeader}
+                      i18n={ui}
                     />
                   ))}
                   {itemsByLane[lane.key].length === 0 ? (
@@ -462,11 +662,11 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
                 <div>
                   <label className="text-[12px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">{ui.status}</label>
                   <select
-                    value={modalItem.status || 'backlog'}
-                    onChange={(e) => setModalItem((prev) => (prev ? { ...prev, status: e.target.value } : prev))}
+                    value={modalItem.curation_status || 'draft'}
+                    onChange={(e) => setModalItem((prev) => (prev ? { ...prev, curation_status: e.target.value } : prev))}
                     className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                   >
-                    {LANES.map((lane) => (
+                    {CURATION_LANES.map((lane) => (
                       <option key={lane.key} value={lane.key}>{lane.label}</option>
                     ))}
                   </select>

@@ -1471,7 +1471,16 @@ const enUS: Record<string, string> = {
 
   // ── Tribe Dashboard page ──
   'tribe.meta': '{name} — Tribe | AI & PM Hub',
+  'tribe.generalTab': '📊 General',
   'tribe.membersTab': '👥 Members',
+  'tribe.radarGlobal': '🌐 Global Radar',
+  'tribe.radarWebinars': 'Upcoming webinars',
+  'tribe.radarPublications': 'Latest global publications',
+  'tribe.radarEmpty': 'No items.',
+  'tribe.requestReview': 'Request Review',
+  'tribe.approvePeer': 'Approve (Peer)',
+  'tribe.approveForCuration': 'Approve for Curation',
+  'tribe.selectReviewer': 'Select reviewer',
   'tribe.deliverablesTab': '📦 Deliverables',
   'tribe.boardTab': '📋 Board',
   'tribe.resourcesTab': '📚 Resources',

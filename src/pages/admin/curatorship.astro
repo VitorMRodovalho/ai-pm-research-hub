@@ -1,13 +1,14 @@
 ---
 /**
- * admin/curatorship.astro — Wave 5: Knowledge Curation Kanban Board
- * Kanban-style board with columns: Pendente, Em Revisão, Aprovado, Descartado.
- * Drag-and-drop between columns triggers curate_item RPC.
- * Access: admin+ or tribe_leader (read), admin+ (actions).
+ * admin/curatorship.astro — Wave 5 + CXO Fase 2
+ * Super-Kanban: board_items curation_pending de todas as tribos → Publicado.
+ * Legado: artifacts/hub_resources via curate_item RPC.
+ * Access: admin+, curator, co_gp.
  */
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import AdminNav from '../../components/nav/AdminNav.astro';
+import CuratorshipBoardIsland from '../../components/boards/CuratorshipBoardIsland';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 
@@ -79,7 +80,14 @@ const CUR_I18N = {
       <a href="/admin" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">{CUR_I18N.backAdmin}</a>
     </div>
 
-    <!-- Kanban Board -->
+    <!-- Super-Kanban: Board Items das Tribos (curation_pending → publicado) -->
+    <section class="mb-10">
+      <h2 class="text-lg font-extrabold text-navy mb-2">Itens das tribos</h2>
+      <p class="text-sm text-slate-500 mb-4">Artefatos aprovados pelos líderes, aguardando publicação na vitrine. Arraste para &quot;Publicado&quot;.</p>
+      <CuratorshipBoardIsland client:load i18n={CUR_I18N} />
+    </section>
+
+    <!-- Kanban Board (artifacts/hub_resources — legado) -->
     <div id="cur-board" class="hidden grid grid-cols-1 md:grid-cols-4 gap-4" style="min-height:400px">
       <div class="kanban-col" data-status="draft">
         <div class="flex items-center gap-2 mb-3">

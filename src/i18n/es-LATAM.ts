@@ -1471,7 +1471,16 @@ const esLATAM: Record<string, string> = {
 
   // ── Tribe Dashboard page ──
   'tribe.meta': '{name} — Tribu | Núcleo IA & GP',
+  'tribe.generalTab': '📊 General',
   'tribe.membersTab': '👥 Miembros',
+  'tribe.radarGlobal': '🌐 Radar Global',
+  'tribe.radarWebinars': 'Próximos webinars',
+  'tribe.radarPublications': 'Últimas publicaciones globales',
+  'tribe.radarEmpty': 'Ningún ítem.',
+  'tribe.requestReview': 'Solicitar revisión',
+  'tribe.approvePeer': 'Aprobar (par)',
+  'tribe.approveForCuration': 'Aprobar para curaduría',
+  'tribe.selectReviewer': 'Seleccionar revisor',
   'tribe.deliverablesTab': '📦 Entregables',
   'tribe.boardTab': '📋 Tablero',
   'tribe.resourcesTab': '📚 Recursos',

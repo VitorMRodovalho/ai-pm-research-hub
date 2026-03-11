@@ -456,12 +456,14 @@ export type Database = {
           board_id: string
           checklist: Json | null
           created_at: string
+          curation_status: string
           cycle: number | null
           description: string | null
           due_date: string | null
           id: string
           labels: Json | null
           position: number
+          reviewer_id: string | null
           source_board: string | null
           source_card_id: string | null
           status: string
@@ -475,12 +477,14 @@ export type Database = {
           board_id: string
           checklist?: Json | null
           created_at?: string
+          curation_status?: string
           cycle?: number | null
           description?: string | null
           due_date?: string | null
           id?: string
           labels?: Json | null
           position?: number
+          reviewer_id?: string | null
           source_board?: string | null
           source_card_id?: string | null
           status?: string
@@ -494,12 +498,14 @@ export type Database = {
           board_id?: string
           checklist?: Json | null
           created_at?: string
+          curation_status?: string
           cycle?: number | null
           description?: string | null
           due_date?: string | null
           id?: string
           labels?: Json | null
           position?: number
+          reviewer_id?: string | null
           source_board?: string | null
           source_card_id?: string | null
           status?: string
@@ -541,6 +547,34 @@ export type Database = {
             columns: ["board_id"]
             isOneToOne: false
             referencedRelation: "project_boards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_items_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_items_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_items_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_items_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
         ]
@@ -5549,6 +5583,10 @@ export type Database = {
         Args: { p_batch_id: string }
         Returns: Json
       }
+      advance_board_item_curation: {
+        Args: { p_action: string; p_item_id: string; p_reviewer_id?: string }
+        Returns: undefined
+      }
       analytics_is_leadership_role: {
         Args: { p_designations: string[]; p_operational_role: string }
         Returns: boolean
@@ -5881,6 +5919,7 @@ export type Database = {
         Returns: Json[]
       }
       list_curation_board: { Args: { p_status?: string }; Returns: Json[] }
+      list_curation_pending_board_items: { Args: never; Returns: Json[] }
       list_cycles: { Args: never; Returns: Json }
       list_meeting_artifacts: {
         Args: { p_limit?: number; p_tribe_id?: number }
@@ -5909,6 +5948,10 @@ export type Database = {
       }
       list_pending_curation: { Args: { p_table?: string }; Returns: Json }
       list_project_boards: { Args: { p_tribe_id?: number }; Returns: Json[] }
+      list_radar_global: {
+        Args: { p_publications_limit?: number; p_webinars_limit?: number }
+        Returns: Json
+      }
       list_taxonomy_tags: {
         Args: never
         Returns: {
@@ -6030,6 +6073,10 @@ export type Database = {
         Returns: Json
       }
       platform_activity_summary: { Args: never; Returns: Json }
+      publish_board_item_from_curation: {
+        Args: { p_item_id: string }
+        Returns: string
+      }
       publish_comms_metrics_batch: {
         Args: { p_metric_date?: string; p_source?: string }
         Returns: {

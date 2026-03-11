@@ -1471,7 +1471,16 @@ const ptBR: Record<string, string> = {
 
   // ── Tribe Dashboard page ──
   'tribe.meta': '{name} — Tribo | Núcleo IA & GP',
+  'tribe.generalTab': '📊 Geral',
   'tribe.membersTab': '👥 Membros',
+  'tribe.radarGlobal': '🌐 Radar Global',
+  'tribe.radarWebinars': 'Próximos webinars',
+  'tribe.radarPublications': 'Últimas publicações globais',
+  'tribe.radarEmpty': 'Nenhum item.',
+  'tribe.requestReview': 'Solicitar Revisão',
+  'tribe.approvePeer': 'Aprovar (Peer)',
+  'tribe.approveForCuration': 'Aprovar para Curadoria',
+  'tribe.selectReviewer': 'Selecionar revisor',
   'tribe.deliverablesTab': '📦 Entregas',
   'tribe.boardTab': '📋 Quadro',
   'tribe.resourcesTab': '📚 Recursos',

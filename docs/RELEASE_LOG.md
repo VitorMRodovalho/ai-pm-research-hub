@@ -1,5 +1,36 @@
 # Release Log
 
+## 2026-03-15 — feat: implement tribe cockpit and peer-to-peer curation workflow (CXO Fase 2)
+
+### Scope
+CXO Task Force Fase 2: Cockpit da Tribo, Motor de Curadoria no Kanban e Super-Kanban de Curadoria.
+
+### Delivered
+- **1. Cockpit da Tribo** (`src/pages/tribe/[id].astro`)
+  - Abas reduzidas a: Geral, Kanban, Membros.
+  - Aba Geral com seção "🌐 Radar Global": próximos webinars e últimas publicações globais (RPC `list_radar_global`).
+- **2. Motor de Curadoria no Kanban** (`TribeKanbanIsland.tsx`)
+  - Status de curadoria: draft → peer_review → leader_review → curation_pending → published.
+  - Autor: botão "Solicitar Revisão" com Popover Radix para selecionar revisor.
+  - Peer: botão "Aprovar (Peer)" quando é o revisor designado.
+  - Líder: botão "Aprovar para Curadoria" para enviar a `curation_pending`.
+  - Drag-and-drop entre lanes para transições permitidas; reordenação dentro da lane.
+- **3. Super-Kanban de Curadoria** (`/admin/curatorship`)
+  - Novo componente `CuratorshipBoardIsland.tsx` (dnd-kit).
+  - Lista exclusivamente itens `curation_pending` de todas as tribos via RPC `list_curation_pending_board_items`.
+  - Coluna "Publicado": drag-and-drop dispara `publish_board_item_from_curation` → item aparece em `/publications`.
+- **4. Migration e RPCs**
+  - `20260315000007_curation_workflow_board_items.sql`: `reviewer_id`, `curation_status` em `board_items`; RPCs `advance_board_item_curation`, `list_curation_pending_board_items`, `publish_board_item_from_curation`, `list_radar_global`.
+- **5. Dependência**
+  - `@radix-ui/react-popover` instalada para o seletor de revisor.
+
+### Validation
+- `supabase db push`
+- `npm run build`
+- `npm test`
+
+---
+
 ## 2026-03-15 — fix: aggressive rename to bypass cloudflare fs cache issues
 
 ### Scope

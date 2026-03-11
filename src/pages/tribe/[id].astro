@@ -57,6 +57,10 @@ const TRIBE_I18N = {
   modalSelectArtifact: t('tribe.modal.selectArtifact', lang),
   modalCancel: t('tribe.modal.cancel', lang),
   modalSave: t('tribe.modal.save', lang),
+  requestReview: t('tribe.requestReview', lang),
+  approvePeer: t('tribe.approvePeer', lang),
+  approveForCuration: t('tribe.approveForCuration', lang),
+  selectReviewer: t('tribe.selectReviewer', lang),
   modalTitleRequired: t('tribe.modal.titleRequired', lang),
   msgSaved: t('tribe.msg.saved', lang),
   msgSaveError: t('tribe.msg.saveError', lang),
@@ -75,6 +79,11 @@ const TRIBE_I18N = {
   lgpdMask: t('tribe.lgpdMask', lang),
   lgpdTooltip: t('tribe.lgpdTooltip', lang),
   broadcastTab: t('tribe.broadcastTab', lang),
+  generalTab: t('tribe.generalTab', lang),
+  radarGlobal: t('tribe.radarGlobal', lang),
+  radarWebinars: t('tribe.radarWebinars', lang),
+  radarPublications: t('tribe.radarPublications', lang),
+  radarEmpty: t('tribe.radarEmpty', lang),
   broadcast: {
     title: t('tribe.broadcast.title', lang),
     subtitle: t('tribe.broadcast.subtitle', lang),
@@ -145,35 +154,27 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     </div>
     <div id="tribe-access-note" class="hidden mb-4"></div>
 
-    <!-- Tabs -->
+    <!-- Tabs: Cockpit simplificado [Geral | Kanban | Membros] -->
     <div class="flex gap-2 mb-5 flex-wrap" id="tribe-tabs">
       <button class="tribe-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white transition-all"
-              data-tab="members" data-action="switch-tab">{t('tribe.membersTab', lang)}</button>
-      <button class="tribe-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
-              data-tab="deliverables" data-action="switch-tab">{t('tribe.deliverablesTab', lang)}</button>
-      <button class="tribe-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
-              data-tab="resources" data-action="switch-tab">{t('tribe.resourcesTab', lang)}</button>
+              data-tab="general" data-action="switch-tab">{t('tribe.generalTab', lang)}</button>
       <button class="tribe-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
               data-tab="board" data-action="switch-tab">{TRIBE_I18N.boardTab}</button>
+      <button class="tribe-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+              data-tab="members" data-action="switch-tab">{t('tribe.membersTab', lang)}</button>
     </div>
 
     <!-- Tab panels -->
-    <div id="panel-members">
-      <LoadingSkeleton variant="card" count={4} />
+    <div id="panel-general">
+      <LoadingSkeleton variant="card" count={2} />
     </div>
-    <div id="panel-deliverables" class="hidden">
-      <LoadingSkeleton variant="card" count={3} />
-    </div>
-    <div id="panel-resources" class="hidden">
-      <LoadingSkeleton variant="card" count={3} />
-    </div>
-    <!-- Project Board panel (Astro Island / React) -->
     <div id="panel-board" class="hidden">
       <TribeKanbanIsland client:load tribeId={tribeId} i18n={TRIBE_I18N} />
     </div>
-    <!-- Comms Hub panel (conditionally shown for comms_team members) -->
+    <div id="panel-members" class="hidden">
+      <LoadingSkeleton variant="card" count={4} />
+    </div>
     <div id="panel-commshub" class="hidden"></div>
-    <!-- Broadcast panel (conditionally shown for tribe leader + admin) -->
     <div id="panel-broadcast" class="hidden"></div>
     </div>
   </div>
@@ -342,7 +343,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
   // ── Tab switching ──
   function switchTab(tabName: string) {
-    const panels = ['members', 'deliverables', 'resources', 'board', 'commshub', 'broadcast'];
+    const panels = ['general', 'board', 'members', 'commshub', 'broadcast'];
     panels.forEach(p => {
       const el = document.getElementById(`panel-${p}`);
       if (el) el.classList.toggle('hidden', p !== tabName);
@@ -567,6 +568,73 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     contextCatalog.legacy = legacy || [];
     contextSwitchLoaded = true;
     renderContextSwitchMenu();
+  }
+
+  // ── Geral tab (Radar Global) ──
+  async function loadRadarGlobal() {
+    const el = document.getElementById('panel-general');
+    if (!el || !sb) return;
+    try {
+      const { data, error } = await sb.rpc('list_radar_global', { p_webinars_limit: 5, p_publications_limit: 5 });
+      if (error) throw new Error(error.message);
+      renderGeneralPanel(data || { webinars: [], publications: [] });
+    } catch (e: any) {
+      el.innerHTML = `
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
+          <h2 class="text-base font-extrabold text-navy dark:text-slate-100 mb-4">${escapeHtml(I18N.radarGlobal || 'Radar Global')}</h2>
+          <p class="text-sm text-slate-500">${escapeHtml(e?.message || I18N.error || 'Erro ao carregar.')}</p>
+        </div>`;
+    }
+  }
+
+  function renderGeneralPanel(radar: { webinars?: any[]; publications?: any[] }) {
+    const el = document.getElementById('panel-general');
+    if (!el) return;
+    const webinars = Array.isArray(radar.webinars) ? radar.webinars : [];
+    const publications = Array.isArray(radar.publications) ? radar.publications : [];
+    const today = new Date().toISOString().slice(0, 10);
+    const upcomingWebinars = webinars
+      .filter((w: any) => String(w?.date || '').slice(0, 10) >= today)
+      .sort((a: any, b: any) => String(a?.date || '').localeCompare(String(b?.date || '')))
+      .slice(0, 5);
+    const recentPubs = publications.slice(0, 5);
+
+    const webinarItems = upcomingWebinars.length
+      ? upcomingWebinars.map((w: any) => {
+          const d = w.date ? new Date(w.date + 'T12:00:00').toLocaleDateString(I18N.dateLocale || 'pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+          const link = w.meeting_link ? `<a href="${escapeHtml(w.meeting_link)}" target="_blank" rel="noopener" class="text-navy dark:text-purple font-semibold hover:underline">${escapeHtml(w.title || 'Webinar')}</a>` : escapeHtml(w.title || 'Webinar');
+          return `<div class="flex justify-between items-center gap-2 py-2 border-b border-slate-100 dark:border-slate-700 last:border-0"><span>${link}</span><span class="text-[12px] text-slate-500 shrink-0">${d}</span></div>`;
+        }).join('')
+      : `<div class="py-4 text-center text-slate-500 text-sm">${escapeHtml(I18N.radarEmpty || 'Nenhum item.')}</div>`;
+
+    const pubItems = recentPubs.length
+      ? recentPubs.map((p: any) => {
+          const title = escapeHtml(p.title || 'Publicação');
+          const upd = p.updated_at ? new Date(p.updated_at).toLocaleDateString(I18N.dateLocale || 'pt-BR', { day: '2-digit', month: 'short' }) : '';
+          return `<div class="flex justify-between items-center gap-2 py-2 border-b border-slate-100 dark:border-slate-700 last:border-0"><span class="font-medium text-slate-800 dark:text-slate-200">${title}</span>${upd ? `<span class="text-[11px] text-slate-400">${upd}</span>` : ''}</div>`;
+        }).join('')
+      : `<div class="py-4 text-center text-slate-500 text-sm">${escapeHtml(I18N.radarEmpty || 'Nenhum item.')}</div>`;
+
+    el.innerHTML = `
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+            <h2 class="text-base font-extrabold text-navy dark:text-slate-100">${escapeHtml(I18N.radarGlobal || 'Radar Global')}</h2>
+            <p class="text-[12px] text-slate-500 mt-0.5">${escapeHtml(I18N.radarWebinars || 'Próximos webinars')}</p>
+          </div>
+          <div class="p-4 max-h-[280px] overflow-y-auto">${webinarItems}</div>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
+            <h2 class="text-base font-extrabold text-navy dark:text-slate-100">${escapeHtml(I18N.radarPublications || 'Últimas publicações')}</h2>
+            <p class="text-[12px] text-slate-500 mt-0.5">${escapeHtml(I18N.radarPublications || 'Publicações globais recentes')}</p>
+          </div>
+          <div class="p-4 max-h-[280px] overflow-y-auto">${pubItems}</div>
+        </div>
+      </div>
+      <div class="mt-4">
+        <a href="/publications" class="inline-flex items-center gap-2 text-sm font-semibold text-navy dark:text-purple hover:underline">Ver todas as publicações →</a>
+      </div>`;
   }
 
   // ── Members tab ──
@@ -1286,7 +1354,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       }
 
       revealTribeShell();
-
+      switchTab('general');
       checkEditPermission();
       checkCommsHubAccess();
       checkBroadcastAccess();
@@ -1371,12 +1439,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
       renderMembers(allMembers);
 
-      // Deliverables
-      const deliverables = Array.isArray(delivRes.data) ? delivRes.data : [];
-      renderDeliverables(deliverables);
-
-      // Resources
-      renderResources(resourcesRes.data || []);
+      // Geral: Radar Global (webinars + publicações)
+      loadRadarGlobal();
 
       // Project Board is now handled by React island (TribeKanbanIsland).
 
