@@ -1,5 +1,30 @@
 # Release Log
 
+## 2026-03-11 — Sprint 35 (Dev): Auth Route Smoke Expansion
+
+### Scope
+Expandir a cobertura de smoke para validar não apenas disponibilidade (`2xx`), mas também comportamento fail-closed em rotas protegidas quando o usuário está anônimo.
+
+### Delivered
+- `scripts/smoke-routes.mjs`:
+  - adicionada asserção de conteúdo (`assertContains`) para marcadores de deny em rotas críticas:
+    - `/admin/selection` -> `#sel-denied`
+    - `/admin/analytics` -> `#analytics-denied`
+    - `/admin/curatorship` -> `#cur-denied`
+    - `/admin/comms` -> `#comms-denied`
+    - `/webinars` -> `#webinars-denied`
+    - `/tribe/1` -> `#tribe-denied`
+  - mantidos checks de disponibilidade e redirects legados `/rank` e `/ranks`.
+- `tests/ui-stabilization.test.mjs`:
+  - novo lock de regressão para garantir presença desses checks no smoke script.
+
+### Audit Results
+- `npm run smoke:routes`
+- `npm test`
+- `npm run build`
+
+---
+
 ## 2026-03-11 — Sprint 34 (Dev): Cloudflare Env Parity Audit
 
 ### Scope

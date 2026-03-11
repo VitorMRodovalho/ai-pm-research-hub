@@ -755,6 +755,16 @@ test('cloudflare public env parity runbook includes preview checks and local aud
   assert.equal(script.includes('src/lib/supabase.ts'), true);
 });
 
+test('route smoke script validates anonymous deny markers on protected routes', () => {
+  const smoke = read('scripts/smoke-routes.mjs');
+  assert.equal(smoke.includes("assertContains('/admin/selection', 'id=\"sel-denied\"')"), true);
+  assert.equal(smoke.includes("assertContains('/admin/analytics', 'id=\"analytics-denied\"')"), true);
+  assert.equal(smoke.includes("assertContains('/admin/curatorship', 'id=\"cur-denied\"')"), true);
+  assert.equal(smoke.includes("assertContains('/admin/comms', 'id=\"comms-denied\"')"), true);
+  assert.equal(smoke.includes("assertContains('/webinars', 'id=\"webinars-denied\"')"), true);
+  assert.equal(smoke.includes("assertContains('/tribe/1', 'id=\"tribe-denied\"')"), true);
+});
+
 test('home pages resolve shared home schedule instead of fetching only the deadline', () => {
   const pt = read('src/pages/index.astro');
   const en = read('src/pages/en/index.astro');

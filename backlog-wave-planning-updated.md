@@ -858,7 +858,7 @@ Native Supabase-based comms metrics replaced external Looker dependency. YouTube
 | W46 | Browser guard stability hardening | High | In progress | Reduzir flakiness em asserts assíncronos de `/admin/selection` para manter quality gate previsível. |
 | W47 | Actions runtime future-proof (Node 24) | Medium | Done | Workflows críticos receberam `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24='true'` com lock de regressão em teste para evitar drift. |
 | W48 | Cloudflare env parity audit | High | Done | Script `audit_cloudflare_public_env_parity.sh` + runbook com checklist Production/Preview e lock de regressão publicados. |
-| W49 | Auth route smoke expansion | Medium | Planned | Expandir smoke/browser guards para rotas operacionais críticas com estados autenticado/anônimo. |
+| W49 | Auth route smoke expansion | Medium | Done | `smoke-routes` agora verifica marcadores de deny em rotas protegidas no contexto anônimo e mantém redirects legados. |
 | W50 | Docs index by persona (execution pass) | Medium | Planned | Publicar `docs/INDEX.md` com trilhas por persona (GP, líder, contributor, sponsor). |
 | W51 | ADR baseline extraction | Medium | Planned | Separar decisões técnicas duráveis em ADRs curtas sem misturar com changelog de governança. |
 | W52 | Admin modularization phase 4 | Medium | Planned | Quebrar superfícies admin extensas em módulos menores sem regressão de ACL e navegação. |

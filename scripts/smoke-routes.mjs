@@ -40,6 +40,17 @@ async function assertRedirect(path, expectedLocation) {
   }
 }
 
+async function assertContains(path, fragment) {
+  const res = await fetch(`${BASE}${path}`);
+  if (!res.ok) {
+    throw new Error(`Expected ${path} to return 2xx for content check, got ${res.status}`);
+  }
+  const body = await res.text();
+  if (!body.includes(fragment)) {
+    throw new Error(`Expected ${path} to contain "${fragment}"`);
+  }
+}
+
 async function run() {
   const dev = spawn(
     'npm',
@@ -66,6 +77,12 @@ async function run() {
     await assertOk('/es');
 
     await assertOk('/teams');
+    await assertContains('/admin/selection', 'id="sel-denied"');
+    await assertContains('/admin/analytics', 'id="analytics-denied"');
+    await assertContains('/admin/curatorship', 'id="cur-denied"');
+    await assertContains('/admin/comms', 'id="comms-denied"');
+    await assertContains('/webinars', 'id="webinars-denied"');
+    await assertContains('/tribe/1', 'id="tribe-denied"');
     await assertRedirect('/rank', '/gamification');
     await assertRedirect('/ranks', '/gamification');
 

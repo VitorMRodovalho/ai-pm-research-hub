@@ -1,5 +1,21 @@
 # Governance Changelog
 
+## 2026-03-11 — Auth Smoke Expansion For Protected Routes
+
+### Decisions
+
+1. **Smoke de rota passa a validar guardrails de acesso, não só uptime**: `scripts/smoke-routes.mjs` agora exige presença explícita dos marcadores de deny em rotas protegidas sob contexto anônimo.
+
+2. **Fail-closed em UI vira contrato de verificação contínua**: manter somente `200` não era suficiente, porque as páginas protegidas são SSR com painel oculto. O contrato agora inclui confirmação de estado bloqueado no HTML.
+
+### Process Lessons Learned
+
+1. **Smoke rápido pode cobrir ACL sem custo de browser completo**: checar markers de deny no HTML oferece sinal útil de segurança entre pushes, com baixo custo de execução.
+
+2. **Locks textuais evitam regressão silenciosa no próprio smoke script**: adicionamos teste em `ui-stabilization` para garantir que os checks de deny não sejam removidos por acidente.
+
+---
+
 ## 2026-03-11 — Cloudflare Public Env Parity Audit
 
 ### Decisions
