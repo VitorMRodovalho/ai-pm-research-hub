@@ -1,5 +1,22 @@
 # Release Log
 
+## 2026-03-11 — Sprint 13 (Dev): Home Schedule SOT Closure + Legacy Hotfix Validation Review
+
+### Scope
+Encerrar formalmente a trilha de fonte única de agenda/prazo da home (Issue #3) e revisar a validação legada do hotfix de homepage (Issue #2), consolidando evidências e runbook operacional.
+
+### Delivered
+- `docs/migrations/HOME_SCHEDULE_SOT_RUNBOOK.md`:
+  - checklist de auditoria, SQL de verificação, SQL de atualização e estratégia de rollback sem hardcode frontend.
+- Revisão de aderência:
+  - home pública (PT/EN/ES) já consome `home_schedule` via `src/lib/schedule.ts`;
+  - superfícies de hero/agenda/tribos/recursos alinhadas ao runtime da agenda.
+
+### Audit Results
+- Validado com `npm run smoke:routes`, `npm run test:browser:guards` e `npm run build`.
+
+---
+
 ## 2026-03-11 — Sprint 12 (Dev): Artifacts 400 Harden + Tribes Resilience Guard
 
 ### Scope
