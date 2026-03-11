@@ -1640,6 +1640,84 @@ export type Database = {
           },
         ]
       }
+      ingestion_run_ledger: {
+        Row: {
+          batch_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          manifest_hash: string
+          mode: string
+          run_key: string
+          run_notes: string | null
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          batch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          manifest_hash: string
+          mode: string
+          run_key: string
+          run_notes?: string | null
+          source: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          batch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          manifest_hash?: string
+          mode?: string
+          run_key?: string
+          run_notes?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingestion_run_ledger_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "ingestion_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_run_ledger_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_run_ledger_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_run_ledger_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_run_ledger_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingestion_source_controls: {
         Row: {
           allow_apply: boolean
@@ -3919,6 +3997,15 @@ export type Database = {
         Args: { p_new_leader_id: string; p_reason?: string; p_tribe_id: number }
         Returns: Json
       }
+      admin_complete_ingestion_run: {
+        Args: {
+          p_batch_id?: string
+          p_notes?: string
+          p_run_id: string
+          p_status: string
+        }
+        Returns: Json
+      }
       admin_data_quality_audit: { Args: never; Returns: Json }
       admin_deactivate_member: {
         Args: { p_member_id: string; p_reason?: string }
@@ -4038,6 +4125,16 @@ export type Database = {
         Returns: Json
       }
       admin_reactivate_member: { Args: { p_member_id: string }; Returns: Json }
+      admin_register_ingestion_run: {
+        Args: {
+          p_manifest_hash: string
+          p_mode: string
+          p_notes?: string
+          p_run_key: string
+          p_source: string
+        }
+        Returns: Json
+      }
       admin_release_ingestion_apply_lock: {
         Args: { p_holder: string; p_source: string }
         Returns: Json

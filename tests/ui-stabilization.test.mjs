@@ -338,6 +338,16 @@ test('ingestion pipeline run ledger enforces idempotent apply runs', () => {
   assert.equal(pipeline.includes("sb.rpc('admin_complete_ingestion_run'"), true);
 });
 
+test('ingestion alerts have auditable lifecycle transitions', () => {
+  const migration = read('supabase/migrations/20260313060000_ingestion_alert_lifecycle.sql');
+  const script = read('scripts/manage_ingestion_alert.ts');
+
+  assert.equal(migration.includes('create table if not exists public.ingestion_alert_events'), true);
+  assert.equal(migration.includes('create or replace function public.admin_update_ingestion_alert_status('), true);
+  assert.equal(migration.includes("raise exception 'Invalid transition closed -> acknowledged';"), true);
+  assert.equal(script.includes("sb.rpc('admin_update_ingestion_alert_status'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');
