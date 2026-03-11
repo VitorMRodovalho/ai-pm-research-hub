@@ -1,7 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SB_URL  = import.meta.env.PUBLIC_SUPABASE_URL;
-const SB_KEY  = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+function readRuntimePublicEnv(key: '__PUBLIC_SUPABASE_URL' | '__PUBLIC_SUPABASE_ANON_KEY'): string {
+  if (typeof window === 'undefined') return '';
+  const value = (window as any)[key];
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+const SB_URL  = (import.meta.env.PUBLIC_SUPABASE_URL || readRuntimePublicEnv('__PUBLIC_SUPABASE_URL') || '').trim();
+const SB_KEY  = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY || readRuntimePublicEnv('__PUBLIC_SUPABASE_ANON_KEY') || '').trim();
 
 function getMissingSupabaseEnvVars(): string[] {
   const missing: string[] = [];

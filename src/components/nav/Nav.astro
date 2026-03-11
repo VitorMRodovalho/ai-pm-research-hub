@@ -76,6 +76,9 @@ const jsI18n = JSON.stringify({
 });
 
 const navConfigJson = JSON.stringify(NAV_ITEMS);
+const runtimeEnv = ((Astro.locals as any)?.runtime?.env ?? {}) as Record<string, string | undefined>;
+const NAV_PUBLIC_SUPABASE_URL = (import.meta.env.PUBLIC_SUPABASE_URL || runtimeEnv.PUBLIC_SUPABASE_URL || '').trim();
+const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY || runtimeEnv.PUBLIC_SUPABASE_ANON_KEY || '').trim();
 ---
 
 <nav class="sticky top-0 z-[200] bg-navy/97 backdrop-blur-md border-b-2 border-orange
@@ -168,6 +171,10 @@ const navConfigJson = JSON.stringify(NAV_ITEMS);
 <!-- Pass config and i18n to client -->
 <script id="nav-i18n-data" type="application/json" set:html={jsI18n}></script>
 <script id="nav-config-data" type="application/json" set:html={navConfigJson}></script>
+<script is:inline define:vars={{ NAV_PUBLIC_SUPABASE_URL, NAV_PUBLIC_SUPABASE_ANON_KEY }}>
+  window.__PUBLIC_SUPABASE_URL = NAV_PUBLIC_SUPABASE_URL || '';
+  window.__PUBLIC_SUPABASE_ANON_KEY = NAV_PUBLIC_SUPABASE_ANON_KEY || '';
+</script>
 
 <script>
   import { getSupabase, ROLE_COLORS } from '../../lib/supabase';
