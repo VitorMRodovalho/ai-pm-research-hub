@@ -18,6 +18,8 @@ begin
   select * into v_caller from public.get_my_member_record();
   if v_caller is null
     or not (
+      auth.role() = 'service_role'
+      or
       v_caller.is_superadmin is true
       or v_caller.operational_role in ('manager', 'deputy_manager')
       or coalesce('co_gp' = any(v_caller.designations), false)

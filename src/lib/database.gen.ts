@@ -3381,6 +3381,7 @@ export type Database = {
         Args: { p_new_leader_id: string; p_reason?: string; p_tribe_id: number }
         Returns: Json
       }
+      admin_data_quality_audit: { Args: never; Returns: Json }
       admin_deactivate_member: {
         Args: { p_member_id: string; p_reason?: string }
         Returns: Json

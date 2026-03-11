@@ -7,9 +7,13 @@
 
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
+import { writeFileSync } from 'fs';
+import { resolve } from 'path';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const outArg = process.argv.find((arg) => arg.startsWith('--out='));
+const outPath = outArg ? outArg.slice('--out='.length) : '';
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
@@ -26,7 +30,13 @@ async function main() {
     console.error('[audit] failed:', error.message);
     process.exit(1);
   }
-  console.log(JSON.stringify(data || {}, null, 2));
+  const json = JSON.stringify(data || {}, null, 2);
+  if (outPath) {
+    writeFileSync(resolve(process.cwd(), outPath), json, 'utf-8');
+    console.log(`[audit] report saved to ${outPath}`);
+    return;
+  }
+  console.log(json);
 }
 
 main().catch((err) => {
