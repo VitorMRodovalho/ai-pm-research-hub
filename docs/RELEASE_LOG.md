@@ -1,5 +1,29 @@
 # Release Log
 
+## 2026-03-11 — W75-W76: Tribe Kanban migrado para Astro Island (React)
+
+### Scope
+Substituir o Kanban vanilla em `src/pages/tribe/[id].astro` por uma island React com DnD moderno, modal rico e UX de edição com menor fricção operacional.
+
+### Delivered
+- Novo componente: `src/components/boards/TribeKanbanIsland.tsx`
+  - Drag-and-drop com `@dnd-kit` (pointer + keyboard sensors).
+  - UI otimista na movimentação de status com rollback local em caso de erro RPC.
+  - Modal de card com edição de título, descrição, status, responsável, prazo e checklist.
+  - Ação de arquivamento integrada via `admin_archive_board_item`.
+- Página da tribo:
+  - `panel-board` agora monta `<TribeKanbanIsland client:load ... />`.
+  - chamada legacy de `loadProjectBoard()` removida do fluxo principal.
+- Dependências:
+  - adicionado `lucide-react` para ícones do board/modal.
+- Testes atualizados para o novo contrato da island.
+
+### Validation captured
+- `npm test`
+- `npm run build`
+
+---
+
 ## 2026-03-11 — W60-W74: Kanban + Governança de Portfólio (execução contínua)
 
 ### Scope

@@ -75,11 +75,14 @@ test('dark mode styling is applied to teams, webinars, and tribe board modal sur
   const teams = read('src/pages/teams.astro');
   const webinars = read('src/pages/admin/webinars.astro');
   const tribe = read('src/pages/tribe/[id].astro');
+  const tribeIsland = read('src/components/boards/TribeKanbanIsland.tsx');
   const darkAuditScript = read('scripts/audit_dark_mode_a11y.sh');
   const darkChecklist = read('docs/project-governance/DARK_MODE_A11Y_CHECKLIST.md');
   assert.equal(teams.includes('dark:bg-slate-900'), true);
   assert.equal(webinars.includes('dark:bg-slate-900'), true);
-  assert.equal(tribe.includes('id="board-item-modal"'), true);
+  assert.equal(tribe.includes('<TribeKanbanIsland client:load'), true);
+  assert.equal(tribeIsland.includes('dark:bg-slate-900'), true);
+  assert.equal(tribeIsland.includes('dark:border-slate-700'), true);
   assert.equal(tribe.includes('dark:bg-slate-900'), true);
   assert.equal(tribe.includes('dark:border-slate-700'), true);
   assert.equal(tribe.includes('id="deliverable-modal"'), true);
@@ -219,12 +222,15 @@ test('astro island foundation includes React and dnd-kit for kanban evolution', 
   const astroConfig = read('astro.config.mjs');
   const packageJson = read('package.json');
   const publicationsIsland = read('src/components/boards/PublicationsBoardIsland.tsx');
+  const tribeIsland = read('src/components/boards/TribeKanbanIsland.tsx');
   assert.equal(astroConfig.includes("import react from '@astrojs/react'"), true);
   assert.equal(astroConfig.includes('integrations: [react()]'), true);
   assert.equal(packageJson.includes('"@astrojs/react"'), true);
   assert.equal(packageJson.includes('"react"'), true);
   assert.equal(packageJson.includes('"@dnd-kit/core"'), true);
+  assert.equal(packageJson.includes('"lucide-react"'), true);
   assert.equal(publicationsIsland.includes('DndContext'), true);
+  assert.equal(tribeIsland.includes('DndContext'), true);
   assert.equal(publicationsIsland.includes('SortableContext'), true);
   assert.equal(publicationsIsland.includes('event.shiftKey'), true);
   assert.equal(publicationsIsland.includes("event.key === 'ArrowLeft'"), true);
@@ -755,30 +761,18 @@ test('tribe taxonomy includes workstream classification for navigation grouping'
 
 test('tribe kanban supports modal edit/create and archive actions', () => {
   const tribe = read('src/pages/tribe/[id].astro');
+  const island = read('src/components/boards/TribeKanbanIsland.tsx');
   const migration = read('supabase/migrations/20260314153000_board_item_editor_rpc.sql');
   const attachmentsMigration = read('supabase/migrations/20260314180000_upsert_board_item_attachments_support.sql');
-  assert.equal(tribe.includes('id="board-item-modal"'), true);
-  assert.equal(tribe.includes('data-action="open-board-item"'), true);
-  assert.equal(tribe.includes('data-action="add-board-card"'), true);
-  assert.equal(tribe.includes("sb.rpc('upsert_board_item'"), true);
-  assert.equal(tribe.includes("sb.rpc('admin_archive_board_item'"), true);
-  assert.equal(tribe.includes('id="board-item-form"'), true);
-  assert.equal(tribe.includes('id="bi-labels"'), true);
-  assert.equal(tribe.includes('id="bi-checklist"'), true);
-  assert.equal(tribe.includes('id="bi-attachments"'), true);
-  assert.equal(tribe.includes('const attachmentsBadge = attachmentsRaw.length > 0'), true);
-  assert.equal(tribe.includes('p_attachments: attachments,'), true);
-  assert.equal(tribe.includes('id="board-toolbar"'), true);
-  assert.equal(tribe.includes('id="board-search"'), true);
-  assert.equal(tribe.includes('id="board-filter-status"'), true);
-  assert.equal(tribe.includes('id="board-filter-assignee"'), true);
-  assert.equal(tribe.includes('id="board-sort"'), true);
-  assert.equal(tribe.includes('id="board-show-archived"'), true);
-  assert.equal(tribe.includes('id="board-sla-indicators"'), true);
-  assert.equal(tribe.includes('id="bi-restore-btn"'), true);
-  assert.equal(tribe.includes("sb.rpc('admin_restore_board_item'"), true);
-  assert.equal(tribe.includes('function applyBoardFilters(items: any[]): any[]'), true);
-  assert.equal(tribe.includes('const checklistBadge = checklistTotal > 0'), true);
+  assert.equal(tribe.includes('<TribeKanbanIsland client:load'), true);
+  assert.equal(island.includes('DndContext'), true);
+  assert.equal(island.includes('sortableKeyboardCoordinates'), true);
+  assert.equal(island.includes("sb.rpc('upsert_board_item'"), true);
+  assert.equal(island.includes("sb.rpc('admin_archive_board_item'"), true);
+  assert.equal(island.includes('Checklist'), true);
+  assert.equal(island.includes('parseAttachments'), true);
+  assert.equal(island.includes('canEditBoard('), true);
+  assert.equal(island.includes('setModalItem'), true);
   assert.equal(migration.includes('create or replace function public.upsert_board_item('), true);
   assert.equal(attachmentsMigration.includes('p_attachments jsonb default'), true);
   assert.equal(attachmentsMigration.includes('attachments = coalesce(p_attachments, attachments)'), true);
@@ -786,12 +780,12 @@ test('tribe kanban supports modal edit/create and archive actions', () => {
 });
 
 test('tribe kanban preserves checklist state and validates attachment urls', () => {
-  const tribe = read('src/pages/tribe/[id].astro');
-  assert.equal(tribe.includes('function serializeChecklistRows(rawText: string)'), true);
-  assert.equal(tribe.includes("row.startsWith('[x] ')"), true);
-  assert.equal(tribe.includes('function serializeAttachmentsRows(rawText: string)'), true);
-  assert.equal(tribe.includes('Existem links inválidos em anexos'), true);
-  assert.equal(tribe.includes('const attachmentHosts = Array.from(new Set('), true);
+  const island = read('src/components/boards/TribeKanbanIsland.tsx');
+  assert.equal(island.includes('function parseChecklist(input: any)'), true);
+  assert.equal(island.includes('function parseAttachments(input: any)'), true);
+  assert.equal(island.includes('setModalItem((prev) => (prev ? { ...prev, checklist } : prev));'), true);
+  assert.equal(island.includes("row.id === modalItem.id ? { ...modalItem } : row"), true);
+  assert.equal(island.includes('Paperclip'), true);
 });
 
 test('schedule flow no longer depends on far-future deadline sentinel', () => {

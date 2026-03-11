@@ -910,3 +910,18 @@ Boards passam a ter trilha de governança reforçada por contratos backend: movi
 
 ### Implication
 Reduzimos risco de base desconexa entre tribos/subprojetos/global, aumentamos capacidade de auditoria e aceleramos diagnósticos executivos com contratos estáveis.
+
+---
+
+## 2026-03-11 — Tribe Kanban Island migration standard
+
+### Decision
+O board de tribo deixa de depender do motor vanilla no painel principal e adota island React dedicada (`TribeKanbanIsland`) como padrão para evolução de UX.
+
+### Rules
+- Fluxo de board na tribo deve priorizar island React para interações complexas (DnD + modal rico).
+- Atualizações de status devem manter padrão de UI otimista com rollback em erro RPC.
+- Edição de card continua dependente de ACL backend já existente (`upsert_board_item`, `admin_archive_board_item`) sem bypass client-side.
+
+### Implication
+Reduzimos fricção operacional, facilitamos manutenção futura e criamos base sustentável para concluir paridade entre board de tribo e board de publicações.

@@ -4,6 +4,7 @@ import Toast from '../../components/ui/Toast.astro';
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import PresentationLayer from '../../components/ui/PresentationLayer.astro';
+import TribeKanbanIsland from '../../components/boards/TribeKanbanIsland';
 import { getStaticTribeFallback } from '../../lib/tribes/catalog';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 const { id } = Astro.params;
@@ -162,153 +163,9 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     <div id="panel-resources" class="hidden">
       <LoadingSkeleton variant="card" count={3} />
     </div>
-    <!-- Project Board panel -->
+    <!-- Project Board panel (Astro Island / React) -->
     <div id="panel-board" class="hidden">
-      <div id="board-loading" class="text-center py-10 text-slate-400">Carregando quadro...</div>
-      <div id="board-toolbar" class="hidden mb-3 grid grid-cols-1 md:grid-cols-5 gap-2">
-        <input id="board-search" type="text" placeholder="Buscar no quadro..." class="px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
-        <select id="board-filter-status" class="px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40">
-          <option value="">Todos os status</option>
-          <option value="backlog">Backlog</option>
-          <option value="todo">To Do</option>
-          <option value="in_progress">Em Progresso</option>
-          <option value="review">Revisão</option>
-          <option value="done">Concluído</option>
-        </select>
-        <select id="board-filter-assignee" class="px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40">
-          <option value="">Todos os responsáveis</option>
-          <option value="unassigned">Sem responsável</option>
-        </select>
-        <select id="board-sort" class="px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40">
-          <option value="updated_desc">Mais recentes</option>
-          <option value="due_asc">Prazo (mais próximo)</option>
-          <option value="title_asc">Título (A-Z)</option>
-        </select>
-        <label class="inline-flex items-center gap-2 px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg text-sm text-slate-700 dark:text-slate-200">
-          <input id="board-show-archived" type="checkbox" class="w-4 h-4 rounded border-slate-300 dark:border-slate-600" />
-          Mostrar arquivados
-        </label>
-      </div>
-      <div id="board-sla-indicators" class="hidden mb-3 flex flex-wrap gap-2"></div>
-      <div id="board-empty" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-8 text-center">
-        <div class="text-4xl mb-3 opacity-50">&#x1f4cb;</div>
-        <p class="font-semibold text-slate-600 mb-2">Nenhum quadro de projeto</p>
-        <p class="text-sm text-slate-400 mb-4">Esta tribo ainda não possui um quadro de projeto.</p>
-        <button id="board-create-btn" class="hidden px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity">Criar Quadro</button>
-      </div>
-      <div id="board-kanban" class="hidden grid grid-cols-1 md:grid-cols-5 gap-3" style="min-height:350px">
-        <div class="board-col" data-col="backlog">
-          <div class="flex items-center gap-2 mb-2">
-            <div class="w-2.5 h-2.5 rounded-full bg-slate-400"></div>
-            <h4 class="text-[12px] font-bold text-slate-600 uppercase">Backlog</h4>
-            <span class="bcol-count text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full font-bold">0</span>
-            <button data-action="add-board-card" data-col="backlog" class="ml-auto w-5 h-5 rounded-md bg-slate-100 text-slate-500 text-xs font-bold cursor-pointer border-0 hover:bg-slate-200 transition-all">+</button>
-          </div>
-          <div class="board-drop space-y-2 min-h-[150px] p-1.5 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50" data-col="backlog"></div>
-        </div>
-        <div class="board-col" data-col="todo">
-          <div class="flex items-center gap-2 mb-2">
-            <div class="w-2.5 h-2.5 rounded-full bg-blue-400"></div>
-            <h4 class="text-[12px] font-bold text-blue-600 uppercase">To Do</h4>
-            <span class="bcol-count text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full font-bold">0</span>
-            <button data-action="add-board-card" data-col="todo" class="ml-auto w-5 h-5 rounded-md bg-blue-100 text-blue-700 text-xs font-bold cursor-pointer border-0 hover:bg-blue-200 transition-all">+</button>
-          </div>
-          <div class="board-drop space-y-2 min-h-[150px] p-1.5 rounded-xl border-2 border-dashed border-blue-200 bg-blue-50/30" data-col="todo"></div>
-        </div>
-        <div class="board-col" data-col="in_progress">
-          <div class="flex items-center gap-2 mb-2">
-            <div class="w-2.5 h-2.5 rounded-full bg-amber-400"></div>
-            <h4 class="text-[12px] font-bold text-amber-700 uppercase">Em Progresso</h4>
-            <span class="bcol-count text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full font-bold">0</span>
-            <button data-action="add-board-card" data-col="in_progress" class="ml-auto w-5 h-5 rounded-md bg-amber-100 text-amber-700 text-xs font-bold cursor-pointer border-0 hover:bg-amber-200 transition-all">+</button>
-          </div>
-          <div class="board-drop space-y-2 min-h-[150px] p-1.5 rounded-xl border-2 border-dashed border-amber-200 bg-amber-50/30" data-col="in_progress"></div>
-        </div>
-        <div class="board-col" data-col="review">
-          <div class="flex items-center gap-2 mb-2">
-            <div class="w-2.5 h-2.5 rounded-full bg-purple-400"></div>
-            <h4 class="text-[12px] font-bold text-purple-600 uppercase">Revisão</h4>
-            <span class="bcol-count text-[10px] bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-full font-bold">0</span>
-            <button data-action="add-board-card" data-col="review" class="ml-auto w-5 h-5 rounded-md bg-purple-100 text-purple-700 text-xs font-bold cursor-pointer border-0 hover:bg-purple-200 transition-all">+</button>
-          </div>
-          <div class="board-drop space-y-2 min-h-[150px] p-1.5 rounded-xl border-2 border-dashed border-purple-200 bg-purple-50/30" data-col="review"></div>
-        </div>
-        <div class="board-col" data-col="done">
-          <div class="flex items-center gap-2 mb-2">
-            <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
-            <h4 class="text-[12px] font-bold text-emerald-700 uppercase">Concluído</h4>
-            <span class="bcol-count text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-bold">0</span>
-            <button data-action="add-board-card" data-col="done" class="ml-auto w-5 h-5 rounded-md bg-emerald-100 text-emerald-700 text-xs font-bold cursor-pointer border-0 hover:bg-emerald-200 transition-all">+</button>
-          </div>
-          <div class="board-drop space-y-2 min-h-[150px] p-1.5 rounded-xl border-2 border-dashed border-emerald-200 bg-emerald-50/30" data-col="done"></div>
-        </div>
-      </div>
-      <div id="board-archived" class="hidden mt-4 bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl p-3">
-        <div class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-300 mb-2">Cards arquivados</div>
-        <div id="board-archived-list" class="space-y-2"></div>
-      </div>
-    </div>
-    <div id="board-item-modal" class="fixed inset-0 z-50 hidden">
-      <div class="absolute inset-0 bg-black/40" data-action="close-board-item-modal"></div>
-      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-xl p-6 max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-700">
-        <h2 id="board-item-modal-title" class="text-lg font-extrabold text-navy dark:text-slate-100 mb-4">Detalhes do card</h2>
-        <form id="board-item-form" class="flex flex-col gap-3">
-          <input type="hidden" id="bi-id" />
-          <input type="hidden" id="bi-status-seed" />
-          <div>
-            <label for="bi-title" class="text-[13px] font-semibold text-slate-600 dark:text-slate-300 mb-1 block">Título</label>
-            <input type="text" id="bi-title" required class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
-          </div>
-          <div>
-            <label for="bi-description" class="text-[13px] font-semibold text-slate-600 dark:text-slate-300 mb-1 block">Descrição</label>
-            <textarea id="bi-description" rows="4" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></textarea>
-          </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label for="bi-status" class="text-[13px] font-semibold text-slate-600 dark:text-slate-300 mb-1 block">Status</label>
-              <select id="bi-status" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40">
-                <option value="backlog">Backlog</option>
-                <option value="todo">To Do</option>
-                <option value="in_progress">Em Progresso</option>
-                <option value="review">Revisão</option>
-                <option value="done">Concluído</option>
-              </select>
-            </div>
-            <div>
-              <label for="bi-due-date" class="text-[13px] font-semibold text-slate-600 dark:text-slate-300 mb-1 block">Prazo</label>
-              <input type="date" id="bi-due-date" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
-            </div>
-          </div>
-          <div>
-            <label for="bi-assignee" class="text-[13px] font-semibold text-slate-600 dark:text-slate-300 mb-1 block">Responsável</label>
-            <select id="bi-assignee" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></select>
-          </div>
-          <div>
-            <label for="bi-tags" class="text-[13px] font-semibold text-slate-600 dark:text-slate-300 mb-1 block">Tags (separadas por vírgula)</label>
-            <input type="text" id="bi-tags" placeholder="kanban, prioridade, ux" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
-          </div>
-          <div>
-            <label for="bi-labels" class="text-[13px] font-semibold text-slate-600 dark:text-slate-300 mb-1 block">Labels (separadas por vírgula)</label>
-            <input type="text" id="bi-labels" placeholder="prioridade alta, bloqueado" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
-          </div>
-          <div>
-            <label for="bi-checklist" class="text-[13px] font-semibold text-slate-600 dark:text-slate-300 mb-1 block">Checklist (uma linha por item)</label>
-            <textarea id="bi-checklist" rows="3" placeholder="- Definir owner&#10;- Revisar copy final" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></textarea>
-          </div>
-          <div>
-            <label for="bi-attachments" class="text-[13px] font-semibold text-slate-600 dark:text-slate-300 mb-1 block">Anexos (um link por linha)</label>
-            <textarea id="bi-attachments" rows="3" placeholder="https://docs.google.com/...&#10;https://miro.com/..." class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></textarea>
-          </div>
-          <div class="flex justify-between items-center gap-3 mt-2">
-            <button type="button" id="bi-delete-btn" data-action="delete-board-item" class="px-4 py-2 text-sm font-semibold text-red-600 border border-red-200 dark:border-red-900 rounded-lg cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/30 transition-all hidden">🗑️ Arquivar card</button>
-            <button type="button" id="bi-restore-btn" data-action="restore-board-item" class="px-4 py-2 text-sm font-semibold text-emerald-700 border border-emerald-200 dark:border-emerald-900 rounded-lg cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-all hidden">↩ Restaurar card</button>
-            <div class="flex gap-3 ml-auto">
-              <button type="button" data-action="close-board-item-modal" class="px-4 py-2 text-sm font-semibold text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">Cancelar</button>
-              <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-navy rounded-lg cursor-pointer border-0 hover:opacity-90 transition-all">Salvar</button>
-            </div>
-          </div>
-        </form>
-      </div>
+      <TribeKanbanIsland client:load tribeId={tribeId} i18n={TRIBE_I18N} />
     </div>
     <!-- Comms Hub panel (conditionally shown for comms_team members) -->
     <div id="panel-commshub" class="hidden"></div>
@@ -1532,8 +1389,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       // Resources
       renderResources(resourcesRes.data || []);
 
-      // Project Board
-      loadProjectBoard();
+      // Project Board is now handled by React island (TribeKanbanIsland).
 
     } catch (e: any) {
       console.error('Tribe dashboard error:', e);

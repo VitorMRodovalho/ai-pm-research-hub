@@ -913,8 +913,8 @@ This backlog now reflects the actual state of production. All items marked Done 
 
 | Sprint | Foco | Priority | Status | Description |
 |---|---|---|---|---|
-| W75 | Tribe board island migration phase 1 | High | Planned | Extrair lógica do board da tribo para island incremental mantendo RPCs e ACL atuais. |
-| W76 | Tribe board island migration phase 2 | High | Planned | Concluir drag/drop + modal no island da tribo com paridade total de funcionalidades. |
+| W75 | Tribe board island migration phase 1 | High | Done | `TribeKanbanIsland` criada em React com DnD, sensores de teclado e integração RPC de movimentação. |
+| W76 | Tribe board island migration phase 2 | High | Done | Modal rico de card (descrição/checklist/responsável/prazo/arquivamento) conectado a `upsert_board_item` e `admin_archive_board_item`. |
 | W77 | Board permissions matrix sync | High | Planned | Alinhar `navigation.config`, PERMISSIONS_MATRIX e validações automatizadas de acesso por rota. |
 | W78 | Publications workflow UI metadata | Medium | Planned | Expor captura de `channel/submitted_at/outcome` no fluxo do board global de publicações. |
 | W79 | Executive portfolio page | Medium | Planned | Nova superfície frontend consumindo `exec_portfolio_board_summary` para leitura de diretoria. |
