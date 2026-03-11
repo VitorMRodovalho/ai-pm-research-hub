@@ -3,7 +3,6 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Toast from '../components/ui/Toast.astro';
 import HeroSection from '../components/sections/HeroSection.astro';
 import { getHomeSchedule } from '../lib/schedule';
-import AgendaSection from '../components/sections/AgendaSection.astro';
 import QuadrantsSection from '../components/sections/QuadrantsSection.astro';
 import TribesSection from '../components/sections/TribesSection.astro';
 import KpiSection from '../components/sections/KpiSection.astro';
@@ -24,7 +23,6 @@ const deadlineIso = homeSchedule?.selectionDeadlineAt ?? null;
 <BaseLayout title={t('meta.title', lang)} activePage="home" lang={lang}>
   <Toast />
   <HeroSection deadline={deadlineIso} schedule={homeSchedule} lang={lang} />
-  <AgendaSection deadline={deadlineIso} lang={lang} />
   <QuadrantsSection lang={lang} />
   <TribesSection deadline={deadlineIso} lang={lang} />
   <KpiSection lang={lang} />

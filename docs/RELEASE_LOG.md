@@ -1,5 +1,55 @@
 # Release Log
 
+## 2026-03-15 — Clean-up & God Mode (UX + Data Sanity + Super Admin)
+
+### Scope
+Auditoria pós-entrega: limpeza de UX (PAUTA removida, menus sem duplicidade), correção Tribo 8 vs Comms operacional, God Mode para Super Admin (override RLS e UI).
+
+### Delivered
+- **1. UX Clean-up**
+  - PAUTA removida completamente: item `agenda` excluído de `navigation.config.ts`, `AgendaSection` removido de `index.astro` (pt-BR, en, es).
+  - Teste `ui-stabilization` atualizado para não assertar AgendaSection.
+- **2. Data Sanity (Tribo 8)**
+  - Migration `20260315000003_fix_tribe8_and_comms.sql`: Tribo 8 volta a `workstream_type = 'research'` e nome `Inclusão & Colaboração & Comunicação`; boards de Comms (domain_key = 'communication') desvinculados da tribo 8, passando a `board_scope = 'global'` (operational exige tribe_id por constraint).
+- **3. God Mode (Super Admin)**
+  - `TribeKanbanIsland`: early return `canEditBoard() → true` quando `member.is_superadmin`.
+  - `tribe/[id].astro`: early return em `checkEditPermission()` quando `currentMember.is_superadmin`.
+  - Migration `20260315000004_superadmin_god_mode_rls.sql`: políticas RLS em `project_boards` e `board_items` com bypass total para `auth.uid() IN (SELECT auth_id FROM members WHERE is_superadmin = true)`.
+
+### Validation captured
+- `supabase db push`
+- `npm test`
+- `npm run build`
+
+---
+
+## 2026-03-15 — W85-W89 (Operações, Legado, Qualidade)
+
+### Scope
+Trilhas paralelas: Track A (Dashboard Comms), Track B (Data Sanity), Track C (E2E + Docs).
+
+### Delivered
+- **W85 Dashboard Comms (Track A):**
+  - RPC `get_comms_dashboard_metrics()` — filtra `project_boards` com `domain_key = 'communication'`, cruza `board_items` e `tags`;
+  - Componente `CommsDashboard.tsx` (Recharts): macro cards, bar chart por status, pie chart por formato;
+  - Página `/admin/comms-ops` atualizada para usar o novo dashboard.
+- **W86 Data Sanity (Track B):**
+  - Migration `20260315000000_legacy_data_sanity.sql`: orfãos em `member_cycle_history`, padronização de `cycle_code`, `legacy_board_url` em `tribes`;
+  - Migration `20260315000001_get_comms_dashboard_metrics.sql`.
+- **W87 E2E Lifecycle (Track C):**
+  - Spec `tests/e2e/user-lifecycle.spec.ts` — fluxo líder: /tribe/1, board tab, card pre-seeded, drag para Done, logout;
+  - Script `npm run test:e2e:lifecycle`.
+- **W88 Docs:**
+  - Atualizado `MIGRATION.md`, `RELEASE_LOG.md`, `PERMISSIONS_MATRIX.md` (Comms Dashboard W85).
+
+### Validation captured
+- `supabase db push`
+- `npm test`
+- `npm run build`
+- `npm run test:e2e:lifecycle`
+
+---
+
 ## 2026-03-11 — W80-W84 tooling hardening (Radix + Playwright + ESLint i18n gate)
 
 ### Scope

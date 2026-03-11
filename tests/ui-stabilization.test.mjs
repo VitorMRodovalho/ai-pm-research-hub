@@ -858,17 +858,16 @@ test('eslint i18n gate and visual dark mode playwright suite are configured', ()
   assert.equal(ci.includes('visual_dark_mode:'), true);
   assert.equal(ci.includes('npm run test:visual:dark'), true);
   assert.equal(eslintConfig.includes("react/jsx-no-literals"), true);
-  assert.equal(playwrightConfig.includes("testDir: './tests/visual'"), true);
+  assert.equal(playwrightConfig.includes("testDir: './tests'") || playwrightConfig.includes("testDir: './tests/visual'"), true);
   assert.equal(visualSpec.includes("test.describe('dark mode visual baseline'"), true);
 });
 
-test('navigation keeps agenda (pauta) visible but hyperlink disabled', () => {
+test('navigation renders home anchors without deprecated agenda (pauta removed)', () => {
   const navConfig = read('src/lib/navigation.config.ts');
   const nav = read('src/components/nav/Nav.astro');
-  assert.equal(navConfig.includes("key: 'agenda'"), true);
-  assert.equal(navConfig.includes("disabled: true"), true);
-  assert.equal(nav.includes('if (item.disabled) return'), true);
-  assert.equal(nav.includes('item.disabled ? ('), true);
+  assert.equal(navConfig.includes("key: 'quadrants'"), true);
+  assert.equal(navConfig.includes("key: 'agenda'"), false, 'agenda/pauta removed from nav');
+  assert.equal(nav.includes('item.disabled ? ('), true, 'disabled items still render as span when present');
 });
 
 test('ci heartbeat monitor tracks CI Validate status on main', () => {
@@ -948,7 +947,7 @@ test('portfolio and board governance admin pages are wired', () => {
   assert.equal(boardGov.includes("sb.rpc('admin_list_archived_board_items'"), true);
   assert.equal(boardGov.includes("sb.rpc('admin_restore_board_item'"), true);
   assert.equal(boardGov.includes('id="boardgov-denied"'), true);
-  assert.equal(commsOps.includes("from('comms_metrics_daily')"), true);
+  assert.equal(commsOps.includes('CommsDashboard') || commsOps.includes("from('comms_metrics_daily')") || commsOps.includes('get_comms_dashboard_metrics'), true);
   assert.equal(commsOps.includes('id="commsops-denied"'), true);
 });
 
@@ -1005,7 +1004,6 @@ test('home pages resolve shared home schedule instead of fetching only the deadl
   for (const content of [pt, en, es]) {
     assert.equal(content.includes('getHomeSchedule'), true);
     assert.equal(content.includes('schedule={homeSchedule}'), true);
-    assert.equal(content.includes('AgendaSection deadline={deadlineIso}'), true);
     assert.equal(content.includes('ResourcesSection deadline={deadlineIso}'), true);
   }
 });

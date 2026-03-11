@@ -90,6 +90,7 @@ function parseAttachments(input: any): AttachmentItem[] {
 
 function canEditBoard(member: any, tribe: any): boolean {
   if (!member) return false;
+  if (member.is_superadmin === true) return true;
   const desigs: string[] = Array.isArray(member.designations) ? member.designations : [];
   const isCommsOperational = String(tribe?.workstream_type || '').toLowerCase() === 'operational'
     && String(tribe?.name || '').toLowerCase().includes('comunica');

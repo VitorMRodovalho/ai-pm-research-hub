@@ -1241,6 +1241,44 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(boot, 200); return; }
 
+    // Register nav:member listener early so late-injected auth (e.g. E2E mocks) can reveal shell
+    const onNavMember = (async (evt: Event) => {
+      const e = evt as CustomEvent;
+      currentMember = e.detail;
+      if (!canExploreTribes(currentMember)) {
+        showDenied('Acesso restrito a membros ativos da plataforma.');
+        return;
+      }
+      revealTribeShell();
+      checkEditPermission();
+      checkCommsHubAccess();
+      checkBroadcastAccess();
+      renderAccessNote();
+      if (currentMember && !Object.keys(contactData).length
+          && (isHighManagement(currentMember)
+              || (currentMember.operational_role === 'tribe_leader'
+                  && currentMember.tribe_id === TRIBE_ID))) {
+        try {
+          const { data: cd } = await sb.rpc('get_tribe_member_contacts', { p_tribe_id: TRIBE_ID });
+          const parsed = typeof cd === 'string' ? JSON.parse(cd) : cd;
+          if (parsed && typeof parsed === 'object') {
+            contactData = parsed;
+            const members = Array.from(membersMap.values());
+            members.sort((a: any, b: any) => {
+              if (a.operational_role === 'tribe_leader') return -1;
+              if (b.operational_role === 'tribe_leader') return 1;
+              return (a.name || '').localeCompare(b.name || '');
+            });
+            renderMembers(members);
+          }
+        } catch (_) { /* non-critical */ }
+      }
+    }) as EventListener;
+    if (!(window as any).__tribe_nav_member_bound) {
+      (window as any).__tribe_nav_member_bound = true;
+      window.addEventListener('nav:member', onNavMember);
+    }
+
     try {
       const cycles = await loadCycles(sb);
       currentCycleCode = getCurrentCycle(cycles)?.cycle_code || '';
@@ -1263,41 +1301,6 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       }
 
       revealTribeShell();
-
-      // Also listen for async member resolution — reload contacts if privileged
-      window.addEventListener('nav:member', (async (evt: Event) => {
-        const e = evt as CustomEvent;
-        currentMember = e.detail;
-        if (!canExploreTribes(currentMember)) {
-          showDenied('Acesso restrito a membros ativos da plataforma.');
-          return;
-        }
-        revealTribeShell();
-        checkEditPermission();
-        checkCommsHubAccess();
-        checkBroadcastAccess();
-        renderAccessNote();
-        // Late-bind LGPD contacts if the member turns out to be privileged
-        if (currentMember && !Object.keys(contactData).length
-            && (isHighManagement(currentMember)
-                || (currentMember.operational_role === 'tribe_leader'
-                    && currentMember.tribe_id === TRIBE_ID))) {
-          try {
-            const { data: cd } = await sb.rpc('get_tribe_member_contacts', { p_tribe_id: TRIBE_ID });
-            const parsed = typeof cd === 'string' ? JSON.parse(cd) : cd;
-            if (parsed && typeof parsed === 'object') {
-              contactData = parsed;
-              const members = Array.from(membersMap.values());
-              members.sort((a: any, b: any) => {
-                if (a.operational_role === 'tribe_leader') return -1;
-                if (b.operational_role === 'tribe_leader') return 1;
-                return (a.name || '').localeCompare(b.name || '');
-              });
-              renderMembers(members);
-            }
-          } catch (_) { /* non-critical */ }
-        }
-      }) as EventListener);
 
       checkEditPermission();
       checkCommsHubAccess();
@@ -1415,6 +1418,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
   function checkEditPermission() {
     if (!currentMember) return;
+    if (currentMember.is_superadmin === true) { canEdit = true; return; }
     const desigs: string[] = currentMember.designations || [];
     const canOperateComms = isCommunicationOperationalTribe()
       && (

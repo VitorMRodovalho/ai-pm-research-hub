@@ -47,7 +47,6 @@ export const TIER_RANK: Record<AccessTier, number> = {
 
 export const NAV_ITEMS: NavItem[] = [
   // ─── Home anchor links (always visible) ───
-  { key: 'agenda',     labelKey: 'nav.agenda',     href: '/#agenda',     disabled: true, minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors' },
   { key: 'quadrants',  labelKey: 'nav.quadrants',  href: '/#quadrants',  minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors' },
   { key: 'tribes',     labelKey: 'nav.tribes',     href: '/#tribes',     minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors' },
   { key: 'kpis',       labelKey: 'nav.kpis',       href: '/#kpis',       minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors' },
