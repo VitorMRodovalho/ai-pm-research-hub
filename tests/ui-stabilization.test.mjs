@@ -524,6 +524,16 @@ test('remediation effectiveness analytics summarize rule outcomes', () => {
   assert.equal(script.includes("sb.rpc('exec_remediation_effectiveness'"), true);
 });
 
+test('governance export bundle composes all governance contracts', () => {
+  const migration = read('supabase/migrations/20260314000000_governance_export_bundle.sql');
+  const script = read('scripts/run_governance_export_bundle.ts');
+
+  assert.equal(migration.includes('create or replace function public.exec_governance_export_bundle('), true);
+  assert.equal(migration.includes('public.exec_partner_governance_summary(p_window_days);'), true);
+  assert.equal(migration.includes('public.exec_remediation_effectiveness(p_window_days);'), true);
+  assert.equal(script.includes("sb.rpc('exec_governance_export_bundle'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

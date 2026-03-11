@@ -5231,6 +5231,10 @@ export type Database = {
         Args: { p_chapter?: string; p_cycle_code?: string; p_tribe_id?: number }
         Returns: Json
       }
+      exec_governance_export_bundle: {
+        Args: { p_window_days?: number }
+        Returns: Json
+      }
       exec_impact_hours_v2: {
         Args: { p_chapter?: string; p_cycle_code?: string; p_tribe_id?: number }
         Returns: Json
@@ -5248,6 +5252,10 @@ export type Database = {
         Returns: Json
       }
       exec_readiness_slo_dashboard: {
+        Args: { p_window_days?: number }
+        Returns: Json
+      }
+      exec_remediation_effectiveness: {
         Args: { p_window_days?: number }
         Returns: Json
       }
