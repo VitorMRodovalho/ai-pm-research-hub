@@ -6,6 +6,11 @@ function readRuntimePublicEnv(key: '__PUBLIC_SUPABASE_URL' | '__PUBLIC_SUPABASE_
   return typeof value === 'string' ? value.trim() : '';
 }
 
+// Last-resort public fallback for production resilience.
+// These values are public by Supabase design (frontend anon client).
+const DEFAULT_PUBLIC_SUPABASE_URL = 'https://ldrfrvwhxsmgaabwmaik.supabase.co';
+const DEFAULT_PUBLIC_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkcmZydndoeHNtZ2FhYndtYWlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MjU5NDQsImV4cCI6MjA4ODMwMTk0NH0.gzibKd7Jyck3Ya61vzrloX1YZt-0pNReTuefdi4mAmw';
+
 const _runtimeSupabaseConfig = {
   url: '',
   anonKey: '',
@@ -17,19 +22,24 @@ export function setSupabaseRuntimeConfig(url: string, anonKey: string) {
 }
 
 function resolveSupabasePublicEnv() {
-  const url = (
+  const envUrl = (
     import.meta.env.PUBLIC_SUPABASE_URL ||
     _runtimeSupabaseConfig.url ||
     readRuntimePublicEnv('__PUBLIC_SUPABASE_URL') ||
     ''
   ).trim();
-  const anonKey = (
+  const envAnonKey = (
     import.meta.env.PUBLIC_SUPABASE_ANON_KEY ||
     _runtimeSupabaseConfig.anonKey ||
     readRuntimePublicEnv('__PUBLIC_SUPABASE_ANON_KEY') ||
     ''
   ).trim();
-  return { url, anonKey };
+  const usedFallback = !envUrl || !envAnonKey;
+  return {
+    url: envUrl || DEFAULT_PUBLIC_SUPABASE_URL,
+    anonKey: envAnonKey || DEFAULT_PUBLIC_SUPABASE_ANON_KEY,
+    usedFallback,
+  };
 }
 
 function getMissingSupabaseEnvVars(url: string, anonKey: string): string[] {
@@ -40,9 +50,9 @@ function getMissingSupabaseEnvVars(url: string, anonKey: string): string[] {
 }
 
 function assertSupabaseEnvConfigured() {
-  const { url, anonKey } = resolveSupabasePublicEnv();
+  const { url, anonKey, usedFallback } = resolveSupabasePublicEnv();
   const missing = getMissingSupabaseEnvVars(url, anonKey);
-  if (missing.length === 0) return { url, anonKey };
+  if (missing.length === 0) return { url, anonKey, usedFallback };
   const details = missing.join(', ');
   throw new Error(
     `[Supabase Config Error] Missing required public environment variable(s): ${details}. ` +
@@ -126,8 +136,11 @@ export const ROLE_COLORS: Record<string, string> = {
 let _client: ReturnType<typeof createClient> | null = null;
 
 export function getSupabase() {
-  const { url, anonKey } = assertSupabaseEnvConfigured();
+  const { url, anonKey, usedFallback } = assertSupabaseEnvConfigured();
   if (!_client) {
+    if (usedFallback && typeof console !== 'undefined') {
+      console.warn('[Supabase Config Warning] Using baked-in public fallback keys. Check Cloudflare env injection.');
+    }
     _client = createClient(url, anonKey, {
       auth: { persistSession: true, detectSessionInUrl: true },
     });
