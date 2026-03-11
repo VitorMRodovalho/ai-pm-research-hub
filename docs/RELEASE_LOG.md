@@ -3121,3 +3121,24 @@ Restructure project navigation to distinguish research vs operational fronts, ex
 - `npm run build` passed
 - `supabase db push` applied:
   - `20260314152000_tribes_workstream_type_taxonomy.sql`
+
+---
+
+## 2026-03-11 — Git sync routine alignment + next-10 sprint queue
+
+### Scope
+Align governance docs to the current single-remote deployment reality and publish the next 10-sprint execution queue in backlog.
+
+### Delivered
+- Updated sync truth in backlog production summary:
+  - `origin/main` is canonical in this clone
+  - `production` remote is optional and only used when explicitly configured
+- Updated release/process docs to remove stale dev/prod split assumptions:
+  - `docs/RELEASE_PROCESS.md`
+  - `docs/project-governance/PROJECT_GOVERNANCE_RUNBOOK.md`
+  - `docs/project-governance/REPO_SYNC_STRATEGY.md`
+- Added prioritized queue for **W34-W43** in `backlog-wave-planning-updated.md` with execution order and audit gates.
+
+### Validation captured
+- `git remote -v` checked: only `origin` configured in this clone
+- Documentation cross-check completed for stale references and sync flow

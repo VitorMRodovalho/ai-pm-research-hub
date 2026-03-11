@@ -81,7 +81,7 @@ Breve descrição do escopo da release e do estado de maturidade.
 Para que o trabalho apareça no [GitHub Project](https://github.com/users/VitorMRodovalho/projects/1/):
 
 1. **Criar GitHub Issue** para cada incremento significativo (ex.: "Event Delegation: admin + attendance")
-2. **Adicionar ao project**: `gh project item-add 1 --owner VitorMRodovalho --url https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/XX`
+2. **Adicionar ao project**: `gh project item-add 1 --owner VitorMRodovalho --url https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/XX`
 3. **Committar com referência**: `fix: Event Delegation (#XX)` — o GitHub vincula automaticamente
 4. **Atualizar status** no board ao concluir: mover para Done
 
@@ -91,8 +91,8 @@ O workflow `project-governance-sync` faz auditoria periódica; ele não move car
 
 ## 4. Repositório de destino
 
-- **Desenvolvimento**: `VitorMRodovalho/ai-pm-hub-v2`
-- **Produção** (se diferente): `VitorMRodovalho/ai-pm-research-hub` — o merge/deploy para produção segue o fluxo definido no projeto (ex.: merge main → production)
+- **Canonico (este clone)**: `VitorMRodovalho/ai-pm-research-hub` via `origin/main`
+- **Remote adicional de produção**: opcional. Só usar `production/main` quando o remote `production` existir localmente e estiver validado em `git remote -v`.
 
 ---
 

@@ -812,7 +812,7 @@ Native Supabase-based comms metrics replaced external Looker dependency. YouTube
 ## PRODUCTION STATE SUMMARY (2026-03-11)
 
 ### Infrastructure
-- **Git**: `origin/main` and `production/main` 100% synchronized
+- **Git**: `origin/main` is the canonical deploy branch in this clone; optional `production` remote only when explicitly configured
 - **SQL Migrations**: 44 tracked in repo / linked schema refreshed from Supabase — Wave 7-9 data/RPCs, Wave 11 site_config
 - **Edge Functions**: 13 active in production (all `--no-verify-jwt`)
 - **Frontend**: Deployed via Cloudflare Pages (auto-deploy from main)
@@ -843,6 +843,31 @@ Native Supabase-based comms metrics replaced external Looker dependency. YouTube
 - `docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md`: 5-phase routine formalized
 - `docs/project-governance/PROJECT_ON_TRACK.md`: Edge functions verificadas (Wave 13)
 - `backlog-wave-planning-updated.md`: This file — synchronized
+
+---
+
+## PRÓXIMAS 10 SPRINTS (FILA PRIORIZADA)
+
+> Base atual: Waves 27-33 concluídas.  
+> Próxima esteira recomendada para execução contínua: **W34-W43**.
+
+| Sprint | Foco | Priority | Status | Description |
+|---|---|---|---|---|
+| W34 | CI Runtime Hardening | High | Planned | Reduzir flakiness e tempo de pipeline com cache determinístico, retries controlados e matriz de jobs crítica. |
+| W35 | E2E Auth Critical Paths | High | Planned | Cobrir fluxos autenticados end-to-end (admin/member/curatorship/webinars) com Playwright estável e dados mockados. |
+| W36 | Supabase RPC Integration Contracts | High | Planned | Validar contratos de RPC em ambiente controlado (payload, ACL e regressão de assinatura). |
+| W37 | Admin Modularization Phase 3 | Medium | Planned | Extrair blocos de render/handlers do admin por domínio para reduzir risco de regressão em arquivo monolítico. |
+| W38 | Knowledge Hub Phase B Ops SLA | High | Planned | Definir e instrumentar SLA operacional da curadoria (tempo de triagem/publicação e backlog aging). |
+| W39 | Comms Integration Phase 2 | High | Planned | Avançar operação híbrida Trello -> Hub com meta >80% de origem Hub e evidências de adoção. |
+| W40 | Analytics V2 Partner Real Validation | High | Planned | Executar pacote executivo com leitura real partner-facing e checklist de evidências de contrato SQL. |
+| W41 | Branch Protection + Release Readiness Automation | Medium | Planned | Automatizar auditoria de branch protection e gate de readiness de release em rotina contínua. |
+| W42 | Bus-Factor Drill Assisted | Medium | Planned | Rodar drill assistido com operador secundário executando runbook completo com evidências. |
+| W43 | Bus-Factor Drill Blind + Gap Closure | Medium | Planned | Rodar drill cego, consolidar lacunas e abrir plano de ação com owners e prazos fechados. |
+
+### Sequência operacional sugerida
+- Executar na ordem **W34 -> W43** sem pular gates técnicos (`npm test`, `npm run build`, `npm run smoke:routes`).
+- Onde houver impacto de schema/RPC, aplicar `supabase db push` na fase de audit da sprint.
+- Encerrar cada sprint com atualização de `docs/RELEASE_LOG.md` e checkpoint deste backlog.
 
 ---
 

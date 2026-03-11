@@ -5,7 +5,7 @@
 Sim, continuamos a usar o **GitHub Project** para gestão de sprints e backlog.
 
 - **Board**: [GitHub Project — AI PM Hub](https://github.com/users/VitorMRodovalho/projects/1/)
-- **Repositório**: `VitorMRodovalho/ai-pm-hub-v2`
+- **Repositório**: `VitorMRodovalho/ai-pm-research-hub`
 - **EPICs atuais**: #47 (P0 Foundation), #48 (P1 Comms), #49 (P2 Knowledge), #50 (P3 Scale)
 
 ---
@@ -27,7 +27,7 @@ Sim, continuamos a usar o **GitHub Project** para gestão de sprints e backlog.
 Keep GitHub Project (`AI PM Hub - Wave Sprint Pipeline`) synchronized with real delivery state and avoid draft-only work items for active execution.
 
 ## Mandatory rules
-- Every active sprint (`In progress` or `In review`) must be a real GitHub Issue in `VitorMRodovalho/ai-pm-hub-v2`.
+- Every active sprint (`In progress` or `In review`) must be a real GitHub Issue in `VitorMRodovalho/ai-pm-research-hub`.
 - Draft cards are allowed only for long-horizon backlog ideation.
 - Critical commits must reference a sprint/issue id in the commit message/body.
 - SQL-impact sprints must include migration pack (`apply/audit/rollback`) before `Done`.

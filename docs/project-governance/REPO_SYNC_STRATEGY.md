@@ -9,6 +9,7 @@ Evitar drift entre os repositórios de desenvolvimento e produção e garantir q
 - Repositório de trabalho atual: `origin` (`ai-pm-research-hub`).
 - Em ambientes que possuem remote adicional de deploy, usar `production` para o push final em produção.
 - Quando o remote `production` não estiver configurado localmente, registrar isso explicitamente no release log e manter deploy via fluxo padrão do `origin/main`.
+- Regra anti-duplicidade: **não** executar push duplicado para o mesmo repositório sob remotes diferentes.
 
 ## Fluxo oficial por sprint
 
