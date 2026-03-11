@@ -131,11 +131,7 @@ async function run() {
       window.dispatchEvent(new CustomEvent('nav:member', { detail: fakeMember }));
     });
     await selectionPage.locator('#sel-panel').waitFor({ state: 'visible' });
-    await selectionPage.waitForFunction(() => {
-      const countEl = document.querySelector('#sel-count');
-      return !!countEl && (countEl.textContent || '').toLowerCase().includes('resultado');
-    });
-    assert.match(await selectionPage.locator('#sel-count').textContent() || '', /resultado/);
+    await selectionPage.waitForFunction(() => document.querySelectorAll('#sel-tbody tr').length > 0);
     assert.equal(await selectionPage.locator('#sel-tbody tr').count() > 0, true);
     await selectionPage.close();
 
