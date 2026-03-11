@@ -1,5 +1,30 @@
 # Release Log
 
+## 2026-03-11 — Sprint 32 (Dev): CI Heartbeat Monitor + Browser Guard Flake Hardening
+
+### Scope
+Fechar regressões do quality gate e institucionalizar monitoramento contínuo do CI para evitar acúmulo de falhas silenciosas em `main`.
+
+### Delivered
+- `tests/browser-guards.test.mjs`:
+  - asserção de `/admin/selection` endurecida para aguardar render real da tabela (`#sel-tbody tr`) em vez de depender de timing de texto em `#sel-count`.
+- `.github/workflows/ci-heartbeat-monitor.yml` (novo):
+  - execução agendada a cada 30 minutos + `workflow_dispatch`;
+  - consulta o último run concluído de `CI Validate` em `main`;
+  - abre issue de alerta quando houver falha;
+  - comenta/fecha automaticamente o alerta quando houver recuperação.
+- `tests/ui-stabilization.test.mjs`:
+  - lock de regressão garantindo presença e contrato básico do heartbeat monitor.
+- `backlog-wave-planning-updated.md`:
+  - fila atualizada para **próximas 15 sprints (W44-W58)**.
+
+### Audit Results
+- `npm test`
+- `git push origin main`
+- Monitoramento GitHub Actions habilitado por workflow dedicado
+
+---
+
 ## 2026-03-11 — Hotfix Governance: Archive/Restore + Integridade Dimensão/Fato (tribe_id)
 
 ### Scope

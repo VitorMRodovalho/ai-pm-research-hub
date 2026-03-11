@@ -729,6 +729,15 @@ test('ci browser guards use retry wrapper and playwright cache', () => {
   assert.equal(retryScript.includes('npm run test:browser:guards'), true);
 });
 
+test('ci heartbeat monitor tracks CI Validate status on main', () => {
+  const heartbeat = read('.github/workflows/ci-heartbeat-monitor.yml');
+  assert.equal(heartbeat.includes('name: CI Heartbeat Monitor'), true);
+  assert.equal(heartbeat.includes("cron: '*/30 * * * *'"), true);
+  assert.equal(heartbeat.includes("workflow_id = 'ci.yml'"), true);
+  assert.equal(heartbeat.includes("alertTitle = '[CI Monitor] CI Validate failing on main'"), true);
+  assert.equal(heartbeat.includes('issues: write'), true);
+});
+
 test('home pages resolve shared home schedule instead of fetching only the deadline', () => {
   const pt = read('src/pages/index.astro');
   const en = read('src/pages/en/index.astro');

@@ -846,34 +846,37 @@ Native Supabase-based comms metrics replaced external Looker dependency. YouTube
 
 ---
 
-## PRÓXIMAS 10 SPRINTS (FILA PRIORIZADA)
+## PRÓXIMAS 15 SPRINTS (FILA PRIORIZADA)
 
-> Base atual: Waves 27-33 concluídas.  
-> Próxima esteira recomendada para execução contínua: **W34-W43**.
+> Base atual: W34-W43 concluídas; pendência explícita em **W44.3** (validação real de Analytics V2).  
+> Próxima esteira recomendada para execução contínua: **W44-W58**.
 
 | Sprint | Foco | Priority | Status | Description |
 |---|---|---|---|---|
-| W34 | CI Runtime Hardening | High | Done | Governança de sync alinhada para evitar rotina de push duplicada; backlog de execução contínua formalizado. |
-| W35 | E2E Auth Critical Paths | High | Done | Fundação de dark mode entregue com toggle persistente no drawer de perfil e contrato de teste automatizado. |
-| W36 | Supabase RPC Integration Contracts | High | Done | RPC `upsert_board_item` adicionada com ACL de gestão/liderança para edição de cards sem bypass de segurança. |
-| W37 | Admin Modularization Phase 3 | Medium | Done | UX do Kanban da tribo evoluída com modal de detalhes, criação por coluna e arquivamento de card. |
-| W38 | Knowledge Hub Phase B Ops SLA | High | Done | Cobertura dark mode expandida para superfícies operacionais críticas (`teams`, `webinars`, modal do kanban). |
-| W39 | Comms Integration Phase 2 | High | Done | Kanban recebeu metadados operacionais (labels/checklist) com rendering de progresso no card. |
-| W40 | Analytics V2 Partner Real Validation | High | Done | Épico técnico publicado com diretriz de Astro Islands + `dnd-kit` para próxima evolução do board. |
-| W41 | Branch Protection + Release Readiness Automation | Medium | Done | CI endurecida com cache Playwright e retry controlado para browser guards, mantendo quality gate estrito. |
-| W42 | Bus-Factor Drill Assisted | Medium | Done | Protocolo QA expandido e run assistido documentado para validação por operador secundário. |
-| W43 | Bus-Factor Drill Blind + Gap Closure | Medium | Done | Fechamento da rodada com trilha de lacunas para drill cego e continuidade operacional documentada. |
+| W44 | Analytics V2 partner-facing validation | High | In progress | Fechar validação com leitura real em ambiente vinculado, sem regressão de ACL read-only. |
+| W45 | CI heartbeat monitor | High | Done | Workflow agendado para vigiar falhas do `CI Validate` em `main` e abrir/fechar alerta automaticamente. |
+| W46 | Browser guard stability hardening | High | In progress | Reduzir flakiness em asserts assíncronos de `/admin/selection` para manter quality gate previsível. |
+| W47 | Actions runtime future-proof (Node 24) | Medium | Planned | Atualizar workflows para versões compatíveis com depreciação de Node 20 no GitHub Actions. |
+| W48 | Cloudflare env parity audit | High | Planned | Consolidar checklist de paridade de variáveis públicas (Production/Preview) com validação auditável. |
+| W49 | Auth route smoke expansion | Medium | Planned | Expandir smoke/browser guards para rotas operacionais críticas com estados autenticado/anônimo. |
+| W50 | Docs index by persona (execution pass) | Medium | Planned | Publicar `docs/INDEX.md` com trilhas por persona (GP, líder, contributor, sponsor). |
+| W51 | ADR baseline extraction | Medium | Planned | Separar decisões técnicas duráveis em ADRs curtas sem misturar com changelog de governança. |
+| W52 | Admin modularization phase 4 | Medium | Planned | Quebrar superfícies admin extensas em módulos menores sem regressão de ACL e navegação. |
+| W53 | Comms integration execution lane | High | Planned | Converter baseline/roadmap de comms em entregas incrementais com critérios de aceitação claros. |
+| W54 | Knowledge Hub Wave B contracts | High | Planned | Fechar contratos funcionais para `/workspace` antes de expansão de funcionalidades. |
+| W55 | Analytics V2 partner QA rerun | Medium | Planned | Repetir evidência partner-facing pós-ajustes e versionar snapshot de comparação. |
+| W56 | Bus-factor blind drill | Medium | Planned | Execução cega por operador secundário com checklist completo de recovery/deploy. |
+| W57 | Release readiness automation | Medium | Planned | Fortalecer gates de release (build/test/smoke/browser) com evidência única por sprint. |
+| W58 | Wave closure + governance pack | Medium | Planned | Fechamento formal W44-W58 com backlog, release log e changelog sincronizados. |
 
 ### Sequência operacional sugerida
-- Executar na ordem **W34 -> W43** sem pular gates técnicos (`npm test`, `npm run build`, `npm run smoke:routes`).
+- Executar na ordem **W44 -> W58** sem pular gates técnicos (`npm test`, `npm run build`, `npm run smoke:routes`).
 - Onde houver impacto de schema/RPC, aplicar `supabase db push` na fase de audit da sprint.
-- Encerrar cada sprint com atualização de `docs/RELEASE_LOG.md` e checkpoint deste backlog.
+- Encerrar cada sprint com atualização de `docs/RELEASE_LOG.md`, `docs/GOVERNANCE_CHANGELOG.md` e checkpoint deste backlog.
 
-### Audit consolidado W34-W43 (2026-03-11)
-- **Build:** clean
-- **Tests:** 79/79
-- **DB push:** migration `20260314153000_board_item_editor_rpc.sql` aplicada com sucesso
+### Audit consolidado (rodada em andamento)
 - **Deploy path:** `origin/main` (sem remoto `production` configurado neste clone)
+- **CI monitoramento contínuo:** heartbeat ativo a cada 30 minutos + verificação manual por push
 
 ---
 

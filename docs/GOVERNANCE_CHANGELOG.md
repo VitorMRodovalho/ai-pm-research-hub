@@ -1,5 +1,23 @@
 # Governance Changelog
 
+## 2026-03-11 — CI Heartbeat Monitoring And Flake Guard Hardening
+
+### Decisions
+
+1. **CI health now needs active monitoring, not only per-push observation**: A scheduled heartbeat workflow now checks the latest `CI Validate` run on `main` every 30 minutes and emits an issue-level alert when the gate is red.
+
+2. **CI alert lifecycle should be explicit**: The monitor opens an alert issue on failure and closes it automatically when the next healthy run is detected, preserving operational traceability without manual ticket churn.
+
+3. **Browser guard assertions must wait on stable UI state instead of timing-sensitive text updates**: For `/admin/selection`, the guard now keys on rendered table rows rather than `#sel-count` text timing to reduce flaky failures in CI runners.
+
+### Process Lessons Learned
+
+1. **A passing local run is not enough when CI timing differs**: Assertions tied to minor rendering races can pass locally and still fail under hosted runner variability.
+
+2. **Continuous governance includes pipeline observability**: Treating CI drift as an auditable signal (issue opened/closed) reduces silent failure windows between pushes.
+
+---
+
 ## 2026-03-12 — Waves 36-40: Analytics V2 Rollout
 
 ### Decisions
