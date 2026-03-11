@@ -639,6 +639,18 @@ test('governance bundle snapshots persist export history', () => {
   assert.equal(script.includes("sb.rpc('admin_capture_governance_bundle_snapshot'"), true);
 });
 
+test('board lifecycle and source-to-tribe integrity contracts are backend-enforced', () => {
+  const migration = read('supabase/migrations/20260314130000_board_lifecycle_and_tribe_fact_integrity.sql');
+  assert.equal(migration.includes('create table if not exists public.board_source_tribe_map'), true);
+  assert.equal(migration.includes('create trigger trg_enforce_board_item_source_tribe_integrity'), true);
+  assert.equal(migration.includes('project_boards_linked_sources_require_tribe_chk'), true);
+  assert.equal(migration.includes('create table if not exists public.board_lifecycle_events'), true);
+  assert.equal(migration.includes('create or replace function public.admin_archive_project_board('), true);
+  assert.equal(migration.includes('create or replace function public.admin_restore_project_board('), true);
+  assert.equal(migration.includes('create or replace function public.admin_archive_board_item('), true);
+  assert.equal(migration.includes('create or replace function public.admin_restore_board_item('), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

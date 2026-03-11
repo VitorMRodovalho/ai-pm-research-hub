@@ -1,5 +1,30 @@
 # Release Log
 
+## 2026-03-11 — Hotfix Governance: Archive/Restore + Integridade Dimensão/Fato (tribe_id)
+
+### Scope
+Implementar recuperação segura de quadro/card sem hard delete e reforçar vínculo estrutural por chave (`tribe_id`) entre dimensões e fatos de boards.
+
+### Delivered
+- Nova migration: `supabase/migrations/20260314130000_board_lifecycle_and_tribe_fact_integrity.sql`
+  - tabela canônica `board_source_tribe_map` (`source_board -> tribe_id`);
+  - trigger de integridade em `board_items` para impedir source board em tribo errada;
+  - hardening em `project_boards` para exigir `tribe_id` em fontes vinculadas (`trello`/`notion`);
+  - tabela de auditoria `board_lifecycle_events`;
+  - RPCs:
+    - `admin_archive_project_board`
+    - `admin_restore_project_board`
+    - `admin_archive_board_item`
+    - `admin_restore_board_item`
+- Teste estático atualizado em `tests/ui-stabilization.test.mjs`.
+
+### Audit Results
+- `supabase db push`
+- `npm test`
+- `npm run build`
+
+---
+
 ## 2026-03-11 — Hotfix Data Alignment: Comunicação + Legacy 3/6 + Notion Tribo 8
 
 ### Scope
