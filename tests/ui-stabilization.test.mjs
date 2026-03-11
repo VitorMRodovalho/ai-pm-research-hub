@@ -271,6 +271,16 @@ test('continuity overrides support explicit renumbering paths', () => {
   assert.equal(script.includes("sb.rpc('admin_upsert_tribe_continuity_override'"), true);
 });
 
+test('post-ingestion healthcheck persists governance alerts', () => {
+  const migration = read('supabase/migrations/20260312230000_post_ingestion_healthcheck_alerts.sql');
+  const script = read('scripts/run_post_ingestion_healthcheck.ts');
+  assert.equal(migration.includes('create table if not exists public.ingestion_alerts'), true);
+  assert.equal(migration.includes('create or replace function public.admin_run_post_ingestion_healthcheck('), true);
+  assert.equal(migration.includes("'communication_tribe_missing'"), true);
+  assert.equal(migration.includes("'legacy_cycle_1_2_empty'"), true);
+  assert.equal(script.includes("sb.rpc('admin_run_post_ingestion_healthcheck'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

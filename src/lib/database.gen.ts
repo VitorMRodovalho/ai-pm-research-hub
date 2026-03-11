@@ -1357,6 +1357,81 @@ export type Database = {
           },
         ]
       }
+      ingestion_alerts: {
+        Row: {
+          alert_key: string
+          batch_id: string | null
+          created_by: string | null
+          details: Json
+          detected_at: string
+          id: number
+          resolved_at: string | null
+          severity: string
+          status: string
+          summary: string
+        }
+        Insert: {
+          alert_key: string
+          batch_id?: string | null
+          created_by?: string | null
+          details?: Json
+          detected_at?: string
+          id?: number
+          resolved_at?: string | null
+          severity: string
+          status?: string
+          summary: string
+        }
+        Update: {
+          alert_key?: string
+          batch_id?: string | null
+          created_by?: string | null
+          details?: Json
+          detected_at?: string
+          id?: number
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          summary?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingestion_alerts_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "ingestion_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_alerts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_alerts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_alerts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_alerts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingestion_batch_files: {
         Row: {
           batch_id: string
@@ -3730,6 +3805,10 @@ export type Database = {
       admin_reactivate_member: { Args: { p_member_id: string }; Returns: Json }
       admin_remove_tribe_selection: {
         Args: { p_member_id: string }
+        Returns: Json
+      }
+      admin_run_post_ingestion_healthcheck: {
+        Args: { p_batch_id?: string }
         Returns: Json
       }
       admin_set_ingestion_source_policy: {
