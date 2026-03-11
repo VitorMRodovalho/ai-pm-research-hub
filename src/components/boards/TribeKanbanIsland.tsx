@@ -18,6 +18,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { CalendarClock, Paperclip, Trash2, UserCircle2, X, Send, CheckCircle2, Award } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import * as Popover from '@radix-ui/react-popover';
 
 type Member = {
@@ -343,20 +344,22 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
     setBoardId(String(activeBoard.id));
     setCanEdit(canEditBoard(member, tribeData));
 
-    const [{ data: boardItems }, { data: tribeMembers }] = await Promise.all([
+    const [{ data: boardItems, error: boardErr }, { data: tribeMembers }] = await Promise.all([
       sb.rpc('list_board_items', { p_board_id: activeBoard.id, p_status: null }),
       sb.from('public_members').select('id,name,photo_url').eq('tribe_id', tribeId).eq('current_cycle_active', true).eq('is_active', true),
     ]);
+    console.log('[Kanban] Board items:', Array.isArray(boardItems) ? boardItems.length : 'NOT_ARRAY', 'Error:', boardErr);
 
     let legacyRaw: BoardItem[] = [];
     try {
       const { data: legacyData, error: legacyErr } = await sb.rpc('list_legacy_board_items_for_tribe', { p_current_tribe_id: tribeId });
+      console.log('[Kanban] Legacy items:', Array.isArray(legacyData) ? legacyData.length : 'NOT_ARRAY', 'Error:', legacyErr);
       if (!legacyErr && Array.isArray(legacyData)) {
         legacyRaw = legacyData
           .filter((item: any) => item.status !== 'archived')
           .map((row: any) => ({ ...row, is_legacy: true, curation_status: row.curation_status || 'draft' }));
       }
-    } catch { /* legacy items are optional — never block the main board */ }
+    } catch (e) { console.warn('[Kanban] Legacy fetch failed:', e); }
 
     setMembers(Array.isArray(tribeMembers) ? tribeMembers : []);
     setTribeData(tribeData);
@@ -366,6 +369,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       ...raw.map((row: any) => ({ ...row, curation_status: row.curation_status || 'draft' })),
       ...legacyRaw,
     ];
+    console.log('[Kanban] Combined items:', combined.length, '(board:', raw.length, '+ legacy:', legacyRaw.length, ')');
     setItems(combined);
     setLoading(false);
   }
@@ -639,7 +643,8 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       <Dialog.Root open={!!modalItem} onOpenChange={(open) => { if (!open) setModalItem(null); }}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
-          <Dialog.Content className="fixed z-50 top-1/2 left-1/2 w-full max-w-5xl -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-xl max-h-[90vh] overflow-y-auto">
+          <Dialog.Content className="fixed z-50 top-1/2 left-1/2 w-full max-w-5xl -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-xl max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
+            <VisuallyHidden asChild><Dialog.Title>Editar card</Dialog.Title></VisuallyHidden>
             {!modalItem ? null : (
               <>
             <div className="flex items-center justify-between gap-3 mb-3">
