@@ -444,6 +444,16 @@ test('remediation escalation matrix resolves action by severity and recurrence',
   assert.equal(script.includes("sb.rpc('admin_resolve_remediation_action'"), true);
 });
 
+test('readiness slo breach checks emit governed alerts', () => {
+  const migration = read('supabase/migrations/20260313160000_readiness_slo_breach_alerts.sql');
+  const script = read('scripts/check_readiness_slo_breach.ts');
+
+  assert.equal(migration.includes('create table if not exists public.readiness_slo_alerts'), true);
+  assert.equal(migration.includes('create or replace function public.admin_check_readiness_slo_breach('), true);
+  assert.equal(migration.includes("where a.alert_key = 'readiness_slo_breach'"), true);
+  assert.equal(script.includes("sb.rpc('admin_check_readiness_slo_breach'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

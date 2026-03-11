@@ -1837,6 +1837,65 @@ export type Database = {
           },
         ]
       }
+      ingestion_remediation_escalation_matrix: {
+        Row: {
+          action_type: string
+          enabled: boolean
+          priority: number
+          recurrence_threshold: number
+          severity: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          action_type: string
+          enabled?: boolean
+          priority?: number
+          recurrence_threshold: number
+          severity: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          action_type?: string
+          enabled?: boolean
+          priority?: number
+          recurrence_threshold?: number
+          severity?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingestion_remediation_escalation_matrix_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_remediation_escalation_matrix_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_remediation_escalation_matrix_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_remediation_escalation_matrix_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingestion_run_ledger: {
         Row: {
           batch_id: string | null
@@ -4537,6 +4596,10 @@ export type Database = {
       }
       admin_remove_tribe_selection: {
         Args: { p_member_id: string }
+        Returns: Json
+      }
+      admin_resolve_remediation_action: {
+        Args: { p_alert_id: number }
         Returns: Json
       }
       admin_run_dry_rehearsal_chain: {
