@@ -4700,6 +4700,15 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_append_rollback_audit_event: {
+        Args: {
+          p_details?: Json
+          p_event_type: string
+          p_plan_id: string
+          p_reason?: string
+        }
+        Returns: Json
+      }
       admin_approve_ingestion_rollback: {
         Args: {
           p_execution_window_end?: string

@@ -534,6 +534,16 @@ test('governance export bundle composes all governance contracts', () => {
   assert.equal(script.includes("sb.rpc('exec_governance_export_bundle'"), true);
 });
 
+test('dual-control rollback audit trails are persisted in backend', () => {
+  const migration = read('supabase/migrations/20260314010000_dual_control_audit_trails.sql');
+  const script = read('scripts/append_rollback_audit_event.ts');
+
+  assert.equal(migration.includes('create table if not exists public.rollback_audit_events'), true);
+  assert.equal(migration.includes('create or replace function public.admin_append_rollback_audit_event('), true);
+  assert.equal(migration.includes("check (event_type in ('planned', 'approved_stage_1', 'approved_stage_2', 'executed', 'cancelled'))"), true);
+  assert.equal(script.includes("sb.rpc('admin_append_rollback_audit_event'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');
