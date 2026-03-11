@@ -545,6 +545,155 @@ export type Database = {
           },
         ]
       }
+      board_lifecycle_events: {
+        Row: {
+          action: string
+          actor_member_id: string | null
+          board_id: string | null
+          created_at: string
+          id: number
+          item_id: string | null
+          new_status: string | null
+          previous_status: string | null
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          actor_member_id?: string | null
+          board_id?: string | null
+          created_at?: string
+          id?: number
+          item_id?: string | null
+          new_status?: string | null
+          previous_status?: string | null
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          actor_member_id?: string | null
+          board_id?: string | null
+          created_at?: string
+          id?: number
+          item_id?: string | null
+          new_status?: string | null
+          previous_status?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "board_lifecycle_events_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_lifecycle_events_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "board_lifecycle_events_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_lifecycle_events_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_lifecycle_events_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "project_boards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "board_lifecycle_events_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "board_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      board_source_tribe_map: {
+        Row: {
+          is_active: boolean
+          notes: string | null
+          source_board: string
+          tribe_id: number
+          updated_at: string
+        }
+        Insert: {
+          is_active?: boolean
+          notes?: string | null
+          source_board: string
+          tribe_id: number
+          updated_at?: string
+        }
+        Update: {
+          is_active?: boolean
+          notes?: string | null
+          source_board?: string
+          tribe_id?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "board_source_tribe_map_tribe_id_fkey"
+            columns: ["tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      board_taxonomy_alerts: {
+        Row: {
+          alert_code: string
+          board_id: string | null
+          created_at: string
+          id: number
+          payload: Json
+          resolved_at: string | null
+          severity: string
+        }
+        Insert: {
+          alert_code: string
+          board_id?: string | null
+          created_at?: string
+          id?: never
+          payload?: Json
+          resolved_at?: string | null
+          severity?: string
+        }
+        Update: {
+          alert_code?: string
+          board_id?: string | null
+          created_at?: string
+          id?: never
+          payload?: Json
+          resolved_at?: string | null
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "board_taxonomy_alerts_board_id_fkey"
+            columns: ["board_id"]
+            isOneToOne: false
+            referencedRelation: "project_boards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       broadcast_log: {
         Row: {
           body: string
@@ -3439,6 +3588,56 @@ export type Database = {
           },
         ]
       }
+      portfolio_data_sanity_runs: {
+        Row: {
+          created_at: string
+          id: number
+          run_by: string
+          summary: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          run_by: string
+          summary?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          run_by?: string
+          summary?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_data_sanity_runs_run_by_fkey"
+            columns: ["run_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "portfolio_data_sanity_runs_run_by_fkey"
+            columns: ["run_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "portfolio_data_sanity_runs_run_by_fkey"
+            columns: ["run_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portfolio_data_sanity_runs_run_by_fkey"
+            columns: ["run_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       presentations: {
         Row: {
           created_at: string | null
@@ -3507,6 +3706,7 @@ export type Database = {
       project_boards: {
         Row: {
           board_name: string
+          board_scope: string
           columns: Json
           created_at: string
           created_by: string | null
@@ -3520,6 +3720,7 @@ export type Database = {
         }
         Insert: {
           board_name: string
+          board_scope?: string
           columns?: Json
           created_at?: string
           created_by?: string | null
@@ -3533,6 +3734,7 @@ export type Database = {
         }
         Update: {
           board_name?: string
+          board_scope?: string
           columns?: Json
           created_at?: string
           created_by?: string | null
@@ -3578,6 +3780,84 @@ export type Database = {
             columns: ["tribe_id"]
             isOneToOne: false
             referencedRelation: "tribes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      publication_submission_events: {
+        Row: {
+          board_item_id: string
+          channel: string
+          created_at: string
+          external_link: string | null
+          id: number
+          notes: string | null
+          outcome: string
+          published_at: string | null
+          submitted_at: string | null
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          board_item_id: string
+          channel?: string
+          created_at?: string
+          external_link?: string | null
+          id?: never
+          notes?: string | null
+          outcome?: string
+          published_at?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          board_item_id?: string
+          channel?: string
+          created_at?: string
+          external_link?: string | null
+          id?: never
+          notes?: string | null
+          outcome?: string
+          published_at?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_submission_events_board_item_id_fkey"
+            columns: ["board_item_id"]
+            isOneToOne: false
+            referencedRelation: "board_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_submission_events_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "publication_submission_events_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "publication_submission_events_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_submission_events_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
         ]
@@ -4320,6 +4600,7 @@ export type Database = {
           id: number
           is_active: boolean
           leader_member_id: string | null
+          legacy_board_url: string | null
           meeting_day: string | null
           meeting_link: string | null
           meeting_schedule: string | null
@@ -4333,12 +4614,14 @@ export type Database = {
           updated_at: string | null
           updated_by: string | null
           whatsapp_url: string | null
+          workstream_type: string
         }
         Insert: {
           drive_url?: string | null
           id: number
           is_active?: boolean
           leader_member_id?: string | null
+          legacy_board_url?: string | null
           meeting_day?: string | null
           meeting_link?: string | null
           meeting_schedule?: string | null
@@ -4352,12 +4635,14 @@ export type Database = {
           updated_at?: string | null
           updated_by?: string | null
           whatsapp_url?: string | null
+          workstream_type?: string
         }
         Update: {
           drive_url?: string | null
           id?: number
           is_active?: boolean
           leader_member_id?: string | null
+          legacy_board_url?: string | null
           meeting_day?: string | null
           meeting_link?: string | null
           meeting_schedule?: string | null
@@ -4371,6 +4656,7 @@ export type Database = {
           updated_at?: string | null
           updated_by?: string | null
           whatsapp_url?: string | null
+          workstream_type?: string
         }
         Relationships: [
           {
@@ -4839,6 +5125,18 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_archive_board_item: {
+        Args: { p_item_id: string; p_reason?: string }
+        Returns: Json
+      }
+      admin_archive_project_board: {
+        Args: {
+          p_archive_items?: boolean
+          p_board_id: string
+          p_reason?: string
+        }
+        Returns: Json
+      }
       admin_capture_data_quality_snapshot: {
         Args: {
           p_run_context?: string
@@ -4884,6 +5182,7 @@ export type Database = {
         Args: { p_reason?: string; p_tribe_id: number }
         Returns: Json
       }
+      admin_detect_board_taxonomy_drift: { Args: never; Returns: Json }
       admin_ensure_communication_tribe: {
         Args: {
           p_name?: string
@@ -4941,6 +5240,20 @@ export type Database = {
           p_role_snapshot?: string
         }
         Returns: Json
+      }
+      admin_list_archived_board_items: {
+        Args: { p_board_id?: string; p_limit?: number }
+        Returns: {
+          assignee_name: string
+          board_id: string
+          board_name: string
+          board_scope: string
+          domain_key: string
+          due_date: string
+          id: string
+          title: string
+          updated_at: string
+        }[]
       }
       admin_list_members: {
         Args: {
@@ -5045,6 +5358,18 @@ export type Database = {
         Args: { p_alert_id: number }
         Returns: Json
       }
+      admin_restore_board_item: {
+        Args: {
+          p_item_id: string
+          p_reason?: string
+          p_restore_status?: string
+        }
+        Returns: Json
+      }
+      admin_restore_project_board: {
+        Args: { p_board_id: string; p_reason?: string }
+        Returns: Json
+      }
       admin_run_dry_rehearsal_chain: {
         Args: { p_context_label?: string; p_gate_mode?: string }
         Returns: Json
@@ -5053,6 +5378,7 @@ export type Database = {
         Args: { p_alert_id: number }
         Returns: Json
       }
+      admin_run_portfolio_data_sanity: { Args: never; Returns: Json }
       admin_run_post_ingestion_chain: {
         Args: {
           p_batch_id?: string
@@ -5334,9 +5660,11 @@ export type Database = {
       curate_item: {
         Args: {
           p_action: string
+          p_audience_level?: string
           p_id: string
           p_table: string
           p_tags?: string[]
+          p_tribe_id?: number
         }
         Returns: Json
       }
@@ -5344,6 +5672,10 @@ export type Database = {
       decrypt_sensitive: { Args: { val: string }; Returns: string }
       deselect_tribe: { Args: never; Returns: Json }
       encrypt_sensitive: { Args: { val: string }; Returns: string }
+      enqueue_artifact_publication_card: {
+        Args: { p_actor_member_id?: string; p_artifact_id: string }
+        Returns: Json
+      }
       exec_analytics_v2_quality: {
         Args: { p_chapter?: string; p_cycle_code?: string; p_tribe_id?: number }
         Returns: Json
@@ -5394,6 +5726,10 @@ export type Database = {
         Args: { p_window_days?: number }
         Returns: Json
       }
+      exec_portfolio_board_summary: {
+        Args: { p_include_inactive?: boolean }
+        Returns: Json
+      }
       exec_readiness_slo_by_source: {
         Args: { p_window_days?: number }
         Returns: Json
@@ -5411,6 +5747,7 @@ export type Database = {
         Returns: Json
       }
       exec_skills_radar: { Args: never; Returns: Json }
+      get_comms_dashboard_metrics: { Args: never; Returns: Json }
       get_communication_template: {
         Args: { p_slug: string; p_vars?: Json }
         Returns: Json
@@ -5684,6 +6021,14 @@ export type Database = {
         Args: { p_item_id: string; p_new_status: string; p_position?: number }
         Returns: undefined
       }
+      move_board_item_to_board: {
+        Args: {
+          p_item_id: number
+          p_reason?: string
+          p_target_board_id: number
+        }
+        Returns: Json
+      }
       platform_activity_summary: { Args: never; Returns: Json }
       publish_comms_metrics_batch: {
         Args: { p_metric_date?: string; p_source?: string }
@@ -5710,6 +6055,17 @@ export type Database = {
           p_tribe_id?: number
         }
         Returns: string
+      }
+      search_knowledge: {
+        Args: { search_term: string }
+        Returns: {
+          artifact_id: string
+          asset_id: string
+          chunk_id: string
+          content_snippet: string
+          theme_title: string
+          tribe_name: string
+        }[]
       }
       select_tribe: { Args: { p_tribe_id: number }; Returns: Json }
       set_progress: {
@@ -5768,6 +6124,81 @@ export type Database = {
         Args: { p_duration_minutes: number; p_event_id: string }
         Returns: Json
       }
+      upsert_board_item: {
+        Args: {
+          p_assignee_id?: string
+          p_attachments?: Json
+          p_board_id?: string
+          p_checklist?: Json
+          p_description?: string
+          p_due_date?: string
+          p_item_id?: string
+          p_labels?: Json
+          p_status?: string
+          p_tags?: string[]
+          p_title?: string
+        }
+        Returns: string
+      }
+      upsert_publication_submission_event:
+        | {
+            Args: {
+              p_board_item_id: string
+              p_channel?: string
+              p_notes?: string
+              p_outcome?: string
+              p_submitted_at?: string
+            }
+            Returns: {
+              board_item_id: string
+              channel: string
+              created_at: string
+              external_link: string | null
+              id: number
+              notes: string | null
+              outcome: string
+              published_at: string | null
+              submitted_at: string | null
+              updated_at: string
+              updated_by: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "publication_submission_events"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: {
+              p_board_item_id: string
+              p_channel?: string
+              p_external_link?: string
+              p_notes?: string
+              p_outcome?: string
+              p_published_at?: string
+              p_submitted_at?: string
+            }
+            Returns: {
+              board_item_id: string
+              channel: string
+              created_at: string
+              external_link: string | null
+              id: number
+              notes: string | null
+              outcome: string
+              published_at: string | null
+              submitted_at: string | null
+              updated_at: string
+              updated_by: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "publication_submission_events"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
       upsert_tribe_deliverable: {
         Args: {
           p_artifact_id?: string

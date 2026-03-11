@@ -8,6 +8,7 @@
  */
 import { t, type Lang } from '../../i18n/utils';
 import LangSwitcher from './LangSwitcher.astro';
+import GlobalSearchIsland from '../ui/GlobalSearchIsland';
 import { NAV_ITEMS, type NavItem } from '../../lib/navigation.config';
 
 interface Props { activePage?: string; lang?: Lang; }
@@ -122,6 +123,9 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
   </div>
 
   <div class="flex items-center gap-2">
+    <div class="hidden sm:block">
+      <GlobalSearchIsland client:load />
+    </div>
     <LangSwitcher currentLang={lang} currentPath={currentPath} />
 
     <!-- Auth area: populated by client script -->

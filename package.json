@@ -16,6 +16,7 @@
     "audit:permissions": "./scripts/audit_permissions_matrix_sync.sh",
     "lint:i18n": "eslint src/components/boards/**/*.tsx src/pages/admin/portfolio.astro",
     "test:visual:dark": "playwright test tests/visual/dark-mode.spec.ts --config=playwright.config.ts",
+    "test:e2e:lifecycle": "playwright test tests/e2e/user-lifecycle.spec.ts --config=playwright.config.ts",
     "screenshots:multilang": "node scripts/screenshots-multilang.mjs",
     "screenshots:setup": "npx playwright install chromium",
     "db:types": "supabase gen types typescript --linked > src/lib/database.gen.ts"
@@ -32,9 +33,11 @@
     "@tailwindcss/vite": "^4.2.1",
     "astro": "^5.17.1",
     "chart.js": "^4.5.1",
+    "cmdk": "^1.1.1",
     "lucide-react": "^0.577.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "recharts": "^2.15.0",
     "tailwindcss": "^4.2.1"
   },
   "devDependencies": {
