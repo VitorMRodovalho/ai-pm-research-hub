@@ -287,6 +287,16 @@ test('post-ingestion healthcheck persists governance alerts', () => {
   assert.equal(script.includes("sb.rpc('admin_run_post_ingestion_healthcheck'"), true);
 });
 
+test('legacy member continuity links stay backend-governed', () => {
+  const migration = read('supabase/migrations/20260313010000_legacy_member_links.sql');
+  const script = read('scripts/seed_legacy_member_links.ts');
+
+  assert.equal(migration.includes('create table if not exists public.legacy_member_links'), true);
+  assert.equal(migration.includes('create or replace function public.admin_link_member_to_legacy_tribe('), true);
+  assert.equal(migration.includes("check (link_type in ('historical_member', 'historical_leader', 'continued_member'))"), true);
+  assert.equal(script.includes("sb.rpc('admin_link_member_to_legacy_tribe'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

@@ -1941,6 +1941,115 @@ export type Database = {
         }
         Relationships: []
       }
+      legacy_member_links: {
+        Row: {
+          chapter_snapshot: string | null
+          confidence_score: number
+          created_at: string
+          created_by: string | null
+          cycle_code: string
+          id: number
+          legacy_tribe_id: number
+          link_type: string
+          member_id: string
+          metadata: Json
+          role_snapshot: string | null
+          updated_at: string
+        }
+        Insert: {
+          chapter_snapshot?: string | null
+          confidence_score?: number
+          created_at?: string
+          created_by?: string | null
+          cycle_code: string
+          id?: number
+          legacy_tribe_id: number
+          link_type?: string
+          member_id: string
+          metadata?: Json
+          role_snapshot?: string | null
+          updated_at?: string
+        }
+        Update: {
+          chapter_snapshot?: string | null
+          confidence_score?: number
+          created_at?: string
+          created_by?: string | null
+          cycle_code?: string
+          id?: number
+          legacy_tribe_id?: number
+          link_type?: string
+          member_id?: string
+          metadata?: Json
+          role_snapshot?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legacy_member_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "legacy_member_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "legacy_member_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legacy_member_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legacy_member_links_legacy_tribe_id_fkey"
+            columns: ["legacy_tribe_id"]
+            isOneToOne: false
+            referencedRelation: "legacy_tribes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legacy_member_links_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "legacy_member_links_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "legacy_member_links_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legacy_member_links_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       legacy_tribe_board_links: {
         Row: {
           board_id: string
@@ -3778,6 +3887,19 @@ export type Database = {
       }
       admin_link_communication_boards: {
         Args: { p_tribe_id?: number }
+        Returns: Json
+      }
+      admin_link_member_to_legacy_tribe: {
+        Args: {
+          p_chapter_snapshot?: string
+          p_confidence_score?: number
+          p_cycle_code: string
+          p_legacy_tribe_id: number
+          p_link_type?: string
+          p_member_id: string
+          p_metadata?: Json
+          p_role_snapshot?: string
+        }
         Returns: Json
       }
       admin_list_members: {
