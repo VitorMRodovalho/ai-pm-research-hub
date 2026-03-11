@@ -1,5 +1,23 @@
 # Release Log
 
+## 2026-03-11 — Sprint 29 (Dev): Knowledge Hub Phase A Contracts
+
+### Scope
+Formalizar contratos operacionais mínimos da fase A do Knowledge Hub para reduzir ambiguidade de curadoria/publicação.
+
+### Delivered
+- `docs/project-governance/KNOWLEDGE_HUB_PHASE_A_CONTRACTS.md`:
+  - contratos de entrada/curadoria/exposição;
+  - checklist de aceite da fase A;
+  - dependências explícitas para fase B.
+- `README.md` atualizado no mapa de documentação.
+
+### Audit Results
+- `npm run smoke:routes`
+- `npm run build`
+
+---
+
 ## 2026-03-11 — Sprint 28 (Dev): Admin Modularization Phase 2 (Member Formatting Utils)
 
 ### Scope
