@@ -392,6 +392,17 @@ test('ingestion source sla contracts enforce timeout governance', () => {
   assert.equal(script.includes("sb.rpc('admin_check_ingestion_source_timeout'"), true);
 });
 
+test('ingestion alert remediation hooks are backend-governed and auditable', () => {
+  const migration = read('supabase/migrations/20260313110000_ingestion_alert_remediation_hooks.sql');
+  const script = read('scripts/run_ingestion_alert_remediation.ts');
+
+  assert.equal(migration.includes('create table if not exists public.ingestion_alert_remediation_rules'), true);
+  assert.equal(migration.includes('create table if not exists public.ingestion_alert_remediation_runs'), true);
+  assert.equal(migration.includes('create or replace function public.admin_set_ingestion_alert_remediation_rule('), true);
+  assert.equal(migration.includes('create or replace function public.admin_run_ingestion_alert_remediation('), true);
+  assert.equal(script.includes("sb.rpc('admin_run_ingestion_alert_remediation'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

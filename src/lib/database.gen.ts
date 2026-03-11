@@ -1843,6 +1843,65 @@ export type Database = {
           },
         ]
       }
+      ingestion_source_sla: {
+        Row: {
+          enabled: boolean
+          escalation_severity: string
+          expected_max_minutes: number
+          source: string
+          timeout_minutes: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          enabled?: boolean
+          escalation_severity?: string
+          expected_max_minutes?: number
+          source: string
+          timeout_minutes?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          enabled?: boolean
+          escalation_severity?: string
+          expected_max_minutes?: number
+          source?: string
+          timeout_minutes?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingestion_source_sla_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_source_sla_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_source_sla_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_source_sla_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_assets: {
         Row: {
           created_at: string
@@ -4122,6 +4181,10 @@ export type Database = {
         Args: { p_new_leader_id: string; p_reason?: string; p_tribe_id: number }
         Returns: Json
       }
+      admin_check_ingestion_source_timeout: {
+        Args: { p_source: string; p_started_at: string }
+        Returns: Json
+      }
       admin_complete_ingestion_run: {
         Args: {
           p_batch_id?: string
@@ -4294,6 +4357,16 @@ export type Database = {
           p_notes?: string
           p_require_manual_review?: boolean
           p_source: string
+        }
+        Returns: Json
+      }
+      admin_set_ingestion_source_sla: {
+        Args: {
+          p_enabled?: boolean
+          p_escalation_severity?: string
+          p_expected_max_minutes?: number
+          p_source: string
+          p_timeout_minutes?: number
         }
         Returns: Json
       }
