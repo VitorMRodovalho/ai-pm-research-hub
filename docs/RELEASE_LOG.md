@@ -1,5 +1,26 @@
 # Release Log
 
+## 2026-03-11 — Hotfix Data Alignment: Comunicação + Legacy 3/6 + Notion Tribo 8
+
+### Scope
+Corrigir desconexões de dados apontadas em produção para alocação de comunicação, continuidade de tribos legadas (3->6, 6->2) e trilha de ingestão Notion da tribo 8.
+
+### Delivered
+- Nova migration: `supabase/migrations/20260314123000_tribe_alignment_comms_legacy_notion_fix.sql`
+  - garante tribo de comunicação ativa e alocação de Mayanna/Leticia/Andressa;
+  - define líder da tribo de comunicação (Mayanna, quando encontrada);
+  - reforça continuidade explícita `legacy 3 -> atual 6` e `legacy 6 -> atual 2`;
+  - remapeia boards Trello do stream `tribo3_priorizacao` para tribo 6;
+  - reativa/realinha boards manuais do stream Italo/Fabricio em tribo 6;
+  - vincula boards de comunicação ao domínio/tribo de comunicação;
+  - cria/garante lane Notion para tribo 8 e associa itens `notion_import_staging` com hint compatível.
+
+### Audit Results
+- Migration aplicada via `supabase db push`.
+- Build validado com `npm run build`.
+
+---
+
 ## 2026-03-11 — Sprint 31 (Dev): Bus-Factor Drill Execution Evidence
 
 ### Scope
