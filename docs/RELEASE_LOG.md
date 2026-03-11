@@ -1,5 +1,20 @@
 # Release Log
 
+## 2026-03-11 — Sprint 24 (Dev): Authenticated Browser Guards Expansion
+
+### Scope
+Expandir browser guards para cobrir jornada autenticada de operador em `/admin/selection`, além dos cenários anônimos já existentes.
+
+### Delivered
+- `tests/browser-guards.test.mjs`:
+  - novo cenário autenticado para seleção admin com member manager simulado;
+  - valida painel visível, deny oculto e contagem renderizada.
+
+### Audit Results
+- Validado com `npm run test:browser:guards` e `npm run build`.
+
+---
+
 ## 2026-03-11 — Sprint 23 (Dev): Branch Protection Enforcement Audit Pack
 
 ### Scope

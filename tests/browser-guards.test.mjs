@@ -65,6 +65,77 @@ async function run() {
     assert.match(await denied.textContent() || '', /Acesso restrito a administradores/);
     assert.equal(await page.locator('#sel-panel').isVisible(), false);
 
+    const selectionPage = await browser.newPage();
+    await selectionPage.goto(`${base}/admin/selection`, { waitUntil: 'networkidle' });
+    await selectionPage.evaluate(() => {
+      const fakeMember = {
+        auth_id: 'selection-admin-test',
+        operational_role: 'manager',
+        designations: [],
+        is_superadmin: false,
+        name: 'Selection Admin',
+      };
+      const fakeSb = {
+        auth: {
+          getSession() {
+            return Promise.resolve({ data: { session: null } });
+          },
+        },
+        rpc(name) {
+          if (name === 'volunteer_funnel_summary') {
+            return Promise.resolve({
+              data: {
+                by_cycle: [{ cycle: 3, total_applications: 10, unique_applicants: 8, matched_members: 4, active_applications: 7 }],
+              },
+              error: null,
+            });
+          }
+          if (name === 'list_volunteer_applications') {
+            return Promise.resolve({
+              data: {
+                total: 1,
+                rows: [{
+                  first_name: 'Maria',
+                  last_name: 'Teste',
+                  cycle: 3,
+                  app_status: 'Active',
+                  city: 'Goiania',
+                  state: 'GO',
+                  country: 'BR',
+                  certifications: ['PMP'],
+                  is_existing_member: true,
+                  snapshot_date: '2026-03-11',
+                }],
+              },
+              error: null,
+            });
+          }
+          if (name === 'get_member_by_auth') return Promise.resolve({ data: fakeMember, error: null });
+          return Promise.resolve({ data: [], error: null });
+        },
+        from(table) {
+          if (table === 'cycles') {
+            return {
+              select() { return this; },
+              order() { return Promise.resolve({ data: [{ cycle_code: 'cycle_3', cycle_label: 'Ciclo 3', is_current: true, sort_order: 3 }], error: null }); },
+            };
+          }
+          return {
+            select() { return this; },
+            order() { return Promise.resolve({ data: [], error: null }); },
+          };
+        },
+      };
+      window.navGetMember = () => fakeMember;
+      window.navGetSb = () => fakeSb;
+      window.dispatchEvent(new CustomEvent('nav:member', { detail: fakeMember }));
+    });
+    await selectionPage.locator('#sel-panel').waitFor({ state: 'visible' });
+    await selectionPage.locator('#sel-count').waitFor({ state: 'visible' });
+    assert.match(await selectionPage.locator('#sel-count').textContent() || '', /resultado/);
+    assert.equal(await selectionPage.locator('#sel-tbody tr').count() > 0, true);
+    await selectionPage.close();
+
     await page.goto(`${base}/admin/analytics`, { waitUntil: 'networkidle' });
     const analyticsDenied = page.locator('#analytics-denied');
     await analyticsDenied.waitFor({ state: 'visible' });
