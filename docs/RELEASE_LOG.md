@@ -1,5 +1,23 @@
 # Release Log
 
+## 2026-03-11 — Sprint 31 (Dev): Bus-Factor Drill Execution Evidence
+
+### Scope
+Registrar execução objetiva de drill de continuidade para reduzir risco de operador único.
+
+### Delivered
+- `docs/project-governance/BUS_FACTOR_DRILL_RUN_2026-03-11.md`:
+  - metadados da execução;
+  - checklist aplicado;
+  - evidências, gaps e plano de ação.
+- `docs/DISASTER_RECOVERY.md` atualizado com referência à execução atual.
+
+### Audit Results
+- `npm run smoke:routes`
+- `npm run build`
+
+---
+
 ## 2026-03-11 — Sprint 30 (Dev): Comms Integration Phase 1 Baseline
 
 ### Scope

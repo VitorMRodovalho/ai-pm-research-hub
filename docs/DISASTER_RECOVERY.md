@@ -154,6 +154,7 @@ Objetivo: validar que um segundo operador consegue executar recuperação e depl
 ### Evidência obrigatória
 
 Usar template: `docs/project-governance/BUS_FACTOR_DRILL_EVIDENCE_TEMPLATE.md`.
+Registro de execução atual: `docs/project-governance/BUS_FACTOR_DRILL_RUN_2026-03-11.md`.
 
 Critério mínimo de aprovação do drill:
 
