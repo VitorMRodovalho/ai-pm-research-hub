@@ -174,7 +174,6 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     <div id="panel-members" class="hidden">
       <LoadingSkeleton variant="card" count={4} />
     </div>
-    <div id="panel-commshub" class="hidden"></div>
     <div id="panel-broadcast" class="hidden"></div>
     </div>
   </div>
@@ -331,7 +330,6 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   let currentCycleCode = '';
   let allDeliverables: any[] = [];
   let publishedArtifacts: any[] = [];
-  let commsHubShown = false;
   let contactData: Record<string, {email?:string, phone?:string}> = {};
   let contextSwitchLoaded = false;
   let headerLeader: any = null;
@@ -360,89 +358,21 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   }
 
 
-  // ── Comms Hub tab (R2: conditional for comms_team designation) ──
-  function showCommsHubTab() {
-    if (commsHubShown) return;
-    commsHubShown = true;
-    const tabsContainer = document.getElementById('tribe-tabs');
-    if (!tabsContainer) return;
-    const btn = document.createElement('button');
-    btn.className = 'tribe-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all';
-    btn.dataset.tab = 'commshub';
-    btn.dataset.action = 'switch-tab';
-    btn.textContent = I18N.commsHubTab || '\u{1F4E1} Comms Hub';
-    tabsContainer.appendChild(btn);
-  }
+  // Comms Hub removed from tribe pages — lives exclusively at /admin/comms-ops
 
-  function renderCommsHub() {
-    const el = document.getElementById('panel-commshub');
-    if (!el) return;
-    const ch = I18N.commsHub || {};
-    el.innerHTML = `
-      <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-100">
-          <h2 class="text-base font-extrabold text-navy">${escapeHtml(ch.title || 'Comms Hub')}</h2>
-          <p class="text-[13px] text-slate-500">${escapeHtml(ch.subtitle || '')}</p>
-        </div>
-        <div id="commshub-table-area" class="p-5">
-          <div class="text-center py-8 text-slate-400 text-sm" id="commshub-loading">${escapeHtml(ch.loading || 'Loading...')}</div>
-        </div>
-      </div>`;
-    loadCommsMetrics();
-  }
-
-  async function loadCommsMetrics() {
-    const ch = I18N.commsHub || {};
-    try {
-      const { data, error } = await sb.rpc('comms_metrics_latest_by_channel', { p_days: 14 });
-      const area = document.getElementById('commshub-table-area');
-      if (!area) return;
-      if (error || !data?.length) {
-        area.innerHTML = `<div class="text-center py-8 text-slate-500 text-sm">${escapeHtml(ch.empty || 'No data')}</div>`;
-        return;
-      }
-      const rows = data.map((r: any) => `
-        <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-          <td class="px-3 py-2.5 text-[13px]">${escapeHtml(r.metric_date || '\u2014')}</td>
-          <td class="px-3 py-2.5 text-[13px] font-medium">${escapeHtml(r.channel || '\u2014')}</td>
-          <td class="px-3 py-2.5 text-[13px] text-right">${r.audience ?? '\u2014'}</td>
-          <td class="px-3 py-2.5 text-[13px] text-right">${r.reach ?? '\u2014'}</td>
-          <td class="px-3 py-2.5 text-[13px] text-right">${r.engagement != null ? (Number(r.engagement) * 100).toFixed(2) + '%' : '\u2014'}</td>
-          <td class="px-3 py-2.5 text-[13px] text-right">${r.leads ?? '\u2014'}</td>
-        </tr>`).join('');
-      area.innerHTML = `
-        <div class="overflow-x-auto">
-          <table class="w-full text-[13px] border-collapse">
-            <thead>
-              <tr class="border-b border-slate-200 text-left">
-                <th class="px-3 py-2 font-semibold text-slate-600">${escapeHtml(ch.colDate || 'Date')}</th>
-                <th class="px-3 py-2 font-semibold text-slate-600">${escapeHtml(ch.colChannel || 'Channel')}</th>
-                <th class="px-3 py-2 font-semibold text-slate-600 text-right">${escapeHtml(ch.colAudience || 'Audience')}</th>
-                <th class="px-3 py-2 font-semibold text-slate-600 text-right">${escapeHtml(ch.colReach || 'Reach')}</th>
-                <th class="px-3 py-2 font-semibold text-slate-600 text-right">${escapeHtml(ch.colEngagement || 'Engagement')}</th>
-                <th class="px-3 py-2 font-semibold text-slate-600 text-right">${escapeHtml(ch.colLeads || 'Leads')}</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>`;
-    } catch (e: any) {
-      const area = document.getElementById('commshub-table-area');
-      if (area) area.innerHTML = `<div class="text-center py-8 text-red-500 text-sm">${escapeHtml(e?.message || 'Error')}</div>`;
-    }
-  }
-
-  // ── Header render ──
+  // ── Header render (Landing Page visual parity) ──
+  const QUAD_COLORS: Record<string, string> = { q1: '#00799E', q2: '#FF610F', q3: '#4F17A8', q4: '#10B981' };
   function renderHeader(_tribe: any, leader: any, slots: any[]) {
     const el = document.getElementById('tribe-header');
     if (!el) return;
 
     const leaderName = leader ? escapeHtml(leader.name) : '—';
-    const leaderPhoto = leader?.photo_url
-      ? `<img src="${escapeHtml(leader.photo_url)}" class="w-8 h-8 rounded-full object-cover border border-slate-100" alt="">`
-      : leader
-        ? `<div class="w-8 h-8 rounded-full bg-purple/20 flex items-center justify-center text-purple text-xs font-bold">${escapeHtml(leader.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase())}</div>`
-        : '';
+    const leaderInitials = leader
+      ? escapeHtml(leader.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase())
+      : '?';
+    const leaderPhotoLarge = leader?.photo_url
+      ? `<img src="${escapeHtml(leader.photo_url)}" class="w-14 h-14 rounded-full object-cover border-2 border-white shadow-md" alt="${leaderName}">`
+      : `<div class="w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-extrabold shadow-md" style="background:${QUAD_COLORS[_tribe?.quadrant || 'q3']}">${leaderInitials}</div>`;
 
     let scheduleHtml = '';
     if (_tribe?.meeting_schedule && String(_tribe.meeting_schedule).trim()) {
@@ -455,40 +385,52 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         return `${day} ${start}–${end}`;
       }).join(' · ');
     } else {
-      scheduleHtml = '<span class="text-slate-400 italic">—</span>';
+      scheduleHtml = '<span class="text-white/50 italic">—</span>';
     }
     const editBtnHtml = canEdit
-      ? ` <button data-action="open-meeting-schedule-modal" type="button" class="inline-flex items-center justify-center w-6 h-6 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-navy transition-all cursor-pointer" title="${escapeHtml(I18N.editMeetingSchedule || 'Editar horário')}"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button>`
+      ? ` <button data-action="open-meeting-schedule-modal" type="button" class="inline-flex items-center justify-center w-6 h-6 rounded-lg text-white/60 hover:bg-white/20 hover:text-white transition-all cursor-pointer" title="${escapeHtml(I18N.editMeetingSchedule || 'Editar horário')}"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button>`
       : '';
 
     const tribeName = buildTribeLabel(_tribe, { prefix: I18N.tribePrefix || 'Tribo' });
     const quadrantLabel = _tribe?.quadrant_name || I18N.quadrantLabel || '';
     const tribeDescription = _tribe?.notes || I18N.tribeDesc || '—';
+    const qColor = QUAD_COLORS[_tribe?.quadrant || 'q3'];
+    const memberCount = membersMap.size;
 
     el.innerHTML = `
-      <div class="bg-white rounded-2xl border border-slate-200 p-6">
-        <div class="flex items-start gap-4 flex-wrap">
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 flex-wrap mb-1">
-              <h1 class="text-xl font-extrabold text-navy">T${TRIBE_ID}: ${escapeHtml(tribeName)}</h1>
-              <button data-action="toggle-context-switch" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all cursor-pointer">
-                Trocar contexto ▾
-              </button>
-              ${quadrantLabel ? `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide bg-purple/10 text-purple">${escapeHtml(quadrantLabel)}</span>` : ''}
+      <div class="rounded-2xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700">
+        <div class="relative px-6 py-6" style="background: linear-gradient(135deg, ${qColor} 0%, ${qColor}CC 100%)">
+          <div class="flex items-center gap-5 flex-wrap">
+            <div class="relative">
+              ${leaderPhotoLarge}
+              <div class="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg flex items-center justify-center text-white text-[11px] font-extrabold shadow-sm" style="background:${qColor}">T${TRIBE_ID}</div>
             </div>
-            <div id="tribe-context-switch" class="hidden mt-2 rounded-xl border border-slate-200 bg-white shadow-sm p-3 max-w-xl"></div>
-            <p class="text-[13px] text-slate-500 leading-relaxed mb-3">${escapeHtml(tribeDescription)}</p>
-            <div class="flex flex-wrap gap-x-5 gap-y-2 text-[13px]">
-              <div class="flex items-center gap-2">
-                ${leaderPhoto}
-                <span class="text-slate-400 font-semibold">${I18N.leader}:</span>
-                <span class="font-semibold text-navy">${leaderName}</span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap mb-1">
+                <h1 class="text-xl font-extrabold text-white drop-shadow-sm">${escapeHtml(tribeName)}</h1>
+                ${quadrantLabel ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/20 text-white backdrop-blur-sm">${escapeHtml(quadrantLabel)}</span>` : ''}
+                <button data-action="toggle-context-switch" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white/15 text-white/80 border border-white/20 hover:bg-white/25 transition-all cursor-pointer backdrop-blur-sm">
+                  Trocar ▾
+                </button>
               </div>
-              <div class="flex items-center gap-1.5" id="tribe-schedule-cell">
-                <span class="text-slate-400 font-semibold">📅 ${I18N.meetingSchedule}:</span>
-                <span class="text-navy font-medium">${scheduleHtml}</span>${editBtnHtml}
-              </div>
+              <div id="tribe-context-switch" class="hidden mt-2 rounded-xl border border-slate-200 bg-white shadow-lg p-3 max-w-xl absolute z-20 left-6 right-6"></div>
+              <p class="text-[13px] text-white/80 leading-relaxed line-clamp-2">${escapeHtml(tribeDescription)}</p>
             </div>
+          </div>
+        </div>
+        <div class="bg-white dark:bg-slate-900 px-6 py-3 flex flex-wrap gap-x-6 gap-y-2 text-[13px] border-t border-slate-100 dark:border-slate-700">
+          <div class="flex items-center gap-2">
+            <span class="text-slate-400 font-semibold">${I18N.leader}:</span>
+            <span class="font-bold text-navy dark:text-slate-100">${leaderName}</span>
+          </div>
+          <div class="flex items-center gap-1.5" id="tribe-schedule-cell">
+            <span class="text-slate-400 font-semibold">📅 ${I18N.meetingSchedule}:</span>
+            <span class="text-navy dark:text-slate-100 font-medium">${scheduleHtml}</span>${editBtnHtml}
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-slate-400 font-semibold">👥</span>
+            <span class="font-semibold text-navy dark:text-slate-100">${memberCount}</span>
+            <span class="text-slate-400">membros ativos</span>
           </div>
         </div>
       </div>
@@ -599,41 +541,70 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       .slice(0, 5);
     const recentPubs = publications.slice(0, 5);
 
+    function renderItemRow(title: string, subtitle: string, href?: string): string {
+      const label = href
+        ? `<a href="${escapeHtml(href)}" target="_blank" rel="noopener" class="text-navy dark:text-purple font-semibold hover:underline">${escapeHtml(title)}</a>`
+        : `<span class="font-medium text-slate-800 dark:text-slate-200">${escapeHtml(title)}</span>`;
+      return `<div class="flex justify-between items-center gap-3 py-2.5 border-b border-slate-100 dark:border-slate-700 last:border-0">${label}<span class="text-[11px] text-slate-400 shrink-0">${escapeHtml(subtitle)}</span></div>`;
+    }
+
     const webinarItems = upcomingWebinars.length
       ? upcomingWebinars.map((w: any) => {
           const d = w.date ? new Date(w.date + 'T12:00:00').toLocaleDateString(I18N.dateLocale || 'pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-          const link = w.meeting_link ? `<a href="${escapeHtml(w.meeting_link)}" target="_blank" rel="noopener" class="text-navy dark:text-purple font-semibold hover:underline">${escapeHtml(w.title || 'Webinar')}</a>` : escapeHtml(w.title || 'Webinar');
-          return `<div class="flex justify-between items-center gap-2 py-2 border-b border-slate-100 dark:border-slate-700 last:border-0"><span>${link}</span><span class="text-[12px] text-slate-500 shrink-0">${d}</span></div>`;
+          return renderItemRow(w.title || 'Webinar', d, w.meeting_link || undefined);
         }).join('')
-      : `<div class="py-4 text-center text-slate-500 text-sm">${escapeHtml(I18N.radarEmpty || 'Nenhum item.')}</div>`;
+      : `<div class="py-6 text-center text-slate-400 text-sm">${escapeHtml(I18N.radarEmpty || 'Nenhum item.')}</div>`;
 
     const pubItems = recentPubs.length
       ? recentPubs.map((p: any) => {
-          const title = escapeHtml(p.title || 'Publicação');
           const upd = p.updated_at ? new Date(p.updated_at).toLocaleDateString(I18N.dateLocale || 'pt-BR', { day: '2-digit', month: 'short' }) : '';
-          return `<div class="flex justify-between items-center gap-2 py-2 border-b border-slate-100 dark:border-slate-700 last:border-0"><span class="font-medium text-slate-800 dark:text-slate-200">${title}</span>${upd ? `<span class="text-[11px] text-slate-400">${upd}</span>` : ''}</div>`;
+          return renderItemRow(p.title || 'Publicação', upd);
         }).join('')
-      : `<div class="py-4 text-center text-slate-500 text-sm">${escapeHtml(I18N.radarEmpty || 'Nenhum item.')}</div>`;
+      : `<div class="py-6 text-center text-slate-400 text-sm">${escapeHtml(I18N.radarEmpty || 'Nenhum item.')}</div>`;
 
     el.innerHTML = `
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-          <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
-            <h2 class="text-base font-extrabold text-navy dark:text-slate-100">${escapeHtml(I18N.radarGlobal || 'Radar Global')}</h2>
-            <p class="text-[12px] text-slate-500 mt-0.5">${escapeHtml(I18N.radarWebinars || 'Próximos webinars')}</p>
+      <div class="space-y-6">
+        <div>
+          <h2 class="text-xl font-semibold text-navy dark:text-slate-100 mb-4">Destaques do Núcleo</h2>
+          <p class="text-[13px] text-slate-500 mb-4">Artefatos oficiais, webinars e publicações aprovadas pela curadoria.</p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+              <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
+                <span class="text-lg">🎙️</span>
+                <h3 class="text-sm font-bold text-navy dark:text-slate-100">${escapeHtml(I18N.radarWebinars || 'Próximos Webinars')}</h3>
+              </div>
+              <div class="px-5 py-2 max-h-[260px] overflow-y-auto">${webinarItems}</div>
+            </div>
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+              <div class="px-5 py-3.5 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
+                <span class="text-lg">📄</span>
+                <h3 class="text-sm font-bold text-navy dark:text-slate-100">${escapeHtml(I18N.radarPublications || 'Publicações Oficiais')}</h3>
+              </div>
+              <div class="px-5 py-2 max-h-[260px] overflow-y-auto">${pubItems}</div>
+            </div>
           </div>
-          <div class="p-4 max-h-[280px] overflow-y-auto">${webinarItems}</div>
         </div>
-        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-          <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-700">
-            <h2 class="text-base font-extrabold text-navy dark:text-slate-100">${escapeHtml(I18N.radarPublications || 'Últimas publicações')}</h2>
-            <p class="text-[12px] text-slate-500 mt-0.5">${escapeHtml(I18N.radarPublications || 'Publicações globais recentes')}</p>
+        <div>
+          <h2 class="text-xl font-semibold text-navy dark:text-slate-100 mb-4">Referências Compartilhadas</h2>
+          <p class="text-[13px] text-slate-500 mb-4">Materiais de estudo, rascunhos públicos e recursos curados pela comunidade.</p>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <a href="/publications" class="group flex flex-col items-center gap-2 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-navy/30 hover:shadow-md transition-all no-underline">
+              <span class="text-2xl">📚</span>
+              <span class="text-sm font-bold text-navy dark:text-slate-100 group-hover:underline">Vitrine de Publicações</span>
+              <span class="text-[11px] text-slate-400">Todos os artefatos publicados</span>
+            </a>
+            <a href="/webinars" class="group flex flex-col items-center gap-2 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-navy/30 hover:shadow-md transition-all no-underline">
+              <span class="text-2xl">🎓</span>
+              <span class="text-sm font-bold text-navy dark:text-slate-100 group-hover:underline">Webinars & Eventos</span>
+              <span class="text-[11px] text-slate-400">Agenda e gravações</span>
+            </a>
+            <a href="/knowledge" class="group flex flex-col items-center gap-2 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-navy/30 hover:shadow-md transition-all no-underline">
+              <span class="text-2xl">🔗</span>
+              <span class="text-sm font-bold text-navy dark:text-slate-100 group-hover:underline">Base de Conhecimento</span>
+              <span class="text-[11px] text-slate-400">Artigos, cursos e referências</span>
+            </a>
           </div>
-          <div class="p-4 max-h-[280px] overflow-y-auto">${pubItems}</div>
         </div>
-      </div>
-      <div class="mt-4">
-        <a href="/publications" class="inline-flex items-center gap-2 text-sm font-semibold text-navy dark:text-purple hover:underline">Ver todas as publicações →</a>
       </div>`;
   }
 
@@ -1304,7 +1275,6 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       }
       revealTribeShell();
       checkEditPermission();
-      checkCommsHubAccess();
       checkBroadcastAccess();
       renderAccessNote();
       if (currentMember && !Object.keys(contactData).length
@@ -1356,7 +1326,6 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       revealTribeShell();
       switchTab('general');
       checkEditPermission();
-      checkCommsHubAccess();
       checkBroadcastAccess();
       renderAccessNote();
 
@@ -1482,15 +1451,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       canOperateComms;
   }
 
-  // R2: Comms Hub tab — shown if member has comms_team designation or is high management
-  function checkCommsHubAccess() {
-    if (!currentMember) return;
-    const desigs: string[] = currentMember.designations || [];
-    if (desigs.includes('comms_team') || isHighManagement(currentMember)) {
-      showCommsHubTab();
-      renderCommsHub();
-    }
-  }
+  // Comms Hub access check removed — Comms Hub lives at /admin/comms-ops
 
   // Board/Kanban is handled by TribeKanbanIsland (React dnd-kit)
 
