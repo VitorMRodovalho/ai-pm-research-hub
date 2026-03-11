@@ -57,6 +57,7 @@ async function run() {
     await assertOk('/profile');
     await assertOk('/help');
     await assertOk('/admin');
+    await assertOk('/admin/curatorship');
     await assertOk('/admin/analytics');
     await assertOk('/admin/selection');
     await assertOk('/admin/comms');
