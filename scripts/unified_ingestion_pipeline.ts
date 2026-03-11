@@ -112,10 +112,29 @@ function buildManifest(sensitiveRoot: string): ManifestItem[] {
 }
 
 async function main() {
+  const lockSource = 'mixed';
+  const lockHolder = `unified_ingestion_pipeline:${process.pid}`;
+  let lockAcquired = false;
   const sensitiveRoot = getSensitiveRoot();
   const manifest = buildManifest(sensitiveRoot);
 
   if (MODE === 'apply') {
+    const { data: lockResult, error: lockError } = await sb.rpc('admin_acquire_ingestion_apply_lock', {
+      p_source: lockSource,
+      p_holder: lockHolder,
+      p_ttl_minutes: 45,
+      p_metadata: { script: 'unified_ingestion_pipeline.ts' },
+    });
+    if (lockError) {
+      console.error('[ingestion] lock acquisition failed', lockError.message);
+      process.exit(1);
+    }
+    if (!lockResult?.acquired) {
+      console.error('[ingestion] apply lock already held', JSON.stringify(lockResult, null, 2));
+      process.exit(1);
+    }
+    lockAcquired = true;
+
     const controlSources = ['trello', 'miro', 'calendar', 'volunteer_csv', 'notion', 'whatsapp'];
     const allowMap = new Map<string, boolean>();
     for (const source of controlSources) {
@@ -133,6 +152,12 @@ async function main() {
         return acc;
       }, {} as Record<string, number>);
       console.error('[ingestion] apply blocked by source policy', JSON.stringify(grouped, null, 2));
+      if (lockAcquired) {
+        await sb.rpc('admin_release_ingestion_apply_lock', {
+          p_source: lockSource,
+          p_holder: lockHolder,
+        });
+      }
       process.exit(1);
     }
   }
@@ -193,15 +218,24 @@ async function main() {
     }
   }
 
-  const { error: doneErr } = await sb.rpc('admin_finalize_ingestion_batch', {
-    p_batch_id: batchId,
-    p_status: 'completed',
-    p_summary: summary,
-  });
+  try {
+    const { error: doneErr } = await sb.rpc('admin_finalize_ingestion_batch', {
+      p_batch_id: batchId,
+      p_status: 'completed',
+      p_summary: summary,
+    });
 
-  if (doneErr) {
-    console.error('[ingestion] failed to finalize batch', doneErr.message);
-    process.exit(1);
+    if (doneErr) {
+      console.error('[ingestion] failed to finalize batch', doneErr.message);
+      process.exit(1);
+    }
+  } finally {
+    if (lockAcquired) {
+      await sb.rpc('admin_release_ingestion_apply_lock', {
+        p_source: lockSource,
+        p_holder: lockHolder,
+      });
+    }
   }
 
   console.log(`[ingestion] batch completed: ${batchId}`);

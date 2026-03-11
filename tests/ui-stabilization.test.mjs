@@ -217,6 +217,7 @@ test('unified ingestion pipeline keeps sensitive governance in backend contracts
   const migration = read('supabase/migrations/20260312170000_unified_ingestion_batches.sql');
   const pipeline = read('scripts/unified_ingestion_pipeline.ts');
   const controlsMigration = read('supabase/migrations/20260312200000_ingestion_source_controls.sql');
+  const lockingMigration = read('supabase/migrations/20260313000000_ingestion_apply_locking.sql');
   assert.equal(migration.includes('create table if not exists public.ingestion_batches'), true);
   assert.equal(migration.includes('create table if not exists public.ingestion_batch_files'), true);
   assert.equal(migration.includes('create or replace function public.admin_start_ingestion_batch('), true);
@@ -228,6 +229,11 @@ test('unified ingestion pipeline keeps sensitive governance in backend contracts
   assert.equal(controlsMigration.includes('create table if not exists public.ingestion_source_controls'), true);
   assert.equal(controlsMigration.includes('create or replace function public.admin_set_ingestion_source_policy('), true);
   assert.equal(controlsMigration.includes('create or replace function public.admin_get_ingestion_source_policy('), true);
+  assert.equal(lockingMigration.includes('create table if not exists public.ingestion_apply_locks'), true);
+  assert.equal(lockingMigration.includes('create or replace function public.admin_acquire_ingestion_apply_lock('), true);
+  assert.equal(lockingMigration.includes('create or replace function public.admin_release_ingestion_apply_lock('), true);
+  assert.equal(pipeline.includes("sb.rpc('admin_acquire_ingestion_apply_lock'"), true);
+  assert.equal(pipeline.includes("sb.rpc('admin_release_ingestion_apply_lock'"), true);
 });
 
 test('legacy tribe materialization uses explicit backend lineage/links', () => {

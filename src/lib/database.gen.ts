@@ -1432,6 +1432,30 @@ export type Database = {
           },
         ]
       }
+      ingestion_apply_locks: {
+        Row: {
+          acquired_at: string
+          expires_at: string
+          holder: string
+          metadata: Json
+          source: string
+        }
+        Insert: {
+          acquired_at?: string
+          expires_at: string
+          holder: string
+          metadata?: Json
+          source: string
+        }
+        Update: {
+          acquired_at?: string
+          expires_at?: string
+          holder?: string
+          metadata?: Json
+          source?: string
+        }
+        Relationships: []
+      }
       ingestion_batch_files: {
         Row: {
           batch_id: string
@@ -3693,6 +3717,15 @@ export type Database = {
       }
     }
     Functions: {
+      admin_acquire_ingestion_apply_lock: {
+        Args: {
+          p_holder: string
+          p_metadata?: Json
+          p_source: string
+          p_ttl_minutes?: number
+        }
+        Returns: Json
+      }
       admin_change_tribe_leader: {
         Args: { p_new_leader_id: string; p_reason?: string; p_tribe_id: number }
         Returns: Json
@@ -3803,6 +3836,10 @@ export type Database = {
         Returns: Json
       }
       admin_reactivate_member: { Args: { p_member_id: string }; Returns: Json }
+      admin_release_ingestion_apply_lock: {
+        Args: { p_holder: string; p_source: string }
+        Returns: Json
+      }
       admin_remove_tribe_selection: {
         Args: { p_member_id: string }
         Returns: Json
