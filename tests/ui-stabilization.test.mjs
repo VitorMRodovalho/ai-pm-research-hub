@@ -382,6 +382,16 @@ test('partner-safe governance summary stays backend read-only', () => {
   assert.equal(script.includes("sb.rpc('exec_partner_governance_summary'"), true);
 });
 
+test('ingestion source sla contracts enforce timeout governance', () => {
+  const migration = read('supabase/migrations/20260313100000_ingestion_source_sla_timeouts.sql');
+  const script = read('scripts/check_ingestion_source_timeout.ts');
+
+  assert.equal(migration.includes('create table if not exists public.ingestion_source_sla'), true);
+  assert.equal(migration.includes('create or replace function public.admin_set_ingestion_source_sla('), true);
+  assert.equal(migration.includes('create or replace function public.admin_check_ingestion_source_timeout('), true);
+  assert.equal(script.includes("sb.rpc('admin_check_ingestion_source_timeout'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');
