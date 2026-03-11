@@ -174,6 +174,9 @@ test('analytics v2 grants readonly access without widening admin actions and shi
   assert.equal(analytics.includes("safeRpc('exec_role_transitions')"), true);
   assert.equal(analytics.includes("safeRpc('exec_analytics_v2_quality')"), true);
   assert.equal(analytics.includes('id="analytics-quality-banner"'), true);
+  assert.equal(analytics.includes('id="analytics-interpretation-card"'), true);
+  assert.equal(analytics.includes('id="analytics-copy-summary"'), true);
+  assert.equal(analytics.includes('function buildExecutiveSummary()'), true);
   assert.equal(analytics.includes("sb.from('cycles').select('cycle_code, cycle_label, is_current, sort_order')"), true);
   assert.equal(analytics.includes("sb.from('tribes').select('id, name, is_active').eq('is_active', true).order('id')"), true);
   assert.equal(migration.includes('create or replace function public.can_read_internal_analytics()'), true);

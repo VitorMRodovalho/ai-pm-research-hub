@@ -38,6 +38,15 @@ const ANALYTICS_I18N = {
   qualityWarn: t('admin.analytics.qualityWarn', lang),
   qualityIssue: t('admin.analytics.qualityIssue', lang),
   qualityWindowLabel: t('admin.analytics.qualityWindowLabel', lang),
+  interpretationTitle: t('admin.analytics.interpretationTitle', lang),
+  interpretationBody: t('admin.analytics.interpretationBody', lang),
+  interpretationFunnel: t('admin.analytics.interpretationFunnel', lang),
+  interpretationImpact: t('admin.analytics.interpretationImpact', lang),
+  interpretationRoi: t('admin.analytics.interpretationRoi', lang),
+  interpretationLeadership: t('admin.analytics.interpretationLeadership', lang),
+  copySummary: t('admin.analytics.copySummary', lang),
+  summaryCopied: t('admin.analytics.summaryCopied', lang),
+  summaryCopyError: t('admin.analytics.summaryCopyError', lang),
 };
 ---
 
@@ -134,6 +143,24 @@ const ANALYTICS_I18N = {
         </div>
         <div class="mt-2 text-[.7rem] text-slate-500" id="analytics-quality-window"></div>
         <div class="mt-2 text-[.72rem] text-slate-700" id="analytics-quality-body"></div>
+      </section>
+
+      <section id="analytics-interpretation-card" class="bg-white border border-slate-200 rounded-xl p-4">
+        <div class="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <div class="text-[.75rem] font-semibold text-slate-500 mb-1">{t('admin.analytics.interpretationTitle', lang)}</div>
+            <p class="text-[.72rem] text-slate-500">{t('admin.analytics.interpretationBody', lang)}</p>
+          </div>
+          <button id="analytics-copy-summary" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-[.72rem] font-semibold border border-slate-200 hover:bg-slate-200">
+            {t('admin.analytics.copySummary', lang)}
+          </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3 text-[.72rem] text-slate-600">
+          <div class="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2">{t('admin.analytics.interpretationFunnel', lang)}</div>
+          <div class="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2">{t('admin.analytics.interpretationImpact', lang)}</div>
+          <div class="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2">{t('admin.analytics.interpretationRoi', lang)}</div>
+          <div class="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2">{t('admin.analytics.interpretationLeadership', lang)}</div>
+        </div>
       </section>
 
       <div id="analytics-v2-kpis" class="grid grid-cols-2 xl:grid-cols-5 gap-3">
@@ -264,6 +291,7 @@ const ANALYTICS_I18N = {
   let chartInstances = new Map<string, any>();
   let chartPromise: Promise<any> | null = null;
   let tribeMap = new Map<number, string>();
+  let lastSnapshot: any = null;
 
   function toast(msg: string, type = '') {
     (window as any).toast?.(msg, type);
@@ -773,6 +801,44 @@ const ANALYTICS_I18N = {
     `;
   }
 
+  function buildExecutiveSummary(): string {
+    if (!lastSnapshot) return '';
+    const { funnel, impact, roi, leadership, quality } = lastSnapshot;
+    const stages = funnel?.stages || {};
+    const chapterCount = Array.isArray(roi?.chapters) ? roi.chapters.length : 0;
+    const promoted = Number(leadership?.summary?.promoted_members || 0);
+    const transitions = Number(leadership?.summary?.tracked_transitions || 0);
+    const qualityIssues = Array.isArray(quality?.issues) ? quality.issues.length : 0;
+    const qualityWarnings = Array.isArray(quality?.warnings) ? quality.warnings.length : 0;
+    return [
+      `Scope: ${buildScopeSummary(funnel)}`,
+      `Funnel => total: ${stages.total_members || 0}, onboarding: ${stages.members_with_full_core_trail || 0}, allocated: ${stages.members_allocated_to_tribe || 0}, published: ${stages.members_with_published_artifact || 0}`,
+      `Impact => hours: ${impact?.total_impact_hours || 0}, target%: ${impact?.percent_of_target || 0}`,
+      `ROI => chapters: ${chapterCount}, attributed conversions: ${(roi?.chapters || []).reduce((s: number, c: any) => s + Number(c.attributed_conversions || 0), 0)}`,
+      `Leadership => promoted: ${promoted}, tracked transitions: ${transitions}`,
+      `Quality => issues: ${qualityIssues}, warnings: ${qualityWarnings}`,
+    ].join('\n');
+  }
+
+  function bindPartnerUxActions() {
+    const copyBtn = document.getElementById('analytics-copy-summary');
+    if (!copyBtn || copyBtn.dataset.bound) return;
+    copyBtn.dataset.bound = '1';
+    copyBtn.addEventListener('click', async () => {
+      const summary = buildExecutiveSummary();
+      if (!summary) {
+        toast(L.summaryCopyError || 'Unable to copy summary', 'error');
+        return;
+      }
+      try {
+        await navigator.clipboard?.writeText(summary);
+        toast(L.summaryCopied || 'Summary copied', 'success');
+      } catch {
+        toast(L.summaryCopyError || 'Unable to copy summary', 'error');
+      }
+    });
+  }
+
   function renderQuality(quality: any) {
     const banner = document.getElementById('analytics-quality-banner');
     const title = document.getElementById('analytics-quality-title');
@@ -836,6 +902,7 @@ const ANALYTICS_I18N = {
     }
 
     setText('analytics-scope-summary', buildScopeSummary(funnel));
+    lastSnapshot = { funnel, impact, cert, roi, leadership, quality };
     renderQuality(quality);
     renderKpis(funnel, impact, roi, leadership);
     await Promise.all([
@@ -859,6 +926,7 @@ const ANALYTICS_I18N = {
 
     showPanel();
     setupConsentUi();
+    bindPartnerUxActions();
     bindFilterUi();
     await loadFilterOptions();
     await loadAnalyticsV2();
