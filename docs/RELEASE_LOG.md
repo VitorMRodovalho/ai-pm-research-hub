@@ -1,5 +1,24 @@
 # Release Log
 
+## 2026-03-11 — Sprint 12 (Dev): Artifacts 400 Harden + Tribes Resilience Guard
+
+### Scope
+Fechar a tranche de estabilidade para `artifacts` e `tribes` com foco em prevenção de regressão: evitar chamadas inválidas para RPC de curadoria e ampliar cobertura browser para interação mínima de cards de tribos.
+
+### Delivered
+- `src/pages/artifacts.astro`:
+  - guarda explícita para `artifactId` ausente antes de chamar `curate_item`;
+  - tratamento amigável para erro de UUID inválido (classe de falha que tende a gerar 400).
+- `tests/browser-guards.test.mjs`:
+  - cobertura adicional da home para garantir que um card de tribo expande corretamente ao clique no header.
+- `DEBUG_HOLISTIC_PLAYBOOK.md`:
+  - lição aprendida adicionada para classe de bug `artifacts 400`.
+
+### Audit Results
+- Validado com `npm test`, `npm run test:browser:guards` e `npm run build`.
+
+---
+
 ## 2026-03-11 — Sprint 11 (Dev): CI Path-Portability + Browser Guard Regex Fix
 
 ### Scope

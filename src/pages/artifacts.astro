@@ -806,6 +806,10 @@ const ARTIFACTS_I18N = {
 
   async function saveInlineTags(editor: HTMLElement) {
     const artifactId = editor.dataset.artifactId || '';
+    if (!artifactId) {
+      toast('Item inválido para atualização de tags.', 'error');
+      return;
+    }
     const selected = Array.from(editor.querySelectorAll('input:checked')).map(i => (i as HTMLInputElement).value);
     try {
       const { error } = await sb.rpc('curate_item', {
@@ -818,7 +822,12 @@ const ARTIFACTS_I18N = {
       toast('Tags atualizadas!', 'success');
       renderCatalogFiltered();
     } catch (e: any) {
-      toast(e.message || 'Erro ao salvar tags', 'error');
+      const msg = String(e?.message || '');
+      if (msg.includes('invalid input syntax for type uuid') || msg.includes('22P02')) {
+        toast('Não foi possível atualizar as tags: identificador do artefato inválido.', 'error');
+        return;
+      }
+      toast(msg || 'Erro ao salvar tags', 'error');
     }
   }
 

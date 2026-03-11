@@ -87,6 +87,12 @@ async function run() {
     assert.equal(((await tribesNotice.textContent()) || '').trim().length > 0, true);
     assert.equal(((await tribesDeadline.textContent()) || '').includes('Encerra Sáb 08/Mar 12h BRT'), false);
     assert.equal(await page.locator('#loginPrompt').isVisible(), true);
+    const firstTribeHeader = page.locator('[data-tribe-header]').first();
+    await firstTribeHeader.click();
+    const expandedBody = page.locator('[id^="tb-"]').first();
+    await page.waitForTimeout(120);
+    const expandedHeight = await expandedBody.evaluate((el) => el.scrollHeight);
+    assert.equal(expandedHeight > 0, true);
 
     await page.goto(`${base}/tribe/1`, { waitUntil: 'networkidle' });
     const tribeDenied = page.locator('#tribe-denied');
