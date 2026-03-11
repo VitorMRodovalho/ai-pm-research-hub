@@ -112,6 +112,80 @@ async function run() {
     assert.match(await curDenied.textContent() || '', /Acesso restrito a administradores e lideres/);
     assert.equal(await page.locator('#cur-board').isVisible(), false);
 
+    const curatorshipPage = await browser.newPage();
+    await curatorshipPage.goto(`${base}/admin/curatorship`, { waitUntil: 'networkidle' });
+    await curatorshipPage.evaluate(() => {
+      const fakeMember = {
+        auth_id: 'curator-manager-test',
+        operational_role: 'manager',
+        designations: [],
+        is_superadmin: false,
+        name: 'Curatorship Manager',
+      };
+      const fakeItems = [
+        {
+          id: 'artifact-cur-1',
+          _table: 'artifacts',
+          status: 'draft',
+          title: 'Knowledge Ops Board Review',
+          author_name: 'PM Core Team',
+          tribe_name: 'Tribo de Comunicacao',
+          source: 'manual',
+          tags: ['governance'],
+          suggested_tags: ['community'],
+          tribe_id: null,
+          audience_level: null,
+        },
+      ];
+      const fakeTags = [
+        { tag_key: 'governance', label_pt: 'Governanca', category: 'governance' },
+        { tag_key: 'community', label_pt: 'Comunidade', category: 'community' },
+      ];
+      const fakeTribes = [
+        { id: 6, name: 'Comunicacao', is_active: true },
+      ];
+      const fakeSb = {
+        auth: {
+          getSession() {
+            return Promise.resolve({ data: { session: null } });
+          },
+        },
+        rpc(name) {
+          if (name === 'list_curation_board') return Promise.resolve({ data: fakeItems, error: null });
+          if (name === 'list_pending_curation') return Promise.resolve({ data: fakeItems, error: null });
+          if (name === 'list_taxonomy_tags') return Promise.resolve({ data: fakeTags, error: null });
+          if (name === 'curate_item') return Promise.resolve({ data: { success: true }, error: null });
+          if (name === 'get_member_by_auth') return Promise.resolve({ data: fakeMember, error: null });
+          return Promise.resolve({ data: [], error: null });
+        },
+        from(table) {
+          if (table === 'tribes') {
+            return {
+              select() { return this; },
+              eq() { return this; },
+              order() { return Promise.resolve({ data: fakeTribes, error: null }); },
+            };
+          }
+          return {
+            select() { return this; },
+            eq() { return this; },
+            order() { return Promise.resolve({ data: [], error: null }); },
+          };
+        },
+      };
+      window.navGetMember = () => fakeMember;
+      window.navGetSb = () => fakeSb;
+      window.dispatchEvent(new CustomEvent('nav:member', { detail: fakeMember }));
+    });
+    await curatorshipPage.locator('#cur-board').waitFor({ state: 'visible' });
+    assert.match(await curatorshipPage.locator('#cur-count').textContent() || '', /item/);
+    await curatorshipPage.locator('.cur-btn-approve').first().click();
+    assert.equal(await curatorshipPage.locator('.cur-confirm-approve').first().isVisible(), true);
+    assert.equal(await curatorshipPage.locator('.cur-approve-tribe').first().isVisible(), true);
+    await curatorshipPage.locator('#cur-search').fill('inexistente');
+    assert.equal(await curatorshipPage.locator('.kanban-card').count(), 0);
+    await curatorshipPage.close();
+
     await page.goto(`${base}/admin/webinars`, { waitUntil: 'networkidle' });
     await page.evaluate(() => {
       const fakeMember = {

@@ -1,5 +1,23 @@
 # Release Log
 
+## 2026-03-11 — Sprint 16 (Dev): Browser Guard Expansion for Critical Flows
+
+### Scope
+Expandir cobertura de regressão para fluxos críticos operacionais (Credly/profile, alocação admin e curadoria) com foco em estabilidade de interface e ACL.
+
+### Delivered
+- `tests/ui-stabilization.test.mjs`:
+  - novo teste para contrato do botão `verify-credly` (event delegation + toggle seguro de estado do botão);
+  - novo teste de proteção null-safe no pending allocation (`safeName` + `normalizeDigits`).
+- `tests/browser-guards.test.mjs`:
+  - cenário positivo para `/admin/curatorship` com manager simulado;
+  - validação de board visível, editor de aprovação (`visibilidade/audiência`) e busca operacional.
+
+### Audit Results
+- Validado com `npm test`, `npm run test:browser:guards` e `npm run build`.
+
+---
+
 ## 2026-03-11 — Sprint 15 (Dev): Governance Automation Gate + Short Guide
 
 ### Scope

@@ -22,6 +22,22 @@ test('profile credly verification retries once on 401 with refreshed session', (
   assert.equal(content.includes('await sb.auth.refreshSession();'), true);
 });
 
+test('profile credly verify action keeps delegated handler and button state safety', () => {
+  const content = read('src/pages/profile.astro');
+  assert.equal(content.includes("case 'verify-credly':"), true);
+  assert.equal(content.includes("id=\"btn-credly-verify\" data-action=\"verify-credly\""), true);
+  assert.equal(content.includes('btn.disabled = true; btn.textContent = PROFILE_I18N.credlyVerifying;'), true);
+  assert.equal(content.includes('btn.disabled = false; btn.textContent = PROFILE_I18N.verifyCredly;'), true);
+});
+
+test('admin allocation pending list is null-safe for name and phone rendering', () => {
+  const content = read('src/pages/admin/index.astro');
+  assert.equal(content.includes('function safeName(m: any): string'), true);
+  assert.equal(content.includes('function normalizeDigits(value: unknown): string'), true);
+  assert.equal(content.includes('const nm = safeName(m);'), true);
+  assert.equal(content.includes('const phone = normalizeDigits(m?.phone);'), true);
+});
+
 test('gamification lifetime ranking uses aggregated points map before fallback', () => {
   const content = read('src/pages/gamification.astro');
   assert.equal(content.includes('lifetime_points: Number(lifetimePointsByMember[m.member_id] ?? m.total_points ?? 0)'), true);
