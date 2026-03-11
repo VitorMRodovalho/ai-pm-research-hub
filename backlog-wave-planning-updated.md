@@ -861,7 +861,7 @@ Native Supabase-based comms metrics replaced external Looker dependency. YouTube
 | W49 | Auth route smoke expansion | Medium | Done | `smoke-routes` agora verifica marcadores de deny em rotas protegidas no contexto anônimo e mantém redirects legados. |
 | W50 | Docs index by persona (execution pass) | Medium | Done | `docs/INDEX.md` recebeu verificação operacional e novo script `audit_docs_index_links.sh` para integridade contínua de referências. |
 | W51 | ADR baseline extraction | Medium | Done | Baseline `docs/adr/` criada (ADR-0001..0003), índice publicado e auditoria `audit_adr_index.sh` com lock de regressão. |
-| W52 | Admin modularization phase 4 | Medium | Planned | Quebrar superfícies admin extensas em módulos menores sem regressão de ACL e navegação. |
+| W52 | Admin modularization phase 4 | Medium | Done | `admin/index.astro` extraiu helpers de catálogo para `src/lib/admin/tribe-catalog-ui.ts` com lock de regressão. |
 | W53 | Comms integration execution lane | High | Planned | Converter baseline/roadmap de comms em entregas incrementais com critérios de aceitação claros. |
 | W54 | Knowledge Hub Wave B contracts | High | Planned | Fechar contratos funcionais para `/workspace` antes de expansão de funcionalidades. |
 | W55 | Analytics V2 partner QA rerun | Medium | Planned | Repetir evidência partner-facing pós-ajustes e versionar snapshot de comparação. |

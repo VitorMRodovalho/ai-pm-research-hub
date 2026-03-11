@@ -790,6 +790,16 @@ test('adr baseline exists and index audit script validates referenced ADR files'
   assert.equal(adrAudit.includes('ADR index has broken references'), true);
 });
 
+test('admin tribe catalog UI helpers are extracted to dedicated module', () => {
+  const admin = read('src/pages/admin/index.astro');
+  const helpers = read('src/lib/admin/tribe-catalog-ui.ts');
+  assert.equal(admin.includes("from '../../lib/admin/tribe-catalog-ui'"), true);
+  assert.equal(admin.includes('getTribeCatalogSummary(tribes, MEMBER?.is_superadmin === true, isRuntimeTribeActive)'), true);
+  assert.equal(admin.includes('buildAdminTribeFilterHtml({'), true);
+  assert.equal(helpers.includes('export function getTribeCatalogSummary('), true);
+  assert.equal(helpers.includes('export function buildAdminTribeFilterHtml('), true);
+});
+
 test('home pages resolve shared home schedule instead of fetching only the deadline', () => {
   const pt = read('src/pages/index.astro');
   const en = read('src/pages/en/index.astro');

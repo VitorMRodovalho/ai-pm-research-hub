@@ -1,5 +1,21 @@
 # Governance Changelog
 
+## 2026-03-11 — Admin Modularization (Phase 4 Slice)
+
+### Decisions
+
+1. **Helpers de catálogo de tribos no admin passam para módulo dedicado**: lógica de resumo e montagem de opções do filtro foi extraída para `src/lib/admin/tribe-catalog-ui.ts`.
+
+2. **Modularização incremental continua preferível ao big-bang**: a extração foi limitada a funções estáveis e de baixo risco, preservando ACL e fluxo já validados.
+
+### Process Lessons Learned
+
+1. **Separar helpers puros facilita lock de regressão textual e manutenção futura**.
+
+2. **Fases pequenas reduzem chance de regressão em arquivo monolítico**: o `admin/index.astro` continua funcional enquanto diminui acoplamento gradualmente.
+
+---
+
 ## 2026-03-11 — ADR Baseline For Durable Technical Decisions
 
 ### Decisions

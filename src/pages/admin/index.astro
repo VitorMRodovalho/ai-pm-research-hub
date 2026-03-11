@@ -1172,6 +1172,7 @@ const ADMIN_I18N = {
     resolveTierFromMember,
   } from '../../lib/admin/constants';
   import { initials, normalizeDigits, safeName } from '../../lib/admin/member-format';
+  import { buildAdminTribeFilterHtml, getTribeCatalogSummary } from '../../lib/admin/tribe-catalog-ui';
   import { canManageTribeLifecycle } from '../../lib/tribes/access';
   import { buildTribeLabel, getQuadrantColor, getTribeColor, isRuntimeTribeActive } from '../../lib/tribes/catalog';
 
@@ -1455,11 +1456,7 @@ const ADMIN_I18N = {
   function renderTribeCatalogSummary(tribes: any[]) {
     const summaryEl = document.getElementById('tribe-catalog-summary');
     if (!summaryEl) return;
-    const active = tribes.filter((tribe: any) => isRuntimeTribeActive(tribe)).length;
-    const inactive = tribes.length - active;
-    summaryEl.textContent = MEMBER?.is_superadmin
-      ? `${active} ativas · ${inactive} inativas`
-      : `${active} ativas no catálogo`;
+    summaryEl.textContent = getTribeCatalogSummary(tribes, MEMBER?.is_superadmin === true, isRuntimeTribeActive);
   }
 
   function populateAdminTribeFilter(tribes: any[]) {
@@ -1468,10 +1465,13 @@ const ADMIN_I18N = {
     const currentValue = select.value;
     const allLabel = select.querySelector('option[value=""]')?.textContent || 'Todas as tribos';
     const noneLabel = select.querySelector('option[value="none"]')?.textContent || 'Sem tribo';
-    const dynamicOptions = tribes.map((tribe: any) =>
-      `<option value="${tribe.id}">${String(tribe.id).padStart(2, '0')} — ${escapeHtml(buildTribeLabel(tribe))}</option>`
-    ).join('');
-    select.innerHTML = `<option value="">${escapeHtml(allLabel)}</option>${dynamicOptions}<option value="none">${escapeHtml(noneLabel)}</option>`;
+    select.innerHTML = buildAdminTribeFilterHtml({
+      tribes,
+      allLabel,
+      noneLabel,
+      buildLabel: buildTribeLabel,
+      escapeHtml,
+    });
     select.value = currentValue;
   }
 

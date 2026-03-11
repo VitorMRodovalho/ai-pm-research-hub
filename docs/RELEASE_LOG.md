@@ -1,5 +1,26 @@
 # Release Log
 
+## 2026-03-11 — Sprint 38 (Dev): Admin Modularization Phase 4
+
+### Scope
+Reduzir acoplamento do `admin/index.astro` extraindo helpers de UI do catálogo de tribos para módulo dedicado, sem alterar ACL ou fluxo operacional.
+
+### Delivered
+- Novo módulo: `src/lib/admin/tribe-catalog-ui.ts`
+  - `getTribeCatalogSummary(...)`
+  - `buildAdminTribeFilterHtml(...)`
+- `src/pages/admin/index.astro`:
+  - passa a importar os helpers extraídos;
+  - mantém comportamento atual de resumo e filtro dinâmico do catálogo.
+- `tests/ui-stabilization.test.mjs`:
+  - lock de regressão para garantir extração e uso do módulo.
+
+### Audit Results
+- `npm test`
+- `npm run build`
+
+---
+
 ## 2026-03-11 — Sprint 37 (Dev): ADR Baseline Extraction
 
 ### Scope
