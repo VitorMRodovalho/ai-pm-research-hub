@@ -180,6 +180,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   import { hasMinimumTier, resolveTierFromMember } from '../lib/admin/constants';
   import { ROLE_LABELS, ROLE_COLORS } from '../lib/supabase';
   import { getMemberRole } from '../lib/routing';
+  import { buildWebinarCommsHref, getAttendanceEditAssistantCopy, getAttendanceHandoffCopy } from '../lib/webinars/context-aids';
 
   const I18N = (window as any).__ATTENDANCE_I18N || {
     loading: 'Carregando...',
@@ -338,12 +339,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       actions.innerHTML = '';
       return;
     }
-    const actionCopy: Record<string, string> = {
-      'meeting-link': 'Handoff contextual: completar o meeting link operacional deste webinar.',
-      'youtube-url': 'Handoff contextual: registrar o replay deste webinar no evento correspondente.',
-    };
     const parts = [
-      actionCopy[ATTENDANCE_ROUTE.action] || 'Handoff contextual: abrir o fluxo de eventos no contexto do webinar selecionado.',
+      getAttendanceHandoffCopy(ATTENDANCE_ROUTE.action),
     ];
     if (ATTENDANCE_ROUTE.query) parts.push(`Filtro atual: "${escapeAttr(ATTENDANCE_ROUTE.query)}".`);
     if (ATTENDANCE_ROUTE.type) parts.push(`Tipo: ${escapeAttr(ATTENDANCE_ROUTE.type)}.`);
@@ -352,7 +349,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     note.classList.remove('hidden');
 
     const focused = currentFocusedEvent();
-    const commsHref = focused ? buildAttendanceCommsHref(focused) : '';
+    const commsHref = focused ? buildWebinarCommsHref(ATTENDANCE_ROUTE, focused) : '';
     actions.innerHTML = `
       ${focused && CAN_MANAGE
         ? '<button type="button" class="px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold border-0 cursor-pointer hover:opacity-90" data-action="open-focused-edit">Editar webinar focado</button>'
@@ -381,20 +378,6 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   function currentFocusedEvent(): any | null {
     if (!ATTENDANCE_ROUTE.eventId) return null;
     return ALL_EVENTS.find((ev: any) => ev.id === ATTENDANCE_ROUTE.eventId) || null;
-  }
-
-  function buildAttendanceCommsHref(ev: any): string {
-    const params = new URLSearchParams();
-    params.set('focus', 'broadcasts');
-    params.set('context', 'webinar');
-    params.set('stage', ATTENDANCE_ROUTE.action === 'youtube-url' ? 'followup' : 'invite');
-    if (ev.id) params.set('eventId', String(ev.id));
-    if (ev.title) {
-      params.set('q', String(ev.title));
-      params.set('title', String(ev.title));
-    }
-    if (ev.date) params.set('date', String(ev.date));
-    return `/admin/comms?${params.toString()}`;
   }
 
   function maybeHandleFocusedEvent(events: any[]) {
@@ -437,7 +420,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       return;
     }
     if (ATTENDANCE_ROUTE.action === 'meeting-link') {
-      box.innerHTML = 'Assistente contextual: adicione ou confirme o meeting link desta sessao, revise data/duracao e salve para liberar a divulgacao no fluxo de webinars.';
+      box.innerHTML = getAttendanceEditAssistantCopy(ATTENDANCE_ROUTE.action);
       box.classList.remove('hidden');
       requestAnimationFrame(() => {
         (document.getElementById('edit-ev-link') as HTMLInputElement | null)?.focus();
@@ -445,7 +428,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       return;
     }
     if (ATTENDANCE_ROUTE.action === 'youtube-url') {
-      box.innerHTML = 'Assistente contextual: cole o replay em `youtube_url`, confirme a flag de gravacao e salve para que o proximo handoff de publicacao possa seguir.';
+      box.innerHTML = getAttendanceEditAssistantCopy(ATTENDANCE_ROUTE.action);
       box.classList.remove('hidden');
       requestAnimationFrame(() => {
         (document.getElementById('edit-ev-youtube') as HTMLInputElement | null)?.focus();

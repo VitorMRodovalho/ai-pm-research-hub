@@ -152,6 +152,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
 <script>
   import { canAccessAdminRoute } from '../../lib/admin/constants';
+  import { buildAttendanceFromCommsRoute, buildCommsPlaybookTemplates } from '../../lib/webinars/context-aids';
 
   let sb: any = null;
   let allBroadcasts: any[] = [];
@@ -358,42 +359,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   }
 
   function buildAttendanceFromCommsHref(): string {
-    const params = new URLSearchParams();
-    params.set('tab', 'events');
-    params.set('type', 'webinar');
-    if (COMMS_ROUTE.q) params.set('q', COMMS_ROUTE.q);
-    if (COMMS_ROUTE.eventId) params.set('eventId', COMMS_ROUTE.eventId);
-    if (COMMS_ROUTE.stage === 'followup') {
-      params.set('action', 'youtube-url');
-      params.set('edit', '1');
-    }
-    return `/attendance?${params.toString()}`;
+    return buildAttendanceFromCommsRoute(COMMS_ROUTE);
   }
 
   function buildCommsPlaybook(): Array<{ title: string; tone: string; subject: string; body: string }> {
-    const title = COMMS_ROUTE.title || 'Webinar';
-    const date = formatRouteDate(COMMS_ROUTE.date) || 'data a confirmar';
-    const invite = {
-      title: 'Convite base',
-      tone: 'bg-blue-50 border-blue-200',
-      subject: `[Webinar] ${title} — ${date}`,
-      body: `Olá, pessoal.\n\nTemos o webinar "${title}" programado para ${date}.\n\nSe possível, reforcem a participação do público-alvo e utilizem o link operacional já validado no Attendance.\n\nEm breve seguimos com novos lembretes.`,
-    };
-    const reminder = {
-      title: 'Lembrete base',
-      tone: 'bg-amber-50 border-amber-200',
-      subject: `[Lembrete] ${title} acontece em ${date}`,
-      body: `Olá, pessoal.\n\nPassando para lembrar do webinar "${title}", marcado para ${date}.\n\nConfiram o link da sessão, a audiência pretendida e a orientação de presença antes do início.\n\nNos vemos lá.`,
-    };
-    const followup = {
-      title: 'Follow-up base',
-      tone: 'bg-emerald-50 border-emerald-200',
-      subject: `[Replay] ${title} — material disponível`,
-      body: `Olá, pessoal.\n\nO webinar "${title}" já foi realizado e estamos fechando a publicação do replay e dos materiais relacionados.\n\nAssim que o conteúdo estiver confirmado nas superfícies finais, podemos divulgar o acesso e próximos passos ao público.`,
-    };
-    if (COMMS_ROUTE.stage === 'followup') return [followup, invite];
-    if (COMMS_ROUTE.stage === 'reminder') return [reminder, invite];
-    return [invite, reminder];
+    return buildCommsPlaybookTemplates(COMMS_ROUTE, formatRouteDate);
   }
 
   function renderCommsPlaybook() {
