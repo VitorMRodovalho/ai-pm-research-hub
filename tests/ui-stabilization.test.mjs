@@ -261,6 +261,16 @@ test('notion normalization contracts are backend-mapped before board insertion',
   assert.equal(script.includes("sb.rpc('admin_finalize_ingestion_batch'"), true);
 });
 
+test('continuity overrides support explicit renumbering paths', () => {
+  const migration = read('supabase/migrations/20260312220000_tribe_continuity_overrides.sql');
+  const script = read('scripts/seed_continuity_overrides.ts');
+  assert.equal(migration.includes('create table if not exists public.tribe_continuity_overrides'), true);
+  assert.equal(migration.includes('create or replace function public.admin_upsert_tribe_continuity_override('), true);
+  assert.equal(script.includes('fabricio-stream-renumbering'), true);
+  assert.equal(script.includes('debora-stream-renumbering'), true);
+  assert.equal(script.includes("sb.rpc('admin_upsert_tribe_continuity_override'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

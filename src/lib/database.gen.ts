@@ -2726,6 +2726,100 @@ export type Database = {
         }
         Relationships: []
       }
+      tribe_continuity_overrides: {
+        Row: {
+          continuity_key: string
+          continuity_type: string
+          created_at: string
+          current_cycle_code: string
+          current_tribe_id: number | null
+          id: number
+          is_active: boolean
+          leader_name: string | null
+          legacy_cycle_code: string
+          legacy_tribe_id: number | null
+          metadata: Json
+          notes: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          continuity_key: string
+          continuity_type?: string
+          created_at?: string
+          current_cycle_code: string
+          current_tribe_id?: number | null
+          id?: number
+          is_active?: boolean
+          leader_name?: string | null
+          legacy_cycle_code: string
+          legacy_tribe_id?: number | null
+          metadata?: Json
+          notes?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          continuity_key?: string
+          continuity_type?: string
+          created_at?: string
+          current_cycle_code?: string
+          current_tribe_id?: number | null
+          id?: number
+          is_active?: boolean
+          leader_name?: string | null
+          legacy_cycle_code?: string
+          legacy_tribe_id?: number | null
+          metadata?: Json
+          notes?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tribe_continuity_overrides_current_tribe_id_fkey"
+            columns: ["current_tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribe_continuity_overrides_legacy_tribe_id_fkey"
+            columns: ["legacy_tribe_id"]
+            isOneToOne: false
+            referencedRelation: "tribes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribe_continuity_overrides_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tribe_continuity_overrides_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tribe_continuity_overrides_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tribe_continuity_overrides_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tribe_deliverables: {
         Row: {
           artifact_id: string | null
@@ -3700,6 +3794,21 @@ export type Database = {
           p_quadrant?: number
           p_quadrant_name?: string
           p_whatsapp_url?: string
+        }
+        Returns: Json
+      }
+      admin_upsert_tribe_continuity_override: {
+        Args: {
+          p_continuity_key: string
+          p_continuity_type?: string
+          p_current_cycle_code: string
+          p_current_tribe_id: number
+          p_is_active?: boolean
+          p_leader_name?: string
+          p_legacy_cycle_code: string
+          p_legacy_tribe_id: number
+          p_metadata?: Json
+          p_notes?: string
         }
         Returns: Json
       }
