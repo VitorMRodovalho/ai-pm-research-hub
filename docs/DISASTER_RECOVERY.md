@@ -150,3 +150,13 @@ Objetivo: validar que um segundo operador consegue executar recuperação e depl
    - quem executou
    - data/hora
    - evidências e gaps
+
+### Evidência obrigatória
+
+Usar template: `docs/project-governance/BUS_FACTOR_DRILL_EVIDENCE_TEMPLATE.md`.
+
+Critério mínimo de aprovação do drill:
+
+1. Fluxo executado sem intervenção técnica direta do mantenedor principal.
+2. Evidências anexadas (logs, screenshots e referência de commit).
+3. Gaps convertidos em ações com owner e prazo.

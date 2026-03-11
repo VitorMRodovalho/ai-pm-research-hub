@@ -1,5 +1,21 @@
 # Release Log
 
+## 2026-03-11 — Sprint 19 (Dev): Bus Factor Drill Evidence Pack
+
+### Scope
+Fortalecer o controle de continuidade operacional com template padronizado de evidências para drill de operador secundário.
+
+### Delivered
+- `docs/project-governance/BUS_FACTOR_DRILL_EVIDENCE_TEMPLATE.md`:
+  - metadados, checklist, anexos de evidência, matriz de gaps e plano de ação.
+- `docs/DISASTER_RECOVERY.md`:
+  - seção de drill atualizada com referência explícita ao template e critérios mínimos de aprovação.
+
+### Audit Results
+- Validado com `npm run build`.
+
+---
+
 ## 2026-03-11 — Sprint 18 (Dev): Documentation Index by Persona
 
 ### Scope
