@@ -161,7 +161,8 @@ const ROLE_COLORS: Record<string, string> = {
   }
 
   function memberCard(m: Member, subtitle?: string): string {
-    const initials = m.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+    const safeName = String(m?.name || 'Membro sem nome');
+    const initials = safeName.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
     const photo = m.photo_url
       ? `<img src="${m.photo_url}" class="w-16 h-16 rounded-full object-cover border-2 border-white/10" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
         + `<div style="display:none" class="w-16 h-16 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.8rem]">${initials}</div>`
@@ -175,7 +176,7 @@ const ROLE_COLORS: Record<string, string> = {
       : `<div class="text-[.6rem] text-slate-400">${m.chapter || ''}</div>`;
     return `<div class="text-center w-[90px]">
       ${photo}
-      <div class="text-[.7rem] font-semibold mt-1.5 leading-tight">${m.name.split(' ').slice(0, 2).join(' ')} ${li}</div>
+      <div class="text-[.7rem] font-semibold mt-1.5 leading-tight">${safeName.split(' ').slice(0, 2).join(' ')} ${li}</div>
       ${sub}
       <div class="flex justify-center gap-[3px] mt-1">${dots}</div>
     </div>`;

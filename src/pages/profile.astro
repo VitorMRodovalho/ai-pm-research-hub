@@ -704,7 +704,8 @@ const PROFILE_I18N = {
     const el = document.getElementById('profile-content');
     if (!el) return;
 
-    const initials = m.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+    const safeName = String(m?.name || PROFILE_I18N.defaultName || 'Membro');
+    const initials = safeName.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
     const comp = getCompleteness(m);
     const barColor = completenessColor(comp.pct);
     const secondaryEmails: string[] = m.secondary_emails || [];
@@ -722,7 +723,7 @@ const PROFILE_I18N = {
             : `<div class="w-16 h-16 rounded-full bg-teal flex items-center justify-center text-white font-bold text-xl">${initials}</div>`
           }
           <div class="flex-1 min-w-0">
-            <div class="font-extrabold text-lg text-navy">${m.name}</div>
+            <div class="font-extrabold text-lg text-navy">${safeName}</div>
             <div class="text-sm text-slate-500">${m.chapter || '—'}</div>
             <div class="mt-1 flex flex-wrap gap-1">${roleBadgesHtml(m)}</div>
           </div>

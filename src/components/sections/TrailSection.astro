@@ -154,7 +154,8 @@ try {
     const container = document.getElementById('rankingContainer');
     if (!container) return;
     container.innerHTML = ranked.map((r: any) => {
-      const initials = r.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+      const safeName = String(r?.name || 'Membro sem nome');
+      const initials = safeName.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
       const photoEl = r.photo
         ? `<img src="${r.photo}" class="w-8 h-8 rounded-full object-cover" alt="">`
         : `<div class="w-8 h-8 rounded-full bg-teal flex items-center justify-center text-white text-[.65rem] font-bold">${initials}</div>`;
@@ -163,7 +164,7 @@ try {
       return `<div class="bg-white/[.06] rounded-xl p-3 flex items-center gap-2.5">
         ${photoEl}
         <div class="flex-1 min-w-0">
-          <div class="text-[.78rem] font-semibold truncate">${r.name.split(' ').slice(0, 2).join(' ')}${badge}</div>
+          <div class="text-[.78rem] font-semibold truncate">${safeName.split(' ').slice(0, 2).join(' ')}${badge}</div>
           <div class="bg-white/10 rounded h-1.5 mt-1 overflow-hidden">
             <div class="h-full rounded transition-all duration-500" style="width:${r.pct}%;background:${barColor}"></div>
           </div>

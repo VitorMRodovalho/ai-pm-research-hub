@@ -1,5 +1,30 @@
 # Release Log
 
+## 2026-03-11 — Sprint W43.1-W43.2: SSR Name Guards + Member Data Sanity Patch
+
+### Scope
+Fechar follow-through de confiabilidade com hardening de renderizacao em componentes sensiveis a dados incompletos e aplicar patch SQL de sanidade de `members` no ambiente remoto.
+
+### Delivered
+- **SSR/client render hardening**:
+  - `src/components/sections/TeamSection.astro`
+  - `src/components/sections/CpmaiSection.astro`
+  - `src/components/sections/TrailSection.astro`
+  - `src/pages/profile.astro`
+  Todos os pontos acima passaram a usar fallback seguro de nome antes de `split/map` para evitar quebra quando `name` vier nulo/vazio.
+- **Data patch follow-through**:
+  - `supabase/migrations/20260314110000_member_data_sanity_patch.sql`
+  - Backfill de `members.name` vazio para valor seguro.
+  - Backfill de `members.designations` nulo para array vazio.
+  - Normalizacao de `members.phone` para digitos (ou `null` quando vazio).
+
+### Audit Results
+- `supabase db push`: migration `20260314110000_member_data_sanity_patch.sql` aplicada com sucesso.
+- `supabase migration list`: `Local` e `Remote` alinhados apos aplicacao.
+- Validacao de app (nesta tranche): `npm test` + `npm run build` + `npm run smoke:routes` no fechamento do sprint.
+
+---
+
 ## 2026-03-11 — Sprint W42.3-W43.3: CI Browser Gate + Operator Regression Locks
 
 ### Scope

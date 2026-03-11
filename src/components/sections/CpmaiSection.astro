@@ -78,8 +78,9 @@ const { lang = 'pt-BR' } = Astro.props;
 
       // Build cards
       grid.innerHTML = members.map((m: any) => {
+        const safeName = String(m?.name || 'Membro sem nome');
         const photoUrl = m.photo_url || '';
-        const initials = m.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+        const initials = safeName.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
         const cpmaiBadge = m.credly_badges?.find?.((b: any) => b.category === 'cpmai');
         const badgeUrl = cpmaiBadge?.badge_url || m.credly_url || '';
         const certType = cpmaiBadge?.name || 'PMI-CPMAI';
@@ -87,10 +88,10 @@ const { lang = 'pt-BR' } = Astro.props;
         return `
           <div class="bg-white rounded-2xl border border-slate-200 p-5 text-center hover:-translate-y-px hover:shadow-md transition-all duration-200">
             ${photoUrl
-              ? `<img src="${photoUrl}" alt="${m.name}" class="w-16 h-16 rounded-full object-cover mx-auto mb-3 border-2 border-amber/30">`
+              ? `<img src="${photoUrl}" alt="${safeName}" class="w-16 h-16 rounded-full object-cover mx-auto mb-3 border-2 border-amber/30">`
               : `<div class="w-16 h-16 rounded-full bg-amber/10 flex items-center justify-center text-amber font-bold text-lg mx-auto mb-3 border-2 border-amber/30">${initials}</div>`
             }
-            <div class="font-bold text-sm text-navy">${m.name}</div>
+            <div class="font-bold text-sm text-navy">${safeName}</div>
             <div class="text-[.68rem] text-slate-400 mt-0.5">${m.chapter || ''}</div>
             <div class="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[.65rem] font-bold bg-amber/10 text-amber">
               🎓 ${certType}
