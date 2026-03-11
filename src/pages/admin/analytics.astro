@@ -2,31 +2,37 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import AdminNav from '../../components/nav/AdminNav.astro';
+import ChartCard from '../../components/analytics/ChartCard.astro';
+import { CHAPTER_FULL } from '../../lib/admin/constants';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
+const chapterOptions = Object.entries(CHAPTER_FULL).map(([code, label]) => ({ code, label }));
 const ANALYTICS_I18N = {
   consentGranted: t('admin.analytics.consentGranted', lang),
   consentDenied: t('admin.analytics.consentDenied', lang),
   consentUnknown: t('admin.analytics.consentUnknown', lang),
-  funnelTitle: t('admin.analytics.funnelTitle', lang),
-  funnelDesc: t('admin.analytics.funnelDesc', lang),
-  radarTitle: t('admin.analytics.radarTitle', lang),
-  radarDesc: t('admin.analytics.radarDesc', lang),
-  totalMembers: t('admin.analytics.totalMembers', lang),
-  withTribe: t('admin.analytics.withTribe', lang),
-  withCredly: t('admin.analytics.withCredly', lang),
-  withPhoto: t('admin.analytics.withPhoto', lang),
-  withLinkedin: t('admin.analytics.withLinkedin', lang),
-  tribeLeaders: t('admin.analytics.tribeLeaders', lang),
-  totalArtifacts: t('admin.analytics.totalArtifacts', lang),
-  totalEvents: t('admin.analytics.totalEvents', lang),
-  totalBroadcasts: t('admin.analytics.totalBroadcasts', lang),
-  members: t('admin.analytics.members', lang),
-  credly: t('admin.analytics.credly', lang),
-  photos: t('admin.analytics.photos', lang),
-  linkedin: t('admin.analytics.linkedin', lang),
-  artifacts: t('admin.analytics.artifacts', lang),
-  noData: t('admin.analytics.noData', lang),
+  emptyState: t('admin.analytics.emptyState', lang),
+  chartNoData: t('admin.analytics.chartNoData', lang),
+  chartError: t('admin.analytics.chartError', lang),
+  stageEntered: t('admin.analytics.stageEntered', lang),
+  stageOnboarding: t('admin.analytics.stageOnboarding', lang),
+  stageAllocated: t('admin.analytics.stageAllocated', lang),
+  stagePublished: t('admin.analytics.stagePublished', lang),
+  backgroundLabel: t('admin.analytics.backgroundLabel', lang),
+  impactLabel: t('admin.analytics.impactLabel', lang),
+  currentAffiliates: t('admin.analytics.currentAffiliates', lang),
+  attributedAffiliates: t('admin.analytics.attributedAffiliates', lang),
+  promotedMembers: t('admin.analytics.promotedMembers', lang),
+  transitions: t('admin.analytics.transitions', lang),
+  targetMeta: t('admin.analytics.targetMeta', lang),
+  scopePrefix: t('admin.analytics.scopePrefix', lang),
+  allTribesLabel: t('admin.analytics.filterAllTribes', lang),
+  allChaptersLabel: t('admin.analytics.filterAllChapters', lang),
+  allCyclesLabel: t('admin.analytics.filterAllCycles', lang),
+  transitionFrom: t('admin.analytics.transitionFrom', lang),
+  transitionTo: t('admin.analytics.transitionTo', lang),
+  transitionCount: t('admin.analytics.transitionCount', lang),
+  impactHoursShort: t('admin.analytics.impactHoursShort', lang),
 };
 ---
 
@@ -51,163 +57,225 @@ const ANALYTICS_I18N = {
     </div>
 
     <div id="analytics-panel" class="hidden space-y-6">
-      <!-- Consent card -->
-      <div class="bg-white border border-slate-200 rounded-xl p-4">
-        <div class="flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <div class="text-[.75rem] font-semibold text-slate-500 mb-1">{t('admin.analytics.consentTitle', lang)}</div>
-            <p class="text-[.72rem] text-slate-500">{t('admin.analytics.consentBody', lang)}</p>
-            <p class="text-[.68rem] text-slate-400 mt-1" id="consent-status">{t('admin.analytics.consentUnknown', lang)}</p>
-          </div>
-          <div class="flex gap-2">
-            <button id="btn-consent-grant" class="px-3 py-2 bg-emerald-600 text-white rounded-lg text-[.72rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
-              {t('admin.analytics.consentGrant', lang)}
-            </button>
-            <button id="btn-consent-revoke" class="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-[.72rem] font-semibold cursor-pointer border border-slate-200 hover:bg-slate-200 transition-all">
-              {t('admin.analytics.consentRevoke', lang)}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Cross-Source Platform Overview -->
-      <div class="border-b-2 border-slate-200 pb-6 mb-6">
-        <h2 class="text-lg font-extrabold text-navy mb-1">Visão Geral da Plataforma</h2>
-        <p class="text-[.72rem] text-slate-400 mb-4">Dados consolidados de todas as fontes integradas</p>
-
-        <div id="platform-kpis" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4"></div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <div class="px-4 py-3 border-b border-slate-200">
-              <h3 class="text-sm font-bold text-navy">Saúde da Plataforma</h3>
-              <p class="text-[.68rem] text-slate-400">Completude dos dados de membros</p>
-            </div>
-            <div class="p-4" style="height:260px">
-              <canvas id="platform-health-chart"></canvas>
-            </div>
-          </section>
-
-          <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <div class="px-4 py-3 border-b border-slate-200">
-              <h3 class="text-sm font-bold text-navy">Atividade Mensal</h3>
-              <p class="text-[.68rem] text-slate-400">Eventos, artefatos e comunicados por mês</p>
-            </div>
-            <div class="p-4" style="height:260px">
-              <canvas id="activity-timeline-chart"></canvas>
-            </div>
-          </section>
-        </div>
-      </div>
-
-      <!-- KPI Stats -->
-      <div id="stats-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
-
-      <!-- Charts Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <div class="px-4 py-3 border-b border-slate-200">
-            <h2 class="text-sm font-bold text-navy" id="funnel-title"></h2>
-            <p class="text-[.68rem] text-slate-400" id="funnel-desc"></p>
-          </div>
-          <div class="p-4" style="height:300px">
-            <canvas id="funnel-chart"></canvas>
-          </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <section id="analytics-access-note" class="bg-white border border-slate-200 rounded-xl p-4">
+          <div class="text-[.75rem] font-semibold text-slate-500 mb-1">{t('admin.analytics.accessTitle', lang)}</div>
+          <p class="text-[.72rem] text-slate-500">{t('admin.analytics.accessBody', lang)}</p>
         </section>
 
-        <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-          <div class="px-4 py-3 border-b border-slate-200">
-            <h2 class="text-sm font-bold text-navy" id="radar-title"></h2>
-            <p class="text-[.68rem] text-slate-400" id="radar-desc"></p>
-          </div>
-          <div class="p-4" style="height:300px">
-            <canvas id="radar-chart"></canvas>
+        <section class="bg-white border border-slate-200 rounded-xl p-4">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <div class="text-[.75rem] font-semibold text-slate-500 mb-1">{t('admin.analytics.consentTitle', lang)}</div>
+              <p class="text-[.72rem] text-slate-500">{t('admin.analytics.consentBody', lang)}</p>
+              <p class="text-[.68rem] text-slate-400 mt-1" id="consent-status">{t('admin.analytics.consentUnknown', lang)}</p>
+            </div>
+            <div class="flex gap-2">
+              <button id="btn-consent-grant" class="px-3 py-2 bg-emerald-600 text-white rounded-lg text-[.72rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
+                {t('admin.analytics.consentGrant', lang)}
+              </button>
+              <button id="btn-consent-revoke" class="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-[.72rem] font-semibold cursor-pointer border border-slate-200 hover:bg-slate-200 transition-all">
+                {t('admin.analytics.consentRevoke', lang)}
+              </button>
+            </div>
           </div>
         </section>
       </div>
 
-      <!-- Cert Timeline -->
-      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden" id="analytics-filter-shell">
         <div class="px-4 py-3 border-b border-slate-200">
-          <h2 class="text-sm font-bold text-navy">Linha do Tempo de Certificações</h2>
-          <p class="text-[.68rem] text-slate-400">Progressão de certificações por cohort mensal</p>
+          <h2 class="text-sm font-bold text-navy">{t('admin.analytics.filtersTitle', lang)}</h2>
+          <p class="text-[.68rem] text-slate-400">{t('admin.analytics.filtersBody', lang)}</p>
         </div>
-        <div class="p-4" style="height:280px">
-          <canvas id="cert-chart"></canvas>
+        <div class="p-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <label class="text-[.72rem] text-slate-500 font-semibold">
+              {t('admin.analytics.filterCycle', lang)}
+              <select id="analytics-filter-cycle" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white">
+                <option value="">{t('admin.analytics.filterAllCycles', lang)}</option>
+              </select>
+            </label>
+            <label class="text-[.72rem] text-slate-500 font-semibold">
+              {t('admin.analytics.filterTribe', lang)}
+              <select id="analytics-filter-tribe" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white">
+                <option value="">{t('admin.analytics.filterAllTribes', lang)}</option>
+              </select>
+            </label>
+            <label class="text-[.72rem] text-slate-500 font-semibold">
+              {t('admin.analytics.filterChapter', lang)}
+              <select id="analytics-filter-chapter" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white">
+                <option value="">{t('admin.analytics.filterAllChapters', lang)}</option>
+              </select>
+            </label>
+          </div>
+          <div class="mt-3 flex items-center justify-between gap-3 flex-wrap">
+            <div id="analytics-scope-summary" class="text-[.72rem] text-slate-500">{t('admin.analytics.loading', lang)}</div>
+            <div class="flex gap-2">
+              <button id="analytics-apply" class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-semibold hover:opacity-90">
+                {t('admin.analytics.applyFilters', lang)}
+              </button>
+              <button id="analytics-reset" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-semibold border border-slate-200 hover:bg-slate-200">
+                {t('admin.analytics.resetFilters', lang)}
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- Selection Process Analytics -->
-      <div class="mt-8 pt-6 border-t-2 border-slate-200">
-        <div class="flex items-center gap-3 mb-4">
-          <h2 class="text-lg font-extrabold text-navy">Processo Seletivo</h2>
-          <span class="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full uppercase">LGPD</span>
+      <div id="analytics-v2-kpis" class="grid grid-cols-2 xl:grid-cols-5 gap-3">
+        <div class="bg-white border border-slate-200 rounded-xl p-4">
+          <div class="text-[.68rem] text-slate-400 font-semibold">{t('admin.analytics.kpiCohort', lang)}</div>
+          <div id="kpi-cohort-members" class="text-2xl font-black text-navy mt-1">-</div>
+          <div id="kpi-cohort-meta" class="text-[.65rem] text-slate-400 mt-1">-</div>
         </div>
-        <p class="text-[.72rem] text-slate-400 mb-5">Dados agregados de voluntários — Ciclos 1, 2 e 3</p>
-
-        <!-- Funnel per cycle -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <div class="px-4 py-3 border-b border-slate-200">
-              <h3 class="text-sm font-bold text-navy">Funil por Ciclo</h3>
-              <p class="text-[.68rem] text-slate-400">Candidaturas vs. membros existentes vs. ativos</p>
-            </div>
-            <div class="p-4" style="height:300px">
-              <canvas id="sel-funnel-chart"></canvas>
-            </div>
-          </section>
-
-          <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <div class="px-4 py-3 border-b border-slate-200">
-              <h3 class="text-sm font-bold text-navy">Certificações</h3>
-              <p class="text-[.68rem] text-slate-400">Distribuição de certificações entre voluntários</p>
-            </div>
-            <div class="p-4" style="height:300px">
-              <canvas id="sel-certs-chart"></canvas>
-            </div>
-          </section>
+        <div class="bg-white border border-slate-200 rounded-xl p-4">
+          <div class="text-[.68rem] text-slate-400 font-semibold">{t('admin.analytics.kpiOnboarding', lang)}</div>
+          <div id="kpi-onboarding-rate" class="text-2xl font-black text-teal mt-1">-</div>
+          <div id="kpi-onboarding-meta" class="text-[.65rem] text-slate-400 mt-1">-</div>
         </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <div class="px-4 py-3 border-b border-slate-200">
-              <h3 class="text-sm font-bold text-navy">Distribuição Geográfica</h3>
-              <p class="text-[.68rem] text-slate-400">Top 15 estados/países dos voluntários</p>
-            </div>
-            <div class="p-4" style="height:300px">
-              <canvas id="sel-geo-chart"></canvas>
-            </div>
-          </section>
-
-          <section class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <div class="px-4 py-3 border-b border-slate-200">
-              <h3 class="text-sm font-bold text-navy">Evolução por Snapshot (Ciclo 3)</h3>
-              <p class="text-[.68rem] text-slate-400">Comparação Jan 16 vs. Mar 9</p>
-            </div>
-            <div class="p-4" style="height:300px">
-              <canvas id="sel-snapshot-chart"></canvas>
-            </div>
-          </section>
+        <div class="bg-white border border-slate-200 rounded-xl p-4">
+          <div class="text-[.68rem] text-slate-400 font-semibold">{t('admin.analytics.kpiImpact', lang)}</div>
+          <div id="kpi-impact-hours" class="text-2xl font-black text-purple mt-1">-</div>
+          <div id="kpi-impact-meta" class="text-[.65rem] text-slate-400 mt-1">-</div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4">
+          <div class="text-[.68rem] text-slate-400 font-semibold">{t('admin.analytics.kpiAffiliations', lang)}</div>
+          <div id="kpi-affiliations" class="text-2xl font-black text-amber-600 mt-1">-</div>
+          <div id="kpi-affiliations-meta" class="text-[.65rem] text-slate-400 mt-1">-</div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-4">
+          <div class="text-[.68rem] text-slate-400 font-semibold">{t('admin.analytics.kpiLeadership', lang)}</div>
+          <div id="kpi-leadership" class="text-2xl font-black text-emerald-600 mt-1">-</div>
+          <div id="kpi-leadership-meta" class="text-[.65rem] text-slate-400 mt-1">-</div>
         </div>
       </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <ChartCard
+          cardId="analytics-funnel-card"
+          canvasId="analytics-funnel-chart"
+          title={t('admin.analytics.funnelTitle', lang)}
+          subtitle={t('admin.analytics.funnelDesc', lang)}
+          heightClass="h-[320px]"
+        >
+          <p id="analytics-funnel-note" class="text-[.68rem] text-slate-400 mt-3"></p>
+        </ChartCard>
+
+        <ChartCard
+          cardId="analytics-impact-tribe-card"
+          canvasId="analytics-impact-tribe-chart"
+          title={t('admin.analytics.impactTribeTitle', lang)}
+          subtitle={t('admin.analytics.impactTribeDesc', lang)}
+          heightClass="h-[320px]"
+        >
+          <p id="analytics-impact-tribe-note" class="text-[.68rem] text-slate-400 mt-3"></p>
+        </ChartCard>
+      </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <ChartCard
+          cardId="analytics-impact-chapter-card"
+          canvasId="analytics-impact-chapter-chart"
+          title={t('admin.analytics.impactChapterTitle', lang)}
+          subtitle={t('admin.analytics.impactChapterDesc', lang)}
+          heightClass="h-[320px]"
+        >
+          <p id="analytics-impact-chapter-note" class="text-[.68rem] text-slate-400 mt-3"></p>
+        </ChartCard>
+
+        <ChartCard
+          cardId="analytics-cert-card"
+          canvasId="analytics-cert-chart"
+          title={t('admin.analytics.certTitle', lang)}
+          subtitle={t('admin.analytics.certDesc', lang)}
+          heightClass="h-[320px]"
+        >
+          <p id="analytics-cert-note" class="text-[.68rem] text-slate-400 mt-3"></p>
+        </ChartCard>
+      </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <ChartCard
+          cardId="analytics-roi-card"
+          canvasId="analytics-roi-chart"
+          title={t('admin.analytics.roiTitle', lang)}
+          subtitle={t('admin.analytics.roiDesc', lang)}
+          heightClass="h-[320px]"
+        >
+          <p id="analytics-roi-note" class="text-[.68rem] text-slate-400 mt-3"></p>
+        </ChartCard>
+
+        <ChartCard
+          cardId="analytics-leadership-card"
+          canvasId="analytics-leadership-chart"
+          title={t('admin.analytics.leadershipTitle', lang)}
+          subtitle={t('admin.analytics.leadershipDesc', lang)}
+          heightClass="h-[320px]"
+        >
+          <div id="analytics-leadership-highlight" class="text-[.68rem] text-slate-500 mt-3"></div>
+        </ChartCard>
+      </div>
+
+      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden" id="analytics-transition-matrix-card">
+        <div class="px-4 py-3 border-b border-slate-200">
+          <h2 class="text-sm font-bold text-navy">{t('admin.analytics.transitionMatrixTitle', lang)}</h2>
+          <p class="text-[.68rem] text-slate-400">{t('admin.analytics.transitionMatrixDesc', lang)}</p>
+        </div>
+        <div class="p-4">
+          <div id="analytics-transition-matrix" class="overflow-x-auto text-sm text-slate-600">
+            <p class="text-[.72rem] text-slate-400">{t('admin.analytics.loading', lang)}</p>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 </BaseLayout>
 
-<script is:inline define:vars={{ ANALYTICS_I18N }}>
+<script is:inline define:vars={{ ANALYTICS_I18N, chapterOptions }}>
   window.__ANALYTICS_I18N = typeof ANALYTICS_I18N !== 'undefined' ? ANALYTICS_I18N : {};
+  window.__ANALYTICS_CHAPTER_OPTIONS = Array.isArray(chapterOptions) ? chapterOptions : [];
 </script>
 <script>
-  import { canAccessAdminRoute } from '../../lib/admin/constants';
+  import { canReadInternalAnalytics } from '../../lib/admin/constants';
+  import { buildTribeLabel } from '../../lib/tribes/catalog';
 
   const CONSENT_KEY = 'analytics_consent';
+  const L = (typeof window !== 'undefined' && (window as any).__ANALYTICS_I18N) || {};
+  const CHAPTER_OPTIONS = (typeof window !== 'undefined' && (window as any).__ANALYTICS_CHAPTER_OPTIONS) || [];
+  const PALETTE = ['#0d9488', '#7c3aed', '#2563eb', '#e11d48', '#ea580c', '#65a30d', '#0891b2', '#6366f1'];
+
   let sb: any = null;
   let MEMBER: any = null;
-  const L = (typeof window !== 'undefined' && (window as any).__ANALYTICS_I18N) || {};
-  const PALETTE = ['#0d9488', '#7c3aed', '#2563eb', '#0a66c2', '#e11d48', '#ea580c', '#65a30d', '#0891b2'];
+  let filters = { cycleCode: '', tribeId: '', chapter: '' };
+  let chartInstances = new Map<string, any>();
+  let chartPromise: Promise<any> | null = null;
+  let tribeMap = new Map<number, string>();
 
-  function allowAnalytics(m: any): boolean {
-    return canAccessAdminRoute(m, 'admin_analytics');
+  function toast(msg: string, type = '') {
+    (window as any).toast?.(msg, type);
+  }
+
+  function formatNumber(value: number | string | null | undefined, digits = 0): string {
+    const numeric = Number(value || 0);
+    return new Intl.NumberFormat(document.documentElement.lang || 'pt-BR', {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    }).format(Number.isFinite(numeric) ? numeric : 0);
+  }
+
+  function formatPercent(part: number, total: number): string {
+    if (!total) return '0%';
+    return `${Math.round((part / total) * 100)}%`;
+  }
+
+  function setText(id: string, value: string) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  }
+
+  function setNote(id: string, value: string) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
   }
 
   function showDenied() {
@@ -220,30 +288,30 @@ const ANALYTICS_I18N = {
     document.getElementById('analytics-loading')?.classList.add('hidden');
     document.getElementById('analytics-denied')?.classList.add('hidden');
     document.getElementById('analytics-panel')?.classList.remove('hidden');
-    setupConsentUi();
-    loadCharts();
   }
 
   function consentValue(): 'granted' | 'denied' | 'unknown' {
-    const v = localStorage.getItem(CONSENT_KEY);
-    if (v === 'granted' || v === 'denied') return v;
+    const raw = localStorage.getItem(CONSENT_KEY);
+    if (raw === 'granted' || raw === 'denied') return raw;
     return 'unknown';
   }
 
   function renderConsentStatus() {
     const statusEl = document.getElementById('consent-status');
     if (!statusEl) return;
-    const v = consentValue();
-    if (v === 'granted') {
-      statusEl.textContent = L.consentGranted || 'Consentimento ativo';
+    const current = consentValue();
+    if (current === 'granted') {
+      statusEl.textContent = L.consentGranted || 'Consent granted';
       statusEl.className = 'text-[.68rem] text-emerald-600 mt-1';
-    } else if (v === 'denied') {
-      statusEl.textContent = L.consentDenied || 'Consentimento revogado';
-      statusEl.className = 'text-[.68rem] text-crimson mt-1';
-    } else {
-      statusEl.textContent = L.consentUnknown || 'Nao consentido';
-      statusEl.className = 'text-[.68rem] text-slate-400 mt-1';
+      return;
     }
+    if (current === 'denied') {
+      statusEl.textContent = L.consentDenied || 'Consent revoked';
+      statusEl.className = 'text-[.68rem] text-crimson mt-1';
+      return;
+    }
+    statusEl.textContent = L.consentUnknown || 'Consent unknown';
+    statusEl.className = 'text-[.68rem] text-slate-400 mt-1';
   }
 
   function setupConsentUi() {
@@ -251,330 +319,496 @@ const ANALYTICS_I18N = {
     const revokeBtn = document.getElementById('btn-consent-revoke');
     if (grantBtn && !grantBtn.dataset.bound) {
       grantBtn.dataset.bound = '1';
-      grantBtn.addEventListener('click', () => { localStorage.setItem(CONSENT_KEY, 'granted'); renderConsentStatus(); });
+      grantBtn.addEventListener('click', () => {
+        localStorage.setItem(CONSENT_KEY, 'granted');
+        renderConsentStatus();
+      });
     }
     if (revokeBtn && !revokeBtn.dataset.bound) {
       revokeBtn.dataset.bound = '1';
-      revokeBtn.addEventListener('click', () => { localStorage.setItem(CONSENT_KEY, 'denied'); renderConsentStatus(); });
+      revokeBtn.addEventListener('click', () => {
+        localStorage.setItem(CONSENT_KEY, 'denied');
+        renderConsentStatus();
+      });
     }
     renderConsentStatus();
   }
 
-  function escapeHtml(s: string): string {
-    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  async function getChartLib() {
+    if (!chartPromise) {
+      chartPromise = import('chart.js').then((mod) => {
+        const {
+          Chart,
+          BarController,
+          BarElement,
+          LineController,
+          LineElement,
+          CategoryScale,
+          LinearScale,
+          PointElement,
+          ArcElement,
+          DoughnutController,
+          Tooltip,
+          Legend,
+        } = mod;
+        Chart.register(
+          BarController,
+          BarElement,
+          LineController,
+          LineElement,
+          CategoryScale,
+          LinearScale,
+          PointElement,
+          ArcElement,
+          DoughnutController,
+          Tooltip,
+          Legend,
+        );
+        return Chart;
+      });
+    }
+    return chartPromise;
   }
 
-  async function loadCharts() {
-    const { Chart, BarController, RadarController, LineController, DoughnutController, CategoryScale, LinearScale, RadialLinearScale, BarElement, PointElement, LineElement, ArcElement, Filler, Legend, Tooltip } = await import('chart.js');
-    Chart.register(BarController, RadarController, LineController, DoughnutController, CategoryScale, LinearScale, RadialLinearScale, BarElement, PointElement, LineElement, ArcElement, Filler, Legend, Tooltip);
-
-    // ── Cross-source platform overview ──
-    try {
-      const { data: pData, error: pErr } = await sb.rpc('platform_activity_summary');
-      if (!pErr && pData) {
-        const m = pData.members || {};
-        const a = pData.artifacts || {};
-        const e = pData.events || {};
-        const b = pData.boards || {};
-        const cm = pData.comms || {};
-        const va = pData.volunteer_apps || {};
-
-        const kpiEl = document.getElementById('platform-kpis');
-        if (kpiEl) {
-          const kpis = [
-            { icon: '&#x1F465;', val: m.active || 0, label: 'Membros Ativos' },
-            { icon: '&#x1F4C4;', val: a.total || 0, label: 'Artefatos' },
-            { icon: '&#x1F4C5;', val: e.total || 0, label: 'Eventos' },
-            { icon: '&#x1F4CB;', val: b.total_items || 0, label: 'Itens Kanban' },
-            { icon: '&#x1F4E2;', val: cm.total_reach || 0, label: 'Alcance Comms' },
-            { icon: '&#x1F4E8;', val: va.total || 0, label: 'Candidaturas' },
-          ];
-          kpiEl.innerHTML = kpis.map(k =>
-            `<div class="bg-white border border-slate-200 rounded-xl p-3 text-center">
-              <div class="text-base">${k.icon}</div>
-              <div class="text-lg font-extrabold text-navy">${k.val}</div>
-              <div class="text-[.6rem] text-slate-500 font-semibold">${escapeHtml(k.label)}</div>
-            </div>`
-          ).join('');
-        }
-
-        // Platform health doughnut
-        const healthCanvas = document.getElementById('platform-health-chart') as HTMLCanvasElement;
-        if (healthCanvas && m.total) {
-          new Chart(healthCanvas, {
-            type: 'doughnut',
-            data: {
-              labels: ['Com Tribo', 'Com Credly', 'Com Foto', 'Com LinkedIn'],
-              datasets: [{
-                data: [m.with_tribe || 0, m.with_credly || 0, m.with_photo || 0, m.with_linkedin || 0],
-                backgroundColor: [PALETTE[0], PALETTE[1], PALETTE[2], PALETTE[3]],
-                borderWidth: 0,
-              }]
-            },
-            options: {
-              responsive: true, maintainAspectRatio: false, cutout: '55%',
-              plugins: {
-                legend: { position: 'bottom', labels: { font: { size: 10 }, usePointStyle: true, padding: 12 } },
-                tooltip: { callbacks: { label: (c: any) => c.label + ': ' + c.raw + '/' + m.total + ' (' + Math.round(c.raw / m.total * 100) + '%)' } }
-              }
-            }
-          });
-        }
-
-        // Activity timeline line chart
-        const monthly = pData.monthly_activity || [];
-        if (monthly.length) {
-          const timelineCanvas = document.getElementById('activity-timeline-chart') as HTMLCanvasElement;
-          if (timelineCanvas) {
-            const labels = monthly.map((d: any) => {
-              const dt = new Date(d.month_label);
-              return dt.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
-            });
-            new Chart(timelineCanvas, {
-              type: 'line',
-              data: {
-                labels,
-                datasets: [
-                  { label: 'Eventos', data: monthly.map((d: any) => d.events), borderColor: PALETTE[0], backgroundColor: PALETTE[0] + '20', fill: true, tension: 0.3, pointRadius: 4 },
-                  { label: 'Artefatos', data: monthly.map((d: any) => d.artifacts), borderColor: PALETTE[1], backgroundColor: PALETTE[1] + '20', fill: true, tension: 0.3, pointRadius: 4 },
-                  { label: 'Comunicados', data: monthly.map((d: any) => d.broadcasts), borderColor: PALETTE[5], backgroundColor: PALETTE[5] + '20', fill: true, tension: 0.3, pointRadius: 4 },
-                ]
-              },
-              options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, usePointStyle: true } } },
-                scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
-              }
-            });
-          }
-        }
-      }
-    } catch (e) { console.warn('Platform overview:', e); }
-
-    const funnelTitle = document.getElementById('funnel-title');
-    const funnelDesc = document.getElementById('funnel-desc');
-    const radarTitle = document.getElementById('radar-title');
-    const radarDesc = document.getElementById('radar-desc');
-    if (funnelTitle) funnelTitle.textContent = L.funnelTitle || 'Funil de Engajamento';
-    if (funnelDesc) funnelDesc.textContent = L.funnelDesc || '';
-    if (radarTitle) radarTitle.textContent = L.radarTitle || 'Radar por Tribo';
-    if (radarDesc) radarDesc.textContent = L.radarDesc || '';
-
-    try {
-      const { data, error } = await sb.rpc('exec_funnel_summary');
-      if (!error && data?.total_members) {
-        const total = data.total_members;
-        const statsGrid = document.getElementById('stats-grid');
-        if (statsGrid) {
-          const stats = [
-            { label: L.totalMembers || 'Membros Ativos', value: total, icon: '&#x1F465;' },
-            { label: L.tribeLeaders || 'Líderes', value: data.tribe_leaders, icon: '&#x1F451;' },
-            { label: L.totalArtifacts || 'Artefatos', value: data.total_artifacts, icon: '&#x1F4C4;' },
-            { label: L.totalBroadcasts || 'Broadcasts', value: data.total_broadcasts, icon: '&#x1F4E7;' },
-          ];
-          statsGrid.innerHTML = stats.map(s =>
-            '<div class="bg-white border border-slate-200 rounded-xl p-3 text-center">'
-            + '<div class="text-lg">' + s.icon + '</div>'
-            + '<div class="text-xl font-extrabold text-navy">' + s.value + '</div>'
-            + '<div class="text-[.65rem] text-slate-500 font-semibold">' + escapeHtml(s.label) + '</div>'
-            + '</div>'
-          ).join('');
-        }
-
-        const funnelCanvas = document.getElementById('funnel-chart') as HTMLCanvasElement;
-        if (funnelCanvas) new Chart(funnelCanvas, {
-          type: 'bar',
-          data: {
-            labels: [L.withTribe || 'Com Tribo', L.withCredly || 'Credly', L.withPhoto || 'Com Foto', L.withLinkedin || 'LinkedIn'],
-            datasets: [{
-              data: [data.with_tribe, data.with_credly, data.with_photo, data.with_linkedin],
-              backgroundColor: PALETTE.slice(0, 4),
-              borderRadius: 6, barPercentage: 0.65,
-            }]
-          },
-          options: {
-            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c: any) => c.raw + ' / ' + total + ' (' + Math.round(c.raw / total * 100) + '%)' } } },
-            scales: { x: { max: total, grid: { color: '#f1f5f9' } }, y: { grid: { display: false } } }
-          }
-        });
-      }
-    } catch (e) { console.warn('Funnel chart:', e); }
-
-    try {
-      const { data } = await sb.rpc('exec_skills_radar');
-      if (Array.isArray(data) && data.length) {
-        const radarCanvas = document.getElementById('radar-chart') as HTMLCanvasElement;
-        if (radarCanvas) new Chart(radarCanvas, {
-          type: 'radar',
-          data: {
-            labels: data.map((t: any) => (t.tribe_name || '').substring(0, 14)),
-            datasets: [
-              { label: L.credly || 'Credly', data: data.map((t: any) => t.credly_count || 0), borderColor: PALETTE[1], backgroundColor: PALETTE[1] + '25', fill: true, pointRadius: 3 },
-              { label: L.photos || 'Fotos', data: data.map((t: any) => t.photo_count || 0), borderColor: PALETTE[2], backgroundColor: PALETTE[2] + '25', fill: true, pointRadius: 3 },
-              { label: L.linkedin || 'LinkedIn', data: data.map((t: any) => t.linkedin_count || 0), borderColor: PALETTE[0], backgroundColor: PALETTE[0] + '25', fill: true, pointRadius: 3 },
-            ]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, usePointStyle: true } } },
-            scales: { r: { ticks: { font: { size: 9 } }, pointLabels: { font: { size: 9 } } } }
-          }
-        });
-      }
-    } catch (e) { console.warn('Radar chart:', e); }
-
-    try {
-      const { data } = await sb.rpc('exec_cert_timeline', { p_months: 12 });
-      if (Array.isArray(data) && data.length) {
-        const certCanvas = document.getElementById('cert-chart') as HTMLCanvasElement;
-        if (certCanvas) new Chart(certCanvas, {
-          type: 'line',
-          data: {
-            labels: data.map((d: any) => d.cohort_month),
-            datasets: [
-              { label: 'Tier 1 (%)', data: data.map((d: any) => d.pct_with_tier1 || 0), borderColor: PALETTE[0], backgroundColor: PALETTE[0] + '20', fill: true, tension: 0.3, pointRadius: 4 },
-              { label: 'Tier 2+ (%)', data: data.map((d: any) => d.pct_with_tier2 || 0), borderColor: PALETTE[1], backgroundColor: PALETTE[1] + '20', fill: true, tension: 0.3, pointRadius: 4 },
-            ]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, usePointStyle: true } } },
-            scales: { y: { beginAtZero: true, max: 100, ticks: { callback: (v: any) => v + '%' }, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
-          }
-        });
-      }
-    } catch (e) { console.warn('Cert timeline chart:', e); }
-
-    // ── Selection Process charts ──
-    try {
-      const { data: selData, error: selErr } = await sb.rpc('volunteer_funnel_summary');
-      if (!selErr && selData) {
-        const byCycle = selData.by_cycle || [];
-        const certs = selData.certifications || [];
-        const geo = selData.geography || [];
-
-        // Funnel per cycle
-        if (byCycle.length) {
-          const funnelCanvas = document.getElementById('sel-funnel-chart') as HTMLCanvasElement;
-          if (funnelCanvas) new Chart(funnelCanvas, {
-            type: 'bar',
-            data: {
-              labels: byCycle.map((c: any) => 'Ciclo ' + c.cycle),
-              datasets: [
-                { label: 'Candidaturas', data: byCycle.map((c: any) => c.total_applications), backgroundColor: PALETTE[2], borderRadius: 4 },
-                { label: 'Membros Existentes', data: byCycle.map((c: any) => c.matched_members), backgroundColor: PALETTE[0], borderRadius: 4 },
-                { label: 'Ativos', data: byCycle.map((c: any) => c.active_applications), backgroundColor: PALETTE[1], borderRadius: 4 },
-              ]
-            },
-            options: {
-              responsive: true, maintainAspectRatio: false,
-              plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, usePointStyle: true } } },
-              scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
-            }
-          });
-        }
-
-        // Certifications horizontal bar
-        if (certs.length) {
-          const certCanvas = document.getElementById('sel-certs-chart') as HTMLCanvasElement;
-          if (certCanvas) new Chart(certCanvas, {
-            type: 'bar',
-            data: {
-              labels: certs.slice(0, 12).map((c: any) => (c.cert || 'N/A').substring(0, 20)),
-              datasets: [{
-                data: certs.slice(0, 12).map((c: any) => c.cnt),
-                backgroundColor: PALETTE.concat(PALETTE).slice(0, 12),
-                borderRadius: 4, barPercentage: 0.7,
-              }]
-            },
-            options: {
-              indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-              plugins: { legend: { display: false } },
-              scales: { x: { beginAtZero: true, grid: { color: '#f1f5f9' } }, y: { grid: { display: false }, ticks: { font: { size: 9 } } } }
-            }
-          });
-        }
-
-        // Geographic treemap-like horizontal bar
-        if (geo.length) {
-          const geoCanvas = document.getElementById('sel-geo-chart') as HTMLCanvasElement;
-          if (geoCanvas) new Chart(geoCanvas, {
-            type: 'bar',
-            data: {
-              labels: geo.slice(0, 15).map((g: any) => [g.state, g.country].filter(Boolean).join(', ')),
-              datasets: [{
-                data: geo.slice(0, 15).map((g: any) => g.cnt),
-                backgroundColor: PALETTE.concat(PALETTE).slice(0, 15),
-                borderRadius: 4, barPercentage: 0.7,
-              }]
-            },
-            options: {
-              indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-              plugins: { legend: { display: false } },
-              scales: { x: { beginAtZero: true, grid: { color: '#f1f5f9' } }, y: { grid: { display: false }, ticks: { font: { size: 9 } } } }
-            }
-          });
-        }
-
-        // Snapshot comparison for Ciclo 3
-        const c3Snapshots = byCycle.filter((c: any) => c.cycle === 3);
-        if (c3Snapshots.length >= 1) {
-          const snap = c3Snapshots[0];
-          const snapshotCanvas = document.getElementById('sel-snapshot-chart') as HTMLCanvasElement;
-          if (snapshotCanvas) {
-            const labels = ['Candidaturas', 'Únicos', 'Membros', 'Ativos'];
-            const vals = [snap.total_applications, snap.unique_applicants, snap.matched_members, snap.active_applications];
-            new Chart(snapshotCanvas, {
-              type: 'bar',
-              data: {
-                labels,
-                datasets: [{
-                  label: `Ciclo 3 (${snap.earliest_snapshot || ''} → ${snap.latest_snapshot || ''})`,
-                  data: vals,
-                  backgroundColor: [PALETTE[2], PALETTE[3], PALETTE[0], PALETTE[1]],
-                  borderRadius: 6, barPercentage: 0.6,
-                }]
-              },
-              options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, usePointStyle: true } } },
-                scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
-              }
-            });
-          }
-        }
-      }
-    } catch (e) { console.warn('Selection process charts:', e); }
+  async function upsertChart(canvasId: string, config: any) {
+    const canvas = document.getElementById(canvasId) as HTMLCanvasElement | null;
+    if (!canvas) return;
+    const Chart = await getChartLib();
+    chartInstances.get(canvasId)?.destroy?.();
+    chartInstances.set(canvasId, new Chart(canvas, config));
   }
 
-  function applyGate(m: any) {
-    if (m && allowAnalytics(m)) showPanel();
-    else showDenied();
+  function renderEmptyChart(canvasId: string, noteId: string) {
+    chartInstances.get(canvasId)?.destroy?.();
+    chartInstances.delete(canvasId);
+    setNote(noteId, L.chartNoData || L.emptyState || 'No data');
   }
 
-  async function boot() {
+  function getFilterPayload() {
+    return {
+      p_cycle_code: filters.cycleCode || null,
+      p_tribe_id: filters.tribeId ? Number(filters.tribeId) : null,
+      p_chapter: filters.chapter || null,
+    };
+  }
+
+  async function safeRpc(name: string) {
+    try {
+      const { data, error } = await sb.rpc(name, getFilterPayload());
+      if (error) throw error;
+      return data || {};
+    } catch (error) {
+      console.warn(name, error);
+      toast(`${L.chartError || 'Analytics error'}: ${name}`, 'error');
+      return null;
+    }
+  }
+
+  function populateSelect(selectId: string, options: Array<{ value: string; label: string }>, defaultLabel: string, selected = '') {
+    const select = document.getElementById(selectId) as HTMLSelectElement | null;
+    if (!select) return;
+    const html = [`<option value="">${defaultLabel}</option>`]
+      .concat(options.map((option) => `<option value="${option.value}">${option.label}</option>`))
+      .join('');
+    select.innerHTML = html;
+    select.value = selected;
+  }
+
+  async function loadFilterOptions() {
+    const [cyclesRes, tribesRes] = await Promise.all([
+      sb.from('cycles').select('cycle_code, cycle_label, is_current, sort_order').order('sort_order', { ascending: false }),
+      sb.from('tribes').select('id, name, is_active').eq('is_active', true).order('id'),
+    ]);
+
+    const cycles = Array.isArray(cyclesRes.data) ? cyclesRes.data : [];
+    const activeTribes = Array.isArray(tribesRes.data) ? tribesRes.data : [];
+
+    tribeMap = new Map(activeTribes.map((tribe: any) => [Number(tribe.id), buildTribeLabel(tribe)]));
+
+    if (!filters.cycleCode) {
+      const currentCycle = cycles.find((cycle: any) => cycle.is_current) || cycles[0];
+      filters.cycleCode = currentCycle?.cycle_code || '';
+    }
+
+    populateSelect(
+      'analytics-filter-cycle',
+      cycles.map((cycle: any) => ({ value: cycle.cycle_code, label: cycle.cycle_label || cycle.cycle_code })),
+      L.allCyclesLabel || 'All cycles',
+      filters.cycleCode
+    );
+    populateSelect(
+      'analytics-filter-tribe',
+      activeTribes.map((tribe: any) => ({
+        value: String(tribe.id),
+        label: `${String(tribe.id).padStart(2, '0')} - ${buildTribeLabel(tribe)}`,
+      })),
+      L.allTribesLabel || 'All tribes',
+      filters.tribeId
+    );
+    populateSelect(
+      'analytics-filter-chapter',
+      CHAPTER_OPTIONS.map((chapter: any) => ({ value: chapter.code, label: chapter.code })),
+      L.allChaptersLabel || 'All chapters',
+      filters.chapter
+    );
+  }
+
+  function bindFilterUi() {
+    const applyBtn = document.getElementById('analytics-apply');
+    const resetBtn = document.getElementById('analytics-reset');
+
+    if (applyBtn && !applyBtn.dataset.bound) {
+      applyBtn.dataset.bound = '1';
+      applyBtn.addEventListener('click', () => {
+        const cycle = document.getElementById('analytics-filter-cycle') as HTMLSelectElement | null;
+        const tribe = document.getElementById('analytics-filter-tribe') as HTMLSelectElement | null;
+        const chapter = document.getElementById('analytics-filter-chapter') as HTMLSelectElement | null;
+        filters = {
+          cycleCode: cycle?.value || '',
+          tribeId: tribe?.value || '',
+          chapter: chapter?.value || '',
+        };
+        loadAnalyticsV2();
+      });
+    }
+
+    if (resetBtn && !resetBtn.dataset.bound) {
+      resetBtn.dataset.bound = '1';
+      resetBtn.addEventListener('click', async () => {
+        filters = { cycleCode: '', tribeId: '', chapter: '' };
+        await loadFilterOptions();
+        loadAnalyticsV2();
+      });
+    }
+  }
+
+  function buildScopeSummary(funnel: any) {
+    const cycleSelect = document.getElementById('analytics-filter-cycle') as HTMLSelectElement | null;
+    const tribeSelect = document.getElementById('analytics-filter-tribe') as HTMLSelectElement | null;
+    const chapterSelect = document.getElementById('analytics-filter-chapter') as HTMLSelectElement | null;
+    const cycleLabel = funnel?.cycle_label || cycleSelect?.selectedOptions?.[0]?.textContent || L.allCyclesLabel || '';
+    const tribeLabel = tribeSelect?.value ? tribeSelect.selectedOptions?.[0]?.textContent : (L.allTribesLabel || '');
+    const chapterLabel = chapterSelect?.value ? chapterSelect.selectedOptions?.[0]?.textContent : (L.allChaptersLabel || '');
+    return `${L.scopePrefix || 'Scope'}: ${cycleLabel} | ${tribeLabel} | ${chapterLabel}`;
+  }
+
+  function renderKpis(funnel: any, impact: any, roi: any, leadership: any) {
+    const stages = funnel?.stages || {};
+    const totalMembers = Number(stages.total_members || 0);
+    const fullCore = Number(stages.members_with_full_core_trail || 0);
+    const totalImpactHours = Number(impact?.total_impact_hours || 0);
+    const impactPct = Number(impact?.percent_of_target || 0);
+    const attributedAffiliations = Array.isArray(roi?.chapters)
+      ? roi.chapters.reduce((sum: number, chapter: any) => sum + Number(chapter.attributed_conversions || 0), 0)
+      : 0;
+    const promotedMembers = Number(leadership?.summary?.promoted_members || 0);
+    const trackedTransitions = Number(leadership?.summary?.tracked_transitions || 0);
+
+    setText('kpi-cohort-members', formatNumber(totalMembers));
+    setText('kpi-cohort-meta', buildScopeSummary(funnel));
+
+    setText('kpi-onboarding-rate', formatPercent(fullCore, totalMembers));
+    setText('kpi-onboarding-meta', `${formatNumber(fullCore)} / ${formatNumber(totalMembers)}`);
+
+    setText('kpi-impact-hours', `${formatNumber(totalImpactHours, 1)}h`);
+    setText('kpi-impact-meta', `${formatNumber(impactPct, 1)}% ${L.targetMeta || 'of target'}`);
+
+    setText('kpi-affiliations', formatNumber(attributedAffiliations));
+    setText('kpi-affiliations-meta', L.attributedAffiliates || 'Attributed affiliations');
+
+    setText('kpi-leadership', formatNumber(promotedMembers));
+    setText('kpi-leadership-meta', `${formatNumber(trackedTransitions)} ${L.transitions || 'transitions'}`);
+  }
+
+  async function renderFunnelChart(funnel: any) {
+    const stages = funnel?.stages || {};
+    const values = [
+      Number(stages.total_members || 0),
+      Number(stages.members_with_full_core_trail || 0),
+      Number(stages.members_allocated_to_tribe || 0),
+      Number(stages.members_with_published_artifact || 0),
+    ];
+    if (!values.some(Boolean)) {
+      renderEmptyChart('analytics-funnel-chart', 'analytics-funnel-note');
+      return;
+    }
+    setNote('analytics-funnel-note', '');
+    await upsertChart('analytics-funnel-chart', {
+      type: 'bar',
+      data: {
+        labels: [
+          L.stageEntered || 'Entered',
+          L.stageOnboarding || 'Onboarding',
+          L.stageAllocated || 'Allocated',
+          L.stagePublished || 'Published',
+        ],
+        datasets: [{
+          label: L.stageEntered || 'Members',
+          data: values,
+          backgroundColor: PALETTE.slice(0, 4),
+          borderRadius: 10,
+        }],
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { beginAtZero: true, ticks: { precision: 0 } },
+          y: { grid: { display: false } },
+        },
+      },
+    });
+  }
+
+  async function renderImpactCharts(impact: any) {
+    const tribes = Array.isArray(impact?.breakdown_by_tribe) ? impact.breakdown_by_tribe : [];
+    const chapters = Array.isArray(impact?.breakdown_by_chapter) ? impact.breakdown_by_chapter : [];
+
+    if (!tribes.length) {
+      renderEmptyChart('analytics-impact-tribe-chart', 'analytics-impact-tribe-note');
+    } else {
+      setNote('analytics-impact-tribe-note', '');
+      await upsertChart('analytics-impact-tribe-chart', {
+        type: 'bar',
+        data: {
+          labels: tribes.map((item: any) => tribeMap.get(Number(item.tribe_id)) || `Tribo ${item.tribe_id}`),
+          datasets: [{
+            label: L.impactHoursShort || 'Hours',
+            data: tribes.map((item: any) => Number(item.impact_hours || 0)),
+            backgroundColor: PALETTE,
+            borderRadius: 10,
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } },
+        },
+      });
+    }
+
+    if (!chapters.length) {
+      renderEmptyChart('analytics-impact-chapter-chart', 'analytics-impact-chapter-note');
+      return;
+    }
+
+    setNote('analytics-impact-chapter-note', '');
+    await upsertChart('analytics-impact-chapter-chart', {
+      type: 'doughnut',
+      data: {
+        labels: chapters.map((item: any) => item.chapter),
+        datasets: [{
+          data: chapters.map((item: any) => Number(item.impact_hours || 0)),
+          backgroundColor: PALETTE,
+          borderWidth: 2,
+          borderColor: '#fff',
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } },
+      },
+    });
+  }
+
+  async function renderCertChart(cert: any) {
+    const series = Array.isArray(cert?.series) ? cert.series : [];
+    if (!series.length) {
+      renderEmptyChart('analytics-cert-chart', 'analytics-cert-note');
+      return;
+    }
+
+    setNote(
+      'analytics-cert-note',
+      `${formatNumber(cert?.summary?.prior_background || 0)} ${L.backgroundLabel || 'background'} | ${formatNumber(cert?.summary?.hub_impact || 0)} ${L.impactLabel || 'impact'}`
+    );
+
+    await upsertChart('analytics-cert-chart', {
+      type: 'bar',
+      data: {
+        labels: series.map((item: any) => item.certification_type),
+        datasets: [
+          {
+            label: L.backgroundLabel || 'Background',
+            data: series.map((item: any) => Number(item.prior_background || 0)),
+            backgroundColor: PALETTE[5],
+            borderRadius: 8,
+          },
+          {
+            label: L.impactLabel || 'Hub impact',
+            data: series.map((item: any) => Number(item.hub_impact || 0)),
+            backgroundColor: PALETTE[0],
+            borderRadius: 8,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } },
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } },
+        },
+      },
+    });
+  }
+
+  async function renderRoiChart(roi: any) {
+    const chapters = Array.isArray(roi?.chapters) ? roi.chapters : [];
+    if (!chapters.length) {
+      renderEmptyChart('analytics-roi-chart', 'analytics-roi-note');
+      return;
+    }
+
+    setNote('analytics-roi-note', '');
+    await upsertChart('analytics-roi-chart', {
+      type: 'bar',
+      data: {
+        labels: chapters.map((item: any) => item.chapter_code),
+        datasets: [
+          {
+            label: L.currentAffiliates || 'Current affiliates',
+            data: chapters.map((item: any) => Number(item.current_active_affiliates || 0)),
+            backgroundColor: PALETTE[2],
+            borderRadius: 8,
+          },
+          {
+            label: L.attributedAffiliates || 'Attributed',
+            data: chapters.map((item: any) => Number(item.attributed_conversions || 0)),
+            backgroundColor: PALETTE[4],
+            borderRadius: 8,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+      },
+    });
+  }
+
+  async function renderLeadershipChart(leadership: any) {
+    const conversions = Array.isArray(leadership?.conversions_by_cycle) ? leadership.conversions_by_cycle : [];
+    if (!conversions.length) {
+      renderEmptyChart('analytics-leadership-chart', 'analytics-leadership-highlight');
+      return;
+    }
+
+    const topCycle = [...conversions].sort((a: any, b: any) => Number(b.promoted_members || 0) - Number(a.promoted_members || 0))[0];
+    setText(
+      'analytics-leadership-highlight',
+      topCycle
+        ? `${topCycle.cycle_label || topCycle.cycle_code}: ${formatNumber(topCycle.promoted_members || 0)} ${L.promotedMembers || 'promoted members'}`
+        : ''
+    );
+
+    await upsertChart('analytics-leadership-chart', {
+      type: 'bar',
+      data: {
+        labels: conversions.map((item: any) => item.cycle_label || item.cycle_code),
+        datasets: [{
+          label: L.promotedMembers || 'Promoted members',
+          data: conversions.map((item: any) => Number(item.promoted_members || 0)),
+          backgroundColor: PALETTE[6],
+          borderRadius: 8,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+      },
+    });
+  }
+
+  function renderTransitionMatrix(leadership: any) {
+    const matrix = Array.isArray(leadership?.transition_matrix) ? leadership.transition_matrix : [];
+    const container = document.getElementById('analytics-transition-matrix');
+    if (!container) return;
+    if (!matrix.length) {
+      container.innerHTML = `<p class="text-[.72rem] text-slate-400">${L.chartNoData || L.emptyState || 'No data'}</p>`;
+      return;
+    }
+    container.innerHTML = `
+      <table class="w-full text-left text-[.78rem]">
+        <thead>
+          <tr class="border-b border-slate-200 text-slate-500 uppercase tracking-wide text-[.65rem]">
+            <th class="py-2 pr-3">${L.transitionFrom || 'From'}</th>
+            <th class="py-2 pr-3">${L.transitionTo || 'To'}</th>
+            <th class="py-2">${L.transitionCount || 'Transitions'}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${matrix.slice(0, 10).map((row: any) => `
+            <tr class="border-b border-slate-100">
+              <td class="py-2 pr-3">${row.from_role_bucket || '-'}</td>
+              <td class="py-2 pr-3">${row.to_role_bucket || '-'}</td>
+              <td class="py-2 font-semibold text-navy">${formatNumber(row.transitions || 0)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  async function loadAnalyticsV2() {
+    setText('analytics-scope-summary', L.scopePrefix || 'Loading...');
+    const [funnel, impact, cert, roi, leadership] = await Promise.all([
+      safeRpc('exec_funnel_v2'),
+      safeRpc('exec_impact_hours_v2'),
+      safeRpc('exec_certification_delta'),
+      safeRpc('exec_chapter_roi'),
+      safeRpc('exec_role_transitions'),
+    ]);
+
+    if (!funnel || !impact || !cert || !roi || !leadership) {
+      setText('analytics-scope-summary', L.chartError || 'Analytics error');
+      return;
+    }
+
+    setText('analytics-scope-summary', buildScopeSummary(funnel));
+    renderKpis(funnel, impact, roi, leadership);
+    await Promise.all([
+      renderFunnelChart(funnel),
+      renderImpactCharts(impact),
+      renderCertChart(cert),
+      renderRoiChart(roi),
+      renderLeadershipChart(leadership),
+    ]);
+    renderTransitionMatrix(leadership);
+  }
+
+  async function init() {
     sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(boot, 200); return; }
+    MEMBER = (window as any).navGetMember?.();
 
-    window.addEventListener('nav:member', ((e: CustomEvent) => {
-      if (e.detail) { MEMBER = e.detail; applyGate(MEMBER); }
-    }) as EventListener);
+    if (!sb || !MEMBER || !canReadInternalAnalytics(MEMBER)) {
+      showDenied();
+      return;
+    }
 
-    const m = (window as any).navGetMember?.();
-    if (m) { MEMBER = m; applyGate(MEMBER); return; }
+    showPanel();
+    setupConsentUi();
+    bindFilterUi();
+    await loadFilterOptions();
+    await loadAnalyticsV2();
+  }
 
-    try {
-      const { data: { session } } = await sb.auth.getSession();
-      if (session) {
-        const { data } = await sb.rpc('get_member_by_auth');
-        MEMBER = data;
-        applyGate(MEMBER);
-        return;
-      }
-    } catch (e) { console.warn('Analytics boot:', e); }
-
-    showDenied();
+  function boot() {
+    if ((window as any).navGetMember?.()) {
+      init();
+      return;
+    }
+    window.addEventListener('nav:member', () => init(), { once: true });
+    setTimeout(() => init(), 700);
   }
 
   boot();

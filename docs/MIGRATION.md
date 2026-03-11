@@ -140,11 +140,25 @@ Paste normalization, debounce fallback, and validation hardening were shipped in
 ### Internal analytics
 Current production route is native Chart.js dashboards backed by Supabase RPCs in protected admin routes.
 
+### Applied in Wave 36-40
+- `supabase/migrations/20260312110000_analytics_v2_internal_readonly_and_metrics.sql` adds `can_read_internal_analytics()` so `/admin/analytics` can open to `sponsor`, `chapter_liaison`, and `curator` as read-only consumers without widening write/admin actions.
+- The same migration introduces cycle-aware contracts for `exec_funnel_v2`, `exec_impact_hours_v2`, `exec_certification_delta`, `exec_chapter_roi`, and `exec_role_transitions`, plus a shared `analytics_member_scope(...)` helper.
+- `src/lib/database.gen.ts` was regenerated from the linked project after the migration.
+
+### Current transition state
+- `/admin/analytics` now runs on Analytics V2 contracts and global filters (`cycle_code`, `tribe_id`, `chapter_code`).
+- `/admin/selection` remains the LGPD-sensitive analytics path and is still admin-only.
+- Attribution and leadership analytics are now backed by explicit SQL contracts rather than frontend-only aggregation guesses.
+
 ### External media analytics
 Current production route is Supabase-backed admin communications dashboards. External connectors may still feed source data, but Looker/PostHog iframes are no longer the primary product pattern.
 
 ### Migration constraint
 Do not build brittle direct social API integrations into core Astro or Supabase flows unless absolutely necessary.
+
+### Required next steps
+1. Validate the new V2 metrics against live linked-project data and tune the chapter-attribution window only through governance docs plus SQL contracts, not ad-hoc frontend logic.
+2. Keep future analytics asks inside the staged contract pattern (new RPC/view first, chart second) so `admin/analytics` does not regress into client-side business logic.
 
 ---
 

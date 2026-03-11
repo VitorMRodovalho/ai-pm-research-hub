@@ -1,5 +1,45 @@
 # Release Log
 
+## 2026-03-12 — v0.34.0 Waves 36-40: Analytics V2 Read-Only Rollout
+
+### Scope
+This tranche turns `/admin/analytics` into the staged Analytics V2 surface: a global filter bar, internal read-only ACL for partner-facing observers, and explicit SQL contracts for engagement funnel, innovation hours, certification delta, chapter ROI, and leadership journey.
+
+### Analytics V2 Upgrade
+- **`supabase/migrations/20260312110000_analytics_v2_internal_readonly_and_metrics.sql`**: Adds `can_read_internal_analytics`, cycle-aware member scoping, and the RPCs `exec_funnel_v2`, `exec_impact_hours_v2`, `exec_certification_delta`, `exec_chapter_roi`, and `exec_role_transitions`.
+- **`src/pages/admin/analytics.astro`** and **`src/components/analytics/ChartCard.astro`**: Rebuild the route around Chart.js-native V2 sections, global filters, KPI cards, and a transition matrix, while keeping the route aligned with the existing admin shell.
+- **`src/lib/admin/constants.ts`**, **`src/lib/navigation.config.ts`**, **`src/components/nav/AdminNav.astro`**, and **`src/pages/admin/index.astro`**: Split analytics read access from admin write access so observers with the approved designations can read the dashboard without inheriting management powers.
+
+### Governance / Regression
+- **`src/lib/database.gen.ts`** regenerated from the linked Supabase project after applying the migration.
+- **`tests/ui-stabilization.test.mjs`**, **`tests/browser-guards.test.mjs`**, and **`scripts/smoke-routes.mjs`** now lock the new analytics ACL path, V2 RPC wiring, and route availability.
+- **Backlog / governance / permissions / migration notes / README** updated to reflect the Analytics V2 rollout and the new read-only audience.
+
+### Files Changed
+- `src/components/analytics/ChartCard.astro`
+- `src/lib/admin/constants.ts`
+- `src/lib/navigation.config.ts`
+- `src/components/nav/AdminNav.astro`
+- `src/pages/admin/analytics.astro`
+- `src/pages/admin/index.astro`
+- `src/i18n/pt-BR.ts`
+- `src/i18n/en-US.ts`
+- `src/i18n/es-LATAM.ts`
+- `src/lib/database.gen.ts`
+- `supabase/migrations/20260312110000_analytics_v2_internal_readonly_and_metrics.sql`
+- `tests/ui-stabilization.test.mjs`
+- `tests/browser-guards.test.mjs`
+- `scripts/smoke-routes.mjs`
+- `backlog-wave-planning-updated.md`, `docs/GOVERNANCE_CHANGELOG.md`, `docs/PERMISSIONS_MATRIX.md`, `docs/RELEASE_LOG.md`, `docs/MIGRATION.md`, `README.md`
+
+### Audit Results
+- Build: clean
+- Tests: 32/32
+- Browser guard: OK
+- Smoke: routes OK
+
+---
+
 ## 2026-03-12 — v0.33.0 Wave 35: Dynamic Tribe Catalog Foundation
 
 ### Scope

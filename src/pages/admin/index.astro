@@ -899,6 +899,18 @@ const ADMIN_I18N = {
 
       <!-- Sponsor Tier: Executive Overview panel -->
       <div id="panel-executive" class="hidden">
+        <div id="exec-analytics-link-card" class="hidden bg-white rounded-xl border border-slate-200 overflow-hidden mb-5">
+          <div class="px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <div class="text-sm font-bold text-navy">{t('nav.adminAnalytics', lang)}</div>
+              <p class="text-[.72rem] text-slate-400 mt-1">{t('admin.analytics.subtitle', lang)}</p>
+            </div>
+            <a href="/admin/analytics" class="px-4 py-2 rounded-lg bg-navy text-white text-[.78rem] font-semibold no-underline hover:opacity-90">
+              Abrir Analytics V2
+            </a>
+          </div>
+        </div>
+
         <!-- Funnel (exec_funnel_summary RPC) -->
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden mb-5">
           <div class="px-5 py-3.5 border-b border-slate-200">
@@ -1265,7 +1277,11 @@ const ADMIN_I18N = {
 
   // ── TABS ──
   function switchAdmTab(el: HTMLElement, tab: string) {
-    if (['tribes', 'members', 'reports', 'knowledge', 'analytics'].includes(tab) && !ensureAdminAction()) return;
+    if (['tribes', 'members', 'reports', 'knowledge'].includes(tab) && !ensureAdminAction()) return;
+    if (tab === 'analytics' && !canAccessAdminRoute(MEMBER, 'admin_analytics')) {
+      toast(ADMIN_I18N.noPermission, 'error');
+      return;
+    }
     document.querySelectorAll('.adm-tab').forEach(t => {
       t.classList.remove('bg-navy', 'text-white', 'border-navy');
       t.classList.add('bg-white', 'text-slate-500', 'border-slate-200');
@@ -3682,6 +3698,9 @@ const ADMIN_I18N = {
       document.getElementById('panel-knowledge')?.classList.add('hidden');
 
       document.getElementById('panel-executive')?.classList.remove('hidden');
+      if (canAccessAdminRoute(MEMBER, 'admin_analytics')) {
+        document.getElementById('exec-analytics-link-card')?.classList.remove('hidden');
+      }
       loadExecutiveOverview();
       loadAdminLinks();
       initLifecycleControls();

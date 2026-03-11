@@ -4,7 +4,7 @@
 > Qualquer alteração de acesso deve ser refletida aqui, no `navigation.config.ts`,
 > e nas RLS policies do Supabase antes de ser deployada.
 >
-> Última atualização: 2026-03-12 (Wave 35 audit: dynamic tribe catalog, explicit active status, and admin catalog controls revalidated against current site hierarchy)
+> Última atualização: 2026-03-12 (Wave 40 audit: Analytics V2 read-only ACL plus staged funnel, ROI, certification, and leadership contracts)
 
 ---
 
@@ -63,7 +63,7 @@ Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Se
 | Minha Tribo `/tribe/[id]`  |    —    |   V    |    V     |  V/A   |  V/A  |    V/A     | Membros ativos+ podem explorar tribos ativas em modo leitura; tribos inativas ficam reservadas ao Superadmin; ações locais seguem restritas à liderança/gestão |
 | Profile                    |    —    |  V/A   |   V/A    |  V/A   |  V/A  |    V/A     |                                  |
 | Admin Panel `/admin`       |    —    |   —    |    V     |   V    |  V/A  |    V/A     |                                  |
-| Admin Analytics            |    —    |   —    |    —     |   —    |   V   |     V      |                                  |
+| Admin Analytics            |    —    |   —    |    V     |   —    |   V   |     V      | `sponsor`, `curator`, `chapter_liaison`: V read-only only |
 | Admin Comms Dashboard      |    —    |   —    |    —     |   —    |   V   |     V      | `comms_leader`, `comms_member`: V |
 | Help `/help`               |    —    |   V    |    V     |   V    |   V   |     V      | LGPD topics hidden for non-admin |
 | Admin Webinars             |    —    |   —    |    —     |   —    |   V   |     V      | Admin-only orchestration over events/attendance/comms/replay, now with contextual handoffs and lightweight authoring aids in reuse surfaces; external registration out of scope |
@@ -225,7 +225,7 @@ Itens de navegação com tier insuficiente: visíveis mas desabilitados (opacida
 | `my-tribe`       | `member`   | —                                | ✅         |
 | `profile`        | `member`   | —                                | ✅         |
 | `admin`          | `observer` | —                                | ✅         |
-| `admin-analytics`   | `admin`    | —                                | ✅         |
+| `admin-analytics`   | `admin`    | `['sponsor', 'chapter_liaison', 'curator']` | ✅ (read-only analytics audience) |
 | `admin-comms`      | `admin`    | `['comms_leader', 'comms_member']`| ✅ (lgpdSensitive) |
 | `admin-curatorship`| `observer` | —                                | ✅         |
 | `admin-selection`  | `admin`    | —                                | ✅ (lgpdSensitive) |
@@ -250,6 +250,7 @@ Itens de navegação com tier insuficiente: visíveis mas desabilitados (opacida
 | `broadcast_log` INSERT       | service_role only               | —        | ✅         |
 | `comms_metrics_daily` SELECT | `comms_metrics_admin_read`      | 4 OR comms desig | ✅ |
 | `comms_metrics_daily` WRITE  | `can_manage_comms_metrics()`    | 4 OR comms desig | ✅ |
+| `exec_funnel_v2` / `exec_impact_hours_v2` / `exec_certification_delta` / `exec_chapter_roi` / `exec_role_transitions` | `can_read_internal_analytics()` | 2 (`observer`) or admin | ✅ |
 
 ### Edge Functions
 

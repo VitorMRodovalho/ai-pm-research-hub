@@ -3065,6 +3065,29 @@ export type Database = {
         }
         Returns: Json
       }
+      analytics_is_leadership_role: {
+        Args: { p_designations: string[]; p_operational_role: string }
+        Returns: boolean
+      }
+      analytics_member_scope: {
+        Args: { p_chapter?: string; p_cycle_code?: string; p_tribe_id?: number }
+        Returns: {
+          chapter: string
+          cycle_code: string
+          cycle_end: string
+          cycle_label: string
+          cycle_start: string
+          first_cycle_code: string
+          first_cycle_start: string
+          is_current: boolean
+          member_id: string
+          tribe_id: number
+        }[]
+      }
+      analytics_role_bucket: {
+        Args: { p_designations: string[]; p_operational_role: string }
+        Returns: string
+      }
       broadcast_count_today: { Args: { p_tribe_id: number }; Returns: number }
       broadcast_history: {
         Args: { p_limit?: number; p_tribe_id?: number }
@@ -3080,6 +3103,7 @@ export type Database = {
       }
       can_manage_comms_metrics: { Args: never; Returns: boolean }
       can_manage_knowledge: { Args: never; Returns: boolean }
+      can_read_internal_analytics: { Args: never; Returns: boolean }
       comms_metrics_latest: {
         Args: never
         Returns: {
@@ -3175,7 +3199,27 @@ export type Database = {
           pct_with_tier2: number
         }[]
       }
+      exec_certification_delta: {
+        Args: { p_chapter?: string; p_cycle_code?: string; p_tribe_id?: number }
+        Returns: Json
+      }
+      exec_chapter_roi: {
+        Args: { p_chapter?: string; p_cycle_code?: string; p_tribe_id?: number }
+        Returns: Json
+      }
       exec_funnel_summary: { Args: never; Returns: Json }
+      exec_funnel_v2: {
+        Args: { p_chapter?: string; p_cycle_code?: string; p_tribe_id?: number }
+        Returns: Json
+      }
+      exec_impact_hours_v2: {
+        Args: { p_chapter?: string; p_cycle_code?: string; p_tribe_id?: number }
+        Returns: Json
+      }
+      exec_role_transitions: {
+        Args: { p_chapter?: string; p_cycle_code?: string; p_tribe_id?: number }
+        Returns: Json
+      }
       exec_skills_radar: { Args: never; Returns: Json }
       get_communication_template: {
         Args: { p_slug: string; p_vars?: Json }

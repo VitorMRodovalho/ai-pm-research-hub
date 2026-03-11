@@ -1,0 +1,67 @@
+---
+// Importa o cliente Supabase existente no projeto
+import { supabase } from '@/lib/supabase';
+
+// 1. Busca os dados no servidor (Server-side rendering)
+const { data, error } = await supabase
+  .from('vw_exec_cert_timeline')
+  .select('cohort_month, pct_with_tier1, pct_with_tier2')
+  .order('cohort_month', { ascending: true });
+
+if (error) {
+  console.error("Erro ao buscar dados de certificação:", error);
+}
+
+// 2. Prepara os arrays para o gráfico
+const chartData = data || [];
+const categories = chartData.map(d => d.cohort_month);
+const tier1Data = chartData.map(d => d.pct_with_tier1);
+const tier2Data = chartData.map(d => d.pct_with_tier2);
+---
+
+<div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+  <div class="mb-4">
+    <h3 class="text-lg font-bold text-slate-800">Maturidade do Núcleo: Crescimento de Certificações</h3>
+    <p class="text-sm text-slate-500">Evolução do percentual de membros com certificações Tier 1 e Tier 2 ao longo dos ciclos.</p>
+  </div>
+  
+  <div id="maturity-chart" class="w-full h-80"></div>
+</div>
+
+<script define:vars={{ categories, tier1Data, tier2Data }}>
+  import ApexCharts from 'apexcharts';
+
+  const options = {
+    chart: { 
+      type: 'area', 
+      height: 320, 
+      toolbar: { show: false },
+      fontFamily: 'Inter, sans-serif'
+    },
+    series: [
+      { name: '% com Tier 1 (Fundamentos)', data: tier1Data },
+      { name: '% com Tier 2 (Avançado)', data: tier2Data }
+    ],
+    xaxis: { 
+      categories: categories,
+      tooltip: { enabled: false }
+    },
+    colors: ['#3B82F6', '#10B981'], // Azul PMI e Verde Sucesso
+    dataLabels: { enabled: false },
+    fill: { 
+      type: 'gradient', 
+      gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 90, 100] } 
+    },
+    stroke: { curve: 'smooth', width: 2 },
+    legend: { position: 'top', horizontalAlign: 'right' }
+  };
+
+  // Garante que o DOM carregou antes de injetar o gráfico
+  document.addEventListener('DOMContentLoaded', () => {
+    const chartElement = document.querySelector("#maturity-chart");
+    if (chartElement) {
+      const chart = new ApexCharts(chartElement, options);
+      chart.render();
+    }
+  });
+</script>

@@ -1,0 +1,34 @@
+---
+interface Props {
+  title: string;
+  subtitle?: string;
+  cardId?: string;
+  canvasId?: string;
+  heightClass?: string;
+  bodyClass?: string;
+}
+
+const {
+  title,
+  subtitle = '',
+  cardId,
+  canvasId,
+  heightClass = 'h-[320px]',
+  bodyClass = 'p-4',
+} = Astro.props;
+---
+
+<section id={cardId} class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+  <div class="px-4 py-3 border-b border-slate-200">
+    <h2 class="text-sm font-bold text-navy">{title}</h2>
+    {subtitle ? <p class="text-[.68rem] text-slate-400">{subtitle}</p> : null}
+  </div>
+  <div class={bodyClass}>
+    {canvasId ? (
+      <div class={heightClass}>
+        <canvas id={canvasId}></canvas>
+      </div>
+    ) : null}
+    <slot />
+  </div>
+</section>

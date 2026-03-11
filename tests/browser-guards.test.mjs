@@ -65,6 +65,12 @@ async function run() {
     assert.match(await denied.textContent() || '', /Acesso restrito a administradores/);
     assert.equal(await page.locator('#sel-panel').isVisible(), false);
 
+    await page.goto(`${base}/admin/analytics`, { waitUntil: 'networkidle' });
+    const analyticsDenied = page.locator('#analytics-denied');
+    await analyticsDenied.waitFor({ state: 'visible' });
+    assert.match(await analyticsDenied.textContent() || '', /analytics/i);
+    assert.equal(await page.locator('#analytics-panel').isVisible(), false);
+
     await page.goto(`${base}/`, { waitUntil: 'networkidle' });
     await page.waitForTimeout(1800);
     assert.equal(await page.locator('#hero-cycle-status').isVisible(), true);
@@ -201,8 +207,107 @@ async function run() {
     assert.match(contextualCommsHref || '', /context=webinar/);
     assert.match(contextualCommsHref || '', /eventId=webinar/);
 
+    const analyticsPage = await browser.newPage();
+    await analyticsPage.goto(`${base}/admin/analytics`, { waitUntil: 'networkidle' });
+    await analyticsPage.evaluate(() => {
+      const fakeMember = {
+        auth_id: 'analytics-observer-test',
+        operational_role: 'researcher',
+        designations: ['sponsor'],
+        is_superadmin: false,
+        name: 'Sponsor Analytics',
+      };
+      const fakeSb = {
+        rpc(name) {
+          if (name === 'exec_funnel_v2') {
+            return Promise.resolve({
+              data: {
+                cycle_code: '2026.1',
+                cycle_label: 'Cycle 2026.1',
+                stages: {
+                  total_members: 10,
+                  members_with_full_core_trail: 7,
+                  members_allocated_to_tribe: 6,
+                  members_with_published_artifact: 3,
+                },
+              },
+              error: null,
+            });
+          }
+          if (name === 'exec_impact_hours_v2') {
+            return Promise.resolve({
+              data: {
+                total_impact_hours: 42.5,
+                percent_of_target: 12.5,
+                breakdown_by_tribe: [{ tribe_id: 1, impact_hours: 42.5 }],
+                breakdown_by_chapter: [{ chapter: 'PMI-GO', impact_hours: 18 }, { chapter: 'PMI-MG', impact_hours: 24.5 }],
+              },
+              error: null,
+            });
+          }
+          if (name === 'exec_certification_delta') {
+            return Promise.resolve({
+              data: {
+                summary: { prior_background: 1, hub_impact: 4 },
+                series: [{ certification_type: 'CPMAI', prior_background: 1, hub_impact: 4 }],
+              },
+              error: null,
+            });
+          }
+          if (name === 'exec_chapter_roi') {
+            return Promise.resolve({
+              data: {
+                chapters: [{ chapter_code: 'PMI-GO', current_active_affiliates: 5, attributed_conversions: 3 }],
+              },
+              error: null,
+            });
+          }
+          if (name === 'exec_role_transitions') {
+            return Promise.resolve({
+              data: {
+                summary: { promoted_members: 2, tracked_transitions: 4 },
+                conversions_by_cycle: [{ cycle_code: '2026.1', cycle_label: 'Cycle 2026.1', promoted_members: 2 }],
+                transition_matrix: [{ from_role_bucket: 'researcher', to_role_bucket: 'tribe_leader', transitions: 2 }],
+              },
+              error: null,
+            });
+          }
+          return Promise.resolve({ data: {}, error: null });
+        },
+        from(table) {
+          if (table === 'cycles') {
+            return {
+              select() { return this; },
+              order() { return Promise.resolve({ data: [{ cycle_code: '2026.1', cycle_label: 'Cycle 2026.1', is_current: true, sort_order: 1 }], error: null }); },
+            };
+          }
+          if (table === 'tribes') {
+            return {
+              select() { return this; },
+              eq() { return this; },
+              order() { return Promise.resolve({ data: [{ id: 1, name: 'Radar Tecnologico', is_active: true }], error: null }); },
+            };
+          }
+          return {
+            select() { return this; },
+            eq() { return this; },
+            order() { return Promise.resolve({ data: [], error: null }); },
+          };
+        },
+      };
+      window.navGetMember = () => fakeMember;
+      window.navGetSb = () => fakeSb;
+      window.dispatchEvent(new CustomEvent('nav:member', { detail: fakeMember }));
+    });
+    await analyticsPage.locator('#analytics-panel').waitFor({ state: 'visible' });
+    assert.equal(await analyticsPage.locator('#analytics-denied').isVisible(), false);
+    assert.equal(await analyticsPage.locator('#analytics-filter-cycle').isVisible(), true);
+    assert.match(await analyticsPage.locator('#kpi-cohort-members').textContent() || '', /10/);
+    assert.match(await analyticsPage.locator('#analytics-transition-matrix').textContent() || '', /researcher|tribe_leader/);
+    await analyticsPage.close();
+
     await page.close();
-    console.log('Browser guard, home runtime, and webinars admin test passed.');
+    console.log('Browser guard, home runtime, webinars admin, and analytics readonly test passed.');
   } finally {
     await browser.close();
     devServer?.kill('SIGTERM');

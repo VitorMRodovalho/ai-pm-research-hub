@@ -1,12 +1,22 @@
 # Nucleo IA & GP — Backlog & Wave Planning
 ## Status: Marco 2026 (atualizado 2026-03-12)
-## Sincronizado com producao: Git, Migracoes SQL (45/45 no repo + schema linkado auditado) e 13 Edge Functions
+## Sincronizado com producao: Git, Migracoes SQL (46/46 no repo + schema linkado auditado) e 13 Edge Functions
 
 **Board de sprints**: [GitHub Project — AI PM Hub](https://github.com/users/VitorMRodovalho/projects/1/) · Regras: `docs/project-governance/PROJECT_GOVERNANCE_RUNBOOK.md`
 
 ---
 
 ## LATEST UPDATE (2026-03-12)
+
+### Entregue em Waves 36-40
+- **W36.1 Analytics Read-Only ACL Foundation**: `admin_analytics` deixa de ser admin-only absoluto e passa a aceitar leitura interna para `sponsor`, `chapter_liaison` e `curator`, sem abrir `admin_manage_actions` nem a trilha LGPD sensivel de `/admin/selection`.
+- **W37.1 Engagement Funnel + Innovation Hours**: `/admin/analytics` ganha barra global de filtros (`cycle_code`, `tribe_id`, `chapter_code`) e passa a consumir `exec_funnel_v2` e `exec_impact_hours_v2`, entregando o primeiro slice de funil operacional e horas de inovacao.
+- **W38-W40 Data Contracts**: nova migration `20260312110000_analytics_v2_internal_readonly_and_metrics.sql` adiciona `can_read_internal_analytics`, helper scope cycle-aware e os RPCs `exec_certification_delta`, `exec_chapter_roi` e `exec_role_transitions`, concluindo a tranche de certificacao delta, ROI por capitulo e jornada de senioridade.
+
+### Wave 36-40 Audit Results (2026-03-12)
+- **Build**: clean | **Tests**: 32/32 | **Browser guard**: OK | **Smoke**: routes OK
+- **Site hierarchy / ACL**: `/admin/analytics` agora respeita audiencia interna read-only sem herdar permissao de escrita; `/admin/selection` e demais superficies LGPD continuam admin-only
+- **Known follow-through**: validar os graficos V2 com dados reais do projeto linkado, especialmente calibracao da janela de atribuicao de filiacao e leitura do onboarding completo por ciclo
 
 ### Entregue em Wave 35
 - **W35.1 Dynamic Tribe Catalog Foundation**: `tribe/[id]` e os wrappers multilang deixam de bloquear ids acima de `8`, e o header da tribo passa a usar metadata runtime do banco com fallback estático apenas para o catálogo legado.

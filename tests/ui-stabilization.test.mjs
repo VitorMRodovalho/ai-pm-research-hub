@@ -149,6 +149,41 @@ test('tribe catalog supports dynamic runtime entries and explicit active status'
   assert.equal(migration.includes('create or replace function public.admin_set_tribe_active'), true);
 });
 
+test('analytics v2 grants readonly access without widening admin actions and ships staged metric contracts', () => {
+  const constants = read('src/lib/admin/constants.ts');
+  const navConfig = read('src/lib/navigation.config.ts');
+  const adminNav = read('src/components/nav/AdminNav.astro');
+  const adminIndex = read('src/pages/admin/index.astro');
+  const analytics = read('src/pages/admin/analytics.astro');
+  const migration = read('supabase/migrations/20260312110000_analytics_v2_internal_readonly_and_metrics.sql');
+
+  assert.equal(constants.includes('ANALYTICS_READONLY_DESIGNATIONS'), true);
+  assert.equal(constants.includes('canReadInternalAnalytics(member)'), true);
+  assert.equal(constants.includes('canManageAdminActions(member)'), true);
+  assert.equal(navConfig.includes("allowedDesignations: ['sponsor', 'chapter_liaison', 'curator']"), true);
+  assert.equal(adminNav.includes("allowedDesignations: ['sponsor', 'chapter_liaison', 'curator']"), true);
+  assert.equal(adminIndex.includes("tab === 'analytics' && !canAccessAdminRoute(MEMBER, 'admin_analytics')"), true);
+  assert.equal(adminIndex.includes('id="exec-analytics-link-card"'), true);
+  assert.equal(analytics.includes('id="analytics-filter-cycle"'), true);
+  assert.equal(analytics.includes('id="analytics-filter-tribe"'), true);
+  assert.equal(analytics.includes('id="analytics-filter-chapter"'), true);
+  assert.equal(analytics.includes("safeRpc('exec_funnel_v2')"), true);
+  assert.equal(analytics.includes("safeRpc('exec_impact_hours_v2')"), true);
+  assert.equal(analytics.includes("safeRpc('exec_certification_delta')"), true);
+  assert.equal(analytics.includes("safeRpc('exec_chapter_roi')"), true);
+  assert.equal(analytics.includes("safeRpc('exec_role_transitions')"), true);
+  assert.equal(analytics.includes("sb.from('cycles').select('cycle_code, cycle_label, is_current, sort_order')"), true);
+  assert.equal(analytics.includes("sb.from('tribes').select('id, name, is_active').eq('is_active', true).order('id')"), true);
+  assert.equal(migration.includes('create or replace function public.can_read_internal_analytics()'), true);
+  assert.equal(migration.includes('create or replace function public.analytics_member_scope('), true);
+  assert.equal(migration.includes('create or replace function public.exec_funnel_v2('), true);
+  assert.equal(migration.includes('create or replace function public.exec_impact_hours_v2('), true);
+  assert.equal(migration.includes('create or replace function public.exec_certification_delta('), true);
+  assert.equal(migration.includes('create or replace function public.exec_chapter_roi('), true);
+  assert.equal(migration.includes('create or replace function public.exec_role_transitions('), true);
+  assert.equal(migration.includes('raise exception \'Internal analytics access required\''), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

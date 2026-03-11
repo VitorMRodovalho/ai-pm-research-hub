@@ -1,5 +1,23 @@
 # Governance Changelog
 
+## 2026-03-12 — Waves 36-40: Analytics V2 Rollout
+
+### Decisions
+
+1. **`/admin/analytics` becomes an internal read-only surface, not an admin-write surface by accident**: `sponsor`, `chapter_liaison`, and `curator` can now read Analytics V2, but write/admin powers remain anchored to `admin_manage_actions` and the sensitive selection route stays admin-only.
+
+2. **Analytics stories must land on explicit SQL contracts before frontend storytelling**: funnel, innovation hours, certification delta, chapter ROI, and leadership journey now each have a dedicated RPC or shared scoped helper, so product logic is not spread across browser-only aggregation code.
+
+3. **Cycle-aware filtering is the default contract for executive dashboards**: the new global filter bar (`cycle_code`, `tribe_id`, `chapter_code`) is now the stable entry point for partner-facing internal reads, rather than per-chart one-off filters.
+
+### Process Lessons Learned
+
+1. **Read-only audience expansion should happen through route-specific exceptions, not by lowering the whole admin tier model**: keeping analytics as a designation-aware exception avoided accidental write access drift across other admin pages.
+
+2. **One migration can still be multi-wave if the product dependency graph is already aligned**: once the ACL, filter model, and chart direction were decided, it was safer to ship the whole analytics contract set together than to leave half the dashboard on placeholders.
+
+---
+
 ## 2026-03-12 — Wave 35: Dynamic Tribe Catalog Foundation
 
 ### Decisions

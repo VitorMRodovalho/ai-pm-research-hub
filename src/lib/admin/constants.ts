@@ -55,6 +55,7 @@ export const TIER_LABELS: Record<string, string> = {
 
 export type AccessTier = 'superadmin' | 'admin' | 'leader' | 'observer' | 'member' | 'visitor';
 export type AdminRouteKey = 'admin_panel' | 'admin_analytics' | 'admin_comms' | 'admin_webinars' | 'admin_curatorship' | 'admin_member_edit' | 'admin_manage_actions' | 'admin_selection' | 'admin_settings';
+export const ANALYTICS_READONLY_DESIGNATIONS = ['sponsor', 'chapter_liaison', 'curator'] as const;
 
 const TIER_RANK: Record<AccessTier, number> = {
   visitor: 0,
@@ -75,6 +76,11 @@ const ROUTE_MIN_TIER: Record<AdminRouteKey, AccessTier> = {
   admin_manage_actions: 'admin',
   admin_selection: 'admin',
   admin_settings: 'superadmin',
+};
+
+const ROUTE_ALLOWED_DESIGNATIONS: Partial<Record<AdminRouteKey, readonly string[]>> = {
+  admin_analytics: ANALYTICS_READONLY_DESIGNATIONS,
+  admin_comms: ['comms_leader', 'comms_member'],
 };
 
 export { MAX_SLOTS } from '../../data/tribes';
@@ -161,9 +167,28 @@ export function hasMinimumTier(current: AccessTier, required: AccessTier): boole
   return TIER_RANK[current] >= TIER_RANK[required];
 }
 
+export function hasAnyDesignation(member: any, allowed: readonly string[] = []): boolean {
+  const desigs: string[] = Array.isArray(member?.designations) ? member.designations : [];
+  return allowed.some((designation) => desigs.includes(designation));
+}
+
 export function canAccessAdminRoute(member: any, route: AdminRouteKey): boolean {
+  if (!member) return false;
   const tier = resolveTierFromMember(member);
-  return hasMinimumTier(tier, ROUTE_MIN_TIER[route]);
+  if (hasMinimumTier(tier, ROUTE_MIN_TIER[route])) return true;
+  return hasAnyDesignation(member, ROUTE_ALLOWED_DESIGNATIONS[route]);
+}
+
+export function canReadInternalAnalytics(member: any): boolean {
+  return canAccessAdminRoute(member, 'admin_analytics');
+}
+
+export function canManageAdminActions(member: any): boolean {
+  return canAccessAdminRoute(member, 'admin_manage_actions');
+}
+
+export function isAnalyticsReadonlyAudience(member: any): boolean {
+  return canReadInternalAnalytics(member) && !canManageAdminActions(member);
 }
 
 export function getTier(m: any): string {
