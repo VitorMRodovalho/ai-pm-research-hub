@@ -720,6 +720,9 @@ const esLATAM: Record<string, string> = {
   'artifacts.msg.submitted': 'Artefacto enviado ✅',
   'artifacts.msg.reviewSaved': 'Revisión guardada ✅',
   'artifacts.search': 'Buscar por titulo, autor o tag...',
+  'artifacts.catProduced': 'Artefactos Producidos',
+  'artifacts.catReference': 'Materiales de Referencia',
+  'artifacts.catAll': 'Todos',
   'artifacts.filterAll': 'Todos',
   'artifacts.tagAll': 'Todas las Tags',
   'artifacts.results': '{n} artefacto(s)',
@@ -1125,9 +1128,10 @@ const esLATAM: Record<string, string> = {
   'artifacts.author': 'Autor',
 
   // ── Workspace (Knowledge Hub) ──
-  'nav.workspace': 'Workspace',
-  'workspace.meta': 'Workspace — Núcleo IA & GP',
-  'workspace.heading': 'Knowledge Hub',
+  'nav.workspace': 'Biblioteca',
+  'nav.library': 'Biblioteca',
+  'workspace.meta': 'Biblioteca de Conocimiento — Núcleo IA & GP',
+  'workspace.heading': 'Biblioteca de Conocimiento',
   'workspace.subtitle': 'Cursos, referencias, webinars y materiales compartidos por las líneas de investigación.',
   'workspace.filterAll': 'Todos',
   'workspace.filterCourse': 'Curso',

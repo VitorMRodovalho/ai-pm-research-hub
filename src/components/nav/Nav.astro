@@ -567,7 +567,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     const memberItems = drawerItems.filter((i: any) => i.group === 'member' && i.key !== 'publications');
     const adminItems = drawerItems.filter((i: any) => i.group === 'admin');
     const adminSubItems = drawerItems.filter((i: any) => i.group === 'admin-sub');
-    const operationsItems = drawerItems.filter((i: any) => i.key === 'admin-comms-ops');
+    const operationsItems = drawerItems.filter((i: any) => i.key === 'admin-comms-ops' || i.key === 'admin-comms');
     const governanceItems = drawerItems.filter((i: any) => i.key === 'publications' || i.key === 'admin-portfolio');
 
     const DRAWER_ICONS: Record<string, string> = {
@@ -656,7 +656,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       html += '<hr class="border-slate-100 my-2"><div class="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1 px-2">🌍 Governança</div>';
       governanceItems.forEach((item: any) => { html += drawerLink(item, 'text-slate-600 hover:bg-slate-50 pl-4'); });
     }
-    const otherAdminSub = adminSubItems.filter((i: any) => i.key !== 'admin-comms-ops' && i.key !== 'admin-portfolio');
+    const otherAdminSub = adminSubItems.filter((i: any) => i.key !== 'admin-comms-ops' && i.key !== 'admin-comms' && i.key !== 'admin-portfolio');
     if (adminItems.length || otherAdminSub.length) {
       html += '<hr class="border-slate-100 my-2">';
       adminItems.forEach((item: any) => { html += drawerLink(item, 'text-purple hover:bg-purple/5'); });

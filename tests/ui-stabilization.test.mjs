@@ -125,7 +125,7 @@ test('admin webinars now reuses the events stack instead of staying a placeholde
 
 test('presentations and workspace accept deep-link query filters for webinar follow-through', () => {
   const presentations = read('src/pages/presentations.astro');
-  const workspace = read('src/pages/workspace.astro');
+  const workspace = read('src/pages/library.astro');
   assert.equal(presentations.includes("new URLSearchParams(window.location.search)"), true);
   assert.equal(presentations.includes("const q = params.get('q')"), true);
   assert.equal(presentations.includes("const tribe = params.get('tribe')"), true);
@@ -283,7 +283,7 @@ test('tribe catalog supports dynamic runtime entries and explicit active status'
   const tribeEs = read('src/pages/es/tribe/[id].astro');
   const admin = read('src/pages/admin/index.astro');
   const nav = read('src/components/nav/Nav.astro');
-  const workspace = read('src/pages/workspace.astro');
+  const workspace = read('src/pages/library.astro');
   const artifacts = read('src/pages/artifacts.astro');
   const gamification = read('src/pages/gamification.astro');
   const hero = read('src/components/sections/HeroSection.astro');

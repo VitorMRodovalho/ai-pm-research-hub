@@ -90,11 +90,11 @@ const ARTIFACTS_I18N = {
     <!-- Catalog category sub-tabs -->
     <div id="catalog-category" class="flex gap-2 mb-4">
       <button class="cat-sub px-3.5 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white transition-all"
-              data-action="cat-sub" data-cat="">Todos</button>
+              data-action="cat-sub" data-cat="produced">{t('artifacts.catProduced', lang)}</button>
       <button class="cat-sub px-3.5 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
-              data-action="cat-sub" data-cat="produced">Artefatos Produzidos</button>
+              data-action="cat-sub" data-cat="reference">{t('artifacts.catReference', lang)}</button>
       <button class="cat-sub px-3.5 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
-              data-action="cat-sub" data-cat="reference">Materiais de Referência</button>
+              data-action="cat-sub" data-cat="">{t('artifacts.catAll', lang)}</button>
     </div>
 
     <!-- Search + Filters (catalog only) -->
@@ -268,7 +268,7 @@ const ARTIFACTS_I18N = {
   let activeTribe = '';
   let activeTag = '';
   let searchQuery = '';
-  let activeCategory = '';
+  let activeCategory = 'produced';
   let CAN_MANAGE = false;
   let runtimeTribesLoaded = false;
 

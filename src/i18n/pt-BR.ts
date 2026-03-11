@@ -720,6 +720,9 @@ const ptBR: Record<string, string> = {
   'artifacts.msg.submitted': 'Artefato submetido ✅',
   'artifacts.msg.reviewSaved': 'Revisão salva ✅',
   'artifacts.search': 'Buscar por titulo, autor ou tag...',
+  'artifacts.catProduced': 'Artefatos Produzidos',
+  'artifacts.catReference': 'Materiais de Referência',
+  'artifacts.catAll': 'Todos',
   'artifacts.filterAll': 'Todos',
   'artifacts.tagAll': 'Todas as Tags',
   'artifacts.results': '{n} artefato(s)',
@@ -1125,9 +1128,10 @@ const ptBR: Record<string, string> = {
   'artifacts.author': 'Autor',
 
   // ── Workspace (Knowledge Hub) ──
-  'nav.workspace': 'Workspace',
-  'workspace.meta': 'Workspace — Núcleo IA & GP',
-  'workspace.heading': 'Knowledge Hub',
+  'nav.workspace': 'Biblioteca',
+  'nav.library': 'Biblioteca',
+  'workspace.meta': 'Biblioteca de Conhecimento — Núcleo IA & GP',
+  'workspace.heading': 'Biblioteca de Conhecimento',
   'workspace.subtitle': 'Cursos, referências, webinars e materiais compartilhados pelas tribos.',
   'workspace.filterAll': 'Todos',
   'workspace.filterCourse': 'Curso',

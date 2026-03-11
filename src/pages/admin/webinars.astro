@@ -37,7 +37,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
             <a href="/presentations" class="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-[.78rem] font-semibold no-underline text-center hover:bg-slate-50 transition-all">
               Replays
             </a>
-            <a href="/workspace" class="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-[.78rem] font-semibold no-underline text-center hover:bg-slate-50 transition-all">
+            <a href="/library" class="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-[.78rem] font-semibold no-underline text-center hover:bg-slate-50 transition-all">
               Biblioteca
             </a>
           </div>
@@ -267,7 +267,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     params.set('type', 'webinar');
     if (ev.tribe_id) params.set('tribe', String(ev.tribe_id));
     if (ev.title) params.set('q', String(ev.title));
-    return `/workspace?${params.toString()}`;
+    return `/library?${params.toString()}`;
   }
 
   function operatorAction(ev: any): { label: string; href: string; note: string; tone: string; done?: boolean; priority: number } {

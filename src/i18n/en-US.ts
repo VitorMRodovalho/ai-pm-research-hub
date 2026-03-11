@@ -720,6 +720,9 @@ const enUS: Record<string, string> = {
   'artifacts.msg.submitted': 'Artifact submitted ✅',
   'artifacts.msg.reviewSaved': 'Review saved ✅',
   'artifacts.search': 'Search by title, author or tag...',
+  'artifacts.catProduced': 'Produced Artifacts',
+  'artifacts.catReference': 'Reference Materials',
+  'artifacts.catAll': 'All',
   'artifacts.filterAll': 'All',
   'artifacts.tagAll': 'All Tags',
   'artifacts.results': '{n} artifact(s)',
@@ -1125,9 +1128,10 @@ const enUS: Record<string, string> = {
   'artifacts.author': 'Author',
 
   // ── Workspace (Knowledge Hub) ──
-  'nav.workspace': 'Workspace',
-  'workspace.meta': 'Workspace — AI & PM Hub',
-  'workspace.heading': 'Knowledge Hub',
+  'nav.workspace': 'Library',
+  'nav.library': 'Library',
+  'workspace.meta': 'Knowledge Library — AI & PM Hub',
+  'workspace.heading': 'Knowledge Library',
   'workspace.subtitle': 'Courses, references, webinars, and materials shared by research streams.',
   'workspace.filterAll': 'All',
   'workspace.filterCourse': 'Course',
