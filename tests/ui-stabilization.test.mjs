@@ -189,6 +189,7 @@ test('curatorship rpc contract keeps approve/reject payload keys stable', () => 
 test('publications global board route and curatorship enqueue toggle are wired', () => {
   const navConfig = read('src/lib/navigation.config.ts');
   const publications = read('src/pages/publications.astro');
+  const publicationsIsland = read('src/components/boards/PublicationsBoardIsland.tsx');
   const curatorship = read('src/pages/admin/curatorship.astro');
   const constants = read('src/lib/admin/constants.ts');
   const migration = read('supabase/migrations/20260314170000_global_publications_and_operational_board_scope.sql');
@@ -196,13 +197,28 @@ test('publications global board route and curatorship enqueue toggle are wired',
   assert.equal(navConfig.includes("key: 'publications'"), true);
   assert.equal(navConfig.includes("href: '/publications'"), true);
   assert.equal(constants.includes('export function canAccessPublicationsWorkspace(member: any): boolean'), true);
-  assert.equal(publications.includes("sb.rpc('list_project_boards', { p_tribe_id: null })"), true);
-  assert.equal(publications.includes("domain_key || '') === 'publications_submissions'"), true);
-  assert.equal(publications.includes("sb.rpc('move_board_item'"), true);
+  assert.equal(publications.includes("import PublicationsBoardIsland"), true);
+  assert.equal(publications.includes("<PublicationsBoardIsland client:load />"), true);
+  assert.equal(publicationsIsland.includes("sb.rpc('list_project_boards', { p_tribe_id: null })"), true);
+  assert.equal(publicationsIsland.includes("domain_key || '') === 'publications_submissions'"), true);
+  assert.equal(publicationsIsland.includes("sb.rpc('move_board_item'"), true);
   assert.equal(curatorship.includes('cur-approve-publication'), true);
   assert.equal(curatorship.includes("'pmi_submission'"), true);
   assert.equal(migration.includes("domain_key = 'publications_submissions'"), true);
   assert.equal(migration.includes('create or replace function public.enqueue_artifact_publication_card('), true);
+});
+
+test('astro island foundation includes React and dnd-kit for kanban evolution', () => {
+  const astroConfig = read('astro.config.mjs');
+  const packageJson = read('package.json');
+  const publicationsIsland = read('src/components/boards/PublicationsBoardIsland.tsx');
+  assert.equal(astroConfig.includes("import react from '@astrojs/react'"), true);
+  assert.equal(astroConfig.includes('integrations: [react()]'), true);
+  assert.equal(packageJson.includes('"@astrojs/react"'), true);
+  assert.equal(packageJson.includes('"react"'), true);
+  assert.equal(packageJson.includes('"@dnd-kit/core"'), true);
+  assert.equal(publicationsIsland.includes('DndContext'), true);
+  assert.equal(publicationsIsland.includes('SortableContext'), true);
 });
 
 test('tribe exploration and lifecycle management honor active-member access plus project management controls', () => {
