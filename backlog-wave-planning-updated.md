@@ -863,16 +863,39 @@ Native Supabase-based comms metrics replaced external Looker dependency. YouTube
 | W51 | ADR baseline extraction | Medium | Done | Baseline `docs/adr/` criada (ADR-0001..0003), índice publicado e auditoria `audit_adr_index.sh` com lock de regressão. |
 | W52 | Admin modularization phase 4 | Medium | Done | `admin/index.astro` extraiu helpers de catálogo para `src/lib/admin/tribe-catalog-ui.ts` com lock de regressão. |
 | W53 | Comms integration execution lane | High | Done | Separação estrutural entre quadro global de publicações e Hub de Comunicação operacional, com automação Curadoria→Kanban, ACL expandida e consolidação transitória para 1 board ativo por tribo (visão executiva do legado). |
-| W54 | Knowledge Hub Wave B contracts | High | Planned | Fechar contratos funcionais para `/workspace` antes de expansão de funcionalidades. |
-| W55 | Analytics V2 partner QA rerun | Medium | Planned | Repetir evidência partner-facing pós-ajustes e versionar snapshot de comparação. |
-| W56 | Bus-factor blind drill | Medium | Planned | Execução cega por operador secundário com checklist completo de recovery/deploy. |
-| W57 | Release readiness automation | Medium | Planned | Fortalecer gates de release (build/test/smoke/browser) com evidência única por sprint. |
-| W58 | Wave closure + governance pack | Medium | Planned | Fechamento formal W44-W58 com backlog, release log e changelog sincronizados. |
+| W54 | Dark mode full coverage | High | Done | Cobertura dark ampliada em superfícies críticas de operação na tribo (`board-item-modal`, `deliverable-modal`, cards e controles) com lock de regressão em testes. |
+| W55 | Dark mode A11y + design QA gate | High | Done | Script `audit_dark_mode_a11y.sh` + checklist de governança publicados para auditoria rápida de contraste/cobertura antes de release. |
+| W56 | Kanban island foundation (React + dnd-kit) | High | Done | Stack React habilitada em Astro e board de publicações migrado para island `PublicationsBoardIsland.tsx` com drag-and-drop ordenável. |
+| W57 | Card detail UX completion | High | Done | Modal de card na tribo ganhou suporte completo a anexos (frontend + RPC `upsert_board_item` + badge visual por card). |
+| W58 | Kanban advanced operations | Medium | Done | Filtros de status/responsável, busca textual e ordenação no quadro da tribo para reduzir fricção em backlogs maiores. |
+| W59 | UX release hardening gate | Medium | Done | Gate unificado `npm run qa:kanban` criado (dark audit + tests + build + smoke routes) e incorporado ao protocolo de QA. |
 
 ### Sequência operacional sugerida
-- Executar na ordem **W44 -> W58** sem pular gates técnicos (`npm test`, `npm run build`, `npm run smoke:routes`).
+- Executar na ordem **W44 -> W59** sem pular gates técnicos (`npm run qa:kanban` para tranches de UX e `npm test` + `npm run build` para demais tranches).
 - Onde houver impacto de schema/RPC, aplicar `supabase db push` na fase de audit da sprint.
 - Encerrar cada sprint com atualização de `docs/RELEASE_LOG.md`, `docs/GOVERNANCE_CHANGELOG.md` e checkpoint deste backlog.
+
+---
+
+## PRÓXIMAS 15 SPRINTS (W60-W74)
+
+| Sprint | Foco | Priority | Status | Description |
+|---|---|---|---|---|
+| W60 | Tribe Kanban Island parity | High | Planned | Migrar quadro da tribo para React island mantendo paridade de ACL/modal e reduzindo dívida do drag-and-drop em vanilla JS. |
+| W61 | Checklist state persistence | High | Planned | Permitir marcar itens de checklist como concluídos no modal sem resetar estado em cada edição. |
+| W62 | Attachments UX uplift | Medium | Planned | Melhorar anexos com validação de URL, preview de domínio e remoção granular por item. |
+| W63 | Board restore UX | Medium | Planned | Expor restauração de cards arquivados via fluxo seguro para gestão/superadmin. |
+| W64 | Cross-board move policy | Medium | Planned | Definir e implementar política de movimentação entre boards no mesmo domínio (global/operacional/tribal) com trilha de auditoria. |
+| W65 | Dark mode visual baseline snapshots | Medium | Planned | Gerar baseline de screenshots light/dark para páginas críticas e detectar drift visual. |
+| W66 | Keyboard-first kanban interactions | Medium | Planned | Adicionar acessibilidade de teclado para seleção/movimentação de cards no island. |
+| W67 | Publications workflow enrichment | High | Planned | Acrescentar metadados de submissão PMI (canal, data, resultado) no lane global sem quebrar fluxo atual. |
+| W68 | Comms board SLA indicators | Medium | Planned | KPIs de atraso/orfandade por coluna no board operacional de comunicação. |
+| W69 | Portfolio executive dashboard RPC | High | Planned | Criar RPC consolidada de portfólio (tribe/operational/global) para leitura executiva sem scripts ad hoc. |
+| W70 | Data quality guards for board taxonomy | High | Planned | Regras de integridade para evitar regressão de `board_scope/domain_key/tribe_id` no ciclo de ingestão. |
+| W71 | Route-level UX smoke expansion | Medium | Planned | Estender smoke/browser guards para `/publications` e flows críticos de modal Kanban. |
+| W72 | i18n hardening for new UX surfaces | Medium | Planned | Cobrir textos recentes de Kanban/Dark em PT/EN/ES para eliminar strings hardcoded residuais. |
+| W73 | Governance pack v2 | Medium | Planned | Atualizar runbooks e matriz de permissões após conclusão da migração para islands na tribo. |
+| W74 | Current roadmap closure checkpoint | High | Planned | Fechamento formal do roadmap conceitual atual (Dark + Kanban UX), com decisão de próximos épicos de arquitetura. |
 
 ### Audit consolidado (rodada em andamento)
 - **Deploy path:** `origin/main` (sem remoto `production` configurado neste clone)

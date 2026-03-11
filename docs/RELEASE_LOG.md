@@ -3397,3 +3397,24 @@ Aplicar saneamento transitório de portfólio para facilitar leitura executiva d
   - `board_scope`: `{'tribe': 7, 'operational': 1, 'global': 1}`
   - `domain_key`: `{'research_delivery': 7, 'communication': 1, 'publications_submissions': 1}`
 - `npm test` passou (87/87).
+
+---
+
+## 2026-03-11 — W54-W59: Dark + Kanban UX execution pack (phase 2)
+
+### Scope
+Executar a segunda fase do roadmap conceitual de UX operacional com foco em: cobertura dark mode, fundação Astro Islands para Kanban, card detail completo e gate unificado de release.
+
+### Delivered
+- **W54**: cobertura dark mode ampliada em modais e cards da tribo.
+- **W55**: auditoria operacional `scripts/audit_dark_mode_a11y.sh` + checklist `docs/project-governance/DARK_MODE_A11Y_CHECKLIST.md`.
+- **W56**: React habilitado no Astro (`@astrojs/react`) e board global de publicações migrado para island com `@dnd-kit`.
+- **W57**: suporte de anexos em card detail (`bi-attachments`) com persistência no RPC `upsert_board_item`.
+- **W58**: filtros/sort no quadro da tribo (`board-search`, filtros de status/responsável e ordenação).
+- **W59**: gate único de release UX `npm run qa:kanban` (dark audit + test + build + smoke).
+
+### Validation captured
+- `supabase db push` aplicado:
+  - `20260314180000_upsert_board_item_attachments_support.sql`
+- `npm run qa:kanban` passou (inclui `npm test`, `npm run build`, `npm run smoke:routes`)
+- `npm test` passou com locks atualizados (89/89)

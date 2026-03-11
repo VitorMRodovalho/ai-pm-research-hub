@@ -879,3 +879,18 @@ UX velocity can increase while preserving safety, auditability, and maintainabil
 
 ### Implication
 A arquitetura passa a refletir a operação real do Núcleo: pesquisa por tribo, operação por subprojeto, e governança institucional em superfícies globais.
+
+---
+
+## 2026-03-11 — Kanban UX phase-2 governance (islands + release gate)
+
+### Decision
+A evolução de UX de Kanban segue oficialmente a trilha de Astro Islands com React para interações complexas, mantendo backend/RPC como contrato de verdade.
+
+### Rules
+- Superfícies Kanban com drag-and-drop complexo devem priorizar islands sobre expansão contínua de vanilla JS.
+- Incrementos de UX em dark mode/kanban exigem gate `npm run qa:kanban` antes de release.
+- Card detail deve expor capacidades já suportadas no schema (`checklist`, `labels`, `attachments`, `assignee`, `due_date`) para evitar backlog de UX frente ao backend.
+
+### Implication
+Reduzimos dívida de manutenção no frontend, aumentamos previsibilidade de release e alinhamos melhor experiência do operador com as capacidades reais do modelo de dados.
