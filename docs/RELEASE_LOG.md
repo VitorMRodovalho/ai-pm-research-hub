@@ -3370,3 +3370,30 @@ Corrigir desvio arquitetural "tudo é tribo" separando, no backend e no frontend
 - `npm run build` passed
 - `supabase db push` aplicado com sucesso
 - `supabase migration list` confirma `20260314170000` local/remoto sincronizados
+
+---
+
+## 2026-03-11 — W53 follow-up: transition consolidation (one active board per tribe)
+
+### Scope
+Aplicar saneamento transitório de portfólio para facilitar leitura executiva do legado: um quadro ativo por tribo de pesquisa, um quadro operacional para comunicação e um quadro global para publicações/submissões.
+
+### Delivered
+- Migration aplicada: `20260314173000_portfolio_board_consolidation_transition.sql`.
+- Consolidação executada no remoto:
+  - Board global `Publicações & Submissões PMI` mantido como único lane global.
+  - Cards legados de boards de artigos migrados para o lane global.
+  - `Hub de Comunicação` mantido como único board ativo operacional da tribo 8.
+  - Criação/normalização de board ativo canônico para cada tribo de pesquisa (T1..T7), com merge de boards irmãos quando existiam.
+  - Desativação (soft) de boards redundantes após migração de cards.
+- Resultado pós-saneamento (snapshot remoto):
+  - **9 boards ativos**: `7 tribe` + `1 operational` + `1 global`.
+  - Tribos de pesquisa T1..T7 com exatamente 1 board ativo cada.
+  - Nenhum card ativo órfão de board/inactive-board.
+
+### Validation captured
+- `supabase db push` aplicado com sucesso.
+- Diagnóstico remoto via API confirmou taxonomia final:
+  - `board_scope`: `{'tribe': 7, 'operational': 1, 'global': 1}`
+  - `domain_key`: `{'research_delivery': 7, 'communication': 1, 'publications_submissions': 1}`
+- `npm test` passou (87/87).

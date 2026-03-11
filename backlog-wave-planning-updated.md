@@ -862,7 +862,7 @@ Native Supabase-based comms metrics replaced external Looker dependency. YouTube
 | W50 | Docs index by persona (execution pass) | Medium | Done | `docs/INDEX.md` recebeu verificação operacional e novo script `audit_docs_index_links.sh` para integridade contínua de referências. |
 | W51 | ADR baseline extraction | Medium | Done | Baseline `docs/adr/` criada (ADR-0001..0003), índice publicado e auditoria `audit_adr_index.sh` com lock de regressão. |
 | W52 | Admin modularization phase 4 | Medium | Done | `admin/index.astro` extraiu helpers de catálogo para `src/lib/admin/tribe-catalog-ui.ts` com lock de regressão. |
-| W53 | Comms integration execution lane | High | Done | Separação estrutural entre quadro global de publicações e Hub de Comunicação operacional, com automação Curadoria→Kanban e ACL expandida para papéis de comunicação/curadoria. |
+| W53 | Comms integration execution lane | High | Done | Separação estrutural entre quadro global de publicações e Hub de Comunicação operacional, com automação Curadoria→Kanban, ACL expandida e consolidação transitória para 1 board ativo por tribo (visão executiva do legado). |
 | W54 | Knowledge Hub Wave B contracts | High | Planned | Fechar contratos funcionais para `/workspace` antes de expansão de funcionalidades. |
 | W55 | Analytics V2 partner QA rerun | Medium | Planned | Repetir evidência partner-facing pós-ajustes e versionar snapshot de comparação. |
 | W56 | Bus-factor blind drill | Medium | Planned | Execução cega por operador secundário com checklist completo de recovery/deploy. |
