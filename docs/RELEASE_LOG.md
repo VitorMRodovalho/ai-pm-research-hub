@@ -1,5 +1,22 @@
 # Release Log
 
+## 2026-03-11 — Sprint 26 (Dev): SSR Safety Sweep Final Pack
+
+### Scope
+Consolidar varredura final de segurança SSR para rotas críticas e padronizar checklist de prevenção de `undefined` em renderização server-side.
+
+### Delivered
+- `docs/project-governance/SSR_SAFETY_SWEEP_FINAL.md`:
+  - princípios de guarda null-safe;
+  - lista de rotas críticas auditadas;
+  - comandos de validação e heurística rápida de revisão.
+
+### Audit Results
+- `npm run smoke:routes`
+- `npm run build`
+
+---
+
 ## 2026-03-11 — Sprint 25 (Dev): Curatorship RPC Contract Regression Coverage
 
 ### Scope
