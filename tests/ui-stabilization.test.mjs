@@ -783,6 +783,16 @@ test('ci browser guards use retry wrapper and playwright cache', () => {
   assert.equal(retryScript.includes('npm run test:browser:guards'), true);
 });
 
+test('kanban dark release gate script and command are wired', () => {
+  const pkg = read('package.json');
+  const gate = read('scripts/qa_kanban_dark_release_gate.sh');
+  const qaDoc = read('docs/QA_RELEASE_VALIDATION.md');
+  assert.equal(pkg.includes('"qa:kanban"'), true);
+  assert.equal(gate.includes('./scripts/audit_dark_mode_a11y.sh'), true);
+  assert.equal(gate.includes('npm run smoke:routes'), true);
+  assert.equal(qaDoc.includes('npm run qa:kanban'), true);
+});
+
 test('ci heartbeat monitor tracks CI Validate status on main', () => {
   const heartbeat = read('.github/workflows/ci-heartbeat-monitor.yml');
   assert.equal(heartbeat.includes('name: CI Heartbeat Monitor'), true);

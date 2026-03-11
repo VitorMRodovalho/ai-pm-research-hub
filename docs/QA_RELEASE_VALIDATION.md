@@ -36,3 +36,17 @@ Em mudanças críticas de UX:
 1. Um segundo operador (não autor da mudança) executa o checklist do item 4.
 2. Registrar evidências (capturas + observações) em `docs/project-governance/`.
 3. Se houver divergência, abrir issue e bloquear fechamento de sprint até correção.
+
+## 6. Gate unificado para release de UX (Kanban + Dark)
+
+Antes de liberar mudanças em superfícies de Kanban/Dark, executar:
+
+```bash
+npm run qa:kanban
+```
+
+Esse gate executa em sequência:
+- `./scripts/audit_dark_mode_a11y.sh`
+- `npm test`
+- `npm run build`
+- `npm run smoke:routes`
