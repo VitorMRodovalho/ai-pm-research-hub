@@ -1469,6 +1469,62 @@ export type Database = {
           },
         ]
       }
+      ingestion_source_controls: {
+        Row: {
+          allow_apply: boolean
+          notes: string | null
+          require_manual_review: boolean
+          source: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          allow_apply?: boolean
+          notes?: string | null
+          require_manual_review?: boolean
+          source: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          allow_apply?: boolean
+          notes?: string | null
+          require_manual_review?: boolean
+          source?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingestion_source_controls_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_source_controls_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_source_controls_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_source_controls_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_assets: {
         Row: {
           created_at: string
@@ -3407,6 +3463,10 @@ export type Database = {
         Args: { p_member_id: string; p_tribe_id: number }
         Returns: Json
       }
+      admin_get_ingestion_source_policy: {
+        Args: { p_source: string }
+        Returns: Json
+      }
       admin_get_tribe_allocations: { Args: never; Returns: Json }
       admin_inactivate_member: {
         Args: { p_member_id: string; p_reason?: string }
@@ -3475,6 +3535,15 @@ export type Database = {
       admin_reactivate_member: { Args: { p_member_id: string }; Returns: Json }
       admin_remove_tribe_selection: {
         Args: { p_member_id: string }
+        Returns: Json
+      }
+      admin_set_ingestion_source_policy: {
+        Args: {
+          p_allow_apply: boolean
+          p_notes?: string
+          p_require_manual_review?: boolean
+          p_source: string
+        }
         Returns: Json
       }
       admin_set_tribe_active: {

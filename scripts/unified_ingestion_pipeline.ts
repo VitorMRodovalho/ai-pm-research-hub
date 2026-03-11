@@ -115,6 +115,28 @@ async function main() {
   const sensitiveRoot = getSensitiveRoot();
   const manifest = buildManifest(sensitiveRoot);
 
+  if (MODE === 'apply') {
+    const controlSources = ['trello', 'miro', 'calendar', 'volunteer_csv', 'notion', 'whatsapp'];
+    const allowMap = new Map<string, boolean>();
+    for (const source of controlSources) {
+      const { data, error } = await sb.rpc('admin_get_ingestion_source_policy', { p_source: source });
+      if (error) {
+        console.error(`[ingestion] policy read failed for ${source}: ${error.message}`);
+        process.exit(1);
+      }
+      allowMap.set(source, Boolean(data?.allow_apply));
+    }
+    const blockedApply = manifest.filter((item) => item.shouldIngest && !allowMap.get(item.sourceKind));
+    if (blockedApply.length) {
+      const grouped = blockedApply.reduce((acc, item) => {
+        acc[item.sourceKind] = (acc[item.sourceKind] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      console.error('[ingestion] apply blocked by source policy', JSON.stringify(grouped, null, 2));
+      process.exit(1);
+    }
+  }
+
   const stats = manifest.reduce((acc, item) => {
     acc.total += 1;
     acc.byKind[item.sourceKind] = (acc.byKind[item.sourceKind] || 0) + 1;
@@ -130,6 +152,7 @@ async function main() {
     eligibleFiles: stats.eligible,
     blockedFiles: stats.blocked,
     byKind: stats.byKind,
+    policyMode: MODE,
   };
 
   console.log('[ingestion] summary', JSON.stringify(summary, null, 2));
