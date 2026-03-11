@@ -793,6 +793,15 @@ test('kanban dark release gate script and command are wired', () => {
   assert.equal(qaDoc.includes('npm run qa:kanban'), true);
 });
 
+test('navigation keeps agenda (pauta) visible but hyperlink disabled', () => {
+  const navConfig = read('src/lib/navigation.config.ts');
+  const nav = read('src/components/nav/Nav.astro');
+  assert.equal(navConfig.includes("key: 'agenda'"), true);
+  assert.equal(navConfig.includes("disabled: true"), true);
+  assert.equal(nav.includes('if (item.disabled) return'), true);
+  assert.equal(nav.includes('item.disabled ? ('), true);
+});
+
 test('ci heartbeat monitor tracks CI Validate status on main', () => {
   const heartbeat = read('.github/workflows/ci-heartbeat-monitor.yml');
   assert.equal(heartbeat.includes('name: CI Heartbeat Monitor'), true);
