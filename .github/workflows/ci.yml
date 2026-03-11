@@ -2,9 +2,13 @@ name: CI Validate
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, dev ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev ]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   validate:
@@ -62,3 +66,10 @@ jobs:
           PUBLIC_SUPABASE_URL: 'https://mock.supabase.co'
           PUBLIC_SUPABASE_ANON_KEY: 'mock-key-for-build'
         run: npm run test:browser:guards
+
+  quality_gate:
+    runs-on: ubuntu-latest
+    needs: [validate, browser_guards]
+    steps:
+      - name: Report gate status
+        run: echo "CI quality gate passed (validate + browser_guards)."

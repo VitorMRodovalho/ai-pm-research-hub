@@ -1,5 +1,25 @@
 # Release Log
 
+## 2026-03-11 — Sprint 17 (Dev): CI/Branch Hardening Operational Gate
+
+### Scope
+Endurecer o pipeline operacional em `main`/`dev` e consolidar orientação de branch protection com checks obrigatórios.
+
+### Delivered
+- `.github/workflows/ci.yml`:
+  - gatilho em `push`/`pull_request` para `main` e `dev`;
+  - `concurrency` por branch para evitar execução concorrente desnecessária;
+  - novo job agregador `quality_gate` (depende de `validate` + `browser_guards`).
+- `docs/project-governance/BRANCH_ENFORCEMENT.md`:
+  - guia prático de checks obrigatórios e aplicação de protection rules.
+- `docs/DEPLOY_CHECKLIST.md`:
+  - visão de workflows atualizada com `CI Validate` e `Issue Reference Gate`.
+
+### Audit Results
+- Validado com `npm test` e `npm run build`.
+
+---
+
 ## 2026-03-11 — Sprint 16 (Dev): Browser Guard Expansion for Critical Flows
 
 ### Scope

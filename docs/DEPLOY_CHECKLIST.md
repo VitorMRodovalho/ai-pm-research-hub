@@ -118,6 +118,8 @@ Em Cloudflare Pages → Settings → Environment variables:
 
 | Workflow | Gatilho | Status esperado |
 |----------|---------|-----------------|
+| **CI Validate** | push/PR em `main` e `dev` | ✅ `quality_gate` aprovado (validate + browser_guards) |
+| **Issue Reference Gate** | push/PR em `main` e `dev` | ✅ exige issue link em trilha crítica |
 | **CodeQL Analysis** | push/PR em main | ✅ Passa (upload: false até Code scanning habilitado) |
 | **Project Governance Sync** | diário 09:15 UTC, push em gov paths | ✅ Passa (usa GITHUB_TOKEN) |
 | **Knowledge Insights** | seg/qui 10:30 UTC | ✅ Passa (skip quando secrets ausentes) |
