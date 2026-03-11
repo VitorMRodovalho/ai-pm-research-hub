@@ -125,6 +125,7 @@ test('tribe catalog supports dynamic runtime entries and explicit active status'
   const artifacts = read('src/pages/artifacts.astro');
   const gamification = read('src/pages/gamification.astro');
   const hero = read('src/components/sections/HeroSection.astro');
+  const tribesSection = read('src/components/sections/TribesSection.astro');
   const catalog = read('src/lib/tribes/catalog.ts');
   const migration = read('supabase/migrations/20260312050000_dynamic_tribe_catalog_and_status.sql');
 
@@ -141,6 +142,9 @@ test('tribe catalog supports dynamic runtime entries and explicit active status'
   assert.equal(artifacts.includes("sb.from('tribes').select('id, name, is_active').order('id')"), true);
   assert.equal(gamification.includes("sb.from('tribes').select('id, name, quadrant').eq('is_active', true).order('id')"), true);
   assert.equal(hero.includes(".eq('is_active', true)"), true);
+  assert.equal(tribesSection.includes(".select('id, name, notes, whatsapp_url, is_active')"), true);
+  assert.equal(tribesSection.includes("if (card && activeMap[tid] === false)"), true);
+  assert.equal(tribesSection.includes("if (title && nameMap[tid]) title.textContent = String(nameMap[tid]);"), true);
   assert.equal(catalog.includes('export function getTribeColor'), true);
   assert.equal(catalog.includes('export function isRuntimeTribeActive'), true);
   assert.equal(migration.includes('add column if not exists is_active boolean not null default true'), true);

@@ -154,7 +154,7 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
                   </div>
 
                   <div class="flex-1 min-w-0">
-                    <h3 class="text-[.95rem] font-bold truncate">{tr.name}</h3>
+                    <h3 id={`tn-${tr.id}`} class="text-[.95rem] font-bold truncate">{tr.name}</h3>
                     <div class="text-[.82rem] text-slate-500">
                       {tr.leader}
                       {tr.leaderLinkedIn && (
@@ -181,7 +181,7 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
                 <div class="max-h-0 overflow-hidden transition-all duration-400 px-5"
                      id={`tb-${tr.id}`}>
                   <div class="pb-5 pt-3 border-t border-black/5">
-                    <p class="text-[.88rem] text-slate-500 mb-3">{tr.description}</p>
+                    <p id={`td-${tr.id}`} class="text-[.88rem] text-slate-500 mb-3">{tr.description}</p>
 
                     <div class="mb-3">
                       <strong class="text-[.85rem]">{t('tribes.deliverables', lang)}</strong>
@@ -513,7 +513,7 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
         .eq('is_active', true)
         .order('day_of_week'),
       sb.from('tribes')
-        .select('id, notes, whatsapp_url')
+        .select('id, name, notes, whatsapp_url, is_active')
     ]);
 
     // Group slots by tribe
@@ -526,13 +526,28 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
     // Notes map
     const notesMap = {};
     const waMap = {};
+    const activeMap = {};
+    const nameMap = {};
     (tribes || []).forEach((t) => {
       if (t.notes) notesMap[t.id] = t.notes;
       if (t.whatsapp_url) waMap[t.id] = t.whatsapp_url;
+      if (typeof t.is_active === 'boolean') activeMap[t.id] = t.is_active;
+      if (t.name) nameMap[t.id] = t.name;
     });
 
     // Update each tribe's meeting schedule display
     for (const tid of TRIBE_IDS) {
+      const card = document.getElementById(`t-${tid}`);
+      if (card && activeMap[tid] === false) {
+        card.style.display = 'none';
+        continue;
+      }
+      if (card && activeMap[tid] !== false) {
+        card.style.display = '';
+      }
+      const title = document.getElementById(`tn-${tid}`);
+      if (title && nameMap[tid]) title.textContent = String(nameMap[tid]);
+
       const el = document.getElementById(`ms-${tid}`);
       if (!el) continue;
 
