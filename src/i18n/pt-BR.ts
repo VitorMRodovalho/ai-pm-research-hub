@@ -47,6 +47,7 @@ const ptBR: Record<string, string> = {
   'admin.analytics.artifacts': 'Artefatos',
   'admin.analytics.noData': 'Sem dados disponíveis',
   'nav.exploreTribes': 'Explorar Tribos',
+  'nav.publications': 'Publicações & Submissões',
   'nav.presentations': 'Apresentacoes',
   'pres.toggleOn': 'Modo Apresentacao',
   'pres.toggleOff': 'Encerrar Apresentacao',

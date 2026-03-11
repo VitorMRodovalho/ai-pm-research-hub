@@ -1462,10 +1462,26 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   }
 
   // R1: Admin global — PM, Deputy PM and SuperAdmin can edit any tribe
+  function isCommunicationOperationalTribe(): boolean {
+    if (!tribeData) return false;
+    const workstream = String(tribeData.workstream_type || '').toLowerCase();
+    const name = String(tribeData.name || '').toLowerCase();
+    return workstream === 'operational' && name.includes('comunica');
+  }
+
   function checkEditPermission() {
     if (!currentMember) return;
+    const desigs: string[] = currentMember.designations || [];
+    const canOperateComms = isCommunicationOperationalTribe()
+      && (
+        currentMember.operational_role === 'communicator'
+        || desigs.includes('comms_team')
+        || desigs.includes('comms_leader')
+        || desigs.includes('comms_member')
+      );
     canEdit = isHighManagement(currentMember) ||
-      (currentMember.operational_role === 'tribe_leader' && currentMember.tribe_id === TRIBE_ID);
+      (currentMember.operational_role === 'tribe_leader' && currentMember.tribe_id === TRIBE_ID) ||
+      canOperateComms;
   }
 
   // R2: Comms Hub tab — shown if member has comms_team designation or is high management

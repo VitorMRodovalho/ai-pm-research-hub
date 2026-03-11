@@ -3338,3 +3338,35 @@ Execute the next 10-sprint queue with incremental pushes, including direct UX re
 - `supabase db push` applied:
   - `20260314153000_board_item_editor_rpc.sql`
 - Incremental push cadence completed across all sprint commits on `origin/main`
+
+---
+
+## 2026-03-11 — W53: Global publications board + communication operational lane
+
+### Scope
+Corrigir desvio arquitetural "tudo é tribo" separando, no backend e no frontend, o que é fluxo global de governança de publicações e o que é subprojeto operacional de comunicação.
+
+### Delivered
+- Nova migration `20260314170000_global_publications_and_operational_board_scope.sql` aplicada em produção:
+  - adiciona `project_boards.board_scope` (`tribe | operational | global`);
+  - renomeia `tribes.id=8` para `Hub de Comunicação` e marca como `workstream_type='operational'`;
+  - promove/cria board global `domain_key='publications_submissions'` com `tribe_id = NULL`;
+  - consolida boards de comunicação em um board operacional canônico (`domain_key='communication'`) com merge de cards;
+  - expande ACL dos RPCs de Kanban (`upsert_board_item`, `move_board_item`, `admin_archive_board_item`) para papéis/designações de comunicação e curadoria em domínios apropriados;
+  - adiciona automação de pipeline via `enqueue_artifact_publication_card(...)` e integra `curate_item(...)` para enfileirar artefatos aprovados quando `p_audience_level='pmi_submission'`.
+- Nova rota `src/pages/publications.astro`:
+  - painel global fora de `/tribe/*`;
+  - leitura de board por `domain_key='publications_submissions'`;
+  - movimentação de cards por `move_board_item`.
+- Curadoria (`src/pages/admin/curatorship.astro`) agora oferece checkbox de envio para o funil de submissão PMI no fluxo de aprovação de artifacts.
+- Navegação:
+  - novo item `Publicações & Submissões` em `navigation.config.ts`;
+  - ícone/label no `Nav.astro` + chaves i18n PT/EN/ES.
+- Tribo operacional de comunicação:
+  - `src/pages/tribe/[id].astro` permite edição do board por `communicator` e designações `comms_team/comms_leader/comms_member` quando a tribo é operacional de comunicação.
+
+### Validation captured
+- `npm test` passed (87/87)
+- `npm run build` passed
+- `supabase db push` aplicado com sucesso
+- `supabase migration list` confirma `20260314170000` local/remoto sincronizados

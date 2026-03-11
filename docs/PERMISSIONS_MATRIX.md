@@ -66,7 +66,8 @@ Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Se
 | Admin Analytics            |    —    |   —    |    V     |   —    |   V   |     V      | `sponsor`, `curator`, `chapter_liaison`: V read-only only |
 | Admin Comms Dashboard      |    —    |   —    |    —     |   —    |   V   |     V      | `comms_leader`, `comms_member`: V |
 | Help `/help`               |    —    |   V    |    V     |   V    |   V   |     V      | LGPD topics hidden for non-admin |
-| Admin Webinars             |    —    |   —    |    —     |   —    |   V   |     V      | Admin-only orchestration over events/attendance/comms/replay, now with contextual handoffs and lightweight authoring aids in reuse surfaces; external registration out of scope |
+| Webinars `/webinars`       |    —    |   —    |    —     |  V/A   |  V/A  |    V/A     | Também acessível por `comms_leader`, `comms_member`, `curator`, `co_gp`, `facilitator`, `guest` |
+| Publicações `/publications`|    —    |   —    |    —     |  V/A   |  V/A  |    V/A     | Também acessível por `curator`, `co_gp`, `comms_leader`, `comms_member`, `communicator` |
 | Admin Member Edit          |    —    |   —    |    —     |   —    |   —   |    V/A     |                                  |
 
 ### 3.2 Comunicação (Wave 3)
@@ -232,7 +233,8 @@ Itens de navegação com tier insuficiente: visíveis mas desabilitados (opacida
 | `admin-settings`   | `superadmin` | —                             | ✅ (S-RM5)         |
 | `help`             | `member`   | —                                | ✅         |
 | `onboarding`     | `member`   | —                                | ✅ (drawer) |
-| `admin-webinars` | `admin`    | —                                | ✅ (admin-only webinar orchestrator with contextual handoffs and aids) |
+| `webinars`        | `leader`   | `['comms_leader','comms_member','curator','co_gp']` | ✅ (workspace operacional fora de admin-only) |
+| `publications`    | `leader`   | `['curator','co_gp','comms_leader','comms_member']` | ✅ (quadro global de submissões) |
 
 ### Backend (`has_min_tier` / RLS)
 

@@ -47,6 +47,7 @@ const esLATAM: Record<string, string> = {
   'admin.analytics.artifacts': 'Artefactos',
   'admin.analytics.noData': 'Sin datos disponibles',
   'nav.exploreTribes': 'Explorar Tribus',
+  'nav.publications': 'Publicaciones y Envíos',
   'nav.presentations': 'Presentaciones',
   'pres.toggleOn': 'Modo Presentacion',
   'pres.toggleOff': 'Finalizar Presentacion',

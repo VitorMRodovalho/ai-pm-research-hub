@@ -47,6 +47,7 @@ const enUS: Record<string, string> = {
   'admin.analytics.artifacts': 'Artifacts',
   'admin.analytics.noData': 'No data available',
   'nav.exploreTribes': 'Explore Tribes',
+  'nav.publications': 'Publications & Submissions',
   'nav.presentations': 'Presentations',
   'pres.toggleOn': 'Presentation Mode',
   'pres.toggleOff': 'Exit Presentation',

@@ -203,6 +203,18 @@ export function canAccessWebinarsWorkspace(member: any): boolean {
   return ['comms_leader', 'comms_member', 'curator', 'co_gp'].some((d) => designations.includes(d));
 }
 
+export function canAccessPublicationsWorkspace(member: any): boolean {
+  if (!member) return false;
+  if (member.is_superadmin) return true;
+
+  const opRole = String(member.operational_role || 'guest');
+  const designations: string[] = Array.isArray(member.designations) ? member.designations : [];
+  const allowedRoles = ['manager', 'deputy_manager', 'tribe_leader', 'communicator'];
+  if (allowedRoles.includes(opRole)) return true;
+
+  return ['curator', 'co_gp', 'comms_leader', 'comms_member'].some((d) => designations.includes(d));
+}
+
 export function getTier(m: any): string {
   return resolveTierFromMember(m);
 }

@@ -863,3 +863,19 @@ Dark mode and kanban UX evolution become governed operational concerns, not ad-h
 
 ### Implication
 UX velocity can increase while preserving safety, auditability, and maintainability boundaries.
+
+---
+
+## 2026-03-11 — Global boards are first-class (not forced into tribe buckets)
+
+### Decision
+`project_boards` passa a distinguir explicitamente escopo de execução (`tribe`, `operational`, `global`) para evitar acoplamento indevido de fluxos institucionais em uma tribo artificial.
+
+### Rules
+- Fluxos de governança transversal (ex.: submissão de artigos PMI) devem usar board global com `tribe_id = null` e `domain_key` próprio.
+- Fluxos operacionais contínuos (ex.: Hub de Comunicação) devem usar board operacional, sem serem tratados como tribo de pesquisa.
+- Curadoria pode disparar automações para board global via contrato explícito (`p_audience_level='pmi_submission'`) em vez de lógica implícita por nome.
+- ACL de edição em Kanban deve ser orientada por domínio do board (`domain_key`) + papel/designação, não apenas por `tribe_leader`.
+
+### Implication
+A arquitetura passa a refletir a operação real do Núcleo: pesquisa por tribo, operação por subprojeto, e governança institucional em superfícies globais.

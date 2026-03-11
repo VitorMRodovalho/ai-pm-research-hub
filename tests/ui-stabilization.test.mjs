@@ -175,8 +175,27 @@ test('curatorship rpc contract keeps approve/reject payload keys stable', () => 
   assert.equal(curatorship.includes('p_tags: tags || null'), true);
   assert.equal(curatorship.includes('p_tribe_id: extra?.tribeId ?? null'), true);
   assert.equal(curatorship.includes('p_audience_level: extra?.audienceLevel ?? null'), true);
-  assert.equal(curatorship.includes("const audienceLevel = table === 'events' ? audienceRaw : null;"), true);
+  assert.equal(curatorship.includes("table === 'artifacts' && sendToPublication ? 'pmi_submission' : null"), true);
   assert.equal(curatorship.includes("callCurate(table, id, 'reject');"), true);
+});
+
+test('publications global board route and curatorship enqueue toggle are wired', () => {
+  const navConfig = read('src/lib/navigation.config.ts');
+  const publications = read('src/pages/publications.astro');
+  const curatorship = read('src/pages/admin/curatorship.astro');
+  const constants = read('src/lib/admin/constants.ts');
+  const migration = read('supabase/migrations/20260314170000_global_publications_and_operational_board_scope.sql');
+
+  assert.equal(navConfig.includes("key: 'publications'"), true);
+  assert.equal(navConfig.includes("href: '/publications'"), true);
+  assert.equal(constants.includes('export function canAccessPublicationsWorkspace(member: any): boolean'), true);
+  assert.equal(publications.includes("sb.rpc('list_project_boards', { p_tribe_id: null })"), true);
+  assert.equal(publications.includes("domain_key || '') === 'publications_submissions'"), true);
+  assert.equal(publications.includes("sb.rpc('move_board_item'"), true);
+  assert.equal(curatorship.includes('cur-approve-publication'), true);
+  assert.equal(curatorship.includes("'pmi_submission'"), true);
+  assert.equal(migration.includes("domain_key = 'publications_submissions'"), true);
+  assert.equal(migration.includes('create or replace function public.enqueue_artifact_publication_card('), true);
 });
 
 test('tribe exploration and lifecycle management honor active-member access plus project management controls', () => {

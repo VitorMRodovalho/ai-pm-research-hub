@@ -69,6 +69,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'my-tribe',   labelKey: 'nav.myTribe',    href: '/tribe/',     minTier: 'member', requiresAuth: true, section: 'both', group: 'member', badge: 'teal', dynamic: true, resolver: 'resolveMyTribeHref' },
   { key: 'projects',   labelKey: 'nav.exploreTribes', href: '/teams',   minTier: 'member', requiresAuth: true, section: 'both', group: 'member' },
   { key: 'webinars',   labelKey: 'nav.adminWebinars', href: '/webinars', minTier: 'leader', requiresAuth: true, section: 'both', group: 'subprojects', allowedDesignations: ['comms_leader', 'comms_member', 'curator', 'co_gp'], allowedOperationalRoles: ['facilitator', 'guest'] },
+  { key: 'publications', labelKey: 'nav.publications', href: '/publications', minTier: 'leader', requiresAuth: true, section: 'both', group: 'subprojects', allowedDesignations: ['curator', 'co_gp', 'comms_leader', 'comms_member'], allowedOperationalRoles: ['communicator'] },
 
   // ─── Profile drawer only ───
   { key: 'profile', labelKey: 'nav.profile', href: '/profile', minTier: 'member', requiresAuth: true, section: 'drawer', group: 'profile' },

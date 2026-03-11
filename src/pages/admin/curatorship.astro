@@ -361,6 +361,12 @@ const CUR_I18N = {
       + '<option value="leaders">' + (I.audienceLeaders || 'Liderancas') + '</option>'
       + '<option value="members">' + (I.audienceMembers || 'Membros') + '</option>'
       + '</select>'
+      + (item?._table === 'artifacts'
+        ? '<label class="mt-2 flex items-center gap-2 text-[10px] font-semibold text-slate-700">'
+          + '<input type="checkbox" class="cur-approve-publication w-3 h-3" />'
+          + 'Enviar para Publicações & Submissões PMI'
+          + '</label>'
+        : '')
       + '<button class="cur-confirm-approve mt-2 w-full px-2 py-1.5 bg-emerald-600 text-white rounded text-[10px] font-semibold hover:opacity-90 border-0 cursor-pointer">'
       + (I.saveApprove || 'Salvar e Aprovar')
       + '</button>'
@@ -398,8 +404,11 @@ const CUR_I18N = {
     } else if (target.closest('.cur-confirm-approve')) {
       const tribeRaw = (card.querySelector('.cur-approve-tribe') as HTMLSelectElement | null)?.value || '';
       const audienceRaw = (card.querySelector('.cur-approve-audience') as HTMLSelectElement | null)?.value || '';
+      const sendToPublication = !!(card.querySelector('.cur-approve-publication') as HTMLInputElement | null)?.checked;
       const tribeId = tribeRaw ? Number(tribeRaw) : null;
-      const audienceLevel = table === 'events' ? audienceRaw : null;
+      const audienceLevel = table === 'events'
+        ? audienceRaw
+        : (table === 'artifacts' && sendToPublication ? 'pmi_submission' : null);
       callCurate(table, id, 'approve', item?.suggested_tags || item?.tags, { tribeId, audienceLevel });
     } else if (target.closest('.cur-save-tags')) {
       callCurate(table, id, 'update_tags', getSelectedTags(card));
