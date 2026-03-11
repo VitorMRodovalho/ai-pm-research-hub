@@ -32,6 +32,14 @@ const CUR_I18N = {
   tagsSaved: t('admin.curatorship.tagsSaved', lang),
   backAdmin: t('admin.curatorship.backAdmin', lang),
   meta: t('admin.curatorship.meta', lang),
+  searchPlaceholder: t('admin.curatorship.searchPlaceholder', lang),
+  visibilityLabel: t('admin.curatorship.visibilityLabel', lang),
+  visibilityGlobal: t('admin.curatorship.visibilityGlobal', lang),
+  audienceLabel: t('admin.curatorship.audienceLabel', lang),
+  audienceAll: t('admin.curatorship.audienceAll', lang),
+  audienceLeaders: t('admin.curatorship.audienceLeaders', lang),
+  audienceMembers: t('admin.curatorship.audienceMembers', lang),
+  saveApprove: t('admin.curatorship.saveApprove', lang),
 };
 ---
 
@@ -46,6 +54,14 @@ const CUR_I18N = {
         <p class="text-sm text-slate-500">{CUR_I18N.subtitle}</p>
       </div>
       <div class="flex gap-2 items-center">
+        <div class="relative">
+          <input
+            id="cur-search"
+            type="text"
+            class="w-64 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-700 outline-none focus:border-navy"
+            placeholder={CUR_I18N.searchPlaceholder}
+          />
+        </div>
         <div id="cur-count" class="hidden px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-sm font-bold"></div>
         <div class="flex gap-1">
           <button class="cur-filter px-3 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white" data-filter="all">{CUR_I18N.filterAll}</button>
@@ -109,7 +125,9 @@ const CUR_I18N = {
   let sb: any = null;
   let allItems: any[] = [];
   let allTags: any[] = [];
+  let allTribes: any[] = [];
   let activeFilter = 'all';
+  let searchQuery = '';
   let canAct = false;
 
   const TAG_COLORS: Record<string, string> = {
@@ -166,11 +184,24 @@ const CUR_I18N = {
         + '<button class="cur-btn-reject px-2 py-1 bg-red-500 text-white rounded text-[10px] font-semibold hover:opacity-90 border-0 cursor-pointer">✕</button>'
         + '</div>' : '')
       + '<div class="cur-tag-editor hidden mt-2 p-2 bg-slate-50 rounded-lg"></div>'
+      + '<div class="cur-approve-editor hidden mt-2 p-2 bg-emerald-50 rounded-lg border border-emerald-100"></div>'
       + '</div>';
   }
 
   function getFilteredItems(): any[] {
-    return activeFilter === 'all' ? allItems : allItems.filter(i => i._table === activeFilter);
+    const byType = activeFilter === 'all' ? allItems : allItems.filter(i => i._table === activeFilter);
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return byType;
+    return byType.filter((i: any) => {
+      const haystack = [
+        i.title || '',
+        i.description || '',
+        i.author_name || '',
+        i.tribe_name || '',
+        i.source || '',
+      ].join(' ').toLowerCase();
+      return haystack.includes(q);
+    });
   }
 
   function render() {
@@ -240,7 +271,14 @@ const CUR_I18N = {
     try {
       const item = allItems.find(i => i.id === id && i._table === table);
       const tags = item?.suggested_tags || item?.tags || [];
-      const { error } = await sb.rpc('curate_item', { p_table: table, p_id: id, p_action: action, p_tags: tags });
+      const { error } = await sb.rpc('curate_item', {
+        p_table: table,
+        p_id: id,
+        p_action: action,
+        p_tags: tags,
+        p_tribe_id: item?.tribe_id || null,
+        p_audience_level: null,
+      });
       if (error) throw new Error(error.message);
       if (item) item.status = to;
       render();
@@ -250,9 +288,16 @@ const CUR_I18N = {
     }
   }
 
-  async function callCurate(table: string, id: string, action: string, tags?: string[]) {
+  async function callCurate(table: string, id: string, action: string, tags?: string[], extra?: { tribeId?: number | null; audienceLevel?: string | null }) {
     try {
-      const { error } = await sb.rpc('curate_item', { p_table: table, p_id: id, p_action: action, p_tags: tags || null });
+      const { error } = await sb.rpc('curate_item', {
+        p_table: table,
+        p_id: id,
+        p_action: action,
+        p_tags: tags || null,
+        p_tribe_id: extra?.tribeId ?? null,
+        p_audience_level: extra?.audienceLevel ?? null,
+      });
       if (error) throw new Error(error.message);
       const item = allItems.find(i => i.id === id && i._table === table);
       if (action === 'approve' && item) item.status = 'approved';
@@ -289,6 +334,40 @@ const CUR_I18N = {
     return Array.from(el.querySelectorAll('.cur-tag-editor input:checked')).map(i => (i as HTMLInputElement).value);
   }
 
+  function buildTribeOptions(selectedTribeId: number | null): string {
+    const base = '<option value="">' + (I.visibilityGlobal || 'Global') + '</option>';
+    const opts = (allTribes || []).map((t: any) => {
+      const selected = selectedTribeId && Number(selectedTribeId) === Number(t.id) ? ' selected' : '';
+      return '<option value="' + String(t.id) + '"' + selected + '>' + escapeHtml(t.name || ('Tribo ' + String(t.id))) + '</option>';
+    }).join('');
+    return base + opts;
+  }
+
+  function showApproveEditor(el: HTMLElement, item: any) {
+    const editor = el.querySelector('.cur-approve-editor') as HTMLElement;
+    if (!editor) return;
+    const wasHidden = editor.classList.contains('hidden');
+    document.querySelectorAll('.cur-approve-editor').forEach(e => (e as HTMLElement).classList.add('hidden'));
+    if (!wasHidden) return;
+    editor.innerHTML =
+      '<div class="space-y-2">'
+      + '<label class="block text-[10px] font-semibold text-slate-600">' + (I.visibilityLabel || 'Visibilidade') + '</label>'
+      + '<select class="cur-approve-tribe w-full rounded-md border border-slate-200 px-2 py-1 text-[11px]">'
+      + buildTribeOptions(item?.tribe_id || null)
+      + '</select>'
+      + '<label class="block text-[10px] font-semibold text-slate-600 mt-1">' + (I.audienceLabel || 'Publico-alvo') + '</label>'
+      + '<select class="cur-approve-audience w-full rounded-md border border-slate-200 px-2 py-1 text-[11px]">'
+      + '<option value="all">' + (I.audienceAll || 'Todos') + '</option>'
+      + '<option value="leaders">' + (I.audienceLeaders || 'Liderancas') + '</option>'
+      + '<option value="members">' + (I.audienceMembers || 'Membros') + '</option>'
+      + '</select>'
+      + '<button class="cur-confirm-approve mt-2 w-full px-2 py-1.5 bg-emerald-600 text-white rounded text-[10px] font-semibold hover:opacity-90 border-0 cursor-pointer">'
+      + (I.saveApprove || 'Salvar e Aprovar')
+      + '</button>'
+      + '</div>';
+    editor.classList.remove('hidden');
+  }
+
   document.addEventListener('click', function(e) {
     const target = e.target as HTMLElement;
     const card = target.closest('.kanban-card') as HTMLElement;
@@ -311,11 +390,17 @@ const CUR_I18N = {
     const item = allItems.find(i => i.id === id && i._table === table);
 
     if (target.closest('.cur-btn-approve')) {
-      callCurate(table, id, 'approve', item?.suggested_tags || item?.tags);
+      if (item) showApproveEditor(card, item);
     } else if (target.closest('.cur-btn-reject')) {
       callCurate(table, id, 'reject');
     } else if (target.closest('.cur-btn-tags') && item) {
       showTagEditor(card, item);
+    } else if (target.closest('.cur-confirm-approve')) {
+      const tribeRaw = (card.querySelector('.cur-approve-tribe') as HTMLSelectElement | null)?.value || '';
+      const audienceRaw = (card.querySelector('.cur-approve-audience') as HTMLSelectElement | null)?.value || '';
+      const tribeId = tribeRaw ? Number(tribeRaw) : null;
+      const audienceLevel = table === 'events' ? audienceRaw : null;
+      callCurate(table, id, 'approve', item?.suggested_tags || item?.tags, { tribeId, audienceLevel });
     } else if (target.closest('.cur-save-tags')) {
       callCurate(table, id, 'update_tags', getSelectedTags(card));
     } else if (target.closest('.cur-approve-tags')) {
@@ -331,12 +416,14 @@ const CUR_I18N = {
   async function showPanel(m: any) {
     canAct = m.is_superadmin || ['manager', 'deputy_manager'].includes(m.operational_role);
     try {
-      const [ir, tr] = await Promise.all([
+      const [ir, tr, tribesRes] = await Promise.all([
         sb.rpc('list_curation_board').then((r: any) => r).catch(() => sb.rpc('list_pending_curation', { p_table: 'all' })),
         sb.rpc('list_taxonomy_tags'),
+        sb.from('tribes').select('id,name,is_active').eq('is_active', true).order('id'),
       ]);
       allItems = Array.isArray(ir.data) ? ir.data : (ir.data || []);
       allTags = tr.data || [];
+      allTribes = Array.isArray(tribesRes.data) ? tribesRes.data : [];
     } catch (e: any) { console.warn('Curation load:', e); }
     document.getElementById('cur-loading')?.classList.add('hidden');
     document.getElementById('cur-board')?.classList.remove('hidden');
@@ -372,5 +459,12 @@ const CUR_I18N = {
     } catch (e) { console.warn('Curatorship boot:', e); }
     showDenied();
   }
+  document.addEventListener('input', function(e) {
+    const target = e.target as HTMLElement;
+    if (target && target.id === 'cur-search') {
+      searchQuery = ((target as HTMLInputElement).value || '').trim();
+      render();
+    }
+  });
   boot();
 </script>
