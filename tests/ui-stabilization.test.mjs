@@ -733,6 +733,7 @@ test('tribe taxonomy includes workstream classification for navigation grouping'
 test('tribe kanban supports modal edit/create and archive actions', () => {
   const tribe = read('src/pages/tribe/[id].astro');
   const migration = read('supabase/migrations/20260314153000_board_item_editor_rpc.sql');
+  const attachmentsMigration = read('supabase/migrations/20260314180000_upsert_board_item_attachments_support.sql');
   assert.equal(tribe.includes('id="board-item-modal"'), true);
   assert.equal(tribe.includes('data-action="open-board-item"'), true);
   assert.equal(tribe.includes('data-action="add-board-card"'), true);
@@ -741,8 +742,13 @@ test('tribe kanban supports modal edit/create and archive actions', () => {
   assert.equal(tribe.includes('id="board-item-form"'), true);
   assert.equal(tribe.includes('id="bi-labels"'), true);
   assert.equal(tribe.includes('id="bi-checklist"'), true);
+  assert.equal(tribe.includes('id="bi-attachments"'), true);
+  assert.equal(tribe.includes('const attachmentsBadge = attachmentsRaw.length > 0'), true);
+  assert.equal(tribe.includes('p_attachments: attachments,'), true);
   assert.equal(tribe.includes('const checklistBadge = checklistTotal > 0'), true);
   assert.equal(migration.includes('create or replace function public.upsert_board_item('), true);
+  assert.equal(attachmentsMigration.includes('p_attachments jsonb default'), true);
+  assert.equal(attachmentsMigration.includes('attachments = coalesce(p_attachments, attachments)'), true);
   assert.equal(migration.includes("raise exception 'Project management access required';"), true);
 });
 
