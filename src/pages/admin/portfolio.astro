@@ -6,17 +6,17 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
 <BaseLayout title={t('nav.adminPortfolio', lang)} activePage="admin">
   <div class="max-w-[1100px] mx-auto px-4 py-8 space-y-4">
-    <div id="portfolio-loading" class="text-slate-400 text-sm">Carregando portfólio executivo...</div>
+    <div id="portfolio-loading" class="text-slate-400 text-sm">{t('portfolio.loading', lang)}</div>
     <div id="portfolio-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
-      Acesso restrito a administração e audiência executiva.
+      {t('portfolio.denied', lang)}
     </div>
     <section id="portfolio-panel" class="hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h1 class="text-xl font-extrabold text-navy mb-3">Portfólio Executivo</h1>
-      <p class="text-sm text-slate-500 mb-4">Visão consolidada por escopo/domínio para priorização de gestão.</p>
+      <h1 class="text-xl font-extrabold text-navy mb-3">{t('portfolio.title', lang)}</h1>
+      <p class="text-sm text-slate-500 mb-4">{t('portfolio.subtitle', lang)}</p>
       <div id="portfolio-macros" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-4"></div>
       <div class="flex flex-wrap gap-2 mb-4">
-        <button id="portfolio-run-taxonomy-alerts" class="px-3 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50">Rodar detecção de drift taxonomy</button>
-        <button id="portfolio-run-sanity" class="px-3 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50">Rodar data sanity v2</button>
+        <button id="portfolio-run-taxonomy-alerts" class="px-3 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50">{t('portfolio.runTaxonomy', lang)}</button>
+        <button id="portfolio-run-sanity" class="px-3 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50">{t('portfolio.runSanity', lang)}</button>
       </div>
       <div id="portfolio-summary" class="space-y-5"></div>
     </section>
@@ -24,6 +24,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 </BaseLayout>
 
 <script>
+  let portfolioBootRetries = 0;
+
   function hasPortfolioAccess(member: any): boolean {
     if (!member) return false;
     if (member.is_superadmin) return true;
@@ -87,7 +89,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const sb = (window as any).navGetSb?.();
 
     if (!member || !sb) {
-      window.addEventListener('nav:member', () => bootPortfolioPage(), { once: true });
+      portfolioBootRetries += 1;
+      if (portfolioBootRetries >= 20) {
+        loading?.classList.add('hidden');
+        denied?.classList.remove('hidden');
+        denied!.textContent = 'Acesso restrito a administração e audiência executiva.';
+        return;
+      }
+      setTimeout(() => bootPortfolioPage(), 150);
       return;
     }
     loading?.classList.add('hidden');

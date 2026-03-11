@@ -1,5 +1,33 @@
 # Release Log
 
+## 2026-03-11 — W80-W84 tooling hardening (Radix + Playwright + ESLint i18n gate)
+
+### Scope
+Executar a fundação de governança/UX da onda W80-W84 com ferramentas padrão de mercado e bloqueios fail-closed no CI.
+
+### Delivered
+- **Fase 1 (infra):**
+  - Playwright Test configurado (`@playwright/test`, `playwright.config.ts`);
+  - Radix UI adicionado (`@radix-ui/react-dialog`, `@radix-ui/react-dropdown-menu`);
+  - ESLint com gate de hardcoded JSX em superfícies críticas (`eslint.config.mjs`, `npm run lint:i18n`).
+- **Fase 2 (caminho crítico):**
+  - Modal do `TribeKanbanIsland` migrado para Radix Dialog (focus trap + `Esc` nativo);
+  - `PublicationsBoardIsland` passou a usar Radix Dropdown para outcome e limpeza de literals em JSX;
+  - Spec visual dark mode criada em `tests/visual/dark-mode.spec.ts` com snapshots para `/`, `/tribe/1`, `/admin/portfolio`.
+- **Fase 3 (CI/CD):**
+  - `ci.yml` atualizado com gate de lint i18n e job `visual_dark_mode`;
+  - quality gate passa a depender de `validate + browser_guards + visual_dark_mode`.
+- **Hardening adicional de fail-closed:**
+  - `/admin/portfolio` ajustado para negar acesso quando contexto auth não resolve no tempo esperado (evita hangs em browser tests anônimos).
+
+### Validation captured
+- `npm run lint:i18n`
+- `npm run test:visual:dark`
+- `npm test`
+- `npm run build`
+
+---
+
 ## 2026-03-11 — Gap closure W77-W79 (UI executive impact + permissions regression lock)
 
 ### Scope

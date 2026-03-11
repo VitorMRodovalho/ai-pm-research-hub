@@ -17,6 +17,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { CalendarClock, Paperclip, Trash2, UserCircle2, X } from 'lucide-react';
+import * as Dialog from '@radix-ui/react-dialog';
 
 type Member = {
   id: string;
@@ -192,6 +193,17 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
   const [members, setMembers] = useState<Member[]>([]);
   const [activeId, setActiveId] = useState<string>('');
   const [modalItem, setModalItem] = useState<BoardItem | null>(null);
+  const ui = {
+    deniedBoard: i18n?.deniedBoard || 'Acesso restrito para este quadro.',
+    checklist: i18n?.checklist || 'Checklist',
+    status: i18n?.status || 'Status',
+    assignee: i18n?.assignee || 'Responsavel',
+    noAssignee: i18n?.noAssignee || 'Sem responsavel',
+    dueDate: i18n?.dueDate || 'Prazo',
+    archiveCard: i18n?.archiveCard || 'Arquivar card',
+    cancel: i18n?.cancel || 'Cancelar',
+    save: i18n?.save || 'Salvar',
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -353,7 +365,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
     return <div className="text-center py-10 text-slate-400">{i18n.loading || 'Carregando...'}</div>;
   }
   if (denied) {
-    return <div className="text-center py-10 text-slate-500 dark:text-slate-300">Acesso restrito para este quadro.</div>;
+    return <div className="text-center py-10 text-slate-500 dark:text-slate-300">{ui.deniedBoard}</div>;
   }
 
   return (
@@ -401,24 +413,23 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
         </DndContext>
       </div>
 
-      {modalItem ? (
-        <div className="fixed inset-0 z-50">
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/40 border-0 p-0 m-0 cursor-default"
-            aria-label="close-modal-overlay"
-            onClick={() => setModalItem(null)}
-          />
-          <div className="absolute top-1/2 left-1/2 w-full max-w-5xl -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-xl max-h-[90vh] overflow-y-auto">
+      <Dialog.Root open={!!modalItem} onOpenChange={(open) => { if (!open) setModalItem(null); }}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
+          <Dialog.Content className="fixed z-50 top-1/2 left-1/2 w-full max-w-5xl -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-xl max-h-[90vh] overflow-y-auto">
+            {!modalItem ? null : (
+              <>
             <div className="flex items-center justify-between gap-3 mb-3">
               <input
                 value={modalItem.title || ''}
                 onChange={(e) => setModalItem((prev) => (prev ? { ...prev, title: e.target.value } : prev))}
                 className="flex-1 text-lg font-bold text-slate-900 dark:text-slate-100 bg-transparent border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2"
               />
-              <button type="button" onClick={() => setModalItem(null)} className="p-2 rounded-lg border border-slate-200 dark:border-slate-700">
+              <Dialog.Close asChild>
+                <button type="button" className="p-2 rounded-lg border border-slate-200 dark:border-slate-700">
                 <X size={16} />
               </button>
+              </Dialog.Close>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div className="lg:col-span-2 space-y-3">
@@ -430,7 +441,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
                   placeholder="Descricao do card..."
                 />
                 <div className="space-y-2">
-                  <p className="text-[12px] font-semibold text-slate-600 dark:text-slate-300">Checklist</p>
+                  <p className="text-[12px] font-semibold text-slate-600 dark:text-slate-300">{ui.checklist}</p>
                   {parseChecklist(modalItem.checklist).map((item, idx) => (
                     <label key={`${item.text}-${idx}`} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
                       <input
@@ -448,7 +459,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
               </div>
               <aside className="space-y-3">
                 <div>
-                  <label className="text-[12px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">Status</label>
+                  <label className="text-[12px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">{ui.status}</label>
                   <select
                     value={modalItem.status || 'backlog'}
                     onChange={(e) => setModalItem((prev) => (prev ? { ...prev, status: e.target.value } : prev))}
@@ -460,7 +471,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
                   </select>
                 </div>
                 <div>
-                  <label className="text-[12px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">Responsavel</label>
+                  <label className="text-[12px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">{ui.assignee}</label>
                   <select
                     value={modalItem.assignee_id || ''}
                     onChange={(e) => {
@@ -469,14 +480,14 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
                     }}
                     className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                   >
-                    <option value="">Sem responsavel</option>
+                    <option value="">{ui.noAssignee}</option>
                     {members.map((member) => (
                       <option key={member.id} value={member.id}>{member.name || 'Membro'}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="text-[12px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">Prazo</label>
+                  <label className="text-[12px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">{ui.dueDate}</label>
                   <input
                     type="date"
                     value={modalItem.due_date ? String(modalItem.due_date).slice(0, 10) : ''}
@@ -490,24 +501,26 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
                     onClick={archiveModal}
                     className="w-full inline-flex items-center justify-center gap-2 border border-red-200 dark:border-red-900 text-red-600 px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30"
                   >
-                    <Trash2 size={14} /> Arquivar card
+                    <Trash2 size={14} /> {ui.archiveCard}
                   </button>
                 ) : null}
               </aside>
             </div>
             <div className="mt-4 flex justify-end gap-2">
               <button type="button" onClick={() => setModalItem(null)} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
-                Cancelar
+                {ui.cancel}
               </button>
               {canEdit ? (
                 <button type="button" onClick={saveModal} className="px-3 py-2 rounded-lg bg-navy text-white">
-                  Salvar
+                  {ui.save}
                 </button>
               ) : null}
             </div>
-          </div>
-        </div>
-      ) : null}
+              </>
+            )}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   );
 }

@@ -241,9 +241,13 @@ test('astro island foundation includes React and dnd-kit for kanban evolution', 
   assert.equal(packageJson.includes('"react"'), true);
   assert.equal(packageJson.includes('"@dnd-kit/core"'), true);
   assert.equal(packageJson.includes('"lucide-react"'), true);
+  assert.equal(packageJson.includes('"@radix-ui/react-dialog"'), true);
+  assert.equal(packageJson.includes('"@radix-ui/react-dropdown-menu"'), true);
   assert.equal(publicationsIsland.includes('DndContext'), true);
   assert.equal(tribeIsland.includes('DndContext'), true);
   assert.equal(publicationsIsland.includes('SortableContext'), true);
+  assert.equal(tribeIsland.includes("import * as Dialog from '@radix-ui/react-dialog';"), true);
+  assert.equal(publicationsIsland.includes("import * as DropdownMenu from '@radix-ui/react-dropdown-menu';"), true);
   assert.equal(publicationsIsland.includes('event.shiftKey'), true);
   assert.equal(publicationsIsland.includes("event.key === 'ArrowLeft'"), true);
   assert.equal(publicationsIsland.includes("event.key === 'ArrowRight'"), true);
@@ -840,6 +844,22 @@ test('kanban dark release gate script and command are wired', () => {
   assert.equal(baseline.includes('screenshots-multilang.mjs'), true);
   assert.equal(contrast.includes('npm run screenshots:multilang'), true);
   assert.equal(qaDoc.includes('npm run qa:kanban'), true);
+});
+
+test('eslint i18n gate and visual dark mode playwright suite are configured', () => {
+  const pkg = read('package.json');
+  const ci = read('.github/workflows/ci.yml');
+  const eslintConfig = read('eslint.config.mjs');
+  const playwrightConfig = read('playwright.config.ts');
+  const visualSpec = read('tests/visual/dark-mode.spec.ts');
+  assert.equal(pkg.includes('"lint:i18n"'), true);
+  assert.equal(pkg.includes('"test:visual:dark"'), true);
+  assert.equal(ci.includes('Run i18n hardcoded lint gate'), true);
+  assert.equal(ci.includes('visual_dark_mode:'), true);
+  assert.equal(ci.includes('npm run test:visual:dark'), true);
+  assert.equal(eslintConfig.includes("react/jsx-no-literals"), true);
+  assert.equal(playwrightConfig.includes("testDir: './tests/visual'"), true);
+  assert.equal(visualSpec.includes("test.describe('dark mode visual baseline'"), true);
 });
 
 test('navigation keeps agenda (pauta) visible but hyperlink disabled', () => {

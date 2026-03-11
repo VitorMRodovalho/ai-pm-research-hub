@@ -13,6 +13,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { ExternalLink } from 'lucide-react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 
 type BoardItem = {
   id: string;
@@ -35,6 +36,29 @@ const LANES: Lane[] = [
   { key: 'review', label: 'Em revisão' },
   { key: 'done', label: 'Concluído' },
 ];
+
+const UI = {
+  duePrefix: 'Prazo:',
+  publishedBadge: 'Publicado',
+  loadingBoard: 'Carregando quadro global...',
+  deniedBoard: 'Acesso restrito para esta área.',
+  modalTitle: 'Metadados de submissão PMI',
+  fieldChannel: 'Canal',
+  fieldSubmittedAt: 'Data da submissão',
+  fieldOutcome: 'Resultado',
+  fieldNotes: 'Notas',
+  fieldExternalLink: 'URL de publicação externa',
+  fieldPublishedAt: 'Data de publicação efetiva',
+  cancel: 'Cancelar',
+  save: 'Salvar',
+  optionPending: 'pending',
+  optionSubmitted: 'submitted',
+  optionApproved: 'approved',
+  optionRejected: 'rejected',
+  optionWithdrawn: 'withdrawn',
+};
+
+const OUTCOME_OPTIONS = ['pending', 'submitted', 'approved', 'rejected', 'withdrawn'] as const;
 
 function canAccessPublicationsWorkspace(member: any): boolean {
   if (!member) return false;
@@ -87,7 +111,7 @@ function SortableCard({
       ) : null}
       <div className="flex flex-wrap gap-1 items-center">
         {item.due_date ? (
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">Prazo: {item.due_date}</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">{[UI.duePrefix, item.due_date].join(' ')}</span>
         ) : null}
         {Array.isArray(item.tags)
           ? item.tags.map((tag) => (
@@ -106,7 +130,7 @@ function SortableCard({
             aria-label="Abrir publicação externa"
           >
             <ExternalLink size={12} />
-            Publicado
+            {UI.publishedBadge}
           </a>
         ) : null}
       </div>
@@ -287,12 +311,12 @@ export default function PublicationsBoardIsland() {
   }
 
   if (loading) {
-    return <div className="text-center py-10 text-slate-400">Carregando quadro global...</div>;
+    return <div className="text-center py-10 text-slate-400">{UI.loadingBoard}</div>;
   }
   if (denied) {
     return (
       <div className="text-center py-10 text-slate-500 dark:text-slate-300">
-        Acesso restrito para esta área.
+        {UI.deniedBoard}
       </div>
     );
   }
@@ -337,32 +361,45 @@ export default function PublicationsBoardIsland() {
       <div className="fixed inset-0 z-50">
         <button type="button" className="absolute inset-0 bg-black/40 border-0 p-0 m-0" aria-label="close-modal-overlay" onClick={() => setModalItem(null)} />
         <div className="absolute top-1/2 left-1/2 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-xl">
-          <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-3">Metadados de submissão PMI</h3>
+          <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-3">{UI.modalTitle}</h3>
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Canal</label>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">{UI.fieldChannel}</label>
               <input value={metaChannel} onChange={(e) => setMetaChannel(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800" />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Data da submissão</label>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">{UI.fieldSubmittedAt}</label>
               <input type="datetime-local" value={metaSubmittedAt} onChange={(e) => setMetaSubmittedAt(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800" />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Resultado</label>
-              <select value={metaOutcome} onChange={(e) => setMetaOutcome(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800">
-                <option value="pending">pending</option>
-                <option value="submitted">submitted</option>
-                <option value="approved">approved</option>
-                <option value="rejected">rejected</option>
-                <option value="withdrawn">withdrawn</option>
-              </select>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">{UI.fieldOutcome}</label>
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger asChild>
+                  <button type="button" className="w-full text-left rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800">
+                    {metaOutcome}
+                  </button>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Portal>
+                  <DropdownMenu.Content sideOffset={6} className="z-50 min-w-[220px] rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 shadow-xl">
+                    {OUTCOME_OPTIONS.map((option) => (
+                      <DropdownMenu.Item
+                        key={option}
+                        onSelect={() => setMetaOutcome(option)}
+                        className="px-2 py-1.5 text-sm rounded-md text-slate-700 dark:text-slate-200 outline-none hover:bg-slate-100 dark:hover:bg-slate-800"
+                      >
+                        {option}
+                      </DropdownMenu.Item>
+                    ))}
+                  </DropdownMenu.Content>
+                </DropdownMenu.Portal>
+              </DropdownMenu.Root>
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Notas</label>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">{UI.fieldNotes}</label>
               <textarea value={metaNotes} onChange={(e) => setMetaNotes(e.target.value)} rows={4} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800" />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">URL de publicação externa</label>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">{UI.fieldExternalLink}</label>
               <input
                 type="url"
                 value={metaExternalLink}
@@ -372,7 +409,7 @@ export default function PublicationsBoardIsland() {
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">Data de publicação efetiva</label>
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">{UI.fieldPublishedAt}</label>
               <input
                 type="datetime-local"
                 value={metaPublishedAt}
@@ -382,8 +419,8 @@ export default function PublicationsBoardIsland() {
             </div>
           </div>
           <div className="mt-4 flex justify-end gap-2">
-            <button type="button" onClick={() => setModalItem(null)} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm">Cancelar</button>
-            <button type="button" onClick={saveSubmissionMetadata} className="px-3 py-2 rounded-lg bg-navy text-white text-sm">Salvar</button>
+            <button type="button" onClick={() => setModalItem(null)} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm">{UI.cancel}</button>
+            <button type="button" onClick={saveSubmissionMetadata} className="px-3 py-2 rounded-lg bg-navy text-white text-sm">{UI.save}</button>
           </div>
         </div>
       </div>
