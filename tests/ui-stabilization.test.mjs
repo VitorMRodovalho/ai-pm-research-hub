@@ -225,6 +225,17 @@ test('unified ingestion pipeline keeps sensitive governance in backend contracts
   assert.equal(pipeline.includes("sb.rpc('admin_finalize_ingestion_batch'"), true);
 });
 
+test('legacy tribe materialization uses explicit backend lineage/links', () => {
+  const migration = read('supabase/migrations/20260312180000_legacy_tribe_materialization.sql');
+  const script = read('scripts/materialize_legacy_tribes.ts');
+  assert.equal(migration.includes('create table if not exists public.legacy_tribes'), true);
+  assert.equal(migration.includes('create table if not exists public.legacy_tribe_board_links'), true);
+  assert.equal(migration.includes('create or replace function public.admin_upsert_legacy_tribe('), true);
+  assert.equal(migration.includes('create or replace function public.admin_link_board_to_legacy_tribe('), true);
+  assert.equal(script.includes("sb.rpc('admin_upsert_legacy_tribe'"), true);
+  assert.equal(script.includes("sb.rpc('admin_link_board_to_legacy_tribe'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

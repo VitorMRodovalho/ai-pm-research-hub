@@ -3117,6 +3117,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_finalize_ingestion_batch: {
+        Args: { p_batch_id: string; p_status?: string; p_summary?: Json }
+        Returns: Json
+      }
       admin_force_tribe_selection: {
         Args: { p_member_id: string; p_tribe_id: number }
         Returns: Json
@@ -3183,6 +3187,10 @@ export type Database = {
       admin_set_tribe_active: {
         Args: { p_is_active: boolean; p_reason?: string; p_tribe_id: number }
         Returns: Json
+      }
+      admin_start_ingestion_batch: {
+        Args: { p_mode?: string; p_notes?: string; p_source: string }
+        Returns: string
       }
       admin_update_member: {
         Args: {
