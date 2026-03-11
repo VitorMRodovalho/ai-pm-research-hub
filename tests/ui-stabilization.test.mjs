@@ -213,6 +213,18 @@ test('analytics v2 grants readonly access without widening admin actions and shi
   assert.equal(migration.includes('raise exception \'Internal analytics access required\''), true);
 });
 
+test('unified ingestion pipeline keeps sensitive governance in backend contracts', () => {
+  const migration = read('supabase/migrations/20260312170000_unified_ingestion_batches.sql');
+  const pipeline = read('scripts/unified_ingestion_pipeline.ts');
+  assert.equal(migration.includes('create table if not exists public.ingestion_batches'), true);
+  assert.equal(migration.includes('create table if not exists public.ingestion_batch_files'), true);
+  assert.equal(migration.includes('create or replace function public.admin_start_ingestion_batch('), true);
+  assert.equal(migration.includes('create or replace function public.admin_finalize_ingestion_batch('), true);
+  assert.equal(pipeline.includes('blocked_by_policy_whatsapp_manual_only'), true);
+  assert.equal(pipeline.includes("sb.rpc('admin_start_ingestion_batch'"), true);
+  assert.equal(pipeline.includes("sb.rpc('admin_finalize_ingestion_batch'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');
