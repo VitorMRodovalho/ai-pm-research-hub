@@ -1,5 +1,22 @@
 # Release Log
 
+## 2026-03-11 — Sprint 30 (Dev): Comms Integration Phase 1 Baseline
+
+### Scope
+Consolidar baseline operacional da integração de comunicação para reduzir dispersão entre Trello e Hub.
+
+### Delivered
+- `docs/project-governance/COMMS_PHASE1_BASELINE.md`:
+  - matriz de baseline por domínio;
+  - critérios de avanço para fase 2;
+  - cadência operacional recomendada.
+- `docs/project-governance/COMMS_INTEGRATION_ROADMAP.md` atualizado com referência explícita da baseline.
+
+### Audit Results
+- `npm run build`
+
+---
+
 ## 2026-03-11 — Sprint 29 (Dev): Knowledge Hub Phase A Contracts
 
 ### Scope

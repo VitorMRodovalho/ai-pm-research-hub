@@ -26,6 +26,7 @@ Unificar planejamento, execução e evidências de comunicação no Hub sem rupt
 - Inventariar quadro Trello atual (listas, labels, responsáveis, SLAs).
 - Definir dicionário de status equivalente no Hub.
 - Publicar checklist de migração piloto por campanha.
+- Referência de baseline operacional: `docs/project-governance/COMMS_PHASE1_BASELINE.md`.
 
 **Milestone M1:** baseline aprovado e checklist publicado.
 
