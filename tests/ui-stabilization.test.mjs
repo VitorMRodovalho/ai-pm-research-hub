@@ -709,6 +709,7 @@ test('governance bundle snapshots persist export history', () => {
 
 test('board lifecycle and source-to-tribe integrity contracts are backend-enforced', () => {
   const migration = read('supabase/migrations/20260314130000_board_lifecycle_and_tribe_fact_integrity.sql');
+  const crossMove = read('supabase/migrations/20260314191000_cross_board_move_policy.sql');
   assert.equal(migration.includes('create table if not exists public.board_source_tribe_map'), true);
   assert.equal(migration.includes('create trigger trg_enforce_board_item_source_tribe_integrity'), true);
   assert.equal(migration.includes('project_boards_linked_sources_require_tribe_chk'), true);
@@ -717,6 +718,9 @@ test('board lifecycle and source-to-tribe integrity contracts are backend-enforc
   assert.equal(migration.includes('create or replace function public.admin_restore_project_board('), true);
   assert.equal(migration.includes('create or replace function public.admin_archive_board_item('), true);
   assert.equal(migration.includes('create or replace function public.admin_restore_board_item('), true);
+  assert.equal(crossMove.includes('create or replace function public.move_board_item_to_board('), true);
+  assert.equal(crossMove.includes("Cross-board move denied: board_scope mismatch"), true);
+  assert.equal(crossMove.includes("Cross-board move denied: domain_key mismatch"), true);
 });
 
 test('tribe taxonomy includes workstream classification for navigation grouping', () => {
@@ -750,6 +754,9 @@ test('tribe kanban supports modal edit/create and archive actions', () => {
   assert.equal(tribe.includes('id="board-filter-status"'), true);
   assert.equal(tribe.includes('id="board-filter-assignee"'), true);
   assert.equal(tribe.includes('id="board-sort"'), true);
+  assert.equal(tribe.includes('id="board-show-archived"'), true);
+  assert.equal(tribe.includes('id="bi-restore-btn"'), true);
+  assert.equal(tribe.includes("sb.rpc('admin_restore_board_item'"), true);
   assert.equal(tribe.includes('function applyBoardFilters(items: any[]): any[]'), true);
   assert.equal(tribe.includes('const checklistBadge = checklistTotal > 0'), true);
   assert.equal(migration.includes('create or replace function public.upsert_board_item('), true);

@@ -165,7 +165,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     <!-- Project Board panel -->
     <div id="panel-board" class="hidden">
       <div id="board-loading" class="text-center py-10 text-slate-400">Carregando quadro...</div>
-      <div id="board-toolbar" class="hidden mb-3 grid grid-cols-1 md:grid-cols-4 gap-2">
+      <div id="board-toolbar" class="hidden mb-3 grid grid-cols-1 md:grid-cols-5 gap-2">
         <input id="board-search" type="text" placeholder="Buscar no quadro..." class="px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
         <select id="board-filter-status" class="px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40">
           <option value="">Todos os status</option>
@@ -184,6 +184,10 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
           <option value="due_asc">Prazo (mais próximo)</option>
           <option value="title_asc">Título (A-Z)</option>
         </select>
+        <label class="inline-flex items-center gap-2 px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg text-sm text-slate-700 dark:text-slate-200">
+          <input id="board-show-archived" type="checkbox" class="w-4 h-4 rounded border-slate-300 dark:border-slate-600" />
+          Mostrar arquivados
+        </label>
       </div>
       <div id="board-empty" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-8 text-center">
         <div class="text-4xl mb-3 opacity-50">&#x1f4cb;</div>
@@ -237,6 +241,10 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
           </div>
           <div class="board-drop space-y-2 min-h-[150px] p-1.5 rounded-xl border-2 border-dashed border-emerald-200 bg-emerald-50/30" data-col="done"></div>
         </div>
+      </div>
+      <div id="board-archived" class="hidden mt-4 bg-slate-50/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-xl p-3">
+        <div class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-300 mb-2">Cards arquivados</div>
+        <div id="board-archived-list" class="space-y-2"></div>
       </div>
     </div>
     <div id="board-item-modal" class="fixed inset-0 z-50 hidden">
@@ -292,6 +300,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
           </div>
           <div class="flex justify-between items-center gap-3 mt-2">
             <button type="button" id="bi-delete-btn" data-action="delete-board-item" class="px-4 py-2 text-sm font-semibold text-red-600 border border-red-200 dark:border-red-900 rounded-lg cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/30 transition-all hidden">🗑️ Arquivar card</button>
+            <button type="button" id="bi-restore-btn" data-action="restore-board-item" class="px-4 py-2 text-sm font-semibold text-emerald-700 border border-emerald-200 dark:border-emerald-900 rounded-lg cursor-pointer hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-all hidden">↩ Restaurar card</button>
             <div class="flex gap-3 ml-auto">
               <button type="button" data-action="close-board-item-modal" class="px-4 py-2 text-sm font-semibold text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">Cancelar</button>
               <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-navy rounded-lg cursor-pointer border-0 hover:opacity-90 transition-all">Salvar</button>
@@ -452,6 +461,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   let boardStatusFilter = '';
   let boardAssigneeFilter = '';
   let boardSort = 'updated_desc';
+  let boardShowArchived = false;
 
   function getActiveCycleCode(): string {
     return currentCycleCode || allDeliverables.find((item: any) => item?.cycle_code)?.cycle_code || '';
@@ -460,6 +470,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   function applyBoardFilters(items: any[]): any[] {
     const q = boardSearch.trim().toLowerCase();
     const filtered = items.filter((item: any) => {
+      if (item.status === 'archived') return false;
       if (boardStatusFilter && item.status !== boardStatusFilter) return false;
       if (boardAssigneeFilter === 'unassigned' && item.assignee_id) return false;
       if (boardAssigneeFilter && boardAssigneeFilter !== 'unassigned' && String(item.assignee_id || '') !== boardAssigneeFilter) return false;
@@ -1147,6 +1158,17 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         archiveBoardItemFromModal();
       }
 
+      if (action === 'restore-board-item') {
+        const idInput = document.getElementById('bi-id') as HTMLInputElement | null;
+        const itemId = idInput?.value || '';
+        restoreBoardItem(itemId);
+      }
+
+      if (action === 'restore-board-item-inline') {
+        const itemId = target.dataset.itemId || '';
+        restoreBoardItem(itemId);
+      }
+
       if (action === 'send-broadcast') {
         sendBroadcast();
       }
@@ -1595,6 +1617,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     const kanbanEl = document.getElementById('board-kanban');
     const toolbar = document.getElementById('board-toolbar');
     const assigneeFilter = document.getElementById('board-filter-assignee') as HTMLSelectElement | null;
+    const archivedWrap = document.getElementById('board-archived');
+    const archivedList = document.getElementById('board-archived-list');
     if (loadEl) loadEl.classList.add('hidden');
     if (kanbanEl) kanbanEl.classList.remove('hidden');
     if (toolbar) toolbar.classList.remove('hidden');
@@ -1618,6 +1642,24 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       if (countEl) countEl.textContent = String(colItems.length);
       drop.innerHTML = colItems.map((item: any) => boardCardHtml(item)).join('');
     });
+
+    const archivedItems = currentBoardItems.filter((item: any) => item?.status === 'archived');
+    if (archivedWrap && archivedList) {
+      archivedWrap.classList.toggle('hidden', !(boardShowArchived && archivedItems.length > 0));
+      archivedList.innerHTML = boardShowArchived
+        ? (archivedItems.length
+          ? archivedItems.map((item: any) => `
+            <div class="flex items-center gap-2 p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <div class="min-w-0 flex-1">
+                <div class="text-xs font-semibold text-slate-700 dark:text-slate-100 truncate">${escapeHtml(item.title || 'Sem título')}</div>
+                <div class="text-[11px] text-slate-400 truncate">${escapeHtml(item.assignee_name || 'Sem responsável')}</div>
+              </div>
+              <button data-action="restore-board-item-inline" data-item-id="${item.id}" class="px-2 py-1 text-[11px] font-semibold text-emerald-700 border border-emerald-200 dark:border-emerald-900 rounded-md hover:bg-emerald-50 dark:hover:bg-emerald-900/20">Restaurar</button>
+            </div>
+          `).join('')
+          : '<div class="text-xs text-slate-400">Nenhum card arquivado.</div>')
+        : '';
+    }
 
     if (canEdit) setupBoardDragDrop();
   }
@@ -1761,8 +1803,9 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     const attachmentsInput = document.getElementById('bi-attachments') as HTMLTextAreaElement;
     const seedInput = document.getElementById('bi-status-seed') as HTMLInputElement;
     const deleteBtn = document.getElementById('bi-delete-btn');
+    const restoreBtn = document.getElementById('bi-restore-btn');
 
-    if (!modal || !titleEl || !idInput || !titleInput || !descriptionInput || !statusSelect || !dueDateInput || !assigneeSelect || !tagsInput || !labelsInput || !checklistInput || !attachmentsInput || !seedInput || !deleteBtn) return;
+    if (!modal || !titleEl || !idInput || !titleInput || !descriptionInput || !statusSelect || !dueDateInput || !assigneeSelect || !tagsInput || !labelsInput || !checklistInput || !attachmentsInput || !seedInput || !deleteBtn || !restoreBtn) return;
 
     titleEl.textContent = item ? 'Editar card' : 'Novo card';
     idInput.value = item?.id || '';
@@ -1790,7 +1833,9 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       })
       .filter((entry: string) => !!entry)
       .join('\n');
-    deleteBtn.classList.toggle('hidden', !item);
+    const isArchived = item?.status === 'archived';
+    deleteBtn.classList.toggle('hidden', !item || isArchived);
+    restoreBtn.classList.toggle('hidden', !item || !isArchived);
 
     assigneeSelect.innerHTML = `<option value="">Não atribuído</option>` +
       Array.from(membersMap.values())
@@ -1885,6 +1930,22 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     (window as any).toast?.('Card arquivado.', 'success');
   }
 
+  async function restoreBoardItem(itemId: string) {
+    if (!sb || !itemId) return;
+    const { error } = await sb.rpc('admin_restore_board_item', {
+      p_item_id: itemId,
+      p_reason: 'Restored from tribe kanban UI',
+    });
+    if (error) {
+      console.error('admin_restore_board_item error', error);
+      (window as any).toast?.('Não foi possível restaurar o card.', 'error');
+      return;
+    }
+    closeBoardItemModal();
+    await loadProjectBoard();
+    (window as any).toast?.('Card restaurado com sucesso.', 'success');
+  }
+
   function setupBoardDragDrop() {
     const kanbanEl = document.getElementById('board-kanban');
     if (!kanbanEl) return;
@@ -1958,6 +2019,10 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   });
   document.getElementById('board-sort')?.addEventListener('change', (e: Event) => {
     boardSort = (e.target as HTMLSelectElement)?.value || 'updated_desc';
+    renderBoardItems(currentBoardItems);
+  });
+  document.getElementById('board-show-archived')?.addEventListener('change', (e: Event) => {
+    boardShowArchived = !!(e.target as HTMLInputElement)?.checked;
     renderBoardItems(currentBoardItems);
   });
 
