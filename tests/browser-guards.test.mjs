@@ -249,6 +249,17 @@ async function run() {
     });
     await curatorshipPage.locator('#cur-board').waitFor({ state: 'visible' });
     assert.match(await curatorshipPage.locator('#cur-count').textContent() || '', /item/);
+    await curatorshipPage.waitForFunction(() => {
+      const approveButtons = document.querySelectorAll('.cur-btn-approve');
+      if (approveButtons.length > 0) return true;
+      try {
+        const member = window.navGetMember && window.navGetMember();
+        if (member) window.dispatchEvent(new CustomEvent('nav:member', { detail: member }));
+      } catch {
+        // noop; keep polling until timeout
+      }
+      return false;
+    });
     await curatorshipPage.locator('.cur-btn-approve').first().click();
     assert.equal(await curatorshipPage.locator('.cur-confirm-approve').first().isVisible(), true);
     assert.equal(await curatorshipPage.locator('.cur-approve-tribe').first().isVisible(), true);
