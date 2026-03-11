@@ -3031,6 +3031,62 @@ export type Database = {
           },
         ]
       }
+      release_readiness_policies: {
+        Row: {
+          max_open_warnings: number
+          mode: string
+          policy_key: string
+          require_fresh_snapshot_hours: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          max_open_warnings?: number
+          mode: string
+          policy_key: string
+          require_fresh_snapshot_hours?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          max_open_warnings?: number
+          mode?: string
+          policy_key?: string
+          require_fresh_snapshot_hours?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "release_readiness_policies_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "release_readiness_policies_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "release_readiness_policies_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "release_readiness_policies_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_config: {
         Row: {
           key: string
@@ -4211,6 +4267,7 @@ export type Database = {
       admin_release_readiness_gate: {
         Args: {
           p_max_open_warnings?: number
+          p_policy_mode?: string
           p_require_fresh_snapshot_hours?: number
         }
         Returns: Json
@@ -4229,6 +4286,15 @@ export type Database = {
           p_notes?: string
           p_require_manual_review?: boolean
           p_source: string
+        }
+        Returns: Json
+      }
+      admin_set_release_readiness_policy: {
+        Args: {
+          p_max_open_warnings?: number
+          p_mode?: string
+          p_policy_key?: string
+          p_require_fresh_snapshot_hours?: number
         }
         Returns: Json
       }

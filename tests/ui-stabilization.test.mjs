@@ -360,6 +360,17 @@ test('readiness gate supports strict and advisory policy modes', () => {
   assert.equal(policyScript.includes("sb.rpc('admin_set_release_readiness_policy'"), true);
 });
 
+test('post-ingestion chain orchestrates healthcheck snapshot and gate', () => {
+  const migration = read('supabase/migrations/20260313080000_post_ingestion_chain_orchestrator.sql');
+  const script = read('scripts/run_post_ingestion_chain.ts');
+
+  assert.equal(migration.includes('create or replace function public.admin_run_post_ingestion_chain('), true);
+  assert.equal(migration.includes('public.admin_run_post_ingestion_healthcheck('), true);
+  assert.equal(migration.includes('public.admin_capture_data_quality_snapshot('), true);
+  assert.equal(migration.includes('public.admin_release_readiness_gate('), true);
+  assert.equal(script.includes("sb.rpc('admin_run_post_ingestion_chain'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');
