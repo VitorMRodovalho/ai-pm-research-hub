@@ -33,6 +33,11 @@ const ANALYTICS_I18N = {
   transitionTo: t('admin.analytics.transitionTo', lang),
   transitionCount: t('admin.analytics.transitionCount', lang),
   impactHoursShort: t('admin.analytics.impactHoursShort', lang),
+  qualityTitle: t('admin.analytics.qualityTitle', lang),
+  qualityOk: t('admin.analytics.qualityOk', lang),
+  qualityWarn: t('admin.analytics.qualityWarn', lang),
+  qualityIssue: t('admin.analytics.qualityIssue', lang),
+  qualityWindowLabel: t('admin.analytics.qualityWindowLabel', lang),
 };
 ---
 
@@ -120,6 +125,15 @@ const ANALYTICS_I18N = {
             </div>
           </div>
         </div>
+      </section>
+
+      <section id="analytics-quality-banner" class="hidden rounded-xl border px-4 py-3">
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <div class="text-[.75rem] font-semibold" id="analytics-quality-title">{t('admin.analytics.qualityTitle', lang)}</div>
+          <div class="text-[.68rem] font-semibold" id="analytics-quality-status"></div>
+        </div>
+        <div class="mt-2 text-[.7rem] text-slate-500" id="analytics-quality-window"></div>
+        <div class="mt-2 text-[.72rem] text-slate-700" id="analytics-quality-body"></div>
       </section>
 
       <div id="analytics-v2-kpis" class="grid grid-cols-2 xl:grid-cols-5 gap-3">
@@ -759,22 +773,70 @@ const ANALYTICS_I18N = {
     `;
   }
 
+  function renderQuality(quality: any) {
+    const banner = document.getElementById('analytics-quality-banner');
+    const title = document.getElementById('analytics-quality-title');
+    const status = document.getElementById('analytics-quality-status');
+    const body = document.getElementById('analytics-quality-body');
+    const windowEl = document.getElementById('analytics-quality-window');
+    if (!banner || !title || !status || !body || !windowEl) return;
+    if (!quality) {
+      banner.classList.add('hidden');
+      return;
+    }
+    const issues: string[] = Array.isArray(quality.issues) ? quality.issues : [];
+    const warnings: string[] = Array.isArray(quality.warnings) ? quality.warnings : [];
+    const beforeDays = Number(quality?.attribution_window?.before_days || 30);
+    const afterDays = Number(quality?.attribution_window?.after_days || 90);
+
+    title.textContent = L.qualityTitle || 'Data quality';
+    windowEl.textContent = `${L.qualityWindowLabel || 'ROI attribution window'}: -${beforeDays} / +${afterDays} days`;
+
+    if (!issues.length && !warnings.length) {
+      banner.className = 'rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3';
+      status.textContent = L.qualityOk || 'No issues detected';
+      status.className = 'text-[.68rem] font-semibold text-emerald-700';
+      body.textContent = '';
+      banner.classList.remove('hidden');
+      return;
+    }
+
+    const chunks = [];
+    if (issues.length) chunks.push(`${L.qualityIssue || 'Issues'}: ${issues.join(', ')}`);
+    if (warnings.length) chunks.push(`${L.qualityWarn || 'Warnings'}: ${warnings.join(', ')}`);
+    body.textContent = chunks.join(' | ');
+
+    if (issues.length) {
+      banner.className = 'rounded-xl border border-amber-300 bg-amber-50 px-4 py-3';
+      status.textContent = `${issues.length} ${L.qualityIssue || 'issues'}`;
+      status.className = 'text-[.68rem] font-semibold text-amber-800';
+    } else {
+      banner.className = 'rounded-xl border border-sky-300 bg-sky-50 px-4 py-3';
+      status.textContent = `${warnings.length} ${L.qualityWarn || 'warnings'}`;
+      status.className = 'text-[.68rem] font-semibold text-sky-700';
+    }
+    banner.classList.remove('hidden');
+  }
+
   async function loadAnalyticsV2() {
     setText('analytics-scope-summary', L.scopePrefix || 'Loading...');
-    const [funnel, impact, cert, roi, leadership] = await Promise.all([
+    const [funnel, impact, cert, roi, leadership, quality] = await Promise.all([
       safeRpc('exec_funnel_v2'),
       safeRpc('exec_impact_hours_v2'),
       safeRpc('exec_certification_delta'),
       safeRpc('exec_chapter_roi'),
       safeRpc('exec_role_transitions'),
+      safeRpc('exec_analytics_v2_quality'),
     ]);
 
     if (!funnel || !impact || !cert || !roi || !leadership) {
       setText('analytics-scope-summary', L.chartError || 'Analytics error');
+      renderQuality(quality);
       return;
     }
 
     setText('analytics-scope-summary', buildScopeSummary(funnel));
+    renderQuality(quality);
     renderKpis(funnel, impact, roi, leadership);
     await Promise.all([
       renderFunnelChart(funnel),

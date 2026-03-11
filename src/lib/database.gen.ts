@@ -3186,6 +3186,10 @@ export type Database = {
       decrypt_sensitive: { Args: { val: string }; Returns: string }
       deselect_tribe: { Args: never; Returns: Json }
       encrypt_sensitive: { Args: { val: string }; Returns: string }
+      exec_analytics_v2_quality: {
+        Args: { p_chapter?: string; p_cycle_code?: string; p_tribe_id?: number }
+        Returns: Json
+      }
       exec_cert_timeline: {
         Args: { p_months?: number }
         Returns: {

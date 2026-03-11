@@ -172,6 +172,8 @@ test('analytics v2 grants readonly access without widening admin actions and shi
   assert.equal(analytics.includes("safeRpc('exec_certification_delta')"), true);
   assert.equal(analytics.includes("safeRpc('exec_chapter_roi')"), true);
   assert.equal(analytics.includes("safeRpc('exec_role_transitions')"), true);
+  assert.equal(analytics.includes("safeRpc('exec_analytics_v2_quality')"), true);
+  assert.equal(analytics.includes('id="analytics-quality-banner"'), true);
   assert.equal(analytics.includes("sb.from('cycles').select('cycle_code, cycle_label, is_current, sort_order')"), true);
   assert.equal(analytics.includes("sb.from('tribes').select('id, name, is_active').eq('is_active', true).order('id')"), true);
   assert.equal(migration.includes('create or replace function public.can_read_internal_analytics()'), true);
@@ -181,6 +183,9 @@ test('analytics v2 grants readonly access without widening admin actions and shi
   assert.equal(migration.includes('create or replace function public.exec_certification_delta('), true);
   assert.equal(migration.includes('create or replace function public.exec_chapter_roi('), true);
   assert.equal(migration.includes('create or replace function public.exec_role_transitions('), true);
+  const qualityMigration = read('supabase/migrations/20260312130000_analytics_v2_quality_checks.sql');
+  assert.equal(qualityMigration.includes('create or replace function public.exec_analytics_v2_quality('), true);
+  assert.equal(qualityMigration.includes('grant execute on function public.exec_analytics_v2_quality(text, integer, text) to authenticated;'), true);
   assert.equal(migration.includes('raise exception \'Internal analytics access required\''), true);
 });
 
