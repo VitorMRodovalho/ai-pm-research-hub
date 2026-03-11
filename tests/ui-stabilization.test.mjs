@@ -327,6 +327,17 @@ test('release readiness gate centralizes alerts and snapshot checks', () => {
   assert.equal(script.includes("sb.rpc('admin_release_readiness_gate'"), true);
 });
 
+test('ingestion pipeline run ledger enforces idempotent apply runs', () => {
+  const migration = read('supabase/migrations/20260313050000_ingestion_run_ledger.sql');
+  const pipeline = read('scripts/unified_ingestion_pipeline.ts');
+
+  assert.equal(migration.includes('create table if not exists public.ingestion_run_ledger'), true);
+  assert.equal(migration.includes('create or replace function public.admin_register_ingestion_run('), true);
+  assert.equal(migration.includes('create or replace function public.admin_complete_ingestion_run('), true);
+  assert.equal(pipeline.includes("sb.rpc('admin_register_ingestion_run'"), true);
+  assert.equal(pipeline.includes("sb.rpc('admin_complete_ingestion_run'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

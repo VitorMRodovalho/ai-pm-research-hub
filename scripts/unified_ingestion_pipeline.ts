@@ -30,6 +30,7 @@ type ManifestItem = {
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const MODE = (process.argv.find((arg) => arg.startsWith('--mode='))?.split('=')[1] || 'dry_run') as IngestionMode;
+const RUN_KEY = process.argv.find((arg) => arg.startsWith('--run-key='))?.split('=')[1] || '';
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
@@ -115,8 +116,28 @@ async function main() {
   const lockSource = 'mixed';
   const lockHolder = `unified_ingestion_pipeline:${process.pid}`;
   let lockAcquired = false;
+  let runId: string | null = null;
   const sensitiveRoot = getSensitiveRoot();
   const manifest = buildManifest(sensitiveRoot);
+  const manifestHash = createHash('sha256').update(JSON.stringify(manifest)).digest('hex');
+  const runKey = RUN_KEY || `mixed:${MODE}:${manifestHash}`;
+
+  const { data: runResult, error: runError } = await sb.rpc('admin_register_ingestion_run', {
+    p_run_key: runKey,
+    p_source: 'mixed',
+    p_mode: MODE,
+    p_manifest_hash: manifestHash,
+    p_notes: 'Unified ingestion pipeline run',
+  });
+  if (runError) {
+    console.error('[ingestion] failed to register run', runError.message);
+    process.exit(1);
+  }
+  if (!runResult?.proceed) {
+    console.log('[ingestion] idempotent skip', JSON.stringify(runResult, null, 2));
+    process.exit(0);
+  }
+  runId = runResult?.run_id ?? null;
 
   if (MODE === 'apply') {
     const { data: lockResult, error: lockError } = await sb.rpc('admin_acquire_ingestion_apply_lock', {
@@ -158,6 +179,13 @@ async function main() {
           p_holder: lockHolder,
         });
       }
+      if (runId) {
+        await sb.rpc('admin_complete_ingestion_run', {
+          p_run_id: runId,
+          p_status: 'failed',
+          p_notes: 'Blocked by ingestion source policy',
+        });
+      }
       process.exit(1);
     }
   }
@@ -190,6 +218,13 @@ async function main() {
 
   if (batchErr || !batchId) {
     console.error('[ingestion] failed to start batch', batchErr?.message || 'unknown_error');
+    if (runId) {
+      await sb.rpc('admin_complete_ingestion_run', {
+        p_run_id: runId,
+        p_status: 'failed',
+        p_notes: `Failed to start ingestion batch: ${batchErr?.message || 'unknown_error'}`,
+      });
+    }
     process.exit(1);
   }
 
@@ -227,7 +262,23 @@ async function main() {
 
     if (doneErr) {
       console.error('[ingestion] failed to finalize batch', doneErr.message);
+      if (runId) {
+        await sb.rpc('admin_complete_ingestion_run', {
+          p_run_id: runId,
+          p_status: 'failed',
+          p_batch_id: batchId,
+          p_notes: `Failed to finalize batch: ${doneErr.message}`,
+        });
+      }
       process.exit(1);
+    }
+    if (runId) {
+      await sb.rpc('admin_complete_ingestion_run', {
+        p_run_id: runId,
+        p_status: 'completed',
+        p_batch_id: batchId,
+        p_notes: 'Batch finalized successfully',
+      });
     }
   } finally {
     if (lockAcquired) {
