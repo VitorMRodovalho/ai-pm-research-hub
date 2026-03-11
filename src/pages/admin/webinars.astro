@@ -1,7 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
-import { canAccessWebinarsWorkspace } from '../../lib/admin/constants';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
@@ -163,6 +162,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 </BaseLayout>
 
 <script>
+  import { canAccessWebinarsWorkspace } from '../../lib/admin/constants';
+
   let sb: any = null;
   let webinarArtifactsByEventId = new Map<string, any>();
   let webinarWorkspaceByKey = new Map<string, any>();

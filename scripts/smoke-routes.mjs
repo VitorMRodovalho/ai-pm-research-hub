@@ -65,7 +65,7 @@ async function run() {
     await assertOk('/en');
     await assertOk('/es');
 
-    await assertRedirect('/teams', '/#team');
+    await assertOk('/teams');
     await assertRedirect('/rank', '/gamification');
     await assertRedirect('/ranks', '/gamification');
 
