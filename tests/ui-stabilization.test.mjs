@@ -75,6 +75,8 @@ test('dark mode styling is applied to teams, webinars, and tribe board modal sur
   const teams = read('src/pages/teams.astro');
   const webinars = read('src/pages/admin/webinars.astro');
   const tribe = read('src/pages/tribe/[id].astro');
+  const darkAuditScript = read('scripts/audit_dark_mode_a11y.sh');
+  const darkChecklist = read('docs/project-governance/DARK_MODE_A11Y_CHECKLIST.md');
   assert.equal(teams.includes('dark:bg-slate-900'), true);
   assert.equal(webinars.includes('dark:bg-slate-900'), true);
   assert.equal(tribe.includes('id="board-item-modal"'), true);
@@ -82,6 +84,9 @@ test('dark mode styling is applied to teams, webinars, and tribe board modal sur
   assert.equal(tribe.includes('dark:border-slate-700'), true);
   assert.equal(tribe.includes('id="deliverable-modal"'), true);
   assert.equal(tribe.includes('close-deliverable-modal'), true);
+  assert.equal(darkAuditScript.includes('src/pages/tribe/[id].astro'), true);
+  assert.equal(darkAuditScript.includes('PASS: dark mode audit passed.'), true);
+  assert.equal(darkChecklist.includes('./scripts/audit_dark_mode_a11y.sh'), true);
 });
 
 test('admin webinars now reuses the events stack instead of staying a placeholder', () => {
