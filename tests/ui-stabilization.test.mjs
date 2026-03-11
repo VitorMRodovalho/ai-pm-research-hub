@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-const ROOT = '/home/vitormrodovalho/Desktop/ai-pm-research-hub';
+const ROOT = process.cwd();
 
 function read(relativePath) {
   return readFileSync(resolve(ROOT, relativePath), 'utf8');

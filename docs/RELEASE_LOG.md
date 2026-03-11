@@ -1,5 +1,20 @@
 # Release Log
 
+## 2026-03-11 — Sprint 11 (Dev): CI Path-Portability + Browser Guard Regex Fix
+
+### Scope
+Corrigir quebra de CI em ambiente GitHub Actions causada por paths absolutos hardcoded nos testes e por regex case-sensitive no browser guard da home.
+
+### Delivered
+- `tests/ui-stabilization.test.mjs`: root de leitura alterado para `process.cwd()` (portável entre local e runner CI).
+- `tests/attendance-ui.test.mjs`: root de leitura alterado para `process.cwd()`.
+- `tests/browser-guards.test.mjs`: regex do `#hero-event-area` ajustada para case-insensitive (`/i`) evitando falso negativo com variação de caixa em `kick-off`.
+
+### Audit Results
+- Validado localmente com `npm test`, `npm run test:browser:guards` e `npm run build`.
+
+---
+
 ## 2026-03-11 — Sprint 10 (Dev): CI/Governance Closure Pass (`#14`)
 
 ### Scope

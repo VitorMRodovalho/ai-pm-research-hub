@@ -75,7 +75,7 @@ async function run() {
     await page.waitForTimeout(1800);
     assert.equal(await page.locator('#hero-cycle-status').isVisible(), true);
     assert.equal(await page.locator('#hero-countdown-area').isVisible(), false);
-    assert.match(await page.locator('#hero-event-area').textContent() || '', /Kick-off|Gravação|Recording|Google Meet|Meet/);
+    assert.match(await page.locator('#hero-event-area').textContent() || '', /Kick-off|Gravação|Recording|Google Meet|Meet/i);
     const tribesState = page.locator('#tribes-selection-state');
     const tribesDeadline = page.locator('#tribes-deadline-badge');
     const tribesNotice = page.locator('#tribes-selection-notice');
