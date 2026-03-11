@@ -34,6 +34,8 @@ data/legacy-imports/docs/*.docx
 
 # Data Governance: entire data/ directory (raw exports, staging, PII, logs)
 data/
+Sensitive/
+sensitive/
 docs/project-governance/DATA_INGESTION_POLICY.md
 
 # Data Science: local-only analysis scripts and sensitive inputs

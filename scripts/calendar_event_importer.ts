@@ -13,6 +13,7 @@ import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { resolveSensitivePath } from './shared/paths';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -30,7 +31,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const ICS_PATH = '/home/vitormrodovalho/Downloads/data/raw-drive-exports/Sensitive/Google Clalendar/vitorodovalho@gmail.com.ics';
+const ICS_PATH = resolveSensitivePath('Google Clalendar', 'vitorodovalho@gmail.com.ics');
 
 const NUCLEO_KEYWORDS = [
   'nucleo', 'núcleo', 'tribo', 'tribe',

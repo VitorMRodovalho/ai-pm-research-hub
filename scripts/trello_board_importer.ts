@@ -14,6 +14,7 @@ import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { resolveSensitivePath } from './shared/paths';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -31,7 +32,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const SENSITIVE_DIR = '/home/vitormrodovalho/Downloads/data/raw-drive-exports/Sensitive/Trello';
+const SENSITIVE_DIR = resolveSensitivePath('Trello');
 
 interface BoardConfig {
   file: string;

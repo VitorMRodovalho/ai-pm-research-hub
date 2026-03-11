@@ -14,6 +14,7 @@ import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { resolveSensitivePath } from './shared/paths';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -31,7 +32,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const MIRO_CSV_PATH = '/home/vitormrodovalho/Downloads/data/raw-drive-exports/Sensitive/Miro board - Núcleo IA - Geral.csv';
+const MIRO_CSV_PATH = resolveSensitivePath('Miro board - Núcleo IA - Geral.csv');
 
 const SECTION_ASSET_TYPE: Record<string, string> = {
   'videos': 'reference',
