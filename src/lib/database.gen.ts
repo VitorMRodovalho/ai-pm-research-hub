@@ -1968,6 +1968,143 @@ export type Database = {
           },
         ]
       }
+      ingestion_rollback_plans: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          batch_id: string | null
+          created_at: string
+          created_by: string | null
+          details: Json
+          dry_run: boolean
+          executed_at: string | null
+          executed_by: string | null
+          id: string
+          reason: string
+          status: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          batch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          details?: Json
+          dry_run?: boolean
+          executed_at?: string | null
+          executed_by?: string | null
+          id?: string
+          reason: string
+          status?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          batch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          details?: Json
+          dry_run?: boolean
+          executed_at?: string | null
+          executed_by?: string | null
+          id?: string
+          reason?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingestion_rollback_plans_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_rollback_plans_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_rollback_plans_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_rollback_plans_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_rollback_plans_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "ingestion_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_rollback_plans_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_rollback_plans_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_rollback_plans_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_rollback_plans_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_rollback_plans_executed_by_fkey"
+            columns: ["executed_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_rollback_plans_executed_by_fkey"
+            columns: ["executed_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_rollback_plans_executed_by_fkey"
+            columns: ["executed_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_rollback_plans_executed_by_fkey"
+            columns: ["executed_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingestion_run_ledger: {
         Row: {
           batch_id: string | null
@@ -4573,6 +4710,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_execute_ingestion_rollback: {
+        Args: { p_approve_and_execute?: boolean; p_plan_id: string }
+        Returns: Json
+      }
       admin_finalize_ingestion_batch: {
         Args: { p_batch_id: string; p_status?: string; p_summary?: Json }
         Returns: Json
@@ -4671,6 +4812,15 @@ export type Database = {
       }
       admin_move_member_tribe: {
         Args: { p_member_id: string; p_new_tribe_id: number; p_reason?: string }
+        Returns: Json
+      }
+      admin_plan_ingestion_rollback: {
+        Args: {
+          p_batch_id: string
+          p_details?: Json
+          p_dry_run?: boolean
+          p_reason: string
+        }
         Returns: Json
       }
       admin_reactivate_member: { Args: { p_member_id: string }; Returns: Json }

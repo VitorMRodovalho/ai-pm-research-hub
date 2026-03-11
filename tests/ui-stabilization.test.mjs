@@ -484,6 +484,16 @@ test('controlled rollback contracts support planned and approved execution', () 
   assert.equal(script.includes("sb.rpc('admin_execute_ingestion_rollback'"), true);
 });
 
+test('rollback execution safeguards require dual approval and valid window', () => {
+  const migration = read('supabase/migrations/20260313200000_rollback_execution_safeguards.sql');
+  const script = read('scripts/approve_controlled_rollback.ts');
+
+  assert.equal(migration.includes('create or replace function public.admin_approve_ingestion_rollback('), true);
+  assert.equal(migration.includes("raise exception 'Rollback execution requires dual approval';"), true);
+  assert.equal(migration.includes("raise exception 'Rollback execution is before allowed window';"), true);
+  assert.equal(script.includes("sb.rpc('admin_approve_ingestion_rollback'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');
