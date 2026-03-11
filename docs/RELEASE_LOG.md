@@ -1,5 +1,19 @@
 # Release Log
 
+## 2026-03-11 — Sprint 9 (Dev): Reliability Closure Pass (`#12`, `#13`)
+
+### Scope
+Encerrar formalmente a trilha de confiabilidade associada ao SSR safety audit e ao data patch follow-through com rastreabilidade de evidências.
+
+### Delivered
+- Issue `#12` encerrada com evidência de hardening SSR/name-safe em componentes e páginas críticas.
+- Issue `#13` encerrada com evidência de aplicação da migration de sanidade de dados (`20260314110000_member_data_sanity_patch.sql`) e confirmação de alinhamento local/remoto no Supabase.
+
+### Audit Results
+- Tranche de governança/issue management sem SQL novo adicional (migration já aplicada em sprint anterior).
+
+---
+
 ## 2026-03-11 — Sprint 8 (Dev): P0 Closure Pass (`#19`, `#11`, `#1`)
 
 ### Scope
