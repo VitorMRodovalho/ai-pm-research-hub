@@ -65,6 +65,22 @@ Entrada recebida com foco em gaps de estabilizacao, seguranca e operacao. Valida
 | W44.3 | Analytics V2 validacao em dados reais | Medium | Follow-through W36-40 | validacao registrada com leitura partner-facing sem regressao de ACL |
 | W44.4 | Bus-factor mitigation drill | Medium | Triagem externa | runbook de recovery validado por segundo operador |
 
+### Execucao sequencial (2026-03-11) — status apos 6 sprints
+
+| Sprint | Itens alvo | Status | Evidencia principal |
+|---|---|---|---|
+| Sprint 1 | W41.1 + W41.2 | **Done** | `.env` fora do tracking + hardening admin pending (`replace` safe) |
+| Sprint 2 | W41.3 + W41.4 | **Done** | ranking lifetime alinhado com agregado real + retry 401 em verify Credly |
+| Sprint 3 | W42.1 + W42.2 | **Done** | backlog de PRs encerrado + policy trunk-based formalizada |
+| Sprint 4 | W42.3 + W43.3 | **Done** | CI com browser guard + novos regression locks operador |
+| Sprint 5 | W43.1 + W43.2 | **Done** | SSR hardening + migration `20260314110000_member_data_sanity_patch.sql` aplicada |
+| Sprint 6 | W44.1 + W44.2 + W44.4 | **Done** | milestones GitHub + repo sync strategy + drill pack no DR |
+
+### Carry-over explicito
+
+- **W44.3 Analytics V2 validacao em dados reais**: **Em aberto**.  
+  Requer execucao partner-facing com usuario autorizado e evidencia de leitura real no ambiente vinculado.
+
 ### Entregue em Wave 35
 - **W35.1 Dynamic Tribe Catalog Foundation**: `tribe/[id]` e os wrappers multilang deixam de bloquear ids acima de `8`, e o header da tribo passa a usar metadata runtime do banco com fallback estático apenas para o catálogo legado.
 - **W35.2 Explicit Tribe Status + Admin Catalog Controls**: nova migration adiciona `tribes.is_active`, RPCs seguras para listar/criar/ativar-inativar tribos e o painel admin ganha catálogo runtime, criação de novas tribos e toggles de status.

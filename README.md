@@ -160,6 +160,7 @@ The current production pattern is to keep communications metrics in Supabase-bac
 - Backlog and waves: `backlog-wave-planning-updated.md`
 - How to work with the board: `docs/project-governance/PROJECT_GOVERNANCE_RUNBOOK.md`
 - Board ↔ docs sync (gestão à vista): `docs/AGENT_BOARD_SYNC.md`
+- Dev ↔ prod sync strategy: `docs/project-governance/REPO_SYNC_STRATEGY.md`
 
 ---
 

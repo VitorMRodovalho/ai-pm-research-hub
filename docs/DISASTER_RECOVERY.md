@@ -127,3 +127,26 @@ Conferir em Settings → Environment variables. Em caso de perda, recriar a part
 - **PITR**: https://supabase.com/docs/guides/platform/manage-your-usage/point-in-time-recovery
 - **Cloudflare Pages**: https://developers.cloudflare.com/pages/
 - **Repositório**: fonte de verdade para código; migrations em `supabase/migrations/`
+
+---
+
+## 6. Drill de redução de bus-factor (operador secundário)
+
+Objetivo: validar que um segundo operador consegue executar recuperação e deploy sem dependência tácita do mantenedor principal.
+
+### Checklist do drill
+
+1. Operador secundário executa restore de cenário em ambiente controlado (ou simulação documentada).
+2. Operador secundário executa:
+   - `npm test`
+   - `npm run build`
+   - `npm run smoke:routes`
+   - `supabase migration list`
+3. Operador secundário valida acesso a:
+   - GitHub repo/settings essenciais
+   - Supabase project
+   - Cloudflare Pages
+4. Resultado do drill é registrado em `docs/RELEASE_LOG.md` com:
+   - quem executou
+   - data/hora
+   - evidências e gaps
