@@ -1,5 +1,23 @@
 # Release Log
 
+## 2026-03-11 — Sprint 15 (Dev): Governance Automation Gate + Short Guide
+
+### Scope
+Fechar a tranche de automação de governança (`#5`) com um gate de rastreabilidade para trilha crítica e um guia operacional curto para gestão de waves/sprints.
+
+### Delivered
+- `.github/workflows/issue-reference-gate.yml`:
+  - gate em `push`/`pull_request` para `main` e `dev`.
+- `scripts/require_issue_reference.sh`:
+  - valida referência de issue (`#123`, `GH-123` ou URL) quando há mudança em trilha crítica.
+- `docs/project-governance/PROJECT_AUTOMATION_SHORT_GUIDE.md`:
+  - campos mínimos do Project, fluxo operacional e regra do gate.
+
+### Audit Results
+- Validado com `npm run build` e lint shell básico do script de gate (`bash -n`).
+
+---
+
 ## 2026-03-11 — Sprint 14 (Dev): Executive Admin Panel Bind Closure (V2 Contracts)
 
 ### Scope

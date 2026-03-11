@@ -1,0 +1,39 @@
+name: Issue Reference Gate
+
+on:
+  pull_request:
+    branches: [main, dev]
+  push:
+    branches: [main, dev]
+
+permissions:
+  contents: read
+
+jobs:
+  issue_reference_gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect commit range
+        id: range
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "base=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+            echo "head=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "base=${{ github.event.before }}" >> "$GITHUB_OUTPUT"
+            echo "head=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Enforce linked issue on critical paths
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title || '' }}
+          PR_BODY: ${{ github.event.pull_request.body || '' }}
+        run: |
+          chmod +x scripts/require_issue_reference.sh
+          scripts/require_issue_reference.sh "${{ steps.range.outputs.base }}" "${{ steps.range.outputs.head }}"
