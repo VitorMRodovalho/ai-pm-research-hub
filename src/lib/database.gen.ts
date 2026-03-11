@@ -3277,6 +3277,33 @@ export type Database = {
           },
         ]
       }
+      readiness_slo_alerts: {
+        Row: {
+          breach_key: string
+          created_at: string
+          details: Json
+          id: number
+          resolved_at: string | null
+          status: string
+        }
+        Insert: {
+          breach_key: string
+          created_at?: string
+          details?: Json
+          id?: number
+          resolved_at?: string | null
+          status?: string
+        }
+        Update: {
+          breach_key?: string
+          created_at?: string
+          details?: Json
+          id?: number
+          resolved_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       release_readiness_history: {
         Row: {
           context_label: string | null
@@ -4438,6 +4465,13 @@ export type Database = {
       }
       admin_check_ingestion_source_timeout: {
         Args: { p_source: string; p_started_at: string }
+        Returns: Json
+      }
+      admin_check_readiness_slo_breach: {
+        Args: {
+          p_max_consecutive_not_ready?: number
+          p_max_hours_since_last_decision?: number
+        }
         Returns: Json
       }
       admin_complete_ingestion_run: {

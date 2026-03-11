@@ -454,6 +454,16 @@ test('readiness slo breach checks emit governed alerts', () => {
   assert.equal(script.includes("sb.rpc('admin_check_readiness_slo_breach'"), true);
 });
 
+test('ingestion provenance signatures are generated and stored in backend', () => {
+  const migration = read('supabase/migrations/20260313170000_ingestion_provenance_signatures.sql');
+  const script = read('scripts/sign_ingestion_provenance.ts');
+
+  assert.equal(migration.includes('create table if not exists public.ingestion_provenance_signatures'), true);
+  assert.equal(migration.includes('create or replace function public.admin_sign_ingestion_file_provenance('), true);
+  assert.equal(migration.includes("digest("), true);
+  assert.equal(script.includes("sb.rpc('admin_sign_ingestion_file_provenance'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');
