@@ -6,19 +6,43 @@ function readRuntimePublicEnv(key: '__PUBLIC_SUPABASE_URL' | '__PUBLIC_SUPABASE_
   return typeof value === 'string' ? value.trim() : '';
 }
 
-const SB_URL  = (import.meta.env.PUBLIC_SUPABASE_URL || readRuntimePublicEnv('__PUBLIC_SUPABASE_URL') || '').trim();
-const SB_KEY  = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY || readRuntimePublicEnv('__PUBLIC_SUPABASE_ANON_KEY') || '').trim();
+const _runtimeSupabaseConfig = {
+  url: '',
+  anonKey: '',
+};
 
-function getMissingSupabaseEnvVars(): string[] {
+export function setSupabaseRuntimeConfig(url: string, anonKey: string) {
+  _runtimeSupabaseConfig.url = typeof url === 'string' ? url.trim() : '';
+  _runtimeSupabaseConfig.anonKey = typeof anonKey === 'string' ? anonKey.trim() : '';
+}
+
+function resolveSupabasePublicEnv() {
+  const url = (
+    import.meta.env.PUBLIC_SUPABASE_URL ||
+    _runtimeSupabaseConfig.url ||
+    readRuntimePublicEnv('__PUBLIC_SUPABASE_URL') ||
+    ''
+  ).trim();
+  const anonKey = (
+    import.meta.env.PUBLIC_SUPABASE_ANON_KEY ||
+    _runtimeSupabaseConfig.anonKey ||
+    readRuntimePublicEnv('__PUBLIC_SUPABASE_ANON_KEY') ||
+    ''
+  ).trim();
+  return { url, anonKey };
+}
+
+function getMissingSupabaseEnvVars(url: string, anonKey: string): string[] {
   const missing: string[] = [];
-  if (!SB_URL || !String(SB_URL).trim()) missing.push('PUBLIC_SUPABASE_URL');
-  if (!SB_KEY || !String(SB_KEY).trim()) missing.push('PUBLIC_SUPABASE_ANON_KEY');
+  if (!url) missing.push('PUBLIC_SUPABASE_URL');
+  if (!anonKey) missing.push('PUBLIC_SUPABASE_ANON_KEY');
   return missing;
 }
 
 function assertSupabaseEnvConfigured() {
-  const missing = getMissingSupabaseEnvVars();
-  if (missing.length === 0) return;
+  const { url, anonKey } = resolveSupabasePublicEnv();
+  const missing = getMissingSupabaseEnvVars(url, anonKey);
+  if (missing.length === 0) return { url, anonKey };
   const details = missing.join(', ');
   throw new Error(
     `[Supabase Config Error] Missing required public environment variable(s): ${details}. ` +
@@ -102,9 +126,9 @@ export const ROLE_COLORS: Record<string, string> = {
 let _client: ReturnType<typeof createClient> | null = null;
 
 export function getSupabase() {
-  assertSupabaseEnvConfigured();
+  const { url, anonKey } = assertSupabaseEnvConfigured();
   if (!_client) {
-    _client = createClient(SB_URL, SB_KEY, {
+    _client = createClient(url, anonKey, {
       auth: { persistSession: true, detectSessionInUrl: true },
     });
   }

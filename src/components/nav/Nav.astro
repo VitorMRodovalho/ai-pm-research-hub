@@ -177,13 +177,18 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
 </script>
 
 <script>
-  import { getSupabase, ROLE_COLORS } from '../../lib/supabase';
+  import { getSupabase, ROLE_COLORS, setSupabaseRuntimeConfig } from '../../lib/supabase';
   import { getMemberRole } from '../../lib/routing';
   import { resolveTierFromMember, hasMinimumTier, type AccessTier } from '../../lib/admin/constants';
   import { TIER_RANK } from '../../lib/navigation.config';
   import { canExploreTribes, canSeeInactiveTribes } from '../../lib/tribes/access';
   import { buildTribeLabel, isRuntimeTribeActive } from '../../lib/tribes/catalog';
 
+  // Ensure runtime-injected env is available before creating the client.
+  setSupabaseRuntimeConfig(
+    String((window as any).__PUBLIC_SUPABASE_URL || ''),
+    String((window as any).__PUBLIC_SUPABASE_ANON_KEY || '')
+  );
   const sb = getSupabase();
   let _member: any = null;
   let _user: any = null;
