@@ -738,6 +738,13 @@ test('ci heartbeat monitor tracks CI Validate status on main', () => {
   assert.equal(heartbeat.includes('issues: write'), true);
 });
 
+test('workflows force JavaScript actions onto Node 24 runtime', () => {
+  const ci = read('.github/workflows/ci.yml');
+  const heartbeat = read('.github/workflows/ci-heartbeat-monitor.yml');
+  assert.equal(ci.includes("FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'"), true);
+  assert.equal(heartbeat.includes("FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'"), true);
+});
+
 test('home pages resolve shared home schedule instead of fetching only the deadline', () => {
   const pt = read('src/pages/index.astro');
   const en = read('src/pages/en/index.astro');

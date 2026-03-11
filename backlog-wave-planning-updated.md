@@ -856,7 +856,7 @@ Native Supabase-based comms metrics replaced external Looker dependency. YouTube
 | W44 | Analytics V2 partner-facing validation | High | In progress | Fechar validação com leitura real em ambiente vinculado, sem regressão de ACL read-only. |
 | W45 | CI heartbeat monitor | High | Done | Workflow agendado para vigiar falhas do `CI Validate` em `main` e abrir/fechar alerta automaticamente. |
 | W46 | Browser guard stability hardening | High | In progress | Reduzir flakiness em asserts assíncronos de `/admin/selection` para manter quality gate previsível. |
-| W47 | Actions runtime future-proof (Node 24) | Medium | Planned | Atualizar workflows para versões compatíveis com depreciação de Node 20 no GitHub Actions. |
+| W47 | Actions runtime future-proof (Node 24) | Medium | Done | Workflows críticos receberam `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24='true'` com lock de regressão em teste para evitar drift. |
 | W48 | Cloudflare env parity audit | High | Planned | Consolidar checklist de paridade de variáveis públicas (Production/Preview) com validação auditável. |
 | W49 | Auth route smoke expansion | Medium | Planned | Expandir smoke/browser guards para rotas operacionais críticas com estados autenticado/anônimo. |
 | W50 | Docs index by persona (execution pass) | Medium | Planned | Publicar `docs/INDEX.md` com trilhas por persona (GP, líder, contributor, sponsor). |

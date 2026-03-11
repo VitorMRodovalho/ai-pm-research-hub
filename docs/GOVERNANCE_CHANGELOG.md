@@ -1,5 +1,21 @@
 # Governance Changelog
 
+## 2026-03-11 — Actions Runtime Future-Proof (Node 24)
+
+### Decisions
+
+1. **Workflows passam a forçar runtime Node 24 para actions JavaScript**: adicionamos `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24='true'` para reduzir risco da virada automática de runtime no GitHub Actions afetar o CI de forma inesperada.
+
+2. **Future-proof deve ser tratado como governança de confiabilidade, não só manutenção técnica**: a mudança foi aplicada não apenas em `ci.yml`, mas também em fluxos de monitoramento, auditoria e sync operacional para evitar drift entre pipelines.
+
+### Process Lessons Learned
+
+1. **Warnings de runner são sinais antecipados de risco operacional**: tratar esse aviso antes da data de corte evita incidentes em lote em múltiplos workflows.
+
+2. **Locks de regressão em testes também ajudam para infra de CI**: adicionamos assert textual em `ui-stabilization` para preservar a flag de runtime.
+
+---
+
 ## 2026-03-11 — CI Heartbeat Monitoring And Flake Guard Hardening
 
 ### Decisions

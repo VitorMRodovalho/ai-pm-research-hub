@@ -1,5 +1,30 @@
 # Release Log
 
+## 2026-03-11 — Sprint 33 (Dev): Actions Runtime Future-Proof (Node 24)
+
+### Scope
+Blindar a esteira de GitHub Actions contra a depreciação de Node 20 em actions JavaScript, reduzindo risco de quebra silenciosa futura no CI.
+
+### Delivered
+- Workflows atualizados com `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'`:
+  - `.github/workflows/ci.yml`
+  - `.github/workflows/ci-heartbeat-monitor.yml`
+  - `.github/workflows/codeql-analysis.yml`
+  - `.github/workflows/issue-reference-gate.yml`
+  - `.github/workflows/project-governance-sync.yml`
+  - `.github/workflows/credly-auto-sync.yml`
+  - `.github/workflows/comms-metrics-sync.yml`
+  - `.github/workflows/knowledge-insights-auto-sync.yml`
+  - `.github/workflows/release-tag.yml`
+- `tests/ui-stabilization.test.mjs`:
+  - novo lock de regressão garantindo presença da flag em workflows-chave.
+
+### Audit Results
+- `npm test`
+- `npm run build`
+
+---
+
 ## 2026-03-11 — Sprint 32 (Dev): CI Heartbeat Monitor + Browser Guard Flake Hardening
 
 ### Scope
