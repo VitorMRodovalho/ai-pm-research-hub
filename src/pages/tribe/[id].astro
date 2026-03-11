@@ -189,6 +189,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
           Mostrar arquivados
         </label>
       </div>
+      <div id="board-sla-indicators" class="hidden mb-3 flex flex-wrap gap-2"></div>
       <div id="board-empty" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-8 text-center">
         <div class="text-4xl mb-3 opacity-50">&#x1f4cb;</div>
         <p class="font-semibold text-slate-600 mb-2">Nenhum quadro de projeto</p>
@@ -1617,11 +1618,13 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     const kanbanEl = document.getElementById('board-kanban');
     const toolbar = document.getElementById('board-toolbar');
     const assigneeFilter = document.getElementById('board-filter-assignee') as HTMLSelectElement | null;
+    const slaEl = document.getElementById('board-sla-indicators');
     const archivedWrap = document.getElementById('board-archived');
     const archivedList = document.getElementById('board-archived-list');
     if (loadEl) loadEl.classList.add('hidden');
     if (kanbanEl) kanbanEl.classList.remove('hidden');
     if (toolbar) toolbar.classList.remove('hidden');
+    if (slaEl) slaEl.classList.remove('hidden');
 
     currentBoardItems = Array.isArray(items) ? items : [];
     if (assigneeFilter) {
@@ -1634,6 +1637,15 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       assigneeFilter.value = selectedValue || '';
     }
     const visibleItems = applyBoardFilters(currentBoardItems);
+    const overdue = visibleItems.filter((item: any) => item?.status !== 'done' && item?.status !== 'archived' && item?.due_date && new Date(item.due_date).getTime() < Date.now()).length;
+    const unassigned = visibleItems.filter((item: any) => !item?.assignee_id).length;
+    if (slaEl) {
+      slaEl.innerHTML = `
+        <span class="text-[11px] font-semibold px-2 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Atrasados: ${overdue}</span>
+        <span class="text-[11px] font-semibold px-2 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">Sem responsável: ${unassigned}</span>
+        <span class="text-[11px] font-semibold px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">Cards visíveis: ${visibleItems.length}</span>
+      `;
+    }
     BOARD_COLS.forEach(col => {
       const drop = kanbanEl?.querySelector(`.board-drop[data-col="${col}"]`);
       const countEl = kanbanEl?.querySelector(`.board-col[data-col="${col}"] .bcol-count`);

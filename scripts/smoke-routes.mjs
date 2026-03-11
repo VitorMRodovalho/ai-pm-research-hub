@@ -73,6 +73,7 @@ async function run() {
     await assertOk('/admin/selection');
     await assertOk('/admin/comms');
     await assertOk('/admin/webinars');
+    await assertOk('/publications');
     await assertOk('/en');
     await assertOk('/es');
 

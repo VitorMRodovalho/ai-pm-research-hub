@@ -894,3 +894,19 @@ A evolução de UX de Kanban segue oficialmente a trilha de Astro Islands com Re
 
 ### Implication
 Reduzimos dívida de manutenção no frontend, aumentamos previsibilidade de release e alinhamos melhor experiência do operador com as capacidades reais do modelo de dados.
+
+---
+
+## 2026-03-11 — Portfolio taxonomy guardrails and restore-first lifecycle
+
+### Decision
+Boards passam a ter trilha de governança reforçada por contratos backend: movimentação cross-board controlada por taxonomia e recuperação explícita de cards arquivados via UI.
+
+### Rules
+- Movimentação entre boards só é permitida quando `board_scope`, `domain_key` e (quando aplicável) `tribe_id` são compatíveis.
+- Cards arquivados permanecem em soft-delete e devem poder ser restaurados por fluxo autorizado; sem hard delete operacional.
+- Taxonomia de `project_boards` fica protegida por trigger para evitar regressões de ingestão.
+- Visão executiva de portfólio deve consumir RPC dedicada e não consultas ad-hoc no frontend.
+
+### Implication
+Reduzimos risco de base desconexa entre tribos/subprojetos/global, aumentamos capacidade de auditoria e aceleramos diagnósticos executivos com contratos estáveis.

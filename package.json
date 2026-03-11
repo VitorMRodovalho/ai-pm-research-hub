@@ -11,6 +11,7 @@
     "test:browser:guards": "node tests/browser-guards.test.mjs",
     "smoke:routes": "node scripts/smoke-routes.mjs",
     "qa:kanban": "./scripts/qa_kanban_dark_release_gate.sh",
+    "audit:dark:baseline": "./scripts/audit_dark_mode_visual_baseline.sh",
     "screenshots:multilang": "node scripts/screenshots-multilang.mjs",
     "screenshots:setup": "npx playwright install chromium",
     "db:types": "supabase gen types typescript --linked > src/lib/database.gen.ts"

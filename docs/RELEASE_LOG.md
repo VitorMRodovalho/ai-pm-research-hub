@@ -1,5 +1,38 @@
 # Release Log
 
+## 2026-03-11 — W60-W74: Kanban + Governança de Portfólio (execução contínua)
+
+### Scope
+Executar a sequência de 15 sprints com foco em UX operacional de Kanban, governança de taxonomy de boards, segurança de movimentação entre quadros e fechamento do roadmap Dark + Kanban.
+
+### Delivered
+- Navegação:
+  - hyperlink `Pauta` mantido visível e inativo por decisão temporária de hierarquia.
+- Tribo Kanban:
+  - persistência de checklist com `[x]/[ ]`;
+  - validação/deduplicação de anexos com preview de domínio;
+  - restauração de cards arquivados na própria UI;
+  - indicadores SLA de atraso/orfandade no toolbar.
+- Publications Island:
+  - movimentação de cards por teclado (`Shift + ArrowLeft/ArrowRight`).
+- QA/UX:
+  - novo script `scripts/audit_dark_mode_visual_baseline.sh`;
+  - novo comando `npm run audit:dark:baseline`;
+  - `smoke-routes` agora cobre `/publications`.
+- Backend/migrations aplicadas:
+  - `20260314191000_cross_board_move_policy.sql`
+  - `20260314192000_portfolio_executive_dashboard_rpc.sql`
+  - `20260314193000_board_taxonomy_data_quality_guards.sql`
+  - `20260314194000_publications_submission_workflow_enrichment.sql`
+
+### Validation captured
+- `supabase db push` (todas as migrations acima aplicadas)
+- `./scripts/audit_dark_mode_visual_baseline.sh`
+- `npm test`
+- `npm run build`
+
+---
+
 ## 2026-03-11 — Sprint 38 (Dev): Admin Modularization Phase 4
 
 ### Scope

@@ -50,3 +50,13 @@ Esse gate executa em sequência:
 - `npm test`
 - `npm run build`
 - `npm run smoke:routes`
+
+## 7. Baseline visual dark mode (pré-release)
+
+Antes de publicar mudanças amplas de UI, execute:
+
+```bash
+npm run audit:dark:baseline
+```
+
+Esse comando valida pré-requisitos de baseline visual e executa auditoria rápida de cobertura dark mode.

@@ -42,7 +42,13 @@ function canAccessPublicationsWorkspace(member: any): boolean {
   return ['curator', 'co_gp', 'comms_leader', 'comms_member'].some((d) => designations.includes(d));
 }
 
-function SortableCard({ item }: { item: BoardItem }) {
+function SortableCard({
+  item,
+  onLaneKeyboardMove,
+}: {
+  item: BoardItem;
+  onLaneKeyboardMove: (item: BoardItem, direction: -1 | 1) => void;
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -55,6 +61,18 @@ function SortableCard({ item }: { item: BoardItem }) {
       style={style}
       {...attributes}
       {...listeners}
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (!event.shiftKey) return;
+        if (event.key === 'ArrowLeft') {
+          event.preventDefault();
+          onLaneKeyboardMove(item, -1);
+        }
+        if (event.key === 'ArrowRight') {
+          event.preventDefault();
+          onLaneKeyboardMove(item, 1);
+        }
+      }}
       className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-sm cursor-grab active:cursor-grabbing"
     >
       <h3 className="text-[12px] font-bold text-navy dark:text-slate-100 mb-1">{item.title || 'Sem título'}</h3>
@@ -160,6 +178,26 @@ export default function PublicationsBoardIsland() {
     windowRef?.toast?.('Status atualizado', 'success');
   }
 
+  async function moveViaKeyboard(item: BoardItem, direction: -1 | 1) {
+    const laneIdx = LANES.findIndex((lane) => lane.key === item.status);
+    if (laneIdx < 0) return;
+    const targetLane = LANES[laneIdx + direction];
+    if (!targetLane || targetLane.key === item.status) return;
+    const sb = windowRef?.navGetSb?.();
+    if (!sb || !boardId) return;
+    const { error } = await sb.rpc('move_board_item', {
+      p_item_id: item.id,
+      p_new_status: targetLane.key,
+      p_position: 0,
+    });
+    if (error) {
+      windowRef?.toast?.(error.message || 'Falha ao mover card', 'error');
+      return;
+    }
+    setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, status: targetLane.key } : row)));
+    windowRef?.toast?.(`Card movido para ${targetLane.label}`, 'success');
+  }
+
   if (loading) {
     return <div className="text-center py-10 text-slate-400">Carregando quadro global...</div>;
   }
@@ -193,7 +231,7 @@ export default function PublicationsBoardIsland() {
             >
               <div id={lane.key} className="min-h-[220px] space-y-2">
                 {itemsByLane[lane.key].map((item) => (
-                  <SortableCard key={item.id} item={item} />
+                  <SortableCard key={item.id} item={item} onLaneKeyboardMove={moveViaKeyboard} />
                 ))}
                 {itemsByLane[lane.key].length === 0 ? (
                   <div className="text-[11px] text-slate-400 dark:text-slate-500 py-6 text-center">

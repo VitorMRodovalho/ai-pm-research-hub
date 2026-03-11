@@ -208,6 +208,13 @@ test('publications global board route and curatorship enqueue toggle are wired',
   assert.equal(migration.includes('create or replace function public.enqueue_artifact_publication_card('), true);
 });
 
+test('publications workflow enrichment keeps submission event contracts in backend', () => {
+  const migration = read('supabase/migrations/20260314194000_publications_submission_workflow_enrichment.sql');
+  assert.equal(migration.includes('create table if not exists public.publication_submission_events'), true);
+  assert.equal(migration.includes('create or replace function public.upsert_publication_submission_event('), true);
+  assert.equal(migration.includes("outcome in ('pending', 'submitted', 'approved', 'rejected', 'withdrawn')"), true);
+});
+
 test('astro island foundation includes React and dnd-kit for kanban evolution', () => {
   const astroConfig = read('astro.config.mjs');
   const packageJson = read('package.json');
@@ -219,6 +226,9 @@ test('astro island foundation includes React and dnd-kit for kanban evolution', 
   assert.equal(packageJson.includes('"@dnd-kit/core"'), true);
   assert.equal(publicationsIsland.includes('DndContext'), true);
   assert.equal(publicationsIsland.includes('SortableContext'), true);
+  assert.equal(publicationsIsland.includes('event.shiftKey'), true);
+  assert.equal(publicationsIsland.includes("event.key === 'ArrowLeft'"), true);
+  assert.equal(publicationsIsland.includes("event.key === 'ArrowRight'"), true);
 });
 
 test('tribe exploration and lifecycle management honor active-member access plus project management controls', () => {
@@ -723,6 +733,15 @@ test('board lifecycle and source-to-tribe integrity contracts are backend-enforc
   assert.equal(crossMove.includes("Cross-board move denied: domain_key mismatch"), true);
 });
 
+test('portfolio executive dashboard and taxonomy guard contracts exist', () => {
+  const dashboardRpc = read('supabase/migrations/20260314192000_portfolio_executive_dashboard_rpc.sql');
+  const taxonomyGuards = read('supabase/migrations/20260314193000_board_taxonomy_data_quality_guards.sql');
+  assert.equal(dashboardRpc.includes('create or replace function public.exec_portfolio_board_summary('), true);
+  assert.equal(dashboardRpc.includes("'overdue_cards'"), true);
+  assert.equal(taxonomyGuards.includes('create or replace function public.enforce_project_board_taxonomy()'), true);
+  assert.equal(taxonomyGuards.includes('create trigger trg_enforce_project_board_taxonomy'), true);
+});
+
 test('tribe taxonomy includes workstream classification for navigation grouping', () => {
   const migration = read('supabase/migrations/20260314152000_tribes_workstream_type_taxonomy.sql');
   const teams = read('src/pages/teams.astro');
@@ -755,6 +774,7 @@ test('tribe kanban supports modal edit/create and archive actions', () => {
   assert.equal(tribe.includes('id="board-filter-assignee"'), true);
   assert.equal(tribe.includes('id="board-sort"'), true);
   assert.equal(tribe.includes('id="board-show-archived"'), true);
+  assert.equal(tribe.includes('id="board-sla-indicators"'), true);
   assert.equal(tribe.includes('id="bi-restore-btn"'), true);
   assert.equal(tribe.includes("sb.rpc('admin_restore_board_item'"), true);
   assert.equal(tribe.includes('function applyBoardFilters(items: any[]): any[]'), true);
@@ -802,10 +822,14 @@ test('ci browser guards use retry wrapper and playwright cache', () => {
 test('kanban dark release gate script and command are wired', () => {
   const pkg = read('package.json');
   const gate = read('scripts/qa_kanban_dark_release_gate.sh');
+  const baseline = read('scripts/audit_dark_mode_visual_baseline.sh');
   const qaDoc = read('docs/QA_RELEASE_VALIDATION.md');
   assert.equal(pkg.includes('"qa:kanban"'), true);
+  assert.equal(pkg.includes('"audit:dark:baseline"'), true);
   assert.equal(gate.includes('./scripts/audit_dark_mode_a11y.sh'), true);
   assert.equal(gate.includes('npm run smoke:routes'), true);
+  assert.equal(baseline.includes('./scripts/audit_dark_mode_a11y.sh'), true);
+  assert.equal(baseline.includes('screenshots-multilang.mjs'), true);
   assert.equal(qaDoc.includes('npm run qa:kanban'), true);
 });
 
@@ -846,6 +870,7 @@ test('cloudflare public env parity runbook includes preview checks and local aud
 
 test('route smoke script validates anonymous deny markers on protected routes', () => {
   const smoke = read('scripts/smoke-routes.mjs');
+  assert.equal(smoke.includes("assertOk('/publications')"), true);
   assert.equal(smoke.includes("assertContains('/admin/selection', 'id=\"sel-denied\"')"), true);
   assert.equal(smoke.includes("assertContains('/admin/analytics', 'id=\"analytics-denied\"')"), true);
   assert.equal(smoke.includes("assertContains('/admin/curatorship', 'id=\"cur-denied\"')"), true);

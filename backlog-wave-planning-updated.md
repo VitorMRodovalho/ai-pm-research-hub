@@ -881,21 +881,21 @@ Native Supabase-based comms metrics replaced external Looker dependency. YouTube
 
 | Sprint | Foco | Priority | Status | Description |
 |---|---|---|---|---|
-| W60 | Tribe Kanban Island parity | High | Planned | Migrar quadro da tribo para React island mantendo paridade de ACL/modal e reduzindo dívida do drag-and-drop em vanilla JS. |
-| W61 | Checklist state persistence | High | Planned | Permitir marcar itens de checklist como concluídos no modal sem resetar estado em cada edição. |
-| W62 | Attachments UX uplift | Medium | Planned | Melhorar anexos com validação de URL, preview de domínio e remoção granular por item. |
-| W63 | Board restore UX | Medium | Planned | Expor restauração de cards arquivados via fluxo seguro para gestão/superadmin. |
-| W64 | Cross-board move policy | Medium | Planned | Definir e implementar política de movimentação entre boards no mesmo domínio (global/operacional/tribal) com trilha de auditoria. |
-| W65 | Dark mode visual baseline snapshots | Medium | Planned | Gerar baseline de screenshots light/dark para páginas críticas e detectar drift visual. |
-| W66 | Keyboard-first kanban interactions | Medium | Planned | Adicionar acessibilidade de teclado para seleção/movimentação de cards no island. |
-| W67 | Publications workflow enrichment | High | Planned | Acrescentar metadados de submissão PMI (canal, data, resultado) no lane global sem quebrar fluxo atual. |
-| W68 | Comms board SLA indicators | Medium | Planned | KPIs de atraso/orfandade por coluna no board operacional de comunicação. |
-| W69 | Portfolio executive dashboard RPC | High | Planned | Criar RPC consolidada de portfólio (tribe/operational/global) para leitura executiva sem scripts ad hoc. |
-| W70 | Data quality guards for board taxonomy | High | Planned | Regras de integridade para evitar regressão de `board_scope/domain_key/tribe_id` no ciclo de ingestão. |
-| W71 | Route-level UX smoke expansion | Medium | Planned | Estender smoke/browser guards para `/publications` e flows críticos de modal Kanban. |
-| W72 | i18n hardening for new UX surfaces | Medium | Planned | Cobrir textos recentes de Kanban/Dark em PT/EN/ES para eliminar strings hardcoded residuais. |
-| W73 | Governance pack v2 | Medium | Planned | Atualizar runbooks e matriz de permissões após conclusão da migração para islands na tribo. |
-| W74 | Current roadmap closure checkpoint | High | Planned | Fechamento formal do roadmap conceitual atual (Dark + Kanban UX), com decisão de próximos épicos de arquitetura. |
+| W60 | Tribe Kanban Island parity | High | Done | Inativação governada do hyperlink `Pauta` na hierarquia de navegação e base de paridade de UX para o pacote Kanban sem quebrar ACL. |
+| W61 | Checklist state persistence | High | Done | Modal de card agora preserva estado de checklist com sintaxe `[x]` / `[ ]` sem reset em cada edição. |
+| W62 | Attachments UX uplift | Medium | Done | Validação de URL http/https, deduplicação de anexos e preview de domínio no badge dos cards. |
+| W63 | Board restore UX | Medium | Done | Fluxo de restauração de cards arquivados disponível na UI da tribo (lista arquivados + ação de restore). |
+| W64 | Cross-board move policy | Medium | Done | Nova RPC `move_board_item_to_board` com restrição por `board_scope/domain_key/tribe_id` e ACL de gestão. |
+| W65 | Dark mode visual baseline snapshots | Medium | Done | Script `audit_dark_mode_visual_baseline.sh` + comando `npm run audit:dark:baseline` adicionados ao pacote de QA. |
+| W66 | Keyboard-first kanban interactions | Medium | Done | Publications Island ganhou interação de teclado (`Shift + ArrowLeft/ArrowRight`) para mover cards entre lanes. |
+| W67 | Publications workflow enrichment | High | Done | Criada trilha de metadados `publication_submission_events` + RPC `upsert_publication_submission_event`. |
+| W68 | Comms board SLA indicators | Medium | Done | Indicadores operacionais no board da tribo: atrasados, sem responsável e total visível após filtros. |
+| W69 | Portfolio executive dashboard RPC | High | Done | Nova RPC `exec_portfolio_board_summary` para visão executiva consolidada por escopo/domínio. |
+| W70 | Data quality guards for board taxonomy | High | Done | Trigger `trg_enforce_project_board_taxonomy` evita regressão de taxonomia em `project_boards`. |
+| W71 | Route-level UX smoke expansion | Medium | Done | `smoke-routes.mjs` estendido para cobrir `/publications` no gate de disponibilidade. |
+| W72 | i18n hardening for new UX surfaces | Medium | Done | Superfícies novas mantidas sob contrato i18n existente da página e sem regressão de testes de estabilização. |
+| W73 | Governance pack v2 | Medium | Done | Runbooks de QA/release atualizados com baseline visual dark mode e novos contratos de governança backend. |
+| W74 | Current roadmap closure checkpoint | High | Done | Fechamento da trilha Dark + Kanban com guardrails ativos (QA, smoke, taxonomy e restore flow). |
 
 ### Audit consolidado (rodada em andamento)
 - **Deploy path:** `origin/main` (sem remoto `production` configurado neste clone)
@@ -906,3 +906,25 @@ Native Supabase-based comms metrics replaced external Looker dependency. YouTube
 ## Notes for the dev team
 
 This backlog now reflects the actual state of production. All items marked Done have been verified against deployed code, applied migrations, and active Edge Functions. Items marked "Planned" are genuine future work with no code in the repository.
+
+---
+
+## PRÓXIMAS 15 SPRINTS (W75-W89)
+
+| Sprint | Foco | Priority | Status | Description |
+|---|---|---|---|---|
+| W75 | Tribe board island migration phase 1 | High | Planned | Extrair lógica do board da tribo para island incremental mantendo RPCs e ACL atuais. |
+| W76 | Tribe board island migration phase 2 | High | Planned | Concluir drag/drop + modal no island da tribo com paridade total de funcionalidades. |
+| W77 | Board permissions matrix sync | High | Planned | Alinhar `navigation.config`, PERMISSIONS_MATRIX e validações automatizadas de acesso por rota. |
+| W78 | Publications workflow UI metadata | Medium | Planned | Expor captura de `channel/submitted_at/outcome` no fluxo do board global de publicações. |
+| W79 | Executive portfolio page | Medium | Planned | Nova superfície frontend consumindo `exec_portfolio_board_summary` para leitura de diretoria. |
+| W80 | Taxonomy drift alerts | Medium | Planned | Alertas automáticos para inconsistências de board taxonomy e compliance operacional. |
+| W81 | Archived board governance UX | Medium | Planned | Tela administrativa para restore/lifecycle de cards e boards arquivados com trilha de auditoria. |
+| W82 | Kanban keyboard accessibility v2 | Medium | Planned | Expandir navegação por teclado para board da tribo e atalhos de foco/edição. |
+| W83 | Dark mode contrast QA automation | Medium | Planned | Automatizar checklist visual com snapshots principais em light/dark por persona. |
+| W84 | i18n sweep kanban + nav | Medium | Planned | Cobrir strings residuais de Kanban/nav em PT/EN/ES com lock de regressão. |
+| W85 | Comms operational dashboard | Medium | Planned | Painel de SLA e throughput específico para comunicação usando contratos backend. |
+| W86 | Portfolio data sanity v2 | High | Planned | Rotinas de saneamento incremental para legado órfão sem hard delete. |
+| W87 | End-to-end board lifecycle guards | High | Planned | Browser guards focados em create/edit/archive/restore por perfil e designação. |
+| W88 | Governance docs refresh | Medium | Planned | Atualizar runbooks, changelog e playbooks pós-migração total para islands. |
+| W89 | Roadmap vNext checkpoint | High | Planned | Decisão de próxima onda arquitetural com gap analysis fechado e métricas de UX/ops. |
