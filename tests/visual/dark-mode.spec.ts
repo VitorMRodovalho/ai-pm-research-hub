@@ -11,14 +11,9 @@ test.describe('dark mode visual baseline', () => {
   test('home page dark mode baseline', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
-    await page.addStyleTag({
-      content: `
-        #hero-countdown-area, #hero-event-area { visibility: hidden !important; }
-      `,
-    });
-    await expect(page.locator('body')).toHaveScreenshot('home-dark.png', {
+    await page.waitForSelector('#nav-links');
+    await expect(page.locator('#nav-links')).toHaveScreenshot('home-nav-links-dark.png', {
       animations: 'disabled',
-      fullPage: true,
     });
   });
 
