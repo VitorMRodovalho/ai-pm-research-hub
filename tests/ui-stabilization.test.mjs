@@ -574,6 +574,16 @@ test('rollback simulation harness scores risk without mutating state', () => {
   assert.equal(script.includes("sb.rpc('admin_simulate_ingestion_rollback'"), true);
 });
 
+test('governance bundle snapshots persist export history', () => {
+  const migration = read('supabase/migrations/20260314050000_governance_bundle_snapshots.sql');
+  const script = read('scripts/capture_governance_bundle_snapshot.ts');
+
+  assert.equal(migration.includes('create table if not exists public.governance_bundle_snapshots'), true);
+  assert.equal(migration.includes('create or replace function public.admin_capture_governance_bundle_snapshot('), true);
+  assert.equal(migration.includes('v_payload := public.exec_governance_export_bundle'), true);
+  assert.equal(script.includes("sb.rpc('admin_capture_governance_bundle_snapshot'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

@@ -1296,6 +1296,62 @@ export type Database = {
         }
         Relationships: []
       }
+      governance_bundle_snapshots: {
+        Row: {
+          context_label: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          payload: Json
+          window_days: number
+        }
+        Insert: {
+          context_label?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          payload: Json
+          window_days: number
+        }
+        Update: {
+          context_label?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          payload?: Json
+          window_days?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "governance_bundle_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "governance_bundle_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "governance_bundle_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "governance_bundle_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       home_schedule: {
         Row: {
           id: number
@@ -4791,6 +4847,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_capture_governance_bundle_snapshot: {
+        Args: { p_context_label?: string; p_window_days?: number }
+        Returns: Json
+      }
       admin_change_tribe_leader: {
         Args: { p_new_leader_id: string; p_reason?: string; p_tribe_id: number }
         Returns: Json
@@ -5054,6 +5114,10 @@ export type Database = {
           p_metadata?: Json
           p_source_kind: string
         }
+        Returns: Json
+      }
+      admin_simulate_ingestion_rollback: {
+        Args: { p_plan_id: string }
         Returns: Json
       }
       admin_start_ingestion_batch: {
