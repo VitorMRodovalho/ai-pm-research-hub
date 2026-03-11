@@ -1,5 +1,23 @@
 # Release Log
 
+## 2026-03-11 — Sprint 28 (Dev): Admin Modularization Phase 2 (Member Formatting Utils)
+
+### Scope
+Executar fase 2 de modularização do admin, extraindo utilitários reutilizáveis de formatação de membro para reduzir acoplamento em `admin/index`.
+
+### Delivered
+- Novo módulo: `src/lib/admin/member-format.ts`
+  - `initials()`
+  - `safeName()`
+  - `normalizeDigits()`
+- `src/pages/admin/index.astro` atualizado para consumir o módulo.
+- `tests/ui-stabilization.test.mjs` ajustado para validar contrato do novo módulo.
+
+### Audit Results
+- Validado com `npm test` e `npm run build`.
+
+---
+
 ## 2026-03-11 — Sprint 27 (Dev): Analytics V2 Partner Validation Evidence Pack
 
 ### Scope

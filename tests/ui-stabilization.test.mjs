@@ -32,8 +32,10 @@ test('profile credly verify action keeps delegated handler and button state safe
 
 test('admin allocation pending list is null-safe for name and phone rendering', () => {
   const content = read('src/pages/admin/index.astro');
-  assert.equal(content.includes('function safeName(m: any): string'), true);
-  assert.equal(content.includes('function normalizeDigits(value: unknown): string'), true);
+  const memberFormat = read('src/lib/admin/member-format.ts');
+  assert.equal(content.includes("from '../../lib/admin/member-format'"), true);
+  assert.equal(memberFormat.includes('export function safeName(member: any): string'), true);
+  assert.equal(memberFormat.includes('export function normalizeDigits(value: unknown): string'), true);
   assert.equal(content.includes('const nm = safeName(m);'), true);
   assert.equal(content.includes('const phone = normalizeDigits(m?.phone);'), true);
 });

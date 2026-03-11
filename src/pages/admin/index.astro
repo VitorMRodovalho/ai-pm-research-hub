@@ -1171,6 +1171,7 @@ const ADMIN_I18N = {
     hasMinimumTier,
     resolveTierFromMember,
   } from '../../lib/admin/constants';
+  import { initials, normalizeDigits, safeName } from '../../lib/admin/member-format';
   import { canManageTribeLifecycle } from '../../lib/tribes/access';
   import { buildTribeLabel, getQuadrantColor, getTribeColor, isRuntimeTribeActive } from '../../lib/tribes/catalog';
 
@@ -1224,11 +1225,6 @@ const ADMIN_I18N = {
     return false;
   }
 
-  function initials(name: string | null | undefined): string {
-    if (!name || typeof name !== 'string') return '?';
-    return name.split(' ').map(w => w[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || '?';
-  }
-
   function escapeAttr(s: string): string {
     return String(s)
       .replace(/&/g, '&amp;')
@@ -1251,15 +1247,6 @@ const ADMIN_I18N = {
     return m.photo_url
       ? `<img src="${m.photo_url}" class="${size} rounded-full object-cover flex-shrink-0" alt="">`
       : `<div class="${size} rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.6rem] flex-shrink-0">${initials(m?.name)}</div>`;
-  }
-
-  function safeName(m: any): string {
-    return m?.name || 'Membro sem nome';
-  }
-
-  function normalizeDigits(value: unknown): string {
-    if (value === null || value === undefined) return '';
-    return String(value).replace(/\D/g, '');
   }
 
   function roleDots(m: any): string {
