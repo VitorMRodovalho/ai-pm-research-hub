@@ -1,5 +1,22 @@
 # Release Log
 
+## 2026-03-11 — Sprint 8 (Dev): P0 Closure Pass (`#19`, `#11`, `#1`)
+
+### Scope
+Formalizar encerramento dos P0 de estabilizacao com rastreabilidade em issue tracker, vinculando evidencias de commits e gates de validacao ja executados nas sprints anteriores.
+
+### Delivered
+- Issues criticas encerradas com comentario de evidencia:
+  - `#19` (admin allocation crash)
+  - `#11` (rank/credly alignment)
+  - `#1` (credly recurring regression)
+- Comentarios incluem referencia aos commits de correção, locks de regressao e resultados de audit (`test/build/smoke`).
+
+### Audit Results
+- Tranche de governanca/issue management sem SQL novo.
+
+---
+
 ## 2026-03-11 — Sprint 7 (Dev): W44.3 Partner Validation Pack for Analytics V2
 
 ### Scope
