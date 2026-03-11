@@ -11,6 +11,21 @@ This document tracks active technical transition points so the team can distingu
 
 ---
 
+## W85-W89 (Operações, Legado, Qualidade) — Mar 2026
+
+### W85: Dashboard Comms (Cockpit Tribo 8)
+- **RPC:** `get_comms_dashboard_metrics()` — agrega project_boards com `domain_key = 'communication'`, board_items, tags.
+- **Frontend:** `CommsDashboard.tsx` (React Island + Recharts) — macro cards (Backlog, Atrasados, Total), bar chart por status, pie chart por formato.
+- **Rota:** `/admin/comms-ops` — mantém acesso `comms_leader`, `comms_member`, admin.
+
+### W86: Data Sanity do Legado
+- **Migration:** `20260315000000_legacy_data_sanity.sql` — orfãos em `member_cycle_history`, padronização de `cycle_code`, coluna `legacy_board_url` em `tribes`.
+
+### W87: E2E User Lifecycle
+- **Spec:** `tests/e2e/user-lifecycle.spec.ts` — Playwright valida fluxo líder de tribo: /tribe/1, board tab, card, drag, logout.
+
+---
+
 ## 1. Navigation and production stabilization
 
 ### Applied

@@ -9,7 +9,10 @@ node_modules/
 *.bak.*
 
 # Astro generated (regenerates on build/dev)
-.astro/data-store.json
+.astro/
+
+# Playwright test output
+test-results/
 
 # Cursor IDE workspace state
 .cursor/
