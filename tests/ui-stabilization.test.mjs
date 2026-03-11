@@ -71,6 +71,17 @@ test('dark mode foundation persists ui theme and exposes profile toggle', () => 
   assert.equal(css.includes('@custom-variant dark'), true);
 });
 
+test('dark mode styling is applied to teams, webinars, and tribe board modal surfaces', () => {
+  const teams = read('src/pages/teams.astro');
+  const webinars = read('src/pages/admin/webinars.astro');
+  const tribe = read('src/pages/tribe/[id].astro');
+  assert.equal(teams.includes('dark:bg-slate-900'), true);
+  assert.equal(webinars.includes('dark:bg-slate-900'), true);
+  assert.equal(tribe.includes('id="board-item-modal"'), true);
+  assert.equal(tribe.includes('dark:bg-slate-900'), true);
+  assert.equal(tribe.includes('dark:border-slate-700'), true);
+});
+
 test('admin webinars now reuses the events stack instead of staying a placeholder', () => {
   const content = read('src/pages/admin/webinars.astro');
   const publicRoute = read('src/pages/webinars.astro');

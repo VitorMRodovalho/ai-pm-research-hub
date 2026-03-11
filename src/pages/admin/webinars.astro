@@ -12,7 +12,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   </div>
 
   <div id="webinars-content" class="hidden max-w-[1200px] mx-auto px-4 pb-12 space-y-6">
-    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <section class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
       <div class="p-6 sm:p-8">
         <div class="flex items-start justify-between gap-4 flex-wrap">
           <div class="max-w-3xl">
@@ -21,8 +21,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
               <span class="text-emerald-400">•</span>
               <span>Member-first</span>
             </div>
-            <h1 class="text-2xl font-extrabold text-navy mb-2">Webinars</h1>
-            <p class="text-sm text-slate-500 leading-relaxed">
+            <h1 class="text-2xl font-extrabold text-navy dark:text-slate-100 mb-2">Webinars</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-300 leading-relaxed">
               Esta area agora orquestra webinars internos usando o stack ja existente da plataforma:
               agenda e presenca via eventos, comunicacao via painel de comms, replay em apresentacoes
               e biblioteca no workspace. Registro externo, speaker CRM e schema novo seguem fora de escopo.
@@ -48,7 +48,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
     <section id="webinars-stats" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"></section>
 
-    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <section class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
       <div class="px-5 py-4 border-b border-slate-200">
         <h2 class="text-sm font-bold text-navy">Acoes rapidas prioritarias</h2>
         <p class="text-[.72rem] text-slate-400">Proxima acao sugerida por webinar, usando apenas os modulos ja existentes</p>
@@ -57,7 +57,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     </section>
 
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-200">
           <h2 class="text-sm font-bold text-navy">Proximos webinars</h2>
           <p class="text-[.72rem] text-slate-400">Sessões futuras ja cadastradas como `events.type='webinar'`</p>
@@ -65,7 +65,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         <div id="webinars-upcoming" class="p-5"></div>
       </div>
 
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-200">
           <h2 class="text-sm font-bold text-navy">Fila de follow-up</h2>
           <p class="text-[.72rem] text-slate-400">Webinars concluidos que ainda precisam de replay ou fechamento operacional</p>
@@ -74,7 +74,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       </div>
     </section>
 
-    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <section class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
       <div class="px-5 py-4 border-b border-slate-200">
         <h2 class="text-sm font-bold text-navy">Publicacao de replay</h2>
         <p class="text-[.72rem] text-slate-400">Status do replay entre `Presentations` e `Workspace` para webinars ja realizados</p>
@@ -82,7 +82,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       <div id="webinars-publication" class="p-5"></div>
     </section>
 
-    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <section class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
       <div class="px-5 py-4 border-b border-slate-200">
         <h2 class="text-sm font-bold text-navy">Fluxo operacional do MVP</h2>
         <p class="text-[.72rem] text-slate-400">Sem schema novo: apenas orquestracao sobre modulos existentes</p>
@@ -112,7 +112,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     </section>
 
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-200">
           <h2 class="text-sm font-bold text-navy">Incluido agora</h2>
         </div>
@@ -125,7 +125,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         </ul>
       </div>
 
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-200">
           <h2 class="text-sm font-bold text-navy">Fora de escopo desta fase</h2>
         </div>
@@ -139,7 +139,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       </div>
     </section>
 
-    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+    <section class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
       <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h2 class="text-sm font-bold text-navy">Sessoes cadastradas</h2>
