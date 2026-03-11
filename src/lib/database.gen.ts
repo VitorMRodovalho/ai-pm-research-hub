@@ -3987,6 +3987,16 @@ export type Database = {
         Args: { p_mode?: string; p_notes?: string; p_source: string }
         Returns: string
       }
+      admin_suggest_notion_board_mappings: {
+        Args: { p_limit?: number; p_only_unmapped?: boolean }
+        Returns: {
+          confidence_score: number
+          notion_item_id: number
+          reason: string
+          suggested_board_id: string
+          suggested_board_name: string
+        }[]
+      }
       admin_update_member: {
         Args: {
           p_chapter?: string
