@@ -720,6 +720,15 @@ test('tribes section touched links no longer use inline onclick handlers', () =>
   assert.equal(content.includes('data-stop-propagation'), true);
 });
 
+test('ci browser guards use retry wrapper and playwright cache', () => {
+  const ci = read('.github/workflows/ci.yml');
+  const retryScript = read('scripts/run_browser_guards_with_retry.sh');
+  assert.equal(ci.includes('Cache Playwright browsers'), true);
+  assert.equal(ci.includes('./scripts/run_browser_guards_with_retry.sh'), true);
+  assert.equal(retryScript.includes('max_attempts=2'), true);
+  assert.equal(retryScript.includes('npm run test:browser:guards'), true);
+});
+
 test('home pages resolve shared home schedule instead of fetching only the deadline', () => {
   const pt = read('src/pages/index.astro');
   const en = read('src/pages/en/index.astro');
