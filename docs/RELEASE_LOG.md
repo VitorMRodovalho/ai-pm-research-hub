@@ -1,5 +1,20 @@
 # Release Log
 
+## 2026-03-11 — Sprint W41.1-W41.2: Secrets Hygiene + Admin Allocation Crash Guard
+
+### Scope
+Executar o gate inicial de estabilizacao P0 removendo `.env` do versionamento e eliminando a causa recorrente de crash no pool de pendentes da alocacao de tribos quando `phone` vem fora do formato esperado.
+
+### Delivered
+- **Secrets hygiene**: `.env` removido do tracking git (mantido apenas local), com reforco explicito no `CONTRIBUTING.md` para nunca commitar env files.
+- **Admin allocation hardening**: `src/pages/admin/index.astro` recebeu normalizacao segura de telefone (`normalizeDigits`) e fallback de primeiro nome via `safeName`, evitando `replace` em valores nao-string no fluxo de pendentes.
+
+### Audit Results
+- Build local apos ajuste de frontend: pendente de execucao no fechamento da tranche W41 completa.
+- Risco reduzido: dados incompletos/heterogeneos em `members.phone` deixam de quebrar renderizacao da lista de pendentes.
+
+---
+
 ## 2026-03-11 — DB Hotfix: Curadoria com Segmentacao por Tribo e Audiencia
 
 ### Scope

@@ -1257,6 +1257,11 @@ const ADMIN_I18N = {
     return m?.name || 'Membro sem nome';
   }
 
+  function normalizeDigits(value: unknown): string {
+    if (value === null || value === undefined) return '';
+    return String(value).replace(/\D/g, '');
+  }
+
   function roleDots(m: any): string {
     const opRole = getMemberRole(m);
     const desigs = m.designations?.length ? m.designations : [];
@@ -1648,8 +1653,8 @@ const ADMIN_I18N = {
     <div class="text-[.72rem] text-slate-400 mb-2">${ADMIN_I18N.researchersPending.replace('{n}', String(pending.length))}</div>
     ${pending.map((m: any) => {
       const nm = safeName(m);
-      const first = (m?.name || '').split(' ')[0] || 'Membro';
-      const phone = m.phone ? m.phone.replace(/\D/g, '') : '';
+      const first = nm.split(' ')[0] || 'Membro';
+      const phone = normalizeDigits(m?.phone);
       const waLink = phone ? 'https://wa.me/' + phone + '?text=' + encodeURIComponent('Ola ' + first + '! Lembrete: escolha sua tribo no Nucleo IA GP -> https://ai-pm-research-hub.pages.dev/#tribes') : '';
       const mailLink = 'mailto:' + (m.email || '') + '?subject=' + encodeURIComponent('Nucleo IA GP - Escolha sua Tribo') + '&body=' + encodeURIComponent('Ola ' + first + ', lembrete: escolha sua tribo em https://ai-pm-research-hub.pages.dev/#tribes');
       return `

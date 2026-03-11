@@ -54,6 +54,8 @@ All three must pass before you open a PR.
 
 ### Rules
 
+0. **Never commit `.env`.** Keep local credentials in untracked `.env` files only. Use `.env.example` as the shareable template and never force-add env files to git.
+
 1. **Prefer event delegation for all new work.** Do not add new inline event handlers like `onclick="fn('${var}')"`. Some legacy surfaces still use them and should be refactored when touched; new code should attach listeners via `document.addEventListener` and read `data-*` attributes.
 
 2. **Tailwind utility classes only.** Do not create standalone `.css` files unless they contain complex global animations.
