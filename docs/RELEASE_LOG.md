@@ -1,5 +1,20 @@
 # Release Log
 
+## 2026-03-11 — Sprint 14 (Dev): Executive Admin Panel Bind Closure (V2 Contracts)
+
+### Scope
+Concluir a tranche de bind executivo do admin (`#6`) com validação de contrato atual, alinhando escopo legado com os RPCs V2 efetivamente utilizados no painel.
+
+### Delivered
+- `docs/project-governance/ANALYTICS_V2_PARTNER_VALIDATION.md`:
+  - seção de mapeamento legado -> V2;
+  - explicitação dos contratos oficiais (`exec_funnel_v2`, `exec_impact_hours_v2`, `exec_certification_delta`, `exec_chapter_roi`, `exec_role_transitions`, `exec_analytics_v2_quality`).
+
+### Audit Results
+- Validado com `npm run test:browser:guards` (inclui `/admin/analytics` para perfil sem permissão) e `npm run build`.
+
+---
+
 ## 2026-03-11 — Sprint 13 (Dev): Home Schedule SOT Closure + Legacy Hotfix Validation Review
 
 ### Scope

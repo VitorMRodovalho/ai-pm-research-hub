@@ -12,6 +12,20 @@ Validar leitura real do `/admin/analytics` para audiencia partner-facing interna
 - Perfil parceiro autorizado **nao** ganha acesso de escrita em telas administrativas operacionais.
 - Perfil sem autorizacao continua em `#analytics-denied`.
 
+### Nota de contrato (legado -> V2)
+
+A issue executiva original citava contratos legados (`exec_funnel_summary`, `exec_cert_timeline`, `exec_skills_radar`).  
+No estado atual do hub, o painel admin usa o pack V2 como contrato oficial:
+
+- `exec_funnel_v2`
+- `exec_impact_hours_v2`
+- `exec_certification_delta`
+- `exec_chapter_roi`
+- `exec_role_transitions`
+- `exec_analytics_v2_quality`
+
+Esses contratos substituem a trilha legada sem agregacao pesada no cliente.
+
 ### 2) Contratos SQL (dados reais)
 
 Validar retorno nao vazio (ou vazio justificado) dos RPCs:
