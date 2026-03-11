@@ -1,5 +1,22 @@
 # Release Log
 
+## 2026-03-11 — Sprint 23 (Dev): Branch Protection Enforcement Audit Pack
+
+### Scope
+Consolidar enforcement operacional de branch protection com auditoria repetível para `main` e `dev`.
+
+### Delivered
+- `scripts/audit_branch_protection.sh`:
+  - consulta proteção de branch via GitHub API para `main` e `dev`.
+- `docs/project-governance/BRANCH_PROTECTION_AUDIT_RUNBOOK.md`:
+  - guia de execução, resultado esperado e evidências mínimas.
+
+### Audit Results
+- Validação de sintaxe do script: `bash -n scripts/audit_branch_protection.sh`
+- Build: `npm run build`
+
+---
+
 ## 2026-03-11 — Sprint 22 (Dev): Cloudflare Env Injection Validation Runbook
 
 ### Scope
