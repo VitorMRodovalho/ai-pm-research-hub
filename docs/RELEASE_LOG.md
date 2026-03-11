@@ -1,5 +1,30 @@
 # Release Log
 
+## 2026-03-11 — Sprint 34 (Dev): Cloudflare Env Parity Audit
+
+### Scope
+Reduzir risco de regressão em bootstrap Supabase por divergência de variáveis públicas entre Production/Preview no Cloudflare Pages.
+
+### Delivered
+- Novo script: `scripts/audit_cloudflare_public_env_parity.sh`
+  - valida contrato de `PUBLIC_SUPABASE_URL` e `PUBLIC_SUPABASE_ANON_KEY` em `.env.example`;
+  - valida safeguards em `src/lib/supabase.ts` (runtime hooks + fallback);
+  - verifica presença/ausência de `[vars]` em `wrangler.toml` (informativo);
+  - imprime checklist manual de paridade para Production e Preview.
+- `docs/project-governance/CLOUDFLARE_ENV_INJECTION_VALIDATION.md`:
+  - seção de auditoria local rápida;
+  - checklist separado para Preview;
+  - fluxo consolidado de validação pré e pós deploy.
+- `tests/ui-stabilization.test.mjs`:
+  - lock de regressão garantindo script + runbook de paridade.
+
+### Audit Results
+- `./scripts/audit_cloudflare_public_env_parity.sh`
+- `npm test`
+- `npm run build`
+
+---
+
 ## 2026-03-11 — Sprint 33 (Dev): Actions Runtime Future-Proof (Node 24)
 
 ### Scope

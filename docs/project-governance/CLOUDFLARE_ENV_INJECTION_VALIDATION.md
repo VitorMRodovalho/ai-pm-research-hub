@@ -12,6 +12,20 @@ Evitar regressão de incidentes onde `PUBLIC_SUPABASE_URL` e `PUBLIC_SUPABASE_AN
 - Acesso ao painel Cloudflare Pages.
 - Acesso ao navegador com DevTools.
 
+## Auditoria local rápida (pré-check)
+
+Execute antes de validar no painel:
+
+```bash
+./scripts/audit_cloudflare_public_env_parity.sh
+```
+
+Esse script valida:
+
+- presença de `PUBLIC_SUPABASE_URL` e `PUBLIC_SUPABASE_ANON_KEY` em `.env.example`;
+- safeguards de runtime/fallback em `src/lib/supabase.ts`;
+- presença/ausência de `[vars]` em `wrangler.toml` (informativo).
+
 ## Checklist de validação (produção)
 
 1. Verificar Deploy ativo:
@@ -22,6 +36,14 @@ Evitar regressão de incidentes onde `PUBLIC_SUPABASE_URL` e `PUBLIC_SUPABASE_AN
    - `PUBLIC_SUPABASE_ANON_KEY`
 3. Forçar novo deploy:
    - `Retry deployment` após qualquer ajuste de variável.
+
+## Checklist de validação (preview)
+
+1. Verificar variáveis em **Preview**:
+   - `PUBLIC_SUPABASE_URL`
+   - `PUBLIC_SUPABASE_ANON_KEY`
+2. Rodar deploy de preview (PR/branch) após qualquer ajuste.
+3. Repetir probes de runtime e REST no domínio preview.
 
 ## Probe de runtime no navegador
 

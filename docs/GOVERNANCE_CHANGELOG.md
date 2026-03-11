@@ -1,5 +1,23 @@
 # Governance Changelog
 
+## 2026-03-11 — Cloudflare Public Env Parity Audit
+
+### Decisions
+
+1. **Paridade de env pública vira controle operacional explícito**: o projeto passa a ter um audit script dedicado (`scripts/audit_cloudflare_public_env_parity.sh`) para validar pré-condições locais antes de qualquer validação manual no painel do Cloudflare.
+
+2. **Production e Preview precisam do mesmo checklist mínimo para `PUBLIC_SUPABASE_*`**: o runbook de injeção de env foi estendido para exigir validação nos dois ambientes, evitando falsos verdes quando apenas Production está correta.
+
+3. **Fallback público continua permitido como proteção de disponibilidade, não como substituto de governança de deploy**: `src/lib/supabase.ts` mantém fallback resiliente, mas a regra operacional continua sendo manter variáveis consistentes no Cloudflare.
+
+### Process Lessons Learned
+
+1. **Checklist manual sem pré-auditoria automatizada gera retrabalho**: validar primeiro arquivo/contrato local e só depois painel reduz ciclo de investigação.
+
+2. **Paridade Preview/Production evita regressão intermitente em builds de PR**: tratar apenas Production deixa o pipeline suscetível a falhas que reaparecem em previsualização.
+
+---
+
 ## 2026-03-11 — Actions Runtime Future-Proof (Node 24)
 
 ### Decisions

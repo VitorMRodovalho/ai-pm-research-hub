@@ -745,6 +745,16 @@ test('workflows force JavaScript actions onto Node 24 runtime', () => {
   assert.equal(heartbeat.includes("FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'"), true);
 });
 
+test('cloudflare public env parity runbook includes preview checks and local audit script', () => {
+  const runbook = read('docs/project-governance/CLOUDFLARE_ENV_INJECTION_VALIDATION.md');
+  const script = read('scripts/audit_cloudflare_public_env_parity.sh');
+  assert.equal(runbook.includes('./scripts/audit_cloudflare_public_env_parity.sh'), true);
+  assert.equal(runbook.includes('Checklist de validação (preview)'), true);
+  assert.equal(script.includes('PUBLIC_SUPABASE_URL'), true);
+  assert.equal(script.includes('PUBLIC_SUPABASE_ANON_KEY'), true);
+  assert.equal(script.includes('src/lib/supabase.ts'), true);
+});
+
 test('home pages resolve shared home schedule instead of fetching only the deadline', () => {
   const pt = read('src/pages/index.astro');
   const en = read('src/pages/en/index.astro');
