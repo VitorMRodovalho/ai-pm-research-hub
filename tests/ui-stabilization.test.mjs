@@ -494,6 +494,16 @@ test('rollback execution safeguards require dual approval and valid window', () 
   assert.equal(script.includes("sb.rpc('admin_approve_ingestion_rollback'"), true);
 });
 
+test('provenance verification rpc validates stored signatures', () => {
+  const migration = read('supabase/migrations/20260313210000_provenance_verification_rpc.sql');
+  const script = read('scripts/verify_ingestion_provenance.ts');
+
+  assert.equal(migration.includes('create or replace function public.admin_verify_ingestion_provenance_batch('), true);
+  assert.equal(migration.includes('where s.batch_id = p_batch_id'), true);
+  assert.equal(migration.includes("'invalid_signatures'"), true);
+  assert.equal(script.includes("sb.rpc('admin_verify_ingestion_provenance_batch'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');

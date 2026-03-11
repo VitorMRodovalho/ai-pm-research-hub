@@ -1979,8 +1979,12 @@ export type Database = {
           dry_run: boolean
           executed_at: string | null
           executed_by: string | null
+          execution_window_end: string | null
+          execution_window_start: string | null
           id: string
           reason: string
+          second_approved_at: string | null
+          second_approved_by: string | null
           status: string
         }
         Insert: {
@@ -1993,8 +1997,12 @@ export type Database = {
           dry_run?: boolean
           executed_at?: string | null
           executed_by?: string | null
+          execution_window_end?: string | null
+          execution_window_start?: string | null
           id?: string
           reason: string
+          second_approved_at?: string | null
+          second_approved_by?: string | null
           status?: string
         }
         Update: {
@@ -2007,8 +2015,12 @@ export type Database = {
           dry_run?: boolean
           executed_at?: string | null
           executed_by?: string | null
+          execution_window_end?: string | null
+          execution_window_start?: string | null
           id?: string
           reason?: string
+          second_approved_at?: string | null
+          second_approved_by?: string | null
           status?: string
         }
         Relationships: [
@@ -2099,6 +2111,34 @@ export type Database = {
           {
             foreignKeyName: "ingestion_rollback_plans_executed_by_fkey"
             columns: ["executed_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_rollback_plans_second_approved_by_fkey"
+            columns: ["second_approved_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_rollback_plans_second_approved_by_fkey"
+            columns: ["second_approved_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "ingestion_rollback_plans_second_approved_by_fkey"
+            columns: ["second_approved_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_rollback_plans_second_approved_by_fkey"
+            columns: ["second_approved_by"]
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
@@ -4657,6 +4697,14 @@ export type Database = {
           p_metadata?: Json
           p_source: string
           p_ttl_minutes?: number
+        }
+        Returns: Json
+      }
+      admin_approve_ingestion_rollback: {
+        Args: {
+          p_execution_window_end?: string
+          p_execution_window_start?: string
+          p_plan_id: string
         }
         Returns: Json
       }
