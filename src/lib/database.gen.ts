@@ -1078,6 +1078,78 @@ export type Database = {
         }
         Relationships: []
       }
+      data_quality_audit_snapshots: {
+        Row: {
+          audit_result: Json
+          created_at: string
+          created_by: string | null
+          flag_count: number
+          id: string
+          issue_count: number
+          run_context: string
+          run_label: string | null
+          source_batch_id: string | null
+        }
+        Insert: {
+          audit_result: Json
+          created_at?: string
+          created_by?: string | null
+          flag_count?: number
+          id?: string
+          issue_count?: number
+          run_context?: string
+          run_label?: string | null
+          source_batch_id?: string | null
+        }
+        Update: {
+          audit_result?: Json
+          created_at?: string
+          created_by?: string | null
+          flag_count?: number
+          id?: string
+          issue_count?: number
+          run_context?: string
+          run_label?: string | null
+          source_batch_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_quality_audit_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "data_quality_audit_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "data_quality_audit_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "data_quality_audit_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "data_quality_audit_snapshots_source_batch_id_fkey"
+            columns: ["source_batch_id"]
+            isOneToOne: false
+            referencedRelation: "ingestion_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           audience_level: string | null
@@ -3832,6 +3904,14 @@ export type Database = {
           p_metadata?: Json
           p_source: string
           p_ttl_minutes?: number
+        }
+        Returns: Json
+      }
+      admin_capture_data_quality_snapshot: {
+        Args: {
+          p_run_context?: string
+          p_run_label?: string
+          p_source_batch_id?: string
         }
         Returns: Json
       }
