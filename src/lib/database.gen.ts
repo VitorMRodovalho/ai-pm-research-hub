@@ -4539,6 +4539,10 @@ export type Database = {
         Args: { p_member_id: string }
         Returns: Json
       }
+      admin_run_dry_rehearsal_chain: {
+        Args: { p_context_label?: string; p_gate_mode?: string }
+        Returns: Json
+      }
       admin_run_ingestion_alert_remediation: {
         Args: { p_alert_id: number }
         Returns: Json

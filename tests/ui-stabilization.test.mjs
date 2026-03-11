@@ -434,6 +434,16 @@ test('dry-run rehearsal chain validates governance without mutating ingestion', 
   assert.equal(script.includes("sb.rpc('admin_run_dry_rehearsal_chain'"), true);
 });
 
+test('remediation escalation matrix resolves action by severity and recurrence', () => {
+  const migration = read('supabase/migrations/20260313150000_remediation_escalation_matrix.sql');
+  const script = read('scripts/resolve_remediation_action.ts');
+
+  assert.equal(migration.includes('create table if not exists public.ingestion_remediation_escalation_matrix'), true);
+  assert.equal(migration.includes('create or replace function public.admin_resolve_remediation_action('), true);
+  assert.equal(migration.includes('and m.recurrence_threshold <= greatest(v_recurrence, 1)'), true);
+  assert.equal(script.includes("sb.rpc('admin_resolve_remediation_action'"), true);
+});
+
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
   const scheduleContent = read('src/lib/schedule.ts');
   const tribesContent = read('src/components/sections/TribesSection.astro');
