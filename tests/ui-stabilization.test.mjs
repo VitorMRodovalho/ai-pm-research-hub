@@ -59,6 +59,18 @@ test('confirm dialog no longer mutates confirm button onclick directly', () => {
   assert.equal(content.includes("document.getElementById('confirm-btn')?.addEventListener('click'"), true);
 });
 
+test('dark mode foundation persists ui theme and exposes profile toggle', () => {
+  const layout = read('src/layouts/BaseLayout.astro');
+  const nav = read('src/components/nav/Nav.astro');
+  const css = read('src/styles/global.css');
+  assert.equal(layout.includes("const key = 'ui_theme'"), true);
+  assert.equal(layout.includes("document.documentElement.setAttribute('data-theme', theme);"), true);
+  assert.equal(nav.includes("const THEME_KEY = 'ui_theme';"), true);
+  assert.equal(nav.includes("id=\"pd-theme-toggle\""), true);
+  assert.equal(nav.includes("if (action === 'toggle-theme')"), true);
+  assert.equal(css.includes('@custom-variant dark'), true);
+});
+
 test('admin webinars now reuses the events stack instead of staying a placeholder', () => {
   const content = read('src/pages/admin/webinars.astro');
   const publicRoute = read('src/pages/webinars.astro');

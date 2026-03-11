@@ -32,6 +32,14 @@ const roleLabels = JSON.stringify(getRoleLabelsMap(lang));
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <script is:inline>
+    (() => {
+      const key = 'ui_theme';
+      const saved = localStorage.getItem(key);
+      const theme = saved === 'dark' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
 
   <!-- PostHog Analytics -->
   <script>
@@ -68,7 +76,7 @@ const roleLabels = JSON.stringify(getRoleLabelsMap(lang));
     window.addEventListener('analytics:consent-changed', applyAnalyticsConsent as EventListener);
   </script>
 </head>
-<body class="bg-slate-50 text-slate-900">
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors">
   <!-- Role labels for client-side i18n -->
   <script id="role-labels-data" type="application/json" set:html={roleLabels}></script>
   
@@ -79,7 +87,7 @@ const roleLabels = JSON.stringify(getRoleLabelsMap(lang));
   <!-- Profile drawer (populated by nav client script) -->
   <div id="pd-overlay" class="hidden fixed inset-0 z-[500]"></div>
   <div id="pd-drawer"
-    class="fixed top-[60px] right-4 z-[501] bg-white rounded-2xl shadow-2xl border border-slate-100
+    class="fixed top-[60px] right-4 z-[501] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700
            p-4 min-w-[230px] opacity-0 pointer-events-none scale-95 transition-all duration-200
            data-[open=true]:opacity-100 data-[open=true]:pointer-events-auto data-[open=true]:scale-100">
     <div id="pd-inner"></div>

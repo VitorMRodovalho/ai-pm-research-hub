@@ -449,6 +449,22 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     return role;
   }
 
+  const THEME_KEY = 'ui_theme';
+  function getTheme(): 'light' | 'dark' {
+    return localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light';
+  }
+  function applyTheme(theme: 'light' | 'dark') {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem(THEME_KEY, theme);
+    const btn = document.getElementById('pd-theme-toggle');
+    if (btn) {
+      btn.textContent = theme === 'dark' ? '☀️ Modo claro' : '🌙 Modo escuro';
+    }
+  }
+  function toggleTheme() {
+    applyTheme(getTheme() === 'dark' ? 'light' : 'dark');
+  }
+
   function renderAuth() {
     if (!_member || getMemberRole(_member) === 'guest') {
       if (_user) { renderGuestWithSession(); } else { renderLoggedOut(); }
@@ -607,7 +623,10 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       adminSubItems.forEach((item: any) => { html += drawerLink(item, 'text-slate-600 hover:bg-slate-50 pl-4'); });
     }
 
-    html += `<hr class="border-slate-100 my-2">
+    html += `<hr class="border-slate-100 dark:border-slate-700 my-2">
+      <button id="pd-theme-toggle" data-action="toggle-theme"
+        class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer border-0 bg-transparent transition-all">${getTheme() === 'dark' ? '☀️ Modo claro' : '🌙 Modo escuro'}</button>
+      <hr class="border-slate-100 dark:border-slate-700 my-2">
       <button data-action="logout" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-crimson hover:bg-red-50 cursor-pointer border-0 bg-transparent transition-all">${i18n.logout || '↩ Sign Out'}</button>`;
 
     el.innerHTML = html;
@@ -673,6 +692,9 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     }
     if (action === 'logout') {
       (window as any).doLogout?.();
+    }
+    if (action === 'toggle-theme') {
+      toggleTheme();
     }
   });
 
@@ -789,5 +811,6 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     });
   }
 
+  applyTheme(getTheme());
   bootNav();
 </script>
