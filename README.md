@@ -176,6 +176,7 @@ The current production pattern is to keep communications metrics in Supabase-bac
 - `docs/RELEASE_LOG.md` → operational release and hotfix history
 - `docs/WEBINARS_MODULE_DISCOVERY.md` → webinars MVP scope, source-of-truth decision, and rollout boundaries
 - `docs/WEBINARS_CONVERGENCE_PROPOSAL.md` → recommended path for deprecating or converging the standalone `webinars` table
+- `docs/project-governance/KNOWLEDGE_HUB_DESIGN_SPEC.md` → specification for phased Knowledge Hub implementation
 - `docs/CURSOR_SETUP.md` → first-use checklist for Cursor IDE
 - `docs/REPLICATION_GUIDE.md` → how to replicate the Hub for another project
 - `DEBUG_HOLISTIC_PLAYBOOK.md` → holistic debugging and troubleshooting guide

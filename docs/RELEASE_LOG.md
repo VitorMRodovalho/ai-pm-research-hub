@@ -1,5 +1,22 @@
 # Release Log
 
+## 2026-03-11 — Sprint 20 (Dev): Knowledge Hub Design Spec
+
+### Scope
+Publicar especificação consolidada para implementação incremental do Knowledge Hub, com escopo, fases, riscos, dependências e critérios de aceite.
+
+### Delivered
+- `docs/project-governance/KNOWLEDGE_HUB_DESIGN_SPEC.md`:
+  - objetivo, princípios, escopo MVP, direção de dados, ACL, fluxos e fases A/B/C;
+  - dependências, riscos e DoD operacional.
+- `README.md`:
+  - referência ao design spec adicionada ao mapa oficial de documentação.
+
+### Audit Results
+- Validado com `npm run build`.
+
+---
+
 ## 2026-03-11 — Sprint 19 (Dev): Bus Factor Drill Evidence Pack
 
 ### Scope
