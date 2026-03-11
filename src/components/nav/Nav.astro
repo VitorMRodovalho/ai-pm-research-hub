@@ -309,74 +309,119 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     return buildTribeLabel(tribe, { prefix: i18n.tribePrefix || 'Tribo' });
   }
 
+  function categorizeTribeGroups(tribes: any[]): { research: any[], operational: any[], legacy: any[] } {
+    const visible = getVisibleTribesForMember(tribes);
+    return {
+      research: visible.filter((t: any) => t.is_active !== false && String(t.workstream_type || 'research') === 'research'),
+      operational: visible.filter((t: any) => t.is_active !== false && String(t.workstream_type || '') === 'operational'),
+      legacy: visible.filter((t: any) => t.is_active === false),
+    };
+  }
+
   function renderDesktopTribeDropdown(tribes: any[]): string {
-    const visibleTribes = getResearchTribes(tribes);
-    if (!visibleTribes.length) {
-      return '<div class="px-3 py-2 text-slate-400 text-xs">Nenhuma tribo ativa disponível.</div>';
-    }
+    const { research, operational, legacy } = categorizeTribeGroups(tribes);
     const base = getNavBase();
-    return visibleTribes.map((tribe: any) => {
-      const isInactive = tribe.is_active === false;
+    let html = '';
+
+    function tribeRow(tribe: any, inactive?: boolean): string {
       const countBadge = tribe.active_members > 0
         ? '<span class="ml-auto text-[.62rem] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full shrink-0">' + tribe.active_members + '</span>'
         : '';
-      if (isInactive) {
-        return '<div class="flex items-center gap-2 px-3 py-2 text-[.78rem] text-slate-400 font-medium opacity-60 cursor-default" title="Tribo inativa">'
+      if (inactive) {
+        return '<div class="flex items-center gap-2 px-3 py-1.5 text-[.75rem] text-slate-400 font-medium opacity-60 cursor-default">'
           + '<span class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[.6rem] font-bold text-slate-500 shrink-0">' + tribe.id + '</span>'
           + '<span class="truncate">' + tribeLabel(tribe) + '</span>'
-          + '<span class="ml-auto text-[.7rem] shrink-0">&#x1F512;</span>'
           + '</div>';
       }
-      return '<a href="' + base + '/tribe/' + tribe.id + '" class="flex items-center gap-2 px-3 py-2 text-[.78rem] text-slate-700 font-medium hover:bg-slate-50 no-underline transition-all">'
+      return '<a href="' + base + '/tribe/' + tribe.id + '" class="flex items-center gap-2 px-3 py-1.5 text-[.78rem] text-slate-700 font-medium hover:bg-slate-50 no-underline transition-all">'
         + '<span class="w-5 h-5 rounded-full bg-navy/10 flex items-center justify-center text-[.6rem] font-bold text-navy shrink-0">' + tribe.id + '</span>'
         + '<span class="truncate">' + tribeLabel(tribe) + '</span>'
         + countBadge
         + '</a>';
-    }).join('') + '<hr class="border-slate-100 my-1"><a href="' + base + '/#tribes" class="flex items-center gap-2 px-3 py-2 text-[.7rem] text-slate-400 font-medium hover:bg-slate-50 no-underline transition-all"><span class="w-5 h-5 flex items-center justify-center text-[.7rem]">&#x1F30D;</span>' + (i18n.exploreTribes || 'Ver todas') + '</a>';
+    }
+
+    if (research.length) {
+      html += '<div class="px-3 pt-2 pb-1 text-[.6rem] font-bold uppercase tracking-wider text-slate-400">Tribos de Pesquisa</div>';
+      html += research.map((t: any) => tribeRow(t)).join('');
+    }
+    if (operational.length) {
+      html += '<hr class="border-slate-100 my-1">';
+      html += '<div class="px-3 pt-1 pb-1 text-[.6rem] font-bold uppercase tracking-wider text-purple">Operacional</div>';
+      html += operational.map((t: any) => tribeRow(t)).join('');
+    }
+    if (legacy.length) {
+      html += '<hr class="border-slate-100 my-1">';
+      html += '<div class="px-3 pt-1 pb-1 text-[.6rem] font-bold uppercase tracking-wider text-slate-400">Ciclos Anteriores</div>';
+      html += legacy.map((t: any) => tribeRow(t, true)).join('');
+    }
+    html += '<hr class="border-slate-100 my-1"><a href="' + base + '/#tribes" class="flex items-center gap-2 px-3 py-1.5 text-[.7rem] text-slate-400 font-medium hover:bg-slate-50 no-underline transition-all"><span class="w-5 h-5 flex items-center justify-center text-[.7rem]">&#x1F30D;</span>' + (i18n.exploreTribes || 'Ver todas') + '</a>';
+    return html || '<div class="px-3 py-2 text-slate-400 text-xs">Nenhuma tribo disponível.</div>';
   }
 
   function renderDrawerTribeDropdown(tribes: any[]): string {
-    const visibleTribes = getResearchTribes(tribes);
-    if (!visibleTribes.length) {
-      return '<div class="px-2 py-1.5 text-[.7rem] text-slate-400">Nenhuma tribo ativa disponível.</div>';
-    }
+    const { research, operational, legacy } = categorizeTribeGroups(tribes);
     const base = getNavBase();
-    return visibleTribes.map((tribe: any) => {
-      const isInactive = tribe.is_active === false;
-      if (isInactive) {
-        return '<div class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[.73rem] text-slate-400 font-medium opacity-60 cursor-default" title="Tribo inativa">'
+    let html = '';
+
+    function row(tribe: any, inactive?: boolean): string {
+      if (inactive) {
+        return '<div class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[.73rem] text-slate-400 font-medium opacity-60 cursor-default">'
           + '<span class="w-4 h-4 rounded-full bg-slate-200 flex items-center justify-center text-[.55rem] font-bold text-slate-500 shrink-0">' + tribe.id + '</span>'
           + tribeLabel(tribe)
-          + ' &#x1F512;'
           + '</div>';
       }
       return '<a href="' + base + '/tribe/' + tribe.id + '" class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[.73rem] text-slate-600 font-medium no-underline hover:bg-slate-50 transition-all">'
         + '<span class="w-4 h-4 rounded-full bg-navy/10 flex items-center justify-center text-[.55rem] font-bold text-navy shrink-0">' + tribe.id + '</span>'
         + tribeLabel(tribe)
         + '</a>';
-    }).join('');
+    }
+
+    if (research.length) {
+      html += '<div class="px-2 pt-1 pb-0.5 text-[.55rem] font-bold uppercase tracking-wider text-slate-400">Pesquisa</div>';
+      html += research.map((t: any) => row(t)).join('');
+    }
+    if (operational.length) {
+      html += '<div class="px-2 pt-2 pb-0.5 text-[.55rem] font-bold uppercase tracking-wider text-purple">Operacional</div>';
+      html += operational.map((t: any) => row(t)).join('');
+    }
+    if (legacy.length) {
+      html += '<div class="px-2 pt-2 pb-0.5 text-[.55rem] font-bold uppercase tracking-wider text-slate-400">Ciclos Anteriores</div>';
+      html += legacy.map((t: any) => row(t, true)).join('');
+    }
+    return html || '<div class="px-2 py-1.5 text-[.7rem] text-slate-400">Nenhuma tribo disponível.</div>';
   }
 
   function renderMobileTribeDropdown(tribes: any[]): string {
-    const visibleTribes = getResearchTribes(tribes);
-    if (!visibleTribes.length) {
-      return '<div class="px-4 py-2.5 text-white/50 text-sm">Nenhuma tribo ativa disponível.</div>';
-    }
+    const { research, operational, legacy } = categorizeTribeGroups(tribes);
     const base = getNavBase();
-    return visibleTribes.map((tribe: any) => {
-      const isInactive = tribe.is_active === false;
-      if (isInactive) {
-        return '<div class="flex items-center gap-2 px-4 py-2.5 text-white/30 text-sm font-medium opacity-50 cursor-default" title="Tribo inativa">'
+    let html = '';
+
+    function row(tribe: any, inactive?: boolean): string {
+      if (inactive) {
+        return '<div class="flex items-center gap-2 px-4 py-2 text-white/30 text-sm font-medium opacity-50 cursor-default">'
           + '<span class="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[.6rem] font-bold shrink-0">' + tribe.id + '</span>'
           + tribeLabel(tribe)
-          + ' &#x1F512;'
           + '</div>';
       }
-      return '<a href="' + base + '/tribe/' + tribe.id + '" data-action="close-mobile" class="flex items-center gap-2 px-4 py-2.5 text-white/80 text-sm font-medium no-underline hover:bg-white/10 transition-all">'
+      return '<a href="' + base + '/tribe/' + tribe.id + '" data-action="close-mobile" class="flex items-center gap-2 px-4 py-2 text-white/80 text-sm font-medium no-underline hover:bg-white/10 transition-all">'
         + '<span class="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[.6rem] font-bold shrink-0">' + tribe.id + '</span>'
         + tribeLabel(tribe)
         + '</a>';
-    }).join('');
+    }
+
+    if (research.length) {
+      html += '<div class="px-4 pt-2 pb-1 text-[.6rem] font-bold uppercase tracking-wider text-white/40">Pesquisa</div>';
+      html += research.map((t: any) => row(t)).join('');
+    }
+    if (operational.length) {
+      html += '<div class="px-4 pt-2 pb-1 text-[.6rem] font-bold uppercase tracking-wider text-purple-300">Operacional</div>';
+      html += operational.map((t: any) => row(t)).join('');
+    }
+    if (legacy.length) {
+      html += '<div class="px-4 pt-2 pb-1 text-[.6rem] font-bold uppercase tracking-wider text-white/30">Ciclos Anteriores</div>';
+      html += legacy.map((t: any) => row(t, true)).join('');
+    }
+    return html || '<div class="px-4 py-2.5 text-white/50 text-sm">Nenhuma tribo disponível.</div>';
   }
 
   function updateNavVisibility() {

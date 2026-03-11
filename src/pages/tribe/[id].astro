@@ -360,7 +360,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
   // Comms Hub removed from tribe pages — lives exclusively at /admin/comms-ops
 
-  // ── Header render (Landing Page visual parity) ──
+  // ── Header render (Landing Page design system parity) ──
   const QUAD_COLORS: Record<string, string> = { q1: '#00799E', q2: '#FF610F', q3: '#4F17A8', q4: '#10B981' };
   function renderHeader(_tribe: any, leader: any, slots: any[]) {
     const el = document.getElementById('tribe-header');
@@ -370,9 +370,10 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     const leaderInitials = leader
       ? escapeHtml(leader.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase())
       : '?';
-    const leaderPhotoLarge = leader?.photo_url
-      ? `<img src="${escapeHtml(leader.photo_url)}" class="w-14 h-14 rounded-full object-cover border-2 border-white shadow-md" alt="${leaderName}">`
-      : `<div class="w-14 h-14 rounded-full flex items-center justify-center text-white text-lg font-extrabold shadow-md" style="background:${QUAD_COLORS[_tribe?.quadrant || 'q3']}">${leaderInitials}</div>`;
+    const qColor = QUAD_COLORS[_tribe?.quadrant || 'q3'];
+    const leaderPhotoHtml = leader?.photo_url
+      ? `<img src="${escapeHtml(leader.photo_url)}" class="w-[42px] h-[42px] rounded-xl object-cover" alt="${leaderName}">`
+      : `<div class="w-[42px] h-[42px] rounded-xl flex items-center justify-center text-white font-extrabold text-base" style="background:${qColor}">${leaderInitials}</div>`;
 
     let scheduleHtml = '';
     if (_tribe?.meeting_schedule && String(_tribe.meeting_schedule).trim()) {
@@ -385,53 +386,46 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         return `${day} ${start}–${end}`;
       }).join(' · ');
     } else {
-      scheduleHtml = '<span class="text-white/50 italic">—</span>';
+      scheduleHtml = '<span class="text-slate-400 italic">—</span>';
     }
     const editBtnHtml = canEdit
-      ? ` <button data-action="open-meeting-schedule-modal" type="button" class="inline-flex items-center justify-center w-6 h-6 rounded-lg text-white/60 hover:bg-white/20 hover:text-white transition-all cursor-pointer" title="${escapeHtml(I18N.editMeetingSchedule || 'Editar horário')}"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button>`
+      ? ` <button data-action="open-meeting-schedule-modal" type="button" class="inline-flex items-center justify-center w-6 h-6 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-navy transition-all cursor-pointer" title="${escapeHtml(I18N.editMeetingSchedule || 'Editar horário')}"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></button>`
       : '';
 
     const tribeName = buildTribeLabel(_tribe, { prefix: I18N.tribePrefix || 'Tribo' });
     const quadrantLabel = _tribe?.quadrant_name || I18N.quadrantLabel || '';
     const tribeDescription = _tribe?.notes || I18N.tribeDesc || '—';
-    const qColor = QUAD_COLORS[_tribe?.quadrant || 'q3'];
     const memberCount = membersMap.size;
+    const linkedIn = leader?.linkedin_url || '';
 
     el.innerHTML = `
-      <div class="rounded-2xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700">
-        <div class="relative px-6 py-6" style="background: linear-gradient(135deg, ${qColor} 0%, ${qColor}DD 50%, ${qColor}AA 100%)">
-          <div class="absolute inset-0 bg-black/30"></div>
-          <div class="relative flex items-center gap-5 flex-wrap">
-            <div class="relative">
-              ${leaderPhotoLarge}
-              <div class="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg flex items-center justify-center text-white text-[11px] font-extrabold shadow-sm" style="background:${qColor}">T${TRIBE_ID}</div>
+      <div class="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden border border-black/5 dark:border-slate-700 hover:shadow-md transition-all duration-300">
+        <div class="flex items-center gap-4 px-5 py-4">
+          <div class="flex-shrink-0">${leaderPhotoHtml}</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h1 class="text-[.95rem] font-bold text-slate-900 dark:text-slate-100 truncate">${escapeHtml(tribeName)}</h1>
+              ${quadrantLabel ? `<span class="px-2 py-0.5 rounded-md text-[.68rem] font-bold uppercase tracking-wide" style="color:${qColor};background:${qColor}15">${escapeHtml(quadrantLabel)}</span>` : ''}
+              <button data-action="toggle-context-switch" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[.68rem] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition-all cursor-pointer">
+                Trocar ▾
+              </button>
             </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 flex-wrap mb-1">
-                <h1 class="text-xl font-extrabold text-white" style="text-shadow: 0 1px 3px rgba(0,0,0,0.4)">${escapeHtml(tribeName)}</h1>
-                ${quadrantLabel ? `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/20 text-white backdrop-blur-sm">${escapeHtml(quadrantLabel)}</span>` : ''}
-                <button data-action="toggle-context-switch" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white/15 text-white border border-white/25 hover:bg-white/25 transition-all cursor-pointer backdrop-blur-sm">
-                  Trocar ▾
-                </button>
-              </div>
-              <div id="tribe-context-switch" class="hidden mt-2 rounded-xl border border-slate-200 bg-white shadow-lg p-3 max-w-xl absolute z-20 left-6 right-6"></div>
-              <p class="text-[13px] text-white/90 leading-relaxed line-clamp-2" style="text-shadow: 0 1px 2px rgba(0,0,0,0.3)">${escapeHtml(tribeDescription)}</p>
+            <div id="tribe-context-switch" class="hidden mt-2 rounded-xl border border-slate-200 bg-white shadow-lg p-3 max-w-xl absolute z-20"></div>
+            <div class="text-[.82rem] text-slate-500 dark:text-slate-400 mt-0.5">
+              ${leaderName}${linkedIn ? ` <a href="${escapeHtml(linkedIn)}" target="_blank" rel="noopener" class="text-teal no-underline text-[.75rem] ml-1">🔗</a>` : ''}
             </div>
+          </div>
+          <div class="flex-shrink-0 text-center">
+            <div class="text-[.68rem] text-slate-500 font-semibold">👥 ${memberCount}</div>
           </div>
         </div>
-        <div class="bg-white dark:bg-slate-900 px-6 py-3 flex flex-wrap gap-x-6 gap-y-2 text-[13px] border-t border-slate-100 dark:border-slate-700">
-          <div class="flex items-center gap-2">
-            <span class="text-slate-400 font-semibold">${I18N.leader}:</span>
-            <span class="font-bold text-navy dark:text-slate-100">${leaderName}</span>
-          </div>
-          <div class="flex items-center gap-1.5" id="tribe-schedule-cell">
-            <span class="text-slate-400 font-semibold">📅 ${I18N.meetingSchedule}:</span>
-            <span class="text-navy dark:text-slate-100 font-medium">${scheduleHtml}</span>${editBtnHtml}
-          </div>
-          <div class="flex items-center gap-1.5">
-            <span class="text-slate-400 font-semibold">👥</span>
-            <span class="font-semibold text-navy dark:text-slate-100">${memberCount}</span>
-            <span class="text-slate-400">membros ativos</span>
+        <div class="px-5 pb-4 pt-0 border-t border-black/5 dark:border-slate-700">
+          <p class="text-[.88rem] text-slate-500 dark:text-slate-400 mb-3 line-clamp-2">${escapeHtml(tribeDescription)}</p>
+          <div class="flex flex-wrap gap-x-5 gap-y-2 text-[.82rem]">
+            <div class="flex items-center gap-1.5" id="tribe-schedule-cell">
+              <strong class="text-slate-700 dark:text-slate-300">📅 ${I18N.meetingSchedule}:</strong>
+              <span class="text-slate-400">${scheduleHtml}</span>${editBtnHtml}
+            </div>
           </div>
         </div>
       </div>

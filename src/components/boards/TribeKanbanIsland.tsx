@@ -343,19 +343,25 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
     setBoardId(String(activeBoard.id));
     setCanEdit(canEditBoard(member, tribeData));
 
-    const [{ data: boardItems }, { data: tribeMembers }, { data: legacyItems }] = await Promise.all([
+    const [{ data: boardItems }, { data: tribeMembers }] = await Promise.all([
       sb.rpc('list_board_items', { p_board_id: activeBoard.id, p_status: null }),
       sb.from('public_members').select('id,name,photo_url').eq('tribe_id', tribeId).eq('current_cycle_active', true).eq('is_active', true),
-      sb.rpc('list_legacy_board_items_for_tribe', { p_current_tribe_id: tribeId }).catch(() => ({ data: [] })),
     ]);
+
+    let legacyRaw: BoardItem[] = [];
+    try {
+      const { data: legacyData, error: legacyErr } = await sb.rpc('list_legacy_board_items_for_tribe', { p_current_tribe_id: tribeId });
+      if (!legacyErr && Array.isArray(legacyData)) {
+        legacyRaw = legacyData
+          .filter((item: any) => item.status !== 'archived')
+          .map((row: any) => ({ ...row, is_legacy: true, curation_status: row.curation_status || 'draft' }));
+      }
+    } catch { /* legacy items are optional — never block the main board */ }
 
     setMembers(Array.isArray(tribeMembers) ? tribeMembers : []);
     setTribeData(tribeData);
     setCurrentMember(member);
     const raw = (Array.isArray(boardItems) ? boardItems : []).filter((item: any) => item.status !== 'archived');
-    const legacyRaw = (Array.isArray(legacyItems) ? legacyItems : [])
-      .filter((item: any) => item.status !== 'archived')
-      .map((row: any) => ({ ...row, is_legacy: true, curation_status: row.curation_status || 'draft' }));
     const combined = [
       ...raw.map((row: any) => ({ ...row, curation_status: row.curation_status || 'draft' })),
       ...legacyRaw,
