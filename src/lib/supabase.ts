@@ -3,6 +3,23 @@ import { createClient } from '@supabase/supabase-js';
 const SB_URL  = import.meta.env.PUBLIC_SUPABASE_URL;
 const SB_KEY  = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 
+function getMissingSupabaseEnvVars(): string[] {
+  const missing: string[] = [];
+  if (!SB_URL || !String(SB_URL).trim()) missing.push('PUBLIC_SUPABASE_URL');
+  if (!SB_KEY || !String(SB_KEY).trim()) missing.push('PUBLIC_SUPABASE_ANON_KEY');
+  return missing;
+}
+
+function assertSupabaseEnvConfigured() {
+  const missing = getMissingSupabaseEnvVars();
+  if (missing.length === 0) return;
+  const details = missing.join(', ');
+  throw new Error(
+    `[Supabase Config Error] Missing required public environment variable(s): ${details}. ` +
+    `Configure them in the deployment environment (Production/Preview) and redeploy.`
+  );
+}
+
 // ── Typed member ─────────────────────────────────────────────
 export type MemberRole =
   | 'manager' | 'tribe_leader' | 'researcher'
@@ -79,6 +96,7 @@ export const ROLE_COLORS: Record<string, string> = {
 let _client: ReturnType<typeof createClient> | null = null;
 
 export function getSupabase() {
+  assertSupabaseEnvConfigured();
   if (!_client) {
     _client = createClient(SB_URL, SB_KEY, {
       auth: { persistSession: true, detectSessionInUrl: true },
