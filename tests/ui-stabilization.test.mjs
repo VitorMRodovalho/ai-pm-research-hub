@@ -745,6 +745,12 @@ test('tribe kanban supports modal edit/create and archive actions', () => {
   assert.equal(tribe.includes('id="bi-attachments"'), true);
   assert.equal(tribe.includes('const attachmentsBadge = attachmentsRaw.length > 0'), true);
   assert.equal(tribe.includes('p_attachments: attachments,'), true);
+  assert.equal(tribe.includes('id="board-toolbar"'), true);
+  assert.equal(tribe.includes('id="board-search"'), true);
+  assert.equal(tribe.includes('id="board-filter-status"'), true);
+  assert.equal(tribe.includes('id="board-filter-assignee"'), true);
+  assert.equal(tribe.includes('id="board-sort"'), true);
+  assert.equal(tribe.includes('function applyBoardFilters(items: any[]): any[]'), true);
   assert.equal(tribe.includes('const checklistBadge = checklistTotal > 0'), true);
   assert.equal(migration.includes('create or replace function public.upsert_board_item('), true);
   assert.equal(attachmentsMigration.includes('p_attachments jsonb default'), true);

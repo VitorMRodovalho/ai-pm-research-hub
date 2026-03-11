@@ -165,6 +165,26 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     <!-- Project Board panel -->
     <div id="panel-board" class="hidden">
       <div id="board-loading" class="text-center py-10 text-slate-400">Carregando quadro...</div>
+      <div id="board-toolbar" class="hidden mb-3 grid grid-cols-1 md:grid-cols-4 gap-2">
+        <input id="board-search" type="text" placeholder="Buscar no quadro..." class="px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
+        <select id="board-filter-status" class="px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40">
+          <option value="">Todos os status</option>
+          <option value="backlog">Backlog</option>
+          <option value="todo">To Do</option>
+          <option value="in_progress">Em Progresso</option>
+          <option value="review">Revisão</option>
+          <option value="done">Concluído</option>
+        </select>
+        <select id="board-filter-assignee" class="px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40">
+          <option value="">Todos os responsáveis</option>
+          <option value="unassigned">Sem responsável</option>
+        </select>
+        <select id="board-sort" class="px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40">
+          <option value="updated_desc">Mais recentes</option>
+          <option value="due_asc">Prazo (mais próximo)</option>
+          <option value="title_asc">Título (A-Z)</option>
+        </select>
+      </div>
       <div id="board-empty" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-8 text-center">
         <div class="text-4xl mb-3 opacity-50">&#x1f4cb;</div>
         <p class="font-semibold text-slate-600 mb-2">Nenhum quadro de projeto</p>
@@ -428,9 +448,50 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   let contextSwitchLoaded = false;
   let contextCatalog: { active: any[]; operational: any[]; legacy: any[] } = { active: [], operational: [], legacy: [] };
   let currentBoardItems: any[] = [];
+  let boardSearch = '';
+  let boardStatusFilter = '';
+  let boardAssigneeFilter = '';
+  let boardSort = 'updated_desc';
 
   function getActiveCycleCode(): string {
     return currentCycleCode || allDeliverables.find((item: any) => item?.cycle_code)?.cycle_code || '';
+  }
+
+  function applyBoardFilters(items: any[]): any[] {
+    const q = boardSearch.trim().toLowerCase();
+    const filtered = items.filter((item: any) => {
+      if (boardStatusFilter && item.status !== boardStatusFilter) return false;
+      if (boardAssigneeFilter === 'unassigned' && item.assignee_id) return false;
+      if (boardAssigneeFilter && boardAssigneeFilter !== 'unassigned' && String(item.assignee_id || '') !== boardAssigneeFilter) return false;
+      if (!q) return true;
+      const haystack = [
+        item.title || '',
+        item.description || '',
+        item.assignee_name || '',
+        ...(Array.isArray(item.tags) ? item.tags : []),
+      ].join(' ').toLowerCase();
+      return haystack.includes(q);
+    });
+
+    const sorted = [...filtered];
+    if (boardSort === 'title_asc') {
+      sorted.sort((a: any, b: any) => String(a.title || '').localeCompare(String(b.title || '')));
+      return sorted;
+    }
+    if (boardSort === 'due_asc') {
+      sorted.sort((a: any, b: any) => {
+        const da = a?.due_date ? new Date(a.due_date).getTime() : Number.MAX_SAFE_INTEGER;
+        const db = b?.due_date ? new Date(b.due_date).getTime() : Number.MAX_SAFE_INTEGER;
+        return da - db;
+      });
+      return sorted;
+    }
+    sorted.sort((a: any, b: any) => {
+      const ua = a?.updated_at ? new Date(a.updated_at).getTime() : 0;
+      const ub = b?.updated_at ? new Date(b.updated_at).getTime() : 0;
+      return ub - ua;
+    });
+    return sorted;
   }
 
   // ── Tab switching ──
@@ -1508,12 +1569,14 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     const emptyEl = document.getElementById('board-empty');
     const kanbanEl = document.getElementById('board-kanban');
     const createBtn = document.getElementById('board-create-btn');
+    const toolbar = document.getElementById('board-toolbar');
 
     try {
       const { data: boards } = await sb.rpc('list_project_boards', { p_tribe_id: TRIBE_ID });
       if (!boards || boards.length === 0) {
         if (loadEl) loadEl.classList.add('hidden');
         if (emptyEl) emptyEl.classList.remove('hidden');
+        if (toolbar) toolbar.classList.add('hidden');
         if (createBtn && canEdit) createBtn.classList.remove('hidden');
         return;
       }
@@ -1530,15 +1593,28 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   function renderBoardItems(items: any[]) {
     const loadEl = document.getElementById('board-loading');
     const kanbanEl = document.getElementById('board-kanban');
+    const toolbar = document.getElementById('board-toolbar');
+    const assigneeFilter = document.getElementById('board-filter-assignee') as HTMLSelectElement | null;
     if (loadEl) loadEl.classList.add('hidden');
     if (kanbanEl) kanbanEl.classList.remove('hidden');
+    if (toolbar) toolbar.classList.remove('hidden');
 
     currentBoardItems = Array.isArray(items) ? items : [];
+    if (assigneeFilter) {
+      const selectedValue = assigneeFilter.value;
+      assigneeFilter.innerHTML = '<option value="">Todos os responsáveis</option><option value="unassigned">Sem responsável</option>'
+        + Array.from(membersMap.values())
+          .sort((a: any, b: any) => String(a.name || '').localeCompare(String(b.name || '')))
+          .map((m: any) => `<option value="${m.id}">${escapeHtml(m.name || '—')}</option>`)
+          .join('');
+      assigneeFilter.value = selectedValue || '';
+    }
+    const visibleItems = applyBoardFilters(currentBoardItems);
     BOARD_COLS.forEach(col => {
       const drop = kanbanEl?.querySelector(`.board-drop[data-col="${col}"]`);
       const countEl = kanbanEl?.querySelector(`.board-col[data-col="${col}"] .bcol-count`);
       if (!drop) return;
-      const colItems = items.filter((i: any) => i.status === col);
+      const colItems = visibleItems.filter((i: any) => i.status === col);
       if (countEl) countEl.textContent = String(colItems.length);
       drop.innerHTML = colItems.map((item: any) => boardCardHtml(item)).join('');
     });
@@ -1796,6 +1872,23 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = 'Criar Quadro'; }
     }
+  });
+
+  document.getElementById('board-search')?.addEventListener('input', (e: Event) => {
+    boardSearch = ((e.target as HTMLInputElement)?.value || '').trim();
+    renderBoardItems(currentBoardItems);
+  });
+  document.getElementById('board-filter-status')?.addEventListener('change', (e: Event) => {
+    boardStatusFilter = (e.target as HTMLSelectElement)?.value || '';
+    renderBoardItems(currentBoardItems);
+  });
+  document.getElementById('board-filter-assignee')?.addEventListener('change', (e: Event) => {
+    boardAssigneeFilter = (e.target as HTMLSelectElement)?.value || '';
+    renderBoardItems(currentBoardItems);
+  });
+  document.getElementById('board-sort')?.addEventListener('change', (e: Event) => {
+    boardSort = (e.target as HTMLSelectElement)?.value || 'updated_desc';
+    renderBoardItems(currentBoardItems);
   });
 
   document.addEventListener('click', (e: MouseEvent) => {
