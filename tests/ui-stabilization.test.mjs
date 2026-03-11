@@ -80,6 +80,8 @@ test('dark mode styling is applied to teams, webinars, and tribe board modal sur
   assert.equal(tribe.includes('id="board-item-modal"'), true);
   assert.equal(tribe.includes('dark:bg-slate-900'), true);
   assert.equal(tribe.includes('dark:border-slate-700'), true);
+  assert.equal(tribe.includes('id="deliverable-modal"'), true);
+  assert.equal(tribe.includes('close-deliverable-modal'), true);
 });
 
 test('admin webinars now reuses the events stack instead of staying a placeholder', () => {

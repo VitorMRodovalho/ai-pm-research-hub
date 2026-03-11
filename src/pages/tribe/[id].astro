@@ -267,9 +267,9 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
             <textarea id="bi-checklist" rows="3" placeholder="- Definir owner&#10;- Revisar copy final" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></textarea>
           </div>
           <div class="flex justify-between items-center gap-3 mt-2">
-            <button type="button" id="bi-delete-btn" data-action="delete-board-item" class="px-4 py-2 text-sm font-semibold text-red-600 border border-red-200 rounded-lg cursor-pointer hover:bg-red-50 transition-all hidden">🗑️ Arquivar card</button>
+            <button type="button" id="bi-delete-btn" data-action="delete-board-item" class="px-4 py-2 text-sm font-semibold text-red-600 border border-red-200 dark:border-red-900 rounded-lg cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/30 transition-all hidden">🗑️ Arquivar card</button>
             <div class="flex gap-3 ml-auto">
-              <button type="button" data-action="close-board-item-modal" class="px-4 py-2 text-sm font-semibold text-slate-500 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all">Cancelar</button>
+              <button type="button" data-action="close-board-item-modal" class="px-4 py-2 text-sm font-semibold text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">Cancelar</button>
               <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-navy rounded-lg cursor-pointer border-0 hover:opacity-90 transition-all">Salvar</button>
             </div>
           </div>
@@ -286,38 +286,38 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   <!-- Deliverable Modal -->
   <div id="deliverable-modal" class="fixed inset-0 z-50 hidden">
     <div class="absolute inset-0 bg-black/40" data-action="close-deliverable-modal"></div>
-    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-      <h2 id="deliverable-modal-title" class="text-lg font-extrabold text-navy mb-4"></h2>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-700">
+      <h2 id="deliverable-modal-title" class="text-lg font-extrabold text-navy dark:text-slate-100 mb-4"></h2>
       <form id="deliverable-form" class="flex flex-col gap-3">
         <input type="hidden" id="dlv-id" />
         <div>
-          <label for="dlv-title" class="text-[13px] font-semibold text-slate-600 mb-1 block" id="lbl-dlv-title"></label>
-          <input type="text" id="dlv-title" required class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
+          <label for="dlv-title" class="text-[13px] font-semibold text-slate-600 dark:text-slate-300 mb-1 block" id="lbl-dlv-title"></label>
+          <input type="text" id="dlv-title" required class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
         </div>
         <div>
-          <label for="dlv-description" class="text-[13px] font-semibold text-slate-600 mb-1 block" id="lbl-dlv-description"></label>
-          <textarea id="dlv-description" rows="3" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></textarea>
+          <label for="dlv-description" class="text-[13px] font-semibold text-slate-600 dark:text-slate-300 mb-1 block" id="lbl-dlv-description"></label>
+          <textarea id="dlv-description" rows="3" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></textarea>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label for="dlv-status" class="text-[13px] font-semibold text-slate-600 mb-1 block" id="lbl-dlv-status"></label>
-            <select id="dlv-status" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></select>
+            <label for="dlv-status" class="text-[13px] font-semibold text-slate-600 dark:text-slate-300 mb-1 block" id="lbl-dlv-status"></label>
+            <select id="dlv-status" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></select>
           </div>
           <div>
-            <label for="dlv-due-date" class="text-[13px] font-semibold text-slate-600 mb-1 block" id="lbl-dlv-due-date"></label>
-            <input type="date" id="dlv-due-date" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
+            <label for="dlv-due-date" class="text-[13px] font-semibold text-slate-600 dark:text-slate-300 mb-1 block" id="lbl-dlv-due-date"></label>
+            <input type="date" id="dlv-due-date" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
           </div>
         </div>
         <div>
-          <label for="dlv-assignee" class="text-[13px] font-semibold text-slate-600 mb-1 block" id="lbl-dlv-assignee"></label>
-          <select id="dlv-assignee" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></select>
+          <label for="dlv-assignee" class="text-[13px] font-semibold text-slate-600 dark:text-slate-300 mb-1 block" id="lbl-dlv-assignee"></label>
+          <select id="dlv-assignee" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></select>
         </div>
         <div>
-          <label for="dlv-artifact" class="text-[13px] font-semibold text-slate-600 mb-1 block" id="lbl-dlv-artifact"></label>
-          <select id="dlv-artifact" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></select>
+          <label for="dlv-artifact" class="text-[13px] font-semibold text-slate-600 dark:text-slate-300 mb-1 block" id="lbl-dlv-artifact"></label>
+          <select id="dlv-artifact" class="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></select>
         </div>
         <div class="flex justify-end gap-3 mt-2">
-          <button type="button" data-action="close-deliverable-modal" class="px-4 py-2 text-sm font-semibold text-slate-500 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-all" id="btn-dlv-cancel"></button>
+          <button type="button" data-action="close-deliverable-modal" class="px-4 py-2 text-sm font-semibold text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-all" id="btn-dlv-cancel"></button>
           <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-navy rounded-lg cursor-pointer border-0 hover:opacity-90 transition-all" id="btn-dlv-save"></button>
         </div>
       </form>
@@ -1564,10 +1564,10 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     const due = item.due_date ? `<span class="text-[10px] text-slate-400">${new Date(item.due_date).toLocaleDateString(I18N.dateLocale || 'pt-BR')}</span>` : '';
     const priorityColors: Record<string, string> = { high: 'border-l-red-400', medium: 'border-l-amber-400', low: 'border-l-blue-300' };
     const borderClass = priorityColors[item.priority] || 'border-l-slate-300';
-    return `<div class="board-card bg-white rounded-xl border border-slate-200 border-l-4 ${borderClass} p-3 shadow-sm cursor-grab select-none hover:shadow-md transition-shadow"
+    return `<div class="board-card bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 border-l-4 ${borderClass} p-3 shadow-sm cursor-grab select-none hover:shadow-md transition-shadow"
                  draggable="${canEdit}" data-item-id="${item.id}">
-      <p class="text-[13px] font-semibold text-navy leading-tight mb-1">${escapeHtml(item.title)}</p>
-      ${item.description ? `<p class="text-[11px] text-slate-400 mb-1.5 line-clamp-2">${escapeHtml(item.description)}</p>` : ''}
+      <p class="text-[13px] font-semibold text-navy dark:text-slate-100 leading-tight mb-1">${escapeHtml(item.title)}</p>
+      ${item.description ? `<p class="text-[11px] text-slate-400 dark:text-slate-300 mb-1.5 line-clamp-2">${escapeHtml(item.description)}</p>` : ''}
       <div class="flex flex-wrap items-center gap-1">${tags}${labels}${checklistBadge}${assignee}${due}</div>
       ${canEdit ? `<button data-action="open-board-item" data-item-id="${item.id}" class="mt-2 text-[10px] font-bold text-purple hover:underline cursor-pointer border-0 bg-transparent p-0">Editar detalhes</button>` : ''}
     </div>`;
