@@ -48,20 +48,24 @@ This repository is therefore both a **product** and a **knowledge infrastructure
 
 ## March 2026 Operational Status
 
-The repository received a short stabilization cycle in early March 2026 focused on production resilience and documentation hygiene.
+The repository received an extended stabilization and feature cycle through March 2026.
 
-### Recent production hotfixes
+### Recent highlights
 
-- Cloudflare Pages SPA fallback redirect support added.
-- Legacy route aliases restored for `/teams`, `/rank`, and `/ranks`.
-- `TribesSection.astro` patched to guard against missing `deliverables` data during SSR rendering.
-- Credly verification scoring expanded to a tier based model, with backend improvements already delivered.
+- **Dark mode** — Full theme system via CSS custom properties (`theme.css`). Zero hardcoded slate classes remaining. WCAG AA contrast compliance.
+- **Workspace** — New `/workspace` page as the authenticated member's operational hub, with subproject cards, tribe summary, and quick actions.
+- **Nav Redesign** — Unified navigation config (`navigation.config.ts`) powering desktop navbar, mobile drawer, and keyboard shortcuts. Tier-based route visibility.
+- **BoardEngine** — Generic Kanban engine (drag-and-drop, card detail, MemberPicker, attachments, real-time sync) powering tribe boards, publications, comms-ops, and curatorship.
+- **Curatorship workflow** — Peer review → leader review → curation pending → published, with SLA tracking and super-kanban at `/admin/curatorship`.
+- **Data sanitation** — Synced `members.tribe_id` from `tribe_selections` (32 rows), set roles for liaisons/sponsors, sync trigger to prevent drift.
+- **Branch protection** — CI status checks required (`validate` + `browser_guards`), force push blocked.
+- **Comms migration** — 54 Trello items imported to Hub board, team permissions verified, storage bucket created.
 
 ### Known open gaps
 
-- The new tier based Credly scoring is **not yet fully reflected** in all rank and gamification UI surfaces.
+- 10 active members without `tribe_id` (cross-tribe roles or haven't selected yet).
+- The tier-based Credly scoring is not yet fully reflected in all rank and gamification UI surfaces.
 - Mobile paste behavior for the Credly URL field still requires dedicated validation on iOS Safari and Chrome.
-- Some route and navigation behavior should still be covered by repeatable smoke tests after deploy.
 
 ---
 
@@ -145,12 +149,11 @@ The current production pattern is to keep communications metrics in Supabase-bac
 
 ## Immediate Engineering Priorities
 
-1. Validate Analytics V2 on real partner-facing reads, especially the new internal read-only audience and the staged SQL contracts for funnel, ROI, certification delta, and leadership journey.
-2. Expand browser coverage from the current anonymous guard/home runtime checks into richer internal workflows beyond the new `/admin/webinars` and `/admin/analytics` coverage, especially modal and authenticated operator paths.
-3. Continue sharpening the webinars operator flow on top of `events`, now deciding whether the new in-module contextual aids should mature into reusable drafting and QA helpers before any schema expansion.
-4. Finish the dynamic tribe-catalog rollout by validating the new admin catalog controls on the linked Supabase project and deciding how much of the public tribe editorial layer should move from static i18n into runtime metadata.
-5. Keep site hierarchy, access tiers, and LGPD visibility rules aligned across nav, pages, docs, analytics contracts, and new tribe catalog controls.
-6. Approve the prepared webinar convergence direction before any external registration or speaker model is introduced: `docs/WEBINARS_CONVERGENCE_PROPOSAL.md`.
+1. Comms team pilot: validate `/admin/comms-ops` with Mayanna, Leticia, and Andressa. Clean stale backlog items and assign cards.
+2. Expand browser test coverage to authenticated workflows (card detail, drag-and-drop, curatorship approval).
+3. Analytics V2 validation on real partner-facing reads (funnel, ROI, certification delta).
+4. Knowledge Hub Phase A: cross-tribe artifact visibility and search.
+5. Approve webinar convergence direction: `docs/WEBINARS_CONVERGENCE_PROPOSAL.md`.
 
 ---
 
@@ -187,6 +190,11 @@ The current production pattern is to keep communications metrics in Supabase-bac
 - `docs/SPRINT_SANATION_PLAN.md` → plan to stabilize P0 and resume sprints
 - `docs/DEPLOY_CHECKLIST.md` → pending production steps (HF5, secrets, workflows)
 - `docs/DISASTER_RECOVERY.md` → DR runbook (Supabase backup/PITR, Cloudflare rollback)
+- `docs/GITHUB_SETTINGS.md` → branch protection rules and CI workflow reference
+- `docs/DATA_SANITATION_LOG.md` → member data cleanup history and verification queries
+- `docs/COMMS_MIGRATION_CHECKLIST.md` → Trello → Hub migration status for comms team
+- `docs/RPC_REGISTRY.md` → Supabase RPC audit (unused, deprecated, duplicate definitions)
+- `docs/PENDING_PRODUCTION_SQL.md` → compiled SQL for production application
 
 ---
 

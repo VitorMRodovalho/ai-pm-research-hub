@@ -80,7 +80,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           <p>1. Exporte os dados de voluntários da plataforma PMI (formato CSV)</p>
           <p>2. Coloque o arquivo em <code class="bg-[var(--border-strong)] px-1 rounded">/Downloads/data/raw-drive-exports/Sensitive/Export voluntarios inscritos plataforma PMI/</code></p>
           <p>3. Execute o script de importação:</p>
-          <pre class="bg-slate-800 text-slate-100 px-3 py-2 rounded-lg overflow-x-auto">SUPABASE_URL="..." SUPABASE_SERVICE_ROLE_KEY="..." npx tsx scripts/volunteer_csv_importer.ts</pre>
+          <pre class="bg-[var(--surface-section-dark)] text-white/90 px-3 py-2 rounded-lg overflow-x-auto">SUPABASE_URL="..." SUPABASE_SERVICE_ROLE_KEY="..." npx tsx scripts/volunteer_csv_importer.ts</pre>
           <p>4. O script é idempotente — re-executar não cria duplicatas.</p>
         </div>
       </details>

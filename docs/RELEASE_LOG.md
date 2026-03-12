@@ -1,5 +1,63 @@
 # Release Log
 
+## 2026-03-12 — Sprint N7: data sanitation, branch protection, comms readiness, dark mode completion
+
+### Scope
+End-to-end stabilization sprint: data quality, CI hardening, ops documentation, and final dark mode cleanup.
+
+### Delivered
+
+- **1. Data Sanitation** (12 fixes across 4 blocks)
+  - Synced `members.tribe_id` from `tribe_selections` — 32 NULL rows backfilled
+  - Created `trg_sync_tribe_id` trigger to prevent future drift
+  - Fixed Andressa Martins tribe_id (8→2, stale value)
+  - Set operational_role for 2 chapter_liaisons + 4 sponsors (was `none`)
+  - Deactivated 2 departed members (`current_cycle_active→false`)
+  - Reactivated 3 founders (Ivan=sponsor, Roberto=liaison, Sarah=active)
+  - Post-sanitation: 0 inconsistencies, 43/67 with tribe_id, 2 active with role=none
+
+- **2. Branch Protection** (GitHub API)
+  - Required status checks: `validate` + `browser_guards`
+  - Force push to main blocked, branch deletion blocked
+  - No PR requirement (bus factor=1), admin bypass enabled
+  - Documented in `docs/GITHUB_SETTINGS.md`
+
+- **3. RPC Registry Cleanup**
+  - `kpi_summary`: wired to home page KpiSection (live progress indicators)
+  - `publish_board_item_from_curation`: reclassified as Internal (called by `submit_curation_review`)
+  - 3 RPCs marked Deprecated: `get_curation_cross_board`, `list_webinars`, `platform_activity_summary`
+
+- **4. Comms Migration Readiness**
+  - Verified 54 imported items across 5 columns (28 backlog, 2 todo, 3 in_progress, 1 review, 20 done)
+  - Team permissions verified: Mayanna (comms_leader), Leticia (comms_member), Andressa (comms_member)
+  - Created `board-attachments` storage bucket (5MB, pdf/png/jpg/docx/xlsx/pptx) with RLS policies
+  - Documented in `docs/COMMS_MIGRATION_CHECKLIST.md`
+
+- **5. Dark Mode Completion**
+  - Migrated final 7 `text-slate-*` / `bg-slate-*` occurrences across 4 files
+  - **Zero slate classes remaining** in src/ (.astro + .tsx)
+  - Files: selection.astro, KpiBar.astro (4), TeamSection.astro, PresentationLayer.astro
+
+- **6. CI & PostHog Stabilization** (carried from earlier today)
+  - Fixed browser_guards CI test (useMemberContext nav:member fallback)
+  - Fixed PostHog console errors (safePH wrapper, __SV guard, env var gating)
+  - Fixed board columns crash on /tribe/6 (normalize null/string/array)
+  - Fixed get_board_members 400 error (photo_url not avatar_url)
+  - Fixed CardDetail/CardCreate resilient RPC calls
+
+- **7. KPI Summary Wiring**
+  - Home page KpiSection now calls `kpi_summary` RPC
+  - Shows live progress below static targets (chapters, articles, webinars, impact hours, cert %)
+
+### Validation
+- `npm run build` — success
+- `npm test` — 109/109 pass
+- `npm run smoke:routes` — all routes 200
+- Zero `text-slate-*` remaining
+- `npm run lint:i18n` — clean
+
+---
+
 ## 2026-03-12 — Sprint N4: dark mode tokens, WCAG contrast, i18n fixes, prod hotfix
 
 ### Scope

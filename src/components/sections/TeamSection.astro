@@ -173,7 +173,7 @@ const ROLE_COLORS: Record<string, string> = {
     const dots = getRoleDots(m);
     const sub = subtitle
       ? `<div class="text-[.55rem] font-bold uppercase tracking-wider mt-0.5" style="color:#FF610F">${subtitle}</div>`
-      : `<div class="text-[.6rem] text-slate-400">${m.chapter || ''}</div>`;
+      : `<div class="text-[.6rem] text-[var(--text-muted)]">${m.chapter || ''}</div>`;
     return `<div class="text-center w-[90px]">
       ${photo}
       <div class="text-[.7rem] font-semibold mt-1.5 leading-tight">${safeName.split(' ').slice(0, 2).join(' ')} ${li}</div>
