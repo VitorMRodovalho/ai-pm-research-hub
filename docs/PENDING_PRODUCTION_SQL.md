@@ -31,7 +31,7 @@ The following RPCs defined in these migrations are actively called by the fronte
 
 ## 1. Board Engine RPCs (Core)
 
-- [ ] **Applied to production**
+- [x] **Applied to production** (2026-03-12 via `supabase db push`)
 
 Source: `supabase/migrations/20260317100000_board_engine_rpcs.sql`
 
@@ -147,7 +147,7 @@ BEGIN
   FROM project_boards pb WHERE pb.id = p_board_id;
 
   RETURN QUERY
-  SELECT m.id, m.name, m.avatar_url, m.operational_role
+  SELECT m.id, m.name, m.photo_url AS avatar_url, m.operational_role
   FROM members m
   WHERE m.is_active = true
     AND (
@@ -544,7 +544,7 @@ GRANT EXECUTE ON FUNCTION public.list_active_boards() TO authenticated;
 
 ## 2. Fix full_name to name References
 
-- [ ] **Applied to production**
+- [x] **Applied to production** (2026-03-12 via `supabase db push` + hotfix for `avatar_url` → `photo_url`)
 
 Source: `supabase/migrations/20260318100000_fix_full_name_to_name.sql`
 
@@ -665,7 +665,7 @@ BEGIN
   FROM project_boards pb WHERE pb.id = p_board_id;
 
   RETURN QUERY
-  SELECT m.id, m.name, m.avatar_url, m.operational_role
+  SELECT m.id, m.name, m.photo_url AS avatar_url, m.operational_role
   FROM members m
   WHERE m.is_active = true
     AND (
@@ -834,7 +834,7 @@ $$;
 
 ## 3. Ensure Tribe Board Domain Keys
 
-- [ ] **Applied to production**
+- [x] **Applied to production** (2026-03-12 via `supabase db push`)
 
 Source: `supabase/migrations/20260318000001_ensure_tribe_board_domain_keys.sql`
 
@@ -893,7 +893,7 @@ $$;
 
 ## 4. Tribes Video Columns
 
-- [ ] **Applied to production**
+- [x] **Applied to production** (2026-03-12 via `supabase db push`)
 
 Source: `supabase/migrations/20260318110000_tribes_video_columns.sql`
 
@@ -928,7 +928,7 @@ COMMIT;
 
 ## 5. KPI Targets Config
 
-- [ ] **Applied to production**
+- [x] **Applied to production** (2026-03-12 via `supabase db push`)
 
 Source: `supabase/migrations/20260318110001_kpi_targets_config.sql`
 

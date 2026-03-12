@@ -110,7 +110,7 @@ BEGIN
   FROM project_boards pb WHERE pb.id = p_board_id;
 
   RETURN QUERY
-  SELECT m.id, m.name, m.avatar_url, m.operational_role
+  SELECT m.id, m.name, m.photo_url AS avatar_url, m.operational_role
   FROM members m
   WHERE m.is_active = true
     AND (
