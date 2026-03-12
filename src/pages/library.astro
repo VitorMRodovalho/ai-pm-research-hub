@@ -35,12 +35,12 @@ const WORKSPACE_I18N = {
   <div class="max-w-[1100px] mx-auto px-4 py-8">
     <div class="mb-6">
       <h1 class="text-2xl font-extrabold text-navy">{t('workspace.heading', lang)}</h1>
-      <p class="text-slate-500 text-sm mt-1">{t('workspace.subtitle', lang)}</p>
+      <p class="text-[var(--text-secondary)] text-sm mt-1">{t('workspace.subtitle', lang)}</p>
     </div>
 
     <div class="mb-4">
       <input id="ws-search" type="text"
-             class="w-full px-4 py-2.5 rounded-xl border-[1.5px] border-slate-200 text-sm bg-white focus:outline-none focus:border-navy transition-colors"
+             class="w-full px-4 py-2.5 rounded-xl border-[1.5px] border-[var(--border-default)] text-sm bg-[var(--surface-card)] focus:outline-none focus:border-navy transition-colors"
              placeholder={t('workspace.search', lang)} />
     </div>
 
@@ -48,34 +48,34 @@ const WORKSPACE_I18N = {
       <div class="flex gap-1.5 flex-wrap">
         <button class="ws-type-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white transition-all"
                 data-filter-type="" data-action="filter-type">{t('workspace.filterAll', lang)}</button>
-        <button class="ws-type-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+        <button class="ws-type-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
                 data-filter-type="course" data-action="filter-type">{t('workspace.filterCourse', lang)}</button>
-        <button class="ws-type-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+        <button class="ws-type-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
                 data-filter-type="reference" data-action="filter-type">{t('workspace.filterReference', lang)}</button>
-        <button class="ws-type-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+        <button class="ws-type-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
                 data-filter-type="webinar" data-action="filter-type">{t('workspace.filterWebinar', lang)}</button>
-        <button class="ws-type-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+        <button class="ws-type-filter px-3.5 py-1.5 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
                 data-filter-type="other" data-action="filter-type">{t('workspace.filterOther', lang)}</button>
       </div>
       <select id="ws-tribe-filter"
-              class="ml-auto px-3 py-1.5 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy cursor-pointer"
+              class="ml-auto px-3 py-1.5 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy cursor-pointer"
               data-action="filter-tribe">
         <option value="">{t('workspace.tribeAll', lang)}</option>
       </select>
     </div>
 
     <div id="ws-tag-bar" class="flex flex-wrap gap-1.5 mb-5"></div>
-    <div id="ws-results" class="text-[.7rem] text-slate-400 mb-3"></div>
+    <div id="ws-results" class="text-[.7rem] text-[var(--text-muted)] mb-3"></div>
 
     <div id="ws-grid">
       <LoadingSkeleton variant="card" count={6} />
     </div>
 
     <div id="ws-pagination" class="hidden flex items-center justify-center gap-3 mt-6">
-      <button id="ws-prev" class="px-3.5 py-1.5 rounded-lg text-[13px] font-semibold border border-slate-200 bg-white text-slate-500 cursor-pointer hover:bg-slate-50 disabled:opacity-40 disabled:cursor-default"
+      <button id="ws-prev" class="px-3.5 py-1.5 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] cursor-pointer hover:bg-[var(--surface-hover)] disabled:opacity-40 disabled:cursor-default"
               data-action="ws-prev">{t('workspace.prev', lang)}</button>
-      <span id="ws-page-info" class="text-[12px] text-slate-500"></span>
-      <button id="ws-next" class="px-3.5 py-1.5 rounded-lg text-[13px] font-semibold border border-slate-200 bg-white text-slate-500 cursor-pointer hover:bg-slate-50 disabled:opacity-40 disabled:cursor-default"
+      <span id="ws-page-info" class="text-[12px] text-[var(--text-secondary)]"></span>
+      <button id="ws-next" class="px-3.5 py-1.5 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] cursor-pointer hover:bg-[var(--surface-hover)] disabled:opacity-40 disabled:cursor-default"
               data-action="ws-next">{t('workspace.next', lang)}</button>
     </div>
   </div>
@@ -107,7 +107,7 @@ const WORKSPACE_I18N = {
     community:  'bg-green-50 text-green-700 border-green-200',
     innovation: 'bg-amber-50 text-amber-700 border-amber-200',
     impact:     'bg-rose-50 text-rose-700 border-rose-200',
-    governance: 'bg-slate-100 text-slate-700 border-slate-200',
+    governance: 'bg-[var(--surface-base)] text-[var(--text-primary)] border-[var(--border-default)]',
   };
 
   let TRIBE_NAMES: Record<number, string> = I18N.tribeNames || {};
@@ -126,7 +126,7 @@ const WORKSPACE_I18N = {
 
   function tagCategoryColor(tagKey: string): string {
     const tag = allTags.find((t: any) => t.tag_key === tagKey);
-    return tag ? (TAG_COLORS[tag.category] || TAG_COLORS.governance) : 'bg-slate-50 text-slate-600 border-slate-200';
+    return tag ? (TAG_COLORS[tag.category] || TAG_COLORS.governance) : 'bg-[var(--surface-base)] text-[var(--text-secondary)] border-[var(--border-default)]';
   }
 
   function applyRouteState() {
@@ -161,7 +161,7 @@ const WORKSPACE_I18N = {
   function renderCards(items: any[]) {
     const grid = document.getElementById('ws-grid')!;
     if (!items.length) {
-      grid.innerHTML = '<div class="text-center py-14"><div class="text-4xl mb-3">&#x1F4ED;</div><div class="font-semibold text-slate-500 text-sm">' + I18N.empty + '</div></div>';
+      grid.innerHTML = '<div class="text-center py-14"><div class="text-4xl mb-3">&#x1F4ED;</div><div class="font-semibold text-[var(--text-secondary)] text-sm">' + I18N.empty + '</div></div>';
       return;
     }
     grid.innerHTML = '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">' + items.map(cardHtml).join('') + '</div>';
@@ -189,14 +189,14 @@ const WORKSPACE_I18N = {
       ? new Date(r.created_at).toLocaleDateString(I18N.locale || 'pt-BR', { month: 'short', day: '2-digit', year: 'numeric' })
       : '';
 
-    return '<div class="bg-white rounded-2xl border border-slate-200/80 p-5 flex flex-col shadow-sm hover:shadow-md hover:border-slate-300 hover:-translate-y-px transition-all duration-200">'
+    return '<div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)]/80 p-5 flex flex-col shadow-sm hover:shadow-md hover:border-[var(--text-muted)] hover:-translate-y-px transition-all duration-200">'
       + '<div class="flex items-center gap-2 mb-3">'
-      + '<span class="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center text-lg leading-none shrink-0">' + icon + '</span>'
-      + '<div class="flex flex-col min-w-0"><span class="text-[11px] font-bold uppercase tracking-wide text-slate-400">' + esc(typeLabel) + '</span>'
-      + (dateStr ? '<span class="text-[.6rem] text-slate-300">' + dateStr + '</span>' : '') + '</div>'
+      + '<span class="w-9 h-9 rounded-xl bg-[var(--surface-base)] flex items-center justify-center text-lg leading-none shrink-0">' + icon + '</span>'
+      + '<div class="flex flex-col min-w-0"><span class="text-[11px] font-bold uppercase tracking-wide text-[var(--text-muted)]">' + esc(typeLabel) + '</span>'
+      + (dateStr ? '<span class="text-[.6rem] text-[var(--text-muted)]">' + dateStr + '</span>' : '') + '</div>'
       + '</div>'
       + '<h3 class="text-[15px] font-bold text-navy leading-snug mb-1.5">' + esc(r.title) + '</h3>'
-      + (desc ? '<p class="text-[12.5px] text-slate-500 leading-relaxed mb-0">' + desc + '</p>' : '')
+      + (desc ? '<p class="text-[12.5px] text-[var(--text-secondary)] leading-relaxed mb-0">' + desc + '</p>' : '')
       + tagsHtml
       + (tribe ? '<span class="inline-block mt-2 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-navy/5 text-navy/70 w-fit">' + esc(tribe) + '</span>' : '')
       + link
@@ -215,9 +215,9 @@ const WORKSPACE_I18N = {
       button.classList.toggle('bg-navy', isActive);
       button.classList.toggle('text-white', isActive);
       button.classList.toggle('border-navy', isActive);
-      button.classList.toggle('bg-white', !isActive);
-      button.classList.toggle('text-slate-500', !isActive);
-      button.classList.toggle('border-slate-200', !isActive);
+      button.classList.toggle('bg-[var(--surface-card)]', !isActive);
+      button.classList.toggle('text-[var(--text-secondary)]', !isActive);
+      button.classList.toggle('border-[var(--border-default)]', !isActive);
     });
   }
 

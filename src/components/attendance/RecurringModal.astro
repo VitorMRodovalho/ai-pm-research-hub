@@ -8,34 +8,34 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
 <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-recurring">
-  <div class="bg-white rounded-2xl w-full max-w-[560px] overflow-hidden max-h-[90vh] flex flex-col">
-    <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center flex-shrink-0">
+  <div class="bg-[var(--surface-card)] rounded-2xl w-full max-w-[560px] overflow-hidden max-h-[90vh] flex flex-col">
+    <div class="px-5 py-4 border-b border-[var(--border-default)] flex justify-between items-center flex-shrink-0">
       <h3 class="text-base font-bold text-navy">{t('attendance.modal.recurringTitle', lang)}</h3>
-      <button type="button" class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" data-action="close-modal" data-modal-id="modal-recurring">✕</button>
+      <button type="button" class="bg-transparent border-0 text-xl cursor-pointer text-[var(--text-muted)]" data-action="close-modal" data-modal-id="modal-recurring">✕</button>
     </div>
     <form id="recurring-event-form" class="p-5 overflow-y-auto flex-1">
-      <div class="bg-slate-50 rounded-lg px-3.5 py-3 text-[13px] text-navy flex items-center gap-2 mb-4">
+      <div class="bg-[var(--surface-base)] rounded-lg px-3.5 py-3 text-[13px] text-navy flex items-center gap-2 mb-4">
         {t('attendance.modal.recurringHint', lang).replace('{n}', '{n}').replace('{date}', '{date}')}
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
         <div class="flex flex-col gap-1.5 sm:col-span-2">
-          <label class="text-[12px] font-semibold text-slate-500">{t('attendance.modal.templateTitle', lang)}</label>
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.templateTitle', lang)}</label>
           <input type="text" id="rec-title" value="Reunião Geral — Núcleo IA & GP | Semana &#123;n&#125;"
-                 class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+                 class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[12px] font-semibold text-slate-500">{t('attendance.modal.type', lang)}</label>
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.type', lang)}</label>
           <select id="rec-type"
-                  class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
+                  class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
             <option value="general_meeting">{t('attendance.modal.typeGeneral', lang)}</option>
             <option value="tribe_meeting">{t('attendance.modal.typeTribe', lang)}</option>
             <option value="webinar">{t('attendance.modal.typeWebinar', lang)}</option>
           </select>
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[12px] font-semibold text-slate-500">{t('attendance.modal.audience', lang)}</label>
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.audience', lang)}</label>
           <select id="rec-audience"
-                  class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
+                  class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
             <option value="all">{t('attendance.modal.audienceAll', lang)}</option>
             <option value="leadership">{t('attendance.modal.audienceLeadership', lang)}</option>
             <option value="tribe">{t('attendance.modal.audienceTribe', lang)}</option>
@@ -43,24 +43,24 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           </select>
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[12px] font-semibold text-slate-500">{t('attendance.modal.startDate', lang)}</label>
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.startDate', lang)}</label>
           <input type="date" id="rec-start"
-                 class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+                 class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[12px] font-semibold text-slate-500">{t('attendance.modal.durationMin', lang)}</label>
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.durationMin', lang)}</label>
           <input type="number" id="rec-duration" value="90" min="15" max="480"
-                 class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+                 class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[12px] font-semibold text-slate-500">{t('attendance.modal.weeks', lang)}</label>
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.weeks', lang)}</label>
           <input type="number" id="rec-weeks" value="12" min="1" max="52"
-                 class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+                 class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
         </div>
         <div class="flex flex-col gap-1.5 sm:col-span-2">
-          <label class="text-[12px] font-semibold text-slate-500">{t('attendance.modal.recurringLink', lang)}</label>
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.recurringLink', lang)}</label>
           <input type="url" id="rec-link" placeholder="https://meet.google.com/..." value="https://meet.google.com/dzo-phoj-tid"
-                 class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+                 class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
         </div>
         <div class="flex flex-col gap-1.5">
           <label class="flex items-center gap-2 text-[13px] font-medium cursor-pointer">
@@ -70,8 +70,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         </div>
       </div>
     </form>
-    <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2 flex-shrink-0">
-      <button type="button" class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer" data-action="close-modal" data-modal-id="modal-recurring">{t('attendance.modal.cancel', lang)}</button>
+    <div class="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2 flex-shrink-0">
+      <button type="button" class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer" data-action="close-modal" data-modal-id="modal-recurring">{t('attendance.modal.cancel', lang)}</button>
       <button type="submit" form="recurring-event-form" class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer">{t('attendance.modal.createSeries', lang)}</button>
     </div>
   </div>

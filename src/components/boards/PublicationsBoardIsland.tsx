@@ -104,11 +104,11 @@ function SortableCard({
         }
       }}
       onDoubleClick={() => onOpen(item)}
-      className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-sm cursor-grab active:cursor-grabbing"
+      className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3 shadow-sm cursor-grab active:cursor-grabbing"
     >
-      <h3 className="text-[12px] font-bold text-navy dark:text-slate-100 mb-1">{item.title || UI.untitled}</h3>
+      <h3 className="text-[12px] font-bold text-navy mb-1">{item.title || UI.untitled}</h3>
       {item.description ? (
-        <p className="text-[11px] text-slate-500 dark:text-slate-300 line-clamp-3 mb-2">{item.description}</p>
+        <p className="text-[11px] text-[var(--text-secondary)] line-clamp-3 mb-2">{item.description}</p>
       ) : null}
       <div className="flex flex-wrap gap-1 items-center">
         {item.due_date ? (
@@ -116,7 +116,7 @@ function SortableCard({
         ) : null}
         {Array.isArray(item.tags)
           ? item.tags.map((tag) => (
-              <span key={`${item.id}-${tag}`} className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+              <span key={`${item.id}-${tag}`} className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--surface-base)] text-[var(--text-secondary)]">
                 {tag}
               </span>
             ))
@@ -312,11 +312,11 @@ export default function PublicationsBoardIsland() {
   }
 
   if (loading) {
-    return <div className="text-center py-10 text-slate-400">{UI.loadingBoard}</div>;
+    return <div className="text-center py-10 text-[var(--text-muted)]">{UI.loadingBoard}</div>;
   }
   if (denied) {
     return (
-      <div className="text-center py-10 text-slate-500 dark:text-slate-300">
+      <div className="text-center py-10 text-[var(--text-secondary)]">
         {UI.deniedBoard}
       </div>
     );
@@ -331,10 +331,10 @@ export default function PublicationsBoardIsland() {
     >
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
         {LANES.map((lane) => (
-          <section key={lane.key} className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3">
+          <section key={lane.key} className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-[12px] font-bold text-slate-700 dark:text-slate-200">{lane.label}</h2>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+              <h2 className="text-[12px] font-bold text-[var(--text-primary)]">{lane.label}</h2>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--surface-base)] text-[var(--text-secondary)]">
                 {itemsByLane[lane.key]?.length || 0}
               </span>
             </div>
@@ -348,7 +348,7 @@ export default function PublicationsBoardIsland() {
                   <SortableCard key={item.id} item={item} onLaneKeyboardMove={moveViaKeyboard} onOpen={openSubmissionModal} />
                 ))}
                 {itemsByLane[lane.key].length === 0 ? (
-                  <div className="text-[11px] text-slate-400 dark:text-slate-500 py-6 text-center">
+                  <div className="text-[11px] text-[var(--text-muted)] py-6 text-center">
                     {draggingId ? 'Solte o card aqui' : 'Sem cards'}
                   </div>
                 ) : null}
@@ -361,32 +361,32 @@ export default function PublicationsBoardIsland() {
     {modalItem ? (
       <div className="fixed inset-0 z-50">
         <button type="button" className="absolute inset-0 bg-black/40 border-0 p-0 m-0" aria-label="close-modal-overlay" onClick={() => setModalItem(null)} />
-        <div className="absolute top-1/2 left-1/2 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-xl">
-          <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-3">{UI.modalTitle}</h3>
+        <div className="absolute top-1/2 left-1/2 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-xl">
+          <h3 className="text-base font-bold text-[var(--text-primary)] mb-3">{UI.modalTitle}</h3>
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">{UI.fieldChannel}</label>
-              <input value={metaChannel} onChange={(e) => setMetaChannel(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800" />
+              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{UI.fieldChannel}</label>
+              <input value={metaChannel} onChange={(e) => setMetaChannel(e.target.value)} className="w-full rounded-lg border border-[var(--border-default)] px-3 py-2 text-sm bg-[var(--surface-card)]" />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">{UI.fieldSubmittedAt}</label>
-              <input type="datetime-local" value={metaSubmittedAt} onChange={(e) => setMetaSubmittedAt(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800" />
+              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{UI.fieldSubmittedAt}</label>
+              <input type="datetime-local" value={metaSubmittedAt} onChange={(e) => setMetaSubmittedAt(e.target.value)} className="w-full rounded-lg border border-[var(--border-default)] px-3 py-2 text-sm bg-[var(--surface-card)]" />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">{UI.fieldOutcome}</label>
+              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{UI.fieldOutcome}</label>
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
-                  <button type="button" className="w-full text-left rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800">
+                  <button type="button" className="w-full text-left rounded-lg border border-[var(--border-default)] px-3 py-2 text-sm bg-[var(--surface-card)]">
                     {metaOutcome}
                   </button>
                 </DropdownMenu.Trigger>
                 <DropdownMenu.Portal>
-                  <DropdownMenu.Content sideOffset={6} className="z-50 min-w-[220px] rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 shadow-xl">
+                  <DropdownMenu.Content sideOffset={6} className="z-50 min-w-[220px] rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] p-1 shadow-xl">
                     {OUTCOME_OPTIONS.map((option) => (
                       <DropdownMenu.Item
                         key={option}
                         onSelect={() => setMetaOutcome(option)}
-                        className="px-2 py-1.5 text-sm rounded-md text-slate-700 dark:text-slate-200 outline-none hover:bg-slate-100 dark:hover:bg-slate-800"
+                        className="px-2 py-1.5 text-sm rounded-md text-[var(--text-primary)] outline-none hover:bg-[var(--surface-hover)]"
                       >
                         {option}
                       </DropdownMenu.Item>
@@ -396,31 +396,31 @@ export default function PublicationsBoardIsland() {
               </DropdownMenu.Root>
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">{UI.fieldNotes}</label>
-              <textarea value={metaNotes} onChange={(e) => setMetaNotes(e.target.value)} rows={4} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800" />
+              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{UI.fieldNotes}</label>
+              <textarea value={metaNotes} onChange={(e) => setMetaNotes(e.target.value)} rows={4} className="w-full rounded-lg border border-[var(--border-default)] px-3 py-2 text-sm bg-[var(--surface-card)]" />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">{UI.fieldExternalLink}</label>
+              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{UI.fieldExternalLink}</label>
               <input
                 type="url"
                 value={metaExternalLink}
                 onChange={(e) => setMetaExternalLink(e.target.value)}
                 placeholder="https://..."
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800"
+                className="w-full rounded-lg border border-[var(--border-default)] px-3 py-2 text-sm bg-[var(--surface-card)]"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">{UI.fieldPublishedAt}</label>
+              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{UI.fieldPublishedAt}</label>
               <input
                 type="datetime-local"
                 value={metaPublishedAt}
                 onChange={(e) => setMetaPublishedAt(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-sm bg-white dark:bg-slate-800"
+                className="w-full rounded-lg border border-[var(--border-default)] px-3 py-2 text-sm bg-[var(--surface-card)]"
               />
             </div>
           </div>
           <div className="mt-4 flex justify-end gap-2">
-            <button type="button" onClick={() => setModalItem(null)} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm">{UI.cancel}</button>
+            <button type="button" onClick={() => setModalItem(null)} className="px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm">{UI.cancel}</button>
             <button type="button" onClick={saveSubmissionMetadata} className="px-3 py-2 rounded-lg bg-navy text-white text-sm">{UI.save}</button>
           </div>
         </div>

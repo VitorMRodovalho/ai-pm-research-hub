@@ -74,7 +74,7 @@ export default function CommsDashboard() {
 
   if (loading) {
     return (
-      <div className="text-slate-400 text-sm py-8">Carregando métricas...</div>
+      <div className="text-[var(--text-muted)] text-sm py-8">Carregando métricas...</div>
     );
   }
   if (error) {
@@ -100,23 +100,23 @@ export default function CommsDashboard() {
     <div className="space-y-6">
       {/* Macro cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <div className="text-xs text-slate-500 uppercase font-semibold">Posts no Backlog</div>
-          <div className="text-lg font-extrabold text-slate-800">{metrics.backlog_count}</div>
+        <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-3">
+          <div className="text-xs text-[var(--text-secondary)] uppercase font-semibold">Posts no Backlog</div>
+          <div className="text-lg font-extrabold text-[var(--text-primary)]">{metrics.backlog_count}</div>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <div className="text-xs text-slate-500 uppercase font-semibold">Posts Atrasados</div>
-          <div className="text-lg font-extrabold text-slate-800">{metrics.overdue_count}</div>
+        <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-3">
+          <div className="text-xs text-[var(--text-secondary)] uppercase font-semibold">Posts Atrasados</div>
+          <div className="text-lg font-extrabold text-[var(--text-primary)]">{metrics.overdue_count}</div>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <div className="text-xs text-slate-500 uppercase font-semibold">Total de Publicações</div>
-          <div className="text-lg font-extrabold text-slate-800">{metrics.total_publications}</div>
+        <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-3">
+          <div className="text-xs text-[var(--text-secondary)] uppercase font-semibold">Total de Publicações</div>
+          <div className="text-lg font-extrabold text-[var(--text-primary)]">{metrics.total_publications}</div>
         </div>
       </div>
 
       {/* Bar chart: Volume por status */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
-        <h2 className="text-sm font-semibold text-slate-700 mb-3">Volume por Status</h2>
+      <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4">
+        <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Volume por Status</h2>
         {statusData.length > 0 ? (
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={statusData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
@@ -128,13 +128,13 @@ export default function CommsDashboard() {
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-slate-500 text-sm py-6">Sem dados de status.</p>
+          <p className="text-[var(--text-secondary)] text-sm py-6">Sem dados de status.</p>
         )}
       </div>
 
       {/* Pie chart: Distribuição por formato */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
-        <h2 className="text-sm font-semibold text-slate-700 mb-3">Distribuição por Formato</h2>
+      <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4">
+        <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-3">Distribuição por Formato</h2>
         {formatData.length > 0 ? (
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
@@ -158,7 +158,7 @@ export default function CommsDashboard() {
             </PieChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-slate-500 text-sm py-6">Sem dados de formato.</p>
+          <p className="text-[var(--text-secondary)] text-sm py-6">Sem dados de formato.</p>
         )}
       </div>
     </div>

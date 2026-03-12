@@ -119,20 +119,20 @@ const totalSteps = phases.reduce((sum, p) => sum + p.steps.length, 0);
     <!-- Header -->
     <div class="mb-8">
       <h1 class="text-2xl font-extrabold text-navy mb-2">{t('onboarding.heading', lang)}</h1>
-      <p class="text-slate-500 text-sm mb-4">{t('onboarding.subtitle', lang)}</p>
+      <p class="text-[var(--text-secondary)] text-sm mb-4">{t('onboarding.subtitle', lang)}</p>
 
       <!-- Progress Bar -->
-      <div class="bg-white rounded-2xl border border-slate-200 p-4">
+      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-4">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-[12px] font-bold text-slate-600">Seu Progresso</span>
+          <span class="text-[12px] font-bold text-[var(--text-secondary)]">Seu Progresso</span>
           <span id="progress-label" class="text-[12px] font-bold text-navy">0 / {totalSteps} etapas</span>
         </div>
-        <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+        <div class="w-full h-3 bg-[var(--surface-base)] rounded-full overflow-hidden">
           <div id="progress-bar" class="h-full rounded-full bg-gradient-to-r from-teal to-emerald-500 transition-all duration-500" style="width:0%"></div>
         </div>
         <div class="flex justify-between mt-3">
           {phases.map((phase) => (
-            <div class="flex items-center gap-1.5 text-[10px] font-semibold text-slate-400" data-phase={phase.id}>
+            <div class="flex items-center gap-1.5 text-[10px] font-semibold text-[var(--text-muted)]" data-phase={phase.id}>
               <span>{phase.icon}</span>
               <span class="hidden sm:inline">{phase.title}</span>
             </div>
@@ -162,7 +162,7 @@ const totalSteps = phases.reduce((sum, p) => sum + p.steps.length, 0);
             </div>
             <div>
               <h2 class="text-[15px] font-bold text-navy">{phase.title}</h2>
-              <p class="text-[11px] text-slate-400">Fase {pi + 1} de {phases.length}</p>
+              <p class="text-[11px] text-[var(--text-muted)]">Fase {pi + 1} de {phases.length}</p>
             </div>
           </div>
 
@@ -170,10 +170,10 @@ const totalSteps = phases.reduce((sum, p) => sum + p.steps.length, 0);
             {phase.steps.map((step, si) => {
               const globalIndex = phases.slice(0, pi).reduce((s, p) => s + p.steps.length, 0) + si;
               return (
-                <div class="step-card bg-white rounded-xl border border-slate-200 overflow-hidden transition-all" data-step={step.id}>
+                <div class="step-card bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] overflow-hidden transition-all" data-step={step.id}>
                   <button class="step-toggle w-full flex items-center gap-3 p-4 text-left cursor-pointer bg-transparent border-0" data-step-idx={String(globalIndex)}>
-                    <div class="step-check w-7 h-7 rounded-full border-2 border-slate-200 flex items-center justify-center flex-shrink-0 transition-colors" data-step-idx={String(globalIndex)}>
-                      <span class="text-[11px] font-bold text-slate-400">{globalIndex + 1}</span>
+                    <div class="step-check w-7 h-7 rounded-full border-2 border-[var(--border-default)] flex items-center justify-center flex-shrink-0 transition-colors" data-step-idx={String(globalIndex)}>
+                      <span class="text-[11px] font-bold text-[var(--text-muted)]">{globalIndex + 1}</span>
                     </div>
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center gap-2">
@@ -181,16 +181,16 @@ const totalSteps = phases.reduce((sum, p) => sum + p.steps.length, 0);
                         <h3 class="text-[13px] font-bold text-navy">{step.title}</h3>
                       </div>
                     </div>
-                    <svg class="step-chevron w-4 h-4 text-slate-400 transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="step-chevron w-4 h-4 text-[var(--text-muted)] transition-transform flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                     </svg>
                   </button>
 
                   <div class="step-body hidden px-4 pb-4 pl-14">
-                    <p class="text-[.78rem] text-slate-500 mb-3">{step.desc}</p>
+                    <p class="text-[.78rem] text-[var(--text-secondary)] mb-3">{step.desc}</p>
                     {step.hasDeadline && (
                       <p class="text-[.72rem] font-semibold text-orange mb-2" id="onboarding-deadline">
-                        {deadlinePrefix} <span id="onboarding-deadline-value" class="text-slate-400">…</span>
+                        {deadlinePrefix} <span id="onboarding-deadline-value" class="text-[var(--text-muted)]">…</span>
                       </p>
                     )}
                     {step.tip && (
@@ -214,7 +214,7 @@ const totalSteps = phases.reduce((sum, p) => sum + p.steps.length, 0);
                               data-step-idx={String(globalIndex)}>
                         ✓ Marcar como concluído
                       </button>
-                      <button class="mark-undone-btn hidden px-3 py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 transition-all"
+                      <button class="mark-undone-btn hidden px-3 py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-all"
                               data-step-idx={String(globalIndex)}>
                         Desfazer
                       </button>
@@ -272,13 +272,13 @@ const totalSteps = phases.reduce((sum, p) => sum + p.steps.length, 0);
     document.querySelectorAll('.step-check').forEach(el => {
       const idx = parseInt((el as HTMLElement).dataset.stepIdx || '-1');
       if (completed.has(idx)) {
-        el.classList.remove('border-slate-200');
+        el.classList.remove('border-[var(--border-default)]');
         el.classList.add('border-emerald-500', 'bg-emerald-500');
         el.innerHTML = '<svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>';
       } else {
         el.classList.remove('border-emerald-500', 'bg-emerald-500');
-        el.classList.add('border-slate-200');
-        el.innerHTML = '<span class="text-[11px] font-bold text-slate-400">' + (idx + 1) + '</span>';
+        el.classList.add('border-[var(--border-default)]');
+        el.innerHTML = '<span class="text-[11px] font-bold text-[var(--text-muted)]">' + (idx + 1) + '</span>';
       }
     });
 
