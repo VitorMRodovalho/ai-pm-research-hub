@@ -522,7 +522,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
             if (!document.getElementById('tribe-dropdown')) {
               var dd = document.createElement('div');
               dd.id = 'tribe-dropdown';
-              dd.className = 'hidden absolute top-full mt-1 right-0 w-56 bg-[var(--surface-elevated)] rounded-xl shadow-xl border border-[var(--border-default)] py-1.5 z-[300] max-h-[60vh] overflow-y-auto';
+              dd.className = 'hidden absolute top-full mt-1 right-0 w-[calc(100vw-2rem)] sm:w-56 bg-[var(--surface-elevated)] rounded-xl shadow-xl border border-[var(--border-default)] py-1.5 z-[300] max-h-[60vh] overflow-y-auto';
               dd.innerHTML = '<div class="px-3 py-2 text-[var(--text-muted)] text-xs">Loading...</div>';
               desktopEl.style.position = 'relative';
               desktopEl.appendChild(dd);

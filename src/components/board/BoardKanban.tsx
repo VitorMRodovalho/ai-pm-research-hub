@@ -190,11 +190,8 @@ export default function BoardKanban({ columns, columnItems, overColumnId, mode, 
 
   return (
     <div className="overflow-x-auto -mx-2 px-2 pb-2 scrollbar-thin">
-    <div className="grid gap-4" style={{
-      gridTemplateColumns: `repeat(${columns.length}, minmax(250px, 1fr))`,
-      minHeight: 400,
-      minWidth: columns.length * 266,
-    }}>
+    <style>{`@media(min-width:1280px){.bk-grid{grid-template-columns:repeat(${columns.length},minmax(0,1fr))!important}}`}</style>
+    <div className="bk-grid grid gap-4 grid-cols-1 md:grid-cols-2" style={{ minHeight: 400 }}>
       {columns.map((col) => (
         <KanbanColumn key={col.id} col={col}
           items={columnItems[col.id] || []}
