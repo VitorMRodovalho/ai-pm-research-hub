@@ -1,7 +1,7 @@
 /**
- * useBoard.ts — Fetch board config + items
+ * useBoard.ts — Fetch board config + items + realtime subscriptions
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Board, BoardItem, BoardEngineProps } from '../types/board';
 
 function getSb() {
@@ -88,6 +88,42 @@ export function useBoard(props: BoardEngineProps): UseBoardResult {
   useEffect(() => {
     fetch();
   }, [fetch]);
+
+  // ── Realtime subscription ──────────────────────────────────────
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!board?.id) return;
+
+    let channel: any = null;
+
+    (async () => {
+      const sb = await waitForSb();
+      if (!sb) return;
+
+      const debouncedRefetch = () => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => fetch(), 500);
+      };
+
+      channel = sb
+        .channel(`board:${board.id}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'board_items', filter: `board_id=eq.${board.id}` },
+          debouncedRefetch,
+        )
+        .subscribe();
+    })();
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (channel) {
+        const sb = getSb();
+        sb?.removeChannel(channel);
+      }
+    };
+  }, [board?.id, fetch]);
 
   return { board, items, loading, error, refetch: fetch };
 }
