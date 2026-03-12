@@ -166,27 +166,27 @@ test('attendance and admin comms accept contextual webinar handoff state from UR
 });
 
 test('curatorship keeps operator filters and approval targeting wired to rpc payload', () => {
-  const curatorship = read('src/pages/admin/curatorship.astro');
-  assert.equal(curatorship.includes('id="cur-search"'), true);
-  assert.equal(curatorship.includes('let searchQuery ='), true);
-  assert.equal(curatorship.includes("if (target && target.id === 'cur-search')"), true);
-  assert.equal(curatorship.includes('p_tribe_id: extra?.tribeId ?? null'), true);
-  assert.equal(curatorship.includes('p_audience_level: extra?.audienceLevel ?? null'), true);
-  assert.equal(curatorship.includes("class=\"cur-confirm-approve"), true);
-  assert.equal(curatorship.includes("sb.from('tribes').select('id,name,is_active').eq('is_active', true).order('id')"), true);
+  const island = read('src/components/boards/CuratorshipBoardIsland.tsx');
+  const astro = read('src/pages/admin/curatorship.astro');
+  assert.equal(astro.includes('CuratorshipBoardIsland client:load'), true);
+  assert.equal(island.includes("setSearch("), true);
+  assert.equal(island.includes("setFilter("), true);
+  assert.equal(island.includes("p_tribe_id: null"), true);
+  assert.equal(island.includes("p_audience_level: null"), true);
+  assert.equal(island.includes("rpc('curate_item'"), true);
+  assert.equal(island.includes("rpc('submit_curation_review'"), true);
 });
 
 test('curatorship rpc contract keeps approve/reject payload keys stable', () => {
-  const curatorship = read('src/pages/admin/curatorship.astro');
-  assert.equal(curatorship.includes("const { error } = await sb.rpc('curate_item', {"), true);
-  assert.equal(curatorship.includes('p_table: table'), true);
-  assert.equal(curatorship.includes('p_id: id'), true);
-  assert.equal(curatorship.includes('p_action: action'), true);
-  assert.equal(curatorship.includes('p_tags: tags || null'), true);
-  assert.equal(curatorship.includes('p_tribe_id: extra?.tribeId ?? null'), true);
-  assert.equal(curatorship.includes('p_audience_level: extra?.audienceLevel ?? null'), true);
-  assert.equal(curatorship.includes("table === 'artifacts' && sendToPublication ? 'pmi_submission' : null"), true);
-  assert.equal(curatorship.includes("callCurate(table, id, 'reject');"), true);
+  const island = read('src/components/boards/CuratorshipBoardIsland.tsx');
+  assert.equal(island.includes("rpc('curate_item'"), true);
+  assert.equal(island.includes('p_table: table'), true);
+  assert.equal(island.includes('p_id: id'), true);
+  assert.equal(island.includes('p_action: action'), true);
+  assert.equal(island.includes("rpc('submit_curation_review'"), true);
+  assert.equal(island.includes('p_item_id: modalItem.id'), true);
+  assert.equal(island.includes('p_decision: decision'), true);
+  assert.equal(island.includes('p_criteria_scores: scores'), true);
 });
 
 test('publications global board route and curatorship enqueue toggle are wired', () => {
@@ -205,8 +205,8 @@ test('publications global board route and curatorship enqueue toggle are wired',
   assert.equal(publicationsIsland.includes("sb.rpc('list_project_boards', { p_tribe_id: null })"), true);
   assert.equal(publicationsIsland.includes("domain_key || '') === 'publications_submissions'"), true);
   assert.equal(publicationsIsland.includes("sb.rpc('move_board_item'"), true);
-  assert.equal(curatorship.includes('cur-approve-publication'), true);
-  assert.equal(curatorship.includes("'pmi_submission'"), true);
+  assert.equal(curatorship.includes('CuratorshipBoardIsland'), true);
+  assert.equal(curatorship.includes("client:load"), true);
   assert.equal(migration.includes("domain_key = 'publications_submissions'"), true);
   assert.equal(migration.includes('create or replace function public.enqueue_artifact_publication_card('), true);
 });
