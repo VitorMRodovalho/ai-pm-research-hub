@@ -6,19 +6,19 @@ Last updated: 2026-03-12
 
 ---
 
-## Unused RPCs
+## RPCs with No Direct Frontend Call-Site
 
-RPCs that are defined in migrations but never called from application code.
+RPCs that are defined in migrations but have no `sb.rpc('...')` call in `src/`.
 
-| RPC Name | Defined In | Status |
-|---|---|---|
-| `get_curation_cross_board` | `20260317100000_board_engine_rpcs.sql`, `20260318100000_fix_full_name_to_name.sql` | **Unused** — no call-site in `src/` |
-| `publish_board_item_from_curation` | `20260315000007_curation_workflow_board_items.sql` | **Unused** — no call-site in `src/` |
-| `list_webinars` | `20260309140000_webinars_and_rpc_security.sql` | **Unused** — no call-site in `src/` |
-| `platform_activity_summary` | `20260312030000_list_volunteer_applications_rpc.sql` | **Unused** — no call-site in `src/` |
-| `kpi_summary` | `20260309001000_kpi_summary_rpc.sql` | **Unused** — no call-site in `src/` |
+| RPC Name | Defined In | Status | Notes |
+|---|---|---|---|
+| `get_curation_cross_board` | `20260317100000_board_engine_rpcs.sql` | **Deprecated** | Returns ALL board items — CuratorshipBoardIsland uses `list_curation_pending_board_items` instead. Do not delete (may serve future admin dashboard). |
+| `list_webinars` | `20260309140000_webinars_and_rpc_security.sql` | **Deprecated** | Webinars page uses `get_events_with_attendance`. Superseded. |
+| `platform_activity_summary` | `20260312030000_list_volunteer_applications_rpc.sql` | **Deprecated** | No consumer exists. Candidate for removal next cycle. |
+| `publish_board_item_from_curation` | `20260315000007_curation_workflow_board_items.sql` | **Internal** | Called by `submit_curation_review` (line 136 of `20260316140000`). Not orphaned — do not remove. |
+| `kpi_summary` | `20260309001000_kpi_summary_rpc.sql` | **Active** | Wired to `KpiSection.astro` (commit `7ecd314`). Shows live progress on home page. |
 
-> **Action**: Do not delete yet. These may be needed for upcoming features. Revisit next cycle.
+> **Policy**: Deprecated RPCs are kept in the database but not maintained. They may be dropped in a future migration consolidation. Internal RPCs must not be removed without checking all SQL callers.
 
 ---
 

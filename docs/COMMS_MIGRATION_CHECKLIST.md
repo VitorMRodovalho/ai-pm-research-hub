@@ -11,7 +11,7 @@ Status: **Ready for pilot testing**
 | Columns | `backlog → todo → in_progress → review → done` |
 | Items imported | 54 total (28 backlog, 2 todo, 3 in progress, 1 review, 20 done) |
 | Frontend page | `/admin/comms-ops` with BoardEngine + CommsDashboard |
-| Access control | superadmin, manager, deputy_manager, comms_leader, comms_member |
+| Access control | superadmin, manager, deputy_manager, comms_leader, comms_member (verified: Mayanna=comms_leader, Leticia Clemente=comms_member, Andressa=comms_member) |
 | Drag-and-drop | Yes (desktop + mobile + keyboard) |
 | Card detail | Title, description, assignee, reviewer, tags, due date, checklist, attachments |
 | MemberPicker | Yes (searchable autocomplete for 66+ members) |
@@ -37,8 +37,9 @@ Status: **Ready for pilot testing**
   - Action: Comms team reviews and archives stale items
 - [ ] **Assign team members** — Current items likely have no assignee_id set
   - Action: Comms team assigns cards to Mayanna, Leticia, Andressa
-- [ ] **Storage bucket** — `board-attachments` bucket must exist in Supabase Storage
-  - See `docs/DEPLOY_CHECKLIST.md` Section 7
+- [x] **Storage bucket** — `board-attachments` bucket created (2026-03-12)
+  - 5MB limit, pdf/png/jpg/docx/xlsx/pptx allowed
+  - RLS policies: authenticated can upload/read, owner can delete
 
 ### Nice to Have
 - [ ] **Labels/categories** — Board supports `labels` (jsonb) but no UI for managing label taxonomy

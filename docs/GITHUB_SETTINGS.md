@@ -1,43 +1,45 @@
 # GitHub Repository Settings — Branch Protection
 
-Status: **Documentation for GP to configure**
+Status: **ACTIVE** — applied 2026-03-12 via GitHub API
 
-## Recommended Branch Protection Rules for `main`
-
-Go to **Settings → Branches → Add branch protection rule** and set:
+## Current Branch Protection Rules for `main`
 
 | Setting | Value | Why |
 |---------|-------|-----|
-| Branch name pattern | `main` | Protects the production branch |
-| Require a pull request before merging | Yes | Prevents direct pushes to main |
-| Required approvals | 1 | At least one reviewer must approve |
 | Require status checks to pass | Yes | CI must be green before merge |
-| Required status checks | `quality_gate` | Final gate job that depends on all others |
-| Require branches to be up to date | Yes | PR must be rebased on latest main |
+| Required status checks | `validate`, `browser_guards` | Core CI jobs (build + unit tests + browser tests) |
+| Require branches to be up to date | Yes | Branch must be rebased on latest main |
+| Require PR before merging | **No** | Bus factor = 1 (Vitor is sole committer); direct push allowed |
+| Required approvals | N/A | No PR requirement currently |
 | Do not allow force pushes | Yes | Prevents history rewriting on main |
 | Do not allow deletions | Yes | Prevents accidental branch deletion |
+| Enforce for admins | No | Admin can bypass in emergencies |
 
-## How to Configure via GitHub UI
+## CI Workflow Jobs (`.github/workflows/ci.yml`)
 
-1. Navigate to the repo on GitHub
-2. **Settings** → **Branches** (left sidebar)
-3. Click **Add branch protection rule**
-4. Enter `main` as the branch name pattern
-5. Check the boxes per the table above
-6. For "Require status checks", search for the job names from `.github/workflows/`
-7. Click **Create** / **Save changes**
+| Job | What it does |
+|-----|-------------|
+| `validate` | npm ci → lint:i18n → unit tests → astro build → smoke:routes |
+| `browser_guards` | Playwright browser integration tests |
+| `visual_dark_mode` | Dark mode visual snapshot tests |
+| `quality_gate` | Passes only when all 3 above pass |
 
-## How to Configure via GitHub CLI
+> `validate` and `browser_guards` are required checks. `visual_dark_mode` runs but is not blocking (can be added later).
+
+## How to Modify via GitHub CLI
 
 ```bash
-# Requires gh CLI authenticated with admin access
-gh api repos/{owner}/{repo}/branches/main/protection \
+# View current protection
+gh api repos/VitorMRodovalho/ai-pm-research-hub/branches/main/protection
+
+# Add PR requirement later (when team grows)
+gh api repos/VitorMRodovalho/ai-pm-research-hub/branches/main/protection \
   --method PUT \
   --input - <<'EOF'
 {
   "required_status_checks": {
     "strict": true,
-    "contexts": ["quality_gate"]
+    "contexts": ["validate", "browser_guards"]
   },
   "enforce_admins": false,
   "required_pull_request_reviews": {
@@ -50,20 +52,9 @@ gh api repos/{owner}/{repo}/branches/main/protection \
 EOF
 ```
 
-> **Note:** Replace `{owner}/{repo}` with the actual values. `enforce_admins: false` allows admins to bypass in emergencies — set to `true` for stricter enforcement.
+## What This Means for Workflow
 
-## Current CI Workflow Jobs (`.github/workflows/ci.yml`)
-
-| Job | What it does |
-|-----|-------------|
-| `validate` | npm ci → lint:i18n → unit tests → astro build → smoke:routes |
-| `browser_guards` | Playwright browser integration tests |
-| `visual_dark_mode` | Dark mode visual snapshot tests |
-| `quality_gate` | Passes only when all 3 above pass (use this as required check) |
-
-## Transition Plan
-
-Until branch protection is enabled:
-- Developers push directly to `main` (current workflow)
-- Cloudflare Pages autodeploys on every push
-- After enabling protection, all changes go through PRs
+- Direct pushes to `main` still work (no PR required)
+- But CI must pass — if `validate` or `browser_guards` fail, push is blocked
+- Force push to main is blocked
+- Cloudflare Pages autodeploys on every successful push
