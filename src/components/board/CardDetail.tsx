@@ -231,8 +231,15 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                       </span>
                       <span className="text-slate-600">
                         {ev.actor_name && <strong>{ev.actor_name}</strong>}
-                        {' '}{ev.action === 'status_change' ? `moveu de "${ev.previous_status}" para "${ev.new_status}"` : ev.action}
-                        {ev.reason && <span className="text-slate-400 ml-1">— {ev.reason}</span>}
+                        {' '}
+                        {ev.action === 'status_change' && `moveu de "${COLUMN_PRESETS[ev.previous_status || '']?.label ?? ev.previous_status}" para "${COLUMN_PRESETS[ev.new_status || '']?.label ?? ev.new_status}"`}
+                        {ev.action === 'created' && 'criou este card'}
+                        {ev.action === 'assigned' && (ev.reason || 'atribuiu responsável')}
+                        {ev.action === 'archived' && 'arquivou este card'}
+                        {ev.action === 'moved_out' && 'moveu para outro board'}
+                        {ev.action === 'moved_in' && 'recebido de outro board'}
+                        {!['status_change', 'created', 'assigned', 'archived', 'moved_out', 'moved_in'].includes(ev.action) && ev.action}
+                        {ev.reason && ev.action !== 'assigned' && <span className="text-slate-400 ml-1">— {ev.reason}</span>}
                       </span>
                     </div>
                   ))}

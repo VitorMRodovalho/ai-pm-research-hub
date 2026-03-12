@@ -6,7 +6,7 @@
  *   <BoardEngine client:load domainKey="communication" />
  *   <BoardEngine client:load tribeId={6} domainKey="research_delivery" />
  */
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { DndContext, DragOverlay, closestCorners, PointerSensor, TouchSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core';
 import type { DragStartEvent, DragEndEvent, DragOverEvent } from '@dnd-kit/core';
 
@@ -33,9 +33,7 @@ export default function BoardEngine(props: BoardEngineProps) {
   const [items, setItems] = useState<BoardItem[]>([]);
   const permissions = useBoardPermissions(board);
 
-  // Sync rawItems → local state (for optimistic updates)
-  useState(() => { /* initial */ });
-  useMemo(() => { setItems(rawItems); }, [rawItems]);
+  useEffect(() => { setItems(rawItems); }, [rawItems]);
 
   const mutations = useBoardMutations(items, setItems, refetch);
   const filterHook = useBoardFilters(items);
@@ -119,13 +117,11 @@ export default function BoardEngine(props: BoardEngineProps) {
     }
   }, [permissions, mode]);
 
-  // Register keyboard listener
-  useState(() => {
-    if (typeof window !== 'undefined') {
-      window.addEventListener('keydown', handleKeyDown as any);
-      return () => window.removeEventListener('keydown', handleKeyDown as any);
-    }
-  });
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.addEventListener('keydown', handleKeyDown as any);
+    return () => window.removeEventListener('keydown', handleKeyDown as any);
+  }, [handleKeyDown]);
 
   // ── Render states ──
 
