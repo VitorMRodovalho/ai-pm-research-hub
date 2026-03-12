@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Toast from '../../components/ui/Toast.astro';
+import ConfirmModal from '../../components/ui/ConfirmModal.astro';
 import AdminNav from '../../components/nav/AdminNav.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
@@ -123,6 +124,7 @@ const ADMIN_I18N = {
 ---
 <BaseLayout title={t('admin.meta', lang)} activePage="admin">
   <Toast />
+  <ConfirmModal />
   <div class="max-w-[1400px] mx-auto px-4 pt-6">
     <AdminNav activeSub="panel" lang={lang} />
   </div>
@@ -1608,7 +1610,7 @@ const ADMIN_I18N = {
     const confirmMsg = nextActive
       ? 'Reativar esta tribo no catálogo atual?'
       : 'Marcar esta tribo como inativa no catálogo atual?';
-    if (!confirm(confirmMsg)) return;
+    if (!(await (window as any).confirmAction(confirmMsg))) return;
     const btn = target as HTMLButtonElement;
     const original = btn.textContent || '';
     btn.disabled = true;
@@ -2643,7 +2645,7 @@ const ADMIN_I18N = {
 
   (window as any).deleteAnnouncement = async (id: string) => {
     if (!ensureAdminAction()) return;
-    if (!confirm(ADMIN_I18N.annDeleteConfirm)) return;
+    if (!(await (window as any).confirmAction(ADMIN_I18N.annDeleteConfirm, { destructive: true }))) return;
     await sb.from('announcements').delete().eq('id', id);
     toast(ADMIN_I18N.annDeleted, 'info');
     loadAnnouncements();
@@ -3177,7 +3179,7 @@ const ADMIN_I18N = {
 
   (window as any).deleteCycleRecord = async (recordId: string, label: string) => {
     if (!canAccessAdminRoute(MEMBER, 'admin_member_edit')) return;
-    if (!confirm(`${ADMIN_I18N.deleteRecordConfirmPrefix} "${label}"? ${ADMIN_I18N.deleteRecordConfirmSuffix}`)) return;
+    if (!(await (window as any).confirmAction(`${ADMIN_I18N.deleteRecordConfirmPrefix} "${label}"? ${ADMIN_I18N.deleteRecordConfirmSuffix}`, { destructive: true }))) return;
     const { error } = await sb.from('member_cycle_history').delete().eq('id', recordId);
     if (error) { toast(ADMIN_I18N.errorPrefix + error.message, 'error'); return; }
     toast(ADMIN_I18N.recordRemoved.replace('{label}', label), 'info');
@@ -3813,13 +3815,13 @@ const ADMIN_I18N = {
       try {
         const { data, error } = await sb.rpc(fnName, params);
         if (error) throw new Error(error.message);
-        alert('Sucesso! ' + JSON.stringify(data, null, 2));
+        toast('Operação realizada com sucesso!', 'success');
         if (data?.draft_email_subject) {
           showDraftEmail(data.draft_email_subject, data.draft_email_body);
         }
         initLifecycleControls();
       } catch (e: any) {
-        alert('Erro: ' + (e.message || e));
+        toast('Erro: ' + (e.message || e), 'error');
       } finally {
         btn.disabled = false;
         btn.textContent = origText;
@@ -3846,37 +3848,37 @@ const ADMIN_I18N = {
       btn.addEventListener('click', () => handler(btn));
     };
 
-    bindLifecycleButton('btn-move-member', (btn) => {
+    bindLifecycleButton('btn-move-member', async (btn) => {
       const mid = (document.getElementById('lc-move-member') as HTMLSelectElement).value;
       const tid = Number((document.getElementById('lc-move-tribe') as HTMLSelectElement).value);
       const reason = (document.getElementById('lc-move-reason') as HTMLInputElement).value.trim();
-      if (!mid || !tid) { alert('Selecione membro e tribo.'); return; }
-      if (!confirm('Transferir este membro para a tribo selecionada?')) return;
+      if (!mid || !tid) { toast('Selecione membro e tribo.', 'error'); return; }
+      if (!(await (window as any).confirmAction('Transferir este membro para a tribo selecionada?'))) return;
       callRpc('admin_move_member_tribe', { p_member_id: mid, p_new_tribe_id: tid, p_reason: reason || 'Administrative transfer' }, btn);
     });
 
-    bindLifecycleButton('btn-change-leader', (btn) => {
+    bindLifecycleButton('btn-change-leader', async (btn) => {
       const tid = Number((document.getElementById('lc-leader-tribe') as HTMLSelectElement).value);
       const mid = (document.getElementById('lc-leader-member') as HTMLSelectElement).value;
       const reason = (document.getElementById('lc-leader-reason') as HTMLInputElement).value.trim();
-      if (!tid || !mid) { alert('Selecione tribo e novo lider.'); return; }
-      if (!confirm('Substituir o lider desta tribo? O lider atual sera rebaixado.')) return;
+      if (!tid || !mid) { toast('Selecione tribo e novo lider.', 'error'); return; }
+      if (!(await (window as any).confirmAction('Substituir o lider desta tribo? O lider atual sera rebaixado.'))) return;
       callRpc('admin_change_tribe_leader', { p_tribe_id: tid, p_new_leader_id: mid, p_reason: reason || 'Leadership transition' }, btn);
     });
 
-    bindLifecycleButton('btn-deact-member', (btn) => {
+    bindLifecycleButton('btn-deact-member', async (btn) => {
       const mid = (document.getElementById('lc-deact-member') as HTMLSelectElement).value;
       const reason = (document.getElementById('lc-deact-reason') as HTMLInputElement).value.trim();
-      if (!mid) { alert('Selecione o membro.'); return; }
-      if (!confirm('ATENCAO: Esta acao ira desligar o pesquisador do ciclo ativo. Confirma?')) return;
+      if (!mid) { toast('Selecione o membro.', 'error'); return; }
+      if (!(await (window as any).confirmAction('ATENCAO: Esta acao ira desligar o pesquisador do ciclo ativo. Confirma?', { destructive: true }))) return;
       callRpc('admin_deactivate_member', { p_member_id: mid, p_reason: reason || 'Administrative deactivation' }, btn);
     });
 
-    bindLifecycleButton('btn-deact-tribe', (btn) => {
+    bindLifecycleButton('btn-deact-tribe', async (btn) => {
       const tid = Number((document.getElementById('lc-deact-tribe') as HTMLSelectElement).value);
       const reason = (document.getElementById('lc-deact-tribe-reason') as HTMLInputElement).value.trim();
-      if (!tid) { alert('Selecione a tribo.'); return; }
-      if (!confirm('ATENCAO: Todos os membros desta tribo serao inativados. Esta acao e irreversivel. Confirma?')) return;
+      if (!tid) { toast('Selecione a tribo.', 'error'); return; }
+      if (!(await (window as any).confirmAction('ATENCAO: Todos os membros desta tribo serao inativados. Esta acao e irreversivel. Confirma?', { destructive: true }))) return;
       callRpc('admin_deactivate_tribe', { p_tribe_id: tid, p_reason: reason || 'Tribe deactivated' }, btn);
     });
 
@@ -3930,7 +3932,7 @@ const ADMIN_I18N = {
           }
         }
       } catch (e: any) {
-        alert('Erro: ' + (e.message || e));
+        toast('Erro: ' + (e.message || e), 'error');
       } finally {
         btn.disabled = false;
         btn.textContent = origText;
@@ -3938,8 +3940,8 @@ const ADMIN_I18N = {
     }
 
     document.getElementById('btn-onboarding-dry')?.addEventListener('click', function() { sendOnboarding(true); });
-    document.getElementById('btn-onboarding-send')?.addEventListener('click', function() {
-      if (!confirm('Enviar e-mail de boas-vindas para TODOS os membros ativos? Esta acao disparara e-mails reais.')) return;
+    document.getElementById('btn-onboarding-send')?.addEventListener('click', async function() {
+      if (!(await (window as any).confirmAction('Enviar e-mail de boas-vindas para TODOS os membros ativos? Esta acao disparara e-mails reais.'))) return;
       sendOnboarding(false);
     });
   }

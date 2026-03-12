@@ -1,0 +1,67 @@
+<!-- Confirm modal — call window.confirmAction(msg, opts?) from any page -->
+<!-- Returns a Promise<boolean>. Use: if (await confirmAction('Are you sure?')) { ... } -->
+<div id="confirm-modal"
+  class="hidden fixed inset-0 bg-black/50 z-[200] items-center justify-center p-4">
+  <div class="bg-[var(--surface-card)] rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
+    <div id="confirm-modal-icon" class="text-2xl mb-3">&#x26A0;&#xFE0F;</div>
+    <p id="confirm-modal-msg" class="text-sm font-semibold text-[var(--text-primary)] mb-5 leading-relaxed"></p>
+    <div class="flex gap-3 justify-center">
+      <button id="confirm-modal-cancel"
+        class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer transition-colors">
+        Cancelar
+      </button>
+      <button id="confirm-modal-ok"
+        class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer transition-colors">
+        Confirmar
+      </button>
+    </div>
+  </div>
+</div>
+<script>
+  (window as any).confirmAction = (
+    msg: string,
+    opts?: { okLabel?: string; cancelLabel?: string; icon?: string; destructive?: boolean }
+  ): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const modal = document.getElementById('confirm-modal');
+      const msgEl = document.getElementById('confirm-modal-msg');
+      const iconEl = document.getElementById('confirm-modal-icon');
+      const okBtn = document.getElementById('confirm-modal-ok') as HTMLButtonElement;
+      const cancelBtn = document.getElementById('confirm-modal-cancel') as HTMLButtonElement;
+      if (!modal || !msgEl || !okBtn || !cancelBtn) { resolve(false); return; }
+
+      msgEl.textContent = msg;
+      if (iconEl) iconEl.textContent = opts?.icon || '\u26A0\uFE0F';
+      okBtn.textContent = opts?.okLabel || 'Confirmar';
+      cancelBtn.textContent = opts?.cancelLabel || 'Cancelar';
+
+      if (opts?.destructive) {
+        okBtn.className = 'px-4 py-2 rounded-lg text-[13px] font-semibold bg-red-600 text-white border-0 hover:bg-red-700 cursor-pointer transition-colors';
+      } else {
+        okBtn.className = 'px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer transition-colors';
+      }
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      function cleanup() {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        okBtn.removeEventListener('click', onOk);
+        cancelBtn.removeEventListener('click', onCancel);
+        modal.removeEventListener('click', onBackdrop);
+        document.removeEventListener('keydown', onEsc);
+      }
+      function onOk() { cleanup(); resolve(true); }
+      function onCancel() { cleanup(); resolve(false); }
+      function onBackdrop(e: Event) { if (e.target === modal) { cleanup(); resolve(false); } }
+      function onEsc(e: KeyboardEvent) { if (e.key === 'Escape') { cleanup(); resolve(false); } }
+
+      okBtn.addEventListener('click', onOk);
+      cancelBtn.addEventListener('click', onCancel);
+      modal.addEventListener('click', onBackdrop);
+      document.addEventListener('keydown', onEsc);
+      okBtn.focus();
+    });
+  };
+</script>

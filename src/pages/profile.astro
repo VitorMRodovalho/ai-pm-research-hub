@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Toast from '../components/ui/Toast.astro';
+import ConfirmModal from '../components/ui/ConfirmModal.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 const PROFILE_I18N = {
@@ -120,6 +121,7 @@ const PROFILE_I18N = {
 ---
 <BaseLayout title={t('profile.title', lang)} activePage="profile">
   <Toast />
+  <ConfirmModal />
   <div class="max-w-2xl mx-auto px-4 py-10">
     <h1 class="text-2xl font-extrabold text-navy mb-6">{t('profile.heading', lang)}</h1>
     <div id="profile-content" class="space-y-5">
@@ -929,7 +931,7 @@ const PROFILE_I18N = {
     if (!sb || !currentMember) return;
     const existing: string[] = currentMember.secondary_emails || [];
     const removed = existing[idx];
-    if (!removed || !confirm(PROFILE_I18N.removeEmailConfirm.replace('{email}', removed))) return;
+    if (!removed || !(await (window as any).confirmAction(PROFILE_I18N.removeEmailConfirm.replace('{email}', removed)))) return;
     const newList = existing.filter((_: string, i: number) => i !== idx);
     const { error } = await sb.from('members').update({ secondary_emails: newList }).eq('id', currentMember.id);
     if (error) {

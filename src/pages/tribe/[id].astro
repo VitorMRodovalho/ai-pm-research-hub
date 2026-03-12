@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Toast from '../../components/ui/Toast.astro';
+import ConfirmModal from '../../components/ui/ConfirmModal.astro';
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import PresentationLayer from '../../components/ui/PresentationLayer.astro';
@@ -140,6 +141,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 ---
 <BaseLayout title={pageTitle} activePage="tribes">
   <Toast />
+  <ConfirmModal />
   <div class="max-w-[1400px] mx-auto px-4 py-8">
     <div id="tribe-loading" class="text-center py-10 text-[var(--text-muted)]">{t('tribe.loading', lang)}</div>
     <div id="tribe-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
@@ -1206,7 +1208,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     if (!subject) { (window as any).toast?.(BC.subjectRequired || 'Assunto obrigatório', 'error'); return; }
     if (!body) { (window as any).toast?.(BC.bodyRequired || 'Mensagem obrigatória', 'error'); return; }
 
-    if (!confirm((BC.confirmMsg || 'Enviar para todos os membros ativos?'))) return;
+    if (!(await (window as any).confirmAction((BC.confirmMsg || 'Enviar para todos os membros ativos?')))) return;
 
     if (btnEl) { btnEl.disabled = true; btnEl.textContent = BC.sending || 'Enviando...'; }
 
