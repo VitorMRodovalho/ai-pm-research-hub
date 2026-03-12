@@ -68,7 +68,14 @@ export function useBoard(props: BoardEngineProps): UseBoardResult {
         return;
       }
 
-      setBoard(result.board);
+      // Normalize columns: ensure it's always a string[]
+      const rawCols = result.board.columns;
+      const cols = Array.isArray(rawCols)
+        ? rawCols
+        : typeof rawCols === 'string'
+          ? (() => { try { const p = JSON.parse(rawCols); return Array.isArray(p) ? p : []; } catch { return []; } })()
+          : [];
+      setBoard({ ...result.board, columns: cols });
       setItems(
         (result.items || []).map((item: any) => ({
           ...item,
