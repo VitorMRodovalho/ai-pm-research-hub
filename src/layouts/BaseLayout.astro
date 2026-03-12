@@ -45,11 +45,22 @@ const roleLabels = JSON.stringify(getRoleLabelsMap(lang));
   <script>
     // @ts-nocheck
     const CONSENT_KEY = 'analytics_consent';
-    !function(t,e){var o,n,p,r;e.__SV||((window as any).posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug getPageviewId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,(window as any).posthog||[]);
     const __phKey = import.meta.env.PUBLIC_POSTHOG_KEY;
     const __phHost = import.meta.env.PUBLIC_POSTHOG_HOST;
+
+    /** Safe wrapper — only calls PostHog methods when the real SDK has loaded */
+    function safePH(method: string, ...args: any[]) {
+      const ph = (window as any).posthog;
+      if (ph && typeof ph[method] === 'function') {
+        try { return ph[method](...args); } catch {}
+      }
+    }
+    (window as any).__safePH = safePH;
+
     if (__phKey && __phHost) {
-      (window as any).posthog.init(__phKey, {
+      !function(t,e){var o,n,p,r;e.__SV||((window as any).posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once register_for_session unregister unregister_for_session getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug getPageviewId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,(window as any).posthog||[]);
+
+      safePH('init', __phKey, {
         api_host: __phHost,
         person_profiles: 'identified_only',
         capture_pageview: true,
@@ -64,15 +75,14 @@ const roleLabels = JSON.stringify(getRoleLabelsMap(lang));
     }
 
     function applyAnalyticsConsent() {
-      const ph = (window as any).posthog;
-      if (!ph) return;
+      if (!(window as any).posthog?.__SV) return; // PostHog not initialized
       const consent = consentValue();
       if (consent === 'granted') {
-        ph.opt_in_capturing();
-        try { ph.startSessionRecording?.(); } catch {}
+        safePH('opt_in_capturing');
+        safePH('startSessionRecording');
       } else {
-        ph.opt_out_capturing();
-        try { ph.stopSessionRecording?.(); } catch {}
+        safePH('opt_out_capturing');
+        safePH('stopSessionRecording');
       }
     }
 
@@ -99,24 +109,19 @@ const roleLabels = JSON.stringify(getRoleLabelsMap(lang));
 
   <!-- PostHog: identify authenticated user -->
   <script>
-    function analyticsConsentGranted() {
-      return localStorage.getItem('analytics_consent') === 'granted';
-    }
-
     window.addEventListener('nav:member', (e) => {
       const m = (e as CustomEvent).detail;
-      const ph = (window as any).posthog;
-      if (m && m.id && ph && typeof ph.identify === 'function' && analyticsConsentGranted()) {
-        const opRole = m.operational_role || m.role || 'guest';
-        ph.identify(m.id, {
-          chapter: m.chapter || '',
-          operational_role: opRole,
-          designations: (m.designations || []).join(','),
-          is_superadmin: m.is_superadmin || false,
-          cycle_active: m.current_cycle_active || false,
-        });
-        if (typeof ph.group === 'function') ph.group('chapter', m.chapter || 'unknown');
-      }
+      const safePH = (window as any).__safePH;
+      if (!m || !m.id || !safePH || localStorage.getItem('analytics_consent') !== 'granted') return;
+      const opRole = m.operational_role || m.role || 'guest';
+      safePH('identify', m.id, {
+        chapter: m.chapter || '',
+        operational_role: opRole,
+        designations: (m.designations || []).join(','),
+        is_superadmin: m.is_superadmin || false,
+        cycle_active: m.current_cycle_active || false,
+      });
+      safePH('group', 'chapter', m.chapter || 'unknown');
     });
   </script>
 </body>
