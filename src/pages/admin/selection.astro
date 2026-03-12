@@ -16,10 +16,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         <h1 class="text-2xl font-extrabold text-navy">Processo Seletivo</h1>
         <span class="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full uppercase">LGPD</span>
       </div>
-      <p class="text-sm text-slate-500 mt-1">Dados de voluntários PMI por ciclo sincronizado</p>
+      <p class="text-sm text-[var(--text-secondary)] mt-1">Dados de voluntários PMI por ciclo sincronizado</p>
     </div>
 
-    <div id="sel-loading" class="text-center py-10 text-slate-400">Carregando...</div>
+    <div id="sel-loading" class="text-center py-10 text-[var(--text-muted)]">Carregando...</div>
 
     <div id="sel-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
       <div class="text-2xl mb-2">&#x1F512;</div>
@@ -38,32 +38,32 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       <div class="flex gap-3 items-center">
         <input type="text" id="sel-search" placeholder="Buscar por nome, estado, certificação..."
           data-action="selection-search"
-          class="flex-1 px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
-        <span id="sel-count" class="text-[12px] text-slate-400 font-semibold whitespace-nowrap"></span>
+          class="flex-1 px-3 py-2 border border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
+        <span id="sel-count" class="text-[12px] text-[var(--text-muted)] font-semibold whitespace-nowrap"></span>
       </div>
 
       <!-- Table -->
-      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-left text-[13px]">
             <thead>
-              <tr class="bg-slate-50 border-b border-slate-200">
-                <th class="px-4 py-2.5 font-bold text-slate-600">Nome</th>
-                <th class="px-4 py-2.5 font-bold text-slate-600">Ciclo</th>
-                <th class="px-4 py-2.5 font-bold text-slate-600">Status</th>
-                <th class="px-4 py-2.5 font-bold text-slate-600">Certificações</th>
-                <th class="px-4 py-2.5 font-bold text-slate-600">Local</th>
-                <th class="px-4 py-2.5 font-bold text-slate-600">Membro?</th>
-                <th class="px-4 py-2.5 font-bold text-slate-600">Snapshot</th>
+              <tr class="bg-[var(--surface-base)] border-b border-[var(--border-default)]">
+                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Nome</th>
+                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Ciclo</th>
+                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Status</th>
+                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Certificações</th>
+                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Local</th>
+                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Membro?</th>
+                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Snapshot</th>
               </tr>
             </thead>
-            <tbody id="sel-tbody" class="divide-y divide-slate-100"></tbody>
+            <tbody id="sel-tbody" class="divide-y divide-[var(--border-subtle)]"></tbody>
           </table>
         </div>
-        <div id="sel-pagination" class="flex items-center justify-between px-4 py-3 border-t border-slate-100">
-          <button id="sel-prev" data-action="selection-prev" class="px-3 py-1.5 text-[12px] font-semibold bg-slate-100 text-slate-600 rounded-lg cursor-pointer border-0 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-default" disabled>Anterior</button>
-          <span id="sel-page-info" class="text-[12px] text-slate-400"></span>
-          <button id="sel-next" data-action="selection-next" class="px-3 py-1.5 text-[12px] font-semibold bg-slate-100 text-slate-600 rounded-lg cursor-pointer border-0 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-default" disabled>Próximo</button>
+        <div id="sel-pagination" class="flex items-center justify-between px-4 py-3 border-t border-[var(--border-subtle)]">
+          <button id="sel-prev" data-action="selection-prev" class="px-3 py-1.5 text-[12px] font-semibold bg-[var(--surface-base)] text-[var(--text-secondary)] rounded-lg cursor-pointer border-0 hover:bg-[var(--surface-hover)] disabled:opacity-40 disabled:cursor-default" disabled>Anterior</button>
+          <span id="sel-page-info" class="text-[12px] text-[var(--text-muted)]"></span>
+          <button id="sel-next" data-action="selection-next" class="px-3 py-1.5 text-[12px] font-semibold bg-[var(--surface-base)] text-[var(--text-secondary)] rounded-lg cursor-pointer border-0 hover:bg-[var(--surface-hover)] disabled:opacity-40 disabled:cursor-default" disabled>Próximo</button>
         </div>
       </div>
 
@@ -74,11 +74,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       </div>
 
       <!-- Import guide -->
-      <details class="bg-slate-50 border border-slate-200 rounded-xl">
-        <summary class="px-4 py-3 cursor-pointer text-[13px] font-semibold text-slate-600 hover:text-navy">Como importar novos dados CSV</summary>
-        <div class="px-4 pb-4 text-[12px] text-slate-500 space-y-2">
+      <details class="bg-[var(--surface-base)] border border-[var(--border-default)] rounded-xl">
+        <summary class="px-4 py-3 cursor-pointer text-[13px] font-semibold text-[var(--text-secondary)] hover:text-navy">Como importar novos dados CSV</summary>
+        <div class="px-4 pb-4 text-[12px] text-[var(--text-secondary)] space-y-2">
           <p>1. Exporte os dados de voluntários da plataforma PMI (formato CSV)</p>
-          <p>2. Coloque o arquivo em <code class="bg-slate-200 px-1 rounded">/Downloads/data/raw-drive-exports/Sensitive/Export voluntarios inscritos plataforma PMI/</code></p>
+          <p>2. Coloque o arquivo em <code class="bg-[var(--border-strong)] px-1 rounded">/Downloads/data/raw-drive-exports/Sensitive/Export voluntarios inscritos plataforma PMI/</code></p>
           <p>3. Execute o script de importação:</p>
           <pre class="bg-slate-800 text-slate-100 px-3 py-2 rounded-lg overflow-x-auto">SUPABASE_URL="..." SUPABASE_SERVICE_ROLE_KEY="..." npx tsx scripts/volunteer_csv_importer.ts</pre>
           <p>4. O script é idempotente — re-executar não cria duplicatas.</p>
@@ -129,7 +129,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     host.innerHTML = [
       `<button class="sel-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white transition-all" data-action="switch-cycle" data-cycle="all">Todos</button>`,
       ...entries.map(({ cycle, label }) => `
-        <button class="sel-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+        <button class="sel-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
           data-action="switch-cycle" data-cycle="${cycle}" title="${escapeHtml(label)}">${escapeHtml(label)}</button>
       `),
     ].join('');
@@ -180,10 +180,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           { label: 'Ativos', value: active, icon: '&#x2705;' },
         ];
         kpiEl.innerHTML = kpis.map(k =>
-          `<div class="bg-white border border-slate-200 rounded-xl p-3 text-center">
+          `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-3 text-center">
             <div class="text-lg">${k.icon}</div>
             <div class="text-xl font-extrabold text-navy">${k.value}</div>
-            <div class="text-[.65rem] text-slate-500 font-semibold">${escapeHtml(k.label)}</div>
+            <div class="text-[.65rem] text-[var(--text-secondary)] font-semibold">${escapeHtml(k.label)}</div>
           </div>`
         ).join('');
       }
@@ -201,12 +201,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         snapCards.innerHTML = [
           { label: `Snapshot ${snapshotCycleData.earliest_snapshot}`, total: '—', unique: '—', note: 'Primeiro snapshot' },
           { label: `Snapshot ${snapshotCycleData.latest_snapshot}`, total: snapshotCycleData.total_applications, unique: snapshotCycleData.unique_applicants, note: 'Último snapshot' },
-        ].map(s => `<div class="bg-white border border-slate-200 rounded-xl p-4">
+        ].map(s => `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4">
           <h4 class="text-[13px] font-bold text-navy mb-2">${escapeHtml(s.label)}</h4>
-          <p class="text-[11px] text-slate-400 mb-2">${escapeHtml(s.note)}</p>
+          <p class="text-[11px] text-[var(--text-muted)] mb-2">${escapeHtml(s.note)}</p>
           <div class="flex gap-4">
-            <div><div class="text-lg font-extrabold text-navy">${s.total}</div><div class="text-[10px] text-slate-400">Total</div></div>
-            <div><div class="text-lg font-extrabold text-navy">${s.unique}</div><div class="text-[10px] text-slate-400">Únicos</div></div>
+            <div><div class="text-lg font-extrabold text-navy">${s.total}</div><div class="text-[10px] text-[var(--text-muted)]">Total</div></div>
+            <div><div class="text-lg font-extrabold text-navy">${s.unique}</div><div class="text-[10px] text-[var(--text-muted)]">Únicos</div></div>
           </div>
         </div>`).join('');
       } else if (snapSection) {
@@ -222,7 +222,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const pageInfo = document.getElementById('sel-page-info');
     if (!tbody) return;
 
-    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-slate-400">Carregando...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-[var(--text-muted)]">Carregando...</td></tr>';
 
     try {
       const args: any = { p_limit: PAGE_SIZE, p_offset: currentPage * PAGE_SIZE };
@@ -244,7 +244,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       if (nextBtn) nextBtn.disabled = (currentPage + 1) * PAGE_SIZE >= total;
 
       if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-slate-400">Nenhum voluntário encontrado</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-[var(--text-muted)]">Nenhum voluntário encontrado</td></tr>';
         return;
       }
 
@@ -253,16 +253,16 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         const location = [r.city, r.state, r.country].filter(Boolean).join(', ');
         const matchBadge = r.is_existing_member
           ? `<span class="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold">Sim</span>`
-          : `<span class="text-[10px] bg-slate-100 text-slate-400 px-1.5 py-0.5 rounded">Não</span>`;
-        const statusColor = r.app_status === 'Active' ? 'text-emerald-600' : 'text-slate-500';
-        return `<tr class="hover:bg-slate-50/50">
+          : `<span class="text-[10px] bg-[var(--surface-base)] text-[var(--text-muted)] px-1.5 py-0.5 rounded">Não</span>`;
+        const statusColor = r.app_status === 'Active' ? 'text-emerald-600' : 'text-[var(--text-secondary)]';
+        return `<tr class="hover:bg-[var(--surface-hover)]">
           <td class="px-4 py-2.5 font-semibold text-navy">${escapeHtml(r.first_name)} ${escapeHtml(r.last_name)}</td>
           <td class="px-4 py-2.5"><span class="text-[11px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-bold">C${r.cycle}</span></td>
           <td class="px-4 py-2.5 ${statusColor} font-medium text-[12px]">${escapeHtml(r.app_status || '—')}</td>
-          <td class="px-4 py-2.5">${certs || '<span class="text-slate-300">—</span>'}</td>
-          <td class="px-4 py-2.5 text-[12px] text-slate-500">${escapeHtml(location) || '—'}</td>
+          <td class="px-4 py-2.5">${certs || '<span class="text-[var(--text-muted)]">—</span>'}</td>
+          <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]">${escapeHtml(location) || '—'}</td>
           <td class="px-4 py-2.5">${matchBadge}</td>
-          <td class="px-4 py-2.5 text-[11px] text-slate-400">${r.snapshot_date || '—'}</td>
+          <td class="px-4 py-2.5 text-[11px] text-[var(--text-muted)]">${r.snapshot_date || '—'}</td>
         </tr>`;
       }).join('');
     } catch (e: any) {
@@ -280,9 +280,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       btn.classList.toggle('bg-navy', isActive);
       btn.classList.toggle('text-white', isActive);
       btn.classList.toggle('border-navy', isActive);
-      btn.classList.toggle('bg-white', !isActive);
-      btn.classList.toggle('text-slate-500', !isActive);
-      btn.classList.toggle('border-slate-200', !isActive);
+      btn.classList.toggle('bg-[var(--surface-card)]', !isActive);
+      btn.classList.toggle('text-[var(--text-secondary)]', !isActive);
+      btn.classList.toggle('border-[var(--border-default)]', !isActive);
     });
 
     loadData();

@@ -11,7 +11,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   </div>
 
   <div id="webinars-content" class="hidden max-w-[1200px] mx-auto px-4 pb-12 space-y-6">
-    <section class="bg-[var(--surface-card)] dark:bg-slate-900 rounded-2xl border border-[var(--border-default)] dark:border-slate-700 shadow-sm overflow-hidden">
+    <section class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
       <div class="p-6 sm:p-8">
         <div class="flex items-start justify-between gap-4 flex-wrap">
           <div class="max-w-3xl">
@@ -20,8 +20,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
               <span class="text-emerald-400">•</span>
               <span>Member-first</span>
             </div>
-            <h1 class="text-2xl font-extrabold text-navy dark:text-slate-100 mb-2">Webinars</h1>
-            <p class="text-sm text-[var(--text-secondary)] dark:text-slate-300 leading-relaxed">
+            <h1 class="text-2xl font-extrabold text-navy mb-2">Webinars</h1>
+            <p class="text-sm text-[var(--text-secondary)] leading-relaxed">
               Esta area agora orquestra webinars internos usando o stack ja existente da plataforma:
               agenda e presenca via eventos, comunicacao via painel de comms, replay em apresentacoes
               e biblioteca no workspace. Registro externo, speaker CRM e schema novo seguem fora de escopo.
@@ -47,7 +47,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
     <section id="webinars-stats" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"></section>
 
-    <section class="bg-[var(--surface-card)] dark:bg-slate-900 rounded-2xl border border-[var(--border-default)] dark:border-slate-700 shadow-sm overflow-hidden">
+    <section class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
       <div class="px-5 py-4 border-b border-[var(--border-default)]">
         <h2 class="text-sm font-bold text-navy">Acoes rapidas prioritarias</h2>
         <p class="text-[.72rem] text-[var(--text-muted)]">Proxima acao sugerida por webinar, usando apenas os modulos ja existentes</p>
@@ -56,7 +56,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     </section>
 
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div class="bg-[var(--surface-card)] dark:bg-slate-900 rounded-2xl border border-[var(--border-default)] dark:border-slate-700 shadow-sm overflow-hidden">
+      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-[var(--border-default)]">
           <h2 class="text-sm font-bold text-navy">Proximos webinars</h2>
           <p class="text-[.72rem] text-[var(--text-muted)]">Sessões futuras ja cadastradas como `events.type='webinar'`</p>
@@ -64,7 +64,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         <div id="webinars-upcoming" class="p-5"></div>
       </div>
 
-      <div class="bg-[var(--surface-card)] dark:bg-slate-900 rounded-2xl border border-[var(--border-default)] dark:border-slate-700 shadow-sm overflow-hidden">
+      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-[var(--border-default)]">
           <h2 class="text-sm font-bold text-navy">Fila de follow-up</h2>
           <p class="text-[.72rem] text-[var(--text-muted)]">Webinars concluidos que ainda precisam de replay ou fechamento operacional</p>
@@ -73,7 +73,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       </div>
     </section>
 
-    <section class="bg-[var(--surface-card)] dark:bg-slate-900 rounded-2xl border border-[var(--border-default)] dark:border-slate-700 shadow-sm overflow-hidden">
+    <section class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
       <div class="px-5 py-4 border-b border-[var(--border-default)]">
         <h2 class="text-sm font-bold text-navy">Publicacao de replay</h2>
         <p class="text-[.72rem] text-[var(--text-muted)]">Status do replay entre `Presentations` e `Workspace` para webinars ja realizados</p>
@@ -81,7 +81,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       <div id="webinars-publication" class="p-5"></div>
     </section>
 
-    <section class="bg-[var(--surface-card)] dark:bg-slate-900 rounded-2xl border border-[var(--border-default)] dark:border-slate-700 shadow-sm overflow-hidden">
+    <section class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
       <div class="px-5 py-4 border-b border-[var(--border-default)]">
         <h2 class="text-sm font-bold text-navy">Fluxo operacional do MVP</h2>
         <p class="text-[.72rem] text-[var(--text-muted)]">Sem schema novo: apenas orquestracao sobre modulos existentes</p>
@@ -111,7 +111,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     </section>
 
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div class="bg-[var(--surface-card)] dark:bg-slate-900 rounded-2xl border border-[var(--border-default)] dark:border-slate-700 shadow-sm overflow-hidden">
+      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-[var(--border-default)]">
           <h2 class="text-sm font-bold text-navy">Incluido agora</h2>
         </div>
@@ -124,7 +124,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         </ul>
       </div>
 
-      <div class="bg-[var(--surface-card)] dark:bg-slate-900 rounded-2xl border border-[var(--border-default)] dark:border-slate-700 shadow-sm overflow-hidden">
+      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-[var(--border-default)]">
           <h2 class="text-sm font-bold text-navy">Fora de escopo desta fase</h2>
         </div>
@@ -138,7 +138,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       </div>
     </section>
 
-    <section class="bg-[var(--surface-card)] dark:bg-slate-900 rounded-2xl border border-[var(--border-default)] dark:border-slate-700 shadow-sm overflow-hidden">
+    <section class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
       <div class="px-5 py-4 border-b border-[var(--border-default)] flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h2 class="text-sm font-bold text-navy">Sessoes cadastradas</h2>
@@ -154,7 +154,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
   <div id="webinars-denied" class="hidden max-w-[900px] mx-auto px-4 py-16 text-center">
     <div class="text-4xl mb-3">🔒</div>
-    <p class="font-semibold text-slate-600">Acesso restrito a liderancas, comms, curadoria e facilitadores convidados.</p>
+    <p class="font-semibold text-[var(--text-secondary)]">Acesso restrito a liderancas, comms, curadoria e facilitadores convidados.</p>
     <a href="/" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
       Voltar
     </a>
@@ -226,7 +226,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   function publicationBadge(label: string, published: boolean): string {
     return published
       ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700">${label}: publicado</span>`
-      : `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600">${label}: pendente</span>`;
+      : `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[var(--surface-base)] text-[var(--text-secondary)]">${label}: pendente</span>`;
   }
 
   function buildPresentationsHref(ev: any): string {
@@ -357,7 +357,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const fullyPublished = webinars.filter((ev: any) => ev.youtube_url && ev.presentationPublished && ev.workspacePublished).length;
     const cards = [
       { label: 'Proximos webinars', value: upcoming, tone: 'bg-blue-50 text-blue-700 border-blue-200' },
-      { label: 'Ja realizados', value: completed, tone: 'bg-slate-50 text-slate-700 border-slate-200' },
+      { label: 'Ja realizados', value: completed, tone: 'bg-[var(--surface-base)] text-[var(--text-primary)] border-[var(--border-default)]' },
       { label: 'Replay pendente', value: replayPending, tone: 'bg-amber-50 text-amber-700 border-amber-200' },
       { label: 'Replay em 2 superficies', value: fullyPublished, tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
     ];
@@ -379,7 +379,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       ? '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-50 text-red-700">Replay publicado</span>'
       : (ev.is_recorded && isPast
         ? '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700">Replay pendente</span>'
-        : '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600">Sem replay</span>');
+        : '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[var(--surface-base)] text-[var(--text-secondary)]">Sem replay</span>');
     const meetLink = ev.meeting_link && !isPast
       ? `<a href="${escapeHtml(ev.meeting_link)}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-[.72rem] font-semibold no-underline hover:bg-blue-100 transition-all">Entrar</a>`
       : '';
@@ -387,15 +387,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       ? `<a href="${escapeHtml(ev.youtube_url)}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 text-[.72rem] font-semibold no-underline hover:bg-red-100 transition-all">Replay</a>`
       : '';
     const presentationsLink = ev.artifact
-      ? `<a href="${escapeHtml(presentationsHref)}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-[.72rem] font-semibold no-underline hover:bg-slate-50 transition-all">Presentations</a>`
+      ? `<a href="${escapeHtml(presentationsHref)}" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.72rem] font-semibold no-underline hover:bg-[var(--surface-hover)] transition-all">Presentations</a>`
       : '';
     const workspaceLink = ev.workspaceResource?.url
-      ? `<a href="${escapeHtml(workspaceHref)}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-[.72rem] font-semibold no-underline hover:bg-slate-50 transition-all">Workspace</a>`
+      ? `<a href="${escapeHtml(workspaceHref)}" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.72rem] font-semibold no-underline hover:bg-[var(--surface-hover)] transition-all">Workspace</a>`
       : '';
     const nextAction = ev.action || operatorAction(ev);
 
     return `
-      <article class="rounded-2xl border border-slate-200 p-4">
+      <article class="rounded-2xl border border-[var(--border-default)] p-4">
         <div class="flex items-start justify-between gap-3 flex-wrap">
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2 flex-wrap mb-1">
@@ -404,7 +404,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
               <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-green-50 text-green-800">${escapeHtml(audienceLabel(ev.audience_level))}</span>
               ${replayStatus}
             </div>
-            <div class="text-[.76rem] text-slate-500 flex items-center gap-2 flex-wrap">
+            <div class="text-[.76rem] text-[var(--text-secondary)] flex items-center gap-2 flex-wrap">
               <span>${formatDateLabel(ev.date)}</span>
               <span>·</span>
               <span>${Number(ev.duration_minutes || 0)} min</span>
@@ -416,12 +416,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
               ${publicationBadge('Workspace', ev.workspacePublished)}
               <span class="px-2 py-0.5 rounded-full text-[11px] font-bold border ${nextAction.tone}">Proxima acao: ${nextAction.label}</span>
             </div>
-            <p class="text-[.74rem] text-slate-500 mt-2">${escapeHtml(nextAction.note)}</p>
+            <p class="text-[.74rem] text-[var(--text-secondary)] mt-2">${escapeHtml(nextAction.note)}</p>
           </div>
           <div class="flex items-center gap-2 flex-wrap">
             <a href="${escapeHtml(attendanceHref)}" class="px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold no-underline hover:opacity-90 transition-all">Gerenciar</a>
-            <a href="${escapeHtml(nextAction.href)}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-[.72rem] font-semibold no-underline hover:bg-slate-50 transition-all">${nextAction.label}</a>
-            ${!isPast ? `<a href="${escapeHtml(commsHref)}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-[.72rem] font-semibold no-underline hover:bg-slate-50 transition-all">Comms</a>` : ''}
+            <a href="${escapeHtml(nextAction.href)}" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.72rem] font-semibold no-underline hover:bg-[var(--surface-hover)] transition-all">${nextAction.label}</a>
+            ${!isPast ? `<a href="${escapeHtml(commsHref)}" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.72rem] font-semibold no-underline hover:bg-[var(--surface-hover)] transition-all">Comms</a>` : ''}
             ${meetLink}
             ${replayLink}
             ${presentationsLink}
@@ -441,10 +441,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       .slice(0, 5);
     if (!upcoming.length) {
       container.innerHTML = `
-        <div class="rounded-2xl border border-dashed border-slate-200 p-5 text-center">
+        <div class="rounded-2xl border border-dashed border-[var(--border-default)] p-5 text-center">
           <div class="text-3xl mb-2">📭</div>
-          <div class="text-sm font-semibold text-slate-600">Nenhum webinar futuro cadastrado.</div>
-          <p class="text-[.75rem] text-slate-400 mt-1">Use o fluxo de eventos em Attendance para abrir a proxima sessao.</p>
+          <div class="text-sm font-semibold text-[var(--text-secondary)]">Nenhum webinar futuro cadastrado.</div>
+          <p class="text-[.75rem] text-[var(--text-muted)] mt-1">Use o fluxo de eventos em Attendance para abrir a proxima sessao.</p>
         </div>
       `;
       return;
@@ -484,9 +484,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       .slice(0, 6);
     if (!actionItems.length) {
       container.innerHTML = `
-        <div class="rounded-2xl border border-dashed border-slate-200 p-5 text-center">
+        <div class="rounded-2xl border border-dashed border-[var(--border-default)] p-5 text-center">
           <div class="text-3xl mb-2">🧭</div>
-          <div class="text-sm font-semibold text-slate-600">Nenhuma acao prioritaria no momento.</div>
+          <div class="text-sm font-semibold text-[var(--text-secondary)]">Nenhuma acao prioritaria no momento.</div>
         </div>
       `;
       return;
@@ -494,15 +494,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     container.innerHTML = `
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
         ${actionItems.map((ev: any) => `
-          <article class="rounded-2xl border border-slate-200 p-4">
+          <article class="rounded-2xl border border-[var(--border-default)] p-4">
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
                 <div class="text-sm font-bold text-navy">${escapeHtml(ev.title || 'Webinar')}</div>
-                <div class="text-[.72rem] text-slate-400 mt-1">${formatDateLabel(ev.date)} · ${Number(ev.attendee_count || 0)} presentes</div>
+                <div class="text-[.72rem] text-[var(--text-muted)] mt-1">${formatDateLabel(ev.date)} · ${Number(ev.attendee_count || 0)} presentes</div>
                 <div class="mt-2 inline-flex items-center gap-2 px-2.5 py-1 rounded-full border text-[.68rem] font-bold ${ev.action.tone}">
                   ${escapeHtml(ev.action.label)}
                 </div>
-                <p class="text-[.74rem] text-slate-500 mt-2">${escapeHtml(ev.action.note)}</p>
+                <p class="text-[.74rem] text-[var(--text-secondary)] mt-2">${escapeHtml(ev.action.note)}</p>
               </div>
               <a href="${escapeHtml(ev.action.href)}" class="shrink-0 px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold no-underline hover:opacity-90 transition-all">
                 Abrir
@@ -523,10 +523,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       .slice(0, 8);
     if (!replayWebinars.length) {
       container.innerHTML = `
-        <div class="rounded-2xl border border-dashed border-slate-200 p-5 text-center">
+        <div class="rounded-2xl border border-dashed border-[var(--border-default)] p-5 text-center">
           <div class="text-3xl mb-2">📼</div>
-          <div class="text-sm font-semibold text-slate-600">Ainda nao ha webinars com replay publicado.</div>
-          <p class="text-[.75rem] text-slate-400 mt-1">Quando um webinar ganhar replay publicado, esta trilha mostrara se ele chegou em Presentations e Workspace.</p>
+          <div class="text-sm font-semibold text-[var(--text-secondary)]">Ainda nao ha webinars com replay publicado.</div>
+          <p class="text-[.75rem] text-[var(--text-muted)] mt-1">Quando um webinar ganhar replay publicado, esta trilha mostrara se ele chegou em Presentations e Workspace.</p>
         </div>
       `;
       return;
@@ -539,10 +539,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     if (!listEl) return;
     if (!webinars.length) {
       listEl.innerHTML = `
-        <div class="rounded-2xl border border-dashed border-slate-200 p-10 text-center">
+        <div class="rounded-2xl border border-dashed border-[var(--border-default)] p-10 text-center">
           <div class="text-4xl mb-3">🎥</div>
-          <div class="text-sm font-semibold text-slate-600">Ainda nao existem webinars no fluxo atual.</div>
-          <p class="text-[.78rem] text-slate-400 mt-1 mb-4">A partir desta wave, o modulo passa a usar o mesmo backbone operacional de eventos e presenca.</p>
+          <div class="text-sm font-semibold text-[var(--text-secondary)]">Ainda nao existem webinars no fluxo atual.</div>
+          <p class="text-[.78rem] text-[var(--text-muted)] mt-1 mb-4">A partir desta wave, o modulo passa a usar o mesmo backbone operacional de eventos e presenca.</p>
           <a href="/attendance" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold no-underline hover:opacity-90 transition-all">
             Abrir Attendance
           </a>
