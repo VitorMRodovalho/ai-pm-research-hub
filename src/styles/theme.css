@@ -94,6 +94,22 @@
   --font-label-tracking: 0.15em;
   --font-label-size: 0.73rem;
 
+  /* ── Status Badges ── */
+  --badge-approved-bg: #D1FAE5;           /* emerald-100 */
+  --badge-approved-text: #047857;         /* emerald-700 */
+  --badge-rejected-bg: #FEE2E2;          /* red-100 */
+  --badge-rejected-text: #B91C1C;        /* red-700 */
+  --badge-review-bg: #F3E8FF;            /* purple-100 */
+  --badge-review-text: #7E22CE;          /* purple-700 */
+  --badge-pending-bg: #FEF3C7;           /* amber-100 */
+  --badge-pending-text: #92400E;         /* amber-800 */
+  --badge-draft-bg: #F1F5F9;             /* slate-100 */
+  --badge-draft-text: #475569;           /* slate-600 */
+
+  /* ── KPI ── */
+  --kpi-bg: rgba(30, 58, 138, 0.1);      /* blue-900/10 */
+  --kpi-text: #1E3A8A;                   /* blue-900 */
+
   /* ── Kanban / Board ── */
   --board-col-bg: rgba(0, 0, 0, 0.02);
   --board-col-border: rgba(0, 0, 0, 0.08);
@@ -171,6 +187,22 @@
   --admin-badge-border: rgba(139, 92, 246, 0.4);
   --admin-subnav-bg: #162032;
   --admin-subnav-text: #94A3B8;
+
+  /* ── Status Badges ── */
+  --badge-approved-bg: rgba(52, 211, 153, 0.15);
+  --badge-approved-text: #6EE7B7;
+  --badge-rejected-bg: rgba(248, 113, 113, 0.15);
+  --badge-rejected-text: #FCA5A5;
+  --badge-review-bg: rgba(167, 139, 250, 0.15);
+  --badge-review-text: #C4B5FD;
+  --badge-pending-bg: rgba(251, 191, 36, 0.15);
+  --badge-pending-text: #FDE68A;
+  --badge-draft-bg: rgba(148, 163, 184, 0.15);
+  --badge-draft-text: #CBD5E1;
+
+  /* ── KPI ── */
+  --kpi-bg: rgba(96, 165, 250, 0.12);
+  --kpi-text: #93C5FD;
 
   /* ── Board ── */
   --board-col-bg: rgba(255, 255, 255, 0.02);

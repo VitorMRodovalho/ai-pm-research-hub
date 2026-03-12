@@ -85,10 +85,8 @@ const jsI18n = JSON.stringify({
 
 const navConfigJson = JSON.stringify(NAV_ITEMS);
 const runtimeEnv = ((Astro.locals as any)?.runtime?.env ?? {}) as Record<string, string | undefined>;
-const NAV_DEFAULT_PUBLIC_SUPABASE_URL = 'https://ldrfrvwhxsmgaabwmaik.supabase.co';
-const NAV_DEFAULT_PUBLIC_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkcmZydndoeHNtZ2FhYndtYWlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MjU5NDQsImV4cCI6MjA4ODMwMTk0NH0.gzibKd7Jyck3Ya61vzrloX1YZt-0pNReTuefdi4mAmw';
-const NAV_PUBLIC_SUPABASE_URL = (import.meta.env.PUBLIC_SUPABASE_URL || runtimeEnv.PUBLIC_SUPABASE_URL || NAV_DEFAULT_PUBLIC_SUPABASE_URL || '').trim();
-const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY || runtimeEnv.PUBLIC_SUPABASE_ANON_KEY || NAV_DEFAULT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
+const NAV_PUBLIC_SUPABASE_URL = (import.meta.env.PUBLIC_SUPABASE_URL || runtimeEnv.PUBLIC_SUPABASE_URL || '').trim();
+const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY || runtimeEnv.PUBLIC_SUPABASE_ANON_KEY || '').trim();
 ---
 
 <nav class="sticky top-0 z-[200] bg-navy/97 backdrop-blur-md border-b-2 border-orange

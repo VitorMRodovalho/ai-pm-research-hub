@@ -1219,7 +1219,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       const fnUrl = fnBase.replace(/\/$/, '') + '/send-tribe-broadcast';
       const ak = (sb as any).supabaseKey || '';
 
-      console.log('[broadcast] POST', fnUrl, 'jwt:', jwt.length, 'ak:', ak.length);
+      if (import.meta.env.DEV) console.log('[broadcast] POST', fnUrl, 'jwt:', jwt.length, 'ak:', ak.length);
 
       const res = await fetch(fnUrl, {
         method: 'POST',
@@ -1233,7 +1233,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       });
 
       const txt = await res.text();
-      console.log('[broadcast] status:', res.status, 'body:', txt);
+      if (import.meta.env.DEV) console.log('[broadcast] status:', res.status, 'body:', txt);
 
       let data: any = {};
       try { data = JSON.parse(txt); } catch (_) { data = { success: false, error: 'Resposta invalida: ' + txt.substring(0, 200) }; }
