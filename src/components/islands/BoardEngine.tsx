@@ -100,14 +100,35 @@ export default function BoardEngine(props: BoardEngineProps) {
     if (!activeItemData) return;
 
     let targetStatus: string | null = null;
+    let targetPosition = 0;
     const overData = over.data?.current;
-    if (overData?.item) targetStatus = overData.item.status;
-    else if (overData?.columnId) targetStatus = overData.columnId;
 
-    if (targetStatus && targetStatus !== activeItemData.status) {
-      mutations.moveItem(activeId, targetStatus);
+    if (overData?.item) {
+      targetStatus = overData.item.status;
+      const colItems = items
+        .filter((i) => i.status === overData.item.status)
+        .sort((a, b) => a.position - b.position);
+      const overIdx = colItems.findIndex((i) => i.id === overData.item.id);
+      targetPosition = overIdx >= 0 ? overIdx : colItems.length;
+    } else if (overData?.columnId) {
+      targetStatus = overData.columnId;
+      targetPosition = items.filter((i) => i.status === overData.columnId).length;
     }
-  }, [items, mutations, permissions]);
+
+    if (!targetStatus) return;
+
+    if (targetStatus === activeItemData.status) {
+      const colItems = items
+        .filter((i) => i.status === targetStatus)
+        .sort((a, b) => a.position - b.position);
+      const oldIdx = colItems.findIndex((i) => i.id === activeId);
+      if (oldIdx !== targetPosition && oldIdx !== -1) {
+        mutations.reorderItem(activeId, targetStatus, targetPosition);
+      }
+    } else {
+      mutations.moveItem(activeId, targetStatus, targetPosition);
+    }
+  }, [items, mutations, permissions, mode]);
 
   // ── Keyboard shortcut ──
   const handleKeyDown = useCallback((e: KeyboardEvent) => {

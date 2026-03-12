@@ -77,7 +77,8 @@ type I18n = Record<string, string>;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function getSb() { return (globalThis as any).navGetSb?.(); }
+import { getSb, waitForSb } from '../../hooks/useBoard';
+
 function getMember() { return (globalThis as any).navGetMember?.(); }
 
 function daysUntilDue(dueAt: string | null | undefined): number | null {
@@ -426,13 +427,7 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
     setLoading(true);
     setError(null);
 
-    let sb = getSb();
-    let retries = 0;
-    while (!sb && retries < 15) {
-      await new Promise((r) => setTimeout(r, 300));
-      sb = getSb();
-      retries++;
-    }
+    const sb = await waitForSb();
     if (!sb) { setError('Supabase não disponível. Recarregue a página.'); setLoading(false); return; }
 
     const member = getMember();

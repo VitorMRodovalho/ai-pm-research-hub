@@ -26,7 +26,6 @@ export function useBoardMutations(
     const item = items.find((i) => i.id === itemId);
     if (!item || item.status === newStatus) return;
 
-    // Optimistic
     setItems((prev) => prev.map((i) => i.id === itemId ? { ...i, status: newStatus, position: newPosition } : i));
 
     const sb = getSb();
@@ -46,6 +45,34 @@ export function useBoardMutations(
       toast(`Movido para ${newStatus}`);
     }
   }, [items, setItems, refetch, toast]);
+
+  // ── Reorder card within the same column ──
+  const reorderItem = useCallback(async (itemId: string, status: string, newPosition: number) => {
+    setItems((prev) => {
+      const col = prev.filter((i) => i.status === status).sort((a, b) => a.position - b.position);
+      const oldIdx = col.findIndex((i) => i.id === itemId);
+      if (oldIdx === -1) return prev;
+      const [moved] = col.splice(oldIdx, 1);
+      col.splice(newPosition, 0, moved);
+      const reordered = new Map(col.map((item, idx) => [item.id, idx]));
+      return prev.map((i) => reordered.has(i.id) ? { ...i, position: reordered.get(i.id)! } : i);
+    });
+
+    const sb = getSb();
+    if (!sb) { toast('Supabase indisponível', 'error'); return; }
+
+    const { error } = await sb.rpc('move_board_item', {
+      p_item_id: itemId,
+      p_new_status: status,
+      p_new_position: newPosition,
+      p_reason: null,
+    });
+
+    if (error) {
+      toast(`Erro ao reordenar: ${error.message}`, 'error');
+      refetch();
+    }
+  }, [setItems, refetch, toast]);
 
   // ── Create card ──
   const createItem = useCallback(async (
@@ -155,5 +182,5 @@ export function useBoardMutations(
     }
   }, [setItems, refetch, toast]);
 
-  return { moveItem, createItem, updateItem, deleteItem, duplicateItem, moveToBoard, toasts, toast };
+  return { moveItem, reorderItem, createItem, updateItem, deleteItem, duplicateItem, moveToBoard, toasts, toast };
 }
