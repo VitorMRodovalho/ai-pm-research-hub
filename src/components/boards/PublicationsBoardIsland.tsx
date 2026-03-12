@@ -51,6 +51,7 @@ const UI = {
   fieldPublishedAt: 'Data de publicação efetiva',
   cancel: 'Cancelar',
   save: 'Salvar',
+  untitled: 'Sem título',
   optionPending: 'pending',
   optionSubmitted: 'submitted',
   optionApproved: 'approved',
@@ -105,7 +106,7 @@ function SortableCard({
       onDoubleClick={() => onOpen(item)}
       className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 shadow-sm cursor-grab active:cursor-grabbing"
     >
-      <h3 className="text-[12px] font-bold text-navy dark:text-slate-100 mb-1">{item.title || 'Sem título'}</h3>
+      <h3 className="text-[12px] font-bold text-navy dark:text-slate-100 mb-1">{item.title || UI.untitled}</h3>
       {item.description ? (
         <p className="text-[11px] text-slate-500 dark:text-slate-300 line-clamp-3 mb-2">{item.description}</p>
       ) : null}

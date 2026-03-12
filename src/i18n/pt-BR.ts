@@ -1225,6 +1225,9 @@ const ptBR: Record<string, string> = {
   'common.yes': 'Sim',
   'common.no': 'Não',
   'common.notFound': 'Não encontrado',
+  'common.untitled': 'Sem título',
+  'common.confirmAction': 'Confirmar ação',
+  'common.areYouSure': 'Tem certeza?',
 
   // ── Data: KPI labels ──
   'data.kpi.chapters': 'Capítulos PMI',

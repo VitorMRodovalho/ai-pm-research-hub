@@ -9,15 +9,15 @@
        });
 -->
 <div id="confirm-dialog" class="hidden fixed inset-0 bg-black/50 z-[600] items-center justify-center p-4">
-  <div class="bg-white rounded-2xl w-full max-w-[380px] overflow-hidden shadow-2xl">
+  <div class="bg-[var(--surface-elevated)] rounded-2xl w-full max-w-[380px] overflow-hidden shadow-2xl">
     <div class="p-6 text-center">
       <div class="text-3xl mb-3" id="confirm-icon">⚠️</div>
       <h3 class="text-base font-bold text-navy mb-2" id="confirm-title">Confirmar ação</h3>
-      <p class="text-sm text-slate-500" id="confirm-message">Tem certeza?</p>
+      <p class="text-sm text-[var(--text-secondary)]" id="confirm-message">Tem certeza?</p>
     </div>
-    <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2">
+    <div class="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2">
       <button id="confirm-cancel-btn"
-        class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-slate-200 text-slate-600 bg-transparent hover:bg-slate-50 cursor-pointer">
+        class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer">
         Cancelar
       </button>
       <button id="confirm-btn"

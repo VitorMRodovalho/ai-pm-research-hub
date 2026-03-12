@@ -164,7 +164,7 @@
   /* ── Text ── */
   --text-primary: #E2E8F0;
   --text-secondary: #94A3B8;
-  --text-muted: #64748B;
+  --text-muted: #8B9BB5;                 /* WCAG AA ≥4.5:1 on --surface-base #0C1222 */
   --text-inverse: #0F172A;
   --text-on-dark-section: #E2E8F0;
   --text-on-dark-muted: rgba(255, 255, 255, 0.5);

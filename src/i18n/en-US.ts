@@ -1225,6 +1225,9 @@ const enUS: Record<string, string> = {
   'common.yes': 'Yes',
   'common.no': 'No',
   'common.notFound': 'Not found',
+  'common.untitled': 'Untitled',
+  'common.confirmAction': 'Confirm action',
+  'common.areYouSure': 'Are you sure?',
 
   // ── Data: KPI labels ──
   'data.kpi.chapters': 'PMI Chapters',

@@ -1225,6 +1225,9 @@ const esLATAM: Record<string, string> = {
   'common.yes': 'Sí',
   'common.no': 'No',
   'common.notFound': 'No encontrado',
+  'common.untitled': 'Sin título',
+  'common.confirmAction': 'Confirmar acción',
+  'common.areYouSure': '¿Está seguro?',
 
   // ── Data: KPI labels ──
   'data.kpi.chapters': 'Capítulos PMI',
