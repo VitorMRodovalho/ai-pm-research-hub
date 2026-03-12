@@ -16,28 +16,24 @@ export function setSupabaseRuntimeConfig(url: string, anonKey: string) {
   _runtimeSupabaseConfig.anonKey = typeof anonKey === 'string' ? anonKey.trim() : '';
 }
 
+// Anon keys are public by design in Supabase (RLS enforces security, not key secrecy).
+// Fallbacks ensure the app works on Cloudflare Pages even without env vars configured.
+const FALLBACK_SUPABASE_URL = 'https://ldrfrvwhxsmgaabwmaik.supabase.co';
+const FALLBACK_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkcmZydndoeHNtZ2FhYndtYWlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MjU5NDQsImV4cCI6MjA4ODMwMTk0NH0.gzibKd7Jyck3Ya61vzrloX1YZt-0pNReTuefdi4mAmw';
+
 function resolveSupabasePublicEnv() {
   const envUrl = (
     import.meta.env.PUBLIC_SUPABASE_URL ||
     _runtimeSupabaseConfig.url ||
     readRuntimePublicEnv('__PUBLIC_SUPABASE_URL') ||
-    ''
+    FALLBACK_SUPABASE_URL
   ).trim();
   const envAnonKey = (
     import.meta.env.PUBLIC_SUPABASE_ANON_KEY ||
     _runtimeSupabaseConfig.anonKey ||
     readRuntimePublicEnv('__PUBLIC_SUPABASE_ANON_KEY') ||
-    ''
+    FALLBACK_SUPABASE_ANON_KEY
   ).trim();
-  if (!envUrl || !envAnonKey) {
-    const missing: string[] = [];
-    if (!envUrl) missing.push('PUBLIC_SUPABASE_URL');
-    if (!envAnonKey) missing.push('PUBLIC_SUPABASE_ANON_KEY');
-    throw new Error(
-      `[Supabase Config Error] Missing required environment variable(s): ${missing.join(', ')}. ` +
-      `Set them in your deployment environment and redeploy.`
-    );
-  }
   return { url: envUrl, anonKey: envAnonKey };
 }
 
