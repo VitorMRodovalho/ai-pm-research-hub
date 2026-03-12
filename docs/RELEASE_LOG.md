@@ -1,5 +1,36 @@
 # Release Log
 
+## 2026-03-12 — Sprint N4: dark mode tokens, WCAG contrast, i18n fixes, prod hotfix
+
+### Scope
+Sprint N4 focusing on dark mode completeness, accessibility compliance, and production stability.
+
+### Delivered
+- **1. Production Hotfix** (`src/lib/supabase.ts`)
+  - Restored Supabase anon key fallbacks to unbreak Cloudflare Pages deployment.
+  - Audit item #2 had removed hardcoded keys, but CF Pages lacked env vars. Anon keys are public by design (RLS enforces security).
+- **2. WCAG Contrast Fix** (`src/styles/theme.css`)
+  - Dark mode `--text-muted`: #64748B → #8B9BB5 (~4.6:1 contrast ratio on `--surface-base`), meeting WCAG AA.
+- **3. i18n Hardcoded Strings** (3 locale files + 2 components)
+  - Added `common.untitled`, `common.confirmAction`, `common.areYouSure` to pt-BR, en-US, es-LATAM.
+  - `PublicationsBoardIsland.tsx`: extracted "Sem título" → `UI.untitled`.
+  - `ConfirmDialog.astro`: migrated slate colors to CSS vars for dark mode support.
+- **4. Dark Mode Token Migration** (3 admin pages, ~132 classes)
+  - `admin/comms.astro` (57 slate → 0), `admin/selection.astro` (39 → 1 intentional), `admin/webinars.astro` (36 → 0).
+  - Removed redundant `dark:` Tailwind overrides from webinars.astro.
+  - Pattern: `text-slate-*` → `text-[var(--text-primary/secondary/muted)]`, `bg-white` → `bg-[var(--surface-card)]`, etc.
+
+### Remaining (incremental)
+- ~188 `text-slate-*` across 20 other files (non-critical, can migrate incrementally).
+- Mobile responsiveness validation for /workspace, /tribe/[id], drawer at 375px/768px.
+
+### Validation
+- `npm run build` — success
+- `npm run smoke:routes` — all routes 200, including /workspace, /en/workspace, /es/workspace
+- Cloudflare Pages autodeploy triggered via push
+
+---
+
 ## 2026-03-15 — feat: implement tribe cockpit and peer-to-peer curation workflow (CXO Fase 2)
 
 ### Scope
