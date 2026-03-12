@@ -378,6 +378,7 @@ const GAM_I18N = {
   let tribeMode: 'cycle' | 'lifetime' = 'cycle';
   let lifetimePointsByMember: Record<string, number> = {};
   let trailProgressByMember = new Map();
+  let credlyByMember: Record<string, any> = {};
   const TRAIL_TOTAL = 8;
   const PANEL_QUERY_TIMEOUT_MS = 15000;
 
@@ -581,7 +582,7 @@ const GAM_I18N = {
       const pct = (displayPoints / maxPts * 100).toFixed(0);
       const level = getLevel(displayPoints);
       const isMe = MEMBER && m.member_id === MEMBER.id;
-      const credly = aggregateCredlyByMember([])[m.member_id] || { total: 0, badges: 0, t1: 0, t2: 0, t3: 0, t4: 0 };
+      const credly = credlyByMember[m.member_id] || { total: 0, badges: 0, t1: 0, t2: 0, t3: 0, t4: 0 };
       const trail = trailProgressByMember.get(m.member_id) || { completed: 0, inProgress: 0, pct: 0 };
 
       const breakdown = [
@@ -639,6 +640,12 @@ const GAM_I18N = {
       const { data: courseRows, error: courseRowsError } = await sb.from('course_progress')
         .select('member_id, course_id, status');
       if (courseRowsError) throw courseRowsError;
+
+      const { data: credlyRows, error: credlyError } = await sb.from('gamification_points')
+        .select('member_id, points')
+        .like('reason', 'Credly:%');
+      if (credlyError) throw credlyError;
+      credlyByMember = aggregateCredlyByMember(credlyRows || []);
 
       leaderboardData = data || [];
       trailProgressByMember = buildTrailProgressByMember(courseRows || [], TRAIL_TOTAL);
