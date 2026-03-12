@@ -260,6 +260,9 @@ async function run() {
           getSession() {
             return Promise.resolve({ data: { session: null } });
           },
+          getUser() {
+            return Promise.resolve({ data: { user: { id: 'curator-manager-test' } } });
+          },
         },
         rpc(name) {
           if (name === 'list_curation_board') return Promise.resolve({ data: fakeItems, error: null });

@@ -131,6 +131,36 @@ Em Cloudflare Pages → Settings → Environment variables:
 
 ---
 
+## 7. Supabase Storage — bucket `board-attachments`
+
+O upload de anexos em cards do BoardEngine requer o bucket `board-attachments` no Supabase Storage.
+
+### Passos
+- [ ] Abrir Supabase Dashboard → Storage
+- [ ] Criar bucket **`board-attachments`** (público ou com RLS conforme necessidade)
+- [ ] Verificar políticas de acesso:
+  - `INSERT`: membros autenticados (RLS via `auth.uid()`)
+  - `SELECT`: membros autenticados ou público (conforme política de compartilhamento)
+  - `DELETE`: apenas owner do card ou admin
+- [ ] Limite de upload configurado no frontend: **5 MB**, extensões: `pdf, png, jpg, jpeg, docx, xlsx, pptx`
+
+**Sem este bucket, uploads de anexos em cards falharão silenciosamente.**
+
+---
+
+## 8. PostHog Analytics (opcional)
+
+Para habilitar analytics PostHog, configurar no Cloudflare Pages:
+
+| Variável | Obrigatório | Descrição |
+|----------|-------------|-----------|
+| `PUBLIC_POSTHOG_KEY` | Sim (se usar PostHog) | API key do projeto PostHog |
+| `PUBLIC_POSTHOG_HOST` | Sim (se usar PostHog) | Ex: `https://us.i.posthog.com` |
+
+**Sem estas variáveis, PostHog é desabilitado automaticamente (sem erros no console).**
+
+---
+
 ## Resumo de prioridade
 
 | # | Item | Bloqueia? |
@@ -139,4 +169,5 @@ Em Cloudflare Pages → Settings → Environment variables:
 | 2 | SUPABASE_* no build | App não inicia |
 | 3 | sync-comms-metrics deploy + secret | `/admin/comms` tabela vazia até primeira ingestão |
 | 4 | Credly workflow secrets | S10 não executa |
-| 5 | Looker/PostHog URLs | Dashboards em branco (placeholders ok) |
+| 5 | Bucket `board-attachments` | Uploads de anexos em cards falham |
+| 6 | PostHog env vars | Analytics desabilitado (sem erros, funcional sem) |

@@ -39,39 +39,56 @@ export function useMemberContext() {
   const [member, setMember] = useState<MemberContext | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  function applyMember(raw: any) {
+    if (!raw) return;
+    setMember({
+      id: raw.id,
+      operational_role: raw.operational_role || 'guest',
+      designations: raw.designations || [],
+      is_superadmin: raw.is_superadmin || false,
+      tribe_id: raw.tribe_id || null,
+    });
+    setIsLoading(false);
+  }
+
   useEffect(() => {
+    let resolved = false;
+
     (async () => {
+      // Try cached member first (fastest path)
+      const cached = (window as any).navGetMember?.();
+      if (cached) { resolved = true; applyMember(cached); return; }
+
       const sb = await waitForSb();
       if (!sb) { setIsLoading(false); return; }
 
-      const { data: { user } } = await sb.auth.getUser();
-      if (!user) { setIsLoading(false); return; }
-
-      const cached = (window as any).navGetMember?.();
-      if (cached) {
-        setMember({
-          id: cached.id,
-          operational_role: cached.operational_role || 'guest',
-          designations: cached.designations || [],
-          is_superadmin: cached.is_superadmin || false,
-          tribe_id: cached.tribe_id || null,
-        });
+      try {
+        const userRes = await sb.auth.getUser?.();
+        if (!userRes?.data?.user) { setIsLoading(false); return; }
+      } catch {
         setIsLoading(false);
         return;
       }
 
+      // Re-check cache after awaiting sb (nav may have booted in parallel)
+      const cached2 = (window as any).navGetMember?.();
+      if (cached2) { resolved = true; applyMember(cached2); return; }
+
       const { data } = await sb.rpc('get_member_by_auth');
-      if (data) {
-        setMember({
-          id: data.id,
-          operational_role: data.operational_role || 'guest',
-          designations: data.designations || [],
-          is_superadmin: data.is_superadmin || false,
-          tribe_id: data.tribe_id || null,
-        });
-      }
+      if (data) { resolved = true; applyMember(data); return; }
       setIsLoading(false);
     })();
+
+    // Fallback: listen for nav:member event (fires when nav boots after island)
+    function onNavMember(e: Event) {
+      const detail = (e as CustomEvent).detail;
+      if (detail && !resolved) {
+        resolved = true;
+        applyMember(detail);
+      }
+    }
+    window.addEventListener('nav:member', onNavMember);
+    return () => window.removeEventListener('nav:member', onNavMember);
   }, []);
 
   return { member, isLoading };

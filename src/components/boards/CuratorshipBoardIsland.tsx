@@ -540,6 +540,8 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
       setLoading(false);
       return;
     }
+    // Member arrived (possibly late via nav:member) — reset denied and fetch
+    setDenied(false);
     fetchAll();
   }, [memberLoading, authMember, canCurate, fetchAll]);
 
