@@ -9,20 +9,23 @@ interface Props {
   columnItems: Record<string, BoardItem[]>;
   overColumnId: string | null;
   mode: string;
-  permissions: { canMove: boolean; canCurate: boolean };
+  permissions: { canMove: boolean; canCurate: boolean; canEditAny: boolean };
   i18n: BoardI18n;
   onCardClick: (item: BoardItem) => void;
   onQuickMove: (itemId: string, newStatus: string) => void;
 }
 
 // ── Sortable Card Wrapper ────────────────────────────────────────────────────
-function SortableCard({ item, i18n, onClick, onQuickMove, columns }: {
+function SortableCard({ item, i18n, onClick, onQuickMove, columns, mode, canMove }: {
   item: BoardItem; i18n: BoardI18n;
   onClick: () => void; onQuickMove: (status: string) => void;
-  columns: string[];
+  columns: string[]; mode: string; canMove: boolean;
 }) {
+  const isReadonly = mode === 'readonly';
+  const isDraggable = canMove && !isReadonly;
+
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: item.id, data: { item },
+    id: item.id, data: { item }, disabled: !isDraggable,
   });
 
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.3 : 1 };
@@ -31,14 +34,44 @@ function SortableCard({ item, i18n, onClick, onQuickMove, columns }: {
   const checkTotal = item.checklist?.length ?? 0;
   const attachCount = item.attachments?.length ?? 0;
   const isOverdue = item.due_date && new Date(item.due_date) < new Date();
+  const isCurationOverdue = item.curation_due_at && new Date(item.curation_due_at) < new Date();
   const nextCol = columns[columns.indexOf(item.status) + 1];
+  const showCuration = mode === 'curation' && item.curation_status;
 
   return (
     <div ref={setNodeRef} style={style}
       className={`group bg-white rounded-xl border border-slate-100 p-3 shadow-sm
         hover:shadow-md hover:border-slate-200 transition-all duration-150
-        cursor-grab active:cursor-grabbing ${isDragging ? 'ring-2 ring-blue-300' : ''}`}
-      {...attributes} {...listeners}>
+        ${isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}
+        ${isDragging ? 'ring-2 ring-blue-300' : ''}
+        ${isCurationOverdue ? 'border-l-4 border-l-red-400' : ''}`}
+      {...attributes} {...(isDraggable ? listeners : {})}>
+
+      {/* SLA badge for curation mode */}
+      {showCuration && (
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md
+            ${item.curation_status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+              item.curation_status === 'review' ? 'bg-purple-100 text-purple-700' :
+              item.curation_status === 'rejected' ? 'bg-red-100 text-red-700' :
+              'bg-slate-100 text-slate-600'}`}>
+            {item.curation_status === 'approved' ? '✅ Aprovado' :
+             item.curation_status === 'review' ? '🔍 Em Revisão' :
+             item.curation_status === 'rejected' ? '❌ Descartado' :
+             '📝 Rascunho'}
+          </span>
+          {isCurationOverdue && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-red-100 text-red-700 animate-pulse">
+              ⏰ SLA Vencido
+            </span>
+          )}
+          {item.curation_due_at && !isCurationOverdue && (
+            <span className="text-[9px] text-slate-400">
+              SLA: {new Date(item.curation_due_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Title */}
       <h4 className="text-[12px] font-bold text-slate-800 leading-snug line-clamp-2 mb-1.5 pr-4"
@@ -88,31 +121,33 @@ function SortableCard({ item, i18n, onClick, onQuickMove, columns }: {
         )}
       </div>
 
-      {/* Quick actions */}
-      <div className="flex gap-1.5 pt-1.5 border-t border-slate-50" onPointerDown={(e) => e.stopPropagation()}>
-        <button onClick={onClick}
-          className="flex-1 px-2 py-1 rounded-lg bg-slate-50 text-slate-600 text-[10px] font-semibold
-            border border-slate-200 hover:bg-slate-100 transition-colors cursor-pointer">
-          📝 Abrir
-        </button>
-        {nextCol && (
-          <button onClick={() => onQuickMove(nextCol)}
-            className="flex-1 px-2 py-1 rounded-lg bg-blue-50 text-blue-700 text-[10px] font-semibold
-              border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer">
-            → Avançar
+      {/* Quick actions — hidden in readonly mode */}
+      {!isReadonly && (
+        <div className="flex gap-1.5 pt-1.5 border-t border-slate-50" onPointerDown={(e) => e.stopPropagation()}>
+          <button onClick={onClick}
+            className="flex-1 px-2 py-1 rounded-lg bg-slate-50 text-slate-600 text-[10px] font-semibold
+              border border-slate-200 hover:bg-slate-100 transition-colors cursor-pointer">
+            📝 Abrir
           </button>
-        )}
-      </div>
+          {nextCol && canMove && (
+            <button onClick={() => onQuickMove(nextCol)}
+              className="flex-1 px-2 py-1 rounded-lg bg-blue-50 text-blue-700 text-[10px] font-semibold
+                border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer">
+              → Avançar
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
 // ── Droppable Column ─────────────────────────────────────────────────────────
-function KanbanColumn({ col, items, isOver, i18n, onCardClick, onQuickMove, allColumns }: {
+function KanbanColumn({ col, items, isOver, i18n, onCardClick, onQuickMove, allColumns, mode, canMove }: {
   col: ColumnMeta; items: BoardItem[]; isOver: boolean;
   i18n: BoardI18n; onCardClick: (item: BoardItem) => void;
   onQuickMove: (itemId: string, status: string) => void;
-  allColumns: string[];
+  allColumns: string[]; mode: string; canMove: boolean;
 }) {
   const itemIds = useMemo(() => items.map((i) => i.id), [items]);
   const { setNodeRef } = useDroppable({ id: `col-${col.id}`, data: { columnId: col.id } });
@@ -141,7 +176,7 @@ function KanbanColumn({ col, items, isOver, i18n, onCardClick, onQuickMove, allC
             <SortableCard key={item.id} item={item} i18n={i18n}
               onClick={() => onCardClick(item)}
               onQuickMove={(status) => onQuickMove(item.id, status)}
-              columns={allColumns} />
+              columns={allColumns} mode={mode} canMove={canMove} />
           ))}
         </div>
       </SortableContext>
@@ -166,7 +201,9 @@ export default function BoardKanban({ columns, columnItems, overColumnId, mode, 
           i18n={i18n}
           onCardClick={onCardClick}
           onQuickMove={onQuickMove}
-          allColumns={allColumnIds} />
+          allColumns={allColumnIds}
+          mode={mode}
+          canMove={permissions.canMove} />
       ))}
     </div>
   );

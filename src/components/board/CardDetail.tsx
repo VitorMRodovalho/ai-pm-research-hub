@@ -34,7 +34,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const [showMoveToBoard, setShowMoveToBoard] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const canEdit = permissions.canEditAny || (permissions.canEditOwn && permissions.member?.id === item.assignee_id);
+  const canEdit = mode !== 'readonly' && (permissions.canEditAny || (permissions.canEditOwn && permissions.member?.id === item.assignee_id));
 
   // Fetch timeline + members on mount
   useEffect(() => {
@@ -255,9 +255,9 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
               <label className="text-[10px] font-semibold text-slate-500 mb-1 block uppercase tracking-wide">Status</label>
               <select value={item.status}
                 onChange={(e) => onMove(e.target.value)}
-                disabled={!permissions.canEditAny}
+                disabled={mode === 'readonly' || !permissions.canEditAny}
                 className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-[12px] bg-white
-                  outline-none focus:border-blue-400 cursor-pointer">
+                  outline-none focus:border-blue-400 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
                 {board.columns.map((col: string) => (
                   <option key={col} value={col}>{COLUMN_PRESETS[col]?.label ?? col}</option>
                 ))}
@@ -322,8 +322,8 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                   outline-none focus:border-blue-400" />
             </div>
 
-            {/* Actions */}
-            <div className="pt-3 border-t border-slate-100 space-y-2">
+            {/* Actions — hidden in readonly mode */}
+            {mode !== 'readonly' && <div className="pt-3 border-t border-slate-100 space-y-2">
               <button onClick={onDuplicate}
                 className="w-full px-3 py-1.5 rounded-lg bg-slate-50 text-slate-600 text-[11px] font-semibold
                   border border-slate-200 hover:bg-slate-100 cursor-pointer text-left">

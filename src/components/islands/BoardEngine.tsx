@@ -93,7 +93,7 @@ export default function BoardEngine(props: BoardEngineProps) {
     const { active, over } = e;
     setActiveItem(null);
     setOverColumnId(null);
-    if (!over || !permissions.canMove) return;
+    if (!over || !permissions.canMove || mode === 'readonly') return;
 
     const activeId = String(active.id);
     const activeItemData = items.find((i) => i.id === activeId);
@@ -157,6 +157,14 @@ export default function BoardEngine(props: BoardEngineProps) {
 
   return (
     <div className="space-y-4">
+      {/* Readonly banner */}
+      {mode === 'readonly' && (
+        <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-[12px] text-amber-800 font-medium">
+          <span>🔒</span>
+          <span>Modo somente leitura — este board é um registro histórico e não pode ser editado.</span>
+        </div>
+      )}
+
       {/* Header */}
       <BoardHeader
         board={board}
