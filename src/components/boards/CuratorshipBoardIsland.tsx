@@ -443,10 +443,25 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
     }
 
     try {
-      const [tribeRes, legacyRes] = await Promise.all([
-        sb.rpc('list_curation_pending_board_items').catch(() => ({ data: null, error: { message: 'RPC unavailable' } })),
-        sb.rpc('list_curation_board').catch(() => sb.rpc('list_pending_curation', { p_table: 'all' }).catch(() => ({ data: null, error: null }))),
-      ]);
+      // Supabase JS v2 .rpc() returns a PostgrestFilterBuilder (thenable but no .catch).
+      // Must await each call individually — never chain .catch() on rpc().
+      let tribeRes: { data: any; error: any } = { data: null, error: null };
+      try {
+        tribeRes = await sb.rpc('list_curation_pending_board_items');
+      } catch (e: any) {
+        tribeRes = { data: null, error: { message: e?.message || 'RPC unavailable' } };
+      }
+
+      let legacyRes: { data: any; error: any } = { data: null, error: null };
+      try {
+        legacyRes = await sb.rpc('list_curation_board');
+      } catch {
+        try {
+          legacyRes = await sb.rpc('list_pending_curation', { p_table: 'all' });
+        } catch {
+          legacyRes = { data: null, error: null };
+        }
+      }
 
       if (tribeRes.error?.message?.includes('access') || tribeRes.error?.message?.includes('curatorship') || tribeRes.error?.message?.includes('Curatorship')) {
         setDenied(true);
