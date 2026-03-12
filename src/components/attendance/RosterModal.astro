@@ -7,35 +7,35 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
 <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-roster">
-  <div class="bg-white rounded-2xl w-full max-w-[680px] flex flex-col overflow-hidden" style="max-height:85vh">
+  <div class="bg-[var(--surface-card)] rounded-2xl w-full max-w-[680px] flex flex-col overflow-hidden" style="max-height:85vh">
     <!-- Header -->
-    <div class="px-5 py-4 border-b border-slate-200 flex-shrink-0">
+    <div class="px-5 py-4 border-b border-[var(--border-default)] flex-shrink-0">
       <div class="flex justify-between items-center mb-3">
         <h3 class="text-base font-bold text-navy" id="roster-title">{t('attendance.modal.rosterTitle', lang)}</h3>
-        <button type="button" class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" data-action="close-modal" data-modal-id="modal-roster">✕</button>
+        <button type="button" class="bg-transparent border-0 text-xl cursor-pointer text-[var(--text-muted)]" data-action="close-modal" data-modal-id="modal-roster">✕</button>
       </div>
       <div class="flex items-center gap-3">
         <input type="text" id="roster-search" placeholder={t('attendance.modal.searchName', lang)}
-               class="flex-1 px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+               class="flex-1 px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
         <div class="text-[12px] font-bold text-emerald-600 flex-shrink-0 whitespace-nowrap" id="roster-count"></div>
       </div>
     </div>
     <!-- Scrollable table area -->
     <div class="overflow-y-auto" style="max-height:calc(85vh - 150px)">
       <table class="w-full border-collapse text-[13px]">
-        <thead class="sticky top-0 z-10 bg-slate-50">
+        <thead class="sticky top-0 z-10 bg-[var(--surface-base)]">
           <tr>
-            <th class="text-left px-3 py-2 text-slate-500 text-[11px] font-bold uppercase tracking-wider">{t('attendance.modal.colCollaborator', lang)}</th>
-            <th class="text-left px-3 py-2 text-slate-500 text-[11px] font-bold uppercase tracking-wider">{t('attendance.modal.colRole', lang)}</th>
-            <th class="text-center px-3 py-2 text-slate-500 text-[11px] font-bold uppercase tracking-wider w-24">{t('attendance.modal.colPresent', lang)}</th>
+            <th class="text-left px-3 py-2 text-[var(--text-secondary)] text-[11px] font-bold uppercase tracking-wider">{t('attendance.modal.colCollaborator', lang)}</th>
+            <th class="text-left px-3 py-2 text-[var(--text-secondary)] text-[11px] font-bold uppercase tracking-wider">{t('attendance.modal.colRole', lang)}</th>
+            <th class="text-center px-3 py-2 text-[var(--text-secondary)] text-[11px] font-bold uppercase tracking-wider w-24">{t('attendance.modal.colPresent', lang)}</th>
           </tr>
         </thead>
         <tbody id="roster-body"></tbody>
       </table>
     </div>
     <!-- Footer -->
-    <div class="px-5 py-3 border-t border-slate-200 flex justify-end flex-shrink-0">
-      <button type="button" class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer" data-action="close-modal" data-modal-id="modal-roster">{t('attendance.modal.close', lang)}</button>
+    <div class="px-5 py-3 border-t border-[var(--border-default)] flex justify-end flex-shrink-0">
+      <button type="button" class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer" data-action="close-modal" data-modal-id="modal-roster">{t('attendance.modal.close', lang)}</button>
     </div>
   </div>
 </div>

@@ -23,9 +23,9 @@ const { icon = '📋', title, message, ctaText, ctaHref, ctaOnclick, compact = f
 
 <div class:list={["text-center", compact ? "py-6" : "py-10"]}>
   <div class:list={["mb-2", compact ? "text-2xl" : "text-4xl"]}>{icon}</div>
-  <div class:list={["font-semibold text-slate-600", compact ? "text-[.82rem]" : "text-sm"]}>{title}</div>
+  <div class:list={["font-semibold text-[var(--text-secondary)]", compact ? "text-[.82rem]" : "text-sm"]}>{title}</div>
   {message && (
-    <p class:list={["text-slate-400 mt-1 max-w-[320px] mx-auto", compact ? "text-[.7rem]" : "text-[.78rem]"]}>
+    <p class:list={["text-[var(--text-muted)] mt-1 max-w-[320px] mx-auto", compact ? "text-[.7rem]" : "text-[.78rem]"]}>
       {message}
     </p>
   )}

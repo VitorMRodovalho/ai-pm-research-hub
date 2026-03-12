@@ -599,11 +599,11 @@ const GAM_I18N = {
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-1.5">
             <span class="text-[13px] font-semibold truncate">${safeMemberName.split(' ').slice(0, 3).join(' ')}</span>
-            <span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-slate-100">${level.emoji} ${level.name}</span>
+            <span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-[var(--surface-base)]">${level.emoji} ${level.name}</span>
             ${isMe ? `<span class="text-[.55rem] font-bold px-1 py-0.5 rounded bg-orange/10 text-orange">${I.lbYou}</span>` : ''}
           </div>
           <div class="text-[11px] text-[var(--text-muted)]">${m.chapter || ''} · ${breakdown}</div>
-          <div class="h-1.5 bg-slate-100 rounded-full mt-1 overflow-hidden">
+          <div class="h-1.5 bg-[var(--surface-base)] rounded-full mt-1 overflow-hidden">
             <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${displayPoints > 0 ? '#FF610F' : '#E2E8F0'}"></div>
           </div>
         </div>
@@ -738,7 +738,7 @@ const GAM_I18N = {
           <div class="flex-1 min-w-0">
             <div class="text-[13px] font-bold">${t.name}</div>
             <div class="text-[11px] text-[var(--text-muted)]">${t.members} ${I.trMembers} · ${modeLabel} ${I.trModeAvg}: ${t.avg} ${I.mpPtsLabel} · ${I.trTotal}: ${t.total} ${I.mpPtsLabel}</div>
-            <div class="h-1.5 bg-slate-100 rounded-full mt-1.5 overflow-hidden">
+            <div class="h-1.5 bg-[var(--surface-base)] rounded-full mt-1.5 overflow-hidden">
               <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${t.color}"></div>
             </div>
           </div>
@@ -748,7 +748,7 @@ const GAM_I18N = {
           </div>
         </div>
         <div class="ml-[76px] mt-2 flex flex-wrap gap-1">
-          ${t.names.map((n: string) => `<span class="text-[.6rem] px-1.5 py-0.5 rounded bg-slate-100 text-[var(--text-secondary)]">${n}</span>`).join('')}
+          ${t.names.map((n: string) => `<span class="text-[.6rem] px-1.5 py-0.5 rounded bg-[var(--surface-base)] text-[var(--text-secondary)]">${n}</span>`).join('')}
         </div>
       </div>`;
       }).join('');
@@ -816,7 +816,7 @@ const GAM_I18N = {
           const unlocked = a.check(myPoints, checkData);
           if (unlocked) earned++;
           return `
-          <div class="flex items-center gap-3 p-3 rounded-xl border ${unlocked ? 'border-amber-200 bg-amber-50/50' : 'border-[var(--border-subtle)] bg-slate-50/50 opacity-50'}">
+          <div class="flex items-center gap-3 p-3 rounded-xl border ${unlocked ? 'border-amber-200 bg-amber-50/50' : 'border-[var(--border-subtle)] bg-[var(--surface-base)]/50 opacity-50'}">
             <div class="text-2xl flex-shrink-0">${unlocked ? a.icon : '🔒'}</div>
             <div class="flex-1 min-w-0">
               <div class="text-[.78rem] font-bold ${unlocked ? 'text-navy' : 'text-[var(--text-muted)]'}">${a.name}</div>
@@ -872,7 +872,7 @@ const GAM_I18N = {
         <div class="text-sm text-[var(--text-secondary)]">${I.mpLifetimeLabel} · <strong>${level.name}</strong></div>
         <div class="text-[.7rem] text-[var(--text-muted)] mt-1">${I.mpCurrentCycleLabel}: <strong>${cyclePoints}</strong> ${I.mpPtsLabel}</div>
         ${level.next ? `<div class="text-[.7rem] text-[var(--text-muted)] mt-1">${I.mpToNext.replace('{n}', String(level.ptsToNext)).replace('{level}', level.next)}</div>` : `<div class="text-[.7rem] text-amber-600 mt-1 font-bold">${I.mpMaxLevel}</div>`}
-        <div class="w-40 h-2 bg-slate-200 rounded-full mx-auto mt-2 overflow-hidden">
+        <div class="w-40 h-2 bg-[var(--border-strong)] rounded-full mx-auto mt-2 overflow-hidden">
           <div class="h-full bg-orange rounded-full" style="width:${level.pctInLevel}%"></div>
         </div>
       </div>
@@ -1019,7 +1019,7 @@ const GAM_I18N = {
         + '<div class="text-[12px] text-[var(--text-secondary)]">' + I.trailCoursesOf.replace('{completed}', String(completed.length)).replace('{total}', String(totalCourses)) + '</div></div>'
         + '<span class="text-[11px] font-bold px-2 py-1 rounded-full ' + (pct >= 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700') + '">'
         + I.trailPctComplete.replace('{pct}', String(pct)) + '</span></div>'
-        + '<div class="h-2.5 bg-slate-100 rounded-full overflow-hidden mb-4">'
+        + '<div class="h-2.5 bg-[var(--surface-base)] rounded-full overflow-hidden mb-4">'
         + '<div class="h-full rounded-full transition-all duration-700" style="width:' + pct + '%;background:' + (pct >= 100 ? '#10B981' : '#FF610F') + '"></div></div>'
         + '<div class="space-y-0">' + courseRows + '</div>';
     } catch (e: any) {

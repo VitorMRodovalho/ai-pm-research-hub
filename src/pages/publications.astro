@@ -12,7 +12,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   </div>
 
   <div id="pub-content" class="hidden max-w-[1200px] mx-auto px-4 pb-10 space-y-4">
-    <section class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+    <section class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
       <div class="p-6 sm:p-8">
         <div class="flex items-start justify-between gap-4 flex-wrap">
           <div class="max-w-3xl">
@@ -21,8 +21,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
               <span class="text-indigo-400">•</span>
               <span>{t('publications.badgeFlow', lang)}</span>
             </div>
-            <h1 class="text-2xl font-extrabold text-navy dark:text-slate-100 mb-2">{t('publications.title', lang)}</h1>
-            <p class="text-sm text-slate-500 dark:text-slate-300 leading-relaxed">
+            <h1 class="text-2xl font-extrabold text-navy mb-2">{t('publications.title', lang)}</h1>
+            <p class="text-sm text-[var(--text-secondary)] leading-relaxed">
               {t('publications.subtitle', lang)}
             </p>
           </div>

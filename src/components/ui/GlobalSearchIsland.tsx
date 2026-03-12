@@ -95,7 +95,7 @@ export default function GlobalSearchIsland() {
           role="presentation"
         >
           <div
-            className="w-full max-w-xl rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl overflow-hidden"
+            className="w-full max-w-xl rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
             role="dialog"
@@ -113,26 +113,26 @@ export default function GlobalSearchIsland() {
               />
               <Command.List className="max-h-[320px] overflow-y-auto p-2">
                 {loading && (
-                  <div className="py-6 text-center text-slate-500 text-sm">Buscando...</div>
+                  <div className="py-6 text-center text-[var(--text-secondary)] text-sm">Buscando...</div>
                 )}
                 {!loading && query.length >= 2 && results.length === 0 && (
-                  <div className="py-6 text-center text-slate-500 text-sm">Nenhum resultado encontrado.</div>
+                  <div className="py-6 text-center text-[var(--text-secondary)] text-sm">Nenhum resultado encontrado.</div>
                 )}
                 {!loading &&
                   results.map((r) => (
                     <Command.Item
                       key={r.chunk_id}
                       value={r.chunk_id}
-                      className="flex flex-col items-stretch gap-1 px-3 py-2 rounded-lg cursor-pointer data-[selected=true]:bg-slate-100 dark:data-[selected=true]:bg-slate-800 data-[selected=true]:outline-none"
+                      className="flex flex-col items-stretch gap-1 px-3 py-2 rounded-lg cursor-pointer data-[selected=true]:bg-[var(--surface-base)] data-[selected=true]:outline-none"
                     >
-                      <div className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 truncate">
+                      <div className="text-[13px] font-semibold text-[var(--text-primary)] truncate">
                         {r.theme_title || 'Sem título'}
                       </div>
-                      <div className="text-[12px] text-slate-600 dark:text-slate-400 line-clamp-2">
+                      <div className="text-[12px] text-[var(--text-secondary)] line-clamp-2">
                         {r.content_snippet}
                       </div>
                       {r.tribe_name && (
-                        <div className="text-[11px] text-slate-500 dark:text-slate-500">
+                        <div className="text-[11px] text-[var(--text-secondary)]">
                           {r.tribe_name}
                         </div>
                       )}

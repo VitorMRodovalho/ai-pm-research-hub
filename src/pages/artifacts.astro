@@ -300,12 +300,12 @@ const ARTIFACTS_I18N = {
   function loadingRows(count = 3): string {
     return Array.from({ length: count }).map(() => `
       <div class="flex items-center gap-3 px-1 py-3 border-b border-[var(--border-subtle)] last:border-b-0 animate-pulse">
-        <div class="w-9 h-9 rounded-full bg-slate-200 flex-shrink-0"></div>
+        <div class="w-9 h-9 rounded-full bg-[var(--border-strong)] flex-shrink-0"></div>
         <div class="flex-1 space-y-1.5">
-          <div class="h-3 w-40 bg-slate-200 rounded"></div>
-          <div class="h-2.5 w-56 bg-slate-200 rounded"></div>
+          <div class="h-3 w-40 bg-[var(--border-strong)] rounded"></div>
+          <div class="h-2.5 w-56 bg-[var(--border-strong)] rounded"></div>
         </div>
-        <div class="h-6 w-16 rounded-full bg-slate-200"></div>
+        <div class="h-6 w-16 rounded-full bg-[var(--border-strong)]"></div>
       </div>
     `).join('');
   }
@@ -431,12 +431,12 @@ const ARTIFACTS_I18N = {
     community:  'bg-green-50 text-green-700 border-green-200',
     innovation: 'bg-amber-50 text-amber-700 border-amber-200',
     impact:     'bg-rose-50 text-rose-700 border-rose-200',
-    governance: 'bg-slate-100 text-slate-700 border-slate-200',
+    governance: 'bg-[var(--surface-base)] text-[var(--text-primary)] border-[var(--border-default)]',
   };
 
   function tagColor(tagKey: string): string {
     var tag = allTags.find(function(t: any) { return t.tag_key === tagKey; });
-    return tag ? (TAG_COLORS[tag.category] || TAG_COLORS.governance) : 'bg-slate-50 text-slate-600 border-slate-200';
+    return tag ? (TAG_COLORS[tag.category] || TAG_COLORS.governance) : 'bg-[var(--surface-base)] text-[var(--text-secondary)] border-[var(--border-default)]';
   }
 
   function getFilteredCatalog(): any[] {

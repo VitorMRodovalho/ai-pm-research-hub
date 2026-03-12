@@ -18,10 +18,10 @@ const {
 } = Astro.props;
 ---
 
-<section id={cardId} class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-  <div class="px-4 py-3 border-b border-slate-200">
+<section id={cardId} class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+  <div class="px-4 py-3 border-b border-[var(--border-default)]">
     <h2 class="text-sm font-bold text-navy">{title}</h2>
-    {subtitle ? <p class="text-[.68rem] text-slate-400">{subtitle}</p> : null}
+    {subtitle ? <p class="text-[.68rem] text-[var(--text-muted)]">{subtitle}</p> : null}
   </div>
   <div class={bodyClass}>
     {canvasId ? (
