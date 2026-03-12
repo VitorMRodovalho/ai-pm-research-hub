@@ -127,13 +127,34 @@ export default function BoardEngine(props: BoardEngineProps) {
 
   if (loading || permissions.isLoading) {
     return (
-      <div className="text-center py-14">
-        <div className="inline-flex items-center gap-3 text-slate-400">
-          <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-          <span className="text-sm font-medium">{i18n.loading}</span>
+      <div className="space-y-4 animate-pulse">
+        <div className="flex items-center justify-between">
+          <div className="h-6 w-48 bg-slate-200 rounded-lg" />
+          <div className="h-9 w-28 bg-slate-200 rounded-xl" />
+        </div>
+        <div className="flex gap-3">
+          <div className="h-9 w-44 bg-slate-100 rounded-xl" />
+          <div className="h-9 w-32 bg-slate-100 rounded-xl" />
+          <div className="h-9 w-36 bg-slate-100 rounded-xl" />
+        </div>
+        <div className="grid grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((n) => (
+            <div key={n} className="space-y-3">
+              <div className="h-4 w-24 bg-slate-200 rounded" />
+              <div className="bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 p-3 space-y-2.5 min-h-[200px]">
+                {[1, 2].map((c) => (
+                  <div key={c} className="bg-white rounded-xl border border-slate-100 p-3 space-y-2">
+                    <div className="h-3 w-full bg-slate-200 rounded" />
+                    <div className="h-3 w-2/3 bg-slate-100 rounded" />
+                    <div className="flex gap-2">
+                      <div className="h-2.5 w-10 bg-slate-100 rounded" />
+                      <div className="h-2.5 w-14 bg-slate-100 rounded" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );

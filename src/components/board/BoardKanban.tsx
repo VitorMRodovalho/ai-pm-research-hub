@@ -189,10 +189,11 @@ export default function BoardKanban({ columns, columnItems, overColumnId, mode, 
   const allColumnIds = columns.map((c) => c.id);
 
   return (
+    <div className="overflow-x-auto -mx-2 px-2 pb-2 scrollbar-thin">
     <div className="grid gap-4" style={{
       gridTemplateColumns: `repeat(${columns.length}, minmax(250px, 1fr))`,
       minHeight: 400,
-      overflowX: 'auto',
+      minWidth: columns.length * 266,
     }}>
       {columns.map((col) => (
         <KanbanColumn key={col.id} col={col}
@@ -205,6 +206,7 @@ export default function BoardKanban({ columns, columnItems, overColumnId, mode, 
           mode={mode}
           canMove={permissions.canMove} />
       ))}
+    </div>
     </div>
   );
 }

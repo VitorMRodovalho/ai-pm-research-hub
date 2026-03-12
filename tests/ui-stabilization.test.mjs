@@ -1083,3 +1083,103 @@ test('tribes deadline formatting no longer relies on manual UTC math or stale fi
   assert.equal(en.includes("'tribes.deadline': 'Closes Sat 03/08 12PM BRT'"), false);
   assert.equal(es.includes("'tribes.deadline': 'Cierra Sáb 08/Mar 12h BRT'"), false);
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BoardEngine integration tests
+// ═══════════════════════════════════════════════════════════════════════════
+
+test('BoardEngine types define all required interfaces for board data model', () => {
+  const types = read('src/types/board.ts');
+  assert.equal(types.includes('export interface Board {'), true);
+  assert.equal(types.includes('export interface BoardItem {'), true);
+  assert.equal(types.includes('export interface LifecycleEvent {'), true);
+  assert.equal(types.includes('export interface BoardMember {'), true);
+  assert.equal(types.includes('export interface BoardSummary {'), true);
+  assert.equal(types.includes('export interface ColumnMeta {'), true);
+  assert.equal(types.includes('export interface BoardEngineProps {'), true);
+  assert.equal(types.includes('export interface BoardI18n {'), true);
+  assert.equal(types.includes('export const DEFAULT_I18N'), true);
+  assert.equal(types.includes('export const COLUMN_PRESETS'), true);
+  assert.equal(types.includes('export function getColumnMeta'), true);
+});
+
+test('BoardEngine hooks use correct Supabase RPC patterns (no .catch on rpc)', () => {
+  const useBoard = read('src/hooks/useBoard.ts');
+  const useMutations = read('src/hooks/useBoardMutations.ts');
+  const usePerms = read('src/hooks/useBoardPermissions.ts');
+  const useFilters = read('src/hooks/useBoardFilters.ts');
+
+  assert.equal(useBoard.includes('.rpc('), true);
+  assert.equal(useBoard.includes('.catch('), false);
+  assert.equal(useMutations.includes('.catch('), false);
+  assert.equal(usePerms.includes('.catch('), false);
+
+  assert.equal(useMutations.includes("await sb.rpc('move_board_item'"), true);
+  assert.equal(useMutations.includes("await sb.rpc('create_board_item'"), true);
+  assert.equal(useMutations.includes("await sb.rpc('update_board_item'"), true);
+  assert.equal(useMutations.includes("await sb.rpc('delete_board_item'"), true);
+  assert.equal(useMutations.includes("await sb.rpc('duplicate_board_item'"), true);
+  assert.equal(useMutations.includes("await sb.rpc('move_item_to_board'"), true);
+
+  assert.equal(useFilters.includes('export function useBoardFilters'), true);
+  assert.equal(useFilters.includes('curationStatus'), true);
+});
+
+test('BoardEngine orchestrator integrates all sub-components and DnD', () => {
+  const engine = read('src/components/islands/BoardEngine.tsx');
+  assert.equal(engine.includes('import BoardHeader'), true);
+  assert.equal(engine.includes('import BoardFilters'), true);
+  assert.equal(engine.includes('import BoardKanban'), true);
+  assert.equal(engine.includes('import CardDetail'), true);
+  assert.equal(engine.includes('import CardCreate'), true);
+  assert.equal(engine.includes('import ToastContainer'), true);
+  assert.equal(engine.includes('DndContext'), true);
+  assert.equal(engine.includes('DragOverlay'), true);
+  assert.equal(engine.includes('PointerSensor'), true);
+  assert.equal(engine.includes('TouchSensor'), true);
+  assert.equal(engine.includes('KeyboardSensor'), true);
+  assert.equal(engine.includes("mode === 'readonly'"), true);
+});
+
+test('BoardEngine supports readonly mode with visual banner and DnD block', () => {
+  const engine = read('src/components/islands/BoardEngine.tsx');
+  assert.equal(engine.includes("mode === 'readonly'"), true);
+  assert.equal(engine.includes('Modo somente leitura'), true);
+  assert.equal(engine.includes("mode !== 'readonly'"), true);
+});
+
+test('BoardKanban cards show curation SLA badges in curation mode', () => {
+  const kanban = read('src/components/board/BoardKanban.tsx');
+  assert.equal(kanban.includes("mode === 'curation'"), true);
+  assert.equal(kanban.includes('curation_status'), true);
+  assert.equal(kanban.includes('curation_due_at'), true);
+  assert.equal(kanban.includes('SLA Vencido'), true);
+});
+
+test('CardDetail supports keyboard Escape to close and has ARIA attributes', () => {
+  const detail = read('src/components/board/CardDetail.tsx');
+  assert.equal(detail.includes("e.key === 'Escape'"), true);
+  assert.equal(detail.includes('role="dialog"'), true);
+  assert.equal(detail.includes('aria-modal="true"'), true);
+});
+
+test('CardCreate supports keyboard Escape to close and has ARIA attributes', () => {
+  const create = read('src/components/board/CardCreate.tsx');
+  assert.equal(create.includes("e.key === 'Escape'"), true);
+  assert.equal(create.includes('role="dialog"'), true);
+  assert.equal(create.includes('aria-modal="true"'), true);
+});
+
+test('generic board route exists and renders BoardEngine', () => {
+  const page = read('src/pages/admin/board/[id].astro');
+  assert.equal(page.includes('BoardEngine client:load'), true);
+  assert.equal(page.includes('boardId={boardId}'), true);
+  assert.equal(page.includes('Astro.params.id'), true);
+});
+
+test('comms-ops page integrates both CommsDashboard and BoardEngine', () => {
+  const page = read('src/pages/admin/comms-ops.astro');
+  assert.equal(page.includes('CommsDashboard client:load'), true);
+  assert.equal(page.includes('BoardEngine client:load'), true);
+  assert.equal(page.includes('domainKey="communication"'), true);
+});

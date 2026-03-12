@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { BoardI18n, BoardMember } from '../../types/board';
 import { COLUMN_PRESETS } from '../../types/board';
 import { getSb } from '../../hooks/useBoard';
@@ -15,6 +15,16 @@ interface Props {
 }
 
 export default function CardCreate({ boardId, columns, i18n, onClose, onCreate }: Props) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [onClose]);
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
@@ -55,8 +65,9 @@ export default function CardCreate({ boardId, columns, i18n, onClose, onCreate }
   };
 
   return (
-    <div className="fixed inset-0 z-[600] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-      onClick={onClose}>
+    <div ref={overlayRef} tabIndex={-1}
+      className="fixed inset-0 z-[600] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 outline-none"
+      onClick={onClose} role="dialog" aria-modal="true" aria-label={i18n.newCard || 'Novo Card'}>
       <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-base font-extrabold text-slate-800">➕ {i18n.newCard}</h3>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Board, BoardItem, BoardI18n, LifecycleEvent, BoardMember, BoardSummary } from '../../types/board';
 import { COLUMN_PRESETS } from '../../types/board';
 import { getSb } from '../../hooks/useBoard';
@@ -18,6 +18,16 @@ interface Props {
 }
 
 export default function CardDetail({ item, board, permissions, mode, i18n, onClose, onUpdate, onMove, onDelete, onDuplicate, onMoveToBoard }: Props) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKey);
+    panelRef.current?.focus();
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [onClose]);
   const [title, setTitle] = useState(item.title);
   const [description, setDescription] = useState(item.description || '');
   const [checklist, setChecklist] = useState(item.checklist || []);
@@ -103,8 +113,9 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const checkPct = checkTotal > 0 ? Math.round((checkDone / checkTotal) * 100) : 0;
 
   return (
-    <div className="fixed inset-0 z-[600] flex items-start justify-center bg-black/40 backdrop-blur-sm p-4 pt-16 overflow-y-auto"
-      onClick={onClose}>
+    <div ref={panelRef} tabIndex={-1}
+      className="fixed inset-0 z-[600] flex items-start justify-center bg-black/40 backdrop-blur-sm p-4 pt-16 overflow-y-auto outline-none"
+      onClick={onClose} role="dialog" aria-modal="true" aria-label={item.title}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl" onClick={(e) => e.stopPropagation()}>
         {/* Top bar */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
