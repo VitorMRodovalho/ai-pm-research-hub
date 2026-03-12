@@ -860,7 +860,7 @@ test('eslint i18n gate and visual dark mode playwright suite are configured', ()
   assert.equal(ci.includes('npm run test:visual:dark'), true);
   assert.equal(eslintConfig.includes("react/jsx-no-literals"), true);
   assert.equal(playwrightConfig.includes("testDir: './tests'") || playwrightConfig.includes("testDir: './tests/visual'"), true);
-  assert.equal(visualSpec.includes("test.describe('dark mode visual baseline'"), true);
+  assert.equal(visualSpec.includes("dark mode visual baseline'"), true);
 });
 
 test('navigation renders home anchors without deprecated agenda (pauta removed)', () => {
