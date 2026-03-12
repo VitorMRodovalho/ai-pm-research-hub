@@ -40,8 +40,10 @@ export default function CardCreate({ boardId, columns, i18n, onClose, onCreate }
     (async () => {
       const sb = getSb();
       if (!sb) return;
-      const { data } = await sb.rpc('get_board_members', { p_board_id: boardId });
-      if (data) setMembers(data);
+      try {
+        const { data } = await sb.rpc('get_board_members', { p_board_id: boardId });
+        if (Array.isArray(data)) setMembers(data);
+      } catch { /* RPC may not exist yet — MemberPicker shows empty */ }
     })();
   }, [boardId]);
 

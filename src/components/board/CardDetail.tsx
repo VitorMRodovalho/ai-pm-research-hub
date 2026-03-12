@@ -114,15 +114,16 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
       const sb = getSb();
       if (!sb) return;
 
+      const safe = (p: Promise<any>) => p.then((r: any) => r).catch(() => ({ data: null }));
       const [tl, mb, bl] = await Promise.all([
-        sb.rpc('get_card_timeline', { p_item_id: item.id }),
-        sb.rpc('get_board_members', { p_board_id: board.id }),
-        sb.rpc('list_active_boards'),
+        safe(sb.rpc('get_card_timeline', { p_item_id: item.id })),
+        safe(sb.rpc('get_board_members', { p_board_id: board.id })),
+        safe(sb.rpc('list_active_boards')),
       ]);
 
-      if (tl.data) setTimeline(tl.data);
-      if (mb.data) setMembers(mb.data);
-      if (bl.data) setBoards(bl.data.filter((b: any) => b.id !== board.id));
+      if (Array.isArray(tl.data)) setTimeline(tl.data);
+      if (Array.isArray(mb.data)) setMembers(mb.data);
+      if (Array.isArray(bl.data)) setBoards(bl.data.filter((b: any) => b.id !== board.id));
     })();
   }, [item.id, board.id]);
 
