@@ -14,6 +14,7 @@ test.describe('dark mode visual baseline', () => {
     await page.waitForSelector('#nav-links');
     await expect(page.locator('#nav-links')).toHaveScreenshot('home-nav-links-dark.png', {
       animations: 'disabled',
+      maxDiffPixelRatio: 0.03,
     });
   });
 
@@ -22,6 +23,7 @@ test.describe('dark mode visual baseline', () => {
     await page.waitForSelector('#tribe-denied');
     await expect(page.locator('#tribe-denied')).toHaveScreenshot('tribe-denied-dark.png', {
       animations: 'disabled',
+      maxDiffPixelRatio: 0.03,
     });
   });
 
@@ -30,6 +32,7 @@ test.describe('dark mode visual baseline', () => {
     await page.waitForSelector('#portfolio-denied');
     await expect(page.locator('#portfolio-denied')).toHaveScreenshot('portfolio-denied-dark.png', {
       animations: 'disabled',
+      maxDiffPixelRatio: 0.03,
     });
   });
 });

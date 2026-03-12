@@ -219,7 +219,7 @@ function SortableCard({
       >{item.title || 'Sem titulo'}</button>
       {item.is_legacy && item.origin_tribe_name ? (
         <span className="inline-block text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 font-bold mb-1">
-          Legado: {item.origin_tribe_name}
+          {i18n.legacyLabel || 'Legado:'} {item.origin_tribe_name}
         </span>
       ) : null}
       <div className="flex items-center gap-2 text-[11px] text-[var(--text-secondary)]">
@@ -231,7 +231,7 @@ function SortableCard({
         <span className="truncate">{item.assignee_name || 'Sem responsavel'}</span>
       </div>
       {item.reviewer_name && curation === 'peer_review' ? (
-        <div className="text-[10px] text-amber-600 mt-0.5">Revisor: {item.reviewer_name}</div>
+        <div className="text-[10px] text-amber-600 mt-0.5">{i18n.reviewerLabel || 'Revisor:'} {item.reviewer_name}</div>
       ) : null}
       <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
         {attachments.length > 0 ? (
@@ -275,7 +275,7 @@ function SortableCard({
                   </button>
                 ))}
                 {peers.length === 0 ? (
-                  <div className="px-2 py-1.5 text-[var(--text-muted)] text-[11px]">Nenhum colega disponivel</div>
+                  <div className="px-2 py-1.5 text-[var(--text-muted)] text-[11px]">{i18n.noPeersAvailable || 'Nenhum colega disponivel'}</div>
                 ) : null}
               </Popover.Content>
             </Popover.Portal>
@@ -330,6 +330,13 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
     approvePeer: i18n?.approvePeer || 'Aprovar (Peer)',
     approveForCuration: i18n?.approveForCuration || 'Aprovar para Curadoria',
     selectReviewer: i18n?.selectReviewer || 'Selecionar revisor',
+    legacyLabel: i18n?.legacyLabel || 'Legado:',
+    reviewerLabel: i18n?.reviewerLabel || 'Revisor:',
+    noPeersAvailable: i18n?.noPeersAvailable || 'Nenhum colega disponivel',
+    tribeBoardTitle: i18n?.tribeBoardTitle || 'Quadro da Tribo',
+    curationPipelineTitle: i18n?.curationPipelineTitle || 'Esteira de Curadoria',
+    cardsCount: i18n?.cardsCount || 'cards',
+    editCardTitle: i18n?.editCardTitle || 'Editar card',
   };
 
   const sensors = useSensors(
@@ -657,6 +664,8 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
 
   const boardLaneItems = BOARD_LANES.reduce((n, l) => n + (itemsByLane[l.key]?.length || 0), 0);
   const curationLaneItems = CURATION_LANES.reduce((n, l) => n + (itemsByLane[l.key]?.length || 0), 0);
+  const boardCountLabel = `(${boardLaneItems} ${ui.cardsCount || 'cards'})`;
+  const curationCountLabel = `(${curationLaneItems} ${ui.cardsCount || 'cards'})`;
 
   return (
     <div className="space-y-6">
@@ -669,8 +678,8 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
         {/* Board workflow lanes */}
         <section className="space-y-2">
           <h2 className="text-sm font-bold text-[var(--text-primary)]">
-            Quadro da Tribo
-            <span className="ml-2 text-[11px] font-normal text-[var(--text-muted)]">({boardLaneItems} cards)</span>
+            {ui.tribeBoardTitle}
+            <span className="ml-2 text-[11px] font-normal text-[var(--text-muted)]">{boardCountLabel}</span>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
             {BOARD_LANES.map((lane) => (
@@ -720,8 +729,8 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
         {curationLaneItems > 0 ? (
           <section className="space-y-2">
             <h2 className="text-sm font-bold text-purple-700 dark:text-purple-300">
-              Esteira de Curadoria
-              <span className="ml-2 text-[11px] font-normal text-[var(--text-muted)]">({curationLaneItems} cards)</span>
+              {ui.curationPipelineTitle}
+              <span className="ml-2 text-[11px] font-normal text-[var(--text-muted)]">{curationCountLabel}</span>
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
               {CURATION_LANES.map((lane) => (
@@ -773,7 +782,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
           <Dialog.Content className="fixed z-50 top-1/2 left-1/2 w-full max-w-5xl -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-elevated)] p-5 shadow-xl max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
-            <VisuallyHidden asChild><Dialog.Title>Editar card</Dialog.Title></VisuallyHidden>
+            <VisuallyHidden asChild><Dialog.Title>{ui.editCardTitle}</Dialog.Title></VisuallyHidden>
             {!modalItem ? null : (
               <>
             <div className="flex items-center justify-between gap-3 mb-3">

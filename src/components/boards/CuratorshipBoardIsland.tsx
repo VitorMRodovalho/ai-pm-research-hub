@@ -96,29 +96,29 @@ const CRITERIA = [
 
 // ─── SLA Badge ──────────────────────────────────────────────────────────────
 
-function SlaBadge({ dueAt }: { dueAt?: string | null }) {
+function SlaBadge({ dueAt, ui = {} }: { dueAt?: string | null; ui?: Record<string, string> }) {
   const days = daysUntilDue(dueAt);
   if (days === null) return null;
   if (days < 0) return (
     <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-bold animate-pulse">
-      <AlertTriangle size={10} /> {Math.abs(days)}d atrasado
+      <AlertTriangle size={10} /> {Math.abs(days)}{ui.slaOverdue || 'd atrasado'}
     </span>
   );
   if (days <= 2) return (
     <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold">
-      <Clock size={10} /> {days}d
+      <Clock size={10} /> {days}{ui.slaDays || 'd'}
     </span>
   );
   return (
     <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--surface-section-cool)] text-[var(--text-secondary)]">
-      <Clock size={10} /> {days}d
+      <Clock size={10} /> {days}{ui.slaDays || 'd'}
     </span>
   );
 }
 
 // ─── Tribe Board Item Card (Sortable) ───────────────────────────────────────
 
-function TribeSortableCard({ item, onOpen }: { item: BoardItem; onOpen: (item: BoardItem) => void }) {
+function TribeSortableCard({ item, onOpen, ui = {} }: { item: BoardItem; onOpen: (item: BoardItem) => void; ui?: Record<string, string> }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const isOverdue = (daysUntilDue(item.curation_due_at) ?? 1) < 0;
 
@@ -141,14 +141,14 @@ function TribeSortableCard({ item, onOpen }: { item: BoardItem; onOpen: (item: B
         >
           {item.title || 'Sem título'}
         </button>
-        <SlaBadge dueAt={item.curation_due_at} />
+        <SlaBadge dueAt={item.curation_due_at} ui={ui} />
       </div>
       <div className="flex items-center gap-2 flex-wrap">
         {item.tribe_name ? (
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold">{item.tribe_name}</span>
         ) : null}
         {(item.review_count || 0) > 0 ? (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-100 text-violet-600">{item.review_count}x avaliado</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-100 text-violet-600">{item.review_count}{ui.timesReviewed || 'x avaliado'}</span>
         ) : null}
       </div>
       {item.assignee_name ? <p className="text-[11px] text-[var(--text-secondary)] mt-1 truncate">{item.assignee_name}</p> : null}
@@ -158,7 +158,7 @@ function TribeSortableCard({ item, onOpen }: { item: BoardItem; onOpen: (item: B
         onPointerDown={(e) => e.stopPropagation()}
         className="mt-2 w-full py-1.5 rounded-lg text-[11px] font-semibold bg-blue-900/10 text-blue-900 hover:bg-blue-900/20 cursor-pointer border-0 transition-colors"
       >
-        Avaliar
+        {ui.evaluate || 'Avaliar'}
       </button>
     </article>
   );
@@ -166,10 +166,11 @@ function TribeSortableCard({ item, onOpen }: { item: BoardItem; onOpen: (item: B
 
 // ─── Legacy Item Card (Sortable) ────────────────────────────────────────────
 
-function LegacySortableCard({ item, onApprove, onReject }: {
+function LegacySortableCard({ item, onApprove, onReject, ui = {} }: {
   item: LegacyItem;
   onApprove: (id: string, table: string) => void;
   onReject: (id: string, table: string) => void;
+  ui?: Record<string, string>;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id, data: { item } });
   const icon = item._table === 'artifacts' ? '📄' : '📚';
@@ -182,7 +183,7 @@ function LegacySortableCard({ item, onApprove, onReject }: {
       {...listeners}
       className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3 shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
     >
-      <h4 className="text-[12px] font-bold text-[var(--text-primary)] line-clamp-2 mb-1">{icon} {item.title}</h4>
+      <h4 className="text-[12px] font-bold text-[var(--text-primary)] line-clamp-2 mb-1">{icon}{' '}{item.title}</h4>
       {item.tribe_name ? (
         <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold mb-1">{item.tribe_name}</span>
       ) : null}
@@ -200,7 +201,7 @@ function LegacySortableCard({ item, onApprove, onReject }: {
             onClick={() => onApprove(item.id, item._table)}
             className="flex-1 px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-semibold border border-emerald-200 hover:bg-emerald-100 cursor-pointer transition-colors"
           >
-            ✅ Aprovar
+            {ui.approveBtn || '✅ Aprovar'}
           </button>
         ) : null}
         {item.status !== 'rejected' ? (
@@ -208,7 +209,7 @@ function LegacySortableCard({ item, onApprove, onReject }: {
             onClick={() => onReject(item.id, item._table)}
             className="flex-1 px-2 py-1 rounded-lg bg-red-50 text-red-600 text-[10px] font-semibold border border-red-200 hover:bg-red-100 cursor-pointer transition-colors"
           >
-            ❌ Descartar
+            {ui.discardBtn || '❌ Descartar'}
           </button>
         ) : null}
       </div>
@@ -253,9 +254,10 @@ function ScoreInput({ value, onChange }: { value: number; onChange: (v: number) 
 
 // ─── Review Rubric Dialog ───────────────────────────────────────────────────
 
-function ReviewRubricDialog({ item, open, onClose, onSubmit }: {
+function ReviewRubricDialog({ item, open, onClose, onSubmit, ui = {} }: {
   item: BoardItem; open: boolean; onClose: () => void;
   onSubmit: (decision: string, scores: Record<string, number>, feedback: string) => Promise<void>;
+  ui?: Record<string, string>;
 }) {
   const [scores, setScores] = useState<Record<string, number>>({});
   const [feedback, setFeedback] = useState('');
@@ -275,6 +277,8 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit }: {
 
   useEffect(() => { if (open) { setScores({}); setFeedback(''); setShowHistory(false); } }, [open, item?.id]);
 
+  const historyBtnLabel = `${ui.historyLabel || 'Histórico'} (${item.review_history?.length || 0})`;
+
   return (
     <Dialog.Root open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <Dialog.Portal>
@@ -283,13 +287,13 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit }: {
           className="fixed right-0 top-0 h-full w-full max-w-lg bg-[var(--surface-elevated)] shadow-2xl z-50 overflow-y-auto"
           aria-describedby={undefined}
         >
-          <VisuallyHidden asChild><Dialog.Title>Avaliação de curadoria</Dialog.Title></VisuallyHidden>
+          <VisuallyHidden asChild><Dialog.Title>{ui.reviewDialogTitle || 'Avaliação de curadoria'}</Dialog.Title></VisuallyHidden>
 
           <div className="sticky top-0 bg-[var(--surface-elevated)] border-b border-[var(--border-default)] px-6 py-4 z-10">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FileText size={18} className="text-blue-900" />
-                <h2 className="text-base font-bold text-blue-900">Avaliação de Curadoria</h2>
+                <h2 className="text-base font-bold text-blue-900">{ui.reviewHeading || 'Avaliação de Curadoria'}</h2>
               </div>
               <Dialog.Close asChild>
                 <button className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-muted)] border-0 bg-transparent cursor-pointer">
@@ -304,7 +308,7 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit }: {
               <h3 className="text-sm font-bold text-blue-900">{item.title}</h3>
               <div className="flex flex-wrap gap-2">
                 {item.tribe_name ? <span className="text-[11px] px-2 py-0.5 rounded-full bg-[var(--surface-section-cool)] text-[var(--text-secondary)]">{item.tribe_name}</span> : null}
-                <SlaBadge dueAt={item.curation_due_at} />
+                <SlaBadge dueAt={item.curation_due_at} ui={ui} />
               </div>
               {item.assignee_name ? <p className="text-xs text-[var(--text-secondary)] flex items-center gap-1"><User size={12} /> {item.assignee_name}</p> : null}
               {item.description ? <p className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap max-h-32 overflow-y-auto bg-[var(--surface-base)] rounded-lg p-3">{item.description}</p> : null}
@@ -314,7 +318,7 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit }: {
               <section>
                 <button type="button" onClick={() => setShowHistory(!showHistory)} className="flex items-center gap-1 text-xs font-semibold text-violet-600 hover:underline bg-transparent border-0 cursor-pointer p-0">
                   {showHistory ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                  Histórico ({item.review_history.length})
+                  {historyBtnLabel}
                 </button>
                 {showHistory ? (
                   <div className="mt-2 space-y-2">
@@ -323,7 +327,7 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit }: {
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-[var(--text-primary)]">{r.curator_name || '—'}</span>
                           <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${r.decision === 'approved' ? 'bg-emerald-100 text-emerald-700' : r.decision === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
-                            {r.decision === 'approved' ? 'Aprovado' : r.decision === 'rejected' ? 'Rejeitado' : 'Devolvido'}
+                            {r.decision === 'approved' ? (ui.histApproved || 'Aprovado') : r.decision === 'rejected' ? (ui.histRejected || 'Rejeitado') : (ui.histReturned || 'Devolvido')}
                           </span>
                         </div>
                         {r.feedback ? <p className="text-[var(--text-secondary)]">{r.feedback}</p> : null}
@@ -336,7 +340,7 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit }: {
 
             <section className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-blue-900 flex items-center gap-1.5"><Star size={14} /> Rubrica</h4>
+                <h4 className="text-sm font-bold text-blue-900 flex items-center gap-1.5"><Star size={14} /> {ui.rubric || 'Rubrica'}</h4>
                 {avgScore ? (
                   <span className={`text-sm font-bold px-2 py-0.5 rounded-full ${parseFloat(avgScore) >= 4 ? 'bg-emerald-100 text-emerald-700' : parseFloat(avgScore) >= 3 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
                     {avgScore}
@@ -355,7 +359,7 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit }: {
             </section>
 
             <section className="space-y-2">
-              <label className="text-xs font-bold text-blue-900">Feedback para a Tribo</label>
+              <label className="text-xs font-bold text-blue-900">{ui.feedbackLabel || 'Feedback para a Tribo'}</label>
               <textarea
                 value={feedback} onChange={(e) => setFeedback(e.target.value)} rows={3}
                 placeholder="Obrigatório para devoluções e rejeições..."
@@ -366,15 +370,15 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit }: {
             <section className="flex flex-col gap-2 pt-2 border-t border-[var(--border-default)]">
               <button type="button" disabled={!allScored || submitting} onClick={() => handleAction('approved')}
                 className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border-0 cursor-pointer">
-                {submitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />} Aprovar e Publicar
+                {submitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />} {ui.approvePublish || 'Aprovar e Publicar'}
               </button>
               <button type="button" disabled={!feedback.trim() || submitting} onClick={() => handleAction('returned_for_revision')}
                 className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border-0 cursor-pointer">
-                {submitting ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />} Devolver à Tribo
+                {submitting ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />} {ui.returnToTribe || 'Devolver à Tribo'}
               </button>
               <button type="button" disabled={!feedback.trim() || submitting} onClick={() => handleAction('rejected')}
                 className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border-0 cursor-pointer">
-                {submitting ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />} Rejeitar
+                {submitting ? <Loader2 size={16} className="animate-spin" /> : <XCircle size={16} />} {ui.reject || 'Rejeitar'}
               </button>
             </section>
           </div>
@@ -600,8 +604,8 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
   );
 
   if (denied) return (
-    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
-      <div className="text-3xl mb-3">🔒</div>
+    <div id="cur-denied" className="bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
+      <div className="text-3xl mb-3">{ui.lockIcon || '🔒'}</div>
       <p className="font-bold text-amber-800 mb-3">{ui.denied || 'Acesso restrito'}</p>
       <a href="/admin" className="inline-block px-5 py-2.5 bg-blue-900 text-white rounded-xl text-sm font-bold no-underline hover:opacity-90">{ui.backAdmin || 'Voltar'}</a>
     </div>
@@ -609,61 +613,63 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
 
   if (error) return (
     <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
-      <div className="text-3xl mb-3">⚠️</div>
-      <p className="font-bold text-red-700 mb-2">Erro ao carregar</p>
+      <div className="text-3xl mb-3">{ui.warnIcon || '⚠️'}</div>
+      <p className="font-bold text-red-700 mb-2">{ui.loadError || 'Erro ao carregar'}</p>
       <p className="text-sm text-red-600 mb-4">{error}</p>
       <button onClick={fetchAll} className="px-5 py-2.5 bg-red-600 text-white rounded-xl text-sm font-bold cursor-pointer hover:bg-red-700 border-0">
-        <RefreshCw size={14} className="inline mr-1" /> Tentar novamente
+        <RefreshCw size={14} className="inline mr-1" /> {ui.retry || 'Tentar novamente'}
       </button>
     </div>
   );
 
   const overdueCount = tribeItems.filter((i) => (daysUntilDue(i.curation_due_at) ?? 1) < 0).length;
+  const pubLinkLabel = ui.publicationsPath || '/publications';
+  const pubFooter = (ui.publishedNote || 'Itens publicados aparecem em ') + pubLinkLabel + '.';
 
   return (
-    <div className="space-y-8">
+    <div id="cur-board" className="space-y-8">
       {/* ── Section 1: Tribe Board Items (curation_pending → published) ── */}
       <section>
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h2 className="text-lg font-extrabold text-blue-900">Itens das Tribos</h2>
-            <p className="text-xs text-[var(--text-secondary)]">Artefatos aprovados pelos líderes. Arraste para publicar ou clique para avaliar.</p>
+            <h2 className="text-lg font-extrabold text-blue-900">{ui.tribeItemsTitle || 'Itens das Tribos'}</h2>
+            <p className="text-xs text-[var(--text-secondary)]">{ui.tribeItemsDesc || 'Artefatos aprovados pelos líderes. Arraste para publicar ou clique para avaliar.'}</p>
           </div>
-          <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-[11px] font-bold">{tribeItems.length} pendente{tribeItems.length !== 1 ? 's' : ''}</span>
+          <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-[11px] font-bold">{tribeItems.length}{' '}{ui.pending || 'pendente'}{tribeItems.length !== 1 ? 's' : ''}</span>
         </div>
 
         {overdueCount > 0 ? (
           <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 border border-red-200 mb-3">
             <AlertTriangle size={16} className="text-red-600" />
-            <p className="text-xs font-semibold text-red-700">{overdueCount} item{overdueCount !== 1 ? 'ns' : ''} com SLA vencido</p>
+            <p className="text-xs font-semibold text-red-700">{overdueCount}{' '}{ui.slaExpiredItems || 'item'}{overdueCount !== 1 ? 'ns' : ''}{' '}{ui.slaExpiredSuffix || 'com SLA vencido'}</p>
           </div>
         ) : null}
 
         {tribeItems.length === 0 ? (
           <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center">
-            <p className="font-bold text-emerald-800">🎉 {ui.empty || 'Nenhum item pendente. Tudo em dia!'}</p>
+            <p className="font-bold text-emerald-800">{ui.celebrateIcon || '🎉'}{' '}{ui.empty || 'Nenhum item pendente. Tudo em dia!'}</p>
           </div>
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onTribeDragEnd}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-[13px] font-bold text-amber-700">Aguardando Curadoria</h3>
+                  <h3 className="text-[13px] font-bold text-amber-700">{ui.awaitingCuration || 'Aguardando Curadoria'}</h3>
                   <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold">{tribeItems.length}</span>
                 </div>
                 <SortableContext id="tribe-pending" items={tribeItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
                   <div className="min-h-[200px] max-h-[60vh] overflow-y-auto space-y-2.5 p-2.5 rounded-xl border-2 border-dashed border-amber-200 bg-amber-50/30">
-                    {tribeItems.map((item) => <TribeSortableCard key={item.id} item={item} onOpen={setModalItem} />)}
+                    {tribeItems.map((item) => <TribeSortableCard key={item.id} item={item} onOpen={setModalItem} ui={ui} />)}
                   </div>
                 </SortableContext>
               </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-[13px] font-bold text-emerald-700">Publicado</h3>
-                  <span className="text-[11px] text-[var(--text-secondary)]">Arraste ou clique "Avaliar"</span>
+                  <h3 className="text-[13px] font-bold text-emerald-700">{ui.published || 'Publicado'}</h3>
+                  <span className="text-[11px] text-[var(--text-secondary)]">{ui.dragOrClickHint || 'Arraste ou clique "Avaliar"'}</span>
                 </div>
                 <DroppableColumn id="tribe-published">
-                  <div className="py-8 text-center text-sm text-[var(--text-muted)]">↓ Solte o card aqui para avaliar e publicar</div>
+                  <div className="py-8 text-center text-sm text-[var(--text-muted)]">{ui.dropToPublish || '↓ Solte o card aqui para avaliar e publicar'}</div>
                 </DroppableColumn>
               </div>
             </div>
@@ -679,8 +685,8 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
         <section>
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h2 className="text-lg font-extrabold text-blue-900">Artefatos & Recursos</h2>
-              <p className="text-xs text-[var(--text-secondary)]">Itens legados de artifacts e hub_resources.</p>
+              <h2 className="text-lg font-extrabold text-blue-900">{ui.legacyTitle || 'Artefatos & Recursos'}</h2>
+              <p className="text-xs text-[var(--text-secondary)]">{ui.legacyDesc || 'Itens legados de artifacts e hub_resources.'}</p>
             </div>
           </div>
 
@@ -701,7 +707,7 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
                 );
               })}
             </div>
-            <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-[11px] font-bold">{filteredLegacy.length} itens</span>
+            <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-[11px] font-bold">{filteredLegacy.length}{' '}{ui.items || 'itens'}</span>
           </div>
 
           <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onLegacyDragEnd}>
@@ -723,9 +729,9 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
                     </div>
                     <SortableContext id={col.id} items={colItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
                       <DroppableColumn id={col.id}>
-                        {colItems.length === 0 ? <div className="py-8 text-center text-[var(--text-muted)] text-[11px]">Vazio</div> : null}
+                        {colItems.length === 0 ? <div className="py-8 text-center text-[var(--text-muted)] text-[11px]">{ui.emptyCol || 'Vazio'}</div> : null}
                         {colItems.map((item) => (
-                          <LegacySortableCard key={item.id} item={item} onApprove={(id, t) => legacyCurate(id, t, 'approve')} onReject={(id, t) => legacyCurate(id, t, 'reject')} />
+                          <LegacySortableCard key={item.id} item={item} onApprove={(id, t) => legacyCurate(id, t, 'approve')} onReject={(id, t) => legacyCurate(id, t, 'reject')} ui={ui} />
                         ))}
                       </DroppableColumn>
                     </SortableContext>
@@ -741,10 +747,10 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
       ) : null}
 
       <p className="text-[12px] text-[var(--text-secondary)]">
-        Itens publicados aparecem em <a href="/publications" className="text-blue-900 font-semibold underline hover:no-underline">/publications</a>.
+        {ui.publishedNote || 'Itens publicados aparecem em '}<a href="/publications" className="text-blue-900 font-semibold underline hover:no-underline">{pubLinkLabel}</a>
       </p>
 
-      {modalItem ? <ReviewRubricDialog item={modalItem} open={!!modalItem} onClose={() => setModalItem(null)} onSubmit={handleReviewSubmit} /> : null}
+      {modalItem ? <ReviewRubricDialog item={modalItem} open={!!modalItem} onClose={() => setModalItem(null)} onSubmit={handleReviewSubmit} ui={ui} /> : null}
     </div>
   );
 }
