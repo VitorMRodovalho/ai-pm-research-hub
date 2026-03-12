@@ -284,7 +284,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                 className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1.5 text-[12px] bg-[var(--surface-card)]
                   outline-none focus:border-blue-400 cursor-pointer">
                 <option value="">{i18n.noAssignee}</option>
-                {members.map((m) => <option key={m.id} value={m.id}>{m.full_name}</option>)}
+                {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             </div>
 
@@ -297,7 +297,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                 className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1.5 text-[12px] bg-[var(--surface-card)]
                   outline-none focus:border-blue-400 cursor-pointer">
                 <option value="">{i18n.noReviewer}</option>
-                {members.map((m) => <option key={m.id} value={m.id}>{m.full_name}</option>)}
+                {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             </div>
 

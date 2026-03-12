@@ -80,7 +80,7 @@ export interface LifecycleEvent {
 
 export interface BoardMember {
   id: string;
-  full_name: string;
+  name: string;
   avatar_url: string | null;
   operational_role: string;
 }

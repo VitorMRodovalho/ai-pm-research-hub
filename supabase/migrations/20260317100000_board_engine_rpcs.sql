@@ -37,9 +37,9 @@ BEGIN
           'description', i.description,
           'status', i.status,
           'assignee_id', i.assignee_id,
-          'assignee_name', am.full_name,
+          'assignee_name', am.name,
           'reviewer_id', i.reviewer_id,
-          'reviewer_name', rm.full_name,
+          'reviewer_name', rm.name,
           'tags', i.tags,
           'labels', i.labels,
           'due_date', i.due_date,
@@ -96,7 +96,7 @@ $$;
 -- ─── 3. get_board_members: Members for MemberPicker ─────────────────────────
 
 CREATE OR REPLACE FUNCTION public.get_board_members(p_board_id uuid)
-RETURNS TABLE(id uuid, full_name text, avatar_url text, operational_role text)
+RETURNS TABLE(id uuid, name text, avatar_url text, operational_role text)
 LANGUAGE plpgsql SECURITY DEFINER
 AS $$
 DECLARE
@@ -107,14 +107,14 @@ BEGIN
   FROM project_boards pb WHERE pb.id = p_board_id;
 
   RETURN QUERY
-  SELECT m.id, m.full_name, m.avatar_url, m.operational_role
+  SELECT m.id, m.name, m.avatar_url, m.operational_role
   FROM members m
   WHERE m.is_active = true
     AND (
       v_scope = 'global'
       OR (v_scope = 'tribe' AND m.tribe_id = v_tribe_id)
     )
-  ORDER BY m.full_name;
+  ORDER BY m.name;
 END;
 $$;
 
@@ -266,7 +266,7 @@ BEGIN
       (board_id, item_id, action, reason, actor_member_id)
     VALUES
       (v_board_id, p_item_id, 'assigned',
-       'Atribuído a ' || coalesce((SELECT full_name FROM members WHERE id = v_new_assignee), 'ninguém'),
+       'Atribuído a ' || coalesce((SELECT name FROM members WHERE id = v_new_assignee), 'ninguém'),
        v_actor);
   END IF;
 END;
@@ -393,7 +393,7 @@ BEGIN
     e.previous_status,
     e.new_status,
     e.reason,
-    m.full_name AS actor_name,
+    m.name AS actor_name,
     e.created_at
   FROM board_lifecycle_events e
   LEFT JOIN members m ON m.id = e.actor_member_id
@@ -421,9 +421,9 @@ BEGIN
         'description', i.description,
         'status', i.status,
         'assignee_id', i.assignee_id,
-        'assignee_name', am.full_name,
+        'assignee_name', am.name,
         'reviewer_id', i.reviewer_id,
-        'reviewer_name', rm.full_name,
+        'reviewer_name', rm.name,
         'tags', i.tags,
         'labels', i.labels,
         'due_date', i.due_date,
