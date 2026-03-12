@@ -6,12 +6,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
 <BaseLayout title={t('nav.adminWebinars', lang)} activePage="webinars">
-  <div id="webinars-loading" class="max-w-[1200px] mx-auto px-4 py-12 text-center text-slate-400">
+  <div id="webinars-loading" class="max-w-[1200px] mx-auto px-4 py-12 text-center text-[var(--text-muted)]">
     Carregando painel de webinars...
   </div>
 
   <div id="webinars-content" class="hidden max-w-[1200px] mx-auto px-4 pb-12 space-y-6">
-    <section class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+    <section class="bg-[var(--surface-card)] dark:bg-slate-900 rounded-2xl border border-[var(--border-default)] dark:border-slate-700 shadow-sm overflow-hidden">
       <div class="p-6 sm:p-8">
         <div class="flex items-start justify-between gap-4 flex-wrap">
           <div class="max-w-3xl">
@@ -21,7 +21,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
               <span>Member-first</span>
             </div>
             <h1 class="text-2xl font-extrabold text-navy dark:text-slate-100 mb-2">Webinars</h1>
-            <p class="text-sm text-slate-500 dark:text-slate-300 leading-relaxed">
+            <p class="text-sm text-[var(--text-secondary)] dark:text-slate-300 leading-relaxed">
               Esta area agora orquestra webinars internos usando o stack ja existente da plataforma:
               agenda e presenca via eventos, comunicacao via painel de comms, replay em apresentacoes
               e biblioteca no workspace. Registro externo, speaker CRM e schema novo seguem fora de escopo.
@@ -31,13 +31,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
             <a href="/attendance" class="px-4 py-2.5 rounded-xl bg-navy text-white text-[.78rem] font-semibold no-underline text-center hover:opacity-90 transition-all">
               Agenda & Presenca
             </a>
-            <a href="/admin/comms" class="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-[.78rem] font-semibold no-underline text-center hover:bg-slate-50 transition-all">
+            <a href="/admin/comms" class="px-4 py-2.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold no-underline text-center hover:bg-[var(--overlay-card-hover)] transition-all">
               Comms
             </a>
-            <a href="/presentations" class="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-[.78rem] font-semibold no-underline text-center hover:bg-slate-50 transition-all">
+            <a href="/presentations" class="px-4 py-2.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold no-underline text-center hover:bg-[var(--overlay-card-hover)] transition-all">
               Replays
             </a>
-            <a href="/library" class="px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 text-[.78rem] font-semibold no-underline text-center hover:bg-slate-50 transition-all">
+            <a href="/library" class="px-4 py-2.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold no-underline text-center hover:bg-[var(--overlay-card-hover)] transition-all">
               Biblioteca
             </a>
           </div>
@@ -47,75 +47,75 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
     <section id="webinars-stats" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"></section>
 
-    <section class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-      <div class="px-5 py-4 border-b border-slate-200">
+    <section class="bg-[var(--surface-card)] dark:bg-slate-900 rounded-2xl border border-[var(--border-default)] dark:border-slate-700 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-[var(--border-default)]">
         <h2 class="text-sm font-bold text-navy">Acoes rapidas prioritarias</h2>
-        <p class="text-[.72rem] text-slate-400">Proxima acao sugerida por webinar, usando apenas os modulos ja existentes</p>
+        <p class="text-[.72rem] text-[var(--text-muted)]">Proxima acao sugerida por webinar, usando apenas os modulos ja existentes</p>
       </div>
       <div id="webinars-actions" class="p-5"></div>
     </section>
 
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-200">
+      <div class="bg-[var(--surface-card)] dark:bg-slate-900 rounded-2xl border border-[var(--border-default)] dark:border-slate-700 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-[var(--border-default)]">
           <h2 class="text-sm font-bold text-navy">Proximos webinars</h2>
-          <p class="text-[.72rem] text-slate-400">Sessões futuras ja cadastradas como `events.type='webinar'`</p>
+          <p class="text-[.72rem] text-[var(--text-muted)]">Sessões futuras ja cadastradas como `events.type='webinar'`</p>
         </div>
         <div id="webinars-upcoming" class="p-5"></div>
       </div>
 
-      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-200">
+      <div class="bg-[var(--surface-card)] dark:bg-slate-900 rounded-2xl border border-[var(--border-default)] dark:border-slate-700 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-[var(--border-default)]">
           <h2 class="text-sm font-bold text-navy">Fila de follow-up</h2>
-          <p class="text-[.72rem] text-slate-400">Webinars concluidos que ainda precisam de replay ou fechamento operacional</p>
+          <p class="text-[.72rem] text-[var(--text-muted)]">Webinars concluidos que ainda precisam de replay ou fechamento operacional</p>
         </div>
         <div id="webinars-followup" class="p-5"></div>
       </div>
     </section>
 
-    <section class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-      <div class="px-5 py-4 border-b border-slate-200">
+    <section class="bg-[var(--surface-card)] dark:bg-slate-900 rounded-2xl border border-[var(--border-default)] dark:border-slate-700 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-[var(--border-default)]">
         <h2 class="text-sm font-bold text-navy">Publicacao de replay</h2>
-        <p class="text-[.72rem] text-slate-400">Status do replay entre `Presentations` e `Workspace` para webinars ja realizados</p>
+        <p class="text-[.72rem] text-[var(--text-muted)]">Status do replay entre `Presentations` e `Workspace` para webinars ja realizados</p>
       </div>
       <div id="webinars-publication" class="p-5"></div>
     </section>
 
-    <section class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-      <div class="px-5 py-4 border-b border-slate-200">
+    <section class="bg-[var(--surface-card)] dark:bg-slate-900 rounded-2xl border border-[var(--border-default)] dark:border-slate-700 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-[var(--border-default)]">
         <h2 class="text-sm font-bold text-navy">Fluxo operacional do MVP</h2>
-        <p class="text-[.72rem] text-slate-400">Sem schema novo: apenas orquestracao sobre modulos existentes</p>
+        <p class="text-[.72rem] text-[var(--text-muted)]">Sem schema novo: apenas orquestracao sobre modulos existentes</p>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 p-5">
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
           <div class="text-lg mb-2">1. 📅</div>
           <h3 class="text-[.82rem] font-bold text-navy mb-1">Planejar</h3>
-          <p class="text-[.74rem] text-slate-500">Crie a sessão em `Attendance` como webinar e defina data, duracao, audiencia e link.</p>
+          <p class="text-[.74rem] text-[var(--text-secondary)]">Crie a sessão em `Attendance` como webinar e defina data, duracao, audiencia e link.</p>
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
           <div class="text-lg mb-2">2. 📣</div>
           <h3 class="text-[.82rem] font-bold text-navy mb-1">Promover</h3>
-          <p class="text-[.74rem] text-slate-500">Use `Admin Comms` para convites e lembretes, sem abrir uma trilha paralela de registro externo.</p>
+          <p class="text-[.74rem] text-[var(--text-secondary)]">Use `Admin Comms` para convites e lembretes, sem abrir uma trilha paralela de registro externo.</p>
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
           <div class="text-lg mb-2">3. ✅</div>
           <h3 class="text-[.82rem] font-bold text-navy mb-1">Registrar presenca</h3>
-          <p class="text-[.74rem] text-slate-500">Capture presenca com check-in autenticado e correcao de roster por lideranca ou admin.</p>
+          <p class="text-[.74rem] text-[var(--text-secondary)]">Capture presenca com check-in autenticado e correcao de roster por lideranca ou admin.</p>
         </div>
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
           <div class="text-lg mb-2">4. ▶️</div>
           <h3 class="text-[.82rem] font-bold text-navy mb-1">Publicar replay</h3>
-          <p class="text-[.74rem] text-slate-500">Feche o webinar com `youtube_url`, materiais e distribuicao em `Presentations` ou `Workspace`.</p>
+          <p class="text-[.74rem] text-[var(--text-secondary)]">Feche o webinar com `youtube_url`, materiais e distribuicao em `Presentations` ou `Workspace`.</p>
         </div>
       </div>
     </section>
 
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-200">
+      <div class="bg-[var(--surface-card)] dark:bg-slate-900 rounded-2xl border border-[var(--border-default)] dark:border-slate-700 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-[var(--border-default)]">
           <h2 class="text-sm font-bold text-navy">Incluido agora</h2>
         </div>
-        <ul class="p-5 space-y-2 text-[.8rem] text-slate-600">
+        <ul class="p-5 space-y-2 text-[.8rem] text-[var(--text-secondary)]">
           <li>Agenda e sessao operacional sobre `events.type='webinar'`</li>
           <li>Presenca autenticada com `attendance`</li>
           <li>Replay com `youtube_url` e artefatos existentes</li>
@@ -124,11 +124,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         </ul>
       </div>
 
-      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-        <div class="px-5 py-4 border-b border-slate-200">
+      <div class="bg-[var(--surface-card)] dark:bg-slate-900 rounded-2xl border border-[var(--border-default)] dark:border-slate-700 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-[var(--border-default)]">
           <h2 class="text-sm font-bold text-navy">Fora de escopo desta fase</h2>
         </div>
-        <ul class="p-5 space-y-2 text-[.8rem] text-slate-600">
+        <ul class="p-5 space-y-2 text-[.8rem] text-[var(--text-secondary)]">
           <li>Registro anonimo ou publico dentro do Hub</li>
           <li>CRM de speakers e perfis reutilizaveis</li>
           <li>Integracoes nativas com Zoom, Meet ou YouTube</li>
@@ -138,11 +138,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       </div>
     </section>
 
-    <section class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between gap-3 flex-wrap">
+    <section class="bg-[var(--surface-card)] dark:bg-slate-900 rounded-2xl border border-[var(--border-default)] dark:border-slate-700 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-[var(--border-default)] flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h2 class="text-sm font-bold text-navy">Sessoes cadastradas</h2>
-          <p class="text-[.72rem] text-slate-400">Visao consolidada dos webinars ja presentes no fluxo atual de eventos</p>
+          <p class="text-[.72rem] text-[var(--text-muted)]">Visao consolidada dos webinars ja presentes no fluxo atual de eventos</p>
         </div>
         <a href="/attendance" class="text-[.78rem] font-semibold text-teal no-underline hover:underline">
           Abrir gestao de eventos

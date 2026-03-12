@@ -81,6 +81,9 @@ async function run() {
     await assertOk('/es');
 
     await assertOk('/teams');
+    await assertOk('/workspace');
+    await assertOk('/en/workspace');
+    await assertOk('/es/workspace');
     await assertContains('/admin/selection', 'id="sel-denied"');
     await assertContains('/admin/analytics', 'id="analytics-denied"');
     await assertContains('/admin/curatorship', 'id="cur-denied"');

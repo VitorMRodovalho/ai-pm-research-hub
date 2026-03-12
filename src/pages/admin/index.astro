@@ -507,7 +507,7 @@ const ADMIN_I18N = {
                 Inclui instrucoes de login, preenchimento de perfil, sincronizacao de Credly e mencao a Tribo 3 (TMO/PMO).
               </div>
               <div class="flex gap-3">
-                <button id="btn-onboarding-dry" class="flex-1 px-4 py-2 bg-slate-200 text-[var(--text-primary)] rounded-lg text-sm font-semibold hover:bg-[var(--surface-hover)]">Simular (Dry Run)</button>
+                <button id="btn-onboarding-dry" class="flex-1 px-4 py-2 bg-[var(--surface-base)] text-[var(--text-primary)] rounded-lg text-sm font-semibold hover:bg-[var(--surface-hover)]">Simular (Dry Run)</button>
                 <button id="btn-onboarding-send" class="flex-1 px-4 py-2 bg-teal text-white rounded-lg text-sm font-semibold hover:opacity-90">Enviar para Todos</button>
               </div>
               <div id="onboarding-result" class="hidden text-[.72rem] bg-[var(--surface-base)] rounded-lg p-3 overflow-auto max-h-48"></div>
@@ -691,7 +691,7 @@ const ADMIN_I18N = {
                 <button type="button" id="knw-btn-save" data-action="save-knowledge-asset" class="px-4 py-2 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
                   {t('admin.knowledge.btnSave', lang)}
                 </button>
-                <button type="button" id="knw-btn-cancel" data-action="cancel-knowledge-edit" class="hidden px-4 py-2 bg-slate-200 text-[var(--text-secondary)] rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:bg-[var(--surface-hover)] transition-all">{t('common.cancel', lang)}</button>
+                <button type="button" id="knw-btn-cancel" data-action="cancel-knowledge-edit" class="hidden px-4 py-2 bg-[var(--surface-base)] text-[var(--text-secondary)] rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:bg-[var(--surface-hover)] transition-all">{t('common.cancel', lang)}</button>
               </div>
             </div>
             <div id="knw-list"><p class="text-[var(--text-muted)] text-[.72rem] text-center py-3">{t('admin.knowledge.loading', lang)}</p></div>
@@ -784,7 +784,7 @@ const ADMIN_I18N = {
                 <button type="button" id="trello-import-btn" class="px-4 py-2 bg-purple-600 text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
                   &#x1F680; Importar
                 </button>
-                <button type="button" id="trello-dryrun-btn" class="px-4 py-2 bg-slate-200 text-[var(--text-secondary)] rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:bg-[var(--surface-hover)] transition-all">
+                <button type="button" id="trello-dryrun-btn" class="px-4 py-2 bg-[var(--surface-base)] text-[var(--text-secondary)] rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:bg-[var(--surface-hover)] transition-all">
                   &#x1F50D; Dry Run
                 </button>
               </div>
@@ -809,7 +809,7 @@ const ADMIN_I18N = {
                 <button type="button" id="calendar-import-btn" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
                   &#x1F4E5; Importar Eventos
                 </button>
-                <button type="button" id="calendar-dryrun-btn" class="px-4 py-2 bg-slate-200 text-[var(--text-secondary)] rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:bg-[var(--surface-hover)] transition-all">
+                <button type="button" id="calendar-dryrun-btn" class="px-4 py-2 bg-[var(--surface-base)] text-[var(--text-secondary)] rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:bg-[var(--surface-hover)] transition-all">
                   &#x1F50D; Dry Run
                 </button>
               </div>
@@ -1070,7 +1070,7 @@ const ADMIN_I18N = {
             </div>
             <label class="relative inline-flex items-center cursor-pointer">
               <input type="checkbox" id="edit-m-superadmin" class="sr-only peer">
-              <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--surface-card)] after:border-[var(--border-default)] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange"></div>
+              <div class="w-11 h-6 bg-[var(--border-strong)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--surface-card)] after:border-[var(--border-default)] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange"></div>
             </label>
           </div>
           <div class="mt-2 text-[.68rem] text-[var(--text-muted)]" id="edit-m-tier-hint">
@@ -1511,7 +1511,7 @@ const ADMIN_I18N = {
       const full = count >= MAX_SLOTS;
       const isInactive = tribe.is_active === false;
       const statusBadge = isInactive
-        ? '<span class="inline-block mt-1 text-[.58rem] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-slate-200 text-[var(--text-secondary)]">Inativa</span>'
+        ? '<span class="inline-block mt-1 text-[.58rem] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-[var(--surface-base)] text-[var(--text-secondary)]">Inativa</span>'
         : '<span class="inline-block mt-1 text-[.58rem] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Ativa</span>';
       const leaderName = tribe.leader_name || TRIBE_LEADERS[t] || 'Sem líder';
       const toggleLabel = isInactive ? 'Reativar catálogo' : 'Marcar inativa';
@@ -1544,7 +1544,7 @@ const ADMIN_I18N = {
               ${getMemberRole(m) === 'tribe_leader' ? '<span class="text-amber-500">&#x1F451;</span>' : ''}
             </div>
           `).join('')}
-          ${members.length === 0 ? '<span class="text-[.72rem] text-slate-300 italic">Nenhum pesquisador</span>' : ''}
+          ${members.length === 0 ? '<span class="text-[.72rem] text-[var(--text-muted)] italic">Nenhum pesquisador</span>' : ''}
         </div>
         <div class="px-3 pb-3 flex items-center gap-2 flex-wrap">
           <button type="button" data-action="toggle-tribe-active" class="btn-tribe-toggle px-3 py-1.5 rounded-lg text-[.7rem] font-semibold border-0 cursor-pointer transition-all ${toggleClass}"
@@ -1855,7 +1855,7 @@ const ADMIN_I18N = {
 
   function memberTribeTag(m: any): string {
     const tid = m.selected_tribe_id || m.fixed_tribe_id || m.tribe_id;
-    if (!tid) return '<span class="text-[.6rem] text-slate-300">sem tribo</span>';
+    if (!tid) return '<span class="text-[.6rem] text-[var(--text-muted)]">sem tribo</span>';
     const color = TRIBE_COLORS[tid] || '#94A3B8';
     return `<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded" style="background:${color}18;color:${color}">T${String(tid).padStart(2,'0')}</span>`;
   }
@@ -1868,7 +1868,7 @@ const ADMIN_I18N = {
     return cycleOrder.map((code: string) => {
       const record = memberCycles.find((h: any) => h.cycle_code === code);
       const meta = getCycleDisplayMeta(code);
-      if (!record) return `<span class="w-[18px] h-[14px] rounded text-[.5rem] font-bold inline-flex items-center justify-center bg-[var(--surface-section-cool)] text-slate-300" title="${meta.label}: não participou">${meta.abbr}</span>`;
+      if (!record) return `<span class="w-[18px] h-[14px] rounded text-[.5rem] font-bold inline-flex items-center justify-center bg-[var(--surface-section-cool)] text-[var(--text-muted)]" title="${meta.label}: não participou">${meta.abbr}</span>`;
       const opLabel = OPROLE_LABELS[record.operational_role] || record.operational_role || '';
       const desigLabels = (record.designations || []).map((d: string) => DESIG_LABELS[d] || d).join(', ');
       const tooltip = `${meta.label}: ${opLabel}${desigLabels ? ' + ' + desigLabels : ''}${record.tribe_name ? ' · ' + record.tribe_name : ''}`;
@@ -1913,7 +1913,7 @@ const ADMIN_I18N = {
           : '';
 
         return `
-        <div class="member-row flex items-center gap-2 px-4 py-2.5 border-b border-slate-50 hover:bg-[var(--surface-hover)] transition-all ${isActive ? '' : 'opacity-50'}"
+        <div class="member-row flex items-center gap-2 px-4 py-2.5 border-b border-[var(--border-subtle)] hover:bg-[var(--surface-hover)] transition-all ${isActive ? '' : 'opacity-50'}"
              data-name="${(m?.name || '').toLowerCase()}"
              data-email="${(m.email || '').toLowerCase()}"
              data-chapter="${m.chapter || ''}"
@@ -2182,7 +2182,7 @@ const ADMIN_I18N = {
           ${a.message ? `<div class="text-[.65rem] text-[var(--text-muted)] truncate">${escapeHtml(a.message)}</div>` : ''}
         </div>
         ${statusBadge}
-        <span class="text-[.6rem] text-slate-300 flex-shrink-0">${date}</span>
+        <span class="text-[.6rem] text-[var(--text-muted)] flex-shrink-0">${date}</span>
         <button type="button" class="btn-toggle-ann text-[.6rem] px-2 py-0.5 rounded border-0 cursor-pointer transition-all ${a.is_active ? 'bg-red-50 text-crimson hover:bg-red-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}"
           data-ann-id="${escapeAttr(String(a.id))}" data-ann-active="${!a.is_active}">${escapeHtml(toggleLabel)}</button>
         <button type="button" class="btn-delete-ann text-[.6rem] px-2 py-0.5 rounded bg-[var(--surface-base)] text-[var(--text-muted)] hover:bg-red-50 hover:text-crimson border-0 cursor-pointer transition-all"
@@ -2237,7 +2237,7 @@ const ADMIN_I18N = {
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
       .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-      .replace(/`([^`]+)`/g, '<code class="bg-slate-200 px-0.5 rounded text-[.7em]">$1</code>')
+      .replace(/`([^`]+)`/g, '<code class="bg-[var(--surface-base)] px-0.5 rounded text-[.7em]">$1</code>')
       .replace(/\n/g, '<br>');
   }
 
@@ -2312,7 +2312,7 @@ const ADMIN_I18N = {
           ${a.description ? `<div class="text-[.65rem] text-[var(--text-muted)] truncate">${escapeHtml(a.description)}</div>` : ''}
         </div>
         ${statusBadge}
-        <span class="text-[.6rem] text-slate-300 flex-shrink-0">${date}</span>
+        <span class="text-[.6rem] text-[var(--text-muted)] flex-shrink-0">${date}</span>
         <button type="button" class="btn-edit-knw text-[.6rem] px-2 py-0.5 rounded bg-[var(--surface-base)] text-[var(--text-secondary)] hover:bg-navy hover:text-white border-0 cursor-pointer transition-all" data-knw-id="${escapeAttr(String(a.id))}">✏️</button>
         <button type="button" class="btn-toggle-knw text-[.6rem] px-2 py-0.5 rounded border-0 cursor-pointer transition-all ${a.is_active ? 'bg-red-50 text-crimson hover:bg-red-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}" data-knw-id="${escapeAttr(String(a.id))}" data-knw-active="${!a.is_active}">${a.is_active ? ADMIN_I18N.annBtnDeactivate : ADMIN_I18N.annBtnActivate}</button>
       </div>`;
@@ -2984,7 +2984,7 @@ const ADMIN_I18N = {
     // Render preview table
     const tbody = document.getElementById('vrms-table-body')!;
     tbody.innerHTML = vrmsData.map((r: any) => `
-      <tr class="border-b border-slate-50 hover:bg-[var(--surface-hover)]">
+      <tr class="border-b border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">
         <td class="px-3 py-2 font-medium">${escapeHtml(r.name || 'Membro sem nome')}</td>
         <td class="px-3 py-2 font-mono text-[var(--text-secondary)]">${r.pmi_id || '—'}</td>
         <td class="px-3 py-2 text-[var(--text-secondary)]">${r.email}</td>
@@ -3101,7 +3101,7 @@ const ADMIN_I18N = {
           ${r.tribe_name ? `<div class="text-[.68rem] text-[var(--text-muted)] mt-0.5">🏷️ ${r.tribe_name}</div>` : ''}
           ${r.chapter ? `<div class="text-[.68rem] text-[var(--text-muted)]">📍 ${r.chapter}</div>` : ''}
           ${r.notes ? `<div class="text-[.65rem] text-[var(--text-muted)] italic mt-1">📝 ${r.notes}</div>` : ''}
-          <div class="text-[.6rem] text-slate-300 mt-1">${r.is_active ? ADMIN_I18N.cycleHistoryActive : ADMIN_I18N.cycleHistoryInactive} · ${r.cycle_start || ''} → ${r.cycle_end || ADMIN_I18N.cycleHistoryCurrent}</div>
+          <div class="text-[.6rem] text-[var(--text-muted)] mt-1">${r.is_active ? ADMIN_I18N.cycleHistoryActive : ADMIN_I18N.cycleHistoryInactive} · ${r.cycle_start || ''} → ${r.cycle_end || ADMIN_I18N.cycleHistoryCurrent}</div>
         </div>`;
       }).join('')}
 

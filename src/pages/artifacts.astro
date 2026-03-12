@@ -81,9 +81,9 @@ const ARTIFACTS_I18N = {
     <div class="flex gap-2 mb-6 flex-wrap">
       <button class="art-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white"
               data-tab="catalog" data-action="switch-tab">{t('artifacts.tab.catalog', lang)}</button>
-      <button class="art-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
+      <button class="art-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]"
               id="tab-my" data-tab="mine" data-action="switch-tab">{t('artifacts.tab.mine', lang)}</button>
-      <button class="art-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
+      <button class="art-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]"
               id="tab-review" data-tab="review" data-action="switch-tab">{t('artifacts.tab.review', lang)}</button>
     </div>
 
@@ -91,45 +91,45 @@ const ARTIFACTS_I18N = {
     <div id="catalog-category" class="flex gap-2 mb-4">
       <button class="cat-sub px-3.5 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white transition-all"
               data-action="cat-sub" data-cat="produced">{t('artifacts.catProduced', lang)}</button>
-      <button class="cat-sub px-3.5 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+      <button class="cat-sub px-3.5 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
               data-action="cat-sub" data-cat="reference">{t('artifacts.catReference', lang)}</button>
-      <button class="cat-sub px-3.5 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+      <button class="cat-sub px-3.5 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
               data-action="cat-sub" data-cat="">{t('artifacts.catAll', lang)}</button>
     </div>
 
     <!-- Search + Filters (catalog only) -->
     <div id="catalog-filters" class="space-y-3 mb-4">
       <input id="art-search" type="text"
-             class="w-full px-4 py-2.5 rounded-xl border-[1.5px] border-slate-200 text-sm bg-white focus:outline-none focus:border-navy transition-colors"
+             class="w-full px-4 py-2.5 rounded-xl border-[1.5px] border-[var(--border-default)] text-sm bg-[var(--surface-card)] focus:outline-none focus:border-navy transition-colors"
              placeholder={t('artifacts.search', lang)} />
       <div class="flex flex-wrap items-center gap-2">
         <div class="flex gap-1.5 flex-wrap" id="art-type-filters"></div>
         <select id="art-tribe-filter"
-                class="ml-auto px-3 py-1.5 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy cursor-pointer">
+                class="ml-auto px-3 py-1.5 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy cursor-pointer">
           <option value="">{t('workspace.tribeAll', lang)}</option>
         </select>
       </div>
       <div id="art-tag-bar" class="flex flex-wrap gap-1.5"></div>
-      <div id="art-results" class="text-[.7rem] text-slate-400"></div>
+      <div id="art-results" class="text-[.7rem] text-[var(--text-muted)]"></div>
     </div>
 
     <!-- Catalog tab -->
     <div id="panel-catalog">
-      <div class="bg-white rounded-xl border border-slate-200 p-5" id="catalog-list">
+      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5" id="catalog-list">
         <LoadingSkeleton variant="row" count={3} />
       </div>
     </div>
 
     <!-- My artifacts tab -->
     <div id="panel-mine" class="hidden">
-      <div class="bg-white rounded-xl border border-slate-200 p-5" id="mine-list">
+      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5" id="mine-list">
         <LoadingSkeleton variant="row" count={3} />
       </div>
     </div>
 
     <!-- Review queue tab -->
     <div id="panel-review" class="hidden">
-      <div class="bg-white rounded-xl border border-slate-200 p-5" id="review-list">
+      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5" id="review-list">
         <LoadingSkeleton variant="row" count={3} />
       </div>
     </div>
@@ -137,22 +137,22 @@ const ARTIFACTS_I18N = {
 
   <!-- Submit / Edit Modal -->
   <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-artifact">
-    <div class="bg-white rounded-2xl w-full max-w-[560px] overflow-hidden flex flex-col" style="max-height:85vh">
-      <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center flex-shrink-0">
+    <div class="bg-[var(--surface-elevated)] rounded-2xl w-full max-w-[560px] overflow-hidden flex flex-col" style="max-height:85vh">
+      <div class="px-5 py-4 border-b border-[var(--border-default)] flex justify-between items-center flex-shrink-0">
         <h3 class="text-base font-bold text-navy" id="modal-artifact-title">{t('artifacts.modal.submitTitle', lang)}</h3>
-        <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" data-action="close-art-modal">✕</button>
+        <button class="bg-transparent border-0 text-xl cursor-pointer text-[var(--text-muted)]" data-action="close-art-modal">✕</button>
       </div>
       <div class="p-5 overflow-y-auto flex-1">
         <input type="hidden" id="art-id">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <div class="flex flex-col gap-1.5 sm:col-span-2">
-            <label class="text-[12px] font-semibold text-slate-500">{t('artifacts.modal.labelTitle', lang)}</label>
+            <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('artifacts.modal.labelTitle', lang)}</label>
             <input type="text" id="art-title" placeholder={t('artifacts.modal.placeholderTitle', lang)}
-                   class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+                   class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
           </div>
           <div class="flex flex-col gap-1.5">
-            <label class="text-[12px] font-semibold text-slate-500">{t('artifacts.type', lang)}</label>
-            <select id="art-type" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
+            <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('artifacts.type', lang)}</label>
+            <select id="art-type" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
               <option value="article">{t('artifacts.type.article', lang)}</option>
               <option value="ebook">{t('artifacts.type.ebook', lang)}</option>
               <option value="framework">{t('artifacts.type.framework', lang)}</option>
@@ -163,8 +163,8 @@ const ARTIFACTS_I18N = {
             </select>
           </div>
           <div class="flex flex-col gap-1.5">
-            <label class="text-[12px] font-semibold text-slate-500">{t('artifacts.tribe', lang)}</label>
-            <select id="art-tribe" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
+            <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('artifacts.tribe', lang)}</label>
+            <select id="art-tribe" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
               <option value="">{t('artifacts.tribe.none', lang)}</option>
               {tribeOptions.map(opt => (
                 <option value={opt.value}>{opt.label}</option>
@@ -172,19 +172,19 @@ const ARTIFACTS_I18N = {
             </select>
           </div>
           <div class="flex flex-col gap-1.5 sm:col-span-2">
-            <label class="text-[12px] font-semibold text-slate-500">{t('artifacts.modal.labelUrl', lang)}</label>
+            <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('artifacts.modal.labelUrl', lang)}</label>
             <input type="url" id="art-url" placeholder="https://docs.google.com/..."
-                   class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+                   class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
           </div>
           <div class="flex flex-col gap-1.5 sm:col-span-2">
-            <label class="text-[12px] font-semibold text-slate-500">{t('artifacts.modal.labelDesc', lang)}</label>
+            <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('artifacts.modal.labelDesc', lang)}</label>
             <textarea id="art-desc" rows="3" placeholder={t('artifacts.modal.placeholderDesc', lang)}
-                      class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy resize-y"></textarea>
+                      class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy resize-y"></textarea>
           </div>
           <div class="flex flex-col gap-1.5 sm:col-span-2">
-            <label class="text-[12px] font-semibold text-slate-500">{t('upload.label.orFile', lang)}</label>
+            <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('upload.label.orFile', lang)}</label>
             <input type="file" id="art-file" accept=".pdf,.pptx,.png,.jpg,.jpeg"
-                   class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
+                   class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
             <div id="art-file-error" class="hidden text-[11px] text-crimson font-semibold"></div>
           </div>
         </div>
@@ -205,8 +205,8 @@ const ARTIFACTS_I18N = {
           </div>
         </div>
       </div>
-      <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2 flex-shrink-0">
-        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer"
+      <div class="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2 flex-shrink-0">
+        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-[var(--overlay-card-hover)] cursor-pointer"
                 data-action="close-art-modal">{t('artifacts.modal.cancel', lang)}</button>
         <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer"
                 data-action="save-artifact">{t('artifacts.modal.save', lang)}</button>
@@ -216,18 +216,18 @@ const ARTIFACTS_I18N = {
 
   <!-- Review Modal -->
   <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-review">
-    <div class="bg-white rounded-2xl w-full max-w-[480px] overflow-hidden flex flex-col">
-      <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center">
+    <div class="bg-[var(--surface-elevated)] rounded-2xl w-full max-w-[480px] overflow-hidden flex flex-col">
+      <div class="px-5 py-4 border-b border-[var(--border-default)] flex justify-between items-center">
         <h3 class="text-base font-bold text-navy">{t('artifacts.modal.reviewTitle', lang)}</h3>
-        <button class="bg-transparent border-0 text-xl cursor-pointer text-slate-400" data-action="close-review-modal">✕</button>
+        <button class="bg-transparent border-0 text-xl cursor-pointer text-[var(--text-muted)]" data-action="close-review-modal">✕</button>
       </div>
       <div class="p-5">
         <input type="hidden" id="rev-id">
         <div class="text-sm font-bold mb-1" id="rev-title-display"></div>
-        <div class="text-[12px] text-slate-500 mb-4" id="rev-author-display"></div>
+        <div class="text-[12px] text-[var(--text-secondary)] mb-4" id="rev-author-display"></div>
         <div class="flex flex-col gap-1.5 mb-4">
-          <label class="text-[12px] font-semibold text-slate-500">{t('artifacts.modal.labelStatus', lang)}</label>
-          <select id="rev-status" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('artifacts.modal.labelStatus', lang)}</label>
+          <select id="rev-status" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
             <option value="review">{t('artifacts.review', lang)}</option>
             <option value="approved">{t('artifacts.status.approved', lang)}</option>
             <option value="published">{t('artifacts.published', lang)}</option>
@@ -235,13 +235,13 @@ const ARTIFACTS_I18N = {
           </select>
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[12px] font-semibold text-slate-500">{t('artifacts.modal.labelNotes', lang)}</label>
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('artifacts.modal.labelNotes', lang)}</label>
           <textarea id="rev-notes" rows="3" placeholder={t('artifacts.modal.placeholderNotes', lang)}
-                    class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy resize-y"></textarea>
+                    class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy resize-y"></textarea>
         </div>
       </div>
-      <div class="px-5 py-3.5 border-t border-slate-200 flex justify-end gap-2">
-        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer"
+      <div class="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2">
+        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-[var(--overlay-card-hover)] cursor-pointer"
                 data-action="close-review-modal">{t('artifacts.modal.cancel', lang)}</button>
         <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer"
                 data-action="submit-review">{t('artifacts.modal.saveReview', lang)}</button>
@@ -299,7 +299,7 @@ const ARTIFACTS_I18N = {
   function toast(msg: string, type = '') { (window as any).toast?.(msg, type); }
   function loadingRows(count = 3): string {
     return Array.from({ length: count }).map(() => `
-      <div class="flex items-center gap-3 px-1 py-3 border-b border-slate-100 last:border-b-0 animate-pulse">
+      <div class="flex items-center gap-3 px-1 py-3 border-b border-[var(--border-subtle)] last:border-b-0 animate-pulse">
         <div class="w-9 h-9 rounded-full bg-slate-200 flex-shrink-0"></div>
         <div class="flex-1 space-y-1.5">
           <div class="h-3 w-40 bg-slate-200 rounded"></div>
@@ -322,8 +322,8 @@ const ARTIFACTS_I18N = {
     return `
       <div class="text-center py-10">
         <div class="text-4xl mb-2">${icon}</div>
-        <div class="font-semibold text-slate-600 text-sm">${title}</div>
-        <p class="text-slate-400 mt-1 max-w-[360px] mx-auto text-[.78rem]">${message}</p>
+        <div class="font-semibold text-[var(--text-secondary)] text-sm">${title}</div>
+        <p class="text-[var(--text-muted)] mt-1 max-w-[360px] mx-auto text-[.78rem]">${message}</p>
         ${cta}
       </div>
     `;
@@ -338,9 +338,9 @@ const ARTIFACTS_I18N = {
   function switchArtTab(el: HTMLElement, tab: string) {
     document.querySelectorAll('.art-tab').forEach(t => {
       t.classList.remove('bg-navy', 'text-white', 'border-navy');
-      t.classList.add('bg-white', 'text-slate-500', 'border-slate-200');
+      t.classList.add('bg-[var(--surface-card)]', 'text-[var(--text-secondary)]', 'border-[var(--border-default)]');
     });
-    el.classList.remove('bg-white', 'text-slate-500', 'border-slate-200');
+    el.classList.remove('bg-[var(--surface-card)]', 'text-[var(--text-secondary)]', 'border-[var(--border-default)]');
     el.classList.add('bg-navy', 'text-white', 'border-navy');
     ['catalog', 'mine', 'review'].forEach(p => {
       document.getElementById(`panel-${p}`)?.classList.toggle('hidden', p !== tab);
@@ -493,12 +493,12 @@ const ARTIFACTS_I18N = {
     if (!el) return;
     var types = ['article', 'ebook', 'framework', 'presentation', 'video', 'toolkit', 'other'];
     el.innerHTML = '<button class="art-type-btn px-3 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 '
-      + (!activeType ? 'border-navy bg-navy text-white' : 'border-slate-200 bg-white text-slate-500')
+      + (!activeType ? 'border-navy bg-navy text-white' : 'border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]')
       + ' transition-all" data-action="art-filter-type" data-type="">' + (I18N.filterAll || 'Todos') + '</button>'
       + types.map(function(t) {
         var active = activeType === t;
         return '<button class="art-type-btn px-3 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 '
-          + (active ? 'border-navy bg-navy text-white' : 'border-slate-200 bg-white text-slate-500')
+          + (active ? 'border-navy bg-navy text-white' : 'border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]')
           + ' transition-all" data-action="art-filter-type" data-type="' + t + '">' + (TYPE_LABELS[t] || t) + '</button>';
       }).join('');
   }
@@ -541,29 +541,29 @@ const ARTIFACTS_I18N = {
     const urlLink = a.url ? `<a href="${a.url}" target="_blank" rel="noopener" class="text-teal text-[12px] font-semibold no-underline hover:underline">${I18N.cardOpen}</a>` : '';
 
     return `
-    <div class="py-3.5 border-b border-slate-100 last:border-b-0">
+    <div class="py-3.5 border-b border-[var(--border-subtle)] last:border-b-0">
       <div class="flex items-start gap-3">
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
             <span class="text-sm font-semibold">${a.title}</span>
             ${statusBadge(a.status)}
-            <span class="text-[11px] text-slate-400">${typeLabel}</span>
+            <span class="text-[11px] text-[var(--text-muted)]">${typeLabel}</span>
           </div>
-          <div class="text-[12px] text-slate-500 mt-1">
+          <div class="text-[12px] text-[var(--text-secondary)] mt-1">
             ${author}${tribe ? ` · ${tribe}` : ''} · ${fmtDate(a.submitted_at)}
             ${urlLink ? ` · ${urlLink}` : ''}
           </div>
-          ${a.description ? `<div class="text-[12px] text-slate-500 mt-1">${a.description}</div>` : ''}
+          ${a.description ? `<div class="text-[12px] text-[var(--text-secondary)] mt-1">${a.description}</div>` : ''}
           ${a.review_notes ? `<div class="text-[12px] text-amber-700 bg-amber-50 px-2 py-1 rounded mt-1">💬 ${a.review_notes}</div>` : ''}
           ${(a.tags || []).length ? '<div class="flex flex-wrap gap-1 mt-1.5">' + (a.tags || []).map(function(t: string) { return '<span class="px-1.5 py-0.5 rounded text-[.6rem] font-semibold border ' + tagColor(t) + '">' + esc(t) + '</span>'; }).join('') + '</div>' : ''}
         </div>
         <div class="flex gap-1.5 flex-shrink-0">
-          ${showEdit && a.status === 'draft' ? `<button type="button" class="btn-edit-artifact px-2.5 py-1.5 text-[12px] bg-slate-50 border border-slate-200 rounded-md cursor-pointer font-semibold" data-artifact-id="${esc(a.id)}">✏️</button>` : ''}
+          ${showEdit && a.status === 'draft' ? `<button type="button" class="btn-edit-artifact px-2.5 py-1.5 text-[12px] bg-[var(--surface-base)] border border-[var(--border-default)] rounded-md cursor-pointer font-semibold" data-artifact-id="${esc(a.id)}">✏️</button>` : ''}
           ${showReview ? `<button type="button" class="btn-review-artifact px-2.5 py-1.5 text-[12px] bg-amber-50 border border-amber-200 rounded-md cursor-pointer font-semibold text-amber-800" data-artifact-id="${esc(a.id)}">${I18N.cardReview}</button>` : ''}
           ${CAN_MANAGE && !showEdit ? `<button type="button" class="btn-inline-tags px-2.5 py-1.5 text-[12px] bg-purple-50 border border-purple-200 rounded-md cursor-pointer font-semibold text-purple-700" data-artifact-id="${esc(a.id)}">🏷️</button>` : ''}
         </div>
       </div>
-      <div class="art-inline-tag-editor hidden mt-3 p-3 bg-slate-50 rounded-lg" data-artifact-id="${esc(a.id)}"></div>
+      <div class="art-inline-tag-editor hidden mt-3 p-3 bg-[var(--surface-base)] rounded-lg" data-artifact-id="${esc(a.id)}"></div>
     </div>`;
   }
 
@@ -796,7 +796,7 @@ const ARTIFACTS_I18N = {
       + allTags.map((t: any) => {
         const checked = currentTags.includes(t.tag_key);
         return '<label class="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] cursor-pointer '
-          + (checked ? tagColor(t.tag_key) : 'bg-white border border-slate-200 text-slate-500')
+          + (checked ? tagColor(t.tag_key) : 'bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-secondary)]')
           + '"><input type="checkbox" value="' + esc(t.tag_key) + '"'
           + (checked ? ' checked' : '') + ' class="w-3 h-3 rounded" />' + esc(t.label_pt || t.tag_key) + '</label>';
       }).join('') + '</div>'
@@ -846,7 +846,7 @@ const ARTIFACTS_I18N = {
           var el = b as HTMLElement;
           var isActive = (el.dataset.cat || '') === activeCategory;
           el.className = 'cat-sub px-3.5 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 transition-all '
-            + (isActive ? 'border-navy bg-navy text-white' : 'border-slate-200 bg-white text-slate-500');
+            + (isActive ? 'border-navy bg-navy text-white' : 'border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]');
         });
         activeType = '';
         buildTypeFilters();

@@ -7,11 +7,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
 <BaseLayout title={t('nav.adminBoardGovernance', lang)} activePage="admin">
   <div class="max-w-[1100px] mx-auto px-4 py-8 space-y-4">
-    <div id="boardgov-loading" class="text-slate-400 text-sm">Carregando governança de boards...</div>
+    <div id="boardgov-loading" class="text-[var(--text-muted)] text-sm">Carregando governança de boards...</div>
     <div id="boardgov-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
       Acesso restrito a gestão de projeto.
     </div>
-    <section id="boardgov-panel" class="hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <section id="boardgov-panel" class="hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
       <h1 class="text-xl font-extrabold text-navy mb-3">Governança de Boards Arquivados</h1>
       <div id="boardgov-list" class="space-y-2"></div>
     </section>
@@ -32,10 +32,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
   function rowHtml(row: any): string {
     return `
-      <article class="rounded-xl border border-slate-200 bg-slate-50 p-3 flex items-center gap-3">
+      <article class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-3 flex items-center gap-3">
         <div class="min-w-0 flex-1">
-          <div class="text-sm font-semibold text-slate-800 truncate">${row.title || 'Sem título'}</div>
-          <div class="text-xs text-slate-500">${row.board_name || 'Board'} · ${row.board_scope || 'scope'} · ${row.domain_key || 'domain'}</div>
+          <div class="text-sm font-semibold text-[var(--text-primary)] truncate">${row.title || 'Sem título'}</div>
+          <div class="text-xs text-[var(--text-secondary)]">${row.board_name || 'Board'} · ${row.board_scope || 'scope'} · ${row.domain_key || 'domain'}</div>
         </div>
         <button data-action="restore-archived-item" data-item-id="${row.id}" class="px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 text-xs font-semibold hover:bg-emerald-50">Restaurar</button>
       </article>
@@ -83,7 +83,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     }
     panel?.classList.remove('hidden');
     const rows = await loadArchived();
-    if (list) list.innerHTML = rows.length ? rows.map((r: any) => rowHtml(r)).join('') : '<p class="text-sm text-slate-500">Nenhum card arquivado.</p>';
+    if (list) list.innerHTML = rows.length ? rows.map((r: any) => rowHtml(r)).join('') : '<p class="text-sm text-[var(--text-secondary)]">Nenhum card arquivado.</p>';
   }
 
   document.addEventListener('click', async (event) => {

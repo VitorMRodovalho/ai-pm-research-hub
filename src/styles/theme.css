@@ -58,7 +58,7 @@
   /* ── Text ── */
   --text-primary: #1E293B;
   --text-secondary: #64748B;
-  --text-muted: #94A3B8;
+  --text-muted: #7B8DA0;                 /* WCAG AA ≥3:1 on surface-card */
   --text-inverse: #FFFFFF;
   --text-on-dark-section: #FFFFFF;      /* text on navy/dark sections */
   --text-on-dark-muted: rgba(255, 255, 255, 0.6);
@@ -228,6 +228,13 @@ nav,
 /* ══════════════════════════════════════════════════════════════════
    UTILITY CLASSES (optional — for convenience)
    ══════════════════════════════════════════════════════════════════ */
+
+/* ── Focus visible (WCAG 2.4.7) ── */
+:focus-visible {
+  outline: 2px solid var(--color-teal);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
 
 /* Use these OR the Tailwind arbitrary value syntax bg-[var(--xxx)] */
 .surface-base    { background-color: var(--surface-base); }

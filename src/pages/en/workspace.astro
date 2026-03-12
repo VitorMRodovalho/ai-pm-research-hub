@@ -1,0 +1,11 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t } from '../../i18n/utils';
+const lang = 'en-US' as const;
+---
+<BaseLayout title={t('wk.meta', lang)} activePage="workspace" lang={lang}>
+  <meta http-equiv="refresh" content="0;url=/workspace?lang=en-US">
+  <div class="flex items-center justify-center min-h-[60vh]">
+    <p class="text-[var(--text-muted)] text-sm">{t('wk.loading', lang)}</p>
+  </div>
+</BaseLayout>

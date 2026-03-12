@@ -21,29 +21,29 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     <div id="settings-panel" class="hidden space-y-6">
       <div class="mb-6">
         <h1 class="text-2xl font-extrabold text-navy">Configurações do Site</h1>
-        <p class="text-sm text-slate-500 mt-1">Configurações globais para replicação multi-tenant (S-RM5)</p>
+        <p class="text-sm text-[var(--text-secondary)] mt-1">Configurações globais para replicação multi-tenant (S-RM5)</p>
       </div>
 
-      <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-        <div class="px-5 py-3.5 border-b border-slate-200">
+      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
           <h2 class="text-sm font-bold text-navy">Parâmetros</h2>
-          <p class="text-[.68rem] text-slate-400 mt-0.5">Altere e salve. Apenas Superadmin pode editar.</p>
+          <p class="text-[.68rem] text-[var(--text-muted)] mt-0.5">Altere e salve. Apenas Superadmin pode editar.</p>
         </div>
         <div class="p-5 space-y-4">
           <div>
-            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Termo do grupo</label>
-            <input type="text" id="cfg-group-term" placeholder="Núcleo" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
-            <p class="text-[.6rem] text-slate-400 mt-1">Ex: Núcleo, Chapter, Chapter PMI</p>
+            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Termo do grupo</label>
+            <input type="text" id="cfg-group-term" placeholder="Núcleo" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
+            <p class="text-[.6rem] text-[var(--text-muted)] mt-1">Ex: Núcleo, Chapter, Chapter PMI</p>
           </div>
           <div>
-            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Ciclo padrão (ID)</label>
-            <input type="text" id="cfg-cycle-default" placeholder="—" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
-            <p class="text-[.6rem] text-slate-400 mt-1">ID do ciclo padrão quando não definido (opcional)</p>
+            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Ciclo padrão (ID)</label>
+            <input type="text" id="cfg-cycle-default" placeholder="—" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
+            <p class="text-[.6rem] text-[var(--text-muted)] mt-1">ID do ciclo padrão quando não definido (opcional)</p>
           </div>
           <div>
-            <label class="text-[.68rem] font-semibold text-slate-500 block mb-1">Webhook URL</label>
-            <input type="url" id="cfg-webhook-url" placeholder="https://..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-[.78rem]">
-            <p class="text-[.6rem] text-slate-400 mt-1">URL para notificações externas (opcional)</p>
+            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Webhook URL</label>
+            <input type="url" id="cfg-webhook-url" placeholder="https://..." class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
+            <p class="text-[.6rem] text-[var(--text-muted)] mt-1">URL para notificações externas (opcional)</p>
           </div>
           <button id="cfg-save" class="w-full px-4 py-2.5 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
             Salvar configurações
@@ -52,7 +52,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       </div>
     </div>
 
-    <div id="settings-loading" class="text-center py-16 text-slate-400">Carregando...</div>
+    <div id="settings-loading" class="text-center py-16 text-[var(--text-muted)]">Carregando...</div>
   </div>
   <Toast />
 </BaseLayout>

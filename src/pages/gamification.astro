@@ -157,58 +157,58 @@ const GAM_I18N = {
     </div>
 
     <!-- XP Level Legend -->
-    <div class="bg-gradient-to-r from-navy/5 to-orange/5 rounded-xl border border-slate-200 p-5 mb-6">
+    <div class="bg-gradient-to-r from-navy/5 to-orange/5 rounded-xl border border-[var(--border-default)] p-5 mb-6">
       <h3 class="text-sm font-bold text-navy mb-3">{t('gamification.levels.title', lang)}</h3>
       <div class="flex flex-wrap gap-3">
-        <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-white rounded-lg border border-slate-100">
+        <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-[var(--surface-card)] rounded-lg border border-[var(--border-subtle)]">
           <span class="text-lg">🌱</span>
-          <div><strong>{t('gamification.levels.explorer', lang)}</strong><span class="text-slate-400 ml-1">0–30 pts</span></div>
+          <div><strong>{t('gamification.levels.explorer', lang)}</strong><span class="text-[var(--text-muted)] ml-1">0–30 pts</span></div>
         </div>
-        <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-white rounded-lg border border-slate-100">
+        <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-[var(--surface-card)] rounded-lg border border-[var(--border-subtle)]">
           <span class="text-lg">⚡</span>
-          <div><strong>{t('gamification.levels.practitioner', lang)}</strong><span class="text-slate-400 ml-1">31–90 pts</span></div>
+          <div><strong>{t('gamification.levels.practitioner', lang)}</strong><span class="text-[var(--text-muted)] ml-1">31–90 pts</span></div>
         </div>
-        <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-white rounded-lg border border-slate-100">
+        <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-[var(--surface-card)] rounded-lg border border-[var(--border-subtle)]">
           <span class="text-lg">🔥</span>
-          <div><strong>{t('gamification.levels.expert', lang)}</strong><span class="text-slate-400 ml-1">91–200 pts</span></div>
+          <div><strong>{t('gamification.levels.expert', lang)}</strong><span class="text-[var(--text-muted)] ml-1">91–200 pts</span></div>
         </div>
-        <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-white rounded-lg border border-slate-100">
+        <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-[var(--surface-card)] rounded-lg border border-[var(--border-subtle)]">
           <span class="text-lg">💎</span>
-          <div><strong>{t('gamification.levels.master', lang)}</strong><span class="text-slate-400 ml-1">201–400 pts</span></div>
+          <div><strong>{t('gamification.levels.master', lang)}</strong><span class="text-[var(--text-muted)] ml-1">201–400 pts</span></div>
         </div>
-        <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-white rounded-lg border border-slate-100">
+        <div class="flex items-center gap-1.5 text-[.72rem] px-3 py-1.5 bg-[var(--surface-card)] rounded-lg border border-[var(--border-subtle)]">
           <span class="text-lg">🏆</span>
-          <div><strong>{t('gamification.levels.legend', lang)}</strong><span class="text-slate-400 ml-1">401+ pts</span></div>
+          <div><strong>{t('gamification.levels.legend', lang)}</strong><span class="text-[var(--text-muted)] ml-1">401+ pts</span></div>
         </div>
       </div>
     </div>
 
     <!-- Points legend -->
-    <div class="bg-white rounded-xl border border-slate-200 p-5 mb-6">
+    <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5 mb-6">
       <h3 class="text-sm font-bold text-navy mb-3">{t('gamification.pointsLegend.title', lang)}</h3>
       <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-[13px]">
         <div class="flex items-center gap-2">
           <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-[11px]">+10</span>
-          <span class="text-slate-600">{t('gamification.pointsLegend.attendance', lang)}</span>
+          <span class="text-[var(--text-secondary)]">{t('gamification.pointsLegend.attendance', lang)}</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-bold text-[11px]">+15</span>
-          <span class="text-slate-600">{t('gamification.pointsLegend.course', lang)}</span>
+          <span class="text-[var(--text-secondary)]">{t('gamification.pointsLegend.course', lang)}</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-[11px]">+30</span>
-          <span class="text-slate-600">{t('gamification.pointsLegend.artifact', lang)}</span>
+          <span class="text-[var(--text-secondary)]">{t('gamification.pointsLegend.artifact', lang)}</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="w-8 h-8 rounded-lg bg-pink-50 text-pink-600 flex items-center justify-center font-bold text-[11px]">+50</span>
-          <span class="text-slate-600">{t('gamification.pointsLegend.profile', lang)}</span>
+          <span class="text-[var(--text-secondary)]">{t('gamification.pointsLegend.profile', lang)}</span>
         </div>
         <div class="flex items-center gap-2">
           <span class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-[11px]">+10-50</span>
-          <span class="text-slate-600">{t('gamification.pointsLegend.credly', lang)}</span>
+          <span class="text-[var(--text-secondary)]">{t('gamification.pointsLegend.credly', lang)}</span>
         </div>
       </div>
-      <div class="mt-3 text-[11px] text-slate-500">
+      <div class="mt-3 text-[11px] text-[var(--text-secondary)]">
         {t('gamification.credly.tiersDesc', lang)}
       </div>
     </div>
@@ -217,117 +217,117 @@ const GAM_I18N = {
     <div class="flex gap-2 mb-6 flex-wrap">
       <button class="gam-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white"
               data-tab="leaderboard" data-action="switch-tab">{t('gamification.tab.individual', lang)}</button>
-      <button class="gam-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
+      <button class="gam-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]"
               data-tab="tribes" data-action="switch-tab">{t('gamification.tab.tribes', lang)}</button>
-      <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
+      <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]"
               id="tab-achievements" data-tab="achievements" data-action="switch-tab">{t('gamification.tab.achievements', lang)}</button>
-      <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
+      <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]"
               id="tab-mypoints" data-tab="mypoints" data-action="switch-tab">{t('gamification.tab.myPoints', lang)}</button>
-      <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
+      <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]"
               id="tab-mycerts" data-tab="mycerts" data-action="switch-tab">{t('gamification.tab.certs', lang)}</button>
-      <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500"
+      <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]"
               id="tab-admin-certs" data-tab="admin-certs" data-action="switch-tab">{t('gamification.tab.issue', lang)}</button>
     </div>
 
     <!-- Trail Clarity (logged user) -->
     <div id="trail-clarity-card" class="hidden mb-6">
-      <div class="bg-white rounded-xl border border-slate-200 p-5">
+      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5">
         <div id="trail-clarity-content">
-          <p class="text-slate-400 text-sm text-center py-2">{t('gamification.trail.loading', lang)}</p>
+          <p class="text-[var(--text-muted)] text-sm text-center py-2">{t('gamification.trail.loading', lang)}</p>
         </div>
       </div>
     </div>
 
     <!-- Individual Leaderboard -->
     <div id="panel-leaderboard">
-      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-[var(--border-default)] flex items-center justify-between">
           <h3 class="text-sm font-bold text-navy">{t('gamification.lb.title', lang)}</h3>
-          <div class="inline-flex items-center gap-1.5 bg-slate-50 rounded-full p-1 border border-slate-200">
-            <button id="lb-mode-cycle" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-transparent text-slate-500 border-0 cursor-pointer"
+          <div class="inline-flex items-center gap-1.5 bg-[var(--surface-base)] rounded-full p-1 border border-[var(--border-default)]">
+            <button id="lb-mode-cycle" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-transparent text-[var(--text-secondary)] border-0 cursor-pointer"
                     data-action="set-leaderboard-mode" data-mode="cycle">{t('gamification.mode.cycle', lang)}</button>
             <button id="lb-mode-lifetime" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-navy text-white border-0 cursor-pointer"
                     data-action="set-leaderboard-mode" data-mode="lifetime">{t('gamification.mode.lifetime', lang)}</button>
           </div>
         </div>
         <div class="p-5" id="leaderboard-list">
-          <p class="text-slate-400 text-sm text-center py-6">{t('gamification.loading', lang)}</p>
+          <p class="text-[var(--text-muted)] text-sm text-center py-6">{t('gamification.loading', lang)}</p>
         </div>
       </div>
     </div>
 
     <!-- Tribe Ranking -->
     <div id="panel-tribes" class="hidden">
-      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between gap-3 flex-wrap">
+      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-[var(--border-default)] flex items-center justify-between gap-3 flex-wrap">
           <h3 class="text-sm font-bold text-navy">{t('gamification.tr.title', lang)}</h3>
-          <div class="inline-flex items-center gap-1.5 bg-slate-50 rounded-full p-1 border border-slate-200">
+          <div class="inline-flex items-center gap-1.5 bg-[var(--surface-base)] rounded-full p-1 border border-[var(--border-default)]">
             <button id="tr-mode-cycle" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-navy text-white border-0 cursor-pointer"
                     data-action="set-tribe-mode" data-mode="cycle">{t('gamification.mode.cycle', lang)}</button>
-            <button id="tr-mode-lifetime" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-transparent text-slate-500 border-0 cursor-pointer"
+            <button id="tr-mode-lifetime" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-transparent text-[var(--text-secondary)] border-0 cursor-pointer"
                     data-action="set-tribe-mode" data-mode="lifetime">{t('gamification.mode.lifetime', lang)}</button>
           </div>
         </div>
-        <p class="px-5 pt-2 text-[.7rem] text-slate-400">{t('gamification.tr.formula', lang)}</p>
+        <p class="px-5 pt-2 text-[.7rem] text-[var(--text-muted)]">{t('gamification.tr.formula', lang)}</p>
         <div class="p-5" id="tribes-ranking-list">
-          <p class="text-slate-400 text-sm text-center py-6">{t('gamification.loading', lang)}</p>
+          <p class="text-[var(--text-muted)] text-sm text-center py-6">{t('gamification.loading', lang)}</p>
         </div>
       </div>
     </div>
 
     <!-- Achievements -->
     <div id="panel-achievements" class="hidden">
-      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div class="px-5 py-3.5 border-b border-slate-200">
+      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
           <h3 class="text-sm font-bold text-navy">{t('gamification.ach.title', lang)}</h3>
         </div>
         <div class="p-5" id="achievements-list">
-          <p class="text-slate-400 text-sm text-center py-6">{t('gamification.loading', lang)}</p>
+          <p class="text-[var(--text-muted)] text-sm text-center py-6">{t('gamification.loading', lang)}</p>
         </div>
       </div>
     </div>
 
     <!-- My Points -->
     <div id="panel-mypoints" class="hidden">
-      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div class="px-5 py-3.5 border-b border-slate-200">
+      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
           <h3 class="text-sm font-bold text-navy">{t('gamification.mp.title', lang)}</h3>
         </div>
         <div class="p-5" id="mypoints-list">
-          <p class="text-slate-400 text-sm text-center py-6">{t('gamification.loading', lang)}</p>
+          <p class="text-[var(--text-muted)] text-sm text-center py-6">{t('gamification.loading', lang)}</p>
         </div>
       </div>
     </div>
 
     <!-- My Certificates -->
     <div id="panel-mycerts" class="hidden">
-      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div class="px-5 py-3.5 border-b border-slate-200">
+      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
           <h3 class="text-sm font-bold text-navy">{t('gamification.cert.title', lang)}</h3>
         </div>
         <div class="p-5" id="mycerts-list">
-          <p class="text-slate-400 text-sm text-center py-6">{t('gamification.loading', lang)}</p>
+          <p class="text-[var(--text-muted)] text-sm text-center py-6">{t('gamification.loading', lang)}</p>
         </div>
       </div>
     </div>
 
     <!-- Admin: Issue Certificate -->
     <div id="panel-admin-certs" class="hidden">
-      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div class="px-5 py-3.5 border-b border-slate-200">
+      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
           <h3 class="text-sm font-bold text-navy">{t('gamification.cert.issue', lang)}</h3>
         </div>
         <div class="p-5">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="flex flex-col gap-1.5 sm:col-span-2">
-              <label class="text-[12px] font-semibold text-slate-500">{t('gamification.cert.participant', lang)}</label>
-              <select id="cert-member" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white focus:outline-none focus:border-navy">
+              <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('gamification.cert.participant', lang)}</label>
+              <select id="cert-member" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
                 <option value="">{t('gamification.cert.select', lang)}</option>
               </select>
             </div>
             <div class="flex flex-col gap-1.5">
-              <label class="text-[12px] font-semibold text-slate-500">{t('gamification.cert.type', lang)}</label>
-              <select id="cert-type" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] bg-white">
+              <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('gamification.cert.type', lang)}</label>
+              <select id="cert-type" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)]">
                 <option value="participation">{t('gamification.cert.type.participation', lang)}</option>
                 <option value="completion">{t('gamification.cert.type.completion', lang)}</option>
                 <option value="contribution">{t('gamification.cert.type.contribution', lang)}</option>
@@ -335,18 +335,18 @@ const GAM_I18N = {
               </select>
             </div>
             <div class="flex flex-col gap-1.5">
-              <label class="text-[12px] font-semibold text-slate-500">{t('gamification.cert.cycle', lang)}</label>
-              <input type="number" id="cert-cycle" value="3" class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+              <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('gamification.cert.cycle', lang)}</label>
+              <input type="number" id="cert-cycle" value="3" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
             </div>
             <div class="flex flex-col gap-1.5 sm:col-span-2">
-              <label class="text-[12px] font-semibold text-slate-500">{t('gamification.cert.certTitle', lang)}</label>
+              <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('gamification.cert.certTitle', lang)}</label>
               <input type="text" id="cert-title" placeholder={t('gamification.cert.titlePlaceholder', lang)}
-                     class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy">
+                     class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
             </div>
             <div class="flex flex-col gap-1.5 sm:col-span-2">
-              <label class="text-[12px] font-semibold text-slate-500">{t('gamification.cert.desc', lang)}</label>
+              <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('gamification.cert.desc', lang)}</label>
               <textarea id="cert-desc" rows="2" placeholder={t('gamification.cert.descPlaceholder', lang)}
-                        class="px-3 py-2 rounded-lg border-[1.5px] border-slate-200 text-[13px] focus:outline-none focus:border-navy resize-y"></textarea>
+                        class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy resize-y"></textarea>
             </div>
           </div>
           <div class="mt-4 flex justify-end">
@@ -429,7 +429,7 @@ const GAM_I18N = {
   function setPanelMessage(targetId: string, message: string, kind: 'loading' | 'error' | 'empty' = 'loading', cta?: { text: string; action: string }) {
     const el = document.getElementById(targetId);
     if (!el) return;
-    const color = kind === 'error' ? 'text-crimson' : 'text-slate-400';
+    const color = kind === 'error' ? 'text-crimson' : 'text-[var(--text-muted)]';
     const ctaHtml = cta ? `<button type="button" class="mt-4 px-4 py-2 bg-teal text-white rounded-xl text-sm font-semibold cursor-pointer border-0 hover:opacity-90 transition-all" data-action="${cta.action}">${cta.text}</button>` : '';
     el.innerHTML = `<div class="text-center py-6"><p class="${color} text-sm">${message}</p>${ctaHtml}</div>`;
   }
@@ -502,11 +502,11 @@ const GAM_I18N = {
       cycleBtn.classList.toggle('bg-navy', cycleOn);
       cycleBtn.classList.toggle('bg-transparent', !cycleOn);
       cycleBtn.classList.toggle('text-white', cycleOn);
-      cycleBtn.classList.toggle('text-slate-500', !cycleOn);
+      cycleBtn.classList.toggle('text-[var(--text-secondary)]', !cycleOn);
       lifeBtn.classList.toggle('bg-navy', !cycleOn);
       lifeBtn.classList.toggle('bg-transparent', cycleOn);
       lifeBtn.classList.toggle('text-white', !cycleOn);
-      lifeBtn.classList.toggle('text-slate-500', cycleOn);
+      lifeBtn.classList.toggle('text-[var(--text-secondary)]', cycleOn);
     }
     await ensureLifetimePointsLoaded();
     renderLeaderboard();
@@ -515,9 +515,9 @@ const GAM_I18N = {
   function switchGamTab(el: HTMLElement, tab: string) {
     document.querySelectorAll('.gam-tab').forEach(t => {
       t.classList.remove('bg-navy', 'text-white', 'border-navy');
-      t.classList.add('bg-white', 'text-slate-500', 'border-slate-200');
+      t.classList.add('bg-[var(--surface-card)]', 'text-[var(--text-secondary)]', 'border-[var(--border-default)]');
     });
-    el.classList.remove('bg-white', 'text-slate-500', 'border-slate-200');
+    el.classList.remove('bg-[var(--surface-card)]', 'text-[var(--text-secondary)]', 'border-[var(--border-default)]');
     el.classList.add('bg-navy', 'text-white', 'border-navy');
     ['leaderboard', 'tribes', 'achievements', 'mypoints', 'mycerts', 'admin-certs'].forEach(p => {
       document.getElementById(`panel-${p}`)?.classList.toggle('hidden', p !== tab);
@@ -538,11 +538,11 @@ const GAM_I18N = {
       cycleBtn.classList.toggle('bg-navy', cycleOn);
       cycleBtn.classList.toggle('bg-transparent', !cycleOn);
       cycleBtn.classList.toggle('text-white', cycleOn);
-      cycleBtn.classList.toggle('text-slate-500', !cycleOn);
+      cycleBtn.classList.toggle('text-[var(--text-secondary)]', !cycleOn);
       lifeBtn.classList.toggle('bg-navy', !cycleOn);
       lifeBtn.classList.toggle('bg-transparent', cycleOn);
       lifeBtn.classList.toggle('text-white', !cycleOn);
-      lifeBtn.classList.toggle('text-slate-500', cycleOn);
+      lifeBtn.classList.toggle('text-[var(--text-secondary)]', cycleOn);
     }
     loadTribeRanking();
   }
@@ -593,8 +593,8 @@ const GAM_I18N = {
       ].filter(Boolean).join(' · ');
 
       return `
-      <div class="flex items-center gap-3 py-3 border-b border-slate-100 last:border-b-0 ${i < 3 ? 'bg-amber-50/30' : ''} ${isMe ? 'ring-2 ring-orange/30 rounded-lg' : ''}">
-        <div class="w-8 text-center font-bold text-[13px] text-slate-400 flex-shrink-0">${medal || rank}</div>
+      <div class="flex items-center gap-3 py-3 border-b border-[var(--border-subtle)] last:border-b-0 ${i < 3 ? 'bg-amber-50/30' : ''} ${isMe ? 'ring-2 ring-orange/30 rounded-lg' : ''}">
+        <div class="w-8 text-center font-bold text-[13px] text-[var(--text-muted)] flex-shrink-0">${medal || rank}</div>
         ${photo}
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-1.5">
@@ -602,14 +602,14 @@ const GAM_I18N = {
             <span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-slate-100">${level.emoji} ${level.name}</span>
             ${isMe ? `<span class="text-[.55rem] font-bold px-1 py-0.5 rounded bg-orange/10 text-orange">${I.lbYou}</span>` : ''}
           </div>
-          <div class="text-[11px] text-slate-400">${m.chapter || ''} · ${breakdown}</div>
+          <div class="text-[11px] text-[var(--text-muted)]">${m.chapter || ''} · ${breakdown}</div>
           <div class="h-1.5 bg-slate-100 rounded-full mt-1 overflow-hidden">
             <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${displayPoints > 0 ? '#FF610F' : '#E2E8F0'}"></div>
           </div>
         </div>
         <div class="text-right flex-shrink-0">
           <div class="text-lg font-extrabold text-navy">${displayPoints}</div>
-          <div class="text-[10px] text-slate-400">${I.mpPtsLabel}</div>
+          <div class="text-[10px] text-[var(--text-muted)]">${I.mpPtsLabel}</div>
         </div>
       </div>`;
     }).join('');
@@ -729,26 +729,26 @@ const GAM_I18N = {
       const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '';
       const pct = Math.round((t.score / maxScore) * 100);
       return `
-      <div class="py-4 border-b border-slate-100 last:border-b-0 ${i < 3 ? 'bg-amber-50/30 rounded-lg px-3 mb-2' : ''}">
+      <div class="py-4 border-b border-[var(--border-subtle)] last:border-b-0 ${i < 3 ? 'bg-amber-50/30 rounded-lg px-3 mb-2' : ''}">
         <div class="flex items-center gap-3">
-          <div class="w-8 text-center font-bold text-[13px] text-slate-400 flex-shrink-0">${medal || (i + 1)}</div>
+          <div class="w-8 text-center font-bold text-[13px] text-[var(--text-muted)] flex-shrink-0">${medal || (i + 1)}</div>
           <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style="background:${t.color}">
             T${String(t.tid).padStart(2, '0')}
           </div>
           <div class="flex-1 min-w-0">
             <div class="text-[13px] font-bold">${t.name}</div>
-            <div class="text-[11px] text-slate-400">${t.members} ${I.trMembers} · ${modeLabel} ${I.trModeAvg}: ${t.avg} ${I.mpPtsLabel} · ${I.trTotal}: ${t.total} ${I.mpPtsLabel}</div>
+            <div class="text-[11px] text-[var(--text-muted)]">${t.members} ${I.trMembers} · ${modeLabel} ${I.trModeAvg}: ${t.avg} ${I.mpPtsLabel} · ${I.trTotal}: ${t.total} ${I.mpPtsLabel}</div>
             <div class="h-1.5 bg-slate-100 rounded-full mt-1.5 overflow-hidden">
               <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${t.color}"></div>
             </div>
           </div>
           <div class="text-right flex-shrink-0">
             <div class="text-xl font-extrabold text-navy">${t.score}</div>
-            <div class="text-[10px] text-slate-400">${I.trScore}</div>
+            <div class="text-[10px] text-[var(--text-muted)]">${I.trScore}</div>
           </div>
         </div>
         <div class="ml-[76px] mt-2 flex flex-wrap gap-1">
-          ${t.names.map((n: string) => `<span class="text-[.6rem] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">${n}</span>`).join('')}
+          ${t.names.map((n: string) => `<span class="text-[.6rem] px-1.5 py-0.5 rounded bg-slate-100 text-[var(--text-secondary)]">${n}</span>`).join('')}
         </div>
       </div>`;
       }).join('');
@@ -816,17 +816,17 @@ const GAM_I18N = {
           const unlocked = a.check(myPoints, checkData);
           if (unlocked) earned++;
           return `
-          <div class="flex items-center gap-3 p-3 rounded-xl border ${unlocked ? 'border-amber-200 bg-amber-50/50' : 'border-slate-100 bg-slate-50/50 opacity-50'}">
+          <div class="flex items-center gap-3 p-3 rounded-xl border ${unlocked ? 'border-amber-200 bg-amber-50/50' : 'border-[var(--border-subtle)] bg-slate-50/50 opacity-50'}">
             <div class="text-2xl flex-shrink-0">${unlocked ? a.icon : '🔒'}</div>
             <div class="flex-1 min-w-0">
-              <div class="text-[.78rem] font-bold ${unlocked ? 'text-navy' : 'text-slate-400'}">${a.name}</div>
-              <div class="text-[.65rem] text-slate-400">${a.desc}</div>
+              <div class="text-[.78rem] font-bold ${unlocked ? 'text-navy' : 'text-[var(--text-muted)]'}">${a.name}</div>
+              <div class="text-[.65rem] text-[var(--text-muted)]">${a.desc}</div>
             </div>
             ${unlocked ? '<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 flex-shrink-0">✓</span>' : ''}
           </div>`;
         }).join('')}
       </div>
-      <div class="mt-4 text-center text-[.78rem] text-slate-500">
+      <div class="mt-4 text-center text-[.78rem] text-[var(--text-secondary)]">
         ${I.achLifetimeXP}: <strong>${myPoints}</strong> · ${I.achCurrentCycle}: <strong>${cyclePoints}</strong><br>
         ${earned} ${I.achOf} ${total} ${I.achUnlocked}
       </div>`;
@@ -869,9 +869,9 @@ const GAM_I18N = {
       <div class="text-center mb-6 py-5 bg-gradient-to-br from-navy/5 to-orange/5 rounded-xl">
         <div class="text-3xl mb-1">${level.emoji}</div>
         <div class="text-3xl font-extrabold text-navy">${total}</div>
-        <div class="text-sm text-slate-500">${I.mpLifetimeLabel} · <strong>${level.name}</strong></div>
-        <div class="text-[.7rem] text-slate-400 mt-1">${I.mpCurrentCycleLabel}: <strong>${cyclePoints}</strong> ${I.mpPtsLabel}</div>
-        ${level.next ? `<div class="text-[.7rem] text-slate-400 mt-1">${I.mpToNext.replace('{n}', String(level.ptsToNext)).replace('{level}', level.next)}</div>` : `<div class="text-[.7rem] text-amber-600 mt-1 font-bold">${I.mpMaxLevel}</div>`}
+        <div class="text-sm text-[var(--text-secondary)]">${I.mpLifetimeLabel} · <strong>${level.name}</strong></div>
+        <div class="text-[.7rem] text-[var(--text-muted)] mt-1">${I.mpCurrentCycleLabel}: <strong>${cyclePoints}</strong> ${I.mpPtsLabel}</div>
+        ${level.next ? `<div class="text-[.7rem] text-[var(--text-muted)] mt-1">${I.mpToNext.replace('{n}', String(level.ptsToNext)).replace('{level}', level.next)}</div>` : `<div class="text-[.7rem] text-amber-600 mt-1 font-bold">${I.mpMaxLevel}</div>`}
         <div class="w-40 h-2 bg-slate-200 rounded-full mx-auto mt-2 overflow-hidden">
           <div class="h-full bg-orange rounded-full" style="width:${level.pctInLevel}%"></div>
         </div>
@@ -880,10 +880,10 @@ const GAM_I18N = {
       <div class="mb-5 p-3 rounded-xl border border-amber-200 bg-amber-50/50">
         <div class="text-[.78rem] font-bold text-navy mb-2">${I.credlyTierTitle}</div>
         <div class="flex flex-wrap gap-2 text-[.7rem]">
-          <span class="px-2 py-1 rounded bg-white border border-amber-200 text-amber-700">T1 Master: ${myCredly.t1}</span>
-          <span class="px-2 py-1 rounded bg-white border border-amber-200 text-amber-700">T2 Specialization: ${myCredly.t2}</span>
-          <span class="px-2 py-1 rounded bg-white border border-amber-200 text-amber-700">T3 Trail/Knowledge: ${myCredly.t3}</span>
-          <span class="px-2 py-1 rounded bg-white border border-amber-200 text-amber-700">T4 Other: ${myCredly.t4}</span>
+          <span class="px-2 py-1 rounded bg-[var(--surface-card)] border border-amber-200 text-amber-700">T1 Master: ${myCredly.t1}</span>
+          <span class="px-2 py-1 rounded bg-[var(--surface-card)] border border-amber-200 text-amber-700">T2 Specialization: ${myCredly.t2}</span>
+          <span class="px-2 py-1 rounded bg-[var(--surface-card)] border border-amber-200 text-amber-700">T3 Trail/Knowledge: ${myCredly.t3}</span>
+          <span class="px-2 py-1 rounded bg-[var(--surface-card)] border border-amber-200 text-amber-700">T4 Other: ${myCredly.t4}</span>
           <span class="px-2 py-1 rounded bg-navy text-white font-semibold">${I.credlyTotalLabel}: ${myCredly.total} ${I.mpPtsLabel}</span>
         </div>
       </div>` : ''}
@@ -894,10 +894,10 @@ const GAM_I18N = {
     data.forEach((p: any) => { catTotals[p.category] = (catTotals[p.category] || 0) + p.points; });
     const catKeys = Object.keys(catTotals).sort((a, b) => catTotals[b] - catTotals[a]);
     if (catKeys.length > 0) {
-      el.innerHTML += '<div class="mb-4 p-3 bg-slate-50 rounded-xl"><div class="text-[.72rem] font-bold text-slate-600 mb-2">' + (I.mpCycleBreakdown || 'Detalhamento') + '</div><div class="grid grid-cols-2 sm:grid-cols-4 gap-2">'
+      el.innerHTML += '<div class="mb-4 p-3 bg-[var(--surface-base)] rounded-xl"><div class="text-[.72rem] font-bold text-[var(--text-secondary)] mb-2">' + (I.mpCycleBreakdown || 'Detalhamento') + '</div><div class="grid grid-cols-2 sm:grid-cols-4 gap-2">'
         + catKeys.map((cat: string) => {
           const meta = CATEGORY_META[cat] || CATEGORY_META.bonus;
-          return '<div class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-white border border-slate-100"><span class="text-sm">' + meta.icon + '</span><div><div class="text-[.65rem] text-slate-500">' + escapeHtml(cat) + '</div><div class="text-sm font-bold" style="color:' + meta.color + '">' + catTotals[cat] + ' pts</div></div></div>';
+          return '<div class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-subtle)]"><span class="text-sm">' + meta.icon + '</span><div><div class="text-[.65rem] text-[var(--text-secondary)]">' + escapeHtml(cat) + '</div><div class="text-sm font-bold" style="color:' + meta.color + '">' + catTotals[cat] + ' pts</div></div></div>';
         }).join('') + '</div></div>';
     }
 
@@ -905,11 +905,11 @@ const GAM_I18N = {
       const cat = CATEGORY_META[p.category] || CATEGORY_META.bonus;
       const date = new Date(p.created_at).toLocaleDateString(I.locale || 'pt-BR', { year: 'numeric', month: 'short', day: '2-digit' });
       return `
-      <div class="flex items-center gap-3 py-2.5 border-b border-slate-100 last:border-b-0">
+      <div class="flex items-center gap-3 py-2.5 border-b border-[var(--border-subtle)] last:border-b-0">
         <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm" style="background:${cat.bg}">${cat.icon}</div>
         <div class="flex-1 min-w-0">
           <div class="text-[13px] font-medium truncate">${p.reason}</div>
-          <div class="text-[11px] text-slate-400">${date}</div>
+          <div class="text-[11px] text-[var(--text-muted)]">${date}</div>
         </div>
         <div class="font-bold text-sm" style="color:${cat.color}">+${p.points}</div>
       </div>`;
@@ -945,13 +945,13 @@ const GAM_I18N = {
       el.innerHTML = data.map((c: any) => {
         const date = new Date(c.issued_at).toLocaleDateString(I.locale || 'pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
         return `
-      <div class="flex items-center gap-3 py-3 border-b border-slate-100 last:border-b-0">
+      <div class="flex items-center gap-3 py-3 border-b border-[var(--border-subtle)] last:border-b-0">
         <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-xl flex-shrink-0">🎓</div>
         <div class="flex-1 min-w-0">
           <div class="text-[13px] font-semibold">${c.title}</div>
-          <div class="text-[11px] text-slate-400">${TYPE_LABELS[c.type] || c.type} · ${date}</div>
-          ${c.description ? `<div class="text-[12px] text-slate-500 mt-0.5">${c.description}</div>` : ''}
-          <div class="text-[10px] text-slate-400 mt-0.5 font-mono">${I.certCode}: ${c.verification_code}</div>
+          <div class="text-[11px] text-[var(--text-muted)]">${TYPE_LABELS[c.type] || c.type} · ${date}</div>
+          ${c.description ? `<div class="text-[12px] text-[var(--text-secondary)] mt-0.5">${c.description}</div>` : ''}
+          <div class="text-[10px] text-[var(--text-muted)] mt-0.5 font-mono">${I.certCode}: ${c.verification_code}</div>
         </div>
         ${c.pdf_url ? `<a href="${c.pdf_url}" target="_blank" class="px-3 py-1.5 bg-navy text-white rounded-lg text-[12px] font-semibold no-underline hover:opacity-90">📥 PDF</a>` : ''}
       </div>`;
@@ -967,7 +967,7 @@ const GAM_I18N = {
     if (!MEMBER) return;
     const host = document.getElementById('trail-clarity-content');
     if (!host) return;
-    host.innerHTML = `<p class="text-slate-400 text-sm text-center py-2">${I.trailLoading}</p>`;
+    host.innerHTML = `<p class="text-[var(--text-muted)] text-sm text-center py-2">${I.trailLoading}</p>`;
 
     try {
       const { data: courses, error: coursesError } = await withTimeout(
@@ -1002,11 +1002,11 @@ const GAM_I18N = {
           ? '<svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>'
           : st === 'in_progress'
           ? '<svg class="w-4 h-4 text-amber-500 animate-pulse shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
-          : '<div class="w-4 h-4 rounded-full border-2 border-slate-300 shrink-0"></div>';
+          : '<div class="w-4 h-4 rounded-full border-2 border-[var(--border-strong)] shrink-0"></div>';
         const statusLabel = st === 'completed' ? I.trailStatusCompleted : st === 'in_progress' ? I.trailStatusInProgress : I.trailStatusPending;
-        const statusColor = st === 'completed' ? 'text-emerald-600' : st === 'in_progress' ? 'text-amber-600' : 'text-slate-400';
+        const statusColor = st === 'completed' ? 'text-emerald-600' : st === 'in_progress' ? 'text-amber-600' : 'text-[var(--text-muted)]';
         const link = course.url ? '<a href="' + escapeHtml(course.url) + '" target="_blank" rel="noopener" class="text-[.6rem] text-teal font-semibold hover:underline no-underline shrink-0">' + (I.trailViewCourse || 'Acessar') + '</a>' : '';
-        return '<div class="flex items-center gap-2.5 py-1.5 border-b border-slate-50 last:border-b-0">'
+        return '<div class="flex items-center gap-2.5 py-1.5 border-b border-[var(--border-subtle)] last:border-b-0">'
           + statusIcon
           + '<div class="flex-1 min-w-0"><div class="text-[.75rem] font-medium truncate">' + escapeHtml(course.name) + '</div></div>'
           + '<span class="text-[.6rem] font-semibold shrink-0 ' + statusColor + '">' + statusLabel + '</span>'
@@ -1016,7 +1016,7 @@ const GAM_I18N = {
 
       host.innerHTML = '<div class="flex items-center justify-between gap-3 flex-wrap mb-3">'
         + '<div><div class="text-sm font-bold text-navy">' + I.trailTitle + '</div>'
-        + '<div class="text-[12px] text-slate-500">' + I.trailCoursesOf.replace('{completed}', String(completed.length)).replace('{total}', String(totalCourses)) + '</div></div>'
+        + '<div class="text-[12px] text-[var(--text-secondary)]">' + I.trailCoursesOf.replace('{completed}', String(completed.length)).replace('{total}', String(totalCourses)) + '</div></div>'
         + '<span class="text-[11px] font-bold px-2 py-1 rounded-full ' + (pct >= 100 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700') + '">'
         + I.trailPctComplete.replace('{pct}', String(pct)) + '</span></div>'
         + '<div class="h-2.5 bg-slate-100 rounded-full overflow-hidden mb-4">'

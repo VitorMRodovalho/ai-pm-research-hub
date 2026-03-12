@@ -9,6 +9,6 @@ if (tribeId < 1) return Astro.redirect('/es');
 <BaseLayout title={t('tribe.meta', lang).replace('{name}', `T${tribeId}`)} activePage="tribes" lang={lang}>
   <meta http-equiv="refresh" content={`0;url=/tribe/${id}?lang=es-LATAM`}>
   <div class="flex items-center justify-center min-h-[60vh]">
-    <p class="text-slate-400 text-sm">{t('common.loading', lang)}</p>
+    <p class="text-[var(--text-muted)] text-sm">{t('common.loading', lang)}</p>
   </div>
 </BaseLayout>

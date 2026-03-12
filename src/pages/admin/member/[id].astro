@@ -11,13 +11,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   <Toast />
   <div class="max-w-2xl mx-auto px-4 py-8">
     <div class="flex items-center gap-3 mb-6">
-      <a href="/admin" class="text-slate-400 hover:text-navy transition-all text-sm no-underline">← Voltar</a>
+      <a href="/admin" class="text-[var(--text-muted)] hover:text-navy transition-all text-sm no-underline">← Voltar</a>
       <h1 class="text-xl font-extrabold text-navy" id="page-title">
         {isNew ? '+ Novo Membro' : '✏️ Editar Membro'}
       </h1>
     </div>
-    <div class="bg-white border border-slate-200 rounded-2xl p-6" id="member-form">
-      <div class="text-center py-8 text-slate-400">{t('admin.loadingMembers', lang)}</div>
+    <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-6" id="member-form">
+      <div class="text-center py-8 text-[var(--text-muted)]">{t('admin.loadingMembers', lang)}</div>
     </div>
   </div>
 </BaseLayout>
@@ -100,57 +100,57 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     el.innerHTML = `
       <div class="grid grid-cols-2 gap-4">
         <div class="col-span-2">
-          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Nome completo *</label>
+          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Nome completo *</label>
           <input id="f-name" type="text" value="${m?.name||''}" placeholder="Nome completo"
-            class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+            class="w-full px-3 py-2.5 border-2 border-[var(--border-default)] rounded-xl text-sm bg-[var(--surface-input)] text-[var(--text-primary)] focus:outline-none focus:border-teal">
         </div>
         <div>
-          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Email principal *</label>
+          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Email principal *</label>
           <input id="f-email" type="email" value="${m?.email||''}"
-            class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+            class="w-full px-3 py-2.5 border-2 border-[var(--border-default)] rounded-xl text-sm bg-[var(--surface-input)] text-[var(--text-primary)] focus:outline-none focus:border-teal">
           <div id="err-email" class="text-xs text-crimson mt-1 hidden"></div>
         </div>
         <div>
-          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Capítulo</label>
-          <select id="f-chapter" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Capítulo</label>
+          <select id="f-chapter" class="w-full px-3 py-2.5 border-2 border-[var(--border-default)] rounded-xl text-sm bg-[var(--surface-input)] text-[var(--text-primary)] focus:outline-none focus:border-teal">
             <option value="">— Selecionar —</option>
             ${CHAPTERS.map(c=>`<option ${m?.chapter===c?'selected':''}>${c}</option>`).join('')}
           </select>
         </div>
         <div>
-          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Papel principal</label>
-          <select id="f-role" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Papel principal</label>
+          <select id="f-role" class="w-full px-3 py-2.5 border-2 border-[var(--border-default)] rounded-xl text-sm bg-[var(--surface-input)] text-[var(--text-primary)] focus:outline-none focus:border-teal">
             ${Object.entries(ROLE_LABELS).filter(([k])=>k!=='guest').map(([k,v])=>
               `<option value="${k}" ${m?.operational_role===k?'selected':''}>${v}</option>`
             ).join('')}
           </select>
         </div>
         <div>
-          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Tribo</label>
-          <select id="f-tribe" class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Tribo</label>
+          <select id="f-tribe" class="w-full px-3 py-2.5 border-2 border-[var(--border-default)] rounded-xl text-sm bg-[var(--surface-input)] text-[var(--text-primary)] focus:outline-none focus:border-teal">
             <option value="">— Nenhuma —</option>
             ${[1,2,3,4,5,6,7,8].map(n=>`<option value="${n}" ${m?.tribe_id===n?'selected':''}>Tribo ${n}</option>`).join('')}
           </select>
         </div>
         <div>
-          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">PMI ID <span class="text-amber-500">único</span></label>
+          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">PMI ID <span class="text-amber-500">único</span></label>
           <input id="f-pmi" type="password" value="${m?.pmi_id||''}"
-            class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+            class="w-full px-3 py-2.5 border-2 border-[var(--border-default)] rounded-xl text-sm bg-[var(--surface-input)] text-[var(--text-primary)] focus:outline-none focus:border-teal">
           <div id="err-pmi" class="text-xs text-crimson mt-1 hidden"></div>
         </div>
         <div>
-          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">Telefone <span class="text-amber-500">único</span></label>
+          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Telefone <span class="text-amber-500">único</span></label>
           <input id="f-phone" type="password" value="${m?.phone||''}"
-            class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+            class="w-full px-3 py-2.5 border-2 border-[var(--border-default)] rounded-xl text-sm bg-[var(--surface-input)] text-[var(--text-primary)] focus:outline-none focus:border-teal">
           <div id="err-phone" class="text-xs text-crimson mt-1 hidden"></div>
         </div>
         <div class="col-span-2">
-          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-1">LinkedIn URL</label>
+          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">LinkedIn URL</label>
           <input id="f-li" type="url" value="${m?.linkedin_url||''}" placeholder="https://linkedin.com/in/…"
-            class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm focus:outline-none focus:border-teal">
+            class="w-full px-3 py-2.5 border-2 border-[var(--border-default)] rounded-xl text-sm bg-[var(--surface-input)] text-[var(--text-primary)] focus:outline-none focus:border-teal">
         </div>
         <div class="col-span-2">
-          <label class="block text-[.7rem] font-bold text-slate-400 uppercase tracking-wide mb-2">Todos os papéis</label>
+          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-2">Todos os papéis</label>
           <div class="flex flex-wrap gap-2" id="roles-grid">
             ${ROLES_ALL.map(r => {
               const on = selectedRoles.includes(r);
@@ -170,7 +170,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           </label>
         </div>` : ''}
       </div>
-      <div class="flex justify-between items-center mt-6 pt-4 border-t border-slate-100">
+      <div class="flex justify-between items-center mt-6 pt-4 border-t border-[var(--border-subtle)]">
         <div>
           ${!isNew && m?.current_cycle_active ? `<button type="button" class="btn-inactivate-member text-xs text-crimson font-semibold hover:underline cursor-pointer border-0 bg-transparent" data-member-id="${escapeAttr(m.id)}" data-member-name="${escapeAttr(m.name||'')}">🔴 Inativar membro</button>` : ''}
           ${!isNew && !m?.current_cycle_active ? `<button type="button" class="btn-reactivate-member text-xs text-emerald-600 font-semibold hover:underline cursor-pointer border-0 bg-transparent" data-member-id="${escapeAttr(m.id)}">🟢 Reativar membro</button>` : ''}

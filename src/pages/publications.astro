@@ -7,7 +7,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
 <BaseLayout title={t('nav.publications', lang)} activePage="publications">
-  <div id="pub-loading" class="max-w-[1200px] mx-auto px-4 py-12 text-center text-slate-400">
+  <div id="pub-loading" class="max-w-[1200px] mx-auto px-4 py-12 text-center text-[var(--text-muted)]">
     {t('publications.loading', lang)}
   </div>
 

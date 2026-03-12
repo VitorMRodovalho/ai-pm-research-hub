@@ -25,7 +25,7 @@ function buildHref(prefix: string): string {
     {LANGUAGES.find(l => l.code === currentLang)?.flag}
     <span class="text-white/60 text-[.6rem]">▾</span>
   </button>
-  <div id="lang-menu" class="hidden absolute right-0 top-full mt-1 bg-white rounded-lg shadow-xl border border-slate-200
+  <div id="lang-menu" class="hidden absolute right-0 top-full mt-1 bg-[var(--surface-elevated)] rounded-lg shadow-xl border border-[var(--border-default)]
                               min-w-[140px] py-1 z-50">
     {LANGUAGES.map(l => (
       <a href={buildHref(l.prefix)}
@@ -33,7 +33,7 @@ function buildHref(prefix: string): string {
            "flex items-center gap-2 px-3 py-1.5 text-[.78rem] font-medium no-underline transition-all",
            l.code === currentLang
              ? "bg-navy/5 text-navy font-bold"
-             : "text-slate-600 hover:bg-slate-50"
+             : "text-[var(--text-secondary)] hover:bg-[var(--overlay-card-hover)]"
          ]}>
         <span>{l.flag}</span>
         <span>{l.label}</span>
