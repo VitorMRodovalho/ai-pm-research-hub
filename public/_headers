@@ -1,0 +1,22 @@
+# Cloudflare Pages custom headers
+# SSR pages must not be cached at the edge to avoid stale content after deploys.
+# Static assets (_astro/*) already have content-hashed filenames from Vite.
+
+/tribe/*
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/admin/*
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/profile
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/en/*
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/es/*
+  Cache-Control: no-cache, no-store, must-revalidate
+
+# Static assets — long cache, immutable (Vite hashes guarantee uniqueness)
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
