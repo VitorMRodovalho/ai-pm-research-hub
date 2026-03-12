@@ -161,7 +161,32 @@ WHERE name IN ('Andressa Martins', 'Carlos Magno do HUB Cerrado', 'Fabricio Cost
 
 ---
 
+### Fix 6: Founder corrections — Antonio Marcos + Giovanni (2026-03-12)
+
+**Status:** APPLIED — 2026-03-12 21:30 UTC (GP confirmed Antonio Marcos Costa = Marcos Moura Costa from governance manual)
+
+```sql
+-- Antonio Marcos Costa: add pilot-2024 to cycles (already had founder designation)
+UPDATE members SET cycles = array_cat(
+  COALESCE(cycles, '{}'::text[]), ARRAY['pilot-2024']::text[]
+), updated_at = now()
+WHERE name = 'Antonio Marcos Costa'
+  AND NOT (COALESCE(cycles, '{}'::text[]) @> ARRAY['pilot-2024']);
+
+-- Giovanni Oliveira Baroni Brandão: historical founder record (did not continue)
+INSERT INTO members (name, email, operational_role, designations, cycles,
+  is_active, current_cycle_active, chapter)
+VALUES (
+  'Giovanni Oliveira Baroni Brandão',
+  'giovanni.brandao@historical.nucleo',
+  'none', ARRAY['founder'], ARRAY['pilot-2024'],
+  false, false, 'PMI-GO'
+) ON CONFLICT DO NOTHING;
+```
+
+---
+
 ### Remaining (not sanitation issues)
 
 - **10 active members without tribe_id**: Cross-tribe roles (liaisons, sponsors, GP) or haven't selected a tribe yet.
-- **1 active member with role=none**: Antonio Marcos Costa (operational_role TBD).
+- Antonio Marcos Costa: now identified as founder Marcos Moura Costa. Has `pilot-2024` + current cycles. `operational_role` still `none` — GP may assign later.
