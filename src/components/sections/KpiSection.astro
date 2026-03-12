@@ -6,15 +6,6 @@ interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
 
 const safeKpis = Array.isArray(KPIS) ? KPIS : [];
-
-const kpiLabels = JSON.stringify({
-  chapters: t('data.kpi.chapters', lang),
-  activeMembers: t('data.kpi.activeMembers', lang) || t('data.kpi.chapters', lang),
-  tribes: t('data.kpi.tribes', lang) || 'Tribos ativas',
-  events: t('data.kpi.events', lang) || 'Eventos realizados',
-  impact: t('data.kpi.impact', lang),
-  cert: t('data.kpi.cert', lang),
-});
 ---
 
 <section class="py-16 px-6 bg-[var(--surface-section-dark)] text-white" id="kpis">
@@ -30,11 +21,12 @@ const kpiLabels = JSON.stringify({
     </p>
     <div id="kpi-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
       {safeKpis.map((k) => (
-        <div class="bg-white/6 border border-white/10 rounded-2xl p-5 text-center">
+        <div class="bg-white/6 border border-white/10 rounded-2xl p-5 text-center" data-kpi-key={k.labelKey}>
           <div class="text-[clamp(1.5rem,4vw,2.2rem)] font-extrabold leading-none bg-gradient-to-br from-[#05BFE0] to-[#ED7D31] bg-clip-text text-transparent">
             {k.value}
           </div>
           <div class="text-[.78rem] text-white/60 mt-1.5">{t(k.labelKey, lang)}</div>
+          <div class="kpi-progress hidden mt-2 text-[10px] font-semibold text-[#05BFE0]/80"></div>
         </div>
       ))}
       {!safeKpis.length && (
@@ -45,3 +37,33 @@ const kpiLabels = JSON.stringify({
     </div>
   </div>
 </section>
+
+<script>
+  // Hydrate KPI cards with live progress from kpi_summary RPC
+  (async () => {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+
+    try {
+      const { data, error } = await sb.rpc('kpi_summary');
+      if (error || !data) return;
+
+      // Map label keys → actual values from kpi_summary
+      const actuals: Record<string, string> = {
+        'data.kpi.chapters': `${data.chapters ?? '—'} / 8`,
+        'data.kpi.articles': `${data.published_artifacts ?? '—'} publicados`,
+        'data.kpi.webinars': `${data.total_events ?? '—'} realizados`,
+        'data.kpi.impact':   `${Number(data.impact_hours || 0).toLocaleString('pt-BR')}h atual`,
+        'data.kpi.cert':     `${data.cert_pct ?? '—'}% atual`,
+      };
+
+      document.querySelectorAll<HTMLElement>('#kpi-grid [data-kpi-key]').forEach((card) => {
+        const key = card.dataset.kpiKey || '';
+        const progress = actuals[key];
+        if (!progress) return;
+        const el = card.querySelector<HTMLElement>('.kpi-progress');
+        if (el) { el.textContent = progress; el.classList.remove('hidden'); }
+      });
+    } catch { /* kpi_summary may not exist — keep static fallbacks */ }
+  })();
+</script>
