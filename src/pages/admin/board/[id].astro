@@ -1,0 +1,51 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
+import BoardEngine from '../../../components/islands/BoardEngine';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+const boardId = Astro.params.id;
+---
+
+<BaseLayout title="Board" activePage="admin">
+  <div class="max-w-[1400px] mx-auto px-4 py-8 space-y-4">
+    <div id="board-loading" class="text-slate-400 text-sm">Carregando board...</div>
+    <div id="board-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
+      Acesso restrito.
+    </div>
+    <div id="board-panel" class="hidden">
+      <BoardEngine client:load boardId={boardId} />
+    </div>
+  </div>
+</BaseLayout>
+
+<script is:inline>
+  (function () {
+    function hasBoardAccess(member) {
+      if (!member) return false;
+      if (member.is_superadmin) return true;
+      var role = String(member.operational_role || '');
+      return ['manager', 'deputy_manager', 'tribe_leader', 'researcher', 'facilitator', 'communicator'].includes(role);
+    }
+    function boot() {
+      var loading = document.getElementById('board-loading');
+      var denied = document.getElementById('board-denied');
+      var panel = document.getElementById('board-panel');
+      var member = window.navGetMember && window.navGetMember();
+      if (!member) {
+        window.addEventListener('nav:member', boot, { once: true });
+        return;
+      }
+      if (loading) loading.classList.add('hidden');
+      if (!hasBoardAccess(member)) {
+        if (denied) denied.classList.remove('hidden');
+        return;
+      }
+      if (panel) panel.classList.remove('hidden');
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', boot);
+    } else {
+      boot();
+    }
+  })();
+</script>

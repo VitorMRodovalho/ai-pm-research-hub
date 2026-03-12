@@ -323,7 +323,8 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
             </div>
 
             {/* Actions — hidden in readonly mode */}
-            {mode !== 'readonly' && <div className="pt-3 border-t border-slate-100 space-y-2">
+            {mode !== 'readonly' && (
+            <div className="pt-3 border-t border-slate-100 space-y-2">
               <button onClick={onDuplicate}
                 className="w-full px-3 py-1.5 rounded-lg bg-slate-50 text-slate-600 text-[11px] font-semibold
                   border border-slate-200 hover:bg-slate-100 cursor-pointer text-left">
@@ -372,6 +373,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                 </div>
               )}
             </div>
+            )}
           </div>
         </div>
       </div>
