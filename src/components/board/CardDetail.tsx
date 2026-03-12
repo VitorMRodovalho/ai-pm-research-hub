@@ -44,8 +44,69 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const [dirty, setDirty] = useState(false);
   const [showMoveToBoard, setShowMoveToBoard] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [attachments, setAttachments] = useState(item.attachments || []);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const canEdit = mode !== 'readonly' && (permissions.canEditAny || (permissions.canEditOwn && permissions.member?.id === item.assignee_id));
+
+  // ── Attachment upload ──
+  const ALLOWED_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'];
+  const ALLOWED_EXTENSIONS = /\.(pdf|png|jpg|jpeg|docx|xlsx|pptx)$/i;
+  const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Reset input so same file can be re-selected
+    e.target.value = '';
+
+    if (!ALLOWED_EXTENSIONS.test(file.name)) {
+      (window as any).toast?.('Tipo de arquivo não permitido. Use: pdf, png, jpg, docx, xlsx, pptx', 'error');
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      (window as any).toast?.('Arquivo muito grande. Limite: 5MB', 'error');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const sb = getSb();
+      if (!sb) throw new Error('Supabase indisponível');
+
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const storagePath = `${board.id}/${item.id}/${Date.now()}_${safeName}`;
+
+      const { error: uploadError } = await sb.storage
+        .from('board-attachments')
+        .upload(storagePath, file, { contentType: file.type, upsert: false });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = sb.storage
+        .from('board-attachments')
+        .getPublicUrl(storagePath);
+
+      const newAttachment = { name: file.name, url: urlData?.publicUrl || storagePath };
+      const updated = [...attachments, newAttachment];
+      setAttachments(updated);
+      await onUpdate({ attachments: updated });
+      (window as any).toast?.('Arquivo anexado', 'success');
+    } catch (err: any) {
+      console.error('Upload error:', err);
+      (window as any).toast?.(`Erro no upload: ${err.message || 'desconhecido'}`, 'error');
+    } finally {
+      setUploading(false);
+    }
+  }, [attachments, board.id, item.id, onUpdate]);
+
+  const handleRemoveAttachment = useCallback(async (idx: number) => {
+    const updated = attachments.filter((_, i) => i !== idx);
+    setAttachments(updated);
+    await onUpdate({ attachments: updated });
+    (window as any).toast?.('Anexo removido');
+  }, [attachments, onUpdate]);
 
   // Fetch timeline + members on mount
   useEffect(() => {
@@ -215,21 +276,52 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
             </div>
 
             {/* Attachments */}
-            {item.attachments && item.attachments.length > 0 && (
-              <div>
-                <label className="text-[11px] font-semibold text-[var(--text-secondary)] mb-2 block">{i18n.attachments}</label>
-                <div className="space-y-1.5">
-                  {item.attachments.map((att, idx) => (
-                    <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-base)] rounded-lg hover:bg-[var(--surface-hover)]
-                        no-underline transition-colors">
-                      <span className="text-[12px]">{att.name?.match(/\.(png|jpg|jpeg|gif|webp)$/i) ? '🖼️' : '📄'}</span>
-                      <span className="text-[11px] text-blue-600 truncate">{att.name || att.url}</span>
-                    </a>
-                  ))}
+            <div>
+              <label className="text-[11px] font-semibold text-[var(--text-secondary)] mb-2 block">{i18n.attachments}</label>
+              {attachments.length > 0 && (
+                <div className="space-y-1.5 mb-2">
+                  {attachments.map((att, idx) => {
+                    const isImage = att.name?.match(/\.(png|jpg|jpeg|gif|webp)$/i);
+                    return (
+                      <div key={idx} className="flex items-center gap-2 group">
+                        <a href={att.url} target="_blank" rel="noopener noreferrer"
+                          className="flex-1 flex items-center gap-2 px-3 py-2 bg-[var(--surface-base)] rounded-lg hover:bg-[var(--surface-hover)]
+                            no-underline transition-colors min-w-0">
+                          {isImage ? (
+                            <img src={att.url} alt={att.name} className="w-8 h-8 rounded object-cover flex-shrink-0" />
+                          ) : (
+                            <span className="text-[12px] flex-shrink-0">📄</span>
+                          )}
+                          <span className="text-[11px] text-blue-600 truncate">{att.name || att.url}</span>
+                        </a>
+                        {canEdit && (
+                          <button type="button" onClick={() => handleRemoveAttachment(idx)}
+                            className="opacity-0 group-hover:opacity-100 text-[10px] text-red-500 hover:text-red-700
+                              border-0 bg-transparent cursor-pointer transition-opacity p-1"
+                            title="Remover anexo">✕</button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-            )}
+              )}
+              {canEdit && (
+                <>
+                  <input ref={fileInputRef} type="file" className="hidden"
+                    accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.pptx"
+                    onChange={handleFileUpload} />
+                  <button type="button" onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="text-[11px] font-semibold text-teal hover:text-[var(--color-teal-deep)]
+                      border border-dashed border-[var(--border-default)] rounded-lg px-3 py-2 w-full
+                      bg-transparent cursor-pointer hover:bg-[var(--surface-hover)] transition-colors
+                      disabled:opacity-50 disabled:cursor-wait">
+                    {uploading ? 'Enviando...' : '+ Anexar arquivo'}
+                  </button>
+                  <p className="text-[9px] text-[var(--text-muted)] mt-1">PDF, PNG, JPG, DOCX, XLSX, PPTX — máx 5MB</p>
+                </>
+              )}
+            </div>
 
             {/* Timeline */}
             {timeline.length > 0 && (
