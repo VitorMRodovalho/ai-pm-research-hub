@@ -1,7 +1,366 @@
 ---
-/**
- * Legacy redirect: /workspace → /library
- * Kept per route compatibility policy.
- */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Toast from '../components/ui/Toast.astro';
+import ConfirmModal from '../components/ui/ConfirmModal.astro';
+import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+
+const WK = {
+  meta: t('wk.meta', lang),
+  heading: t('wk.heading', lang),
+  subtitle: t('wk.subtitle', lang),
+  loading: t('wk.loading', lang),
+  authRequired: t('wk.authRequired', lang),
+  authBtn: t('wk.authBtn', lang),
+  sectionMyTribe: t('wk.sectionMyTribe', lang),
+  sectionSubprojects: t('wk.sectionSubprojects', lang),
+  sectionProduction: t('wk.sectionProduction', lang),
+  tribeItems: t('wk.tribeItems', lang),
+  tribePending: t('wk.tribePending', lang),
+  tribeNextMeeting: t('wk.tribeNextMeeting', lang),
+  tribeProgress: t('wk.tribeProgress', lang),
+  tribeLeader: t('wk.tribeLeader', lang),
+  tribeMembers: t('wk.tribeMembers', lang),
+  tribeOpen: t('wk.tribeOpen', lang),
+  tribeNoTribe: t('wk.tribeNoTribe', lang),
+  tribeNoTribeDesc: t('wk.tribeNoTribeDesc', lang),
+  commsHub: t('wk.commsHub', lang),
+  webinars: t('wk.webinars', lang),
+  curatorship: t('wk.curatorship', lang),
+  leadership: t('wk.leadership', lang),
+  publications: t('wk.publications', lang),
+  artifacts: t('wk.artifacts', lang),
+  library: t('wk.library', lang),
+  presentations: t('wk.presentations', lang),
+  subprojectItems: t('wk.subprojectItems', lang),
+  subprojectPending: t('wk.subprojectPending', lang),
+  open: t('wk.open', lang),
+  done: t('wk.done', lang),
+  inProgress: t('wk.inProgress', lang),
+  tribePrefix: t('workspace.tribePrefix', lang),
+  dayNames: [
+    t('common.days.sun', lang), t('common.days.mon', lang), t('common.days.tue', lang),
+    t('common.days.wed', lang), t('common.days.thu', lang), t('common.days.fri', lang),
+    t('common.days.sat', lang),
+  ],
+};
 ---
-<html><head><meta http-equiv="refresh" content="0;url=/library"><link rel="canonical" href="/library"></head><body></body></html>
+<BaseLayout title={WK.meta} activePage="workspace" lang={lang}>
+  <Toast />
+  <ConfirmModal />
+  <div class="max-w-[1200px] mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-2xl font-extrabold text-[var(--text-primary)]">{WK.heading}</h1>
+      <p class="text-sm text-[var(--text-secondary)] mt-1">{WK.subtitle}</p>
+    </div>
+
+    <!-- Auth gate -->
+    <div id="wk-auth-gate" class="hidden bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-8 text-center">
+      <div class="text-3xl mb-3">🔒</div>
+      <p class="font-semibold text-[var(--text-primary)] mb-2">{WK.authRequired}</p>
+      <button id="wk-login-btn" class="mt-3 px-5 py-2.5 bg-navy text-white rounded-xl text-sm font-semibold border-0 cursor-pointer hover:opacity-90 transition-all">
+        {WK.authBtn}
+      </button>
+    </div>
+
+    <!-- Loading -->
+    <div id="wk-loading" class="space-y-6">
+      <LoadingSkeleton variant="profile" />
+      <LoadingSkeleton variant="card" count={3} />
+    </div>
+
+    <!-- Main content (hidden until loaded) -->
+    <div id="wk-content" class="hidden space-y-8">
+
+      <!-- ═══ Section 1: Minha Tribo ═══ -->
+      <section id="wk-my-tribe">
+        <h2 class="text-base font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+          <span class="text-lg">🏠</span> {WK.sectionMyTribe}
+        </h2>
+        <!-- No tribe state -->
+        <div id="wk-no-tribe" class="hidden bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-6 text-center">
+          <div class="text-2xl mb-2">🔍</div>
+          <p class="font-semibold text-[var(--text-primary)]">{WK.tribeNoTribe}</p>
+          <p class="text-sm text-[var(--text-secondary)] mt-1">{WK.tribeNoTribeDesc}</p>
+        </div>
+        <!-- Tribe card (populated via JS) -->
+        <div id="wk-tribe-card" class="hidden"></div>
+      </section>
+
+      <!-- ═══ Section 2: Subprojetos ═══ -->
+      <section id="wk-subprojects">
+        <h2 class="text-base font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+          <span class="text-lg">📋</span> {WK.sectionSubprojects}
+        </h2>
+        <div id="wk-subprojects-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </section>
+
+      <!-- ═══ Section 3: Produção & Recursos ═══ -->
+      <section id="wk-production">
+        <h2 class="text-base font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+          <span class="text-lg">📄</span> {WK.sectionProduction}
+        </h2>
+        <div id="wk-production-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </section>
+    </div>
+  </div>
+
+  <script id="wk-i18n" type="application/json" set:html={JSON.stringify(WK)}></script>
+  <script>
+    // ── Workspace Cockpit — client-side orchestration ──
+    (async () => {
+      const i18n: Record<string, any> = JSON.parse(
+        document.getElementById('wk-i18n')?.textContent || '{}'
+      );
+      const dayNames: string[] = i18n.dayNames || ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+
+      const $loading = document.getElementById('wk-loading')!;
+      const $authGate = document.getElementById('wk-auth-gate')!;
+      const $content = document.getElementById('wk-content')!;
+      const $noTribe = document.getElementById('wk-no-tribe')!;
+      const $tribeCard = document.getElementById('wk-tribe-card')!;
+      const $subGrid = document.getElementById('wk-subprojects-grid')!;
+      const $prodGrid = document.getElementById('wk-production-grid')!;
+
+      // Login button
+      document.getElementById('wk-login-btn')?.addEventListener('click', () => {
+        window.dispatchEvent(new CustomEvent('open-auth-modal'));
+      });
+
+      // ── Wait for nav auth ──
+      function waitForAuth(): Promise<any> {
+        return new Promise((resolve) => {
+          const check = () => {
+            if (typeof (window as any).navGetMember === 'function') {
+              resolve((window as any).navGetMember());
+            } else {
+              setTimeout(check, 100);
+            }
+          };
+          check();
+        });
+      }
+
+      const member = await waitForAuth();
+
+      if (!member) {
+        $loading.classList.add('hidden');
+        $authGate.classList.remove('hidden');
+        return;
+      }
+
+      // ── Load data ──
+      const sb = (window as any).navGetSb?.();
+      if (!sb) {
+        $loading.classList.add('hidden');
+        $authGate.classList.remove('hidden');
+        return;
+      }
+
+      // Parallel data fetching
+      const [boardsRes, meetingRes, tribeCountRes] = await Promise.allSettled([
+        sb.rpc('list_active_boards'),
+        member.tribe_id
+          ? sb.from('tribe_meeting_slots')
+              .select('day_of_week, time_start, time_end')
+              .eq('tribe_id', member.tribe_id)
+              .eq('is_active', true)
+              .limit(1)
+          : Promise.resolve({ data: null }),
+        member.tribe_id
+          ? sb.from('active_members')
+              .select('id', { count: 'exact', head: true })
+              .eq('tribe_id', member.tribe_id)
+          : Promise.resolve({ count: 0 }),
+      ]);
+
+      const boards = boardsRes.status === 'fulfilled' ? (boardsRes.value?.data || []) : [];
+      const meetingSlots = meetingRes.status === 'fulfilled' ? (meetingRes.value?.data || []) : [];
+      const tribeMemberCount = tribeCountRes.status === 'fulfilled' ? (tribeCountRes.value?.count || 0) : 0;
+
+      // ── Categorize boards ──
+      const myTribeBoard = boards.find((b: any) => b.tribe_id === member.tribe_id && b.domain_key === 'research_delivery');
+      const operationalBoards = boards.filter((b: any) => b.board_scope === 'operational');
+
+      // ── Render Section 1: Minha Tribo ──
+      if (member.tribe_id && myTribeBoard) {
+        const totalItems = myTribeBoard.item_count || 0;
+        // Get item status counts
+        let doneCount = 0;
+        let pendingCount = 0;
+        try {
+          const { data: statusData } = await sb
+            .from('board_items')
+            .select('status')
+            .eq('board_id', myTribeBoard.id);
+          if (statusData) {
+            doneCount = statusData.filter((i: any) => i.status === 'done').length;
+            pendingCount = statusData.filter((i: any) => i.status === 'todo' || i.status === 'backlog').length;
+          }
+        } catch {}
+
+        const progressPct = totalItems > 0 ? Math.round((doneCount / totalItems) * 100) : 0;
+
+        // Meeting schedule
+        let meetingLabel = '';
+        if (meetingSlots.length > 0) {
+          const slot = meetingSlots[0];
+          const day = dayNames[slot.day_of_week] || `Dia ${slot.day_of_week}`;
+          meetingLabel = `${day} ${slot.time_start || ''}`;
+        }
+
+        // Find tribe name from static data in DOM or fallback
+        const tribeName = myTribeBoard.board_name?.replace(/^Board\s*/i, '') || `${i18n.tribePrefix} ${member.tribe_id}`;
+
+        const tribeColor = getTribeColor(member.tribe_id);
+
+        $tribeCard.innerHTML = `
+          <a href="/tribe/${member.tribe_id}?tab=board" class="block no-underline group">
+            <div class="bg-[var(--surface-card)] border-2 rounded-2xl p-5 transition-all hover:shadow-lg hover:border-opacity-60"
+                 style="border-color: ${tribeColor}">
+              <div class="flex items-start justify-between mb-3">
+                <div>
+                  <div class="text-xs font-bold uppercase tracking-wide mb-1" style="color: ${tribeColor}">
+                    ${i18n.tribePrefix} ${member.tribe_id}
+                  </div>
+                  <h3 class="text-lg font-extrabold text-[var(--text-primary)] group-hover:underline">${escHtml(tribeName)}</h3>
+                </div>
+                <span class="text-xs font-semibold px-3 py-1 rounded-full text-white" style="background: ${tribeColor}">
+                  ${i18n.tribeOpen} &rarr;
+                </span>
+              </div>
+              <div class="flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-[var(--text-secondary)] mb-3">
+                <span>📋 ${totalItems} ${i18n.tribeItems} · ${pendingCount} ${i18n.tribePending}</span>
+                ${meetingLabel ? `<span>📅 ${i18n.tribeNextMeeting}: ${meetingLabel}</span>` : ''}
+                <span>👥 ${tribeMemberCount} ${i18n.tribeMembers}</span>
+              </div>
+              <!-- Progress bar -->
+              <div class="flex items-center gap-3">
+                <div class="flex-1 h-2 rounded-full bg-[var(--border-subtle)] overflow-hidden">
+                  <div class="h-full rounded-full transition-all" style="width: ${progressPct}%; background: ${tribeColor}"></div>
+                </div>
+                <span class="text-xs font-bold" style="color: ${tribeColor}">${progressPct}%</span>
+              </div>
+            </div>
+          </a>
+        `;
+        $tribeCard.classList.remove('hidden');
+      } else if (!member.tribe_id) {
+        $noTribe.classList.remove('hidden');
+      } else {
+        // Has tribe but no board yet
+        $tribeCard.innerHTML = `
+          <a href="/tribe/${member.tribe_id}" class="block no-underline">
+            <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5 hover:shadow-md transition-all">
+              <h3 class="text-base font-bold text-[var(--text-primary)]">${i18n.tribePrefix} ${member.tribe_id}</h3>
+              <p class="text-sm text-[var(--text-secondary)] mt-1">${i18n.tribeOpen} &rarr;</p>
+            </div>
+          </a>
+        `;
+        $tribeCard.classList.remove('hidden');
+      }
+
+      // ── Render Section 2: Subprojetos ──
+      const SUBPROJECTS = [
+        { key: 'comms', label: i18n.commsHub, icon: '📡', href: '/admin/comms', domain: 'communication', minTier: 'leader', designations: ['comms_leader', 'comms_member'] },
+        { key: 'webinars', label: i18n.webinars, icon: '🎬', href: '/webinars', domain: null, minTier: 'leader', designations: ['comms_leader', 'comms_member', 'curator', 'co_gp'] },
+        { key: 'curatorship', label: i18n.curatorship, icon: '🔍', href: '/admin/curatorship', domain: 'publications_submissions', minTier: 'observer', designations: [] },
+        { key: 'leadership', label: i18n.leadership, icon: '👥', href: '/teams', domain: null, minTier: 'leader', designations: [] },
+        { key: 'publications', label: i18n.publications, icon: '📑', href: '/publications', domain: 'publications_submissions', minTier: 'leader', designations: ['curator', 'co_gp', 'comms_leader', 'comms_member'] },
+      ];
+
+      const memberTier = resolveTier(member);
+      const memberDesig = member.designations || [];
+      const memberOpRole = member.operational_role || member.role || '';
+
+      for (const sp of SUBPROJECTS) {
+        const hasAccess = checkSubprojectAccess(sp, memberTier, memberDesig, memberOpRole);
+        if (!hasAccess) continue;
+
+        const board = sp.domain ? operationalBoards.find((b: any) => b.domain_key === sp.domain) : null;
+        const itemCount = board?.item_count || 0;
+
+        const card = document.createElement('a');
+        card.href = sp.href;
+        card.className = 'block no-underline';
+        card.innerHTML = `
+          <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-4 hover:shadow-md hover:border-[var(--border-default)] transition-all h-full">
+            <div class="text-xl mb-2">${sp.icon}</div>
+            <h3 class="text-sm font-bold text-[var(--text-primary)] mb-1">${escHtml(sp.label)}</h3>
+            ${itemCount > 0 ? `<p class="text-xs text-[var(--text-secondary)]">${itemCount} ${i18n.subprojectItems}</p>` : ''}
+          </div>
+        `;
+        $subGrid.appendChild(card);
+      }
+
+      // ── Render Section 3: Produção & Recursos ──
+      const PRODUCTION = [
+        { label: i18n.artifacts, icon: '📄', href: '/artifacts' },
+        { label: i18n.library, icon: '📚', href: '/library' },
+        { label: i18n.presentations, icon: '🎬', href: '/presentations' },
+      ];
+
+      for (const item of PRODUCTION) {
+        const card = document.createElement('a');
+        card.href = item.href;
+        card.className = 'block no-underline';
+        card.innerHTML = `
+          <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-4 hover:shadow-md hover:border-[var(--border-default)] transition-all h-full">
+            <div class="text-xl mb-2">${item.icon}</div>
+            <h3 class="text-sm font-bold text-[var(--text-primary)]">${escHtml(item.label)}</h3>
+          </div>
+        `;
+        $prodGrid.appendChild(card);
+      }
+
+      // ── Done: show content ──
+      $loading.classList.add('hidden');
+      $content.classList.remove('hidden');
+
+      // ── Helpers ──
+      function escHtml(s: string): string {
+        const d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+      }
+
+      function getTribeColor(tribeId: number): string {
+        const colors: Record<number, string> = {
+          1: '#00799E', 2: '#00799E', 3: '#FF610F', 4: '#FF610F',
+          5: '#4F17A8', 6: '#4F17A8', 7: '#10B981', 8: '#10B981',
+        };
+        return colors[tribeId] || '#94A3B8';
+      }
+
+      const TIER_RANK: Record<string, number> = {
+        visitor: 0, member: 1, observer: 2, leader: 3, admin: 4, superadmin: 5,
+      };
+
+      function resolveTier(m: any): string {
+        if (m.is_superadmin) return 'superadmin';
+        const role = m.operational_role || m.role || 'guest';
+        const map: Record<string, string> = {
+          manager: 'admin', deputy_manager: 'admin',
+          tribe_leader: 'leader', facilitator: 'leader',
+          researcher: 'member', communicator: 'member',
+          guest: 'member',
+        };
+        return map[role] || 'member';
+      }
+
+      function checkSubprojectAccess(
+        sp: { minTier: string; designations: string[] },
+        tier: string,
+        desig: string[],
+        opRole: string
+      ): boolean {
+        const meetsTier = (TIER_RANK[tier] || 0) >= (TIER_RANK[sp.minTier] || 0);
+        const hasDesig = sp.designations.length > 0 && sp.designations.some(d => desig.includes(d));
+        return meetsTier || hasDesig;
+      }
+    })();
+  </script>
+</BaseLayout>
