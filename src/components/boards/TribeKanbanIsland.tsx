@@ -170,6 +170,7 @@ function SortableCard({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.6 : 1,
+    touchAction: 'none',
   };
   const attachments = parseAttachments(item.attachments);
   const due = item.due_date ? new Date(item.due_date) : null;
@@ -194,7 +195,6 @@ function SortableCard({
       {...listeners}
       tabIndex={0}
       className={`rounded-xl border p-3 shadow-sm transition-all ${canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900`}
-      onClick={(e) => { if (!(e.target as HTMLElement).closest('button, [data-radix-collection-item]')) onOpen(item); }}
       onKeyDown={(e) => {
         if (e.shiftKey && e.key === 'ArrowLeft') {
           e.preventDefault();
@@ -212,7 +212,11 @@ function SortableCard({
         }
       }}
     >
-      <h4 className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 mb-1 line-clamp-2">{item.title || 'Sem titulo'}</h4>
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onOpen(item); }}
+        className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 mb-1 line-clamp-2 text-left w-full bg-transparent border-0 p-0 cursor-pointer hover:underline"
+      >{item.title || 'Sem titulo'}</button>
       {item.is_legacy && item.origin_tribe_name ? (
         <span className="inline-block text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 font-bold mb-1">
           Legado: {item.origin_tribe_name}

@@ -105,6 +105,7 @@ function SortableCard({ item, onOpen }: { item: BoardItem; onOpen: (item: BoardI
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.6 : 1,
+    touchAction: 'none',
   };
   const overdue = daysUntilDue(item.curation_due_at);
   const isOverdue = overdue !== null && overdue < 0;
@@ -115,7 +116,6 @@ function SortableCard({ item, onOpen }: { item: BoardItem; onOpen: (item: BoardI
       style={style}
       {...attributes}
       {...listeners}
-      onClick={() => onOpen(item)}
       className={`rounded-xl border bg-white dark:bg-slate-900 p-3 shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${
         isOverdue
           ? 'border-red-300 dark:border-red-700 ring-1 ring-red-200 dark:ring-red-800'
@@ -123,9 +123,13 @@ function SortableCard({ item, onOpen }: { item: BoardItem; onOpen: (item: BoardI
       }`}
     >
       <div className="flex items-start justify-between gap-2 mb-1">
-        <h3 className="text-[13px] font-bold text-navy dark:text-slate-100 line-clamp-2 flex-1">
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onOpen(item); }}
+          className="text-[13px] font-bold text-navy dark:text-slate-100 line-clamp-2 flex-1 text-left hover:underline cursor-pointer bg-transparent border-0 p-0"
+        >
           {item.title || 'Sem título'}
-        </h3>
+        </button>
         <SlaBadge dueAt={item.curation_due_at} />
       </div>
       <div className="flex items-center gap-2 flex-wrap">
@@ -143,6 +147,13 @@ function SortableCard({ item, onOpen }: { item: BoardItem; onOpen: (item: BoardI
       {item.assignee_name ? (
         <p className="text-[11px] text-slate-500 mt-1 truncate">{item.assignee_name}</p>
       ) : null}
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onOpen(item); }}
+        className="mt-2 w-full py-1.5 rounded-lg text-[11px] font-semibold bg-navy/10 text-navy hover:bg-navy/20 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 cursor-pointer border-0 transition-colors"
+      >
+        Avaliar
+      </button>
     </article>
   );
 }
@@ -397,6 +408,22 @@ function ReviewRubricDialog({
   );
 }
 
+function PublishedDropZone() {
+  const { setNodeRef, isOver } = useDroppable({ id: 'published' });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`py-8 text-center text-sm rounded-xl border-2 border-dashed transition-colors ${
+        isOver
+          ? 'border-emerald-500 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700'
+          : 'border-emerald-200 dark:border-emerald-800 text-slate-400'
+      }`}
+    >
+      ↓ Solte o card aqui para publicar na vitrine
+    </div>
+  );
+}
+
 export default function CuratorshipBoardIsland({ i18n }: { i18n?: Record<string, string> }) {
   const windowRef = globalThis as any;
   const [loading, setLoading] = useState(true);
@@ -418,22 +445,6 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: Record<string,
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   const pending = items.filter((i) => (i as any).curation_status !== 'published');
-
-  function PublishedDropZone() {
-    const { setNodeRef, isOver } = useDroppable({ id: 'published' });
-    return (
-      <div
-        ref={setNodeRef}
-        className={`py-8 text-center text-sm rounded-xl border-2 border-dashed transition-colors ${
-          isOver
-            ? 'border-emerald-500 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700'
-            : 'border-emerald-200 dark:border-emerald-800 text-slate-400'
-        }`}
-      >
-        ↓ Solte o card aqui para publicar na vitrine
-      </div>
-    );
-  }
 
   const loadItems = useCallback(async () => {
     const sb = windowRef?.navGetSb?.();
