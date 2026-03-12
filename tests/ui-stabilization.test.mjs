@@ -78,7 +78,7 @@ test('dark mode styling uses CSS custom property tokens instead of dark: prefix 
   const globalCSS = read('src/styles/global.css');
   const darkAuditScript = read('scripts/audit_dark_mode_a11y.sh');
   const darkChecklist = read('docs/project-governance/DARK_MODE_A11Y_CHECKLIST.md');
-  assert.equal(tribe.includes('<TribeKanbanIsland client:load'), true);
+  assert.equal(tribe.includes('<BoardEngine client:load'), true);
   assert.equal(tribe.includes('id="deliverable-modal"'), true);
   assert.equal(tribe.includes('close-deliverable-modal'), true);
   assert.equal(themeCSS.includes('[data-theme="dark"]'), true);
@@ -776,20 +776,20 @@ test('tribe taxonomy includes workstream classification for navigation grouping'
   assert.equal(teams.includes('cycle_tribe_dim'), true);
 });
 
-test('tribe kanban supports modal edit/create and archive actions', () => {
+test('tribe board uses BoardEngine with DnD, card detail, and archive RPCs', () => {
   const tribe = read('src/pages/tribe/[id].astro');
-  const island = read('src/components/boards/TribeKanbanIsland.tsx');
+  const engine = read('src/components/islands/BoardEngine.tsx');
+  const cardDetail = read('src/components/board/CardDetail.tsx');
+  const kanban = read('src/components/board/BoardKanban.tsx');
   const migration = read('supabase/migrations/20260314153000_board_item_editor_rpc.sql');
   const attachmentsMigration = read('supabase/migrations/20260314180000_upsert_board_item_attachments_support.sql');
-  assert.equal(tribe.includes('<TribeKanbanIsland client:load'), true);
-  assert.equal(island.includes('DndContext'), true);
-  assert.equal(island.includes('sortableKeyboardCoordinates'), true);
-  assert.equal(island.includes("sb.rpc('upsert_board_item'"), true);
-  assert.equal(island.includes("sb.rpc('admin_archive_board_item'"), true);
-  assert.equal(island.includes('Checklist'), true);
-  assert.equal(island.includes('parseAttachments'), true);
-  assert.equal(island.includes('canEditBoard('), true);
-  assert.equal(island.includes('setModalItem'), true);
+  assert.equal(tribe.includes('<BoardEngine client:load domainKey="research_delivery"'), true);
+  assert.equal(engine.includes('DndContext'), true);
+  assert.equal(engine.includes('useBoard'), true);
+  assert.equal(engine.includes('useBoardMutations'), true);
+  assert.equal(kanban.includes('SortableContext'), true);
+  assert.equal(cardDetail.includes('checklist'), true);
+  assert.equal(cardDetail.includes('attachments'), true);
   assert.equal(migration.includes('create or replace function public.upsert_board_item('), true);
   assert.equal(attachmentsMigration.includes('p_attachments jsonb default'), true);
   assert.equal(attachmentsMigration.includes('attachments = coalesce(p_attachments, attachments)'), true);

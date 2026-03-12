@@ -288,7 +288,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     if (!_member) return null;
     const tribeId = _member.tribe_id || _member.selected_tribe_id;
     if (!tribeId) return null;
-    return `${getNavBase()}/tribe/${tribeId}`;
+    return `${getNavBase()}/tribe/${tribeId}?tab=board`;
   }
 
   function getNavBase(): string {
