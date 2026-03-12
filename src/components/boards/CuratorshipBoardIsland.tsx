@@ -146,7 +146,12 @@ function TribeSortableCard({ item, onOpen, ui = {} }: { item: BoardItem; onOpen:
         {item.tribe_name ? (
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold">{item.tribe_name}</span>
         ) : null}
-        {(item.review_count || 0) > 0 ? (
+        {((item as any).reviews_approved != null && (item as any).reviewers_required) ? (
+          <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${
+            (item as any).reviews_approved >= (item as any).reviewers_required
+              ? 'bg-emerald-100 text-emerald-700' : 'bg-violet-100 text-violet-600'
+          }`}>{(item as any).reviews_approved}/{(item as any).reviewers_required} revisores</span>
+        ) : (item.review_count || 0) > 0 ? (
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-100 text-violet-600">{item.review_count}{ui.timesReviewed || 'x avaliado'}</span>
         ) : null}
       </div>
@@ -479,11 +484,23 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
     try {
       // Supabase JS v2 .rpc() returns a PostgrestFilterBuilder (thenable but no .catch).
       // Must await each call individually — never chain .catch() on rpc().
+      // Try get_curation_dashboard first (W90), fallback to list_curation_pending_board_items
       let tribeRes: { data: any; error: any } = { data: null, error: null };
+      let dashboardData: any = null;
       try {
-        tribeRes = await sb.rpc('list_curation_pending_board_items');
+        const dashRes = await sb.rpc('get_curation_dashboard');
+        if (dashRes.data && !dashRes.error) {
+          dashboardData = dashRes.data;
+          tribeRes = { data: dashRes.data.items || [], error: null };
+        } else {
+          tribeRes = await sb.rpc('list_curation_pending_board_items');
+        }
       } catch (e: any) {
-        tribeRes = { data: null, error: { message: e?.message || 'RPC unavailable' } };
+        try {
+          tribeRes = await sb.rpc('list_curation_pending_board_items');
+        } catch (e2: any) {
+          tribeRes = { data: null, error: { message: e2?.message || 'RPC unavailable' } };
+        }
       }
 
       let legacyRes: { data: any; error: any } = { data: null, error: null };

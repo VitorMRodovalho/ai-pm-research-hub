@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { Board, BoardItem, BoardI18n, LifecycleEvent, BoardMember, BoardSummary } from '../../types/board';
+import type { Board, BoardItem, BoardI18n, LifecycleEvent, BoardMember, BoardSummary, CurationHistory, RubricScore } from '../../types/board';
 import { COLUMN_PRESETS } from '../../types/board';
 import { getSb } from '../../hooks/useBoard';
 import MemberPicker from './MemberPicker';
@@ -47,8 +47,16 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const [attachments, setAttachments] = useState(item.attachments || []);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [curationHistory, setCurationHistory] = useState<CurationHistory | null>(null);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewScores, setReviewScores] = useState<Record<string, number>>({ clarity: 3, originality: 3, adherence: 3, relevance: 3, ethics: 3 });
+  const [reviewVerdict, setReviewVerdict] = useState<string>('approved');
+  const [reviewNotes, setReviewNotes] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   const canEdit = mode !== 'readonly' && (permissions.canEditAny || (permissions.canEditOwn && permissions.member?.id === item.assignee_id));
+  const isCurator = permissions.canCurate;
+  const isCurationItem = item.curation_status === 'curation_pending';
 
   // ── Attachment upload ──
   const ALLOWED_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'];
@@ -124,8 +132,14 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
       if (Array.isArray(tl.data)) setTimeline(tl.data);
       if (Array.isArray(mb.data)) setMembers(mb.data);
       if (Array.isArray(bl.data)) setBoards(bl.data.filter((b: any) => b.id !== board.id));
+
+      // Fetch curation history if item has curation_status
+      if (item.curation_status && item.curation_status !== 'draft') {
+        const ch = await safe(sb.rpc('get_item_curation_history', { p_item_id: item.id }));
+        if (ch.data && typeof ch.data === 'object') setCurationHistory(ch.data as CurationHistory);
+      }
     })();
-  }, [item.id, board.id]);
+  }, [item.id, board.id, item.curation_status]);
 
   // ── Save ──
   const handleSave = useCallback(async () => {
@@ -143,6 +157,31 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
       setDirty(false);
     }
   }, [title, description, checklist, tags, dueDate, assigneeId, reviewerId, item, onUpdate]);
+
+  // ── Curation review submit ──
+  const handleSubmitReview = useCallback(async () => {
+    const sb = getSb();
+    if (!sb) return;
+    setSubmittingReview(true);
+    try {
+      const { error } = await sb.rpc('submit_curation_review', {
+        p_item_id: item.id,
+        p_decision: reviewVerdict,
+        p_criteria_scores: reviewScores,
+        p_feedback_notes: reviewNotes || null,
+      });
+      if (error) throw error;
+      (window as any).toast?.('Parecer registrado', 'success');
+      setShowReviewForm(false);
+      // Refresh curation history
+      const ch = await sb.rpc('get_item_curation_history', { p_item_id: item.id });
+      if (ch.data && typeof ch.data === 'object') setCurationHistory(ch.data as CurationHistory);
+    } catch (err: any) {
+      (window as any).toast?.(`Erro: ${err.message || 'desconhecido'}`, 'error');
+    } finally {
+      setSubmittingReview(false);
+    }
+  }, [item.id, reviewVerdict, reviewScores, reviewNotes]);
 
   // ── Checklist helpers ──
   const addCheckItem = () => {
@@ -324,6 +363,151 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
               )}
             </div>
 
+            {/* ── Curation Section ── */}
+            {curationHistory && (curationHistory.reviews.length > 0 || isCurationItem) && (
+              <div>
+                <label className="text-[11px] font-semibold text-[var(--text-secondary)] mb-2 block">
+                  {i18n.curationTab || 'Curadoria'}
+                </label>
+
+                {/* SLA Badge */}
+                {item.curation_due_at && (
+                  <div className="mb-3">
+                    {(() => {
+                      const due = new Date(item.curation_due_at);
+                      const now = new Date();
+                      const daysLeft = Math.ceil((due.getTime() - now.getTime()) / 86400000);
+                      const color = daysLeft < 0 ? 'bg-red-100 text-red-700' : daysLeft <= 2 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
+                      const label = daysLeft < 0 ? `${Math.abs(daysLeft)}d atrasado` : daysLeft === 0 ? 'Vence hoje' : `${daysLeft}d restantes`;
+                      return <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${color}`}>SLA: {label}</span>;
+                    })()}
+                  </div>
+                )}
+
+                {/* Reviewer progress */}
+                {curationHistory.sla_config && 'reviewers_required' in curationHistory.sla_config && (
+                  <div className="mb-3 text-[11px] text-[var(--text-secondary)]">
+                    {(() => {
+                      const approved = curationHistory.reviews.filter(r => r.decision === 'approved').length;
+                      const required = curationHistory.sla_config.reviewers_required || 2;
+                      return <span>{approved}/{required} revisores aprovaram</span>;
+                    })()}
+                  </div>
+                )}
+
+                {/* Review history */}
+                {curationHistory.reviews.length > 0 && (
+                  <div className="space-y-3 mb-3">
+                    {curationHistory.reviews.map((rev) => (
+                      <div key={rev.id} className="bg-[var(--surface-base)] rounded-xl p-3 border border-[var(--border-subtle)]">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[11px] font-bold text-[var(--text-primary)]">{rev.curator_name}</span>
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                            rev.decision === 'approved' ? 'bg-emerald-100 text-emerald-700'
+                            : rev.decision === 'rejected' ? 'bg-red-100 text-red-700'
+                            : 'bg-amber-100 text-amber-700'
+                          }`}>
+                            {rev.decision === 'approved' ? 'Aprovado' : rev.decision === 'rejected' ? 'Rejeitado' : 'Revisão solicitada'}
+                          </span>
+                        </div>
+                        {/* Rubric scores as bars */}
+                        {rev.criteria_scores && Object.keys(rev.criteria_scores).length > 0 && (
+                          <div className="space-y-1 mb-2">
+                            {(['clarity', 'originality', 'adherence', 'relevance', 'ethics'] as const).map((key) => {
+                              const score = (rev.criteria_scores as RubricScore)?.[key] || 0;
+                              const labels: Record<string, string> = {
+                                clarity: i18n.rubricClarity || 'Clareza',
+                                originality: i18n.rubricOriginality || 'Originalidade',
+                                adherence: i18n.rubricAdherence || 'Aderência',
+                                relevance: i18n.rubricRelevance || 'Relevância',
+                                ethics: i18n.rubricEthics || 'Ética',
+                              };
+                              return (
+                                <div key={key} className="flex items-center gap-2">
+                                  <span className="text-[9px] text-[var(--text-muted)] w-16 truncate">{labels[key]}</span>
+                                  <div className="flex-1 bg-[var(--surface-section-cool)] rounded-full h-1.5">
+                                    <div className="bg-blue-500 h-1.5 rounded-full transition-all" style={{ width: `${(score / 5) * 100}%` }} />
+                                  </div>
+                                  <span className="text-[9px] font-bold text-[var(--text-secondary)] w-4 text-right">{score}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {rev.feedback_notes && (
+                          <p className="text-[10px] text-[var(--text-muted)] italic mt-1">{rev.feedback_notes}</p>
+                        )}
+                        <span className="text-[9px] text-[var(--text-muted)]">
+                          {new Date(rev.completed_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Review form button + form */}
+                {isCurator && isCurationItem && !showReviewForm && (
+                  <button onClick={() => setShowReviewForm(true)}
+                    className="w-full px-3 py-2 bg-purple-600 text-white rounded-lg text-[11px] font-bold cursor-pointer hover:bg-purple-700 border-0">
+                    📝 {i18n.curationSubmitReview || 'Submeter Parecer'}
+                  </button>
+                )}
+
+                {showReviewForm && (
+                  <div className="bg-[var(--surface-base)] rounded-xl p-4 border border-purple-200 space-y-3">
+                    <h4 className="text-[12px] font-bold text-[var(--text-primary)]">Parecer de Curadoria</h4>
+                    {/* Rubric sliders */}
+                    {(['clarity', 'originality', 'adherence', 'relevance', 'ethics'] as const).map((key) => {
+                      const labels: Record<string, string> = {
+                        clarity: i18n.rubricClarity || 'Clareza e estrutura',
+                        originality: i18n.rubricOriginality || 'Originalidade',
+                        adherence: i18n.rubricAdherence || 'Aderência ao tema',
+                        relevance: i18n.rubricRelevance || 'Relevância prática',
+                        ethics: i18n.rubricEthics || 'Conformidade ética',
+                      };
+                      return (
+                        <div key={key}>
+                          <div className="flex justify-between text-[10px] mb-0.5">
+                            <span className="text-[var(--text-secondary)]">{labels[key]}</span>
+                            <span className="font-bold text-[var(--text-primary)]">{reviewScores[key]}/5</span>
+                          </div>
+                          <input type="range" min="1" max="5" step="1"
+                            value={reviewScores[key]}
+                            onChange={(e) => setReviewScores({ ...reviewScores, [key]: parseInt(e.target.value) })}
+                            className="w-full h-1.5 accent-purple-600" />
+                        </div>
+                      );
+                    })}
+                    {/* Verdict */}
+                    <div>
+                      <label className="text-[10px] font-semibold text-[var(--text-secondary)] mb-1 block">Decisão</label>
+                      <select value={reviewVerdict} onChange={(e) => setReviewVerdict(e.target.value)}
+                        className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1.5 text-[12px] bg-[var(--surface-card)] outline-none">
+                        <option value="approved">Aprovado</option>
+                        <option value="returned_for_revision">Devolver para revisão</option>
+                        <option value="rejected">Rejeitar</option>
+                      </select>
+                    </div>
+                    {/* Notes */}
+                    <textarea value={reviewNotes} onChange={(e) => setReviewNotes(e.target.value)}
+                      rows={3} placeholder="Observações (opcional)"
+                      className="w-full rounded-xl border border-[var(--border-default)] px-3 py-2 text-[11px] outline-none focus:border-purple-400 resize-y" />
+                    {/* Actions */}
+                    <div className="flex gap-2">
+                      <button onClick={handleSubmitReview} disabled={submittingReview}
+                        className="flex-1 px-3 py-1.5 bg-purple-600 text-white rounded-lg text-[11px] font-bold cursor-pointer hover:bg-purple-700 border-0 disabled:opacity-50">
+                        {submittingReview ? 'Enviando...' : 'Confirmar Parecer'}
+                      </button>
+                      <button onClick={() => setShowReviewForm(false)}
+                        className="px-3 py-1.5 bg-[var(--surface-section-cool)] text-[var(--text-secondary)] rounded-lg text-[11px] font-semibold cursor-pointer border border-[var(--border-default)]">
+                        {i18n.cancel || 'Cancelar'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Timeline */}
             {timeline.length > 0 && (
               <div>
@@ -343,7 +527,11 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                         {ev.action === 'archived' && 'arquivou este card'}
                         {ev.action === 'moved_out' && 'moveu para outro board'}
                         {ev.action === 'moved_in' && 'recebido de outro board'}
-                        {!['status_change', 'created', 'assigned', 'archived', 'moved_out', 'moved_in'].includes(ev.action) && ev.action}
+                        {ev.action === 'submitted_for_curation' && 'submeteu para curadoria'}
+                        {ev.action === 'reviewer_assigned' && (ev.reason || 'designou revisor')}
+                        {ev.action === 'curation_review' && `registrou parecer${ev.review_round ? ` (rodada ${ev.review_round})` : ''}`}
+                        {ev.action === 'curation_approved' && (ev.reason || 'aprovado pelo comitê de curadoria')}
+                        {!['status_change', 'created', 'assigned', 'archived', 'moved_out', 'moved_in', 'submitted_for_curation', 'reviewer_assigned', 'curation_review', 'curation_approved'].includes(ev.action) && ev.action}
                         {ev.reason && ev.action !== 'assigned' && <span className="text-[var(--text-muted)] ml-1">— {ev.reason}</span>}
                       </span>
                     </div>

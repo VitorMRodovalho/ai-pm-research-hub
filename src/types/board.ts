@@ -74,6 +74,34 @@ export interface LifecycleEvent {
   reason: string | null;
   actor_name: string | null;
   created_at: string;
+  review_score: RubricScore | null;
+  review_round: number | null;
+  sla_deadline: string | null;
+}
+
+export interface RubricScore {
+  clarity: number;
+  originality: number;
+  adherence: number;
+  relevance: number;
+  ethics: number;
+  overall?: string;
+}
+
+export interface CurationReview {
+  id: string;
+  curator_name: string;
+  curator_id: string;
+  decision: 'approved' | 'returned_for_revision' | 'rejected';
+  criteria_scores: RubricScore;
+  feedback_notes: string | null;
+  completed_at: string;
+}
+
+export interface CurationHistory {
+  reviews: CurationReview[];
+  assignments: { reviewer_name: string; reviewer_id: string; round: number; assigned_at: string; sla_deadline: string | null }[];
+  sla_config: { sla_days: number; reviewers_required: number; max_review_rounds: number; rubric_criteria: string[] } | Record<string, never>;
 }
 
 // ─── Board Member (for pickers) ─────────────────────────────────────────────
@@ -202,6 +230,17 @@ export interface BoardI18n {
   // Curation
   curationStatus?: string;
   curationDue?: string;
+  curationTab?: string;
+  curationReviews?: string;
+  curationAwaitingReviewers?: string;
+  curationApproved?: string;
+  curationSubmitReview?: string;
+  curationRound?: string;
+  rubricClarity?: string;
+  rubricOriginality?: string;
+  rubricAdherence?: string;
+  rubricRelevance?: string;
+  rubricEthics?: string;
   // Source badges
   fromTrello?: string;
   fromNotion?: string;
@@ -240,6 +279,17 @@ export const DEFAULT_I18N: BoardI18n = {
   overdue: 'Vencido',
   curationStatus: 'Status de curadoria',
   curationDue: 'SLA de curadoria',
+  curationTab: 'Curadoria',
+  curationReviews: 'Pareceres',
+  curationAwaitingReviewers: 'Aguardando revisores',
+  curationApproved: 'Aprovado pelo Comitê',
+  curationSubmitReview: 'Submeter Parecer',
+  curationRound: 'Rodada',
+  rubricClarity: 'Clareza e estrutura',
+  rubricOriginality: 'Originalidade',
+  rubricAdherence: 'Aderência ao tema',
+  rubricRelevance: 'Relevância prática',
+  rubricEthics: 'Conformidade ética',
   fromTrello: 'Trello',
   fromNotion: 'Notion',
   fromManual: 'Manual',
