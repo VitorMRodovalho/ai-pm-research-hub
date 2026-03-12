@@ -772,7 +772,7 @@ test('tribe taxonomy includes workstream classification for navigation grouping'
   assert.equal(teams.includes('Ativas (Pesquisa)'), true);
   assert.equal(teams.includes('Subprojetos (Operação)'), true);
   assert.equal(teams.includes('Legado (Read-only)'), true);
-  assert.equal(teams.includes("select('id, name, quadrant_name, is_active, workstream_type')"), true);
+  assert.equal(teams.includes('cycle_tribe_dim'), true);
 });
 
 test('tribe kanban supports modal edit/create and archive actions', () => {

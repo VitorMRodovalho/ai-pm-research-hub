@@ -936,18 +936,19 @@ This backlog now reflects the actual state of production. All items marked Done 
 
 | Sprint | Foco | Priority | Status | Description |
 |---|---|---|---|---|
-| W90 | Tribe island parity hardening | High | Planned | Fechar lacunas de UX entre board de tribo e publicações (filtros avançados e restore contextual). |
-| W91 | Portfolio alert inbox | Medium | Planned | Surface para alertas abertos de taxonomy com resolução assistida. |
-| W92 | Governance restore audit timeline | Medium | Planned | Timeline de restaurações de cards/boards com export CSV de auditoria. |
-| W93 | Comms ops trend charts | Medium | Planned | Evoluir `comms-ops` com tendências semanais/mensais em gráficos nativos. |
-| W94 | Submission workflow board badges | Medium | Planned | Exibir badges de status de submissão diretamente nos cards de publicações. |
-| W95 | Route policy contract tests | High | Planned | Testes contratuais para matriz de permissões por rota e designação. |
-| W96 | Dark mode screenshot diff gate | Medium | Planned | Gate automatizado de regressão visual por diff de screenshot. |
-| W97 | Data sanity remediation runbook | High | Planned | Playbook de correção para cada tipo de inconsistência detectada em sanity. |
-| W98 | Cross-board transfer UI | Medium | Planned | UI administrativa para `move_board_item_to_board` com validação de domínio/escopo. |
-| W99 | Admin productivity command palette | Low | Planned | Atalhos rápidos para ações recorrentes no painel administrativo. |
-| W100 | i18n completeness audit automation | Medium | Planned | Auditoria automática de strings hardcoded residuais em páginas críticas. |
-| W101 | Browser guard flake reduction v2 | Medium | Planned | Estabilização adicional dos testes E2E com retries por etapa crítica. |
-| W102 | Governance API docs pack | Medium | Planned | Documentação técnica das RPCs de governança/portfolio para onboarding. |
-| W103 | Portfolio KPI calibration | High | Planned | Ajuste de limiares de risco e severidade por coluna/domínio de board. |
-| W104 | Roadmap closure checkpoint v2 | High | Planned | Revisão executiva do ciclo W90-W104 e definição da próxima onda. |
+| W90 | Curation review audit trail | High | Planned | Criar `curation_review_log` (item_id, reviewer_id, action, due_date, revised_due_date, notes, created_at) para rastrear fluxo de aprovação do Comitê de Curadoria com SLAs e reprogramações. Integrar com `TribeKanbanIsland` e `CuratorshipBoardIsland`. |
+| W91 | Tribe island parity hardening | High | Planned | Fechar lacunas de UX entre board de tribo e publicações (filtros avançados e restore contextual). |
+| W92 | Portfolio alert inbox | Medium | Planned | Surface para alertas abertos de taxonomy com resolução assistida. |
+| W93 | Governance restore audit timeline | Medium | Planned | Timeline de restaurações de cards/boards com export CSV de auditoria. |
+| W94 | Comms ops trend charts | Medium | Planned | Evoluir `comms-ops` com tendências semanais/mensais em gráficos nativos. |
+| W95 | Submission workflow board badges | Medium | Planned | Exibir badges de status de submissão diretamente nos cards de publicações. |
+| W96 | Route policy contract tests | High | Planned | Testes contratuais para matriz de permissões por rota e designação. |
+| W97 | Dark mode screenshot diff gate | Medium | Planned | Gate automatizado de regressão visual por diff de screenshot. |
+| W98 | Data sanity remediation runbook | High | Planned | Playbook de correção para cada tipo de inconsistência detectada em sanity. |
+| W99 | Cross-board transfer UI | Medium | Planned | UI administrativa para `move_board_item_to_board` com validação de domínio/escopo. |
+| W100 | Admin productivity command palette | Low | Planned | Atalhos rápidos para ações recorrentes no painel administrativo. |
+| W101 | i18n completeness audit automation | Medium | Planned | Auditoria automática de strings hardcoded residuais em páginas críticas. |
+| W102 | Browser guard flake reduction v2 | Medium | Planned | Estabilização adicional dos testes E2E com retries por etapa crítica. |
+| W103 | Governance API docs pack | Medium | Planned | Documentação técnica das RPCs de governança/portfolio para onboarding. |
+| W104 | Portfolio KPI calibration | High | Planned | Ajuste de limiares de risco e severidade por coluna/domínio de board. |
+| W105 | Roadmap closure checkpoint v2 | High | Planned | Revisão executiva do ciclo W90-W105 e definição da próxima onda. |

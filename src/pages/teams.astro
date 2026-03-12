@@ -75,6 +75,27 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       : `<div class="rounded-xl border border-dashed border-slate-200 dark:border-slate-700 p-5 text-sm text-slate-400 dark:text-slate-500">${emptyText}</div>`;
   }
 
+  function escapeHtml(str: string): string {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function legacyCycleHtml(cycleCode: string, cycleLabel: string, rows: any[]): string {
+    const cards = rows.map((r: any) => {
+      const leader = r.leader_name ? `👤 ${escapeHtml(r.leader_name)}` : '';
+      const members = r.member_count > 0 ? ` · 👥 ${r.member_count}` : '';
+      return cardHtml(
+        escapeHtml(r.tribe_name || 'Tribo'),
+        `${escapeHtml(r.tribe_type === 'operational' ? 'Operacional' : 'Pesquisa')} · ${leader}${members}`,
+        '#',
+        true
+      );
+    }).join('');
+    return `<div class="mb-4">
+      <h3 class="text-[13px] font-bold text-slate-600 dark:text-slate-300 mb-2">${escapeHtml(cycleLabel)}</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">${cards}</div>
+    </div>`;
+  }
+
   async function boot() {
     sb = (window as any).navGetSb?.();
     member = (window as any).navGetMember?.();
@@ -91,60 +112,43 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
     showShell();
 
-    const [{ data: tribes }, { data: legacyTribes }, { data: lineage }] = await Promise.all([
-      sb.from('tribes').select('id, name, quadrant_name, is_active, workstream_type').order('id'),
-      sb.from('legacy_tribes').select('id, legacy_key, display_name, cycle_label, quadrant, tribe_id, status, notes').order('id'),
-      sb.from('tribe_lineage').select('legacy_tribe_id, current_tribe_id, relation_type, cycle_scope, notes').eq('is_active', true),
-    ]);
+    const { data: dim } = await sb.from('cycle_tribe_dim').select('*').order('dim_id');
+    const rows = dim || [];
 
-    const lineageMap: Record<number, { currentId: number; note: string }> = {};
-    (lineage || []).forEach((l: any) => {
-      lineageMap[l.legacy_tribe_id] = { currentId: l.current_tribe_id, note: l.notes || '' };
+    const c3Research = rows.filter((r: any) => r.cycle_code === 'cycle_3' && r.tribe_type === 'research' && r.is_active);
+    const active = c3Research.map((r: any) => cardHtml(
+      `T${r.tribe_number}: ${r.tribe_name}`,
+      r.quadrant_name || 'Pesquisa ativa do ciclo',
+      `/tribe/${r.tribe_number}`
+    ));
+
+    const c3Ops = rows.filter((r: any) => r.cycle_code === 'cycle_3' && (r.tribe_type === 'operational' || r.tribe_type === 'subproject'));
+    const operational = c3Ops.map((r: any) => {
+      const href = r.tribe_name === 'Webinars' ? '/webinars'
+        : r.tribe_name === 'Comitê de Curadoria' ? '/admin/curatorship'
+        : r.tribe_name === 'Hub de Comunicação' ? '/admin/comms-ops'
+        : '#';
+      return cardHtml(r.tribe_name, `${r.leader_name || '—'} · ${r.tribe_type === 'subproject' ? 'Subprojeto' : 'Operacional'}`, href);
     });
-    const tribeNameMap: Record<number, string> = {};
-    (tribes || []).forEach((t: any) => { tribeNameMap[t.id] = t.name; });
 
-    const active = (tribes || [])
-      .filter((tribe: any) => tribe.is_active !== false && String(tribe.workstream_type || 'research') === 'research')
-      .map((tribe: any) => cardHtml(
-        buildTribeLabel(tribe, { prefix: 'Tribo' }),
-        tribe.quadrant_name || 'Pesquisa ativa do ciclo',
-        `/tribe/${tribe.id}`
-      ));
-
-    const operational = (tribes || [])
-      .filter((tribe: any) => String(tribe.workstream_type || '') === 'operational')
-      .map((tribe: any) => cardHtml(
-        buildTribeLabel(tribe, { prefix: 'Tribo' }),
-        'Subprojeto operacional contínuo',
-        `/tribe/${tribe.id}`
-      ));
-
-    const webinars = cardHtml(
-      'Webinars',
-      'Funil operacional de eventos e publicação de replays',
-      '/webinars'
-    );
-    operational.unshift(webinars);
-
-    const legacy = (legacyTribes || []).map((tribe: any) => {
-      const currentTribeId = tribe.tribe_id;
-      const successor = currentTribeId ? tribeNameMap[currentTribeId] : null;
-      const cycleTag = tribe.cycle_label || '';
-      const subtitle = successor
-        ? `${cycleTag} · Continuou como T${currentTribeId}: ${successor}`
-        : `${cycleTag} · ${tribe.notes || 'Consulta histórica'}`;
-      return cardHtml(
-        tribe.display_name || 'Tribo histórica',
-        subtitle,
-        currentTribeId ? `/tribe/${currentTribeId}` : '/#tribes',
-        true
-      );
-    });
+    const CYCLE_LABELS: Record<string, string> = {
+      pilot: 'Piloto (2024)',
+      cycle_1: 'Ciclo 1 (2025/1)',
+      cycle_2: 'Ciclo 2 (2025/2)',
+    };
+    const legacyCycles = ['cycle_1', 'cycle_2'];
+    const legacyHtml = legacyCycles.map(cc => {
+      const cycleRows = rows.filter((r: any) => r.cycle_code === cc);
+      return cycleRows.length ? legacyCycleHtml(cc, CYCLE_LABELS[cc] || cc, cycleRows) : '';
+    }).filter(Boolean).join('');
 
     renderBlock('teams-active', active, 'Sem tribos ativas cadastradas.');
     renderBlock('teams-operational', operational, 'Sem subprojetos operacionais cadastrados.');
-    renderBlock('teams-legacy', legacy, 'Sem tribos legadas registradas.');
+
+    const legacyEl = document.getElementById('teams-legacy');
+    if (legacyEl) {
+      legacyEl.innerHTML = legacyHtml || '<div class="rounded-xl border border-dashed border-slate-200 dark:border-slate-700 p-5 text-sm text-slate-400">Sem tribos legadas registradas.</div>';
+    }
   }
 
   boot();
