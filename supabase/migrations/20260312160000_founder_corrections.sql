@@ -16,7 +16,14 @@ INSERT INTO members (name, email, operational_role, designations, cycles,
   is_active, current_cycle_active, chapter)
 VALUES (
   'Giovanni Oliveira Baroni Brandão',
-  'giovanni.brandao@historical.nucleo',
+  'giovannibaro@gmail.com',
   'none', ARRAY['founder'], ARRAY['pilot-2024'],
   false, false, 'PMI-GO'
 ) ON CONFLICT DO NOTHING;
+
+-- Giovanni: set real contact info
+UPDATE members SET
+  email = 'giovannibaro@gmail.com',
+  phone = '+55 (62) 98128-2494',
+  updated_at = now()
+WHERE name = 'Giovanni Oliveira Baroni Brandão';
