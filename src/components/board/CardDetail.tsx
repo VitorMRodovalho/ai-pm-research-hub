@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Board, BoardItem, BoardI18n, LifecycleEvent, BoardMember, BoardSummary } from '../../types/board';
 import { COLUMN_PRESETS } from '../../types/board';
 import { getSb } from '../../hooks/useBoard';
+import MemberPicker from './MemberPicker';
 
 interface Props {
   item: BoardItem;
@@ -278,27 +279,25 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
             {/* Assignee */}
             <div>
               <label className="text-[10px] font-semibold text-[var(--text-secondary)] mb-1 block uppercase tracking-wide">{i18n.assignee}</label>
-              <select value={assigneeId}
-                onChange={(e) => { setAssigneeId(e.target.value); setDirty(true); }}
+              <MemberPicker
+                members={members}
+                value={assigneeId}
+                onChange={(id) => { setAssigneeId(id); setDirty(true); }}
+                placeholder={i18n.noAssignee}
                 disabled={!permissions.canAssign}
-                className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1.5 text-[12px] bg-[var(--surface-card)]
-                  outline-none focus:border-blue-400 cursor-pointer">
-                <option value="">{i18n.noAssignee}</option>
-                {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
+              />
             </div>
 
             {/* Reviewer */}
             <div>
               <label className="text-[10px] font-semibold text-[var(--text-secondary)] mb-1 block uppercase tracking-wide">{i18n.reviewer}</label>
-              <select value={reviewerId}
-                onChange={(e) => { setReviewerId(e.target.value); setDirty(true); }}
+              <MemberPicker
+                members={members}
+                value={reviewerId}
+                onChange={(id) => { setReviewerId(id); setDirty(true); }}
+                placeholder={i18n.noReviewer}
                 disabled={!permissions.canAssign}
-                className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1.5 text-[12px] bg-[var(--surface-card)]
-                  outline-none focus:border-blue-400 cursor-pointer">
-                <option value="">{i18n.noReviewer}</option>
-                {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
+              />
             </div>
 
             {/* Tags */}

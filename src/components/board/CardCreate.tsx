@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { BoardI18n, BoardMember } from '../../types/board';
 import { COLUMN_PRESETS } from '../../types/board';
 import { getSb } from '../../hooks/useBoard';
+import MemberPicker from './MemberPicker';
 
 interface Props {
   boardId: string;
@@ -99,12 +100,12 @@ export default function CardCreate({ boardId, columns, i18n, onClose, onCreate }
             {/* Assignee */}
             <div>
               <label className="text-[11px] font-semibold text-[var(--text-secondary)] mb-1 block">{i18n.assignee}</label>
-              <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}
-                className="w-full rounded-xl border border-[var(--border-default)] px-2 py-2 text-[12px] bg-[var(--surface-card)]
-                  outline-none focus:border-blue-400 cursor-pointer">
-                <option value="">{i18n.noAssignee}</option>
-                {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-              </select>
+              <MemberPicker
+                members={members}
+                value={assigneeId}
+                onChange={setAssigneeId}
+                placeholder={i18n.noAssignee}
+              />
             </div>
 
             {/* Status (which column) */}
