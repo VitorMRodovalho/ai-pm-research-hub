@@ -128,7 +128,40 @@ CREATE TRIGGER trg_sync_tribe_id
 
 ---
 
+### Fix 5: Governance Manual R2 — designations and cycles (2026-03-12)
+
+**Status:** APPLIED — 2026-03-12 16:40 UTC (GP provided data from DocuSign Manual de Governança R2)
+
+Most designations already existed. Only changes needed:
+
+```sql
+-- Ivan Lourenço: add ambassador (already had sponsor, founder)
+UPDATE members SET designations = array_cat(
+  COALESCE(designations, '{}'::text[]), ARRAY['ambassador']::text[]
+), updated_at = now()
+WHERE name = 'Ivan Lourenço' AND NOT (designations @> ARRAY['ambassador']);
+-- 1 row
+
+-- Andressa, Carlos Magno, Fabricio: add pilot-2024 to cycles
+UPDATE members SET cycles = array_cat(
+  COALESCE(cycles, '{}'::text[]), ARRAY['pilot-2024']::text[]
+), updated_at = now()
+WHERE name IN ('Andressa Martins', 'Carlos Magno do HUB Cerrado', 'Fabricio Costa')
+  AND NOT (COALESCE(cycles, '{}'::text[]) @> ARRAY['pilot-2024']);
+-- 3 rows
+```
+
+**Already correct (no update needed):**
+- Sarah Faria: already had `[ambassador, founder, curator]`
+- Roberto Macêdo: already had `[chapter_liaison, ambassador, curator]`
+- Fabricio Costa: already had `[ambassador, founder, curator, co_gp]`
+- Vitor Maia Rodovalho: already had `[ambassador, founder]` + `pilot-2024` in cycles
+
+**Not in members table:** Giovanni Oliveira Baroni Brandão, Marcos Moura Costa (did not continue past pilot).
+
+---
+
 ### Remaining (not sanitation issues)
 
-- **10 active members without tribe_id**: These members don't have a `tribe_selections` record — they may be cross-tribe roles (liaisons, sponsors, GP) or haven't selected a tribe yet.
-- **2 active members with role=none**: Sarah Faria Alcantara Macedo (founder, role TBD by GP) and Antonio Marcos Costa.
+- **10 active members without tribe_id**: Cross-tribe roles (liaisons, sponsors, GP) or haven't selected a tribe yet.
+- **1 active member with role=none**: Antonio Marcos Costa (operational_role TBD).

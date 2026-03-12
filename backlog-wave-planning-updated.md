@@ -8,6 +8,9 @@
 
 ## LATEST UPDATE (2026-03-12)
 
+### Backlog — Futuro
+- **Resource Allocation Management UI**: Frontend para gestão de alocações de recursos do Núcleo (papéis, designações, níveis funcionais, comitê de curadoria, embaixadores). Referência: Manual de Governança R2 (DocuSign). Prioridade: Baixa. Ciclo: futuro.
+
 ### Entregue em Waves 36-40
 - **W36.1 Analytics Read-Only ACL Foundation**: `admin_analytics` deixa de ser admin-only absoluto e passa a aceitar leitura interna para `sponsor`, `chapter_liaison` e `curator`, sem abrir `admin_manage_actions` nem a trilha LGPD sensivel de `/admin/selection`.
 - **W37.1 Engagement Funnel + Innovation Hours**: `/admin/analytics` ganha barra global de filtros (`cycle_code`, `tribe_id`, `chapter_code`) e passa a consumir `exec_funnel_v2` e `exec_impact_hours_v2`, entregando o primeiro slice de funil operacional e horas de inovacao.
