@@ -31,7 +31,11 @@ const ROLE_TIER: Record<string, number> = {
   tribe_leader: 3, researcher: 4, facilitator: 4, communicator: 4, guest: 5,
 };
 
-export function useBoardPermissions(board: Board | null): Permissions {
+/**
+ * Resolve authenticated member context. Useful for components that
+ * need member info without a specific Board (e.g. CuratorshipBoardIsland).
+ */
+export function useMemberContext() {
   const [member, setMember] = useState<MemberContext | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -69,6 +73,12 @@ export function useBoardPermissions(board: Board | null): Permissions {
       setIsLoading(false);
     })();
   }, []);
+
+  return { member, isLoading };
+}
+
+export function useBoardPermissions(board: Board | null): Permissions {
+  const { member, isLoading } = useMemberContext();
 
   if (!member || !board) {
     return {

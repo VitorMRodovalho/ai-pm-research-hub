@@ -78,8 +78,7 @@ type I18n = Record<string, string>;
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 import { getSb, waitForSb } from '../../hooks/useBoard';
-
-function getMember() { return (globalThis as any).navGetMember?.(); }
+import { useMemberContext } from '../../hooks/useBoardPermissions';
 
 function daysUntilDue(dueAt: string | null | undefined): number | null {
   if (!dueAt) return null;
@@ -433,6 +432,7 @@ function DragOverlayCard({ title }: { title: string }) {
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
+  const { member: authMember, isLoading: memberLoading } = useMemberContext();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [denied, setDenied] = useState(false);
@@ -445,6 +445,15 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
 
   const [filter, setFilter] = useState<'all' | 'artifacts' | 'hub_resources'>('all');
   const [search, setSearch] = useState('');
+
+  // Derive curation access from shared member context
+  const canCurate = useMemo(() => {
+    if (!authMember) return false;
+    if (authMember.is_superadmin) return true;
+    const role = authMember.operational_role;
+    if (['manager', 'deputy_manager', 'sponsor', 'chapter_liaison'].includes(role)) return true;
+    return authMember.designations.some((d) => ['curator', 'co_gp'].includes(d));
+  }, [authMember]);
 
   const ui = i18n || {};
 
@@ -466,21 +475,6 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
 
     const sb = await waitForSb();
     if (!sb) { setError('Supabase não disponível. Recarregue a página.'); setLoading(false); return; }
-
-    const member = getMember();
-    if (!member) {
-      const handler = () => { fetchAll(); };
-      window.addEventListener('nav:member', handler, { once: true });
-      // Timeout: if no member arrives, show denied state
-      setTimeout(() => {
-        if (!getMember()) {
-          window.removeEventListener('nav:member', handler);
-          setDenied(true);
-          setLoading(false);
-        }
-      }, 3000);
-      return;
-    }
 
     try {
       // Supabase JS v2 .rpc() returns a PostgrestFilterBuilder (thenable but no .catch).
@@ -538,7 +532,16 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
     }
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  // Gate data fetch on member context resolution
+  useEffect(() => {
+    if (memberLoading) return;
+    if (!authMember || !canCurate) {
+      setDenied(true);
+      setLoading(false);
+      return;
+    }
+    fetchAll();
+  }, [memberLoading, authMember, canCurate, fetchAll]);
 
   // Signal island readiness and manage SSR fallback visibility
   useEffect(() => {
@@ -653,7 +656,7 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
 
   // ── Render states ──
 
-  if (loading) return (
+  if (loading || memberLoading) return (
     <div className="text-center py-12">
       <div className="inline-flex items-center gap-3 text-[var(--text-muted)]">
         <Loader2 size={20} className="animate-spin" />
