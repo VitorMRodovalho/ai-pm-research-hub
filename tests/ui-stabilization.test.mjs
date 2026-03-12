@@ -71,22 +71,23 @@ test('dark mode foundation persists ui theme and exposes profile toggle', () => 
   assert.equal(css.includes('@custom-variant dark'), true);
 });
 
-test('dark mode styling is applied to teams, webinars, and tribe board modal surfaces', () => {
-  const teams = read('src/pages/teams.astro');
-  const webinars = read('src/pages/admin/webinars.astro');
+test('dark mode styling uses CSS custom property tokens instead of dark: prefix classes', () => {
   const tribe = read('src/pages/tribe/[id].astro');
   const tribeIsland = read('src/components/boards/TribeKanbanIsland.tsx');
+  const themeCSS = read('src/styles/theme.css');
+  const globalCSS = read('src/styles/global.css');
   const darkAuditScript = read('scripts/audit_dark_mode_a11y.sh');
   const darkChecklist = read('docs/project-governance/DARK_MODE_A11Y_CHECKLIST.md');
-  assert.equal(teams.includes('dark:bg-slate-900'), true);
-  assert.equal(webinars.includes('dark:bg-slate-900'), true);
   assert.equal(tribe.includes('<TribeKanbanIsland client:load'), true);
-  assert.equal(tribeIsland.includes('dark:bg-slate-900'), true);
-  assert.equal(tribeIsland.includes('dark:border-slate-700'), true);
-  assert.equal(tribe.includes('dark:bg-slate-900'), true);
-  assert.equal(tribe.includes('dark:border-slate-700'), true);
   assert.equal(tribe.includes('id="deliverable-modal"'), true);
   assert.equal(tribe.includes('close-deliverable-modal'), true);
+  assert.equal(themeCSS.includes('[data-theme="dark"]'), true);
+  assert.equal(themeCSS.includes('--surface-base'), true);
+  assert.equal(themeCSS.includes('--surface-card'), true);
+  assert.equal(themeCSS.includes('--text-primary'), true);
+  assert.equal(globalCSS.includes('@import "./theme.css"'), true);
+  assert.equal(globalCSS.includes('var(--surface-base)'), true);
+  assert.equal(tribeIsland.includes('var(--surface'), true);
   assert.equal(darkAuditScript.includes('src/pages/tribe/[id].astro'), true);
   assert.equal(darkAuditScript.includes('PASS: dark mode audit passed.'), true);
   assert.equal(darkChecklist.includes('./scripts/audit_dark_mode_a11y.sh'), true);

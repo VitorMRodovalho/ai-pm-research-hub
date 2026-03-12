@@ -109,7 +109,7 @@ function SlaBadge({ dueAt }: { dueAt?: string | null }) {
     </span>
   );
   return (
-    <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500">
+    <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--surface-section-cool)] text-[var(--text-secondary)]">
       <Clock size={10} /> {days}d
     </span>
   );
@@ -127,8 +127,8 @@ function TribeSortableCard({ item, onOpen }: { item: BoardItem; onOpen: (item: B
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, touchAction: 'none' }}
       {...attributes}
       {...listeners}
-      className={`rounded-xl border bg-white p-3 shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md transition-all ${
-        isOverdue ? 'border-red-300 ring-1 ring-red-200' : 'border-slate-200'
+      className={`rounded-xl border bg-[var(--surface-card)] p-3 shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md transition-all ${
+        isOverdue ? 'border-red-300 ring-1 ring-red-200' : 'border-[var(--border-default)]'
       }`}
     >
       <div className="flex items-start justify-between gap-2 mb-1">
@@ -136,7 +136,7 @@ function TribeSortableCard({ item, onOpen }: { item: BoardItem; onOpen: (item: B
           type="button"
           onClick={(e) => { e.stopPropagation(); onOpen(item); }}
           onPointerDown={(e) => e.stopPropagation()}
-          className="text-[12px] font-bold text-slate-800 line-clamp-2 flex-1 text-left hover:underline cursor-pointer bg-transparent border-0 p-0"
+          className="text-[12px] font-bold text-[var(--text-primary)] line-clamp-2 flex-1 text-left hover:underline cursor-pointer bg-transparent border-0 p-0"
         >
           {item.title || 'Sem título'}
         </button>
@@ -150,7 +150,7 @@ function TribeSortableCard({ item, onOpen }: { item: BoardItem; onOpen: (item: B
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-100 text-violet-600">{item.review_count}x avaliado</span>
         ) : null}
       </div>
-      {item.assignee_name ? <p className="text-[11px] text-slate-500 mt-1 truncate">{item.assignee_name}</p> : null}
+      {item.assignee_name ? <p className="text-[11px] text-[var(--text-secondary)] mt-1 truncate">{item.assignee_name}</p> : null}
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); onOpen(item); }}
@@ -179,21 +179,21 @@ function LegacySortableCard({ item, onApprove, onReject }: {
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, touchAction: 'none' }}
       {...attributes}
       {...listeners}
-      className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
+      className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3 shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
     >
-      <h4 className="text-[12px] font-bold text-slate-800 line-clamp-2 mb-1">{icon} {item.title}</h4>
+      <h4 className="text-[12px] font-bold text-[var(--text-primary)] line-clamp-2 mb-1">{icon} {item.title}</h4>
       {item.tribe_name ? (
         <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold mb-1">{item.tribe_name}</span>
       ) : null}
-      {item.author_name ? <p className="text-[10px] text-slate-400 mb-1">{item.author_name}</p> : null}
+      {item.author_name ? <p className="text-[10px] text-[var(--text-muted)] mb-1">{item.author_name}</p> : null}
       {(item.tags?.length || 0) > 0 ? (
         <div className="flex flex-wrap gap-1 mb-1">
           {item.tags!.slice(0, 3).map((tag) => (
-            <span key={tag} className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-medium">{tag}</span>
+            <span key={tag} className="px-1.5 py-0.5 bg-[var(--surface-section-cool)] text-[var(--text-secondary)] rounded text-[9px] font-medium">{tag}</span>
           ))}
         </div>
       ) : null}
-      <div className="flex gap-1.5 mt-2 pt-2 border-t border-slate-50" onPointerDown={(e) => e.stopPropagation()}>
+      <div className="flex gap-1.5 mt-2 pt-2 border-t border-[var(--border-subtle)]" onPointerDown={(e) => e.stopPropagation()}>
         {item.status !== 'approved' ? (
           <button
             onClick={() => onApprove(item.id, item._table)}
@@ -223,7 +223,7 @@ function DroppableColumn({ id, children }: { id: string; children: React.ReactNo
     <div
       ref={setNodeRef}
       className={`min-h-[200px] max-h-[60vh] overflow-y-auto space-y-2.5 p-2.5 rounded-xl border-2 border-dashed transition-all ${
-        isOver ? 'ring-2 ring-blue-300 border-blue-300 bg-blue-50/40 scale-[1.01]' : 'border-slate-200 bg-slate-50/50'
+        isOver ? 'ring-2 ring-blue-300 border-blue-300 bg-blue-50/40 scale-[1.01]' : 'border-[var(--border-default)] bg-[var(--surface-base)]/50'
       }`}
     >
       {children}
@@ -242,7 +242,7 @@ function ScoreInput({ value, onChange }: { value: number; onChange: (v: number) 
           type="button"
           onClick={() => onChange(n)}
           className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${
-            n <= value ? 'bg-blue-900 text-white shadow-sm' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+            n <= value ? 'bg-blue-900 text-white shadow-sm' : 'bg-[var(--surface-section-cool)] text-[var(--text-muted)] hover:bg-[var(--surface-hover)]'
           }`}
         >{n}</button>
       ))}
@@ -279,19 +279,19 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit }: {
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50" />
         <Dialog.Content
-          className="fixed right-0 top-0 h-full w-full max-w-lg bg-white shadow-2xl z-50 overflow-y-auto"
+          className="fixed right-0 top-0 h-full w-full max-w-lg bg-[var(--surface-elevated)] shadow-2xl z-50 overflow-y-auto"
           aria-describedby={undefined}
         >
           <VisuallyHidden asChild><Dialog.Title>Avaliação de curadoria</Dialog.Title></VisuallyHidden>
 
-          <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 z-10">
+          <div className="sticky top-0 bg-[var(--surface-elevated)] border-b border-[var(--border-default)] px-6 py-4 z-10">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FileText size={18} className="text-blue-900" />
                 <h2 className="text-base font-bold text-blue-900">Avaliação de Curadoria</h2>
               </div>
               <Dialog.Close asChild>
-                <button className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 border-0 bg-transparent cursor-pointer">
+                <button className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-muted)] border-0 bg-transparent cursor-pointer">
                   <XCircle size={18} />
                 </button>
               </Dialog.Close>
@@ -302,11 +302,11 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit }: {
             <section className="space-y-2">
               <h3 className="text-sm font-bold text-blue-900">{item.title}</h3>
               <div className="flex flex-wrap gap-2">
-                {item.tribe_name ? <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">{item.tribe_name}</span> : null}
+                {item.tribe_name ? <span className="text-[11px] px-2 py-0.5 rounded-full bg-[var(--surface-section-cool)] text-[var(--text-secondary)]">{item.tribe_name}</span> : null}
                 <SlaBadge dueAt={item.curation_due_at} />
               </div>
-              {item.assignee_name ? <p className="text-xs text-slate-500 flex items-center gap-1"><User size={12} /> {item.assignee_name}</p> : null}
-              {item.description ? <p className="text-xs text-slate-600 whitespace-pre-wrap max-h-32 overflow-y-auto bg-slate-50 rounded-lg p-3">{item.description}</p> : null}
+              {item.assignee_name ? <p className="text-xs text-[var(--text-secondary)] flex items-center gap-1"><User size={12} /> {item.assignee_name}</p> : null}
+              {item.description ? <p className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap max-h-32 overflow-y-auto bg-[var(--surface-base)] rounded-lg p-3">{item.description}</p> : null}
             </section>
 
             {item.review_history && item.review_history.length > 0 ? (
@@ -318,14 +318,14 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit }: {
                 {showHistory ? (
                   <div className="mt-2 space-y-2">
                     {item.review_history.map((r) => (
-                      <div key={r.id} className="text-xs bg-slate-50 rounded-lg p-3 space-y-1">
+                      <div key={r.id} className="text-xs bg-[var(--surface-base)] rounded-lg p-3 space-y-1">
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-slate-700">{r.curator_name || '—'}</span>
+                          <span className="font-semibold text-[var(--text-primary)]">{r.curator_name || '—'}</span>
                           <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${r.decision === 'approved' ? 'bg-emerald-100 text-emerald-700' : r.decision === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
                             {r.decision === 'approved' ? 'Aprovado' : r.decision === 'rejected' ? 'Rejeitado' : 'Devolvido'}
                           </span>
                         </div>
-                        {r.feedback ? <p className="text-slate-500">{r.feedback}</p> : null}
+                        {r.feedback ? <p className="text-[var(--text-secondary)]">{r.feedback}</p> : null}
                       </div>
                     ))}
                   </div>
@@ -345,8 +345,8 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit }: {
               {CRITERIA.map((c) => (
                 <div key={c.key} className="flex items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-slate-700">{c.label}</p>
-                    <p className="text-[10px] text-slate-400 truncate">{c.tip}</p>
+                    <p className="text-xs font-semibold text-[var(--text-primary)]">{c.label}</p>
+                    <p className="text-[10px] text-[var(--text-muted)] truncate">{c.tip}</p>
                   </div>
                   <ScoreInput value={scores[c.key] || 0} onChange={(v) => setScores((p) => ({ ...p, [c.key]: v }))} />
                 </div>
@@ -358,11 +358,11 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit }: {
               <textarea
                 value={feedback} onChange={(e) => setFeedback(e.target.value)} rows={3}
                 placeholder="Obrigatório para devoluções e rejeições..."
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-900/30 resize-none"
+                className="w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] px-3 py-2 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-blue-900/30 resize-none"
               />
             </section>
 
-            <section className="flex flex-col gap-2 pt-2 border-t border-slate-200">
+            <section className="flex flex-col gap-2 pt-2 border-t border-[var(--border-default)]">
               <button type="button" disabled={!allScored || submitting} onClick={() => handleAction('approved')}
                 className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border-0 cursor-pointer">
                 {submitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />} Aprovar e Publicar
@@ -387,8 +387,8 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit }: {
 
 function DragOverlayCard({ title }: { title: string }) {
   return (
-    <div className="bg-white rounded-xl border-2 border-blue-300 p-3 shadow-xl rotate-[3deg] w-[260px] opacity-95">
-      <h4 className="text-[12px] font-bold text-slate-800 line-clamp-2">{title}</h4>
+    <div className="bg-[var(--surface-card)] rounded-xl border-2 border-blue-300 p-3 shadow-xl rotate-[3deg] w-[260px] opacity-95">
+      <h4 className="text-[12px] font-bold text-[var(--text-primary)] line-clamp-2">{title}</h4>
     </div>
   );
 }
@@ -597,7 +597,7 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
 
   if (loading) return (
     <div className="text-center py-12">
-      <div className="inline-flex items-center gap-3 text-slate-400">
+      <div className="inline-flex items-center gap-3 text-[var(--text-muted)]">
         <Loader2 size={20} className="animate-spin" />
         <span className="text-sm font-medium">{ui.loading || 'Carregando...'}</span>
       </div>
@@ -632,7 +632,7 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
         <div className="flex items-center justify-between mb-3">
           <div>
             <h2 className="text-lg font-extrabold text-blue-900">Itens das Tribos</h2>
-            <p className="text-xs text-slate-500">Artefatos aprovados pelos líderes. Arraste para publicar ou clique para avaliar.</p>
+            <p className="text-xs text-[var(--text-secondary)]">Artefatos aprovados pelos líderes. Arraste para publicar ou clique para avaliar.</p>
           </div>
           <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-[11px] font-bold">{tribeItems.length} pendente{tribeItems.length !== 1 ? 's' : ''}</span>
         </div>
@@ -665,10 +665,10 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-[13px] font-bold text-emerald-700">Publicado</h3>
-                  <span className="text-[11px] text-slate-500">Arraste ou clique "Avaliar"</span>
+                  <span className="text-[11px] text-[var(--text-secondary)]">Arraste ou clique "Avaliar"</span>
                 </div>
                 <DroppableColumn id="tribe-published">
-                  <div className="py-8 text-center text-sm text-slate-400">↓ Solte o card aqui para avaliar e publicar</div>
+                  <div className="py-8 text-center text-sm text-[var(--text-muted)]">↓ Solte o card aqui para avaliar e publicar</div>
                 </DroppableColumn>
               </div>
             </div>
@@ -685,7 +685,7 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
           <div className="flex items-center justify-between mb-3">
             <div>
               <h2 className="text-lg font-extrabold text-blue-900">Artefatos & Recursos</h2>
-              <p className="text-xs text-slate-500">Itens legados de artifacts e hub_resources.</p>
+              <p className="text-xs text-[var(--text-secondary)]">Itens legados de artifacts e hub_resources.</p>
             </div>
           </div>
 
@@ -693,14 +693,14 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
             <input
               type="text" value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder={ui.searchPlaceholder || 'Buscar...'}
-              className="flex-1 min-w-[200px] max-w-xs rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-700 outline-none focus:border-blue-400"
+              className="flex-1 min-w-[200px] max-w-xs rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] px-3 py-2 text-[12px] text-[var(--text-primary)] outline-none focus:border-blue-400"
             />
             <div className="flex gap-1">
               {(['all', 'artifacts', 'hub_resources'] as const).map((f) => {
                 const labels = { all: ui.filterAll || 'Todos', artifacts: ui.filterArtifacts || 'Artefatos', hub_resources: ui.filterResources || 'Recursos' };
                 return (
                   <button key={f} onClick={() => setFilter(f)}
-                    className={`px-3 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 transition-all ${filter === f ? 'border-blue-900 bg-blue-900 text-white' : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'}`}>
+                    className={`px-3 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 transition-all ${filter === f ? 'border-blue-900 bg-blue-900 text-white' : 'border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] hover:border-[var(--border-default)]'}`}>
                     {labels[f]}
                   </button>
                 );
@@ -712,7 +712,7 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
           <DndContext sensors={sensors} collisionDetection={closestCorners} onDragStart={onDragStart} onDragEnd={onLegacyDragEnd}>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
               {([
-                { id: 'leg-draft', label: 'Pendente', dot: 'bg-slate-400', border: 'border-slate-200', bg: 'bg-slate-50/50' },
+                { id: 'leg-draft', label: 'Pendente', dot: 'bg-[var(--text-muted)]', border: 'border-[var(--border-default)]', bg: 'bg-[var(--surface-base)]/50' },
                 { id: 'leg-review', label: 'Em Revisão', dot: 'bg-amber-400', border: 'border-amber-200', bg: 'bg-amber-50/30' },
                 { id: 'leg-approved', label: 'Aprovado', dot: 'bg-emerald-500', border: 'border-emerald-200', bg: 'bg-emerald-50/30' },
                 { id: 'leg-rejected', label: 'Descartado', dot: 'bg-red-400', border: 'border-red-200', bg: 'bg-red-50/30' },
@@ -723,12 +723,12 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
                   <div key={col.id}>
                     <div className="flex items-center gap-2 mb-2">
                       <div className={`w-3 h-3 rounded-full ${col.dot}`} />
-                      <h3 className="text-[13px] font-bold text-slate-700">{col.label}</h3>
-                      <span className="text-[11px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold">{colItems.length}</span>
+                      <h3 className="text-[13px] font-bold text-[var(--text-primary)]">{col.label}</h3>
+                      <span className="text-[11px] bg-[var(--surface-section-cool)] text-[var(--text-secondary)] px-2 py-0.5 rounded-full font-bold">{colItems.length}</span>
                     </div>
                     <SortableContext id={col.id} items={colItems.map((i) => i.id)} strategy={verticalListSortingStrategy}>
                       <DroppableColumn id={col.id}>
-                        {colItems.length === 0 ? <div className="py-8 text-center text-slate-300 text-[11px]">Vazio</div> : null}
+                        {colItems.length === 0 ? <div className="py-8 text-center text-[var(--text-muted)] text-[11px]">Vazio</div> : null}
                         {colItems.map((item) => (
                           <LegacySortableCard key={item.id} item={item} onApprove={(id, t) => legacyCurate(id, t, 'approve')} onReject={(id, t) => legacyCurate(id, t, 'reject')} />
                         ))}
@@ -745,7 +745,7 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
         </section>
       ) : null}
 
-      <p className="text-[12px] text-slate-500">
+      <p className="text-[12px] text-[var(--text-secondary)]">
         Itens publicados aparecem em <a href="/publications" className="text-blue-900 font-semibold underline hover:no-underline">/publications</a>.
       </p>
 

@@ -86,7 +86,7 @@ const iconMap: Record<string, { icon: string; bg: string }> = {
 };
 ---
 
-<section class="py-16 px-6 bg-[#f0f4f8]" id="resources">
+<section class="py-16 px-6 bg-[var(--surface-section-cool)]" id="resources">
   <div class="max-w-[1200px] mx-auto">
     <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-orange mb-2">
       {t('resources.label', lang)}
@@ -97,14 +97,14 @@ const iconMap: Record<string, { icon: string; bg: string }> = {
 
     <div id="resources-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
       {resources.map((r) => (
-        <div class="bg-white rounded-2xl p-5 border border-black/5 flex items-start gap-3">
+        <div class="bg-[var(--surface-card)] rounded-2xl p-5 border border-[var(--border-subtle)] flex items-start gap-3">
           <div class="w-11 h-11 rounded-xl flex items-center justify-center text-[1.3rem] flex-shrink-0"
                style={`background: ${r.iconBg}`}>
             {r.icon}
           </div>
           <div>
             <h4 class="text-[.9rem] font-bold mb-0.5">{r.title}</h4>
-            <p class="text-[.78rem] text-slate-500">{r.text}</p>
+            <p class="text-[.78rem] text-[var(--text-secondary)]">{r.text}</p>
             <a href={r.url} target="_blank" rel="noopener"
                class="text-teal text-[.78rem] font-semibold no-underline hover:underline">
               {r.linkText}
@@ -142,14 +142,14 @@ const iconMap: Record<string, { icon: string; bg: string }> = {
           : '';
         const href = r.url || '#';
 
-        return `<div class="bg-white rounded-2xl p-5 border border-black/5 flex items-start gap-3">
+        return `<div class="bg-[var(--surface-card)] rounded-2xl p-5 border border-[var(--border-subtle)] flex items-start gap-3">
           <div class="w-11 h-11 rounded-xl flex items-center justify-center text-[1.3rem] flex-shrink-0"
                style="background:${meta.bg}">
             ${meta.icon}
           </div>
           <div>
             <h4 class="text-[.9rem] font-bold mb-0.5">${r.title}</h4>
-            <p class="text-[.78rem] text-slate-500">${desc}</p>
+            <p class="text-[.78rem] text-[var(--text-secondary)]">${desc}</p>
             ${href !== '#' ? `<a href="${href}" target="_blank" rel="noopener"
                class="text-teal text-[.78rem] font-semibold no-underline hover:underline">
               ${linkText}

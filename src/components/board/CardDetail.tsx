@@ -116,13 +116,13 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
     <div ref={panelRef} tabIndex={-1}
       className="fixed inset-0 z-[600] flex items-start justify-center bg-black/40 backdrop-blur-sm p-4 pt-16 overflow-y-auto outline-none"
       onClick={onClose} role="dialog" aria-modal="true" aria-label={item.title}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-[var(--surface-elevated)] rounded-2xl shadow-2xl w-full max-w-3xl" onClick={(e) => e.stopPropagation()}>
         {/* Top bar */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)]">
           <div className="flex items-center gap-2">
             <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold
-              ${COLUMN_PRESETS[item.status]?.badgeBg ?? 'bg-slate-100'} 
-              ${COLUMN_PRESETS[item.status]?.badgeText ?? 'text-slate-600'}`}>
+              ${COLUMN_PRESETS[item.status]?.badgeBg ?? 'bg-[var(--surface-section-cool)]'} 
+              ${COLUMN_PRESETS[item.status]?.badgeText ?? 'text-[var(--text-secondary)]'}`}>
               {COLUMN_PRESETS[item.status]?.label ?? item.status}
             </span>
             {item.source_card_id && <span className="text-[9px] text-blue-400">🟦 Trello</span>}
@@ -135,7 +135,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
               </button>
             )}
             <button onClick={onClose}
-              className="text-slate-400 hover:text-slate-700 cursor-pointer bg-transparent border-0 text-lg">✕</button>
+              className="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer bg-transparent border-0 text-lg">✕</button>
           </div>
         </div>
 
@@ -146,37 +146,37 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
             {canEdit ? (
               <input type="text" value={title}
                 onChange={(e) => { setTitle(e.target.value); setDirty(true); }}
-                className="w-full text-lg font-extrabold text-slate-800 border-0 outline-none bg-transparent
-                  focus:bg-slate-50 rounded-lg px-1 -ml-1 transition-colors" />
+                className="w-full text-lg font-extrabold text-[var(--text-primary)] border-0 outline-none bg-transparent
+                  focus:bg-[var(--surface-base)] rounded-lg px-1 -ml-1 transition-colors" />
             ) : (
-              <h2 className="text-lg font-extrabold text-slate-800">{title}</h2>
+              <h2 className="text-lg font-extrabold text-[var(--text-primary)]">{title}</h2>
             )}
 
             {/* Description */}
             <div>
-              <label className="text-[11px] font-semibold text-slate-500 mb-1 block">{i18n.description}</label>
+              <label className="text-[11px] font-semibold text-[var(--text-secondary)] mb-1 block">{i18n.description}</label>
               {canEdit ? (
                 <textarea value={description}
                   onChange={(e) => { setDescription(e.target.value); setDirty(true); }}
                   rows={4}
-                  className="w-full rounded-xl border border-slate-200 px-3 py-2 text-[12px] text-slate-700
+                  className="w-full rounded-xl border border-[var(--border-default)] px-3 py-2 text-[12px] text-[var(--text-primary)]
                     outline-none focus:border-blue-400 transition-all resize-y"
                   placeholder="Adicionar descrição..." />
               ) : (
-                <p className="text-[13px] text-slate-600 whitespace-pre-wrap">{description || 'Sem descrição'}</p>
+                <p className="text-[13px] text-[var(--text-secondary)] whitespace-pre-wrap">{description || 'Sem descrição'}</p>
               )}
             </div>
 
             {/* Checklist */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-[11px] font-semibold text-slate-500">{i18n.checklist}</label>
+                <label className="text-[11px] font-semibold text-[var(--text-secondary)]">{i18n.checklist}</label>
                 {checkTotal > 0 && (
-                  <span className="text-[10px] font-bold text-slate-400">{checkDone}/{checkTotal} ({checkPct}%)</span>
+                  <span className="text-[10px] font-bold text-[var(--text-muted)]">{checkDone}/{checkTotal} ({checkPct}%)</span>
                 )}
               </div>
               {checkTotal > 0 && (
-                <div className="w-full bg-slate-100 rounded-full h-1.5 mb-3">
+                <div className="w-full bg-[var(--surface-section-cool)] rounded-full h-1.5 mb-3">
                   <div className="bg-emerald-500 h-1.5 rounded-full transition-all" style={{ width: `${checkPct}%` }} />
                 </div>
               )}
@@ -186,8 +186,8 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                     <input type="checkbox" checked={ci.done}
                       onChange={() => toggleCheck(idx)}
                       disabled={!canEdit}
-                      className="w-4 h-4 rounded border-slate-300 cursor-pointer accent-emerald-500" />
-                    <span className={`flex-1 text-[12px] ${ci.done ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                      className="w-4 h-4 rounded border-[var(--border-default)] cursor-pointer accent-emerald-500" />
+                    <span className={`flex-1 text-[12px] ${ci.done ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}>
                       {ci.text}
                     </span>
                     {canEdit && (
@@ -204,11 +204,11 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                     onChange={(e) => setNewCheckItem(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && addCheckItem()}
                     placeholder={i18n.addItem}
-                    className="flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-[11px]
+                    className="flex-1 rounded-lg border border-[var(--border-default)] px-3 py-1.5 text-[11px]
                       outline-none focus:border-blue-400" />
                   <button onClick={addCheckItem}
-                    className="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-[11px] font-semibold
-                      cursor-pointer hover:bg-slate-200 border-0">+ Adicionar</button>
+                    className="px-3 py-1.5 bg-[var(--surface-section-cool)] text-[var(--text-secondary)] rounded-lg text-[11px] font-semibold
+                      cursor-pointer hover:bg-[var(--surface-hover)] border-0">+ Adicionar</button>
                 </div>
               )}
             </div>
@@ -216,11 +216,11 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
             {/* Attachments */}
             {item.attachments && item.attachments.length > 0 && (
               <div>
-                <label className="text-[11px] font-semibold text-slate-500 mb-2 block">{i18n.attachments}</label>
+                <label className="text-[11px] font-semibold text-[var(--text-secondary)] mb-2 block">{i18n.attachments}</label>
                 <div className="space-y-1.5">
                   {item.attachments.map((att, idx) => (
                     <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg hover:bg-slate-100
+                      className="flex items-center gap-2 px-3 py-2 bg-[var(--surface-base)] rounded-lg hover:bg-[var(--surface-hover)]
                         no-underline transition-colors">
                       <span className="text-[12px]">{att.name?.match(/\.(png|jpg|jpeg|gif|webp)$/i) ? '🖼️' : '📄'}</span>
                       <span className="text-[11px] text-blue-600 truncate">{att.name || att.url}</span>
@@ -233,14 +233,14 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
             {/* Timeline */}
             {timeline.length > 0 && (
               <div>
-                <label className="text-[11px] font-semibold text-slate-500 mb-2 block">{i18n.timeline}</label>
+                <label className="text-[11px] font-semibold text-[var(--text-secondary)] mb-2 block">{i18n.timeline}</label>
                 <div className="space-y-2 max-h-[200px] overflow-y-auto">
                   {timeline.map((ev) => (
                     <div key={ev.id} className="flex gap-2 text-[11px]">
-                      <span className="text-slate-400 whitespace-nowrap">
+                      <span className="text-[var(--text-muted)] whitespace-nowrap">
                         {new Date(ev.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                       </span>
-                      <span className="text-slate-600">
+                      <span className="text-[var(--text-secondary)]">
                         {ev.actor_name && <strong>{ev.actor_name}</strong>}
                         {' '}
                         {ev.action === 'status_change' && `moveu de "${COLUMN_PRESETS[ev.previous_status || '']?.label ?? ev.previous_status}" para "${COLUMN_PRESETS[ev.new_status || '']?.label ?? ev.new_status}"`}
@@ -250,7 +250,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                         {ev.action === 'moved_out' && 'moveu para outro board'}
                         {ev.action === 'moved_in' && 'recebido de outro board'}
                         {!['status_change', 'created', 'assigned', 'archived', 'moved_out', 'moved_in'].includes(ev.action) && ev.action}
-                        {ev.reason && ev.action !== 'assigned' && <span className="text-slate-400 ml-1">— {ev.reason}</span>}
+                        {ev.reason && ev.action !== 'assigned' && <span className="text-[var(--text-muted)] ml-1">— {ev.reason}</span>}
                       </span>
                     </div>
                   ))}
@@ -260,14 +260,14 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
           </div>
 
           {/* ── Sidebar (right) ── */}
-          <div className="w-full md:w-[240px] p-6 md:border-l border-slate-100 space-y-4">
+          <div className="w-full md:w-[240px] p-6 md:border-l border-[var(--border-subtle)] space-y-4">
             {/* Status */}
             <div>
-              <label className="text-[10px] font-semibold text-slate-500 mb-1 block uppercase tracking-wide">Status</label>
+              <label className="text-[10px] font-semibold text-[var(--text-secondary)] mb-1 block uppercase tracking-wide">Status</label>
               <select value={item.status}
                 onChange={(e) => onMove(e.target.value)}
                 disabled={mode === 'readonly' || !permissions.canEditAny}
-                className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-[12px] bg-white
+                className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1.5 text-[12px] bg-[var(--surface-card)]
                   outline-none focus:border-blue-400 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
                 {board.columns.map((col: string) => (
                   <option key={col} value={col}>{COLUMN_PRESETS[col]?.label ?? col}</option>
@@ -277,11 +277,11 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
 
             {/* Assignee */}
             <div>
-              <label className="text-[10px] font-semibold text-slate-500 mb-1 block uppercase tracking-wide">{i18n.assignee}</label>
+              <label className="text-[10px] font-semibold text-[var(--text-secondary)] mb-1 block uppercase tracking-wide">{i18n.assignee}</label>
               <select value={assigneeId}
                 onChange={(e) => { setAssigneeId(e.target.value); setDirty(true); }}
                 disabled={!permissions.canAssign}
-                className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-[12px] bg-white
+                className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1.5 text-[12px] bg-[var(--surface-card)]
                   outline-none focus:border-blue-400 cursor-pointer">
                 <option value="">{i18n.noAssignee}</option>
                 {members.map((m) => <option key={m.id} value={m.id}>{m.full_name}</option>)}
@@ -290,11 +290,11 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
 
             {/* Reviewer */}
             <div>
-              <label className="text-[10px] font-semibold text-slate-500 mb-1 block uppercase tracking-wide">{i18n.reviewer}</label>
+              <label className="text-[10px] font-semibold text-[var(--text-secondary)] mb-1 block uppercase tracking-wide">{i18n.reviewer}</label>
               <select value={reviewerId}
                 onChange={(e) => { setReviewerId(e.target.value); setDirty(true); }}
                 disabled={!permissions.canAssign}
-                className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-[12px] bg-white
+                className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1.5 text-[12px] bg-[var(--surface-card)]
                   outline-none focus:border-blue-400 cursor-pointer">
                 <option value="">{i18n.noReviewer}</option>
                 {members.map((m) => <option key={m.id} value={m.id}>{m.full_name}</option>)}
@@ -303,7 +303,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
 
             {/* Tags */}
             <div>
-              <label className="text-[10px] font-semibold text-slate-500 mb-1 block uppercase tracking-wide">{i18n.tags}</label>
+              <label className="text-[10px] font-semibold text-[var(--text-secondary)] mb-1 block uppercase tracking-wide">{i18n.tags}</label>
               <div className="flex flex-wrap gap-1 mb-1.5 min-h-[24px]">
                 {tags.map((t) => (
                   <span key={t} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] font-medium">
@@ -318,42 +318,42 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(tagInput); } }}
                   placeholder="Tag + Enter"
-                  className="w-full rounded-lg border border-slate-200 px-2 py-1 text-[11px]
+                  className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1 text-[11px]
                     outline-none focus:border-blue-400" />
               )}
             </div>
 
             {/* Due Date */}
             <div>
-              <label className="text-[10px] font-semibold text-slate-500 mb-1 block uppercase tracking-wide">{i18n.dueDate}</label>
+              <label className="text-[10px] font-semibold text-[var(--text-secondary)] mb-1 block uppercase tracking-wide">{i18n.dueDate}</label>
               <input type="date" value={dueDate}
                 onChange={(e) => { setDueDate(e.target.value); setDirty(true); }}
                 disabled={!canEdit}
-                className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-[12px] bg-white
+                className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1.5 text-[12px] bg-[var(--surface-card)]
                   outline-none focus:border-blue-400" />
             </div>
 
             {/* Actions — hidden in readonly mode */}
             {mode !== 'readonly' && (
-            <div className="pt-3 border-t border-slate-100 space-y-2">
+            <div className="pt-3 border-t border-[var(--border-subtle)] space-y-2">
               <button onClick={onDuplicate}
-                className="w-full px-3 py-1.5 rounded-lg bg-slate-50 text-slate-600 text-[11px] font-semibold
-                  border border-slate-200 hover:bg-slate-100 cursor-pointer text-left">
+                className="w-full px-3 py-1.5 rounded-lg bg-[var(--surface-base)] text-[var(--text-secondary)] text-[11px] font-semibold
+                  border border-[var(--border-default)] hover:bg-[var(--surface-hover)] cursor-pointer text-left">
                 📋 {i18n.duplicate}
               </button>
 
               {boards.length > 0 && (
                 <div>
                   <button onClick={() => setShowMoveToBoard(!showMoveToBoard)}
-                    className="w-full px-3 py-1.5 rounded-lg bg-slate-50 text-slate-600 text-[11px] font-semibold
-                      border border-slate-200 hover:bg-slate-100 cursor-pointer text-left">
+                    className="w-full px-3 py-1.5 rounded-lg bg-[var(--surface-base)] text-[var(--text-secondary)] text-[11px] font-semibold
+                      border border-[var(--border-default)] hover:bg-[var(--surface-hover)] cursor-pointer text-left">
                     📦 {i18n.moveTo}
                   </button>
                   {showMoveToBoard && (
-                    <div className="mt-1 p-2 bg-slate-50 rounded-lg border border-slate-200 max-h-[120px] overflow-y-auto space-y-1">
+                    <div className="mt-1 p-2 bg-[var(--surface-base)] rounded-lg border border-[var(--border-default)] max-h-[120px] overflow-y-auto space-y-1">
                       {boards.map((b) => (
                         <button key={b.id} onClick={() => onMoveToBoard(b.id)}
-                          className="w-full text-left px-2 py-1 rounded text-[10px] text-slate-600
+                          className="w-full text-left px-2 py-1 rounded text-[10px] text-[var(--text-secondary)]
                             hover:bg-blue-50 hover:text-blue-700 cursor-pointer bg-transparent border-0">
                           {b.board_name} ({b.item_count})
                         </button>
@@ -377,8 +377,8 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                         className="flex-1 px-2 py-1.5 rounded-lg bg-red-600 text-white text-[11px] font-bold
                           cursor-pointer border-0 hover:bg-red-700">Confirmar</button>
                       <button onClick={() => setConfirmDelete(false)}
-                        className="flex-1 px-2 py-1.5 rounded-lg bg-slate-100 text-slate-600 text-[11px] font-semibold
-                          cursor-pointer border border-slate-200">{i18n.cancel}</button>
+                        className="flex-1 px-2 py-1.5 rounded-lg bg-[var(--surface-section-cool)] text-[var(--text-secondary)] text-[11px] font-semibold
+                          cursor-pointer border border-[var(--border-default)]">{i18n.cancel}</button>
                     </div>
                   )}
                 </div>

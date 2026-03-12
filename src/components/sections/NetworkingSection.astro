@@ -5,7 +5,7 @@ interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
 ---
 
-<section class="py-16 px-6 bg-[#F7F4EF]" id="breakout">
+<section class="py-16 px-6 bg-[var(--surface-section-warm)]" id="breakout">
   <div class="max-w-[1200px] mx-auto">
     <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-orange mb-2">
       {t('networking.label', lang)}

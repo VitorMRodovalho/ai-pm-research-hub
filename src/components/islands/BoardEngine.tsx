@@ -129,26 +129,26 @@ export default function BoardEngine(props: BoardEngineProps) {
     return (
       <div className="space-y-4 animate-pulse">
         <div className="flex items-center justify-between">
-          <div className="h-6 w-48 bg-slate-200 rounded-lg" />
-          <div className="h-9 w-28 bg-slate-200 rounded-xl" />
+          <div className="h-6 w-48 bg-[var(--surface-hover)] rounded-lg" />
+          <div className="h-9 w-28 bg-[var(--surface-hover)] rounded-xl" />
         </div>
         <div className="flex gap-3">
-          <div className="h-9 w-44 bg-slate-100 rounded-xl" />
-          <div className="h-9 w-32 bg-slate-100 rounded-xl" />
-          <div className="h-9 w-36 bg-slate-100 rounded-xl" />
+          <div className="h-9 w-44 bg-[var(--surface-section-cool)] rounded-xl" />
+          <div className="h-9 w-32 bg-[var(--surface-section-cool)] rounded-xl" />
+          <div className="h-9 w-36 bg-[var(--surface-section-cool)] rounded-xl" />
         </div>
         <div className="grid grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((n) => (
             <div key={n} className="space-y-3">
-              <div className="h-4 w-24 bg-slate-200 rounded" />
-              <div className="bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 p-3 space-y-2.5 min-h-[200px]">
+              <div className="h-4 w-24 bg-[var(--surface-hover)] rounded" />
+              <div className="bg-[var(--surface-base)] rounded-xl border-2 border-dashed border-[var(--border-default)] p-3 space-y-2.5 min-h-[200px]">
                 {[1, 2].map((c) => (
-                  <div key={c} className="bg-white rounded-xl border border-slate-100 p-3 space-y-2">
-                    <div className="h-3 w-full bg-slate-200 rounded" />
-                    <div className="h-3 w-2/3 bg-slate-100 rounded" />
+                  <div key={c} className="bg-[var(--surface-card)] rounded-xl border border-[var(--border-subtle)] p-3 space-y-2">
+                    <div className="h-3 w-full bg-[var(--surface-hover)] rounded" />
+                    <div className="h-3 w-2/3 bg-[var(--surface-section-cool)] rounded" />
                     <div className="flex gap-2">
-                      <div className="h-2.5 w-10 bg-slate-100 rounded" />
-                      <div className="h-2.5 w-14 bg-slate-100 rounded" />
+                      <div className="h-2.5 w-10 bg-[var(--surface-section-cool)] rounded" />
+                      <div className="h-2.5 w-14 bg-[var(--surface-section-cool)] rounded" />
                     </div>
                   </div>
                 ))}
@@ -233,9 +233,9 @@ export default function BoardEngine(props: BoardEngineProps) {
 
         <DragOverlay dropAnimation={{ duration: 200, easing: 'ease-out' }}>
           {activeItem ? (
-            <div className="bg-white rounded-xl border-2 border-blue-300 p-3 shadow-xl rotate-[3deg] w-[260px] opacity-95">
-              <h4 className="text-[12px] font-bold text-slate-800 line-clamp-2">{activeItem.title}</h4>
-              {activeItem.assignee_name && <p className="text-[10px] text-slate-400 mt-1">👤 {activeItem.assignee_name}</p>}
+            <div className="bg-[var(--surface-card)] rounded-xl border-2 border-blue-300 p-3 shadow-xl rotate-[3deg] w-[260px] opacity-95">
+              <h4 className="text-[12px] font-bold text-[var(--text-primary)] line-clamp-2">{activeItem.title}</h4>
+              {activeItem.assignee_name && <p className="text-[10px] text-[var(--text-muted)] mt-1">👤 {activeItem.assignee_name}</p>}
             </div>
           ) : null}
         </DragOverlay>

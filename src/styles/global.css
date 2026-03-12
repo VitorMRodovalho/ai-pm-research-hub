@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
+@import "./theme.css";
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
 @theme {
@@ -20,6 +21,6 @@ html { scroll-behavior: smooth; }
 body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
-  background: #F0F4F8;
-  color: #1a1a2e;
+  background: var(--surface-base);
+  color: var(--text-primary);
 }

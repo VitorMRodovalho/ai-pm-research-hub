@@ -328,12 +328,12 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
         ? '<span class="ml-auto text-[.62rem] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full shrink-0">' + tribe.active_members + '</span>'
         : '';
       if (inactive) {
-        return '<div class="flex items-center gap-2 px-3 py-1.5 text-[.75rem] text-slate-400 font-medium opacity-60 cursor-default">'
-          + '<span class="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[.6rem] font-bold text-slate-500 shrink-0">' + tribe.id + '</span>'
+        return '<div class="flex items-center gap-2 px-3 py-1.5 text-[.75rem] text-[var(--text-muted)] font-medium opacity-60 cursor-default">'
+          + '<span class="w-5 h-5 rounded-full bg-[var(--surface-section-cool)] flex items-center justify-center text-[.6rem] font-bold text-[var(--text-secondary)] shrink-0">' + tribe.id + '</span>'
           + '<span class="truncate">' + tribeLabel(tribe) + '</span>'
           + '</div>';
       }
-      return '<a href="' + base + '/tribe/' + tribe.id + '" class="flex items-center gap-2 px-3 py-1.5 text-[.78rem] text-slate-700 font-medium hover:bg-slate-50 no-underline transition-all">'
+      return '<a href="' + base + '/tribe/' + tribe.id + '" class="flex items-center gap-2 px-3 py-1.5 text-[.78rem] text-[var(--text-primary)] font-medium hover:bg-[var(--surface-hover)] no-underline transition-all">'
         + '<span class="w-5 h-5 rounded-full bg-navy/10 flex items-center justify-center text-[.6rem] font-bold text-navy shrink-0">' + tribe.id + '</span>'
         + '<span class="truncate">' + tribeLabel(tribe) + '</span>'
         + countBadge
@@ -341,21 +341,21 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     }
 
     if (research.length) {
-      html += '<div class="px-3 pt-2 pb-1 text-[.6rem] font-bold uppercase tracking-wider text-slate-400">Tribos de Pesquisa</div>';
+      html += '<div class="px-3 pt-2 pb-1 text-[.6rem] font-bold uppercase tracking-wider text-[var(--text-muted)]">Tribos de Pesquisa</div>';
       html += research.map((t: any) => tribeRow(t)).join('');
     }
     if (operational.length) {
-      html += '<hr class="border-slate-100 my-1">';
+      html += '<hr class="border-[var(--border-subtle)] my-1">';
       html += '<div class="px-3 pt-1 pb-1 text-[.6rem] font-bold uppercase tracking-wider text-purple">Operacional</div>';
       html += operational.map((t: any) => tribeRow(t)).join('');
     }
     if (legacy.length) {
-      html += '<hr class="border-slate-100 my-1">';
-      html += '<div class="px-3 pt-1 pb-1 text-[.6rem] font-bold uppercase tracking-wider text-slate-400">Ciclos Anteriores</div>';
+      html += '<hr class="border-[var(--border-subtle)] my-1">';
+      html += '<div class="px-3 pt-1 pb-1 text-[.6rem] font-bold uppercase tracking-wider text-[var(--text-muted)]">Ciclos Anteriores</div>';
       html += legacy.map((t: any) => tribeRow(t, true)).join('');
     }
-    html += '<hr class="border-slate-100 my-1"><a href="' + base + '/#tribes" class="flex items-center gap-2 px-3 py-1.5 text-[.7rem] text-slate-400 font-medium hover:bg-slate-50 no-underline transition-all"><span class="w-5 h-5 flex items-center justify-center text-[.7rem]">&#x1F30D;</span>' + (i18n.exploreTribes || 'Ver todas') + '</a>';
-    return html || '<div class="px-3 py-2 text-slate-400 text-xs">Nenhuma tribo disponível.</div>';
+    html += '<hr class="border-[var(--border-subtle)] my-1"><a href="' + base + '/#tribes" class="flex items-center gap-2 px-3 py-1.5 text-[.7rem] text-[var(--text-muted)] font-medium hover:bg-[var(--surface-hover)] no-underline transition-all"><span class="w-5 h-5 flex items-center justify-center text-[.7rem]">&#x1F30D;</span>' + (i18n.exploreTribes || 'Ver todas') + '</a>';
+    return html || '<div class="px-3 py-2 text-[var(--text-muted)] text-xs">Nenhuma tribo disponível.</div>';
   }
 
   function renderDrawerTribeDropdown(tribes: any[]): string {
@@ -365,19 +365,19 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
 
     function row(tribe: any, inactive?: boolean): string {
       if (inactive) {
-        return '<div class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[.73rem] text-slate-400 font-medium opacity-60 cursor-default">'
-          + '<span class="w-4 h-4 rounded-full bg-slate-200 flex items-center justify-center text-[.55rem] font-bold text-slate-500 shrink-0">' + tribe.id + '</span>'
+        return '<div class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[.73rem] text-[var(--text-muted)] font-medium opacity-60 cursor-default">'
+          + '<span class="w-4 h-4 rounded-full bg-[var(--surface-section-cool)] flex items-center justify-center text-[.55rem] font-bold text-[var(--text-secondary)] shrink-0">' + tribe.id + '</span>'
           + tribeLabel(tribe)
           + '</div>';
       }
-      return '<a href="' + base + '/tribe/' + tribe.id + '" class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[.73rem] text-slate-600 font-medium no-underline hover:bg-slate-50 transition-all">'
+      return '<a href="' + base + '/tribe/' + tribe.id + '" class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[.73rem] text-[var(--text-secondary)] font-medium no-underline hover:bg-[var(--surface-hover)] transition-all">'
         + '<span class="w-4 h-4 rounded-full bg-navy/10 flex items-center justify-center text-[.55rem] font-bold text-navy shrink-0">' + tribe.id + '</span>'
         + tribeLabel(tribe)
         + '</a>';
     }
 
     if (research.length) {
-      html += '<div class="px-2 pt-1 pb-0.5 text-[.55rem] font-bold uppercase tracking-wider text-slate-400">Pesquisa</div>';
+      html += '<div class="px-2 pt-1 pb-0.5 text-[.55rem] font-bold uppercase tracking-wider text-[var(--text-muted)]">Pesquisa</div>';
       html += research.map((t: any) => row(t)).join('');
     }
     if (operational.length) {
@@ -385,10 +385,10 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       html += operational.map((t: any) => row(t)).join('');
     }
     if (legacy.length) {
-      html += '<div class="px-2 pt-2 pb-0.5 text-[.55rem] font-bold uppercase tracking-wider text-slate-400">Ciclos Anteriores</div>';
+      html += '<div class="px-2 pt-2 pb-0.5 text-[.55rem] font-bold uppercase tracking-wider text-[var(--text-muted)]">Ciclos Anteriores</div>';
       html += legacy.map((t: any) => row(t, true)).join('');
     }
-    return html || '<div class="px-2 py-1.5 text-[.7rem] text-slate-400">Nenhuma tribo disponível.</div>';
+    return html || '<div class="px-2 py-1.5 text-[.7rem] text-[var(--text-muted)]">Nenhuma tribo disponível.</div>';
   }
 
   function renderMobileTribeDropdown(tribes: any[]): string {
@@ -480,8 +480,8 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
             if (!document.getElementById('tribe-dropdown')) {
               var dd = document.createElement('div');
               dd.id = 'tribe-dropdown';
-              dd.className = 'hidden absolute top-full mt-1 right-0 w-56 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-[300] max-h-[60vh] overflow-y-auto';
-              dd.innerHTML = '<div class="px-3 py-2 text-slate-400 text-xs">Loading...</div>';
+              dd.className = 'hidden absolute top-full mt-1 right-0 w-56 bg-[var(--surface-elevated)] rounded-xl shadow-xl border border-[var(--border-default)] py-1.5 z-[300] max-h-[60vh] overflow-y-auto';
+              dd.innerHTML = '<div class="px-3 py-2 text-[var(--text-muted)] text-xs">Loading...</div>';
               desktopEl.style.position = 'relative';
               desktopEl.appendChild(dd);
             }
@@ -685,33 +685,33 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
         <div class="min-w-0">
           <div class="font-bold text-[.9rem] text-navy">${name}</div>
           <span class="text-[.62rem] font-bold px-1.5 py-0.5 rounded inline-block mt-0.5" style="background:${color}22;color:${color}">${getRoleLabel(r)}</span>
-          <div class="text-[.67rem] text-slate-500 truncate mt-0.5">${_member.email||''}</div>
+          <div class="text-[.67rem] text-[var(--text-secondary)] truncate mt-0.5">${_member.email||''}</div>
         </div>
       </div>
-      <hr class="border-slate-100 my-2">`;
+      <hr class="border-[var(--border-subtle)] my-2">`;
 
-    profileItems.forEach((item: any) => { html += drawerLink(item, 'text-slate-800 hover:bg-slate-50'); });
-    memberItems.forEach((item: any) => { html += drawerLink(item, 'text-slate-800 hover:bg-slate-50'); });
+    profileItems.forEach((item: any) => { html += drawerLink(item, 'text-[var(--text-primary)] hover:bg-[var(--surface-hover)]'); });
+    memberItems.forEach((item: any) => { html += drawerLink(item, 'text-[var(--text-primary)] hover:bg-[var(--surface-hover)]'); });
 
     if (operationsItems.length) {
-      html += '<hr class="border-slate-100 my-2"><div class="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1 px-2">⚙️ Operações</div>';
-      operationsItems.forEach((item: any) => { html += drawerLink(item, 'text-slate-600 hover:bg-slate-50 pl-4'); });
+      html += '<hr class="border-[var(--border-subtle)] my-2"><div class="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1 px-2">⚙️ Operações</div>';
+      operationsItems.forEach((item: any) => { html += drawerLink(item, 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] pl-4'); });
     }
     if (governanceItems.length) {
-      html += '<hr class="border-slate-100 my-2"><div class="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1 px-2">🌍 Governança</div>';
-      governanceItems.forEach((item: any) => { html += drawerLink(item, 'text-slate-600 hover:bg-slate-50 pl-4'); });
+      html += '<hr class="border-[var(--border-subtle)] my-2"><div class="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1 px-2">🌍 Governança</div>';
+      governanceItems.forEach((item: any) => { html += drawerLink(item, 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] pl-4'); });
     }
     const otherAdminSub = adminSubItems.filter((i: any) => i.key !== 'admin-comms-ops' && i.key !== 'admin-comms' && i.key !== 'admin-portfolio');
     if (adminItems.length || otherAdminSub.length) {
-      html += '<hr class="border-slate-100 my-2">';
+      html += '<hr class="border-[var(--border-subtle)] my-2">';
       adminItems.forEach((item: any) => { html += drawerLink(item, 'text-purple hover:bg-purple/5'); });
-      otherAdminSub.forEach((item: any) => { html += drawerLink(item, 'text-slate-600 hover:bg-slate-50 pl-4'); });
+      otherAdminSub.forEach((item: any) => { html += drawerLink(item, 'text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] pl-4'); });
     }
 
-    html += `<hr class="border-slate-100 dark:border-slate-700 my-2">
+    html += `<hr class="border-[var(--border-subtle)] my-2">
       <button id="pd-theme-toggle" data-action="toggle-theme"
-        class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer border-0 bg-transparent transition-all">${getTheme() === 'dark' ? '☀️ Modo claro' : '🌙 Modo escuro'}</button>
-      <hr class="border-slate-100 dark:border-slate-700 my-2">
+        class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)] cursor-pointer border-0 bg-transparent transition-all">${getTheme() === 'dark' ? '☀️ Modo claro' : '🌙 Modo escuro'}</button>
+      <hr class="border-[var(--border-subtle)] my-2">
       <button data-action="logout" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-crimson hover:bg-red-50 cursor-pointer border-0 bg-transparent transition-all">${i18n.logout || '↩ Sign Out'}</button>`;
 
     el.innerHTML = html;

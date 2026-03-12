@@ -68,29 +68,29 @@ export default function CardCreate({ boardId, columns, i18n, onClose, onCreate }
     <div ref={overlayRef} tabIndex={-1}
       className="fixed inset-0 z-[600] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 outline-none"
       onClick={onClose} role="dialog" aria-modal="true" aria-label={i18n.newCard || 'Novo Card'}>
-      <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-[var(--surface-elevated)] rounded-2xl p-6 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-base font-extrabold text-slate-800">➕ {i18n.newCard}</h3>
+          <h3 className="text-base font-extrabold text-[var(--text-primary)]">➕ {i18n.newCard}</h3>
           <button onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 cursor-pointer bg-transparent border-0 text-lg">✕</button>
+            className="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer bg-transparent border-0 text-lg">✕</button>
         </div>
 
         <div className="space-y-4">
           {/* Title */}
           <div>
-            <label className="text-[11px] font-semibold text-slate-600 mb-1 block">Título *</label>
+            <label className="text-[11px] font-semibold text-[var(--text-secondary)] mb-1 block">Título *</label>
             <input type="text" value={title} onChange={(e) => setTitle(e.target.value)}
               autoFocus placeholder="Nome do card..."
-              className="w-full rounded-xl border-2 border-slate-200 px-3 py-2.5 text-sm
+              className="w-full rounded-xl border-2 border-[var(--border-default)] px-3 py-2.5 text-sm
                 outline-none focus:border-blue-400 transition-all" />
           </div>
 
           {/* Description */}
           <div>
-            <label className="text-[11px] font-semibold text-slate-600 mb-1 block">{i18n.description}</label>
+            <label className="text-[11px] font-semibold text-[var(--text-secondary)] mb-1 block">{i18n.description}</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)}
               rows={3} placeholder="Descrição opcional..."
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-[12px]
+              className="w-full rounded-xl border border-[var(--border-default)] px-3 py-2 text-[12px]
                 outline-none focus:border-blue-400 resize-y" />
           </div>
 
@@ -98,9 +98,9 @@ export default function CardCreate({ boardId, columns, i18n, onClose, onCreate }
           <div className="grid grid-cols-2 gap-3">
             {/* Assignee */}
             <div>
-              <label className="text-[11px] font-semibold text-slate-600 mb-1 block">{i18n.assignee}</label>
+              <label className="text-[11px] font-semibold text-[var(--text-secondary)] mb-1 block">{i18n.assignee}</label>
               <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 px-2 py-2 text-[12px] bg-white
+                className="w-full rounded-xl border border-[var(--border-default)] px-2 py-2 text-[12px] bg-[var(--surface-card)]
                   outline-none focus:border-blue-400 cursor-pointer">
                 <option value="">{i18n.noAssignee}</option>
                 {members.map((m) => <option key={m.id} value={m.id}>{m.full_name}</option>)}
@@ -109,9 +109,9 @@ export default function CardCreate({ boardId, columns, i18n, onClose, onCreate }
 
             {/* Status (which column) */}
             <div>
-              <label className="text-[11px] font-semibold text-slate-600 mb-1 block">Coluna</label>
+              <label className="text-[11px] font-semibold text-[var(--text-secondary)] mb-1 block">Coluna</label>
               <select value={status} onChange={(e) => setStatus(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 px-2 py-2 text-[12px] bg-white
+                className="w-full rounded-xl border border-[var(--border-default)] px-2 py-2 text-[12px] bg-[var(--surface-card)]
                   outline-none focus:border-blue-400 cursor-pointer">
                 {columns.map((col) => (
                   <option key={col} value={col}>{COLUMN_PRESETS[col]?.label ?? col}</option>
@@ -122,15 +122,15 @@ export default function CardCreate({ boardId, columns, i18n, onClose, onCreate }
 
           {/* Due date */}
           <div>
-            <label className="text-[11px] font-semibold text-slate-600 mb-1 block">{i18n.dueDate}</label>
+            <label className="text-[11px] font-semibold text-[var(--text-secondary)] mb-1 block">{i18n.dueDate}</label>
             <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 px-3 py-2 text-[12px] bg-white
+              className="w-full rounded-xl border border-[var(--border-default)] px-3 py-2 text-[12px] bg-[var(--surface-card)]
                 outline-none focus:border-blue-400" />
           </div>
 
           {/* Tags */}
           <div>
-            <label className="text-[11px] font-semibold text-slate-600 mb-1 block">{i18n.tags}</label>
+            <label className="text-[11px] font-semibold text-[var(--text-secondary)] mb-1 block">{i18n.tags}</label>
             <div className="flex flex-wrap gap-1 mb-1.5 min-h-[24px]">
               {tags.map((t) => (
                 <span key={t} className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-semibold">
@@ -144,7 +144,7 @@ export default function CardCreate({ boardId, columns, i18n, onClose, onCreate }
               onChange={(e) => setTagInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(tagInput); } }}
               placeholder="Tag + Enter"
-              className="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-[11px]
+              className="w-full rounded-xl border border-[var(--border-default)] px-3 py-1.5 text-[11px]
                 outline-none focus:border-blue-400" />
           </div>
         </div>
@@ -154,7 +154,7 @@ export default function CardCreate({ boardId, columns, i18n, onClose, onCreate }
           className={`w-full mt-5 px-4 py-3 rounded-xl text-sm font-bold cursor-pointer border-0 transition-all
             ${title.trim() && !submitting
               ? 'bg-blue-900 text-white hover:bg-blue-800'
-              : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}>
+              : 'bg-[var(--surface-hover)] text-[var(--text-muted)] cursor-not-allowed'}`}>
           {submitting ? '⏳ Criando...' : `✅ Criar Card`}
         </button>
       </div>

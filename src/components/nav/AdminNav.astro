@@ -32,7 +32,7 @@ const adminLinksJson = JSON.stringify(ADMIN_LINKS);
          "px-4 py-2 rounded-xl text-[13px] font-semibold no-underline transition-all",
          activeSub === link.key
            ? "bg-navy text-white"
-           : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+           : "bg-[var(--admin-subnav-bg)] text-[var(--admin-subnav-text)] hover:bg-[var(--surface-hover)]"
        ]}>
       {t(link.labelKey, lang)}
     </a>

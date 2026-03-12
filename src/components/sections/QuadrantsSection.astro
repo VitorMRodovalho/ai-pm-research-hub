@@ -12,7 +12,7 @@ const COLORS: Record<string, string> = {
 const safeQuadrants = Array.isArray(QUADRANTS) ? QUADRANTS : [];
 ---
 
-<section class="py-16 px-6 bg-white" id="quadrants">
+<section class="py-16 px-6 bg-[var(--surface-card)]" id="quadrants">
   <div class="max-w-[1200px] mx-auto">
     <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-teal mb-2">
       {t('quadrants.label', lang)}
@@ -20,12 +20,12 @@ const safeQuadrants = Array.isArray(QUADRANTS) ? QUADRANTS : [];
     <h2 class="text-[clamp(1.7rem,4vw,2.5rem)] font-extrabold leading-tight mb-3">
       {t('quadrants.title', lang)}
     </h2>
-    <p class="text-base text-slate-500 max-w-[700px] mb-10">
+    <p class="text-base text-[var(--text-secondary)] max-w-[700px] mb-10">
       {t('quadrants.subtitle', lang)}
     </p>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
       {safeQuadrants.map((q) => (
-        <div class="relative p-7 rounded-2xl border border-black/5 bg-[#FAFAF8]
+        <div class="relative p-7 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)]
                     hover:-translate-y-px hover:shadow-md transition-all duration-200"
              style={`border-left: 4px solid ${COLORS[q.color]}`}>
           <div class="text-[.65rem] font-extrabold tracking-[.2em] uppercase mb-1"
@@ -33,11 +33,11 @@ const safeQuadrants = Array.isArray(QUADRANTS) ? QUADRANTS : [];
             {t(q.labelKey, lang)}
           </div>
           <div class="font-bold text-lg mb-1">{t(q.titleKey, lang)}</div>
-          <div class="text-[.85rem] text-slate-500">{t(q.subtitleKey, lang)}</div>
+          <div class="text-[.85rem] text-[var(--text-secondary)]">{t(q.subtitleKey, lang)}</div>
         </div>
       ))}
       {!safeQuadrants.length && (
-        <div class="col-span-full bg-[#FAFAF8] rounded-2xl border border-black/5 p-6 text-sm text-slate-500">
+        <div class="col-span-full bg-[var(--surface-card)] rounded-2xl border border-[var(--border-subtle)] p-6 text-sm text-[var(--text-secondary)]">
           {t('quadrants.unavailable', lang)}
         </div>
       )}

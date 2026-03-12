@@ -29,16 +29,16 @@ export default function BoardFilters({
           value={filters.search}
           onChange={(e) => onSearch(e.target.value)}
           placeholder={i18n.search || 'Buscar...'}
-          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px]
-            text-slate-700 outline-none focus:border-blue-400 transition-all pl-8"
+          className="w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] px-3 py-2 text-[12px]
+            text-[var(--text-primary)] outline-none focus:border-blue-400 transition-all pl-8"
         />
-        <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" fill="none"
+        <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" fill="none"
           stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m21 21-4.34-4.34M11 19a8 8 0 100-16 8 8 0 000 16z" />
         </svg>
         {filters.search && (
           <button onClick={() => onSearch('')}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-secondary)] 
               cursor-pointer bg-transparent border-0 text-sm">✕</button>
         )}
       </div>
@@ -48,7 +48,7 @@ export default function BoardFilters({
         <select
           value={filters.assigneeId || ''}
           onChange={(e) => onAssignee(e.target.value || null)}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-600
+          className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] px-3 py-2 text-[12px] text-[var(--text-secondary)]
             outline-none focus:border-blue-400 cursor-pointer"
         >
           <option value="">👤 Todos</option>
@@ -62,7 +62,7 @@ export default function BoardFilters({
       <select
         value={filters.dueDateFilter}
         onChange={(e) => onDueDate(e.target.value as any)}
-        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-600
+        className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] px-3 py-2 text-[12px] text-[var(--text-secondary)]
           outline-none focus:border-blue-400 cursor-pointer"
       >
         <option value="all">📅 Todas as datas</option>
@@ -76,7 +76,7 @@ export default function BoardFilters({
         <select
           value={filters.curationStatus || ''}
           onChange={(e) => onCurationStatus(e.target.value || null)}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[12px] text-slate-600
+          className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] px-3 py-2 text-[12px] text-[var(--text-secondary)]
             outline-none focus:border-blue-400 cursor-pointer"
         >
           <option value="">🔍 Curadoria: Todos</option>
@@ -91,7 +91,7 @@ export default function BoardFilters({
       {hasActive && (
         <button onClick={onClear}
           className="px-3 py-2 rounded-xl text-[11px] font-semibold text-red-500 hover:bg-red-50
-            cursor-pointer border border-red-200 bg-white transition-colors">
+            cursor-pointer border border-red-200 bg-[var(--surface-card)] transition-colors">
           ✕ Limpar filtros
         </button>
       )}

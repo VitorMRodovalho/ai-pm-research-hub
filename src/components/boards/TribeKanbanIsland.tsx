@@ -194,7 +194,7 @@ function SortableCard({
       {...attributes}
       {...listeners}
       tabIndex={0}
-      className={`rounded-xl border p-3 shadow-sm transition-all ${canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900`}
+      className={`rounded-xl border p-3 shadow-sm transition-all ${canEdit ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'} border-[var(--border-default)] bg-[var(--surface-card)]`}
       onKeyDown={(e) => {
         if (e.shiftKey && e.key === 'ArrowLeft') {
           e.preventDefault();
@@ -215,14 +215,14 @@ function SortableCard({
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); onOpen(item); }}
-        className="text-[13px] font-semibold text-slate-900 dark:text-slate-100 mb-1 line-clamp-2 text-left w-full bg-transparent border-0 p-0 cursor-pointer hover:underline"
+        className="text-[13px] font-semibold text-[var(--text-primary)] mb-1 line-clamp-2 text-left w-full bg-transparent border-0 p-0 cursor-pointer hover:underline"
       >{item.title || 'Sem titulo'}</button>
       {item.is_legacy && item.origin_tribe_name ? (
         <span className="inline-block text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 font-bold mb-1">
           Legado: {item.origin_tribe_name}
         </span>
       ) : null}
-      <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-300">
+      <div className="flex items-center gap-2 text-[11px] text-[var(--text-secondary)]">
         {assigneePhoto ? (
           <img src={assigneePhoto} className="w-5 h-5 rounded-full object-cover" alt="assignee" />
         ) : (
@@ -240,7 +240,7 @@ function SortableCard({
           </span>
         ) : null}
         {due ? (
-          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded ${due.getTime() < Date.now() && curation !== 'published' ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-600'}`}>
+          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded ${due.getTime() < Date.now() && curation !== 'published' ? 'bg-red-50 text-red-700' : 'bg-[var(--surface-section-cool)] text-[var(--text-secondary)]'}`}>
             <CalendarClock size={12} /> {due.toLocaleDateString('pt-BR')}
           </span>
         ) : null}
@@ -259,23 +259,23 @@ function SortableCard({
             </Popover.Trigger>
             <Popover.Portal>
               <Popover.Content
-                className="rounded-lg border border-slate-200 bg-white dark:bg-slate-900 dark:border-slate-700 p-2 shadow-lg z-50 max-h-48 overflow-y-auto"
+                className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] p-2 shadow-lg z-50 max-h-48 overflow-y-auto"
                 sideOffset={4}
                 onOpenAutoFocus={(e) => e.preventDefault()}
               >
-                <div className="text-[11px] font-semibold text-slate-600 mb-1.5">{i18n.selectReviewer || 'Selecionar revisor'}</div>
+                <div className="text-[11px] font-semibold text-[var(--text-secondary)] mb-1.5">{i18n.selectReviewer || 'Selecionar revisor'}</div>
                 {peers.map((m) => (
                   <button
                     key={m.id}
                     type="button"
                     onClick={() => { onRequestReview(item, m.id); }}
-                    className="block w-full text-left px-2 py-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-sm"
+                    className="block w-full text-left px-2 py-1.5 rounded hover:bg-[var(--surface-hover)] text-sm"
                   >
                     {m.name || 'Membro'}
                   </button>
                 ))}
                 {peers.length === 0 ? (
-                  <div className="px-2 py-1.5 text-slate-400 text-[11px]">Nenhum colega disponivel</div>
+                  <div className="px-2 py-1.5 text-[var(--text-muted)] text-[11px]">Nenhum colega disponivel</div>
                 ) : null}
               </Popover.Content>
             </Popover.Portal>
@@ -649,10 +649,10 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
   }
 
   if (loading) {
-    return <div className="text-center py-10 text-slate-400">{i18n.loading || 'Carregando...'}</div>;
+    return <div className="text-center py-10 text-[var(--text-muted)]">{i18n.loading || 'Carregando...'}</div>;
   }
   if (denied) {
-    return <div className="text-center py-10 text-slate-500 dark:text-slate-300">{ui.deniedBoard}</div>;
+    return <div className="text-center py-10 text-[var(--text-secondary)]">{ui.deniedBoard}</div>;
   }
 
   const boardLaneItems = BOARD_LANES.reduce((n, l) => n + (itemsByLane[l.key]?.length || 0), 0);
@@ -668,16 +668,16 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       >
         {/* Board workflow lanes */}
         <section className="space-y-2">
-          <h2 className="text-sm font-bold text-slate-700 dark:text-slate-200">
+          <h2 className="text-sm font-bold text-[var(--text-primary)]">
             Quadro da Tribo
-            <span className="ml-2 text-[11px] font-normal text-slate-400">({boardLaneItems} cards)</span>
+            <span className="ml-2 text-[11px] font-normal text-[var(--text-muted)]">({boardLaneItems} cards)</span>
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
             {BOARD_LANES.map((lane) => (
-              <section key={lane.key} className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3">
+              <section key={lane.key} className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-[12px] font-bold text-slate-700 dark:text-slate-200">{lane.label}</h3>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                  <h3 className="text-[12px] font-bold text-[var(--text-primary)]">{lane.label}</h3>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--surface-section-cool)] text-[var(--text-secondary)]">
                     {itemsByLane[lane.key]?.length || 0}
                   </span>
                 </div>
@@ -705,7 +705,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
                       />
                     ))}
                     {(itemsByLane[lane.key]?.length || 0) === 0 ? (
-                      <div className="text-[11px] text-slate-400 dark:text-slate-500 py-6 text-center">
+                      <div className="text-[11px] text-[var(--text-muted)] py-6 text-center">
                         {activeId ? 'Solte o card aqui' : 'Sem cards'}
                       </div>
                     ) : null}
@@ -721,7 +721,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
           <section className="space-y-2">
             <h2 className="text-sm font-bold text-purple-700 dark:text-purple-300">
               Esteira de Curadoria
-              <span className="ml-2 text-[11px] font-normal text-slate-400">({curationLaneItems} cards)</span>
+              <span className="ml-2 text-[11px] font-normal text-[var(--text-muted)]">({curationLaneItems} cards)</span>
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
               {CURATION_LANES.map((lane) => (
@@ -756,7 +756,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
                         />
                       ))}
                       {(itemsByLane[lane.key]?.length || 0) === 0 ? (
-                        <div className="text-[11px] text-slate-400 dark:text-slate-500 py-6 text-center">
+                        <div className="text-[11px] text-[var(--text-muted)] py-6 text-center">
                           {activeId ? 'Solte o card aqui' : 'Sem cards'}
                         </div>
                       ) : null}
@@ -772,7 +772,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       <Dialog.Root open={!!modalItem} onOpenChange={(open) => { if (!open) setModalItem(null); }}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
-          <Dialog.Content className="fixed z-50 top-1/2 left-1/2 w-full max-w-5xl -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 shadow-xl max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
+          <Dialog.Content className="fixed z-50 top-1/2 left-1/2 w-full max-w-5xl -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-elevated)] p-5 shadow-xl max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
             <VisuallyHidden asChild><Dialog.Title>Editar card</Dialog.Title></VisuallyHidden>
             {!modalItem ? null : (
               <>
@@ -780,10 +780,10 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
               <input
                 value={modalItem.title || ''}
                 onChange={(e) => setModalItem((prev) => (prev ? { ...prev, title: e.target.value } : prev))}
-                className="flex-1 text-lg font-bold text-slate-900 dark:text-slate-100 bg-transparent border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2"
+                className="flex-1 text-lg font-bold text-[var(--text-primary)] bg-transparent border border-[var(--border-default)] rounded-lg px-3 py-2"
               />
               <Dialog.Close asChild>
-                <button type="button" className="p-2 rounded-lg border border-slate-200 dark:border-slate-700">
+                <button type="button" className="p-2 rounded-lg border border-[var(--border-default)]">
                 <X size={16} />
               </button>
               </Dialog.Close>
@@ -794,13 +794,13 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
                   value={modalItem.description || ''}
                   onChange={(e) => setModalItem((prev) => (prev ? { ...prev, description: e.target.value } : prev))}
                   rows={8}
-                  className="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                  className="w-full text-sm border border-[var(--border-default)] rounded-lg px-3 py-2 bg-[var(--surface-card)] text-[var(--text-primary)]"
                   placeholder="Descricao do card..."
                 />
                 <div className="space-y-2">
-                  <p className="text-[12px] font-semibold text-slate-600 dark:text-slate-300">{ui.checklist}</p>
+                  <p className="text-[12px] font-semibold text-[var(--text-secondary)]">{ui.checklist}</p>
                   {parseChecklist(modalItem.checklist).map((item, idx) => (
-                    <label key={`${item.text}-${idx}`} className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                    <label key={`${item.text}-${idx}`} className="flex items-center gap-2 text-sm text-[var(--text-primary)]">
                       <input
                         type="checkbox"
                         checked={item.done}
@@ -816,7 +816,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
               </div>
               <aside className="space-y-3">
                 <div>
-                  <label className="text-[12px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">{ui.status}</label>
+                  <label className="text-[12px] font-semibold text-[var(--text-secondary)] block mb-1">{ui.status}</label>
                   <select
                     value={resolveItemLane(modalItem)}
                     onChange={(e) => {
@@ -827,7 +827,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
                         setModalItem((prev) => (prev ? { ...prev, curation_status: lane } : prev));
                       }
                     }}
-                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                    className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 bg-[var(--surface-card)] text-[var(--text-primary)]"
                   >
                     {ALL_LANES.map((lane) => (
                       <option key={lane.key} value={lane.key}>{lane.label}</option>
@@ -835,14 +835,14 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
                   </select>
                 </div>
                 <div>
-                  <label className="text-[12px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">{ui.assignee}</label>
+                  <label className="text-[12px] font-semibold text-[var(--text-secondary)] block mb-1">{ui.assignee}</label>
                   <select
                     value={modalItem.assignee_id || ''}
                     onChange={(e) => {
                       const selected = members.find((m) => m.id === e.target.value);
                       setModalItem((prev) => (prev ? { ...prev, assignee_id: e.target.value || null, assignee_name: selected?.name || null } : prev));
                     }}
-                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                    className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 bg-[var(--surface-card)] text-[var(--text-primary)]"
                   >
                     <option value="">{ui.noAssignee}</option>
                     {members.map((member) => (
@@ -851,12 +851,12 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
                   </select>
                 </div>
                 <div>
-                  <label className="text-[12px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">{ui.dueDate}</label>
+                  <label className="text-[12px] font-semibold text-[var(--text-secondary)] block mb-1">{ui.dueDate}</label>
                   <input
                     type="date"
                     value={modalItem.due_date ? String(modalItem.due_date).slice(0, 10) : ''}
                     onChange={(e) => setModalItem((prev) => (prev ? { ...prev, due_date: e.target.value || null } : prev))}
-                    className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                    className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 bg-[var(--surface-card)] text-[var(--text-primary)]"
                   />
                 </div>
                 {canEdit ? (
@@ -871,7 +871,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
               </aside>
             </div>
             <div className="mt-4 flex justify-end gap-2">
-              <button type="button" onClick={() => setModalItem(null)} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">
+              <button type="button" onClick={() => setModalItem(null)} className="px-3 py-2 rounded-lg border border-[var(--border-default)] text-[var(--text-secondary)]">
                 {ui.cancel}
               </button>
               {canEdit ? (

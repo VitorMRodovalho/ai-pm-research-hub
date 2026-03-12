@@ -16,11 +16,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   <Toast />
 
   <!-- AUTH GATE (hidden by default, shown only if no session) -->
-  <div id="auth-gate" class="hidden items-center justify-center min-h-screen bg-slate-50">
-    <div class="bg-white rounded-2xl p-9 max-w-[360px] w-full text-center border border-slate-200">
+  <div id="auth-gate" class="hidden items-center justify-center min-h-screen bg-[var(--surface-base)]">
+    <div class="bg-[var(--surface-card)] rounded-2xl p-9 max-w-[360px] w-full text-center border border-[var(--border-default)]">
       <div class="text-4xl mb-3">⏱️</div>
       <h2 class="text-navy font-bold text-xl mb-2">{t('attendance.authTitle', lang)}</h2>
-      <p class="text-slate-500 text-sm mb-6">{t('attendance.authDesc', lang)}</p>
+      <p class="text-[var(--text-secondary)] text-sm mb-6">{t('attendance.authDesc', lang)}</p>
       <button id="attendance-auth-btn"
               class="w-full py-3 rounded-lg bg-navy text-white font-semibold text-sm border-0 cursor-pointer hover:bg-navy/90 transition-colors"
               data-action="open-auth">
@@ -36,7 +36,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
   <!-- LOADING STATE -->
   <div id="loading-gate" class="flex items-center justify-center min-h-[60vh]">
-    <p class="text-slate-400 text-sm">{t('attendance.loading', lang)}</p>
+    <p class="text-[var(--text-muted)] text-sm">{t('attendance.loading', lang)}</p>
   </div>
 
   <!-- APP (hidden until auth) -->
@@ -50,15 +50,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
                 data-tab="events" data-action="switch-tab">
           {t('attendance.events', lang)}
         </button>
-        <button class="tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+        <button class="tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
                 data-tab="ranking" data-action="switch-tab">
           {t('attendance.ranking', lang)}
         </button>
-        <button class="hidden tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+        <button class="hidden tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
                 id="tab-new-event" data-action="open-new-event">
           {t('attendance.newEvent', lang)}
         </button>
-        <button class="hidden tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-slate-200 bg-white text-slate-500 transition-all"
+        <button class="hidden tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
                 id="tab-recurring" data-action="open-recurring">
           {t('attendance.recurring', lang)}
         </button>
@@ -66,21 +66,21 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
       <!-- Events tab -->
       <div id="tab-events">
-        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between">
+        <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] overflow-hidden">
+          <div class="px-5 py-3.5 border-b border-[var(--border-default)] flex items-center justify-between">
             <h3 class="text-sm font-bold text-navy">{t('attendance.eventsTitle', lang)}</h3>
-            <button class="px-3 py-1.5 rounded-lg text-[12px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-slate-50 cursor-pointer"
+            <button class="px-3 py-1.5 rounded-lg text-[12px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer"
                     data-action="refresh-events">{t('attendance.refresh', lang)}</button>
           </div>
-          <div class="px-5 py-4 border-b border-slate-100 space-y-3">
+          <div class="px-5 py-4 border-b border-[var(--border-subtle)] space-y-3">
             <div id="attendance-context-note" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[.75rem] text-amber-900"></div>
             <div id="attendance-context-actions" class="hidden flex gap-2 flex-wrap"></div>
             <div class="flex gap-2 flex-wrap items-center">
               <input id="attendance-search" type="text"
-                     class="flex-1 min-w-[220px] px-4 py-2.5 rounded-xl border-[1.5px] border-slate-200 text-sm bg-white focus:outline-none focus:border-navy transition-colors"
+                     class="flex-1 min-w-[220px] px-4 py-2.5 rounded-xl border-[1.5px] border-[var(--border-default)] text-sm bg-[var(--surface-input)] focus:outline-none focus:border-navy transition-colors"
                      placeholder="Buscar evento, replay ou link" />
               <select id="attendance-type-filter"
-                      class="px-3 py-2.5 rounded-xl border-[1.5px] border-slate-200 text-sm bg-white focus:outline-none focus:border-navy cursor-pointer">
+                      class="px-3 py-2.5 rounded-xl border-[1.5px] border-[var(--border-default)] text-sm bg-[var(--surface-input)] focus:outline-none focus:border-navy cursor-pointer">
                 <option value="">Todos os tipos</option>
                 <option value="webinar">Webinar</option>
                 <option value="tribe_meeting">Tribo</option>
@@ -97,8 +97,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
       <!-- Ranking tab -->
       <div id="tab-ranking" class="hidden">
-        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div class="px-5 py-3.5 border-b border-slate-200">
+        <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] overflow-hidden">
+          <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
             <h3 class="text-sm font-bold text-navy">{t('attendance.rankingTitle', lang)}</h3>
           </div>
           <div class="p-5" id="ranking-list">
@@ -309,13 +309,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
   function loadingRows(count = 3): string {
     return Array.from({ length: count }).map(() => `
-      <div class="flex items-center gap-3 px-1 py-3 border-b border-slate-100 last:border-b-0 animate-pulse">
-        <div class="w-9 h-9 rounded-full bg-slate-200 flex-shrink-0"></div>
+      <div class="flex items-center gap-3 px-1 py-3 border-b border-[var(--border-subtle)] last:border-b-0 animate-pulse">
+        <div class="w-9 h-9 rounded-full bg-[var(--surface-section-cool)] flex-shrink-0"></div>
         <div class="flex-1 space-y-1.5">
-          <div class="h-3 w-40 bg-slate-200 rounded"></div>
-          <div class="h-2.5 w-56 bg-slate-200 rounded"></div>
+          <div class="h-3 w-40 bg-[var(--surface-section-cool)] rounded"></div>
+          <div class="h-2.5 w-56 bg-[var(--surface-section-cool)] rounded"></div>
         </div>
-        <div class="h-5 w-14 rounded-full bg-slate-200"></div>
+        <div class="h-5 w-14 rounded-full bg-[var(--surface-section-cool)]"></div>
       </div>
     `).join('');
   }
@@ -355,9 +355,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         ? '<button type="button" class="px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold border-0 cursor-pointer hover:opacity-90" data-action="open-focused-edit">Editar webinar focado</button>'
         : ''}
       ${commsHref
-        ? `<a href="${escapeAttr(commsHref)}" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-[.72rem] font-semibold no-underline hover:bg-slate-50 transition-all">Abrir Comms contextual</a>`
+        ? `<a href="${escapeAttr(commsHref)}" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.72rem] font-semibold no-underline hover:bg-[var(--surface-hover)] transition-all">Abrir Comms contextual</a>`
         : ''}
-      <button type="button" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 text-[.72rem] font-semibold cursor-pointer hover:bg-slate-50" data-action="clear-event-filters">Limpar contexto</button>
+      <button type="button" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.72rem] font-semibold cursor-pointer hover:bg-[var(--surface-hover)]" data-action="clear-event-filters">Limpar contexto</button>
     `;
     actions.classList.remove('hidden');
   }
@@ -470,9 +470,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   function switchTab(el: HTMLElement, name: string) {
     document.querySelectorAll('.tab-btn').forEach(t => {
       t.classList.remove('bg-navy', 'text-white', 'border-navy');
-      t.classList.add('bg-white', 'text-slate-500', 'border-slate-200');
+      t.classList.add('bg-[var(--surface-card)]', 'text-[var(--text-secondary)]', 'border-[var(--border-default)]');
     });
-    el.classList.remove('bg-white', 'text-slate-500', 'border-slate-200');
+    el.classList.remove('bg-[var(--surface-card)]', 'text-[var(--text-secondary)]', 'border-[var(--border-default)]');
     el.classList.add('bg-navy', 'text-white', 'border-navy');
     document.getElementById('tab-events')!.classList.toggle('hidden', name !== 'events');
     document.getElementById('tab-ranking')!.classList.toggle('hidden', name !== 'ranking');
@@ -509,12 +509,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     if (!ALL_EVENTS.length) {
       const cta = CAN_MANAGE
         ? `<button class="mt-3 px-4 py-2 bg-navy text-white rounded-xl text-[12px] font-semibold border-0 cursor-pointer hover:opacity-90" data-action="open-new-event">${I18N.emptyNewEvent}</button>`
-        : `<button class="mt-3 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[12px] font-semibold cursor-pointer hover:bg-slate-50" data-action="refresh-events">${I18N.emptyRefresh}</button>`;
+        : `<button class="mt-3 px-4 py-2 bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-secondary)] rounded-xl text-[12px] font-semibold cursor-pointer hover:bg-[var(--surface-hover)]" data-action="refresh-events">${I18N.emptyRefresh}</button>`;
       el.innerHTML = `
         <div class="text-center py-8">
           <div class="text-3xl mb-2">📅</div>
-          <div class="font-semibold text-slate-600 text-sm">${I18N.noEvents}</div>
-          <p class="text-slate-400 text-[12px] mt-1">${CAN_MANAGE ? I18N.emptyManagerHint : I18N.emptyMemberHint}</p>
+          <div class="font-semibold text-[var(--text-secondary)] text-sm">${I18N.noEvents}</div>
+          <p class="text-[var(--text-muted)] text-[12px] mt-1">${CAN_MANAGE ? I18N.emptyManagerHint : I18N.emptyMemberHint}</p>
           ${cta}
         </div>
       `;
@@ -524,8 +524,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       el.innerHTML = `
         <div class="text-center py-8">
           <div class="text-3xl mb-2">🔎</div>
-          <div class="font-semibold text-slate-600 text-sm">Nenhum evento corresponde ao filtro atual.</div>
-          <button class="mt-3 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl text-[12px] font-semibold cursor-pointer hover:bg-slate-50" data-action="clear-event-filters">Limpar filtros</button>
+          <div class="font-semibold text-[var(--text-secondary)] text-sm">Nenhum evento corresponde ao filtro atual.</div>
+          <button class="mt-3 px-4 py-2 bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-secondary)] rounded-xl text-[12px] font-semibold cursor-pointer hover:bg-[var(--surface-hover)]" data-action="clear-event-filters">Limpar filtros</button>
         </div>
       `;
       return;
@@ -553,13 +553,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
     el.innerHTML = filtered.map((ev: any) => {
       const attIcon = ev.i_attended === true ? '✅' : ev.i_attended === false ? '❌' : '—';
-      const attBg = ev.i_attended === true ? 'bg-green-100 text-green-800' : ev.i_attended === false ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-500';
+      const attBg = ev.i_attended === true ? 'bg-green-100 text-green-800' : ev.i_attended === false ? 'bg-red-100 text-red-800' : 'bg-[var(--surface-section-cool)] text-[var(--text-secondary)]';
       const canEdit = CAN_MANAGE || ev.created_by === MEMBER.auth_id;
       const canRoster = CAN_MANAGE;
       const isFocused = ev.id === ATTENDANCE_ROUTE.eventId;
       const wrapperClass = isFocused
         ? 'rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-3.5 my-2'
-        : 'py-3.5 border-b border-slate-100 last:border-b-0';
+        : 'py-3.5 border-b border-[var(--border-subtle)] last:border-b-0';
 
       const isPast = new Date(ev.date + 'T23:59:59') < new Date();
       const linkHtml = ev.meeting_link && !isPast
@@ -567,7 +567,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         : '';
       const ytHtml = ev.youtube_url
         ? `<a href="${ev.youtube_url}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-white font-semibold no-underline px-2 py-0.5 bg-red-600 rounded-md text-[12px]">${I18N.eventYoutube}</a>`
-        : (ev.is_recorded ? `<span class="text-[11px] text-slate-400 italic">${I18N.eventYoutubeSoon}</span>` : '');
+        : (ev.is_recorded ? `<span class="text-[11px] text-[var(--text-muted)] italic">${I18N.eventYoutubeSoon}</span>` : '');
 
       ((window as any).__attendanceEventsById = (window as any).__attendanceEventsById || {})[ev.id] = ev;
       return `
@@ -576,7 +576,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           <div class="w-7 h-7 rounded-full flex items-center justify-center text-[13px] flex-shrink-0 ${attBg}">${attIcon}</div>
           <div class="flex-1 min-w-0">
             <div class="text-sm font-semibold">${ev.title}</div>
-            <div class="text-[12px] text-slate-500 mt-0.5 flex items-center gap-2 flex-wrap">
+            <div class="text-[12px] text-[var(--text-secondary)] mt-0.5 flex items-center gap-2 flex-wrap">
               <span>${fmtDate(ev.date)}</span><span>·</span>
               <span>${ev.duration_minutes}min</span><span>·</span>
               <span>${ev.attendee_count || 0} ${I18N.eventAttendees}</span>
@@ -589,8 +589,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
             ${ev.i_attended !== true
               ? `<button type="button" class="px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-navy text-white border-0 cursor-pointer hover:opacity-90" data-action="check-in" data-event-id="${escapeAttr(ev.id)}">${I18N.eventCheckIn}</button>`
               : `<button class="px-3 py-1.5 rounded-lg text-[12px] font-semibold border-[1.5px] border-navy text-navy bg-transparent cursor-not-allowed opacity-40" disabled>✓</button>`}
-            ${canRoster ? `<button type="button" class="px-2 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-md cursor-pointer" title="${I18N.eventRosterTooltip}" data-action="open-roster" data-event-id="${escapeAttr(ev.id)}" data-event-title="${escapeAttr(ev.title || '')}">📋</button>` : ''}
-            ${canEdit ? `<button type="button" class="px-2 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-md cursor-pointer" title="${I18N.eventEditTooltip}" data-action="edit-event" data-event-id="${escapeAttr(ev.id)}">✏️</button>` : ''}
+            ${canRoster ? `<button type="button" class="px-2 py-1.5 text-sm bg-[var(--surface-base)] border border-[var(--border-default)] rounded-md cursor-pointer" title="${I18N.eventRosterTooltip}" data-action="open-roster" data-event-id="${escapeAttr(ev.id)}" data-event-title="${escapeAttr(ev.title || '')}">📋</button>` : ''}
+            ${canEdit ? `<button type="button" class="px-2 py-1.5 text-sm bg-[var(--surface-base)] border border-[var(--border-default)] rounded-md cursor-pointer" title="${I18N.eventEditTooltip}" data-action="edit-event" data-event-id="${escapeAttr(ev.id)}">✏️</button>` : ''}
           </div>
         </div>
       </div>`;
@@ -833,11 +833,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const searchInput = document.getElementById('roster-search') as HTMLInputElement;
     if (searchInput) searchInput.value = '';
     openModal('modal-roster');
-    document.getElementById('roster-body')!.innerHTML = `<tr><td colspan="3" class="text-center py-5 text-slate-500">${I18N.rosterLoading}</td></tr>`;
+    document.getElementById('roster-body')!.innerHTML = `<tr><td colspan="3" class="text-center py-5 text-[var(--text-secondary)]">${I18N.rosterLoading}</td></tr>`;
     const { data } = await sb.rpc('get_tribe_event_roster', { p_event_id: eventId });
     const tbody = document.getElementById('roster-body')!;
     if (!data?.length) {
-      tbody.innerHTML = `<tr><td colspan="3" class="text-center text-slate-500 py-5">${I18N.rosterNoParticipants}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="3" class="text-center text-[var(--text-secondary)] py-5">${I18N.rosterNoParticipants}</td></tr>`;
       return;
     }
     // Sort: present first, then alphabetically
@@ -855,14 +855,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     }
     tbody.innerHTML = sorted.map((m: any) => `
       <tr class="roster-row" data-name="${(m.name || '').toLowerCase()}">
-        <td class="px-3 py-2.5 border-b border-slate-100">
+        <td class="px-3 py-2.5 border-b border-[var(--border-subtle)]">
           <div class="flex items-center gap-2">
-            <img class="w-7 h-7 rounded-full object-cover bg-slate-100 flex-shrink-0" src="${m.photo_url || ''}" data-hide-on-error alt="">
+            <img class="w-7 h-7 rounded-full object-cover bg-[var(--surface-section-cool)] flex-shrink-0" src="${m.photo_url || ''}" data-hide-on-error alt="">
             <span class="${m.present ? 'font-semibold' : ''}">${m.name}</span>
           </div>
         </td>
-        <td class="px-3 py-2.5 border-b border-slate-100">${roleBadges(rolesFromMember(m))}</td>
-        <td class="px-3 py-2.5 border-b border-slate-100 text-center">
+        <td class="px-3 py-2.5 border-b border-[var(--border-subtle)]">${roleBadges(rolesFromMember(m))}</td>
+        <td class="px-3 py-2.5 border-b border-[var(--border-subtle)] text-center">
           ${CAN_MANAGE
             ? `<button type="button" class="toggle-btn ${m.present ? 'on' : 'off'}" id="tog-${m.id}"
                  data-action="toggle-presence" data-event-id="${escapeAttr(eventId)}" data-member-id="${escapeAttr(m.id)}"></button>`
@@ -889,22 +889,22 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         el.innerHTML = `
           <div class="text-center py-8">
             <div class="text-3xl mb-2">📊</div>
-            <div class="font-semibold text-slate-600 text-sm">${I18N.rankingNoData}</div>
-            <p class="text-slate-400 text-[12px] mt-1">${I18N.rankingNoDataHint}</p>
+            <div class="font-semibold text-[var(--text-secondary)] text-sm">${I18N.rankingNoData}</div>
+            <p class="text-[var(--text-muted)] text-[12px] mt-1">${I18N.rankingNoDataHint}</p>
           </div>
         `;
         return;
       }
       const max = Math.max(...data.map((m: any) => parseFloat(m.hours_attended || 0)), 1);
       el.innerHTML = data.map((m: any, i: number) => `
-        <div class="flex items-center gap-2.5 py-2 border-b border-slate-100 last:border-b-0">
-          <div class="text-[13px] font-bold text-slate-500 w-6 text-center flex-shrink-0">${i + 1}</div>
-          <img class="w-8 h-8 rounded-full object-cover bg-slate-100 flex-shrink-0" src="${m.photo_url || ''}" data-hide-on-error alt="">
+        <div class="flex items-center gap-2.5 py-2 border-b border-[var(--border-subtle)] last:border-b-0">
+          <div class="text-[13px] font-bold text-[var(--text-secondary)] w-6 text-center flex-shrink-0">${i + 1}</div>
+          <img class="w-8 h-8 rounded-full object-cover bg-[var(--surface-section-cool)] flex-shrink-0" src="${m.photo_url || ''}" data-hide-on-error alt="">
           <div class="flex-1 min-w-0">
             <div class="text-[13px] font-semibold truncate">${m.name}</div>
             <div>${roleBadges(rolesFromMember(m))}</div>
           </div>
-          <div class="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden flex-shrink-0">
+          <div class="w-20 h-1.5 bg-[var(--surface-section-cool)] rounded-full overflow-hidden flex-shrink-0">
             <div class="h-full bg-crimson rounded-full" style="width:${(m.hours_attended / max * 100).toFixed(1)}%"></div>
           </div>
           <div class="text-[13px] text-navy font-bold flex-shrink-0">${m.hours_attended || 0}h</div>

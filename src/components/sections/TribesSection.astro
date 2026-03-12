@@ -61,7 +61,7 @@ const selectionStateLabel = selectionState === 'open'
 const selectionStateClasses = selectionState === 'open'
   ? 'bg-green-100 text-green-700 animate-pulse'
   : selectionState === 'closed'
-    ? 'bg-slate-200 text-slate-700'
+    ? 'bg-[var(--surface-section-cool)] text-[var(--text-primary)]'
     : 'bg-amber-100 text-amber-700';
 const selectionNotice = selectionState === 'open'
   ? t('tribes.deadlineNotice', lang)
@@ -91,7 +91,7 @@ const initialCounts: Record<number, number> = {};
 const TRIBE_IDS = safeTribes.map(tr => tr.id);
 ---
 
-<section class="py-16 px-6 bg-[#F7F4EF]" id="tribes">
+<section class="py-16 px-6 bg-[var(--surface-section-warm)]" id="tribes">
   <div class="max-w-[1200px] mx-auto">
     <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-orange mb-2">
       {t('tribes.label', lang)}
@@ -99,7 +99,7 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
     <h2 class="text-[clamp(1.7rem,4vw,2.5rem)] font-extrabold leading-tight mb-3">
       {t('tribes.title', lang)}
     </h2>
-    <div class="text-base text-slate-500 max-w-[700px] mb-2">
+    <div class="text-base text-[var(--text-secondary)] max-w-[700px] mb-2">
       <span id="tribes-selection-state" class:list={['inline-block px-2.5 py-0.5 rounded-md text-[.68rem] font-bold', selectionStateClasses]}>
         {selectionStateLabel}
       </span>
@@ -134,12 +134,12 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
                 {quad.label}
               </div>
               <div class="text-[1.15rem] font-extrabold mt-0.5">{quad.title}</div>
-              <div class="text-[.82rem] text-slate-500">{quad.subtitle}</div>
+              <div class="text-[.82rem] text-[var(--text-secondary)]">{quad.subtitle}</div>
             </div>
 
             {/* Tribe cards */}
             {tribes.map((tr) => (
-              <div class="bg-white rounded-2xl overflow-hidden border border-black/5 mb-4
+              <div class="bg-[var(--surface-card)] rounded-2xl overflow-hidden border border-[var(--border-subtle)] mb-4
                           hover:shadow-md transition-all duration-300"
                    id={`t-${tr.id}`}
                    data-quadrant={tr.quadrant}>
@@ -155,7 +155,7 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
 
                   <div class="flex-1 min-w-0">
                     <h3 id={`tn-${tr.id}`} class="text-[.95rem] font-bold truncate">{tr.name}</h3>
-                    <div class="text-[.82rem] text-slate-500">
+                    <div class="text-[.82rem] text-[var(--text-secondary)]">
                       {tr.leader}
                       {tr.leaderLinkedIn && (
                         <a href={tr.leaderLinkedIn} target="_blank" rel="noopener"
@@ -172,7 +172,7 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
                              style={i < (initialCounts[tr.id] || 0) ? 'background:#70AD47;border-color:#70AD47' : ''}></div>
                       ))}
                     </div>
-                    <div class="text-[.68rem] text-slate-500 font-semibold" id={`st-${tr.id}`}>
+                    <div class="text-[.68rem] text-[var(--text-secondary)] font-semibold" id={`st-${tr.id}`}>
                       {initialCounts[tr.id] || 0}/{MAX_SLOTS}
                     </div>
                   </div>
@@ -180,18 +180,18 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
 
                 <div class="max-h-0 overflow-hidden transition-all duration-400 px-5"
                      id={`tb-${tr.id}`}>
-                  <div class="pb-5 pt-3 border-t border-black/5">
-                    <p id={`td-${tr.id}`} class="text-[.88rem] text-slate-500 mb-3">{tr.description}</p>
+                  <div class="pb-5 pt-3 border-t border-[var(--border-subtle)]">
+                    <p id={`td-${tr.id}`} class="text-[.88rem] text-[var(--text-secondary)] mb-3">{tr.description}</p>
 
                     <div class="mb-3">
                       <strong class="text-[.85rem]">{t('tribes.deliverables', lang)}</strong>
-                      <ul class="mt-1.5 ml-5 text-[.84rem] text-slate-500 list-disc">
+                      <ul class="mt-1.5 ml-5 text-[.84rem] text-[var(--text-secondary)] list-disc">
                         {(tr.deliverables || []).map((d: string) => <li class="mb-1">{d}</li>)}
                       </ul>
                     </div>
 
                     <p class="text-[.82rem] mb-3" id={`ms-${tr.id}`}>
-                      <strong>{t('tribes.meetings', lang)}</strong> <span class="text-slate-400">{tr.meetingSchedule || t('tribes.loading', lang)}</span>
+                      <strong>{t('tribes.meetings', lang)}</strong> <span class="text-[var(--text-muted)]">{tr.meetingSchedule || t('tribes.loading', lang)}</span>
                     </p>
 
                     <div class="flex gap-3 flex-wrap items-center mt-4">
@@ -220,7 +220,7 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
         );
       })}
       {(!safeQuadrants.length || !safeTribes.length) && (
-        <div class="bg-white rounded-2xl border border-black/5 p-5 text-sm text-slate-500">
+        <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-subtle)] p-5 text-sm text-[var(--text-secondary)]">
           {t('tribes.trailsUnavailable', lang)}
         </div>
       )}
@@ -563,9 +563,9 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
         }).join(' · ');
         scheduleHtml = formatted;
       } else if (notesMap[tid]) {
-        scheduleHtml = `<span class="text-slate-400 italic">${notesMap[tid]}</span>`;
+        scheduleHtml = `<span class="text-[var(--text-muted)] italic">${notesMap[tid]}</span>`;
       } else {
-        scheduleHtml = '<span class="text-slate-400 italic">A definir</span>';
+        scheduleHtml = '<span class="text-[var(--text-muted)] italic">A definir</span>';
       }
 
       // Add WhatsApp link if available

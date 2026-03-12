@@ -57,10 +57,10 @@ const ANALYTICS_I18N = {
   <div class="max-w-[1200px] mx-auto px-4 pb-8">
     <div class="mb-6">
       <h1 class="text-2xl font-extrabold text-navy">{t('admin.analytics.title', lang)}</h1>
-      <p class="text-sm text-slate-500">{t('admin.analytics.subtitle', lang)}</p>
+      <p class="text-sm text-[var(--text-secondary)]">{t('admin.analytics.subtitle', lang)}</p>
     </div>
 
-    <div id="analytics-loading" class="text-center py-10 text-slate-400">{t('admin.analytics.loading', lang)}</div>
+    <div id="analytics-loading" class="text-center py-10 text-[var(--text-muted)]">{t('admin.analytics.loading', lang)}</div>
 
     <div id="analytics-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
       <div class="text-2xl mb-2">&#x1F512;</div>
@@ -72,23 +72,23 @@ const ANALYTICS_I18N = {
 
     <div id="analytics-panel" class="hidden space-y-6">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <section id="analytics-access-note" class="bg-white border border-slate-200 rounded-xl p-4">
-          <div class="text-[.75rem] font-semibold text-slate-500 mb-1">{t('admin.analytics.accessTitle', lang)}</div>
-          <p class="text-[.72rem] text-slate-500">{t('admin.analytics.accessBody', lang)}</p>
+        <section id="analytics-access-note" class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4">
+          <div class="text-[.75rem] font-semibold text-[var(--text-secondary)] mb-1">{t('admin.analytics.accessTitle', lang)}</div>
+          <p class="text-[.72rem] text-[var(--text-secondary)]">{t('admin.analytics.accessBody', lang)}</p>
         </section>
 
-        <section class="bg-white border border-slate-200 rounded-xl p-4">
+        <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4">
           <div class="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <div class="text-[.75rem] font-semibold text-slate-500 mb-1">{t('admin.analytics.consentTitle', lang)}</div>
-              <p class="text-[.72rem] text-slate-500">{t('admin.analytics.consentBody', lang)}</p>
-              <p class="text-[.68rem] text-slate-400 mt-1" id="consent-status">{t('admin.analytics.consentUnknown', lang)}</p>
+              <div class="text-[.75rem] font-semibold text-[var(--text-secondary)] mb-1">{t('admin.analytics.consentTitle', lang)}</div>
+              <p class="text-[.72rem] text-[var(--text-secondary)]">{t('admin.analytics.consentBody', lang)}</p>
+              <p class="text-[.68rem] text-[var(--text-muted)] mt-1" id="consent-status">{t('admin.analytics.consentUnknown', lang)}</p>
             </div>
             <div class="flex gap-2">
               <button id="btn-consent-grant" class="px-3 py-2 bg-emerald-600 text-white rounded-lg text-[.72rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
                 {t('admin.analytics.consentGrant', lang)}
               </button>
-              <button id="btn-consent-revoke" class="px-3 py-2 bg-slate-100 text-slate-700 rounded-lg text-[.72rem] font-semibold cursor-pointer border border-slate-200 hover:bg-slate-200 transition-all">
+              <button id="btn-consent-revoke" class="px-3 py-2 bg-[var(--surface-section-cool)] text-[var(--text-primary)] rounded-lg text-[.72rem] font-semibold cursor-pointer border border-[var(--border-default)] hover:bg-[var(--surface-hover)] transition-all">
                 {t('admin.analytics.consentRevoke', lang)}
               </button>
             </div>
@@ -96,39 +96,39 @@ const ANALYTICS_I18N = {
         </section>
       </div>
 
-      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden" id="analytics-filter-shell">
-        <div class="px-4 py-3 border-b border-slate-200">
+      <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden" id="analytics-filter-shell">
+        <div class="px-4 py-3 border-b border-[var(--border-default)]">
           <h2 class="text-sm font-bold text-navy">{t('admin.analytics.filtersTitle', lang)}</h2>
-          <p class="text-[.68rem] text-slate-400">{t('admin.analytics.filtersBody', lang)}</p>
+          <p class="text-[.68rem] text-[var(--text-muted)]">{t('admin.analytics.filtersBody', lang)}</p>
         </div>
         <div class="p-4">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <label class="text-[.72rem] text-slate-500 font-semibold">
+            <label class="text-[.72rem] text-[var(--text-secondary)] font-semibold">
               {t('admin.analytics.filterCycle', lang)}
-              <select id="analytics-filter-cycle" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white">
+              <select id="analytics-filter-cycle" class="mt-1 w-full px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-card)]">
                 <option value="">{t('admin.analytics.filterAllCycles', lang)}</option>
               </select>
             </label>
-            <label class="text-[.72rem] text-slate-500 font-semibold">
+            <label class="text-[.72rem] text-[var(--text-secondary)] font-semibold">
               {t('admin.analytics.filterTribe', lang)}
-              <select id="analytics-filter-tribe" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white">
+              <select id="analytics-filter-tribe" class="mt-1 w-full px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-card)]">
                 <option value="">{t('admin.analytics.filterAllTribes', lang)}</option>
               </select>
             </label>
-            <label class="text-[.72rem] text-slate-500 font-semibold">
+            <label class="text-[.72rem] text-[var(--text-secondary)] font-semibold">
               {t('admin.analytics.filterChapter', lang)}
-              <select id="analytics-filter-chapter" class="mt-1 w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white">
+              <select id="analytics-filter-chapter" class="mt-1 w-full px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-card)]">
                 <option value="">{t('admin.analytics.filterAllChapters', lang)}</option>
               </select>
             </label>
           </div>
           <div class="mt-3 flex items-center justify-between gap-3 flex-wrap">
-            <div id="analytics-scope-summary" class="text-[.72rem] text-slate-500">{t('admin.analytics.loading', lang)}</div>
+            <div id="analytics-scope-summary" class="text-[.72rem] text-[var(--text-secondary)]">{t('admin.analytics.loading', lang)}</div>
             <div class="flex gap-2">
               <button id="analytics-apply" class="px-4 py-2 bg-navy text-white rounded-lg text-sm font-semibold hover:opacity-90">
                 {t('admin.analytics.applyFilters', lang)}
               </button>
-              <button id="analytics-reset" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-semibold border border-slate-200 hover:bg-slate-200">
+              <button id="analytics-reset" class="px-4 py-2 bg-[var(--surface-section-cool)] text-[var(--text-primary)] rounded-lg text-sm font-semibold border border-[var(--border-default)] hover:bg-[var(--surface-hover)]">
                 {t('admin.analytics.resetFilters', lang)}
               </button>
             </div>
@@ -141,53 +141,53 @@ const ANALYTICS_I18N = {
           <div class="text-[.75rem] font-semibold" id="analytics-quality-title">{t('admin.analytics.qualityTitle', lang)}</div>
           <div class="text-[.68rem] font-semibold" id="analytics-quality-status"></div>
         </div>
-        <div class="mt-2 text-[.7rem] text-slate-500" id="analytics-quality-window"></div>
-        <div class="mt-2 text-[.72rem] text-slate-700" id="analytics-quality-body"></div>
+        <div class="mt-2 text-[.7rem] text-[var(--text-secondary)]" id="analytics-quality-window"></div>
+        <div class="mt-2 text-[.72rem] text-[var(--text-primary)]" id="analytics-quality-body"></div>
       </section>
 
-      <section id="analytics-interpretation-card" class="bg-white border border-slate-200 rounded-xl p-4">
+      <section id="analytics-interpretation-card" class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4">
         <div class="flex items-start justify-between gap-3 flex-wrap">
           <div>
-            <div class="text-[.75rem] font-semibold text-slate-500 mb-1">{t('admin.analytics.interpretationTitle', lang)}</div>
-            <p class="text-[.72rem] text-slate-500">{t('admin.analytics.interpretationBody', lang)}</p>
+            <div class="text-[.75rem] font-semibold text-[var(--text-secondary)] mb-1">{t('admin.analytics.interpretationTitle', lang)}</div>
+            <p class="text-[.72rem] text-[var(--text-secondary)]">{t('admin.analytics.interpretationBody', lang)}</p>
           </div>
-          <button id="analytics-copy-summary" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-[.72rem] font-semibold border border-slate-200 hover:bg-slate-200">
+          <button id="analytics-copy-summary" class="px-4 py-2 bg-[var(--surface-section-cool)] text-[var(--text-primary)] rounded-lg text-[.72rem] font-semibold border border-[var(--border-default)] hover:bg-[var(--surface-hover)]">
             {t('admin.analytics.copySummary', lang)}
           </button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3 text-[.72rem] text-slate-600">
-          <div class="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2">{t('admin.analytics.interpretationFunnel', lang)}</div>
-          <div class="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2">{t('admin.analytics.interpretationImpact', lang)}</div>
-          <div class="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2">{t('admin.analytics.interpretationRoi', lang)}</div>
-          <div class="rounded-lg bg-slate-50 border border-slate-200 px-3 py-2">{t('admin.analytics.interpretationLeadership', lang)}</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3 text-[.72rem] text-[var(--text-secondary)]">
+          <div class="rounded-lg bg-[var(--surface-base)] border border-[var(--border-default)] px-3 py-2">{t('admin.analytics.interpretationFunnel', lang)}</div>
+          <div class="rounded-lg bg-[var(--surface-base)] border border-[var(--border-default)] px-3 py-2">{t('admin.analytics.interpretationImpact', lang)}</div>
+          <div class="rounded-lg bg-[var(--surface-base)] border border-[var(--border-default)] px-3 py-2">{t('admin.analytics.interpretationRoi', lang)}</div>
+          <div class="rounded-lg bg-[var(--surface-base)] border border-[var(--border-default)] px-3 py-2">{t('admin.analytics.interpretationLeadership', lang)}</div>
         </div>
       </section>
 
       <div id="analytics-v2-kpis" class="grid grid-cols-2 xl:grid-cols-5 gap-3">
-        <div class="bg-white border border-slate-200 rounded-xl p-4">
-          <div class="text-[.68rem] text-slate-400 font-semibold">{t('admin.analytics.kpiCohort', lang)}</div>
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4">
+          <div class="text-[.68rem] text-[var(--text-muted)] font-semibold">{t('admin.analytics.kpiCohort', lang)}</div>
           <div id="kpi-cohort-members" class="text-2xl font-black text-navy mt-1">-</div>
-          <div id="kpi-cohort-meta" class="text-[.65rem] text-slate-400 mt-1">-</div>
+          <div id="kpi-cohort-meta" class="text-[.65rem] text-[var(--text-muted)] mt-1">-</div>
         </div>
-        <div class="bg-white border border-slate-200 rounded-xl p-4">
-          <div class="text-[.68rem] text-slate-400 font-semibold">{t('admin.analytics.kpiOnboarding', lang)}</div>
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4">
+          <div class="text-[.68rem] text-[var(--text-muted)] font-semibold">{t('admin.analytics.kpiOnboarding', lang)}</div>
           <div id="kpi-onboarding-rate" class="text-2xl font-black text-teal mt-1">-</div>
-          <div id="kpi-onboarding-meta" class="text-[.65rem] text-slate-400 mt-1">-</div>
+          <div id="kpi-onboarding-meta" class="text-[.65rem] text-[var(--text-muted)] mt-1">-</div>
         </div>
-        <div class="bg-white border border-slate-200 rounded-xl p-4">
-          <div class="text-[.68rem] text-slate-400 font-semibold">{t('admin.analytics.kpiImpact', lang)}</div>
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4">
+          <div class="text-[.68rem] text-[var(--text-muted)] font-semibold">{t('admin.analytics.kpiImpact', lang)}</div>
           <div id="kpi-impact-hours" class="text-2xl font-black text-purple mt-1">-</div>
-          <div id="kpi-impact-meta" class="text-[.65rem] text-slate-400 mt-1">-</div>
+          <div id="kpi-impact-meta" class="text-[.65rem] text-[var(--text-muted)] mt-1">-</div>
         </div>
-        <div class="bg-white border border-slate-200 rounded-xl p-4">
-          <div class="text-[.68rem] text-slate-400 font-semibold">{t('admin.analytics.kpiAffiliations', lang)}</div>
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4">
+          <div class="text-[.68rem] text-[var(--text-muted)] font-semibold">{t('admin.analytics.kpiAffiliations', lang)}</div>
           <div id="kpi-affiliations" class="text-2xl font-black text-amber-600 mt-1">-</div>
-          <div id="kpi-affiliations-meta" class="text-[.65rem] text-slate-400 mt-1">-</div>
+          <div id="kpi-affiliations-meta" class="text-[.65rem] text-[var(--text-muted)] mt-1">-</div>
         </div>
-        <div class="bg-white border border-slate-200 rounded-xl p-4">
-          <div class="text-[.68rem] text-slate-400 font-semibold">{t('admin.analytics.kpiLeadership', lang)}</div>
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4">
+          <div class="text-[.68rem] text-[var(--text-muted)] font-semibold">{t('admin.analytics.kpiLeadership', lang)}</div>
           <div id="kpi-leadership" class="text-2xl font-black text-emerald-600 mt-1">-</div>
-          <div id="kpi-leadership-meta" class="text-[.65rem] text-slate-400 mt-1">-</div>
+          <div id="kpi-leadership-meta" class="text-[.65rem] text-[var(--text-muted)] mt-1">-</div>
         </div>
       </div>
 
@@ -199,7 +199,7 @@ const ANALYTICS_I18N = {
           subtitle={t('admin.analytics.funnelDesc', lang)}
           heightClass="h-[320px]"
         >
-          <p id="analytics-funnel-note" class="text-[.68rem] text-slate-400 mt-3"></p>
+          <p id="analytics-funnel-note" class="text-[.68rem] text-[var(--text-muted)] mt-3"></p>
         </ChartCard>
 
         <ChartCard
@@ -209,7 +209,7 @@ const ANALYTICS_I18N = {
           subtitle={t('admin.analytics.impactTribeDesc', lang)}
           heightClass="h-[320px]"
         >
-          <p id="analytics-impact-tribe-note" class="text-[.68rem] text-slate-400 mt-3"></p>
+          <p id="analytics-impact-tribe-note" class="text-[.68rem] text-[var(--text-muted)] mt-3"></p>
         </ChartCard>
       </div>
 
@@ -221,7 +221,7 @@ const ANALYTICS_I18N = {
           subtitle={t('admin.analytics.impactChapterDesc', lang)}
           heightClass="h-[320px]"
         >
-          <p id="analytics-impact-chapter-note" class="text-[.68rem] text-slate-400 mt-3"></p>
+          <p id="analytics-impact-chapter-note" class="text-[.68rem] text-[var(--text-muted)] mt-3"></p>
         </ChartCard>
 
         <ChartCard
@@ -231,7 +231,7 @@ const ANALYTICS_I18N = {
           subtitle={t('admin.analytics.certDesc', lang)}
           heightClass="h-[320px]"
         >
-          <p id="analytics-cert-note" class="text-[.68rem] text-slate-400 mt-3"></p>
+          <p id="analytics-cert-note" class="text-[.68rem] text-[var(--text-muted)] mt-3"></p>
         </ChartCard>
       </div>
 
@@ -243,7 +243,7 @@ const ANALYTICS_I18N = {
           subtitle={t('admin.analytics.roiDesc', lang)}
           heightClass="h-[320px]"
         >
-          <p id="analytics-roi-note" class="text-[.68rem] text-slate-400 mt-3"></p>
+          <p id="analytics-roi-note" class="text-[.68rem] text-[var(--text-muted)] mt-3"></p>
         </ChartCard>
 
         <ChartCard
@@ -253,18 +253,18 @@ const ANALYTICS_I18N = {
           subtitle={t('admin.analytics.leadershipDesc', lang)}
           heightClass="h-[320px]"
         >
-          <div id="analytics-leadership-highlight" class="text-[.68rem] text-slate-500 mt-3"></div>
+          <div id="analytics-leadership-highlight" class="text-[.68rem] text-[var(--text-secondary)] mt-3"></div>
         </ChartCard>
       </div>
 
-      <section class="bg-white border border-slate-200 rounded-xl overflow-hidden" id="analytics-transition-matrix-card">
-        <div class="px-4 py-3 border-b border-slate-200">
+      <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden" id="analytics-transition-matrix-card">
+        <div class="px-4 py-3 border-b border-[var(--border-default)]">
           <h2 class="text-sm font-bold text-navy">{t('admin.analytics.transitionMatrixTitle', lang)}</h2>
-          <p class="text-[.68rem] text-slate-400">{t('admin.analytics.transitionMatrixDesc', lang)}</p>
+          <p class="text-[.68rem] text-[var(--text-muted)]">{t('admin.analytics.transitionMatrixDesc', lang)}</p>
         </div>
         <div class="p-4">
-          <div id="analytics-transition-matrix" class="overflow-x-auto text-sm text-slate-600">
-            <p class="text-[.72rem] text-slate-400">{t('admin.analytics.loading', lang)}</p>
+          <div id="analytics-transition-matrix" class="overflow-x-auto text-sm text-[var(--text-secondary)]">
+            <p class="text-[.72rem] text-[var(--text-muted)]">{t('admin.analytics.loading', lang)}</p>
           </div>
         </div>
       </section>
@@ -353,7 +353,7 @@ const ANALYTICS_I18N = {
       return;
     }
     statusEl.textContent = L.consentUnknown || 'Consent unknown';
-    statusEl.className = 'text-[.68rem] text-slate-400 mt-1';
+    statusEl.className = 'text-[.68rem] text-[var(--text-muted)] mt-1';
   }
 
   function setupConsentUi() {
@@ -776,13 +776,13 @@ const ANALYTICS_I18N = {
     const container = document.getElementById('analytics-transition-matrix');
     if (!container) return;
     if (!matrix.length) {
-      container.innerHTML = `<p class="text-[.72rem] text-slate-400">${L.chartNoData || L.emptyState || 'No data'}</p>`;
+      container.innerHTML = `<p class="text-[.72rem] text-[var(--text-muted)]">${L.chartNoData || L.emptyState || 'No data'}</p>`;
       return;
     }
     container.innerHTML = `
       <table class="w-full text-left text-[.78rem]">
         <thead>
-          <tr class="border-b border-slate-200 text-slate-500 uppercase tracking-wide text-[.65rem]">
+          <tr class="border-b border-[var(--border-default)] text-[var(--text-secondary)] uppercase tracking-wide text-[.65rem]">
             <th class="py-2 pr-3">${L.transitionFrom || 'From'}</th>
             <th class="py-2 pr-3">${L.transitionTo || 'To'}</th>
             <th class="py-2">${L.transitionCount || 'Transitions'}</th>
@@ -790,7 +790,7 @@ const ANALYTICS_I18N = {
         </thead>
         <tbody>
           ${matrix.slice(0, 10).map((row: any) => `
-            <tr class="border-b border-slate-100">
+            <tr class="border-b border-[var(--border-subtle)]">
               <td class="py-2 pr-3">${row.from_role_bucket || '-'}</td>
               <td class="py-2 pr-3">${row.to_role_bucket || '-'}</td>
               <td class="py-2 font-semibold text-navy">${formatNumber(row.transitions || 0)}</td>

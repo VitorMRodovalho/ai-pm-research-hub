@@ -1,0 +1,208 @@
+/*
+ * theme.css — Design Tokens for Núcleo IA & GP
+ * 
+ * Import this in your global CSS or Astro layout.
+ * All tokens auto-switch with [data-theme="dark"].
+ * 
+ * Usage in components:
+ *   bg-[var(--surface-base)]
+ *   text-[var(--text-primary)]
+ *   border-[var(--border-subtle)]
+ *   bg-[var(--color-navy)]
+ */
+
+/* ══════════════════════════════════════════════════════════════════
+   LIGHT MODE (default)
+   ══════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── PMI Brand Palette ── */
+  --color-navy: #003B5C;
+  --color-navy-deep: #0A1628;
+  --color-navy-light: #004B7A;
+  --color-orange: #FF610F;
+  --color-orange-muted: #ED7D31;
+  --color-orange-light: #FFF3ED;
+  --color-teal: #05BFE0;
+  --color-teal-deep: #00799E;
+  --color-teal-light: #E8FAFE;
+  --color-crimson: #BE2027;
+  --color-crimson-light: #FFF0F0;
+  --color-purple: #4F17A8;
+  --color-purple-light: #F3EDFF;
+  --color-emerald: #10B981;
+  --color-emerald-light: #ECFDF5;
+  --color-amber: #D97706;
+  --color-amber-light: #FFFBEB;
+
+  /* ── Surfaces ── */
+  --surface-base: #F7F4EF;             /* warm off-white (page bg) */
+  --surface-card: #FAFAF8;             /* card backgrounds */
+  --surface-elevated: #FFFFFF;          /* modals, popovers */
+  --surface-section-warm: #F7F4EF;     /* tribes, vision, breakout */
+  --surface-section-cool: #F0F4F8;     /* resources */
+  --surface-section-dark: #003B5C;     /* KPIs, team (keeps dark) */
+  --surface-section-footer: #200F3B;   /* footer */
+  --surface-input: #FFFFFF;            /* form inputs */
+  --surface-hover: rgba(0, 0, 0, 0.02);
+
+  /* ── Hero (gradient) ── */
+  --hero-gradient: linear-gradient(135deg, #003B5C, #200F3B 40%, #0A1628);
+
+  /* ── Borders ── */
+  --border-subtle: rgba(0, 0, 0, 0.05);
+  --border-default: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.15);
+  --border-card: rgba(0, 0, 0, 0.05);
+
+  /* ── Text ── */
+  --text-primary: #1E293B;
+  --text-secondary: #64748B;
+  --text-muted: #94A3B8;
+  --text-inverse: #FFFFFF;
+  --text-on-dark-section: #FFFFFF;      /* text on navy/dark sections */
+  --text-on-dark-muted: rgba(255, 255, 255, 0.6);
+
+  /* ── Shadows ── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.06);
+
+  /* ── Overlays ── */
+  --overlay-backdrop: rgba(0, 0, 0, 0.5);
+  --overlay-nav: rgba(0, 59, 92, 0.97);  /* navy/97 */
+
+  /* ── Nav specific ── */
+  --nav-bg: rgba(0, 59, 92, 0.97);
+  --nav-text: rgba(255, 255, 255, 0.7);
+  --nav-text-active: #FFFFFF;
+  --nav-border: var(--color-orange);
+
+  /* ── Admin specific ── */
+  --admin-badge-bg: rgba(79, 23, 168, 0.3);
+  --admin-badge-border: rgba(79, 23, 168, 0.5);
+  --admin-subnav-active-bg: var(--color-navy);
+  --admin-subnav-active-text: #FFFFFF;
+  --admin-subnav-bg: #F1F5F9;
+  --admin-subnav-text: #64748B;
+
+  /* ── Typography ── */
+  --font-heading-weight: 800;
+  --font-body-weight: 400;
+  --font-label-weight: 700;
+  --font-label-tracking: 0.15em;
+  --font-label-size: 0.73rem;
+
+  /* ── Kanban / Board ── */
+  --board-col-bg: rgba(0, 0, 0, 0.02);
+  --board-col-border: rgba(0, 0, 0, 0.08);
+  --board-card-bg: var(--surface-elevated);
+  --board-card-border: var(--border-subtle);
+  --board-card-hover: var(--shadow-md);
+  --board-drag-ring: rgba(5, 191, 224, 0.4);
+}
+
+
+/* ══════════════════════════════════════════════════════════════════
+   DARK MODE
+   ══════════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] {
+  /* ── Brand (adjusted for dark bg legibility) ── */
+  --color-teal: #22D3EE;
+  --color-teal-deep: #06B6D4;
+  --color-teal-light: rgba(34, 211, 238, 0.1);
+  --color-orange: #FB923C;
+  --color-orange-muted: #F59E0B;
+  --color-orange-light: rgba(251, 146, 60, 0.1);
+  --color-crimson: #EF4444;
+  --color-crimson-light: rgba(239, 68, 68, 0.1);
+  --color-purple: #8B5CF6;
+  --color-purple-light: rgba(139, 92, 246, 0.1);
+  --color-emerald: #34D399;
+  --color-emerald-light: rgba(52, 211, 153, 0.1);
+  --color-amber: #FBBF24;
+  --color-amber-light: rgba(251, 191, 36, 0.1);
+
+  /* ── Surfaces ── */
+  --surface-base: #0C1222;
+  --surface-card: #162032;
+  --surface-elevated: #1C2A3F;
+  --surface-section-warm: #10182A;
+  --surface-section-cool: #0E1726;
+  --surface-section-dark: #080E1C;
+  --surface-section-footer: #0A0718;
+  --surface-input: #1C2A3F;
+  --surface-hover: rgba(255, 255, 255, 0.03);
+
+  /* ── Hero ── */
+  --hero-gradient: linear-gradient(135deg, #080E1C, #120A26 40%, #060A14);
+
+  /* ── Borders ── */
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --border-card: rgba(255, 255, 255, 0.08);
+
+  /* ── Text ── */
+  --text-primary: #E2E8F0;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+  --text-inverse: #0F172A;
+  --text-on-dark-section: #E2E8F0;
+  --text-on-dark-muted: rgba(255, 255, 255, 0.5);
+
+  /* ── Shadows (subtler in dark) ── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+
+  /* ── Overlays ── */
+  --overlay-backdrop: rgba(0, 0, 0, 0.7);
+  --overlay-nav: rgba(8, 14, 28, 0.97);
+
+  /* ── Nav ── */
+  --nav-bg: rgba(8, 14, 28, 0.97);
+
+  /* ── Admin ── */
+  --admin-badge-bg: rgba(139, 92, 246, 0.2);
+  --admin-badge-border: rgba(139, 92, 246, 0.4);
+  --admin-subnav-bg: #162032;
+  --admin-subnav-text: #94A3B8;
+
+  /* ── Board ── */
+  --board-col-bg: rgba(255, 255, 255, 0.02);
+  --board-col-border: rgba(255, 255, 255, 0.06);
+  --board-card-bg: var(--surface-card);
+  --board-card-border: var(--border-card);
+  --board-drag-ring: rgba(34, 211, 238, 0.4);
+}
+
+
+/* ══════════════════════════════════════════════════════════════════
+   TRANSITION (smooth theme switch)
+   ══════════════════════════════════════════════════════════════════ */
+
+body,
+section,
+nav,
+.bg-transition {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════
+   UTILITY CLASSES (optional — for convenience)
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Use these OR the Tailwind arbitrary value syntax bg-[var(--xxx)] */
+.surface-base    { background-color: var(--surface-base); }
+.surface-card    { background-color: var(--surface-card); }
+.surface-elevated { background-color: var(--surface-elevated); }
+.text-primary    { color: var(--text-primary); }
+.text-secondary  { color: var(--text-secondary); }
+.text-muted      { color: var(--text-muted); }
+.border-subtle   { border-color: var(--border-subtle); }
+.border-default  { border-color: var(--border-default); }

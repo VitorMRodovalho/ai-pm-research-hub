@@ -12,7 +12,7 @@ interface Props {
 const SOURCE_BADGE: Record<string, { label: string; color: string }> = {
   trello: { label: '🟦 Trello', color: 'bg-blue-50 text-blue-700' },
   notion: { label: '🟨 Notion', color: 'bg-amber-50 text-amber-700' },
-  manual: { label: '✋ Manual', color: 'bg-slate-50 text-slate-600' },
+  manual: { label: '✋ Manual', color: 'bg-[var(--surface-base)] text-[var(--text-secondary)]' },
 };
 
 export default function BoardHeader({ board, itemCount, totalCount, canCreate, onCreateClick, i18n }: Props) {
@@ -22,7 +22,7 @@ export default function BoardHeader({ board, itemCount, totalCount, canCreate, o
     <div className="flex items-center justify-between flex-wrap gap-3">
       <div className="flex items-center gap-3">
         <div>
-          <h2 className="text-lg font-extrabold text-slate-800">{board.board_name}</h2>
+          <h2 className="text-lg font-extrabold text-[var(--text-primary)]">{board.board_name}</h2>
           <div className="flex items-center gap-2 mt-0.5">
             <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold ${src.color}`}>
               {src.label}
@@ -32,7 +32,7 @@ export default function BoardHeader({ board, itemCount, totalCount, canCreate, o
                 Tribo {board.tribe_id}
               </span>
             )}
-            <span className="text-[11px] text-slate-400">
+            <span className="text-[11px] text-[var(--text-muted)]">
               {itemCount === totalCount ? `${totalCount} itens` : `${itemCount} de ${totalCount} itens`}
             </span>
           </div>

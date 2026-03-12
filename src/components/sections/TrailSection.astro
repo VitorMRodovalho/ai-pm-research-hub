@@ -30,20 +30,20 @@ try {
     <h2 class="text-[clamp(1.7rem,4vw,2.5rem)] font-extrabold leading-tight mb-3">
       {t('trail.title', lang)}
     </h2>
-    <p class="text-base text-slate-500 max-w-[700px] mb-10">
+    <p class="text-base text-[var(--text-secondary)] max-w-[700px] mb-10">
       {t('trail.subtitle', lang)}
     </p>
 
     <!-- Course lists -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
       <!-- Core -->
-      <div class="bg-[#F7F4EF] rounded-2xl p-6 border-l-4 border-teal">
+      <div class="bg-[var(--surface-section-warm)] rounded-2xl p-6 border-l-4 border-teal">
         <div class="text-[.7rem] font-bold text-teal uppercase tracking-wider mb-4">
           {t('trail.core', lang)}
         </div>
         {core.map((c, i) => (
           <a href={c.url} target="_blank" rel="noopener"
-             class="flex items-center gap-3 py-2 border-b border-black/5 no-underline text-slate-800 hover:text-teal transition-colors">
+             class="flex items-center gap-3 py-2 border-b border-[var(--border-subtle)] no-underline text-[var(--text-primary)] hover:text-teal transition-colors">
             <span class="w-[22px] h-[22px] rounded-md bg-teal text-white flex items-center justify-center
                          text-[.65rem] font-bold flex-shrink-0">
               {i + 1}
@@ -52,18 +52,18 @@ try {
           </a>
         ))}
         {!core.length && (
-          <p class="text-[.82rem] text-slate-500">{t('trail.coreUnavailable', lang)}</p>
+          <p class="text-[.82rem] text-[var(--text-secondary)]">{t('trail.coreUnavailable', lang)}</p>
         )}
       </div>
 
       <!-- Extra -->
-      <div class="bg-[#F7F4EF] rounded-2xl p-6 border-l-4 border-purple">
+      <div class="bg-[var(--surface-section-warm)] rounded-2xl p-6 border-l-4 border-purple">
         <div class="text-[.7rem] font-bold text-purple uppercase tracking-wider mb-4">
           {t('trail.extra', lang)}
         </div>
         {extra.map((c, i) => (
           <a href={c.url} target="_blank" rel="noopener"
-             class="flex items-center gap-3 py-2 border-b border-black/5 no-underline text-slate-800 hover:text-purple transition-colors">
+             class="flex items-center gap-3 py-2 border-b border-[var(--border-subtle)] no-underline text-[var(--text-primary)] hover:text-purple transition-colors">
             <span class="w-[22px] h-[22px] rounded-md bg-purple text-white flex items-center justify-center
                          text-[.65rem] font-bold flex-shrink-0">
               {i + 5}
@@ -72,7 +72,7 @@ try {
           </a>
         ))}
         {!extra.length && (
-          <p class="text-[.82rem] text-slate-500">{t('trail.extraUnavailable', lang)}</p>
+          <p class="text-[.82rem] text-[var(--text-secondary)]">{t('trail.extraUnavailable', lang)}</p>
         )}
       </div>
     </div>

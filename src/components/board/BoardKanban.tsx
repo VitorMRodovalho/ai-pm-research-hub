@@ -40,8 +40,8 @@ function SortableCard({ item, i18n, onClick, onQuickMove, columns, mode, canMove
 
   return (
     <div ref={setNodeRef} style={style}
-      className={`group bg-white rounded-xl border border-slate-100 p-3 shadow-sm
-        hover:shadow-md hover:border-slate-200 transition-all duration-150
+      className={`group bg-[var(--surface-card)] rounded-xl border border-[var(--border-subtle)] p-3 shadow-sm
+        hover:shadow-md hover:border-[var(--border-default)] transition-all duration-150
         ${isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'}
         ${isDragging ? 'ring-2 ring-blue-300' : ''}
         ${isCurationOverdue ? 'border-l-4 border-l-red-400' : ''}`}
@@ -54,7 +54,7 @@ function SortableCard({ item, i18n, onClick, onQuickMove, columns, mode, canMove
             ${item.curation_status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
               item.curation_status === 'review' ? 'bg-purple-100 text-purple-700' :
               item.curation_status === 'rejected' ? 'bg-red-100 text-red-700' :
-              'bg-slate-100 text-slate-600'}`}>
+              'bg-[var(--surface-section-cool)] text-[var(--text-secondary)]'}`}>
             {item.curation_status === 'approved' ? '✅ Aprovado' :
              item.curation_status === 'review' ? '🔍 Em Revisão' :
              item.curation_status === 'rejected' ? '❌ Descartado' :
@@ -66,7 +66,7 @@ function SortableCard({ item, i18n, onClick, onQuickMove, columns, mode, canMove
             </span>
           )}
           {item.curation_due_at && !isCurationOverdue && (
-            <span className="text-[9px] text-slate-400">
+            <span className="text-[9px] text-[var(--text-muted)]">
               SLA: {new Date(item.curation_due_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
             </span>
           )}
@@ -74,7 +74,7 @@ function SortableCard({ item, i18n, onClick, onQuickMove, columns, mode, canMove
       )}
 
       {/* Title */}
-      <h4 className="text-[12px] font-bold text-slate-800 leading-snug line-clamp-2 mb-1.5 pr-4"
+      <h4 className="text-[12px] font-bold text-[var(--text-primary)] leading-snug line-clamp-2 mb-1.5 pr-4"
         onClick={(e) => { e.stopPropagation(); onClick(); }}
         onPointerDown={(e) => e.stopPropagation()}
         style={{ cursor: 'pointer' }}>
@@ -84,15 +84,15 @@ function SortableCard({ item, i18n, onClick, onQuickMove, columns, mode, canMove
       {/* Badges row */}
       <div className="flex items-center gap-2 flex-wrap mb-1.5">
         {attachCount > 0 && (
-          <span className="text-[10px] text-slate-400">📎 {attachCount}</span>
+          <span className="text-[10px] text-[var(--text-muted)]">📎 {attachCount}</span>
         )}
         {checkTotal > 0 && (
-          <span className={`text-[10px] ${checkDone === checkTotal ? 'text-emerald-600' : 'text-slate-400'}`}>
+          <span className={`text-[10px] ${checkDone === checkTotal ? 'text-emerald-600' : 'text-[var(--text-muted)]'}`}>
             ☑️ {checkDone}/{checkTotal}
           </span>
         )}
         {item.due_date && (
-          <span className={`text-[10px] font-semibold ${isOverdue ? 'text-red-600' : 'text-slate-400'}`}>
+          <span className={`text-[10px] font-semibold ${isOverdue ? 'text-red-600' : 'text-[var(--text-muted)]'}`}>
             📅 {new Date(item.due_date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
           </span>
         )}
@@ -105,16 +105,16 @@ function SortableCard({ item, i18n, onClick, onQuickMove, columns, mode, canMove
       {item.tags?.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-1.5">
           {item.tags.slice(0, 3).map((t) => (
-            <span key={t} className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[9px] font-medium">{t}</span>
+            <span key={t} className="px-1.5 py-0.5 bg-[var(--surface-section-cool)] text-[var(--text-secondary)] rounded text-[9px] font-medium">{t}</span>
           ))}
-          {item.tags.length > 3 && <span className="text-[9px] text-slate-400">+{item.tags.length - 3}</span>}
+          {item.tags.length > 3 && <span className="text-[9px] text-[var(--text-muted)]">+{item.tags.length - 3}</span>}
         </div>
       )}
 
       {/* Assignee + Reviewer */}
       <div className="flex items-center gap-2 mb-1">
         {item.assignee_name && (
-          <span className="text-[10px] text-slate-500">👤 {item.assignee_name}</span>
+          <span className="text-[10px] text-[var(--text-secondary)]">👤 {item.assignee_name}</span>
         )}
         {item.reviewer_name && (
           <span className="text-[10px] text-purple-500">🔍 {item.reviewer_name}</span>
@@ -123,10 +123,10 @@ function SortableCard({ item, i18n, onClick, onQuickMove, columns, mode, canMove
 
       {/* Quick actions — hidden in readonly mode */}
       {!isReadonly && (
-        <div className="flex gap-1.5 pt-1.5 border-t border-slate-50" onPointerDown={(e) => e.stopPropagation()}>
+        <div className="flex gap-1.5 pt-1.5 border-t border-[var(--border-subtle)]" onPointerDown={(e) => e.stopPropagation()}>
           <button onClick={onClick}
-            className="flex-1 px-2 py-1 rounded-lg bg-slate-50 text-slate-600 text-[10px] font-semibold
-              border border-slate-200 hover:bg-slate-100 transition-colors cursor-pointer">
+            className="flex-1 px-2 py-1 rounded-lg bg-[var(--surface-base)] text-[var(--text-secondary)] text-[10px] font-semibold
+              border border-[var(--border-default)] hover:bg-[var(--surface-hover)] transition-colors cursor-pointer">
             📝 Abrir
           </button>
           {nextCol && canMove && (
@@ -156,7 +156,7 @@ function KanbanColumn({ col, items, isOver, i18n, onCardClick, onQuickMove, allC
     <div className="flex flex-col min-w-[250px]">
       <div className="flex items-center gap-2 mb-3">
         <div className={`w-3 h-3 rounded-full ${col.dotColor}`} />
-        <h3 className="text-[13px] font-bold text-slate-700">{col.label}</h3>
+        <h3 className="text-[13px] font-bold text-[var(--text-primary)]">{col.label}</h3>
         <span className={`text-[11px] ${col.badgeBg} ${col.badgeText} px-2 py-0.5 rounded-full font-bold`}>
           {items.length}
         </span>
@@ -168,7 +168,7 @@ function KanbanColumn({ col, items, isOver, i18n, onCardClick, onQuickMove, allC
             transition-all duration-200 ${col.borderColor} ${col.bgColor}
             ${isOver ? 'ring-2 ring-blue-300 border-blue-300 bg-blue-50/40 scale-[1.01]' : ''}`}>
           {items.length === 0 && (
-            <div className="flex items-center justify-center h-[100px] text-slate-300 text-[11px] font-medium">
+            <div className="flex items-center justify-center h-[100px] text-[var(--text-muted)] text-[11px] font-medium">
               {isOver ? '↓ Soltar aqui' : 'Vazio'}
             </div>
           )}

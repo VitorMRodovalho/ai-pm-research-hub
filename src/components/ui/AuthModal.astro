@@ -25,12 +25,12 @@ const ui = {
 
 <div id="auth-modal"
   class="hidden fixed inset-0 z-[300] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-  <div class="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl relative">
+  <div class="bg-[var(--surface-elevated)] rounded-2xl p-8 max-w-sm w-full shadow-2xl relative">
     <button id="auth-close-btn"
-            class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 cursor-pointer border-0 bg-transparent text-xl">✕</button>
+            class="absolute top-4 right-4 text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer border-0 bg-transparent text-xl">✕</button>
     <div class="text-3xl mb-3 text-center">🔐</div>
     <h2 class="text-xl font-extrabold text-center text-navy mb-1">{ui.title}</h2>
-    <p class="text-sm text-slate-500 text-center mb-6">{ui.subtitle}</p>
+    <p class="text-sm text-[var(--text-secondary)] text-center mb-6">{ui.subtitle}</p>
     <button id="btn-google"
       class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-navy text-white
              rounded-xl font-semibold text-sm hover:opacity-90 transition-all cursor-pointer border-0 mb-3">
@@ -44,13 +44,13 @@ const ui = {
       {ui.linkedin}
     </button>
     <div class="relative my-3">
-      <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200"></div></div>
-      <div class="relative flex justify-center"><span class="px-3 bg-white text-slate-400 text-xs">{ui.or}</span></div>
+      <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-[var(--border-default)]"></div></div>
+      <div class="relative flex justify-center"><span class="px-3 bg-[var(--surface-elevated)] text-[var(--text-muted)] text-xs">{ui.or}</span></div>
     </div>
     <input type="email" id="magic-email" placeholder={ui.emailPlaceholder}
-      class="w-full px-3 py-2.5 border-2 border-slate-200 rounded-xl text-sm mb-2 focus:outline-none focus:border-teal transition-all" />
+      class="w-full px-3 py-2.5 border-2 border-[var(--border-default)] rounded-xl text-sm mb-2 bg-[var(--surface-input)] focus:outline-none focus:border-teal transition-all" />
     <button id="btn-magic"
-      class="w-full px-4 py-2.5 border-2 border-slate-200 text-slate-700 rounded-xl font-semibold text-sm
+      class="w-full px-4 py-2.5 border-2 border-[var(--border-default)] text-[var(--text-primary)] rounded-xl font-semibold text-sm
              hover:border-teal hover:text-teal transition-all cursor-pointer bg-transparent mb-2">
       {ui.magic}
     </button>

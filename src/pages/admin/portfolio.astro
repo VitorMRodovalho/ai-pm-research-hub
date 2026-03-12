@@ -6,17 +6,17 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
 <BaseLayout title={t('nav.adminPortfolio', lang)} activePage="admin">
   <div class="max-w-[1100px] mx-auto px-4 py-8 space-y-4">
-    <div id="portfolio-loading" class="text-slate-400 text-sm">{t('portfolio.loading', lang)}</div>
+    <div id="portfolio-loading" class="text-[var(--text-muted)] text-sm">{t('portfolio.loading', lang)}</div>
     <div id="portfolio-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
       {t('portfolio.denied', lang)}
     </div>
-    <section id="portfolio-panel" class="hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <section id="portfolio-panel" class="hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
       <h1 class="text-xl font-extrabold text-navy mb-3">{t('portfolio.title', lang)}</h1>
-      <p class="text-sm text-slate-500 mb-4">{t('portfolio.subtitle', lang)}</p>
+      <p class="text-sm text-[var(--text-secondary)] mb-4">{t('portfolio.subtitle', lang)}</p>
       <div id="portfolio-macros" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-4"></div>
       <div class="flex flex-wrap gap-2 mb-4">
-        <button id="portfolio-run-taxonomy-alerts" class="px-3 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50">{t('portfolio.runTaxonomy', lang)}</button>
-        <button id="portfolio-run-sanity" class="px-3 py-2 rounded-lg border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50">{t('portfolio.runSanity', lang)}</button>
+        <button id="portfolio-run-taxonomy-alerts" class="px-3 py-2 rounded-lg border border-[var(--border-default)] text-[var(--text-primary)] text-xs font-semibold hover:bg-[var(--surface-hover)]">{t('portfolio.runTaxonomy', lang)}</button>
+        <button id="portfolio-run-sanity" class="px-3 py-2 rounded-lg border border-[var(--border-default)] text-[var(--text-primary)] text-xs font-semibold hover:bg-[var(--surface-hover)]">{t('portfolio.runSanity', lang)}</button>
       </div>
       <div id="portfolio-summary" class="space-y-5"></div>
     </section>
@@ -37,20 +37,20 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
   function cardHtml(entry: any): string {
     const hasNoActiveCards = Number(entry.total_cards || 0) === 0;
-    const overdueClass = Number(entry.overdue_cards || 0) > 0 ? 'text-red-600 font-bold' : 'text-slate-600';
+    const overdueClass = Number(entry.overdue_cards || 0) > 0 ? 'text-red-600 font-bold' : 'text-[var(--text-secondary)]';
     return `
-      <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-        <div class="text-xs font-bold uppercase tracking-wide text-slate-500">${entry.board_scope} · ${entry.domain_key} ${hasNoActiveCards ? '<span class="ml-1 text-amber-600">⚠️</span>' : ''}</div>
-        <div class="mt-1 text-sm text-slate-700">Cards: <strong>${entry.total_cards || 0}</strong></div>
-        <div class="text-xs text-slate-500 mt-1">Atrasados: <span class="${overdueClass}">${entry.overdue_cards || 0}</span> · Órfãos: ${entry.orphan_cards || 0}</div>
+      <article class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-3">
+        <div class="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">${entry.board_scope} · ${entry.domain_key} ${hasNoActiveCards ? '<span class="ml-1 text-amber-600">⚠️</span>' : ''}</div>
+        <div class="mt-1 text-sm text-[var(--text-primary)]">Cards: <strong>${entry.total_cards || 0}</strong></div>
+        <div class="text-xs text-[var(--text-secondary)] mt-1">Atrasados: <span class="${overdueClass}">${entry.overdue_cards || 0}</span> · Órfãos: ${entry.orphan_cards || 0}</div>
       </article>
     `;
   }
 
-  function macroHtml(title: string, value: string | number, accentClass = 'text-slate-800'): string {
+  function macroHtml(title: string, value: string | number, accentClass = 'text-[var(--text-primary)]'): string {
     return `
-      <article class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-        <div class="text-[11px] uppercase tracking-wide font-semibold text-slate-500">${title}</div>
+      <article class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-3">
+        <div class="text-[11px] uppercase tracking-wide font-semibold text-[var(--text-secondary)]">${title}</div>
         <div class="text-2xl font-extrabold ${accentClass}">${value}</div>
       </article>
     `;
@@ -73,7 +73,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   function sectionHtml(title: string, rows: any[]): string {
     return `
       <section>
-        <h2 class="text-sm font-bold uppercase tracking-wide text-slate-600 mb-2">${title}</h2>
+        <h2 class="text-sm font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-2">${title}</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">${rows.map((row: any) => cardHtml(row)).join('')}</div>
       </section>
     `;
@@ -130,7 +130,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         macroHtml('Total de Membros Ativos', totalMembers),
         macroHtml('Total de Tribos Ativas', totalTribes),
         macroHtml('Total de Boards Operando', totalBoardsOperating),
-        macroHtml('Total de Cards Atrasados', totalOverdue, totalOverdue > 0 ? 'text-red-600' : 'text-slate-800'),
+        macroHtml('Total de Cards Atrasados', totalOverdue, totalOverdue > 0 ? 'text-red-600' : 'text-[var(--text-primary)]'),
       ].join('');
     }
     if (summary) {

@@ -8,18 +8,18 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
 <BaseLayout title={t('nav.adminCommsOps', lang)} activePage="admin">
   <div class="max-w-[1400px] mx-auto px-4 py-8 space-y-6">
-    <div id="commsops-loading" class="text-slate-400 text-sm">Carregando operações de comunicação...</div>
+    <div id="commsops-loading" class="text-[var(--text-muted)] text-sm">Carregando operações de comunicação...</div>
     <div id="commsops-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
       Acesso restrito à gestão/comunicação.
     </div>
 
     <section id="commsops-panel" class="hidden space-y-6">
-      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
         <h1 class="text-xl font-extrabold text-navy mb-4">Comms Ops Dashboard</h1>
         <CommsDashboard client:load />
       </div>
 
-      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
         <BoardEngine client:load domainKey="communication" />
       </div>
     </section>
