@@ -51,13 +51,33 @@ type BoardItem = {
 
 type Lane = { key: string; label: string };
 
+const BOARD_LANES: Lane[] = [
+  { key: 'backlog', label: 'Backlog' },
+  { key: 'todo', label: 'A Fazer' },
+  { key: 'doing', label: 'Em Progresso' },
+  { key: 'done', label: 'Concluido' },
+];
+
 const CURATION_LANES: Lane[] = [
-  { key: 'draft', label: 'Rascunho' },
   { key: 'peer_review', label: 'Revisao por par' },
   { key: 'leader_review', label: 'Revisao do lider' },
   { key: 'curation_pending', label: 'Aguard. curadoria' },
   { key: 'published', label: 'Publicado' },
 ];
+
+function resolveItemLane(item: BoardItem): string {
+  const cs = item.curation_status;
+  if (cs && cs !== 'draft' && ['peer_review', 'leader_review', 'curation_pending', 'published'].includes(cs)) {
+    return cs;
+  }
+  const st = (item.status || 'backlog').toLowerCase();
+  if (['todo', 'to_do', 'a fazer'].includes(st)) return 'todo';
+  if (['doing', 'in_progress', 'em progresso', 'review'].includes(st)) return 'doing';
+  if (['done', 'concluido', 'complete'].includes(st)) return 'done';
+  return 'backlog';
+}
+
+const ALL_LANES: Lane[] = [...BOARD_LANES, ...CURATION_LANES];
 
 type TribeKanbanI18n = Record<string, any>;
 
@@ -314,10 +334,14 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
   );
 
   const itemsByLane = useMemo(() => {
-    return CURATION_LANES.reduce<Record<string, BoardItem[]>>((acc, lane) => {
-      acc[lane.key] = items.filter((item) => (item.curation_status || 'draft') === lane.key);
-      return acc;
-    }, {});
+    const acc: Record<string, BoardItem[]> = {};
+    for (const lane of ALL_LANES) acc[lane.key] = [];
+    for (const item of items) {
+      const lane = resolveItemLane(item);
+      if (acc[lane]) acc[lane].push(item);
+      else acc['backlog'].push(item);
+    }
+    return acc;
   }, [items]);
 
   async function loadBoard() {
@@ -369,7 +393,9 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       ...raw.map((row: any) => ({ ...row, curation_status: row.curation_status || 'draft' })),
       ...legacyRaw,
     ];
-    console.log('[Kanban] Combined items:', combined.length, '(board:', raw.length, '+ legacy:', legacyRaw.length, ')');
+    const laneDistrib: Record<string, number> = {};
+    for (const it of combined) { const l = resolveItemLane(it); laneDistrib[l] = (laneDistrib[l] || 0) + 1; }
+    console.log('[Kanban] Combined items:', combined.length, '(board:', raw.length, '+ legacy:', legacyRaw.length, ') Lanes:', JSON.stringify(laneDistrib));
     setItems(combined);
     setLoading(false);
   }
@@ -382,45 +408,65 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
     });
   }, []);
 
-  function rollbackCuration(itemId: string, from: string) {
-    setItems((prev) => prev.map((row) => (row.id === itemId ? { ...row, curation_status: from } : row)));
+  const BOARD_LANE_KEYS = new Set(BOARD_LANES.map((l) => l.key));
+
+  function rollbackMove(itemId: string, previousLane: string) {
+    setItems((prev) => prev.map((row) => {
+      if (row.id !== itemId) return row;
+      if (BOARD_LANE_KEYS.has(previousLane)) return { ...row, status: previousLane };
+      return { ...row, curation_status: previousLane };
+    }));
   }
 
-  async function persistMove(itemId: string, newCurationStatus: string, previousCurationStatus: string) {
+  async function persistMove(itemId: string, targetLane: string, previousLane: string) {
     const sb = windowRef?.navGetSb?.();
     if (!sb || !boardId) return;
     const item = items.find((i) => i.id === itemId);
     if (!item) return;
-    if (previousCurationStatus === newCurationStatus) {
-      // Same-lane reorder: use move_board_item to update position only
+
+    if (previousLane === targetLane) {
       const { error } = await sb.rpc('move_board_item', {
         p_item_id: itemId,
         p_new_status: item.status || 'backlog',
         p_position: 0,
       });
       if (error) {
-        rollbackCuration(itemId, previousCurationStatus);
+        rollbackMove(itemId, previousLane);
         windowRef?.toast?.(error.message || 'Falha ao reordenar', 'error');
       }
       return;
     }
-    if (previousCurationStatus === 'peer_review' && newCurationStatus === 'leader_review' && item.reviewer_id === currentMember?.id) {
+
+    if (BOARD_LANE_KEYS.has(previousLane) && BOARD_LANE_KEYS.has(targetLane)) {
+      const { error } = await sb.rpc('move_board_item', {
+        p_item_id: itemId,
+        p_new_status: targetLane,
+        p_position: 0,
+      });
+      if (error) {
+        rollbackMove(itemId, previousLane);
+        windowRef?.toast?.(error.message || 'Falha ao mover', 'error');
+      }
+      return;
+    }
+
+    if (previousLane === 'peer_review' && targetLane === 'leader_review' && item.reviewer_id === currentMember?.id) {
       const { error } = await sb.rpc('advance_board_item_curation', { p_item_id: itemId, p_action: 'approve_peer', p_reviewer_id: null });
       if (error) {
-        rollbackCuration(itemId, previousCurationStatus);
+        rollbackMove(itemId, previousLane);
         windowRef?.toast?.(error.message || 'Falha', 'error');
         return;
       }
       windowRef?.toast?.('Aprovado (Peer)', 'success');
       return;
     }
-    if (previousCurationStatus === 'leader_review' && newCurationStatus === 'curation_pending') {
+    if (previousLane === 'leader_review' && targetLane === 'curation_pending') {
       const isLeader = currentMember?.operational_role === 'tribe_leader' && Number(currentMember?.tribe_id) === Number(tribeData?.id);
       const isAdmin = currentMember?.is_superadmin || ['manager', 'deputy_manager'].includes(String(currentMember?.operational_role || ''));
       if (isLeader || isAdmin) {
         const { error } = await sb.rpc('advance_board_item_curation', { p_item_id: itemId, p_action: 'approve_leader', p_reviewer_id: null });
         if (error) {
-          rollbackCuration(itemId, previousCurationStatus);
+          rollbackMove(itemId, previousLane);
           windowRef?.toast?.(error.message || 'Falha', 'error');
           return;
         }
@@ -428,18 +474,30 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
         return;
       }
     }
-    rollbackCuration(itemId, previousCurationStatus);
+    rollbackMove(itemId, previousLane);
     windowRef?.toast?.('Transicao nao permitida', 'error');
   }
 
   async function moveViaKeyboard(item: BoardItem, direction: -1 | 1) {
     if (!canEdit) return;
-    const cur = item.curation_status || 'draft';
-    if (direction > 0 && cur === 'peer_review' && item.reviewer_id === currentMember?.id) {
+    const curLane = resolveItemLane(item);
+
+    if (BOARD_LANE_KEYS.has(curLane)) {
+      const idx = BOARD_LANES.findIndex((l) => l.key === curLane);
+      const nextIdx = idx + direction;
+      if (nextIdx >= 0 && nextIdx < BOARD_LANES.length) {
+        const targetLane = BOARD_LANES[nextIdx].key;
+        setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, status: targetLane } : row)));
+        await persistMove(item.id, targetLane, curLane);
+      }
+      return;
+    }
+
+    if (direction > 0 && curLane === 'peer_review' && item.reviewer_id === currentMember?.id) {
       await handleApprovePeer(item);
       return;
     }
-    if (direction > 0 && cur === 'leader_review') {
+    if (direction > 0 && curLane === 'leader_review') {
       const isLeader = currentMember?.operational_role === 'tribe_leader' && Number(currentMember?.tribe_id) === Number(tribeData?.id);
       const isAdmin = currentMember?.is_superadmin || ['manager', 'deputy_manager'].includes(String(currentMember?.operational_role || ''));
       if (isLeader || isAdmin) {
@@ -506,36 +564,41 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
     const overId = String(over.id);
     const current = items.find((item) => item.id === itemId);
     if (!current) return;
-    const cur = current.curation_status || 'draft';
-    const directLane = CURATION_LANES.find((lane) => lane.key === overId)?.key;
+    const curLane = resolveItemLane(current);
+    const directLane = ALL_LANES.find((lane) => lane.key === overId)?.key;
     const overItem = items.find((row) => row.id === overId);
-    const targetLane = directLane || (overItem ? (overItem.curation_status || 'draft') : null);
+    const targetLane = directLane || (overItem ? resolveItemLane(overItem) : null);
     if (!targetLane) return;
 
-    const isSameLane = targetLane === cur;
-    const isCrossLaneCuration = (cur === 'peer_review' && targetLane === 'leader_review') || (cur === 'leader_review' && targetLane === 'curation_pending');
-    const canCurationTransition = (cur === 'peer_review' && targetLane === 'leader_review' && current.reviewer_id === currentMember?.id)
-      || (cur === 'leader_review' && targetLane === 'curation_pending' && (currentMember?.operational_role === 'tribe_leader' || currentMember?.is_superadmin || ['manager', 'deputy_manager'].includes(String(currentMember?.operational_role || ''))));
+    const isSameLane = targetLane === curLane;
+    const bothBoard = BOARD_LANE_KEYS.has(curLane) && BOARD_LANE_KEYS.has(targetLane);
+    const isCrossLaneCuration = (curLane === 'peer_review' && targetLane === 'leader_review') || (curLane === 'leader_review' && targetLane === 'curation_pending');
+    const canCurationTransition = (curLane === 'peer_review' && targetLane === 'leader_review' && current.reviewer_id === currentMember?.id)
+      || (curLane === 'leader_review' && targetLane === 'curation_pending' && (currentMember?.operational_role === 'tribe_leader' || currentMember?.is_superadmin || ['manager', 'deputy_manager'].includes(String(currentMember?.operational_role || ''))));
 
-    if (!isSameLane && !(isCrossLaneCuration && canCurationTransition)) {
+    if (!isSameLane && !bothBoard && !(isCrossLaneCuration && canCurationTransition)) {
       return;
     }
 
     setItems((prev) => {
-      const next = isSameLane ? prev : prev.map((row) => (row.id === itemId ? { ...row, curation_status: targetLane } : row));
-      if (overItem && targetLane === (overItem.curation_status || 'draft')) {
-        const laneItems = (isSameLane ? prev : next).filter((row) => (row.curation_status || 'draft') === targetLane);
+      const applyLane = (row: BoardItem): BoardItem => {
+        if (BOARD_LANE_KEYS.has(targetLane)) return { ...row, status: targetLane };
+        return { ...row, curation_status: targetLane };
+      };
+      const next = isSameLane ? prev : prev.map((row) => (row.id === itemId ? applyLane(row) : row));
+      if (overItem && targetLane === resolveItemLane(overItem)) {
+        const laneItems = (isSameLane ? prev : next).filter((row) => resolveItemLane(row) === targetLane);
         const oldIndex = laneItems.findIndex((row) => row.id === itemId);
         const overIndex = laneItems.findIndex((row) => row.id === overId);
         if (oldIndex >= 0 && overIndex >= 0) {
           const moved = arrayMove(laneItems, oldIndex, overIndex);
-          const others = (isSameLane ? prev : next).filter((row) => (row.curation_status || 'draft') !== targetLane);
+          const others = (isSameLane ? prev : next).filter((row) => resolveItemLane(row) !== targetLane);
           return [...others, ...moved];
         }
       }
       return isSameLane ? prev : next;
     });
-    await persistMove(itemId, targetLane, cur);
+    await persistMove(itemId, targetLane, curLane);
   }
 
   async function saveModal() {
@@ -547,7 +610,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       p_board_id: boardId,
       p_title: modalItem.title,
       p_description: modalItem.description || null,
-      p_status: modalItem.status || (modalItem.curation_status || 'draft'),
+      p_status: modalItem.status || 'backlog',
       p_assignee_id: modalItem.assignee_id || null,
       p_due_date: modalItem.due_date || null,
       p_tags: null,
@@ -588,57 +651,119 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
     return <div className="text-center py-10 text-slate-500 dark:text-slate-300">{ui.deniedBoard}</div>;
   }
 
+  const boardLaneItems = BOARD_LANES.reduce((n, l) => n + (itemsByLane[l.key]?.length || 0), 0);
+  const curationLaneItems = CURATION_LANES.reduce((n, l) => n + (itemsByLane[l.key]?.length || 0), 0);
+
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
-        <DndContext
-          collisionDetection={closestCorners}
-          sensors={sensors}
-          onDragStart={(event: DragStartEvent) => setActiveId(String(event.active.id))}
-          onDragEnd={onDragEnd}
-        >
-          {CURATION_LANES.map((lane) => (
-            <section key={lane.key} className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-[12px] font-bold text-slate-700 dark:text-slate-200">{lane.label}</h3>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                  {itemsByLane[lane.key]?.length || 0}
-                </span>
-              </div>
-              <SortableContext
-                id={lane.key}
-                items={itemsByLane[lane.key].map((item) => item.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div id={lane.key} className="min-h-[220px] space-y-2">
-                  {itemsByLane[lane.key].map((item) => (
-                    <SortableCard
-                      key={item.id}
-                      item={item}
-                      canEdit={canEdit}
-                      assigneePhoto={members.find((m) => m.id === item.assignee_id)?.photo_url || undefined}
-                      onOpen={setModalItem}
-                      onLaneKeyboardMove={moveViaKeyboard}
-                      members={members}
-                      currentMember={currentMember}
-                      tribeData={tribeData}
-                      onRequestReview={handleRequestReview}
-                      onApprovePeer={handleApprovePeer}
-                      onApproveLeader={handleApproveLeader}
-                      i18n={ui}
-                    />
-                  ))}
-                  {itemsByLane[lane.key].length === 0 ? (
-                    <div className="text-[11px] text-slate-400 dark:text-slate-500 py-6 text-center">
-                      {activeId ? 'Solte o card aqui' : 'Sem cards'}
-                    </div>
-                  ) : null}
+    <div className="space-y-6">
+      <DndContext
+        collisionDetection={closestCorners}
+        sensors={sensors}
+        onDragStart={(event: DragStartEvent) => setActiveId(String(event.active.id))}
+        onDragEnd={onDragEnd}
+      >
+        {/* Board workflow lanes */}
+        <section className="space-y-2">
+          <h2 className="text-sm font-bold text-slate-700 dark:text-slate-200">
+            Quadro da Tribo
+            <span className="ml-2 text-[11px] font-normal text-slate-400">({boardLaneItems} cards)</span>
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+            {BOARD_LANES.map((lane) => (
+              <section key={lane.key} className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-[12px] font-bold text-slate-700 dark:text-slate-200">{lane.label}</h3>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    {itemsByLane[lane.key]?.length || 0}
+                  </span>
                 </div>
-              </SortableContext>
-            </section>
-          ))}
-        </DndContext>
-      </div>
+                <SortableContext
+                  id={lane.key}
+                  items={(itemsByLane[lane.key] || []).map((item) => item.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div id={lane.key} className="min-h-[120px] max-h-[60vh] overflow-y-auto space-y-2">
+                    {(itemsByLane[lane.key] || []).map((item) => (
+                      <SortableCard
+                        key={item.id}
+                        item={item}
+                        canEdit={canEdit}
+                        assigneePhoto={members.find((m) => m.id === item.assignee_id)?.photo_url || undefined}
+                        onOpen={setModalItem}
+                        onLaneKeyboardMove={moveViaKeyboard}
+                        members={members}
+                        currentMember={currentMember}
+                        tribeData={tribeData}
+                        onRequestReview={handleRequestReview}
+                        onApprovePeer={handleApprovePeer}
+                        onApproveLeader={handleApproveLeader}
+                        i18n={ui}
+                      />
+                    ))}
+                    {(itemsByLane[lane.key]?.length || 0) === 0 ? (
+                      <div className="text-[11px] text-slate-400 dark:text-slate-500 py-6 text-center">
+                        {activeId ? 'Solte o card aqui' : 'Sem cards'}
+                      </div>
+                    ) : null}
+                  </div>
+                </SortableContext>
+              </section>
+            ))}
+          </div>
+        </section>
+
+        {/* Curation workflow lanes — only shown if items exist */}
+        {curationLaneItems > 0 ? (
+          <section className="space-y-2">
+            <h2 className="text-sm font-bold text-purple-700 dark:text-purple-300">
+              Esteira de Curadoria
+              <span className="ml-2 text-[11px] font-normal text-slate-400">({curationLaneItems} cards)</span>
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+              {CURATION_LANES.map((lane) => (
+                <section key={lane.key} className="rounded-2xl border border-purple-200 dark:border-purple-800 bg-purple-50/30 dark:bg-purple-900/10 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-[12px] font-bold text-purple-700 dark:text-purple-300">{lane.label}</h3>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300">
+                      {itemsByLane[lane.key]?.length || 0}
+                    </span>
+                  </div>
+                  <SortableContext
+                    id={lane.key}
+                    items={(itemsByLane[lane.key] || []).map((item) => item.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div id={lane.key} className="min-h-[120px] max-h-[60vh] overflow-y-auto space-y-2">
+                      {(itemsByLane[lane.key] || []).map((item) => (
+                        <SortableCard
+                          key={item.id}
+                          item={item}
+                          canEdit={canEdit}
+                          assigneePhoto={members.find((m) => m.id === item.assignee_id)?.photo_url || undefined}
+                          onOpen={setModalItem}
+                          onLaneKeyboardMove={moveViaKeyboard}
+                          members={members}
+                          currentMember={currentMember}
+                          tribeData={tribeData}
+                          onRequestReview={handleRequestReview}
+                          onApprovePeer={handleApprovePeer}
+                          onApproveLeader={handleApproveLeader}
+                          i18n={ui}
+                        />
+                      ))}
+                      {(itemsByLane[lane.key]?.length || 0) === 0 ? (
+                        <div className="text-[11px] text-slate-400 dark:text-slate-500 py-6 text-center">
+                          {activeId ? 'Solte o card aqui' : 'Sem cards'}
+                        </div>
+                      ) : null}
+                    </div>
+                  </SortableContext>
+                </section>
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </DndContext>
 
       <Dialog.Root open={!!modalItem} onOpenChange={(open) => { if (!open) setModalItem(null); }}>
         <Dialog.Portal>
@@ -689,11 +814,18 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
                 <div>
                   <label className="text-[12px] font-semibold text-slate-600 dark:text-slate-300 block mb-1">{ui.status}</label>
                   <select
-                    value={modalItem.curation_status || 'draft'}
-                    onChange={(e) => setModalItem((prev) => (prev ? { ...prev, curation_status: e.target.value } : prev))}
+                    value={resolveItemLane(modalItem)}
+                    onChange={(e) => {
+                      const lane = e.target.value;
+                      if (BOARD_LANE_KEYS.has(lane)) {
+                        setModalItem((prev) => (prev ? { ...prev, status: lane, curation_status: 'draft' } : prev));
+                      } else {
+                        setModalItem((prev) => (prev ? { ...prev, curation_status: lane } : prev));
+                      }
+                    }}
                     className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
                   >
-                    {CURATION_LANES.map((lane) => (
+                    {ALL_LANES.map((lane) => (
                       <option key={lane.key} value={lane.key}>{lane.label}</option>
                     ))}
                   </select>
