@@ -91,10 +91,18 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
     showShell();
 
-    const [{ data: tribes }, { data: legacyTribes }] = await Promise.all([
+    const [{ data: tribes }, { data: legacyTribes }, { data: lineage }] = await Promise.all([
       sb.from('tribes').select('id, name, quadrant_name, is_active, workstream_type').order('id'),
-      sb.from('legacy_tribes').select('id, legacy_name, legacy_quadrant, is_active').order('id'),
+      sb.from('legacy_tribes').select('id, legacy_key, display_name, cycle_label, quadrant, tribe_id, status, notes').order('id'),
+      sb.from('tribe_lineage').select('legacy_tribe_id, current_tribe_id, relation_type, cycle_scope, notes').eq('is_active', true),
     ]);
+
+    const lineageMap: Record<number, { currentId: number; note: string }> = {};
+    (lineage || []).forEach((l: any) => {
+      lineageMap[l.legacy_tribe_id] = { currentId: l.current_tribe_id, note: l.notes || '' };
+    });
+    const tribeNameMap: Record<number, string> = {};
+    (tribes || []).forEach((t: any) => { tribeNameMap[t.id] = t.name; });
 
     const active = (tribes || [])
       .filter((tribe: any) => tribe.is_active !== false && String(tribe.workstream_type || 'research') === 'research')
@@ -119,12 +127,20 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     );
     operational.unshift(webinars);
 
-    const legacy = (legacyTribes || []).map((tribe: any) => cardHtml(
-      `Legado #${tribe.id}: ${tribe.legacy_name || 'Tribo histórica'}`,
-      tribe.legacy_quadrant || 'Consulta histórica',
-      '/#team',
-      true
-    ));
+    const legacy = (legacyTribes || []).map((tribe: any) => {
+      const currentTribeId = tribe.tribe_id;
+      const successor = currentTribeId ? tribeNameMap[currentTribeId] : null;
+      const cycleTag = tribe.cycle_label || '';
+      const subtitle = successor
+        ? `${cycleTag} · Continuou como T${currentTribeId}: ${successor}`
+        : `${cycleTag} · ${tribe.notes || 'Consulta histórica'}`;
+      return cardHtml(
+        tribe.display_name || 'Tribo histórica',
+        subtitle,
+        currentTribeId ? `/tribe/${currentTribeId}` : '/#tribes',
+        true
+      );
+    });
 
     renderBlock('teams-active', active, 'Sem tribos ativas cadastradas.');
     renderBlock('teams-operational', operational, 'Sem subprojetos operacionais cadastrados.');
