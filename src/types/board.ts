@@ -45,6 +45,18 @@ export interface BoardItem {
   source_board: string | null;
   created_at: string;
   updated_at: string;
+  assignments?: ItemAssignment[];
+}
+
+export type AssignmentRole = 'author' | 'reviewer' | 'contributor' | 'curation_reviewer';
+
+export interface ItemAssignment {
+  id?: string | null;
+  member_id: string;
+  name: string;
+  avatar_url: string | null;
+  role: AssignmentRole;
+  assigned_at?: string;
 }
 
 export interface Label {
@@ -227,6 +239,13 @@ export interface BoardI18n {
   noAssignee?: string;
   noReviewer?: string;
   overdue?: string;
+  // Multi-assignee
+  assignees?: string;
+  addMember?: string;
+  roleAuthor?: string;
+  roleReviewer?: string;
+  roleContributor?: string;
+  roleCurationReviewer?: string;
   // Curation
   curationStatus?: string;
   curationDue?: string;
@@ -277,6 +296,12 @@ export const DEFAULT_I18N: BoardI18n = {
   noAssignee: 'Sem responsável',
   noReviewer: 'Sem revisor',
   overdue: 'Vencido',
+  assignees: 'Participantes',
+  addMember: 'Adicionar membro',
+  roleAuthor: 'Autor',
+  roleReviewer: 'Revisor',
+  roleContributor: 'Contribuidor',
+  roleCurationReviewer: 'Curador',
   curationStatus: 'Status de curadoria',
   curationDue: 'SLA de curadoria',
   curationTab: 'Curadoria',

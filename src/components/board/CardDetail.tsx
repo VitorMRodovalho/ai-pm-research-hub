@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { Board, BoardItem, BoardI18n, LifecycleEvent, BoardMember, BoardSummary, CurationHistory, RubricScore } from '../../types/board';
+import type { Board, BoardItem, BoardI18n, LifecycleEvent, BoardMember, BoardSummary, CurationHistory, RubricScore, ItemAssignment, AssignmentRole } from '../../types/board';
 import { COLUMN_PRESETS } from '../../types/board';
 import { getSb } from '../../hooks/useBoard';
 import MemberPicker from './MemberPicker';
+import MemberPickerMulti from './MemberPickerMulti';
 
 interface Props {
   item: BoardItem;
@@ -53,6 +54,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const [reviewVerdict, setReviewVerdict] = useState<string>('approved');
   const [reviewNotes, setReviewNotes] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [itemAssignments, setItemAssignments] = useState<ItemAssignment[]>(item.assignments || []);
 
   const canEdit = mode !== 'readonly' && (permissions.canEditAny || (permissions.canEditOwn && permissions.member?.id === item.assignee_id));
   const isCurator = permissions.canCurate;
@@ -133,6 +135,14 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
       if (Array.isArray(mb.data)) setMembers(mb.data);
       if (Array.isArray(bl.data)) setBoards(bl.data.filter((b: any) => b.id !== board.id));
 
+      // Fetch assignments from junction table
+      const asn = await safe(sb.rpc('get_item_assignments', { p_item_id: item.id }));
+      if (Array.isArray(asn.data) && asn.data.length > 0) {
+        setItemAssignments(asn.data as ItemAssignment[]);
+      } else if (item.assignments && item.assignments.length > 0) {
+        setItemAssignments(item.assignments);
+      }
+
       // Fetch curation history if item has curation_status
       if (item.curation_status && item.curation_status !== 'draft') {
         const ch = await safe(sb.rpc('get_item_curation_history', { p_item_id: item.id }));
@@ -157,6 +167,41 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
       setDirty(false);
     }
   }, [title, description, checklist, tags, dueDate, assigneeId, reviewerId, item, onUpdate]);
+
+  // ── Multi-assignee handlers ──
+  const handleAddAssignment = useCallback(async (memberId: string, role: AssignmentRole) => {
+    const sb = getSb();
+    if (!sb) return;
+    try {
+      const { error } = await sb.rpc('assign_member_to_item', {
+        p_item_id: item.id, p_member_id: memberId, p_role: role,
+      });
+      if (error) throw error;
+      const member = members.find((m) => m.id === memberId);
+      setItemAssignments((prev) => [
+        ...prev,
+        { member_id: memberId, name: member?.name || '', avatar_url: member?.avatar_url || null, role, assigned_at: new Date().toISOString() },
+      ]);
+      (window as any).toast?.('Membro adicionado', 'success');
+    } catch (err: any) {
+      (window as any).toast?.(err.message || 'Erro ao adicionar membro', 'error');
+    }
+  }, [item.id, members]);
+
+  const handleRemoveAssignment = useCallback(async (memberId: string, role: AssignmentRole) => {
+    const sb = getSb();
+    if (!sb) return;
+    try {
+      const { error } = await sb.rpc('unassign_member_from_item', {
+        p_item_id: item.id, p_member_id: memberId, p_role: role,
+      });
+      if (error) throw error;
+      setItemAssignments((prev) => prev.filter((a) => !(a.member_id === memberId && a.role === role)));
+      (window as any).toast?.('Membro removido');
+    } catch (err: any) {
+      (window as any).toast?.(err.message || 'Erro ao remover membro', 'error');
+    }
+  }, [item.id]);
 
   // ── Curation review submit ──
   const handleSubmitReview = useCallback(async () => {
@@ -557,29 +602,44 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
               </select>
             </div>
 
-            {/* Assignee */}
+            {/* Assignees (multi-role) */}
             <div>
-              <label className="text-[10px] font-semibold text-[var(--text-secondary)] mb-1 block uppercase tracking-wide">{i18n.assignee}</label>
-              <MemberPicker
+              <label className="text-[10px] font-semibold text-[var(--text-secondary)] mb-1 block uppercase tracking-wide">{i18n.assignees || 'Participantes'}</label>
+              <MemberPickerMulti
                 members={members}
-                value={assigneeId}
-                onChange={(id) => { setAssigneeId(id); setDirty(true); }}
-                placeholder={i18n.noAssignee}
+                assignments={itemAssignments}
+                onAdd={handleAddAssignment}
+                onRemove={handleRemoveAssignment}
+                i18n={i18n}
                 disabled={!permissions.canAssign}
               />
             </div>
 
-            {/* Reviewer */}
-            <div>
-              <label className="text-[10px] font-semibold text-[var(--text-secondary)] mb-1 block uppercase tracking-wide">{i18n.reviewer}</label>
-              <MemberPicker
-                members={members}
-                value={reviewerId}
-                onChange={(id) => { setReviewerId(id); setDirty(true); }}
-                placeholder={i18n.noReviewer}
-                disabled={!permissions.canAssign}
-              />
-            </div>
+            {/* Legacy single assignee/reviewer (hidden if junction data exists) */}
+            {itemAssignments.length === 0 && (
+              <>
+                <div>
+                  <label className="text-[10px] font-semibold text-[var(--text-secondary)] mb-1 block uppercase tracking-wide">{i18n.assignee}</label>
+                  <MemberPicker
+                    members={members}
+                    value={assigneeId}
+                    onChange={(id) => { setAssigneeId(id); setDirty(true); }}
+                    placeholder={i18n.noAssignee}
+                    disabled={!permissions.canAssign}
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-semibold text-[var(--text-secondary)] mb-1 block uppercase tracking-wide">{i18n.reviewer}</label>
+                  <MemberPicker
+                    members={members}
+                    value={reviewerId}
+                    onChange={(id) => { setReviewerId(id); setDirty(true); }}
+                    placeholder={i18n.noReviewer}
+                    disabled={!permissions.canAssign}
+                  />
+                </div>
+              </>
+            )}
 
             {/* Tags */}
             <div>
