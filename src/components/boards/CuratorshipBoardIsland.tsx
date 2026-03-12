@@ -166,14 +166,17 @@ function TribeSortableCard({ item, onOpen, ui = {} }: { item: BoardItem; onOpen:
 
 // ─── Legacy Item Card (Sortable) ────────────────────────────────────────────
 
-function LegacySortableCard({ item, onApprove, onReject, ui = {} }: {
+function LegacySortableCard({ item, onApprove, onReject, tribes = [], ui = {} }: {
   item: LegacyItem;
-  onApprove: (id: string, table: string) => void;
+  onApprove: (id: string, table: string, tribeId?: number | null) => void;
   onReject: (id: string, table: string) => void;
+  tribes?: { id: number; name: string }[];
   ui?: Record<string, string>;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id, data: { item } });
   const icon = item._table === 'artifacts' ? '📄' : '📚';
+  const [confirming, setConfirming] = useState(false);
+  const [selectedTribe, setSelectedTribe] = useState<number | null>(null);
 
   return (
     <article
@@ -181,7 +184,7 @@ function LegacySortableCard({ item, onApprove, onReject, ui = {} }: {
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1, touchAction: 'none' }}
       {...attributes}
       {...listeners}
-      className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3 shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
+      className="kanban-card rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3 shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md transition-all"
     >
       <h4 className="text-[12px] font-bold text-[var(--text-primary)] line-clamp-2 mb-1">{icon}{' '}{item.title}</h4>
       {item.tribe_name ? (
@@ -195,23 +198,52 @@ function LegacySortableCard({ item, onApprove, onReject, ui = {} }: {
           ))}
         </div>
       ) : null}
-      <div className="flex gap-1.5 mt-2 pt-2 border-t border-[var(--border-subtle)]" onPointerDown={(e) => e.stopPropagation()}>
-        {item.status !== 'approved' ? (
-          <button
-            onClick={() => onApprove(item.id, item._table)}
-            className="flex-1 px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-semibold border border-emerald-200 hover:bg-emerald-100 cursor-pointer transition-colors"
-          >
-            {ui.approveBtn || '✅ Aprovar'}
-          </button>
-        ) : null}
-        {item.status !== 'rejected' ? (
-          <button
-            onClick={() => onReject(item.id, item._table)}
-            className="flex-1 px-2 py-1 rounded-lg bg-red-50 text-red-600 text-[10px] font-semibold border border-red-200 hover:bg-red-100 cursor-pointer transition-colors"
-          >
-            {ui.discardBtn || '❌ Descartar'}
-          </button>
-        ) : null}
+      <div className="flex flex-col gap-1.5 mt-2 pt-2 border-t border-[var(--border-subtle)]" onPointerDown={(e) => e.stopPropagation()}>
+        {confirming ? (
+          <div className="cur-confirm-approve flex flex-col gap-1.5">
+            <select
+              value={selectedTribe ?? ''}
+              onChange={(e) => setSelectedTribe(e.target.value ? Number(e.target.value) : null)}
+              className="cur-approve-tribe w-full rounded-lg border border-emerald-200 bg-emerald-50 text-[10px] px-2 py-1"
+            >
+              <option value="">{ui.noTribe || '— Sem tribo —'}</option>
+              {tribes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+            <div className="flex gap-1.5">
+              <button
+                onClick={() => { onApprove(item.id, item._table, selectedTribe); setConfirming(false); }}
+                className="flex-1 px-2 py-1 rounded-lg bg-emerald-100 text-emerald-800 text-[10px] font-semibold border border-emerald-300 hover:bg-emerald-200 cursor-pointer transition-colors"
+              >
+                {ui.confirmApprove || '✅ Confirmar'}
+              </button>
+              <button
+                onClick={() => setConfirming(false)}
+                className="px-2 py-1 rounded-lg bg-gray-100 text-gray-600 text-[10px] font-semibold border border-gray-200 hover:bg-gray-200 cursor-pointer transition-colors"
+              >
+                {ui.cancel || '✕'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-1.5">
+            {item.status !== 'approved' ? (
+              <button
+                onClick={() => setConfirming(true)}
+                className="cur-btn-approve flex-1 px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-semibold border border-emerald-200 hover:bg-emerald-100 cursor-pointer transition-colors"
+              >
+                {ui.approveBtn || '✅ Aprovar'}
+              </button>
+            ) : null}
+            {item.status !== 'rejected' ? (
+              <button
+                onClick={() => onReject(item.id, item._table)}
+                className="flex-1 px-2 py-1 rounded-lg bg-red-50 text-red-600 text-[10px] font-semibold border border-red-200 hover:bg-red-100 cursor-pointer transition-colors"
+              >
+                {ui.discardBtn || '❌ Descartar'}
+              </button>
+            ) : null}
+          </div>
+        )}
       </div>
     </article>
   );
@@ -407,6 +439,7 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
 
   const [tribeItems, setTribeItems] = useState<BoardItem[]>([]);
   const [legacyItems, setLegacyItems] = useState<LegacyItem[]>([]);
+  const [tribesList, setTribesList] = useState<{ id: number; name: string }[]>([]);
   const [modalItem, setModalItem] = useState<BoardItem | null>(null);
   const [dragTitle, setDragTitle] = useState<string | null>(null);
 
@@ -438,6 +471,14 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
     if (!member) {
       const handler = () => { fetchAll(); };
       window.addEventListener('nav:member', handler, { once: true });
+      // Timeout: if no member arrives, show denied state
+      setTimeout(() => {
+        if (!getMember()) {
+          window.removeEventListener('nav:member', handler);
+          setDenied(true);
+          setLoading(false);
+        }
+      }, 3000);
       return;
     }
 
@@ -484,6 +525,12 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
         tribe_name: row.tribe_name,
         source: row.source,
       })));
+
+      // Fetch tribes list for approve confirmation
+      try {
+        const { data: tribesData } = await sb.from('tribes').select('id,name').eq('is_active', true).order('name');
+        if (Array.isArray(tribesData)) setTribesList(tribesData);
+      } catch { /* non-critical */ }
     } catch (err: any) {
       setError(`Erro: ${err?.message || 'desconhecido'}`);
     } finally {
@@ -492,6 +539,18 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  // Signal island readiness and manage SSR fallback visibility
+  useEffect(() => {
+    if (!loading) {
+      window.dispatchEvent(new Event('cur:island-ready'));
+      // If board loaded successfully, ensure SSR denied fallback is hidden
+      if (!denied) {
+        const ssrDenied = document.getElementById('cur-denied');
+        if (ssrDenied) ssrDenied.classList.add('hidden');
+      }
+    }
+  }, [loading, denied]);
 
   // ── Tribe board: review submit ──
 
@@ -603,13 +662,14 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
     </div>
   );
 
-  if (denied) return (
-    <div id="cur-denied" className="bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
-      <div className="text-3xl mb-3">{ui.lockIcon || '🔒'}</div>
-      <p className="font-bold text-amber-800 mb-3">{ui.denied || 'Acesso restrito'}</p>
-      <a href="/admin" className="inline-block px-5 py-2.5 bg-blue-900 text-white rounded-xl text-sm font-bold no-underline hover:opacity-90">{ui.backAdmin || 'Voltar'}</a>
-    </div>
-  );
+  if (denied) {
+    // Show the SSR #cur-denied fallback instead of rendering a duplicate
+    if (typeof document !== 'undefined') {
+      const ssrDenied = document.getElementById('cur-denied');
+      if (ssrDenied) ssrDenied.classList.remove('hidden');
+    }
+    return null;
+  }
 
   if (error) return (
     <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
@@ -626,8 +686,13 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
   const pubLinkLabel = ui.publicationsPath || '/publications';
   const pubFooter = (ui.publishedNote || 'Itens publicados aparecem em ') + pubLinkLabel + '.';
 
+  const totalCount = tribeItems.length + legacyItems.length;
+
   return (
     <div id="cur-board" className="space-y-8">
+      <span id="cur-count" className="text-xs text-[var(--text-muted)]">
+        {totalCount}{' '}{totalCount === 1 ? 'item' : 'itens'}{' '}{ui.totalLabel || 'no painel'}
+      </span>
       {/* ── Section 1: Tribe Board Items (curation_pending → published) ── */}
       <section>
         <div className="flex items-center justify-between mb-3">
@@ -692,6 +757,7 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
 
           <div className="flex items-center gap-3 mb-4 flex-wrap">
             <input
+              id="cur-search"
               type="text" value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder={ui.searchPlaceholder || 'Buscar...'}
               className="flex-1 min-w-[200px] max-w-xs rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] px-3 py-2 text-[12px] text-[var(--text-primary)] outline-none focus:border-blue-400"
@@ -731,7 +797,7 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
                       <DroppableColumn id={col.id}>
                         {colItems.length === 0 ? <div className="py-8 text-center text-[var(--text-muted)] text-[11px]">{ui.emptyCol || 'Vazio'}</div> : null}
                         {colItems.map((item) => (
-                          <LegacySortableCard key={item.id} item={item} onApprove={(id, t) => legacyCurate(id, t, 'approve')} onReject={(id, t) => legacyCurate(id, t, 'reject')} ui={ui} />
+                          <LegacySortableCard key={item.id} item={item} tribes={tribesList} onApprove={(id, t) => legacyCurate(id, t, 'approve')} onReject={(id, t) => legacyCurate(id, t, 'reject')} ui={ui} />
                         ))}
                       </DroppableColumn>
                     </SortableContext>
