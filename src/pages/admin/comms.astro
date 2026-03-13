@@ -128,6 +128,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         </div>
       </section>
 
+      <!-- Staleness Banner (graceful degradation) -->
+      <div id="comms-staleness-banner" class="hidden"></div>
+
       <!-- Section 2: Channel Metrics Chart -->
       <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div class="px-4 py-3 border-b border-[var(--border-default)]">
@@ -157,6 +160,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
                 <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">{t('admin.comms.colReach', lang)}</th>
                 <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">{t('admin.comms.colEngagement', lang)}</th>
                 <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">{t('admin.comms.colLeads', lang)}</th>
+                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">Fonte</th>
               </tr>
             </thead>
             <tbody id="comms-table-body"></tbody>
@@ -298,6 +302,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     loadCommsChart();
     loadChannelConfig();
     loadTokenAlerts();
+    loadStalenessBanner();
   }
 
   async function loadCommsChart() {
@@ -380,6 +385,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         + '<td class="px-3 py-2 text-right">' + (r.reach ?? '\u2014') + '</td>'
         + '<td class="px-3 py-2 text-right">' + (r.engagement != null ? (Number(r.engagement) * 100).toFixed(2) + '%' : '\u2014') + '</td>'
         + '<td class="px-3 py-2 text-right">' + (r.leads ?? '\u2014') + '</td>'
+        + '<td class="px-3 py-2"><span class="text-[10px] px-1.5 py-0.5 rounded-full font-semibold ' + (r.source === 'api' ? 'bg-teal/10 text-teal' : 'bg-gray-100 text-gray-500') + '">' + (r.source === 'api' ? 'API' : r.source || 'manual') + '</span></td>'
         + '</tr>'
       ).join('');
       table.classList.remove('hidden');
@@ -702,6 +708,54 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       });
     } catch (e) {
       console.warn('Token alerts:', e);
+    }
+  }
+
+  // ─── Staleness / Graceful Degradation Banner ───
+
+  async function loadStalenessBanner() {
+    const banner = document.getElementById('comms-staleness-banner');
+    if (!banner) return;
+
+    try {
+      const { data, error } = await sb.rpc('comms_channel_status');
+      if (error || !data?.length) return;
+
+      const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+      const alerts: string[] = [];
+
+      for (const ch of data as any[]) {
+        const lastSync = ch.last_sync_at ? new Date(ch.last_sync_at).getTime() : 0;
+        const syncAge = Date.now() - lastSync;
+        const channelName = ch.channel.charAt(0).toUpperCase() + ch.channel.slice(1);
+
+        if (ch.sync_status === 'token_expired') {
+          const lastDate = ch.last_sync_at
+            ? new Date(ch.last_sync_at).toLocaleDateString('pt-BR')
+            : 'desconhecida';
+          alerts.push(
+            `<div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800 text-sm">
+              \u{1F6A8} <strong>${channelName}</strong>: Token expirado. Última atualização: ${lastDate}.
+            </div>`
+          );
+        } else if (lastSync > 0 && syncAge > SEVEN_DAYS) {
+          const daysAgo = Math.floor(syncAge / (24 * 60 * 60 * 1000));
+          alerts.push(
+            `<div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
+              \u26A0\uFE0F <strong>${channelName}</strong>: Dados podem estar desatualizados (último sync: ${daysAgo} dias atrás).
+            </div>`
+          );
+        }
+      }
+
+      if (alerts.length > 0) {
+        banner.innerHTML = alerts.join('');
+        banner.classList.remove('hidden');
+      } else {
+        banner.classList.add('hidden');
+      }
+    } catch (e) {
+      console.warn('Staleness banner:', e);
     }
   }
 
