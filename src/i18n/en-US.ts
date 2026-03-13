@@ -1171,6 +1171,10 @@ const enUS: Record<string, string> = {
   'admin.comms.configChannel': 'Configure Channel',
   'admin.comms.tokenExpiry': 'Token Expiry',
   'admin.comms.channelConfig': 'Config (JSON)',
+  'admin.comms.manualTitle': 'Manual Metrics Entry',
+  'admin.comms.manualSubtitle': 'Fallback for when automatic integration is unavailable',
+  'admin.comms.manualToggle': 'Enter Manually',
+  'admin.comms.manualSave': 'Save Metric',
 
   // ─── Admin Help (W4.10) ───
   'admin.help.meta': 'Help Center — AI & PM Research Hub',

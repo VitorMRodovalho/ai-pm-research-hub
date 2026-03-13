@@ -1171,6 +1171,10 @@ const ptBR: Record<string, string> = {
   'admin.comms.configChannel': 'Configurar Canal',
   'admin.comms.tokenExpiry': 'Expiração do Token',
   'admin.comms.channelConfig': 'Config (JSON)',
+  'admin.comms.manualTitle': 'Registro Manual de Métricas',
+  'admin.comms.manualSubtitle': 'Fallback para quando a integração automática não estiver disponível',
+  'admin.comms.manualToggle': 'Registrar Manualmente',
+  'admin.comms.manualSave': 'Salvar Métrica',
 
   // ─── Admin Help (W4.10) ───
   'admin.help.meta': 'Central de Ajuda — Núcleo IA & GP',
