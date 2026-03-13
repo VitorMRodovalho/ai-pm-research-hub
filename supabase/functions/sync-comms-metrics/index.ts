@@ -20,9 +20,21 @@ type IngestionPayload = {
   run_key?: string
   triggered_by?: string
   dry_run?: boolean
+  channels?: string[]  // optional: sync only specific channels
+}
+
+type ChannelConfig = {
+  channel: string
+  api_key: string | null
+  oauth_token: string | null
+  oauth_refresh_token: string | null
+  token_expires_at: string | null
+  sync_status: string
+  config: Record<string, unknown>
 }
 
 const RUN_KEY_PREFIX = 'comms_metrics'
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
 
 function parseInteger(value: unknown): number | null {
   if (value === null || value === undefined || value === '') return null
@@ -174,6 +186,312 @@ async function logRun(
   await sb.from('comms_metrics_ingestion_log').upsert(body, { onConflict: 'run_key' })
 }
 
+// ─── Per-channel API fetchers ───
+
+async function fetchYouTubeMetrics(cfg: ChannelConfig): Promise<NormalizedMetric[]> {
+  const apiKey = cfg.api_key
+  const channelId = (cfg.config as any)?.channel_id
+  if (!apiKey || !channelId) return []
+
+  const today = new Date().toISOString().slice(0, 10)
+  const metrics: NormalizedMetric[] = []
+
+  try {
+    // Fetch channel stats (subscribers, views)
+    const channelResp = await fetch(
+      `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${channelId}&key=${apiKey}`
+    )
+    if (!channelResp.ok) throw new Error(`YouTube channels API: ${channelResp.status}`)
+    const channelData = await channelResp.json()
+    const stats = channelData?.items?.[0]?.statistics
+
+    if (stats) {
+      metrics.push({
+        metric_date: today,
+        channel: 'youtube',
+        audience: parseInteger(stats.subscriberCount),
+        reach: parseInteger(stats.viewCount),
+        engagement_rate: null,
+        leads: null,
+        source: 'api',
+        payload: { api: 'youtube_channels', ...stats },
+      })
+    }
+
+    // Fetch recent videos for engagement data
+    const searchResp = await fetch(
+      `https://www.googleapis.com/youtube/v3/search?part=id&channelId=${channelId}&type=video&order=date&maxResults=10&key=${apiKey}`
+    )
+    if (searchResp.ok) {
+      const searchData = await searchResp.json()
+      const videoIds = (searchData?.items || []).map((i: any) => i.id?.videoId).filter(Boolean)
+      if (videoIds.length > 0) {
+        const videosResp = await fetch(
+          `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds.join(',')}&key=${apiKey}`
+        )
+        if (videosResp.ok) {
+          const videosData = await videosResp.json()
+          let totalViews = 0, totalLikes = 0
+          for (const v of videosData?.items || []) {
+            totalViews += parseInt(v.statistics?.viewCount || '0', 10)
+            totalLikes += parseInt(v.statistics?.likeCount || '0', 10)
+          }
+          if (totalViews > 0 && metrics[0]) {
+            metrics[0].engagement_rate = parseEngagement(totalLikes / totalViews)
+            metrics[0].payload = { ...metrics[0].payload, recent_videos: videoIds.length, total_views: totalViews, total_likes: totalLikes }
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.error('YouTube fetch error:', e)
+  }
+
+  return metrics
+}
+
+async function fetchLinkedInMetrics(cfg: ChannelConfig): Promise<NormalizedMetric[]> {
+  const token = cfg.oauth_token
+  const orgUrn = (cfg.config as any)?.organization_urn
+  if (!token || !orgUrn) return []
+
+  const today = new Date().toISOString().slice(0, 10)
+  const metrics: NormalizedMetric[] = []
+
+  try {
+    // Fetch follower count
+    const followersResp = await fetch(
+      `https://api.linkedin.com/v2/organizationalEntityFollowerStatistics?q=organizationalEntity&organizationalEntity=${encodeURIComponent(orgUrn)}`,
+      { headers: { 'Authorization': `Bearer ${token}`, 'X-Restli-Protocol-Version': '2.0.0' } }
+    )
+
+    let followers: number | null = null
+    if (followersResp.ok) {
+      const followersData = await followersResp.json()
+      const element = followersData?.elements?.[0]
+      if (element) {
+        followers = parseInteger(
+          (element.followerCounts?.organicFollowerCount || 0) +
+          (element.followerCounts?.paidFollowerCount || 0)
+        )
+      }
+    }
+
+    // Fetch share statistics
+    const shareResp = await fetch(
+      `https://api.linkedin.com/v2/organizationalEntityShareStatistics?q=organizationalEntity&organizationalEntity=${encodeURIComponent(orgUrn)}`,
+      { headers: { 'Authorization': `Bearer ${token}`, 'X-Restli-Protocol-Version': '2.0.0' } }
+    )
+
+    let reach: number | null = null
+    let engagement: number | null = null
+    if (shareResp.ok) {
+      const shareData = await shareResp.json()
+      const totals = shareData?.elements?.[0]?.totalShareStatistics
+      if (totals) {
+        reach = parseInteger(totals.impressionCount)
+        const clicks = totals.clickCount || 0
+        const impressions = totals.impressionCount || 1
+        engagement = parseEngagement(clicks / impressions)
+      }
+    }
+
+    metrics.push({
+      metric_date: today,
+      channel: 'linkedin',
+      audience: followers,
+      reach,
+      engagement_rate: engagement,
+      leads: null,
+      source: 'api',
+      payload: { api: 'linkedin_org_stats' },
+    })
+  } catch (e) {
+    console.error('LinkedIn fetch error:', e)
+  }
+
+  return metrics
+}
+
+async function fetchInstagramMetrics(cfg: ChannelConfig): Promise<NormalizedMetric[]> {
+  const token = cfg.oauth_token
+  const igUserId = (cfg.config as any)?.ig_user_id
+  if (!token || !igUserId) return []
+
+  const today = new Date().toISOString().slice(0, 10)
+  const metrics: NormalizedMetric[] = []
+
+  try {
+    // Fetch user profile (followers count)
+    const profileResp = await fetch(
+      `https://graph.facebook.com/v19.0/${igUserId}?fields=followers_count,media_count&access_token=${token}`
+    )
+
+    let followers: number | null = null
+    if (profileResp.ok) {
+      const profileData = await profileResp.json()
+      followers = parseInteger(profileData?.followers_count)
+    }
+
+    // Fetch insights (reach, impressions)
+    const insightsResp = await fetch(
+      `https://graph.facebook.com/v19.0/${igUserId}/insights?metric=reach,impressions&period=day&access_token=${token}`
+    )
+
+    let reach: number | null = null
+    if (insightsResp.ok) {
+      const insightsData = await insightsResp.json()
+      for (const metric of insightsData?.data || []) {
+        if (metric.name === 'reach') {
+          const latest = metric.values?.[metric.values.length - 1]
+          reach = parseInteger(latest?.value)
+        }
+      }
+    }
+
+    metrics.push({
+      metric_date: today,
+      channel: 'instagram',
+      audience: followers,
+      reach,
+      engagement_rate: null,
+      leads: null,
+      source: 'api',
+      payload: { api: 'instagram_graph' },
+    })
+  } catch (e) {
+    console.error('Instagram fetch error:', e)
+  }
+
+  return metrics
+}
+
+const CHANNEL_FETCHERS: Record<string, (cfg: ChannelConfig) => Promise<NormalizedMetric[]>> = {
+  youtube: fetchYouTubeMetrics,
+  linkedin: fetchLinkedInMetrics,
+  instagram: fetchInstagramMetrics,
+}
+
+// ─── Token expiry helpers ───
+
+function isTokenValid(cfg: ChannelConfig): boolean {
+  // YouTube uses API key (never expires)
+  if (cfg.channel === 'youtube') return !!cfg.api_key
+  // OAuth channels need a valid token
+  if (!cfg.oauth_token) return false
+  if (!cfg.token_expires_at) return true // no expiry set = assume valid
+  return new Date(cfg.token_expires_at).getTime() > Date.now()
+}
+
+function isTokenExpiringSoon(cfg: ChannelConfig): boolean {
+  if (cfg.channel === 'youtube') return false
+  if (!cfg.token_expires_at) return false
+  const expiresAt = new Date(cfg.token_expires_at).getTime()
+  return expiresAt > Date.now() && expiresAt < Date.now() + SEVEN_DAYS_MS
+}
+
+// ─── Per-channel sync orchestrator ───
+
+async function syncFromChannelConfigs(
+  sb: ReturnType<typeof createClient>,
+  triggeredBy: string,
+  dryRun: boolean,
+  filterChannels?: string[],
+): Promise<{ total_upserted: number; channel_results: Record<string, unknown>[] }> {
+  const { data: configs, error } = await sb
+    .from('comms_channel_config')
+    .select('*')
+
+  if (error || !configs?.length) {
+    return { total_upserted: 0, channel_results: [] }
+  }
+
+  const channelResults: Record<string, unknown>[] = []
+  let totalUpserted = 0
+
+  for (const cfg of configs as ChannelConfig[]) {
+    if (filterChannels?.length && !filterChannels.includes(cfg.channel)) continue
+
+    const fetcher = CHANNEL_FETCHERS[cfg.channel]
+    if (!fetcher) {
+      channelResults.push({ channel: cfg.channel, status: 'no_fetcher' })
+      continue
+    }
+
+    // Check token validity
+    if (!isTokenValid(cfg)) {
+      await sb.from('comms_channel_config')
+        .update({ sync_status: 'token_expired' })
+        .eq('channel', cfg.channel)
+      channelResults.push({ channel: cfg.channel, status: 'token_expired' })
+      continue
+    }
+
+    // Check if expiring soon (still sync but flag)
+    if (isTokenExpiringSoon(cfg)) {
+      channelResults.push({ channel: cfg.channel, warning: 'token_expiring_soon' })
+    }
+
+    const runKey = `${RUN_KEY_PREFIX}_${cfg.channel}_${new Date().toISOString()}`
+
+    try {
+      const metrics = await fetcher(cfg)
+
+      if (!dryRun && metrics.length > 0) {
+        const { error: upsertError } = await sb
+          .from('comms_metrics_daily')
+          .upsert(metrics, { onConflict: 'metric_date,channel,source' })
+
+        if (upsertError) throw upsertError
+
+        // Update last_sync_at
+        await sb.from('comms_channel_config')
+          .update({ last_sync_at: new Date().toISOString(), sync_status: 'active' })
+          .eq('channel', cfg.channel)
+      }
+
+      await logRun(sb, {
+        run_key: runKey,
+        source: `api_${cfg.channel}`,
+        triggered_by: triggeredBy,
+        status: 'success',
+        fetched_rows: metrics.length,
+        upserted_rows: dryRun ? 0 : metrics.length,
+        invalid_rows: 0,
+        context: { dry_run: dryRun, channel: cfg.channel },
+        finished: true,
+      }).catch(() => {})
+
+      totalUpserted += metrics.length
+      channelResults.push({ channel: cfg.channel, status: 'success', rows: metrics.length })
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Unknown error'
+      await sb.from('comms_channel_config')
+        .update({ sync_status: 'error' })
+        .eq('channel', cfg.channel)
+
+      await logRun(sb, {
+        run_key: runKey,
+        source: `api_${cfg.channel}`,
+        triggered_by: triggeredBy,
+        status: 'error',
+        fetched_rows: 0,
+        upserted_rows: 0,
+        invalid_rows: 0,
+        error_message: message,
+        context: { channel: cfg.channel },
+        finished: true,
+      }).catch(() => {})
+
+      channelResults.push({ channel: cfg.channel, status: 'error', error: message })
+    }
+  }
+
+  return { total_upserted: totalUpserted, channel_results: channelResults }
+}
+
+// ─── Main handler ───
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -197,64 +515,78 @@ Deno.serve(async (req) => {
   const dryRun = !!body.dry_run
 
   try {
-    const sourceData = Array.isArray(body.rows)
-      ? { rows: body.rows, source: defaultSource }
-      : await fetchRowsFromEndpoint(defaultSource)
+    // If rows are provided in the request body, use legacy ingestion path
+    if (Array.isArray(body.rows) && body.rows.length > 0) {
+      const sourceData = { rows: body.rows, source: defaultSource }
 
-    const normalized: NormalizedMetric[] = []
-    let invalidRows = 0
+      const normalized: NormalizedMetric[] = []
+      let invalidRows = 0
 
-    for (const row of sourceData.rows) {
-      const parsed = normalizeRow(row, sourceData.source)
-      if (!parsed) {
-        invalidRows += 1
-        continue
+      for (const row of sourceData.rows) {
+        const parsed = normalizeRow(row, sourceData.source)
+        if (!parsed) {
+          invalidRows += 1
+          continue
+        }
+        normalized.push(parsed)
       }
-      normalized.push(parsed)
-    }
 
-    await logRun(sb, {
-      run_key: runKey,
-      source: sourceData.source,
-      triggered_by: triggeredBy,
-      status: 'running',
-      fetched_rows: sourceData.rows.length,
-      upserted_rows: 0,
-      invalid_rows: invalidRows,
-      context: { dry_run: dryRun },
-    }).catch(() => {})
+      await logRun(sb, {
+        run_key: runKey,
+        source: sourceData.source,
+        triggered_by: triggeredBy,
+        status: 'running',
+        fetched_rows: sourceData.rows.length,
+        upserted_rows: 0,
+        invalid_rows: invalidRows,
+        context: { dry_run: dryRun },
+      }).catch(() => {})
 
-    if (!dryRun && normalized.length) {
-      const { error } = await sb
-        .from('comms_metrics_daily')
-        .upsert(normalized, { onConflict: 'metric_date,channel,source' })
+      if (!dryRun && normalized.length) {
+        const { error } = await sb
+          .from('comms_metrics_daily')
+          .upsert(normalized, { onConflict: 'metric_date,channel,source' })
 
-      if (error) throw error
-    }
+        if (error) throw error
+      }
 
-    await logRun(sb, {
-      run_key: runKey,
-      source: sourceData.source,
-      triggered_by: triggeredBy,
-      status: 'success',
-      fetched_rows: sourceData.rows.length,
-      upserted_rows: dryRun ? 0 : normalized.length,
-      invalid_rows: invalidRows,
-      context: {
+      await logRun(sb, {
+        run_key: runKey,
+        source: sourceData.source,
+        triggered_by: triggeredBy,
+        status: 'success',
+        fetched_rows: sourceData.rows.length,
+        upserted_rows: dryRun ? 0 : normalized.length,
+        invalid_rows: invalidRows,
+        context: { dry_run: dryRun, sample: normalized.slice(0, 3) },
+        finished: true,
+      }).catch(() => {})
+
+      return new Response(JSON.stringify({
+        success: true,
+        mode: 'legacy_rows',
+        run_key: runKey,
         dry_run: dryRun,
-        sample: normalized.slice(0, 3),
-      },
-      finished: true,
-    }).catch(() => {})
+        source: sourceData.source,
+        fetched_rows: sourceData.rows.length,
+        upserted_rows: dryRun ? 0 : normalized.length,
+        invalid_rows: invalidRows,
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // New path: sync from comms_channel_config (per-channel API calls)
+    const result = await syncFromChannelConfigs(sb, triggeredBy, dryRun, body.channels)
 
     return new Response(JSON.stringify({
       success: true,
+      mode: 'channel_config',
       run_key: runKey,
       dry_run: dryRun,
-      source: sourceData.source,
-      fetched_rows: sourceData.rows.length,
-      upserted_rows: dryRun ? 0 : normalized.length,
-      invalid_rows: invalidRows,
+      total_upserted: result.total_upserted,
+      channel_results: result.channel_results,
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
