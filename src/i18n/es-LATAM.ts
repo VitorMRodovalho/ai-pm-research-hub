@@ -485,6 +485,9 @@ const esLATAM: Record<string, string> = {
   'attendance.modal.bulkSuccess': '{n} asistencias registradas',
   'attendance.checkin.windowExpired': 'El plazo de 24h para check-in expiró. Solicite al gestor.',
   'attendance.checkin.tooEarly': 'El check-in abre 2h antes del evento.',
+  'attendance.feedback.cycleTotal': 'Total del ciclo',
+  'attendance.feedback.events': 'eventos',
+  'attendance.feedback.streak': 'asistencias consecutivas!',
 
   // ── Attendance page (script / client-side) ──
   'attendance.dateLocale': 'es-419',
@@ -603,6 +606,7 @@ const esLATAM: Record<string, string> = {
   'profile.level.expert': 'Especialista IA',
   'profile.level.practitioner': 'Practicante IA',
   'profile.level.explorer': 'Explorador IA',
+  'profile.streakLabel': 'asistencias consecutivas!',
   'profile.noActiveCycle': 'Sin ciclo activo',
   'profile.journeyTitle': '📅 Mi Recorrido en el Núcleo',
   'profile.noHistory': 'Aún sin historial de ciclo registrado.',

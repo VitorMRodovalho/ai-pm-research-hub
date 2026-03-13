@@ -170,6 +170,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   bulkSuccess: t('attendance.modal.bulkSuccess', lang),
   checkinWindowExpired: t('attendance.checkin.windowExpired', lang),
   checkinTooEarly: t('attendance.checkin.tooEarly', lang),
+  feedbackCycleTotal: t('attendance.feedback.cycleTotal', lang),
+  feedbackEvents: t('attendance.feedback.events', lang),
 }) }}>
   window.__ATTENDANCE_I18N = JSON.parse(__ATTENDANCE_I18N);
 </script>
@@ -726,7 +728,19 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       const { data, error } = await sb.rpc('register_own_presence', { p_event_id: eventId });
       if (error) throw error;
       if (data?.success) {
-        toast(I18N.msgCheckedIn, 'success');
+        // Enriched feedback: show XP + hours after check-in
+        let feedbackMsg = I18N.msgCheckedIn;
+        try {
+          const ev = ALL_EVENTS.find((e: any) => e.id === eventId);
+          const evHours = ev?.duration_minutes ? (ev.duration_minutes / 60).toFixed(1) : null;
+          const { data: ahRows } = await sb.rpc('get_member_attendance_hours', { p_member_id: MEMBER.id });
+          const ah = ahRows?.[0];
+          if (ah) {
+            feedbackMsg += `\n+10 XP${evHours ? ' · +' + evHours + 'h' : ''}`;
+            feedbackMsg += `\n${I18N.feedbackCycleTotal}: ${Number(ah.total_hours).toFixed(1)}h · ${ah.total_events} ${I18N.feedbackEvents}`;
+          }
+        } catch (_) { /* fallback to simple toast */ }
+        toast(feedbackMsg, 'success');
         safePH?.('capture', 'checkin_success', { event_id: eventId });
         loadEvents(); loadKPIs();
       } else {

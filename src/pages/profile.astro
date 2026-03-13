@@ -49,6 +49,7 @@ const PROFILE_I18N = {
   levelExpert: t('profile.level.expert', lang),
   levelPractitioner: t('profile.level.practitioner', lang),
   levelExplorer: t('profile.level.explorer', lang),
+  streakLabel: t('profile.streakLabel', lang),
   noActiveCycle: t('profile.noActiveCycle', lang),
   journeyTitle: t('profile.journeyTitle', lang),
   noHistory: t('profile.noHistory', lang),
@@ -724,6 +725,7 @@ const PROFILE_I18N = {
     // XP level based on real attendance hours
     const totalHours = attendanceHoursData?.total_hours ? Math.round(Number(attendanceHoursData.total_hours)) : 0;
     const level = getLevel(totalHours);
+    const streak = attendanceHoursData?.current_streak || 0;
 
     el.innerHTML = `
       <!-- Card: Identity + Completeness -->
@@ -741,6 +743,7 @@ const PROFILE_I18N = {
           <div class="text-center flex-shrink-0 hidden sm:block">
             <div class="text-2xl">${level.emoji}</div>
             <div class="text-[.65rem] font-bold text-[var(--text-secondary)]">${level.name}</div>
+            ${streak >= 3 ? `<div class="mt-1 text-[.6rem] font-bold text-orange-500">🔥 ${streak} ${PROFILE_I18N.streakLabel}</div>` : ''}
           </div>
         </div>
 

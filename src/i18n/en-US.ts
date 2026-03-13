@@ -485,6 +485,9 @@ const enUS: Record<string, string> = {
   'attendance.modal.bulkSuccess': '{n} attendances recorded',
   'attendance.checkin.windowExpired': 'The 24h check-in window has expired. Ask your manager.',
   'attendance.checkin.tooEarly': 'Check-in opens 2h before the event.',
+  'attendance.feedback.cycleTotal': 'Cycle total',
+  'attendance.feedback.events': 'events',
+  'attendance.feedback.streak': 'consecutive attendances!',
 
   // ── Attendance page (script / client-side) ──
   'attendance.dateLocale': 'en-US',
@@ -603,6 +606,7 @@ const enUS: Record<string, string> = {
   'profile.level.expert': 'AI Expert',
   'profile.level.practitioner': 'AI Practitioner',
   'profile.level.explorer': 'AI Explorer',
+  'profile.streakLabel': 'consecutive attendances!',
   'profile.noActiveCycle': 'No active cycle',
   'profile.journeyTitle': '📅 My Journey in the Hub',
   'profile.noHistory': 'No cycle history registered yet.',

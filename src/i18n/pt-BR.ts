@@ -485,6 +485,9 @@ const ptBR: Record<string, string> = {
   'attendance.modal.bulkSuccess': '{n} presenças registradas',
   'attendance.checkin.windowExpired': 'O prazo de 24h para check-in expirou. Solicite ao gestor.',
   'attendance.checkin.tooEarly': 'O check-in abre 2h antes do evento.',
+  'attendance.feedback.cycleTotal': 'Total no ciclo',
+  'attendance.feedback.events': 'eventos',
+  'attendance.feedback.streak': 'presenças consecutivas!',
 
   // ── Attendance page (script / client-side) ──
   'attendance.dateLocale': 'pt-BR',
@@ -603,6 +606,7 @@ const ptBR: Record<string, string> = {
   'profile.level.expert': 'Especialista IA',
   'profile.level.practitioner': 'Praticante IA',
   'profile.level.explorer': 'Explorador IA',
+  'profile.streakLabel': 'presenças consecutivas!',
   'profile.noActiveCycle': 'Sem ciclo ativo',
   'profile.journeyTitle': '📅 Minha Jornada no Núcleo',
   'profile.noHistory': 'Ainda sem histórico de ciclo cadastrado.',
