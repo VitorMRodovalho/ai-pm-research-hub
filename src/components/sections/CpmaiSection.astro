@@ -83,7 +83,8 @@ const { lang = 'pt-BR' } = Astro.props;
         const initials = safeName.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
         const cpmaiBadge = m.credly_badges?.find?.((b: any) => b.category === 'cpmai');
         const badgeUrl = cpmaiBadge?.badge_url || m.credly_url || '';
-        const certType = cpmaiBadge?.name || 'PMI-CPMAI';
+        const rawBadgeName = cpmaiBadge?.name || '';
+        const certType = rawBadgeName.includes('CPMAI') ? 'PMI-CPMAI\u2122' : (rawBadgeName || 'PMI-CPMAI');
 
         return `
           <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-5 text-center hover:-translate-y-px hover:shadow-md transition-all duration-200">

@@ -36,4 +36,6 @@ Annual goals for 2026. Continuous monitoring via `/#kpis`.
 - Partner entities of type `pmi_chapter` are tracked separately and do NOT count toward the partner_entities KPI target (chapters are already KPI #1).
 - Certification trail uses aggregated course progress from the `courses` + `course_progress` tables, not binary `cpmai_certified`.
 - CPMAI certification (KPI #4) is a separate binary count — how many members hold the full CPMAI credential.
+  - **Pending validation**: GP should confirm whether each member's CPMAI was obtained during participation in the Núcleo. Ideally, `cpmai_certified_at` should be >= the member's first cycle start date. Currently 2 members are certified: Marcos (2026-03-04, during cycle 3) and Pedro (2025-10-23, before joining cycle 3). For now both count; GP may refine the filter once entry dates are confirmed.
+  - When `cpmai_certified_at IS NULL`, the member is included (benefit of the doubt).
 - Meeting hours (KPI #8) counts raw event duration. Impact hours (KPI #9) multiplies by attendees present.
