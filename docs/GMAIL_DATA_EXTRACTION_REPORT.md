@@ -1,8 +1,8 @@
 # Gmail Data Extraction — Reconciliation Report
 
-**Data:** 2026-03-13
+**Data:** 2026-03-13 (atualizado com dados da aplicação Ambassador)
 **Executado por:** Claude (CXO AI)
-**Fonte:** Lista de CC do Fireflies (kick-off Ciclo 3)
+**Fonte:** Lista de CC do Fireflies (kick-off Ciclo 3) + Aplicação Ambassador (fev/2026)
 
 ---
 
@@ -16,8 +16,8 @@
 
 | Email | Observação |
 |-------|------------|
-| `deborahvpontes@gmail.com` | Deborah Pontes — pessoa DIFERENTE de Débora Moura. Líder designada no Ciclo 3. **Precisa ser cadastrada pelo GP.** |
-| `polliane.portes@pmi.org` | Polliane Portes — email institucional PMI. Não encontrado nem em `secondary_emails`. |
+| `deborahvpontes@gmail.com` | Deborah Pontes — pessoa DIFERENTE de Débora Moura. **Precisa ser cadastrada pelo GP.** |
+| `polliane.portes@pmi.org` | Polliane Portes — Staff PMI LATAM. Registrada como contato externo em `partner_entities`. |
 | `welma@pmigo.org.br` | Welma — email institucional PMI-GO. Não encontrado nem em `secondary_emails`. |
 
 #### Membros encontrados mas INATIVOS:
@@ -31,7 +31,9 @@
 
 ---
 
-## 2. Partner Entities — Datas Atualizadas
+## 2. Partner Entities — Datas Atualizadas + Prospects
+
+### Capítulos PMI (datas formalizadas)
 
 | Parceiro | partnership_date | Status |
 |----------|-----------------|--------|
@@ -39,9 +41,24 @@
 | PMI-RS | 2025-12-10 | active |
 | PMI-DF | 2025-12-10 | active |
 | PMI-MG | 2025-12-09 | active |
-| Instituto Federal de Goiás (IFG) | 2025-12-10 | prospect |
 
-IFG inserido como `prospect` (reunião de apresentação, pendente follow-up).
+### Prospects (aplicação Ambassador + reuniões)
+
+| Entidade | Tipo | Status | Origem |
+|----------|------|--------|--------|
+| Instituto Federal de Goiás (IFG) | academia | prospect | Reunião 10/dez/2025 com Prof. Sirlon Diniz |
+| FioCruz | governo | prospect | Negociações mencionadas na aplicação Ambassador (fev/2026) |
+| AI.Brasil | empresa | prospect | Negociações mencionadas na aplicação Ambassador (fev/2026) |
+| CEIA-UFG (Centro de Excelência em IA) | academia | prospect | Negociações mencionadas na aplicação Ambassador |
+| PMO-GA | governo | prospect | Negociações mencionadas na aplicação Ambassador (fev/2026) |
+
+### Contatos Estratégicos
+
+| Contato | Cargo / Org | Registro |
+|---------|-------------|----------|
+| Cristina Duarte | Diretora de Administração e Finanças, PMI-DF | Nota no `description` de PMI-DF |
+| Polliane Portes | Staff PMI LATAM (`polliane.portes@pmi.org`) | Entidade `PMI LATAM Staff` (type: `pmi_global`) |
+| Daniel Falcão | PMI Global | Contato adicional na entidade `PMI LATAM Staff` |
 
 ---
 
@@ -83,15 +100,12 @@ Todos os 7 líderes encontrados no DB com emails corretos:
 
 ---
 
-## 5. Contatos Estratégicos
+## 5. Governance
 
-| Contato | Cargo / Org | Registro |
-|---------|-------------|----------|
-| Cristina Duarte | Diretora de Administração e Finanças, PMI-DF | Nota adicionada ao `description` de PMI-DF em `partner_entities` |
-| Polliane Portes | Staff PMI LATAM (`polliane.portes@pmi.org`) | Nova entrada `PMI LATAM Staff` em `partner_entities` (type: `pmi_global`) |
-| Daniel Falcão | PMI Global | Registrado como contato adicional na entidade `PMI LATAM Staff` |
-| Jessica Alcantara | Presidente PMI-CE (substituiu Cristiano) | Já no DB como `sponsor` com `designations=['sponsor']`, chapter PMI-CE |
-| Cristiano Oliveira | Ex-presidente PMI-CE, agora embaixador | Já no DB com `designations=['ambassador']`, `is_active=false` |
+| Pessoa | Cargo Atual | DB Status |
+|--------|-------------|-----------|
+| Jessica Alcantara | Presidente PMI-CE (substituiu Cristiano) | `sponsor`, `designations=['sponsor']`, chapter PMI-CE |
+| Cristiano Oliveira | Ex-presidente PMI-CE, embaixador | `designations=['ambassador']`, `is_active=false` |
 
 ---
 
@@ -99,8 +113,10 @@ Todos os 7 líderes encontrados no DB com emails corretos:
 
 | Sprint | Oportunidade | Status |
 |--------|-------------|--------|
-| W119 | Submeter proposta do Núcleo ao LATAM LIM 2026 (convite via Fabricio, 09/mar/2026) | Planned |
-| W120 | Follow-up aplicação à iniciativa Ricardo Vargas / PM AI Revolution | Planned |
+| W120 | PM AI Revolution Ambassador follow-up (aplicação 11/fev/2026, Vitor + Fabricio) | Planned |
+| W121 | LATAM LIM 2026 — submissão de proposta (convite via Fabricio, 09/mar/2026) | Planned |
+| W122 | Carlos Novello Award follow-up (Vitor indicado Voluntário do Ano PMI LATAM 2025) | Planned |
+| W123 | Partner pipeline management (5 entidades em negociação: FioCruz, AI.Brasil, CEIA-UFG, IFG, PMO-GA) | Planned |
 
 ---
 
@@ -108,7 +124,7 @@ Todos os 7 líderes encontrados no DB com emails corretos:
 
 1. **Cadastrar 3 membros ausentes** (ou confirmar que não devem ser cadastrados):
    - `deborahvpontes@gmail.com` (Deborah Pontes)
-   - `polliane.portes@pmi.org` (Polliane Portes)
+   - `polliane.portes@pmi.org` (Polliane Portes — já registrada como contato externo)
    - `welma@pmigo.org.br` (Welma)
 
 2. **Decidir sobre reativação** de Diego Menezes e Rogério Côrtes
@@ -116,3 +132,5 @@ Todos os 7 líderes encontrados no DB com emails corretos:
 3. **Preencher autores individuais** nos 7 artigos semeados (atualmente `Núcleo IA & GP`)
 
 4. **Adicionar `external_url`** para os 4 artigos já publicados no ProjectManagement.com
+
+5. **Atribuir responsáveis** para cada negociação de parceria (5 prospects)
