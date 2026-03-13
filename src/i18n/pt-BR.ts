@@ -1279,13 +1279,17 @@ const ptBR: Record<string, string> = {
 
   // ── Data: KPI labels ──
   'data.kpi.chapters': 'Capítulos PMI',
+  'data.kpi.partners': 'Entidades Parceiras',
+  'data.kpi.certTrail': 'Trilha Mini Cert. IA',
+  'data.kpi.cpmai': 'Certificados CPMAI',
   'data.kpi.activeMembers': 'Membros ativos',
   'data.kpi.tribes': 'Tribos ativas',
   'data.kpi.events': 'Eventos realizados',
-  'data.kpi.articles': 'Artigos',
-  'data.kpi.webinars': 'Webinars',
+  'data.kpi.articles': 'Artigos Publicados',
+  'data.kpi.webinars': 'Webinares/Talks',
   'data.kpi.pilots': 'Pilotos IA',
-  'data.kpi.impact': 'Horas de impacto',
+  'data.kpi.meetings': 'Horas de Encontros',
+  'data.kpi.impact': 'Horas de Impacto',
   'data.kpi.cert': 'Certificação IA',
 
   // ── Data: Quadrant labels ──

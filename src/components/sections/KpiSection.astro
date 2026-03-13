@@ -19,7 +19,7 @@ const safeKpis = Array.isArray(KPIS) ? KPIS : [];
     <p class="text-base text-white/60 max-w-[700px] mb-10">
       {t('kpis.subtitle', lang)}
     </p>
-    <div id="kpi-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
+    <div id="kpi-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-5">
       {safeKpis.map((k) => (
         <div class="bg-white/6 border border-white/10 rounded-2xl p-5 text-center" data-kpi-key={k.labelKey}>
           <div class="text-[clamp(1.5rem,4vw,2.2rem)] font-extrabold leading-none bg-gradient-to-br from-[#05BFE0] to-[#ED7D31] bg-clip-text text-transparent">
@@ -63,11 +63,14 @@ const safeKpis = Array.isArray(KPIS) ? KPIS : [];
 
     const METRIC_TO_LABEL: Record<string, string> = {
       chapters_participating: 'data.kpi.chapters',
+      partner_entities: 'data.kpi.partners',
+      certification_trail: 'data.kpi.certTrail',
+      cpmai_certified: 'data.kpi.cpmai',
       articles_published: 'data.kpi.articles',
       webinars_completed: 'data.kpi.webinars',
       ia_pilots: 'data.kpi.pilots',
+      meeting_hours: 'data.kpi.meetings',
       impact_hours: 'data.kpi.impact',
-      certification_rate: 'data.kpi.cert',
     };
 
     const STATUS_COLORS: Record<string, string> = {
