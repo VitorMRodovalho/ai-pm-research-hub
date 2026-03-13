@@ -338,6 +338,22 @@ const enUS: Record<string, string> = {
   'cpmai.noCerts': 'Coming soon — the first certifications of the current cycle will be displayed here.',
   'cpmai.viewBadge': 'View badge →',
 
+  // ── Projects (IA Pilots) ──
+  'projects.label': 'AI Pilots',
+  'projects.title': 'Projects with AI as Co-pilot',
+  'projects.subtitle': '2026 Goal: 3 pilots | Progress: 1/3',
+  'projects.noPilots': 'No pilots registered yet.',
+  'projects.registerPilot': '+ Register Pilot',
+  'projects.statusActive': 'Active',
+  'projects.statusCompleted': 'Completed',
+  'projects.statusPlanning': 'Planning',
+  'projects.demo': 'Demo',
+  'projects.github': 'GitHub',
+  'projects.lead': 'Lead',
+  'projects.placeholderTitle': 'In planning',
+  'projects.placeholderDesc': 'Next quarter',
+  'nav.projects': 'AI Pilots',
+
   // ── Team ──
   'team.label': '44 Collaborators · 5 Chapters · 1 Mission',
   'team.title': 'Our Team',

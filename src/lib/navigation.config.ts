@@ -75,6 +75,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'projects',   labelKey: 'nav.exploreTribes', href: '/teams',   minTier: 'member', requiresAuth: true, section: 'drawer', group: 'member', drawerSection: 'explorar', navSlot: 'none' },
   { key: 'webinars',   labelKey: 'nav.adminWebinars', href: '/webinars', minTier: 'leader', requiresAuth: true, section: 'drawer', group: 'subprojects', drawerSection: 'producao', allowedDesignations: ['comms_leader', 'comms_member', 'curator', 'co_gp'], allowedOperationalRoles: ['facilitator', 'guest'] },
   { key: 'publications', labelKey: 'nav.publications', href: '/publications', minTier: 'leader', requiresAuth: true, section: 'both', group: 'subprojects', drawerSection: 'producao', navSlot: 'none', allowedDesignations: ['curator', 'co_gp', 'comms_leader', 'comms_member'], allowedOperationalRoles: ['communicator'] },
+  { key: 'ia-pilots',    labelKey: 'nav.projects',     href: '/projects',      minTier: 'visitor', requiresAuth: false, section: 'drawer', group: 'subprojects', drawerSection: 'producao' },
 
   // ─── Profile drawer only ───
   { key: 'profile', labelKey: 'nav.profile', href: '/profile', minTier: 'member', requiresAuth: true, section: 'drawer', group: 'profile', drawerSection: 'meu-espaco' },
