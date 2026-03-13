@@ -1,0 +1,319 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+---
+
+<BaseLayout title={t('partnerships.title', lang)} activePage="admin">
+  <div class="max-w-[1100px] mx-auto px-4 py-8 space-y-4">
+    <div id="partnerships-loading" class="text-[var(--text-muted)] text-sm">{t('common.loading', lang)}</div>
+    <div id="partnerships-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
+      {t('partnerships.denied', lang)}
+    </div>
+    <section id="partnerships-panel" class="hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h1 class="text-xl font-extrabold text-navy">{t('partnerships.title', lang)}</h1>
+          <p class="text-sm text-[var(--text-secondary)]">{t('partnerships.subtitle', lang)}</p>
+        </div>
+        <button id="btn-add-partner" class="px-3 py-2 rounded-lg bg-teal text-white text-xs font-semibold hover:opacity-90">
+          {t('partnerships.addPartner', lang)}
+        </button>
+      </div>
+
+      <div class="flex flex-wrap gap-2 mb-4">
+        <select id="filter-type" class="text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5">
+          <option value="">{t('partnerships.allTypes', lang)}</option>
+          <option value="pmi_chapter">PMI Chapter</option>
+          <option value="academia">Academia</option>
+          <option value="governo">Governo</option>
+          <option value="empresa">Empresa</option>
+          <option value="outro">Outro</option>
+        </select>
+        <select id="filter-status" class="text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5">
+          <option value="">{t('partnerships.allStatuses', lang)}</option>
+          <option value="active">{t('common.active', lang)}</option>
+          <option value="prospect">Prospect</option>
+          <option value="inactive">{t('common.inactive', lang)}</option>
+        </select>
+      </div>
+
+      <div id="partners-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+    </section>
+
+    <!-- Modal -->
+    <div id="partner-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-xl w-full max-w-md p-5 mx-4">
+        <h2 id="modal-title" class="text-lg font-extrabold text-navy mb-4">{t('partnerships.addPartner', lang)}</h2>
+        <input type="hidden" id="modal-partner-id" />
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('partnerships.name', lang)}</label>
+            <input id="modal-name" type="text" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2" />
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('partnerships.type', lang)}</label>
+            <select id="modal-type" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2">
+              <option value="pmi_chapter">PMI Chapter</option>
+              <option value="academia">Academia</option>
+              <option value="governo">Governo</option>
+              <option value="empresa">Empresa</option>
+              <option value="outro">Outro</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('partnerships.description', lang)}</label>
+            <textarea id="modal-description" rows="2" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2"></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('partnerships.date', lang)}</label>
+              <input id="modal-date" type="date" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2" />
+            </div>
+            <div>
+              <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Status</label>
+              <select id="modal-status" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2">
+                <option value="active">Active</option>
+                <option value="prospect">Prospect</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('partnerships.contactName', lang)}</label>
+              <input id="modal-contact-name" type="text" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2" />
+            </div>
+            <div>
+              <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('partnerships.contactEmail', lang)}</label>
+              <input id="modal-contact-email" type="email" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2" />
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-between mt-5">
+          <button id="btn-delete-partner" class="hidden px-3 py-2 rounded-lg border border-red-300 text-red-600 text-xs font-semibold hover:bg-red-50">
+            {t('common.delete', lang)}
+          </button>
+          <div class="flex gap-2 ml-auto">
+            <button id="btn-cancel-modal" class="px-3 py-2 rounded-lg border border-[var(--border-default)] text-[var(--text-primary)] text-xs font-semibold hover:bg-[var(--surface-hover)]">
+              {t('common.cancel', lang)}
+            </button>
+            <button id="btn-save-partner" class="px-3 py-2 rounded-lg bg-teal text-white text-xs font-semibold hover:opacity-90">
+              {t('common.save', lang)}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  const TYPE_LABELS: Record<string, string> = {
+    pmi_chapter: 'PMI Chapter',
+    academia: 'Academia',
+    governo: 'Governo',
+    empresa: 'Empresa',
+    outro: 'Outro',
+  };
+
+  const STATUS_STYLES: Record<string, { badge: string; dot: string }> = {
+    active:   { badge: 'bg-emerald-100 text-emerald-700', dot: '🟢' },
+    prospect: { badge: 'bg-amber-100 text-amber-700', dot: '🟡' },
+    inactive: { badge: 'bg-gray-100 text-gray-500', dot: '⚪' },
+  };
+
+  let allPartners: any[] = [];
+  let bootRetries = 0;
+
+  function hasPartnershipsAccess(member: any): boolean {
+    if (!member) return false;
+    if (member.is_superadmin) return true;
+    const role = String(member.operational_role || '');
+    const designations: string[] = Array.isArray(member.designations) ? member.designations : [];
+    return ['manager', 'deputy_manager'].includes(role)
+      || ['sponsor', 'chapter_liaison'].some((d) => designations.includes(d));
+  }
+
+  function renderPartners() {
+    const grid = document.getElementById('partners-grid');
+    if (!grid) return;
+
+    const typeFilter = (document.getElementById('filter-type') as HTMLSelectElement)?.value || '';
+    const statusFilter = (document.getElementById('filter-status') as HTMLSelectElement)?.value || '';
+
+    const filtered = allPartners.filter((p) => {
+      if (typeFilter && p.entity_type !== typeFilter) return false;
+      if (statusFilter && p.status !== statusFilter) return false;
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      grid.innerHTML = '<p class="text-sm text-[var(--text-muted)] col-span-full">Nenhuma parceria encontrada.</p>';
+      return;
+    }
+
+    grid.innerHTML = filtered.map((p: any) => {
+      const s = STATUS_STYLES[p.status] || STATUS_STYLES.inactive;
+      const typeLabel = TYPE_LABELS[p.entity_type] || p.entity_type;
+      const date = p.partnership_date ? new Date(p.partnership_date + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+      return `<article class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4 cursor-pointer hover:border-teal/40 transition-colors" data-partner-id="${p.id}">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-sm font-bold text-[var(--text-primary)]">${p.name}</span>
+          <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold ${s.badge}">${s.dot} ${p.status}</span>
+        </div>
+        <div class="text-xs text-[var(--text-secondary)] mb-1">${typeLabel}</div>
+        ${p.description ? `<div class="text-xs text-[var(--text-muted)] mb-2 line-clamp-2">${p.description}</div>` : ''}
+        <div class="flex items-center justify-between text-[10px] text-[var(--text-muted)]">
+          <span>${date}</span>
+          ${p.contact_name ? `<span>${p.contact_name}</span>` : ''}
+        </div>
+      </article>`;
+    }).join('');
+
+    grid.querySelectorAll('[data-partner-id]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const id = el.getAttribute('data-partner-id');
+        const partner = allPartners.find((p) => p.id === id);
+        if (partner) openModal(partner);
+      });
+    });
+  }
+
+  function openModal(partner?: any) {
+    const modal = document.getElementById('partner-modal');
+    const title = document.getElementById('modal-title');
+    const deleteBtn = document.getElementById('btn-delete-partner');
+    if (!modal) return;
+
+    (document.getElementById('modal-partner-id') as HTMLInputElement).value = partner?.id || '';
+    (document.getElementById('modal-name') as HTMLInputElement).value = partner?.name || '';
+    (document.getElementById('modal-type') as HTMLSelectElement).value = partner?.entity_type || 'pmi_chapter';
+    (document.getElementById('modal-description') as HTMLTextAreaElement).value = partner?.description || '';
+    (document.getElementById('modal-date') as HTMLInputElement).value = partner?.partnership_date || '';
+    (document.getElementById('modal-status') as HTMLSelectElement).value = partner?.status || 'active';
+    (document.getElementById('modal-contact-name') as HTMLInputElement).value = partner?.contact_name || '';
+    (document.getElementById('modal-contact-email') as HTMLInputElement).value = partner?.contact_email || '';
+
+    if (title) title.textContent = partner ? 'Editar Parceria' : 'Nova Parceria';
+    if (deleteBtn) {
+      if (partner) deleteBtn.classList.remove('hidden');
+      else deleteBtn.classList.add('hidden');
+    }
+
+    modal.classList.remove('hidden');
+  }
+
+  function closeModal() {
+    document.getElementById('partner-modal')?.classList.add('hidden');
+  }
+
+  async function loadPartners(sb: any) {
+    const { data, error } = await sb.from('partner_entities').select('*').order('partnership_date', { ascending: false });
+    if (error) {
+      (window as any).toast?.('Falha ao carregar parcerias.', 'error');
+      return;
+    }
+    allPartners = data || [];
+    renderPartners();
+  }
+
+  async function savePartner(sb: any) {
+    const id = (document.getElementById('modal-partner-id') as HTMLInputElement)?.value || null;
+    const name = (document.getElementById('modal-name') as HTMLInputElement)?.value?.trim();
+    const entityType = (document.getElementById('modal-type') as HTMLSelectElement)?.value;
+    const description = (document.getElementById('modal-description') as HTMLTextAreaElement)?.value?.trim() || null;
+    const date = (document.getElementById('modal-date') as HTMLInputElement)?.value || null;
+    const status = (document.getElementById('modal-status') as HTMLSelectElement)?.value;
+    const contactName = (document.getElementById('modal-contact-name') as HTMLInputElement)?.value?.trim() || null;
+    const contactEmail = (document.getElementById('modal-contact-email') as HTMLInputElement)?.value?.trim() || null;
+
+    if (!name || !entityType || !date) {
+      (window as any).toast?.('Preencha nome, tipo e data.', 'error');
+      return;
+    }
+
+    const { data, error } = await sb.rpc('admin_manage_partner_entity', {
+      p_action: id ? 'update' : 'create',
+      p_id: id || null,
+      p_name: name,
+      p_entity_type: entityType,
+      p_description: description,
+      p_partnership_date: date,
+      p_contact_name: contactName,
+      p_contact_email: contactEmail,
+      p_status: status,
+    });
+
+    if (error || !data?.success) {
+      (window as any).toast?.(data?.error || 'Erro ao salvar parceria.', 'error');
+      return;
+    }
+
+    closeModal();
+    (window as any).toast?.('Parceria salva!', 'success');
+    await loadPartners(sb);
+  }
+
+  async function deletePartner(sb: any) {
+    const id = (document.getElementById('modal-partner-id') as HTMLInputElement)?.value;
+    if (!id || !confirm('Excluir esta parceria?')) return;
+
+    const { data, error } = await sb.rpc('admin_manage_partner_entity', {
+      p_action: 'delete',
+      p_id: id,
+    });
+
+    if (error || !data?.success) {
+      (window as any).toast?.('Erro ao excluir.', 'error');
+      return;
+    }
+
+    closeModal();
+    (window as any).toast?.('Parceria excluída.', 'success');
+    await loadPartners(sb);
+  }
+
+  async function bootPartnershipsPage() {
+    const loading = document.getElementById('partnerships-loading');
+    const denied = document.getElementById('partnerships-denied');
+    const panel = document.getElementById('partnerships-panel');
+    const member = (window as any).navGetMember?.();
+    const sb = (window as any).navGetSb?.();
+
+    if (!member || !sb) {
+      bootRetries += 1;
+      if (bootRetries >= 20) {
+        loading?.classList.add('hidden');
+        denied?.classList.remove('hidden');
+        return;
+      }
+      setTimeout(() => bootPartnershipsPage(), 150);
+      return;
+    }
+
+    loading?.classList.add('hidden');
+    if (!hasPartnershipsAccess(member)) {
+      denied?.classList.remove('hidden');
+      return;
+    }
+
+    panel?.classList.remove('hidden');
+    await loadPartners(sb);
+
+    // Wire up event listeners
+    document.getElementById('btn-add-partner')?.addEventListener('click', () => openModal());
+    document.getElementById('btn-cancel-modal')?.addEventListener('click', closeModal);
+    document.getElementById('btn-save-partner')?.addEventListener('click', () => savePartner(sb));
+    document.getElementById('btn-delete-partner')?.addEventListener('click', () => deletePartner(sb));
+    document.getElementById('filter-type')?.addEventListener('change', renderPartners);
+    document.getElementById('filter-status')?.addEventListener('change', renderPartners);
+
+    // Close modal on backdrop click
+    document.getElementById('partner-modal')?.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeModal();
+    });
+  }
+
+  bootPartnershipsPage();
+</script>
