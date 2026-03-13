@@ -20,6 +20,17 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       </div>
       <div id="portfolio-summary" class="space-y-5"></div>
     </section>
+
+    <!-- KPI Health Section (W104) -->
+    <section id="kpi-health-panel" class="hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-lg font-extrabold text-navy">{t('portfolio.kpiHealth.title', lang)}</h2>
+          <p class="text-xs text-[var(--text-secondary)]">{t('portfolio.kpiHealth.subtitle', lang)}</p>
+        </div>
+      </div>
+      <div id="kpi-health-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+    </section>
   </div>
 </BaseLayout>
 
@@ -140,6 +151,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         sectionHtml('🌍 Global', grouped.global),
       ].join('');
     }
+
+    // Load KPI health cards
+    loadKpiHealth(sb);
   }
 
   document.getElementById('portfolio-run-taxonomy-alerts')?.addEventListener('click', async () => {
@@ -164,6 +178,52 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const summary = data?.summary || {};
     (window as any).toast?.(`Sanity OK. Orfãos: ${summary.orphan_items ?? 0} · Inativos: ${summary.items_in_inactive_board ?? 0}`, 'success');
   });
+
+  // ─── KPI Health (W104) ───
+  async function loadKpiHealth(sb: any) {
+    const healthPanel = document.getElementById('kpi-health-panel');
+    const healthGrid = document.getElementById('kpi-health-grid');
+    if (!healthPanel || !healthGrid) return;
+
+    const { data, error } = await sb.rpc('exec_portfolio_health');
+    if (error || !data) return;
+
+    const items = Array.isArray(data) ? data : [];
+    if (items.length === 0) return;
+
+    const STATUS_STYLES: Record<string, { bg: string; border: string; accent: string; icon: string }> = {
+      green:  { bg: 'bg-emerald-50', border: 'border-emerald-200', accent: 'text-emerald-700', icon: '🟢' },
+      yellow: { bg: 'bg-amber-50', border: 'border-amber-200', accent: 'text-amber-700', icon: '🟡' },
+      red:    { bg: 'bg-red-50', border: 'border-red-200', accent: 'text-red-700', icon: '🔴' },
+    };
+
+    const lang = document.documentElement.lang || 'pt-BR';
+    const langKey = lang === 'en-US' || lang.startsWith('en') ? 'en' : lang.startsWith('es') ? 'es' : 'pt';
+
+    healthGrid.innerHTML = items.map((item: any) => {
+      const s = STATUS_STYLES[item.status] || STATUS_STYLES.red;
+      const label = item.label?.[langKey] || item.label?.pt || item.metric_key;
+      const pct = Math.min(Number(item.progress_pct) || 0, 100);
+      const unitLabel = item.unit === 'percent' ? '%' : item.unit === 'hours' ? 'h' : '';
+
+      return `<article class="rounded-xl ${s.border} ${s.bg} p-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span>${s.icon}</span>
+          <span class="text-xs font-bold uppercase tracking-wide ${s.accent}">${label}</span>
+        </div>
+        <div class="flex items-end gap-1 mb-2">
+          <span class="text-2xl font-extrabold ${s.accent}">${item.current}${unitLabel}</span>
+          <span class="text-xs text-[var(--text-muted)] mb-1">/ ${item.target}${unitLabel}</span>
+        </div>
+        <div class="w-full h-2 rounded-full bg-white/60 overflow-hidden">
+          <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${s.accent === 'text-emerald-700' ? '#10B981' : s.accent === 'text-amber-700' ? '#D97706' : '#BE2027'}"></div>
+        </div>
+        <div class="text-[10px] ${s.accent} font-semibold mt-1">${pct}% da meta</div>
+      </article>`;
+    }).join('');
+
+    healthPanel.classList.remove('hidden');
+  }
 
   bootPortfolioPage();
 </script>

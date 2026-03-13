@@ -27,6 +27,12 @@ const safeKpis = Array.isArray(KPIS) ? KPIS : [];
           </div>
           <div class="text-[.78rem] text-white/60 mt-1.5">{t(k.labelKey, lang)}</div>
           <div class="kpi-progress hidden mt-2 text-[10px] font-semibold text-[#05BFE0]/80"></div>
+          <div class="kpi-health-bar hidden mt-2">
+            <div class="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div class="kpi-health-fill h-full rounded-full transition-all duration-700" style="width:0%"></div>
+            </div>
+            <div class="kpi-health-label text-[9px] mt-1 font-semibold"></div>
+          </div>
         </div>
       ))}
       {!safeKpis.length && (
@@ -39,31 +45,79 @@ const safeKpis = Array.isArray(KPIS) ? KPIS : [];
 </section>
 
 <script>
-  // Hydrate KPI cards with live progress from kpi_summary RPC
+  // Hydrate KPI cards with live progress from kpi_summary + portfolio health
   (async () => {
     const sb = (window as any).navGetSb?.();
     if (!sb) return;
 
+    // Map metric_key → labelKey for matching
+    const METRIC_TO_LABEL: Record<string, string> = {
+      chapters_participating: 'data.kpi.chapters',
+      articles_published: 'data.kpi.articles',
+      webinars_completed: 'data.kpi.webinars',
+      ia_pilots: 'data.kpi.pilots',
+      impact_hours: 'data.kpi.impact',
+      certification_rate: 'data.kpi.cert',
+    };
+
+    const STATUS_COLORS: Record<string, string> = {
+      green: '#10B981',
+      yellow: '#D97706',
+      red: '#BE2027',
+    };
+
     try {
-      const { data, error } = await sb.rpc('kpi_summary');
-      if (error || !data) return;
+      // Fetch both RPCs in parallel
+      const [summaryRes, healthRes] = await Promise.all([
+        sb.rpc('kpi_summary'),
+        sb.rpc('exec_portfolio_health'),
+      ]);
 
-      // Map label keys → actual values from kpi_summary
-      const actuals: Record<string, string> = {
-        'data.kpi.chapters': `${data.chapters ?? '—'} / 8`,
-        'data.kpi.articles': `${data.published_artifacts ?? '—'} publicados`,
-        'data.kpi.webinars': `${data.total_events ?? '—'} realizados`,
-        'data.kpi.impact':   `${Number(data.impact_hours || 0).toLocaleString('pt-BR')}h atual`,
-        'data.kpi.cert':     `${data.cert_pct ?? '—'}% atual`,
-      };
+      // kpi_summary: show actual counts
+      if (summaryRes.data && !summaryRes.error) {
+        const data = summaryRes.data;
+        const actuals: Record<string, string> = {
+          'data.kpi.chapters': `${data.chapters ?? '—'} / 8`,
+          'data.kpi.articles': `${data.published_artifacts ?? '—'} publicados`,
+          'data.kpi.webinars': `${data.total_events ?? '—'} realizados`,
+          'data.kpi.impact':   `${Number(data.impact_hours || 0).toLocaleString('pt-BR')}h atual`,
+          'data.kpi.cert':     `${data.cert_pct ?? '—'}% atual`,
+        };
 
-      document.querySelectorAll<HTMLElement>('#kpi-grid [data-kpi-key]').forEach((card) => {
-        const key = card.dataset.kpiKey || '';
-        const progress = actuals[key];
-        if (!progress) return;
-        const el = card.querySelector<HTMLElement>('.kpi-progress');
-        if (el) { el.textContent = progress; el.classList.remove('hidden'); }
-      });
-    } catch { /* kpi_summary may not exist — keep static fallbacks */ }
+        document.querySelectorAll<HTMLElement>('#kpi-grid [data-kpi-key]').forEach((card) => {
+          const key = card.dataset.kpiKey || '';
+          const progress = actuals[key];
+          if (!progress) return;
+          const el = card.querySelector<HTMLElement>('.kpi-progress');
+          if (el) { el.textContent = progress; el.classList.remove('hidden'); }
+        });
+      }
+
+      // exec_portfolio_health: show progress bars
+      if (healthRes.data && !healthRes.error) {
+        const healthItems = Array.isArray(healthRes.data) ? healthRes.data : [];
+        healthItems.forEach((item: any) => {
+          const labelKey = METRIC_TO_LABEL[item.metric_key];
+          if (!labelKey) return;
+          const card = document.querySelector<HTMLElement>(`#kpi-grid [data-kpi-key="${labelKey}"]`);
+          if (!card) return;
+
+          const barContainer = card.querySelector<HTMLElement>('.kpi-health-bar');
+          const fill = card.querySelector<HTMLElement>('.kpi-health-fill');
+          const label = card.querySelector<HTMLElement>('.kpi-health-label');
+          if (!barContainer || !fill || !label) return;
+
+          const pct = Math.min(Number(item.progress_pct) || 0, 100);
+          const color = STATUS_COLORS[item.status] || STATUS_COLORS.red;
+
+          fill.style.width = `${pct}%`;
+          fill.style.backgroundColor = color;
+          label.style.color = color;
+          label.textContent = `${item.current} / ${item.target}`;
+          label.title = `${item.current} de ${item.target} ${item.unit === 'percent' ? '%' : item.unit === 'hours' ? 'horas' : ''} — progresso: ${pct}%`;
+          barContainer.classList.remove('hidden');
+        });
+      }
+    } catch { /* RPCs may not exist — keep static fallbacks */ }
   })();
 </script>

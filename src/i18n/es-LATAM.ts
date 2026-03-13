@@ -89,6 +89,8 @@ const esLATAM: Record<string, string> = {
   'portfolio.subtitle': 'Vista consolidada por alcance/dominio para priorización de gestión.',
   'portfolio.runTaxonomy': 'Ejecutar detección de drift taxonomy',
   'portfolio.runSanity': 'Ejecutar data sanity v2',
+  'portfolio.kpiHealth.title': 'Salud del Portafolio — KPIs',
+  'portfolio.kpiHealth.subtitle': 'Progreso de las metas anuales vs datos reales del ciclo.',
   'nav.adminHelp': 'Ayuda / Guía',
   'nav.adminCuratorship': 'Curaduria',
   'nav.adminSelection': 'Proceso Selectivo',

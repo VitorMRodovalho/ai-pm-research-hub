@@ -89,6 +89,8 @@ const enUS: Record<string, string> = {
   'portfolio.subtitle': 'Consolidated scope/domain view for management prioritization.',
   'portfolio.runTaxonomy': 'Run taxonomy drift detection',
   'portfolio.runSanity': 'Run data sanity v2',
+  'portfolio.kpiHealth.title': 'Portfolio Health — KPIs',
+  'portfolio.kpiHealth.subtitle': 'Annual target progress vs live cycle data.',
   'nav.adminHelp': 'Help / Guide',
   'nav.adminCuratorship': 'Curatorship',
   'nav.adminSelection': 'Selection Process',
