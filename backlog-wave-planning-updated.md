@@ -970,3 +970,5 @@ This backlog now reflects the actual state of production. All items marked Done 
 | W111 | Cycle management UI | Medium | Planned | Interface admin para gerenciar ciclos (criar, editar datas, marcar atual). Eliminar necessidade de SQL direto para alterar `cycles` table. |
 | W112 | CPMAI certification journey tracking | Low | Planned | Tracking de `cpmai_certified_at` com datas reais, integração com Credly badges, distinção entre certificações pré-existentes vs earned no ciclo. |
 | W113 | Partner entities management UI | Medium | Planned | Interface admin `/admin/partnerships` para gerenciar entidades parceiras (CRUD), filtrar por tipo, visualizar timeline de parcerias. |
+| W119 | LATAM LIM 2026 submission | High | Planned | Submeter proposta do Núcleo ao LATAM LIM 2026 (convite encaminhado por Fabricio em 09/mar/2026). Pode contar como webinar/talk se aceito. Deadline a confirmar. |
+| W120 | PM AI Revolution application follow-up | Medium | Planned | Acompanhar aplicação à iniciativa de Ricardo Vargas (info@pmairevolution.com). GP aplicou via nucleoia@pmigo.org.br. Pendente resposta/follow-up. |
