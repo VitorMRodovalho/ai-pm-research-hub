@@ -150,7 +150,7 @@ function TribeSortableCard({ item, onOpen, ui = {} }: { item: BoardItem; onOpen:
           <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${
             (item as any).reviews_approved >= (item as any).reviewers_required
               ? 'bg-emerald-100 text-emerald-700' : 'bg-violet-100 text-violet-600'
-          }`}>{(item as any).reviews_approved}/{(item as any).reviewers_required} revisores</span>
+          }`}>{(item as any).reviews_approved}{String('/')}{(item as any).reviewers_required}{' '}{ui.reviewersLabel || 'revisores'}</span>
         ) : (item.review_count || 0) > 0 ? (
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-100 text-violet-600">{item.review_count}{ui.timesReviewed || 'x avaliado'}</span>
         ) : null}

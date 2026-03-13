@@ -534,6 +534,10 @@ async function run() {
     assert.equal(await analyticsPage.locator('#analytics-quality-banner').isVisible(), true);
     assert.equal(await analyticsPage.locator('#analytics-interpretation-card').isVisible(), true);
     assert.match(await analyticsPage.locator('#kpi-cohort-members').textContent() || '', /10/);
+    await analyticsPage.waitForFunction(
+      () => (document.getElementById('analytics-transition-matrix')?.textContent || '').match(/researcher|tribe_leader/),
+      { timeout: 10000 }
+    );
     assert.match(await analyticsPage.locator('#analytics-transition-matrix').textContent() || '', /researcher|tribe_leader/);
     await analyticsPage.locator('#analytics-copy-summary').click();
     const copiedSummary = await analyticsPage.evaluate(() => (window).__copiedSummary || '');
