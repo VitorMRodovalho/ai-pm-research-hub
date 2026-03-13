@@ -94,6 +94,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'admin-sustainability', labelKey: 'nav.adminSustainability', href: '/admin/sustainability', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['sponsor', 'chapter_liaison', 'curator'] },
   { key: 'admin-selection', labelKey: 'nav.adminSelection', href: '/admin/selection', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', lgpdSensitive: true },
   { key: 'admin-settings',  labelKey: 'nav.adminSettings',  href: '/admin/settings', minTier: 'superadmin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin' },
+  { key: 'notifications',   labelKey: 'nav.notifications', href: '/notifications',  minTier: 'member',   requiresAuth: true, section: 'drawer', group: 'member', drawerSection: 'meu-espaco' },
   { key: 'help',            labelKey: 'nav.adminHelp',     href: '/help',           minTier: 'member',   requiresAuth: true, section: 'drawer', group: 'member', drawerSection: 'meu-espaco' },
 ];
 
