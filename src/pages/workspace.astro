@@ -14,6 +14,10 @@ const WK = {
   loading: t('wk.loading', lang),
   authRequired: t('wk.authRequired', lang),
   authBtn: t('wk.authBtn', lang),
+  checkinBanner: t('wk.checkinBanner', lang),
+  checkinStarted: t('wk.checkinStarted', lang),
+  checkinStartsSoon: t('wk.checkinStartsSoon', lang),
+  checkinDone: t('wk.checkinDone', lang),
   sectionMyTribe: t('wk.sectionMyTribe', lang),
   sectionSubprojects: t('wk.sectionSubprojects', lang),
   sectionProduction: t('wk.sectionProduction', lang),
@@ -74,6 +78,9 @@ const WK = {
 
     <!-- Main content (hidden until loaded) -->
     <div id="wk-content" class="hidden space-y-8">
+
+      <!-- Quick Check-in Banner (shown when near event exists) -->
+      <div id="wk-checkin-banner" class="hidden"></div>
 
       <!-- ═══ Section 1: Minha Tribo ═══ -->
       <section id="wk-my-tribe">
@@ -314,6 +321,68 @@ const WK = {
           </div>
         `;
         $prodGrid.appendChild(card);
+      }
+
+      // ── Quick Check-in Banner ──
+      try {
+        const { data: nearEvents } = await sb.rpc('get_near_events', { p_member_id: member.id });
+        const banner = document.getElementById('wk-checkin-banner')!;
+        if (nearEvents?.length) {
+          const unchecked = nearEvents.filter((ev: any) => !ev.already_checked_in);
+          if (unchecked.length > 0) {
+            const ev = unchecked[0];
+            const evDate = new Date(ev.event_date + 'T00:00:00');
+            const diffMin = Math.round((Date.now() - evDate.getTime()) / 60000);
+            const timeLabel = diffMin > 0
+              ? i18n.checkinStarted.replace('{m}', String(diffMin))
+              : i18n.checkinStartsSoon.replace('{m}', String(Math.abs(diffMin)));
+
+            banner.innerHTML = `
+              <div class="bg-teal/10 border-2 border-teal rounded-2xl p-4 flex items-center justify-between gap-3 animate-pulse-border">
+                <div class="flex-1 min-w-0">
+                  <div class="font-bold text-[var(--text-primary)] text-sm truncate">${escHtml(ev.event_title)}</div>
+                  <div class="text-xs text-[var(--text-secondary)] mt-0.5">${timeLabel}</div>
+                </div>
+                <button type="button" id="wk-quick-checkin-btn"
+                  class="px-4 py-2 bg-teal text-white rounded-xl text-sm font-bold border-0 cursor-pointer hover:opacity-90 transition-all flex-shrink-0"
+                  data-event-id="${ev.event_id}">
+                  ${i18n.checkinBanner}
+                </button>
+              </div>
+            `;
+            banner.classList.remove('hidden');
+
+            document.getElementById('wk-quick-checkin-btn')?.addEventListener('click', async () => {
+              const btn = document.getElementById('wk-quick-checkin-btn') as HTMLElement;
+              btn.textContent = '...';
+              btn.setAttribute('disabled', 'true');
+              try {
+                const { data: result, error } = await sb.rpc('register_own_presence', { p_event_id: ev.event_id });
+                if (error) throw error;
+                if (result?.success) {
+                  banner.innerHTML = `
+                    <div class="bg-green-50 border-2 border-green-400 rounded-2xl p-4 text-center">
+                      <span class="font-bold text-green-700 text-sm">${i18n.checkinDone}</span>
+                    </div>
+                  `;
+                  const safePH = (window as any).__safePH;
+                  safePH?.('capture', 'quick_checkin_used', { source: 'workspace', event_id: ev.event_id });
+                  setTimeout(() => banner.classList.add('hidden'), 3000);
+                } else {
+                  (window as any).toast?.(result?.message || result?.error || 'Error', 'error');
+                  btn.textContent = i18n.checkinBanner;
+                  btn.removeAttribute('disabled');
+                }
+              } catch (e: any) {
+                (window as any).toast?.(e?.message || 'Error', 'error');
+                btn.textContent = i18n.checkinBanner;
+                btn.removeAttribute('disabled');
+              }
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Workspace: failed to load near events:', e);
       }
 
       // ── Done: show content ──
