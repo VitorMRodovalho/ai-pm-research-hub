@@ -212,6 +212,7 @@ const ADMIN_I18N = {
         <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]" data-action="switch-adm-tab" data-tab="reports">{t('admin.tab.reports', lang)}</button>
         <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]" data-action="switch-adm-tab" data-tab="knowledge">{t('admin.tab.knowledge', lang)}</button>
         <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]" data-action="switch-adm-tab" data-tab="analytics">{t('admin.tab.analytics', lang)}</button>
+        <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]" data-action="switch-adm-tab" data-tab="data-health">{t('admin.tab.dataHealth', lang)}</button>
       </div>
 
       <div id="panel-tribes">
@@ -868,6 +869,46 @@ const ADMIN_I18N = {
         </div>
       </div>
 
+      <!-- Data Health panel (W98) -->
+      <div id="panel-data-health" class="hidden space-y-4">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h2 class="text-lg font-extrabold text-navy">{t('admin.dataHealth.title', lang)}</h2>
+            <p class="text-xs text-[var(--text-secondary)]">{t('admin.dataHealth.subtitle', lang)}</p>
+          </div>
+          <div class="flex gap-2">
+            <button id="dh-btn-detect" class="px-3 py-2 rounded-lg border border-[var(--border-default)] text-[var(--text-primary)] text-xs font-semibold hover:bg-[var(--surface-hover)] cursor-pointer" data-action="dh-detect">{t('admin.dataHealth.runDetect', lang)}</button>
+            <button id="dh-btn-autofix" class="px-3 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:opacity-90 cursor-pointer border-0" data-action="dh-autofix">{t('admin.dataHealth.runAutoFix', lang)}</button>
+          </div>
+        </div>
+        <div id="dh-summary-cards" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+        <div>
+          <h3 class="text-sm font-bold text-navy mb-2">{t('admin.dataHealth.pending', lang)}</h3>
+          <div id="dh-pending-list" class="space-y-2">
+            <p class="text-xs text-[var(--text-muted)]">{t('admin.dataHealth.noPending', lang)}</p>
+          </div>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-navy mb-2">{t('admin.dataHealth.history', lang)}</h3>
+          <div id="dh-history-list" class="space-y-2">
+            <p class="text-xs text-[var(--text-muted)]">{t('admin.dataHealth.noHistory', lang)}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Resolve anomaly modal -->
+      <div id="dh-resolve-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-5">
+          <h3 class="text-sm font-bold text-navy mb-2">{t('admin.dataHealth.resolveBtn', lang)}</h3>
+          <p id="dh-resolve-desc" class="text-xs text-[var(--text-secondary)] mb-3"></p>
+          <textarea id="dh-resolve-notes" class="w-full border border-[var(--border-default)] rounded-lg p-2 text-xs min-h-[60px]" placeholder={t('admin.dataHealth.resolutionNotes', lang)}></textarea>
+          <div class="flex justify-end gap-2 mt-3">
+            <button class="px-3 py-2 rounded-lg border border-[var(--border-default)] text-xs font-semibold cursor-pointer" data-action="dh-resolve-cancel">{t('common.cancel', lang)}</button>
+            <button class="px-3 py-2 rounded-lg bg-navy text-white text-xs font-semibold cursor-pointer border-0" data-action="dh-resolve-confirm">{t('admin.dataHealth.confirmResolve', lang)}</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Leader Tier: My Tribe panel -->
       <div id="panel-my-tribe" class="hidden">
         <!-- Tribe Settings (editable by leader) -->
@@ -1288,10 +1329,12 @@ const ADMIN_I18N = {
     document.getElementById('panel-reports')?.classList.toggle('hidden', tab !== 'reports');
     document.getElementById('panel-knowledge')?.classList.toggle('hidden', tab !== 'knowledge');
     document.getElementById('panel-analytics')?.classList.toggle('hidden', tab !== 'analytics');
+    document.getElementById('panel-data-health')?.classList.toggle('hidden', tab !== 'data-health');
     if (tab === 'members') loadMembersList();
     if (tab === 'reports') initReports();
     if (tab === 'knowledge') loadKnowledgeAssets();
     if (tab === 'analytics') { initAnalyticsConsent(); loadAnalyticsCharts(); }
+    if (tab === 'data-health') loadDataHealth();
   }
 
   (window as any).switchAdmTab = switchAdmTab;
@@ -3667,6 +3710,7 @@ const ADMIN_I18N = {
       document.getElementById('panel-members')?.classList.add('hidden');
       document.getElementById('panel-reports')?.classList.add('hidden');
       document.getElementById('panel-knowledge')?.classList.add('hidden');
+      document.getElementById('panel-data-health')?.classList.add('hidden');
 
       // Hide KPI bar (superadmin-only stats)
       document.querySelectorAll('#admin-panel > .grid.grid-cols-2')[0]?.classList.add('hidden');
@@ -3690,6 +3734,7 @@ const ADMIN_I18N = {
       document.getElementById('panel-members')?.classList.add('hidden');
       document.getElementById('panel-reports')?.classList.add('hidden');
       document.getElementById('panel-knowledge')?.classList.add('hidden');
+      document.getElementById('panel-data-health')?.classList.add('hidden');
 
       document.getElementById('panel-executive')?.classList.remove('hidden');
       if (canAccessAdminRoute(MEMBER, 'admin_analytics')) {
@@ -4011,6 +4056,175 @@ const ADMIN_I18N = {
       document.getElementById('not-admin-msg')?.classList.remove('hidden');
     }, 2000);
   }
+
+  // ─── Data Health (W98) ───
+  let dhLoaded = false;
+  let dhResolveId: string | null = null;
+
+  const SEVERITY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+    critical: { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200' },
+    warning: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+    info: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' },
+  };
+
+  const ANOMALY_LABELS: Record<string, string> = {
+    tribe_selection_drift: 'Tribe Selection Drift',
+    active_flag_inconsistency: 'Active Flag Inconsistency',
+    role_designation_mismatch: 'Role/Designation Mismatch',
+    orphan_active_no_tribe: 'Orphan Active (No Tribe)',
+    cycle_array_stale: 'Cycle Array Stale',
+    duplicate_email: 'Duplicate Email',
+    never_logged_in: 'Never Logged In',
+    assignment_orphan: 'Assignment Orphan',
+    sla_config_missing: 'SLA Config Missing',
+  };
+
+  async function loadDataHealth() {
+    if (dhLoaded) return;
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+
+    const { data, error } = await sb.rpc('admin_get_anomaly_report');
+    if (error) {
+      (window as any).toast?.(ADMIN_I18N.loading || 'Error', 'error');
+      return;
+    }
+    dhLoaded = true;
+    renderDataHealth(data);
+  }
+
+  function renderDataHealth(report: any) {
+    const summaryEl = document.getElementById('dh-summary-cards');
+    const pendingEl = document.getElementById('dh-pending-list');
+    const historyEl = document.getElementById('dh-history-list');
+    if (!summaryEl || !pendingEl || !historyEl) return;
+
+    const summary = report?.summary || {};
+    const byType = summary.by_type || {};
+    const bySeverity = summary.by_severity || {};
+
+    // Summary cards
+    summaryEl.innerHTML = [
+      dhMacroCard('Total Pending', summary.total_pending || 0, (summary.total_pending || 0) > 0 ? 'text-amber-600' : 'text-emerald-600'),
+      dhMacroCard('Total Fixed', summary.total_fixed || 0, 'text-emerald-600'),
+      dhMacroCard('Critical', bySeverity.critical || 0, (bySeverity.critical || 0) > 0 ? 'text-red-600' : 'text-[var(--text-primary)]'),
+      dhMacroCard('Warnings', bySeverity.warning || 0, (bySeverity.warning || 0) > 0 ? 'text-amber-600' : 'text-[var(--text-primary)]'),
+    ].join('');
+
+    // Pending list
+    const pending = report?.pending || [];
+    if (pending.length === 0) {
+      pendingEl.innerHTML = `<p class="text-xs text-[var(--text-muted)]">${ADMIN_I18N.loading ? '' : ''}Nenhuma anomalia pendente.</p>`;
+    } else {
+      pendingEl.innerHTML = pending.map((a: any) => {
+        const sc = SEVERITY_COLORS[a.severity] || SEVERITY_COLORS.info;
+        const label = ANOMALY_LABELS[a.anomaly_type] || a.anomaly_type;
+        return `<div class="flex items-start gap-3 p-3 rounded-xl border ${sc.border} ${sc.bg}">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-[10px] font-bold uppercase tracking-wide ${sc.text}">${label}</span>
+              <span class="text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${sc.text} ${sc.bg} border ${sc.border}">${a.severity}</span>
+              ${a.auto_fixable ? '<span class="text-[9px] px-1.5 py-0.5 rounded-full font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200">auto-fixable</span>' : ''}
+            </div>
+            <p class="text-xs text-[var(--text-primary)]">${a.description}</p>
+            <p class="text-[10px] text-[var(--text-muted)] mt-1">${new Date(a.detected_at).toLocaleString('pt-BR')}</p>
+          </div>
+          ${!a.auto_fixable ? `<button class="px-2 py-1 rounded-lg border border-[var(--border-default)] text-[10px] font-semibold cursor-pointer hover:bg-[var(--surface-hover)]" data-action="dh-resolve" data-anomaly-id="${a.id}" data-anomaly-desc="${encodeURIComponent(a.description)}">Resolver</button>` : ''}
+        </div>`;
+      }).join('');
+    }
+
+    // History list
+    const history = report?.history || [];
+    if (history.length === 0) {
+      historyEl.innerHTML = '<p class="text-xs text-[var(--text-muted)]">Nenhuma correção registrada.</p>';
+    } else {
+      historyEl.innerHTML = history.slice(0, 20).map((h: any) => {
+        const label = ANOMALY_LABELS[h.anomaly_type] || h.anomaly_type;
+        return `<div class="flex items-center gap-3 p-2 rounded-lg bg-emerald-50/50 border border-emerald-100 text-xs">
+          <span class="text-emerald-600 font-semibold">${label}</span>
+          <span class="text-[var(--text-muted)] flex-1">${h.description?.substring(0, 80) || ''}</span>
+          <span class="text-[10px] text-[var(--text-muted)]">${h.fixed_by || 'auto'} · ${h.fixed_at ? new Date(h.fixed_at).toLocaleString('pt-BR') : ''}</span>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  function dhMacroCard(title: string, value: number | string, accent: string) {
+    return `<div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-3">
+      <div class="text-[10px] uppercase tracking-wide font-semibold text-[var(--text-secondary)]">${title}</div>
+      <div class="text-2xl font-extrabold ${accent}">${value}</div>
+    </div>`;
+  }
+
+  async function dhRunDetect(autoFix: boolean) {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    const btn = document.getElementById(autoFix ? 'dh-btn-autofix' : 'dh-btn-detect') as HTMLButtonElement;
+    if (btn) { btn.disabled = true; btn.textContent = '...'; }
+
+    const { data, error } = await sb.rpc('admin_detect_data_anomalies', { p_auto_fix: autoFix });
+    if (error) {
+      (window as any).toast?.('Erro ao processar anomalias.', 'error');
+    } else {
+      const s = data?.summary || {};
+      (window as any).toast?.(
+        autoFix
+          ? `Correções aplicadas: ${s.fixed || 0} corrigidas, ${s.pending || 0} pendentes.`
+          : `Detecção concluída: ${(s.fixed || 0) + (s.pending || 0)} anomalias encontradas.`,
+        'success'
+      );
+    }
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = autoFix ? ADMIN_I18N.loading || 'Corrigir Automáticas' : 'Executar Detecção';
+    }
+    dhLoaded = false;
+    loadDataHealth();
+  }
+
+  async function dhResolveAnomaly() {
+    if (!dhResolveId) return;
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    const notes = (document.getElementById('dh-resolve-notes') as HTMLTextAreaElement)?.value || '';
+    const { error } = await sb.rpc('admin_resolve_anomaly', { p_anomaly_id: dhResolveId, p_notes: notes });
+    if (error) {
+      (window as any).toast?.('Erro ao resolver anomalia.', 'error');
+    } else {
+      (window as any).toast?.('Anomalia resolvida com sucesso.', 'success');
+    }
+    dhResolveId = null;
+    document.getElementById('dh-resolve-modal')?.classList.add('hidden');
+    dhLoaded = false;
+    loadDataHealth();
+  }
+
+  // Delegated actions for data health
+  document.addEventListener('click', (event) => {
+    const target = (event.target as HTMLElement | null)?.closest('[data-action]') as HTMLElement | null;
+    if (!target) return;
+    switch (target.dataset.action) {
+      case 'dh-detect': dhRunDetect(false); break;
+      case 'dh-autofix': dhRunDetect(true); break;
+      case 'dh-resolve': {
+        dhResolveId = target.dataset.anomalyId || null;
+        const desc = decodeURIComponent(target.dataset.anomalyDesc || '');
+        const descEl = document.getElementById('dh-resolve-desc');
+        if (descEl) descEl.textContent = desc;
+        (document.getElementById('dh-resolve-notes') as HTMLTextAreaElement).value = '';
+        document.getElementById('dh-resolve-modal')?.classList.remove('hidden');
+        break;
+      }
+      case 'dh-resolve-cancel':
+        dhResolveId = null;
+        document.getElementById('dh-resolve-modal')?.classList.add('hidden');
+        break;
+      case 'dh-resolve-confirm':
+        dhResolveAnomaly();
+        break;
+    }
+  });
 
   boot();
 </script>
