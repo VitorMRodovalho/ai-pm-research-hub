@@ -31,6 +31,7 @@ const safeKpis = Array.isArray(KPIS) ? KPIS : [];
               <div class="kpi-health-fill h-full rounded-full transition-all duration-700" style="width:0%"></div>
             </div>
             <div class="kpi-health-label text-[9px] mt-1 font-semibold"></div>
+            <div class="kpi-quarter-label hidden text-[8px] mt-0.5 text-white/40"></div>
           </div>
         </div>
       ))}
@@ -106,6 +107,15 @@ const safeKpis = Array.isArray(KPIS) ? KPIS : [];
         label.textContent = `${item.current}${suffix}${unitLabel} / ${item.target}${suffix}${unitLabel}`;
         label.title = `${item.current}${suffix}${unitLabel} de ${item.target}${suffix}${unitLabel} — progresso: ${pct}%`;
         barContainer.classList.remove('hidden');
+
+        // Quarterly label
+        const qLabel = card.querySelector<HTMLElement>('.kpi-quarter-label');
+        if (qLabel && item.quarter && item.quarter_cumulative > 0) {
+          const qCur = item.current;
+          const qTgt = item.quarter_cumulative;
+          qLabel.textContent = `Q${item.quarter}: ${qCur}${suffix}${unitLabel} / ${qTgt}${suffix}${unitLabel}`;
+          qLabel.classList.remove('hidden');
+        }
       });
     } catch { /* RPC may not exist — keep static fallbacks */ }
   })();
