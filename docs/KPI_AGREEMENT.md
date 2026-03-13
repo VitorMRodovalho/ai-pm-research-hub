@@ -12,19 +12,36 @@ Annual goals for 2026. Continuous monitoring via `/#kpis`.
 
 ---
 
+## Temporal Anchor Rule
+
+All KPIs are filtered from the **kickoff event date** of the first cycle of the current year.
+
+- **Source**: `events` table, title containing "kick-off" or "kick off", earliest in the year
+- **Current anchor**: 2026-03-05 (Evento de Abertura — Ciclo 3)
+- **Fallback**: January 1st of the current year (if no kickoff event found)
+
+**Exceptions:**
+- `chapters_participating`: current state snapshot, no temporal filter
+- `certification_trail`: cumulative progress, no temporal filter (what matters is completion, not when)
+- `cpmai_certified`: uses January 1st of current year (not kickoff) since certification can happen before the formal kickoff event
+
+**Justification**: KPIs are annual. The operational year begins at the kickoff. If questioned, the answer is: "we count from the kickoff registered in the database, with video recording as evidence."
+
+---
+
 ## 9 KPIs Agreed
 
-| # | Metric Key | Label (pt) | Target | Unit | Formula / Data Source |
-|---|-----------|-----------|--------|------|----------------------|
-| 1 | `chapters_participating` | Capítulos PMI | 8 | count | `COUNT(DISTINCT chapter) FROM members WHERE current_cycle_active` |
-| 2 | `partner_entities` | Entidades Parceiras | 3 | count | `COUNT(*) FROM partner_entities WHERE entity_type IN ('academia','governo','empresa') AND status='active'` |
-| 3 | `certification_trail` | Trilha Mini Cert. IA | 70% | percent | `AVG(completed_courses / total_courses) * 100` for eligible members |
-| 4 | `cpmai_certified` | Certificados CPMAI | 2 | count | `COUNT(*) FROM members WHERE cpmai_certified = true AND current_cycle_active` |
-| 5 | `articles_published` | Artigos Publicados | 10 | count | `COUNT(*) FROM board_items WHERE curation_status='approved'` (cycle-filtered) |
-| 6 | `webinars_completed` | Webinares/Talks | 6 | count | `COUNT(*) FROM events WHERE type='webinar'` (cycle-filtered) |
-| 7 | `ia_pilots` | Pilotos IA | 3 | count | From `site_config` key `ia_pilots_count` (default: 1 = Hub) |
-| 8 | `meeting_hours` | Horas de Encontros | 90h | hours | `SUM(duration_actual) / 60` for events in cycle (raw hours, not per-attendee) |
-| 9 | `impact_hours` | Horas de Impacto | 1800h | hours | `SUM(duration_minutes / 60)` per attendee present (duration x attendees) |
+| # | Metric Key | Label (pt) | Target | Unit | Temporal Filter | Formula / Data Source |
+|---|-----------|-----------|--------|------|----------------|----------------------|
+| 1 | `chapters_participating` | Capítulos PMI | 8 | count | None (current state) | `COUNT(DISTINCT chapter) FROM members WHERE current_cycle_active` |
+| 2 | `partner_entities` | Entidades Parceiras | 3 | count | `>= kickoff` | `COUNT(*) FROM partner_entities WHERE entity_type IN ('academia','governo','empresa') AND partnership_date >= kickoff` |
+| 3 | `certification_trail` | Trilha Mini Cert. IA | 70% | percent | None (cumulative) | `AVG(completed_courses / total_courses) * 100` for eligible members |
+| 4 | `cpmai_certified` | Certificados CPMAI | 2 | count | `>= Jan 1 year` | `COUNT(*) FROM members WHERE cpmai_certified_at >= Jan 1` |
+| 5 | `articles_published` | Artigos Publicados | 10 | count | `>= kickoff` | `COUNT(*) FROM board_items WHERE curation_status='approved' AND created_at >= kickoff` |
+| 6 | `webinars_completed` | Webinares/Talks | 6 | count | `>= kickoff` | `COUNT(*) FROM events WHERE type='webinar' AND date >= kickoff` |
+| 7 | `ia_pilots` | Pilotos IA | 3 | count | N/A | From `site_config` key `ia_pilots_count` (default: 1 = Hub) |
+| 8 | `meeting_hours` | Horas de Encontros | 90h | hours | `>= kickoff` | `SUM(duration_actual) / 60` (raw hours, not per-attendee) |
+| 9 | `impact_hours` | Horas de Impacto | 1800h | hours | `>= kickoff` | `SUM(duration_minutes / 60)` per attendee present (duration x attendees) |
 
 ## Color Thresholds (UI)
 - Green: >= 70% of target
@@ -35,7 +52,5 @@ Annual goals for 2026. Continuous monitoring via `/#kpis`.
 - Targets are annual (2026). Monitoring is continuous via the `/#kpis` section on the home page.
 - Partner entities of type `pmi_chapter` are tracked separately and do NOT count toward the partner_entities KPI target (chapters are already KPI #1).
 - Certification trail uses aggregated course progress from the `courses` + `course_progress` tables, not binary `cpmai_certified`.
-- CPMAI certification (KPI #4) is a separate binary count — how many members hold the full CPMAI credential.
-  - **Pending validation**: GP should confirm whether each member's CPMAI was obtained during participation in the Núcleo. Ideally, `cpmai_certified_at` should be >= the member's first cycle start date. Currently 2 members are certified: Marcos (2026-03-04, during cycle 3) and Pedro (2025-10-23, before joining cycle 3). For now both count; GP may refine the filter once entry dates are confirmed.
-  - When `cpmai_certified_at IS NULL`, the member is included (benefit of the doubt).
+- CPMAI certification (KPI #4) uses Jan 1 as anchor. Marcos Klemz (2026-03-04) counts. Pedro Mendes (2025-10-23) does not count for 2026.
 - Meeting hours (KPI #8) counts raw event duration. Impact hours (KPI #9) multiplies by attendees present.
