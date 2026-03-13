@@ -350,6 +350,8 @@ const esLATAM: Record<string, string> = {
   'cpmai.badge': 'Verificado vía Credly',
   'cpmai.noCerts': 'Próximamente — las primeras certificaciones del ciclo actual se mostrarán aquí.',
   'cpmai.viewBadge': 'Ver badge →',
+  'cpmai.certifiedIn': 'Certificado en',
+  'profile.cpmaiCertifiedIn': 'Certificado en',
 
   // ── Projects (IA Pilots) ──
   'projects.label': 'Pilotos de IA',

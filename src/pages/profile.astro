@@ -97,6 +97,7 @@ const PROFILE_I18N = {
   credlyNoBadgesMsg: t('profile.credlyNoBadgesMsg', lang),
   credlyVerifyError: t('profile.credlyVerifyError', lang),
   credlyConnectError: t('profile.credlyConnectError', lang),
+  cpmaiCertifiedIn: t('profile.cpmaiCertifiedIn', lang),
   unknownError: t('profile.unknownError', lang),
   weekTitle: t('profile.week.title', lang),
   weekNextMeeting: t('profile.week.nextMeeting', lang),
@@ -845,6 +846,15 @@ const PROFILE_I18N = {
                 ${PROFILE_I18N.verifyCredly}
               </button>
             </div>
+            ${m.cpmai_certified ? `
+            <div class="mt-2 flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200">
+              <span class="text-base">🎓</span>
+              <div>
+                <span class="text-[.75rem] font-bold text-amber-800">PMI-CPMAI\u2122</span>
+                ${m.cpmai_certified_at ? `<span class="text-[.68rem] text-amber-600 ml-1.5">${PROFILE_I18N.cpmaiCertifiedIn} ${new Date(m.cpmai_certified_at).toLocaleDateString(PROFILE_I18N.dateLocale || 'pt-BR', { month: 'long', year: 'numeric' })}</span>` : ''}
+              </div>
+            </div>
+            ` : ''}
           </div>
         </div>
         <div class="mt-5 flex justify-end">
