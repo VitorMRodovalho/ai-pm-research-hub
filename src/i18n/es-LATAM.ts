@@ -1171,6 +1171,10 @@ const esLATAM: Record<string, string> = {
   'admin.comms.configChannel': 'Configurar Canal',
   'admin.comms.tokenExpiry': 'Expiración del Token',
   'admin.comms.channelConfig': 'Config (JSON)',
+  'admin.comms.manualTitle': 'Registro Manual de Métricas',
+  'admin.comms.manualSubtitle': 'Alternativa cuando la integración automática no está disponible',
+  'admin.comms.manualToggle': 'Registrar Manualmente',
+  'admin.comms.manualSave': 'Guardar Métrica',
 
   // ─── Admin Help (W4.10) ───
   'admin.help.meta': 'Centro de Ayuda — Núcleo IA & GP',
