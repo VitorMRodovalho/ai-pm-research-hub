@@ -64,10 +64,10 @@ const { lang = 'pt-BR' } = Astro.props;
       // Query members with cpmai_certified = true OR who have CPMAI badges in credly_badges
       const { data: members, error } = await sb
         .from('public_members')
-        .select('id, name, photo_url, chapter, credly_badges, credly_url')
+        .select('id, name, photo_url, chapter, credly_badges, credly_url, cpmai_certified_at')
         .eq('current_cycle_active', true)
         .or('cpmai_certified.eq.true,credly_badges.cs.[{"category":"cpmai"}]')
-        .order('name');
+        .order('cpmai_certified_at', { ascending: true, nullsFirst: false });
 
       loading.classList.add('hidden');
 
@@ -85,6 +85,8 @@ const { lang = 'pt-BR' } = Astro.props;
         const badgeUrl = cpmaiBadge?.badge_url || m.credly_url || '';
         const rawBadgeName = cpmaiBadge?.name || '';
         const certType = rawBadgeName.includes('CPMAI') ? 'PMI-CPMAI\u2122' : (rawBadgeName || 'PMI-CPMAI');
+        const certDate = m.cpmai_certified_at || cpmaiBadge?.issued_at || null;
+        const certDateStr = certDate ? new Date(certDate).toLocaleDateString(document.documentElement.lang === 'en' ? 'en-US' : document.documentElement.lang === 'es' ? 'es' : 'pt-BR', { month: 'short', year: 'numeric' }) : '';
 
         return `
           <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-5 text-center hover:-translate-y-px hover:shadow-md transition-all duration-200">
@@ -97,6 +99,7 @@ const { lang = 'pt-BR' } = Astro.props;
             <div class="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[.65rem] font-bold bg-amber/10 text-amber">
               🎓 ${certType}
             </div>
+            ${certDateStr ? `<div class="text-[.6rem] text-[var(--text-muted)] mt-1">${document.getElementById('cpmai-certified-in-text')?.textContent || 'Certificado em'} ${certDateStr}</div>` : ''}
             ${badgeUrl ? `<div class="mt-2"><a href="${badgeUrl}" target="_blank" rel="noopener" class="text-[.7rem] text-teal hover:underline no-underline">${document.getElementById('cpmai-view-text')?.textContent || 'View badge →'}</a></div>` : ''}
           </div>
         `;
@@ -119,5 +122,6 @@ const { lang = 'pt-BR' } = Astro.props;
   }
 </script>
 
-<!-- Hidden text for JS to read translated string -->
+<!-- Hidden text for JS to read translated strings -->
 <span id="cpmai-view-text" class="hidden">{t('cpmai.viewBadge', lang)}</span>
+<span id="cpmai-certified-in-text" class="hidden">{t('cpmai.certifiedIn', lang)}</span>

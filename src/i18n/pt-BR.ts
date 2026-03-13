@@ -350,6 +350,8 @@ const ptBR: Record<string, string> = {
   'cpmai.badge': 'Verificado via Credly',
   'cpmai.noCerts': 'Em breve — as primeiras certificações do ciclo atual serão exibidas aqui.',
   'cpmai.viewBadge': 'Ver badge →',
+  'cpmai.certifiedIn': 'Certificado em',
+  'profile.cpmaiCertifiedIn': 'Certificado em',
 
   // ── Projects (IA Pilots) ──
   'projects.label': 'Pilotos de IA',
