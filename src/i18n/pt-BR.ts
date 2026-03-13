@@ -480,6 +480,11 @@ const ptBR: Record<string, string> = {
   'attendance.modal.audienceLeadership': 'Liderança (Nível 1+2 + Embaixadores)',
   'attendance.modal.audienceTribe': 'Apenas a tribo',
   'attendance.modal.audienceCurators': 'Comitê de Curadoria',
+  'attendance.modal.selectAll': 'Selecionar Todos',
+  'attendance.modal.bulkConfirm': 'Confirmar Presenças',
+  'attendance.modal.bulkSuccess': '{n} presenças registradas',
+  'attendance.checkin.windowExpired': 'O prazo de 24h para check-in expirou. Solicite ao gestor.',
+  'attendance.checkin.tooEarly': 'O check-in abre 2h antes do evento.',
 
   // ── Attendance page (script / client-side) ──
   'attendance.dateLocale': 'pt-BR',

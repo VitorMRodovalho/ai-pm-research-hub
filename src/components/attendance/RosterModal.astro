@@ -34,7 +34,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       </table>
     </div>
     <!-- Footer -->
-    <div class="px-5 py-3 border-t border-[var(--border-default)] flex justify-end flex-shrink-0">
+    <div class="px-5 py-3 border-t border-[var(--border-default)] flex items-center justify-between flex-shrink-0">
+      <div class="flex items-center gap-2">
+        <button type="button" id="roster-bulk-all" class="hidden px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-teal text-white border-0 cursor-pointer hover:opacity-90 transition-opacity" data-action="roster-bulk-all">
+          {t('attendance.modal.selectAll', lang)}
+        </button>
+        <button type="button" id="roster-bulk-confirm" class="hidden px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-navy text-white border-0 cursor-pointer hover:opacity-90 transition-opacity" data-action="roster-bulk-confirm">
+          {t('attendance.modal.bulkConfirm', lang)}
+        </button>
+      </div>
       <button type="button" class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer" data-action="close-modal" data-modal-id="modal-roster">{t('attendance.modal.close', lang)}</button>
     </div>
   </div>

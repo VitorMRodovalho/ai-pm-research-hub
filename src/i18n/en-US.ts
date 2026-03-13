@@ -480,6 +480,11 @@ const enUS: Record<string, string> = {
   'attendance.modal.audienceLeadership': 'Leadership (Level 1+2 + Ambassadors)',
   'attendance.modal.audienceTribe': 'Only the tribe',
   'attendance.modal.audienceCurators': 'Curation Committee',
+  'attendance.modal.selectAll': 'Select All',
+  'attendance.modal.bulkConfirm': 'Confirm Attendance',
+  'attendance.modal.bulkSuccess': '{n} attendances recorded',
+  'attendance.checkin.windowExpired': 'The 24h check-in window has expired. Ask your manager.',
+  'attendance.checkin.tooEarly': 'Check-in opens 2h before the event.',
 
   // ── Attendance page (script / client-side) ──
   'attendance.dateLocale': 'en-US',

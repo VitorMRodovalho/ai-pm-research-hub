@@ -480,6 +480,11 @@ const esLATAM: Record<string, string> = {
   'attendance.modal.audienceLeadership': 'Liderazgo (Nivel 1+2 + Embajadores)',
   'attendance.modal.audienceTribe': 'Solo la tribu',
   'attendance.modal.audienceCurators': 'Comité de Curaduría',
+  'attendance.modal.selectAll': 'Seleccionar Todos',
+  'attendance.modal.bulkConfirm': 'Confirmar Asistencias',
+  'attendance.modal.bulkSuccess': '{n} asistencias registradas',
+  'attendance.checkin.windowExpired': 'El plazo de 24h para check-in expiró. Solicite al gestor.',
+  'attendance.checkin.tooEarly': 'El check-in abre 2h antes del evento.',
 
   // ── Attendance page (script / client-side) ──
   'attendance.dateLocale': 'es-419',

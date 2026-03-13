@@ -167,6 +167,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   rosterVisible: t('attendance.modal.visible', lang),
   rankingNoData: t('attendance.ranking.noData', lang),
   rankingNoDataHint: t('attendance.ranking.noDataHint', lang),
+  bulkSuccess: t('attendance.modal.bulkSuccess', lang),
+  checkinWindowExpired: t('attendance.checkin.windowExpired', lang),
+  checkinTooEarly: t('attendance.checkin.tooEarly', lang),
 }) }}>
   window.__ATTENDANCE_I18N = JSON.parse(__ATTENDANCE_I18N);
 </script>
@@ -661,6 +664,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         case 'toggle-presence':
           togglePresence(target.dataset.eventId || '', target.dataset.memberId || '', target);
           break;
+        case 'roster-bulk-all':
+          bulkSelectAll();
+          break;
+        case 'roster-bulk-confirm':
+          bulkConfirmPresence();
+          break;
       }
     });
 
@@ -721,9 +730,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         safePH?.('capture', 'checkin_success', { event_id: eventId });
         loadEvents(); loadKPIs();
       } else {
-        const errMsg = data?.error || data?.message || I18N.msgCheckInError;
+        let errMsg = data?.message || I18N.msgCheckInError;
+        if (data?.error === 'checkin_window_expired') errMsg = I18N.checkinWindowExpired;
+        else if (data?.error === 'checkin_too_early') errMsg = I18N.checkinTooEarly;
         toast(errMsg, 'error');
-        safePH?.('capture', 'checkin_failed', { event_id: eventId, error: errMsg });
+        safePH?.('capture', 'checkin_failed', { event_id: eventId, error: data?.error || errMsg });
       }
     } catch (e: any) {
       const errMsg = e?.message || I18N.msgCheckInError;
@@ -868,6 +879,16 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const searchInput = document.getElementById('roster-search') as HTMLInputElement;
     if (searchInput) searchInput.value = '';
     openModal('modal-roster');
+    // Show bulk buttons for leaders+
+    const bulkAllBtn = document.getElementById('roster-bulk-all');
+    const bulkConfirmBtn = document.getElementById('roster-bulk-confirm');
+    if (CAN_MANAGE) {
+      bulkAllBtn?.classList.remove('hidden');
+      bulkConfirmBtn?.classList.remove('hidden');
+    } else {
+      bulkAllBtn?.classList.add('hidden');
+      bulkConfirmBtn?.classList.add('hidden');
+    }
     document.getElementById('roster-body')!.innerHTML = `<tr><td colspan="3" class="text-center py-5 text-[var(--text-secondary)]">${I18N.rosterLoading}</td></tr>`;
     let data: any;
     try {
@@ -927,6 +948,46 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     } catch (e: any) {
       toast(e?.message || I18N.msgError, 'error');
       console.error('mark_member_present failed:', e);
+    }
+  }
+
+  // ── BULK ROSTER ──
+  function bulkSelectAll() {
+    const toggles = document.querySelectorAll('#roster-body .toggle-btn.off') as NodeListOf<HTMLElement>;
+    toggles.forEach(btn => {
+      btn.classList.remove('off');
+      btn.classList.add('on');
+    });
+  }
+
+  async function bulkConfirmPresence() {
+    if (!CURRENT_EVENT_ID) return;
+    // Gather all member IDs that are toggled ON
+    const togglesOn = document.querySelectorAll('#roster-body .toggle-btn.on') as NodeListOf<HTMLElement>;
+    const memberIds: string[] = [];
+    togglesOn.forEach(btn => {
+      const mid = btn.dataset.memberId;
+      if (mid) memberIds.push(mid);
+    });
+    if (!memberIds.length) return toast(I18N.msgError, 'error');
+
+    try {
+      const { data, error } = await sb.rpc('admin_bulk_mark_attendance', {
+        p_event_id: CURRENT_EVENT_ID,
+        p_member_ids: memberIds,
+        p_present: true
+      });
+      if (error) throw error;
+      if (data?.success) {
+        toast(I18N.bulkSuccess.replace('{n}', String(data.marked)), 'success');
+        loadKPIs();
+        // Refresh roster
+        const titleEl = document.getElementById('roster-title');
+        openRoster(CURRENT_EVENT_ID, titleEl?.textContent?.replace('📋 ', '') || '');
+      } else toast(data?.error || I18N.msgError, 'error');
+    } catch (e: any) {
+      toast(e?.message || I18N.msgError, 'error');
+      console.error('admin_bulk_mark_attendance failed:', e);
     }
   }
 
