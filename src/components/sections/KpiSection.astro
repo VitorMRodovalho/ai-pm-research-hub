@@ -98,8 +98,10 @@ const safeKpis = Array.isArray(KPIS) ? KPIS : [];
         fill.style.width = `${pct}%`;
         fill.style.backgroundColor = color;
         label.style.color = color;
-        label.textContent = `${item.current} / ${item.target}`;
-        label.title = `${item.current} de ${item.target} ${item.unit === 'percent' ? '%' : item.unit === 'hours' ? 'horas' : ''} — progresso: ${pct}%`;
+        const suffix = item.unit === 'percent' ? '%' : '';
+        const unitLabel = item.unit === 'hours' ? 'h' : '';
+        label.textContent = `${item.current}${suffix}${unitLabel} / ${item.target}${suffix}${unitLabel}`;
+        label.title = `${item.current}${suffix}${unitLabel} de ${item.target}${suffix}${unitLabel} — progresso: ${pct}%`;
         barContainer.classList.remove('hidden');
       });
     } catch { /* RPC may not exist — keep static fallbacks */ }
