@@ -408,6 +408,34 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
               )}
             </div>
 
+            {/* ── Curation Pipeline Visual ── */}
+            {item.curation_status && item.curation_status !== 'draft' && (
+              <div className="mb-3">
+                <label className="text-[11px] font-semibold text-[var(--text-secondary)] mb-2 block">
+                  {i18n.curationPipeline || 'Pipeline de Curadoria'}
+                </label>
+                <div className="flex items-center gap-0.5 flex-wrap">
+                  {['ideation', 'research', 'drafting', 'author_review', 'peer_review', 'leader_review', 'curation', 'published'].map((step, idx) => {
+                    const STEP_LABELS: Record<string, string> = {
+                      ideation: 'Ideação', research: 'Pesquisa', drafting: 'Redação',
+                      author_review: 'Rev. Autores', peer_review: 'Peer Review',
+                      leader_review: 'Rev. Líder', curation: 'Curadoria', published: 'Publicado'
+                    };
+                    const steps = ['ideation', 'research', 'drafting', 'author_review', 'peer_review', 'leader_review', 'curation', 'published'];
+                    const currentIdx = steps.indexOf(item.curation_status || '');
+                    const isActive = idx === currentIdx;
+                    const isDone = idx < currentIdx;
+                    const bg = isActive ? 'bg-teal text-white' : isDone ? 'bg-teal/20 text-teal' : 'bg-[var(--surface-hover)] text-[var(--text-muted)]';
+                    return (
+                      <span key={step} className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${bg}`} title={STEP_LABELS[step]}>
+                        {STEP_LABELS[step]}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* ── Curation Section ── */}
             {curationHistory && (curationHistory.reviews.length > 0 || isCurationItem) && (
               <div>
