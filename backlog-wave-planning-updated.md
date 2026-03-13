@@ -947,11 +947,21 @@ This backlog now reflects the actual state of production. All items marked Done 
 | W95 | Submission workflow board badges | Medium | Planned | Exibir badges de status de submissão diretamente nos cards de publicações. |
 | W96 | Route policy contract tests | High | Planned | Testes contratuais para matriz de permissões por rota e designação. |
 | W97 | Dark mode screenshot diff gate | Medium | Planned | Gate automatizado de regressão visual por diff de screenshot. |
-| W98 | Data sanity remediation runbook | High | Planned | Playbook de correção para cada tipo de inconsistência detectada em sanity. |
+| W98 | Data sanity remediation runbook | High | Done | Migration `data_anomaly_log` + RPCs `admin_detect_data_anomalies` (9 tipos, 5 auto-fixáveis), `admin_get_anomaly_report`, `admin_resolve_anomaly`. Nova tab "Saúde dos Dados" no admin panel com cards de severidade, auto-fix e resolução manual. |
 | W99 | Cross-board transfer UI | Medium | Planned | UI administrativa para `move_board_item_to_board` com validação de domínio/escopo. |
 | W100 | Admin productivity command palette | Low | Planned | Atalhos rápidos para ações recorrentes no painel administrativo. |
 | W101 | i18n completeness audit automation | Medium | Planned | Auditoria automática de strings hardcoded residuais em páginas críticas. |
 | W102 | Browser guard flake reduction v2 | Medium | Planned | Estabilização adicional dos testes E2E com retries por etapa crítica. |
 | W103 | Governance API docs pack | Medium | Planned | Documentação técnica das RPCs de governança/portfolio para onboarding. |
-| W104 | Portfolio KPI calibration | High | Planned | Ajuste de limiares de risco e severidade por coluna/domínio de board. |
-| W105 | Roadmap closure checkpoint v2 | High | Planned | Revisão executiva do ciclo W90-W105 e definição da próxima onda. |
+| W104 | Portfolio KPI calibration & monitoring | High | Done | Tabela `portfolio_kpi_targets` com 6 metas do ciclo 3 + RPC `exec_portfolio_health` cruzando targets vs dados reais. KpiSection.astro com barras de progresso semáforo. `/admin/portfolio` com seção "Saúde do Portfólio". |
+| W105 | Cycle Report (Executive Dashboard) | High | Done | RPC `exec_cycle_report` agregando KPIs, membros, tribos, produção, engajamento e curadoria. Nova página `/admin/cycle-report` com chart.js, print CSS para PDF. Rota protegida por admin + sponsor/chapter_liaison. |
+
+---
+
+## PRÓXIMAS SPRINTS (W106-W108)
+
+| Sprint | Foco | Priority | Status | Description |
+|---|---|---|---|---|
+| W106 | Attendance journey friction analysis | High | Planned | Auditar jornada completa de registro de presença (cliques, cálculo de `duration_actual`, multiplicação para KPI). Identificar pontos de abandono via PostHog funnel, propor e implementar melhorias de UX. Critério: funnel documentado, gaps identificados, fixes implementados. |
+| W107 | Hub como Piloto IA #1 (registro formal) | Medium | Planned | Registrar o Hub/SaaS como primeiro dos 3 Pilotos IA da meta anual. Criar página `/projects/hub-ia` ou seção no admin com descrição, tecnologias, resultados, métricas PostHog e lições aprendidas. Alinhar formato para os outros 2 pilotos futuros. |
+| W108 | Financial sustainability framework (design phase) | Low | Planned | Documentar possibilidades de sustentabilidade (parcerias acadêmicas, licenças IA, sponsorships, grants). Criar `docs/SUSTAINABILITY_FRAMEWORK.md` e placeholder no portal. Apenas design — sem features financeiras. |
