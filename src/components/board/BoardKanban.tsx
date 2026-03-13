@@ -47,22 +47,32 @@ function SortableCard({ item, i18n, onClick, onQuickMove, columns, mode, canMove
         ${isCurationOverdue ? 'border-l-4 border-l-red-400' : ''}`}
       {...attributes} {...(isDraggable ? listeners : {})}>
 
-      {/* SLA badge for curation mode */}
-      {showCuration && (
+      {/* Submission workflow badge — visible on all modes when curation_status is set */}
+      {item.curation_status && item.curation_status !== 'draft' && (
         <div className="flex items-center gap-1.5 mb-1.5">
           <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md
-            ${item.curation_status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
-              item.curation_status === 'review' ? 'bg-purple-100 text-purple-700' :
+            ${item.curation_status === 'approved' || item.curation_status === 'published' ? 'bg-emerald-100 text-emerald-700' :
+              item.curation_status === 'review' || item.curation_status === 'peer_review' || item.curation_status === 'leader_review' || item.curation_status === 'curation' ? 'bg-purple-100 text-purple-700' :
               item.curation_status === 'rejected' ? 'bg-red-100 text-red-700' :
+              item.curation_status === 'drafting' || item.curation_status === 'author_review' ? 'bg-blue-100 text-blue-700' :
+              item.curation_status === 'research' || item.curation_status === 'ideation' ? 'bg-amber-100 text-amber-700' :
               'bg-[var(--surface-section-cool)] text-[var(--text-secondary)]'}`}>
-            {item.curation_status === 'approved' ? '✅ Aprovado' :
-             item.curation_status === 'review' ? '🔍 Em Revisão' :
-             item.curation_status === 'rejected' ? '❌ Descartado' :
-             '📝 Rascunho'}
+            {item.curation_status === 'approved' ? '\u2705 Aprovado' :
+             item.curation_status === 'published' ? '\u{1F4E2} Publicado' :
+             item.curation_status === 'review' ? '\u{1F50D} Em Revisão' :
+             item.curation_status === 'peer_review' ? '\u{1F50D} Peer Review' :
+             item.curation_status === 'leader_review' ? '\u{1F50D} Rev. Líder' :
+             item.curation_status === 'curation' ? '\u{1F50D} Curadoria' :
+             item.curation_status === 'rejected' ? '\u274C Descartado' :
+             item.curation_status === 'drafting' ? '\u270D\uFE0F Redação' :
+             item.curation_status === 'author_review' ? '\u270D\uFE0F Rev. Autores' :
+             item.curation_status === 'research' ? '\u{1F4DA} Pesquisa' :
+             item.curation_status === 'ideation' ? '\u{1F4A1} Ideação' :
+             `\u{1F4DD} ${item.curation_status}`}
           </span>
           {isCurationOverdue && (
             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-red-100 text-red-700 animate-pulse">
-              ⏰ SLA Vencido
+              {'\u23F0'} SLA Vencido
             </span>
           )}
           {item.curation_due_at && !isCurationOverdue && (
