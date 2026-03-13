@@ -1,0 +1,277 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import AdminNav from '../../components/nav/AdminNav.astro';
+import Toast from '../../components/ui/Toast.astro';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+---
+
+<BaseLayout title={t('chapterReport.title', lang)} activePage="admin">
+  <div class="max-w-[1200px] mx-auto px-4 pt-6">
+    <AdminNav activeSub="chapter-report" lang={lang} />
+  </div>
+  <div class="max-w-[1100px] mx-auto px-4 pb-12">
+    <div id="chr-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
+      <div class="text-3xl mb-3">&#x1F512;</div>
+      <p class="font-semibold text-amber-800">{t('chapterReport.denied', lang)}</p>
+      <a href="/admin" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">Voltar ao Admin</a>
+    </div>
+
+    <div id="chr-panel" class="hidden space-y-6">
+      <!-- Header + Chapter selector -->
+      <div class="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-2xl font-extrabold text-navy">{t('chapterReport.title', lang)}</h1>
+          <p class="text-sm text-[var(--text-secondary)] mt-1">{t('chapterReport.subtitle', lang)}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <select id="chr-chapter-select" class="px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem] bg-[var(--surface-card)] font-semibold">
+          </select>
+          <button onclick="window.print()" class="px-3 py-2 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90">
+            {t('chapterReport.exportPdf', lang)}
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div id="chr-kpis" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      </div>
+
+      <!-- Members by role + Tribes -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
+          <h3 class="text-sm font-bold text-navy mb-3">{t('chapterReport.membersByRole', lang)}</h3>
+          <div id="chr-roles" class="space-y-2"></div>
+        </div>
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
+          <h3 class="text-sm font-bold text-navy mb-3">{t('chapterReport.tribesRepresented', lang)}</h3>
+          <div id="chr-tribes" class="flex flex-wrap gap-2"></div>
+        </div>
+      </div>
+
+      <!-- Cross-chapter comparison (GP only) -->
+      <div id="chr-comparison" class="hidden bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
+          <h3 class="text-sm font-bold text-navy">{t('chapterReport.comparison', lang)}</h3>
+          <p class="text-[.68rem] text-[var(--text-muted)] mt-0.5">{t('chapterReport.comparisonDesc', lang)}</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table id="chr-comp-table" class="w-full text-[.75rem]">
+            <thead>
+              <tr class="bg-[var(--surface-section-cool)]">
+                <th class="text-left px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('chapterReport.colChapter', lang)}</th>
+                <th class="text-center px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('chapterReport.colActive', lang)}</th>
+                <th class="text-center px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('chapterReport.colArticles', lang)}</th>
+                <th class="text-center px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('chapterReport.colAttendance', lang)}</th>
+                <th class="text-center px-4 py-2.5 font-bold text-[var(--text-secondary)]">{t('chapterReport.colCpmai', lang)}</th>
+              </tr>
+            </thead>
+            <tbody id="chr-comp-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="chr-loading" class="text-center py-16 text-[var(--text-muted)]">Carregando...</div>
+  </div>
+  <Toast />
+</BaseLayout>
+
+<script>
+  let sb: any = null;
+  let MEMBER: any = null;
+  let isGP = false;
+
+  function escHtml(s: string) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  const ROLE_LABELS: Record<string, string> = {
+    researcher: 'Pesquisador', tribe_leader: 'Líder de Tribo', manager: 'Gerente',
+    deputy_manager: 'Vice-Gerente', communicator: 'Comunicador', facilitator: 'Facilitador',
+    guest: 'Convidado', none: 'Sem papel',
+  };
+
+  function showDenied() {
+    document.getElementById('chr-loading')?.classList.add('hidden');
+    document.getElementById('chr-panel')?.classList.add('hidden');
+    document.getElementById('chr-denied')?.classList.remove('hidden');
+  }
+
+  function showPanel() {
+    document.getElementById('chr-loading')?.classList.add('hidden');
+    document.getElementById('chr-denied')?.classList.add('hidden');
+    document.getElementById('chr-panel')?.classList.remove('hidden');
+  }
+
+  async function loadChapterData(chapter: string) {
+    if (!sb || !chapter) return;
+    try {
+      const { data, error } = await sb.rpc('exec_chapter_dashboard', { p_chapter: chapter });
+      if (error) throw error;
+      if (data?.error === 'permission_denied') { showDenied(); return; }
+      renderDashboard(data);
+    } catch (e: any) {
+      console.error('Chapter load:', e);
+      (window as any).toast?.('Erro: ' + (e.message || ''), 'error');
+    }
+  }
+
+  function renderDashboard(d: any) {
+    const kpis = document.getElementById('chr-kpis');
+    if (kpis) {
+      const m = d.members || {};
+      const p = d.production || {};
+      const e = d.engagement || {};
+      const c = d.certification || {};
+      kpis.innerHTML = [
+        kpiCard('Membros Ativos', m.active || 0, `de ${m.total || 0}`, 'bg-blue-50 text-blue-700'),
+        kpiCard('Artigos em Pipeline', p.articles_in_pipeline || 0, `${p.articles_published || 0} aprovados`, 'bg-indigo-50 text-indigo-700'),
+        kpiCard('Horas de Participação', e.total_hours || 0, `${e.attendance_events || 0} eventos`, 'bg-emerald-50 text-emerald-700'),
+        kpiCard('CPMAI Certificados', c.cpmai_certified || 0, `de ${c.total_active || 0}`, 'bg-amber-50 text-amber-700'),
+      ].join('');
+    }
+
+    // Roles
+    const roles = document.getElementById('chr-roles');
+    if (roles) {
+      const byRole = d.members?.by_role || {};
+      const entries = Object.entries(byRole).sort((a: any, b: any) => b[1] - a[1]);
+      if (entries.length === 0) {
+        roles.innerHTML = '<p class="text-[.7rem] text-[var(--text-muted)]">Sem dados</p>';
+      } else {
+        const max = Math.max(...entries.map((e: any) => e[1] as number));
+        roles.innerHTML = entries.map(([role, count]: any) => `
+          <div class="flex items-center gap-2">
+            <span class="text-[.7rem] font-medium text-[var(--text-secondary)] w-28 shrink-0">${escHtml(ROLE_LABELS[role] || role)}</span>
+            <div class="flex-1 h-5 bg-[var(--surface-section-cool)] rounded-full overflow-hidden">
+              <div class="h-full bg-navy rounded-full" style="width:${Math.max(10, (count/max)*100)}%"></div>
+            </div>
+            <span class="text-[.7rem] font-bold text-navy w-6 text-right">${count}</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    // Tribes
+    const tribes = document.getElementById('chr-tribes');
+    if (tribes) {
+      const tribeList = d.members?.tribes || [];
+      if (tribeList.length === 0) {
+        tribes.innerHTML = '<p class="text-[.7rem] text-[var(--text-muted)]">Nenhuma tribo</p>';
+      } else {
+        tribes.innerHTML = tribeList.map((t: string) =>
+          `<span class="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-[.72rem] font-semibold">${escHtml(t)}</span>`
+        ).join('');
+      }
+    }
+  }
+
+  function kpiCard(label: string, value: any, sub: string, colors: string) {
+    return `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+      <div class="text-2xl font-extrabold text-navy">${value}</div>
+      <div class="text-[.72rem] font-bold text-[var(--text-secondary)] mt-1">${escHtml(label)}</div>
+      <div class="text-[.6rem] ${colors} mt-1 font-medium">${escHtml(sub)}</div>
+    </div>`;
+  }
+
+  async function loadComparison() {
+    if (!sb || !isGP) return;
+    try {
+      const { data, error } = await sb.rpc('exec_chapter_comparison');
+      if (error) throw error;
+      const rows = data || [];
+      if (rows.length === 0) return;
+      document.getElementById('chr-comparison')?.classList.remove('hidden');
+      const body = document.getElementById('chr-comp-body');
+      if (body) {
+        body.innerHTML = rows.map((r: any) => `
+          <tr class="border-t border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">
+            <td class="px-4 py-2.5 font-bold text-navy">${escHtml(r.chapter)}</td>
+            <td class="px-4 py-2.5 text-center">${r.active_members}</td>
+            <td class="px-4 py-2.5 text-center">${r.articles_approved}</td>
+            <td class="px-4 py-2.5 text-center">${r.attendance_events}</td>
+            <td class="px-4 py-2.5 text-center">${r.cpmai_certified}</td>
+          </tr>
+        `).join('');
+      }
+    } catch (e) {
+      console.warn('Comparison load:', e);
+    }
+  }
+
+  async function populateChapterSelect() {
+    if (!sb) return;
+    const sel = document.getElementById('chr-chapter-select') as HTMLSelectElement;
+    if (!sel) return;
+
+    // Get distinct chapters from members
+    const { data } = await sb.from('public_members').select('chapter').not('chapter', 'is', null);
+    const chapters = [...new Set((data || []).map((d: any) => d.chapter).filter(Boolean))].sort();
+
+    if (chapters.length === 0) return;
+
+    sel.innerHTML = chapters.map((c: string) =>
+      `<option value="${escHtml(c)}">${escHtml(c)}</option>`
+    ).join('');
+
+    // If sponsor/liaison, select their chapter
+    if (!isGP && MEMBER?.chapter) {
+      sel.value = MEMBER.chapter;
+      // Restrict to own chapter
+      if (!isGP) {
+        sel.querySelectorAll('option').forEach((opt: HTMLOptionElement) => {
+          if (opt.value !== MEMBER.chapter) opt.remove();
+        });
+      }
+    }
+
+    sel.addEventListener('change', () => loadChapterData(sel.value));
+    loadChapterData(sel.value);
+  }
+
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail) { MEMBER = e.detail; applyGate(MEMBER); }
+    }) as EventListener);
+
+    const m = (window as any).navGetMember?.();
+    if (m) { MEMBER = m; applyGate(MEMBER); return; }
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        const { data } = await sb.rpc('get_member_by_auth');
+        MEMBER = data;
+        applyGate(MEMBER);
+        return;
+      }
+    } catch (e) { console.warn('ChapterReport boot:', e); }
+    showDenied();
+  }
+
+  function applyGate(m: any) {
+    const desigs: string[] = m?.designations || [];
+    isGP = m?.is_superadmin || m?.operational_role === 'manager' || m?.operational_role === 'deputy_manager';
+    const hasAccess = isGP || desigs.includes('sponsor') || desigs.includes('chapter_liaison');
+    if (hasAccess) {
+      showPanel();
+      populateChapterSelect();
+      if (isGP) loadComparison();
+    } else {
+      showDenied();
+    }
+  }
+
+  boot();
+</script>
+
+<style>
+  @media print {
+    nav, button, select, #chr-denied, [data-admin-nav] { display: none !important; }
+    #chr-panel { display: block !important; }
+    .rounded-xl, .rounded-2xl { border-radius: 0 !important; }
+  }
+</style>
