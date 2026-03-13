@@ -1166,6 +1166,11 @@ const enUS: Record<string, string> = {
   'admin.comms.colEngagement': 'Engagement',
   'admin.comms.colLeads': 'Leads',
   'admin.comms.configNote': 'Native dashboard powered by Supabase metrics.',
+  'admin.comms.channelsTitle': 'Communication Channels',
+  'admin.comms.channelsSubtitle': 'Integration status and tokens for YouTube, LinkedIn, and Instagram',
+  'admin.comms.configChannel': 'Configure Channel',
+  'admin.comms.tokenExpiry': 'Token Expiry',
+  'admin.comms.channelConfig': 'Config (JSON)',
 
   // ─── Admin Help (W4.10) ───
   'admin.help.meta': 'Help Center — AI & PM Research Hub',

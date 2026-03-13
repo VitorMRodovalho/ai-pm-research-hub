@@ -1166,6 +1166,11 @@ const ptBR: Record<string, string> = {
   'admin.comms.colEngagement': 'Engajamento',
   'admin.comms.colLeads': 'Leads',
   'admin.comms.configNote': 'Painel nativo alimentado por métricas do Supabase.',
+  'admin.comms.channelsTitle': 'Canais de Comunicação',
+  'admin.comms.channelsSubtitle': 'Status de integração e tokens para YouTube, LinkedIn e Instagram',
+  'admin.comms.configChannel': 'Configurar Canal',
+  'admin.comms.tokenExpiry': 'Expiração do Token',
+  'admin.comms.channelConfig': 'Config (JSON)',
 
   // ─── Admin Help (W4.10) ───
   'admin.help.meta': 'Central de Ajuda — Núcleo IA & GP',

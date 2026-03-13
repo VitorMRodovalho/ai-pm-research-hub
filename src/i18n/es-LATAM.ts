@@ -1166,6 +1166,11 @@ const esLATAM: Record<string, string> = {
   'admin.comms.colEngagement': 'Participación',
   'admin.comms.colLeads': 'Leads',
   'admin.comms.configNote': 'Panel nativo alimentado por métricas de Supabase.',
+  'admin.comms.channelsTitle': 'Canales de Comunicación',
+  'admin.comms.channelsSubtitle': 'Estado de integración y tokens para YouTube, LinkedIn e Instagram',
+  'admin.comms.configChannel': 'Configurar Canal',
+  'admin.comms.tokenExpiry': 'Expiración del Token',
+  'admin.comms.channelConfig': 'Config (JSON)',
 
   // ─── Admin Help (W4.10) ───
   'admin.help.meta': 'Centro de Ayuda — Núcleo IA & GP',
