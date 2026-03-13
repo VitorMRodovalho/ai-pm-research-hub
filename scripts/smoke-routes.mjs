@@ -79,6 +79,7 @@ async function run() {
     await assertOk('/admin/webinars');
     await assertOk('/admin/partnerships');
     await assertOk('/admin/sustainability');
+    await assertOk('/admin/chapter-report');
     await assertOk('/publications');
     await assertOk('/projects');
     await assertOk('/en');
@@ -97,6 +98,7 @@ async function run() {
     await assertContains('/admin/comms-ops', 'id="commsops-denied"');
     await assertContains('/admin/partnerships', 'id="partnerships-denied"');
     await assertContains('/admin/sustainability', 'id="sust-denied"');
+    await assertContains('/admin/chapter-report', 'id="chr-denied"');
     await assertContains('/webinars', 'id="webinars-denied"');
     await assertContains('/tribe/1', 'id="tribe-denied"');
     await assertRedirect('/rank', '/gamification');
