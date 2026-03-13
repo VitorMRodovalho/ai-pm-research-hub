@@ -93,7 +93,7 @@ const safeKpis = Array.isArray(KPIS) ? KPIS : [];
         if (!barContainer || !fill || !label) return;
 
         const pct = Math.min(Number(item.progress_pct) || 0, 100);
-        const color = STATUS_COLORS[item.status] || STATUS_COLORS.red;
+        const color = pct >= 70 ? STATUS_COLORS.green : pct >= 40 ? STATUS_COLORS.yellow : STATUS_COLORS.red;
 
         fill.style.width = `${pct}%`;
         fill.style.backgroundColor = color;
