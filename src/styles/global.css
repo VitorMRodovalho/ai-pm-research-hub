@@ -24,3 +24,12 @@ body {
   background: var(--surface-base);
   color: var(--text-primary);
 }
+
+/* ─── Print CSS (W105 Cycle Report) ─── */
+@media print {
+  nav, footer, .print\:hidden, #admin-subnav, [data-action], button { display: none !important; }
+  body { background: white !important; color: black !important; font-size: 11pt; }
+  .cr-section { break-inside: avoid; page-break-inside: avoid; margin-bottom: 1.5rem; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  @page { margin: 1.5cm; }
+}

@@ -1,0 +1,308 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminNav from '../../components/nav/AdminNav.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+---
+
+<BaseLayout title={t('cycleReport.meta', lang)} activePage="admin">
+  <div class="max-w-[1400px] mx-auto px-4 pt-6 print:hidden">
+    <AdminNav activeSub="cycle-report" lang={lang} />
+  </div>
+
+  <div class="max-w-[1200px] mx-auto px-4 py-8">
+    <div id="cr-loading" class="text-center py-10 text-[var(--text-muted)]">{t('cycleReport.loading', lang)}</div>
+    <div id="cr-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm text-center">
+      {t('cycleReport.denied', lang)}
+    </div>
+
+    <div id="cr-report" class="hidden space-y-8">
+      <!-- Header -->
+      <header class="flex items-center justify-between print:justify-center flex-wrap gap-4">
+        <div>
+          <h1 class="text-2xl font-extrabold text-navy" id="cr-title">{t('cycleReport.title', lang)}</h1>
+          <p class="text-sm text-[var(--text-secondary)]" id="cr-subtitle"></p>
+        </div>
+        <button id="cr-export-pdf" class="print:hidden px-4 py-2 rounded-lg bg-navy text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">
+          {t('cycleReport.exportPdf', lang)}
+        </button>
+      </header>
+
+      <!-- KPIs Semaphore -->
+      <section class="cr-section">
+        <h2 class="text-lg font-extrabold text-navy mb-3">{t('cycleReport.kpisTitle', lang)}</h2>
+        <div id="cr-kpis" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3"></div>
+      </section>
+
+      <!-- Members -->
+      <section class="cr-section">
+        <h2 class="text-lg font-extrabold text-navy mb-3">{t('cycleReport.membersTitle', lang)}</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="cr-members-stats"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4">
+            <h3 class="text-sm font-bold text-navy mb-2">{t('cycleReport.byChapter', lang)}</h3>
+            <canvas id="cr-chart-chapters" height="200"></canvas>
+          </div>
+          <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4">
+            <h3 class="text-sm font-bold text-navy mb-2">{t('cycleReport.byRole', lang)}</h3>
+            <canvas id="cr-chart-roles" height="200"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tribes -->
+      <section class="cr-section">
+        <h2 class="text-lg font-extrabold text-navy mb-3">{t('cycleReport.tribesTitle', lang)}</h2>
+        <div id="cr-tribes" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+      </section>
+
+      <!-- Production -->
+      <section class="cr-section">
+        <h2 class="text-lg font-extrabold text-navy mb-3">{t('cycleReport.productionTitle', lang)}</h2>
+        <div id="cr-production" class="grid grid-cols-2 md:grid-cols-5 gap-3"></div>
+      </section>
+
+      <!-- Engagement -->
+      <section class="cr-section">
+        <h2 class="text-lg font-extrabold text-navy mb-3">{t('cycleReport.engagementTitle', lang)}</h2>
+        <div id="cr-engagement" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+      </section>
+
+      <!-- Curation -->
+      <section class="cr-section">
+        <h2 class="text-lg font-extrabold text-navy mb-3">{t('cycleReport.curationTitle', lang)}</h2>
+        <div id="cr-curation" class="grid grid-cols-2 md:grid-cols-5 gap-3"></div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="text-center text-xs text-[var(--text-muted)] pt-4 border-t border-[var(--border-default)]">
+        <span id="cr-footer"></span>
+      </footer>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import Chart from 'chart.js/auto';
+
+  let crBootRetries = 0;
+
+  const STATUS_STYLES: Record<string, { bg: string; border: string; text: string }> = {
+    green:  { bg: '#D1FAE5', border: '#6EE7B7', text: '#047857' },
+    yellow: { bg: '#FEF3C7', border: '#FCD34D', text: '#B45309' },
+    red:    { bg: '#FEE2E2', border: '#FCA5A5', text: '#DC2626' },
+  };
+
+  const CHART_COLORS = [
+    '#003B5C', '#4F17A8', '#05BFE0', '#FF610F', '#EC4899',
+    '#10B981', '#D97706', '#7C3AED', '#BE2027', '#00799E',
+  ];
+
+  function statCard(label: string, value: string | number, accent = '') {
+    return `<div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3">
+      <div class="text-[10px] uppercase tracking-wide font-semibold text-[var(--text-secondary)]">${label}</div>
+      <div class="text-2xl font-extrabold ${accent || 'text-navy'}">${value}</div>
+    </div>`;
+  }
+
+  function hasAccess(member: any): boolean {
+    if (!member) return false;
+    if (member.is_superadmin) return true;
+    const role = String(member.operational_role || '');
+    const designations: string[] = Array.isArray(member.designations) ? member.designations : [];
+    return ['manager', 'deputy_manager'].includes(role)
+      || ['sponsor', 'chapter_liaison'].some(d => designations.includes(d));
+  }
+
+  async function bootCycleReport() {
+    const loading = document.getElementById('cr-loading');
+    const denied = document.getElementById('cr-denied');
+    const report = document.getElementById('cr-report');
+    const member = (window as any).navGetMember?.();
+    const sb = (window as any).navGetSb?.();
+
+    if (!member || !sb) {
+      crBootRetries++;
+      if (crBootRetries >= 20) {
+        loading?.classList.add('hidden');
+        denied?.classList.remove('hidden');
+        return;
+      }
+      setTimeout(bootCycleReport, 150);
+      return;
+    }
+
+    loading?.classList.add('hidden');
+    if (!hasAccess(member)) {
+      denied?.classList.remove('hidden');
+      return;
+    }
+
+    const { data, error } = await sb.rpc('exec_cycle_report');
+    if (error || !data) {
+      denied?.classList.remove('hidden');
+      denied!.textContent = 'Falha ao gerar relatório do ciclo.';
+      return;
+    }
+
+    report?.classList.remove('hidden');
+    renderReport(data);
+  }
+
+  function renderReport(r: any) {
+    const lang = document.documentElement.lang?.startsWith('en') ? 'en' : document.documentElement.lang?.startsWith('es') ? 'es' : 'pt';
+
+    // Header
+    const subtitle = document.getElementById('cr-subtitle');
+    if (subtitle) subtitle.textContent = `${r.cycle?.name || ''} — Gerado em ${new Date().toLocaleDateString('pt-BR')}`;
+
+    // KPIs
+    const kpisEl = document.getElementById('cr-kpis');
+    if (kpisEl && Array.isArray(r.kpis)) {
+      kpisEl.innerHTML = r.kpis.map((k: any) => {
+        const s = STATUS_STYLES[k.status] || STATUS_STYLES.red;
+        const label = k.label?.[lang] || k.label?.pt || k.metric_key;
+        const pct = Math.min(Number(k.progress_pct) || 0, 100);
+        const unitSuffix = k.unit === 'percent' ? '%' : k.unit === 'hours' ? 'h' : '';
+        return `<div class="rounded-xl p-3 text-center" style="background:${s.bg};border:1px solid ${s.border}">
+          <div class="text-2xl font-extrabold" style="color:${s.text}">${k.current}${unitSuffix}</div>
+          <div class="text-[10px] font-bold uppercase tracking-wide" style="color:${s.text}">${label}</div>
+          <div class="w-full h-1.5 rounded-full mt-2" style="background:${s.border}40">
+            <div class="h-full rounded-full" style="width:${pct}%;background:${s.text}"></div>
+          </div>
+          <div class="text-[9px] mt-1" style="color:${s.text}">${pct}% — meta: ${k.target}${unitSuffix}</div>
+        </div>`;
+      }).join('');
+    }
+
+    // Members stats
+    const ms = r.members || {};
+    const membersStatsEl = document.getElementById('cr-members-stats');
+    if (membersStatsEl) {
+      membersStatsEl.innerHTML = [
+        statCard('Total', ms.total || 0),
+        statCard('Ativos', ms.active || 0, 'text-emerald-600'),
+        statCard('Retenção', `${ms.retention_rate || 0}%`, 'text-blue-600'),
+        statCard('Novos no Ciclo', ms.new_this_cycle || 0, 'text-purple'),
+      ].join('');
+    }
+
+    // Chart: by chapter (horizontal bar)
+    const chaptersCanvas = document.getElementById('cr-chart-chapters') as HTMLCanvasElement;
+    if (chaptersCanvas && Array.isArray(ms.by_chapter) && ms.by_chapter.length > 0) {
+      new Chart(chaptersCanvas, {
+        type: 'bar',
+        data: {
+          labels: ms.by_chapter.map((c: any) => c.chapter),
+          datasets: [{
+            data: ms.by_chapter.map((c: any) => c.count),
+            backgroundColor: CHART_COLORS.slice(0, ms.by_chapter.length),
+            borderWidth: 0,
+            borderRadius: 4,
+          }],
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { beginAtZero: true, ticks: { precision: 0 } },
+            y: { ticks: { font: { size: 11 } } },
+          },
+        },
+      });
+    }
+
+    // Chart: by role (donut)
+    const rolesCanvas = document.getElementById('cr-chart-roles') as HTMLCanvasElement;
+    if (rolesCanvas && Array.isArray(ms.by_role) && ms.by_role.length > 0) {
+      new Chart(rolesCanvas, {
+        type: 'doughnut',
+        data: {
+          labels: ms.by_role.map((r: any) => r.role || 'none'),
+          datasets: [{
+            data: ms.by_role.map((r: any) => r.count),
+            backgroundColor: CHART_COLORS.slice(0, ms.by_role.length),
+            borderWidth: 2,
+            borderColor: '#fff',
+          }],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } },
+        },
+      });
+    }
+
+    // Tribes
+    const tribesEl = document.getElementById('cr-tribes');
+    if (tribesEl && Array.isArray(r.tribes)) {
+      tribesEl.innerHTML = r.tribes.map((t: any) => `
+        <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4">
+          <div class="text-sm font-bold text-navy">${t.name}</div>
+          <div class="text-[10px] text-[var(--text-muted)] mb-2">Líder: ${t.leader}</div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div>Membros: <strong>${t.member_count}</strong></div>
+            <div>Cards: <strong>${t.board_items_completed}/${t.board_items_total}</strong></div>
+            <div>Conclusão: <strong>${t.completion_pct}%</strong></div>
+            <div>Artigos: <strong>${t.articles_produced}</strong></div>
+          </div>
+          <div class="w-full h-1.5 rounded-full bg-[var(--border-default)] mt-2 overflow-hidden">
+            <div class="h-full rounded-full bg-emerald-500" style="width:${Math.min(t.completion_pct, 100)}%"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Production
+    const prod = r.production || {};
+    const prodEl = document.getElementById('cr-production');
+    if (prodEl) {
+      prodEl.innerHTML = [
+        statCard('Submetidos', prod.articles_submitted || 0),
+        statCard('Em Revisão', prod.articles_in_review || 0, 'text-amber-600'),
+        statCard('Publicados', prod.articles_published || 0, 'text-emerald-600'),
+        statCard('Webinars OK', prod.webinars_completed || 0, 'text-blue-600'),
+        statCard('Webinars Plan.', prod.webinars_planned || 0),
+      ].join('');
+    }
+
+    // Engagement
+    const eng = r.engagement || {};
+    const engEl = document.getElementById('cr-engagement');
+    if (engEl) {
+      engEl.innerHTML = [
+        statCard('Eventos', eng.total_events || 0),
+        statCard('Horas Impacto', `${Number(eng.total_attendance_hours || 0).toLocaleString('pt-BR')}h`, 'text-teal'),
+        statCard('Presença Média', eng.avg_attendance_per_event || 0),
+        statCard('Certificação', `${eng.certification_completion_rate || 0}%`, 'text-purple'),
+      ].join('');
+    }
+
+    // Curation
+    const cur = r.curation || {};
+    const curEl = document.getElementById('cr-curation');
+    if (curEl) {
+      curEl.innerHTML = [
+        statCard('Revisados', cur.items_submitted || 0),
+        statCard('Aprovados', cur.items_approved || 0, 'text-emerald-600'),
+        statCard('Em Revisão', cur.items_in_review || 0, 'text-amber-600'),
+        statCard('Tempo Médio', `${cur.avg_review_days || 0}d`),
+        statCard('SLA OK', `${cur.sla_compliance_rate || 0}%`, 'text-blue-600'),
+      ].join('');
+    }
+
+    // Footer
+    const footer = document.getElementById('cr-footer');
+    if (footer) {
+      footer.textContent = `Gerado em ${new Date().toLocaleDateString('pt-BR')} · Núcleo IA & GP · ai-pm-research-hub.pages.dev`;
+    }
+  }
+
+  // Export PDF
+  document.getElementById('cr-export-pdf')?.addEventListener('click', () => window.print());
+
+  bootCycleReport();
+</script>

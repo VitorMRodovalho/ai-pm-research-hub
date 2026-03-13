@@ -71,6 +71,7 @@ async function run() {
     await assertOk('/admin/curatorship');
     await assertOk('/admin/analytics');
     await assertOk('/admin/portfolio');
+    await assertOk('/admin/cycle-report');
     await assertOk('/admin/governance-v2');
     await assertOk('/admin/comms-ops');
     await assertOk('/admin/selection');
