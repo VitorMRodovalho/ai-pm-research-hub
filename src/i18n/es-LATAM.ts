@@ -1279,13 +1279,17 @@ const esLATAM: Record<string, string> = {
 
   // ── Data: KPI labels ──
   'data.kpi.chapters': 'Capítulos PMI',
+  'data.kpi.partners': 'Entidades Asociadas',
+  'data.kpi.certTrail': 'Sendero Mini Cert. IA',
+  'data.kpi.cpmai': 'Certificados CPMAI',
   'data.kpi.activeMembers': 'Miembros activos',
   'data.kpi.tribes': 'Tribus activas',
   'data.kpi.events': 'Eventos realizados',
-  'data.kpi.articles': 'Artículos',
-  'data.kpi.webinars': 'Webinars',
+  'data.kpi.articles': 'Artículos Publicados',
+  'data.kpi.webinars': 'Webinarios/Charlas',
   'data.kpi.pilots': 'Pilotos IA',
-  'data.kpi.impact': 'Horas de impacto',
+  'data.kpi.meetings': 'Horas de Encuentros',
+  'data.kpi.impact': 'Horas de Impacto',
   'data.kpi.cert': 'Certificación IA',
 
   // ── Data: Quadrant labels ──

@@ -953,7 +953,7 @@ This backlog now reflects the actual state of production. All items marked Done 
 | W101 | i18n completeness audit automation | Medium | Planned | Auditoria automática de strings hardcoded residuais em páginas críticas. |
 | W102 | Browser guard flake reduction v2 | Medium | Planned | Estabilização adicional dos testes E2E com retries por etapa crítica. |
 | W103 | Governance API docs pack | Medium | Planned | Documentação técnica das RPCs de governança/portfolio para onboarding. |
-| W104 | Portfolio KPI calibration & monitoring | High | Done | Tabela `portfolio_kpi_targets` com 6 metas do ciclo 3 + RPC `exec_portfolio_health` cruzando targets vs dados reais. KpiSection.astro com barras de progresso semáforo. `/admin/portfolio` com seção "Saúde do Portfólio". |
+| W104 | Portfolio KPI calibration & monitoring | High | Done | Expandido de 6 para 9 KPIs conforme acordo GP-Sponsor (12/out/2025). Tabela `portfolio_kpi_targets`, `partner_entities`, `cpmai_certified_at`. RPC `exec_portfolio_health` com 9 métricas cycle-filtered. KpiSection.astro grid 5-col com barras semáforo. |
 | W105 | Cycle Report (Executive Dashboard) | High | Done | RPC `exec_cycle_report` agregando KPIs, membros, tribos, produção, engajamento e curadoria. Nova página `/admin/cycle-report` com chart.js, print CSS para PDF. Rota protegida por admin + sponsor/chapter_liaison. |
 
 ---
@@ -965,3 +965,8 @@ This backlog now reflects the actual state of production. All items marked Done 
 | W106 | Attendance journey friction analysis | High | Planned | Auditar jornada completa de registro de presença (cliques, cálculo de `duration_actual`, multiplicação para KPI). Identificar pontos de abandono via PostHog funnel, propor e implementar melhorias de UX. Critério: funnel documentado, gaps identificados, fixes implementados. |
 | W107 | Hub como Piloto IA #1 (registro formal) | Medium | Planned | Registrar o Hub/SaaS como primeiro dos 3 Pilotos IA da meta anual. Criar página `/projects/hub-ia` ou seção no admin com descrição, tecnologias, resultados, métricas PostHog e lições aprendidas. Alinhar formato para os outros 2 pilotos futuros. |
 | W108 | Financial sustainability framework (design phase) | Low | Planned | Documentar possibilidades de sustentabilidade (parcerias acadêmicas, licenças IA, sponsorships, grants). Criar `docs/SUSTAINABILITY_FRAMEWORK.md` e placeholder no portal. Apenas design — sem features financeiras. |
+| W109 | Board status vocabulary | Medium | Planned | Criar vocabulário padronizado de status para boards (publicações: draft→review→approved→published). Eliminar ambiguidade entre `status` e `curation_status`. |
+| W110 | KPI data contract tests | Medium | Planned | Testes de contrato para `exec_portfolio_health`: validar shape do retorno, 9 métricas presentes, tipos corretos, thresholds consistentes. |
+| W111 | Cycle management UI | Medium | Planned | Interface admin para gerenciar ciclos (criar, editar datas, marcar atual). Eliminar necessidade de SQL direto para alterar `cycles` table. |
+| W112 | CPMAI certification journey tracking | Low | Planned | Tracking de `cpmai_certified_at` com datas reais, integração com Credly badges, distinção entre certificações pré-existentes vs earned no ciclo. |
+| W113 | Partner entities management UI | Medium | Planned | Interface admin `/admin/partnerships` para gerenciar entidades parceiras (CRUD), filtrar por tipo, visualizar timeline de parcerias. |

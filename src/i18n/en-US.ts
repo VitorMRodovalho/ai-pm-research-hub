@@ -1279,12 +1279,16 @@ const enUS: Record<string, string> = {
 
   // ── Data: KPI labels ──
   'data.kpi.chapters': 'PMI Chapters',
+  'data.kpi.partners': 'Partner Entities',
+  'data.kpi.certTrail': 'AI Mini Cert. Trail',
+  'data.kpi.cpmai': 'CPMAI Certified',
   'data.kpi.activeMembers': 'Active Members',
   'data.kpi.tribes': 'Active Tribes',
   'data.kpi.events': 'Events Held',
-  'data.kpi.articles': 'Articles',
-  'data.kpi.webinars': 'Webinars',
+  'data.kpi.articles': 'Articles Published',
+  'data.kpi.webinars': 'Webinars/Talks',
   'data.kpi.pilots': 'AI Pilots',
+  'data.kpi.meetings': 'Meeting Hours',
   'data.kpi.impact': 'Impact Hours',
   'data.kpi.cert': 'AI Certification',
 
