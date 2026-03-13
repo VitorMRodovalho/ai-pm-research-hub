@@ -711,9 +711,26 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
   // ── CHECK-IN ──
   async function checkIn(eventId: string) {
-    const { data } = await sb.rpc('register_own_presence', { p_event_id: eventId });
-    if (data?.success) { toast(I18N.msgCheckedIn, 'success'); loadEvents(); loadKPIs(); }
-    else toast(data?.error || I18N.msgCheckInError, 'error');
+    const safePH = (window as any).__safePH;
+    safePH?.('capture', 'checkin_attempted', { event_id: eventId });
+    try {
+      const { data, error } = await sb.rpc('register_own_presence', { p_event_id: eventId });
+      if (error) throw error;
+      if (data?.success) {
+        toast(I18N.msgCheckedIn, 'success');
+        safePH?.('capture', 'checkin_success', { event_id: eventId });
+        loadEvents(); loadKPIs();
+      } else {
+        const errMsg = data?.error || data?.message || I18N.msgCheckInError;
+        toast(errMsg, 'error');
+        safePH?.('capture', 'checkin_failed', { event_id: eventId, error: errMsg });
+      }
+    } catch (e: any) {
+      const errMsg = e?.message || I18N.msgCheckInError;
+      toast(errMsg, 'error');
+      safePH?.('capture', 'checkin_failed', { event_id: eventId, error: errMsg });
+      console.error('register_own_presence failed:', e);
+    }
   }
 
   // ── AUDIENCE HELPER ──
@@ -740,20 +757,26 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const audience = (document.getElementById('ev-audience') as HTMLSelectElement).value;
     if (!title || !date) return toast(I18N.msgFillTitleDate, 'error');
 
-    const { data } = await sb.rpc('create_event', {
-      p_type: type, p_title: title, p_date: date,
-      p_duration_minutes: duration,
-      p_tribe_id: type === 'tribe_meeting' ? MEMBER.tribe_id : null,
-      p_audience_level: audience
-    });
-    if (data?.success) {
-      if (link || recorded) {
-        await sb.rpc('update_event', { p_event_id: data.event_id, p_meeting_link: link, p_is_recorded: recorded });
-      }
-      closeModal('modal-new-event');
-      toast(I18N.msgEventCreated, 'success');
-      loadEvents(); loadKPIs();
-    } else toast(data?.error || I18N.msgEventCreateError, 'error');
+    try {
+      const { data, error } = await sb.rpc('create_event', {
+        p_type: type, p_title: title, p_date: date,
+        p_duration_minutes: duration,
+        p_tribe_id: type === 'tribe_meeting' ? MEMBER.tribe_id : null,
+        p_audience_level: audience
+      });
+      if (error) throw error;
+      if (data?.success) {
+        if (link || recorded) {
+          await sb.rpc('update_event', { p_event_id: data.event_id, p_meeting_link: link, p_is_recorded: recorded });
+        }
+        closeModal('modal-new-event');
+        toast(I18N.msgEventCreated, 'success');
+        loadEvents(); loadKPIs();
+      } else toast(data?.error || I18N.msgEventCreateError, 'error');
+    } catch (e: any) {
+      toast(e?.message || I18N.msgEventCreateError, 'error');
+      console.error('create_event failed:', e);
+    }
   }
 
   // ── RECURRING ──
@@ -773,19 +796,25 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const audience = (document.getElementById('rec-audience') as HTMLSelectElement).value;
     if (!titleTpl || !start) return toast(I18N.msgFillTemplateDate, 'error');
 
-    const { data } = await sb.rpc('create_recurring_weekly_events', {
-      p_type: type, p_title_template: titleTpl, p_start_date: start,
-      p_duration_minutes: duration, p_n_weeks: weeks,
-      p_meeting_link: link,
-      p_tribe_id: type === 'tribe_meeting' ? MEMBER.tribe_id : null,
-      p_is_recorded: recorded,
-      p_audience_level: audience
-    });
-    if (data?.success) {
-      closeModal('modal-recurring');
-      toast(I18N.msgEventsCreated.replace('{n}', data.events_created), 'success');
-      loadEvents(); loadKPIs();
-    } else toast(data?.error || I18N.msgRecurringError, 'error');
+    try {
+      const { data, error } = await sb.rpc('create_recurring_weekly_events', {
+        p_type: type, p_title_template: titleTpl, p_start_date: start,
+        p_duration_minutes: duration, p_n_weeks: weeks,
+        p_meeting_link: link,
+        p_tribe_id: type === 'tribe_meeting' ? MEMBER.tribe_id : null,
+        p_is_recorded: recorded,
+        p_audience_level: audience
+      });
+      if (error) throw error;
+      if (data?.success) {
+        closeModal('modal-recurring');
+        toast(I18N.msgEventsCreated.replace('{n}', data.events_created), 'success');
+        loadEvents(); loadKPIs();
+      } else toast(data?.error || I18N.msgRecurringError, 'error');
+    } catch (e: any) {
+      toast(e?.message || I18N.msgRecurringError, 'error');
+      console.error('create_recurring_weekly_events failed:', e);
+    }
   }
 
   // ── EDIT EVENT ──
@@ -812,17 +841,23 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const recorded = (document.getElementById('edit-ev-recorded') as HTMLInputElement).checked;
     const audience = (document.getElementById('edit-ev-audience') as HTMLSelectElement).value;
 
-    const { data } = await sb.rpc('update_event', {
-      p_event_id: id, p_title: title, p_date: date,
-      p_duration_minutes: duration, p_meeting_link: link,
-      p_youtube_url: youtube, p_is_recorded: recorded,
-      p_audience_level: audience
-    });
-    if (data?.success) {
-      closeModal('modal-edit-event');
-      toast(I18N.msgEventUpdated, 'success');
-      loadEvents(); loadKPIs();
-    } else toast(data?.error || I18N.msgEventSaveError, 'error');
+    try {
+      const { data, error } = await sb.rpc('update_event', {
+        p_event_id: id, p_title: title, p_date: date,
+        p_duration_minutes: duration, p_meeting_link: link,
+        p_youtube_url: youtube, p_is_recorded: recorded,
+        p_audience_level: audience
+      });
+      if (error) throw error;
+      if (data?.success) {
+        closeModal('modal-edit-event');
+        toast(I18N.msgEventUpdated, 'success');
+        loadEvents(); loadKPIs();
+      } else toast(data?.error || I18N.msgEventSaveError, 'error');
+    } catch (e: any) {
+      toast(e?.message || I18N.msgEventSaveError, 'error');
+      console.error('update_event failed:', e);
+    }
   }
 
   // ── ROSTER ──
@@ -834,7 +869,17 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     if (searchInput) searchInput.value = '';
     openModal('modal-roster');
     document.getElementById('roster-body')!.innerHTML = `<tr><td colspan="3" class="text-center py-5 text-[var(--text-secondary)]">${I18N.rosterLoading}</td></tr>`;
-    const { data } = await sb.rpc('get_tribe_event_roster', { p_event_id: eventId });
+    let data: any;
+    try {
+      const res = await sb.rpc('get_tribe_event_roster', { p_event_id: eventId });
+      if (res.error) throw res.error;
+      data = res.data;
+    } catch (e: any) {
+      toast(e?.message || I18N.msgError, 'error');
+      console.error('get_tribe_event_roster failed:', e);
+      document.getElementById('roster-body')!.innerHTML = `<tr><td colspan="3" class="text-center py-5 text-red-500 text-sm">Error loading roster</td></tr>`;
+      return;
+    }
     const tbody = document.getElementById('roster-body')!;
     if (!data?.length) {
       tbody.innerHTML = `<tr><td colspan="3" class="text-center text-[var(--text-secondary)] py-5">${I18N.rosterNoParticipants}</td></tr>`;
@@ -874,9 +919,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
   async function togglePresence(eventId: string, memberId: string, btn: HTMLElement) {
     const isOn = btn.classList.contains('on');
-    const { data } = await sb.rpc('mark_member_present', { p_event_id: eventId, p_member_id: memberId, p_present: !isOn });
-    if (data?.success) { btn.classList.toggle('on', !isOn); btn.classList.toggle('off', isOn); loadKPIs(); }
-    else toast(data?.error || I18N.msgError, 'error');
+    try {
+      const { data, error } = await sb.rpc('mark_member_present', { p_event_id: eventId, p_member_id: memberId, p_present: !isOn });
+      if (error) throw error;
+      if (data?.success) { btn.classList.toggle('on', !isOn); btn.classList.toggle('off', isOn); loadKPIs(); }
+      else toast(data?.error || I18N.msgError, 'error');
+    } catch (e: any) {
+      toast(e?.message || I18N.msgError, 'error');
+      console.error('mark_member_present failed:', e);
+    }
   }
 
   // ── RANKING ──
@@ -950,6 +1001,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     if (routeTabBtn) switchTab(routeTabBtn, ATTENDANCE_ROUTE.tab);
     loadKPIs();
     loadEvents();
+
+    // PostHog: track page view
+    const safePH = (window as any).__safePH;
+    safePH?.('capture', 'attendance_page_viewed', {
+      member_tribe: MEMBER.tribe_id,
+      events_visible: ALL_EVENTS.length
+    });
   }
 
   async function boot() {

@@ -174,6 +174,7 @@ const PROFILE_I18N = {
   let journeyStats: any = null;
   let xpByCycle: Record<string, number> = {};
   let cycleXpData: any = null;
+  let attendanceHoursData: { total_hours: number; total_events: number; avg_hours_per_event: number } | null = null;
   let currentCycleCode: string = '';
   let currentCycleLabel: string = '';
   let cycleMeta: Record<string, { label: string; abbr: string; color: string }> = {};
@@ -287,6 +288,14 @@ const PROFILE_I18N = {
         const { data: cxd } = await sb.rpc('get_member_cycle_xp', { p_member_id: currentMember.id });
         cycleXpData = typeof cxd === 'string' ? JSON.parse(cxd) : cxd;
       } catch (_) { cycleXpData = null; }
+
+      // Real attendance hours via RPC (replaces points/10 placeholder)
+      try {
+        const { data: ahRows } = await sb.rpc('get_member_attendance_hours', { p_member_id: currentMember.id });
+        if (ahRows && ahRows.length > 0) {
+          attendanceHoursData = ahRows[0];
+        }
+      } catch (_) { attendanceHoursData = null; }
 
       // Artifacts
       const { data: artifacts } = await sb.from('artifacts')
@@ -712,8 +721,8 @@ const PROFILE_I18N = {
     const barColor = completenessColor(comp.pct);
     const secondaryEmails: string[] = m.secondary_emails || [];
 
-    // XP level (placeholder hours — would come from a view/RPC in production)
-    const totalHours = cycleStats?.points ? Math.round(cycleStats.points / 10) : 0; // rough proxy
+    // XP level based on real attendance hours
+    const totalHours = attendanceHoursData?.total_hours ? Math.round(Number(attendanceHoursData.total_hours)) : 0;
     const level = getLevel(totalHours);
 
     el.innerHTML = `
