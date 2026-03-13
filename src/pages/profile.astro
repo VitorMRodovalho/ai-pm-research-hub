@@ -119,6 +119,18 @@ const PROFILE_I18N = {
   dayThu: t('common.days.thu', lang),
   dayFri: t('common.days.fri', lang),
   daySat: t('common.days.sat', lang),
+  notifPrefsTitle: t('notifications.prefs.title', lang),
+  notifPrefsInApp: t('notifications.prefs.inApp', lang),
+  notifPrefsInAppDesc: t('notifications.prefs.inAppDesc', lang),
+  notifPrefsEmailDigest: t('notifications.prefs.emailDigest', lang),
+  notifPrefsEmailDigestDesc: t('notifications.prefs.emailDigestDesc', lang),
+  notifPrefsMuteTypes: t('notifications.prefs.muteTypes', lang),
+  notifPrefsTypeAssignment: t('notifications.prefs.typeAssignment', lang),
+  notifPrefsTypeCuration: t('notifications.prefs.typeCuration', lang),
+  notifPrefsTypePublication: t('notifications.prefs.typePublication', lang),
+  notifPrefsTypeSystem: t('notifications.prefs.typeSystem', lang),
+  notifPrefsTypeMention: t('notifications.prefs.typeMention', lang),
+  notifPrefsSaved: t('notifications.prefs.saved', lang),
 };
 ---
 <BaseLayout title={t('profile.title', lang)} activePage="profile">
@@ -864,7 +876,62 @@ const PROFILE_I18N = {
           </button>
         </div>
       </div>
+
+      <!-- Card: Notification Preferences -->
+      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
+        <h2 class="text-sm font-bold text-navy mb-4">${PROFILE_I18N.notifPrefsTitle}</h2>
+        <div class="space-y-4" id="notif-prefs-container">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm font-semibold text-navy">${PROFILE_I18N.notifPrefsInApp}</div>
+              <div class="text-[.68rem] text-[var(--text-muted)]">${PROFILE_I18N.notifPrefsInAppDesc}</div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="pref-in-app" class="sr-only peer" checked>
+              <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal"></div>
+            </label>
+          </div>
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm font-semibold text-navy">${PROFILE_I18N.notifPrefsEmailDigest}</div>
+              <div class="text-[.68rem] text-[var(--text-muted)]">${PROFILE_I18N.notifPrefsEmailDigestDesc}</div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="pref-email-digest" class="sr-only peer" checked>
+              <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-teal"></div>
+            </label>
+          </div>
+          <div class="border-t border-[var(--border-default)] pt-3">
+            <div class="text-[.75rem] font-bold text-[var(--text-secondary)] mb-2">${PROFILE_I18N.notifPrefsMuteTypes}</div>
+            <div class="flex flex-wrap gap-2">
+              <label class="inline-flex items-center gap-1.5 text-[.75rem] text-navy cursor-pointer">
+                <input type="checkbox" id="mute-assignment" class="accent-teal w-3.5 h-3.5"> ${PROFILE_I18N.notifPrefsTypeAssignment}
+              </label>
+              <label class="inline-flex items-center gap-1.5 text-[.75rem] text-navy cursor-pointer">
+                <input type="checkbox" id="mute-curation_status" class="accent-teal w-3.5 h-3.5"> ${PROFILE_I18N.notifPrefsTypeCuration}
+              </label>
+              <label class="inline-flex items-center gap-1.5 text-[.75rem] text-navy cursor-pointer">
+                <input type="checkbox" id="mute-publication" class="accent-teal w-3.5 h-3.5"> ${PROFILE_I18N.notifPrefsTypePublication}
+              </label>
+              <label class="inline-flex items-center gap-1.5 text-[.75rem] text-navy cursor-pointer">
+                <input type="checkbox" id="mute-system" class="accent-teal w-3.5 h-3.5"> ${PROFILE_I18N.notifPrefsTypeSystem}
+              </label>
+              <label class="inline-flex items-center gap-1.5 text-[.75rem] text-navy cursor-pointer">
+                <input type="checkbox" id="mute-mention" class="accent-teal w-3.5 h-3.5"> ${PROFILE_I18N.notifPrefsTypeMention}
+              </label>
+            </div>
+          </div>
+          <div class="flex justify-end pt-2">
+            <button data-action="save-notif-prefs"
+              class="px-4 py-2 bg-navy text-white rounded-xl font-semibold text-[.8rem] hover:opacity-90 transition-all cursor-pointer border-0">
+              ${PROFILE_I18N.saveChanges}
+            </button>
+          </div>
+        </div>
+      </div>
     `;
+    // Load notification preferences after render
+    loadNotifPrefs();
   }
 
   function normalizeCredlyFieldValue(input?: HTMLInputElement | null) {
@@ -965,6 +1032,40 @@ const PROFILE_I18N = {
     }
   }
 
+  // ── Notification preferences ──
+  async function loadNotifPrefs() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb || !currentMember) return;
+    const { data } = await sb.from('notification_preferences')
+      .select('in_app, email_digest, muted_types')
+      .eq('member_id', currentMember.id)
+      .maybeSingle();
+    if (!data) return; // defaults are all true / empty
+    const inApp = document.getElementById('pref-in-app') as HTMLInputElement;
+    const emailDigest = document.getElementById('pref-email-digest') as HTMLInputElement;
+    if (inApp) inApp.checked = data.in_app !== false;
+    if (emailDigest) emailDigest.checked = data.email_digest !== false;
+    const mutedTypes: string[] = data.muted_types || [];
+    for (const t of mutedTypes) {
+      const el = document.getElementById(`mute-${t}`) as HTMLInputElement;
+      if (el) el.checked = true;
+    }
+  }
+
+  async function saveNotifPrefs() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb || !currentMember) return;
+    const inApp = (document.getElementById('pref-in-app') as HTMLInputElement)?.checked ?? true;
+    const emailDigest = (document.getElementById('pref-email-digest') as HTMLInputElement)?.checked ?? true;
+    const muteIds = ['assignment', 'curation_status', 'publication', 'system', 'mention'];
+    const mutedTypes = muteIds.filter(t => (document.getElementById(`mute-${t}`) as HTMLInputElement)?.checked);
+    const { error } = await sb.rpc('update_notification_preferences', {
+      p_prefs: { in_app: inApp, email_digest: emailDigest, muted_types: mutedTypes }
+    });
+    if (error) (window as any).toast?.(error.message, 'error');
+    else (window as any).toast?.(PROFILE_I18N.notifPrefsSaved, 'success');
+  }
+
   if (!(window as any).__profileDelegationBound) {
     (window as any).__profileDelegationBound = true;
     document.addEventListener('click', (e: MouseEvent) => {
@@ -989,6 +1090,9 @@ const PROFILE_I18N = {
         }
         case 'verify-credly':
           verifyCredly();
+          break;
+        case 'save-notif-prefs':
+          saveNotifPrefs();
           break;
       }
     });
