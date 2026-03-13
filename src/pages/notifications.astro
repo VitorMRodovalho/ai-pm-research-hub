@@ -1,0 +1,176 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+import Toast from '../components/ui/Toast.astro';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+---
+
+<BaseLayout title={t('notifications.title', lang)} activePage="notifications">
+  <div class="max-w-[700px] mx-auto px-4 py-8">
+    <div id="notif-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
+      <div class="text-3xl mb-3">&#x1F514;</div>
+      <p class="font-semibold text-amber-800">{t('notifications.loginRequired', lang)}</p>
+      <a href="/" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">{t('notifications.goHome', lang)}</a>
+    </div>
+
+    <div id="notif-panel" class="hidden space-y-4">
+      <div class="flex items-center justify-between">
+        <h1 class="text-xl font-extrabold text-navy">{t('notifications.title', lang)}</h1>
+        <button id="notif-mark-all" class="px-3 py-1.5 bg-navy text-white rounded-lg text-[.7rem] font-semibold cursor-pointer border-0 hover:opacity-90">
+          {t('notifications.markAllRead', lang)}
+        </button>
+      </div>
+
+      <!-- Filter tabs -->
+      <div class="flex gap-2">
+        <button data-notif-filter="all" class="px-3 py-1.5 rounded-lg text-[.72rem] font-semibold cursor-pointer border border-[var(--border-default)] bg-navy text-white">{t('notifications.filterAll', lang)}</button>
+        <button data-notif-filter="unread" class="px-3 py-1.5 rounded-lg text-[.72rem] font-semibold cursor-pointer border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]">{t('notifications.filterUnread', lang)}</button>
+      </div>
+
+      <!-- List -->
+      <div id="notif-list" class="space-y-2">
+        <p class="text-sm text-[var(--text-muted)] py-4 text-center">{t('common.loading', lang)}</p>
+      </div>
+
+      <div id="notif-empty" class="hidden text-center py-8">
+        <div class="text-3xl mb-2">&#x2705;</div>
+        <p class="text-sm text-[var(--text-muted)]">{t('notifications.empty', lang)}</p>
+      </div>
+    </div>
+
+    <div id="notif-loading" class="text-center py-16 text-[var(--text-muted)]">{t('common.loading', lang)}</div>
+  </div>
+  <Toast />
+</BaseLayout>
+
+<script>
+  let sb: any = null;
+  let currentFilter = 'all';
+
+  function escHtml(s: string) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  const TYPE_ICONS: Record<string, string> = {
+    assignment_new: '\u{1F4CB}', assignment_removed: '\u{1F4CB}', card_moved: '\u{1F4CB}',
+    review_requested: '\u{1F50D}', review_completed: '\u2705', curation_approved: '\u{1F389}',
+    curation_revision: '\u{1F4DD}', sla_warning: '\u23F0', attendance_reminder: '\u{1F4CD}',
+    inactivity_alert: '\u26A0\uFE0F', kpi_milestone: '\u{1F3AF}', publication_published: '\u{1F4F0}',
+  };
+
+  function timeAgo(dateStr: string): string {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h`;
+    const days = Math.floor(hours / 24);
+    return `${days}d`;
+  }
+
+  async function loadNotifications() {
+    if (!sb) return;
+    const list = document.getElementById('notif-list');
+    const empty = document.getElementById('notif-empty');
+    if (!list) return;
+
+    try {
+      const { data, error } = await sb.rpc('get_my_notifications', {
+        p_limit: 50, p_unread_only: currentFilter === 'unread'
+      });
+      if (error) throw error;
+      const notifs = data || [];
+
+      if (notifs.length === 0) {
+        list.innerHTML = '';
+        empty?.classList.remove('hidden');
+        return;
+      }
+
+      empty?.classList.add('hidden');
+      list.innerHTML = notifs.map((n: any) => `
+        <div class="flex items-start gap-3 p-3 rounded-xl border ${n.is_read ? 'border-[var(--border-subtle)] bg-[var(--surface-base)]' : 'border-blue-200 bg-blue-50/30'} hover:shadow-sm transition-all cursor-pointer"
+          data-notif-id="${n.id}" data-notif-link="${escHtml(n.link || '')}">
+          <span class="text-lg mt-0.5">${TYPE_ICONS[n.type] || '\u{1F514}'}</span>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              ${!n.is_read ? '<span class="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>' : ''}
+              <span class="text-[.78rem] font-bold text-[var(--text-primary)] line-clamp-1">${escHtml(n.title)}</span>
+            </div>
+            ${n.body ? `<p class="text-[.7rem] text-[var(--text-secondary)] mt-0.5 line-clamp-2">${escHtml(n.body)}</p>` : ''}
+            <span class="text-[.6rem] text-[var(--text-muted)] mt-1 block">${timeAgo(n.created_at)}</span>
+          </div>
+        </div>
+      `).join('');
+
+      // Bind click handlers
+      list.querySelectorAll('[data-notif-id]').forEach((el: Element) => {
+        el.addEventListener('click', async () => {
+          const id = (el as HTMLElement).dataset.notifId!;
+          const link = (el as HTMLElement).dataset.notifLink;
+          await sb.rpc('mark_notification_read', { p_notification_id: id });
+          if (link) window.location.href = link;
+          else loadNotifications();
+        });
+      });
+    } catch (e: any) {
+      console.error('Notifications load:', e);
+      list.innerHTML = '<p class="text-sm text-red-600 text-center py-4">Erro ao carregar notificações</p>';
+    }
+  }
+
+  async function markAllRead() {
+    if (!sb) return;
+    try {
+      await sb.rpc('mark_all_notifications_read');
+      (window as any).toast?.('Todas marcadas como lidas', 'success');
+      loadNotifications();
+      // Update badge
+      (window as any).__updateNotifBadge?.();
+    } catch (e: any) {
+      (window as any).toast?.('Erro: ' + (e.message || ''), 'error');
+    }
+  }
+
+  // Filter tabs
+  document.querySelectorAll('[data-notif-filter]').forEach((btn: Element) => {
+    btn.addEventListener('click', () => {
+      currentFilter = (btn as HTMLElement).dataset.notifFilter || 'all';
+      document.querySelectorAll('[data-notif-filter]').forEach((b: Element) => {
+        const isActive = (b as HTMLElement).dataset.notifFilter === currentFilter;
+        b.className = `px-3 py-1.5 rounded-lg text-[.72rem] font-semibold cursor-pointer border border-[var(--border-default)] ${isActive ? 'bg-navy text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)]'}`;
+      });
+      loadNotifications();
+    });
+  });
+
+  document.getElementById('notif-mark-all')?.addEventListener('click', markAllRead);
+
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    const m = (window as any).navGetMember?.();
+    if (m) { showPanel(); return; }
+
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail) showPanel();
+    }) as EventListener);
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) { showPanel(); return; }
+    } catch (e) {}
+
+    document.getElementById('notif-loading')?.classList.add('hidden');
+    document.getElementById('notif-denied')?.classList.remove('hidden');
+  }
+
+  function showPanel() {
+    document.getElementById('notif-loading')?.classList.add('hidden');
+    document.getElementById('notif-denied')?.classList.add('hidden');
+    document.getElementById('notif-panel')?.classList.remove('hidden');
+    loadNotifications();
+  }
+
+  boot();
+</script>

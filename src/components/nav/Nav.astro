@@ -601,11 +601,13 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
         }
         <span class="text-white text-[.8rem] font-semibold hidden sm:inline">${first}</span>
         <span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded uppercase hidden sm:inline" style="background:${color}33;color:${color}">${label}</span>
+        <span id="notif-badge" class="hidden w-4 h-4 rounded-full bg-red-500 text-white text-[.55rem] font-bold flex items-center justify-center"></span>
         <span class="text-white/40 text-[.6rem]">▾</span>
       </button>`;
 
     updateNavVisibility();
     buildDrawer();
+    startNotifBadgePolling();
   }
 
   function renderLoggedOut() {
@@ -629,6 +631,32 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
         </button>
       </div>`;
   }
+
+  // ── Notification badge polling ──
+  let notifInterval: ReturnType<typeof setInterval> | null = null;
+  async function updateNotifBadge() {
+    if (!_sb) return;
+    try {
+      const { data } = await _sb.rpc('get_notification_count');
+      const badge = document.getElementById('notif-badge');
+      if (badge) {
+        if (data && data > 0) {
+          badge.textContent = data > 9 ? '9+' : String(data);
+          badge.classList.remove('hidden');
+          badge.classList.add('flex');
+        } else {
+          badge.classList.add('hidden');
+          badge.classList.remove('flex');
+        }
+      }
+    } catch (e) { /* silent */ }
+  }
+  function startNotifBadgePolling() {
+    updateNotifBadge();
+    if (notifInterval) clearInterval(notifInterval);
+    notifInterval = setInterval(updateNotifBadge, 60000);
+  }
+  (window as any).__updateNotifBadge = updateNotifBadge;
 
   function buildDrawer() {
     const el = document.getElementById('pd-inner');

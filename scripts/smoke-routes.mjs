@@ -80,6 +80,7 @@ async function run() {
     await assertOk('/admin/partnerships');
     await assertOk('/admin/sustainability');
     await assertOk('/admin/chapter-report');
+    await assertOk('/notifications');
     await assertOk('/publications');
     await assertOk('/projects');
     await assertOk('/en');
