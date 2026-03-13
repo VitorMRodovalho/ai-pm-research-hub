@@ -50,6 +50,71 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           </button>
         </div>
       </div>
+
+      <!-- ── W111: Cycle Management ── -->
+      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-[var(--border-default)] flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-bold text-navy">Gerenciamento de Ciclos</h2>
+            <p class="text-[.68rem] text-[var(--text-muted)] mt-0.5">Criar, editar e definir ciclo ativo.</p>
+          </div>
+          <button id="cycle-add-btn" class="px-3 py-1.5 bg-navy text-white rounded-lg text-[.7rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
+            + Novo Ciclo
+          </button>
+        </div>
+        <div id="cycle-list" class="p-5 space-y-3">
+          <p class="text-[.7rem] text-[var(--text-muted)]">Carregando ciclos...</p>
+        </div>
+      </div>
+
+      <!-- Cycle Modal -->
+      <div id="cycle-modal-overlay" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center">
+        <div class="bg-[var(--surface-card)] rounded-2xl shadow-xl w-full max-w-md mx-4 border border-[var(--border-default)]">
+          <div class="px-5 py-4 border-b border-[var(--border-default)] flex items-center justify-between">
+            <h3 id="cycle-modal-title" class="text-sm font-bold text-navy">Novo Ciclo</h3>
+            <button id="cycle-modal-close" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-lg cursor-pointer bg-transparent border-0">&times;</button>
+          </div>
+          <div class="p-5 space-y-3">
+            <div>
+              <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Código</label>
+              <input type="text" id="cyc-code" placeholder="cycle_4" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
+              <p class="text-[.6rem] text-[var(--text-muted)] mt-0.5">Identificador único (ex: cycle_4, pilot)</p>
+            </div>
+            <div>
+              <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Nome</label>
+              <input type="text" id="cyc-label" placeholder="Ciclo 4 (2026/2)" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Abreviação</label>
+                <input type="text" id="cyc-abbr" placeholder="C4" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
+              </div>
+              <div>
+                <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Cor</label>
+                <input type="color" id="cyc-color" value="#94A3B8" class="w-full h-[38px] px-1 py-1 border border-[var(--border-default)] rounded-lg cursor-pointer">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Data Início</label>
+                <input type="date" id="cyc-start" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
+              </div>
+              <div>
+                <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Data Fim</label>
+                <input type="date" id="cyc-end" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
+                <p class="text-[.6rem] text-[var(--text-muted)] mt-0.5">Opcional (vazio = em andamento)</p>
+              </div>
+            </div>
+            <div>
+              <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Ordem de exibição</label>
+              <input type="number" id="cyc-sort" value="0" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
+            </div>
+            <button id="cycle-modal-save" class="w-full px-4 py-2.5 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all mt-2">
+              Salvar
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div id="settings-loading" class="text-center py-16 text-[var(--text-muted)]">Carregando...</div>
@@ -76,6 +141,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     document.getElementById('settings-denied')?.classList.add('hidden');
     document.getElementById('settings-panel')?.classList.remove('hidden');
     loadConfig();
+    loadCycles();
   }
 
   async function loadConfig() {
@@ -142,6 +208,147 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   }
 
   document.getElementById('cfg-save')?.addEventListener('click', saveConfig);
+
+  // ── W111: Cycle Management ──
+  let editingCycleCode: string | null = null;
+
+  async function loadCycles() {
+    if (!sb) return;
+    const container = document.getElementById('cycle-list');
+    if (!container) return;
+    try {
+      const { data, error } = await sb.rpc('list_cycles');
+      if (error) throw error;
+      const cycles = data || [];
+      if (cycles.length === 0) {
+        container.innerHTML = '<p class="text-[.7rem] text-[var(--text-muted)]">Nenhum ciclo cadastrado.</p>';
+        return;
+      }
+      container.innerHTML = cycles.map((c: any) => `
+        <div class="flex items-center gap-3 p-3 rounded-lg border border-[var(--border-subtle)] hover:border-[var(--border-default)] transition-all">
+          <div class="w-4 h-4 rounded-full shrink-0" style="background:${escapeHtml(c.cycle_color)}"></div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="text-[.78rem] font-bold text-[var(--text-primary)]">${escapeHtml(c.cycle_label)}</span>
+              <span class="text-[.65rem] px-1.5 py-0.5 rounded bg-[var(--surface-section-cool)] text-[var(--text-muted)] font-mono">${escapeHtml(c.cycle_code)}</span>
+              ${c.is_current ? '<span class="text-[.6rem] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold">Ativo</span>' : ''}
+            </div>
+            <p class="text-[.65rem] text-[var(--text-muted)] mt-0.5">${escapeHtml(c.cycle_abbr)} &middot; ${c.cycle_start || '—'} a ${c.cycle_end || 'em andamento'}</p>
+          </div>
+          <div class="flex items-center gap-1.5 shrink-0">
+            ${!c.is_current ? `<button data-cyc-current="${escapeHtml(c.cycle_code)}" class="px-2 py-1 text-[.65rem] font-semibold rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 cursor-pointer transition-colors">Ativar</button>` : ''}
+            <button data-cyc-edit="${escapeHtml(c.cycle_code)}" class="px-2 py-1 text-[.65rem] font-semibold rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 cursor-pointer transition-colors">Editar</button>
+            ${!c.is_current ? `<button data-cyc-del="${escapeHtml(c.cycle_code)}" class="px-2 py-1 text-[.65rem] font-semibold rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 cursor-pointer transition-colors">Excluir</button>` : ''}
+          </div>
+        </div>
+      `).join('');
+
+      // Bind edit buttons
+      container.querySelectorAll('[data-cyc-edit]').forEach((btn: Element) => {
+        btn.addEventListener('click', () => {
+          const code = (btn as HTMLElement).dataset.cycEdit!;
+          const cyc = cycles.find((c: any) => c.cycle_code === code);
+          if (cyc) openCycleModal(cyc);
+        });
+      });
+      // Bind set-current buttons
+      container.querySelectorAll('[data-cyc-current]').forEach((btn: Element) => {
+        btn.addEventListener('click', async () => {
+          const code = (btn as HTMLElement).dataset.cycCurrent!;
+          if (!confirm(`Definir "${code}" como ciclo ativo?`)) return;
+          try {
+            const { error } = await sb.rpc('admin_manage_cycle', { p_action: 'set_current', p_cycle_code: code });
+            if (error) throw error;
+            (window as any).toast?.('Ciclo ativo atualizado', 'success');
+            loadCycles();
+          } catch (e: any) { (window as any).toast?.('Erro: ' + (e.message || 'desconhecido'), 'error'); }
+        });
+      });
+      // Bind delete buttons
+      container.querySelectorAll('[data-cyc-del]').forEach((btn: Element) => {
+        btn.addEventListener('click', async () => {
+          const code = (btn as HTMLElement).dataset.cycDel!;
+          if (!confirm(`Excluir ciclo "${code}"? Esta ação não pode ser desfeita.`)) return;
+          try {
+            const { error } = await sb.rpc('admin_manage_cycle', { p_action: 'delete', p_cycle_code: code });
+            if (error) throw error;
+            (window as any).toast?.('Ciclo excluído', 'success');
+            loadCycles();
+          } catch (e: any) { (window as any).toast?.('Erro: ' + (e.message || 'desconhecido'), 'error'); }
+        });
+      });
+    } catch (e: any) {
+      console.error('Load cycles:', e);
+      if (container) container.innerHTML = '<p class="text-[.7rem] text-red-600">Erro ao carregar ciclos.</p>';
+    }
+  }
+
+  function openCycleModal(cyc?: any) {
+    editingCycleCode = cyc?.cycle_code || null;
+    const title = document.getElementById('cycle-modal-title');
+    if (title) title.textContent = cyc ? 'Editar Ciclo' : 'Novo Ciclo';
+    (document.getElementById('cyc-code') as HTMLInputElement).value = cyc?.cycle_code || '';
+    (document.getElementById('cyc-code') as HTMLInputElement).disabled = !!cyc;
+    (document.getElementById('cyc-label') as HTMLInputElement).value = cyc?.cycle_label || '';
+    (document.getElementById('cyc-abbr') as HTMLInputElement).value = cyc?.cycle_abbr || '';
+    (document.getElementById('cyc-color') as HTMLInputElement).value = cyc?.cycle_color || '#94A3B8';
+    (document.getElementById('cyc-start') as HTMLInputElement).value = cyc?.cycle_start || '';
+    (document.getElementById('cyc-end') as HTMLInputElement).value = cyc?.cycle_end || '';
+    (document.getElementById('cyc-sort') as HTMLInputElement).value = String(cyc?.sort_order ?? 0);
+    document.getElementById('cycle-modal-overlay')?.classList.remove('hidden');
+  }
+
+  function closeCycleModal() {
+    document.getElementById('cycle-modal-overlay')?.classList.add('hidden');
+    editingCycleCode = null;
+  }
+
+  async function saveCycle() {
+    if (!sb) return;
+    const code = (document.getElementById('cyc-code') as HTMLInputElement).value.trim();
+    const label = (document.getElementById('cyc-label') as HTMLInputElement).value.trim();
+    const abbr = (document.getElementById('cyc-abbr') as HTMLInputElement).value.trim();
+    const color = (document.getElementById('cyc-color') as HTMLInputElement).value;
+    const start = (document.getElementById('cyc-start') as HTMLInputElement).value;
+    const end = (document.getElementById('cyc-end') as HTMLInputElement).value || null;
+    const sort = parseInt((document.getElementById('cyc-sort') as HTMLInputElement).value) || 0;
+
+    if (!code || !label || !abbr || !start) {
+      (window as any).toast?.('Preencha código, nome, abreviação e data início', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('cycle-modal-save') as HTMLButtonElement;
+    if (btn) btn.disabled = true;
+    try {
+      const action = editingCycleCode ? 'update' : 'create';
+      const { error } = await sb.rpc('admin_manage_cycle', {
+        p_action: action,
+        p_cycle_code: code,
+        p_label: label,
+        p_abbr: abbr,
+        p_start: start,
+        p_end: end,
+        p_color: color,
+        p_sort: sort,
+      });
+      if (error) throw error;
+      (window as any).toast?.(editingCycleCode ? 'Ciclo atualizado' : 'Ciclo criado', 'success');
+      closeCycleModal();
+      loadCycles();
+    } catch (e: any) {
+      (window as any).toast?.('Erro: ' + (e.message || 'desconhecido'), 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  document.getElementById('cycle-add-btn')?.addEventListener('click', () => openCycleModal());
+  document.getElementById('cycle-modal-close')?.addEventListener('click', closeCycleModal);
+  document.getElementById('cycle-modal-save')?.addEventListener('click', saveCycle);
+  document.getElementById('cycle-modal-overlay')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeCycleModal();
+  });
 
   boot();
 </script>
