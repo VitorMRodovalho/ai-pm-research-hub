@@ -1,0 +1,37 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getLangFromURL, type Lang } from '../../i18n/utils';
+import AdminNav from '../../components/nav/AdminNav.astro';
+import CrossTribeIsland from '../../components/islands/CrossTribeIsland';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+---
+
+<BaseLayout title="Comparativo de Tribos" activePage="admin">
+  <div class="max-w-[1200px] mx-auto px-4 pt-6">
+    <AdminNav activeSub="cross-tribes" lang={lang} />
+  </div>
+
+  <div id="cross-tribe-panel" class="max-w-[1200px] mx-auto px-4 pb-12">
+    <div class="mb-6">
+      <h1 class="text-xl font-bold text-[var(--text-primary)]">Comparativo de Tribos — Ciclo 3</h1>
+      <p class="text-sm text-[var(--text-secondary)] mt-1">Visão consolidada de todas as tribos. Apenas GP/DM.</p>
+    </div>
+    <CrossTribeIsland client:load />
+  </div>
+</BaseLayout>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    const check = () => {
+      const member = (window as any).navMember;
+      if (!member) { setTimeout(check, 300); return; }
+      const isGP = member.is_superadmin || member.operational_role === 'manager' || member.operational_role === 'deputy_manager';
+      if (!isGP) {
+        const panel = document.getElementById('cross-tribe-panel');
+        if (panel) panel.innerHTML = '<div class="text-center py-20"><p class="text-lg font-bold text-red-500">Acesso restrito a GP/DM</p></div>';
+      }
+    };
+    check();
+  });
+</script>

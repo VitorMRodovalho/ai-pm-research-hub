@@ -130,6 +130,14 @@ const WK = {
         <div id="wk-tribe-card" class="hidden"></div>
       </section>
 
+      <!-- ═══ Section 1.5: Alertas Operacionais (GP only) ═══ -->
+      <section id="wk-alerts" class="hidden">
+        <h2 class="text-base font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+          <span class="text-lg">🚨</span> {WK.sectionAlerts || 'Alertas Operacionais'}
+        </h2>
+        <div id="wk-alerts-card" class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5"></div>
+      </section>
+
       <!-- ═══ Section 2: Subprojetos ═══ -->
       <section id="wk-subprojects">
         <h2 class="text-base font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
@@ -303,6 +311,37 @@ const WK = {
           </a>
         `;
         $tribeCard.classList.remove('hidden');
+      }
+
+      // ── Render Section 1.5: Alertas Operacionais (GP only) ──
+      const isGP = member.is_superadmin || member.operational_role === 'manager' || member.operational_role === 'deputy_manager';
+      if (isGP && sb) {
+        const $alertsSection = document.getElementById('wk-alerts');
+        const $alertsCard = document.getElementById('wk-alerts-card');
+        if ($alertsSection && $alertsCard) {
+          try {
+            const { data: alertData } = await sb.rpc('detect_operational_alerts');
+            if (alertData && alertData.total > 0) {
+              const sev = alertData.by_severity;
+              const topAlerts = alertData.alerts.slice(0, 5);
+              const sevIcons: Record<string, string> = { high: '🔴', medium: '⚠️', low: 'ℹ️' };
+              $alertsCard.innerHTML = `
+                <div class="flex items-center justify-between mb-3">
+                  <div class="flex gap-2">
+                    ${sev.high > 0 ? `<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700">🔴 ${sev.high} altos</span>` : ''}
+                    ${sev.medium > 0 ? `<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">⚠️ ${sev.medium} médios</span>` : ''}
+                    ${sev.low > 0 ? `<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">ℹ️ ${sev.low} baixos</span>` : ''}
+                  </div>
+                  <a href="/admin/tribes" class="text-xs font-bold text-teal no-underline hover:underline">Ver tudo &rarr;</a>
+                </div>
+                <div class="space-y-1.5">
+                  ${topAlerts.map((a: any) => `<div class="flex items-start gap-2 text-xs p-2 rounded-lg bg-[var(--surface-hover)]"><span>${sevIcons[a.severity] || ''}</span><span class="text-[var(--text-primary)]">${escHtml(a.message)}</span></div>`).join('')}
+                </div>
+              `;
+              $alertsSection.classList.remove('hidden');
+            }
+          } catch {}
+        }
       }
 
       // ── Render Section 2: Subprojetos ──

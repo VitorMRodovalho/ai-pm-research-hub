@@ -1817,6 +1817,11 @@ const ptBR: Record<string, string> = {
   'admin.webinars.msg.deleteError': 'Erro ao remover',
   'nav.adminWebinars': 'Webinars',
 
+  // ── Cross-Tribe + Impact ──
+  'nav.adminCrossTribes': 'Comparativo de Tribos',
+  'nav.about': 'Sobre',
+  'wk.sectionAlerts': 'Alertas Operacionais',
+
   // ── Tribe Dashboard ──
   'nav.adminTribeDashboard': 'Dashboard de Tribo',
   'tribeDashboard.title': 'Dashboard — Tribo',

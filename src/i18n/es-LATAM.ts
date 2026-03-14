@@ -1817,6 +1817,11 @@ const esLATAM: Record<string, string> = {
   'admin.webinars.msg.deleteError': 'Error al eliminar webinar',
   'nav.adminWebinars': 'Webinars',
 
+  // ── Cross-Tribe + Impact ──
+  'nav.adminCrossTribes': 'Comparativo de Tribus',
+  'nav.about': 'Acerca de',
+  'wk.sectionAlerts': 'Alertas Operacionales',
+
   // ── Tribe Dashboard ──
   'nav.adminTribeDashboard': 'Dashboard de Tribu',
   'tribeDashboard.title': 'Dashboard — Tribu',
