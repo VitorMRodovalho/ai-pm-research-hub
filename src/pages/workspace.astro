@@ -6,6 +6,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
 import KpiDashboard from '../components/workspace/KpiDashboard';
 import AttendanceDashboard from '../components/workspace/AttendanceDashboard';
 import AttendanceForm from '../components/workspace/AttendanceForm';
+import DropoutRiskBanner from '../components/workspace/DropoutRiskBanner';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
@@ -139,6 +140,11 @@ const WK = {
           <span class="text-lg">🚨</span> {WK.sectionAlerts || 'Alertas Operacionais'}
         </h2>
         <div id="wk-alerts-card" class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5"></div>
+      </section>
+
+      <!-- ═══ Dropout Risk Banner (GP/leader only, self-hides if 0) ═══ -->
+      <section id="wk-dropout-risk" class="hidden">
+        <DropoutRiskBanner client:load />
       </section>
 
       <!-- ═══ KPI Dashboard (all authenticated members) ═══ -->
@@ -605,6 +611,7 @@ const WK = {
       }
 
       // ── Show KPI + Attendance sections ──
+      document.getElementById('wk-dropout-risk')?.classList.remove('hidden');
       document.getElementById('wk-kpis')?.classList.remove('hidden');
       document.getElementById('wk-attendance')?.classList.remove('hidden');
 
