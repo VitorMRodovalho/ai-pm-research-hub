@@ -1004,8 +1004,12 @@ test('home pages resolve shared home schedule instead of fetching only the deadl
   const es = read('src/pages/es/index.astro');
   for (const content of [pt, en, es]) {
     assert.equal(content.includes('getHomeSchedule'), true);
-    assert.equal(content.includes('schedule={homeSchedule}'), true);
     assert.equal(content.includes('ResourcesSection deadline={deadlineIso}'), true);
+  }
+  // pt-BR uses HomepageHero (W135 redesign), en/es still use HeroSection
+  assert.equal(pt.includes('HomepageHero'), true);
+  for (const content of [en, es]) {
+    assert.equal(content.includes('schedule={homeSchedule}'), true);
   }
 });
 

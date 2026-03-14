@@ -1,0 +1,73 @@
+---
+---
+
+<section class="py-16 px-6 bg-[var(--surface-section-cool)]" id="nucleo">
+  <div class="max-w-[900px] mx-auto text-center">
+    <h2 class="text-[clamp(1.5rem,3.5vw,2.2rem)] font-extrabold text-[var(--text-primary)] leading-tight mb-4">
+      O que é o Núcleo IA & GP?
+    </h2>
+    <p class="text-[1rem] text-[var(--text-secondary)] leading-relaxed max-w-[700px] mx-auto mb-10">
+      Grupo colaborativo de pesquisa entre capítulos PMI do Brasil, focado na interseção entre
+      Inteligência Artificial e Gestão de Projetos. Pesquisadores voluntários produzem artigos,
+      protótipos e webinars sobre como a IA está transformando a profissão.
+    </p>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 max-w-[700px] mx-auto">
+      <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5">
+        <div class="text-3xl font-extrabold text-navy" id="nucleo-members">--</div>
+        <div class="text-[.72rem] text-[var(--text-muted)] font-semibold uppercase tracking-wider mt-1">pesquisadores</div>
+      </div>
+      <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5">
+        <div class="text-3xl font-extrabold text-navy" id="nucleo-tribes">--</div>
+        <div class="text-[.72rem] text-[var(--text-muted)] font-semibold uppercase tracking-wider mt-1">tribos</div>
+      </div>
+      <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5">
+        <div class="text-3xl font-extrabold text-navy" id="nucleo-chapters">--</div>
+        <div class="text-[.72rem] text-[var(--text-muted)] font-semibold uppercase tracking-wider mt-1">capítulos PMI</div>
+      </div>
+      <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5">
+        <div class="text-3xl font-extrabold text-navy" id="nucleo-hours">--</div>
+        <div class="text-[.72rem] text-[var(--text-muted)] font-semibold uppercase tracking-wider mt-1">horas de impacto</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  (() => {
+    function animateOnScroll(id: string, target: number, suffix = '') {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const observer = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting) {
+          observer.disconnect();
+          const duration = 1400;
+          const start = performance.now();
+          function step(now: number) {
+            const progress = Math.min((now - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            el!.textContent = Math.round(target * eased) + suffix;
+            if (progress < 1) requestAnimationFrame(step);
+          }
+          requestAnimationFrame(step);
+        }
+      }, { threshold: 0.3 });
+      observer.observe(el);
+    }
+
+    async function loadStats() {
+      const sb = (window as any).navGetSb?.();
+      if (!sb) { setTimeout(loadStats, 300); return; }
+      try {
+        const { data } = await sb.rpc('get_homepage_stats');
+        if (data) {
+          animateOnScroll('nucleo-members', data.members);
+          animateOnScroll('nucleo-tribes', data.tribes);
+          animateOnScroll('nucleo-chapters', data.chapters);
+          animateOnScroll('nucleo-hours', data.impact_hours, 'h');
+        }
+      } catch (e) { console.warn('nucleo stats:', e); }
+    }
+    loadStats();
+  })();
+</script>

@@ -1,15 +1,17 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Toast from '../components/ui/Toast.astro';
-import HeroSection from '../components/sections/HeroSection.astro';
+import HomepageHero from '../components/sections/HomepageHero.astro';
+import NucleoSection from '../components/sections/NucleoSection.astro';
 import { getHomeSchedule } from '../lib/schedule';
 import QuadrantsSection from '../components/sections/QuadrantsSection.astro';
 import TribesSection from '../components/sections/TribesSection.astro';
 import KpiSection from '../components/sections/KpiSection.astro';
-import NetworkingSection from '../components/sections/NetworkingSection.astro';
+import WeeklyScheduleSection from '../components/sections/WeeklyScheduleSection.astro';
 import RulesSection from '../components/sections/RulesSection.astro';
 import TrailSection from '../components/sections/TrailSection.astro';
 import CpmaiSection from '../components/sections/CpmaiSection.astro';
+import ChaptersSection from '../components/sections/ChaptersSection.astro';
 import TeamSection from '../components/sections/TeamSection.astro';
 import VisionSection from '../components/sections/VisionSection.astro';
 import ResourcesSection from '../components/sections/ResourcesSection.astro';
@@ -22,17 +24,18 @@ const deadlineIso = homeSchedule?.selectionDeadlineAt ?? null;
 ---
 <BaseLayout title={t('meta.title', lang)} activePage="home" lang={lang}>
   <Toast />
-  <HeroSection deadline={deadlineIso} schedule={homeSchedule} lang={lang} />
+  <HomepageHero />
+  <NucleoSection />
   <QuadrantsSection lang={lang} />
   <TribesSection deadline={deadlineIso} lang={lang} />
   <KpiSection lang={lang} />
-  <NetworkingSection lang={lang} />
+  <WeeklyScheduleSection />
   <RulesSection lang={lang} />
   <TrailSection lang={lang} />
   <CpmaiSection lang={lang} />
+  <ChaptersSection />
   <TeamSection lang={lang} />
   <VisionSection lang={lang} />
   <ResourcesSection deadline={deadlineIso} lang={lang} />
   <PresentationLayer context="home" lang={lang} />
-
 </BaseLayout>

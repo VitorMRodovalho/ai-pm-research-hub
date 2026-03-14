@@ -482,4 +482,18 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-033: W135 — Homepage journey redesign com hero condicional
+
+**Data:** 2026-03-15
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Aplicado em produção
+
+**Decisão:** Redesenhar a homepage com hero condicional (visitante vs membro logado). Visitantes veem contadores de impacto (58 pesquisadores, 8 tribos, 876h) e CTA de entrada. Membros logados veem saudação personalizada, card da próxima reunião geral com link do Meet, card da tribo com horário e link, e miniatura de assiduidade. Adicionadas 3 novas seções scrolláveis: "O Núcleo" (contadores animados), "Agenda Semanal" (reuniões de tribo agrupadas por dia da semana), e "Capítulos PMI" (5 capítulos integrados com CTA de expansão). Removidos: banner estático do kickoff e seção Breakout Rooms.
+
+**Justificativa:** Homepage serve duas jornadas distintas — visitantes precisam de credibilidade em 10 segundos (números de impacto), membros precisam do link do Meet a 1 clique. Banner de kickoff e breakout rooms eram conteúdo estático que já passou. Agenda semanal dinâmica nunca fica desatualizada pois puxa do banco.
+
+**Impacto técnico:** RPC pública `get_homepage_stats()` (sem auth, GRANT TO anon). Componentes: HomepageHero.astro (hero condicional com client-side auth), NucleoSection.astro (contadores com IntersectionObserver), WeeklyScheduleSection.astro (tribe_meeting_slots agrupados por dia), ChaptersSection.astro. site_config entries: general_meeting_link, general_meeting_day, general_meeting_time. Migration `20260319100039`.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisão deve ter Data, Autor, Status, Decisão, Justificativa, e Impacto técnico quando aplicável. Propostas pendentes requerem aprovação da Liderança dos Capítulos conforme Seção 7 do Manual R2.*
