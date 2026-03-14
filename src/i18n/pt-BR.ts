@@ -105,6 +105,7 @@ const ptBR: Record<string, string> = {
   'portfolio.subtitle': 'Visão consolidada por escopo/domínio para priorização de gestão.',
   'portfolio.runTaxonomy': 'Rodar detecção de drift taxonomy',
   'portfolio.runSanity': 'Rodar data sanity v2',
+  'portfolio.activeBoards': 'Boards Ativos',
   'portfolio.kpiHealth.title': 'Saúde do Portfólio — KPIs',
   'portfolio.kpiHealth.subtitle': 'Progresso das metas anuais do Núcleo vs dados reais do ciclo.',
   'nav.adminPartnerships': '🤝 Parcerias',
