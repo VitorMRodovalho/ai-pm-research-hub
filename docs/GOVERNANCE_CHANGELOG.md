@@ -318,4 +318,59 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-020 — Hub Resources Deep Classification — Junk Removal
+**Data:** 2026-03-15 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisão:** Desativar 83 itens junk do hub_resources: 27 títulos numéricos (linhas de planilha), 25 exports WhatsApp Image, 8 nomes numerados (artefatos de lista de presença), 7 URLs LinkedIn como título, 4 timestamps de fotos, 3 exports analytics, 3 unnamed/untitled, 6 misc (chars avulsos, URLs bare, screenshots).
+
+**Justificativa:** Importação bulk de planilhas e Miro trouxe artefatos que não são recursos de conhecimento. Poluem busca, navegação e métricas de produção. Items mantidos no DB com `is_active=false, curation_status='rejected'` para auditoria.
+
+**Impacto técnico:** Hub resources ativos: 323→240. Nenhuma exclusão de dados.
+
+---
+
+### GC-021 — Hub Resources Tag Cleanup
+**Data:** 2026-03-15 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisão:** Remover 3 tags bulk-import de todos os itens ativos: `meeting_minutes` (280+ itens), `archived`, `miro_library`. Tags devem carregar significado semântico, não metadados de processo.
+
+**Justificativa:** Tag `meeting_minutes` estava em 280+ itens como artefato de importação — a maioria não era ata de reunião. `archived` duplica a coluna `is_active`. `miro_library` duplica a coluna `source`.
+
+**Impacto técnico:** UPDATE em tags de todos os itens ativos. Tags passam a ser exclusivamente semânticas.
+
+---
+
+### GC-022 — Hub Resources Asset Type Expansion
+**Data:** 2026-03-15 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisão:** Expandir constraint `hub_resources_asset_type_check` de 4 para 9 tipos (adição: article, presentation, governance, certificate, template). Reclassificar 141 itens "other" para tipos descritivos: 60→reference, 17→governance, 11→certificate, 6→presentation, 5→article, 2→course, 2→webinar.
+
+**Justificativa:** 44% dos itens estavam tipados como "other", eliminando valor analítico. Granularidade insuficiente para busca, filtragem por tipo e dashboard de produção.
+
+**Impacto técnico:** Migração `expand_hub_resources_asset_types`. Asset type "other": 141→0.
+
+---
+
+### GC-023 — Hub Resources 3-Level Taxonomy (Origin Tags)
+**Data:** 2026-03-15 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisão:** Classificar todos os 240 itens ativos com tag de origem: `origin:nucleo` (53, 22%), `origin:pmi-global` (29, 12%), `origin:external` (158, 66%). Adicionar tags de conteúdo específicas: ai-agent, prototype, comms, publication-guide, ai-tool, survey-data, risk, agile.
+
+**Justificativa:** Sem taxonomia de origem, não é possível distinguir produção interna do Núcleo de referências externas. A distinção é crítica para KPIs de produção (artigos produzidos vs citados) e para o dashboard de portfólio.
+
+**Impacto técnico:** UPDATE em tags de todos os itens ativos. 100% de cobertura de origin tag.
+
+---
+
+### GC-024 — Hub Resources Author/Cycle Enrichment
+**Data:** 2026-03-15 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisão:** Vincular 6 certificados a `author_id` (member UUID) via name matching no título. Atribuir `cycle_code` a 64 itens com base em tags existentes (ciclo-1, ciclo-2, ciclo-3). Expandir tribe assignment de 136 para 142 itens via keyword matching.
+
+**Justificativa:** Certificados sem author_id não apareciam no perfil do membro. Itens sem cycle_code não podiam ser filtrados por período. Enriquecimento dimensional melhora busca, relatórios e perfil individual.
+
+**Impacto técnico:** UPDATE em author_id (6 items), cycle_code (64 items), tribe_id (6 items adicionais).
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisão deve ter Data, Autor, Status, Decisão, Justificativa, e Impacto técnico quando aplicável. Propostas pendentes requerem aprovação da Liderança dos Capítulos conforme Seção 7 do Manual R2.*
