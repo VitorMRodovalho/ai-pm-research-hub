@@ -384,4 +384,18 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-026: Análise cruzada WhatsApp — 15 grupos, 18.338 mensagens
+
+**Data:** 2026-03-15
+**Autor:** Vitor Rodovalho (via Claude Code — Supabase MCP)
+**Status:** Aplicado em produção
+
+**Decisão:** Analisar 15 grupos de WhatsApp (operacionais, tribos, governança, arquivo) para extrair dados estruturados, identificar padrões de fricção e oportunidades de melhoria para o portal.
+
+**Justificativa:** Links, agendas e artefatos de pesquisa ficam enterrados no scroll do WhatsApp, gerando 156 sinais de fricção de acesso. A análise cruzada permite enriquecer dados de produção (meeting_links, horários, recursos) e identificar funcionalidades do portal que substituem comunicação informal.
+
+**Impacto técnico:** 4 tribe meeting_links populados (T01, T02, T06, T07). 3 meeting schedules definidos (T06, T07, T08). T02 miro_url adicionado. 8 hub_resources criados (5 protótipos Lovable, 3 artefatos Claude). 156 sinais de fricção catalogados. 7 oportunidades de backlog/change-request identificadas (CR-01 a CR-07).
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisão deve ter Data, Autor, Status, Decisão, Justificativa, e Impacto técnico quando aplicável. Propostas pendentes requerem aprovação da Liderança dos Capítulos conforme Seção 7 do Manual R2.*
