@@ -412,4 +412,60 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-028: W134a — Formulário de registro de presença
+
+**Data:** 2026-03-15
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Aplicado em produção
+
+**Decisão:** Implementar formulário de registro de presença em lote na página /workspace, visível para GP e líderes de tribo. Inclui RPCs `register_attendance_batch`, `update_event_duration` e `get_recent_events`.
+
+**Justificativa:** O registro de presença era manual e não tinha interface. GP e líderes precisam registrar presenças de forma eficiente para alimentar métricas de engajamento.
+
+**Impacto técnico:** 3 RPCs criados (SECURITY DEFINER). 4 site_config entries (thresholds/pesos). React component AttendanceForm com seletor de evento, lista de membros com checkboxes, busca, duração real. Migration `20260319100036`.
+
+---
+
+### GC-029: W134b — Dashboard de presença (3 visões)
+
+**Data:** 2026-03-15
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Aplicado em produção
+
+**Decisão:** Implementar dashboard de presença com 3 visões condicionais: GP (tabela completa, filtro por tribo, alertas de risco), Líder (auto-filtrado para sua tribo), Pesquisador (visão pessoal com comparativo tribo/geral).
+
+**Justificativa:** Transparência de participação conforme decisão D5 do núcleo. Pesquisadores veem apenas seus próprios dados + médias comparativas. GP e líderes veem indicadores de risco de dropout.
+
+**Impacto técnico:** RPC `get_attendance_summary` com fórmula combinada (40% geral + 60% tribo). React component AttendanceDashboard. Indicadores: verde ≥75%, amarelo 50-74%, vermelho <50%, preto 0%.
+
+---
+
+### GC-030: W104 — Dashboard de KPIs do portfólio
+
+**Data:** 2026-03-15
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Aplicado em produção
+
+**Decisão:** Implementar dashboard de KPIs com 6 métricas ao vivo (horas de impacto, certificação CPMAI, pilotos IA, artigos, webinars, capítulos) na página /workspace, visível para todos os membros autenticados.
+
+**Justificativa:** KPIs do Ciclo 3 precisam ser visíveis e acompanhados em tempo real. Sem dashboard, as metas ficam em planilhas sem visibilidade.
+
+**Impacto técnico:** RPC `get_kpi_dashboard` retorna JSONB com 6 métricas + progresso linear do ciclo. React component KpiDashboard com cards coloridos (verde on-track, amarelo slightly behind, vermelho critical). Migration `20260319100036`.
+
+---
+
+### GC-031: W105 — Relatório executivo do ciclo aprimorado
+
+**Data:** 2026-03-15
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Aplicado em produção
+
+**Decisão:** Aprimorar `exec_cycle_report` para usar `get_kpi_dashboard` (dados mais precisos) e incluir seção de presença por tribo. Adicionar tabela de attendance no cycle-report com métricas por tribo e membros em risco. Redirecionar /report → /admin/cycle-report.
+
+**Justificativa:** O relatório executivo existente não incluía dados de presença. Com 783 attendance records, o relatório agora mostra participação comparativa entre tribos, permitindo decisões informadas sobre engajamento.
+
+**Impacto técnico:** `exec_cycle_report` reescrito para usar `get_kpi_dashboard` e `get_attendance_summary`. Nova seção "Presença por Tribo" na página cycle-report. Migration `20260319100037`. Redirect `/report` adicionado.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisão deve ter Data, Autor, Status, Decisão, Justificativa, e Impacto técnico quando aplicável. Propostas pendentes requerem aprovação da Liderança dos Capítulos conforme Seção 7 do Manual R2.*

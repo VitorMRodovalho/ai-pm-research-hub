@@ -74,6 +74,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         <div id="cr-curation" class="grid grid-cols-2 md:grid-cols-5 gap-3"></div>
       </section>
 
+      <!-- Attendance by Tribe -->
+      <section class="cr-section">
+        <h2 class="text-lg font-extrabold text-navy mb-3">Presença por Tribo</h2>
+        <div id="cr-attendance" class="overflow-x-auto"></div>
+      </section>
+
       <!-- Footer -->
       <footer class="text-center text-xs text-[var(--text-muted)] pt-4 border-t border-[var(--border-default)]">
         <span id="cr-footer"></span>
@@ -292,6 +298,59 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         statCard('Tempo Médio', `${cur.avg_review_days || 0}d`),
         statCard('SLA OK', `${cur.sla_compliance_rate || 0}%`, 'text-blue-600'),
       ].join('');
+    }
+
+    // Attendance by tribe
+    const attEl = document.getElementById('cr-attendance');
+    if (attEl && Array.isArray(r.attendance) && r.attendance.length > 0) {
+      attEl.innerHTML = `
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="bg-[var(--surface-base)]">
+              <th class="text-left px-3 py-2 font-semibold text-[var(--text-secondary)]">Tribo</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">Membros</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">Geral %</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">Tribo %</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">Combinado %</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">Em Risco</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${r.attendance.map((a: any) => {
+              const combined = Number(a.avg_combined_pct) || 0;
+              const risk = Number(a.at_risk_count) || 0;
+              const color = combined >= 75 ? 'text-emerald-600' : combined >= 50 ? 'text-amber-600' : 'text-red-600';
+              return `<tr class="border-t border-[var(--border-subtle)]">
+                <td class="px-3 py-2 font-semibold text-[var(--text-primary)]">${a.tribe_name}</td>
+                <td class="px-3 py-2 text-center">${a.members_count}</td>
+                <td class="px-3 py-2 text-center">${a.avg_geral_pct}%</td>
+                <td class="px-3 py-2 text-center">${a.avg_tribe_pct}%</td>
+                <td class="px-3 py-2 text-center font-bold ${color}">${combined}%</td>
+                <td class="px-3 py-2 text-center">${risk > 0 ? `<span class="text-red-600 font-bold">${risk}</span>` : '—'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // Also render KPIs from new format if available
+    const kpisEl2 = document.getElementById('cr-kpis');
+    if (kpisEl2 && r.kpis?.kpis && Array.isArray(r.kpis.kpis)) {
+      const cyclePct = r.kpis.cycle_pct || 0;
+      kpisEl2.innerHTML = r.kpis.kpis.map((k: any) => {
+        const pct = k.target > 0 ? Math.round((k.current / k.target) * 100) : 0;
+        const status = pct >= cyclePct ? 'green' : pct >= cyclePct * 0.75 ? 'yellow' : 'red';
+        const s = STATUS_STYLES[status];
+        return `<div class="rounded-xl p-3 text-center" style="background:${s.bg};border:1px solid ${s.border}">
+          <div class="text-2xl font-extrabold" style="color:${s.text}">${k.current}${k.unit ? k.unit : ''}</div>
+          <div class="text-[10px] font-bold uppercase tracking-wide" style="color:${s.text}">${k.name}</div>
+          <div class="w-full h-1.5 rounded-full mt-2" style="background:${s.border}40">
+            <div class="h-full rounded-full" style="width:${Math.min(pct, 100)}%;background:${s.text}"></div>
+          </div>
+          <div class="text-[9px] mt-1" style="color:${s.text}">${pct}% — meta: ${k.target}${k.unit ? k.unit : ''}</div>
+        </div>`;
+      }).join('');
     }
 
     // Footer

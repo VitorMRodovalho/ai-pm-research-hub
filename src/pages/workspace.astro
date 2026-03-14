@@ -3,6 +3,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Toast from '../components/ui/Toast.astro';
 import ConfirmModal from '../components/ui/ConfirmModal.astro';
 import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
+import KpiDashboard from '../components/workspace/KpiDashboard';
+import AttendanceDashboard from '../components/workspace/AttendanceDashboard';
+import AttendanceForm from '../components/workspace/AttendanceForm';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
@@ -136,6 +139,21 @@ const WK = {
           <span class="text-lg">🚨</span> {WK.sectionAlerts || 'Alertas Operacionais'}
         </h2>
         <div id="wk-alerts-card" class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5"></div>
+      </section>
+
+      <!-- ═══ KPI Dashboard (all authenticated members) ═══ -->
+      <section id="wk-kpis" class="hidden">
+        <KpiDashboard client:load />
+      </section>
+
+      <!-- ═══ Attendance Form (manager/leader only) ═══ -->
+      <section id="wk-attendance-form" class="hidden">
+        <AttendanceForm client:load />
+      </section>
+
+      <!-- ═══ Attendance Dashboard ═══ -->
+      <section id="wk-attendance" class="hidden">
+        <AttendanceDashboard client:load />
       </section>
 
       <!-- ═══ Section 2: Subprojetos ═══ -->
@@ -584,6 +602,16 @@ const WK = {
         }
       } catch (e) {
         console.warn('Workspace: failed to load onboarding:', e);
+      }
+
+      // ── Show KPI + Attendance sections ──
+      document.getElementById('wk-kpis')?.classList.remove('hidden');
+      document.getElementById('wk-attendance')?.classList.remove('hidden');
+
+      // Show AttendanceForm for GP/leader
+      const canRegister = isGP || member.operational_role === 'tribe_leader';
+      if (canRegister) {
+        document.getElementById('wk-attendance-form')?.classList.remove('hidden');
       }
 
       // ── Done: show content ──
