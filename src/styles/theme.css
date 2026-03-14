@@ -46,6 +46,12 @@
   --surface-input: #FFFFFF;            /* form inputs */
   --surface-hover: rgba(0, 0, 0, 0.02);
 
+  /* ── Shorthand aliases (used by admin/campaign pages) ── */
+  --surface: var(--surface-card);
+  --fg: var(--text-primary);
+  --fg-muted: var(--text-muted);
+  --border: var(--border-default);
+
   /* ── Hero (gradient) ── */
   --hero-gradient: linear-gradient(135deg, #003B5C, #200F3B 40%, #0A1628);
 
@@ -151,6 +157,12 @@
   --surface-section-footer: #0A0718;
   --surface-input: #1C2A3F;
   --surface-hover: rgba(255, 255, 255, 0.03);
+
+  /* ── Shorthand aliases ── */
+  --surface: var(--surface-card);
+  --fg: var(--text-primary);
+  --fg-muted: var(--text-muted);
+  --border: var(--border-default);
 
   /* ── Hero ── */
   --hero-gradient: linear-gradient(135deg, #080E1C, #120A26 40%, #060A14);

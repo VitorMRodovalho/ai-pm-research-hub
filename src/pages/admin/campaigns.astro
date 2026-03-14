@@ -110,9 +110,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
             <!-- Audience -->
             <div>
               <label class="block text-sm font-medium text-[var(--fg-muted)] mb-1">{t('campaigns.audience', lang)}</label>
-              <div class="flex items-center gap-4">
+              <div class="flex items-center gap-4 flex-wrap">
                 <label class="flex items-center gap-2 text-sm text-[var(--fg)]">
                   <input type="checkbox" id="aud-all" /> {t('campaigns.allActive', lang)}
+                </label>
+                <label class="flex items-center gap-2 text-sm text-[var(--fg)]">
+                  <input type="checkbox" id="aud-inactive" /> Incluir membros inativos (ex-pesquisadores)
                 </label>
               </div>
               <div id="aud-filters" class="mt-2 grid grid-cols-2 gap-2">
@@ -437,9 +440,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
             }).filter(c => c.email.includes('@'));
           }
 
+          const includeInactive = (document.getElementById('aud-inactive') as HTMLInputElement)?.checked || false;
+          const audienceFilter = { ...tmpl.target_audience, include_inactive: includeInactive };
+
           const { data, error } = await sb.rpc('admin_send_campaign', {
             p_template_id: id,
-            p_audience_filter: tmpl.target_audience,
+            p_audience_filter: audienceFilter,
             p_external_contacts: extContacts,
           });
 
