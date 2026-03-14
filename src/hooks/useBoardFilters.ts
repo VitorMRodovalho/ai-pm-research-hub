@@ -12,7 +12,7 @@ export interface FilterState {
   curationStatus: string | null;
 }
 
-export function useBoardFilters(items: BoardItem[]) {
+export function useBoardFilters(items: BoardItem[], boardMembers?: { id: string; name: string }[]) {
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     assigneeId: null,
@@ -81,9 +81,20 @@ export function useBoardFilters(items: BoardItem[]) {
   const allTags = useMemo(() => [...new Set(items.flatMap((i) => i.tags))].sort(), [items]);
   const allAssignees = useMemo(() => {
     const map = new Map<string, string>();
+    // Include all board/tribe members first
+    if (boardMembers) {
+      boardMembers.forEach((m) => map.set(m.id, m.name));
+    }
+    // Then add any item assignees not already in the map
     items.forEach((i) => { if (i.assignee_id && i.assignee_name) map.set(i.assignee_id, i.assignee_name); });
+    // Also check multi-assignments
+    items.forEach((i) => {
+      if (i.assignments) {
+        i.assignments.forEach((a) => { if (a.member_id && a.name) map.set(a.member_id, a.name); });
+      }
+    });
     return Array.from(map.entries()).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
-  }, [items]);
+  }, [items, boardMembers]);
 
   return {
     filters, filtered, hasActiveFilters,

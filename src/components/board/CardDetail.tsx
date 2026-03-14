@@ -37,6 +37,9 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const [tags, setTags] = useState(item.tags || []);
   const [tagInput, setTagInput] = useState('');
   const [dueDate, setDueDate] = useState(item.due_date || '');
+  const [baselineDate, setBaselineDate] = useState(item.baseline_date || '');
+  const [forecastDate, setForecastDate] = useState(item.forecast_date || '');
+  const [actualDate] = useState(item.actual_completion_date || '');
   const [timeline, setTimeline] = useState<LifecycleEvent[]>([]);
   const [members, setMembers] = useState<BoardMember[]>([]);
   const [boards, setBoards] = useState<BoardSummary[]>([]);
@@ -44,7 +47,14 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const [reviewerId, setReviewerId] = useState(item.reviewer_id || '');
   const [dirty, setDirty] = useState(false);
   const [showMoveToBoard, setShowMoveToBoard] = useState(false);
+  const [showMirrorDialog, setShowMirrorDialog] = useState(false);
+  const [mirrorTargetBoard, setMirrorTargetBoard] = useState('');
+  const [mirrorTargetStatus, setMirrorTargetStatus] = useState('backlog');
+  const [mirrorNotes, setMirrorNotes] = useState('');
+  const [creatingMirror, setCreatingMirror] = useState(false);
+  const [mirrorBoards, setMirrorBoards] = useState<BoardSummary[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [dbChecklist, setDbChecklist] = useState<any[]>([]);
   const [attachments, setAttachments] = useState(item.attachments || []);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -168,6 +178,24 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
       if (Array.isArray(mb.data)) setMembers(mb.data);
       if (Array.isArray(bl.data)) setBoards(bl.data.filter((b: any) => b.id !== board.id));
 
+      // Load checklist items from table
+      const cl = await safe(sb.from('board_item_checklists')
+        .select('id, text, is_completed, position, assigned_to, target_date, completed_at, completed_by, assigned_at')
+        .eq('board_item_id', item.id)
+        .order('position'));
+      if (Array.isArray(cl.data) && cl.data.length > 0) {
+        setDbChecklist(cl.data);
+        setChecklist(cl.data.map((c: any) => ({
+          id: c.id, text: c.text, done: c.is_completed,
+          assigned_to: c.assigned_to, target_date: c.target_date,
+          completed_at: c.completed_at, completed_by: c.completed_by,
+        })));
+      }
+
+      // Load mirror target boards
+      const mt = await safe(sb.rpc('get_mirror_target_boards', { p_source_board_id: board.id }));
+      if (Array.isArray(mt.data)) setMirrorBoards(mt.data);
+
       // Fetch assignments from junction table
       const asn = await safe(sb.rpc('get_item_assignments', { p_item_id: item.id }));
       if (Array.isArray(asn.data) && asn.data.length > 0) {
@@ -192,6 +220,8 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
     if (JSON.stringify(checklist) !== JSON.stringify(item.checklist || [])) fields.checklist = checklist;
     if (JSON.stringify(tags) !== JSON.stringify(item.tags || [])) fields.tags = tags;
     if (dueDate !== (item.due_date || '')) fields.due_date = dueDate || null;
+    if (baselineDate !== (item.baseline_date || '')) fields.baseline_date = baselineDate || null;
+    if (forecastDate !== (item.forecast_date || '')) fields.forecast_date = forecastDate || null;
     if (assigneeId !== (item.assignee_id || '')) fields.assignee_id = assigneeId || null;
     if (reviewerId !== (item.reviewer_id || '')) fields.reviewer_id = reviewerId || null;
 
@@ -199,7 +229,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
       await onUpdate(fields);
       setDirty(false);
     }
-  }, [title, description, checklist, tags, dueDate, assigneeId, reviewerId, item, onUpdate]);
+  }, [title, description, checklist, tags, dueDate, baselineDate, forecastDate, assigneeId, reviewerId, item, onUpdate]);
 
   // ── Multi-assignee handlers ──
   const handleAddAssignment = useCallback(async (memberId: string, role: AssignmentRole) => {
@@ -262,23 +292,91 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   }, [item.id, reviewVerdict, reviewScores, reviewNotes]);
 
   // ── Checklist helpers ──
-  const addCheckItem = () => {
+  const useDbChecklist = dbChecklist.length > 0 || checklist.some(c => c.id);
+
+  const addCheckItem = async () => {
     if (!newCheckItem.trim()) return;
-    setChecklist([...checklist, { text: newCheckItem.trim(), done: false }]);
+    if (useDbChecklist) {
+      const sb = getSb();
+      if (!sb) return;
+      const { data, error } = await sb.from('board_item_checklists')
+        .insert({ board_item_id: item.id, text: newCheckItem.trim(), position: checklist.length })
+        .select('id, text, is_completed, position, assigned_to, target_date, completed_at, completed_by')
+        .single();
+      if (!error && data) {
+        setChecklist([...checklist, { id: data.id, text: data.text, done: false }]);
+        setDbChecklist([...dbChecklist, data]);
+      }
+    } else {
+      setChecklist([...checklist, { text: newCheckItem.trim(), done: false }]);
+      setDirty(true);
+    }
     setNewCheckItem('');
-    setDirty(true);
   };
 
-  const toggleCheck = (idx: number) => {
-    const updated = [...checklist];
-    updated[idx] = { ...updated[idx], done: !updated[idx].done };
-    setChecklist(updated);
-    setDirty(true);
+  const toggleCheck = async (idx: number) => {
+    const ci = checklist[idx];
+    if (ci.id && useDbChecklist) {
+      const sb = getSb();
+      if (!sb) return;
+      const newDone = !ci.done;
+      await sb.rpc('complete_checklist_item', { p_checklist_item_id: ci.id, p_completed: newDone });
+      const updated = [...checklist];
+      updated[idx] = { ...updated[idx], done: newDone, completed_at: newDone ? new Date().toISOString() : null };
+      setChecklist(updated);
+    } else {
+      const updated = [...checklist];
+      updated[idx] = { ...updated[idx], done: !updated[idx].done };
+      setChecklist(updated);
+      setDirty(true);
+    }
   };
 
-  const removeCheck = (idx: number) => {
+  const removeCheck = async (idx: number) => {
+    const ci = checklist[idx];
+    if (ci.id && useDbChecklist) {
+      const sb = getSb();
+      if (!sb) return;
+      await sb.from('board_item_checklists').delete().eq('id', ci.id);
+      setDbChecklist(dbChecklist.filter(d => d.id !== ci.id));
+    } else {
+      setDirty(true);
+    }
     setChecklist(checklist.filter((_, i) => i !== idx));
-    setDirty(true);
+  };
+
+  const assignCheckItem = async (checkId: string, memberId: string, targetDate?: string) => {
+    const sb = getSb();
+    if (!sb) return;
+    await sb.rpc('assign_checklist_item', {
+      p_checklist_item_id: checkId,
+      p_assigned_to: memberId || null,
+      p_target_date: targetDate || null,
+    });
+    setChecklist(checklist.map(c => c.id === checkId ? { ...c, assigned_to: memberId || null, target_date: targetDate || null } : c));
+  };
+
+  // ── Mirror card handler ──
+  const handleCreateMirror = async () => {
+    if (!mirrorTargetBoard) return;
+    const sb = getSb();
+    if (!sb) return;
+    setCreatingMirror(true);
+    try {
+      const { data, error } = await sb.rpc('create_mirror_card', {
+        p_source_item_id: item.id,
+        p_target_board_id: mirrorTargetBoard,
+        p_target_status: mirrorTargetStatus,
+        p_notes: mirrorNotes || null,
+      });
+      if (error) throw error;
+      (window as any).toast?.('Card espelho criado', 'success');
+      setShowMirrorDialog(false);
+    } catch (err: any) {
+      (window as any).toast?.(err.message || 'Erro ao criar espelho', 'error');
+    } finally {
+      setCreatingMirror(false);
+    }
   };
 
   // ── Tag helpers ──
@@ -360,20 +458,47 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                   <div className="bg-emerald-500 h-1.5 rounded-full transition-all" style={{ width: `${checkPct}%` }} />
                 </div>
               )}
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 {checklist.map((ci, idx) => (
-                  <div key={idx} className="flex items-center gap-2 group">
-                    <input type="checkbox" checked={ci.done}
-                      onChange={() => toggleCheck(idx)}
-                      disabled={!canEdit}
-                      className="w-4 h-4 rounded border-[var(--border-default)] cursor-pointer accent-emerald-500" />
-                    <span className={`flex-1 text-[12px] ${ci.done ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}>
-                      {ci.text}
-                    </span>
-                    {canEdit && (
-                      <button onClick={() => removeCheck(idx)}
-                        className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 
-                          cursor-pointer bg-transparent border-0 text-[10px]">✕</button>
+                  <div key={ci.id || idx} className="group">
+                    <div className="flex items-center gap-2">
+                      <input type="checkbox" checked={ci.done}
+                        onChange={() => toggleCheck(idx)}
+                        disabled={!canEdit}
+                        className="w-4 h-4 rounded border-[var(--border-default)] cursor-pointer accent-emerald-500" />
+                      <span className={`flex-1 text-[12px] ${ci.done ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}>
+                        {ci.text}
+                      </span>
+                      {canEdit && (
+                        <button onClick={() => removeCheck(idx)}
+                          className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600
+                            cursor-pointer bg-transparent border-0 text-[10px]">✕</button>
+                      )}
+                    </div>
+                    {/* W141: Assignment row for DB-backed items */}
+                    {ci.id && useDbChecklist && (
+                      <div className="ml-6 mt-1 flex items-center gap-2 flex-wrap">
+                        {canEdit ? (
+                          <select value={ci.assigned_to || ''}
+                            onChange={(e) => assignCheckItem(ci.id!, e.target.value, ci.target_date || undefined)}
+                            className="rounded border border-[var(--border-default)] px-1.5 py-0.5 text-[10px] bg-[var(--surface-card)] outline-none">
+                            <option value="">— Responsável —</option>
+                            {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                          </select>
+                        ) : ci.assigned_to ? (
+                          <span className="text-[10px] text-[var(--text-secondary)]">👤 {members.find(m => m.id === ci.assigned_to)?.name || 'Membro'}</span>
+                        ) : null}
+                        {canEdit ? (
+                          <input type="date" value={ci.target_date || ''}
+                            onChange={(e) => assignCheckItem(ci.id!, ci.assigned_to || '', e.target.value || undefined)}
+                            className="rounded border border-[var(--border-default)] px-1.5 py-0.5 text-[10px] bg-[var(--surface-card)] outline-none" />
+                        ) : ci.target_date ? (
+                          <span className="text-[10px] text-[var(--text-muted)]">📅 {ci.target_date}</span>
+                        ) : null}
+                        {ci.done && ci.completed_at && (
+                          <span className="text-[10px] text-emerald-600">✅ {new Date(ci.completed_at).toLocaleDateString('pt-BR')}</span>
+                        )}
+                      </div>
                     )}
                   </div>
                 ))}
@@ -637,7 +762,10 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                         {ev.action === 'reviewer_assigned' && (ev.reason || 'designou revisor')}
                         {ev.action === 'curation_review' && `registrou parecer${ev.review_round ? ` (rodada ${ev.review_round})` : ''}`}
                         {ev.action === 'curation_approved' && (ev.reason || 'aprovado pelo comitê de curadoria')}
-                        {!['status_change', 'created', 'assigned', 'archived', 'moved_out', 'moved_in', 'submitted_for_curation', 'reviewer_assigned', 'curation_review', 'curation_approved'].includes(ev.action) && ev.action}
+                        {ev.action === 'forecast_update' && `alterou forecast: ${ev.previous_status || '—'} → ${ev.new_status || '—'}`}
+                        {ev.action === 'actual_completion' && `conclusão real: ${ev.new_status || '—'}`}
+                        {ev.action === 'mirror_created' && 'criou card espelho'}
+                        {!['status_change', 'created', 'assigned', 'archived', 'moved_out', 'moved_in', 'submitted_for_curation', 'reviewer_assigned', 'curation_review', 'curation_approved', 'forecast_update', 'actual_completion', 'mirror_created'].includes(ev.action) && ev.action}
                         {ev.reason && ev.action !== 'assigned' && <span className="text-[var(--text-muted)] ml-1">— {ev.reason}</span>}
                       </span>
                     </div>
@@ -724,7 +852,47 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
               )}
             </div>
 
-            {/* Due Date */}
+            {/* PMBOK Dates */}
+            <div>
+              <label className="text-[10px] font-semibold text-[var(--text-secondary)] mb-1 block uppercase tracking-wide">Datas</label>
+              <div className="space-y-2">
+                <div>
+                  <span className="text-[9px] text-[var(--text-muted)] block mb-0.5">Baseline (pactuada)</span>
+                  <input type="date" value={baselineDate}
+                    onChange={(e) => { setBaselineDate(e.target.value); if (!forecastDate) setForecastDate(e.target.value); setDirty(true); }}
+                    disabled={!canEdit || (!!item.baseline_date && !permissions.canEditAny)}
+                    className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1 text-[11px] bg-[var(--surface-card)]
+                      outline-none focus:border-blue-400 disabled:opacity-60" />
+                </div>
+                <div>
+                  <span className="text-[9px] text-[var(--text-muted)] block mb-0.5">Forecast (previsão)</span>
+                  <input type="date" value={forecastDate}
+                    onChange={(e) => { setForecastDate(e.target.value); setDirty(true); }}
+                    disabled={!canEdit}
+                    className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1 text-[11px] bg-[var(--surface-card)]
+                      outline-none focus:border-blue-400" />
+                </div>
+                {actualDate && (
+                  <div>
+                    <span className="text-[9px] text-[var(--text-muted)] block mb-0.5">Actual (conclusão)</span>
+                    <span className="text-[11px] text-emerald-600 font-bold">✅ {actualDate}</span>
+                  </div>
+                )}
+                {/* Variance indicator */}
+                {baselineDate && forecastDate && (
+                  (() => {
+                    const diff = Math.round((new Date(forecastDate).getTime() - new Date(baselineDate).getTime()) / 86400000);
+                    const color = diff <= 0 ? 'text-emerald-600' : diff <= 7 ? 'text-amber-600' : 'text-red-600';
+                    const icon = diff <= 0 ? '✅' : diff <= 7 ? '⚠️' : '🔴';
+                    const label = diff === 0 ? 'No prazo' : diff < 0 ? `${Math.abs(diff)}d adiantado` : `${diff}d atraso`;
+                    return <span className={`text-[10px] font-bold ${color}`}>{icon} Desvio: {label}</span>;
+                  })()
+                )}
+              </div>
+            </div>
+
+            {/* Legacy Due Date (hidden if PMBOK dates exist) */}
+            {!baselineDate && !forecastDate && (
             <div>
               <label className="text-[10px] font-semibold text-[var(--text-secondary)] mb-1 block uppercase tracking-wide">{i18n.dueDate}</label>
               <input type="date" value={dueDate}
@@ -733,6 +901,22 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                 className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1.5 text-[12px] bg-[var(--surface-card)]
                   outline-none focus:border-blue-400" />
             </div>
+            )}
+
+            {/* Mirror Card Info */}
+            {item.is_mirror && item.mirror_source_id && (
+              <div className="bg-blue-50 rounded-lg p-2.5 border border-blue-200">
+                <span className="text-[10px] font-bold text-blue-700 block mb-1">🔗 Card Espelho</span>
+                <a href={`/admin/board/${item.board_id}?card=${item.mirror_source_id}`}
+                  className="text-[10px] text-blue-600 hover:underline no-underline">Ver card original →</a>
+              </div>
+            )}
+            {item.mirror_target_id && (
+              <div className="bg-teal-50 rounded-lg p-2.5 border border-teal-200">
+                <span className="text-[10px] font-bold text-teal-700 block mb-1">🔗 Espelhado</span>
+                <span className="text-[10px] text-teal-600">Card enviado para outro board</span>
+              </div>
+            )}
 
             {/* Actions — hidden in readonly mode */}
             {mode !== 'readonly' && (
@@ -759,6 +943,52 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                           {b.board_name} ({b.item_count})
                         </button>
                       ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Mirror card button */}
+              {mirrorBoards.length > 0 && (
+                <div>
+                  <button onClick={() => setShowMirrorDialog(!showMirrorDialog)}
+                    className="w-full px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-[11px] font-semibold
+                      border border-blue-200 hover:bg-blue-100 cursor-pointer text-left">
+                    🔗 Criar Espelho
+                  </button>
+                  {showMirrorDialog && (
+                    <div className="mt-1 p-3 bg-[var(--surface-base)] rounded-lg border border-blue-200 space-y-2">
+                      <label className="text-[10px] font-semibold text-[var(--text-secondary)] block">Board destino</label>
+                      <select value={mirrorTargetBoard}
+                        onChange={(e) => setMirrorTargetBoard(e.target.value)}
+                        className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1 text-[11px] bg-[var(--surface-card)] outline-none">
+                        <option value="">Selecionar...</option>
+                        {mirrorBoards.map((b: any) => (
+                          <option key={b.board_id} value={b.board_id}>{b.board_name} ({b.item_count})</option>
+                        ))}
+                      </select>
+                      <label className="text-[10px] font-semibold text-[var(--text-secondary)] block">Status inicial</label>
+                      <select value={mirrorTargetStatus}
+                        onChange={(e) => setMirrorTargetStatus(e.target.value)}
+                        className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1 text-[11px] bg-[var(--surface-card)] outline-none">
+                        {board.columns.map((col: string) => (
+                          <option key={col} value={col}>{COLUMN_PRESETS[col]?.label ?? col}</option>
+                        ))}
+                      </select>
+                      <textarea value={mirrorNotes}
+                        onChange={(e) => setMirrorNotes(e.target.value)}
+                        rows={2} placeholder="Notas para o time de destino..."
+                        className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1 text-[10px] outline-none resize-y" />
+                      <div className="flex gap-1">
+                        <button onClick={handleCreateMirror} disabled={!mirrorTargetBoard || creatingMirror}
+                          className="flex-1 px-2 py-1 bg-blue-600 text-white rounded-lg text-[10px] font-bold
+                            cursor-pointer border-0 hover:bg-blue-700 disabled:opacity-50">
+                          {creatingMirror ? 'Criando...' : 'Criar Espelho'}
+                        </button>
+                        <button onClick={() => setShowMirrorDialog(false)}
+                          className="px-2 py-1 bg-[var(--surface-section-cool)] text-[var(--text-secondary)] rounded-lg text-[10px]
+                            cursor-pointer border border-[var(--border-default)]">{i18n.cancel}</button>
+                      </div>
                     </div>
                   )}
                 </div>

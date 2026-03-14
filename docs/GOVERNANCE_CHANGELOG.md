@@ -664,4 +664,74 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-049: W141-1 — Comms Board Navigation
+
+**Data:** 2026-03-14
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Hub de Comunicacao e Publicacoes boards acessiveis via avatar dropdown e /workspace.
+
+**Justificativa:** Comms team (Mayanna, Leticia, Andressa) nao conseguia acessar boards globais pela navegacao. Boards orphaned em `/admin/board/[id]` sem entry points.
+
+**Impacto tecnico:** Dois novos NavItems em `navigation.config.ts` com `drawerSection: 'producao'`. Dois novos cards em workspace subprojects section. Aceito por membros com designations comms_leader, comms_member, curator, co_gp.
+
+---
+
+### GC-050: W141-2 — PMBOK 8 Date Model for Cards
+
+**Data:** 2026-03-14
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Cards tem 3 datas: Baseline (pactuada, imutavel), Forecast (previsao, auto-calculada de checklist MAX ou manual), Actual (conclusao, auto-populated quando ALL checklist items complete). Roll-up: card.forecast = MAX(checklist_items.target_date). Variancia: Forecast - Baseline. Verde (<=0), Amarelo (1-7 dias), Vermelho (>7 dias).
+
+**Justificativa:** Alinhamento com PMBOK 8 para Schedule Performance Measurement. Permite identificar desvios de prazo e gerar SPI por tribo.
+
+**Impacto tecnico:** Colunas baseline_date, forecast_date, actual_completion_date em board_items. Trigger `recalculate_card_dates` auto-atualiza forecast/actual baseado em checklist changes. Trigger `log_forecast_change` registra alteracoes em board_lifecycle_events. CHECK constraint expandido para incluir forecast_update, actual_completion, mirror_created.
+
+---
+
+### GC-051: W141-3 — Checklist Item Assignments
+
+**Data:** 2026-03-14
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Cada item de checklist pode ter 1 membro responsavel + data alvo. Conclusao registra quem e quando completou.
+
+**Justificativa:** Accountability de sub-tarefas dentro de cards. Checklist migrado de JSON em board_items.checklist para tabela board_item_checklists com dados estruturados.
+
+**Impacto tecnico:** Tabela board_item_checklists com assigned_to, target_date, completed_at, completed_by. RPCs assign_checklist_item e complete_checklist_item. CardDetail.tsx atualizado com dropdowns de membro e data por item.
+
+---
+
+### GC-052: W141-4 — Board View Modes
+
+**Data:** 2026-03-14
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** 4 views adicionais: Tabela (sortable columns), Lista Agrupada (por tag/membro/status), Calendario (mensal por forecast_date), Timeline/Gantt (barras baseline-forecast com progresso). Todas compartilham mesmos dados e filtros.
+
+**Justificativa:** Diferentes views para diferentes audiencias: tribo dia-a-dia (kanban), GP review (tabela), planejamento (calendario), executivo (timeline).
+
+**Impacto tecnico:** ViewToggle.tsx, TableView.tsx, GroupedListView.tsx, CalendarView.tsx, TimelineView.tsx criados. BoardEngine.tsx integra toggle e renderiza view ativa condicionalmente. Zero novas dependencias (CSS Grid + SVG nativo).
+
+---
+
+### GC-053: W141-5 — Mirror Cards Cross-Board
+
+**Data:** 2026-03-14
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Cards podem ser espelhados para outros boards com links bidirecionais. Source mantem status atual; mirror inicia no backlog do board destino.
+
+**Justificativa:** Habilita fluxo de handoff: Tribo -> Curadoria -> Comunicacao -> Publicacao. Rastreabilidade bidirecional entre boards.
+
+**Impacto tecnico:** Colunas mirror_source_id, mirror_target_id, is_mirror em board_items. RPCs create_mirror_card e get_mirror_target_boards. CardDetail.tsx mostra links de espelho e dialogo "Criar Espelho" com selecao de board destino.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*

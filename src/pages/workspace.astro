@@ -43,6 +43,8 @@ const WK = {
   tribeNoTribe: t('wk.tribeNoTribe', lang),
   tribeNoTribeDesc: t('wk.tribeNoTribeDesc', lang),
   commsHub: t('wk.commsHub', lang),
+  commsBoard: t('wk.commsBoard', lang),
+  pubBoard: t('wk.pubBoard', lang),
   webinars: t('wk.webinars', lang),
   curatorship: t('wk.curatorship', lang),
   leadership: t('wk.leadership', lang),
@@ -442,6 +444,8 @@ const WK = {
         { key: 'curatorship', label: i18n.curatorship, icon: '🔍', href: '/admin/curatorship', domain: 'publications_submissions', minTier: 'observer', designations: [] },
         { key: 'leadership', label: i18n.leadership, icon: '👥', href: '/teams', domain: null, minTier: 'leader', designations: [] },
         { key: 'publications', label: i18n.publications, icon: '📑', href: '/publications', domain: 'publications_submissions', minTier: 'leader', designations: ['curator', 'co_gp', 'comms_leader', 'comms_member'] },
+        { key: 'board-comms', label: i18n.commsBoard, icon: '📋', href: '/admin/board/a6b78238-11aa-476a-b7e2-a674d224fd79', domain: 'communication', minTier: 'member', designations: ['comms_leader', 'comms_member', 'curator', 'co_gp'] },
+        { key: 'board-pub', label: i18n.pubBoard, icon: '📄', href: '/admin/board/86a8959c-ddd0-4a7f-b45f-bf828230f949', domain: 'publications_submissions', minTier: 'member', designations: ['comms_leader', 'comms_member', 'curator', 'co_gp'] },
       ];
 
       const memberTier = resolveTier(member);

@@ -12,7 +12,7 @@ import type { DragStartEvent, DragEndEvent, DragOverEvent } from '@dnd-kit/core'
 
 import type { BoardEngineProps, BoardItem, BoardI18n } from '../../types/board';
 import { DEFAULT_I18N, getColumnMeta } from '../../types/board';
-import { useBoard } from '../../hooks/useBoard';
+import { useBoard, getSb } from '../../hooks/useBoard';
 import { useBoardMutations } from '../../hooks/useBoardMutations';
 import { useBoardFilters } from '../../hooks/useBoardFilters';
 import { useBoardPermissions } from '../../hooks/useBoardPermissions';
@@ -23,6 +23,12 @@ import BoardKanban from '../board/BoardKanban';
 import CardDetail from '../board/CardDetail';
 import CardCreate from '../board/CardCreate';
 import ToastContainer from '../board/ToastContainer';
+import ViewToggle from '../board/ViewToggle';
+import type { BoardViewMode } from '../board/ViewToggle';
+import TableView from '../board/TableView';
+import GroupedListView from '../board/GroupedListView';
+import CalendarView from '../board/CalendarView';
+import TimelineView from '../board/TimelineView';
 
 export default function BoardEngine(props: BoardEngineProps) {
   const i18n: BoardI18n = { ...DEFAULT_I18N, ...props.i18n };
@@ -36,7 +42,25 @@ export default function BoardEngine(props: BoardEngineProps) {
   useEffect(() => { setItems(rawItems); }, [rawItems]);
 
   const mutations = useBoardMutations(items, setItems, refetch);
-  const filterHook = useBoardFilters(items);
+
+  // Load board/tribe members for filter dropdown
+  const [boardMembers, setBoardMembers] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    if (!board) return;
+    const sb = getSb();
+    if (!sb) return;
+    (async () => {
+      const { data } = board.tribe_id
+        ? await sb.from('members').select('id, name').eq('tribe_id', board.tribe_id).eq('is_active', true)
+        : await sb.from('active_members').select('id, name');
+      if (Array.isArray(data)) setBoardMembers(data);
+    })();
+  }, [board?.id, board?.tribe_id]);
+
+  const filterHook = useBoardFilters(items, boardMembers);
+
+  // ── View mode ──
+  const [viewMode, setViewMode] = useState<BoardViewMode>('kanban');
 
   // ── DnD state ──
   const [activeItem, setActiveItem] = useState<BoardItem | null>(null);
@@ -233,34 +257,77 @@ export default function BoardEngine(props: BoardEngineProps) {
         i18n={i18n}
       />
 
-      {/* Kanban Board */}
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
-      >
-        <BoardKanban
-          columns={columns}
-          columnItems={columnItems}
-          overColumnId={overColumnId}
-          mode={mode}
-          permissions={permissions}
-          i18n={i18n}
-          onCardClick={(item) => setDetailItem(item)}
-          onQuickMove={mutations.moveItem}
-        />
+      {/* View Toggle */}
+      <ViewToggle current={viewMode} onChange={setViewMode} />
 
-        <DragOverlay dropAnimation={{ duration: 200, easing: 'ease-out' }}>
-          {activeItem ? (
-            <div className="bg-[var(--surface-card)] rounded-xl border-2 border-blue-300 p-3 shadow-xl rotate-[3deg] w-[260px] opacity-95">
-              <h4 className="text-[12px] font-bold text-[var(--text-primary)] line-clamp-2">{activeItem.title}</h4>
-              {activeItem.assignee_name && <p className="text-[10px] text-[var(--text-muted)] mt-1">👤 {activeItem.assignee_name}</p>}
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+      {/* Kanban Board (default) */}
+      {viewMode === 'kanban' && (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
+          onDragOver={handleDragOver}
+          onDragEnd={handleDragEnd}
+        >
+          <BoardKanban
+            columns={columns}
+            columnItems={columnItems}
+            overColumnId={overColumnId}
+            mode={mode}
+            permissions={permissions}
+            i18n={i18n}
+            onCardClick={(item) => setDetailItem(item)}
+            onQuickMove={mutations.moveItem}
+          />
+
+          <DragOverlay dropAnimation={{ duration: 200, easing: 'ease-out' }}>
+            {activeItem ? (
+              <div className="bg-[var(--surface-card)] rounded-xl border-2 border-blue-300 p-3 shadow-xl rotate-[3deg] w-[260px] opacity-95">
+                <h4 className="text-[12px] font-bold text-[var(--text-primary)] line-clamp-2">{activeItem.title}</h4>
+                {activeItem.assignee_name && <p className="text-[10px] text-[var(--text-muted)] mt-1">👤 {activeItem.assignee_name}</p>}
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      )}
+
+      {/* Table View */}
+      {viewMode === 'table' && board && (
+        <TableView
+          items={filterHook.filtered}
+          columns={board.columns}
+          i18n={i18n}
+          onOpenDetail={(item) => setDetailItem(item)}
+          onMove={(itemId, newStatus) => mutations.moveItem(itemId, newStatus)}
+        />
+      )}
+
+      {/* Grouped List View */}
+      {viewMode === 'list' && (
+        <GroupedListView
+          items={filterHook.filtered}
+          i18n={i18n}
+          onOpenDetail={(item) => setDetailItem(item)}
+        />
+      )}
+
+      {/* Calendar View */}
+      {viewMode === 'calendar' && (
+        <CalendarView
+          items={filterHook.filtered}
+          i18n={i18n}
+          onOpenDetail={(item) => setDetailItem(item)}
+        />
+      )}
+
+      {/* Timeline View */}
+      {viewMode === 'timeline' && (
+        <TimelineView
+          items={filterHook.filtered}
+          i18n={i18n}
+          onOpenDetail={(item) => setDetailItem(item)}
+        />
+      )}
 
       {/* Card Detail Modal */}
       {detailItem && (
