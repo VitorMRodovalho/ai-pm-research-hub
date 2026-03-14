@@ -228,7 +228,17 @@ const langCode = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
     }
 
     // Check if user is authenticated
-    const member = window.navGetMember?.();
+    let member = window.navGetMember?.();
+    // Refresh from DB to get latest columns (e.g. onboarding_dismissed_at)
+    if (member && sb) {
+      try {
+        const { data: fresh } = await sb.rpc('get_member_by_auth');
+        if (fresh) {
+          // Handle SETOF returning array
+          member = Array.isArray(fresh) ? fresh[0] : fresh;
+        }
+      } catch (_) { /* keep cached member */ }
+    }
     let userPersonas = new Set();
     let isGP = false;
 
