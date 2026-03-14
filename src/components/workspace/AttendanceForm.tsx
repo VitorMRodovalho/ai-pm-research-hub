@@ -59,16 +59,14 @@ export default function AttendanceForm() {
   const isGP = member?.is_superadmin || ['manager', 'deputy_manager'].includes(member?.operational_role || '');
   const isLeader = member?.operational_role === 'tribe_leader';
 
-  if (!member) return null;
-
-  // Load events
+  // Load events (must be BEFORE any conditional return to respect hooks order)
   useEffect(() => {
+    if (!member) return;
     (async () => {
       const sb = getSb();
       if (!sb) return;
       const { data } = await sb.rpc('get_recent_events', { p_days_back: 60, p_days_forward: 7 });
       if (data) {
-        // Filter: GP sees all, leader sees their tribe + general
         let filtered = data as Event[];
         if (!isGP && isLeader) {
           filtered = filtered.filter((e: Event) =>
@@ -78,10 +76,11 @@ export default function AttendanceForm() {
         setEvents(filtered);
       }
     })();
-  }, []);
+  }, [member]);
 
   // Load members + existing attendance when event selected
   const onEventSelect = useCallback(async (eventId: string) => {
+    if (!member) return;
     const ev = events.find(e => e.id === eventId);
     if (!ev) return;
     setSelectedEvent(ev);
@@ -92,13 +91,11 @@ export default function AttendanceForm() {
     const sb = getSb();
     if (!sb) return;
 
-    // Fetch active members
     const { data: memberData } = await sb
       .from('active_members')
       .select('id, name, tribe_id, operational_role')
       .order('name');
 
-    // Fetch existing attendance for this event
     const { data: attData } = await sb
       .from('attendance')
       .select('member_id, present')
@@ -108,18 +105,19 @@ export default function AttendanceForm() {
     const existingIds = new Set<string>((attData || []).map((a: AttendanceRecord) => a.member_id));
     setExisting(existingIds);
 
-    // Filter members based on event type and user role
     let filteredMembers = (memberData || []) as Member[];
     if (ev.type === 'tribe_meeting' && ev.tribe_id) {
       filteredMembers = filteredMembers.filter(m => m.tribe_id === ev.tribe_id);
     } else if (!isGP && isLeader) {
-      // Leader registering general meeting: only their tribe members
       filteredMembers = filteredMembers.filter(m => m.tribe_id === member.tribe_id);
     }
 
     setMembers(filteredMembers);
     setLoading(false);
-  }, [events, isGP, isLeader, member.tribe_id]);
+  }, [member, events, isGP, isLeader]);
+
+  // Don't render until member is loaded (AFTER all hooks)
+  if (!member) return null;
 
   const toggleMember = (id: string) => {
     setChecked(prev => {
