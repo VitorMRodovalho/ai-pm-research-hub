@@ -1,5 +1,19 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+// Retry with exponential backoff for external API calls
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok || response.status < 500) return response;
+    } catch (error) {
+      if (attempt === maxRetries - 1) throw error;
+    }
+    await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+  }
+  throw new Error(`Failed after ${maxRetries} retries: ${url}`);
+}
+
 /**
  * Edge Function: send-notification-digest
  * Cron: weekly (Monday 8h BRT = 11:00 UTC)
@@ -121,7 +135,7 @@ Deno.serve(async (req) => {
       `
 
       try {
-        const res = await fetch('https://api.resend.com/emails', {
+        const res = await fetchWithRetry('https://api.resend.com/emails', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${rkey}` },
           body: JSON.stringify({

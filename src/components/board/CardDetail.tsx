@@ -65,6 +65,30 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const ALLOWED_EXTENSIONS = /\.(pdf|png|jpg|jpeg|docx|xlsx|pptx)$/i;
   const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
+  // EXIF strip: re-draw image via canvas to remove metadata (GPS, camera info)
+  const stripExif = useCallback((file: File): Promise<Blob> => {
+    return new Promise((resolve) => {
+      if (!file.type.startsWith('image/')) { resolve(file); return; }
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { resolve(file); return; }
+        ctx.drawImage(img, 0, 0);
+        canvas.toBlob(
+          (blob) => resolve(blob || file),
+          file.type,
+          0.9
+        );
+        URL.revokeObjectURL(img.src);
+      };
+      img.onerror = () => { resolve(file); };
+      img.src = URL.createObjectURL(file);
+    });
+  }, []);
+
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -80,17 +104,26 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
       return;
     }
 
+    // MIME type validation
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      (window as any).toast?.('Tipo MIME não permitido', 'error');
+      return;
+    }
+
     setUploading(true);
     try {
       const sb = getSb();
       if (!sb) throw new Error('Supabase indisponível');
+
+      // Strip EXIF from images before upload
+      const cleanFile = file.type.startsWith('image/') ? await stripExif(file) : file;
 
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       const storagePath = `${board.id}/${item.id}/${Date.now()}_${safeName}`;
 
       const { error: uploadError } = await sb.storage
         .from('board-attachments')
-        .upload(storagePath, file, { contentType: file.type, upsert: false });
+        .upload(storagePath, cleanFile, { contentType: file.type, upsert: false });
 
       if (uploadError) throw uploadError;
 

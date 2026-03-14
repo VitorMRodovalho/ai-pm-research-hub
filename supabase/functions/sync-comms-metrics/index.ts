@@ -1,6 +1,20 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
+// Retry with exponential backoff for external API calls
+async function fetchWithRetry(url: string, options: RequestInit = {}, maxRetries = 3): Promise<Response> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok || response.status < 500) return response;
+    } catch (error) {
+      if (attempt === maxRetries - 1) throw error;
+    }
+    await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+  }
+  throw new Error(`Failed after ${maxRetries} retries: ${url}`);
+}
+
 type RawMetric = Record<string, unknown>
 
 type NormalizedMetric = {
@@ -131,11 +145,11 @@ async function fetchRowsFromEndpoint(defaultSource: string): Promise<{ rows: Raw
     const headers: HeadersInit = { 'Accept': 'application/json' }
     if (token) headers['Authorization'] = `Bearer ${token}`
 
-    const resp = await fetch(sourceUrl, {
+    const resp = await fetchWithRetry(sourceUrl, {
       method: 'GET',
       headers,
       signal: controller.signal,
-    })
+    }, 2)
 
     if (!resp.ok) throw new Error(`Source fetch failed: ${resp.status}`)
 
@@ -198,7 +212,7 @@ async function fetchYouTubeMetrics(cfg: ChannelConfig): Promise<NormalizedMetric
 
   try {
     // Fetch channel stats (subscribers, views)
-    const channelResp = await fetch(
+    const channelResp = await fetchWithRetry(
       `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${channelId}&key=${apiKey}`
     )
     if (!channelResp.ok) throw new Error(`YouTube channels API: ${channelResp.status}`)
@@ -219,14 +233,14 @@ async function fetchYouTubeMetrics(cfg: ChannelConfig): Promise<NormalizedMetric
     }
 
     // Fetch recent videos for engagement data
-    const searchResp = await fetch(
+    const searchResp = await fetchWithRetry(
       `https://www.googleapis.com/youtube/v3/search?part=id&channelId=${channelId}&type=video&order=date&maxResults=10&key=${apiKey}`
     )
     if (searchResp.ok) {
       const searchData = await searchResp.json()
       const videoIds = (searchData?.items || []).map((i: any) => i.id?.videoId).filter(Boolean)
       if (videoIds.length > 0) {
-        const videosResp = await fetch(
+        const videosResp = await fetchWithRetry(
           `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${videoIds.join(',')}&key=${apiKey}`
         )
         if (videosResp.ok) {
@@ -260,7 +274,7 @@ async function fetchLinkedInMetrics(cfg: ChannelConfig): Promise<NormalizedMetri
 
   try {
     // Fetch follower count
-    const followersResp = await fetch(
+    const followersResp = await fetchWithRetry(
       `https://api.linkedin.com/v2/organizationalEntityFollowerStatistics?q=organizationalEntity&organizationalEntity=${encodeURIComponent(orgUrn)}`,
       { headers: { 'Authorization': `Bearer ${token}`, 'X-Restli-Protocol-Version': '2.0.0' } }
     )
@@ -278,7 +292,7 @@ async function fetchLinkedInMetrics(cfg: ChannelConfig): Promise<NormalizedMetri
     }
 
     // Fetch share statistics
-    const shareResp = await fetch(
+    const shareResp = await fetchWithRetry(
       `https://api.linkedin.com/v2/organizationalEntityShareStatistics?q=organizationalEntity&organizationalEntity=${encodeURIComponent(orgUrn)}`,
       { headers: { 'Authorization': `Bearer ${token}`, 'X-Restli-Protocol-Version': '2.0.0' } }
     )
@@ -323,7 +337,7 @@ async function fetchInstagramMetrics(cfg: ChannelConfig): Promise<NormalizedMetr
 
   try {
     // Fetch user profile (followers count)
-    const profileResp = await fetch(
+    const profileResp = await fetchWithRetry(
       `https://graph.facebook.com/v19.0/${igUserId}?fields=followers_count,media_count&access_token=${token}`
     )
 
@@ -334,7 +348,7 @@ async function fetchInstagramMetrics(cfg: ChannelConfig): Promise<NormalizedMetr
     }
 
     // Fetch insights (reach, impressions)
-    const insightsResp = await fetch(
+    const insightsResp = await fetchWithRetry(
       `https://graph.facebook.com/v19.0/${igUserId}/insights?metric=reach,impressions&period=day&access_token=${token}`
     )
 

@@ -590,17 +590,44 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     const color = ROLE_COLORS[r] || '#64748B';
     const label = getRoleLabel(r);
 
+    // XSS: sanitize avatar_url against domain allowlist
+    const ALLOWED_AVATAR_DOMAINS = [
+      'lh3.googleusercontent.com',
+      'avatars.githubusercontent.com',
+      'platform-lookaside.fbsbx.com',
+      'media.licdn.com',
+    ];
+    function sanitizeAvatarUrl(url: string | null | undefined): string | null {
+      if (!url) return null;
+      try {
+        const parsed = new URL(url);
+        if (ALLOWED_AVATAR_DOMAINS.includes(parsed.hostname)) return url;
+        return null;
+      } catch { return null; }
+    }
+    // XSS: escape HTML in text content
+    function escapeHtml(str: string): string {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    const safePic = sanitizeAvatarUrl(pic);
+    const safeFirst = escapeHtml(first);
+    const safeInitials = escapeHtml(initials);
+    const safeLabel = escapeHtml(label);
+
     const el = document.getElementById('nav-auth');
     if (!el) return;
     el.innerHTML = `
       <button data-action="toggle-pd"
         class="flex items-center gap-1.5 px-1.5 py-1 rounded-lg hover:bg-white/10 transition-all cursor-pointer border-0 bg-transparent">
-        ${pic
-          ? `<img src="${pic}" class="w-7 h-7 rounded-full object-cover" onerror="this.style.display='none'">`
-          : `<div class="w-7 h-7 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.65rem]">${initials}</div>`
+        ${safePic
+          ? `<img src="${safePic}" class="w-7 h-7 rounded-full object-cover" onerror="this.style.display='none'">`
+          : `<div class="w-7 h-7 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.65rem]">${safeInitials}</div>`
         }
-        <span class="text-white text-[.8rem] font-semibold hidden sm:inline">${first}</span>
-        <span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded uppercase hidden sm:inline" style="background:${color}33;color:${color}">${label}</span>
+        <span class="text-white text-[.8rem] font-semibold hidden sm:inline">${safeFirst}</span>
+        <span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded uppercase hidden sm:inline" style="background:${color}33;color:${color}">${safeLabel}</span>
         <span id="notif-badge" class="hidden w-4 h-4 rounded-full bg-red-500 text-white text-[.55rem] font-bold flex items-center justify-center"></span>
         <span class="text-white/40 text-[.6rem]">▾</span>
       </button>`;
