@@ -552,4 +552,32 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-038: W138 — Pre-Beta quality audit
+
+**Data:** 2026-03-14
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Aplicado em produção
+
+**Decisão:** Auditoria completa pré-Beta: corrigir RPCs quebrados por referência à coluna `role` (dropped), resolver transparência do editor de campanhas, adicionar toggle de membros inativos, e inventário de facades frontend.
+
+**Justificativa:** Preparação para anúncio Beta a 53+ membros. 5 overloads de funções (create_event ×2, update_event ×2, create_recurring_weekly_events) referenciavam `members.role` ao invés de `operational_role` e crashariam com 400. As funções get_board, auto_publish_approved_article, mark_interview_status e submit_interview_scores foram verificadas e não estavam quebradas (referenciam `board_item_assignments.role`, coluna existente). CSS aliases (`--surface`, `--fg`, `--fg-muted`, `--border`) estavam ausentes no theme, causando backgrounds transparentes em modais/editors de múltiplas páginas.
+
+**Impacto técnico:** Migration `20260319100041_w138a_fix_role_refs.sql`: 5 function overloads re-criados com `.operational_role`. CSS `theme.css`: aliases adicionados em `:root` e `[data-theme="dark"]`. Campaigns: checkbox "Incluir membros inativos" passa `include_inactive` no audience filter. Facades identificadas: sustainability.astro (puro mockup), projects.astro (botão registro sem handler). Sweep de 63 páginas: zero 500s, zero `getLangFromURL(Astro.url)` incorretos.
+
+---
+
+### GC-039: W139 — Platform Integrity Audit (Pre-Beta)
+
+**Data:** 2026-03-14
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Documentação concluída
+
+**Decisão:** Auditoria completa de integridade da plataforma: 42 rotas únicas, 117 RPCs, 74 tabelas, 14 Edge Functions, 13 componentes React com Supabase. Metodologia: cross-reference automatizado frontend→DB com validação manual por agentes de auditoria.
+
+**Justificativa:** Garantir que nenhum usuário Beta encontre páginas quebradas, RPCs inexistentes, ou features enganosas. O `/admin/comms` era suspeito de facade — confirmado funcional (8 RPCs, dados reais). Dois achados P1 identificados: view `active_members` e tabela `publication_submission_events` inexistentes, causando falhas silenciosas em `/workspace` e `/publications`.
+
+**Impacto técnico:** 4 documentos de auditoria em `docs/audit/`: MASTER_SUMMARY.md, ROUTE_INVENTORY.md, RPC_INVENTORY.md, TABLE_INVENTORY.md, DEPENDENCY_MAP.md. Zero P0 blockers. Zero dead links. Zero referências a colunas dropadas. 89 funções DB órfãs documentadas (42 pipeline legítimo, 16 candidatas a UI, 5 deprecated). Plataforma confirmada pronta para Beta com 2 fixes P1 pendentes.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisão deve ter Data, Autor, Status, Decisão, Justificativa, e Impacto técnico quando aplicável. Propostas pendentes requerem aprovação da Liderança dos Capítulos conforme Seção 7 do Manual R2.*
