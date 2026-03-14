@@ -35,13 +35,4 @@ const deadlineIso = homeSchedule?.selectionDeadlineAt ?? null;
   <ResourcesSection deadline={deadlineIso} lang={lang} />
   <PresentationLayer context="home" lang={lang} />
 
-  <footer class="bg-[#200F3B] text-white/40 py-10 px-6 text-center text-[.78rem]">
-    <p>{t('footer.line1', lang)}</p>
-    <p class="mt-1">{t('footer.chapters', lang)}</p>
-    <p class="mt-2 text-[.68rem]">{t('footer.trademarks', lang)}</p>
-    <p class="mt-1">
-      <a href="https://github.com/VitorMRodovalho/ai-pm-research-hub" class="text-[#05BFE0] no-underline hover:underline">GitHub</a>
-      · {t('footer.gp', lang)}
-    </p>
-  </footer>
 </BaseLayout>
