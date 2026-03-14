@@ -252,4 +252,70 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-014 — Deduplicação e Sanidade do Hub de Comunicação
+**Data:** 2026-03-14 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisão:** Arquivar 7 board_items duplicados na board "Hub de Comunicação" originados da fusão dos boards Trello "Comunicação Ciclo 3" e "Mídias Sociais". Versões `comunicacao_ciclo3` mantidas, versões `midias_sociais` arquivadas.
+
+**Justificativa:** Importação de dois boards Trello com itens de referência sobrepostos gerava duplicidade visual e confusão para a equipe de comunicação.
+
+**Impacto técnico:** UPDATE status='archived' em 7 board_items. Nenhuma exclusão de dados.
+
+---
+
+### GC-015 — Reclassificação de Tipos de Eventos
+**Data:** 2026-03-14 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisão:** Reclassificar 46 de 47 eventos tipados como `other` para tipos descritivos: `interview` (34), `general_meeting` (25), `leadership_meeting` (2), `external_event` (2), `kickoff` (1). Expandir constraint de tipos permitidos na tabela events.
+
+**Justificativa:** 68% dos eventos estavam tipados como "other", eliminando valor analítico da dimensão tipo. Títulos dos eventos continham keywords claras para classificação automática (entrevista, reunião, alinhamento, kick-off, PMI Congress).
+
+**Impacto técnico:** Migração inline + UPDATE direto. Constraint expandida via `expand_event_types_and_reclassify`.
+
+---
+
+### GC-016 — Arquivamento de 22 Tabelas Especulativas (z_archive)
+**Data:** 2026-03-14 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisão:** Criar schema `z_archive` e mover 22 tabelas com 0 registros que representavam features nunca implementadas: pipeline de ingestão (10), rollback/readiness (4), legacy/import (3), publicações/apresentações (2), misc (3).
+
+**Justificativa:** 40% das tabelas do schema público estavam vazias. Tabelas especulativas poluem a interface do Supabase Studio, dificultam auditoria e geram falsos positivos em testes de contrato. Arquivamento é reversível via `ALTER TABLE z_archive.x SET SCHEMA public`.
+
+**Impacto técnico:** Migração `20260319100035_w132_db_sanitation.sql`. Public tables: 93→71. Zero perda de dados.
+
+---
+
+### GC-017 — Bulk-Assign de Tribe Leaders como Assignee Padrão
+**Data:** 2026-03-14 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisão:** Atribuir automaticamente o tribe_leader ativo como assignee de board_items sem assignee em boards de tribos ativas. Itens sem dono geravam baixo accountability na produção.
+
+**Justificativa:** 91% dos board_items (333/363) não tinham assignee. Apenas T8 (9/9 items) tinha cobertura completa após importação do Notion. O líder é o responsável natural pela produção da tribo e pode redelegar via UI.
+
+**Impacto técnico:** UPDATE em migração. Board items unassigned: 333→0 em boards de tribos ativas.
+
+---
+
+### GC-018 — Expansão de Tipos de Hub Resources
+**Data:** 2026-03-14 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisão:** Expandir constraint `hub_resources_asset_type_check` de 4 para 9 tipos: adição de `article`, `presentation`, `governance`, `certificate`, `template`. Reclassificar 27 itens (11 certificates, 7 governance, 6 presentations, 3 articles). Desativar 43 itens junk (row numbers, filenames, single letters).
+
+**Justificativa:** Tipo `reference` era catchall com 200+ itens. Granularidade insuficiente para filtragem, busca e navegação. Junk residual de importação de planilhas.
+
+**Impacto técnico:** Migração inline. Hub resources ativos: 323→280.
+
+---
+
+### GC-019 — Extração e Preservação de Conteúdo Ciclo 2 (Miro + Drive + Notion)
+**Data:** 2026-03-14 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisão:** Documentar e preservar no repositório todo o conteúdo identificado no Miro board Ciclo 2, Google Drive compartilhado e workspaces Notion das tribos. Incluir mapeamento Ciclo 2 → Ciclo 3, inventário de artefatos de pesquisa e assessment de importação para BoardEngine.
+
+**Justificativa:** Conteúdo do Ciclo 2 era acessível apenas via Miro (conta pessoal, risco de expiração) e Google Drive fragmentado. Tribo 6 tinha 187 itens incluindo artigo completo com framework EAA — risco de perda se conta Miro for desativada. Documentação preserva a memória institucional do projeto.
+
+**Impacto técnico:** 3 docs committed: `MIRO_DRIVE_EXTRACTION_CICLO2.md`, `COMMS_TEAM_FRICTION_ANALYSIS.md`, `DB_AUDIT_AND_SANITATION_PLAN.md`. Miro board URL salvo em `site_config`. 6 Canva links vinculados como attachments em board_items. T8 importação de 9 items do Notion já concluída.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisão deve ter Data, Autor, Status, Decisão, Justificativa, e Impacto técnico quando aplicável. Propostas pendentes requerem aprovação da Liderança dos Capítulos conforme Seção 7 do Manual R2.*
