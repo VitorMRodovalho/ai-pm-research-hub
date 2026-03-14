@@ -34,7 +34,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
     <!-- Active Boards List (W139) -->
     <section id="boards-list-panel" class="hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
-      <h2 class="text-lg font-extrabold text-navy mb-3">Boards Ativos</h2>
+      <h2 class="text-lg font-extrabold text-navy mb-3">{t('portfolio.activeBoards', lang)}</h2>
       <div id="boards-list-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
     </section>
   </div>

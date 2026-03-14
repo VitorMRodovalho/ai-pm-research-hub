@@ -295,9 +295,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     else showDenied();
   }
 
+  let selBootRetries = 0;
   async function boot() {
     sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(boot, 200); return; }
+    if (!sb) {
+      selBootRetries += 1;
+      if (selBootRetries >= 20) { showDenied(); return; }
+      setTimeout(boot, 200);
+      return;
+    }
     try {
       await loadSelectionCycles();
     } catch (e) {
