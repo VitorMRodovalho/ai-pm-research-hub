@@ -1814,6 +1814,13 @@ const esLATAM: Record<string, string> = {
   'admin.webinars.msg.deleteError': 'Error al eliminar webinar',
   'nav.adminWebinars': 'Webinars',
 
+  // ── Tribe Dashboard ──
+  'nav.adminTribeDashboard': 'Dashboard de Tribu',
+  'tribeDashboard.title': 'Dashboard — Tribu',
+  'tribeDashboard.denied': 'Acceso restringido al dashboard de la tribu.',
+  'tribeDashboard.back': 'Volver al Admin',
+  'wk.tribeDashboard': 'Dashboard de la Tribu',
+
   // ── Workspace Onboarding ──
   'wk.sectionOnboarding': 'Onboarding — Tus Pasos',
   'wk.onbProgress': 'pasos completados',

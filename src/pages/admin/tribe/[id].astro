@@ -1,0 +1,71 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
+import AdminNav from '../../../components/nav/AdminNav.astro';
+import TribeDashboardIsland from '../../../components/islands/TribeDashboardIsland';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+const tribeId = Astro.params.id!;
+---
+
+<BaseLayout title={`${t('tribeDashboard.title', lang)} ${tribeId}`} activePage="admin">
+  <div class="max-w-[1200px] mx-auto px-4 pt-6">
+    <AdminNav activeSub="tribe-dashboard" lang={lang} />
+  </div>
+
+  <div id="td-denied" class="hidden max-w-[1100px] mx-auto px-4">
+    <div class="bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
+      <div class="text-3xl mb-3">&#x1F512;</div>
+      <p class="font-semibold text-amber-800">{t('tribeDashboard.denied', lang)}</p>
+      <a href="/admin" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
+        {t('tribeDashboard.back', lang)}
+      </a>
+    </div>
+  </div>
+
+  <div id="td-panel" class="hidden max-w-[1200px] mx-auto px-4 pb-12">
+    <TribeDashboardIsland client:load tribeId={tribeId} />
+  </div>
+
+  <div id="td-loading" class="max-w-[1200px] mx-auto px-4 text-center py-16 text-[var(--text-muted)]">
+    Carregando...
+  </div>
+</BaseLayout>
+
+<script is:inline>
+  (function () {
+    function hasAccess(member) {
+      if (!member) return false;
+      if (member.is_superadmin) return true;
+      var role = String(member.operational_role || '');
+      if (role === 'manager' || role === 'deputy_manager') return true;
+      if (role === 'tribe_leader') return true;
+      var desigs = member.designations || [];
+      if (desigs.indexOf('sponsor') >= 0 || desigs.indexOf('chapter_liaison') >= 0) return true;
+      return false;
+    }
+
+    function boot() {
+      var loading = document.getElementById('td-loading');
+      var denied = document.getElementById('td-denied');
+      var panel = document.getElementById('td-panel');
+      var member = window.navGetMember && window.navGetMember();
+      if (!member) {
+        window.addEventListener('nav:member', boot, { once: true });
+        return;
+      }
+      if (loading) loading.classList.add('hidden');
+      if (!hasAccess(member)) {
+        if (denied) denied.classList.remove('hidden');
+      } else {
+        if (panel) panel.classList.remove('hidden');
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', boot);
+    } else {
+      boot();
+    }
+  })();
+</script>
