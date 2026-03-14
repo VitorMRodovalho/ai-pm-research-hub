@@ -820,6 +820,9 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       if (sd) sd.classList.toggle('hidden');
     }
     if (action === 'toggle-tribe-dropdown') {
+      // Don't intercept clicks on actual navigation links inside the dropdown
+      var clickedLink = (e.target as HTMLElement).closest('a[href]');
+      if (clickedLink && clickedLink !== target) return;
       e.preventDefault(); e.stopPropagation();
       var dd = document.getElementById('tribe-dropdown');
       if (!dd) return;
