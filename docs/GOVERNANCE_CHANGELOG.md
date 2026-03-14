@@ -398,17 +398,17 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
-### GC-027: Importação histórica de attendance — 750 registros (Ciclo 1, 2 e kickoff C3)
+### GC-027: Importação histórica de attendance — 783 registros (Ciclo 1, 2 e kickoff C3)
 
 **Data:** 2026-03-15
 **Autor:** Vitor Rodovalho (via Claude Code — Supabase API)
 **Status:** Aplicado em produção
 
-**Decisão:** Importar dados históricos de presença de planilha Excel (Nucleo_AI_2025_Participantes.xlsx) e screenshots de Google Meet do kickoff C3, cobrindo fevereiro a dezembro de 2025.
+**Decisão:** Importar dados históricos de presença de planilha Excel (Nucleo_AI_2025_Participantes.xlsx) e 5 screenshots de Google Meet, cobrindo fevereiro a dezembro de 2025 e kickoff/reunião de março de 2026.
 
-**Justificativa:** A tabela attendance tinha apenas 38 registros manuais, insuficiente para calcular métricas de engajamento, retenção e participação por tribo/ciclo. Sem dados históricos, KPIs como taxa de presença e impact_hours ficam imprecisos. A importação cobre 95 eventos criados e 41 participantes do kickoff C3.
+**Justificativa:** A tabela attendance tinha apenas 38 registros manuais, insuficiente para calcular métricas de engajamento, retenção e participação por tribo/ciclo. Sem dados históricos, KPIs como taxa de presença e impact_hours ficam imprecisos.
 
-**Impacto técnico:** INSERT de 750 attendance records (era 38, aumento de 18.7x). 95 eventos cobertos: 24 Geral C1, 8 Geral C2, 3 Liderança C2, 29 Tribo 3, 17 Tribo 4, 5 Tribo 5, 15 Tribo 6. 35 membros únicos C1/C2 + 41 kickoff C3. ON CONFLICT DO NOTHING para idempotência.
+**Impacto técnico:** 783 attendance records total (era 38, aumento de 20.6x). 96 eventos cobertos: 24 Geral C1, 8 Geral C2, 3 Liderança C2, 29 T3, 17 T4, 5 T5, 15 T6. 41 kickoff C3 attendees extraídos de screenshots. 23 Reunião Geral 12/mar attendees de screenshot. 56 membros distintos. ON CONFLICT DO NOTHING para idempotência.
 
 ---
 
