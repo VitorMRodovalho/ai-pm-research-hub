@@ -31,6 +31,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       </div>
       <div id="kpi-health-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
     </section>
+
+    <!-- Active Boards List (W139) -->
+    <section id="boards-list-panel" class="hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
+      <h2 class="text-lg font-extrabold text-navy mb-3">Boards Ativos</h2>
+      <div id="boards-list-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+    </section>
   </div>
 </BaseLayout>
 
@@ -154,6 +160,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
     // Load KPI health cards
     loadKpiHealth(sb);
+    // Load boards list (W139)
+    loadBoardsList(sb);
   }
 
   document.getElementById('portfolio-run-taxonomy-alerts')?.addEventListener('click', async () => {
@@ -223,6 +231,36 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     }).join('');
 
     healthPanel.classList.remove('hidden');
+  }
+
+  // ─── Boards List (W139) ───
+  async function loadBoardsList(sb: any) {
+    const panel = document.getElementById('boards-list-panel');
+    const grid = document.getElementById('boards-list-grid');
+    if (!panel || !grid) return;
+
+    const { data, error } = await sb.rpc('list_project_boards');
+    if (error || !data) return;
+
+    const boards = (Array.isArray(data) ? data : []).filter((b: any) => b.is_active);
+    if (boards.length === 0) return;
+
+    panel.classList.remove('hidden');
+    grid.innerHTML = boards.map((b: any) => {
+      const scope = b.board_scope === 'tribe' ? 'Tribo' : b.board_scope === 'global' ? 'Global' : b.board_scope || '';
+      return `
+        <a href="/admin/board/${b.id}" class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-3 no-underline hover:border-teal transition-all block">
+          <div class="text-sm font-semibold text-navy">${escH(b.board_name || 'Board')}</div>
+          <div class="text-[.68rem] text-[var(--text-muted)] mt-1">${escH(scope)} · ${escH(b.domain_key || '')}</div>
+        </a>
+      `;
+    }).join('');
+  }
+
+  function escH(s: string) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
   }
 
   bootPortfolioPage();

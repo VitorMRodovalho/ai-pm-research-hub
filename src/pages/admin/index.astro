@@ -1969,7 +1969,7 @@ const ADMIN_I18N = {
           ${avatar(m, 'w-9 h-9')}
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-1.5 flex-wrap">
-              <span class="font-semibold text-[.82rem] text-navy">${escapeHtml(safeName(m))}</span>
+              <a href="/admin/member/${escapeAttr(m.id)}" class="font-semibold text-[.82rem] text-navy no-underline hover:underline">${escapeHtml(safeName(m))}</a>
               ${!hasAuth ? '<span class="text-[.58rem] font-bold px-1 py-0.5 rounded bg-amber-50 text-amber-600">SEM LOGIN</span>' : ''}
             </div>
             <div class="text-[.65rem] text-[var(--text-muted)] truncate">${m.email}</div>
