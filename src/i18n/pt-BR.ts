@@ -1814,6 +1814,20 @@ const ptBR: Record<string, string> = {
   'admin.webinars.msg.deleteError': 'Erro ao remover',
   'nav.adminWebinars': 'Webinars',
 
+  // ── Workspace Onboarding ──
+  'wk.sectionOnboarding': 'Onboarding — Suas Etapas',
+  'wk.onbProgress': 'etapas concluídas',
+  'wk.onbOverdue': 'Atrasado',
+  'wk.onbCompleted': 'Concluído',
+  'wk.onbPending': 'Pendente',
+  'wk.onbMarkDone': 'Concluir',
+  'wk.onbAllDone': 'Onboarding Concluído!',
+  'wk.onbAllDoneDesc': 'Parabéns! Todas as etapas foram concluídas. Bem-vindo ao Núcleo!',
+
+  // ── Chapter Report — Selection Pipeline ──
+  'chapterReport.selectionTitle': 'Pipeline do Processo Seletivo',
+  'chapterReport.selectionDesc': 'Métricas do funil de seleção para este capítulo.',
+
   // ── Guest (authenticated but not registered) ──
   'guest.notRegistered': 'Sua conta foi autenticada, mas ainda não está cadastrada no Núcleo.',
   'guest.contactAdmin': 'Entre em contato com o gestor do projeto para ser incluído como membro.',

@@ -21,6 +21,14 @@ const WK = {
   sectionMyTribe: t('wk.sectionMyTribe', lang),
   sectionSubprojects: t('wk.sectionSubprojects', lang),
   sectionProduction: t('wk.sectionProduction', lang),
+  sectionOnboarding: t('wk.sectionOnboarding', lang),
+  onbProgress: t('wk.onbProgress', lang),
+  onbOverdue: t('wk.onbOverdue', lang),
+  onbCompleted: t('wk.onbCompleted', lang),
+  onbPending: t('wk.onbPending', lang),
+  onbMarkDone: t('wk.onbMarkDone', lang),
+  onbAllDone: t('wk.onbAllDone', lang),
+  onbAllDoneDesc: t('wk.onbAllDoneDesc', lang),
   tribeItems: t('wk.tribeItems', lang),
   tribePending: t('wk.tribePending', lang),
   tribeNextMeeting: t('wk.tribeNextMeeting', lang),
@@ -81,6 +89,30 @@ const WK = {
 
       <!-- Quick Check-in Banner (shown when near event exists) -->
       <div id="wk-checkin-banner" class="hidden"></div>
+
+      <!-- ═══ Onboarding Checklist (shown for new members) ═══ -->
+      <section id="wk-onboarding" class="hidden">
+        <h2 class="text-base font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+          <span class="text-lg">📋</span> {WK.sectionOnboarding}
+        </h2>
+        <div id="wk-onboarding-card" class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5">
+          <div id="wk-onb-progress-bar" class="mb-4">
+            <div class="flex justify-between text-xs font-semibold mb-1">
+              <span id="wk-onb-label" class="text-[var(--text-secondary)]"></span>
+              <span id="wk-onb-pct" class="text-navy"></span>
+            </div>
+            <div class="h-2.5 rounded-full bg-[var(--border-subtle)] overflow-hidden">
+              <div id="wk-onb-bar" class="h-full rounded-full bg-teal transition-all" style="width:0%"></div>
+            </div>
+          </div>
+          <div id="wk-onb-steps" class="space-y-2"></div>
+          <div id="wk-onb-done" class="hidden text-center py-4">
+            <div class="text-2xl mb-2">🎉</div>
+            <p class="font-bold text-[var(--text-primary)]">{WK.onbAllDone}</p>
+            <p class="text-xs text-[var(--text-secondary)] mt-1">{WK.onbAllDoneDesc}</p>
+          </div>
+        </div>
+      </section>
 
       <!-- ═══ Section 1: Minha Tribo ═══ -->
       <section id="wk-my-tribe">
@@ -383,6 +415,116 @@ const WK = {
         }
       } catch (e) {
         console.warn('Workspace: failed to load near events:', e);
+      }
+
+      // ── Load Onboarding Checklist ──
+      try {
+        // Find the member's application with onboarding in progress
+        const { data: onbApps } = await sb
+          .from('onboarding_progress')
+          .select('application_id')
+          .eq('member_id', member.id)
+          .limit(1);
+
+        if (onbApps?.length > 0) {
+          const appId = onbApps[0].application_id;
+          const { data: onbStatus } = await sb.rpc('get_onboarding_status', { p_application_id: appId });
+
+          if (onbStatus && onbStatus.steps?.length > 0) {
+            const $onbSection = document.getElementById('wk-onboarding')!;
+            const $onbSteps = document.getElementById('wk-onb-steps')!;
+            const $onbLabel = document.getElementById('wk-onb-label')!;
+            const $onbPct = document.getElementById('wk-onb-pct')!;
+            const $onbBar = document.getElementById('wk-onb-bar')!;
+            const $onbDone = document.getElementById('wk-onb-done')!;
+
+            const pct = onbStatus.progress_pct || 0;
+            $onbLabel.textContent = `${onbStatus.completed_steps}/${onbStatus.total_steps} ${i18n.onbProgress}`;
+            $onbPct.textContent = `${pct}%`;
+            $onbBar.style.width = `${pct}%`;
+
+            if (onbStatus.is_fully_complete) {
+              $onbSteps.classList.add('hidden');
+              $onbDone.classList.remove('hidden');
+            } else {
+              for (const step of onbStatus.steps) {
+                const isDone = step.status === 'completed' || step.status === 'skipped';
+                const isOverdue = step.is_overdue;
+                const stepEl = document.createElement('div');
+                stepEl.className = `flex items-center gap-3 p-3 rounded-xl border ${
+                  isDone ? 'bg-green-50 border-green-200' :
+                  isOverdue ? 'bg-red-50 border-red-200' :
+                  'bg-[var(--surface-section-cool)] border-[var(--border-subtle)]'
+                }`;
+
+                const statusIcon = isDone ? '✅' : isOverdue ? '⚠️' : '⏳';
+                const slaLabel = !isDone && step.sla_deadline
+                  ? (() => {
+                      const deadline = new Date(step.sla_deadline);
+                      const daysLeft = Math.ceil((deadline.getTime() - Date.now()) / 86400000);
+                      return daysLeft > 0
+                        ? `<span class="text-[.65rem] text-amber-600">${daysLeft}d restantes</span>`
+                        : `<span class="text-[.65rem] text-red-600 font-bold">${i18n.onbOverdue}</span>`;
+                    })()
+                  : '';
+
+                stepEl.innerHTML = `
+                  <span class="text-base">${statusIcon}</span>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-semibold text-[var(--text-primary)]">${escHtml(step.step_key.replace(/_/g, ' '))}</div>
+                    ${slaLabel}
+                  </div>
+                  ${!isDone ? `<button class="onb-mark-btn px-3 py-1.5 text-[.7rem] font-bold rounded-lg bg-teal text-white border-0 cursor-pointer hover:opacity-90" data-app="${appId}" data-step="${step.step_key}">${i18n.onbMarkDone}</button>` : `<span class="text-[.65rem] text-green-600 font-semibold">${i18n.onbCompleted}</span>`}
+                `;
+                $onbSteps.appendChild(stepEl);
+              }
+
+              // Attach mark-done handlers
+              $onbSteps.querySelectorAll('.onb-mark-btn').forEach((btn: Element) => {
+                btn.addEventListener('click', async () => {
+                  const el = btn as HTMLButtonElement;
+                  const aId = el.dataset.app!;
+                  const sKey = el.dataset.step!;
+                  el.textContent = '...';
+                  el.disabled = true;
+                  try {
+                    const { data: res, error } = await sb.rpc('update_onboarding_step', {
+                      p_application_id: aId, p_step_key: sKey, p_status: 'completed',
+                    });
+                    if (error) throw error;
+                    if (res?.success) {
+                      const parent = el.closest('div.flex')!;
+                      parent.classList.remove('bg-[var(--surface-section-cool)]', 'border-[var(--border-subtle)]', 'bg-red-50', 'border-red-200');
+                      parent.classList.add('bg-green-50', 'border-green-200');
+                      parent.querySelector('span.text-base')!.textContent = '✅';
+                      el.replaceWith(Object.assign(document.createElement('span'), {
+                        className: 'text-[.65rem] text-green-600 font-semibold',
+                        textContent: i18n.onbCompleted,
+                      }));
+                      // Update progress bar
+                      $onbLabel.textContent = `${res.completed_steps}/${res.total_steps} ${i18n.onbProgress}`;
+                      const newPct = res.total_steps > 0 ? Math.round((res.completed_steps / res.total_steps) * 100) : 0;
+                      $onbPct.textContent = `${newPct}%`;
+                      $onbBar.style.width = `${newPct}%`;
+                      if (res.all_done) {
+                        $onbSteps.classList.add('hidden');
+                        $onbDone.classList.remove('hidden');
+                      }
+                    }
+                  } catch (e: any) {
+                    (window as any).toast?.(e?.message || 'Error', 'error');
+                    el.textContent = i18n.onbMarkDone;
+                    el.disabled = false;
+                  }
+                });
+              });
+            }
+
+            $onbSection.classList.remove('hidden');
+          }
+        }
+      } catch (e) {
+        console.warn('Workspace: failed to load onboarding:', e);
       }
 
       // ── Done: show content ──
