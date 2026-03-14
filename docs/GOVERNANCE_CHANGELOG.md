@@ -524,4 +524,18 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-036: W136c — Help link accessibility + welcome popup persistence
+
+**Data:** 2026-03-15
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Aplicado em produção
+
+**Decisão:** Restaurar link "Central de Ajuda" no avatar dropdown (seção Meu Espaço) para todos os usuários logados. Adicionar botão "?" persistente na barra de navegação ao lado do avatar. Persistir dismiss do popup de boas-vindas no banco de dados (`onboarding_dismissed_at`) ao invés de `sessionStorage` (que resetava ao fechar aba).
+
+**Justificativa:** W136 removeu agressivamente o link de ajuda do dropdown, tornando /help inacessível para pesquisadores. O popup de boas-vindas reaparecia porque `sessionStorage` não persiste entre sessões. Membros existentes já viram o popup múltiplas vezes — migração marca todos como dismissed.
+
+**Impacto técnico:** `navigation.config.ts`: `help` item mudado de `section: 'main'` para `section: 'both'` com `drawerSection: 'meu-espaco'`. Nav.astro: botão "?" adicionado antes do avatar. `help.astro`: popup usa `member.onboarding_dismissed_at` do DB em vez de `sessionStorage`. Nova migração: coluna `onboarding_dismissed_at timestamptz` em members, RPC `dismiss_onboarding()`. Todos os membros ativos marcados como dismissed na migração.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisão deve ter Data, Autor, Status, Decisão, Justificativa, e Impacto técnico quando aplicável. Propostas pendentes requerem aprovação da Liderança dos Capítulos conforme Seção 7 do Manual R2.*

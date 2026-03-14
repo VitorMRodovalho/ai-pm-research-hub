@@ -291,8 +291,9 @@ const langCode = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
       console.warn('Failed to load GP WhatsApp:', e);
     }
 
-    // First-login onboarding modal
-    if (member && !member.profile_completed_at && !sessionStorage.getItem('onb_dismissed')) {
+    // First-login onboarding modal — only for truly new members
+    // Uses DB column onboarding_dismissed_at (persisted) instead of sessionStorage
+    if (member && !member.profile_completed_at && !member.onboarding_dismissed_at) {
       const $modal = document.getElementById('onb-modal-backdrop');
       const $title = document.getElementById('onb-modal-title');
       const $role = document.getElementById('onb-modal-role');
@@ -312,14 +313,15 @@ const langCode = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
         $role.textContent = roleText;
         $modal.classList.remove('hidden');
 
-        document.getElementById('onb-modal-dismiss')?.addEventListener('click', () => {
-          sessionStorage.setItem('onb_dismissed', '1');
+        function dismissOnboarding() {
           $modal.classList.add('hidden');
-        });
+          // Persist dismiss in DB so it never shows again
+          const sb = window.navGetSb?.();
+          if (sb) sb.rpc('dismiss_onboarding').catch((e) => console.warn('dismiss_onboarding failed:', e));
+        }
 
-        document.getElementById('onb-modal-cta')?.addEventListener('click', () => {
-          sessionStorage.setItem('onb_dismissed', '1');
-        });
+        document.getElementById('onb-modal-dismiss')?.addEventListener('click', dismissOnboarding);
+        document.getElementById('onb-modal-cta')?.addEventListener('click', dismissOnboarding);
       }
     }
 
