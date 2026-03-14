@@ -140,7 +140,7 @@ const langCode = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
     return jsonbObj[lang] || jsonbObj['pt'] || jsonbObj['en'] || Object.values(jsonbObj)[0] || '';
   }
 
-  function renderJourney(journey, isExpanded) {
+  function renderJourney(journey, isExpanded, isAuthenticated) {
     const title = getText(journey.title, langCode);
     const subtitle = getText(journey.subtitle, langCode);
     const steps = journey.steps || [];
@@ -154,6 +154,11 @@ const langCode = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
       const sIcon = step.icon || '📋';
       const sMins = step.estimated_minutes || 0;
       const sReq = step.is_required;
+
+      // For visitors, action links trigger auth modal instead of navigating
+      const actionHtml = isAuthenticated
+        ? `<a href="${sActionUrl}" class="inline-block mt-2 text-xs font-bold text-teal no-underline hover:underline">${escHtml(sActionLabel)} →</a>`
+        : `<button type="button" onclick="document.dispatchEvent(new CustomEvent('open-auth'))" class="mt-2 text-xs font-bold text-teal bg-transparent border-0 cursor-pointer hover:underline p-0">${escHtml(sActionLabel)} →</button>`;
 
       return `
         <div class="flex gap-3 p-4 rounded-xl bg-[var(--surface-section-cool)] border border-[var(--border-subtle)]">
@@ -171,7 +176,7 @@ const langCode = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
                 <p class="text-xs text-[var(--text-muted)] mt-1 pl-4 border-l-2 border-teal/30">${escHtml(sWhy)}</p>
               </details>
             ` : ''}
-            <a href="${sActionUrl}" class="inline-block mt-2 text-xs font-bold text-teal no-underline hover:underline">${escHtml(sActionLabel)} →</a>
+            ${actionHtml}
           </div>
         </div>
       `;
@@ -250,16 +255,16 @@ const langCode = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
     const isVisitor = !member;
 
     if (isVisitor) {
-      // Visitor: all collapsed, show banner
+      // Visitor: all collapsed, show banner, action links trigger auth modal
       $visitorBanner?.classList.remove('hidden');
       for (const j of journeys) {
-        $journeys.innerHTML += renderJourney(j, false);
+        $journeys.innerHTML += renderJourney(j, false, false);
       }
     } else if (isGP) {
       // GP: all expanded
       $yourLabel?.classList.remove('hidden');
       for (const j of journeys) {
-        $journeys.innerHTML += renderJourney(j, true);
+        $journeys.innerHTML += renderJourney(j, true, true);
       }
     } else {
       // Regular member: own journeys expanded, others collapsed
@@ -269,14 +274,14 @@ const langCode = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
       if (myJourneys.length > 0) {
         $yourLabel?.classList.remove('hidden');
         for (const j of myJourneys) {
-          $journeys.innerHTML += renderJourney(j, true);
+          $journeys.innerHTML += renderJourney(j, true, true);
         }
       }
 
       if (otherJourneys.length > 0) {
         $otherLabel?.classList.remove('hidden');
         for (const j of otherJourneys) {
-          $otherJourneys.innerHTML += renderJourney(j, false);
+          $otherJourneys.innerHTML += renderJourney(j, false, true);
         }
       }
     }
