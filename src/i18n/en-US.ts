@@ -1814,6 +1814,20 @@ const enUS: Record<string, string> = {
   'admin.webinars.msg.deleteError': 'Error removing webinar',
   'nav.adminWebinars': 'Webinars',
 
+  // ── Workspace Onboarding ──
+  'wk.sectionOnboarding': 'Onboarding — Your Steps',
+  'wk.onbProgress': 'steps completed',
+  'wk.onbOverdue': 'Overdue',
+  'wk.onbCompleted': 'Completed',
+  'wk.onbPending': 'Pending',
+  'wk.onbMarkDone': 'Mark Done',
+  'wk.onbAllDone': 'Onboarding Complete!',
+  'wk.onbAllDoneDesc': 'Congratulations! All steps have been completed. Welcome to the Hub!',
+
+  // ── Chapter Report — Selection Pipeline ──
+  'chapterReport.selectionTitle': 'Selection Pipeline',
+  'chapterReport.selectionDesc': 'Selection funnel metrics for this chapter.',
+
   // ── Guest (authenticated but not registered) ──
   'guest.notRegistered': 'Your account was authenticated, but is not yet registered in the Hub.',
   'guest.contactAdmin': 'Contact the project manager to be added as a member.',

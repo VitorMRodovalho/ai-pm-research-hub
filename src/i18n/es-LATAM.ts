@@ -1814,6 +1814,20 @@ const esLATAM: Record<string, string> = {
   'admin.webinars.msg.deleteError': 'Error al eliminar webinar',
   'nav.adminWebinars': 'Webinars',
 
+  // ── Workspace Onboarding ──
+  'wk.sectionOnboarding': 'Onboarding — Tus Pasos',
+  'wk.onbProgress': 'pasos completados',
+  'wk.onbOverdue': 'Atrasado',
+  'wk.onbCompleted': 'Completado',
+  'wk.onbPending': 'Pendiente',
+  'wk.onbMarkDone': 'Completar',
+  'wk.onbAllDone': '¡Onboarding Completado!',
+  'wk.onbAllDoneDesc': '¡Felicitaciones! Todos los pasos han sido completados. ¡Bienvenido al Núcleo!',
+
+  // ── Chapter Report — Selection Pipeline ──
+  'chapterReport.selectionTitle': 'Pipeline del Proceso Selectivo',
+  'chapterReport.selectionDesc': 'Métricas del embudo de selección para este capítulo.',
+
   // ── Guest (authenticated but not registered) ──
   'guest.notRegistered': 'Tu cuenta fue autenticada, pero aún no está registrada en el Núcleo.',
   'guest.contactAdmin': 'Contacta al gestor del proyecto para ser incluido como miembro.',

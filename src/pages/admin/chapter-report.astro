@@ -50,6 +50,18 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         </div>
       </div>
 
+      <!-- Selection Pipeline Metrics -->
+      <div id="chr-selection" class="hidden bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
+          <h3 class="text-sm font-bold text-navy">{t('chapterReport.selectionTitle', lang)}</h3>
+          <p class="text-[.68rem] text-[var(--text-muted)] mt-0.5">{t('chapterReport.selectionDesc', lang)}</p>
+        </div>
+        <div class="p-5">
+          <div id="chr-sel-funnel" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4"></div>
+          <div id="chr-sel-rate" class="text-center text-sm font-bold text-navy"></div>
+        </div>
+      </div>
+
       <!-- Cross-chapter comparison (GP only) -->
       <div id="chr-comparison" class="hidden bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
@@ -174,6 +186,44 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     </div>`;
   }
 
+  async function loadSelectionMetrics(chapter: string) {
+    if (!sb) return;
+    try {
+      const { data, error } = await sb.rpc('get_selection_pipeline_metrics', { p_chapter: chapter });
+      if (error) throw error;
+      if (data?.error) return;
+
+      const f = data.funnel || {};
+      const selSection = document.getElementById('chr-selection');
+      const funnel = document.getElementById('chr-sel-funnel');
+      const rate = document.getElementById('chr-sel-rate');
+
+      if (selSection && funnel) {
+        funnel.innerHTML = [
+          selKpiCard('Candidaturas', f.total_applications || 0, 'bg-blue-50 text-blue-700'),
+          selKpiCard('Aprovados', f.approved || 0, 'bg-green-50 text-green-700'),
+          selKpiCard('Rejeitados', f.rejected || 0, 'bg-red-50 text-red-700'),
+          selKpiCard('Entrevistas', (f.interview_scheduled || 0) + (f.interview_done || 0), 'bg-indigo-50 text-indigo-700'),
+        ].join('');
+
+        if (rate) {
+          rate.textContent = `Taxa de aprovação: ${data.conversion_rate || 0}%`;
+        }
+
+        selSection.classList.remove('hidden');
+      }
+    } catch (e) {
+      console.warn('Selection metrics load:', e);
+    }
+  }
+
+  function selKpiCard(label: string, value: number, colors: string) {
+    return `<div class="rounded-lg p-3 text-center ${colors}">
+      <div class="text-xl font-extrabold">${value}</div>
+      <div class="text-[.68rem] font-semibold mt-0.5">${escHtml(label)}</div>
+    </div>`;
+  }
+
   async function loadComparison() {
     if (!sb || !isGP) return;
     try {
@@ -225,8 +275,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       }
     }
 
-    sel.addEventListener('change', () => loadChapterData(sel.value));
+    sel.addEventListener('change', () => {
+      loadChapterData(sel.value);
+      loadSelectionMetrics(sel.value);
+    });
     loadChapterData(sel.value);
+    loadSelectionMetrics(sel.value);
   }
 
   async function boot() {
