@@ -373,4 +373,15 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-025 — Board Items Metadata Enrichment
+**Data:** 2026-03-15 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisão:** Enriquecer metadados de 327 board_items ativos em 6 boards: adicionar 46 descrições contextuais (Hub de Comunicação 20, T3 25, Publicações 1), 68 novos tags semânticos, limpar 26 tags junk `miro_section_` do T3, e garantir 100% de cobertura de cycle_code. Cross-reference com contexto de WhatsApp (Canva design IDs, datas de publicação, autoria) e conteúdo Miro Ciclo 2 (problem statements, article outlines, member workspaces).
+
+**Justificativa:** Board items importados de Trello, Miro e Notion entraram sem descrições ou com tags não-semânticas (texto de sticky notes usado como tag). Sem metadados, os cards são opacos para membros que não participaram da criação original. Descrições e tags melhoram busca, onboarding de novos membros e rastreabilidade de produção.
+
+**Impacto técnico:** UPDATE em descriptions (46 items), tags (68 items), cycle_code (30 items). 1 card duplicado arquivado. Cobertura: descriptions 25%→39%, tags 79%→99.7%, cycle 91%→100%.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisão deve ter Data, Autor, Status, Decisão, Justificativa, e Impacto técnico quando aplicável. Propostas pendentes requerem aprovação da Liderança dos Capítulos conforme Seção 7 do Manual R2.*
