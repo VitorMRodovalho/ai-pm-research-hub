@@ -1,5 +1,19 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+// Retry with exponential backoff for external API calls
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok || response.status < 500) return response;
+    } catch (error) {
+      if (attempt === maxRetries - 1) throw error;
+    }
+    await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+  }
+  throw new Error(`Failed after ${maxRetries} retries: ${url}`);
+}
+
 function buildDynamicSignature(sender: Record<string, any>, cycleName: string): string {
   const name = sender.name || 'Gerencia do Projeto'
   const phone = sender.phone || ''
@@ -209,7 +223,7 @@ Deno.serve(async (req) => {
       // Rate-limit safeguard: 1s delay between sends (Resend free tier = 2 req/sec)
       await new Promise(r => setTimeout(r, 1000))
 
-      const rr = await fetch('https://api.resend.com/emails', {
+      const rr = await fetchWithRetry('https://api.resend.com/emails', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + rkey },
         body: JSON.stringify(resendPayload),

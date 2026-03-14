@@ -1,5 +1,19 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+// Retry with exponential backoff for external API calls
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok || response.status < 500) return response;
+    } catch (error) {
+      if (attempt === maxRetries - 1) throw error;
+    }
+    await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+  }
+  throw new Error(`Failed after ${maxRetries} retries: ${url}`);
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -78,7 +92,7 @@ function extractUsername(url: string): string | null {
 }
 
 async function fetchBadges(username: string): Promise<CredlyBadge[]> {
-  const resp = await fetch(`https://www.credly.com/users/${username}/badges.json`, {
+  const resp = await fetchWithRetry(`https://www.credly.com/users/${username}/badges.json`, {
     headers: { 'Accept': 'application/json', 'User-Agent': 'NucleoIA-GP/1.0' },
   })
   if (!resp.ok) throw new Error(`Credly ${resp.status}: ${username}`)
