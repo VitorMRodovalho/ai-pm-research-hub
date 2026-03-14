@@ -1,143 +1,347 @@
 ---
 /**
- * help.astro — Central de Ajuda (public for all logged-in members)
- * LGPD and Privacy topics are hidden for non-admin users.
- * Migrated from /admin/help (W4.10) to /help for universal access.
+ * help.astro — W130: Contextual Help Center
+ * Role-aware: expands user's journey, collapses others.
+ * Visitors see all collapsed with overview.
+ * WhatsApp button pulls GP phone from DB.
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
-
-interface HelpTopic {
-  icon: string;
-  titleKey: string;
-  items: { titleKey: string; bodyKey: string }[];
-  adminOnly?: boolean;
-}
-
-const topics: HelpTopic[] = [
-  {
-    icon: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>',
-    titleKey: 'admin.help.lgpd.title',
-    adminOnly: true,
-    items: [
-      { titleKey: 'admin.help.lgpd.q1', bodyKey: 'admin.help.lgpd.a1' },
-      { titleKey: 'admin.help.lgpd.q2', bodyKey: 'admin.help.lgpd.a2' },
-      { titleKey: 'admin.help.lgpd.q3', bodyKey: 'admin.help.lgpd.a3' },
-    ],
-  },
-  {
-    icon: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>',
-    titleKey: 'admin.help.broadcast.title',
-    items: [
-      { titleKey: 'admin.help.broadcast.q1', bodyKey: 'admin.help.broadcast.a1' },
-      { titleKey: 'admin.help.broadcast.q2', bodyKey: 'admin.help.broadcast.a2' },
-      { titleKey: 'admin.help.broadcast.q3', bodyKey: 'admin.help.broadcast.a3' },
-    ],
-  },
-  {
-    icon: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>',
-    titleKey: 'admin.help.whatsapp.title',
-    items: [
-      { titleKey: 'admin.help.whatsapp.q1', bodyKey: 'admin.help.whatsapp.a1' },
-      { titleKey: 'admin.help.whatsapp.q2', bodyKey: 'admin.help.whatsapp.a2' },
-    ],
-  },
-  {
-    icon: '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>',
-    titleKey: 'admin.help.privacy.title',
-    adminOnly: true,
-    items: [
-      { titleKey: 'admin.help.privacy.q1', bodyKey: 'admin.help.privacy.a1' },
-      { titleKey: 'admin.help.privacy.q2', bodyKey: 'admin.help.privacy.a2' },
-    ],
-  },
-];
-
-const GP_CONTACT = 'https://wa.me/5562999999999';
+const langCode = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
 ---
 
-<BaseLayout title={t('admin.help.meta', lang)} activePage="help">
-  <div class="max-w-[900px] mx-auto px-4 py-8 pb-12">
-    <div class="mb-8">
-      <h1 class="text-2xl font-extrabold text-navy">{t('admin.help.title', lang)}</h1>
-      <p class="text-sm text-[var(--text-secondary)] mt-1">{t('admin.help.subtitle', lang)}</p>
+<BaseLayout title={t('help.meta', lang)} activePage="help">
+  <!-- Loading -->
+  <div id="help-loading" class="max-w-[900px] mx-auto px-4 py-16 text-center">
+    <div class="animate-pulse text-[var(--text-muted)]">⏳</div>
+  </div>
+
+  <!-- Visitor banner (shown for unauthenticated) -->
+  <div id="help-visitor-banner" class="hidden max-w-[900px] mx-auto px-4 pt-8">
+    <div class="bg-gradient-to-br from-teal/10 to-blue-50 border border-teal/20 rounded-2xl p-6 mb-6">
+      <h2 class="text-xl font-extrabold text-navy">{t('help.visitorWelcome', lang)}</h2>
+      <p class="text-sm text-[var(--text-secondary)] mt-1">{t('help.visitorDesc', lang)}</p>
+      <div class="mt-4">
+        <span class="text-sm font-semibold text-[var(--text-primary)]">{t('help.visitorCta', lang)}</span>
+        <a href="/about" class="ml-2 text-sm font-bold text-teal no-underline hover:underline">
+          {t('help.visitorCtaBtn', lang)}
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-[900px] mx-auto px-4 py-8 pb-12" id="help-content">
+    <div class="mb-8 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-extrabold text-navy">{t('help.title', lang)}</h1>
+        <p class="text-sm text-[var(--text-secondary)] mt-1">{t('help.subtitle', lang)}</p>
+      </div>
     </div>
 
-    <div class="space-y-6" id="help-topics">
-      {topics.map((topic, ti) => (
-        <section
-          class={`bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl overflow-hidden shadow-sm ${topic.adminOnly ? 'help-admin-only hidden' : ''}`}
-          data-admin-only={topic.adminOnly ? 'true' : undefined}
-        >
-          <div class="flex items-center gap-3 px-5 py-4 bg-[var(--surface-base)] border-b border-[var(--border-default)]">
-            <div class="text-navy" set:html={topic.icon} />
-            <h2 class="text-[15px] font-bold text-navy">{t(topic.titleKey, lang)}</h2>
-          </div>
-          <div class="divide-y divide-[var(--border-subtle)]">
-            {topic.items.map((item, qi) => (
-              <details class="group" data-topic={`${ti}-${qi}`}>
-                <summary class="flex items-center justify-between px-5 py-3.5 cursor-pointer select-none hover:bg-[var(--overlay-card-hover)] transition-colors">
-                  <span class="text-[13.5px] font-semibold text-[var(--text-primary)] pr-4">{t(item.titleKey, lang)}</span>
-                  <svg class="w-4 h-4 text-[var(--text-muted)] flex-shrink-0 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                  </svg>
-                </summary>
-                <div class="px-5 pb-4 text-[13px] text-[var(--text-secondary)] leading-relaxed" set:html={t(item.bodyKey, lang)} />
-              </details>
-            ))}
-          </div>
-        </section>
-      ))}
+    <!-- Your Journey label (hidden for visitors) -->
+    <div id="help-your-label" class="hidden mb-3">
+      <span class="text-xs font-bold uppercase tracking-wider text-teal">{t('help.yourJourney', lang)}</span>
     </div>
 
-    <div class="mt-10 bg-gradient-to-r from-navy to-slate-800 rounded-2xl p-6 text-center">
-      <p class="text-white/80 text-sm mb-3">{t('admin.help.contactText', lang)}</p>
-      <a href={GP_CONTACT} target="_blank" rel="noopener noreferrer"
+    <!-- Journeys container -->
+    <div class="space-y-4" id="help-journeys"></div>
+
+    <!-- Other journeys label -->
+    <div id="help-other-label" class="hidden mt-8 mb-3">
+      <span class="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">{t('help.otherJourneys', lang)}</span>
+    </div>
+    <div class="space-y-4" id="help-other-journeys"></div>
+
+    <!-- WhatsApp contact footer -->
+    <div class="mt-10 bg-gradient-to-r from-navy to-slate-800 rounded-2xl p-6 text-center" id="help-contact">
+      <p class="text-white/80 text-sm mb-3">{t('help.contactText', lang)}</p>
+      <a id="help-wa-btn" href="#" target="_blank" rel="noopener noreferrer"
          class="inline-flex items-center gap-2 px-5 py-2.5 bg-green-500 hover:bg-green-600 text-white font-semibold text-sm rounded-xl no-underline transition-all shadow-lg">
         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8 8 0 01-4.257-1.223l-.306-.182-2.87.853.853-2.87-.182-.306A8 8 0 1112 20z"/></svg>
-        {t('admin.help.contactBtn', lang)}
+        <span id="help-wa-label">{t('help.contactBtn', lang)}</span>
       </a>
     </div>
   </div>
 
-  <div id="help-denied" class="hidden max-w-[900px] mx-auto px-4 py-16 text-center">
-    <div class="text-4xl mb-3">🔒</div>
-    <p class="font-semibold text-[var(--text-secondary)]">{t('admin.help.denied', lang)}</p>
-    <a href="/" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
-      {t('admin.help.backHome', lang)}
-    </a>
+  <!-- First-login onboarding modal -->
+  <div id="onb-modal-backdrop" class="hidden fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-[var(--surface-card)] rounded-2xl shadow-2xl max-w-md w-full p-6 relative">
+      <h2 id="onb-modal-title" class="text-xl font-extrabold text-navy mb-2"></h2>
+      <p id="onb-modal-role" class="text-sm text-[var(--text-secondary)] mb-4"></p>
+      <p class="text-sm font-semibold text-[var(--text-primary)] mb-3">{t('onb.modalSteps', lang)}</p>
+      <div class="space-y-2 mb-6">
+        <div class="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
+          <span>☐</span><span>{t('onb.modalStep1', lang)}</span>
+        </div>
+        <div class="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
+          <span>☐</span><span>{t('onb.modalStep2', lang)}</span>
+        </div>
+        <div class="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
+          <span>☐</span><span>{t('onb.modalStep3', lang)}</span>
+        </div>
+      </div>
+      <div class="flex gap-3">
+        <a href="/profile" id="onb-modal-cta"
+          class="flex-1 text-center px-4 py-2.5 bg-teal text-white rounded-xl text-sm font-bold no-underline hover:opacity-90 transition-all">
+          {t('onb.modalCta', lang)}
+        </a>
+        <button type="button" id="onb-modal-dismiss"
+          class="px-4 py-2.5 border border-[var(--border-default)] rounded-xl text-sm font-semibold text-[var(--text-secondary)] bg-transparent cursor-pointer hover:bg-[var(--surface-hover)] transition-all">
+          {t('onb.modalDismiss', lang)}
+        </button>
+      </div>
+    </div>
   </div>
 </BaseLayout>
 
-<script>
-  import { resolveTierFromMember, hasMinimumTier } from '../lib/admin/constants';
+<script define:vars={{ langCode }}>
+  // ════════════════════════════════════════════════════
+  // W130: Help page client-side logic
+  // ════════════════════════════════════════════════════
 
-  function boot() {
-    const member = (window as any).navGetMember?.();
-    if (!member) { window.addEventListener('nav:member', () => boot()); return; }
+  const ROLE_TO_PERSONA = {
+    'researcher': 'researcher',
+    'communicator': 'communicator',
+    'tribe_leader': 'tribe_leader',
+    'facilitator': 'tribe_leader',
+    'manager': 'gp',
+    'deputy_manager': 'gp',
+  };
 
-    const tier = resolveTierFromMember(member);
-    const isAdmin = hasMinimumTier(tier, 'admin');
+  const DESIGNATION_TO_PERSONA = {
+    'curator': 'curator',
+    'sponsor': 'sponsor',
+    'chapter_liaison': 'liaison',
+    'comms_team': 'communicator',
+    'comms_leader': 'communicator',
+    'comms_member': 'communicator',
+    'co_gp': 'gp',
+  };
 
-    const topics = document.getElementById('help-topics');
-    const denied = document.getElementById('help-denied');
-    const contact = topics?.parentElement?.querySelector('.bg-gradient-to-r');
+  function resolvePersonas(member) {
+    const personas = new Set();
+    const role = member.operational_role || '';
+    if (ROLE_TO_PERSONA[role]) personas.add(ROLE_TO_PERSONA[role]);
 
-    if (!hasMinimumTier(tier, 'member')) {
-      topics?.classList.add('hidden');
-      (contact as HTMLElement)?.classList.add('hidden');
-      denied?.classList.remove('hidden');
+    const desigs = member.designations || [];
+    for (const d of desigs) {
+      if (DESIGNATION_TO_PERSONA[d]) personas.add(DESIGNATION_TO_PERSONA[d]);
+    }
+
+    if (member.is_superadmin) personas.add('gp');
+    if (personas.size === 0) personas.add('researcher');
+    return personas;
+  }
+
+  function getText(jsonbObj, lang) {
+    if (!jsonbObj || typeof jsonbObj === 'string') return jsonbObj || '';
+    return jsonbObj[lang] || jsonbObj['pt'] || jsonbObj['en'] || Object.values(jsonbObj)[0] || '';
+  }
+
+  function renderJourney(journey, isExpanded) {
+    const title = getText(journey.title, langCode);
+    const subtitle = getText(journey.subtitle, langCode);
+    const steps = journey.steps || [];
+
+    const stepsHtml = steps.map((step, i) => {
+      const sTitle = getText(step.title, langCode);
+      const sDesc = getText(step.description, langCode);
+      const sWhy = getText(step.why, langCode);
+      const sActionLabel = getText(step.action_label, langCode);
+      const sActionUrl = step.action_url || '#';
+      const sIcon = step.icon || '📋';
+      const sMins = step.estimated_minutes || 0;
+      const sReq = step.is_required;
+
+      return `
+        <div class="flex gap-3 p-4 rounded-xl bg-[var(--surface-section-cool)] border border-[var(--border-subtle)]">
+          <span class="text-lg flex-shrink-0 mt-0.5">${sIcon}</span>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="text-sm font-bold text-[var(--text-primary)]">${i + 1}. ${escHtml(sTitle)}</span>
+              ${sReq ? '<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded bg-teal/10 text-teal uppercase">✓</span>' : ''}
+              ${sMins > 0 ? `<span class="text-[.65rem] text-[var(--text-muted)]">~${sMins >= 60 ? Math.round(sMins / 60) + 'h' : sMins + 'min'}</span>` : ''}
+            </div>
+            <p class="text-xs text-[var(--text-secondary)] mt-1">${escHtml(sDesc)}</p>
+            ${sWhy ? `
+              <details class="mt-2">
+                <summary class="text-xs font-semibold text-teal cursor-pointer select-none">ℹ️ ${langCode === 'en' ? 'Why?' : langCode === 'es' ? '¿Por qué?' : 'Por quê?'}</summary>
+                <p class="text-xs text-[var(--text-muted)] mt-1 pl-4 border-l-2 border-teal/30">${escHtml(sWhy)}</p>
+              </details>
+            ` : ''}
+            <a href="${sActionUrl}" class="inline-block mt-2 text-xs font-bold text-teal no-underline hover:underline">${escHtml(sActionLabel)} →</a>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl overflow-hidden shadow-sm journey-section" data-persona="${journey.persona_key}">
+        <details class="group" ${isExpanded ? 'open' : ''}>
+          <summary class="flex items-center justify-between px-5 py-4 cursor-pointer select-none hover:bg-[var(--overlay-card-hover)] transition-colors">
+            <div class="flex items-center gap-3">
+              <span class="text-xl">${journey.icon}</span>
+              <div>
+                <h2 class="text-[15px] font-bold text-navy">${escHtml(title)}</h2>
+                <p class="text-xs text-[var(--text-secondary)] mt-0.5">${escHtml(subtitle)}</p>
+              </div>
+            </div>
+            <svg class="w-5 h-5 text-[var(--text-muted)] flex-shrink-0 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </summary>
+          <div class="px-5 pb-5 space-y-3">
+            ${stepsHtml}
+          </div>
+        </details>
+      </section>
+    `;
+  }
+
+  function escHtml(s) {
+    if (!s) return '';
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  async function boot() {
+    const sb = window.navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    const $loading = document.getElementById('help-loading');
+    const $content = document.getElementById('help-content');
+    const $journeys = document.getElementById('help-journeys');
+    const $otherJourneys = document.getElementById('help-other-journeys');
+    const $yourLabel = document.getElementById('help-your-label');
+    const $otherLabel = document.getElementById('help-other-label');
+    const $visitorBanner = document.getElementById('help-visitor-banner');
+
+    // Load journeys from DB
+    const { data: journeys } = await sb.rpc('get_help_journeys');
+    if (!journeys || journeys.length === 0) {
+      $loading?.classList.add('hidden');
+      $content?.classList.remove('hidden');
       return;
     }
 
-    if (isAdmin) {
-      document.querySelectorAll('.help-admin-only').forEach(el => {
-        el.classList.remove('hidden');
-      });
+    // Check if user is authenticated
+    const member = window.navGetMember?.();
+    let userPersonas = new Set();
+    let isGP = false;
+
+    if (member) {
+      userPersonas = resolvePersonas(member);
+      isGP = userPersonas.has('gp');
     }
+
+    const isVisitor = !member;
+
+    if (isVisitor) {
+      // Visitor: all collapsed, show banner
+      $visitorBanner?.classList.remove('hidden');
+      for (const j of journeys) {
+        $journeys.innerHTML += renderJourney(j, false);
+      }
+    } else if (isGP) {
+      // GP: all expanded
+      $yourLabel?.classList.remove('hidden');
+      for (const j of journeys) {
+        $journeys.innerHTML += renderJourney(j, true);
+      }
+    } else {
+      // Regular member: own journeys expanded, others collapsed
+      const myJourneys = journeys.filter(j => userPersonas.has(j.persona_key));
+      const otherJourneys = journeys.filter(j => !userPersonas.has(j.persona_key));
+
+      if (myJourneys.length > 0) {
+        $yourLabel?.classList.remove('hidden');
+        for (const j of myJourneys) {
+          $journeys.innerHTML += renderJourney(j, true);
+        }
+      }
+
+      if (otherJourneys.length > 0) {
+        $otherLabel?.classList.remove('hidden');
+        for (const j of otherJourneys) {
+          $otherJourneys.innerHTML += renderJourney(j, false);
+        }
+      }
+    }
+
+    // Load WhatsApp GP contact
+    try {
+      const { data: waData } = await sb.rpc('get_gp_whatsapp');
+      if (waData && waData.phone) {
+        const waBtn = document.getElementById('help-wa-btn');
+        const waLabel = document.getElementById('help-wa-label');
+        const msg = encodeURIComponent(
+          langCode === 'en' ? 'Hello, I need help with the Hub platform.'
+          : langCode === 'es' ? 'Hola, necesito ayuda con la plataforma del Núcleo.'
+          : 'Olá, preciso de ajuda com a plataforma do Núcleo IA.'
+        );
+        if (waBtn) waBtn.href = `https://wa.me/${waData.phone}?text=${msg}`;
+        if (waLabel && waData.name) {
+          waLabel.textContent = `💬 ${waData.name}`;
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to load GP WhatsApp:', e);
+    }
+
+    // First-login onboarding modal
+    if (member && !member.profile_completed_at && !sessionStorage.getItem('onb_dismissed')) {
+      const $modal = document.getElementById('onb-modal-backdrop');
+      const $title = document.getElementById('onb-modal-title');
+      const $role = document.getElementById('onb-modal-role');
+
+      if ($modal && $title && $role) {
+        const welcomeText = langCode === 'en' ? `Welcome to the Hub, ${member.name}!`
+          : langCode === 'es' ? `¡Bienvenido al Núcleo, ${member.name}!`
+          : `Bem-vindo ao Núcleo, ${member.name}!`;
+
+        const roleLabel = member.operational_role || 'researcher';
+        const tribeId = member.tribe_id || '?';
+        const roleText = langCode === 'en' ? `You are a ${roleLabel} in Tribe ${tribeId}`
+          : langCode === 'es' ? `Eres ${roleLabel} en la Tribu ${tribeId}`
+          : `Você é ${roleLabel} na Tribo ${tribeId}`;
+
+        $title.textContent = welcomeText;
+        $role.textContent = roleText;
+        $modal.classList.remove('hidden');
+
+        document.getElementById('onb-modal-dismiss')?.addEventListener('click', () => {
+          sessionStorage.setItem('onb_dismissed', '1');
+          $modal.classList.add('hidden');
+        });
+
+        document.getElementById('onb-modal-cta')?.addEventListener('click', () => {
+          sessionStorage.setItem('onb_dismissed', '1');
+        });
+      }
+    }
+
+    $loading?.classList.add('hidden');
+    $content?.classList.remove('hidden');
   }
 
-  boot();
+  // Wait for nav:member or boot immediately
+  function init() {
+    const member = window.navGetMember?.();
+    if (member) { boot(); return; }
+
+    // Listen for member event
+    window.addEventListener('nav:member', () => boot());
+
+    // Fallback: boot after short delay for visitors
+    setTimeout(() => {
+      if (!document.getElementById('help-loading')?.classList.contains('hidden')) {
+        boot();
+      }
+    }, 1500);
+  }
+
+  init();
 </script>

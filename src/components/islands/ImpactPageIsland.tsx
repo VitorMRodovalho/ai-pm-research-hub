@@ -81,6 +81,25 @@ const LABELS: Record<string, Record<string, string>> = {
     sponsor: 'Sponsor',
     membersCount: 'membros',
     loading: 'Carregando dados de impacto...',
+    leadTitle: 'Interessado em participar?',
+    leadSubtitle: 'Preencha o formulário e entraremos em contato.',
+    leadName: 'Nome completo',
+    leadEmail: 'E-mail',
+    leadPhone: 'Telefone (opcional)',
+    leadChapter: 'Capítulo PMI de interesse',
+    leadChapterPlaceholder: 'Selecione um capítulo',
+    leadRole: 'Interesse como',
+    leadRolePlaceholder: 'Selecione um papel',
+    leadRoleResearcher: 'Pesquisador',
+    leadRoleLeader: 'Líder de Tribo',
+    leadRoleOther: 'Outro',
+    leadMessage: 'Mensagem (opcional)',
+    leadConsent: 'Concordo com a Política de Privacidade e autorizo o contato sobre oportunidades de participação.',
+    leadSubmit: 'Enviar interesse',
+    leadSubmitting: 'Enviando...',
+    leadSuccess: 'Obrigado! Entraremos em contato em breve.',
+    leadError: 'Erro ao enviar. Tente novamente.',
+    leadConsentRequired: 'O consentimento é obrigatório.',
   },
   'en-US': {
     hero: 'Transforming Project Management in the Age of Artificial Intelligence',
@@ -111,6 +130,25 @@ const LABELS: Record<string, Record<string, string>> = {
     sponsor: 'Sponsor',
     membersCount: 'members',
     loading: 'Loading impact data...',
+    leadTitle: 'Interested in joining?',
+    leadSubtitle: 'Fill out the form and we will get in touch.',
+    leadName: 'Full name',
+    leadEmail: 'Email',
+    leadPhone: 'Phone (optional)',
+    leadChapter: 'PMI Chapter of interest',
+    leadChapterPlaceholder: 'Select a chapter',
+    leadRole: 'Interest as',
+    leadRolePlaceholder: 'Select a role',
+    leadRoleResearcher: 'Researcher',
+    leadRoleLeader: 'Tribe Leader',
+    leadRoleOther: 'Other',
+    leadMessage: 'Message (optional)',
+    leadConsent: 'I agree to the Privacy Policy and authorize contact about participation opportunities.',
+    leadSubmit: 'Submit interest',
+    leadSubmitting: 'Submitting...',
+    leadSuccess: 'Thank you! We will get in touch soon.',
+    leadError: 'Error submitting. Please try again.',
+    leadConsentRequired: 'Consent is required.',
   },
   'es-LATAM': {
     hero: 'Transformando la Gestión de Proyectos en la Era de la Inteligencia Artificial',
@@ -141,10 +179,138 @@ const LABELS: Record<string, Record<string, string>> = {
     sponsor: 'Sponsor',
     membersCount: 'miembros',
     loading: 'Cargando datos de impacto...',
+    leadTitle: '¿Interesado en participar?',
+    leadSubtitle: 'Completa el formulario y nos pondremos en contacto.',
+    leadName: 'Nombre completo',
+    leadEmail: 'Correo electrónico',
+    leadPhone: 'Teléfono (opcional)',
+    leadChapter: 'Capítulo PMI de interés',
+    leadChapterPlaceholder: 'Selecciona un capítulo',
+    leadRole: 'Interés como',
+    leadRolePlaceholder: 'Selecciona un rol',
+    leadRoleResearcher: 'Investigador',
+    leadRoleLeader: 'Líder de Tribu',
+    leadRoleOther: 'Otro',
+    leadMessage: 'Mensaje (opcional)',
+    leadConsent: 'Acepto la Política de Privacidad y autorizo el contacto sobre oportunidades de participación.',
+    leadSubmit: 'Enviar interés',
+    leadSubmitting: 'Enviando...',
+    leadSuccess: '¡Gracias! Nos pondremos en contacto pronto.',
+    leadError: 'Error al enviar. Inténtalo de nuevo.',
+    leadConsentRequired: 'El consentimiento es obligatorio.',
   },
 };
 
 const TRIBE_COLORS = ['#0d9488', '#2563eb', '#7c3aed', '#dc2626', '#ea580c', '#0891b2', '#4f46e5', '#059669'];
+
+const CHAPTERS = ['PMI-GO', 'PMI-CE', 'PMI-DF', 'PMI-MG', 'PMI-RS'];
+
+function LeadCaptureForm({ l, lang }: { l: Record<string, string>; lang: string }) {
+  const [form, setForm] = useState({ name: '', email: '', phone: '', chapter_interest: '', role_interest: '', message: '', lgpd_consent: false });
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [consentError, setConsentError] = useState(false);
+
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.lgpd_consent) { setConsentError(true); return; }
+    setConsentError(false);
+    setStatus('submitting');
+    try {
+      const sb = (window as any).navGetSb?.();
+      if (!sb) throw new Error('No client');
+      const { error } = await sb.from('visitor_leads').insert([{
+        name: form.name,
+        email: form.email,
+        phone: form.phone || null,
+        chapter_interest: form.chapter_interest || null,
+        role_interest: form.role_interest || null,
+        message: form.message || null,
+        lgpd_consent: true,
+        source: 'website',
+      }]);
+      if (error) throw error;
+      setStatus('success');
+    } catch {
+      setStatus('error');
+    }
+  }, [form]);
+
+  if (status === 'success') {
+    return (
+      <section className="bg-green-50 border border-green-200 rounded-2xl p-8 text-center">
+        <div className="text-3xl mb-3">✅</div>
+        <p className="text-green-700 font-semibold">{l.leadSuccess}</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-6 md:p-8" id="lead-form">
+      <h2 className="text-xl font-bold text-[var(--text-primary)] mb-1">{l.leadTitle}</h2>
+      <p className="text-sm text-[var(--text-secondary)] mb-6">{l.leadSubtitle}</p>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">{l.leadName} *</label>
+            <input type="text" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-sm text-[var(--text-primary)]" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">{l.leadEmail} *</label>
+            <input type="email" required value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+              className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-sm text-[var(--text-primary)]" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">{l.leadPhone}</label>
+            <input type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+              className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-sm text-[var(--text-primary)]" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">{l.leadChapter}</label>
+            <select value={form.chapter_interest} onChange={e => setForm(f => ({ ...f, chapter_interest: e.target.value }))}
+              className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-sm text-[var(--text-primary)]">
+              <option value="">{l.leadChapterPlaceholder}</option>
+              {CHAPTERS.map(ch => <option key={ch} value={ch}>{ch}</option>)}
+              <option value="other">{l.leadRoleOther}</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">{l.leadRole}</label>
+            <select value={form.role_interest} onChange={e => setForm(f => ({ ...f, role_interest: e.target.value }))}
+              className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-sm text-[var(--text-primary)]">
+              <option value="">{l.leadRolePlaceholder}</option>
+              <option value="researcher">{l.leadRoleResearcher}</option>
+              <option value="leader">{l.leadRoleLeader}</option>
+              <option value="other">{l.leadRoleOther}</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">{l.leadMessage}</label>
+          <textarea rows={3} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
+            className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-sm text-[var(--text-primary)] resize-y" />
+        </div>
+        <div>
+          <label className={`flex items-start gap-2 cursor-pointer ${consentError ? 'text-red-600' : ''}`}>
+            <input type="checkbox" checked={form.lgpd_consent} onChange={e => { setForm(f => ({ ...f, lgpd_consent: e.target.checked })); setConsentError(false); }}
+              className="mt-1 flex-shrink-0" />
+            <span className="text-xs text-[var(--text-secondary)]">
+              {l.leadConsent} <a href="/privacy" target="_blank" className="text-teal underline">Privacy</a>
+            </span>
+          </label>
+          {consentError && <p className="text-xs text-red-600 mt-1">{l.leadConsentRequired}</p>}
+        </div>
+        <button type="submit" disabled={status === 'submitting'}
+          className="w-full md:w-auto px-6 py-2.5 bg-teal text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all border-0 cursor-pointer disabled:opacity-50">
+          {status === 'submitting' ? l.leadSubmitting : l.leadSubmit}
+        </button>
+        {status === 'error' && <p className="text-xs text-red-600">{l.leadError}</p>}
+      </form>
+    </section>
+  );
+}
 
 export default function ImpactPageIsland({ lang = 'pt-BR' }: ImpactPageProps) {
   const [data, setData] = useState<ImpactData | null>(null);
@@ -325,6 +491,9 @@ export default function ImpactPageIsland({ lang = 'pt-BR' }: ImpactPageProps) {
           </div>
         </section>
       )}
+
+      {/* Lead Capture Form */}
+      <LeadCaptureForm l={l} lang={lang} />
 
       {/* CTA */}
       <section className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-8 text-center">
