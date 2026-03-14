@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import PartnerPipelineIsland from '../../components/islands/PartnerPipelineIsland';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
@@ -10,6 +11,18 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     <div id="partnerships-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
       {t('partnerships.denied', lang)}
     </div>
+
+    <!-- Pipeline View (W123) -->
+    <section id="pipeline-panel" class="hidden">
+      <PartnerPipelineIsland client:load lang={lang} />
+    </section>
+
+    <!-- View Toggle -->
+    <div id="view-toggle" class="hidden flex gap-2 mb-2">
+      <button id="btn-view-pipeline" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal text-white">Pipeline</button>
+      <button id="btn-view-crud" class="px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--border-default)] text-[var(--text-primary)] hover:bg-[var(--surface-hover)]">CRUD</button>
+    </div>
+
     <section id="partnerships-panel" class="hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
       <div class="flex items-center justify-between mb-4">
         <div>
@@ -26,15 +39,22 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           <option value="">{t('partnerships.allTypes', lang)}</option>
           <option value="pmi_chapter">PMI Chapter</option>
           <option value="academia">Academia</option>
+          <option value="academic">Academic</option>
           <option value="governo">Governo</option>
           <option value="empresa">Empresa</option>
+          <option value="community">Community</option>
+          <option value="research">Research</option>
+          <option value="association">Association</option>
           <option value="outro">Outro</option>
         </select>
         <select id="filter-status" class="text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5">
           <option value="">{t('partnerships.allStatuses', lang)}</option>
           <option value="active">{t('common.active', lang)}</option>
           <option value="prospect">Prospect</option>
+          <option value="contact">Contact</option>
+          <option value="negotiation">Negotiation</option>
           <option value="inactive">{t('common.inactive', lang)}</option>
+          <option value="churned">Churned</option>
         </select>
       </div>
 
@@ -56,8 +76,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
             <select id="modal-type" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2">
               <option value="pmi_chapter">PMI Chapter</option>
               <option value="academia">Academia</option>
+              <option value="academic">Academic</option>
               <option value="governo">Governo</option>
               <option value="empresa">Empresa</option>
+              <option value="community">Community</option>
+              <option value="research">Research</option>
+              <option value="association">Association</option>
               <option value="outro">Outro</option>
             </select>
           </div>
@@ -73,9 +97,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
             <div>
               <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Status</label>
               <select id="modal-status" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2">
-                <option value="active">Active</option>
                 <option value="prospect">Prospect</option>
+                <option value="contact">Contact</option>
+                <option value="negotiation">Negotiation</option>
+                <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
+                <option value="churned">Churned</option>
               </select>
             </div>
           </div>
@@ -118,9 +145,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   };
 
   const STATUS_STYLES: Record<string, { badge: string; dot: string }> = {
-    active:   { badge: 'bg-emerald-100 text-emerald-700', dot: '🟢' },
-    prospect: { badge: 'bg-amber-100 text-amber-700', dot: '🟡' },
-    inactive: { badge: 'bg-gray-100 text-gray-500', dot: '⚪' },
+    active:      { badge: 'bg-emerald-100 text-emerald-700', dot: '🟢' },
+    prospect:    { badge: 'bg-amber-100 text-amber-700', dot: '🟡' },
+    contact:     { badge: 'bg-blue-100 text-blue-700', dot: '🔵' },
+    negotiation: { badge: 'bg-purple-100 text-purple-700', dot: '🟣' },
+    inactive:    { badge: 'bg-gray-100 text-gray-500', dot: '⚪' },
+    churned:     { badge: 'bg-red-100 text-red-500', dot: '🔴' },
   };
 
   let allPartners: any[] = [];
@@ -298,7 +328,29 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       return;
     }
 
-    panel?.classList.remove('hidden');
+    const pipelinePanel = document.getElementById('pipeline-panel');
+    const viewToggle = document.getElementById('view-toggle');
+    const btnPipeline = document.getElementById('btn-view-pipeline');
+    const btnCrud = document.getElementById('btn-view-crud');
+
+    // Show pipeline by default, toggle with buttons
+    pipelinePanel?.classList.remove('hidden');
+    viewToggle?.classList.remove('hidden');
+
+    btnPipeline?.addEventListener('click', () => {
+      pipelinePanel?.classList.remove('hidden');
+      panel?.classList.add('hidden');
+      btnPipeline.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal text-white';
+      if (btnCrud) btnCrud.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--border-default)] text-[var(--text-primary)] hover:bg-[var(--surface-hover)]';
+    });
+
+    btnCrud?.addEventListener('click', () => {
+      pipelinePanel?.classList.add('hidden');
+      panel?.classList.remove('hidden');
+      if (btnCrud) btnCrud.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-teal text-white';
+      if (btnPipeline) btnPipeline.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--border-default)] text-[var(--text-primary)] hover:bg-[var(--surface-hover)]';
+    });
+
     await loadPartners(sb);
 
     // Wire up event listeners
