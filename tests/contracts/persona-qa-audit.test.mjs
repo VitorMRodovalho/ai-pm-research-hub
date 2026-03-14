@@ -93,7 +93,7 @@ test('navigation.config.ts defines access tiers for all admin routes', () => {
   const content = readFile('src/lib/navigation.config.ts');
   const adminRoutes = [
     '/admin', '/admin/analytics', '/admin/comms', '/admin/curatorship',
-    '/admin/cycle-report', '/admin/chapter-report', '/admin/tribes',
+    '/report', '/admin/chapter-report', '/admin/tribes',
     '/admin/partnerships', '/admin/sustainability', '/admin/selection',
   ];
   for (const route of adminRoutes) {
