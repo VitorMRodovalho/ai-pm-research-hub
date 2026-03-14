@@ -1817,6 +1817,11 @@ const enUS: Record<string, string> = {
   'admin.webinars.msg.deleteError': 'Error removing webinar',
   'nav.adminWebinars': 'Webinars',
 
+  // ── Cross-Tribe + Impact ──
+  'nav.adminCrossTribes': 'Tribe Comparison',
+  'nav.about': 'About',
+  'wk.sectionAlerts': 'Operational Alerts',
+
   // ── Tribe Dashboard ──
   'nav.adminTribeDashboard': 'Tribe Dashboard',
   'tribeDashboard.title': 'Dashboard — Tribe',
