@@ -662,9 +662,9 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
   // ── Notification badge polling ──
   let notifInterval: ReturnType<typeof setInterval> | null = null;
   async function updateNotifBadge() {
-    if (!_sb) return;
+    if (!sb) return;
     try {
-      const { data } = await _sb.rpc('get_notification_count');
+      const { data } = await sb.rpc('get_notification_count');
       const badge = document.getElementById('notif-badge');
       if (badge) {
         if (data && data > 0) {
