@@ -100,7 +100,27 @@ Todos os 7 líderes encontrados no DB com emails corretos:
 
 ---
 
-## 5. Governance
+## 5. Enriquecimento de Dados (Planilha de Seleção)
+
+44 membros atualizados com dados da planilha "Ciclo 2 + Ciclo 3":
+- **phone**: número de telefone (formato +DDI...)
+- **linkedin_url**: perfil LinkedIn
+- **pmi_id**: ID PMI Global
+
+Regra: campos só atualizados se estavam NULL ou vazios (dados existentes preservados).
+
+**Cobertura pós-enriquecimento** (membros ativos ciclo 3):
+| Campo | Preenchidos | Total | % |
+|-------|-------------|-------|---|
+| phone | 45 | 53 | 85% |
+| linkedin_url | 45 | 53 | 85% |
+| pmi_id | 44 | 53 | 83% |
+
+3 membros com PMI ID = "PENDENTE INFO": Maria Luiza, Letícia Vieira, João Uzejka.
+
+---
+
+## 6. Governance
 
 | Pessoa | Cargo Atual | DB Status |
 |--------|-------------|-----------|
@@ -109,7 +129,7 @@ Todos os 7 líderes encontrados no DB com emails corretos:
 
 ---
 
-## 6. Oportunidades Registradas no Backlog
+## 7. Oportunidades Registradas no Backlog
 
 | Sprint | Oportunidade | Status |
 |--------|-------------|--------|
