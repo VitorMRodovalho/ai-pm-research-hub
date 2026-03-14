@@ -298,36 +298,28 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   let selBootRetries = 0;
   async function boot() {
     sb = (window as any).navGetSb?.();
-    if (!sb) {
+    const m = (window as any).navGetMember?.();
+
+    if (!sb || !m) {
       selBootRetries += 1;
       if (selBootRetries >= 20) { showDenied(); return; }
       setTimeout(boot, 200);
       return;
     }
+
+    MEMBER = m;
+
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail) { MEMBER = e.detail; applyGate(MEMBER); }
+    }) as EventListener);
+
     try {
       await loadSelectionCycles();
     } catch (e) {
       console.warn('Selection cycles:', e);
     }
 
-    window.addEventListener('nav:member', ((e: CustomEvent) => {
-      if (e.detail) { MEMBER = e.detail; applyGate(MEMBER); }
-    }) as EventListener);
-
-    const m = (window as any).navGetMember?.();
-    if (m) { MEMBER = m; applyGate(MEMBER); return; }
-
-    try {
-      const { data: { session } } = await sb.auth.getSession();
-      if (session) {
-        const { data } = await sb.rpc('get_member_by_auth');
-        MEMBER = data;
-        applyGate(MEMBER);
-        return;
-      }
-    } catch (e) { console.warn('Selection boot:', e); }
-
-    showDenied();
+    applyGate(MEMBER);
   }
 
   if (!(window as any).__selectionDelegationBound) {
