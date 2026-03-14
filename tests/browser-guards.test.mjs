@@ -58,14 +58,14 @@ async function run() {
   await waitForServer();
   const browser = await chromium.launch({ headless: true });
   try {
-    const page = await browser.newPage();
+    const page = await browser.newPage({ locale: 'pt-BR' });
     await page.goto(`${base}/admin/selection`, { waitUntil: 'networkidle' });
     const denied = page.locator('#sel-denied');
     await denied.waitFor({ state: 'visible' });
     assert.match(await denied.textContent() || '', /Acesso restrito a administradores/);
     assert.equal(await page.locator('#sel-panel').isVisible(), false);
 
-    const selectionPage = await browser.newPage();
+    const selectionPage = await browser.newPage({ locale: 'pt-BR' });
     await selectionPage.goto(`${base}/admin/selection`, { waitUntil: 'networkidle' });
     await selectionPage.evaluate(() => {
       const fakeMember = {
@@ -187,7 +187,7 @@ async function run() {
     await boardGovDenied.waitFor({ state: 'visible' });
     assert.match(await boardGovDenied.textContent() || '', /Acesso restrito a gestão de projeto/);
 
-    const boardGovPage = await browser.newPage();
+    const boardGovPage = await browser.newPage({ locale: 'pt-BR' });
     await boardGovPage.goto(`${base}/admin/governance-v2`, { waitUntil: 'networkidle' });
     await boardGovPage.evaluate(() => {
       const fakeMember = {
@@ -223,7 +223,7 @@ async function run() {
     await boardGovPage.locator('[data-action="restore-archived-item"]').first().click();
     await boardGovPage.close();
 
-    const curatorshipPage = await browser.newPage();
+    const curatorshipPage = await browser.newPage({ locale: 'pt-BR' });
     await curatorshipPage.goto(`${base}/admin/curatorship`, { waitUntil: 'networkidle' });
     await curatorshipPage.evaluate(() => {
       const fakeMember = {
@@ -411,7 +411,7 @@ async function run() {
     assert.match(contextualCommsHref || '', /context=webinar/);
     assert.match(contextualCommsHref || '', /eventId=webinar/);
 
-    const analyticsPage = await browser.newPage();
+    const analyticsPage = await browser.newPage({ locale: 'pt-BR' });
     await analyticsPage.goto(`${base}/admin/analytics`, { waitUntil: 'networkidle' });
     await analyticsPage.evaluate(() => {
       (window).__copiedSummary = '';
