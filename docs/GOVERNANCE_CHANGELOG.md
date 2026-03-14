@@ -538,4 +538,18 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-037: W137 — Email delivery via Resend Edge Function
+
+**Data:** 2026-03-15
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Aplicado em produção
+
+**Decisão:** Ativar entrega real de emails de campanhas via Resend API + Supabase Edge Function `send-campaign`. GP pode enviar campanhas para membros ativos com templates i18n, variáveis dinâmicas, e link de unsubscribe. Frontend agora aguarda resultado da entrega e mostra status (entregues/erros).
+
+**Justificativa:** Sistema de campanhas existia (templates, preview, audiência) mas não entregava emails. Resend free tier (3000/mês, 100/dia) suficiente para 53 membros. Edge Function executa com service role key para acessar recipients via RLS bypass.
+
+**Impacto técnico:** Edge Function `send-campaign` deployada. RESEND_API_KEY configurado como secret. Frontend campaigns.astro: send flow aguarda Edge Function response, mostra delivery stats (entregues/erros), recarrega histórico após envio. Sender: `nucleoia@pmigo.org.br`.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisão deve ter Data, Autor, Status, Decisão, Justificativa, e Impacto técnico quando aplicável. Propostas pendentes requerem aprovação da Liderança dos Capítulos conforme Seção 7 do Manual R2.*

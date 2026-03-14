@@ -445,25 +445,43 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
           if (error) {
             (window as any).toast?.(error.message || 'Erro ao enviar', 'error');
+            confirmBtn.textContent = 'Enviar Agora';
+            (confirmBtn as HTMLButtonElement).disabled = false;
           } else if (data) {
-            // Trigger Edge Function
+            (window as any).toast?.(`Enviando para ${data.total_recipients} destinatários...`, 'info');
+            // Trigger Edge Function and wait for delivery results
             const { data: { session } } = await sb.auth.getSession();
             if (session?.access_token && data.status === 'sending') {
-              fetch(`${(sb as any).supabaseUrl}/functions/v1/send-campaign`, {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${session.access_token}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ send_id: data.send_id }),
-              }).catch(() => {});
+              confirmBtn.textContent = 'Entregando...';
+              try {
+                const efRes = await fetch(`${(sb as any).supabaseUrl}/functions/v1/send-campaign`, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ send_id: data.send_id }),
+                });
+                const efData = await efRes.json();
+                if (efRes.ok) {
+                  const msg = efData.errors > 0
+                    ? `Entregues: ${efData.delivered}/${efData.total} · ${efData.errors} erro(s)`
+                    : `${efData.delivered} email(s) entregues com sucesso`;
+                  (window as any).toast?.(msg, efData.errors > 0 ? 'error' : 'success');
+                } else {
+                  (window as any).toast?.(`Erro na entrega: ${efData.error || 'Erro desconhecido'}`, 'error');
+                }
+              } catch (e: any) {
+                (window as any).toast?.('Campanha criada, mas entrega pode estar em andamento.', 'info');
+              }
+            } else {
+              (window as any).toast?.(`Campanha criada: ${data.total_recipients} destinatários`, 'success');
             }
-            (window as any).toast?.(`Campanha criada: ${data.total_recipients} destinatários`, 'success');
+            document.getElementById('send-modal')?.classList.add('hidden');
+            confirmBtn.textContent = 'Enviar Agora';
+            (confirmBtn as HTMLButtonElement).disabled = false;
+            await loadHistory(sb);
           }
-
-          document.getElementById('send-modal')?.classList.add('hidden');
-          confirmBtn.textContent = 'Enviar Agora';
-          (confirmBtn as HTMLButtonElement).disabled = false;
         };
         document.getElementById('send-modal')?.classList.remove('hidden');
       });
