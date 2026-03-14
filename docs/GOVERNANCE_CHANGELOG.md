@@ -580,4 +580,88 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
-*Para adicionar uma nova entrada, use o formato acima. Cada decisão deve ter Data, Autor, Status, Decisão, Justificativa, e Impacto técnico quando aplicável. Propostas pendentes requerem aprovação da Liderança dos Capítulos conforme Seção 7 do Manual R2.*
+### GC-040: W139-1 — Active Member Definition
+
+**Data:** 2026-03-14
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Definicao formal de "membro ativo": `members.is_active = true`. View `active_members` criada como `SELECT * FROM members WHERE is_active = true`.
+
+**Justificativa:** `/workspace` (tribe member counts) e attendance module (member list) referenciavam `active_members` que nao existia, causando contagem zero e lista vazia silenciosamente. Fix identificado na auditoria W139 como P1.
+
+**Impacto tecnico:** View `active_members` criada com GRANT SELECT para authenticated e anon. 53 membros retornados (validado).
+
+---
+
+### GC-041: W139-2 — Publication Submission Tracking
+
+**Data:** 2026-03-14
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Schema tipado para tracking de submissoes de publicacoes a conferencias e periodicos PMI. Tabela `publication_submission_events` recriada no schema public (estava em z_archive), tabelas `publication_submissions` e `publication_submission_authors` criadas.
+
+**Justificativa:** Tabela `publication_submission_events` foi arquivada para z_archive mas frontend e RPCs continuavam referenciando o schema public, causando falha silenciosa. Alem do fix, criado schema completo para tracking estruturado de submissoes (Cycle 3 deliverable).
+
+**Impacto tecnico:** 3 tabelas, 2 enums (`submission_status`, `submission_target_type`), 3 RPCs SECURITY DEFINER (`create_publication_submission`, `update_publication_submission_status`, `get_publication_submissions`), 2 RPCs existentes corrigidos (return type de z_archive para public, `auth_user_id` corrigido para `auth_id`).
+
+---
+
+### GC-042: W139-4/W108 — Sustainability Framework
+
+**Data:** 2026-03-14
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Modulo de sustentabilidade financeira com schema real, substituindo mockup hardcoded. Stakeholders podem registrar custos e receitas durante Beta.
+
+**Justificativa:** `/admin/sustainability` era 4 cards hardcoded com "Planning". Para Beta, necessario ter framework real onde gestores podem inserir dados — mesmo que inicialmente zerados. Alinhado com W108 (sustainability module).
+
+**Impacto tecnico:** 5 tabelas (`cost_categories`, `cost_entries`, `revenue_categories`, `revenue_entries`, `sustainability_kpi_targets`), 3 RPCs (`create_cost_entry`, `create_revenue_entry`, `get_sustainability_dashboard`), seeded com 8 categorias de custo, 7 categorias de receita, 5 KPI targets Ciclo 3. Frontend reescrito com dashboard real + modais de registro.
+
+---
+
+### GC-043: W139-5 — Deprecated Function Cleanup
+
+**Data:** 2026-03-14
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** 4 funcoes deprecated removidas apos verificacao: `comms_metrics_latest`, `kpi_summary`, `move_board_item_to_board`, `finalize_decisions`. DDL backed up em `docs/audit/DEPRECATED_FUNCTIONS_BACKUP.sql`.
+
+**Justificativa:** Funcoes identificadas na auditoria W139 como deprecated (substituidas por versoes mais recentes). Verificado: zero trigger bindings, zero chamadas frontend, uma dependencia inter-funcao encontrada (`exec_funnel_v2` chamado por `exec_analytics_v2_quality`) — mantida.
+
+**Impacto tecnico:** 4 funcoes removidas com CASCADE. `exec_funnel_v2` mantida (usada por analytics). Schema catalog mais limpo.
+
+---
+
+### GC-044: W139C — Technical Debt Inventory
+
+**Data:** 2026-03-14
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Documentacao concluida
+
+**Decisao:** Inventario completo de divida tecnica pre-Beta: npm audit, outdated packages, TypeScript strict, hardcoded values, TODOs, security check.
+
+**Justificativa:** Baseline de qualidade tecnica para o Beta. Documenta o estado da plataforma para reference pos-Beta.
+
+**Impacto tecnico:** 10 vulnerabilities npm (todas dev-time), 18 TypeScript strict errors (nao-bloqueantes), 0 TODOs, 0 secrets hardcoded, 0 localhost refs. Plataforma limpa para Beta.
+
+---
+
+### GC-045: W139-3 — Admin Orphan Page Links
+
+**Data:** 2026-03-14
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Paginas orfas `/admin/board/[id]` e `/admin/member/[id]` agora acessiveis via links na UI admin.
+
+**Justificativa:** Auditoria W139 identificou que essas rotas existiam mas nenhum link apontava para elas. Membros no painel admin agora linkam para detalhe via nome clicavel. Boards listados em `/admin/portfolio` com links para detalhe.
+
+**Impacto tecnico:** Nome do membro em `/admin/index.astro` agora e `<a>` para `/admin/member/[id]`. Lista de boards ativos adicionada em `/admin/portfolio.astro` com links para `/admin/board/[id]`.
+
+---
+
+*Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*
