@@ -496,4 +496,18 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-034: W136 — Nav menu cleanup + YouTube enrichment
+
+**Data:** 2026-03-15
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Aplicado em produção
+
+**Decisão:** Limpar o avatar dropdown (menu de perfil) de 25+ itens para max 15. Remover do dropdown: Onboarding, Notificações, Ajuda, Apresentações, Webinars, IA Pilots, Blog, Comms Ops, Portfólio, Governança de Boards, Curadoria, Parcerias, Relatório por Capítulo, Sustentabilidade, Cross-Tribos, Dashboard de Tribo, Campanhas. Essas páginas continuam acessíveis via URL e admin panel, apenas não aparecem no dropdown. Removida duplicata "Explorar Tribos" (aparecia em minha-tribo E explorar). Adicionadas traduções i18n faltantes no jsI18n do Nav.astro. Relatório do Ciclo aponta para /report.
+
+**Justificativa:** Menu com 25+ itens causa paralisia de escolha e inclui features não finalizadas. Regra: dropdown mostra apenas features prontas e de uso frequente. Itens administrativos acessíveis via painel admin. Links quebrados (i18n não traduzido) prejudicam credibilidade.
+
+**Impacto técnico:** Modificado `navigation.config.ts` — items removidos do drawer via `section: 'main'` (preserva config para uso futuro). Adicionadas 9 traduções faltantes ao `jsI18n` em Nav.astro. Cycle report href `/admin/cycle-report` → `/report`. SQL: `is_recorded=true` em eventos pós 25/fev. site_config: `youtube_channel_url`.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisão deve ter Data, Autor, Status, Decisão, Justificativa, e Impacto técnico quando aplicável. Propostas pendentes requerem aprovação da Liderança dos Capítulos conforme Seção 7 do Manual R2.*
