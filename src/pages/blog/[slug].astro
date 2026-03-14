@@ -1,0 +1,77 @@
+---
+/**
+ * /blog/[slug] — Individual blog post page (published only)
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+
+const lang: Lang = getLangFromURL(Astro.url) ?? 'pt-BR';
+const langKey = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
+const { slug } = Astro.params;
+---
+
+<BaseLayout activePage="blog" title={t('blog.title', lang)}>
+  <div class="max-w-[800px] mx-auto px-4 py-12">
+    <div id="post-loading" class="text-center py-16 text-gray-400">{t('campaigns.loading', lang)}</div>
+    <div id="post-not-found" class="hidden text-center py-16">
+      <p class="text-[var(--fg-muted)]">{t('blog.notFound', lang)}</p>
+      <a href="/blog" class="text-teal-400 hover:underline mt-2 inline-block">{t('blog.backToList', lang)}</a>
+    </div>
+
+    <article id="post-content" class="hidden">
+      <a href="/blog" class="text-sm text-teal-400 hover:underline mb-6 inline-block">&larr; {t('blog.backToList', lang)}</a>
+      <h1 id="post-title" class="text-3xl font-bold text-[var(--fg)] mb-4"></h1>
+      <div class="flex items-center gap-4 text-sm text-[var(--fg-muted)] mb-8">
+        <span id="post-date"></span>
+        <span id="post-category" class="px-2 py-0.5 rounded bg-[var(--surface-hover)]"></span>
+        <span id="post-author" class="text-[var(--fg)]"></span>
+      </div>
+      <div id="post-body" class="prose prose-invert max-w-none
+        [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-[var(--fg)] [&_h1]:mt-8 [&_h1]:mb-4
+        [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-[var(--fg)] [&_h2]:mt-6 [&_h2]:mb-3
+        [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-[var(--fg)] [&_h3]:mt-4 [&_h3]:mb-2
+        [&_p]:text-[var(--fg-muted)] [&_p]:leading-relaxed [&_p]:mb-4
+        [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 [&_ul]:text-[var(--fg-muted)]
+        [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4 [&_ol]:text-[var(--fg-muted)]
+        [&_li]:mb-1
+        [&_a]:text-teal-400 [&_a]:hover:underline
+        [&_strong]:text-[var(--fg)] [&_strong]:font-semibold
+        [&_em]:italic
+        [&_hr]:border-[var(--border)] [&_hr]:my-8
+      "></div>
+    </article>
+  </div>
+</BaseLayout>
+
+<script define:vars={{ slug, langKey }}>
+  async function loadPost() {
+    const sb = window.navGetSb?.();
+    if (!sb) { setTimeout(loadPost, 200); return; }
+
+    const { data } = await sb.from('blog_posts')
+      .select('*, members:author_member_id(name)')
+      .eq('slug', slug)
+      .eq('status', 'published')
+      .single();
+
+    document.getElementById('post-loading')?.classList.add('hidden');
+
+    if (!data) {
+      document.getElementById('post-not-found')?.classList.remove('hidden');
+      return;
+    }
+
+    document.getElementById('post-content')?.classList.remove('hidden');
+    document.getElementById('post-title').textContent = data.title?.[langKey] || data.title?.pt || '';
+    document.getElementById('post-body').innerHTML = data.body_html?.[langKey] || data.body_html?.pt || '';
+    document.getElementById('post-category').textContent = data.category;
+    document.getElementById('post-author').textContent = data.members?.name || '';
+    document.getElementById('post-date').textContent = data.published_at
+      ? new Date(data.published_at).toLocaleDateString(langKey === 'pt' ? 'pt-BR' : langKey === 'es' ? 'es-ES' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+      : '';
+
+    // Update page title
+    document.title = (data.title?.[langKey] || data.title?.pt || 'Blog') + ' | Nucleo IA & GP';
+  }
+  loadPost();
+</script>

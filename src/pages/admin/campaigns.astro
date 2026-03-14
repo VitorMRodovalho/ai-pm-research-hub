@@ -1,0 +1,505 @@
+---
+/**
+ * /admin/campaigns — Campaign Management (GP/DM/comms_team)
+ * Template editor, audience targeting, send history, stats.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminNav from '../../components/nav/AdminNav.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+
+const lang: Lang = getLangFromURL(Astro.url) ?? 'pt-BR';
+---
+
+<BaseLayout activePage="admin" title={t('campaigns.title', lang)}>
+  <div class="max-w-[1200px] mx-auto px-4 py-8">
+    <AdminNav activeSub="campaigns" lang={lang} />
+
+    <!-- Loading -->
+    <div id="camp-loading" class="text-center py-16 text-gray-400">
+      {t('campaigns.loading', lang)}
+    </div>
+
+    <!-- Denied -->
+    <div id="camp-denied" class="hidden text-center py-16">
+      <p class="text-red-400 font-semibold">{t('campaigns.denied', lang)}</p>
+    </div>
+
+    <!-- Main Panel -->
+    <div id="camp-panel" class="hidden">
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-[var(--fg)]">{t('campaigns.title', lang)}</h1>
+          <p class="text-sm text-[var(--fg-muted)]">{t('campaigns.subtitle', lang)}</p>
+        </div>
+        <button id="btn-new-template"
+          class="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700 transition-colors">
+          + {t('campaigns.newTemplate', lang)}
+        </button>
+      </div>
+
+      <!-- Tabs: Templates | Send History -->
+      <div class="flex gap-2 mb-6">
+        <button data-camp-tab="templates" class="px-4 py-2 rounded-xl text-[13px] font-semibold bg-navy text-white">
+          {t('campaigns.tabTemplates', lang)}
+        </button>
+        <button data-camp-tab="history" class="px-4 py-2 rounded-xl text-[13px] font-semibold bg-[var(--admin-subnav-bg)] text-[var(--admin-subnav-text)]">
+          {t('campaigns.tabHistory', lang)}
+        </button>
+      </div>
+
+      <!-- Templates List -->
+      <div id="camp-templates" class="space-y-4"></div>
+
+      <!-- Send History -->
+      <div id="camp-history" class="hidden space-y-4"></div>
+
+      <!-- Template Editor Modal -->
+      <div id="tmpl-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60" id="tmpl-modal-backdrop"></div>
+        <div class="relative bg-[var(--surface)] rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 mx-4">
+          <h2 id="tmpl-modal-title" class="text-xl font-bold mb-4 text-[var(--fg)]">{t('campaigns.editTemplate', lang)}</h2>
+
+          <div class="space-y-4">
+            <!-- Name -->
+            <div>
+              <label class="block text-sm font-medium text-[var(--fg-muted)] mb-1">{t('campaigns.templateName', lang)}</label>
+              <input id="tmpl-name" type="text" class="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]" />
+            </div>
+
+            <!-- Category -->
+            <div>
+              <label class="block text-sm font-medium text-[var(--fg-muted)] mb-1">{t('campaigns.category', lang)}</label>
+              <select id="tmpl-category" class="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]">
+                <option value="operational">Operational</option>
+                <option value="onboarding">Onboarding</option>
+                <option value="announcement">Announcement</option>
+                <option value="newsletter">Newsletter</option>
+              </select>
+            </div>
+
+            <!-- i18n Tabs -->
+            <div class="flex gap-1 border-b border-[var(--border)]">
+              <button data-lang-tab="pt" class="px-3 py-1.5 text-sm font-semibold border-b-2 border-teal-500 text-teal-400">PT-BR</button>
+              <button data-lang-tab="en" class="px-3 py-1.5 text-sm font-semibold text-[var(--fg-muted)]">EN-US</button>
+              <button data-lang-tab="es" class="px-3 py-1.5 text-sm font-semibold text-[var(--fg-muted)]">ES-LATAM</button>
+            </div>
+
+            <!-- Subject per lang -->
+            <div>
+              <label class="block text-sm font-medium text-[var(--fg-muted)] mb-1">{t('campaigns.subject', lang)}</label>
+              <input id="tmpl-subject" type="text" class="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]" />
+            </div>
+
+            <!-- Body HTML per lang -->
+            <div>
+              <label class="block text-sm font-medium text-[var(--fg-muted)] mb-1">{t('campaigns.bodyHtml', lang)}</label>
+              <textarea id="tmpl-body" rows="12" class="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--fg)] font-mono text-xs"></textarea>
+            </div>
+
+            <!-- Variable picker -->
+            <div>
+              <label class="block text-sm font-medium text-[var(--fg-muted)] mb-1">{t('campaigns.variables', lang)}</label>
+              <div class="flex flex-wrap gap-1">
+                {['{member.name}', '{member.tribe}', '{member.chapter}', '{platform.url}', '{unsubscribe_url}'].map(v => (
+                  <button data-var={v} class="var-btn px-2 py-1 text-xs bg-[var(--surface-hover)] text-[var(--fg)] rounded font-mono hover:bg-teal-900/30">{v}</button>
+                ))}
+              </div>
+            </div>
+
+            <!-- Audience -->
+            <div>
+              <label class="block text-sm font-medium text-[var(--fg-muted)] mb-1">{t('campaigns.audience', lang)}</label>
+              <div class="flex items-center gap-4">
+                <label class="flex items-center gap-2 text-sm text-[var(--fg)]">
+                  <input type="checkbox" id="aud-all" /> {t('campaigns.allActive', lang)}
+                </label>
+              </div>
+              <div id="aud-filters" class="mt-2 grid grid-cols-2 gap-2">
+                <div>
+                  <label class="text-xs text-[var(--fg-muted)]">{t('campaigns.roles', lang)}</label>
+                  <input id="aud-roles" type="text" placeholder="researcher, tribe_leader" class="w-full px-2 py-1 text-sm rounded border border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]" />
+                </div>
+                <div>
+                  <label class="text-xs text-[var(--fg-muted)]">{t('campaigns.chapters', lang)}</label>
+                  <input id="aud-chapters" type="text" placeholder="PMI-GO, PMI-CE" class="w-full px-2 py-1 text-sm rounded border border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[var(--border)]">
+            <button id="tmpl-cancel" class="px-4 py-2 text-sm text-[var(--fg-muted)] hover:text-[var(--fg)]">{t('campaigns.cancel', lang)}</button>
+            <button id="tmpl-save" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700">{t('campaigns.save', lang)}</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Send Modal -->
+      <div id="send-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60" id="send-modal-backdrop"></div>
+        <div class="relative bg-[var(--surface)] rounded-2xl shadow-2xl w-full max-w-lg p-6 mx-4">
+          <h2 class="text-xl font-bold mb-4 text-[var(--fg)]">{t('campaigns.confirmSend', lang)}</h2>
+          <div id="send-preview" class="mb-4 text-sm text-[var(--fg-muted)]"></div>
+
+          <!-- External contacts (for external campaigns) -->
+          <div id="ext-contacts-section" class="hidden mb-4">
+            <label class="block text-sm font-medium text-[var(--fg-muted)] mb-1">{t('campaigns.externalContacts', lang)}</label>
+            <textarea id="ext-contacts" rows="4" placeholder="Name, email@example.com&#10;Name2, email2@example.com"
+              class="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--fg)] font-mono text-xs"></textarea>
+            <p class="text-xs text-[var(--fg-muted)] mt-1">{t('campaigns.externalNote', lang)}</p>
+          </div>
+
+          <div class="flex justify-end gap-3">
+            <button id="send-cancel" class="px-4 py-2 text-sm text-[var(--fg-muted)]">{t('campaigns.cancel', lang)}</button>
+            <button id="send-confirm" class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700">{t('campaigns.sendNow', lang)}</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Preview Modal -->
+      <div id="preview-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60" id="preview-modal-backdrop"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 mx-4">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-gray-900">{t('campaigns.preview', lang)}</h2>
+            <button id="preview-close" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+          </div>
+          <div id="preview-subject" class="text-sm font-semibold text-gray-700 mb-2"></div>
+          <div id="preview-body" class="prose max-w-none"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  type CampaignTemplate = {
+    id: string; name: string; slug: string; subject: Record<string,string>;
+    body_html: Record<string,string>; body_text: Record<string,string>;
+    target_audience: { roles?: string[]; designations?: string[]; chapters?: string[]; all?: boolean };
+    category: string; variables: string[];
+    created_at: string; updated_at: string;
+  };
+
+  function boot() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    const member = (window as any).navGetMember?.();
+    if (!member) {
+      window.addEventListener('nav:member', ((e: CustomEvent) => {
+        if (e.detail) initCampaigns(sb, e.detail);
+        else showDenied();
+      }) as EventListener);
+      sb.auth.getSession().then(({ data: { session } }: any) => {
+        if (session) sb.rpc('get_member_by_auth').then(({ data }: any) => {
+          if (data) initCampaigns(sb, data);
+          else showDenied();
+        });
+        else showDenied();
+      });
+      return;
+    }
+    initCampaigns(sb, member);
+  }
+
+  function showDenied() {
+    document.getElementById('camp-loading')?.classList.add('hidden');
+    document.getElementById('camp-denied')?.classList.remove('hidden');
+  }
+
+  function hasAccess(m: any): boolean {
+    return m.is_superadmin || ['manager','deputy_manager'].includes(m.operational_role) || (m.designations || []).includes('comms_team');
+  }
+
+  function canSend(m: any): boolean {
+    return m.is_superadmin || ['manager','deputy_manager'].includes(m.operational_role);
+  }
+
+  let currentLang = 'pt';
+  let editingTemplate: CampaignTemplate | null = null;
+  let allTemplates: CampaignTemplate[] = [];
+
+  async function initCampaigns(sb: any, member: any) {
+    if (!hasAccess(member)) { showDenied(); return; }
+
+    document.getElementById('camp-loading')?.classList.add('hidden');
+    document.getElementById('camp-panel')?.classList.remove('hidden');
+
+    const isSender = canSend(member);
+
+    // Tab switching
+    document.querySelectorAll('[data-camp-tab]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = (btn as HTMLElement).dataset.campTab;
+        document.querySelectorAll('[data-camp-tab]').forEach(b => {
+          (b as HTMLElement).className = tab === (b as HTMLElement).dataset.campTab
+            ? 'px-4 py-2 rounded-xl text-[13px] font-semibold bg-navy text-white'
+            : 'px-4 py-2 rounded-xl text-[13px] font-semibold bg-[var(--admin-subnav-bg)] text-[var(--admin-subnav-text)]';
+        });
+        document.getElementById('camp-templates')!.classList.toggle('hidden', tab !== 'templates');
+        document.getElementById('camp-history')!.classList.toggle('hidden', tab !== 'history');
+        if (tab === 'history') loadHistory(sb);
+      });
+    });
+
+    // Load templates
+    await loadTemplates(sb, isSender);
+
+    // Lang tab switching in editor
+    document.querySelectorAll('[data-lang-tab]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const lang = (btn as HTMLElement).dataset.langTab!;
+        saveLangFields();
+        currentLang = lang;
+        loadLangFields();
+        document.querySelectorAll('[data-lang-tab]').forEach(b => {
+          const active = (b as HTMLElement).dataset.langTab === lang;
+          (b as HTMLElement).className = active
+            ? 'px-3 py-1.5 text-sm font-semibold border-b-2 border-teal-500 text-teal-400'
+            : 'px-3 py-1.5 text-sm font-semibold text-[var(--fg-muted)]';
+        });
+      });
+    });
+
+    // Variable picker
+    document.querySelectorAll('.var-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const v = (btn as HTMLElement).dataset.var!;
+        const ta = document.getElementById('tmpl-body') as HTMLTextAreaElement;
+        const pos = ta.selectionStart;
+        ta.value = ta.value.substring(0, pos) + v + ta.value.substring(pos);
+        ta.focus();
+        ta.setSelectionRange(pos + v.length, pos + v.length);
+      });
+    });
+
+    // New template button
+    document.getElementById('btn-new-template')?.addEventListener('click', () => {
+      editingTemplate = null;
+      currentLang = 'pt';
+      (document.getElementById('tmpl-name') as HTMLInputElement).value = '';
+      (document.getElementById('tmpl-category') as HTMLSelectElement).value = 'operational';
+      (document.getElementById('tmpl-subject') as HTMLInputElement).value = '';
+      (document.getElementById('tmpl-body') as HTMLTextAreaElement).value = '';
+      (document.getElementById('aud-all') as HTMLInputElement).checked = false;
+      (document.getElementById('aud-roles') as HTMLInputElement).value = '';
+      (document.getElementById('aud-chapters') as HTMLInputElement).value = '';
+      document.getElementById('tmpl-modal')?.classList.remove('hidden');
+    });
+
+    // Modal close handlers
+    document.getElementById('tmpl-modal-backdrop')?.addEventListener('click', () => document.getElementById('tmpl-modal')?.classList.add('hidden'));
+    document.getElementById('tmpl-cancel')?.addEventListener('click', () => document.getElementById('tmpl-modal')?.classList.add('hidden'));
+    document.getElementById('send-modal-backdrop')?.addEventListener('click', () => document.getElementById('send-modal')?.classList.add('hidden'));
+    document.getElementById('send-cancel')?.addEventListener('click', () => document.getElementById('send-modal')?.classList.add('hidden'));
+    document.getElementById('preview-modal-backdrop')?.addEventListener('click', () => document.getElementById('preview-modal')?.classList.add('hidden'));
+    document.getElementById('preview-close')?.addEventListener('click', () => document.getElementById('preview-modal')?.classList.add('hidden'));
+
+    // Save template
+    document.getElementById('tmpl-save')?.addEventListener('click', async () => {
+      saveLangFields();
+      const name = (document.getElementById('tmpl-name') as HTMLInputElement).value.trim();
+      if (!name) { (window as any).toast?.('Nome obrigatório', 'error'); return; }
+      const slug = editingTemplate?.slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const category = (document.getElementById('tmpl-category') as HTMLSelectElement).value;
+      const allActive = (document.getElementById('aud-all') as HTMLInputElement).checked;
+      const roles = (document.getElementById('aud-roles') as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean);
+      const chapters = (document.getElementById('aud-chapters') as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean);
+
+      const subject = editingTemplate?.subject || {};
+      const body_html = editingTemplate?.body_html || {};
+      const body_text = editingTemplate?.body_text || {};
+
+      // Current lang values already saved via saveLangFields
+      const record = {
+        name, slug, category,
+        subject: { ...subject, [currentLang]: (document.getElementById('tmpl-subject') as HTMLInputElement).value },
+        body_html: { ...body_html, [currentLang]: (document.getElementById('tmpl-body') as HTMLTextAreaElement).value },
+        body_text: { ...body_text, [currentLang]: (document.getElementById('tmpl-body') as HTMLTextAreaElement).value.replace(/<[^>]+>/g, '') },
+        target_audience: { roles, designations: [], chapters, all: allActive },
+      };
+
+      if (editingTemplate) {
+        await sb.from('campaign_templates').update(record).eq('id', editingTemplate.id);
+      } else {
+        await sb.from('campaign_templates').insert(record);
+      }
+
+      document.getElementById('tmpl-modal')?.classList.add('hidden');
+      await loadTemplates(sb, isSender);
+      (window as any).toast?.('Template salvo', 'success');
+    });
+  }
+
+  function saveLangFields() {
+    if (!editingTemplate) return;
+    editingTemplate.subject[currentLang] = (document.getElementById('tmpl-subject') as HTMLInputElement).value;
+    editingTemplate.body_html[currentLang] = (document.getElementById('tmpl-body') as HTMLTextAreaElement).value;
+  }
+
+  function loadLangFields() {
+    if (!editingTemplate) return;
+    (document.getElementById('tmpl-subject') as HTMLInputElement).value = editingTemplate.subject[currentLang] || '';
+    (document.getElementById('tmpl-body') as HTMLTextAreaElement).value = editingTemplate.body_html[currentLang] || '';
+  }
+
+  async function loadTemplates(sb: any, isSender: boolean) {
+    const { data } = await sb.from('campaign_templates').select('*').order('created_at', { ascending: true });
+    allTemplates = data || [];
+
+    const container = document.getElementById('camp-templates')!;
+    if (allTemplates.length === 0) {
+      container.innerHTML = '<p class="text-center text-[var(--fg-muted)] py-8">Nenhum template criado ainda.</p>';
+      return;
+    }
+
+    container.innerHTML = allTemplates.map((t: CampaignTemplate) => {
+      const audDesc = t.target_audience.all ? 'Todos os membros ativos'
+        : (t.target_audience.roles || []).join(', ') || 'Audiência personalizada';
+      const catBadge = { operational: 'bg-blue-900/30 text-blue-300', onboarding: 'bg-green-900/30 text-green-300',
+        announcement: 'bg-purple-900/30 text-purple-300', newsletter: 'bg-amber-900/30 text-amber-300' }[t.category] || 'bg-gray-700 text-gray-300';
+
+      return `<div class="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+        <div class="flex items-start justify-between">
+          <div>
+            <h3 class="font-semibold text-[var(--fg)]">${t.name}</h3>
+            <p class="text-sm text-[var(--fg-muted)]">${audDesc}</p>
+            <span class="inline-block mt-1 px-2 py-0.5 rounded text-xs font-medium ${catBadge}">${t.category}</span>
+          </div>
+          <div class="flex gap-2">
+            <button data-edit="${t.id}" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--surface-hover)] text-[var(--fg)] hover:bg-[var(--border)]">Editar</button>
+            <button data-preview="${t.id}" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--surface-hover)] text-[var(--fg)] hover:bg-[var(--border)]">Preview</button>
+            ${isSender ? `<button data-send="${t.id}" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-600 text-white hover:bg-teal-700">Enviar →</button>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Edit handlers
+    container.querySelectorAll('[data-edit]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = (btn as HTMLElement).dataset.edit;
+        editingTemplate = allTemplates.find(t => t.id === id) || null;
+        if (!editingTemplate) return;
+        currentLang = 'pt';
+        (document.getElementById('tmpl-name') as HTMLInputElement).value = editingTemplate.name;
+        (document.getElementById('tmpl-category') as HTMLSelectElement).value = editingTemplate.category;
+        loadLangFields();
+        (document.getElementById('aud-all') as HTMLInputElement).checked = editingTemplate.target_audience.all || false;
+        (document.getElementById('aud-roles') as HTMLInputElement).value = (editingTemplate.target_audience.roles || []).join(', ');
+        (document.getElementById('aud-chapters') as HTMLInputElement).value = (editingTemplate.target_audience.chapters || []).join(', ');
+        document.getElementById('tmpl-modal')?.classList.remove('hidden');
+      });
+    });
+
+    // Preview handlers
+    container.querySelectorAll('[data-preview]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = (btn as HTMLElement).dataset.preview;
+        const { data } = await sb.rpc('admin_preview_campaign', { p_template_id: id });
+        if (data) {
+          document.getElementById('preview-subject')!.textContent = 'Assunto: ' + data.subject;
+          document.getElementById('preview-body')!.innerHTML = data.html;
+          document.getElementById('preview-modal')?.classList.remove('hidden');
+        } else {
+          (window as any).toast?.('Erro ao carregar preview', 'error');
+        }
+      });
+    });
+
+    // Send handlers
+    container.querySelectorAll('[data-send]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = (btn as HTMLElement).dataset.send;
+        const tmpl = allTemplates.find(t => t.id === id);
+        if (!tmpl) return;
+        const isExternal = !tmpl.target_audience.all && (tmpl.target_audience.roles || []).length === 0;
+        document.getElementById('ext-contacts-section')?.classList.toggle('hidden', !isExternal);
+        document.getElementById('send-preview')!.innerHTML = `
+          <p><strong>${tmpl.name}</strong></p>
+          <p>${tmpl.target_audience.all ? 'Todos os membros ativos' : (tmpl.target_audience.roles || []).join(', ') || 'Contatos externos'}</p>
+          <p class="text-amber-400 mt-2">⚠ Esta ação envia emails reais. Requer aprovação do GP.</p>
+        `;
+        const confirmBtn = document.getElementById('send-confirm')!;
+        confirmBtn.onclick = async () => {
+          confirmBtn.textContent = 'Enviando...';
+          (confirmBtn as HTMLButtonElement).disabled = true;
+
+          let extContacts: { name: string; email: string; language: string }[] = [];
+          if (isExternal) {
+            const raw = (document.getElementById('ext-contacts') as HTMLTextAreaElement).value;
+            extContacts = raw.split('\n').filter(l => l.trim()).map(l => {
+              const [name, email] = l.split(',').map(s => s.trim());
+              return { name: name || '', email: email || '', language: 'en' };
+            }).filter(c => c.email.includes('@'));
+          }
+
+          const { data, error } = await sb.rpc('admin_send_campaign', {
+            p_template_id: id,
+            p_audience_filter: tmpl.target_audience,
+            p_external_contacts: extContacts,
+          });
+
+          if (error) {
+            (window as any).toast?.(error.message || 'Erro ao enviar', 'error');
+          } else if (data) {
+            // Trigger Edge Function
+            const { data: { session } } = await sb.auth.getSession();
+            if (session?.access_token && data.status === 'sending') {
+              fetch(`${(sb as any).supabaseUrl}/functions/v1/send-campaign`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${session.access_token}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ send_id: data.send_id }),
+              }).catch(() => {});
+            }
+            (window as any).toast?.(`Campanha criada: ${data.total_recipients} destinatários`, 'success');
+          }
+
+          document.getElementById('send-modal')?.classList.add('hidden');
+          confirmBtn.textContent = 'Enviar Agora';
+          (confirmBtn as HTMLButtonElement).disabled = false;
+        };
+        document.getElementById('send-modal')?.classList.remove('hidden');
+      });
+    });
+  }
+
+  async function loadHistory(sb: any) {
+    const { data } = await sb.from('campaign_sends').select('*, campaign_templates(name)').order('created_at', { ascending: false });
+    const container = document.getElementById('camp-history')!;
+    if (!data || data.length === 0) {
+      container.innerHTML = '<p class="text-center text-[var(--fg-muted)] py-8">Nenhuma campanha enviada ainda.</p>';
+      return;
+    }
+
+    container.innerHTML = data.map((s: any) => {
+      const statusColors: Record<string,string> = { draft: 'text-gray-400', scheduled: 'text-blue-400', sending: 'text-amber-400', sent: 'text-green-400', failed: 'text-red-400' };
+      const dt = s.sent_at ? new Date(s.sent_at).toLocaleString('pt-BR') : new Date(s.created_at).toLocaleString('pt-BR');
+      return `<div class="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 flex items-center justify-between">
+        <div>
+          <h3 class="font-semibold text-[var(--fg)]">${s.campaign_templates?.name || 'Template removido'}</h3>
+          <p class="text-sm text-[var(--fg-muted)]">${s.recipient_count} destinatários · ${dt}</p>
+          <span class="${statusColors[s.status] || 'text-gray-400'} text-sm font-medium">${s.status}</span>
+        </div>
+        <button data-stats="${s.id}" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--surface-hover)] text-[var(--fg)]">Stats</button>
+      </div>`;
+    }).join('');
+
+    container.querySelectorAll('[data-stats]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const { data } = await sb.rpc('admin_get_campaign_stats', { p_send_id: (btn as HTMLElement).dataset.stats });
+        if (data) {
+          (window as any).toast?.(`Entregues: ${data.delivered_count} · Abertos: ${data.open_count} · Desinscritos: ${data.unsubscribe_count}`, 'info');
+        }
+      });
+    });
+  }
+
+  boot();
+</script>

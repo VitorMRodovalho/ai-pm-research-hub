@@ -1,0 +1,278 @@
+---
+/**
+ * /admin/blog — Blog Post Management (GP/DM/comms_team)
+ * CRUD for blog posts with i18n, status workflow, and preview.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminNav from '../../components/nav/AdminNav.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+
+const lang: Lang = getLangFromURL(Astro.url) ?? 'pt-BR';
+---
+
+<BaseLayout activePage="admin" title={t('blog.adminTitle', lang)}>
+  <div class="max-w-[1200px] mx-auto px-4 py-8">
+    <AdminNav activeSub="blog" lang={lang} />
+
+    <div id="blog-loading" class="text-center py-16 text-gray-400">{t('campaigns.loading', lang)}</div>
+    <div id="blog-denied" class="hidden text-center py-16">
+      <p class="text-red-400 font-semibold">{t('campaigns.denied', lang)}</p>
+    </div>
+
+    <div id="blog-panel" class="hidden">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-[var(--fg)]">{t('blog.adminTitle', lang)}</h1>
+          <p class="text-sm text-[var(--fg-muted)]">{t('blog.adminSubtitle', lang)}</p>
+        </div>
+        <button id="btn-new-post" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700">
+          + {t('blog.newPost', lang)}
+        </button>
+      </div>
+
+      <div id="blog-list" class="space-y-4"></div>
+
+      <!-- Post Editor Modal -->
+      <div id="post-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60" id="post-modal-backdrop"></div>
+        <div class="relative bg-[var(--surface)] rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 mx-4">
+          <h2 id="post-modal-title" class="text-xl font-bold mb-4 text-[var(--fg)]">{t('blog.editPost', lang)}</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-[var(--fg-muted)] mb-1">Slug</label>
+              <input id="post-slug" type="text" class="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-[var(--fg-muted)] mb-1">{t('blog.category', lang)}</label>
+              <select id="post-category" class="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]">
+                <option value="case-study">Case Study</option>
+                <option value="tutorial">Tutorial</option>
+                <option value="announcement">Announcement</option>
+                <option value="opinion">Opinion</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-[var(--fg-muted)] mb-1">Status</label>
+              <select id="post-status" class="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]">
+                <option value="draft">{t('blog.statusDraft', lang)}</option>
+                <option value="review">{t('blog.statusReview', lang)}</option>
+                <option value="published">{t('blog.statusPublished', lang)}</option>
+              </select>
+            </div>
+            <label class="flex items-center gap-2 text-sm text-[var(--fg)]">
+              <input type="checkbox" id="post-featured" /> {t('blog.featured', lang)}
+            </label>
+            <div>
+              <label class="block text-sm font-medium text-[var(--fg-muted)] mb-1">Tags (comma separated)</label>
+              <input id="post-tags" type="text" class="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]" />
+            </div>
+
+            <!-- i18n tabs -->
+            <div class="flex gap-1 border-b border-[var(--border)]">
+              <button data-blang="pt" class="px-3 py-1.5 text-sm font-semibold border-b-2 border-teal-500 text-teal-400">PT-BR</button>
+              <button data-blang="en" class="px-3 py-1.5 text-sm font-semibold text-[var(--fg-muted)]">EN-US</button>
+              <button data-blang="es" class="px-3 py-1.5 text-sm font-semibold text-[var(--fg-muted)]">ES-LATAM</button>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-[var(--fg-muted)] mb-1">{t('blog.postTitle', lang)}</label>
+              <input id="post-title" type="text" class="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-[var(--fg-muted)] mb-1">{t('blog.excerpt', lang)}</label>
+              <textarea id="post-excerpt" rows="2" class="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-[var(--fg-muted)] mb-1">{t('blog.body', lang)}</label>
+              <textarea id="post-body" rows="16" class="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--fg)] font-mono text-xs"></textarea>
+            </div>
+          </div>
+          <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-[var(--border)]">
+            <button id="post-cancel" class="px-4 py-2 text-sm text-[var(--fg-muted)]">{t('campaigns.cancel', lang)}</button>
+            <button id="post-save" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700">{t('campaigns.save', lang)}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  type BlogPost = {
+    id: string; slug: string; title: Record<string,string>; excerpt: Record<string,string>;
+    body_html: Record<string,string>; category: string; tags: string[];
+    status: string; is_featured: boolean; published_at: string | null;
+    created_at: string; updated_at: string;
+  };
+
+  let currentLang = 'pt';
+  let editingPost: BlogPost | null = null;
+
+  function boot() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+    const member = (window as any).navGetMember?.();
+    if (!member) {
+      window.addEventListener('nav:member', ((e: CustomEvent) => {
+        if (e.detail) initBlog(sb, e.detail); else showDenied();
+      }) as EventListener);
+      sb.auth.getSession().then(({ data: { session } }: any) => {
+        if (session) sb.rpc('get_member_by_auth').then(({ data }: any) => {
+          if (data) initBlog(sb, data); else showDenied();
+        });
+        else showDenied();
+      });
+      return;
+    }
+    initBlog(sb, member);
+  }
+
+  function showDenied() {
+    document.getElementById('blog-loading')?.classList.add('hidden');
+    document.getElementById('blog-denied')?.classList.remove('hidden');
+  }
+
+  function hasAccess(m: any): boolean {
+    return m.is_superadmin || ['manager','deputy_manager'].includes(m.operational_role) || (m.designations || []).includes('comms_team');
+  }
+
+  async function initBlog(sb: any, member: any) {
+    if (!hasAccess(member)) { showDenied(); return; }
+    document.getElementById('blog-loading')?.classList.add('hidden');
+    document.getElementById('blog-panel')?.classList.remove('hidden');
+
+    await loadPosts(sb);
+
+    // Lang tabs
+    document.querySelectorAll('[data-blang]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        saveLangFields();
+        currentLang = (btn as HTMLElement).dataset.blang!;
+        loadLangFields();
+        document.querySelectorAll('[data-blang]').forEach(b => {
+          const active = (b as HTMLElement).dataset.blang === currentLang;
+          (b as HTMLElement).className = active
+            ? 'px-3 py-1.5 text-sm font-semibold border-b-2 border-teal-500 text-teal-400'
+            : 'px-3 py-1.5 text-sm font-semibold text-[var(--fg-muted)]';
+        });
+      });
+    });
+
+    // New post
+    document.getElementById('btn-new-post')?.addEventListener('click', () => {
+      editingPost = null;
+      currentLang = 'pt';
+      (document.getElementById('post-slug') as HTMLInputElement).value = '';
+      (document.getElementById('post-category') as HTMLSelectElement).value = 'case-study';
+      (document.getElementById('post-status') as HTMLSelectElement).value = 'draft';
+      (document.getElementById('post-featured') as HTMLInputElement).checked = false;
+      (document.getElementById('post-tags') as HTMLInputElement).value = '';
+      (document.getElementById('post-title') as HTMLInputElement).value = '';
+      (document.getElementById('post-excerpt') as HTMLTextAreaElement).value = '';
+      (document.getElementById('post-body') as HTMLTextAreaElement).value = '';
+      document.getElementById('post-modal')?.classList.remove('hidden');
+    });
+
+    document.getElementById('post-modal-backdrop')?.addEventListener('click', () => document.getElementById('post-modal')?.classList.add('hidden'));
+    document.getElementById('post-cancel')?.addEventListener('click', () => document.getElementById('post-modal')?.classList.add('hidden'));
+
+    // Save post
+    document.getElementById('post-save')?.addEventListener('click', async () => {
+      saveLangFields();
+      const slug = (document.getElementById('post-slug') as HTMLInputElement).value.trim();
+      if (!slug) { (window as any).toast?.('Slug obrigatório', 'error'); return; }
+
+      const status = (document.getElementById('post-status') as HTMLSelectElement).value;
+      const record: any = {
+        slug,
+        category: (document.getElementById('post-category') as HTMLSelectElement).value,
+        status,
+        is_featured: (document.getElementById('post-featured') as HTMLInputElement).checked,
+        tags: (document.getElementById('post-tags') as HTMLInputElement).value.split(',').map(s => s.trim()).filter(Boolean),
+        title: editingPost?.title || {},
+        excerpt: editingPost?.excerpt || {},
+        body_html: editingPost?.body_html || {},
+        updated_at: new Date().toISOString(),
+      };
+      record.title[currentLang] = (document.getElementById('post-title') as HTMLInputElement).value;
+      record.excerpt[currentLang] = (document.getElementById('post-excerpt') as HTMLTextAreaElement).value;
+      record.body_html[currentLang] = (document.getElementById('post-body') as HTMLTextAreaElement).value;
+
+      if (status === 'published' && !record.published_at) {
+        record.published_at = new Date().toISOString();
+      }
+
+      if (editingPost) {
+        await sb.from('blog_posts').update(record).eq('id', editingPost.id);
+      } else {
+        record.author_member_id = member.id;
+        await sb.from('blog_posts').insert(record);
+      }
+
+      document.getElementById('post-modal')?.classList.add('hidden');
+      await loadPosts(sb);
+      (window as any).toast?.('Post salvo', 'success');
+    });
+  }
+
+  function saveLangFields() {
+    if (!editingPost) return;
+    editingPost.title[currentLang] = (document.getElementById('post-title') as HTMLInputElement).value;
+    editingPost.excerpt[currentLang] = (document.getElementById('post-excerpt') as HTMLTextAreaElement).value;
+    editingPost.body_html[currentLang] = (document.getElementById('post-body') as HTMLTextAreaElement).value;
+  }
+
+  function loadLangFields() {
+    if (!editingPost) return;
+    (document.getElementById('post-title') as HTMLInputElement).value = editingPost.title[currentLang] || '';
+    (document.getElementById('post-excerpt') as HTMLTextAreaElement).value = editingPost.excerpt[currentLang] || '';
+    (document.getElementById('post-body') as HTMLTextAreaElement).value = editingPost.body_html[currentLang] || '';
+  }
+
+  async function loadPosts(sb: any) {
+    const { data } = await sb.from('blog_posts').select('*').order('created_at', { ascending: false });
+    const container = document.getElementById('blog-list')!;
+    if (!data || data.length === 0) {
+      container.innerHTML = '<p class="text-center text-[var(--fg-muted)] py-8">Nenhum post criado ainda.</p>';
+      return;
+    }
+
+    container.innerHTML = data.map((p: BlogPost) => {
+      const statusColors: Record<string,string> = { draft: 'bg-gray-700 text-gray-300', review: 'bg-amber-900/30 text-amber-300', published: 'bg-green-900/30 text-green-300' };
+      return `<div class="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
+        <div class="flex items-start justify-between">
+          <div>
+            <h3 class="font-semibold text-[var(--fg)]">${p.title?.pt || p.title?.en || p.slug}</h3>
+            <p class="text-sm text-[var(--fg-muted)]">/blog/${p.slug} · ${p.category}</p>
+            <div class="flex gap-2 mt-1">
+              <span class="inline-block px-2 py-0.5 rounded text-xs font-medium ${statusColors[p.status] || ''}">${p.status}</span>
+              ${p.is_featured ? '<span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-teal-900/30 text-teal-300">Featured</span>' : ''}
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button data-edit-post="${p.id}" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--surface-hover)] text-[var(--fg)]">Editar</button>
+            ${p.status === 'published' ? `<a href="/blog/${p.slug}" target="_blank" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--surface-hover)] text-[var(--fg)]">Ver</a>` : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    container.querySelectorAll('[data-edit-post]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = (btn as HTMLElement).dataset.editPost;
+        editingPost = data.find((p: BlogPost) => p.id === id) || null;
+        if (!editingPost) return;
+        currentLang = 'pt';
+        (document.getElementById('post-slug') as HTMLInputElement).value = editingPost.slug;
+        (document.getElementById('post-category') as HTMLSelectElement).value = editingPost.category;
+        (document.getElementById('post-status') as HTMLSelectElement).value = editingPost.status;
+        (document.getElementById('post-featured') as HTMLInputElement).checked = editingPost.is_featured;
+        (document.getElementById('post-tags') as HTMLInputElement).value = (editingPost.tags || []).join(', ');
+        loadLangFields();
+        document.getElementById('post-modal')?.classList.remove('hidden');
+      });
+    });
+  }
+
+  boot();
+</script>
