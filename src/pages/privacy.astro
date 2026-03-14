@@ -1,0 +1,140 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+---
+
+<BaseLayout title={t('privacy.pageTitle', lang)} activePage="privacy" lang={lang}>
+  <div class="max-w-[820px] mx-auto px-4 py-10 space-y-10">
+    <header class="text-center">
+      <h1 class="text-2xl md:text-3xl font-extrabold text-navy">{t('privacy.title', lang)}</h1>
+      <p class="text-sm text-[var(--text-muted)] mt-2">{t('privacy.lastUpdated', lang)}: 2026-03-14</p>
+    </header>
+
+    {/* Section 1 */}
+    <section class="space-y-2">
+      <h2 class="text-lg font-bold text-[var(--text-primary)]">1. {t('privacy.s1.title', lang)}</h2>
+      <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
+        <li>{t('privacy.s1.org', lang)}</li>
+        <li>{t('privacy.s1.chapters', lang)}</li>
+        <li>{t('privacy.s1.contact', lang)}: nucleoia@pmigo.org.br</li>
+        <li>{t('privacy.s1.dpo', lang)}: Vitor Maia Rodovalho</li>
+      </ul>
+    </section>
+
+    {/* Section 2 */}
+    <section class="space-y-2">
+      <h2 class="text-lg font-bold text-[var(--text-primary)]">2. {t('privacy.s2.title', lang)}</h2>
+      <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
+        <li><strong>{t('privacy.s2.registration', lang)}:</strong> {t('privacy.s2.registrationDesc', lang)}</li>
+        <li><strong>{t('privacy.s2.auth', lang)}:</strong> {t('privacy.s2.authDesc', lang)}</li>
+        <li><strong>{t('privacy.s2.participation', lang)}:</strong> {t('privacy.s2.participationDesc', lang)}</li>
+        <li><strong>{t('privacy.s2.production', lang)}:</strong> {t('privacy.s2.productionDesc', lang)}</li>
+        <li><strong>{t('privacy.s2.application', lang)}:</strong> {t('privacy.s2.applicationDesc', lang)}</li>
+        <li><strong>{t('privacy.s2.navigation', lang)}:</strong> {t('privacy.s2.navigationDesc', lang)}</li>
+      </ul>
+    </section>
+
+    {/* Section 3 */}
+    <section class="space-y-2">
+      <h2 class="text-lg font-bold text-[var(--text-primary)]">3. {t('privacy.s3.title', lang)}</h2>
+      <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
+        <li>{t('privacy.s3.research', lang)}</li>
+        <li>{t('privacy.s3.communication', lang)}</li>
+        <li>{t('privacy.s3.selection', lang)}</li>
+        <li>{t('privacy.s3.gamification', lang)}</li>
+        <li>{t('privacy.s3.analytics', lang)}</li>
+        <li>{t('privacy.s3.reports', lang)}</li>
+      </ul>
+    </section>
+
+    {/* Section 4 */}
+    <section class="space-y-2">
+      <h2 class="text-lg font-bold text-[var(--text-primary)]">4. {t('privacy.s4.title', lang)}</h2>
+      <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
+        <li>{t('privacy.s4.chapters', lang)}</li>
+        <li>{t('privacy.s4.pmiGlobal', lang)}</li>
+        <li>{t('privacy.s4.supabase', lang)}</li>
+        <li>{t('privacy.s4.cloudflare', lang)}</li>
+        <li>{t('privacy.s4.posthog', lang)}</li>
+        <li>{t('privacy.s4.sentry', lang)}</li>
+        <li>{t('privacy.s4.noCommercial', lang)}</li>
+      </ul>
+    </section>
+
+    {/* Section 5 */}
+    <section class="space-y-2">
+      <h2 class="text-lg font-bold text-[var(--text-primary)]">5. {t('privacy.s5.title', lang)}</h2>
+      <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
+        <li>{t('privacy.s5.active', lang)}</li>
+        <li>{t('privacy.s5.inactive', lang)}</li>
+        <li>{t('privacy.s5.notifications', lang)}</li>
+        <li>{t('privacy.s5.anomalyLogs', lang)}</li>
+        <li>{t('privacy.s5.applications', lang)}</li>
+      </ul>
+    </section>
+
+    {/* Section 6 */}
+    <section class="space-y-2">
+      <h2 class="text-lg font-bold text-[var(--text-primary)]">6. {t('privacy.s6.title', lang)}</h2>
+      <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
+        <li><strong>{t('privacy.s6.access', lang)}:</strong> {t('privacy.s6.accessDesc', lang)}</li>
+        <li><strong>{t('privacy.s6.correction', lang)}:</strong> {t('privacy.s6.correctionDesc', lang)}</li>
+        <li><strong>{t('privacy.s6.deletion', lang)}:</strong> {t('privacy.s6.deletionDesc', lang)}</li>
+        <li><strong>{t('privacy.s6.portability', lang)}:</strong> {t('privacy.s6.portabilityDesc', lang)}</li>
+        <li><strong>{t('privacy.s6.revocation', lang)}:</strong> {t('privacy.s6.revocationDesc', lang)}</li>
+        <li><strong>{t('privacy.s6.opposition', lang)}:</strong> {t('privacy.s6.oppositionDesc', lang)}</li>
+      </ul>
+    </section>
+
+    {/* Section 7 */}
+    <section class="space-y-2">
+      <h2 class="text-lg font-bold text-[var(--text-primary)]">7. {t('privacy.s7.title', lang)}</h2>
+      <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
+        <li>{t('privacy.s7.oauth', lang)}</li>
+        <li>{t('privacy.s7.rls', lang)}</li>
+        <li>{t('privacy.s7.securityDefiner', lang)}</li>
+        <li>{t('privacy.s7.https', lang)}</li>
+        <li>{t('privacy.s7.encryption', lang)}</li>
+        <li>{t('privacy.s7.noPasswords', lang)}</li>
+        <li>{t('privacy.s7.exifStripping', lang)}</li>
+      </ul>
+    </section>
+
+    {/* Section 8 */}
+    <section class="space-y-2">
+      <h2 class="text-lg font-bold text-[var(--text-primary)]">8. {t('privacy.s8.title', lang)}</h2>
+      <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
+        <li>{t('privacy.s8.posthog', lang)}</li>
+        <li>{t('privacy.s8.sentry', lang)}</li>
+        <li>{t('privacy.s8.supabaseAuth', lang)}</li>
+        <li>{t('privacy.s8.noCookies', lang)}</li>
+      </ul>
+    </section>
+
+    {/* Section 9 */}
+    <section class="space-y-2">
+      <h2 class="text-lg font-bold text-[var(--text-primary)]">9. {t('privacy.s9.title', lang)}</h2>
+      <p class="text-sm text-[var(--text-secondary)]">{t('privacy.s9.text', lang)}</p>
+    </section>
+
+    {/* Section 10 */}
+    <section class="space-y-2">
+      <h2 class="text-lg font-bold text-[var(--text-primary)]">10. {t('privacy.s10.title', lang)}</h2>
+      <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
+        <li>Email: nucleoia@pmigo.org.br</li>
+        <li>{t('privacy.s1.dpo', lang)}: Vitor Maia Rodovalho</li>
+      </ul>
+    </section>
+  </div>
+</BaseLayout>
+
+<script is:inline>
+  if (!document.querySelector('meta[name="robots"]')) {
+    const m = document.createElement('meta');
+    m.setAttribute('name', 'robots');
+    m.setAttribute('content', 'noindex');
+    document.head.appendChild(m);
+  }
+</script>
