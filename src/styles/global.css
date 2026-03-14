@@ -27,9 +27,19 @@ body {
 
 /* ─── Print CSS (W105 Cycle Report) ─── */
 @media print {
-  nav, footer, .print\:hidden, #admin-subnav, [data-action], button { display: none !important; }
+  nav, footer, .print\:hidden, #admin-subnav, [data-action], button, #consent-banner { display: none !important; }
   body { background: white !important; color: black !important; font-size: 11pt; }
   .cr-section { break-inside: avoid; page-break-inside: avoid; margin-bottom: 1.5rem; }
+  canvas { break-inside: avoid; page-break-inside: avoid; margin-bottom: 1rem; max-width: 100% !important; }
+  .overflow-x-auto, .overflow-y-auto { overflow: visible !important; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   @page { margin: 1.5cm; }
+}
+
+/* ─── Mobile Responsiveness (W128) ─── */
+@media (max-width: 640px) {
+  /* Kanban pipeline: horizontal scroll on mobile */
+  .pipeline-mobile-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* Recharts containers must not exceed viewport */
+  .recharts-responsive-container { max-width: 100vw !important; }
 }

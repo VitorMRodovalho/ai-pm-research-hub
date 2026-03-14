@@ -40,6 +40,34 @@ const roleLabels = JSON.stringify(getRoleLabelsMap(lang));
       document.documentElement.setAttribute('data-theme', theme);
     })();
   </script>
+  <!-- Browser language auto-detection (W128) -->
+  <script is:inline>
+    (function() {
+      // Skip if already on a localized path or if user has been here before
+      if (localStorage.getItem('preferred_language')) return;
+      var path = window.location.pathname;
+      if (path.startsWith('/en/') || path.startsWith('/es/')) return;
+      // Check URL param override
+      var urlLang = new URLSearchParams(window.location.search).get('lang');
+      if (urlLang) {
+        if (urlLang === 'en') { localStorage.setItem('preferred_language', 'en'); window.location.href = '/en/' + path.replace(/^\//, ''); return; }
+        if (urlLang === 'es') { localStorage.setItem('preferred_language', 'es'); window.location.href = '/es/' + path.replace(/^\//, ''); return; }
+        localStorage.setItem('preferred_language', 'pt');
+        return;
+      }
+      // Auto-detect from browser
+      var browserLang = (navigator.language || '').slice(0, 2);
+      if (browserLang === 'en') {
+        localStorage.setItem('preferred_language', 'en');
+        window.location.href = '/en/' + path.replace(/^\//, '');
+      } else if (browserLang === 'es') {
+        localStorage.setItem('preferred_language', 'es');
+        window.location.href = '/es/' + path.replace(/^\//, '');
+      } else {
+        localStorage.setItem('preferred_language', 'pt');
+      }
+    })();
+  </script>
 
   <!-- Sentry Error Monitoring (W126) -->
   <script>
