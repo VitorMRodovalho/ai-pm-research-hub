@@ -49,6 +49,16 @@ function buildHref(prefix: string): string {
     document.getElementById('lang-menu')?.classList.toggle('hidden');
   });
 
+  // Persist language choice in localStorage when switching
+  document.querySelectorAll('#lang-menu a').forEach(link => {
+    link.addEventListener('click', () => {
+      const href = link.getAttribute('href') || '/';
+      if (href.startsWith('/en')) localStorage.setItem('preferred_language', 'en');
+      else if (href.startsWith('/es')) localStorage.setItem('preferred_language', 'es');
+      else localStorage.setItem('preferred_language', 'pt');
+    });
+  });
+
   // Close dropdown when clicking outside
   document.addEventListener('click', (e) => {
     const switcher = document.getElementById('lang-switcher');

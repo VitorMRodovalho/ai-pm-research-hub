@@ -250,7 +250,8 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
       )}
 
       {/* Kanban Board */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-3 min-h-[400px]">
+      <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 md:overflow-visible pipeline-mobile-scroll">
+      <div className="grid grid-cols-[repeat(5,minmax(200px,1fr))] md:grid-cols-5 gap-3 min-h-[400px] min-w-[900px] md:min-w-0">
         {COLUMNS.map(status => {
           const partners = (data.pipeline || []).filter(p => p.status === status);
           const count = data.by_status?.[status] || 0;
@@ -285,6 +286,7 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
             </div>
           );
         })}
+      </div>
       </div>
 
       {/* Detail Modal */}

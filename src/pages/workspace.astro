@@ -412,13 +412,13 @@ const WK = {
               : i18n.checkinStartsSoon.replace('{m}', String(Math.abs(diffMin)));
 
             banner.innerHTML = `
-              <div class="bg-teal/10 border-2 border-teal rounded-2xl p-4 flex items-center justify-between gap-3 animate-pulse-border">
+              <div class="bg-teal/10 border-2 border-teal rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 animate-pulse-border">
                 <div class="flex-1 min-w-0">
                   <div class="font-bold text-[var(--text-primary)] text-sm truncate">${escHtml(ev.event_title)}</div>
                   <div class="text-xs text-[var(--text-secondary)] mt-0.5">${timeLabel}</div>
                 </div>
                 <button type="button" id="wk-quick-checkin-btn"
-                  class="px-4 py-2 bg-teal text-white rounded-xl text-sm font-bold border-0 cursor-pointer hover:opacity-90 transition-all flex-shrink-0"
+                  class="w-full sm:w-auto px-3 sm:px-4 py-2 bg-teal text-white rounded-xl text-sm font-bold border-0 cursor-pointer hover:opacity-90 transition-all flex-shrink-0"
                   data-event-id="${ev.event_id}">
                   ${i18n.checkinBanner}
                 </button>
