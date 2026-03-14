@@ -35,6 +35,12 @@ export interface BoardItem {
   tags: string[];
   labels: Label[];
   due_date: string | null;
+  baseline_date: string | null;
+  forecast_date: string | null;
+  actual_completion_date: string | null;
+  mirror_source_id: string | null;
+  mirror_target_id: string | null;
+  is_mirror: boolean;
   position: number;
   attachments: Attachment[];
   checklist: ChecklistItem[];
@@ -72,6 +78,14 @@ export interface Attachment {
 export interface ChecklistItem {
   text: string;
   done: boolean;
+  // W141: Extended fields from board_item_checklists table
+  id?: string;
+  assigned_to?: string | null;
+  assigned_name?: string | null;
+  target_date?: string | null;
+  completed_at?: string | null;
+  completed_by?: string | null;
+  completed_by_name?: string | null;
 }
 
 export type CurationStatus = 'draft' | 'review' | 'approved' | 'rejected';
