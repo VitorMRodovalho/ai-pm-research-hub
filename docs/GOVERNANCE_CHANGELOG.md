@@ -468,4 +468,18 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-032: W134c — Banner de alerta de risco de dropout
+
+**Data:** 2026-03-15
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Aplicado em produção
+
+**Decisão:** Implementar banner de alerta na /workspace mostrando membros em risco de dropout (3+ reuniões consecutivas sem presença). Visível para GP e líderes de tribo. Líderes veem apenas membros da própria tribo.
+
+**Justificativa:** Dados históricos mostram 3 ondas de dropout previsíveis (no-show 1ª semana, fadiga do meio, recuperação pré-encerramento). Detectar membros com 3 faltas consecutivas permite intervenção antes da perda se consolidar. Threshold configurável via site_config.attendance_risk_threshold.
+
+**Impacto técnico:** RPC `get_dropout_risk_members` com CROSS JOIN LATERAL para calcular eventos esperados por membro × presenças reais. React component DropoutRiskBanner com toggle expandível. Migration `20260319100038`.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisão deve ter Data, Autor, Status, Decisão, Justificativa, e Impacto técnico quando aplicável. Propostas pendentes requerem aprovação da Liderança dos Capítulos conforme Seção 7 do Manual R2.*
