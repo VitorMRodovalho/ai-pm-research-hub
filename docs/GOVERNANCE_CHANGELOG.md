@@ -398,4 +398,18 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-027: Importação histórica de attendance — 750 registros (Ciclo 1, 2 e kickoff C3)
+
+**Data:** 2026-03-15
+**Autor:** Vitor Rodovalho (via Claude Code — Supabase API)
+**Status:** Aplicado em produção
+
+**Decisão:** Importar dados históricos de presença de planilha Excel (Nucleo_AI_2025_Participantes.xlsx) e screenshots de Google Meet do kickoff C3, cobrindo fevereiro a dezembro de 2025.
+
+**Justificativa:** A tabela attendance tinha apenas 38 registros manuais, insuficiente para calcular métricas de engajamento, retenção e participação por tribo/ciclo. Sem dados históricos, KPIs como taxa de presença e impact_hours ficam imprecisos. A importação cobre 95 eventos criados e 41 participantes do kickoff C3.
+
+**Impacto técnico:** INSERT de 750 attendance records (era 38, aumento de 18.7x). 95 eventos cobertos: 24 Geral C1, 8 Geral C2, 3 Liderança C2, 29 Tribo 3, 17 Tribo 4, 5 Tribo 5, 15 Tribo 6. 35 membros únicos C1/C2 + 41 kickoff C3. ON CONFLICT DO NOTHING para idempotência.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisão deve ter Data, Autor, Status, Decisão, Justificativa, e Impacto técnico quando aplicável. Propostas pendentes requerem aprovação da Liderança dos Capítulos conforme Seção 7 do Manual R2.*
