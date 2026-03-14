@@ -240,6 +240,48 @@ const WK = {
         return;
       }
 
+      // ── Helpers (must be before loadWorkspaceData to avoid TDZ) ──
+      function escHtml(s: string): string {
+        const d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+      }
+
+      function getTribeColor(tribeId: number): string {
+        const colors: Record<number, string> = {
+          1: '#00799E', 2: '#00799E', 3: '#FF610F', 4: '#FF610F',
+          5: '#4F17A8', 6: '#4F17A8', 7: '#10B981', 8: '#10B981',
+        };
+        return colors[tribeId] || '#94A3B8';
+      }
+
+      const TIER_RANK: Record<string, number> = {
+        visitor: 0, member: 1, observer: 2, leader: 3, admin: 4, superadmin: 5,
+      };
+
+      function resolveTier(m: any): string {
+        if (m.is_superadmin) return 'superadmin';
+        const role = m.operational_role || m.role || 'guest';
+        const map: Record<string, string> = {
+          manager: 'admin', deputy_manager: 'admin',
+          tribe_leader: 'leader', facilitator: 'leader',
+          researcher: 'member', communicator: 'member',
+          guest: 'member',
+        };
+        return map[role] || 'member';
+      }
+
+      function checkSubprojectAccess(
+        sp: { minTier: string; designations: string[] },
+        tier: string,
+        desig: string[],
+        opRole: string
+      ): boolean {
+        const meetsTier = (TIER_RANK[tier] || 0) >= (TIER_RANK[sp.minTier] || 0);
+        const hasDesig = sp.designations.length > 0 && sp.designations.some(d => desig.includes(d));
+        return meetsTier || hasDesig;
+      }
+
       let _wsLoaded = false;
       async function onMemberReady() {
         if (_wsLoaded) return;
@@ -636,48 +678,6 @@ const WK = {
 
       // ── Start loading ──
       await loadWorkspaceData();
-
-      // ── Helpers ──
-      function escHtml(s: string): string {
-        const d = document.createElement('div');
-        d.textContent = s;
-        return d.innerHTML;
-      }
-
-      function getTribeColor(tribeId: number): string {
-        const colors: Record<number, string> = {
-          1: '#00799E', 2: '#00799E', 3: '#FF610F', 4: '#FF610F',
-          5: '#4F17A8', 6: '#4F17A8', 7: '#10B981', 8: '#10B981',
-        };
-        return colors[tribeId] || '#94A3B8';
-      }
-
-      const TIER_RANK: Record<string, number> = {
-        visitor: 0, member: 1, observer: 2, leader: 3, admin: 4, superadmin: 5,
-      };
-
-      function resolveTier(m: any): string {
-        if (m.is_superadmin) return 'superadmin';
-        const role = m.operational_role || m.role || 'guest';
-        const map: Record<string, string> = {
-          manager: 'admin', deputy_manager: 'admin',
-          tribe_leader: 'leader', facilitator: 'leader',
-          researcher: 'member', communicator: 'member',
-          guest: 'member',
-        };
-        return map[role] || 'member';
-      }
-
-      function checkSubprojectAccess(
-        sp: { minTier: string; designations: string[] },
-        tier: string,
-        desig: string[],
-        opRole: string
-      ): boolean {
-        const meetsTier = (TIER_RANK[tier] || 0) >= (TIER_RANK[sp.minTier] || 0);
-        const hasDesig = sp.designations.length > 0 && sp.designations.some(d => desig.includes(d));
-        return meetsTier || hasDesig;
-      }
     })();
   </script>
 </BaseLayout>
