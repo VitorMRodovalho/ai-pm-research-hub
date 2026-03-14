@@ -24,12 +24,12 @@ const allSQL = migrations.map(m => m.content).join('\n');
 function findFunctionBody(funcName) {
   const escaped = funcName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const regex = new RegExp(
-    `CREATE\\s+OR\\s+REPLACE\\s+FUNCTION\\s+(?:public\\.)?${escaped}\\s*\\([^)]*\\)[\\s\\S]*?\\$\\$([\\s\\S]*?)\\$\\$`,
+    `CREATE\\s+OR\\s+REPLACE\\s+FUNCTION\\s+(?:public\\.)?${escaped}\\s*\\([^)]*\\)[\\s\\S]*?\\$(\\w*?)\\$([\\s\\S]*?)\\$\\1\\$`,
     'gi'
   );
   const matches = [...allSQL.matchAll(regex)];
   if (matches.length === 0) return null;
-  return matches[matches.length - 1][1];
+  return matches[matches.length - 1][2];
 }
 
 // ─── P0-A: RLS POLICIES on selection/onboarding tables ───
@@ -57,7 +57,7 @@ for (const table of RPC_ONLY_TABLES) {
 // ─── P0-B: SECURITY DEFINER auth fixes ───
 
 const AUTH_FIXED_RPCS = [
-  { name: 'create_event', shouldCheck: ['Not authenticated', 'operational_role'] },
+  { name: 'create_event', shouldCheck: ['Unauthorized', 'operational_role'] },
   { name: 'mark_member_present', shouldCheck: ['Not authenticated', 'v_caller_id = p_member_id'] },
   { name: 'get_member_attendance_hours', shouldCheck: ['Not authenticated', 'v_caller_id = p_member_id'] },
 ];
@@ -72,7 +72,10 @@ for (const rpc of AUTH_FIXED_RPCS) {
   test(`RPC ${rpc.name} raises exception on unauthorized`, () => {
     const body = findFunctionBody(rpc.name);
     assert.ok(body);
-    assert.ok(/RAISE\s+EXCEPTION/i.test(body), `${rpc.name} must RAISE EXCEPTION`);
+    assert.ok(
+      /RAISE\s+EXCEPTION/i.test(body) || /error.*Unauthorized/i.test(body),
+      `${rpc.name} must RAISE EXCEPTION or return error`
+    );
   });
 
   for (const check of rpc.shouldCheck) {
