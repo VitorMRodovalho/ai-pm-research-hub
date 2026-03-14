@@ -302,36 +302,48 @@ const langCode = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
     }
 
     // First-login onboarding modal — only for truly new members
-    // Uses DB column onboarding_dismissed_at (persisted) instead of sessionStorage
-    if (member && !member.profile_completed_at && !member.onboarding_dismissed_at) {
-      const $modal = document.getElementById('onb-modal-backdrop');
-      const $title = document.getElementById('onb-modal-title');
-      const $role = document.getElementById('onb-modal-role');
+    // Query DB directly to check dismiss state (don't trust cached member object)
+    if (member && !member.profile_completed_at) {
+      let shouldShowPopup = false;
+      try {
+        const { data: dismissRow } = await sb.from('members')
+          .select('onboarding_dismissed_at')
+          .eq('auth_id', (await sb.auth.getUser()).data.user?.id)
+          .maybeSingle();
+        shouldShowPopup = !dismissRow?.onboarding_dismissed_at;
+      } catch (_) {
+        // If query fails, don't show popup (safe default)
+        shouldShowPopup = false;
+      }
 
-      if ($modal && $title && $role) {
-        const welcomeText = langCode === 'en' ? `Welcome to the Hub, ${member.name}!`
-          : langCode === 'es' ? `¡Bienvenido al Núcleo, ${member.name}!`
-          : `Bem-vindo ao Núcleo, ${member.name}!`;
+      if (shouldShowPopup) {
+        const $modal = document.getElementById('onb-modal-backdrop');
+        const $title = document.getElementById('onb-modal-title');
+        const $role = document.getElementById('onb-modal-role');
 
-        const roleLabel = member.operational_role || 'researcher';
-        const tribeId = member.tribe_id || '?';
-        const roleText = langCode === 'en' ? `You are a ${roleLabel} in Tribe ${tribeId}`
-          : langCode === 'es' ? `Eres ${roleLabel} en la Tribu ${tribeId}`
-          : `Você é ${roleLabel} na Tribo ${tribeId}`;
+        if ($modal && $title && $role) {
+          const welcomeText = langCode === 'en' ? `Welcome to the Hub, ${member.name}!`
+            : langCode === 'es' ? `¡Bienvenido al Núcleo, ${member.name}!`
+            : `Bem-vindo ao Núcleo, ${member.name}!`;
 
-        $title.textContent = welcomeText;
-        $role.textContent = roleText;
-        $modal.classList.remove('hidden');
+          const roleLabel = member.operational_role || 'researcher';
+          const tribeId = member.tribe_id || '?';
+          const roleText = langCode === 'en' ? `You are a ${roleLabel} in Tribe ${tribeId}`
+            : langCode === 'es' ? `Eres ${roleLabel} en la Tribu ${tribeId}`
+            : `Você é ${roleLabel} na Tribo ${tribeId}`;
 
-        function dismissOnboarding() {
-          $modal.classList.add('hidden');
-          // Persist dismiss in DB so it never shows again
-          const sb = window.navGetSb?.();
-          if (sb) sb.rpc('dismiss_onboarding').catch((e) => console.warn('dismiss_onboarding failed:', e));
+          $title.textContent = welcomeText;
+          $role.textContent = roleText;
+          $modal.classList.remove('hidden');
+
+          function dismissOnboarding() {
+            $modal.classList.add('hidden');
+            sb.rpc('dismiss_onboarding').catch((e) => console.warn('dismiss_onboarding failed:', e));
+          }
+
+          document.getElementById('onb-modal-dismiss')?.addEventListener('click', dismissOnboarding);
+          document.getElementById('onb-modal-cta')?.addEventListener('click', dismissOnboarding);
         }
-
-        document.getElementById('onb-modal-dismiss')?.addEventListener('click', dismissOnboarding);
-        document.getElementById('onb-modal-cta')?.addEventListener('click', dismissOnboarding);
       }
     }
 

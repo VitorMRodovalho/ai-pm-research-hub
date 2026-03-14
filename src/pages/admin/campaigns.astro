@@ -7,7 +7,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import AdminNav from '../../components/nav/AdminNav.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 
-const lang: Lang = getLangFromURL(Astro.url) ?? 'pt-BR';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
 <BaseLayout activePage="admin" title={t('campaigns.title', lang)}>
