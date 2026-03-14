@@ -11,7 +11,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   <div class="max-w-[1200px] mx-auto px-4 pt-6">
     <AdminNav activeSub="sustainability" lang={lang} />
   </div>
-  <div class="max-w-[900px] mx-auto px-4 pb-12">
+  <div class="max-w-[1100px] mx-auto px-4 pb-12">
     <div id="sust-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
       <div class="text-3xl mb-3">&#x1F512;</div>
       <p class="font-semibold text-amber-800">{t('sustainability.denied', lang)}</p>
@@ -19,64 +19,149 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     </div>
 
     <div id="sust-panel" class="hidden space-y-6">
-      <div class="mb-6">
-        <h1 class="text-2xl font-extrabold text-navy">{t('sustainability.title', lang)}</h1>
-        <p class="text-sm text-[var(--text-secondary)] mt-1">{t('sustainability.subtitle', lang)}</p>
-      </div>
-
-      <!-- Phase indicator -->
-      <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
-        <span class="text-xl">&#x1F4CB;</span>
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-2">
         <div>
-          <p class="text-sm font-bold text-blue-800">{t('sustainability.designPhase', lang)}</p>
-          <p class="text-[.75rem] text-blue-600 mt-0.5">{t('sustainability.designPhaseDesc', lang)}</p>
+          <h1 class="text-2xl font-extrabold text-navy">{t('sustainability.title', lang)}</h1>
+          <p class="text-sm text-[var(--text-secondary)] mt-1">{t('sustainability.subtitle', lang)}</p>
+        </div>
+        <div class="flex gap-2">
+          <button id="btn-add-cost" class="px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold hover:opacity-90 cursor-pointer hidden">
+            {t('sustainability.addCost', lang)}
+          </button>
+          <button id="btn-add-revenue" class="px-4 py-2 bg-teal text-white rounded-xl text-sm font-semibold hover:opacity-90 cursor-pointer hidden">
+            {t('sustainability.addRevenue', lang)}
+          </button>
         </div>
       </div>
 
-      <!-- 4 Pillars -->
+      <!-- Overview Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3" id="overview-cards">
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+          <p class="text-[.68rem] text-[var(--text-muted)] uppercase tracking-wider">{t('sustainability.totalCosts', lang)}</p>
+          <p class="text-xl font-extrabold text-navy mt-1" id="kpi-total-costs">R$ 0</p>
+        </div>
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+          <p class="text-[.68rem] text-[var(--text-muted)] uppercase tracking-wider">{t('sustainability.totalRevenue', lang)}</p>
+          <p class="text-xl font-extrabold text-teal mt-1" id="kpi-total-revenue">R$ 0</p>
+        </div>
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+          <p class="text-[.68rem] text-[var(--text-muted)] uppercase tracking-wider">{t('sustainability.costPerMember', lang)}</p>
+          <p class="text-xl font-extrabold text-navy mt-1" id="kpi-cost-per-member">R$ 0</p>
+        </div>
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+          <p class="text-[.68rem] text-[var(--text-muted)] uppercase tracking-wider">{t('sustainability.infraZeroCost', lang)}</p>
+          <p class="text-xl font-extrabold text-green-600 mt-1" id="kpi-infra-zero">100%</p>
+        </div>
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+          <p class="text-[.68rem] text-[var(--text-muted)] uppercase tracking-wider">{t('sustainability.activeMembers', lang)}</p>
+          <p class="text-xl font-extrabold text-navy mt-1" id="kpi-active-members">0</p>
+        </div>
+      </div>
+
+      <!-- Costs + Revenue Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Costs by Category -->
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
-          <div class="flex items-center gap-2 mb-2">
-            <span class="text-xl">&#x1F3EB;</span>
-            <h3 class="text-sm font-bold text-navy">{t('sustainability.pillar.academic', lang)}</h3>
-          </div>
-          <p class="text-[.75rem] text-[var(--text-secondary)]">{t('sustainability.pillar.academicDesc', lang)}</p>
-          <div class="mt-3 px-3 py-1.5 bg-[var(--surface-section-cool)] rounded-lg text-[.68rem] text-[var(--text-muted)] font-medium">
-            Status: {t('sustainability.statusPlanning', lang)}
+          <h2 class="text-sm font-bold text-navy mb-3">{t('sustainability.costs', lang)}</h2>
+          <div id="costs-list" class="space-y-2">
+            <p class="text-[.75rem] text-[var(--text-muted)]">{t('sustainability.noRecords', lang)}</p>
           </div>
         </div>
 
+        <!-- Revenue by Category -->
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
-          <div class="flex items-center gap-2 mb-2">
-            <span class="text-xl">&#x1F916;</span>
-            <h3 class="text-sm font-bold text-navy">{t('sustainability.pillar.aiLicenses', lang)}</h3>
-          </div>
-          <p class="text-[.75rem] text-[var(--text-secondary)]">{t('sustainability.pillar.aiLicensesDesc', lang)}</p>
-          <div class="mt-3 px-3 py-1.5 bg-[var(--surface-section-cool)] rounded-lg text-[.68rem] text-[var(--text-muted)] font-medium">
-            Status: {t('sustainability.statusPlanning', lang)}
+          <h2 class="text-sm font-bold text-navy mb-3">{t('sustainability.revenue', lang)}</h2>
+          <div id="revenue-list" class="space-y-2">
+            <p class="text-[.75rem] text-[var(--text-muted)]">{t('sustainability.noRecords', lang)}</p>
           </div>
         </div>
+      </div>
 
-        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
-          <div class="flex items-center gap-2 mb-2">
-            <span class="text-xl">&#x1F91D;</span>
-            <h3 class="text-sm font-bold text-navy">{t('sustainability.pillar.sponsorships', lang)}</h3>
+      <!-- KPIs -->
+      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
+        <h2 class="text-sm font-bold text-navy mb-3">{t('sustainability.kpis', lang)}</h2>
+        <div id="kpis-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <p class="text-[.75rem] text-[var(--text-muted)]">{t('sustainability.noRecords', lang)}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cost Entry Modal -->
+    <div id="modal-cost" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div class="bg-[var(--surface-card)] rounded-2xl p-6 w-full max-w-md shadow-xl border border-[var(--border-default)]">
+        <h3 class="text-lg font-bold text-navy mb-4">{t('sustainability.addCost', lang)}</h3>
+        <div class="space-y-3">
+          <div>
+            <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">{t('sustainability.category', lang)}</label>
+            <select id="cost-category" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]"></select>
           </div>
-          <p class="text-[.75rem] text-[var(--text-secondary)]">{t('sustainability.pillar.sponsorshipsDesc', lang)}</p>
-          <div class="mt-3 px-3 py-1.5 bg-[var(--surface-section-cool)] rounded-lg text-[.68rem] text-[var(--text-muted)] font-medium">
-            Status: {t('sustainability.statusPlanning', lang)}
+          <div>
+            <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">{t('sustainability.description', lang)}</label>
+            <input id="cost-description" type="text" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]" />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">{t('sustainability.amount', lang)}</label>
+              <input id="cost-amount" type="number" step="0.01" min="0" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]" />
+            </div>
+            <div>
+              <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">{t('sustainability.date', lang)}</label>
+              <input id="cost-date" type="date" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]" />
+            </div>
+          </div>
+          <div>
+            <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">{t('sustainability.paidBy', lang)}</label>
+            <select id="cost-paid-by" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]">
+              <option value="zero_cost">Zero-cost (gratuito)</option>
+              <option value="chapter_pmigo">PMIGo Chapter</option>
+              <option value="member">Membro</option>
+              <option value="sponsor">Sponsor</option>
+            </select>
           </div>
         </div>
+        <div class="flex justify-end gap-2 mt-5">
+          <button id="btn-cancel-cost" class="px-4 py-2 border border-[var(--border-default)] rounded-xl text-sm font-semibold cursor-pointer bg-transparent text-[var(--text-primary)]">{t('sustainability.cancel', lang)}</button>
+          <button id="btn-save-cost" class="px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold cursor-pointer hover:opacity-90">{t('sustainability.save', lang)}</button>
+        </div>
+      </div>
+    </div>
 
-        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
-          <div class="flex items-center gap-2 mb-2">
-            <span class="text-xl">&#x1F4B0;</span>
-            <h3 class="text-sm font-bold text-navy">{t('sustainability.pillar.grants', lang)}</h3>
+    <!-- Revenue Entry Modal -->
+    <div id="modal-revenue" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div class="bg-[var(--surface-card)] rounded-2xl p-6 w-full max-w-md shadow-xl border border-[var(--border-default)]">
+        <h3 class="text-lg font-bold text-navy mb-4">{t('sustainability.addRevenue', lang)}</h3>
+        <div class="space-y-3">
+          <div>
+            <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">{t('sustainability.category', lang)}</label>
+            <select id="rev-category" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]"></select>
           </div>
-          <p class="text-[.75rem] text-[var(--text-secondary)]">{t('sustainability.pillar.grantsDesc', lang)}</p>
-          <div class="mt-3 px-3 py-1.5 bg-[var(--surface-section-cool)] rounded-lg text-[.68rem] text-[var(--text-muted)] font-medium">
-            Status: {t('sustainability.statusPlanning', lang)}
+          <div>
+            <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">{t('sustainability.description', lang)}</label>
+            <input id="rev-description" type="text" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]" />
           </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">{t('sustainability.amount', lang)}</label>
+              <input id="rev-amount" type="number" step="0.01" min="0" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]" />
+            </div>
+            <div>
+              <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">{t('sustainability.date', lang)}</label>
+              <input id="rev-date" type="date" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]" />
+            </div>
+          </div>
+          <div>
+            <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">{t('sustainability.valueType', lang)}</label>
+            <select id="rev-value-type" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]">
+              <option value="monetary">{t('sustainability.monetary', lang)}</option>
+              <option value="reputational">{t('sustainability.reputational', lang)}</option>
+              <option value="qualitative">{t('sustainability.qualitative', lang)}</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 mt-5">
+          <button id="btn-cancel-rev" class="px-4 py-2 border border-[var(--border-default)] rounded-xl text-sm font-semibold cursor-pointer bg-transparent text-[var(--text-primary)]">{t('sustainability.cancel', lang)}</button>
+          <button id="btn-save-rev" class="px-4 py-2 bg-teal text-white rounded-xl text-sm font-semibold cursor-pointer hover:opacity-90">{t('sustainability.save', lang)}</button>
         </div>
       </div>
     </div>
@@ -87,6 +172,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 </BaseLayout>
 
 <script>
+  let dashData: any = null;
+  let canWrite = false;
+
   async function boot() {
     const sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(boot, 200); return; }
@@ -114,8 +202,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const desigs: string[] = m?.designations || [];
     const isAdmin = m?.is_superadmin || m?.rank >= 4;
     const hasSponsor = desigs.includes('sponsor') || desigs.includes('chapter_liaison') || desigs.includes('curator');
-    if (isAdmin || hasSponsor) showPanel();
-    else showDenied();
+    if (isAdmin || hasSponsor) {
+      canWrite = m?.is_superadmin || m?.operational_role === 'manager' || m?.operational_role === 'deputy_manager';
+      showPanel();
+      loadDashboard();
+    } else {
+      showDenied();
+    }
   }
 
   function showDenied() {
@@ -128,7 +221,176 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     document.getElementById('sust-loading')?.classList.add('hidden');
     document.getElementById('sust-denied')?.classList.add('hidden');
     document.getElementById('sust-panel')?.classList.remove('hidden');
+    if (canWrite) {
+      document.getElementById('btn-add-cost')?.classList.remove('hidden');
+      document.getElementById('btn-add-revenue')?.classList.remove('hidden');
+    }
   }
+
+  async function loadDashboard() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+
+    const { data, error } = await sb.rpc('get_sustainability_dashboard', { p_cycle: 3 });
+    if (error) { console.error('Dashboard error:', error); return; }
+    dashData = data;
+    renderDashboard(data);
+  }
+
+  function fmt(v: number | null) {
+    if (v === null || v === undefined) return 'R$ 0';
+    return `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
+  function renderDashboard(d: any) {
+    // KPI cards
+    const el = (id: string) => document.getElementById(id);
+    if (el('kpi-total-costs')) el('kpi-total-costs')!.textContent = fmt(d.total_costs);
+    if (el('kpi-total-revenue')) el('kpi-total-revenue')!.textContent = fmt(d.total_revenue);
+    if (el('kpi-cost-per-member')) el('kpi-cost-per-member')!.textContent = fmt(d.cost_per_member);
+    if (el('kpi-infra-zero')) el('kpi-infra-zero')!.textContent = `${d.infra_zero_cost_pct}%`;
+    if (el('kpi-active-members')) el('kpi-active-members')!.textContent = String(d.active_members);
+
+    // Costs by category
+    const costsEl = el('costs-list');
+    if (costsEl && Array.isArray(d.costs_by_category)) {
+      const hasData = d.costs_by_category.some((c: any) => c.count > 0);
+      if (hasData) {
+        costsEl.innerHTML = d.costs_by_category
+          .filter((c: any) => c.count > 0)
+          .map((c: any) => `
+            <div class="flex items-center justify-between py-2 border-b border-[var(--border-default)] last:border-0">
+              <div>
+                <p class="text-[.78rem] font-semibold text-[var(--text-primary)]">${escH(c.description)}</p>
+                <p class="text-[.68rem] text-[var(--text-muted)]">${c.count} registro(s)</p>
+              </div>
+              <p class="text-sm font-bold text-navy">${fmt(c.total)}</p>
+            </div>
+          `).join('');
+      }
+    }
+
+    // Revenue by category
+    const revEl = el('revenue-list');
+    if (revEl && Array.isArray(d.revenue_by_category)) {
+      const hasData = d.revenue_by_category.some((c: any) => c.count > 0);
+      if (hasData) {
+        revEl.innerHTML = d.revenue_by_category
+          .filter((c: any) => c.count > 0)
+          .map((c: any) => {
+            const badge = c.value_type === 'monetary' ? 'bg-green-100 text-green-800'
+              : c.value_type === 'reputational' ? 'bg-blue-100 text-blue-800'
+              : 'bg-purple-100 text-purple-800';
+            return `
+              <div class="flex items-center justify-between py-2 border-b border-[var(--border-default)] last:border-0">
+                <div>
+                  <p class="text-[.78rem] font-semibold text-[var(--text-primary)]">${escH(c.description)}</p>
+                  <span class="text-[.62rem] px-2 py-0.5 rounded-full ${badge} font-medium">${c.value_type}</span>
+                </div>
+                <p class="text-sm font-bold text-teal">${c.value_type === 'monetary' ? fmt(c.total) : `${c.count} item(s)`}</p>
+              </div>
+            `;
+          }).join('');
+      }
+    }
+
+    // KPIs
+    const kpisEl = el('kpis-list');
+    if (kpisEl && Array.isArray(d.kpis) && d.kpis.length) {
+      kpisEl.innerHTML = d.kpis.map((k: any) => {
+        const targetStr = k.target !== null ? `${k.target} ${k.unit || ''}` : 'A definir';
+        const currentStr = k.current !== null ? `${k.current} ${k.unit || ''}` : '—';
+        return `
+          <div class="bg-[var(--surface-section-cool)] rounded-lg p-3">
+            <p class="text-[.72rem] font-bold text-navy">${escH(k.name.replace(/_/g, ' '))}</p>
+            <div class="flex justify-between mt-2 text-[.68rem]">
+              <span class="text-[var(--text-muted)]">Meta: <span class="font-semibold text-[var(--text-primary)]">${escH(targetStr)}</span></span>
+              <span class="text-[var(--text-muted)]">Atual: <span class="font-semibold text-[var(--text-primary)]">${escH(currentStr)}</span></span>
+            </div>
+            ${k.notes ? `<p class="text-[.62rem] text-[var(--text-muted)] mt-1">${escH(k.notes)}</p>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Populate category dropdowns for modals
+    populateCategoryDropdowns(d);
+  }
+
+  function populateCategoryDropdowns(d: any) {
+    const costSel = document.getElementById('cost-category') as HTMLSelectElement | null;
+    if (costSel && Array.isArray(d.costs_by_category)) {
+      costSel.innerHTML = d.costs_by_category.map((c: any) =>
+        `<option value="${escH(c.category)}">${escH(c.description)}</option>`
+      ).join('');
+    }
+    const revSel = document.getElementById('rev-category') as HTMLSelectElement | null;
+    if (revSel && Array.isArray(d.revenue_by_category)) {
+      revSel.innerHTML = d.revenue_by_category.map((c: any) =>
+        `<option value="${escH(c.category)}">${escH(c.description)}</option>`
+      ).join('');
+    }
+  }
+
+  function escH(s: string) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  // Modal handlers
+  document.getElementById('btn-add-cost')?.addEventListener('click', () => {
+    const dateEl = document.getElementById('cost-date') as HTMLInputElement;
+    if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+    document.getElementById('modal-cost')?.classList.remove('hidden');
+  });
+  document.getElementById('btn-cancel-cost')?.addEventListener('click', () => {
+    document.getElementById('modal-cost')?.classList.add('hidden');
+  });
+  document.getElementById('btn-add-revenue')?.addEventListener('click', () => {
+    const dateEl = document.getElementById('rev-date') as HTMLInputElement;
+    if (dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+    document.getElementById('modal-revenue')?.classList.remove('hidden');
+  });
+  document.getElementById('btn-cancel-rev')?.addEventListener('click', () => {
+    document.getElementById('modal-revenue')?.classList.add('hidden');
+  });
+
+  document.getElementById('btn-save-cost')?.addEventListener('click', async () => {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    const cat = (document.getElementById('cost-category') as HTMLSelectElement)?.value;
+    const desc = (document.getElementById('cost-description') as HTMLInputElement)?.value?.trim();
+    const amt = parseFloat((document.getElementById('cost-amount') as HTMLInputElement)?.value || '0');
+    const date = (document.getElementById('cost-date') as HTMLInputElement)?.value;
+    const paidBy = (document.getElementById('cost-paid-by') as HTMLSelectElement)?.value;
+    if (!desc || !amt || !date) { (window as any).toast?.('Preencha todos os campos', 'error'); return; }
+    const { error } = await sb.rpc('create_cost_entry', {
+      p_category_name: cat, p_description: desc, p_amount_brl: amt, p_date: date, p_paid_by: paidBy
+    });
+    if (error) { (window as any).toast?.(error.message, 'error'); return; }
+    (window as any).toast?.('Custo registrado!', 'success');
+    document.getElementById('modal-cost')?.classList.add('hidden');
+    loadDashboard();
+  });
+
+  document.getElementById('btn-save-rev')?.addEventListener('click', async () => {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    const cat = (document.getElementById('rev-category') as HTMLSelectElement)?.value;
+    const desc = (document.getElementById('rev-description') as HTMLInputElement)?.value?.trim();
+    const amt = parseFloat((document.getElementById('rev-amount') as HTMLInputElement)?.value || '0');
+    const date = (document.getElementById('rev-date') as HTMLInputElement)?.value;
+    const valType = (document.getElementById('rev-value-type') as HTMLSelectElement)?.value;
+    if (!desc || !date) { (window as any).toast?.('Preencha todos os campos', 'error'); return; }
+    const { error } = await sb.rpc('create_revenue_entry', {
+      p_category_name: cat, p_description: desc, p_date: date, p_value_type: valType, p_amount_brl: amt || null
+    });
+    if (error) { (window as any).toast?.(error.message, 'error'); return; }
+    (window as any).toast?.('Receita registrada!', 'success');
+    document.getElementById('modal-revenue')?.classList.add('hidden');
+    loadDashboard();
+  });
 
   boot();
 </script>
