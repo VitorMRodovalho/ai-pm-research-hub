@@ -1814,6 +1814,13 @@ const enUS: Record<string, string> = {
   'admin.webinars.msg.deleteError': 'Error removing webinar',
   'nav.adminWebinars': 'Webinars',
 
+  // ── Tribe Dashboard ──
+  'nav.adminTribeDashboard': 'Tribe Dashboard',
+  'tribeDashboard.title': 'Dashboard — Tribe',
+  'tribeDashboard.denied': 'Tribe dashboard access restricted.',
+  'tribeDashboard.back': 'Back to Admin',
+  'wk.tribeDashboard': 'Tribe Dashboard',
+
   // ── Workspace Onboarding ──
   'wk.sectionOnboarding': 'Onboarding — Your Steps',
   'wk.onbProgress': 'steps completed',

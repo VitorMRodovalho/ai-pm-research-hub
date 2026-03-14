@@ -15,6 +15,7 @@ const ADMIN_LINKS = [
   { key: 'comms',     labelKey: 'nav.adminComms',      href: '/admin/comms',     minTier: 'admin' as const, allowedDesignations: ['comms_leader', 'comms_member'] },
   { key: 'curatorship', labelKey: 'nav.adminCuratorship', href: '/admin/curatorship', minTier: 'observer' as const },
   { key: 'cycle-report', labelKey: 'nav.adminCycleReport', href: '/admin/cycle-report', minTier: 'admin' as const, allowedDesignations: ['sponsor', 'chapter_liaison'] },
+  { key: 'tribe-dashboard', labelKey: 'nav.adminTribeDashboard', href: '/admin/tribe/1', minTier: 'leader' as const, allowedDesignations: ['sponsor', 'chapter_liaison'] },
   { key: 'selection', labelKey: 'nav.adminSelection', href: '/admin/selection', minTier: 'admin' as const },
   { key: 'chapter-report', labelKey: 'nav.adminChapterReport', href: '/admin/chapter-report', minTier: 'observer' as const, allowedDesignations: ['sponsor', 'chapter_liaison'] },
   { key: 'sustainability', labelKey: 'nav.adminSustainability', href: '/admin/sustainability', minTier: 'admin' as const, allowedDesignations: ['sponsor', 'chapter_liaison', 'curator'] },
@@ -62,6 +63,11 @@ const adminLinksJson = JSON.stringify(ADMIN_LINKS);
       const meetsMinTier = (TIER_RANK[tier] ?? 0) >= (TIER_RANK[link.minTier as AccessTier] ?? 0);
       const hasDesig = link.allowedDesignations?.some((d: string) => desigs.includes(d)) ?? false;
       el.style.display = (meetsMinTier || hasDesig) ? '' : 'none';
+
+      // Resolve tribe dashboard link for tribe leaders
+      if (link.key === 'tribe-dashboard' && member.tribe_id) {
+        (el as HTMLAnchorElement).href = `/admin/tribe/${member.tribe_id}`;
+      }
     });
   }
 

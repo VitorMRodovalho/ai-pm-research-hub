@@ -1814,6 +1814,13 @@ const ptBR: Record<string, string> = {
   'admin.webinars.msg.deleteError': 'Erro ao remover',
   'nav.adminWebinars': 'Webinars',
 
+  // ── Tribe Dashboard ──
+  'nav.adminTribeDashboard': 'Dashboard de Tribo',
+  'tribeDashboard.title': 'Dashboard — Tribo',
+  'tribeDashboard.denied': 'Acesso restrito ao dashboard da tribo.',
+  'tribeDashboard.back': 'Voltar ao Admin',
+  'wk.tribeDashboard': 'Dashboard da Tribo',
+
   // ── Workspace Onboarding ──
   'wk.sectionOnboarding': 'Onboarding — Suas Etapas',
   'wk.onbProgress': 'etapas concluídas',
