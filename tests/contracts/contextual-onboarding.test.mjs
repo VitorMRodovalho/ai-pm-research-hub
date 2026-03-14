@@ -149,7 +149,7 @@ test('help page has onboarding modal', () => {
   const content = readFile('src/pages/help.astro');
   assert.ok(content.includes('onb-modal-backdrop'), 'Must have onboarding modal');
   assert.ok(content.includes('profile_completed_at'), 'Must check profile_completed_at');
-  assert.ok(content.includes('onb_dismissed'), 'Must support session dismissal');
+  assert.ok(content.includes('onboarding_dismissed_at'), 'Must check onboarding_dismissed_at from DB');
 });
 
 // ═══════════════════════════════════════════════════

@@ -99,7 +99,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'admin-blog', labelKey: 'nav.adminBlog', href: '/admin/blog', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['comms_team'] },
   { key: 'admin-settings',  labelKey: 'nav.adminSettings',  href: '/admin/settings', minTier: 'superadmin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin' },
   { key: 'notifications',   labelKey: 'nav.notifications', href: '/notifications',  minTier: 'member',   requiresAuth: true, section: 'main', group: 'member', navSlot: 'none' },
-  { key: 'help',            labelKey: 'nav.adminHelp',     href: '/help',           minTier: 'member',   requiresAuth: true, section: 'main', group: 'member', navSlot: 'none' },
+  { key: 'help',            labelKey: 'nav.adminHelp',     href: '/help',           minTier: 'member',   requiresAuth: true, section: 'both', group: 'member', navSlot: 'none', drawerSection: 'meu-espaco' },
 ];
 
 export function getItemAccessibility(
