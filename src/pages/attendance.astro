@@ -82,11 +82,17 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
               <select id="attendance-type-filter"
                       class="px-3 py-2.5 rounded-xl border-[1.5px] border-[var(--border-default)] text-sm bg-[var(--surface-input)] focus:outline-none focus:border-navy cursor-pointer">
                 <option value="">Todos os tipos</option>
-                <option value="webinar">Webinar</option>
-                <option value="tribe_meeting">Tribo</option>
                 <option value="general_meeting">Geral</option>
+                <option value="tribe_meeting">Tribo</option>
+                <option value="webinar">Webinar</option>
+                <option value="kickoff">Kickoff</option>
+                <option value="leadership_meeting">Liderança</option>
                 <option value="other">Outro</option>
               </select>
+              <label id="interview-toggle-wrapper" class="hidden items-center gap-1.5 text-[12px] text-[var(--text-secondary)] cursor-pointer select-none">
+                <input id="attendance-interview-toggle" type="checkbox" class="accent-navy w-3.5 h-3.5" />
+                Mostrar entrevistas
+              </label>
             </div>
           </div>
           <div class="p-5" id="events-list">
@@ -245,6 +251,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   let CAN_MANAGE = false;
   let CURRENT_EVENT_ID: string | null = null;
   let ALL_EVENTS: any[] = [];
+  let SHOW_INTERVIEWS = false;
+  const PAGE_SIZE = 20;
+  let VISIBLE_COUNT = PAGE_SIZE;
   const ATTENDANCE_ROUTE = {
     tab: 'events',
     query: '',
@@ -370,6 +379,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   function filteredEvents(): any[] {
     const query = ATTENDANCE_ROUTE.query.toLowerCase();
     return ALL_EVENTS.filter((ev: any) => {
+      // Hide interviews from non-managers; for managers, respect toggle
+      if (ev.type === 'interview') {
+        if (!CAN_MANAGE) return false;
+        if (!SHOW_INTERVIEWS) return false;
+      }
       const matchesType = !ATTENDANCE_ROUTE.type || ev.type === ATTENDANCE_ROUTE.type;
       const matchesQuery = !query
         || (ev.title || '').toLowerCase().includes(query)
@@ -409,6 +423,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     ATTENDANCE_ROUTE.edit = false;
     ATTENDANCE_ROUTE.autoOpened = true;
     ATTENDANCE_ROUTE.scrolled = true;
+    VISIBLE_COUNT = PAGE_SIZE;
     const searchInput = document.getElementById('attendance-search') as HTMLInputElement | null;
     const typeSelect = document.getElementById('attendance-type-filter') as HTMLSelectElement | null;
     if (searchInput) searchInput.value = '';
@@ -536,11 +551,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       return;
     }
 
-    const typeLabel: Record<string, string> = { tribe_meeting: I18N.eventTypeTribe, general_meeting: I18N.eventTypeGeneral, webinar: I18N.eventTypeWebinar, other: I18N.eventTypeOther };
+    const typeLabel: Record<string, string> = { tribe_meeting: I18N.eventTypeTribe, general_meeting: I18N.eventTypeGeneral, webinar: I18N.eventTypeWebinar, kickoff: 'Kickoff', leadership_meeting: 'Liderança', interview: 'Entrevista', other: I18N.eventTypeOther };
     const badgeClass: Record<string, string> = {
       tribe_meeting: 'bg-blue-50 text-navy',
       general_meeting: 'bg-green-50 text-green-800',
       webinar: 'bg-orange-50 text-amber-800',
+      kickoff: 'bg-purple-50 text-purple-800',
+      leadership_meeting: 'bg-indigo-50 text-indigo-800',
+      interview: 'bg-yellow-50 text-yellow-800',
       other: 'bg-blue-50 text-navy',
     };
     const audienceLabel: Record<string, string> = { leadership: I18N.audienceLeadership, tribe: I18N.audienceTribe, curators: I18N.audienceCurators };
@@ -556,7 +574,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       return `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${badgeClass[ev.type] || 'bg-blue-50 text-navy'}">${typeLabel[ev.type] || ev.type}</span>${rec}${focus}`;
     }
 
-    el.innerHTML = filtered.map((ev: any) => {
+    const paged = filtered.slice(0, VISIBLE_COUNT);
+    const hasMore = filtered.length > VISIBLE_COUNT;
+
+    el.innerHTML = paged.map((ev: any) => {
       const attIcon = ev.i_attended === true ? '✅' : ev.i_attended === false ? '❌' : '—';
       const attBg = ev.i_attended === true ? 'bg-green-100 text-green-800' : ev.i_attended === false ? 'bg-red-100 text-red-800' : 'bg-[var(--surface-section-cool)] text-[var(--text-secondary)]';
       const canEdit = CAN_MANAGE || ev.created_by === MEMBER.auth_id;
@@ -601,6 +622,16 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       </div>`;
     }).join('');
 
+    if (hasMore) {
+      el.innerHTML += `
+        <div class="text-center py-4">
+          <button type="button" class="px-5 py-2.5 rounded-xl text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer transition-colors"
+                  data-action="load-more-events">
+            Carregar mais (${filtered.length - VISIBLE_COUNT} restantes)
+          </button>
+        </div>`;
+    }
+
     maybeHandleFocusedEvent(filtered);
   }
 
@@ -608,7 +639,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const el = document.getElementById('events-list')!;
     el.innerHTML = loadingRows(3);
     try {
-      const { data } = await sb.rpc('get_events_with_attendance', { p_limit: 40, p_offset: 0 });
+      const { data } = await sb.rpc('get_events_with_attendance', { p_limit: 200, p_offset: 0 });
       ALL_EVENTS = data || [];
       renderEvents();
     } catch (e) {
@@ -649,6 +680,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           if (focused) openEditEvent(focused);
           break;
         }
+        case 'load-more-events':
+          VISIBLE_COUNT += PAGE_SIZE;
+          renderEvents();
+          break;
         case 'clear-event-filters':
           clearAttendanceFilters();
           break;
@@ -682,6 +717,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       if (target.id === 'rec-type') updateAudienceFromType('rec-audience', 'rec-type');
       if (target.id === 'attendance-type-filter') {
         ATTENDANCE_ROUTE.type = target.value;
+        VISIBLE_COUNT = PAGE_SIZE;
+        renderEvents();
+      }
+      if (target instanceof HTMLInputElement && target.id === 'attendance-interview-toggle') {
+        SHOW_INTERVIEWS = target.checked;
+        VISIBLE_COUNT = PAGE_SIZE;
         renderEvents();
       }
     });
@@ -692,6 +733,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       if (target.id === 'roster-search') rosterFilter(target.value);
       if (target.id === 'attendance-search') {
         ATTENDANCE_ROUTE.query = target.value.trim();
+        VISIBLE_COUNT = PAGE_SIZE;
         renderEvents();
       }
     });
@@ -1070,6 +1112,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     if (CAN_MANAGE) {
       document.getElementById('tab-new-event')?.classList.remove('hidden');
       document.getElementById('tab-recurring')?.classList.remove('hidden');
+      const interviewToggle = document.getElementById('interview-toggle-wrapper');
+      if (interviewToggle) { interviewToggle.classList.remove('hidden'); interviewToggle.classList.add('flex'); }
     }
     showApp();
     const routeTabBtn = document.querySelector(`[data-tab="${ATTENDANCE_ROUTE.tab}"]`) as HTMLElement | null;

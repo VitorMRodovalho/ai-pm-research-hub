@@ -510,4 +510,18 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-035: W136b — Events pagination + interview visibility filter
+
+**Data:** 2026-03-15
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Aplicado em produção
+
+**Decisão:** Adicionar paginação de 20 eventos por página na listagem de presenças com botão "Carregar mais". Esconder eventos do tipo `interview` (35 entrevistas de processo seletivo) de usuários não-gerentes. Gerentes/superadmin veem toggle "Mostrar entrevistas" (desligado por default). Adicionados filtros de tipo para kickoff e liderança.
+
+**Justificativa:** 148 eventos sem paginação degradam performance e UX. Entrevistas são dados sensíveis do processo seletivo e não devem ser visíveis para pesquisadores comuns. A regra de visibilidade usa `CAN_MANAGE` (tier >= leader) já existente.
+
+**Impacto técnico:** Modificado `attendance.astro` — `filteredEvents()` exclui `type='interview'` para não-gerentes, pagination via `VISIBLE_COUNT` + `PAGE_SIZE=20`, RPC limit aumentado de 40 para 200, novos tipos no dropdown (kickoff, leadership_meeting), toggle de entrevistas visível apenas para managers.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisão deve ter Data, Autor, Status, Decisão, Justificativa, e Impacto técnico quando aplicável. Propostas pendentes requerem aprovação da Liderança dos Capítulos conforme Seção 7 do Manual R2.*
