@@ -790,4 +790,18 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-058: W142 — GP Portfolio Dashboard
+
+**Data:** 2026-03-15
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Dashboard consolidado para o GP mostrando todos 56 entregaveis de lider das 8 tribos com Gantt, heatmap, filtros por tribo/tipo/status/saude/periodo, e cards de resumo por tribo.
+
+**Justificativa:** GP precisava de visao unica para todos entregaveis das tribos. Antes, era necessario visitar cada board individualmente. Dashboard permite decisoes data-driven em reunioes gerais e apresentacoes para sponsors.
+
+**Impacto tecnico:** RPC `get_portfolio_dashboard` com calculos de health/variance. Componente React `PortfolioDashboard` com 4 visoes (tabela, Gantt SVG, heatmap tribo x mes, cards de tribo). Zoom: Ano/Trimestre/Mes/Semana. Filtros: tribo, tipo, status, saude, quarter. Rota: `/admin/portfolio`.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*
