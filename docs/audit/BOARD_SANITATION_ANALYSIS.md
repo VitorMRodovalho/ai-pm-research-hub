@@ -252,3 +252,32 @@
 - `NEEDS-REVIEW`: Does not match any heuristic
 
 **Data source**: Supabase `board_items` joined with `project_boards` and `board_item_tag_assignments` + `tags`. Excludes `status = 'archived'`.
+
+---
+
+## 6. Sanitation Applied — Verification (2026-03-15)
+
+Migration `20260315120000_board_sanitation.sql` deployed to production. Results verified:
+
+| Board | Before | After (visible) | Archived | Status |
+|---|---|---|---|---|
+| T1: Radar Tecnológico | 6 | 6 | 0 | Clean |
+| T2: Agentes Autônomos | 4 | 4 | 0 | Clean |
+| T3: TMO & PMO do Futuro | 52 | 5 | 47 | Sanitized |
+| T4: Cultura & Change | 63 | 11 | 52 | Sanitized |
+| T5: Talentos & Upskilling | 8 | 8 | 0 | Clean |
+| T6: ROI & Portfólio | 150 | 8 | 142 | Sanitized |
+| T7: Governança & Trustworthy AI | 9 | 9 | 0 | Clean |
+| T8: Inclusão & Comunicação | 6 | 6 | 0 | Clean |
+| Hub de Comunicação | 46 | 46 | 0 | Tagged (20 ciclo-2) |
+| Publicações & Submissões PMI | 31 | 8 | 23 | Sanitized |
+| **Total** | **375** | **111** | **264** | |
+
+### Actions taken
+- 56 artifacts tagged `entregavel_lider` (red system tag)
+- T3: 21 task cards converted to checklist items inside 4 parent deliverables
+- T3: 47 items archived (18 converted tasks + 2 standalone tasks + 3 cycle-2 deliverables + 24 miro-import)
+- T4: 52 cycle-2 miro-import items archived
+- T6: 142 cycle-2 miro-import items archived
+- Publicações: 23 instruction/placeholder cards archived
+- Comms: 20 cycle-2 posts tagged with `ciclo-2` in text tags array
