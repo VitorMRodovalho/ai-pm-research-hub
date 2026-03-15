@@ -3,11 +3,17 @@ import assert from 'node:assert/strict';
 import { credlyTierFromPoints, aggregateCredlyByMember } from '../src/lib/gamification.js';
 
 test('credlyTierFromPoints maps known tier values', () => {
-  assert.equal(credlyTierFromPoints(50), 1);
-  assert.equal(credlyTierFromPoints(25), 2);
-  assert.equal(credlyTierFromPoints(15), 3);
-  assert.equal(credlyTierFromPoints(10), 4);
-  assert.equal(credlyTierFromPoints(30), 0);
+  // W143: ranges instead of exact values
+  assert.equal(credlyTierFromPoints(50), 1);  // cert_pmi_senior
+  assert.equal(credlyTierFromPoints(45), 1);  // cert_cpmai
+  assert.equal(credlyTierFromPoints(40), 2);  // cert_pmi_mid
+  assert.equal(credlyTierFromPoints(35), 2);  // cert_pmi_practitioner
+  assert.equal(credlyTierFromPoints(30), 2);  // cert_pmi_entry
+  assert.equal(credlyTierFromPoints(25), 2);  // specialization
+  assert.equal(credlyTierFromPoints(20), 3);  // trail / knowledge_ai_pm
+  assert.equal(credlyTierFromPoints(15), 3);  // course
+  assert.equal(credlyTierFromPoints(10), 4);  // badge
+  assert.equal(credlyTierFromPoints(5), 0);   // unknown
 });
 
 test('aggregateCredlyByMember groups totals and tier counters', () => {

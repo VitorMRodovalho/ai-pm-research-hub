@@ -804,4 +804,18 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-059: W143 — Gamification Category Reclassification
+
+**Data:** 2026-03-15
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Reclassificacao de todas as 210 entradas de gamificacao em taxonomia refinada: trail (20 XP, 7 cursos PMI obrigatorios), cert_pmi_senior (50), cert_cpmai (45), cert_pmi_mid (40), cert_pmi_practitioner (35), cert_pmi_entry (30), specialization (25), knowledge_ai_pm (20), course (15, apenas CDBA), badge (10). Hierarquia de 5 niveis de certificacao substituindo sistema flat anterior.
+
+**Justificativa:** Sistema anterior classificava tudo como "course" a 15 XP. Nova taxonomia valoriza corretamente certificacoes PMI Senior vs Entry, separa trilha obrigatoria de cursos complementares, e distingue especializacoes de badges comunitarios. CDBA_INTRO removido da trilha obrigatoria (sem Credly badge). Duplicata CPMAI v7 de Pedro Henrique resolvida.
+
+**Impacto tecnico:** CHECK constraint expandido para 13 categorias. sync_attendance_points trail-aware com verificacao dual-category. gamification_leaderboard VIEW com learning_points, cert_points, badge_points. get_member_cycle_xp com cycle_learning e cycle_certs. Frontend: CATEGORY_META expandido, TRAIL_TOTAL=7, pontos legend atualizado.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*
