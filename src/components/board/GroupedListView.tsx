@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
-import type { BoardItem, BoardI18n } from '../../types/board';
-import { COLUMN_PRESETS } from '../../types/board';
+import { safeChecklist, COLUMN_PRESETS, type BoardItem, type BoardI18n } from '../../types/board';
 
 interface Props {
   items: BoardItem[];
@@ -86,8 +85,9 @@ export default function GroupedListView({ items, i18n, onOpenDetail }: Props) {
                   const assignees = item.assignments?.length
                     ? item.assignments.map(a => a.name).join(', ')
                     : item.assignee_name || '—';
-                  const checkDone = item.checklist?.filter(c => c.done).length || 0;
-                  const checkTotal = item.checklist?.length || 0;
+                  const _cl = safeChecklist(item.checklist);
+                  const checkDone = _cl.filter(c => c.done).length;
+                  const checkTotal = _cl.length;
 
                   return (
                     <div key={item.id}

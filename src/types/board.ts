@@ -198,6 +198,13 @@ export const COLUMN_PRESETS: Record<string, Omit<ColumnMeta, 'id'>> = {
   },
 };
 
+/** Safely coerce checklist to array — handles string, null, undefined */
+export function safeChecklist(cl: unknown): ChecklistItem[] {
+  if (!cl) return [];
+  if (typeof cl === 'string') { try { cl = JSON.parse(cl); } catch { return []; } }
+  return Array.isArray(cl) ? cl : [];
+}
+
 export function getColumnMeta(colId: string): ColumnMeta {
   const preset = COLUMN_PRESETS[colId];
   if (preset) return { id: colId, ...preset };
