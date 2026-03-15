@@ -440,7 +440,7 @@ async function run() {
       };
       const fakeSb = {
         rpc(name) {
-          if (name === 'exec_funnel_v2') {
+          if (name === 'exec_funnel_summary') {
             return Promise.resolve({
               data: {
                 cycle_code: '2026.1',

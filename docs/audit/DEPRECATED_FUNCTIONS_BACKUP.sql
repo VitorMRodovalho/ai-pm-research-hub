@@ -357,3 +357,131 @@ begin
 end;
 $function$
 
+-- ============================================================
+-- exec_funnel_v2 — Deprecated 2026-03-14 (F-02 audit fix)
+-- Replaced by exec_funnel_summary(text, integer, text)
+-- ============================================================
+CREATE OR REPLACE FUNCTION public.exec_funnel_v2(
+  p_cycle_code text default null,
+  p_tribe_id integer default null,
+  p_chapter text default null
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+STABLE
+AS $$
+declare
+  v_result jsonb;
+begin
+  if not public.can_read_internal_analytics() then
+    raise exception 'Internal analytics access required';
+  end if;
+
+  with scoped as (
+    select * from public.analytics_member_scope(p_cycle_code, p_tribe_id, p_chapter)
+  ),
+  core_total as (
+    select count(*)::integer as total_core_courses
+    from public.courses
+    where category = 'core'
+  ),
+  member_core_progress as (
+    select
+      s.member_id,
+      count(distinct cp.course_id) filter (where cp.status = 'completed')::integer as completed_core_courses
+    from scoped s
+    left join public.course_progress cp on cp.member_id = s.member_id
+    left join public.courses c on c.id = cp.course_id and c.category = 'core'
+    group by s.member_id
+  ),
+  published_artifacts as (
+    select distinct s.member_id
+    from scoped s
+    join public.artifacts a on a.member_id = s.member_id
+    where a.status = 'published'
+      and coalesce(a.published_at, a.created_at, now()) >= s.cycle_start
+      and (
+        s.cycle_end is null
+        or coalesce(a.published_at, a.created_at, now()) < s.cycle_end + interval '1 day'
+      )
+  ),
+  stage_rollup as (
+    select
+      count(distinct s.member_id)::integer as total_members,
+      count(distinct s.member_id) filter (
+        where coalesce(mcp.completed_core_courses, 0) >= coalesce((select total_core_courses from core_total), 0)
+      )::integer as members_with_full_core_trail,
+      count(distinct s.member_id) filter (where s.tribe_id is not null)::integer as members_allocated_to_tribe,
+      count(distinct pa.member_id)::integer as members_with_published_artifact
+    from scoped s
+    left join member_core_progress mcp on mcp.member_id = s.member_id
+    left join published_artifacts pa on pa.member_id = s.member_id
+  )
+  select jsonb_build_object(
+    'cycle_code', (select max(cycle_code) from scoped),
+    'cycle_label', (select max(cycle_label) from scoped),
+    'filters', jsonb_build_object(
+      'cycle_code', p_cycle_code,
+      'tribe_id', p_tribe_id,
+      'chapter', p_chapter
+    ),
+    'stages', jsonb_build_object(
+      'total_members', coalesce((select total_members from stage_rollup), 0),
+      'members_with_full_core_trail', coalesce((select members_with_full_core_trail from stage_rollup), 0),
+      'members_allocated_to_tribe', coalesce((select members_allocated_to_tribe from stage_rollup), 0),
+      'members_with_published_artifact', coalesce((select members_with_published_artifact from stage_rollup), 0)
+    ),
+    'breakdown_by_tribe', coalesce((
+      select jsonb_agg(to_jsonb(t) order by t.tribe_id)
+      from (
+        select
+          s.tribe_id,
+          count(distinct s.member_id)::integer as total_members,
+          count(distinct s.member_id) filter (
+            where coalesce(mcp.completed_core_courses, 0) >= coalesce((select total_core_courses from core_total), 0)
+          )::integer as members_with_full_core_trail,
+          count(distinct s.member_id) filter (where s.tribe_id is not null)::integer as members_allocated_to_tribe,
+          count(distinct pa.member_id)::integer as members_with_published_artifact
+        from scoped s
+        left join member_core_progress mcp on mcp.member_id = s.member_id
+        left join published_artifacts pa on pa.member_id = s.member_id
+        where s.tribe_id is not null
+        group by s.tribe_id
+      ) t
+    ), '[]'::jsonb),
+    'breakdown_by_chapter', coalesce((
+      select jsonb_agg(to_jsonb(c) order by c.chapter)
+      from (
+        select
+          s.chapter,
+          count(distinct s.member_id)::integer as total_members,
+          count(distinct s.member_id) filter (
+            where coalesce(mcp.completed_core_courses, 0) >= coalesce((select total_core_courses from core_total), 0)
+          )::integer as members_with_full_core_trail,
+          count(distinct s.member_id) filter (where s.tribe_id is not null)::integer as members_allocated_to_tribe,
+          count(distinct pa.member_id)::integer as members_with_published_artifact
+        from scoped s
+        left join member_core_progress mcp on mcp.member_id = s.member_id
+        left join published_artifacts pa on pa.member_id = s.member_id
+        where s.chapter is not null and trim(s.chapter) <> ''
+        group by s.chapter
+      ) c
+    ), '[]'::jsonb)
+  ) into v_result;
+
+  return coalesce(v_result, jsonb_build_object(
+    'cycle_code', p_cycle_code,
+    'filters', jsonb_build_object('cycle_code', p_cycle_code, 'tribe_id', p_tribe_id, 'chapter', p_chapter),
+    'stages', jsonb_build_object(
+      'total_members', 0,
+      'members_with_full_core_trail', 0,
+      'members_allocated_to_tribe', 0,
+      'members_with_published_artifact', 0
+    ),
+    'breakdown_by_tribe', '[]'::jsonb,
+    'breakdown_by_chapter', '[]'::jsonb
+  ));
+end;
+$$;
+

@@ -1394,19 +1394,21 @@ const ADMIN_I18N = {
 
     try {
       const { data: funnel } = await sb.rpc('exec_funnel_summary');
-      if (funnel && funnel.total_members) {
+      const stages = funnel?.stages || {};
+      const totalMembers = Number(stages.total_members || 0);
+      if (totalMembers > 0) {
         const funnelCanvas = document.getElementById('chart-funnel') as HTMLCanvasElement;
         if (funnelCanvas) new Chart(funnelCanvas, {
           type: 'bar',
           data: {
-            labels: ['Com Tribo', 'Credly', 'Com Foto', 'Com LinkedIn'],
+            labels: ['Total', 'Trilha Completa', 'Com Tribo', 'Publicaram'],
             datasets: [{
-              data: [funnel.with_tribe, funnel.with_credly, funnel.with_photo, funnel.with_linkedin],
+              data: [totalMembers, Number(stages.members_with_full_core_trail || 0), Number(stages.members_allocated_to_tribe || 0), Number(stages.members_with_published_artifact || 0)],
               backgroundColor: PALETTE.slice(0, 4),
               borderRadius: 6, barPercentage: 0.7,
             }]
           },
-          options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c: any) => c.raw + ' / ' + funnel.total_members } } }, scales: { x: { max: funnel.total_members, grid: { color: '#f1f5f9' } }, y: { grid: { display: false } } } }
+          options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c: any) => c.raw + ' / ' + totalMembers } } }, scales: { x: { max: totalMembers, grid: { color: '#f1f5f9' } }, y: { grid: { display: false } } } }
         });
       }
     } catch (e) { console.warn('Funnel chart:', e); }
@@ -3474,50 +3476,40 @@ const ADMIN_I18N = {
     try {
       const { data: funnelData, error: funnelErr } = await sb.rpc('exec_funnel_summary');
       if (funnelErr) throw funnelErr;
-      const f = Array.isArray(funnelData) && funnelData[0] ? funnelData[0] : null;
-      if (!f) {
+      const f = funnelData || null;
+      const stages = f?.stages || {};
+      const totalM = Number(stages.total_members || 0);
+      if (!f || !totalM) {
         funnelEl.innerHTML = EXEC_ERROR(ADMIN_I18N.execFunnelNoData);
       } else {
-        const total = f.total_members || 0;
-        const maxStage = Math.max(f.active_members || 0, 1);
+        const maxStage = Math.max(totalM, 1);
         const stagePct = (n: number) => Math.round((n / maxStage) * 100);
+        const trail = Number(stages.members_with_full_core_trail || 0);
+        const allocated = Number(stages.members_allocated_to_tribe || 0);
+        const published = Number(stages.members_with_published_artifact || 0);
         funnelEl.innerHTML = `
           <div class="space-y-2 text-[.78rem]">
             <div class="flex justify-between items-center py-1.5 border-b border-[var(--border-subtle)]">
               <span class="font-semibold text-[var(--text-secondary)]">Total membros</span>
-              <span class="font-bold text-navy">${f.total_members ?? 0}</span>
-            </div>
-            <div class="flex justify-between items-center py-1.5 border-b border-[var(--border-subtle)]">
-              <span class="font-semibold text-[var(--text-secondary)]">Ativos</span>
-              <span class="font-bold text-teal">${f.active_members ?? 0}</span>
+              <span class="font-bold text-navy">${totalM}</span>
             </div>
             <div class="flex items-center gap-2 py-1.5">
               <div class="flex-1 h-2 bg-[var(--surface-section-cool)] rounded-full overflow-hidden">
-                <div class="h-full bg-teal rounded-full" style="width:${stagePct(f.members_with_credly_url || 0)}%"></div>
+                <div class="h-full bg-purple rounded-full" style="width:${stagePct(trail)}%"></div>
               </div>
-              <span class="text-[.7rem] font-semibold">Credly: ${f.members_with_credly_url ?? 0}</span>
+              <span class="text-[.7rem] font-semibold">Trilha completa: ${trail}</span>
             </div>
             <div class="flex items-center gap-2 py-1.5">
               <div class="flex-1 h-2 bg-[var(--surface-section-cool)] rounded-full overflow-hidden">
-                <div class="h-full bg-purple rounded-full" style="width:${stagePct(f.members_with_full_core_trail || 0)}%"></div>
+                <div class="h-full bg-teal rounded-full" style="width:${stagePct(allocated)}%"></div>
               </div>
-              <span class="text-[.7rem] font-semibold">Trilha completa: ${f.members_with_full_core_trail ?? 0}</span>
+              <span class="text-[.7rem] font-semibold">Com tribo: ${allocated}</span>
             </div>
             <div class="flex items-center gap-2 py-1.5">
               <div class="flex-1 h-2 bg-[var(--surface-section-cool)] rounded-full overflow-hidden">
-                <div class="h-full bg-amber-500 rounded-full" style="width:${stagePct(f.members_with_tier1 || 0)}%"></div>
+                <div class="h-full bg-emerald-600 rounded-full" style="width:${stagePct(published)}%"></div>
               </div>
-              <span class="text-[.7rem] font-semibold">Tier 1: ${f.members_with_tier1 ?? 0}</span>
-            </div>
-            <div class="flex items-center gap-2 py-1.5">
-              <div class="flex-1 h-2 bg-[var(--surface-section-cool)] rounded-full overflow-hidden">
-                <div class="h-full bg-emerald-600 rounded-full" style="width:${stagePct(f.members_with_tier2_plus || 0)}%"></div>
-              </div>
-              <span class="text-[.7rem] font-semibold">Tier 2+: ${f.members_with_tier2_plus ?? 0}</span>
-            </div>
-            <div class="flex justify-between items-center py-1.5 border-t border-[var(--border-default)] mt-2">
-              <span class="font-semibold text-[var(--text-secondary)]">Artefatos publicados</span>
-              <span class="font-bold text-emerald-600">${f.total_published_artifacts ?? 0}</span>
+              <span class="text-[.7rem] font-semibold">Publicaram: ${published}</span>
             </div>
           </div>`;
       }

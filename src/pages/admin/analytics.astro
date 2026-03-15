@@ -887,7 +887,7 @@ const ANALYTICS_I18N = {
   async function loadAnalyticsV2() {
     setText('analytics-scope-summary', L.scopePrefix || 'Loading...');
     const [funnel, impact, cert, roi, leadership, quality] = await Promise.all([
-      safeRpc('exec_funnel_v2'),
+      safeRpc('exec_funnel_summary'),
       safeRpc('exec_impact_hours_v2'),
       safeRpc('exec_certification_delta'),
       safeRpc('exec_chapter_roi'),
