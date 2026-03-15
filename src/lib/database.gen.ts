@@ -5739,8 +5739,7 @@ export type Database = {
         Args: { p_chapter?: string; p_cycle_code?: string; p_tribe_id?: number }
         Returns: Json
       }
-      exec_funnel_summary: { Args: never; Returns: Json }
-      exec_funnel_v2: {
+      exec_funnel_summary: {
         Args: { p_chapter?: string; p_cycle_code?: string; p_tribe_id?: number }
         Returns: Json
       }

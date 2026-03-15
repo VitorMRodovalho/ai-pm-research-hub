@@ -344,7 +344,7 @@ test('analytics v2 grants readonly access without widening admin actions and shi
   assert.equal(analytics.includes('id="analytics-filter-cycle"'), true);
   assert.equal(analytics.includes('id="analytics-filter-tribe"'), true);
   assert.equal(analytics.includes('id="analytics-filter-chapter"'), true);
-  assert.equal(analytics.includes("safeRpc('exec_funnel_v2')"), true);
+  assert.equal(analytics.includes("safeRpc('exec_funnel_summary')"), true);
   assert.equal(analytics.includes("safeRpc('exec_impact_hours_v2')"), true);
   assert.equal(analytics.includes("safeRpc('exec_certification_delta')"), true);
   assert.equal(analytics.includes("safeRpc('exec_chapter_roi')"), true);
