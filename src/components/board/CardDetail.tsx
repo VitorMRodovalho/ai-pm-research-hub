@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { Board, BoardItem, BoardI18n, LifecycleEvent, BoardMember, BoardSummary, CurationHistory, RubricScore, ItemAssignment, AssignmentRole } from '../../types/board';
-import { COLUMN_PRESETS } from '../../types/board';
+import { safeChecklist, COLUMN_PRESETS, type Board, type BoardItem, type BoardI18n, type LifecycleEvent, type BoardMember, type BoardSummary, type CurationHistory, type RubricScore, type ItemAssignment, type AssignmentRole } from '../../types/board';
 import { getSb } from '../../hooks/useBoard';
 import MemberPicker from './MemberPicker';
 import MemberPickerMulti from './MemberPickerMulti';
@@ -189,22 +188,25 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
           assigned_to: c.assigned_to, target_date: c.target_date,
           completed_at: c.completed_at, completed_by: c.completed_by,
         })));
-      } else if (!checklistMigrated.current && Array.isArray(item.checklist) && item.checklist.length > 0) {
+      } else if (!checklistMigrated.current) {
         // Migrate existing JSON checklist items to the table on first open
-        checklistMigrated.current = true;
-        const jsonItems = item.checklist.filter((c: any) => c.text);
-        if (jsonItems.length > 0) {
-          const rows = jsonItems.map((c: any, i: number) => ({
-            board_item_id: item.id, text: c.text, is_completed: !!c.done, position: i,
-          }));
-          const { data: inserted } = await sb.from('board_item_checklists')
-            .insert(rows).select('id, text, is_completed, position, assigned_to, target_date, completed_at, completed_by');
-          if (Array.isArray(inserted)) {
-            setChecklist(inserted.map((c: any) => ({
-              id: c.id, text: c.text, done: c.is_completed,
-              assigned_to: c.assigned_to, target_date: c.target_date,
-              completed_at: c.completed_at, completed_by: c.completed_by,
-            })));
+        const parsed = safeChecklist(item.checklist);
+        if (parsed.length > 0) {
+          checklistMigrated.current = true;
+          const jsonItems = parsed.filter((c: any) => c.text);
+          if (jsonItems.length > 0) {
+            const rows = jsonItems.map((c: any, i: number) => ({
+              board_item_id: item.id, text: c.text, is_completed: !!c.done, position: i,
+            }));
+            const { data: inserted } = await sb.from('board_item_checklists')
+              .insert(rows).select('id, text, is_completed, position, assigned_to, target_date, completed_at, completed_by');
+            if (Array.isArray(inserted)) {
+              setChecklist(inserted.map((c: any) => ({
+                id: c.id, text: c.text, done: c.is_completed,
+                assigned_to: c.assigned_to, target_date: c.target_date,
+                completed_at: c.completed_at, completed_by: c.completed_by,
+              })));
+            }
           }
         }
       }

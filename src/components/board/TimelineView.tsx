@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import type { BoardItem, BoardI18n } from '../../types/board';
+import { safeChecklist, type BoardItem, type BoardI18n } from '../../types/board';
 
 interface Props {
   items: BoardItem[];
@@ -191,8 +191,9 @@ export default function TimelineView({ items, i18n, onOpenDetail }: Props) {
                 const barWidth = Math.max(1, barEnd - barStart);
 
                 // Checklist progress
-                const checkDone = item.checklist?.filter(c => c.done).length || 0;
-                const checkTotal = item.checklist?.length || 0;
+                const _cl = safeChecklist(item.checklist);
+                const checkDone = _cl.filter(c => c.done).length;
+                const checkTotal = _cl.length;
                 const progressPct = checkTotal > 0 ? (checkDone / checkTotal) * 100 : 0;
 
                 // Deviation color

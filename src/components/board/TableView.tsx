@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
-import type { BoardItem, BoardI18n } from '../../types/board';
-import { COLUMN_PRESETS } from '../../types/board';
+import { safeChecklist, COLUMN_PRESETS, type BoardItem, type BoardI18n } from '../../types/board';
 
 interface Props {
   items: BoardItem[];
@@ -38,8 +37,9 @@ export default function TableView({ items, columns, i18n, onOpenDetail, onMove }
           return dir * (devA - devB);
         }
         case 'checklist': {
-          const pctA = a.checklist?.length ? a.checklist.filter(c => c.done).length / a.checklist.length : 0;
-          const pctB = b.checklist?.length ? b.checklist.filter(c => c.done).length / b.checklist.length : 0;
+          const clA = safeChecklist(a.checklist), clB = safeChecklist(b.checklist);
+          const pctA = clA.length ? clA.filter(c => c.done).length / clA.length : 0;
+          const pctB = clB.length ? clB.filter(c => c.done).length / clB.length : 0;
           return dir * (pctA - pctB);
         }
         default: return 0;
@@ -76,8 +76,9 @@ export default function TableView({ items, columns, i18n, onOpenDetail, onMove }
               ? Math.round((new Date(item.forecast_date).getTime() - new Date(item.baseline_date).getTime()) / 86400000) : null;
             const devColor = dev === null ? '' : dev <= 0 ? 'text-emerald-600' : dev <= 7 ? 'text-amber-600' : 'text-red-600';
             const devIcon = dev === null ? '' : dev <= 0 ? '✅' : dev <= 7 ? '⚠️' : '🔴';
-            const checkDone = item.checklist?.filter(c => c.done).length || 0;
-            const checkTotal = item.checklist?.length || 0;
+            const _cl = safeChecklist(item.checklist);
+            const checkDone = _cl.filter(c => c.done).length;
+            const checkTotal = _cl.length;
             const assignees = item.assignments?.length
               ? item.assignments.map(a => a.name).join(', ')
               : item.assignee_name || '—';

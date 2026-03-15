@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import type { BoardItem, ColumnMeta, BoardI18n } from '../../types/board';
+import { safeChecklist, type BoardItem, type ColumnMeta, type BoardI18n } from '../../types/board';
 
 interface Props {
   columns: ColumnMeta[];
@@ -30,8 +30,9 @@ function SortableCard({ item, i18n, onClick, onQuickMove, columns, mode, canMove
 
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.3 : 1 };
 
-  const checkDone = item.checklist?.filter((c) => c.done).length ?? 0;
-  const checkTotal = item.checklist?.length ?? 0;
+  const cl = safeChecklist(item.checklist);
+  const checkDone = cl.filter((c) => c.done).length;
+  const checkTotal = cl.length;
   const attachCount = item.attachments?.length ?? 0;
   const isOverdue = item.due_date && new Date(item.due_date) < new Date();
   const isCurationOverdue = item.curation_due_at && new Date(item.curation_due_at) < new Date();
