@@ -40,7 +40,7 @@
 
 | Item | Spec | Status | Evidence |
 |------|------|--------|----------|
-| Board names → links `/admin/board/[id]` | Clickable in admin tables | ⚠️ Partial | Links exist in `/admin/portfolio.astro` (line 252) but **NOT** in `/admin/index.astro` main boards table |
+| Board names → links `/admin/board/[id]` | Clickable in admin tables | ✅ Full | Links in `/admin/portfolio.astro` (line 252). `admin/index.astro` has no board table — boards are only listed in portfolio page where they are already linked. |
 | Member names → links `/admin/member/[id]` | Clickable in admin tables | ✅ Full | `admin/index.astro` line 1972: `<a href="/admin/member/${escapeAttr(m.id)}">` |
 | GC-045 | Governance entry | ✅ Full | GC-045 (line 653) |
 
@@ -205,27 +205,25 @@
 
 ### IMPORTANT — Backend/frontend misalignment
 
-| # | Finding | Severity | Details |
-|---|---------|----------|---------|
-| F-01 | Board names not linked in admin/index.astro | IMPORTANT | Portfolio page (`/admin/portfolio.astro:252`) links boards to `/admin/board/[id]`, but the main admin page (`/admin/index.astro`) does NOT link board names anywhere. The spec says "Board names → links /admin/board/[id]" in admin tables. |
+**None found.** F-01 was a false positive — `admin/index.astro` has no board table; boards are only listed in `portfolio.astro` where they are already linked.
 
 ### COSMETIC — Minor deviations
 
 | # | Finding | Severity | Details |
 |---|---------|----------|---------|
-| F-02 | `exec_funnel_v2` not dropped | COSMETIC | Still referenced by `analytics.astro:890`. Was in deprecated list but cannot be dropped until frontend is migrated to `exec_funnel_summary`. |
-| F-03 | Timeline zoom: 2 levels vs 4 | COSMETIC | Spec says Year/Quarter/Month/Week; implementation has Month/Quarter. Acceptable for current use case. |
+| F-02 | `exec_funnel_v2` not dropped | ✅ FIXED | Migrated `analytics.astro` to use `exec_funnel_summary`. Updated `exec_analytics_v2_quality` DB function. Dropped `exec_funnel_v2`. |
+| F-03 | Timeline zoom: 2 levels vs 4 | ✅ FIXED | Added Week and Year zoom levels to TimelineView.tsx. Now has 4 levels: Week, Month, Quarter, Year. |
 | F-04 | board_item_checklists has 0 rows | COSMETIC | Table + triggers + RPCs all deployed. Zero rows because no users have created checklist items via the new UI yet. Auto-migration from JSON kicks in on first card open. Not a bug — just empty state. |
 
 ---
 
 ## Fix List
 
-| # | Fix | Priority | Effort | Action |
+| # | Fix | Priority | Effort | Status |
 |---|-----|----------|--------|--------|
-| F-01 | Add board name links in admin/index.astro | P2 | 15 min | Find board listing in admin page → wrap board names in `<a href="/admin/board/${id}">` |
-| F-02 | Migrate analytics.astro from `exec_funnel_v2` to `exec_funnel_summary` | P3 | 30 min | Update RPC call + adapt response shape, then drop `exec_funnel_v2` |
-| F-03 | Add Week/Year zoom to TimelineView | P3 | 30 min | Add 2 more zoom levels to existing zoom control |
+| F-01 | ~~Add board name links in admin/index.astro~~ | ~~P2~~ | N/A | **N/A** — False positive. `admin/index.astro` has no board table. Board links already exist in `portfolio.astro:252`. |
+| F-02 | Migrate analytics.astro from `exec_funnel_v2` to `exec_funnel_summary` | P3 | 30 min | **DONE** — Frontend migrated, DB function updated, `exec_funnel_v2` dropped |
+| F-03 | Add Week/Year zoom to TimelineView | P3 | 30 min | **DONE** — 4 zoom levels: Week, Month, Quarter, Year |
 
 ---
 
@@ -233,8 +231,8 @@
 
 | Sprint | Total Items | ✅ Full | ⚠️ Partial | ❌ Missing | 🔄 Deviated | Score |
 |--------|-------------|---------|-----------|-----------|------------|-------|
-| W139 | 37 | 35 | 2 | 0 | 0 | **95%** |
-| W141 | 38 | 37 | 0 | 0 | 1 | **97%** |
-| **Total** | **75** | **72** | **2** | **0** | **1** | **96%** |
+| W139 | 37 | 36 | 1 | 0 | 0 | **97%** |
+| W141 | 38 | 38 | 0 | 0 | 0 | **100%** |
+| **Total** | **75** | **74** | **1** | **0** | **0** | **99%** |
 
 **Conclusion:** Both W139 and W141 are deployed with high fidelity. No critical or blocking issues. 3 minor fixes identified (2 partial, 1 deviation), all P2/P3 priority. Platform is ready to proceed to W140 after GP review.
