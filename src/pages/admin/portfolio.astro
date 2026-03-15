@@ -9,8 +9,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   <div class="max-w-[1100px] mx-auto px-4 py-8 space-y-4">
     <!-- W142: GP Portfolio Dashboard (React island) -->
     <section class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
-      <h2 class="text-lg font-extrabold text-navy mb-1">Portfólio de Entregas</h2>
-      <p class="text-xs text-[var(--text-secondary)] mb-4">56 entregáveis das 8 tribos com Gantt, heatmap e filtros multi-dimensionais.</p>
+      <h2 class="text-lg font-extrabold text-navy mb-1">{t('portfolio.title', lang)}</h2>
+      <p class="text-xs text-[var(--text-secondary)] mb-4">{t('portfolio.subtitle', lang)}</p>
       <PortfolioDashboard client:load />
     </section>
 
