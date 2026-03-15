@@ -1,13 +1,14 @@
 /**
  * Resolve Credly tier by awarded points.
- * verify-credly currently assigns:
- * T1=50, T2=25, T3=15, T4=10
+ * W143 reclassification: cert_pmi_senior=50, cert_cpmai=45,
+ * cert_pmi_mid=40, cert_pmi_practitioner=35, cert_pmi_entry=30,
+ * specialization=25, trail/knowledge_ai_pm=20, course=15, badge=10
  */
 export function credlyTierFromPoints(points) {
-  if (points === 50) return 1;
-  if (points === 25) return 2;
-  if (points === 15) return 3;
-  if (points === 10) return 4;
+  if (points >= 45) return 1;  // cert_pmi_senior (50), cert_cpmai (45)
+  if (points >= 25) return 2;  // cert_pmi_mid (40), practitioner (35), entry (30), specialization (25)
+  if (points >= 15) return 3;  // trail (20), knowledge_ai_pm (20), course (15)
+  if (points >= 10) return 4;  // badge (10)
   return 0;
 }
 
