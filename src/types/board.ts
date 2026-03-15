@@ -199,10 +199,16 @@ export const COLUMN_PRESETS: Record<string, Omit<ColumnMeta, 'id'>> = {
 };
 
 /** Safely coerce checklist to array — handles string, null, undefined */
+/** Safely coerce any value to an array — handles string JSON, null, undefined, non-array */
+export function safeArray<T = any>(v: unknown): T[] {
+  if (!v) return [];
+  if (Array.isArray(v)) return v;
+  if (typeof v === 'string') { try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch { return []; } }
+  return [];
+}
+
 export function safeChecklist(cl: unknown): ChecklistItem[] {
-  if (!cl) return [];
-  if (typeof cl === 'string') { try { cl = JSON.parse(cl); } catch { return []; } }
-  return Array.isArray(cl) ? cl : [];
+  return safeArray<ChecklistItem>(cl);
 }
 
 export function getColumnMeta(colId: string): ColumnMeta {

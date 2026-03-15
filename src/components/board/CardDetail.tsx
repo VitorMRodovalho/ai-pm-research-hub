@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { safeChecklist, COLUMN_PRESETS, type Board, type BoardItem, type BoardI18n, type LifecycleEvent, type BoardMember, type BoardSummary, type CurationHistory, type RubricScore, type ItemAssignment, type AssignmentRole } from '../../types/board';
+import { safeChecklist, safeArray, COLUMN_PRESETS, type Board, type BoardItem, type BoardI18n, type LifecycleEvent, type BoardMember, type BoardSummary, type CurationHistory, type RubricScore, type ItemAssignment, type AssignmentRole } from '../../types/board';
 import { getSb } from '../../hooks/useBoard';
 import MemberPicker from './MemberPicker';
 import MemberPickerMulti from './MemberPickerMulti';
@@ -33,7 +33,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const [description, setDescription] = useState(item.description || '');
   const [checklist, setChecklist] = useState(safeChecklist(item.checklist));
   const [newCheckItem, setNewCheckItem] = useState('');
-  const [tags, setTags] = useState(item.tags || []);
+  const [tags, setTags] = useState(safeArray<string>(item.tags));
   const [tagInput, setTagInput] = useState('');
   const [dueDate, setDueDate] = useState(item.due_date || '');
   const [baselineDate, setBaselineDate] = useState(item.baseline_date || '');
@@ -54,7 +54,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const [mirrorBoards, setMirrorBoards] = useState<BoardSummary[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const checklistMigrated = useRef(false);
-  const [attachments, setAttachments] = useState(item.attachments || []);
+  const [attachments, setAttachments] = useState(safeArray(item.attachments));
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [curationHistory, setCurationHistory] = useState<CurationHistory | null>(null);
@@ -63,7 +63,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const [reviewVerdict, setReviewVerdict] = useState<string>('approved');
   const [reviewNotes, setReviewNotes] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
-  const [itemAssignments, setItemAssignments] = useState<ItemAssignment[]>(item.assignments || []);
+  const [itemAssignments, setItemAssignments] = useState<ItemAssignment[]>(safeArray(item.assignments));
 
   const canEdit = mode !== 'readonly' && (permissions.canEditAny || (permissions.canEditOwn && permissions.member?.id === item.assignee_id));
   const isCurator = permissions.canCurate;
