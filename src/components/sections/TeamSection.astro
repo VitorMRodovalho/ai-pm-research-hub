@@ -149,10 +149,10 @@ const ROLE_COLORS: Record<string, string> = {
     return roles.includes(getOpRole(m));
   }
 
-  /** Get all role dots (operational + designations) */
+  /** Get all role dots (operational + designations, deduplicated) */
   function getRoleDots(m: Member): string {
     const opRole = getOpRole(m);
-    const desigs = getDesigs(m);
+    const desigs = getDesigs(m).filter(d => d !== opRole);
     const all = [...(opRole !== 'none' ? [opRole] : []), ...desigs];
     return all
       .filter(r => ROLE_COLORS[r])
