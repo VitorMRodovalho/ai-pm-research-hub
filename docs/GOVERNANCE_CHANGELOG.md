@@ -734,4 +734,60 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-054: W140-1 — Unified Tag System
+
+**Data:** 2026-03-14
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Sistema unificado de tags com 3 tiers (system/administrative/semantic), multi-domain (event/board_item/all), tabela unica `tags` com junction tables por dominio (`event_tag_assignments`, `board_item_tag_assignments`).
+
+**Justificativa:** Substituir classificacao rigida por tipo (`events.type`) com sistema flexivel de tags multi-valor. Permite multi-tag por evento (ex: kickoff + general_meeting), tags compartilhadas entre eventos e boards, e criacao de tags semanticas por lideres.
+
+**Impacto tecnico:** Enums `tag_tier` e `tag_domain`. Tabela `tags` com UNIQUE(name, domain) e coluna gerada `is_system`. Junction tables com RLS. Seed de 30 tags (sistema + administrativas + gates + ciclo). RPCs: `create_tag`, `delete_tag`, `assign_event_tags`, `get_tags`, `get_event_tags`. UI: multi-tag picker em modais de evento, tag chip filter na lista de eventos, aba "Tags" no admin panel com CRUD.
+
+---
+
+### GC-055: W140-2 — Event Audience Rules
+
+**Data:** 2026-03-14
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Regras de audiencia por evento com `event_audience_rules` (grupo) + `event_invited_members` (individual). Target types: all_active_operational, tribe, role, specific_members. Definicao formal: `all_active_operational = is_active AND (tribe_id IS NOT NULL OR operational_role IN ('manager','deputy_manager'))`.
+
+**Justificativa:** Modelo anterior usava `audience_level` generico que nao capturava regras reais de quem deveria participar. Sponsors e liaisons nao devem ser contados como mandatory. Cada evento precisa de regras granulares.
+
+**Impacto tecnico:** Tabelas `event_audience_rules` (partial unique indexes para NULL handling) e `event_invited_members` (UNIQUE event+member). RPCs: `set_event_audience`, `set_event_invited_members`, `get_event_audience`. Migracao automatica dos 161 eventos existentes baseada em `events.type`. Modais de evento atualizados com dropdown de audiencia: todos operacionais, tribo, papel, membros especificos.
+
+---
+
+### GC-056: W140-3 — Attendance Calculation Correction
+
+**Data:** 2026-03-14
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Calculo de presenca corrigido com denominador personalizado. Funcao `is_event_mandatory_for_member(event, member)` verifica regras de audiencia. `get_attendance_panel()` retorna split geral/tribo com percentuais individuais e flag de dropout risk (<50% combined).
+
+**Justificativa:** Calculo anterior dividia presencas pelo total de eventos, penalizando membros que nao eram publico-alvo de certos eventos. Novo calculo conta apenas eventos mandatory para cada membro.
+
+**Impacto tecnico:** Funcao `is_event_mandatory_for_member` consulta `event_audience_rules` + `event_invited_members`. RPC `get_attendance_panel` com CTEs para general_events (tag general_meeting) e tribe_events (tag tribe_meeting), cross join com membros ativos, calculo de percentual por membro.
+
+---
+
+### GC-057: W140-4 — Spec-vs-Deployed Audit as Standard Practice
+
+**Data:** 2026-03-14
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Auditoria spec-vs-deployed estabelecida como pratica padrao apos cada sprint. Documento gerado em `docs/audit/` comparando spec com implementacao real, identificando divergencias e medindo cobertura.
+
+**Justificativa:** Audit W139/W141 encontrou 3 divergencias que teriam passado despercebidas sem verificacao sistematica. Pratica garante integridade entre spec e codigo.
+
+**Impacto tecnico:** Template de audit em `docs/audit/SPEC_VS_DEPLOYED_*.md` com categorias de findings (layout, schema, features), status tracking (partial/full/N-A), e scorecard de cobertura percentual.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*
