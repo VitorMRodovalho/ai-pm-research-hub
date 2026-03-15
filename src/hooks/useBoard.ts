@@ -3,6 +3,7 @@
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Board, BoardItem, BoardEngineProps } from '../types/board';
+import { safeArray, safeChecklist } from '../types/board';
 
 function getSb() {
   return (window as any).navGetSb?.();
@@ -79,10 +80,11 @@ export function useBoard(props: BoardEngineProps): UseBoardResult {
       setItems(
         (result.items || []).map((item: any) => ({
           ...item,
-          tags: item.tags || [],
-          labels: item.labels || [],
-          attachments: item.attachments || [],
-          checklist: item.checklist || [],
+          tags: safeArray(item.tags),
+          labels: safeArray(item.labels),
+          attachments: safeArray(item.attachments),
+          checklist: safeChecklist(item.checklist),
+          assignments: safeArray(item.assignments),
         }))
       );
     } catch (err: any) {
