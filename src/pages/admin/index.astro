@@ -213,6 +213,7 @@ const ADMIN_I18N = {
         <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]" data-action="switch-adm-tab" data-tab="knowledge">{t('admin.tab.knowledge', lang)}</button>
         <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]" data-action="switch-adm-tab" data-tab="analytics">{t('admin.tab.analytics', lang)}</button>
         <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]" data-action="switch-adm-tab" data-tab="data-health">{t('admin.tab.dataHealth', lang)}</button>
+        <button class="adm-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]" data-action="switch-adm-tab" data-tab="tags">Tags</button>
       </div>
 
       <div id="panel-tribes">
@@ -870,6 +871,66 @@ const ADMIN_I18N = {
       </div>
 
       <!-- Data Health panel (W98) -->
+      <!-- W140: Tags Management Panel -->
+      <div id="panel-tags" class="hidden space-y-4">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h2 class="text-lg font-extrabold text-navy">Gerenciamento de Tags</h2>
+            <p class="text-xs text-[var(--text-secondary)]">Tags unificadas para eventos e itens de board. Tags de sistema não podem ser editadas.</p>
+          </div>
+          <button id="tags-btn-create" class="px-3 py-2 rounded-lg bg-navy text-white text-xs font-semibold hover:opacity-90 cursor-pointer border-0" data-action="tags-open-create">+ Nova Tag</button>
+        </div>
+        <div id="tags-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <p class="text-xs text-[var(--text-muted)] col-span-full text-center py-6">{t('admin.loading', lang)}</p>
+        </div>
+      </div>
+
+      <!-- W140: Create Tag Modal -->
+      <div id="modal-create-tag" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-5">
+          <h3 class="text-sm font-bold text-navy mb-3">Criar Nova Tag</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Nome (slug)</label>
+              <input type="text" id="tag-create-name" class="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-xs" placeholder="ex: workshop_event">
+            </div>
+            <div>
+              <label class="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Label (pt-BR)</label>
+              <input type="text" id="tag-create-label" class="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-xs" placeholder="ex: Workshop">
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Cor</label>
+                <input type="color" id="tag-create-color" value="#6B7280" class="w-full h-8 rounded border border-[var(--border-default)] cursor-pointer">
+              </div>
+              <div>
+                <label class="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Tier</label>
+                <select id="tag-create-tier" class="w-full border border-[var(--border-default)] rounded-lg px-2 py-2 text-xs">
+                  <option value="semantic">Semântica</option>
+                  <option value="administrative">Administrativa</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Domínio</label>
+                <select id="tag-create-domain" class="w-full border border-[var(--border-default)] rounded-lg px-2 py-2 text-xs">
+                  <option value="all">Todos</option>
+                  <option value="event">Evento</option>
+                  <option value="board_item">Board Item</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="text-[11px] font-semibold text-[var(--text-secondary)] block mb-1">Descrição (opcional)</label>
+              <input type="text" id="tag-create-desc" class="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-xs" placeholder="Breve descrição da tag">
+            </div>
+          </div>
+          <div class="flex justify-end gap-2 mt-4">
+            <button class="px-3 py-2 rounded-lg border border-[var(--border-default)] text-xs font-semibold cursor-pointer" data-action="tags-close-create">{t('common.cancel', lang)}</button>
+            <button class="px-3 py-2 rounded-lg bg-navy text-white text-xs font-semibold cursor-pointer border-0" data-action="tags-confirm-create">Criar Tag</button>
+          </div>
+        </div>
+      </div>
+
       <div id="panel-data-health" class="hidden space-y-4">
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
@@ -1330,11 +1391,13 @@ const ADMIN_I18N = {
     document.getElementById('panel-knowledge')?.classList.toggle('hidden', tab !== 'knowledge');
     document.getElementById('panel-analytics')?.classList.toggle('hidden', tab !== 'analytics');
     document.getElementById('panel-data-health')?.classList.toggle('hidden', tab !== 'data-health');
+    document.getElementById('panel-tags')?.classList.toggle('hidden', tab !== 'tags');
     if (tab === 'members') loadMembersList();
     if (tab === 'reports') initReports();
     if (tab === 'knowledge') loadKnowledgeAssets();
     if (tab === 'analytics') { initAnalyticsConsent(); loadAnalyticsCharts(); }
     if (tab === 'data-health') loadDataHealth();
+    if (tab === 'tags') loadAdminTags();
   }
 
   (window as any).switchAdmTab = switchAdmTab;
@@ -3703,6 +3766,7 @@ const ADMIN_I18N = {
       document.getElementById('panel-reports')?.classList.add('hidden');
       document.getElementById('panel-knowledge')?.classList.add('hidden');
       document.getElementById('panel-data-health')?.classList.add('hidden');
+      document.getElementById('panel-tags')?.classList.add('hidden');
 
       // Hide KPI bar (superadmin-only stats)
       document.querySelectorAll('#admin-panel > .grid.grid-cols-2')[0]?.classList.add('hidden');
@@ -3727,6 +3791,7 @@ const ADMIN_I18N = {
       document.getElementById('panel-reports')?.classList.add('hidden');
       document.getElementById('panel-knowledge')?.classList.add('hidden');
       document.getElementById('panel-data-health')?.classList.add('hidden');
+      document.getElementById('panel-tags')?.classList.add('hidden');
 
       document.getElementById('panel-executive')?.classList.remove('hidden');
       if (canAccessAdminRoute(MEMBER, 'admin_analytics')) {
@@ -4071,6 +4136,87 @@ const ADMIN_I18N = {
     sla_config_missing: 'SLA Config Missing',
   };
 
+  // ── W140: TAG MANAGEMENT ──
+  let adminTagsLoaded = false;
+
+  async function loadAdminTags() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    const listEl = document.getElementById('tags-list');
+    if (!listEl) return;
+    try {
+      const { data, error } = await sb.rpc('get_tags');
+      if (error) throw error;
+      if (!data?.length) {
+        listEl.innerHTML = '<p class="text-xs text-[var(--text-muted)] col-span-full text-center py-6">Nenhuma tag encontrada.</p>';
+        return;
+      }
+      const tierLabel: Record<string, string> = { system: 'Sistema', administrative: 'Admin', semantic: 'Semântica' };
+      const domainLabel: Record<string, string> = { event: 'Evento', board_item: 'Board', all: 'Todos' };
+      listEl.innerHTML = data.map((tag: any) => `
+        <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-4 flex flex-col gap-2">
+          <div class="flex items-center gap-2">
+            <span class="w-3.5 h-3.5 rounded-full flex-shrink-0" style="background:${tag.color}"></span>
+            <span class="text-sm font-bold text-navy flex-1">${tag.label_pt || tag.name}</span>
+            ${tag.tier !== 'system' ? `<button class="text-red-500 text-[11px] font-semibold hover:underline cursor-pointer bg-transparent border-0" data-action="tags-delete" data-tag-id="${tag.id}" data-tag-name="${tag.label_pt || tag.name}">Excluir</button>` : ''}
+          </div>
+          <div class="text-[11px] text-[var(--text-muted)]">${tag.name}</div>
+          <div class="flex gap-1.5 flex-wrap">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--surface-section-cool)] text-[var(--text-secondary)]">${tierLabel[tag.tier] || tag.tier}</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--surface-section-cool)] text-[var(--text-secondary)]">${domainLabel[tag.domain] || tag.domain}</span>
+            ${tag.event_count > 0 ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700">${tag.event_count} eventos</span>` : ''}
+            ${tag.board_item_count > 0 ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-50 text-green-700">${tag.board_item_count} itens</span>` : ''}
+          </div>
+          ${tag.description ? `<div class="text-[11px] text-[var(--text-secondary)]">${tag.description}</div>` : ''}
+        </div>
+      `).join('');
+      adminTagsLoaded = true;
+    } catch (e: any) {
+      listEl.innerHTML = `<p class="text-xs text-red-500 col-span-full text-center py-6">Erro ao carregar tags: ${e?.message || 'desconhecido'}</p>`;
+    }
+  }
+
+  async function createAdminTag() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    const name = (document.getElementById('tag-create-name') as HTMLInputElement).value.trim();
+    const label = (document.getElementById('tag-create-label') as HTMLInputElement).value.trim();
+    const color = (document.getElementById('tag-create-color') as HTMLInputElement).value;
+    const tier = (document.getElementById('tag-create-tier') as HTMLSelectElement).value;
+    const domain = (document.getElementById('tag-create-domain') as HTMLSelectElement).value;
+    const desc = (document.getElementById('tag-create-desc') as HTMLInputElement).value.trim() || null;
+    if (!name || !label) { toast('Preencha nome e label', 'error'); return; }
+    try {
+      const { data, error } = await sb.rpc('create_tag', {
+        p_name: name, p_label_pt: label, p_color: color,
+        p_tier: tier, p_domain: domain, p_description: desc
+      });
+      if (error) throw error;
+      toast('Tag criada!', 'success');
+      document.getElementById('modal-create-tag')?.classList.add('hidden');
+      document.getElementById('modal-create-tag')?.classList.remove('flex');
+      adminTagsLoaded = false;
+      loadAdminTags();
+    } catch (e: any) {
+      toast(e?.message || 'Erro ao criar tag', 'error');
+    }
+  }
+
+  async function deleteAdminTag(tagId: string, tagName: string) {
+    if (!confirm(`Excluir tag "${tagName}"? Esta ação não pode ser desfeita.`)) return;
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    try {
+      const { error } = await sb.rpc('delete_tag', { p_tag_id: tagId });
+      if (error) throw error;
+      toast('Tag excluída', 'success');
+      adminTagsLoaded = false;
+      loadAdminTags();
+    } catch (e: any) {
+      toast(e?.message || 'Erro ao excluir tag', 'error');
+    }
+  }
+
   async function loadDataHealth() {
     if (dhLoaded) return;
     const sb = (window as any).navGetSb?.();
@@ -4214,6 +4360,21 @@ const ADMIN_I18N = {
         break;
       case 'dh-resolve-confirm':
         dhResolveAnomaly();
+        break;
+      // W140: Tag CRUD actions
+      case 'tags-open-create':
+        document.getElementById('modal-create-tag')?.classList.remove('hidden');
+        document.getElementById('modal-create-tag')?.classList.add('flex');
+        break;
+      case 'tags-close-create':
+        document.getElementById('modal-create-tag')?.classList.add('hidden');
+        document.getElementById('modal-create-tag')?.classList.remove('flex');
+        break;
+      case 'tags-confirm-create':
+        createAdminTag();
+        break;
+      case 'tags-delete':
+        deleteAdminTag(target.dataset.tagId || '', target.dataset.tagName || '');
         break;
     }
   });
