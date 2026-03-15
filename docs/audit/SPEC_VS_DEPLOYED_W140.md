@@ -122,8 +122,8 @@ Each bloco verified against the spec across three dimensions:
 | Tag picker toggle wired | data-action="toggle-tag-picker" handler | ✓ Lines 699-700 | ✅ Full |
 | Tag checkbox change handler | Updates selection on checkbox change | ✓ Lines 735-740 | ✅ Full |
 | ACTIVE_TAG_FILTER in filteredEvents() | Tag-based filter variable, used in filter logic | ✓ Lines 253, 388 | ✅ Full |
-| Ranking tab uses get_attendance_panel | Spec implied corrected calc should be used | ✗ Still uses `member_attendance_summary` view | ⚠️ Partial |
-| AttendanceDashboard.tsx uses get_attendance_panel | Workspace dashboard should use new RPC | ✗ Still uses `get_attendance_summary` | ⚠️ Partial |
+| Ranking tab uses get_attendance_panel | Spec implied corrected calc should be used | ✓ Uses `get_attendance_panel`, sorted by combined_pct | ✅ Full (fixed) |
+| AttendanceDashboard.tsx uses get_attendance_panel | Workspace dashboard should use new RPC | ✓ Uses `get_attendance_panel`, updated interface | ✅ Full (fixed) |
 
 ---
 
@@ -160,18 +160,14 @@ Each bloco verified against the spec across three dimensions:
 
 | ID | Bloco | Severity | Category | Description | Status |
 |----|-------|----------|----------|-------------|--------|
-| F-01 | 6 | Low | Integration | Ranking tab (`attendance.astro:1264`) still reads from `member_attendance_summary` view instead of calling `get_attendance_panel`. The old view doesn't use the corrected personalized denominator. | ⚠️ Partial |
-| F-02 | 6 | Low | Integration | `AttendanceDashboard.tsx:75` still calls `get_attendance_summary` RPC. Should optionally use `get_attendance_panel` for corrected stats. | ⚠️ Partial |
+| F-01 | 6 | Low | Integration | Ranking tab used `member_attendance_summary` view instead of `get_attendance_panel`. | ✅ FIXED |
+| F-02 | 6 | Low | Integration | `AttendanceDashboard.tsx` used `get_attendance_summary` RPC instead of `get_attendance_panel`. | ✅ FIXED |
 
-### Notes on F-01 and F-02
+### Fix verification (2026-03-14)
 
-These are **low severity** because:
-- The new `get_attendance_panel` RPC is deployed and working (returns 53 rows for active members)
-- The corrected calculation is available for any consumer that calls it
-- The old views/RPCs remain functional — they just use the simpler (uncorrected) denominator
-- Migration to the new RPC can be done incrementally without data loss
-
-The ranking tab and workspace dashboard are **backward-compatible** — they show total hours and event counts, which are unaffected by the denominator correction. The denominator correction primarily affects the percentage-based attendance panel (general_pct, tribe_pct, combined_pct, dropout_risk), which is a new feature not previously displayed.
+- **Vitor Maia Rodovalho**: 4/6 general mandatory (66.7%), 0 tribe mandatory, combined 66.7%, dropout_risk=false
+- **Dropout risk count**: 33 of 53 active members (corrected denominator — reflects real attendance gaps)
+- All attendance consumers now use `get_attendance_panel` with personalized mandatory denominators
 
 ---
 
@@ -184,18 +180,13 @@ The ranking tab and workspace dashboard are **backward-compatible** — they sho
 | 3 — Data Migration | 15 | 15 | 0 | 0 | 100% |
 | 4 — Tag RPCs | 8 | 8 | 0 | 0 | 100% |
 | 5 — Attendance Calc | 5 | 5 | 0 | 0 | 100% |
-| 6 — Frontend | 21 | 19 | 2 | 0 | 95% |
+| 6 — Frontend | 21 | 21 | 0 | 0 | 100% |
 | 7 — Admin Tags | 11 | 11 | 0 | 0 | 100% |
 | 8 — Governance | 4 | 4 | 0 | 0 | 100% |
-| **Total** | **84** | **82** | **2** | **0** | **99%** |
+| **Total** | **84** | **84** | **0** | **0** | **100%** |
 
 ---
 
 ## Fix Backlog
 
-| Priority | Finding | Effort | Fix |
-|----------|---------|--------|-----|
-| P3 | F-01: Ranking tab → get_attendance_panel | 15 min | Replace `sb.from('member_attendance_summary')` with `sb.rpc('get_attendance_panel')` in `loadRanking()`, map return columns to existing UI |
-| P3 | F-02: AttendanceDashboard → get_attendance_panel | 15 min | Add optional `get_attendance_panel` call in `AttendanceDashboard.tsx` for corrected percentages |
-
-**Recommended action:** Bundle F-01 and F-02 into a follow-up micro-sprint (W140.1, ~30min). Not blocking — current behavior is functionally correct, just uses uncorrected denominators.
+All findings resolved. No outstanding items.
