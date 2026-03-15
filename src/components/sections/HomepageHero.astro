@@ -228,15 +228,15 @@ import { CHAPTER_CODES } from '../../data/chapters';
         }
       }
 
-      // Attendance
-      sb.rpc('get_attendance_summary', { p_member_id: member.id }).then(({ data }: any) => {
+      // Attendance — uses get_attendance_panel (W140 corrected calc)
+      sb.rpc('get_attendance_panel').then(({ data }: any) => {
         const attEl = document.getElementById('hero-att-info');
         if (!attEl || !data) { if (attEl) attEl.innerHTML = '<div class="text-sm text-white/50">Sem dados ainda</div>'; return; }
-        const general = data.find((d: any) => d.category === 'geral');
-        const tribe = data.find((d: any) => d.category === 'tribo');
-        const gPct = general?.attendance_pct || 0;
-        const tPct = tribe?.attendance_pct || 0;
-        const combined = Math.round(gPct * 0.4 + tPct * 0.6);
+        const myRow = data.find((r: any) => r.member_id === member.id);
+        if (!myRow) { attEl.innerHTML = '<div class="text-sm text-white/50">Sem dados ainda</div>'; return; }
+        const gPct = myRow.general_pct || 0;
+        const tPct = myRow.tribe_pct || 0;
+        const combined = myRow.combined_pct || 0;
         const color = combined >= 75 ? '#10B981' : combined >= 50 ? '#F59E0B' : '#EF4444';
         attEl.innerHTML = `
           <div class="text-sm text-white/60">Geral: <b class="text-white">${gPct}%</b> · Tribo: <b class="text-white">${tPct}%</b></div>
