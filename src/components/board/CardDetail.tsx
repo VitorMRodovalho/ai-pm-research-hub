@@ -31,7 +31,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   }, [onClose]);
   const [title, setTitle] = useState(item.title);
   const [description, setDescription] = useState(item.description || '');
-  const [checklist, setChecklist] = useState(item.checklist || []);
+  const [checklist, setChecklist] = useState(safeChecklist(item.checklist));
   const [newCheckItem, setNewCheckItem] = useState('');
   const [tags, setTags] = useState(item.tags || []);
   const [tagInput, setTagInput] = useState('');
