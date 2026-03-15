@@ -12,6 +12,7 @@ const { activeSub = 'panel', lang = 'pt-BR' } = Astro.props;
 const ADMIN_LINKS = [
   { key: 'panel',     labelKey: 'nav.adminPanel',     href: '/admin',           minTier: 'observer' as const },
   { key: 'analytics', labelKey: 'nav.adminAnalytics', href: '/admin/analytics', minTier: 'admin' as const, allowedDesignations: ['sponsor', 'chapter_liaison', 'curator'] },
+  { key: 'portfolio', labelKey: 'nav.adminPortfolio', href: '/admin/portfolio', minTier: 'admin' as const, allowedDesignations: ['sponsor', 'chapter_liaison', 'curator', 'co_gp'] },
   { key: 'comms',     labelKey: 'nav.adminComms',      href: '/admin/comms',     minTier: 'admin' as const, allowedDesignations: ['comms_leader', 'comms_member'] },
   { key: 'curatorship', labelKey: 'nav.adminCuratorship', href: '/admin/curatorship', minTier: 'observer' as const },
   { key: 'cycle-report', labelKey: 'nav.adminCycleReport', href: '/admin/cycle-report', minTier: 'admin' as const, allowedDesignations: ['sponsor', 'chapter_liaison'] },

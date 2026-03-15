@@ -1,11 +1,19 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import PortfolioDashboard from '../../components/portfolio/PortfolioDashboard';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
 <BaseLayout title={t('nav.adminPortfolio', lang)} activePage="admin">
   <div class="max-w-[1100px] mx-auto px-4 py-8 space-y-4">
+    <!-- W142: GP Portfolio Dashboard (React island) -->
+    <section class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
+      <h2 class="text-lg font-extrabold text-navy mb-1">Portfólio de Entregas</h2>
+      <p class="text-xs text-[var(--text-secondary)] mb-4">56 entregáveis das 8 tribos com Gantt, heatmap e filtros multi-dimensionais.</p>
+      <PortfolioDashboard client:load />
+    </section>
+
     <div id="portfolio-loading" class="text-[var(--text-muted)] text-sm">{t('portfolio.loading', lang)}</div>
     <div id="portfolio-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
       {t('portfolio.denied', lang)}
