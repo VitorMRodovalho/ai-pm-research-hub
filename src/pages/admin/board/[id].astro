@@ -24,7 +24,9 @@ const boardId = Astro.params.id;
       if (!member) return false;
       if (member.is_superadmin) return true;
       var role = String(member.operational_role || '');
-      return ['manager', 'deputy_manager', 'tribe_leader', 'researcher', 'facilitator', 'communicator'].includes(role);
+      if (['manager', 'deputy_manager', 'tribe_leader', 'researcher', 'facilitator', 'communicator', 'sponsor'].includes(role)) return true;
+      var desigs = Array.isArray(member.designations) ? member.designations : [];
+      return ['comms_leader', 'comms_member', 'curator', 'co_gp', 'chapter_liaison'].some(function(d) { return desigs.indexOf(d) >= 0; });
     }
     function boot() {
       var loading = document.getElementById('board-loading');
