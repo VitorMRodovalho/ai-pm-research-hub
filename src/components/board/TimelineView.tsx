@@ -7,9 +7,12 @@ interface Props {
   onOpenDetail: (item: BoardItem) => void;
 }
 
-type ZoomLevel = 'month' | 'quarter';
+type ZoomLevel = 'week' | 'month' | 'quarter' | 'year';
 
 const MONTHS_SHORT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+const ZOOM_LABELS: Record<ZoomLevel, string> = { week: 'Semana', month: 'Mês', quarter: 'Trimestre', year: 'Ano' };
+const ZOOM_MIN_WIDTH: Record<ZoomLevel, string> = { week: '1400px', month: '900px', quarter: '600px', year: '400px' };
 
 export default function TimelineView({ items, i18n, onOpenDetail }: Props) {
   const [zoom, setZoom] = useState<ZoomLevel>('month');
@@ -55,24 +58,76 @@ export default function TimelineView({ items, i18n, onOpenDetail }: Props) {
     return Math.max(0, Math.min(100, (dayOffset / totalDays) * 100));
   };
 
-  // Generate month headers
-  const monthHeaders = useMemo(() => {
+  // Generate time headers based on zoom level
+  const timeHeaders = useMemo(() => {
     const headers: { label: string; left: number; width: number }[] = [];
     const d = new Date(startDate);
-    while (d <= endDate) {
-      const monthStart = new Date(d.getFullYear(), d.getMonth(), 1);
-      const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-      const startOffset = Math.max(0, Math.round((monthStart.getTime() - startDate.getTime()) / 86400000));
-      const endOffset = Math.min(totalDays, Math.round((monthEnd.getTime() - startDate.getTime()) / 86400000));
-      headers.push({
-        label: `${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}`,
-        left: (startOffset / totalDays) * 100,
-        width: ((endOffset - startOffset) / totalDays) * 100,
-      });
-      d.setMonth(d.getMonth() + 1);
+
+    if (zoom === 'week') {
+      // Align to Monday
+      const dayOfWeek = d.getDay();
+      d.setDate(d.getDate() - ((dayOfWeek + 6) % 7));
+      while (d <= endDate) {
+        const weekStart = new Date(d);
+        const weekEnd = new Date(d);
+        weekEnd.setDate(weekEnd.getDate() + 6);
+        const startOff = Math.max(0, Math.round((weekStart.getTime() - startDate.getTime()) / 86400000));
+        const endOff = Math.min(totalDays, Math.round((weekEnd.getTime() - startDate.getTime()) / 86400000));
+        headers.push({
+          label: `${weekStart.getDate()}/${weekStart.getMonth() + 1}`,
+          left: (startOff / totalDays) * 100,
+          width: ((endOff - startOff) / totalDays) * 100,
+        });
+        d.setDate(d.getDate() + 7);
+      }
+    } else if (zoom === 'month') {
+      while (d <= endDate) {
+        const monthStart = new Date(d.getFullYear(), d.getMonth(), 1);
+        const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+        const startOff = Math.max(0, Math.round((monthStart.getTime() - startDate.getTime()) / 86400000));
+        const endOff = Math.min(totalDays, Math.round((monthEnd.getTime() - startDate.getTime()) / 86400000));
+        headers.push({
+          label: `${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}`,
+          left: (startOff / totalDays) * 100,
+          width: ((endOff - startOff) / totalDays) * 100,
+        });
+        d.setMonth(d.getMonth() + 1);
+      }
+    } else if (zoom === 'quarter') {
+      // Align to quarter start
+      d.setMonth(Math.floor(d.getMonth() / 3) * 3);
+      while (d <= endDate) {
+        const qStart = new Date(d.getFullYear(), d.getMonth(), 1);
+        const qEnd = new Date(d.getFullYear(), d.getMonth() + 3, 0);
+        const startOff = Math.max(0, Math.round((qStart.getTime() - startDate.getTime()) / 86400000));
+        const endOff = Math.min(totalDays, Math.round((qEnd.getTime() - startDate.getTime()) / 86400000));
+        const qNum = Math.floor(d.getMonth() / 3) + 1;
+        headers.push({
+          label: `Q${qNum} ${d.getFullYear()}`,
+          left: (startOff / totalDays) * 100,
+          width: ((endOff - startOff) / totalDays) * 100,
+        });
+        d.setMonth(d.getMonth() + 3);
+      }
+    } else {
+      // year
+      d.setMonth(0);
+      while (d <= endDate) {
+        const yStart = new Date(d.getFullYear(), 0, 1);
+        const yEnd = new Date(d.getFullYear(), 11, 31);
+        const startOff = Math.max(0, Math.round((yStart.getTime() - startDate.getTime()) / 86400000));
+        const endOff = Math.min(totalDays, Math.round((yEnd.getTime() - startDate.getTime()) / 86400000));
+        headers.push({
+          label: `${d.getFullYear()}`,
+          left: (startOff / totalDays) * 100,
+          width: ((endOff - startOff) / totalDays) * 100,
+        });
+        d.setFullYear(d.getFullYear() + 1);
+      }
     }
+
     return headers;
-  }, [startDate, endDate, totalDays]);
+  }, [startDate, endDate, totalDays, zoom]);
 
   // Today marker
   const todayX = dayToX(new Date().toISOString().split('T')[0]);
@@ -85,11 +140,11 @@ export default function TimelineView({ items, i18n, onOpenDetail }: Props) {
       {/* Zoom controls */}
       <div className="flex items-center gap-2 mb-3">
         <span className="text-[11px] text-[var(--text-secondary)]">Zoom:</span>
-        {(['month', 'quarter'] as ZoomLevel[]).map(z => (
+        {(['week', 'month', 'quarter', 'year'] as ZoomLevel[]).map(z => (
           <button key={z} onClick={() => setZoom(z)}
             className={`px-2 py-0.5 rounded text-[10px] font-semibold cursor-pointer border-0
               ${zoom === z ? 'bg-blue-100 text-blue-700' : 'bg-[var(--surface-section-cool)] text-[var(--text-muted)]'}`}>
-            {z === 'month' ? 'Mês' : 'Trimestre'}
+            {ZOOM_LABELS[z]}
           </button>
         ))}
       </div>
@@ -100,10 +155,10 @@ export default function TimelineView({ items, i18n, onOpenDetail }: Props) {
         </div>
       ) : (
         <div ref={containerRef} className="overflow-x-auto">
-          <div style={{ minWidth: zoom === 'quarter' ? '600px' : '900px' }}>
-            {/* Month headers */}
+          <div style={{ minWidth: ZOOM_MIN_WIDTH[zoom] }}>
+            {/* Time headers */}
             <div className="relative h-6 border-b border-[var(--border-default)] mb-1">
-              {monthHeaders.map((h, idx) => (
+              {timeHeaders.map((h, idx) => (
                 <div key={idx}
                   className="absolute top-0 h-full flex items-center px-1 border-l border-[var(--border-subtle)] text-[9px] font-bold text-[var(--text-muted)]"
                   style={{ left: `${h.left}%`, width: `${h.width}%` }}>
@@ -119,8 +174,8 @@ export default function TimelineView({ items, i18n, onOpenDetail }: Props) {
                 <span className="absolute -top-4 -translate-x-1/2 text-[8px] text-red-500 font-bold">Hoje</span>
               </div>
 
-              {/* Grid lines per month */}
-              {monthHeaders.map((h, idx) => (
+              {/* Grid lines */}
+              {timeHeaders.map((h, idx) => (
                 <div key={idx} className="absolute top-0 bottom-0 w-px bg-[var(--border-subtle)]"
                   style={{ left: `${h.left}%` }} />
               ))}
