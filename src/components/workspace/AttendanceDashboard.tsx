@@ -7,10 +7,10 @@ interface AttRow {
   member_id: string; member_name: string;
   tribe_id: number | null; tribe_name: string | null;
   operational_role: string;
-  geral_present: number; geral_total: number; geral_pct: number;
-  tribe_present: number; tribe_total: number; tribe_pct: number;
+  general_mandatory: number; general_attended: number; general_pct: number;
+  tribe_mandatory: number; tribe_attended: number; tribe_pct: number;
   combined_pct: number; last_attendance: string | null;
-  consecutive_misses: number;
+  dropout_risk: boolean;
 }
 
 interface MemberInfo {
@@ -67,12 +67,11 @@ export default function AttendanceDashboard() {
       const sb = getSb();
       if (!sb) return;
 
-      const params: any = {};
-      if (isLeader && !isGP) {
-        params.p_tribe_id = member.tribe_id;
-      }
-
-      const { data } = await sb.rpc('get_attendance_summary', params);
+      const { data: rawData } = await sb.rpc('get_attendance_panel');
+      // Filter for leader's tribe client-side (RPC returns all active members)
+      const data = (isLeader && !isGP && member.tribe_id)
+        ? (rawData || []).filter((r: AttRow) => r.tribe_id === member.tribe_id)
+        : rawData;
       if (data) {
         setRows(data as AttRow[]);
         const tMap = new Map<number, string>();
@@ -181,8 +180,8 @@ export default function AttendanceDashboard() {
 
   // ── Views A & B: GP / Leader table ──
   const filtered = tribeFilter ? rows.filter(r => r.tribe_id === tribeFilter) : rows;
-  const atRisk = filtered.filter(r => r.combined_pct < 50 && r.combined_pct > 0).length;
-  const inactive = filtered.filter(r => r.combined_pct === 0).length;
+  const atRisk = filtered.filter(r => r.dropout_risk).length;
+  const inactive = filtered.filter(r => (r.general_mandatory + r.tribe_mandatory) > 0 && r.combined_pct === 0).length;
 
   const fmtDate = (d: string | null) => {
     if (!d) return '—';
@@ -254,11 +253,11 @@ export default function AttendanceDashboard() {
                     </td>
                   )}
                   <td className="px-3 py-2.5 text-center">
-                    <span className="text-[var(--text-secondary)]">{r.geral_present}/{r.geral_total}</span>
-                    <span className="ml-1 font-semibold text-[var(--text-primary)]">({r.geral_pct}%)</span>
+                    <span className="text-[var(--text-secondary)]">{r.general_attended}/{r.general_mandatory}</span>
+                    <span className="ml-1 font-semibold text-[var(--text-primary)]">({r.general_pct}%)</span>
                   </td>
                   <td className="px-3 py-2.5 text-center">
-                    <span className="text-[var(--text-secondary)]">{r.tribe_present}/{r.tribe_total}</span>
+                    <span className="text-[var(--text-secondary)]">{r.tribe_attended}/{r.tribe_mandatory}</span>
                     <span className="ml-1 font-semibold text-[var(--text-primary)]">({r.tribe_pct}%)</span>
                   </td>
                   <td className="px-3 py-2.5 text-center font-bold text-[var(--text-primary)]">{r.combined_pct}%</td>

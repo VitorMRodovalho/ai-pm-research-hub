@@ -1256,12 +1256,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     }
   }
 
-  // ── RANKING ──
+  // ── RANKING (W140: uses get_attendance_panel for corrected denominators) ──
   async function loadRanking() {
     const el = document.getElementById('ranking-list')!;
     el.innerHTML = loadingRows(4);
     try {
-      const { data } = await sb.from('member_attendance_summary').select('*').limit(50);
+      const { data, error } = await sb.rpc('get_attendance_panel');
+      if (error) throw error;
       if (!data?.length) {
         el.innerHTML = `
           <div class="text-center py-8">
@@ -1272,20 +1273,29 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         `;
         return;
       }
-      const max = Math.max(...data.map((m: any) => parseFloat(m.hours_attended || 0)), 1);
-      el.innerHTML = data.map((m: any, i: number) => `
+      // Sort by combined_pct descending, then by name
+      const sorted = [...data].sort((a: any, b: any) => {
+        if (b.combined_pct !== a.combined_pct) return b.combined_pct - a.combined_pct;
+        return (a.member_name || '').localeCompare(b.member_name || '');
+      });
+      el.innerHTML = sorted.map((m: any, i: number) => {
+        const pctColor = m.combined_pct >= 75 ? 'bg-emerald-500' : m.combined_pct >= 50 ? 'bg-yellow-500' : m.combined_pct > 0 ? 'bg-red-500' : 'bg-gray-300';
+        const totalMand = (m.general_mandatory || 0) + (m.tribe_mandatory || 0);
+        const totalAtt = (m.general_attended || 0) + (m.tribe_attended || 0);
+        const riskBadge = m.dropout_risk ? '<span class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-red-100 text-red-700 ml-1">risco</span>' : '';
+        return `
         <div class="flex items-center gap-2.5 py-2 border-b border-[var(--border-subtle)] last:border-b-0">
           <div class="text-[13px] font-bold text-[var(--text-secondary)] w-6 text-center flex-shrink-0">${i + 1}</div>
-          <img class="w-8 h-8 rounded-full object-cover bg-[var(--surface-section-cool)] flex-shrink-0" src="${m.photo_url || ''}" data-hide-on-error alt="">
           <div class="flex-1 min-w-0">
-            <div class="text-[13px] font-semibold truncate">${m.name}</div>
-            <div>${roleBadges(rolesFromMember(m))}</div>
+            <div class="text-[13px] font-semibold truncate">${m.member_name}${riskBadge}</div>
+            <div class="text-[11px] text-[var(--text-muted)]">${totalAtt}/${totalMand} obrigatórias${m.tribe_name ? ' · ' + m.tribe_name : ''}</div>
           </div>
           <div class="w-20 h-1.5 bg-[var(--surface-section-cool)] rounded-full overflow-hidden flex-shrink-0">
-            <div class="h-full bg-crimson rounded-full" style="width:${(m.hours_attended / max * 100).toFixed(1)}%"></div>
+            <div class="h-full ${pctColor} rounded-full" style="width:${Math.min(m.combined_pct, 100).toFixed(1)}%"></div>
           </div>
-          <div class="text-[13px] text-navy font-bold flex-shrink-0">${m.hours_attended || 0}h</div>
-        </div>`).join('');
+          <div class="text-[13px] text-navy font-bold flex-shrink-0 w-10 text-right">${m.combined_pct}%</div>
+        </div>`;
+      }).join('');
     } catch (e) {
       console.warn('Attendance: failed to load ranking:', e);
       el.innerHTML = `<div class="text-center py-8 text-red-500 text-sm">Failed to load ranking. Please try again later.</div>`;
