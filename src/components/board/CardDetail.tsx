@@ -54,7 +54,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const [creatingMirror, setCreatingMirror] = useState(false);
   const [mirrorBoards, setMirrorBoards] = useState<BoardSummary[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [dbChecklist, setDbChecklist] = useState<any[]>([]);
+  const checklistMigrated = useRef(false);
   const [attachments, setAttachments] = useState(item.attachments || []);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -184,12 +184,29 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
         .eq('board_item_id', item.id)
         .order('position'));
       if (Array.isArray(cl.data) && cl.data.length > 0) {
-        setDbChecklist(cl.data);
         setChecklist(cl.data.map((c: any) => ({
           id: c.id, text: c.text, done: c.is_completed,
           assigned_to: c.assigned_to, target_date: c.target_date,
           completed_at: c.completed_at, completed_by: c.completed_by,
         })));
+      } else if (!checklistMigrated.current && Array.isArray(item.checklist) && item.checklist.length > 0) {
+        // Migrate existing JSON checklist items to the table on first open
+        checklistMigrated.current = true;
+        const jsonItems = item.checklist.filter((c: any) => c.text);
+        if (jsonItems.length > 0) {
+          const rows = jsonItems.map((c: any, i: number) => ({
+            board_item_id: item.id, text: c.text, is_completed: !!c.done, position: i,
+          }));
+          const { data: inserted } = await sb.from('board_item_checklists')
+            .insert(rows).select('id, text, is_completed, position, assigned_to, target_date, completed_at, completed_by');
+          if (Array.isArray(inserted)) {
+            setChecklist(inserted.map((c: any) => ({
+              id: c.id, text: c.text, done: c.is_completed,
+              assigned_to: c.assigned_to, target_date: c.target_date,
+              completed_at: c.completed_at, completed_by: c.completed_by,
+            })));
+          }
+        }
       }
 
       // Load mirror target boards
@@ -217,7 +234,6 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
     const fields: Record<string, any> = {};
     if (title !== item.title) fields.title = title;
     if (description !== (item.description || '')) fields.description = description;
-    if (JSON.stringify(checklist) !== JSON.stringify(item.checklist || [])) fields.checklist = checklist;
     if (JSON.stringify(tags) !== JSON.stringify(item.tags || [])) fields.tags = tags;
     if (dueDate !== (item.due_date || '')) fields.due_date = dueDate || null;
     if (baselineDate !== (item.baseline_date || '')) fields.baseline_date = baselineDate || null;
@@ -229,7 +245,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
       await onUpdate(fields);
       setDirty(false);
     }
-  }, [title, description, checklist, tags, dueDate, baselineDate, forecastDate, assigneeId, reviewerId, item, onUpdate]);
+  }, [title, description, tags, dueDate, baselineDate, forecastDate, assigneeId, reviewerId, item, onUpdate]);
 
   // ── Multi-assignee handlers ──
   const handleAddAssignment = useCallback(async (memberId: string, role: AssignmentRole) => {
@@ -291,56 +307,39 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
     }
   }, [item.id, reviewVerdict, reviewScores, reviewNotes]);
 
-  // ── Checklist helpers ──
-  const useDbChecklist = dbChecklist.length > 0 || checklist.some(c => c.id);
-
+  // ── Checklist helpers (always DB-backed via board_item_checklists table) ──
   const addCheckItem = async () => {
     if (!newCheckItem.trim()) return;
-    if (useDbChecklist) {
-      const sb = getSb();
-      if (!sb) return;
-      const { data, error } = await sb.from('board_item_checklists')
-        .insert({ board_item_id: item.id, text: newCheckItem.trim(), position: checklist.length })
-        .select('id, text, is_completed, position, assigned_to, target_date, completed_at, completed_by')
-        .single();
-      if (!error && data) {
-        setChecklist([...checklist, { id: data.id, text: data.text, done: false }]);
-        setDbChecklist([...dbChecklist, data]);
-      }
-    } else {
-      setChecklist([...checklist, { text: newCheckItem.trim(), done: false }]);
-      setDirty(true);
+    const sb = getSb();
+    if (!sb) return;
+    const { data, error } = await sb.from('board_item_checklists')
+      .insert({ board_item_id: item.id, text: newCheckItem.trim(), position: checklist.length })
+      .select('id, text, is_completed, position, assigned_to, target_date, completed_at, completed_by')
+      .single();
+    if (!error && data) {
+      setChecklist([...checklist, { id: data.id, text: data.text, done: false }]);
     }
     setNewCheckItem('');
   };
 
   const toggleCheck = async (idx: number) => {
     const ci = checklist[idx];
-    if (ci.id && useDbChecklist) {
-      const sb = getSb();
-      if (!sb) return;
-      const newDone = !ci.done;
-      await sb.rpc('complete_checklist_item', { p_checklist_item_id: ci.id, p_completed: newDone });
-      const updated = [...checklist];
-      updated[idx] = { ...updated[idx], done: newDone, completed_at: newDone ? new Date().toISOString() : null };
-      setChecklist(updated);
-    } else {
-      const updated = [...checklist];
-      updated[idx] = { ...updated[idx], done: !updated[idx].done };
-      setChecklist(updated);
-      setDirty(true);
-    }
+    if (!ci.id) return;
+    const sb = getSb();
+    if (!sb) return;
+    const newDone = !ci.done;
+    await sb.rpc('complete_checklist_item', { p_checklist_item_id: ci.id, p_completed: newDone });
+    const updated = [...checklist];
+    updated[idx] = { ...updated[idx], done: newDone, completed_at: newDone ? new Date().toISOString() : null };
+    setChecklist(updated);
   };
 
   const removeCheck = async (idx: number) => {
     const ci = checklist[idx];
-    if (ci.id && useDbChecklist) {
+    if (ci.id) {
       const sb = getSb();
       if (!sb) return;
       await sb.from('board_item_checklists').delete().eq('id', ci.id);
-      setDbChecklist(dbChecklist.filter(d => d.id !== ci.id));
-    } else {
-      setDirty(true);
     }
     setChecklist(checklist.filter((_, i) => i !== idx));
   };
@@ -475,8 +474,8 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                             cursor-pointer bg-transparent border-0 text-[10px]">✕</button>
                       )}
                     </div>
-                    {/* W141: Assignment row for DB-backed items */}
-                    {ci.id && useDbChecklist && (
+                    {/* W141: Assignment row for checklist items */}
+                    {ci.id && (
                       <div className="ml-6 mt-1 flex items-center gap-2 flex-wrap">
                         {canEdit ? (
                           <select value={ci.assigned_to || ''}
