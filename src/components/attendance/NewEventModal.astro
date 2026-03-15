@@ -1,7 +1,7 @@
 ---
 /**
- * NewEventModal.astro — Sprint 3
- * Modal for creating a single event. Visible only to CAN_MANAGE users.
+ * NewEventModal.astro — W140
+ * Modal for creating a single event with multi-tag and audience selection.
  */
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
@@ -20,24 +20,27 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           <input type="text" id="ev-title" placeholder="Ex: Reunião Geral — Semana 1"
                  class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy transition-colors">
         </div>
-        <div class="flex flex-col gap-1.5">
-          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.type', lang)}</label>
-          <select id="ev-type"
-                  class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
-            <option value="tribe_meeting">{t('attendance.modal.typeTribe', lang)}</option>
-            <option value="general_meeting">{t('attendance.modal.typeGeneral', lang)}</option>
-            <option value="webinar">{t('attendance.modal.typeWebinar', lang)}</option>
-            <option value="other">{t('attendance.modal.typeOther', lang)}</option>
-          </select>
+        <!-- W140: Multi-tag selector (replaces single type dropdown) -->
+        <div class="flex flex-col gap-1.5 sm:col-span-2">
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">Tags</label>
+          <div id="ev-tags-container" class="flex flex-wrap gap-1.5 min-h-[36px] px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] bg-[var(--surface-card)] cursor-pointer" data-action="toggle-tag-picker" data-target="ev-tag-picker">
+            <span class="text-[12px] text-[var(--text-muted)]">Clique para selecionar tags...</span>
+          </div>
+          <div id="ev-tag-picker" class="hidden mt-1 max-h-[200px] overflow-y-auto rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] shadow-lg">
+            <!-- Populated dynamically by JS -->
+          </div>
+          <input type="hidden" id="ev-selected-tags" value="">
         </div>
+        <!-- Legacy type field (hidden, auto-derived from primary tag) -->
+        <input type="hidden" id="ev-type" value="general_meeting">
         <div class="flex flex-col gap-1.5">
           <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.audience', lang)}</label>
           <select id="ev-audience"
                   class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
-            <option value="all">{t('attendance.modal.audienceAll', lang)}</option>
-            <option value="leadership">{t('attendance.modal.audienceLeadership', lang)}</option>
-            <option value="tribe">{t('attendance.modal.audienceTribe', lang)}</option>
-            <option value="curators">{t('attendance.modal.audienceCurators', lang)}</option>
+            <option value="all_active_operational">Todos os operacionais ativos</option>
+            <option value="tribe">Tribo específica</option>
+            <option value="role">Por papel (liderança)</option>
+            <option value="specific_members">Membros específicos</option>
           </select>
         </div>
         <div class="flex flex-col gap-1.5">
