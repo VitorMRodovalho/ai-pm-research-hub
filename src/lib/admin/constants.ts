@@ -4,13 +4,13 @@
 export const OPROLE_LABELS: Record<string, string> = {
   manager: 'Gerente', deputy_manager: 'Deputy PM', tribe_leader: 'Líder de Tribo',
   researcher: 'Pesquisador', facilitator: 'Facilitador', communicator: 'Multiplicador',
-  none: 'Sem papel', guest: 'Convidado'
+  sponsor: 'Patrocinador', none: 'Sem papel', guest: 'Convidado'
 };
 
 export const OPROLE_COLORS: Record<string, string> = {
   manager: '#FF610F', deputy_manager: '#FF610F', tribe_leader: '#4F17A8',
   researcher: '#EC4899', facilitator: '#06B6D4', communicator: '#8B5CF6',
-  none: '#94A3B8', guest: '#94A3B8'
+  sponsor: '#BE2027', none: '#94A3B8', guest: '#94A3B8'
 };
 
 export const DESIG_LABELS: Record<string, string> = {
@@ -21,7 +21,7 @@ export const DESIG_LABELS: Record<string, string> = {
 };
 
 export const DESIG_COLORS: Record<string, string> = {
-  sponsor: '#BE2027', chapter_liaison: '#BE2027', ambassador: '#10B981',
+  sponsor: '#BE2027', chapter_liaison: '#0284C7', ambassador: '#10B981',
   founder: '#7C3AED', curator: '#D97706', comms_team: '#06B6D4',
   co_gp: '#FF610F', tribe_leader: '#4F17A8',
   comms_leader: '#06B6D4', comms_member: '#06B6D4'
@@ -113,7 +113,7 @@ export function avatar(m: any, size = 'w-8 h-8'): string {
 
 export function memberTags(m: any): string {
   const opRole = m.operational_role || 'guest';
-  const desigs: string[] = m.designations?.length ? m.designations : [];
+  const desigs: string[] = (m.designations?.length ? m.designations : []).filter((d: string) => d !== opRole);
   let html = '';
 
   if (opRole !== 'none' && opRole !== 'guest') {
