@@ -104,7 +104,7 @@ const esLATAM: Record<string, string> = {
   'portfolio.loading': 'Cargando portafolio ejecutivo...',
   'portfolio.denied': 'Acceso restringido a administración y audiencia ejecutiva.',
   'portfolio.title': 'Portafolio Ejecutivo',
-  'portfolio.subtitle': 'Vista consolidada por alcance/dominio para priorización de gestión.',
+  'portfolio.subtitle': 'Entregables de las tribus con Gantt, heatmap y filtros multidimensionales.',
   'portfolio.runTaxonomy': 'Ejecutar detección de drift taxonomy',
   'portfolio.runSanity': 'Ejecutar data sanity v2',
   'portfolio.activeBoards': 'Boards Activos',

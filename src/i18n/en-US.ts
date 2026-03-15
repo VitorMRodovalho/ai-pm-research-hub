@@ -104,7 +104,7 @@ const enUS: Record<string, string> = {
   'portfolio.loading': 'Loading executive portfolio...',
   'portfolio.denied': 'Access restricted to administration and executive audience.',
   'portfolio.title': 'Executive Portfolio',
-  'portfolio.subtitle': 'Consolidated scope/domain view for management prioritization.',
+  'portfolio.subtitle': 'Tribe deliverables with Gantt, heatmap and multi-dimensional filters.',
   'portfolio.runTaxonomy': 'Run taxonomy drift detection',
   'portfolio.runSanity': 'Run data sanity v2',
   'portfolio.activeBoards': 'Active Boards',

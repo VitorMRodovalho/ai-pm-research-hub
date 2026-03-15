@@ -104,7 +104,7 @@ const ptBR: Record<string, string> = {
   'portfolio.loading': 'Carregando portfólio executivo...',
   'portfolio.denied': 'Acesso restrito a administração e audiência executiva.',
   'portfolio.title': 'Portfólio Executivo',
-  'portfolio.subtitle': 'Visão consolidada por escopo/domínio para priorização de gestão.',
+  'portfolio.subtitle': 'Entregáveis das tribos com Gantt, heatmap e filtros multi-dimensionais.',
   'portfolio.runTaxonomy': 'Rodar detecção de drift taxonomy',
   'portfolio.runSanity': 'Rodar data sanity v2',
   'portfolio.activeBoards': 'Boards Ativos',
