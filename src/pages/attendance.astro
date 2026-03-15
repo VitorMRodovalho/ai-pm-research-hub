@@ -79,15 +79,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
               <input id="attendance-search" type="text"
                      class="flex-1 min-w-[220px] px-4 py-2.5 rounded-xl border-[1.5px] border-[var(--border-default)] text-sm bg-[var(--surface-input)] focus:outline-none focus:border-navy transition-colors"
                      placeholder="Buscar evento, replay ou link" />
-              <select id="attendance-type-filter"
-                      class="px-3 py-2.5 rounded-xl border-[1.5px] border-[var(--border-default)] text-sm bg-[var(--surface-input)] focus:outline-none focus:border-navy cursor-pointer">
+              <div id="attendance-tag-filter" class="flex gap-1.5 flex-wrap items-center">
+                <button type="button" class="tag-filter-btn px-2.5 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border border-navy bg-navy text-white" data-tag-filter="">Todos</button>
+                <!-- Populated dynamically by JS from loaded tags -->
+              </div>
+              <!-- Hidden legacy filter for backward compat -->
+              <select id="attendance-type-filter" class="hidden">
                 <option value="">Todos os tipos</option>
-                <option value="general_meeting">Geral</option>
-                <option value="tribe_meeting">Tribo</option>
-                <option value="webinar">Webinar</option>
-                <option value="kickoff">Kickoff</option>
-                <option value="leadership_meeting">Liderança</option>
-                <option value="other">Outro</option>
               </select>
               <label id="interview-toggle-wrapper" class="hidden items-center gap-1.5 text-[12px] text-[var(--text-secondary)] cursor-pointer select-none">
                 <input id="attendance-interview-toggle" type="checkbox" class="accent-navy w-3.5 h-3.5" />
@@ -251,6 +249,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   let CAN_MANAGE = false;
   let CURRENT_EVENT_ID: string | null = null;
   let ALL_EVENTS: any[] = [];
+  let ALL_TAGS: any[] = [];
+  let ACTIVE_TAG_FILTER = '';
   let SHOW_INTERVIEWS = false;
   const PAGE_SIZE = 20;
   let VISIBLE_COUNT = PAGE_SIZE;
@@ -384,13 +384,16 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         if (!CAN_MANAGE) return false;
         if (!SHOW_INTERVIEWS) return false;
       }
+      // W140: tag-based filter takes precedence, fallback to legacy type filter
+      const matchesTag = !ACTIVE_TAG_FILTER || ev.type === ACTIVE_TAG_FILTER;
       const matchesType = !ATTENDANCE_ROUTE.type || ev.type === ATTENDANCE_ROUTE.type;
+      const matchesFilter = ACTIVE_TAG_FILTER ? matchesTag : matchesType;
       const matchesQuery = !query
         || (ev.title || '').toLowerCase().includes(query)
         || (ev.meeting_link || '').toLowerCase().includes(query)
         || (ev.youtube_url || '').toLowerCase().includes(query);
       const matchesFocus = !ATTENDANCE_ROUTE.eventId || ev.id === ATTENDANCE_ROUTE.eventId;
-      return (matchesType && matchesQuery) || matchesFocus;
+      return (matchesFilter && matchesQuery) || matchesFocus;
     });
   }
 
@@ -693,6 +696,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         case 'open-roster':
           openRoster(target.dataset.eventId || '', target.dataset.eventTitle || '');
           break;
+        case 'toggle-tag-picker':
+          toggleTagPicker(target.dataset.target || '');
+          break;
         case 'edit-event': {
           const ev = (window as any).__attendanceEventsById?.[target.dataset.eventId || ''];
           if (ev) openEditEvent(ev);
@@ -708,17 +714,41 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           bulkConfirmPresence();
           break;
       }
+      // W140: tag filter buttons (not data-action based, use data-tag-filter)
+      const tagFilterBtn = (e.target as HTMLElement).closest('.tag-filter-btn') as HTMLElement | null;
+      if (tagFilterBtn && tagFilterBtn.dataset.tagFilter !== undefined) {
+        ACTIVE_TAG_FILTER = tagFilterBtn.dataset.tagFilter || '';
+        VISIBLE_COUNT = PAGE_SIZE;
+        document.querySelectorAll('.tag-filter-btn').forEach(btn => {
+          btn.classList.remove('bg-navy', 'text-white', 'border-navy');
+          btn.classList.add('bg-[var(--surface-card)]', 'text-[var(--text-secondary)]', 'border-[var(--border-default)]');
+        });
+        tagFilterBtn.classList.remove('bg-[var(--surface-card)]', 'text-[var(--text-secondary)]', 'border-[var(--border-default)]');
+        tagFilterBtn.classList.add('bg-navy', 'text-white', 'border-navy');
+        renderEvents();
+      }
     });
 
     document.addEventListener('change', (e: Event) => {
       const target = e.target as HTMLElement | null;
-      if (!(target instanceof HTMLSelectElement)) return;
-      if (target.id === 'ev-type') updateAudienceFromType('ev-audience', 'ev-type');
-      if (target.id === 'rec-type') updateAudienceFromType('rec-audience', 'rec-type');
-      if (target.id === 'attendance-type-filter') {
-        ATTENDANCE_ROUTE.type = target.value;
-        VISIBLE_COUNT = PAGE_SIZE;
-        renderEvents();
+      if (!target) return;
+      // W140: tag checkbox change
+      if (target instanceof HTMLInputElement && target.classList.contains('tag-checkbox')) {
+        const option = target.closest('[data-picker-id]') as HTMLElement | null;
+        const pickerId = option?.dataset.pickerId;
+        if (pickerId === 'ev-tag-picker') updateTagSelection('ev-tag-picker', 'ev-tags-container', 'ev-selected-tags');
+        else if (pickerId === 'edit-ev-tag-picker') updateTagSelection('edit-ev-tag-picker', 'edit-ev-tags-container', 'edit-ev-selected-tags');
+        else if (pickerId === 'rec-tag-picker') updateTagSelection('rec-tag-picker', 'rec-tags-container', 'rec-selected-tags');
+        return;
+      }
+      if (target instanceof HTMLSelectElement) {
+        if (target.id === 'ev-type') updateAudienceFromType('ev-audience', 'ev-type');
+        if (target.id === 'rec-type') updateAudienceFromType('rec-audience', 'rec-type');
+        if (target.id === 'attendance-type-filter') {
+          ATTENDANCE_ROUTE.type = target.value;
+          VISIBLE_COUNT = PAGE_SIZE;
+          renderEvents();
+        }
       }
       if (target instanceof HTMLInputElement && target.id === 'attendance-interview-toggle') {
         SHOW_INTERVIEWS = target.checked;
@@ -800,11 +830,166 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     }
   }
 
-  // ── AUDIENCE HELPER ──
+  // ── W140: TAG SYSTEM ──
+  const LEGACY_TYPE_MAP: Record<string, string> = {
+    general_meeting: 'general_meeting',
+    tribe_meeting: 'tribe_meeting',
+    webinar: 'webinar',
+    kickoff: 'kickoff',
+    leadership_meeting: 'leadership_meeting',
+    interview: 'interview',
+    external_event: 'external_event',
+  };
+
+  async function loadTags() {
+    try {
+      const { data, error } = await sb.rpc('get_tags', { p_domain: 'event' });
+      if (error) throw error;
+      ALL_TAGS = data || [];
+      populateTagPickers();
+      populateTagFilterBar();
+    } catch (e) {
+      console.warn('W140: failed to load tags:', e);
+    }
+  }
+
+  function populateTagPickers() {
+    const pickerIds = ['ev-tag-picker', 'edit-ev-tag-picker', 'rec-tag-picker'];
+    pickerIds.forEach(pickerId => {
+      const picker = document.getElementById(pickerId);
+      if (!picker) return;
+      picker.innerHTML = ALL_TAGS.map(tag => `
+        <label class="flex items-center gap-2 px-3 py-2 hover:bg-[var(--surface-hover)] cursor-pointer text-[13px]" data-tag-option data-tag-id="${escapeAttr(tag.id)}" data-tag-name="${escapeAttr(tag.name)}" data-picker-id="${escapeAttr(pickerId)}">
+          <input type="checkbox" class="w-3.5 h-3.5 accent-navy tag-checkbox" data-tag-id="${escapeAttr(tag.id)}" />
+          <span class="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:${tag.color}"></span>
+          <span>${tag.label_pt || tag.name}</span>
+          <span class="text-[10px] text-[var(--text-muted)] ml-auto">${tag.tier}</span>
+        </label>
+      `).join('');
+    });
+  }
+
+  function populateTagFilterBar() {
+    const bar = document.getElementById('attendance-tag-filter');
+    if (!bar) return;
+    const systemTags = ALL_TAGS.filter(t => t.tier === 'system');
+    bar.innerHTML = `
+      <button type="button" class="tag-filter-btn px-2.5 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border border-navy bg-navy text-white" data-tag-filter="">Todos</button>
+      ${systemTags.map(tag => `
+        <button type="button" class="tag-filter-btn px-2.5 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]" data-tag-filter="${escapeAttr(tag.name)}" style="border-color:${tag.color}40">
+          <span class="inline-block w-2 h-2 rounded-full mr-1" style="background:${tag.color}"></span>${tag.label_pt || tag.name}
+        </button>
+      `).join('')}
+    `;
+  }
+
+  function toggleTagPicker(targetId: string) {
+    const picker = document.getElementById(targetId);
+    if (!picker) return;
+    picker.classList.toggle('hidden');
+  }
+
+  function getSelectedTagIds(hiddenInputId: string): string[] {
+    const val = (document.getElementById(hiddenInputId) as HTMLInputElement)?.value || '';
+    return val ? val.split(',').filter(Boolean) : [];
+  }
+
+  function updateTagSelection(pickerId: string, containerId: string, hiddenInputId: string) {
+    const picker = document.getElementById(pickerId);
+    if (!picker) return;
+    const checkboxes = picker.querySelectorAll('.tag-checkbox:checked') as NodeListOf<HTMLInputElement>;
+    const selectedIds: string[] = [];
+    checkboxes.forEach(cb => { if (cb.dataset.tagId) selectedIds.push(cb.dataset.tagId); });
+
+    (document.getElementById(hiddenInputId) as HTMLInputElement).value = selectedIds.join(',');
+
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    if (!selectedIds.length) {
+      container.innerHTML = '<span class="text-[12px] text-[var(--text-muted)]">Clique para selecionar tags...</span>';
+    } else {
+      container.innerHTML = selectedIds.map(id => {
+        const tag = ALL_TAGS.find(t => t.id === id);
+        if (!tag) return '';
+        return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold" style="background:${tag.color}18;color:${tag.color};border:1px solid ${tag.color}40">
+          <span class="w-1.5 h-1.5 rounded-full" style="background:${tag.color}"></span>${tag.label_pt || tag.name}
+        </span>`;
+      }).join('');
+    }
+
+    // Auto-set legacy type from primary tag
+    const legacyTypeId = pickerId === 'ev-tag-picker' ? 'ev-type' : pickerId === 'rec-tag-picker' ? 'rec-type' : null;
+    if (legacyTypeId && selectedIds.length) {
+      const primaryTag = ALL_TAGS.find(t => t.id === selectedIds[0]);
+      if (primaryTag && LEGACY_TYPE_MAP[primaryTag.name]) {
+        (document.getElementById(legacyTypeId) as HTMLInputElement).value = primaryTag.name;
+      }
+    }
+
+    // Auto-set audience from primary tag
+    const audienceId = pickerId === 'ev-tag-picker' ? 'ev-audience'
+      : pickerId === 'edit-ev-tag-picker' ? 'edit-ev-audience'
+      : pickerId === 'rec-tag-picker' ? 'rec-audience' : null;
+    if (audienceId && selectedIds.length) {
+      const primaryTag = ALL_TAGS.find(t => t.id === selectedIds[0]);
+      if (primaryTag) {
+        const audienceMap: Record<string, string> = {
+          tribe_meeting: 'tribe',
+          general_meeting: 'all_active_operational',
+          webinar: 'all_active_operational',
+          kickoff: 'all_active_operational',
+          leadership_meeting: 'role',
+          interview: 'specific_members',
+          external_event: 'all_active_operational',
+        };
+        const mapped = audienceMap[primaryTag.name];
+        if (mapped) (document.getElementById(audienceId) as HTMLSelectElement).value = mapped;
+      }
+    }
+  }
+
+  function setTagPickerFromIds(pickerId: string, containerId: string, hiddenInputId: string, tagIds: string[]) {
+    (document.getElementById(hiddenInputId) as HTMLInputElement).value = tagIds.join(',');
+    const picker = document.getElementById(pickerId);
+    if (picker) {
+      picker.querySelectorAll('.tag-checkbox').forEach((cb: Element) => {
+        (cb as HTMLInputElement).checked = tagIds.includes((cb as HTMLInputElement).dataset.tagId || '');
+      });
+    }
+    updateTagSelection(pickerId, containerId, hiddenInputId);
+  }
+
+  async function assignEventTagsAndAudience(eventId: string, tagIds: string[], audienceValue: string) {
+    if (tagIds.length) {
+      await sb.rpc('assign_event_tags', { p_event_id: eventId, p_tag_ids: tagIds });
+    }
+    const audienceRules = buildAudienceRules(audienceValue);
+    if (audienceRules.length) {
+      await sb.rpc('set_event_audience', { p_event_id: eventId, p_rules: audienceRules });
+    }
+  }
+
+  function buildAudienceRules(audienceValue: string): any[] {
+    const rules: any[] = [];
+    if (audienceValue === 'all_active_operational') {
+      rules.push({ attendance_type: 'mandatory', target_type: 'all_active_operational', target_value: null });
+    } else if (audienceValue === 'tribe') {
+      rules.push({ attendance_type: 'mandatory', target_type: 'tribe', target_value: MEMBER?.tribe_id ? String(MEMBER.tribe_id) : null });
+    } else if (audienceValue === 'role') {
+      ['manager', 'deputy_manager', 'tribe_leader'].forEach(r => {
+        rules.push({ attendance_type: 'mandatory', target_type: 'role', target_value: r });
+      });
+    } else if (audienceValue === 'specific_members') {
+      rules.push({ attendance_type: 'mandatory', target_type: 'specific_members', target_value: null });
+    }
+    return rules;
+  }
+
+  // ── AUDIENCE HELPER (legacy) ──
   function updateAudienceFromType(audienceId: string, typeId: string) {
     const type = (document.getElementById(typeId) as HTMLSelectElement).value;
-    const map: Record<string, string> = { tribe_meeting: 'tribe', general_meeting: 'all', webinar: 'all', other: 'all' };
-    (document.getElementById(audienceId) as HTMLSelectElement).value = map[type] || 'all';
+    const map: Record<string, string> = { tribe_meeting: 'tribe', general_meeting: 'all_active_operational', webinar: 'all_active_operational', other: 'all_active_operational' };
+    (document.getElementById(audienceId) as HTMLSelectElement).value = map[type] || 'all_active_operational';
   }
 
   // ── NEW EVENT ──
@@ -816,12 +1001,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
   async function createEvent() {
     const title = (document.getElementById('ev-title') as HTMLInputElement).value.trim();
-    const type = (document.getElementById('ev-type') as HTMLSelectElement).value;
+    const type = (document.getElementById('ev-type') as HTMLInputElement).value;
     const date = (document.getElementById('ev-date') as HTMLInputElement).value;
     const duration = parseInt((document.getElementById('ev-duration') as HTMLInputElement).value);
     const link = (document.getElementById('ev-link') as HTMLInputElement).value.trim() || null;
     const recorded = (document.getElementById('ev-recorded') as HTMLInputElement).checked;
     const audience = (document.getElementById('ev-audience') as HTMLSelectElement).value;
+    const tagIds = getSelectedTagIds('ev-selected-tags');
     if (!title || !date) return toast(I18N.msgFillTitleDate, 'error');
 
     try {
@@ -829,13 +1015,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         p_type: type, p_title: title, p_date: date,
         p_duration_minutes: duration,
         p_tribe_id: type === 'tribe_meeting' ? MEMBER.tribe_id : null,
-        p_audience_level: audience
+        p_audience_level: audience === 'all_active_operational' ? 'all' : audience
       });
       if (error) throw error;
       if (data?.success) {
         if (link || recorded) {
           await sb.rpc('update_event', { p_event_id: data.event_id, p_meeting_link: link, p_is_recorded: recorded });
         }
+        // W140: assign tags and audience rules
+        await assignEventTagsAndAudience(data.event_id, tagIds, audience);
         closeModal('modal-new-event');
         toast(I18N.msgEventCreated, 'success');
         loadEvents(); loadKPIs();
@@ -854,13 +1042,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
   async function createRecurring() {
     const titleTpl = (document.getElementById('rec-title') as HTMLInputElement).value.trim();
-    const type = (document.getElementById('rec-type') as HTMLSelectElement).value;
+    const type = (document.getElementById('rec-type') as HTMLInputElement).value;
     const start = (document.getElementById('rec-start') as HTMLInputElement).value;
     const duration = parseInt((document.getElementById('rec-duration') as HTMLInputElement).value);
     const weeks = parseInt((document.getElementById('rec-weeks') as HTMLInputElement).value);
     const link = (document.getElementById('rec-link') as HTMLInputElement).value.trim() || null;
     const recorded = (document.getElementById('rec-recorded') as HTMLInputElement).checked;
     const audience = (document.getElementById('rec-audience') as HTMLSelectElement).value;
+    const tagIds = getSelectedTagIds('rec-selected-tags');
     if (!titleTpl || !start) return toast(I18N.msgFillTemplateDate, 'error');
 
     try {
@@ -870,10 +1059,16 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         p_meeting_link: link,
         p_tribe_id: type === 'tribe_meeting' ? MEMBER.tribe_id : null,
         p_is_recorded: recorded,
-        p_audience_level: audience
+        p_audience_level: audience === 'all_active_operational' ? 'all' : audience
       });
       if (error) throw error;
       if (data?.success) {
+        // W140: assign tags and audience to all created events
+        if (tagIds.length && data.event_ids?.length) {
+          for (const eid of data.event_ids) {
+            await assignEventTagsAndAudience(eid, tagIds, audience);
+          }
+        }
         closeModal('modal-recurring');
         toast(I18N.msgEventsCreated.replace('{n}', data.events_created), 'success');
         loadEvents(); loadKPIs();
@@ -885,7 +1080,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   }
 
   // ── EDIT EVENT ──
-  function openEditEvent(ev: any) {
+  async function openEditEvent(ev: any) {
     (document.getElementById('edit-ev-id') as HTMLInputElement).value = ev.id;
     (document.getElementById('edit-ev-title') as HTMLInputElement).value = ev.title || '';
     (document.getElementById('edit-ev-date') as HTMLInputElement).value = ev.date || '';
@@ -893,7 +1088,18 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     (document.getElementById('edit-ev-link') as HTMLInputElement).value = ev.meeting_link || '';
     (document.getElementById('edit-ev-youtube') as HTMLInputElement).value = ev.youtube_url || '';
     (document.getElementById('edit-ev-recorded') as HTMLInputElement).checked = ev.is_recorded || false;
-    (document.getElementById('edit-ev-audience') as HTMLSelectElement).value = ev.audience_level || 'all';
+    // W140: map legacy audience_level to new audience values
+    const legacyMap: Record<string, string> = { all: 'all_active_operational', leadership: 'role', tribe: 'tribe', curators: 'specific_members' };
+    const mappedAudience = legacyMap[ev.audience_level] || ev.audience_level || 'all_active_operational';
+    (document.getElementById('edit-ev-audience') as HTMLSelectElement).value = mappedAudience;
+    // W140: load event tags
+    try {
+      const { data: tagData } = await sb.rpc('get_event_tags', { p_event_id: ev.id });
+      const tagIds = (tagData || []).map((t: any) => t.tag_id);
+      setTagPickerFromIds('edit-ev-tag-picker', 'edit-ev-tags-container', 'edit-ev-selected-tags', tagIds);
+    } catch (_) {
+      setTagPickerFromIds('edit-ev-tag-picker', 'edit-ev-tags-container', 'edit-ev-selected-tags', []);
+    }
     applyEditContext(ev);
     openModal('modal-edit-event');
   }
@@ -907,16 +1113,19 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const youtube = (document.getElementById('edit-ev-youtube') as HTMLInputElement).value.trim() || null;
     const recorded = (document.getElementById('edit-ev-recorded') as HTMLInputElement).checked;
     const audience = (document.getElementById('edit-ev-audience') as HTMLSelectElement).value;
+    const tagIds = getSelectedTagIds('edit-ev-selected-tags');
 
     try {
       const { data, error } = await sb.rpc('update_event', {
         p_event_id: id, p_title: title, p_date: date,
         p_duration_minutes: duration, p_meeting_link: link,
         p_youtube_url: youtube, p_is_recorded: recorded,
-        p_audience_level: audience
+        p_audience_level: audience === 'all_active_operational' ? 'all' : audience
       });
       if (error) throw error;
       if (data?.success) {
+        // W140: update tags and audience rules
+        await assignEventTagsAndAudience(id, tagIds, audience);
         closeModal('modal-edit-event');
         toast(I18N.msgEventUpdated, 'success');
         loadEvents(); loadKPIs();
@@ -1118,6 +1327,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     showApp();
     const routeTabBtn = document.querySelector(`[data-tab="${ATTENDANCE_ROUTE.tab}"]`) as HTMLElement | null;
     if (routeTabBtn) switchTab(routeTabBtn, ATTENDANCE_ROUTE.tab);
+    loadTags();
     loadKPIs();
     loadEvents();
 
