@@ -23,7 +23,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       <div class="flex items-center justify-between">
         <div>
           <h1 class="text-2xl font-extrabold text-navy">{t('publications.title', lang)}</h1>
-          <p class="text-sm text-[var(--text-secondary)] mt-1">{t('publications.subtitle', lang)}</p>
+          <p class="text-sm text-[var(--text-secondary)] mt-1">{t('publications.submissionsSubtitle', lang)}</p>
         </div>
         <button id="btn-new-sub" class="px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold hover:opacity-90 cursor-pointer hidden">
           + {t('publications.new', lang)}

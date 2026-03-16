@@ -137,7 +137,8 @@ async function run() {
 
     await page.goto(`${base}/admin/analytics`, { waitUntil: 'networkidle' });
     const analyticsDenied = page.locator('#analytics-denied');
-    await analyticsDenied.waitFor({ state: 'visible' });
+    // Analytics page retries auth for 5s before showing denied for unauthenticated users
+    await analyticsDenied.waitFor({ state: 'visible', timeout: 10000 });
     assert.match(await analyticsDenied.textContent() || '', /analytics/i);
     assert.equal(await page.locator('#analytics-panel').isVisible(), false);
 
