@@ -201,8 +201,22 @@ const SIM_I18N = {
       <a href="https://github.com/VitorMRodovalho/ai-pm-research-hub" class="text-[#05BFE0] no-underline hover:underline">GitHub</a>
       · {t('footer.gp', lang)}
       · <a href="/privacy" class="text-[#05BFE0] no-underline hover:underline">{t('footer.privacy', lang)}</a>
+      · <span id="footer-version" class="text-white/25 text-[.65rem]">development</span>
     </p>
   </footer>
+  <script>
+    (async () => {
+      const sb = (window as any).navGetSb?.();
+      if (!sb) return;
+      try {
+        const { data } = await sb.rpc('get_current_release');
+        if (data?.version) {
+          const el = document.getElementById('footer-version');
+          if (el) el.textContent = data.version;
+        }
+      } catch {}
+    })();
+  </script>
 
   <!-- Cookie Consent Banner (W126) -->
   <div id="consent-banner"

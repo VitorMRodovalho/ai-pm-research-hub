@@ -828,6 +828,28 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 **Impacto tecnico:** permissions.ts: 11 operational tiers x 7 designations x ~45 permission strings. SimulationContext (React) + cookie sync for Astro SSR pages. TierViewerBar in BaseLayout (superadmin only). AdminNav, useBoardPermissions migrated to hasPermission(). Phase 3 backlog: migrate remaining ~130 direct checks.
 
+### GC-062: W107 — AI Pilot Registration Framework
+
+**Data:** 2026-03-15
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** 3-pilot annual KPI tracked via `pilots` table. Pilot #1 (Hub SaaS) registered with 9 auto-calculated metrics. /projects shows public summary with expandable detail; /admin/pilots enables GP management. Release system with version in footer.
+
+**Justificativa:** Hub SaaS platform counts as AI Pilot #1 toward annual KPI. Structured tracking enables evidence-based reporting to sponsors and chapter liaisons. Auto-calculated metrics eliminate manual data collection.
+
+**Impacto tecnico:** `pilots` table (8 PMI fields + success_metrics jsonb with auto_query). `releases` table (version tracking with is_current flag). RPCs: get_pilot_metrics (auto-calc 9 metrics), get_pilots_summary (KPI progress 1/3), get_current_release (footer version). Routes: /projects (public), /admin/pilots (GP management).
+
+### GC-063: Terminology — Tribo mantida (W140-GOV revert)
+
+**Data:** 2026-03-15
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Migracao Tribe→Community of Practice (CoP) cancelada. Termo "Tribo" consolidado e sem friccao. Infraestrutura de permissoes permanece pronta caso revisitada.
+
+**Impacto tecnico:** Zero mudancas no banco ou frontend. GC-039 (Org Chart v4) atualizado: referencias a CoP sao informativas, nao operacionais.
+
 ---
 
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*

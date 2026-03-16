@@ -1,0 +1,123 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminNav from '../../components/nav/AdminNav.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+---
+
+<BaseLayout title={t('pilots.title', lang)} activePage="admin">
+  <div class="max-w-[1100px] mx-auto px-4 py-8">
+    <AdminNav activeSub="pilots" lang={lang} />
+
+    <h2 class="text-xl font-extrabold text-navy mb-1">{t('pilots.title', lang)}</h2>
+    <p class="text-sm text-[var(--text-secondary)] mb-6">{t('pilots.subtitle', lang)}</p>
+
+    <!-- Pilots management -->
+    <div id="admin-pilots-loading" class="text-[var(--text-muted)] text-sm py-8 text-center">
+      {t('common.loading', lang)}
+    </div>
+
+    <div id="admin-pilots-content" class="hidden space-y-6">
+      <!-- Pilots section -->
+      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5">
+        <h3 class="text-sm font-bold text-navy mb-4">🚀 {t('pilots.title', lang)}</h3>
+        <div id="pilots-list" class="space-y-3"></div>
+      </div>
+
+      <!-- Releases section -->
+      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-bold text-navy">{t('releases.title', lang)}</h3>
+          <button id="btn-new-release"
+            class="px-3 py-1.5 rounded-lg bg-navy text-white text-[11px] font-semibold cursor-pointer border-0 hover:bg-blue-800 transition-colors">
+            + {t('releases.new', lang)}
+          </button>
+        </div>
+        <div id="releases-list" class="space-y-2"></div>
+        <div id="releases-empty" class="hidden text-sm text-[var(--text-muted)] text-center py-4">
+          {t('footer.version', lang)}: development
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<span id="i18n-releases-current" class="hidden">{t('releases.current', lang)}</span>
+<span id="i18n-pilots-active" class="hidden">{t('pilots.active', lang)}</span>
+<span id="i18n-pilots-completed" class="hidden">{t('pilots.completed', lang)}</span>
+<span id="i18n-pilots-draft" class="hidden">{t('pilots.draft', lang)}</span>
+<span id="i18n-pilots-metrics" class="hidden">{t('pilots.metrics', lang)}</span>
+<span id="i18n-pilots-team" class="hidden">{t('pilots.team', lang)}</span>
+
+<script>
+  async function bootAdminPilots() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(bootAdminPilots, 300); return; }
+
+    const loading = document.getElementById('admin-pilots-loading');
+    const content = document.getElementById('admin-pilots-content');
+    if (!loading || !content) return;
+
+    const i = (id: string) => document.getElementById(id)?.textContent || '';
+
+    try {
+      // Load pilots
+      const { data: pilotsData } = await sb.rpc('get_pilots_summary');
+      // Load releases
+      const { data: releases } = await sb.from('releases').select('*').order('released_at', { ascending: false });
+
+      loading.classList.add('hidden');
+      content.classList.remove('hidden');
+
+      // Render pilots
+      const pilotsList = document.getElementById('pilots-list');
+      if (pilotsList && pilotsData?.pilots) {
+        const STATUS_BADGE: Record<string, string> = {
+          active: `<span class="px-2 py-0.5 rounded-full text-[.6rem] font-bold bg-emerald-50 text-emerald-700">${i('i18n-pilots-active')}</span>`,
+          completed: `<span class="px-2 py-0.5 rounded-full text-[.6rem] font-bold bg-blue-50 text-blue-700">${i('i18n-pilots-completed')}</span>`,
+          draft: `<span class="px-2 py-0.5 rounded-full text-[.6rem] font-bold bg-gray-100 text-gray-500">${i('i18n-pilots-draft')}</span>`,
+        };
+        pilotsList.innerHTML = pilotsData.pilots.map((p: any) => `
+          <div class="flex items-center justify-between p-3 rounded-lg bg-[var(--surface-base)]">
+            <div>
+              <span class="text-sm font-bold text-navy">PILOT #${p.pilot_number}</span>
+              <span class="ml-2 text-[.78rem] text-[var(--text-secondary)]">${p.title}</span>
+              ${STATUS_BADGE[p.status] || ''}
+            </div>
+            <div class="text-[.7rem] text-[var(--text-muted)]">
+              ${p.days_active}d · ${i('i18n-pilots-team')}: ${p.team_count || 0} · ${i('i18n-pilots-metrics')}: ${p.metrics_count}
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Render releases
+      const releasesList = document.getElementById('releases-list');
+      const releasesEmpty = document.getElementById('releases-empty');
+      if (releasesList) {
+        if (!releases || releases.length === 0) {
+          releasesEmpty?.classList.remove('hidden');
+        } else {
+          releasesList.innerHTML = releases.map((r: any) => `
+            <div class="flex items-center justify-between p-3 rounded-lg bg-[var(--surface-base)]">
+              <div>
+                <span class="text-sm font-bold text-navy">${r.version}</span>
+                ${r.is_current ? `<span class="ml-1 px-1.5 py-0.5 rounded text-[.55rem] font-bold bg-teal/10 text-teal">${i('i18n-releases-current')}</span>` : ''}
+                <span class="ml-2 text-[.78rem] text-[var(--text-secondary)]">${r.title}</span>
+              </div>
+              <div class="text-[.7rem] text-[var(--text-muted)]">
+                ${r.released_at ? new Date(r.released_at).toLocaleDateString() : ''}
+                ${r.waves_included ? ` · ${r.waves_included.join(', ')}` : ''}
+              </div>
+            </div>
+          `).join('');
+        }
+      }
+    } catch (err) {
+      console.warn('Admin pilots error:', err);
+      loading.textContent = 'Error loading pilots';
+    }
+  }
+
+  bootAdminPilots();
+</script>
