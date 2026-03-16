@@ -358,6 +358,8 @@ const esLATAM: Record<string, string> = {
   'nav.attendanceLink': '⏱ Asistencia & Horas',
   'nav.adminLink': '⚙️ Panel Admin',
   'nav.logout': '↩ Salir',
+  'nav.privacy': 'Política de Privacidad',
+  'nav.help': 'Ayuda',
   'nav.user': 'Usuario',
   'nav.menu': 'Menú',
 
