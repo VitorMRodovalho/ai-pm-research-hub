@@ -923,6 +923,13 @@ const ANALYTICS_I18N = {
     MEMBER = (window as any).navGetMember?.();
 
     if (!sb || !MEMBER) return; // Not ready yet — don't show denied, just wait
+
+    // Ensure Supabase auth session is established before calling protected RPCs
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) return; // Session not loaded yet — retries will pick it up
+    } catch { return; }
+
     if (!canReadInternalAnalytics(MEMBER)) {
       _initDone = true;
       showDenied();
