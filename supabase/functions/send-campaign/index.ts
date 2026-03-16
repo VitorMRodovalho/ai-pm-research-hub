@@ -21,25 +21,26 @@ Deno.serve(async (req) => {
 
     if (!rkey) return json({ error: 'No RESEND key' }, 500)
 
-    // Auth: verify caller
+    // Auth: verify caller (accepts both user JWT and service_role key)
     const ah = req.headers.get('Authorization') ?? ''
     const tk = ah.replace(/^Bearer\s+/i, '').trim()
     if (!tk) return json({ error: 'No token' }, 401)
 
-    const uc = createClient(url, anon, { global: { headers: { Authorization: 'Bearer ' + tk } } })
-    const ur = await uc.auth.getUser()
-    if (ur.error || !ur.data?.user) return json({ error: 'Bad token' }, 401)
-    const uid = ur.data.user.id
-
     const sb = createClient(url, srk)
+    const isServiceRole = tk === srk
 
-    // Verify caller is GP/DM
-    const { data: caller } = await sb.from('members')
-      .select('id, is_superadmin, operational_role')
-      .eq('auth_id', uid).single()
-    if (!caller) return json({ error: 'No member' }, 403)
-    const isAdmin = caller.is_superadmin || ['manager', 'deputy_manager'].includes(caller.operational_role)
-    if (!isAdmin) return json({ error: 'Forbidden: GP/DM only' }, 403)
+    if (!isServiceRole) {
+      const { data: { user }, error: userError } = await sb.auth.getUser(tk)
+      if (userError || !user) return json({ error: `Auth failed: ${userError?.message || 'token invalid'}` }, 401)
+
+      // Verify caller is GP/DM
+      const { data: caller } = await sb.from('members')
+        .select('id, is_superadmin, operational_role')
+        .eq('auth_id', user.id).single()
+      if (!caller) return json({ error: 'No member' }, 403)
+      const isAdmin = caller.is_superadmin || ['manager', 'deputy_manager'].includes(caller.operational_role)
+      if (!isAdmin) return json({ error: 'Forbidden: GP/DM only' }, 403)
+    }
 
     // Parse payload
     const body = await req.json()
