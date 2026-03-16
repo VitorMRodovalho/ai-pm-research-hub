@@ -878,4 +878,18 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-066 — Financial Sustainability CRUD + Projections (W108)
+
+**Data:** 2026-03-16
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Full CRUD UI for cost and revenue tracking. 4 tabs: Dashboard (with projections + infra breakdown), Costs (CRUD table with filters), Revenue/Value (CRUD table), Targets (KPI editor). Zero-cost seed: 7 infrastructure items registered at R$0, documenting free tier usage.
+
+**Justificativa:** Hub operates at zero-cost but had no data tracking this. Financial transparency is required for sponsors and PMI Global reporting. Projections enable proactive budgeting if/when costs arise.
+
+**Impacto tecnico:** 6 new RPCs: `get_cost_entries`, `get_revenue_entries` (list with filters), `delete_cost_entry`, `delete_revenue_entry` (manager/superadmin only), `update_sustainability_kpi` (edit targets), `get_sustainability_projections` (6-month forecast). Uses existing W139 schema (5 tables). `infra_cost_monthly` KPI (W104) now auto-calculated from `cost_entries`. Cycle Report (W105) includes `sustainability` section. Permission: `admin.sustainability` (manager + deputy_manager).
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*
