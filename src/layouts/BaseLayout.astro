@@ -206,7 +206,14 @@ const SIM_I18N = {
   </footer>
   <script>
     (async () => {
-      const sb = (window as any).navGetSb?.();
+      let sb = (window as any).navGetSb?.();
+      if (!sb) {
+        await new Promise<void>(r => {
+          const check = () => { sb = (window as any).navGetSb?.(); if (sb) r(); else setTimeout(check, 300); };
+          setTimeout(check, 300);
+          setTimeout(r, 3000);
+        });
+      }
       if (!sb) return;
       try {
         const { data } = await sb.rpc('get_current_release');
