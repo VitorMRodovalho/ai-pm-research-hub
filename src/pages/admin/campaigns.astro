@@ -466,7 +466,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
             (window as any).toast?.(`Enviando para ${data.total_recipients} destinatários...`, 'info');
             // Trigger Edge Function and wait for delivery results
             const { data: { session } } = await sb.auth.getSession();
-            if (session?.access_token && data.status === 'sending') {
+            if (session?.access_token && (data.status === 'sending' || data.status === 'pending_delivery')) {
               confirmBtn.textContent = 'Entregando...';
               try {
                 const efRes = await fetch(`${(sb as any).supabaseUrl}/functions/v1/send-campaign`, {
