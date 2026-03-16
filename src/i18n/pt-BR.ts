@@ -477,6 +477,20 @@ const ptBR: Record<string, string> = {
   'releases.current': 'Atual',
   'releases.new': 'Nova Release',
   'footer.version': 'Versão',
+  // ── KPI Scorecard (W104) ──
+  'kpi.title': 'Metas do Ciclo',
+  'kpi.achieved': 'Atingido',
+  'kpi.onTrack': 'No Caminho',
+  'kpi.atRisk': 'Em Risco',
+  'kpi.behind': 'Atrás',
+  'kpi.delivery': 'Entregas',
+  'kpi.engagement': 'Engajamento',
+  'kpi.learning': 'Aprendizado',
+  'kpi.financial': 'Financeiro',
+  'kpi.growth': 'Crescimento',
+  'kpi.manage': 'Gerenciar Metas',
+  'kpi.autoCalculated': 'Auto-calculado',
+  'kpi.manual': 'Manual',
 
   // ── Team ──
   'team.label': '44 Colaboradores · 5 Capítulos · 1 Missão',
