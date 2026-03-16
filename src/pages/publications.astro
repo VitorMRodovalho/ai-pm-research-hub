@@ -61,6 +61,70 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     </div>
   </div>
 
+  <!-- ── My Submissions (researcher self-service, hidden until auth + permission check) ── -->
+  <div id="pub-my-submissions" class="hidden max-w-[1200px] mx-auto px-4 pb-8 space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-xl font-extrabold text-navy">{t('publications.mySubmissions', lang)}</h2>
+      <button id="btn-my-new-sub" class="px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold hover:opacity-90 cursor-pointer">
+        + {t('publications.new', lang)}
+      </button>
+    </div>
+    <div id="my-subs-loading" class="text-center py-8 text-[var(--text-muted)] text-sm">{t('common.loading', lang)}</div>
+    <div id="my-subs-empty" class="hidden text-center py-8">
+      <p class="text-sm text-[var(--text-secondary)]">{t('publications.publicEmpty', lang)}</p>
+    </div>
+    <div id="my-subs-list" class="hidden space-y-3"></div>
+  </div>
+
+  <!-- My Submission Detail Modal -->
+  <div id="my-detail-modal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+    <div class="bg-[var(--surface-card)] rounded-2xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6 relative">
+      <button id="my-detail-close" class="absolute top-3 right-3 text-xl text-[var(--text-muted)] cursor-pointer bg-transparent border-0 hover:text-navy">&times;</button>
+      <div id="my-detail-body"></div>
+    </div>
+  </div>
+
+  <!-- My New Submission Modal -->
+  <div id="my-new-modal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+    <div class="bg-[var(--surface-card)] rounded-2xl shadow-xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6 relative">
+      <button id="my-new-close" class="absolute top-3 right-3 text-xl text-[var(--text-muted)] cursor-pointer bg-transparent border-0 hover:text-navy">&times;</button>
+      <h3 class="text-lg font-bold text-navy mb-4">+ {t('publications.new', lang)}</h3>
+      <form id="my-new-form" class="space-y-3">
+        <div>
+          <label class="text-[.7rem] font-semibold text-[var(--text-muted)] block mb-1">{t('publications.formTitle', lang)}</label>
+          <input name="title" required class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm">
+        </div>
+        <div>
+          <label class="text-[.7rem] font-semibold text-[var(--text-muted)] block mb-1">{t('publications.formAbstract', lang)}</label>
+          <textarea name="abstract" rows="3" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-[.7rem] font-semibold text-[var(--text-muted)] block mb-1">{t('publications.formTargetType', lang)}</label>
+            <select name="target_type" required class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm">
+              <option value="pmi_global_conference">{t('publications.target.pmi_global', lang)}</option>
+              <option value="pmi_chapter_event">{t('publications.target.pmi_chapter', lang)}</option>
+              <option value="academic_journal">{t('publications.target.journal', lang)}</option>
+              <option value="academic_conference">{t('publications.target.conference', lang)}</option>
+              <option value="webinar">{t('publications.target.webinar', lang)}</option>
+              <option value="blog_post">{t('publications.target.blog', lang)}</option>
+              <option value="other">Outro</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[.7rem] font-semibold text-[var(--text-muted)] block mb-1">{t('publications.formTargetName', lang)}</label>
+            <input name="target_name" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm">
+          </div>
+        </div>
+        <div>
+          <label class="text-[.7rem] font-semibold text-[var(--text-muted)] block mb-1">{t('publications.estimatedCost', lang)}</label>
+          <input name="estimated_cost" type="number" step="0.01" min="0" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm">
+        </div>
+        <button type="submit" class="w-full py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer hover:opacity-90">Salvar</button>
+      </form>
+    </div>
+  </div>
+
   <!-- ── Internal Board (login required, hidden for anonymous) ── -->
   <div id="pub-internal" class="hidden max-w-[1200px] mx-auto px-4 pb-10 space-y-4">
     <section class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
@@ -96,6 +160,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 <span id="pub-i18n-featured" class="hidden">{t('publications.featured', lang)}</span>
 
 <script>
+  import { hasPermission } from '../lib/permissions';
   const TYPE_ICONS: Record<string, string> = {
     article: '\u{1F4C4}', framework: '\u{1F3D7}\uFE0F', toolkit: '\u{1F9F0}',
     case_study: '\u{1F4CB}', webinar_recording: '\u{1F3AC}', ebook: '\u{1F4D6}', podcast: '\u{1F3A7}'
@@ -246,6 +311,164 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     }
   }
 
+  // ── Researcher self-service: My Submissions ──
+  const STATUS_COLORS: Record<string, string> = {
+    draft: 'bg-gray-100 text-gray-700',
+    submitted: 'bg-blue-100 text-blue-700',
+    under_review: 'bg-amber-100 text-amber-700',
+    revision_requested: 'bg-orange-100 text-orange-700',
+    accepted: 'bg-green-100 text-green-700',
+    rejected: 'bg-red-100 text-red-700',
+    published: 'bg-emerald-100 text-emerald-700',
+    presented: 'bg-purple-100 text-purple-700',
+  };
+  const STATUS_LABELS: Record<string, string> = {
+    draft: 'Rascunho', submitted: 'Submetido', under_review: 'Em Revisão',
+    revision_requested: 'Revisão Solicitada', accepted: 'Aceito',
+    rejected: 'Rejeitado', published: 'Publicado', presented: 'Apresentado',
+  };
+  const TARGET_LABELS: Record<string, string> = {
+    pmi_global_conference: 'PMI Global', pmi_chapter_event: 'PMI Chapter',
+    academic_journal: 'Periódico', academic_conference: 'Conferência',
+    webinar: 'Webinar', blog_post: 'Blog Post', other: 'Outro',
+  };
+
+  async function loadMySubmissions() {
+    const sb = (window as any).navGetSb?.();
+    const member = (window as any).navGetMember?.();
+    if (!sb || !member) return;
+
+    const loading = document.getElementById('my-subs-loading');
+    const empty = document.getElementById('my-subs-empty');
+    const list = document.getElementById('my-subs-list');
+    if (!list) return;
+
+    try {
+      const { data, error } = await sb.rpc('get_publication_submissions', {
+        p_status: null, p_tribe_id: null
+      });
+      if (error) throw error;
+
+      const myId = member.id;
+      const mySubs = (data || []).filter((s: any) =>
+        s.primary_author_id === myId ||
+        (s.authors || []).some((a: any) => a.member_id === myId)
+      );
+
+      loading?.classList.add('hidden');
+
+      if (mySubs.length === 0) {
+        empty?.classList.remove('hidden');
+        return;
+      }
+
+      list.innerHTML = mySubs.map((s: any) => {
+        const sColor = STATUS_COLORS[s.status] || 'bg-gray-100 text-gray-700';
+        const sLabel = STATUS_LABELS[s.status] || s.status;
+        const tLabel = TARGET_LABELS[s.target_type] || s.target_type;
+        return `
+          <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 cursor-pointer hover:shadow-md transition-all" data-my-sub-id="${s.id}">
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <h3 class="text-sm font-bold text-navy truncate flex-1">${escHtml(s.title)}</h3>
+              <span class="text-[.65rem] font-bold px-2 py-0.5 rounded-full ${sColor} whitespace-nowrap">${escHtml(sLabel)}</span>
+            </div>
+            <div class="flex items-center gap-2 text-[.7rem] text-[var(--text-muted)]">
+              <span>${escHtml(tLabel)}</span>
+              ${s.target_name ? `<span>&bull; ${escHtml(s.target_name)}</span>` : ''}
+              ${s.created_at ? `<span>&bull; ${new Date(s.created_at).toLocaleDateString('pt-BR')}</span>` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      list.classList.remove('hidden');
+
+      // Click handlers for detail
+      list.querySelectorAll('[data-my-sub-id]').forEach(el => {
+        el.addEventListener('click', () => showMySubDetail(el.getAttribute('data-my-sub-id')!, mySubs));
+      });
+    } catch (e) {
+      console.warn('My submissions load:', e);
+      loading?.classList.add('hidden');
+    }
+  }
+
+  function showMySubDetail(id: string, subs: any[]) {
+    const sub = subs.find((s: any) => s.id === id);
+    if (!sub) return;
+    const body = document.getElementById('my-detail-body');
+    if (!body) return;
+
+    const sColor = STATUS_COLORS[sub.status] || 'bg-gray-100 text-gray-700';
+    const sLabel = STATUS_LABELS[sub.status] || sub.status;
+    const tLabel = TARGET_LABELS[sub.target_type] || sub.target_type;
+
+    body.innerHTML = `
+      <div class="space-y-3">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-[.7rem] font-bold px-2 py-0.5 rounded-full ${sColor}">${escHtml(sLabel)}</span>
+          <span class="text-[.7rem] text-[var(--text-muted)]">${escHtml(tLabel)}</span>
+        </div>
+        <h2 class="text-lg font-extrabold text-navy">${escHtml(sub.title)}</h2>
+        ${sub.abstract ? `<p class="text-sm text-[var(--text-secondary)] italic">${escHtml(sub.abstract)}</p>` : ''}
+        ${sub.target_name ? `<div class="text-[.75rem]"><strong>Destino:</strong> ${escHtml(sub.target_name)}</div>` : ''}
+        ${sub.target_url ? `<div class="text-[.75rem]"><a href="${escHtml(sub.target_url)}" target="_blank" rel="noopener" class="text-teal hover:underline">Link externo</a></div>` : ''}
+        ${sub.primary_author_name ? `<div class="text-[.75rem]"><strong>Autor principal:</strong> ${escHtml(sub.primary_author_name)}</div>` : ''}
+        ${sub.estimated_cost ? `<div class="text-[.75rem]"><strong>Custo estimado:</strong> R$ ${Number(sub.estimated_cost).toFixed(2)}</div>` : ''}
+        <div class="text-[.7rem] text-[var(--text-muted)] pt-2 border-t border-[var(--border-subtle)]">
+          Criado em ${sub.created_at ? new Date(sub.created_at).toLocaleDateString('pt-BR') : '-'}
+        </div>
+      </div>
+    `;
+    document.getElementById('my-detail-modal')?.classList.remove('hidden');
+  }
+
+  // Close my-detail modal
+  document.getElementById('my-detail-close')?.addEventListener('click', () => {
+    document.getElementById('my-detail-modal')?.classList.add('hidden');
+  });
+  document.getElementById('my-detail-modal')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) document.getElementById('my-detail-modal')?.classList.add('hidden');
+  });
+
+  // New submission modal for researcher
+  document.getElementById('btn-my-new-sub')?.addEventListener('click', () => {
+    document.getElementById('my-new-modal')?.classList.remove('hidden');
+  });
+  document.getElementById('my-new-close')?.addEventListener('click', () => {
+    document.getElementById('my-new-modal')?.classList.add('hidden');
+  });
+  document.getElementById('my-new-modal')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) document.getElementById('my-new-modal')?.classList.add('hidden');
+  });
+
+  document.getElementById('my-new-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const sb = (window as any).navGetSb?.();
+    const member = (window as any).navGetMember?.();
+    if (!sb || !member) return;
+
+    const fd = new FormData(e.target as HTMLFormElement);
+    const { error } = await sb.rpc('create_publication_submission', {
+      p_title: fd.get('title'),
+      p_abstract: fd.get('abstract') || null,
+      p_target_type: fd.get('target_type'),
+      p_target_name: fd.get('target_name') || null,
+      p_primary_author_id: member.id,
+      p_tribe_id: member.tribe_id || null,
+      p_estimated_cost: fd.get('estimated_cost') ? Number(fd.get('estimated_cost')) : null,
+    });
+
+    if (error) {
+      (window as any).toast?.('Erro ao criar submissão', 'error');
+      return;
+    }
+    (window as any).toast?.('Submissão criada!', 'success');
+    document.getElementById('my-new-modal')?.classList.add('hidden');
+    (e.target as HTMLFormElement).reset();
+    loadMySubmissions();
+  });
+
   // Show internal board section if logged in
   function checkInternalAccess() {
     const m = (window as any).navGetMember?.();
@@ -267,13 +490,26 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     filterTimer = setTimeout(loadPublicPublications, 400);
   });
 
+  // Check researcher self-service access
+  function checkMySubmissionsAccess() {
+    const m = (window as any).navGetMember?.();
+    if (!m) return;
+    // Researchers, tribe_leaders, managers, deputy_managers, superadmins can submit
+    const canSubmit = hasPermission(m, 'content.submit_publication');
+    if (canSubmit) {
+      document.getElementById('pub-my-submissions')?.classList.remove('hidden');
+      loadMySubmissions();
+    }
+  }
+
   // Boot
   function boot() {
     const sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(boot, 300); return; }
     loadPublicPublications();
     checkInternalAccess();
-    window.addEventListener('nav:member', () => checkInternalAccess());
+    checkMySubmissionsAccess();
+    window.addEventListener('nav:member', () => { checkInternalAccess(); checkMySubmissionsAccess(); });
   }
 
   if (document.readyState === 'loading') {

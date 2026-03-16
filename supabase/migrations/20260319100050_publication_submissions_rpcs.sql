@@ -1,0 +1,29 @@
+-- Publication Submissions RPCs — deployed via Supabase MCP
+-- Documents 5 new RPCs for the publication submission pipeline:
+--
+-- 1. get_publication_submission_detail(p_submission_id uuid)
+--    Returns full submission with authors array. SECURITY DEFINER.
+--
+-- 2. add_publication_submission_author(p_submission_id uuid, p_member_id uuid, p_order integer, p_is_corresponding boolean)
+--    Upserts author with ON CONFLICT. SECURITY DEFINER.
+--
+-- 3. remove_publication_submission_author(p_submission_id uuid, p_member_id uuid)
+--    Hard delete. SECURITY DEFINER.
+--
+-- 4. update_publication_submission(p_id uuid, p_title text, p_abstract text, ...)
+--    COALESCE pattern for partial updates. SECURITY DEFINER.
+--
+-- 5. get_publication_pipeline_summary()
+--    Aggregates counts by status, target_type, and tribe. SECURITY DEFINER.
+--
+-- Seed: 8 existing board items migrated to publication_submissions (status: submitted).
+-- Governance: GC-067 — governance_entries bumped from 66 to 67.
+--
+-- Access control:
+--   Admin: hasPermission(member, 'admin.publications') — manager, curator
+--   Researcher: hasPermission(member, 'content.submit_publication') — researcher, tribe_leader, manager
+--
+-- Frontend:
+--   /admin/publications — 3-tab admin page (pipeline, list, metrics)
+--   /publications — researcher self-service section (own submissions + create)
+--   /workspace — "Minhas Publicações" card with status counts

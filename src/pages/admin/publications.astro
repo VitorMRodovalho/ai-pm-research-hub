@@ -1,0 +1,604 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import AdminNav from '../../components/nav/AdminNav.astro';
+import Toast from '../../components/ui/Toast.astro';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+---
+
+<BaseLayout title={t('publications.title', lang)} activePage="admin">
+  <div class="max-w-[1200px] mx-auto px-4 pt-6">
+    <AdminNav activeSub="publications" lang={lang} />
+  </div>
+  <div class="max-w-[1200px] mx-auto px-4 pb-12">
+    <div id="pub-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
+      <div class="text-3xl mb-3">&#x1F512;</div>
+      <p class="font-semibold text-amber-800">{t('publications.denied', lang)}</p>
+      <a href="/admin" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">Voltar</a>
+    </div>
+
+    <div id="pub-panel" class="hidden space-y-5">
+      <!-- Header -->
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-2xl font-extrabold text-navy">{t('publications.title', lang)}</h1>
+          <p class="text-sm text-[var(--text-secondary)] mt-1">{t('publications.subtitle', lang)}</p>
+        </div>
+        <button id="btn-new-sub" class="px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold hover:opacity-90 cursor-pointer hidden">
+          + {t('publications.new', lang)}
+        </button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex gap-1 border-b border-[var(--border-default)]">
+        <button data-tab="pipeline" class="pub-tab px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-navy text-navy bg-transparent cursor-pointer">
+          {t('publications.pipeline', lang)}
+        </button>
+        <button data-tab="list" class="pub-tab px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-muted)] bg-transparent cursor-pointer hover:text-navy">
+          {t('publications.list', lang)}
+        </button>
+        <button data-tab="metrics" class="pub-tab px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-muted)] bg-transparent cursor-pointer hover:text-navy">
+          {t('publications.metrics', lang)}
+        </button>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex flex-wrap gap-3 items-end" id="pub-filters">
+        <div>
+          <label class="text-[.68rem] font-semibold text-[var(--text-muted)] block">Status</label>
+          <select id="filter-status" class="mt-1 px-3 py-1.5 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]">
+            <option value="">Todos</option>
+            <option value="draft">{t('publications.status.draft', lang)}</option>
+            <option value="submitted">{t('publications.status.submitted', lang)}</option>
+            <option value="under_review">{t('publications.status.under_review', lang)}</option>
+            <option value="revision_requested">{t('publications.status.revision_requested', lang)}</option>
+            <option value="accepted">{t('publications.status.accepted', lang)}</option>
+            <option value="rejected">{t('publications.status.rejected', lang)}</option>
+            <option value="published">{t('publications.status.published', lang)}</option>
+            <option value="presented">{t('publications.status.presented', lang)}</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-[.68rem] font-semibold text-[var(--text-muted)] block">Tribo</label>
+          <select id="filter-tribe" class="mt-1 px-3 py-1.5 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <button id="btn-filter" class="px-3 py-1.5 bg-navy/10 text-navy rounded-lg text-sm font-semibold cursor-pointer hover:bg-navy/20">Filtrar</button>
+      </div>
+
+      <!-- TAB: Pipeline -->
+      <div id="tab-pipeline" class="tab-content">
+        <div id="pipeline-board" class="flex gap-3 overflow-x-auto pb-4" style="min-height:300px">
+          <p class="text-[.75rem] text-[var(--text-muted)]">Carregando...</p>
+        </div>
+      </div>
+
+      <!-- TAB: List -->
+      <div id="tab-list" class="tab-content hidden">
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+          <table class="w-full text-sm">
+            <thead class="bg-[var(--surface-section-cool)]">
+              <tr>
+                <th class="px-4 py-2.5 text-left text-[.7rem] font-bold text-navy uppercase">Título</th>
+                <th class="px-4 py-2.5 text-left text-[.7rem] font-bold text-navy uppercase">{t('publications.primaryAuthor', lang)}</th>
+                <th class="px-4 py-2.5 text-left text-[.7rem] font-bold text-navy uppercase">{t('publications.targetName', lang)}</th>
+                <th class="px-4 py-2.5 text-left text-[.7rem] font-bold text-navy uppercase">Status</th>
+                <th class="px-4 py-2.5 text-left text-[.7rem] font-bold text-navy uppercase">{t('publications.submissionDate', lang)}</th>
+              </tr>
+            </thead>
+            <tbody id="pub-table-body">
+              <tr><td colspan="5" class="px-4 py-8 text-center text-[var(--text-muted)] text-sm">{t('publications.noSubmissions', lang)}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB: Metrics -->
+      <div id="tab-metrics" class="tab-content hidden space-y-4">
+        <div id="metrics-cards" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
+            <h3 class="text-sm font-bold text-navy mb-3">{t('publications.byStatus', lang)}</h3>
+            <div id="metrics-by-status" class="space-y-2"></div>
+          </div>
+          <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
+            <h3 class="text-sm font-bold text-navy mb-3">{t('publications.byTarget', lang)}</h3>
+            <div id="metrics-by-target" class="space-y-2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- New Submission Modal -->
+    <div id="modal-new-sub" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div class="bg-[var(--surface-card)] rounded-2xl p-6 w-full max-w-lg shadow-xl border border-[var(--border-default)] max-h-[90vh] overflow-y-auto">
+        <h3 class="text-lg font-bold text-navy mb-4">{t('publications.new', lang)}</h3>
+        <div class="space-y-3">
+          <div>
+            <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">Título</label>
+            <input id="new-title" type="text" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]" />
+          </div>
+          <div>
+            <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">{t('publications.abstract', lang)}</label>
+            <textarea id="new-abstract" rows="3" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]"></textarea>
+          </div>
+          <div>
+            <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">{t('publications.targetType', lang)}</label>
+            <select id="new-target-type" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]">
+              <option value="pmi_global_conference">{t('publications.target.pmi_global_conference', lang)}</option>
+              <option value="pmi_chapter_event">{t('publications.target.pmi_chapter_event', lang)}</option>
+              <option value="academic_journal">{t('publications.target.academic_journal', lang)}</option>
+              <option value="academic_conference">{t('publications.target.academic_conference', lang)}</option>
+              <option value="webinar">{t('publications.target.webinar', lang)}</option>
+              <option value="blog_post">{t('publications.target.blog_post', lang)}</option>
+              <option value="other">{t('publications.target.other', lang)}</option>
+            </select>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">{t('publications.targetName', lang)}</label>
+              <input id="new-target-name" type="text" placeholder="PMI Global Summit 2026" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]" />
+            </div>
+            <div>
+              <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">URL do CFP</label>
+              <input id="new-target-url" type="url" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]" />
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">{t('publications.primaryAuthor', lang)}</label>
+              <select id="new-author" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]"></select>
+            </div>
+            <div>
+              <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">Tribo</label>
+              <select id="new-tribe" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]">
+                <option value="">Nenhuma</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">{t('publications.estimatedCost', lang)} (R$)</label>
+            <input id="new-cost" type="number" step="0.01" min="0" value="0" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]" />
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 mt-5">
+          <button id="btn-cancel-new" class="px-4 py-2 border border-[var(--border-default)] rounded-xl text-sm font-semibold cursor-pointer bg-transparent text-[var(--text-primary)]">{t('sustainability.cancel', lang)}</button>
+          <button id="btn-create-sub" class="px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold cursor-pointer hover:opacity-90">{t('publications.createDraft', lang)}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div id="modal-detail" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div class="bg-[var(--surface-card)] rounded-2xl p-6 w-full max-w-2xl shadow-xl border border-[var(--border-default)] max-h-[90vh] overflow-y-auto">
+        <div class="flex items-start justify-between mb-4">
+          <h3 class="text-lg font-bold text-navy" id="detail-title">—</h3>
+          <button id="btn-close-detail" class="text-[var(--text-muted)] hover:text-navy cursor-pointer text-xl font-bold">&#x2715;</button>
+        </div>
+        <div id="detail-content" class="space-y-4">
+          <p class="text-sm text-[var(--text-muted)]">Carregando...</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="pub-loading" class="text-center py-16 text-[var(--text-muted)]">Carregando...</div>
+  </div>
+  <Toast />
+</BaseLayout>
+
+<script>
+  import { hasPermission } from '../../lib/permissions';
+
+  const STATUS_COLORS: Record<string, string> = {
+    draft: 'bg-gray-100 text-gray-700',
+    submitted: 'bg-blue-100 text-blue-700',
+    under_review: 'bg-yellow-100 text-yellow-700',
+    revision_requested: 'bg-orange-100 text-orange-700',
+    accepted: 'bg-green-100 text-green-700',
+    rejected: 'bg-red-100 text-red-700',
+    published: 'bg-purple-100 text-purple-700',
+    presented: 'bg-teal-100 text-teal-700',
+  };
+
+  const STATUS_LABELS: Record<string, string> = {
+    draft: 'Rascunho', submitted: 'Submetido', under_review: 'Em Revisão',
+    revision_requested: 'Revisão Solicitada', accepted: 'Aceito', rejected: 'Rejeitado',
+    published: 'Publicado', presented: 'Apresentado',
+  };
+
+  const TARGET_ICONS: Record<string, string> = {
+    pmi_global_conference: '&#x1F3DB;', pmi_chapter_event: '&#x1F4CB;',
+    academic_journal: '&#x1F4DA;', academic_conference: '&#x1F393;',
+    webinar: '&#x1F3A4;', blog_post: '&#x1F310;', other: '&#x1F4C4;',
+  };
+
+  const PIPELINE_ORDER = ['draft', 'submitted', 'under_review', 'revision_requested', 'accepted', 'rejected', 'published', 'presented'];
+
+  let submissions: any[] = [];
+  let pipelineSummary: any = null;
+  let members: any[] = [];
+  let tribes: any[] = [];
+  let canWrite = false;
+
+  function escH(s: string) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  function fmt(v: number | null) {
+    if (v === null || v === undefined) return 'R$ 0,00';
+    return `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
+  async function boot() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+    window.addEventListener('nav:member', ((e: CustomEvent) => { if (e.detail) applyGate(e.detail); }) as EventListener);
+    const m = (window as any).navGetMember?.();
+    if (m) { applyGate(m); return; }
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) { const { data } = await sb.rpc('get_member_by_auth'); applyGate(data); return; }
+    } catch (e) { console.warn('Publications boot:', e); }
+    showDenied();
+  }
+
+  function applyGate(m: any) {
+    const isAdmin = hasPermission(m, 'admin.publications');
+    if (isAdmin) {
+      canWrite = hasPermission(m, 'admin.publications');
+      showPanel();
+      loadAll();
+    } else { showDenied(); }
+  }
+
+  function showDenied() {
+    document.getElementById('pub-loading')?.classList.add('hidden');
+    document.getElementById('pub-panel')?.classList.add('hidden');
+    document.getElementById('pub-denied')?.classList.remove('hidden');
+  }
+
+  function showPanel() {
+    document.getElementById('pub-loading')?.classList.add('hidden');
+    document.getElementById('pub-denied')?.classList.add('hidden');
+    document.getElementById('pub-panel')?.classList.remove('hidden');
+    if (canWrite) document.getElementById('btn-new-sub')?.classList.remove('hidden');
+  }
+
+  async function loadAll() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    await Promise.all([loadSubmissions(), loadPipelineSummary(), loadMembers(), loadTribes()]);
+    renderPipeline();
+    renderList();
+    renderMetrics();
+  }
+
+  async function loadSubmissions() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    const status = (document.getElementById('filter-status') as HTMLSelectElement)?.value || null;
+    const tribeId = (document.getElementById('filter-tribe') as HTMLSelectElement)?.value || null;
+    const { data, error } = await sb.rpc('get_publication_submissions', {
+      p_status: status || null,
+      p_tribe_id: tribeId ? parseInt(tribeId) : null,
+    });
+    if (error) { console.error('Load submissions:', error); return; }
+    submissions = data || [];
+  }
+
+  async function loadPipelineSummary() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    const { data } = await sb.rpc('get_publication_pipeline_summary');
+    pipelineSummary = data;
+  }
+
+  async function loadMembers() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    const { data } = await sb.from('members').select('id, name').eq('is_active', true).order('name');
+    members = data || [];
+    const authorSel = document.getElementById('new-author') as HTMLSelectElement;
+    if (authorSel) {
+      authorSel.innerHTML = members.map((m: any) => `<option value="${m.id}">${escH(m.name)}</option>`).join('');
+    }
+  }
+
+  async function loadTribes() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    const { data } = await sb.from('tribes').select('id, name').eq('is_active', true).order('id');
+    tribes = data || [];
+    const tribeSelectors = ['filter-tribe', 'new-tribe'];
+    tribeSelectors.forEach(id => {
+      const el = document.getElementById(id) as HTMLSelectElement;
+      if (!el) return;
+      const prefix = id === 'filter-tribe' ? '<option value="">Todas</option>' : '<option value="">Nenhuma</option>';
+      el.innerHTML = prefix + tribes.map((t: any) => `<option value="${t.id}">${escH(t.name)}</option>`).join('');
+    });
+  }
+
+  // ── Pipeline View ──
+  function renderPipeline() {
+    const board = document.getElementById('pipeline-board');
+    if (!board) return;
+    board.innerHTML = PIPELINE_ORDER.map(status => {
+      const cards = submissions.filter(s => s.status === status);
+      return `
+        <div class="flex-shrink-0 w-48 bg-[var(--surface-section-cool)] rounded-xl p-3" data-status="${status}">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[.7rem] font-bold text-navy uppercase">${escH(STATUS_LABELS[status] || status)}</span>
+            <span class="text-[.65rem] px-1.5 py-0.5 rounded-full ${STATUS_COLORS[status]} font-bold">${cards.length}</span>
+          </div>
+          <div class="space-y-2 min-h-[60px]" data-lane="${status}">
+            ${cards.length ? cards.map(s => renderCard(s)).join('') : `<p class="text-[.65rem] text-[var(--text-muted)] text-center py-4">—</p>`}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Click handlers on cards
+    board.querySelectorAll('[data-sub-id]').forEach(card => {
+      card.addEventListener('click', () => openDetail((card as HTMLElement).dataset.subId!));
+    });
+  }
+
+  function renderCard(s: any) {
+    const icon = TARGET_ICONS[s.target_type] || '&#x1F4C4;';
+    return `
+      <div data-sub-id="${s.id}" class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-lg p-2.5 cursor-pointer hover:shadow-md transition-shadow">
+        <p class="text-[.72rem] font-semibold text-[var(--text-primary)] line-clamp-2">${escH(s.title)}</p>
+        <div class="flex items-center gap-1 mt-1.5">
+          <span class="text-[.8rem]">${icon}</span>
+          <span class="text-[.6rem] text-[var(--text-muted)]">${escH(s.primary_author_name || '—')}</span>
+        </div>
+        ${s.tribe_name ? `<span class="text-[.55rem] px-1.5 py-0.5 rounded-full bg-navy/10 text-navy font-medium mt-1 inline-block">${escH(s.tribe_name)}</span>` : ''}
+      </div>
+    `;
+  }
+
+  // ── List View ──
+  function renderList() {
+    const tbody = document.getElementById('pub-table-body');
+    if (!tbody) return;
+    if (!submissions.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-[var(--text-muted)] text-sm">Nenhuma submissão.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = submissions.map(s => {
+      const icon = TARGET_ICONS[s.target_type] || '&#x1F4C4;';
+      return `
+        <tr class="border-b border-[var(--border-default)] last:border-0 hover:bg-[var(--surface-section-cool)] cursor-pointer" data-row-id="${s.id}">
+          <td class="px-4 py-2.5 text-[.78rem] font-semibold max-w-[300px]">
+            <span class="line-clamp-1">${escH(s.title)}</span>
+          </td>
+          <td class="px-4 py-2.5 text-[.78rem]">${escH(s.primary_author_name || '—')}</td>
+          <td class="px-4 py-2.5 text-[.78rem]"><span class="mr-1">${icon}</span>${escH(s.target_name)}</td>
+          <td class="px-4 py-2.5"><span class="text-[.65rem] px-2 py-0.5 rounded-full ${STATUS_COLORS[s.status]} font-medium">${escH(STATUS_LABELS[s.status] || s.status)}</span></td>
+          <td class="px-4 py-2.5 text-[.78rem] text-[var(--text-muted)]">${s.submission_date || '—'}</td>
+        </tr>
+      `;
+    }).join('');
+
+    tbody.querySelectorAll('[data-row-id]').forEach(row => {
+      row.addEventListener('click', () => openDetail((row as HTMLElement).dataset.rowId!));
+    });
+  }
+
+  // ── Metrics View ──
+  function renderMetrics() {
+    if (!pipelineSummary) return;
+    const d = pipelineSummary;
+
+    // Cards
+    const cardsEl = document.getElementById('metrics-cards');
+    if (cardsEl) {
+      cardsEl.innerHTML = `
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+          <p class="text-[.68rem] text-[var(--text-muted)] uppercase">${escH('Total')}</p>
+          <p class="text-2xl font-extrabold text-navy mt-1">${d.total}</p>
+        </div>
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+          <p class="text-[.68rem] text-[var(--text-muted)] uppercase">Submetidos+</p>
+          <p class="text-2xl font-extrabold text-blue-600 mt-1">${(d.by_status?.submitted || 0) + (d.by_status?.under_review || 0) + (d.by_status?.accepted || 0) + (d.by_status?.published || 0) + (d.by_status?.presented || 0)}</p>
+        </div>
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+          <p class="text-[.68rem] text-[var(--text-muted)] uppercase">Custo Estimado</p>
+          <p class="text-xl font-extrabold text-navy mt-1">${fmt(d.estimated_total_cost)}</p>
+        </div>
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+          <p class="text-[.68rem] text-[var(--text-muted)] uppercase">Custo Realizado</p>
+          <p class="text-xl font-extrabold text-navy mt-1">${fmt(d.actual_total_cost)}</p>
+        </div>
+      `;
+    }
+
+    // By status
+    const statusEl = document.getElementById('metrics-by-status');
+    if (statusEl && d.by_status) {
+      const entries = Object.entries(d.by_status) as [string, number][];
+      statusEl.innerHTML = entries.map(([s, c]) => `
+        <div class="flex items-center justify-between py-1.5">
+          <span class="text-[.75rem] px-2 py-0.5 rounded-full ${STATUS_COLORS[s] || ''} font-medium">${escH(STATUS_LABELS[s] || s)}</span>
+          <span class="text-sm font-bold text-navy">${c}</span>
+        </div>
+      `).join('');
+    }
+
+    // By target type
+    const targetEl = document.getElementById('metrics-by-target');
+    if (targetEl && d.by_target_type) {
+      const entries = Object.entries(d.by_target_type) as [string, number][];
+      targetEl.innerHTML = entries.map(([tt, c]) => `
+        <div class="flex items-center justify-between py-1.5">
+          <span class="text-[.75rem]">${TARGET_ICONS[tt] || ''} ${escH(tt.replace(/_/g, ' '))}</span>
+          <span class="text-sm font-bold text-navy">${c}</span>
+        </div>
+      `).join('');
+    }
+  }
+
+  // ── Detail Modal ──
+  async function openDetail(id: string) {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    document.getElementById('modal-detail')?.classList.remove('hidden');
+    document.getElementById('detail-content')!.innerHTML = '<p class="text-sm text-[var(--text-muted)]">Carregando...</p>';
+
+    const { data, error } = await sb.rpc('get_publication_submission_detail', { p_submission_id: id });
+    if (error || !data) { document.getElementById('detail-content')!.innerHTML = '<p class="text-sm text-red-500">Erro ao carregar.</p>'; return; }
+
+    const s = data.submission;
+    const authors = data.authors || [];
+    document.getElementById('detail-title')!.textContent = s.title;
+
+    const statusOptions = PIPELINE_ORDER.map(st =>
+      `<option value="${st}" ${st === s.status ? 'selected' : ''}>${STATUS_LABELS[st] || st}</option>`
+    ).join('');
+
+    document.getElementById('detail-content')!.innerHTML = `
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Status</label>
+          ${canWrite ? `<select id="detail-status" data-sub-id="${s.id}" class="w-full mt-0.5 px-2 py-1.5 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)]">${statusOptions}</select>` :
+          `<p class="mt-0.5"><span class="px-2 py-0.5 rounded-full ${STATUS_COLORS[s.status]} text-[.7rem] font-medium">${STATUS_LABELS[s.status]}</span></p>`}
+        </div>
+        <div>
+          <label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Tipo</label>
+          <p class="text-sm mt-0.5">${TARGET_ICONS[s.target_type] || ''} ${escH(s.target_type?.replace(/_/g, ' ') || '')}</p>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Alvo</label>
+        <p class="text-sm">${escH(s.target_name || '—')} ${s.target_url ? `<a href="${escH(s.target_url)}" target="_blank" class="text-blue-600 underline text-[.7rem] ml-1">URL</a>` : ''}</p>
+      </div>
+
+      ${s.abstract ? `<div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Abstract</label><p class="text-[.78rem] text-[var(--text-secondary)] mt-0.5">${escH(s.abstract)}</p></div>` : ''}
+
+      <div>
+        <label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Autores</label>
+        <div class="space-y-1 mt-1">
+          ${authors.map((a: any) => `
+            <div class="flex items-center gap-2 text-sm">
+              <span class="font-semibold">${a.author_order}.</span>
+              <span>${escH(a.member_name)}</span>
+              ${a.is_corresponding ? '<span class="text-[.6rem] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">correspondente</span>' : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Submissão</label><p class="text-sm">${s.submission_date || '—'}</p></div>
+        <div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Prazo Revisão</label><p class="text-sm">${s.review_deadline || '—'}</p></div>
+        <div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Aceite</label><p class="text-sm">${s.acceptance_date || '—'}</p></div>
+        <div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Apresentação</label><p class="text-sm">${s.presentation_date || '—'}</p></div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3">
+        <div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Custo Est.</label><p class="text-sm font-semibold">${fmt(s.estimated_cost_brl)}</p></div>
+        <div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Custo Real</label><p class="text-sm font-semibold">${fmt(s.actual_cost_brl)}</p></div>
+        <div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Pago por</label><p class="text-sm">${escH(s.cost_paid_by || '—')}</p></div>
+      </div>
+
+      ${s.reviewer_feedback ? `<div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">Feedback</label><p class="text-[.78rem] bg-[var(--surface-section-cool)] rounded-lg p-2 mt-0.5">${escH(s.reviewer_feedback)}</p></div>` : ''}
+      ${s.doi_or_url ? `<div><label class="text-[.68rem] font-semibold text-[var(--text-muted)]">DOI/URL</label><p class="text-sm"><a href="${escH(s.doi_or_url)}" target="_blank" class="text-blue-600 underline">${escH(s.doi_or_url)}</a></p></div>` : ''}
+
+      <div class="flex items-center gap-2 text-[.65rem] text-[var(--text-muted)]">
+        <span>Tribo: ${escH(s.tribe_name || '—')}</span>
+        <span>·</span>
+        <span>Criado: ${s.created_at ? new Date(s.created_at).toLocaleDateString('pt-BR') : '—'}</span>
+      </div>
+    `;
+
+    // Status change handler
+    const statusSel = document.getElementById('detail-status') as HTMLSelectElement;
+    if (statusSel) {
+      statusSel.addEventListener('change', async () => {
+        const { error } = await sb.rpc('update_publication_submission_status', {
+          p_submission_id: s.id, p_new_status: statusSel.value
+        });
+        if (error) { (window as any).toast?.(error.message, 'error'); return; }
+        (window as any).toast?.('Status atualizado!', 'success');
+        await loadSubmissions();
+        await loadPipelineSummary();
+        renderPipeline();
+        renderList();
+        renderMetrics();
+      });
+    }
+  }
+
+  // ── Tab Switching ──
+  document.querySelectorAll('.pub-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = (tab as HTMLElement).dataset.tab;
+      document.querySelectorAll('.pub-tab').forEach(t => {
+        t.classList.remove('border-navy', 'text-navy');
+        t.classList.add('border-transparent', 'text-[var(--text-muted)]');
+      });
+      tab.classList.add('border-navy', 'text-navy');
+      tab.classList.remove('border-transparent', 'text-[var(--text-muted)]');
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+      document.getElementById(`tab-${target}`)?.classList.remove('hidden');
+    });
+  });
+
+  // ── Modal Handlers ──
+  document.getElementById('btn-new-sub')?.addEventListener('click', () => {
+    document.getElementById('modal-new-sub')?.classList.remove('hidden');
+  });
+  document.getElementById('btn-cancel-new')?.addEventListener('click', () => {
+    document.getElementById('modal-new-sub')?.classList.add('hidden');
+  });
+  document.getElementById('btn-close-detail')?.addEventListener('click', () => {
+    document.getElementById('modal-detail')?.classList.add('hidden');
+  });
+
+  document.getElementById('btn-create-sub')?.addEventListener('click', async () => {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    const title = (document.getElementById('new-title') as HTMLInputElement)?.value?.trim();
+    const abstract = (document.getElementById('new-abstract') as HTMLTextAreaElement)?.value?.trim() || null;
+    const targetType = (document.getElementById('new-target-type') as HTMLSelectElement)?.value;
+    const targetName = (document.getElementById('new-target-name') as HTMLInputElement)?.value?.trim();
+    const targetUrl = (document.getElementById('new-target-url') as HTMLInputElement)?.value?.trim() || null;
+    const authorId = (document.getElementById('new-author') as HTMLSelectElement)?.value;
+    const tribeId = (document.getElementById('new-tribe') as HTMLSelectElement)?.value || null;
+    const cost = parseFloat((document.getElementById('new-cost') as HTMLInputElement)?.value || '0');
+
+    if (!title || !targetName || !authorId) {
+      (window as any).toast?.('Preencha título, alvo e autor.', 'error');
+      return;
+    }
+
+    const { error } = await sb.rpc('create_publication_submission', {
+      p_title: title,
+      p_target_type: targetType,
+      p_target_name: targetName,
+      p_primary_author_id: authorId,
+      p_tribe_id: tribeId ? parseInt(tribeId) : null,
+      p_abstract: abstract,
+      p_target_url: targetUrl,
+      p_estimated_cost_brl: cost,
+    });
+
+    if (error) { (window as any).toast?.(error.message, 'error'); return; }
+    (window as any).toast?.('Submissão criada!', 'success');
+    document.getElementById('modal-new-sub')?.classList.add('hidden');
+    await loadSubmissions();
+    await loadPipelineSummary();
+    renderPipeline();
+    renderList();
+    renderMetrics();
+  });
+
+  // Filter handler
+  document.getElementById('btn-filter')?.addEventListener('click', async () => {
+    await loadSubmissions();
+    renderPipeline();
+    renderList();
+  });
+
+  boot();
+</script>
