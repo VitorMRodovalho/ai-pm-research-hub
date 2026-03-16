@@ -43,13 +43,7 @@ Deno.serve(async (req) => {
   let callerMemberId: string | null = null
 
   if (!isServiceRole) {
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
-    if (!anonKey) return jsonResponse({ success: false, error: 'Server config error: missing ANON_KEY' }, 500)
-
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: `Bearer ${token}` } },
-    })
-    const { data: { user }, error: userError } = await userClient.auth.getUser()
+    const { data: { user }, error: userError } = await sb.auth.getUser(token)
     if (userError || !user) return jsonResponse({ success: false, error: `Auth failed: ${userError?.message || 'no user'}` }, 401)
 
     const { data: member, error: memberError } = await sb

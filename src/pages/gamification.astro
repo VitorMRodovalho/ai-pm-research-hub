@@ -1075,19 +1075,12 @@ const SCORING_I18N = {
         throw new Error(I.msgInvalidSession);
       }
       let attendanceSummary = '';
-      const supabaseUrl = (sb as any).supabaseUrl || (sb as any).rest?.url?.replace('/rest/v1', '') || '';
-      const anonKey = (sb as any).supabaseKey || (sb as any).realtime?.params?.apikey || '';
 
       let attendanceData: any = null;
       let attendanceError: any = null;
       try {
-        const aResp = await fetch(supabaseUrl + '/functions/v1/sync-attendance-points', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token, 'apikey': anonKey },
-          body: '{}',
-        });
-        const aBody = await aResp.json();
-        if (!aResp.ok) { attendanceError = { message: aBody.error || aResp.statusText }; }
+        const { data: aBody, error: aErr } = await sb.functions.invoke('sync-attendance-points', { body: {} });
+        if (aErr) { attendanceError = { message: aErr.message || String(aErr) }; }
         else { attendanceData = aBody; }
       } catch (e: any) { attendanceError = { message: e.message }; }
       if (attendanceError || !attendanceData?.success) {
@@ -1103,13 +1096,8 @@ const SCORING_I18N = {
       let credlyData: any = null;
       let credlyError: any = null;
       try {
-        const cResp = await fetch(supabaseUrl + '/functions/v1/sync-credly-all', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token, 'apikey': anonKey },
-          body: '{}',
-        });
-        const cBody = await cResp.json();
-        if (!cResp.ok) { credlyError = { message: cBody.error || cResp.statusText }; }
+        const { data: cBody, error: cErr } = await sb.functions.invoke('sync-credly-all', { body: {} });
+        if (cErr) { credlyError = { message: cErr.message || String(cErr) }; }
         else { credlyData = cBody; }
       } catch (e: any) { credlyError = { message: e.message }; }
       if (!credlyError && credlyData?.success) {

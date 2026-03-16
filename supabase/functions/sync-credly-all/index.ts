@@ -331,13 +331,6 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
-    if (!anonKey) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Server config error: missing ANON_KEY' }),
-        { headers: jsonHeaders, status: 500 },
-      )
-    }
     const token = authHeader.replace(/^Bearer\s+/i, '')
     const isServiceRole = token === serviceRoleKey
 
@@ -345,25 +338,22 @@ Deno.serve(async (req) => {
 
     // Admin-only: verify caller has tier >= admin (batch operation)
     if (!isServiceRole) {
-      const uc = createClient(supabaseUrl, anonKey, {
-        global: { headers: { Authorization: 'Bearer ' + token } },
-      })
-      const ur = await uc.auth.getUser()
-      if (ur.error || !ur.data?.user) {
+      const { data: { user }, error: userError } = await sb.auth.getUser(token)
+      if (userError || !user) {
         return new Response(
-          JSON.stringify({ success: false, error: `Auth failed: ${ur.error?.message || 'token invalid or expired'}` }),
+          JSON.stringify({ success: false, error: `Auth failed: ${userError?.message || 'token invalid or expired'}` }),
           { headers: jsonHeaders, status: 401 },
         )
       }
       const { data: caller, error: callerError } = await sb
         .from('members')
         .select('is_superadmin, operational_role')
-        .eq('auth_id', ur.data.user.id)
+        .eq('auth_id', user.id)
         .single()
 
       if (!caller) {
         return new Response(
-          JSON.stringify({ success: false, error: `Member not found for auth_id: ${callerError?.message || ur.data.user.id}` }),
+          JSON.stringify({ success: false, error: `Member not found for auth_id: ${callerError?.message || user.id}` }),
           { headers: jsonHeaders, status: 401 },
         )
       }
