@@ -947,6 +947,8 @@ const ANALYTICS_I18N = {
     // Retry pattern: check multiple times instead of single timeout
     const retryIntervals = [500, 1000, 2000, 4000];
     retryIntervals.forEach(ms => setTimeout(() => { if (!_initDone) init(); }, ms));
+    // Final fallback: if nothing resolved after 5s, show denied
+    setTimeout(() => { if (!_initDone) { _initDone = true; showDenied(); } }, 5000);
   }
 
   boot();
