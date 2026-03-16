@@ -995,13 +995,20 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                 </div>
               )}
 
+              {permissions.canEditAny && item.status !== 'archived' && (
+                <button onClick={() => onMove('archived')}
+                  className="w-full px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-[11px] font-semibold
+                    border border-amber-200 hover:bg-amber-100 cursor-pointer text-left">
+                  📦 {i18n.archive || 'Arquivar'}
+                </button>
+              )}
               {permissions.canDelete && (
                 <div>
                   {!confirmDelete ? (
                     <button onClick={() => setConfirmDelete(true)}
                       className="w-full px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-[11px] font-semibold
                         border border-red-200 hover:bg-red-100 cursor-pointer text-left">
-                      🗑️ {i18n.archive}
+                      🗑️ Excluir
                     </button>
                   ) : (
                     <div className="flex gap-1">
