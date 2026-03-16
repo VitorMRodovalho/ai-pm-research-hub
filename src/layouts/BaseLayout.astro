@@ -4,6 +4,7 @@ import Nav from '../components/nav/Nav.astro';
 import AnnouncementBanner from '../components/ui/AnnouncementBanner.astro';
 import AuthModal from '../components/ui/AuthModal.astro';
 import TierViewerBar from '../components/admin/TierViewerBar';
+import HelpFloatingButton from '../components/help/HelpFloatingButton';
 import { t, getRoleLabelsMap, type Lang } from '../i18n/utils';
 
 interface Props {
@@ -212,6 +213,9 @@ const SIM_I18N = {
       else { window.addEventListener('nav:member', run, { once: true }); }
     })();
   </script>
+
+  <!-- Help Floating Button (authenticated users only, rendered client-side) -->
+  <HelpFloatingButton client:load locale={lang} />
 
   <!-- Site Footer with Privacy Link -->
   <footer class="bg-[#200F3B] text-white/40 py-8 px-6 text-center text-[.78rem]">
