@@ -123,6 +123,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 </BaseLayout>
 
 <script>
+  import { hasPermission } from '../../lib/permissions';
+
   let sb: any = null;
   let MEMBER: any = null;
 
@@ -159,7 +161,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   }
 
   async function saveConfig() {
-    if (!sb || !MEMBER?.is_superadmin) return;
+    if (!sb || !hasPermission(MEMBER, 'system.global_config')) return;
     const btn = document.getElementById('cfg-save') as HTMLButtonElement;
     if (btn) btn.disabled = true;
     try {
@@ -203,7 +205,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   }
 
   function applyGate(m: any) {
-    if (m?.is_superadmin) showPanel();
+    if (hasPermission(m, 'system.global_config')) showPanel();
     else showDenied();
   }
 

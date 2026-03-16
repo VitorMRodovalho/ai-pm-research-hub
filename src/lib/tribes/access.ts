@@ -1,4 +1,5 @@
 import { hasMinimumTier, resolveTierFromMember } from '../admin/constants';
+import { hasPermission } from '../permissions';
 
 export function isActivePlatformMember(member: any): boolean {
   if (!member) return false;
@@ -14,13 +15,10 @@ export function canExploreTribes(member: any): boolean {
 
 export function canManageTribeLifecycle(member: any): boolean {
   if (!isActivePlatformMember(member)) return false;
-  const designations = Array.isArray(member.designations) ? member.designations : [];
-  return member.is_superadmin === true
-    || member.operational_role === 'manager'
-    || member.operational_role === 'deputy_manager'
-    || designations.includes('co_gp');
+  return hasPermission(member, 'admin.access');
 }
 
 export function canSeeInactiveTribes(member: any): boolean {
-  return member?.is_superadmin === true;
+  if (!member) return false;
+  return hasPermission(member, 'system.global_config');
 }

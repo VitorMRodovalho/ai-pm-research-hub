@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AlertTriangle, TrendingDown, TrendingUp, Filter } from 'lucide-react';
+import { hasPermission } from '../../lib/permissions';
 
 function getSb() { return (window as any).navGetSb?.(); }
 
@@ -57,8 +58,8 @@ export default function AttendanceDashboard() {
     return () => window.removeEventListener('nav:member', handler);
   }, []);
 
-  const isGP = member?.is_superadmin || ['manager', 'deputy_manager'].includes(member?.operational_role || '');
-  const isLeader = member?.operational_role === 'tribe_leader';
+  const isGP = !!member && hasPermission(member, 'admin.access');
+  const isLeader = !!member && hasPermission(member, 'event.create');
   const isResearcher = !isGP && !isLeader;
 
   useEffect(() => {

@@ -18,6 +18,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { CalendarClock, Paperclip, Trash2, UserCircle2, X, Send, CheckCircle2, Award } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
+import { hasPermission } from '../../lib/permissions';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import * as Popover from '@radix-ui/react-popover';
 
@@ -118,21 +119,12 @@ function parseAttachments(input: any): AttachmentItem[] {
 
 function canEditBoard(member: any, tribe: any): boolean {
   if (!member) return false;
-  if (member.is_superadmin === true) return true;
-  const desigs: string[] = Array.isArray(member.designations) ? member.designations : [];
+  if (hasPermission(member, 'admin.access')) return true;
+  if (hasPermission(member, 'board.edit_tribe_items') && Number(member.tribe_id || 0) === Number(tribe?.id || 0)) return true;
   const isCommsOperational = String(tribe?.workstream_type || '').toLowerCase() === 'operational'
     && String(tribe?.name || '').toLowerCase().includes('comunica');
-  const canOperateComms = isCommsOperational
-    && (
-      member.operational_role === 'communicator'
-      || desigs.includes('comms_team')
-      || desigs.includes('comms_leader')
-      || desigs.includes('comms_member')
-    );
-  const isMgmt = ['manager', 'deputy_manager'].includes(String(member.operational_role || ''));
-  const isLeaderOfThisTribe = String(member.operational_role || '') === 'tribe_leader'
-    && Number(member.tribe_id || 0) === Number(tribe?.id || 0);
-  return !!member?.is_superadmin || isMgmt || isLeaderOfThisTribe || canOperateComms;
+  if (isCommsOperational && hasPermission(member, 'board.view_global')) return true;
+  return false;
 }
 
 function SortableCard({
@@ -177,9 +169,7 @@ function SortableCard({
   const curation = item.curation_status || 'draft';
   const isAuthor = currentMember?.id === item.assignee_id;
   const isReviewer = currentMember?.id === item.reviewer_id;
-  const isLeader = currentMember?.operational_role === 'tribe_leader' && Number(currentMember?.tribe_id) === Number(tribeData?.id);
-  const isSuperAdmin = currentMember?.is_superadmin === true;
-  const isLeaderOrAdmin = isLeader || isSuperAdmin || ['manager', 'deputy_manager'].includes(String(currentMember?.operational_role || ''));
+  const isLeaderOrAdmin = hasPermission(currentMember, 'admin.access') || (hasPermission(currentMember, 'board.edit_tribe_items') && Number(currentMember?.tribe_id) === Number(tribeData?.id));
 
   const showRequestReview = curation === 'draft' && isAuthor && members.length > 0;
   const showApprovePeer = curation === 'peer_review' && isReviewer;
@@ -472,9 +462,8 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       return;
     }
     if (previousLane === 'leader_review' && targetLane === 'curation_pending') {
-      const isLeader = currentMember?.operational_role === 'tribe_leader' && Number(currentMember?.tribe_id) === Number(tribeData?.id);
-      const isAdmin = currentMember?.is_superadmin || ['manager', 'deputy_manager'].includes(String(currentMember?.operational_role || ''));
-      if (isLeader || isAdmin) {
+      const isLeaderOrAdminForCuration = hasPermission(currentMember, 'admin.access') || (hasPermission(currentMember, 'board.edit_tribe_items') && Number(currentMember?.tribe_id) === Number(tribeData?.id));
+      if (isLeaderOrAdminForCuration) {
         const { error } = await sb.rpc('advance_board_item_curation', { p_item_id: itemId, p_action: 'approve_leader', p_reviewer_id: null });
         if (error) {
           rollbackMove(itemId, previousLane);
@@ -509,9 +498,8 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       return;
     }
     if (direction > 0 && curLane === 'leader_review') {
-      const isLeader = currentMember?.operational_role === 'tribe_leader' && Number(currentMember?.tribe_id) === Number(tribeData?.id);
-      const isAdmin = currentMember?.is_superadmin || ['manager', 'deputy_manager'].includes(String(currentMember?.operational_role || ''));
-      if (isLeader || isAdmin) {
+      const isLeaderOrAdminForCuration = hasPermission(currentMember, 'admin.access') || (hasPermission(currentMember, 'board.edit_tribe_items') && Number(currentMember?.tribe_id) === Number(tribeData?.id));
+      if (isLeaderOrAdminForCuration) {
         await handleApproveLeader(item);
       }
     }
@@ -585,7 +573,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
     const bothBoard = BOARD_LANE_KEYS.has(curLane) && BOARD_LANE_KEYS.has(targetLane);
     const isCrossLaneCuration = (curLane === 'peer_review' && targetLane === 'leader_review') || (curLane === 'leader_review' && targetLane === 'curation_pending');
     const canCurationTransition = (curLane === 'peer_review' && targetLane === 'leader_review' && current.reviewer_id === currentMember?.id)
-      || (curLane === 'leader_review' && targetLane === 'curation_pending' && (currentMember?.operational_role === 'tribe_leader' || currentMember?.is_superadmin || ['manager', 'deputy_manager'].includes(String(currentMember?.operational_role || ''))));
+      || (curLane === 'leader_review' && targetLane === 'curation_pending' && (hasPermission(currentMember, 'admin.access') || (hasPermission(currentMember, 'board.edit_tribe_items') && Number(currentMember?.tribe_id) === Number(tribeData?.id))));
 
     if (!isSameLane && !bothBoard && !(isCrossLaneCuration && canCurationTransition)) {
       return;

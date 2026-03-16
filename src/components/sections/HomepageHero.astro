@@ -131,6 +131,7 @@ import { CHAPTER_CODES } from '../../data/chapters';
 </section>
 
 <script>
+  import { hasPermission } from '../../lib/permissions';
   (async () => {
     const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     const DAY_NAMES_FULL = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
@@ -244,7 +245,7 @@ import { CHAPTER_CODES } from '../../data/chapters';
       }).catch(() => {});
 
       // Dropout risk (GP only)
-      const isGP = member.is_superadmin || ['manager', 'deputy_manager'].includes(member.operational_role || '');
+      const isGP = hasPermission(member, 'admin.access');
       if (isGP) {
         sb.rpc('get_dropout_risk_members', { p_threshold: 3 }).then(({ data }: any) => {
           if (data?.length > 0) {

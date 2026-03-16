@@ -65,13 +65,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 </BaseLayout>
 
 <script>
+  import { hasPermission } from '../../lib/permissions';
+
   async function bootReportConfig() {
     const sb = (window as any).navGetSb?.();
     const member = (window as any).navGetMember?.();
     if (!sb || !member) { setTimeout(bootReportConfig, 300); return; }
 
     // Admin check
-    if (!member.is_superadmin && !['manager', 'deputy_manager'].includes(member.operational_role)) {
+    if (!hasPermission(member, 'admin.analytics')) {
       document.getElementById('report-config-loading')!.textContent = 'Acesso restrito.';
       return;
     }

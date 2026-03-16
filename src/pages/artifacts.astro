@@ -257,6 +257,7 @@ const ARTIFACTS_I18N = {
 <script>
   import { getMemberRole } from '../lib/routing';
   import { buildTribeLabel, isRuntimeTribeActive } from '../lib/tribes/catalog';
+  import { hasPermission } from '../lib/permissions';
 
   const I18N = (typeof window !== 'undefined' && (window as any).__ARTIFACTS_I18N) || {};
 
@@ -926,7 +927,7 @@ const ARTIFACTS_I18N = {
 
   function setupUI() {
     const role = getMemberRole(MEMBER);
-    CAN_MANAGE = MEMBER.is_superadmin || role === 'tribe_leader' || (MEMBER.designations || []).includes('curator');
+    CAN_MANAGE = hasPermission(MEMBER, 'board.create_item') || hasPermission(MEMBER, 'content.curate');
     // Show submit button for any logged-in member
     document.getElementById('btn-submit')?.classList.remove('hidden');
     document.getElementById('tab-my')?.classList.remove('hidden');

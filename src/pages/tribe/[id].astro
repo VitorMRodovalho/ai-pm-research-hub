@@ -248,6 +248,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   import { getCurrentCycle, loadCycles } from '../../lib/cycles';
   import { canExploreTribes, canManageTribeLifecycle, canSeeInactiveTribes } from '../../lib/tribes/access';
   import { buildTribeLabel } from '../../lib/tribes/catalog';
+  import { hasPermission } from '../../lib/permissions';
 
   const I18N = (typeof window !== 'undefined' && (window as any).__TRIBE_I18N) || {};
   const TRIBE_ID: number = (typeof window !== 'undefined' && (window as any).__TRIBE_ID) || 0;
@@ -644,7 +645,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
     const contact = contactData[m.id];
     const hasContact = contact && (contact.email || contact.phone);
-    const canSeeContacts = currentMember && (isHighManagement(currentMember) || (currentMember.operational_role === 'tribe_leader' && currentMember.tribe_id === TRIBE_ID));
+    const canSeeContacts = currentMember && (isHighManagement(currentMember) || (hasPermission(currentMember, 'board.edit_tribe_items') && currentMember.tribe_id === TRIBE_ID));
 
     let contactHtml = '';
     if (canSeeContacts && hasContact) {
@@ -1114,7 +1115,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
   function checkBroadcastAccess() {
     if (!currentMember) return;
-    const isLeaderOfThisTribe = currentMember.operational_role === 'tribe_leader'
+    const isLeaderOfThisTribe = hasPermission(currentMember, 'board.edit_tribe_items')
       && currentMember.tribe_id === TRIBE_ID;
     if (isLeaderOfThisTribe || isHighManagement(currentMember)) {
       showBroadcastTab();
@@ -1277,7 +1278,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       renderAccessNote();
       if (currentMember && !Object.keys(contactData).length
           && (isHighManagement(currentMember)
-              || (currentMember.operational_role === 'tribe_leader'
+              || (hasPermission(currentMember, 'board.edit_tribe_items')
                   && currentMember.tribe_id === TRIBE_ID))) {
         try {
           const { data: cd } = await sb.rpc('get_tribe_member_contacts', { p_tribe_id: TRIBE_ID });
@@ -1398,7 +1399,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       allMembers.forEach((m: any) => membersMap.set(m.id, m));
 
       // Load contact data for leaders/admins (LGPD-gated RPC)
-      if (currentMember && (isHighManagement(currentMember) || (currentMember.operational_role === 'tribe_leader' && currentMember.tribe_id === TRIBE_ID))) {
+      if (currentMember && (isHighManagement(currentMember) || (hasPermission(currentMember, 'board.edit_tribe_items') && currentMember.tribe_id === TRIBE_ID))) {
         try {
           const { data: cd } = await sb.rpc('get_tribe_member_contacts', { p_tribe_id: TRIBE_ID });
           const parsed = typeof cd === 'string' ? JSON.parse(cd) : cd;
@@ -1437,7 +1438,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
   function checkEditPermission() {
     if (!currentMember) return;
-    if (currentMember.is_superadmin === true) { canEdit = true; return; }
+    if (hasPermission(currentMember, 'admin.access')) { canEdit = true; return; }
     const desigs: string[] = currentMember.designations || [];
     const canOperateComms = isCommunicationOperationalTribe()
       && (
@@ -1447,7 +1448,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         || desigs.includes('comms_member')
       );
     canEdit = isHighManagement(currentMember) ||
-      (currentMember.operational_role === 'tribe_leader' && currentMember.tribe_id === TRIBE_ID) ||
+      (hasPermission(currentMember, 'board.edit_tribe_items') && currentMember.tribe_id === TRIBE_ID) ||
       canOperateComms;
   }
 

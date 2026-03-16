@@ -49,15 +49,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 </BaseLayout>
 
 <script>
+  import { hasPermission } from '../../lib/permissions';
+
   let portfolioBootRetries = 0;
 
   function hasPortfolioAccess(member: any): boolean {
     if (!member) return false;
-    if (member.is_superadmin) return true;
-    const role = String(member.operational_role || '');
-    const designations: string[] = Array.isArray(member.designations) ? member.designations : [];
-    return ['manager', 'deputy_manager'].includes(role)
-      || ['sponsor', 'chapter_liaison', 'curator', 'co_gp'].some((d) => designations.includes(d));
+    return hasPermission(member, 'admin.portfolio');
   }
 
   function cardHtml(entry: any): string {
