@@ -205,7 +205,7 @@ const SIM_I18N = {
         const m = (window as any).navGetMember?.();
         if (!sb || !m) return;
         sessionStorage.setItem(THROTTLE_KEY, Date.now().toString());
-        sb.rpc('record_member_activity', { p_page: window.location.pathname }).catch(() => {});
+        sb.rpc('record_member_activity', { p_page: window.location.pathname }).then(() => {}, () => {});
       };
 
       if ((window as any).navGetMember?.()) { run(); }
