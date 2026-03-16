@@ -440,6 +440,11 @@ async function run() {
         name: 'Sponsor Analytics',
       };
       const fakeSb = {
+        auth: {
+          getSession() {
+            return Promise.resolve({ data: { session: { access_token: 'fake-token' } } });
+          },
+        },
         rpc(name) {
           if (name === 'exec_funnel_summary') {
             return Promise.resolve({
