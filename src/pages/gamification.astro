@@ -396,6 +396,7 @@ const SCORING_I18N = {
   import { aggregateCredlyByMember } from '../lib/gamification';
   import { buildTrailProgressByMember } from '../lib/trail-progress';
   import { buildTribeLabel, getTribeColor } from '../lib/tribes/catalog';
+  import { hasPermission } from '../lib/permissions';
 
   const I = (typeof window !== 'undefined' && (window as any).__GAMIFICATION_I18N) || {};
 
@@ -1194,12 +1195,12 @@ const SCORING_I18N = {
   }
 
   function setupUI() {
-    const isAdmin = MEMBER.is_superadmin;
+    const canSync = hasPermission(MEMBER, 'gamification.sync');
     document.getElementById('trail-clarity-card')?.classList.remove('hidden');
     document.getElementById('tab-achievements')?.classList.remove('hidden');
     document.getElementById('tab-mypoints')?.classList.remove('hidden');
     document.getElementById('tab-mycerts')?.classList.remove('hidden');
-    if (isAdmin) {
+    if (canSync) {
       document.getElementById('btn-sync')?.classList.remove('hidden');
       document.getElementById('tab-admin-certs')?.classList.remove('hidden');
     }
