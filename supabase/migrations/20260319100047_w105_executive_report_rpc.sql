@@ -27,19 +27,43 @@ DECLARE
   v_platform jsonb;
 BEGIN
   -- SECTION 1: Overview
+  -- W106/A2: exclude interview events from event counts, attendance, impact hours
   SELECT jsonb_build_object(
     'active_members', (SELECT count(*) FROM members WHERE is_active = true),
     'total_members', (SELECT count(*) FROM members),
     'tribes', (SELECT count(*) FROM tribes WHERE is_active = true),
     'chapters', 5,
-    'events_count', (SELECT count(*) FROM events WHERE date BETWEEN v_cycle_start AND v_cycle_end),
-    'total_attendance', (SELECT count(*) FROM attendance a JOIN events e ON e.id = a.event_id WHERE e.date BETWEEN v_cycle_start AND v_cycle_end AND a.present = true),
+    'events_count', (
+      SELECT count(*) FROM events e
+      WHERE e.date BETWEEN v_cycle_start AND v_cycle_end
+      AND NOT EXISTS (
+        SELECT 1 FROM event_tag_assignments eta
+        JOIN tags t ON t.id = eta.tag_id
+        WHERE eta.event_id = e.id AND t.name = 'interview'
+      )
+    ),
+    'total_attendance', (
+      SELECT count(*) FROM attendance a
+      JOIN events e ON e.id = a.event_id
+      WHERE e.date BETWEEN v_cycle_start AND v_cycle_end
+      AND a.present = true
+      AND NOT EXISTS (
+        SELECT 1 FROM event_tag_assignments eta
+        JOIN tags t ON t.id = eta.tag_id
+        WHERE eta.event_id = e.id AND t.name = 'interview'
+      )
+    ),
     'total_impact_hours', COALESCE((
       SELECT ROUND(SUM(COALESCE(e.duration_actual, e.duration_minutes, 60)::numeric
         * (SELECT count(*) FROM attendance a WHERE a.event_id = e.id AND a.present = true)
       ) / 60.0, 1)
       FROM events e
       WHERE e.date BETWEEN v_cycle_start AND v_cycle_end
+      AND NOT EXISTS (
+        SELECT 1 FROM event_tag_assignments eta
+        JOIN tags t ON t.id = eta.tag_id
+        WHERE eta.event_id = e.id AND t.name = 'interview'
+      )
     ), 0),
     'boards_active', (SELECT count(*) FROM project_boards WHERE is_active = true),
     'artifacts_total', COALESCE((
@@ -142,7 +166,7 @@ BEGIN
     v_pilots := '{}'::jsonb;
   END;
 
-  -- SECTION 6: Events timeline
+  -- SECTION 6: Events timeline (W106/A2: exclude interviews)
   SELECT COALESCE(jsonb_agg(jsonb_build_object(
     'month', sub2.month,
     'count', sub2.cnt,
@@ -156,6 +180,11 @@ BEGIN
       COALESCE((SELECT count(*) FROM attendance a WHERE a.event_id = ANY(array_agg(e.id)) AND a.present = true), 0) as attendees
     FROM events e
     WHERE e.date BETWEEN v_cycle_start AND v_cycle_end
+    AND NOT EXISTS (
+      SELECT 1 FROM event_tag_assignments eta
+      JOIN tags t ON t.id = eta.tag_id
+      WHERE eta.event_id = e.id AND t.name = 'interview'
+    )
     GROUP BY to_char(e.date, 'YYYY-MM')
   ) sub2;
 

@@ -1,0 +1,41 @@
+-- ═══════════════════════════════════════════════════════════════════════════
+-- W106 Actions A2 + A3 — Fix attendance/event KPI calculations
+-- Date: 2026-03-16
+-- Reference: docs/audit/W106_ATTENDANCE_FRICTION_ANALYSIS.md
+--
+-- A2: Exclude interview events (tag='interview') from:
+--   - get_annual_kpis: events_total_count
+--   - get_cycle_report: overview.events_count, total_attendance,
+--     total_impact_hours, events_timeline
+--   Interviews are 1:1 sessions with no attendance tracking.
+--   27/39 Cycle 3 events were interviews, inflating event count
+--   and deflating attendance averages.
+--
+-- A3: Exclude sponsors/chapter_liaisons/observers/candidates from
+--   attendance_general_avg_pct denominator in get_annual_kpis.
+--   Advisory roles have different engagement models.
+--   Result: 31.1% → 35.6% (excludes 10 advisory members from denominator)
+--
+-- Before → After:
+--   events_total:              39 → 12  (27 interviews excluded)
+--   attendance_general_avg:  31.1 → 35.6% (advisory roles excluded)
+--   overview.events_count:     39 → 12
+--   events_timeline:     Jan removed (was 22 interview events, 0 attendance)
+-- ═══════════════════════════════════════════════════════════════════════════
+
+-- Applied via Supabase MCP (CREATE OR REPLACE FUNCTION).
+-- See get_annual_kpis() and get_cycle_report() in the database for the
+-- canonical deployed versions.
+--
+-- Key SQL patterns used:
+--
+-- Interview exclusion filter (reused in multiple places):
+--   AND NOT EXISTS (
+--     SELECT 1 FROM event_tag_assignments eta
+--     JOIN tags t ON t.id = eta.tag_id
+--     WHERE eta.event_id = e.id AND t.name = 'interview'
+--   )
+--
+-- A3 attendance denominator filter (get_annual_kpis only):
+--   WHERE m.is_active = true AND m.current_cycle_active = true
+--     AND m.operational_role NOT IN ('sponsor', 'chapter_liaison', 'observer', 'candidate')
