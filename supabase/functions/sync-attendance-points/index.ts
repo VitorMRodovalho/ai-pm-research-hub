@@ -3,13 +3,27 @@ import { corsHeaders } from '../_shared/cors.ts'
 
 const POINTS_PER_ATTENDANCE = 10
 const CATEGORY = 'attendance'
-const BATCH_SIZE = 500
+// Keep batch size small to avoid PostgREST URL length limits on .in() queries
+// Each UUID is 36 chars; 100 * 36 = 3.6KB, well within the ~8KB limit
+const LOOKUP_BATCH = 100
+const INSERT_BATCH = 200
 
-function unauthorizedResponse() {
-  return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
-    status: 401,
+function jsonResponse(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
+}
+
+function extractError(err: unknown): string {
+  if (err && typeof err === 'object') {
+    const e = err as Record<string, unknown>
+    if (typeof e.message === 'string' && e.message) return e.message
+    if (typeof e.msg === 'string' && e.msg) return e.msg
+    if (typeof e.error_description === 'string') return e.error_description
+    try { return JSON.stringify(err) } catch { /* fallthrough */ }
+  }
+  return String(err || 'Unknown error')
 }
 
 Deno.serve(async (req) => {
@@ -20,7 +34,7 @@ Deno.serve(async (req) => {
 
   const authHeader = req.headers.get('Authorization') ?? ''
   const token = authHeader.replace(/^Bearer\s+/i, '')
-  if (!token) return unauthorizedResponse()
+  if (!token) return jsonResponse({ success: false, error: 'Unauthorized' }, 401)
 
   const isServiceRole = token === serviceRoleKey
 
@@ -29,19 +43,22 @@ Deno.serve(async (req) => {
   let callerMemberId: string | null = null
 
   if (!isServiceRole) {
-    const userClient = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
+    if (!anonKey) return jsonResponse({ success: false, error: 'Server config error: missing ANON_KEY' }, 500)
+
+    const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: `Bearer ${token}` } },
     })
     const { data: { user }, error: userError } = await userClient.auth.getUser()
-    if (userError || !user) return unauthorizedResponse()
+    if (userError || !user) return jsonResponse({ success: false, error: `Auth failed: ${userError?.message || 'no user'}` }, 401)
 
-    const { data: member } = await sb
+    const { data: member, error: memberError } = await sb
       .from('members')
       .select('id, is_superadmin, operational_role')
       .eq('auth_id', user.id)
       .single()
 
-    if (!member) return unauthorizedResponse()
+    if (!member) return jsonResponse({ success: false, error: `Member not found: ${memberError?.message || user.id}` }, 401)
 
     const isAdmin = member.is_superadmin === true
       || member.operational_role === 'manager'
@@ -65,16 +82,15 @@ Deno.serve(async (req) => {
     const { data: attendanceRows, error: attendanceError } = await attendanceQuery
     if (attendanceError) throw attendanceError
     if (!attendanceRows || attendanceRows.length === 0) {
-      return new Response(JSON.stringify({ success: true, points_created: 0 }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return jsonResponse({ success: true, points_created: 0 })
     }
 
     const attendanceIds = attendanceRows.map((r) => r.id)
 
+    // Look up existing ref_ids in small batches to avoid URL length limits
     const existingRefIds = new Set<string>()
-    for (let i = 0; i < attendanceIds.length; i += BATCH_SIZE) {
-      const batch = attendanceIds.slice(i, i + BATCH_SIZE)
+    for (let i = 0; i < attendanceIds.length; i += LOOKUP_BATCH) {
+      const batch = attendanceIds.slice(i, i + LOOKUP_BATCH)
       const { data: existing, error: existingError } = await sb
         .from('gamification_points')
         .select('ref_id')
@@ -98,21 +114,15 @@ Deno.serve(async (req) => {
       }))
 
     if (toInsert.length > 0) {
-      for (let i = 0; i < toInsert.length; i += BATCH_SIZE) {
-        const batch = toInsert.slice(i, i + BATCH_SIZE)
+      for (let i = 0; i < toInsert.length; i += INSERT_BATCH) {
+        const batch = toInsert.slice(i, i + INSERT_BATCH)
         const { error: insertError } = await sb.from('gamification_points').insert(batch)
         if (insertError) throw insertError
       }
     }
 
-    return new Response(JSON.stringify({ success: true, points_created: toInsert.length }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return jsonResponse({ success: true, points_created: toInsert.length })
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    return new Response(JSON.stringify({ success: false, error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return jsonResponse({ success: false, error: extractError(error) }, 500)
   }
 })
