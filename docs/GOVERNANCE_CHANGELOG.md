@@ -934,4 +934,18 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-070 — Member Activity Tracking for Adoption Analytics
+
+**Data:** 2026-03-16
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Lightweight activity tracking via `record_member_activity()` RPC called on each pageview (throttled 5min client-side). Stores `last_seen_at`, daily session count, and last 5 pages on members table. Admin-only dashboard at `/admin/adoption` with KPI cards, daily activity chart, breakdowns by tribe/tier, and sortable member list.
+
+**LGPD:** Base legal = legitimo interesse (Art. 7, IX) para gestao operacional. Dados minimos: timestamp + page count. Sem tracking de tempo de permanencia. Sem dados expostos a outros membros. Politica de Privacidade ja cobre analytics (PostHog). Acesso somente admin/GP.
+
+**Impacto tecnico:** 3 columns on `members` (last_seen_at, total_sessions, last_active_pages). New `member_activity_sessions` table (daily granularity, RLS admin-only read). `record_member_activity()` SECURITY DEFINER RPC. `get_adoption_dashboard()` returns summary + by_tier + by_tribe + daily_chart + member_list. Activity tracker in `BaseLayout.astro` (non-blocking, fire-and-forget). `/admin/adoption` page with full dashboard. GC-070.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*
