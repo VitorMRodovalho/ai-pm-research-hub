@@ -31,7 +31,7 @@ UPDATE public.courses SET credly_badge_name = 'AI in Infrastructure & Constructi
 UPDATE public.courses SET credly_badge_name = 'AI in Agile Delivery' WHERE code = 'AI_AGILE';
 
 -- Trail = 6 badges. CPMAI_INTRO and CDBA_INTRO are optional (no Credly badge)
-UPDATE public.courses SET is_trail = false WHERE code IN ('CDBA_INTRO', 'CPMAI_INTRO');
+UPDATE public.courses SET is_trail = false, credly_badge_name = NULL WHERE code IN ('CDBA_INTRO', 'CPMAI_INTRO');
 UPDATE public.courses SET is_trail = true WHERE code IN (
   'GENAI_OVERVIEW', 'DATA_LANDSCAPE', 'PROMPT_ENG',
   'PRACTICAL_GENAI', 'AI_INFRA', 'AI_AGILE'
