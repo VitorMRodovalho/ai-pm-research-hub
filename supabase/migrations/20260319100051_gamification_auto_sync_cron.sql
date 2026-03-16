@@ -1,0 +1,25 @@
+-- Gamification Auto-Sync Cron — deployed via Supabase MCP
+-- Documents pg_cron setup for automated gamification sync.
+--
+-- Extensions enabled:
+--   pg_cron 1.6.4 — job scheduling
+--   pg_net 0.20.0 — HTTP calls from SQL
+--
+-- Vault secret:
+--   service_role_key — stored for pg_cron to authenticate with Edge Functions
+--
+-- Cron jobs:
+--   1. sync-credly-all: '0 3 */5 * *' (every 5 days at 3:00 UTC)
+--      Calls Edge Function sync-credly-all via pg_net HTTP POST
+--   2. sync-attendance-points: '15 3 */5 * *' (every 5 days at 3:15 UTC)
+--      Calls Edge Function sync-attendance-points via pg_net HTTP POST
+--      Staggered 15 min after Credly to avoid resource contention
+--
+-- Both Edge Functions already accept service_role_key as valid auth
+-- (isServiceRole check bypasses user JWT validation).
+--
+-- New RPC:
+--   get_cron_status() — returns job list + recent run history. Superadmin only.
+--
+-- Governance: GC-068 — governance_entries bumped from 67 to 68.
+-- Zero-cost: pg_cron included in Supabase free tier.
