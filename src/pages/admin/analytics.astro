@@ -895,24 +895,25 @@ const ANALYTICS_I18N = {
       safeRpc('exec_analytics_v2_quality'),
     ]);
 
-    if (!funnel || !impact || !cert || !roi || !leadership) {
+    // Render whatever data succeeded — don't block everything if one RPC fails
+    if (!funnel && !impact && !cert && !roi && !leadership) {
       setText('analytics-scope-summary', L.chartError || 'Analytics error');
       renderQuality(quality);
       return;
     }
 
-    setText('analytics-scope-summary', buildScopeSummary(funnel));
+    setText('analytics-scope-summary', funnel ? buildScopeSummary(funnel) : (L.scopePrefix || ''));
     lastSnapshot = { funnel, impact, cert, roi, leadership, quality };
     renderQuality(quality);
     renderKpis(funnel, impact, roi, leadership);
-    await Promise.all([
-      renderFunnelChart(funnel),
-      renderImpactCharts(impact),
-      renderCertChart(cert),
-      renderRoiChart(roi),
-      renderLeadershipChart(leadership),
-    ]);
-    renderTransitionMatrix(leadership);
+    const renderTasks: Promise<void>[] = [];
+    if (funnel) renderTasks.push(renderFunnelChart(funnel));
+    if (impact) renderTasks.push(renderImpactCharts(impact));
+    if (cert) renderTasks.push(renderCertChart(cert));
+    if (roi) renderTasks.push(renderRoiChart(roi));
+    if (leadership) renderTasks.push(renderLeadershipChart(leadership));
+    await Promise.all(renderTasks);
+    if (leadership) renderTransitionMatrix(leadership);
   }
 
   let _initDone = false;
