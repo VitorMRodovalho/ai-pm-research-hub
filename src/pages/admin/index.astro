@@ -3680,7 +3680,7 @@ const ADMIN_I18N = {
 
     const { data: courseProgress } = await sb.from('course_progress').select('status');
     const completed = (courseProgress || []).filter((c: any) => c.status === 'completed').length;
-    const totalCourseSlots = totalActive * 8;
+    const totalCourseSlots = totalActive * 6;
     const trailPct = totalCourseSlots > 0 ? Math.round((completed / totalCourseSlots) * 100) : 0;
 
     const { data: artifacts } = await sb.from('artifacts').select('status');

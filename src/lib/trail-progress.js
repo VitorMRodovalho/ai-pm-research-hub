@@ -1,4 +1,4 @@
-export function buildTrailProgressByMember(rows = [], trailTotal = 8) {
+export function buildTrailProgressByMember(rows = [], trailTotal = 6) {
   const byMember = new Map();
 
   for (const row of rows || []) {

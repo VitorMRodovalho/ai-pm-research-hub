@@ -22,17 +22,133 @@ ALTER TABLE public.courses
   ADD COLUMN IF NOT EXISTS credly_badge_name text,
   ADD COLUMN IF NOT EXISTS is_trail boolean DEFAULT true;
 
--- Populate credly_badge_name for the 7 trail courses
+-- Populate credly_badge_name for the 6 trail courses (have Credly badges)
 UPDATE public.courses SET credly_badge_name = 'Generative AI Overview for Project Managers' WHERE code = 'GENAI_OVERVIEW';
 UPDATE public.courses SET credly_badge_name = 'Data Landscape of GenAI for Project Managers' WHERE code = 'DATA_LANDSCAPE';
 UPDATE public.courses SET credly_badge_name = 'Talking to AI: Prompt Engineering for Project Managers' WHERE code = 'PROMPT_ENG';
 UPDATE public.courses SET credly_badge_name = 'Practical Application of Gen AI for Project Managers' WHERE code = 'PRACTICAL_GENAI';
-UPDATE public.courses SET credly_badge_name = 'Introduction to Cognitive Project Management in AI (CPMAI)™' WHERE code = 'CPMAI_INTRO';
 UPDATE public.courses SET credly_badge_name = 'AI in Infrastructure & Construction Projects' WHERE code = 'AI_INFRA';
 UPDATE public.courses SET credly_badge_name = 'AI in Agile Delivery' WHERE code = 'AI_AGILE';
 
--- Mark CDBA_INTRO as non-trail
-UPDATE public.courses SET is_trail = false WHERE code = 'CDBA_INTRO';
+-- Trail = 6 badges. CPMAI_INTRO and CDBA_INTRO are optional (no Credly badge)
+UPDATE public.courses SET is_trail = false WHERE code IN ('CDBA_INTRO', 'CPMAI_INTRO');
+UPDATE public.courses SET is_trail = true WHERE code IN (
+  'GENAI_OVERVIEW', 'DATA_LANDSCAPE', 'PROMPT_ENG',
+  'PRACTICAL_GENAI', 'AI_INFRA', 'AI_AGILE'
+);
+
+-- ═══════════════════════════════════════════════════════════════
+-- BLOCO E: Trail Data Reconciliation (addendum)
+-- Clean false bulk-inserted data BEFORE functions/reclassification
+-- ═══════════════════════════════════════════════════════════════
+
+-- E.2 Delete false course_progress entries (bulk insert 2026-03-05 20:36:58)
+
+-- Italo: 0 real badges, delete all bulk entries
+DELETE FROM course_progress
+WHERE member_id = (SELECT id FROM members WHERE full_name LIKE '%Italo%Soares%')
+AND completed_at = '2026-03-05 20:36:58.893954+00';
+
+-- Luciana: 0 real badges, delete all bulk entries
+DELETE FROM course_progress
+WHERE member_id = (SELECT id FROM members WHERE full_name LIKE '%Luciana%Dutra%')
+AND completed_at = '2026-03-05 20:36:58.893954+00';
+
+-- Marcelo: 0 real badges
+DELETE FROM course_progress
+WHERE member_id = (SELECT id FROM members WHERE full_name LIKE '%Marcelo%Ferreira%')
+AND completed_at = '2026-03-05 20:36:58.893954+00';
+
+-- Rodrigo Grilo: 0 real badges
+DELETE FROM course_progress
+WHERE member_id = (SELECT id FROM members WHERE full_name LIKE '%Rodrigo%Grilo%')
+AND completed_at = '2026-03-05 20:36:58.893954+00'
+AND course_id NOT IN (
+  SELECT c.id FROM courses c
+  JOIN gamification_points gp ON gp.member_id = (SELECT id FROM members WHERE full_name LIKE '%Rodrigo%Grilo%')
+    AND gp.reason LIKE 'Credly:%' AND gp.reason LIKE '%' || c.credly_badge_name || '%'
+  WHERE c.is_trail = true
+);
+
+-- Lídia: 0 real badges
+DELETE FROM course_progress
+WHERE member_id = (SELECT id FROM members WHERE full_name LIKE '%Lídia%Vale%')
+AND completed_at = '2026-03-05 20:36:58.893954+00';
+
+-- Fabricio: only delete CPMAI_INTRO (the other 6 are real)
+DELETE FROM course_progress
+WHERE member_id = (SELECT id FROM members WHERE full_name LIKE '%Fabricio%Costa%')
+AND course_id = (SELECT id FROM courses WHERE code = 'CPMAI_INTRO');
+
+-- Vitor: only delete CPMAI_INTRO
+DELETE FROM course_progress
+WHERE member_id = (SELECT id FROM members WHERE full_name LIKE '%Vitor%Maia%')
+AND course_id = (SELECT id FROM courses WHERE code = 'CPMAI_INTRO');
+
+-- Leticia: delete CPMAI_INTRO if no matching Credly badge
+DELETE FROM course_progress
+WHERE member_id = (SELECT id FROM members WHERE full_name LIKE '%Leticia%Clemente%')
+AND course_id = (SELECT id FROM courses WHERE code = 'CPMAI_INTRO')
+AND NOT EXISTS (
+  SELECT 1 FROM gamification_points gp
+  WHERE gp.member_id = (SELECT id FROM members WHERE full_name LIKE '%Leticia%Clemente%')
+  AND gp.reason LIKE 'Credly:%'
+  AND gp.reason LIKE '%CPMAI%'
+);
+
+-- E.3 Delete orphaned gamification_points from false progress
+
+-- Italo: delete all course-related gamification
+DELETE FROM gamification_points
+WHERE member_id = (SELECT id FROM members WHERE full_name LIKE '%Italo%Soares%')
+AND reason LIKE 'Curso:%';
+
+-- Luciana
+DELETE FROM gamification_points
+WHERE member_id = (SELECT id FROM members WHERE full_name LIKE '%Luciana%Dutra%')
+AND reason LIKE 'Curso:%';
+
+-- Marcelo
+DELETE FROM gamification_points
+WHERE member_id = (SELECT id FROM members WHERE full_name LIKE '%Marcelo%Ferreira%')
+AND reason LIKE 'Curso:%';
+
+-- Rodrigo Grilo
+DELETE FROM gamification_points
+WHERE member_id = (SELECT id FROM members WHERE full_name LIKE '%Rodrigo%Grilo%')
+AND reason LIKE 'Curso:%';
+
+-- Lídia
+DELETE FROM gamification_points
+WHERE member_id = (SELECT id FROM members WHERE full_name LIKE '%Lídia%Vale%')
+AND reason LIKE 'Curso:%';
+
+-- Fabricio: only CPMAI_INTRO and CDBA_INTRO "Curso:" entries
+DELETE FROM gamification_points
+WHERE member_id = (SELECT id FROM members WHERE full_name LIKE '%Fabricio%Costa%')
+AND reason IN ('Curso: CPMAI_INTRO', 'Curso: CDBA_INTRO');
+
+-- Vitor: same
+DELETE FROM gamification_points
+WHERE member_id = (SELECT id FROM members WHERE full_name LIKE '%Vitor%Maia%')
+AND reason IN ('Curso: CPMAI_INTRO', 'Curso: CDBA_INTRO');
+
+-- E.4 Repopulate course_progress from Credly badges (source of truth)
+INSERT INTO course_progress (member_id, course_id, status, completed_at, updated_at)
+SELECT DISTINCT
+  gp.member_id,
+  c.id as course_id,
+  'completed' as status,
+  gp.earned_at as completed_at,
+  now() as updated_at
+FROM gamification_points gp
+JOIN courses c ON gp.reason LIKE '%' || c.credly_badge_name || '%'
+WHERE gp.reason LIKE 'Credly:%'
+  AND c.is_trail = true
+  AND NOT EXISTS (
+    SELECT 1 FROM course_progress cp
+    WHERE cp.member_id = gp.member_id AND cp.course_id = c.id
+  );
 
 -- ═══════════════════════════════════════════════════════════════
 -- BLOCO 2: Functions — update BEFORE data migration
@@ -188,7 +304,7 @@ GRANT SELECT ON public.gamification_leaderboard TO authenticated, anon;
 -- ORDER: most-specific first, always filter category='course'
 -- ═══════════════════════════════════════════════════════════════
 
--- 3.1a Trail: course completions from course_progress (7 trail codes)
+-- 3.1a Trail: course completions from course_progress (6 trail codes)
 UPDATE public.gamification_points
 SET category = 'trail', points = 20
 WHERE category = 'course'
@@ -197,12 +313,11 @@ AND (
   OR reason LIKE '%DATA_LANDSCAPE%'
   OR reason LIKE '%PROMPT_ENG%'
   OR reason LIKE '%PRACTICAL_GENAI%'
-  OR reason LIKE '%CPMAI_INTRO%'
   OR reason LIKE '%AI_INFRA%'
   OR reason LIKE '%AI_AGILE%'
 );
 
--- 3.1b Trail: Credly badges matching trail course names
+-- 3.1b Trail: Credly badges matching trail course names (6 badges)
 UPDATE public.gamification_points
 SET category = 'trail', points = 20
 WHERE category = 'course'
@@ -211,7 +326,6 @@ AND (
   OR reason LIKE '%Data Landscape of GenAI for Project Managers%'
   OR reason LIKE '%Talking to AI: Prompt Engineering for Project Managers%'
   OR reason LIKE '%Practical Application of Gen AI for Project Managers%'
-  OR reason LIKE '%Introduction to Cognitive Project Management in AI%'
   OR reason LIKE '%AI in Infrastructure%Construction%'
   OR reason LIKE '%AI in Agile Delivery%'
 );
