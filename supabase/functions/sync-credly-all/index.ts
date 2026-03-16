@@ -359,7 +359,7 @@ Deno.serve(async (req) => {
     const { data: members, error: membersError } = await sb
       .from('members')
       .select('id, credly_url')
-      .eq('active', true)
+      .eq('is_active', true)
       .not('credly_url', 'is', null)
       .neq('credly_url', '')
 
