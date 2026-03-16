@@ -291,6 +291,14 @@ export interface BoardI18n {
   fromTrello?: string;
   fromNotion?: string;
   fromManual?: string;
+  // Board rules popover
+  boardRulesTitle?: string;
+  boardRulesCardTitle?: string;
+  boardRulesCardDesc?: string;
+  boardRulesChecklistTitle?: string;
+  boardRulesChecklistDesc?: string;
+  boardRulesDatesTitle?: string;
+  boardRulesDatesDesc?: string;
 }
 
 export const DEFAULT_I18N: BoardI18n = {

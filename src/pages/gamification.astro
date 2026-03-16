@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Toast from '../components/ui/Toast.astro';
+import ScoringInfoPopover from '../components/ui/ScoringInfoPopover.tsx';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 
@@ -133,6 +134,29 @@ const GAM_I18N = {
   tribeName8: t('gamification.tribeName.8', lang),
   locale: lang === 'es-LATAM' ? 'es' : lang,
 };
+
+const SCORING_I18N = {
+  title: t('gamification.scoring.title', lang),
+  certSenior: t('gamification.scoring.certSenior', lang),
+  certSeniorSub: t('gamification.scoring.certSeniorSub', lang),
+  certCpmai: t('gamification.scoring.certCpmai', lang),
+  certMid: t('gamification.scoring.certMid', lang),
+  certMidSub: t('gamification.scoring.certMidSub', lang),
+  certPractitioner: t('gamification.scoring.certPractitioner', lang),
+  certPractitionerSub: t('gamification.scoring.certPractitionerSub', lang),
+  certEntry: t('gamification.scoring.certEntry', lang),
+  certEntrySub: t('gamification.scoring.certEntrySub', lang),
+  specialization: t('gamification.scoring.specialization', lang),
+  specializationSub: t('gamification.scoring.specializationSub', lang),
+  trail: t('gamification.scoring.trail', lang),
+  trailSub: t('gamification.scoring.trailSub', lang),
+  knowledgeAiPm: t('gamification.scoring.knowledgeAiPm', lang),
+  knowledgeAiPmSub: t('gamification.scoring.knowledgeAiPmSub', lang),
+  course: t('gamification.scoring.course', lang),
+  badge: t('gamification.scoring.badge', lang),
+  attendance: t('gamification.scoring.attendance', lang),
+  goal: t('gamification.scoring.goal', lang),
+};
 ---
 <BaseLayout title={t('gamification.titleFull', lang)} activePage="gamification">
   <Toast />
@@ -185,7 +209,10 @@ const GAM_I18N = {
 
     <!-- Points legend -->
     <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5 mb-6">
-      <h3 class="text-sm font-bold text-navy mb-3">{t('gamification.pointsLegend.title', lang)}</h3>
+      <h3 class="text-sm font-bold text-navy mb-3 flex items-center gap-1.5">
+        {t('gamification.pointsLegend.title', lang)}
+        <ScoringInfoPopover client:load i18n={SCORING_I18N} />
+      </h3>
       <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 text-[13px]">
         <div class="flex items-center gap-2">
           <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-[11px]">+10</span>
@@ -211,9 +238,6 @@ const GAM_I18N = {
           <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-[11px]">+30</span>
           <span class="text-[var(--text-secondary)]">{t('gamification.pointsLegend.artifact', lang)}</span>
         </div>
-      </div>
-      <div class="mt-3 text-[11px] text-[var(--text-secondary)]">
-        Trilha PMI: 7 cursos obrigatórios (20 XP cada) · Certificações: Senior 50, CPMAI 45, Mid 40, Practitioner 35, Entry 30 · Badge 10 XP
       </div>
     </div>
 

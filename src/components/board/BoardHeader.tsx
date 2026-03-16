@@ -1,4 +1,5 @@
 import type { Board, BoardI18n } from '../../types/board';
+import BoardRulesPopover from '../ui/BoardRulesPopover';
 
 interface Props {
   board: Board;
@@ -22,7 +23,18 @@ export default function BoardHeader({ board, itemCount, totalCount, canCreate, o
     <div className="flex items-center justify-between flex-wrap gap-3">
       <div className="flex items-center gap-3">
         <div>
-          <h2 className="text-lg font-extrabold text-[var(--text-primary)]">{board.board_name}</h2>
+          <h2 className="text-lg font-extrabold text-[var(--text-primary)] flex items-center gap-1.5">
+            {board.board_name}
+            <BoardRulesPopover i18n={{
+              title: i18n.boardRulesTitle || 'Como usar os Cards',
+              cardTitle: i18n.boardRulesCardTitle || 'CARD = Entregável (WBS)',
+              cardDesc: i18n.boardRulesCardDesc || 'Nome de substantivo: Artigo, Framework, Matriz, PoC\nTem Baseline, Forecast e Actual dates\nAtribuído ao líder ou pesquisador responsável',
+              checklistTitle: i18n.boardRulesChecklistTitle || 'CHECKLIST = Atividade/Tarefa',
+              checklistDesc: i18n.boardRulesChecklistDesc || 'Começa com verbo: Criar, Definir, Revisar, Submeter\nTem responsável (1 pessoa) e prazo\nVive DENTRO de um card',
+              datesTitle: i18n.boardRulesDatesTitle || 'Dates automáticas',
+              datesDesc: i18n.boardRulesDatesDesc || 'Forecast do card = maior prazo das atividades\nActual do card = só preenche quando TUDO concluído',
+            }} />
+          </h2>
           <div className="flex items-center gap-2 mt-0.5">
             <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold ${src.color}`}>
               {src.label}
