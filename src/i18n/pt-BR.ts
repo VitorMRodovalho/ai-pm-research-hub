@@ -358,6 +358,8 @@ const ptBR: Record<string, string> = {
   'nav.attendanceLink': '⏱ Presenças & Horas',
   'nav.adminLink': '⚙️ Painel Admin',
   'nav.logout': '↩ Sair',
+  'nav.privacy': 'Política de Privacidade',
+  'nav.help': 'Ajuda',
   'nav.user': 'Usuário',
   'nav.menu': 'Menu',
 

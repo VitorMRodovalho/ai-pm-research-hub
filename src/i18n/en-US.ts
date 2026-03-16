@@ -358,6 +358,8 @@ const enUS: Record<string, string> = {
   'nav.attendanceLink': '⏱ Attendance & Hours',
   'nav.adminLink': '⚙️ Admin Panel',
   'nav.logout': '↩ Sign Out',
+  'nav.privacy': 'Privacy Policy',
+  'nav.help': 'Help',
   'nav.user': 'User',
   'nav.menu': 'Menu',
 
