@@ -850,6 +850,18 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 **Impacto tecnico:** Zero mudancas no banco ou frontend. GC-039 (Org Chart v4) atualizado: referencias a CoP sao informativas, nao operacionais.
 
+### GC-064: W104 — Annual KPI Calibration
+
+**Data:** 2026-03-16
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** 13 annual KPIs across 5 categories (delivery, engagement, learning, financial, growth). Auto-calculated from existing DB tables. Scorecard integrated into Portfolio Dashboard.
+
+**Justificativa:** GP and sponsors need real-time progress against annual targets. Manual tracking via spreadsheets doesn't scale. Auto-calculation eliminates reporting overhead.
+
+**Impacto tecnico:** `annual_kpi_targets` table with 13 seeded KPIs. `get_annual_kpis` RPC auto-calculates 11/13 from: pilots, board_items+tags, events+tags, attendance, course_progress, members. 2 manual (infra cost, chapters). `update_kpi_target` RPC for GP to adjust targets. Portfolio KPI Health section now uses get_annual_kpis with health indicators (achieved/on_track/at_risk/behind).
+
 ---
 
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*

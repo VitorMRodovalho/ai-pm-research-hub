@@ -195,49 +195,63 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     (window as any).toast?.(`Sanity OK. Orfãos: ${summary.orphan_items ?? 0} · Inativos: ${summary.items_in_inactive_board ?? 0}`, 'success');
   });
 
-  // ─── KPI Health (W104) ───
+  // ─── KPI Health (W104) — now uses get_annual_kpis ───
   async function loadKpiHealth(sb: any) {
     const healthPanel = document.getElementById('kpi-health-panel');
     const healthGrid = document.getElementById('kpi-health-grid');
     if (!healthPanel || !healthGrid) return;
 
-    const { data, error } = await sb.rpc('exec_portfolio_health');
-    if (error || !data) return;
+    const { data, error } = await sb.rpc('get_annual_kpis', { p_cycle: 3, p_year: 2026 });
+    if (error || !data?.kpis) return;
 
-    const items = Array.isArray(data) ? data : [];
-    if (items.length === 0) return;
-
-    const STATUS_STYLES: Record<string, { bg: string; border: string; accent: string; icon: string }> = {
-      green:  { bg: 'bg-emerald-50', border: 'border-emerald-200', accent: 'text-emerald-700', icon: '🟢' },
-      yellow: { bg: 'bg-amber-50', border: 'border-amber-200', accent: 'text-amber-700', icon: '🟡' },
-      red:    { bg: 'bg-red-50', border: 'border-red-200', accent: 'text-red-700', icon: '🔴' },
-    };
+    const kpis = data.kpis;
+    if (kpis.length === 0) return;
 
     const lang = document.documentElement.lang || 'pt-BR';
     const langKey = lang === 'en-US' || lang.startsWith('en') ? 'en' : lang.startsWith('es') ? 'es' : 'pt';
 
-    healthGrid.innerHTML = items.map((item: any) => {
-      const s = STATUS_STYLES[item.status] || STATUS_STYLES.red;
-      const label = item.label?.[langKey] || item.label?.pt || item.metric_key;
-      const pct = Math.min(Number(item.progress_pct) || 0, 100);
-      const unitLabel = item.unit === 'percent' ? '%' : item.unit === 'hours' ? 'h' : '';
+    const HEALTH_STYLES: Record<string, { bg: string; border: string; accent: string; bar: string }> = {
+      achieved: { bg: 'bg-emerald-50', border: 'border-emerald-200', accent: 'text-emerald-700', bar: '#10B981' },
+      on_track: { bg: 'bg-blue-50',    border: 'border-blue-200',    accent: 'text-blue-700',    bar: '#3B82F6' },
+      at_risk:  { bg: 'bg-amber-50',   border: 'border-amber-200',   accent: 'text-amber-700',   bar: '#D97706' },
+      behind:   { bg: 'bg-red-50',     border: 'border-red-200',     accent: 'text-red-700',      bar: '#BE2027' },
+    };
 
-      return `<article class="rounded-xl ${s.border} ${s.bg} p-4">
+    // Summary bar
+    const s = data.summary;
+    const summaryHtml = `<div class="col-span-full flex items-center gap-3 text-[.7rem] font-semibold mb-1">
+      <span class="text-emerald-600">🟢 ${s.achieved}</span>
+      <span class="text-blue-600">🔵 ${s.on_track}</span>
+      <span class="text-amber-600">🟡 ${s.at_risk}</span>
+      <span class="text-red-600">🔴 ${s.behind}</span>
+      <span class="text-[var(--text-muted)] ml-auto">${s.total} KPIs</span>
+    </div>`;
+
+    const cardsHtml = kpis.map((k: any) => {
+      const h = HEALTH_STYLES[k.health] || HEALTH_STYLES.behind;
+      const label = langKey === 'en' && k.label_en ? k.label_en : k.label_pt;
+      const pct = Math.min(Number(k.progress_pct) || 0, 999);
+      const displayPct = Math.min(pct, 100);
+      const unitLabel = k.unit === '%' ? '%' : k.unit === 'R$' ? ' R$' : '';
+      const currentDisplay = k.current !== null && k.current !== undefined ? k.current : '—';
+
+      return `<article class="rounded-xl ${h.border} ${h.bg} p-4">
         <div class="flex items-center gap-2 mb-2">
-          <span>${s.icon}</span>
-          <span class="text-xs font-bold uppercase tracking-wide ${s.accent}">${label}</span>
+          <span>${k.icon}</span>
+          <span class="text-[.68rem] font-bold uppercase tracking-wide ${h.accent}">${label}</span>
         </div>
         <div class="flex items-end gap-1 mb-2">
-          <span class="text-2xl font-extrabold ${s.accent}">${item.current}${unitLabel}</span>
-          <span class="text-xs text-[var(--text-muted)] mb-1">/ ${item.target}${unitLabel}</span>
+          <span class="text-2xl font-extrabold ${h.accent}">${currentDisplay}${unitLabel}</span>
+          <span class="text-xs text-[var(--text-muted)] mb-1">/ ${k.target}${unitLabel}</span>
         </div>
         <div class="w-full h-2 rounded-full bg-white/60 overflow-hidden">
-          <div class="h-full rounded-full transition-all duration-500" style="width:${pct}%;background:${s.accent === 'text-emerald-700' ? '#10B981' : s.accent === 'text-amber-700' ? '#D97706' : '#BE2027'}"></div>
+          <div class="h-full rounded-full transition-all duration-500" style="width:${displayPct}%;background:${h.bar}"></div>
         </div>
-        <div class="text-[10px] ${s.accent} font-semibold mt-1">${pct}% da meta</div>
+        <div class="text-[10px] ${h.accent} font-semibold mt-1">${pct}%</div>
       </article>`;
     }).join('');
 
+    healthGrid.innerHTML = summaryHtml + cardsHtml;
     healthPanel.classList.remove('hidden');
   }
 
