@@ -1,9 +1,11 @@
 /**
  * useBoardPermissions.ts — Access control based on member role + board scope
+ * W144: Respects simulation state from permissions.ts
  */
 import { useState, useEffect } from 'react';
 import type { Board } from '../types/board';
 import { waitForSb } from './useBoard';
+import { getSimulation, type OperationalTier } from '../lib/permissions';
 
 interface MemberContext {
   id: string;
@@ -105,14 +107,21 @@ export function useBoardPermissions(board: Board | null): Permissions {
     };
   }
 
-  const tier = ROLE_TIER[member.operational_role] ?? 5;
-  const isSuperadmin = member.is_superadmin;
+  // W144: Apply simulation overlay if active
+  const sim = getSimulation();
+  const effectiveRole = sim.active && sim.tier ? sim.tier : member.operational_role;
+  const effectiveDesig = sim.active ? sim.designations : member.designations;
+  const effectiveTribeId = sim.active && sim.tribe_id !== null ? sim.tribe_id : member.tribe_id;
+  const effectiveSuperadmin = sim.active ? false : member.is_superadmin;
+
+  const tier = ROLE_TIER[effectiveRole] ?? 5;
+  const isSuperadmin = effectiveSuperadmin;
   const isManager = tier <= 2.5;
   const isLeader = tier <= 3;
-  const isOwnTribe = board.board_scope === 'tribe' && board.tribe_id === member.tribe_id;
+  const isOwnTribe = board.board_scope === 'tribe' && board.tribe_id === effectiveTribeId;
   const isGlobal = board.board_scope === 'global';
-  const isComms = member.designations.some((d) => ['comms_leader', 'comms_member'].includes(d));
-  const isCurator = member.designations.includes('curator') || member.designations.includes('co_gp');
+  const isComms = effectiveDesig.some((d: string) => ['comms_leader', 'comms_member'].includes(d));
+  const isCurator = effectiveDesig.includes('curator') || effectiveDesig.includes('co_gp');
 
   return {
     canView: isSuperadmin || isManager || isGlobal || isOwnTribe,

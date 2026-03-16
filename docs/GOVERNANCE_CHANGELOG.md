@@ -816,6 +816,18 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 **Impacto tecnico:** CHECK constraint expandido para 13 categorias. sync_attendance_points trail-aware com verificacao dual-category. gamification_leaderboard VIEW com learning_points, cert_points, badge_points. get_member_cycle_xp com cycle_learning e cycle_certs. Frontend: CATEGORY_META expandido, TRAIL_TOTAL=7, pontos legend atualizado.
 
+### GC-060: W144 — Centralized Permissions + Tier Viewer
+
+**Data:** 2026-03-15
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado (Fase 1+2)
+
+**Decisao:** All access control centralized in permissions.ts with hasPermission(). Superadmins can simulate any tier/designation/tribe combination to preview member journeys. Writes during simulation execute with real superadmin permissions + info toast.
+
+**Justificativa:** ~158 direct role checks spread across 40+ components made it impossible to audit or test permission changes. GP needed a way to verify member journeys without maintaining multiple test accounts. Centralizing permissions in one file enables single-point changes and full audit trail.
+
+**Impacto tecnico:** permissions.ts: 11 operational tiers x 7 designations x ~45 permission strings. SimulationContext (React) + cookie sync for Astro SSR pages. TierViewerBar in BaseLayout (superadmin only). AdminNav, useBoardPermissions migrated to hasPermission(). Phase 3 backlog: migrate remaining ~130 direct checks.
+
 ---
 
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*
