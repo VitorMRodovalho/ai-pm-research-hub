@@ -25,6 +25,7 @@ DECLARE
   v_pilots jsonb;
   v_events_timeline jsonb;
   v_platform jsonb;
+  v_sustainability jsonb;
 BEGIN
   -- SECTION 1: Overview
   -- W106/A2: exclude interview events from event counts, attendance, impact hours
@@ -193,10 +194,17 @@ BEGIN
     'version', COALESCE((SELECT version FROM releases WHERE is_current = true LIMIT 1), 'development'),
     'releases_count', (SELECT count(*) FROM releases),
     'tests_count', 590,
-    'governance_entries', 65,
+    'governance_entries', 66,
     'zero_cost', true,
     'stack', 'Astro 5 + React 19 + Tailwind 4 + Supabase + Cloudflare Pages'
   ) INTO v_platform;
+
+  -- SECTION 8: Sustainability (W108)
+  BEGIN
+    v_sustainability := public.get_sustainability_dashboard(p_cycle);
+  EXCEPTION WHEN OTHERS THEN
+    v_sustainability := '{}'::jsonb;
+  END;
 
   -- Assemble
   v_result := jsonb_build_object(
@@ -209,6 +217,7 @@ BEGIN
     'gamification', v_gamification,
     'pilots', v_pilots,
     'events_timeline', v_events_timeline,
+    'sustainability', v_sustainability,
     'platform', v_platform
   );
 
