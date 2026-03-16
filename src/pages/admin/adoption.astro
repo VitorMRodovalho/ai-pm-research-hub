@@ -1,0 +1,345 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import AdminNav from '../../components/nav/AdminNav.astro';
+import Toast from '../../components/ui/Toast.astro';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+---
+
+<BaseLayout title={t('adoption.title', lang)} activePage="admin">
+  <div class="max-w-[1200px] mx-auto px-4 pt-6">
+    <AdminNav activeSub="adoption" lang={lang} />
+  </div>
+  <div class="max-w-[1100px] mx-auto px-4 pb-12">
+    <div id="adp-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
+      <div class="text-3xl mb-3">&#x1F512;</div>
+      <p class="font-semibold text-amber-800">{t('adoption.denied', lang)}</p>
+      <a href="/admin" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">Voltar ao Admin</a>
+    </div>
+
+    <div id="adp-panel" class="hidden space-y-6">
+      <!-- Header -->
+      <div>
+        <h1 class="text-2xl font-extrabold text-navy">{t('adoption.title', lang)}</h1>
+        <p class="text-sm text-[var(--text-secondary)] mt-1">{t('adoption.subtitle', lang)}</p>
+      </div>
+
+      <!-- KPI Cards -->
+      <div id="adp-kpis" class="grid grid-cols-2 md:grid-cols-5 gap-3"></div>
+
+      <!-- Daily Activity Chart -->
+      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
+          <h3 class="text-sm font-bold text-navy">{t('adoption.dailyActivity', lang)}</h3>
+          <p class="text-[.68rem] text-[var(--text-muted)] mt-0.5">{t('adoption.last30d', lang)}</p>
+        </div>
+        <div class="p-5">
+          <div id="adp-chart" class="h-[200px] flex items-end gap-[3px]"></div>
+          <div id="adp-chart-labels" class="flex justify-between mt-1 text-[.58rem] text-[var(--text-muted)]"></div>
+        </div>
+      </div>
+
+      <!-- By Tribe + By Tier -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- By Tribe -->
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+          <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
+            <h3 class="text-sm font-bold text-navy">{t('adoption.byTribe', lang)}</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-[.75rem]">
+              <thead>
+                <tr class="bg-[var(--surface-section-cool)]">
+                  <th class="text-left px-4 py-2 font-bold text-[var(--text-secondary)]">{t('adoption.tribe', lang)}</th>
+                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Total</th>
+                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('adoption.seen7d', lang)}</th>
+                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('adoption.neverSeen', lang)}</th>
+                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('adoption.avgSessions', lang)}</th>
+                </tr>
+              </thead>
+              <tbody id="adp-tribe-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- By Tier -->
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+          <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
+            <h3 class="text-sm font-bold text-navy">{t('adoption.byTier', lang)}</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-[.75rem]">
+              <thead>
+                <tr class="bg-[var(--surface-section-cool)]">
+                  <th class="text-left px-4 py-2 font-bold text-[var(--text-secondary)]">{t('adoption.role', lang)}</th>
+                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Total</th>
+                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('adoption.seen7d', lang)}</th>
+                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('adoption.neverSeen', lang)}</th>
+                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('adoption.avgSessions', lang)}</th>
+                </tr>
+              </thead>
+              <tbody id="adp-tier-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Member List -->
+      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-[var(--border-default)] flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-navy">{t('adoption.memberList', lang)}</h3>
+          </div>
+          <div class="flex items-center gap-2">
+            <select id="adp-filter-status" class="px-2 py-1 border border-[var(--border-default)] rounded-lg text-[.72rem] bg-[var(--surface-card)]">
+              <option value="">Todos</option>
+              <option value="active">{t('adoption.status.active', lang)}</option>
+              <option value="inactive">{t('adoption.status.inactive', lang)}</option>
+              <option value="dormant">{t('adoption.status.dormant', lang)}</option>
+              <option value="never">{t('adoption.status.never', lang)}</option>
+            </select>
+            <input id="adp-search" type="text" placeholder="Buscar..." class="px-2 py-1 border border-[var(--border-default)] rounded-lg text-[.72rem] bg-[var(--surface-card)] w-36" />
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-[.75rem]">
+            <thead>
+              <tr class="bg-[var(--surface-section-cool)]">
+                <th class="text-left px-4 py-2 font-bold text-[var(--text-secondary)] cursor-pointer" data-sort="name">Nome</th>
+                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('adoption.role', lang)}</th>
+                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('adoption.tribe', lang)}</th>
+                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)] cursor-pointer" data-sort="last_seen">{t('adoption.lastSeen', lang)}</th>
+                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)] cursor-pointer" data-sort="sessions">{t('adoption.sessions', lang)}</th>
+                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Status</th>
+              </tr>
+            </thead>
+            <tbody id="adp-member-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="adp-loading" class="text-center py-16 text-[var(--text-muted)]">Carregando...</div>
+  </div>
+  <Toast />
+</BaseLayout>
+
+<script>
+  import { hasPermission } from '../../lib/permissions';
+
+  let sb: any = null;
+  let allMembers: any[] = [];
+  let sortField = 'last_seen';
+  let sortAsc = false;
+
+  function esc(s: string) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  const ROLE_LABELS: Record<string, string> = {
+    researcher: 'Pesquisador', tribe_leader: 'Líder de Tribo', manager: 'Gerente',
+    deputy_manager: 'Vice-Gerente', communicator: 'Comunicador', facilitator: 'Facilitador',
+    guest: 'Convidado', sponsor: 'Sponsor', chapter_liaison: 'Chapter Liaison',
+  };
+  const STATUS_ICONS: Record<string, string> = {
+    active: '<span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>',
+    inactive: '<span class="inline-block w-2 h-2 rounded-full bg-amber-400"></span>',
+    dormant: '<span class="inline-block w-2 h-2 rounded-full bg-red-400"></span>',
+    never: '<span class="inline-block w-2 h-2 rounded-full bg-gray-300"></span>',
+  };
+
+  function showDenied() {
+    document.getElementById('adp-loading')?.classList.add('hidden');
+    document.getElementById('adp-panel')?.classList.add('hidden');
+    document.getElementById('adp-denied')?.classList.remove('hidden');
+  }
+  function showPanel() {
+    document.getElementById('adp-loading')?.classList.add('hidden');
+    document.getElementById('adp-denied')?.classList.add('hidden');
+    document.getElementById('adp-panel')?.classList.remove('hidden');
+  }
+
+  function kpiCard(label: string, value: any, sub: string, colors: string) {
+    return `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+      <div class="text-2xl font-extrabold text-navy">${value}</div>
+      <div class="text-[.72rem] font-bold text-[var(--text-secondary)] mt-1">${esc(label)}</div>
+      <div class="text-[.6rem] ${colors} mt-1 font-medium">${esc(sub)}</div>
+    </div>`;
+  }
+
+  function relativeTime(ts: string | null): string {
+    if (!ts) return '—';
+    const diff = Date.now() - new Date(ts).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'agora';
+    if (mins < 60) return `${mins}min`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h`;
+    const days = Math.floor(hrs / 24);
+    if (days < 30) return `${days}d`;
+    return `${Math.floor(days / 30)}m`;
+  }
+
+  function renderKpis(s: any) {
+    const el = document.getElementById('adp-kpis');
+    if (!el) return;
+    el.innerHTML = [
+      kpiCard('Membros ativos', s.total_active || 0, `${s.ever_logged_in || 0} com login`, 'bg-blue-50 text-blue-700'),
+      kpiCard('Ativos 7d', s.seen_last_7d || 0, `${s.adoption_pct_7d || 0}%`, 'bg-emerald-50 text-emerald-700'),
+      kpiCard('Ativos 30d', s.seen_last_30d || 0, `${s.adoption_pct_30d || 0}%`, 'bg-indigo-50 text-indigo-700'),
+      kpiCard('Nunca acessou', s.never_seen || 0, '', 'bg-red-50 text-red-600'),
+      kpiCard('Sessões/membro', s.avg_sessions_per_member || 0, '', 'bg-amber-50 text-amber-700'),
+    ].join('');
+  }
+
+  function renderChart(daily: any[]) {
+    const chart = document.getElementById('adp-chart');
+    const labels = document.getElementById('adp-chart-labels');
+    if (!chart || !labels) return;
+    const maxVal = Math.max(1, ...daily.map((d: any) => d.unique_members || 0));
+    chart.innerHTML = daily.map((d: any) => {
+      const h = Math.max(2, Math.round(((d.unique_members || 0) / maxVal) * 180));
+      const pv = d.total_pageviews || 0;
+      return `<div class="flex-1 bg-navy/20 rounded-t-sm relative group" style="height:${h}px" title="${d.date}: ${d.unique_members} membros, ${pv} pageviews">
+        <div class="absolute bottom-0 left-0 right-0 bg-navy rounded-t-sm" style="height:${h}px"></div>
+      </div>`;
+    }).join('');
+    // Show first, middle, last date labels
+    if (daily.length > 0) {
+      const fmt = (s: string) => s.slice(5); // MM-DD
+      labels.innerHTML = `<span>${fmt(daily[0].date)}</span><span>${fmt(daily[Math.floor(daily.length / 2)].date)}</span><span>${fmt(daily[daily.length - 1].date)}</span>`;
+    }
+  }
+
+  function renderTribeTable(tribes: any[]) {
+    const body = document.getElementById('adp-tribe-body');
+    if (!body) return;
+    body.innerHTML = tribes.filter((t: any) => t.total > 0).map((t: any) => `
+      <tr class="border-t border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">
+        <td class="px-4 py-2 font-semibold text-navy">${esc(t.tribe_name || `T${t.tribe_id}`)}</td>
+        <td class="px-3 py-2 text-center">${t.total}</td>
+        <td class="px-3 py-2 text-center font-bold ${t.seen_7d > 0 ? 'text-emerald-600' : 'text-[var(--text-muted)]'}">${t.seen_7d}</td>
+        <td class="px-3 py-2 text-center ${t.never > 0 ? 'text-red-500' : ''}">${t.never}</td>
+        <td class="px-3 py-2 text-center">${t.avg_sessions ?? 0}</td>
+      </tr>
+    `).join('');
+  }
+
+  function renderTierTable(tiers: any[]) {
+    const body = document.getElementById('adp-tier-body');
+    if (!body) return;
+    body.innerHTML = tiers.map((t: any) => `
+      <tr class="border-t border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">
+        <td class="px-4 py-2 font-semibold text-navy">${esc(ROLE_LABELS[t.tier] || t.tier || '—')}</td>
+        <td class="px-3 py-2 text-center">${t.total}</td>
+        <td class="px-3 py-2 text-center font-bold ${t.seen_7d > 0 ? 'text-emerald-600' : 'text-[var(--text-muted)]'}">${t.seen_7d}</td>
+        <td class="px-3 py-2 text-center ${t.never > 0 ? 'text-red-500' : ''}">${t.never}</td>
+        <td class="px-3 py-2 text-center">${t.avg_sessions ?? 0}</td>
+      </tr>
+    `).join('');
+  }
+
+  function renderMemberTable() {
+    const body = document.getElementById('adp-member-body');
+    if (!body) return;
+    const filterStatus = (document.getElementById('adp-filter-status') as HTMLSelectElement)?.value || '';
+    const search = ((document.getElementById('adp-search') as HTMLInputElement)?.value || '').toLowerCase();
+
+    let filtered = allMembers;
+    if (filterStatus) filtered = filtered.filter((m: any) => m.status === filterStatus);
+    if (search) filtered = filtered.filter((m: any) => (m.name || '').toLowerCase().includes(search));
+
+    // Sort
+    filtered.sort((a: any, b: any) => {
+      let va: any, vb: any;
+      if (sortField === 'name') { va = a.name || ''; vb = b.name || ''; }
+      else if (sortField === 'sessions') { va = a.total_sessions || 0; vb = b.total_sessions || 0; }
+      else { va = a.last_seen || ''; vb = b.last_seen || ''; }
+      if (va < vb) return sortAsc ? -1 : 1;
+      if (va > vb) return sortAsc ? 1 : -1;
+      return 0;
+    });
+
+    body.innerHTML = filtered.map((m: any) => `
+      <tr class="border-t border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">
+        <td class="px-4 py-2 font-semibold text-navy">${esc(m.name || '—')}</td>
+        <td class="px-3 py-2 text-center text-[.68rem]">${esc(ROLE_LABELS[m.tier] || m.tier || '—')}</td>
+        <td class="px-3 py-2 text-center text-[.68rem]">${m.tribe_name ? esc(m.tribe_name) : '—'}</td>
+        <td class="px-3 py-2 text-center">${relativeTime(m.last_seen)}</td>
+        <td class="px-3 py-2 text-center font-bold">${m.total_sessions || 0}</td>
+        <td class="px-3 py-2 text-center">${STATUS_ICONS[m.status] || ''}</td>
+      </tr>
+    `).join('');
+  }
+
+  async function loadDashboard() {
+    if (!sb) return;
+    try {
+      const { data, error } = await sb.rpc('get_adoption_dashboard');
+      if (error) throw error;
+      if (!data) return;
+
+      renderKpis(data.summary || {});
+      renderChart(data.daily_activity || []);
+      renderTribeTable(data.by_tribe || []);
+      renderTierTable(data.by_tier || []);
+      allMembers = data.members || [];
+      renderMemberTable();
+    } catch (e: any) {
+      console.error('Adoption dashboard:', e);
+      (window as any).toast?.('Erro: ' + (e.message || ''), 'error');
+    }
+  }
+
+  function bindFilters() {
+    document.getElementById('adp-filter-status')?.addEventListener('change', renderMemberTable);
+    document.getElementById('adp-search')?.addEventListener('input', renderMemberTable);
+    document.querySelectorAll('[data-sort]').forEach(th => {
+      th.addEventListener('click', () => {
+        const field = (th as HTMLElement).dataset.sort!;
+        if (sortField === field) sortAsc = !sortAsc;
+        else { sortField = field; sortAsc = field === 'name'; }
+        renderMemberTable();
+      });
+    });
+  }
+
+  let _initDone = false;
+  async function init() {
+    if (_initDone) return;
+    sb = (window as any).navGetSb?.();
+    const m = (window as any).navGetMember?.();
+    if (!sb || !m) return;
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) return;
+    } catch { return; }
+
+    if (!hasPermission(m, 'admin.analytics')) {
+      _initDone = true;
+      showDenied();
+      return;
+    }
+
+    _initDone = true;
+    showPanel();
+    bindFilters();
+    await loadDashboard();
+  }
+
+  function boot() {
+    if ((window as any).navGetMember?.()) { init(); return; }
+    window.addEventListener('nav:member', () => init(), { once: true });
+    [500, 1000, 2000, 4000].forEach(ms => setTimeout(() => { if (!_initDone) init(); }, ms));
+    setTimeout(() => { if (!_initDone) { _initDone = true; showDenied(); } }, 5000);
+  }
+
+  boot();
+</script>
+
+<style>
+  @media print {
+    nav, select, input, button, #adp-denied, [data-admin-nav] { display: none !important; }
+    #adp-panel { display: block !important; }
+  }
+</style>

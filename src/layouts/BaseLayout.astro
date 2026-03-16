@@ -192,6 +192,27 @@ const SIM_I18N = {
     });
   </script>
 
+  <!-- Member activity tracker (non-blocking, fire-and-forget) -->
+  <script>
+    (() => {
+      const THROTTLE_KEY = 'hub_activity_ts';
+      const THROTTLE_MS = 5 * 60 * 1000; // 5 minutes
+      const lastTs = parseInt(sessionStorage.getItem(THROTTLE_KEY) || '0');
+      if (Date.now() - lastTs < THROTTLE_MS) return;
+
+      const run = () => {
+        const sb = (window as any).navGetSb?.();
+        const m = (window as any).navGetMember?.();
+        if (!sb || !m) return;
+        sessionStorage.setItem(THROTTLE_KEY, Date.now().toString());
+        sb.rpc('record_member_activity', { p_page: window.location.pathname }).catch(() => {});
+      };
+
+      if ((window as any).navGetMember?.()) { run(); }
+      else { window.addEventListener('nav:member', run, { once: true }); }
+    })();
+  </script>
+
   <!-- Site Footer with Privacy Link -->
   <footer class="bg-[#200F3B] text-white/40 py-8 px-6 text-center text-[.78rem]">
     <p>{t('footer.line1', lang)}</p>
