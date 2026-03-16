@@ -7,7 +7,7 @@
  *   <BoardEngine client:load tribeId={6} domainKey="research_delivery" />
  */
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { DndContext, DragOverlay, closestCorners, PointerSensor, TouchSensor, KeyboardSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, DragOverlay, pointerWithin, rectIntersection, PointerSensor, TouchSensor, KeyboardSensor, useSensor, useSensors, type CollisionDetection } from '@dnd-kit/core';
 import type { DragStartEvent, DragEndEvent, DragOverEvent } from '@dnd-kit/core';
 
 import type { BoardEngineProps, BoardItem, BoardI18n } from '../../types/board';
@@ -74,6 +74,16 @@ export default function BoardEngine(props: BoardEngineProps) {
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
     useSensor(KeyboardSensor)
   );
+
+  // Custom collision detection: prefer column droppables over card sortables
+  // Fixes issue where closestCorners fails for cross-column drops
+  const collisionDetection: CollisionDetection = useCallback((args) => {
+    // First check pointerWithin (most intuitive for cross-column)
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) return pointerCollisions;
+    // Fallback to rect intersection
+    return rectIntersection(args);
+  }, []);
 
   // ── Column config (from DB) ──
   const columns = useMemo(() => {
@@ -264,7 +274,7 @@ export default function BoardEngine(props: BoardEngineProps) {
       {viewMode === 'kanban' && (
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCorners}
+          collisionDetection={collisionDetection}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
