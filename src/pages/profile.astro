@@ -622,7 +622,7 @@ const PROFILE_I18N = {
 
     // Card 2: Trail Progress
     const coursesCompleted = cycleStats?.coursesCompleted || 0;
-    const trailPct = Math.round((coursesCompleted / 8) * 100);
+    const trailPct = Math.round((coursesCompleted / 6) * 100);
 
     // Card 3: Pending Deliverables
     const pendingCount = weekData?.pendingDeliverables || 0;
@@ -648,7 +648,7 @@ const PROFILE_I18N = {
               <span class="text-base">📚</span>
               <span class="text-[.68rem] font-bold text-[var(--text-secondary)] uppercase tracking-wide">${PROFILE_I18N.weekTrailProgress}</span>
             </div>
-            <div class="text-sm font-bold text-navy">${coursesCompleted}/8 ${PROFILE_I18N.weekCompleted}</div>
+            <div class="text-sm font-bold text-navy">${coursesCompleted}/6 ${PROFILE_I18N.weekCompleted}</div>
             <div class="w-full h-1.5 bg-white/80 rounded-full overflow-hidden mt-1.5">
               <div class="h-full rounded-full bg-purple-500 transition-all duration-500" style="width:${trailPct}%"></div>
             </div>
@@ -702,7 +702,7 @@ const PROFILE_I18N = {
           <div class="text-[.65rem] text-[var(--text-muted)] font-semibold">${PROFILE_I18N.attendanceLabel} (${pctAttend}%)</div>
         </div>
         <div class="bg-[var(--surface-base)] rounded-xl p-3 text-center">
-          <div class="text-lg font-black text-navy">${cycleStats.coursesCompleted}/8</div>
+          <div class="text-lg font-black text-navy">${cycleStats.coursesCompleted}/6</div>
           <div class="text-[.65rem] text-[var(--text-muted)] font-semibold">${PROFILE_I18N.trailLabel}</div>
         </div>`;
     }

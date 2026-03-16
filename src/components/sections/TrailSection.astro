@@ -3,7 +3,7 @@
  * TrailSection.astro — Sprint 2
  * PMI AI certification trail with course list + member ranking from Supabase.
  */
-import { coreCourses, extraCourses, TOTAL_COURSES } from '../../data/trail';
+import { coreCourses, extraCourses, complementaryCourses, TOTAL_COURSES } from '../../data/trail';
 import { t, type Lang } from '../../i18n/utils';
 
 interface Props { lang?: Lang; }
@@ -11,14 +11,18 @@ const { lang = 'pt-BR' } = Astro.props;
 
 let core = [] as ReturnType<typeof coreCourses>;
 let extra = [] as ReturnType<typeof extraCourses>;
+let complementary = [] as ReturnType<typeof complementaryCourses>;
 try {
   const coreResolved = coreCourses();
   const extraResolved = extraCourses();
+  const compResolved = complementaryCourses();
   core = Array.isArray(coreResolved) ? coreResolved : [];
   extra = Array.isArray(extraResolved) ? extraResolved : [];
+  complementary = Array.isArray(compResolved) ? compResolved : [];
 } catch {
   core = [];
   extra = [];
+  complementary = [];
 }
 ---
 
@@ -56,7 +60,7 @@ try {
         )}
       </div>
 
-      <!-- Extra -->
+      <!-- Extra (trail badges #5-6) -->
       <div class="bg-[var(--surface-section-warm)] rounded-2xl p-6 border-l-4 border-purple">
         <div class="text-[.7rem] font-bold text-purple uppercase tracking-wider mb-4">
           {t('trail.extra', lang)}
@@ -73,6 +77,23 @@ try {
         ))}
         {!extra.length && (
           <p class="text-[.82rem] text-[var(--text-secondary)]">{t('trail.extraUnavailable', lang)}</p>
+        )}
+        {complementary.length > 0 && (
+          <div class="mt-4 pt-3 border-t border-[var(--border-subtle)]">
+            <div class="text-[.65rem] font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-2">
+              {t('trail.complementary', lang)}
+            </div>
+            {complementary.map((c, i) => (
+              <a href={c.url} target="_blank" rel="noopener"
+                 class="flex items-center gap-3 py-2 border-b border-[var(--border-subtle)] no-underline text-[var(--text-secondary)] hover:text-purple transition-colors opacity-70">
+                <span class="w-[22px] h-[22px] rounded-md bg-gray-400 text-white flex items-center justify-center
+                             text-[.65rem] font-bold flex-shrink-0">
+                  {i + 7}
+                </span>
+                <span class="text-[.82rem] font-medium">{c.name}</span>
+              </a>
+            ))}
+          </div>
         )}
       </div>
     </div>
@@ -103,7 +124,7 @@ try {
 <span id="trail-i18n-inprogress" class="hidden">{t('trail.inProgress', lang)}</span>
 
 <script>
-  const TOTAL = 8;
+  const TOTAL = 6;
   const trailRankingAvg = document.getElementById('trail-i18n-avg')?.textContent || 'Overall average';
   const trailCompleted = document.getElementById('trail-i18n-completed')?.textContent || 'completed';
   const trailInProgress = document.getElementById('trail-i18n-inprogress')?.textContent || 'in progress';
@@ -112,18 +133,23 @@ try {
     const sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(bootTrail, 200); return; }
 
-    const [progressRes, coursesRes, membersRes] = await Promise.all([
-      sb.from('course_progress').select('member_id, course_id, status'),
-      sb.from('courses').select('id, code'),
+    const [coursesRes, membersRes] = await Promise.all([
+      sb.from('courses').select('id, code, is_trail'),
       sb.from('public_members').select('id, name, photo_url').eq('current_cycle_active', true).order('name'),
     ]);
 
-    const progress = progressRes.data;
     const courses = coursesRes.data;
     const members = membersRes.data;
-    if (!progress || !courses || !members) return;
+    if (!courses || !members) return;
 
-    // Per-member stats
+    // Only count trail courses (is_trail=true)
+    const trailCourseIds = new Set(courses.filter((c: any) => c.is_trail).map((c: any) => c.id));
+
+    const { data: progress } = await sb.from('course_progress').select('member_id, course_id, status')
+      .in('course_id', [...trailCourseIds]);
+    if (!progress) return;
+
+    // Per-member stats (trail courses only)
     const mp: Record<string, { completed: number; in_progress: number }> = {};
     progress.forEach((p: any) => {
       if (!mp[p.member_id]) mp[p.member_id] = { completed: 0, in_progress: 0 };

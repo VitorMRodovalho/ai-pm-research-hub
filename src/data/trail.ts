@@ -1,4 +1,4 @@
-// ─── PMI AI Certification Trail — 7 mandatory courses + 1 complementary ───
+// ─── PMI AI Certification Trail — 6 mandatory badges + 2 complementary (no Credly badge) ───
 
 export interface Course {
   code: string;
@@ -40,8 +40,8 @@ export const COURSES: Course[] = [
   {
     code: 'CPMAI_INTRO',
     name: 'Free Introduction to Cognitive PM in AI (CPMAI)',
-    category: 'extra',
-    isTrail: true,
+    category: 'complementary',
+    isTrail: false,
     url: 'https://www.pmi.org/shop/brazil/p-/elearning/free-introduction-to-cognitive-project-management-in-ai-cpmai/el185',
   },
   {
@@ -67,11 +67,11 @@ export const COURSES: Course[] = [
   },
 ];
 
-/** Trail courses only (7, excludes CDBA_INTRO) */
+/** Trail courses only (6 with Credly badge, excludes CPMAI_INTRO + CDBA_INTRO) */
 export const TRAIL_COURSES = COURSES.filter((c) => c.isTrail);
 
-/** Total mandatory trail courses */
-export const TOTAL_COURSES = TRAIL_COURSES.length; // 7
+/** Total mandatory trail courses (6 badges) */
+export const TOTAL_COURSES = TRAIL_COURSES.length; // 6
 
 export function coreCourses(): Course[] {
   return COURSES.filter((c) => c.category === 'core');
