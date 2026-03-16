@@ -194,7 +194,7 @@ BEGIN
     'version', COALESCE((SELECT version FROM releases WHERE is_current = true LIMIT 1), 'development'),
     'releases_count', (SELECT count(*) FROM releases),
     'tests_count', 590,
-    'governance_entries', 66,
+    'governance_entries', 69,
     'zero_cost', true,
     'stack', 'Astro 5 + React 19 + Tailwind 4 + Supabase + Cloudflare Pages'
   ) INTO v_platform;

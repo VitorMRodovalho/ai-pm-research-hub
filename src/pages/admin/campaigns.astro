@@ -178,6 +178,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 </BaseLayout>
 
 <script>
+  import { hasPermission } from '../../lib/permissions';
+
   type CampaignTemplate = {
     id: string; name: string; slug: string; subject: Record<string,string>;
     body_html: Record<string,string>; body_text: Record<string,string>;
@@ -214,11 +216,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   }
 
   function hasAccess(m: any): boolean {
-    return m.is_superadmin || ['manager','deputy_manager'].includes(m.operational_role) || (m.designations || []).includes('comms_team');
+    return hasPermission(m, 'admin.campaigns');
   }
 
   function canSend(m: any): boolean {
-    return m.is_superadmin || ['manager','deputy_manager'].includes(m.operational_role);
+    return hasPermission(m, 'admin.members.manage');
   }
 
   let currentLang = 'pt';

@@ -1,6 +1,8 @@
 // ─── Admin Shared Constants ───
 // Used by admin page and potentially other admin components
 
+import { hasPermission } from '../permissions';
+
 export const OPROLE_LABELS: Record<string, string> = {
   manager: 'Gerente', deputy_manager: 'Deputy PM', tribe_leader: 'Líder de Tribo',
   researcher: 'Pesquisador', facilitator: 'Facilitador', communicator: 'Multiplicador',
@@ -193,26 +195,12 @@ export function isAnalyticsReadonlyAudience(member: any): boolean {
 
 export function canAccessWebinarsWorkspace(member: any): boolean {
   if (!member) return false;
-  if (member.is_superadmin) return true;
-
-  const opRole = String(member.operational_role || 'guest');
-  const designations: string[] = Array.isArray(member.designations) ? member.designations : [];
-  const allowedRoles = ['manager', 'deputy_manager', 'tribe_leader', 'facilitator', 'guest'];
-  if (allowedRoles.includes(opRole)) return true;
-
-  return ['comms_leader', 'comms_member', 'curator', 'co_gp'].some((d) => designations.includes(d));
+  return hasPermission(member, 'board.view_global');
 }
 
 export function canAccessPublicationsWorkspace(member: any): boolean {
   if (!member) return false;
-  if (member.is_superadmin) return true;
-
-  const opRole = String(member.operational_role || 'guest');
-  const designations: string[] = Array.isArray(member.designations) ? member.designations : [];
-  const allowedRoles = ['manager', 'deputy_manager', 'tribe_leader', 'communicator'];
-  if (allowedRoles.includes(opRole)) return true;
-
-  return ['curator', 'co_gp', 'comms_leader', 'comms_member'].some((d) => designations.includes(d));
+  return hasPermission(member, 'content.view_publications');
 }
 
 export function getTier(m: any): string {

@@ -14,6 +14,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { ExternalLink } from 'lucide-react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { hasPermission } from '../../lib/permissions';
 
 type BoardItem = {
   id: string;
@@ -63,11 +64,7 @@ const OUTCOME_OPTIONS = ['pending', 'submitted', 'approved', 'rejected', 'withdr
 
 function canAccessPublicationsWorkspace(member: any): boolean {
   if (!member) return false;
-  if (member.is_superadmin) return true;
-  const opRole = String(member.operational_role || 'guest');
-  const designations: string[] = Array.isArray(member.designations) ? member.designations : [];
-  if (['manager', 'deputy_manager', 'tribe_leader', 'communicator'].includes(opRole)) return true;
-  return ['curator', 'co_gp', 'comms_leader', 'comms_member'].some((d) => designations.includes(d));
+  return hasPermission(member, 'content.view_publications');
 }
 
 function SortableCard({

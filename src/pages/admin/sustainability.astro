@@ -305,6 +305,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 </BaseLayout>
 
 <script>
+  import { hasPermission } from '../../lib/permissions';
+
   let dashData: any = null;
   let projData: any = null;
   let canWrite = false;
@@ -335,11 +337,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   }
 
   function applyGate(m: any) {
-    const desigs: string[] = m?.designations || [];
-    const isAdmin = m?.is_superadmin || m?.rank >= 4;
-    const hasSponsor = desigs.includes('sponsor') || desigs.includes('chapter_liaison') || desigs.includes('curator');
-    if (isAdmin || hasSponsor) {
-      canWrite = m?.is_superadmin || m?.operational_role === 'manager' || m?.operational_role === 'deputy_manager';
+    const isAdmin = hasPermission(m, 'admin.sustainability');
+    if (isAdmin) {
+      canWrite = hasPermission(m, 'admin.sustainability');
       showPanel();
       loadAll();
     } else {

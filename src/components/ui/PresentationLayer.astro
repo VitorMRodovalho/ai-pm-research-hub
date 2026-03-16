@@ -91,6 +91,7 @@ const PRES_I18N = {
   window.__PRES_CTX = { context: context || 'home', tribeId: tribeId || null, i18n: PRES_I18N || {} };
 </script>
 <script>
+  import { hasPermission } from '../../lib/permissions';
   const CTX = (window as any).__PRES_CTX || { context: 'home', tribeId: null, i18n: {} };
   const PI = CTX.i18n;
   let presActive = false;
@@ -98,15 +99,13 @@ const PRES_I18N = {
 
   function canShowToggle(member: any): boolean {
     if (!member) return false;
-    const isAdmin = member.is_superadmin === true
-      || member.operational_role === 'manager'
-      || member.operational_role === 'deputy_manager';
+    const isAdmin = hasPermission(member, 'admin.access');
 
     if (CTX.context === 'home') return isAdmin;
 
     if (CTX.context === 'tribe') {
       if (isAdmin) return true;
-      return member.operational_role === 'tribe_leader'
+      return hasPermission(member, 'board.edit_tribe_items')
         && member.tribe_id === CTX.tribeId;
     }
     return false;

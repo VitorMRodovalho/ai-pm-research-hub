@@ -79,6 +79,7 @@ type I18n = Record<string, string>;
 
 import { getSb, waitForSb } from '../../hooks/useBoard';
 import { useMemberContext } from '../../hooks/useBoardPermissions';
+import { hasPermission } from '../../lib/permissions';
 
 function daysUntilDue(dueAt: string | null | undefined): number | null {
   if (!dueAt) return null;
@@ -454,10 +455,7 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
   // Derive curation access from shared member context
   const canCurate = useMemo(() => {
     if (!authMember) return false;
-    if (authMember.is_superadmin) return true;
-    const role = authMember.operational_role;
-    if (['manager', 'deputy_manager', 'sponsor', 'chapter_liaison'].includes(role)) return true;
-    return authMember.designations.some((d) => ['curator', 'co_gp'].includes(d));
+    return hasPermission(authMember, 'admin.curation');
   }, [authMember]);
 
   const ui = i18n || {};

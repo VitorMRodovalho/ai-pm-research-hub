@@ -19,15 +19,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 </BaseLayout>
 
 <script>
+  import { hasPermission } from '../../lib/permissions';
+
   let boardGovBootRetries = 0;
 
   function hasBoardGovAccess(member: any): boolean {
     if (!member) return false;
-    if (member.is_superadmin) return true;
-    const role = String(member.operational_role || '');
-    const designations: string[] = Array.isArray(member.designations) ? member.designations : [];
-    return ['manager', 'deputy_manager'].includes(role)
-      || ['co_gp', 'curator', 'comms_leader'].some((d) => designations.includes(d));
+    return hasPermission(member, 'admin.access');
   }
 
   function rowHtml(row: any): string {

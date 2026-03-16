@@ -90,6 +90,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
 <script>
   import Chart from 'chart.js/auto';
+  import { hasPermission } from '../../lib/permissions';
 
   let crBootRetries = 0;
 
@@ -113,11 +114,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
   function hasAccess(member: any): boolean {
     if (!member) return false;
-    if (member.is_superadmin) return true;
-    const role = String(member.operational_role || '');
-    const designations: string[] = Array.isArray(member.designations) ? member.designations : [];
-    return ['manager', 'deputy_manager'].includes(role)
-      || ['sponsor', 'chapter_liaison'].some(d => designations.includes(d));
+    return hasPermission(member, 'admin.analytics');
   }
 
   async function bootCycleReport() {

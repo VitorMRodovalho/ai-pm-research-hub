@@ -892,4 +892,46 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-067 — Publication Submissions Pipeline UI
+
+**Data:** 2026-03-16
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Full publication submission pipeline: admin 3-tab UI (pipeline kanban, list table, metrics dashboard), researcher self-service on /publications, workspace "Minhas Publicacoes" card. 5 new RPCs for detail, authors CRUD, update, pipeline summary. Seed 8 existing board items into publication_submissions table.
+
+**Justificativa:** Publication KPI is central to Cycle 3 (10 submissions + 5 academic articles). Existing board-only tracking lacked structured metadata (target type, co-authors, costs, dates). Pipeline view gives curators and GP visibility into submission flow.
+
+**Impacto tecnico:** 5 new RPCs: `get_publication_submission_detail`, `add_publication_submission_author`, `remove_publication_submission_author`, `update_publication_submission`, `get_publication_pipeline_summary`. Admin page `/admin/publications` with permission `admin.publications` (manager/curator). Researcher self-service on `/publications` with `content.submit_publication` permission. Workspace card shows own submission counts by status. Admin nav entry added. 46 i18n keys across 3 locales.
+
+---
+
+### GC-068 — Gamification Auto-Sync Cron (W-CRON)
+
+**Data:** 2026-03-16
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** pg_cron schedules automatic Credly badge sync and attendance points sync every 5 days at 3:00/3:15 UTC (midnight BRT). Eliminates dependency on manual superadmin button click.
+
+**Justificativa:** Manual sync was error-prone (forgotten clicks, potential rate-limiting from repeated clicks). Automated scheduling ensures gamification data stays current without GP overhead.
+
+**Impacto tecnico:** Extensions enabled: pg_cron 1.6.4, pg_net 0.20.0. Service role key stored in Supabase vault. 2 cron jobs: `sync-credly-all` (0 3 */5 * *) and `sync-attendance-points` (15 3 */5 * *). Both call Edge Functions via pg_net HTTP POST with vault-stored service_role auth. Edge Functions already accept service_role_key as valid auth. New RPC `get_cron_status()` (superadmin only) for monitoring. Manual sync button remains as fallback. Zero-cost: pg_cron included in Supabase free tier.
+
+---
+
+### GC-069 — W144 Phase 3: Complete Permission Migration
+
+**Data:** 2026-03-16
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** All remaining direct role/superadmin/designation permission checks migrated to `hasPermission()` from `src/lib/permissions.ts`. ~25 files modified. Only `is:inline` script blocks (where ES imports are unavailable) retain direct checks.
+
+**Justificativa:** Centralized permission system enables Tier Viewer simulation across all pages. Direct role checks scattered across the codebase made it impossible to simulate different tiers. With `hasPermission()`, adding a new role or changing access requires editing only `permissions.ts`.
+
+**Impacto tecnico:** 25+ files migrated across admin pages, board components, workspace components, content pages, and lib helpers. All `.tsx` components and regular `<script>` blocks in `.astro` pages now use `hasPermission()`. Remaining direct checks are in `is:inline` scripts (4 admin pages) which cannot use ES imports, type definitions, data display, and DB queries. `canAccessWebinarsWorkspace()` and `canAccessPublicationsWorkspace()` in `lib/admin/constants.ts` now delegate to `hasPermission()`. `canManageTribeLifecycle()` and `canSeeInactiveTribes()` in `lib/tribes/access.ts` now use `hasPermission()`.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*
