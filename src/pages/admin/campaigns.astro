@@ -421,11 +421,18 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         const id = (btn as HTMLElement).dataset.send;
         const tmpl = allTemplates.find(t => t.id === id);
         if (!tmpl) return;
-        const isExternal = !tmpl.target_audience.all && (tmpl.target_audience.roles || []).length === 0;
+        const hasRoles = (tmpl.target_audience.roles || []).length > 0;
+        const hasDesigs = (tmpl.target_audience.designations || []).length > 0;
+        const isExternal = !tmpl.target_audience.all && !hasRoles && !hasDesigs;
         document.getElementById('ext-contacts-section')?.classList.toggle('hidden', !isExternal);
+        const audienceLabel = tmpl.target_audience.all
+          ? 'Todos os membros ativos'
+          : hasRoles ? (tmpl.target_audience.roles || []).join(', ')
+          : hasDesigs ? (tmpl.target_audience.designations || []).join(', ')
+          : 'Contatos externos';
         document.getElementById('send-preview')!.innerHTML = `
           <p><strong>${tmpl.name}</strong></p>
-          <p>${tmpl.target_audience.all ? 'Todos os membros ativos' : (tmpl.target_audience.roles || []).join(', ') || 'Contatos externos'}</p>
+          <p>${audienceLabel}</p>
           <p class="text-amber-400 mt-2">⚠ Esta ação envia emails reais. Requer aprovação do GP.</p>
         `;
         const confirmBtn = document.getElementById('send-confirm')!;
