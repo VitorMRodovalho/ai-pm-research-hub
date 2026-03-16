@@ -864,4 +864,18 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-065 — Executive Cycle Report (W105)
+
+**Data:** 2026-03-16
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Auto-generated executive cycle report from platform data. Accessible at /report (all authenticated members) with PDF export via browser print. Seven sections: overview, KPIs, tribe performance, pilots, gamification, events, platform stats. Admin configuration at /admin/report allows GP to toggle sections and add notes.
+
+**Justificativa:** GP previously compiled cycle reports manually from 6 different sources (~4h/week). With all data in the Hub, the report auto-generates in real time. Sponsors and PMI Global get accurate data snapshots without manual intervention.
+
+**Impacto tecnico:** `get_cycle_report(p_cycle)` RPC aggregates all 7 sections from existing tables (members, tribes, board_items, events, attendance, gamification_points, pilots, releases). Frontend renders print-optimized React island with inline SVG charts (tribe bars, event timeline). Zero external PDF libraries — uses @media print CSS with window.print(). Report config stored in site_config table via set_site_config RPC.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*

@@ -1,4 +1,25 @@
 ---
-// W105: Redirect /report → /admin/cycle-report for convenience
-return Astro.redirect('/admin/cycle-report', 302);
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ReportPage from '../components/report/ReportPage';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
+
+<BaseLayout title={t('report.title', lang)} activePage="report">
+  <div class="max-w-[1200px] mx-auto px-4 py-8">
+    <ReportPage client:load />
+  </div>
+</BaseLayout>
+
+<style is:global>
+  /* W105: Executive report print enhancements */
+  @media print {
+    .report-section { break-inside: avoid; page-break-inside: avoid; margin-bottom: 1rem; }
+    .report-section-full { break-before: page; page-break-before: always; }
+    .no-print { display: none !important; }
+    .health-green { color: #16a34a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .health-yellow { color: #ca8a04 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .health-red { color: #dc2626 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    @page { margin: 2cm; size: A4; }
+  }
+</style>

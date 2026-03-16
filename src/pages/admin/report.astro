@@ -1,0 +1,137 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminNav from '../../components/nav/AdminNav.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+---
+
+<BaseLayout title={t('report.adminTitle', lang)} activePage="admin">
+  <div class="max-w-[1100px] mx-auto px-4 py-8">
+    <AdminNav activeSub="report" lang={lang} />
+
+    <h2 class="text-xl font-extrabold text-navy mb-1">{t('report.adminTitle', lang)}</h2>
+    <p class="text-sm text-[var(--text-secondary)] mb-6">{t('report.adminSubtitle', lang)}</p>
+
+    <div id="report-config-loading" class="text-[var(--text-muted)] text-sm py-8 text-center">
+      {t('common.loading', lang)}
+    </div>
+
+    <div id="report-config-content" class="hidden space-y-6">
+      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-navy mb-1">{t('report.configTitle', lang)}</label>
+          <input id="cfg-title" type="text" class="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-base)]" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-navy mb-1">{t('report.configSubtitle', lang)}</label>
+          <input id="cfg-subtitle" type="text" class="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-base)]" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-navy mb-1">{t('report.configChapters', lang)}</label>
+          <input id="cfg-chapters" type="text" class="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-base)]" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-navy mb-2">{t('report.configSections', lang)}</label>
+          <div class="space-y-1" id="cfg-sections">
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" data-section="overview" checked /> {t('report.overview', lang)}</label>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" data-section="kpis" checked /> {t('report.kpis', lang)}</label>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" data-section="tribes" checked /> {t('report.tribePerformance', lang)}</label>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" data-section="pilots" checked /> {t('report.pilots', lang)}</label>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" data-section="gamification" checked /> {t('report.gamification', lang)}</label>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" data-section="events" checked /> {t('report.events', lang)}</label>
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" data-section="platform" checked /> {t('report.platform', lang)}</label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-navy mb-1">{t('report.gpNotes', lang)}</label>
+          <textarea id="cfg-notes" rows="3" class="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-base)]"></textarea>
+        </div>
+
+        <div class="flex gap-3">
+          <a href="/report" target="_blank" class="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-semibold hover:bg-[var(--surface-hover)]">
+            {t('report.preview', lang)}
+          </a>
+          <button id="btn-save-config" class="px-4 py-2 rounded-lg bg-navy text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">
+            {t('report.saveConfig', lang)}
+          </button>
+        </div>
+
+        <div id="save-status" class="hidden text-sm text-emerald-600"></div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  async function bootReportConfig() {
+    const sb = (window as any).navGetSb?.();
+    const member = (window as any).navGetMember?.();
+    if (!sb || !member) { setTimeout(bootReportConfig, 300); return; }
+
+    // Admin check
+    if (!member.is_superadmin && !['manager', 'deputy_manager'].includes(member.operational_role)) {
+      document.getElementById('report-config-loading')!.textContent = 'Acesso restrito.';
+      return;
+    }
+
+    const loading = document.getElementById('report-config-loading')!;
+    const content = document.getElementById('report-config-content')!;
+
+    // Load existing config
+    const { data: cfg } = await sb.from('site_config').select('value').eq('key', 'report_config').maybeSingle();
+    const config = cfg?.value || {};
+
+    // Populate fields
+    (document.getElementById('cfg-title') as HTMLInputElement).value = config.title || 'Relatório Executivo — Ciclo 3 (2026/1)';
+    (document.getElementById('cfg-subtitle') as HTMLInputElement).value = config.subtitle || 'Núcleo de Estudos e Pesquisa em IA & Gestão de Projetos';
+    (document.getElementById('cfg-chapters') as HTMLInputElement).value = config.chapters || 'PMI-GO · PMI-CE · PMI-DF · PMI-MG · PMI-RS';
+    (document.getElementById('cfg-notes') as HTMLTextAreaElement).value = config.gp_notes || '';
+
+    // Sections
+    if (config.sections) {
+      document.querySelectorAll('#cfg-sections input[data-section]').forEach((cb: any) => {
+        const key = cb.dataset.section;
+        if (key && config.sections[key] !== undefined) cb.checked = config.sections[key];
+      });
+    }
+
+    loading.classList.add('hidden');
+    content.classList.remove('hidden');
+
+    // Save handler
+    document.getElementById('btn-save-config')!.addEventListener('click', async () => {
+      const sections: Record<string, boolean> = {};
+      document.querySelectorAll('#cfg-sections input[data-section]').forEach((cb: any) => {
+        sections[cb.dataset.section] = cb.checked;
+      });
+
+      const newConfig = {
+        title: (document.getElementById('cfg-title') as HTMLInputElement).value,
+        subtitle: (document.getElementById('cfg-subtitle') as HTMLInputElement).value,
+        chapters: (document.getElementById('cfg-chapters') as HTMLInputElement).value,
+        gp_notes: (document.getElementById('cfg-notes') as HTMLTextAreaElement).value,
+        sections,
+      };
+
+      const { error } = await sb.rpc('set_site_config', {
+        p_key: 'report_config',
+        p_value: newConfig,
+      });
+
+      const status = document.getElementById('save-status')!;
+      if (error) {
+        status.className = 'text-sm text-red-600';
+        status.textContent = 'Erro ao salvar: ' + error.message;
+      } else {
+        status.className = 'text-sm text-emerald-600';
+        status.textContent = 'Configuração salva com sucesso!';
+      }
+      status.classList.remove('hidden');
+      setTimeout(() => status.classList.add('hidden'), 3000);
+    });
+  }
+
+  bootReportConfig();
+</script>
