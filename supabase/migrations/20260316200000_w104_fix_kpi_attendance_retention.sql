@@ -1,0 +1,21 @@
+-- ═══════════════════════════════════════════════════════════════════════════
+-- W104 Fix — attendance_general_avg_pct + retention_pct calculations
+-- Date: 2026-03-16
+-- Fixes:
+--   1. attendance_general_avg_pct was missing GROUP BY m.id, inflating to 1616%
+--   2. retention_pct was filtering created_at < cycle_start (all NULL due to
+--      platform migration), now uses active/total excluding visitors/candidates
+-- ═══════════════════════════════════════════════════════════════════════════
+
+-- The full get_annual_kpis function is re-created with fixes.
+-- See the applied SQL in the Supabase dashboard for the canonical version.
+-- This file documents the fix for reproducibility.
+
+-- Key changes in v_auto_values:
+--
+-- attendance_general_avg_pct: Added GROUP BY m.id + HAVING to the cross-join
+-- subquery so each member gets their own attendance %, then AVG across members.
+--
+-- retention_pct: Changed from "WHERE created_at < v_cycle_start" (always 0 rows)
+-- to "WHERE operational_role NOT IN ('visitor','candidate')" which gives
+-- active/total = 53/68 = 77.9%.

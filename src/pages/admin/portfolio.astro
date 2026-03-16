@@ -227,7 +227,19 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       <span class="text-[var(--text-muted)] ml-auto">${s.total} KPIs</span>
     </div>`;
 
-    const cardsHtml = kpis.map((k: any) => {
+    const CATEGORY_LABELS: Record<string, Record<string, string>> = {
+      delivery:   { pt: 'Entregas',     en: 'Delivery',    es: 'Entregas' },
+      engagement: { pt: 'Engajamento',  en: 'Engagement',  es: 'Compromiso' },
+      learning:   { pt: 'Aprendizado',  en: 'Learning',    es: 'Aprendizaje' },
+      financial:  { pt: 'Financeiro',   en: 'Financial',   es: 'Financiero' },
+      growth:     { pt: 'Crescimento',  en: 'Growth',      es: 'Crecimiento' },
+    };
+    const CATEGORY_ICONS: Record<string, string> = {
+      delivery: '📦', engagement: '🤝', learning: '🎓', financial: '💰', growth: '📈',
+    };
+    const CATEGORY_ORDER = ['delivery', 'engagement', 'learning', 'financial', 'growth'];
+
+    function renderKpiCard(k: any): string {
       const h = HEALTH_STYLES[k.health] || HEALTH_STYLES.behind;
       const label = langKey === 'en' && k.label_en ? k.label_en : k.label_pt;
       const pct = Math.min(Number(k.progress_pct) || 0, 999);
@@ -249,9 +261,29 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         </div>
         <div class="text-[10px] ${h.accent} font-semibold mt-1">${pct}%</div>
       </article>`;
-    }).join('');
+    }
 
-    healthGrid.innerHTML = summaryHtml + cardsHtml;
+    // Group KPIs by category
+    const grouped = new Map<string, any[]>();
+    for (const k of kpis) {
+      const cat = k.category || 'other';
+      if (!grouped.has(cat)) grouped.set(cat, []);
+      grouped.get(cat)!.push(k);
+    }
+
+    let groupedHtml = '';
+    for (const cat of CATEGORY_ORDER) {
+      const items = grouped.get(cat);
+      if (!items || items.length === 0) continue;
+      const catLabel = CATEGORY_LABELS[cat]?.[langKey] || cat;
+      const catIcon = CATEGORY_ICONS[cat] || '';
+      groupedHtml += `<div class="col-span-full mt-3 first:mt-0">
+        <h3 class="text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] mb-2">${catIcon} ${catLabel}</h3>
+      </div>`;
+      groupedHtml += items.map(renderKpiCard).join('');
+    }
+
+    healthGrid.innerHTML = summaryHtml + groupedHtml;
     healthPanel.classList.remove('hidden');
   }
 
