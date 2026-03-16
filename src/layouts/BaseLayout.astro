@@ -3,6 +3,7 @@ import '../styles/global.css';
 import Nav from '../components/nav/Nav.astro';
 import AnnouncementBanner from '../components/ui/AnnouncementBanner.astro';
 import AuthModal from '../components/ui/AuthModal.astro';
+import TierViewerBar from '../components/admin/TierViewerBar';
 import { t, getRoleLabelsMap, type Lang } from '../i18n/utils';
 
 interface Props {
@@ -20,6 +21,19 @@ const {
 } = Astro.props;
 
 const roleLabels = JSON.stringify(getRoleLabelsMap(lang));
+
+const SIM_I18N = {
+  title: t('simulation.title', lang),
+  banner: t('simulation.banner', lang),
+  viewingAs: t('simulation.viewing_as', lang),
+  writesWarning: t('simulation.writes_warning', lang),
+  exit: t('simulation.exit', lang),
+  selectTier: t('simulation.select_tier', lang),
+  designationsLabel: t('simulation.designations', lang),
+  tribeScope: t('simulation.tribe_scope', lang),
+  noTribe: t('simulation.no_tribe', lang),
+  start: t('simulation.start', lang),
+};
 ---
 
 <!doctype html>
@@ -131,6 +145,10 @@ const roleLabels = JSON.stringify(getRoleLabelsMap(lang));
   <Nav activePage={activePage} lang={lang} />
   <AnnouncementBanner />
   <AuthModal lang={lang} />
+  <!-- Tier Viewer: only visible for superadmins (checked client-side) -->
+  <div id="tier-viewer-mount" class="hidden">
+    <TierViewerBar client:load i18n={SIM_I18N} />
+  </div>
   <slot />
   <!-- Profile drawer (populated by nav client script) -->
   <div id="pd-overlay" class="hidden fixed inset-0 z-[500]"></div>
@@ -140,6 +158,21 @@ const roleLabels = JSON.stringify(getRoleLabelsMap(lang));
            data-[open=true]:opacity-100 data-[open=true]:pointer-events-auto data-[open=true]:scale-100">
     <div id="pd-inner"></div>
   </div>
+
+  <!-- Tier Viewer: show mount only for superadmins -->
+  <script>
+    function showTierViewer() {
+      const m = (window as any).navGetMember?.();
+      if (m?.is_superadmin) {
+        document.getElementById('tier-viewer-mount')?.classList.remove('hidden');
+      }
+    }
+    // Also show if sim_tier cookie exists (already simulating)
+    if (document.cookie.includes('sim_tier=')) {
+      document.getElementById('tier-viewer-mount')?.classList.remove('hidden');
+    }
+    window.addEventListener('nav:member', showTierViewer);
+  </script>
 
   <!-- PostHog: identify authenticated user -->
   <script>

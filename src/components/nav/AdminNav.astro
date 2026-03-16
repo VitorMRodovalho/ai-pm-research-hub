@@ -53,24 +53,78 @@ const adminLinksJson = JSON.stringify(ADMIN_LINKS);
 <script>
   import { resolveTierFromMember, hasMinimumTier, type AccessTier } from '../../lib/admin/constants';
   import { TIER_RANK } from '../../lib/navigation.config';
+  import { hasPermission, setSimulation, type OperationalTier, type Designation, TIER_LABELS } from '../../lib/permissions';
+
+  // Map admin nav keys to permission strings
+  const NAV_PERMISSION_MAP: Record<string, string> = {
+    'panel': 'admin.access',
+    'analytics': 'admin.analytics',
+    'portfolio': 'admin.portfolio',
+    'comms': 'admin.campaigns',
+    'curatorship': 'admin.curation',
+    'cycle-report': 'admin.analytics',
+    'cross-tribes': 'admin.access',
+    'tribe-dashboard': 'workspace.view_tribe_dashboard',
+    'selection': 'admin.members.manage',
+    'chapter-report': 'admin.analytics.chapter',
+    'sustainability': 'admin.sustainability',
+    'campaigns': 'admin.campaigns',
+    'blog': 'admin.blog',
+    'settings': 'system.global_config',
+    'help': 'workspace.access',
+  };
+
+  function getCookie(name: string): string | null {
+    const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+    return match ? decodeURIComponent(match[1]) : null;
+  }
 
   function updateAdminNav() {
     const member = (window as any).navGetMember?.();
     if (!member) return;
-    const tier = resolveTierFromMember(member);
-    const desigs: string[] = member.designations || [];
+
+    // Check for active simulation via cookies
+    const simTier = getCookie('sim_tier') as OperationalTier | null;
+    const isSimulating = !!simTier && member.is_superadmin && !!TIER_LABELS[simTier];
+
+    if (isSimulating) {
+      const simDesig = getCookie('sim_designations');
+      const simTribe = getCookie('sim_tribe');
+      setSimulation({
+        active: true,
+        tier: simTier!,
+        designations: simDesig ? JSON.parse(simDesig) : [],
+        tribe_id: simTribe ? parseInt(simTribe) : null,
+      });
+    }
+
+    // Build effective member for permission checks
+    const effectiveMember = isSimulating
+      ? { operational_role: simTier!, designations: getCookie('sim_designations') ? JSON.parse(getCookie('sim_designations')!) : [], is_superadmin: false, tribe_id: getCookie('sim_tribe') ? parseInt(getCookie('sim_tribe')!) : null }
+      : member;
+
     const links: any[] = (window as any).__ADMIN_LINKS || [];
 
     links.forEach((link: any) => {
       const el = document.getElementById(`admin-nav-${link.key}`);
       if (!el) return;
-      const meetsMinTier = (TIER_RANK[tier] ?? 0) >= (TIER_RANK[link.minTier as AccessTier] ?? 0);
-      const hasDesig = link.allowedDesignations?.some((d: string) => desigs.includes(d)) ?? false;
-      el.style.display = (meetsMinTier || hasDesig) ? '' : 'none';
+
+      const perm = NAV_PERMISSION_MAP[link.key];
+      if (perm) {
+        el.style.display = hasPermission(effectiveMember, perm as any) ? '' : 'none';
+      } else {
+        // Fallback to legacy tier check
+        const tier = resolveTierFromMember(isSimulating ? effectiveMember : member);
+        const desigs: string[] = effectiveMember.designations || [];
+        const meetsMinTier = (TIER_RANK[tier] ?? 0) >= (TIER_RANK[link.minTier as AccessTier] ?? 0);
+        const hasDesig = link.allowedDesignations?.some((d: string) => desigs.includes(d)) ?? false;
+        el.style.display = (meetsMinTier || hasDesig) ? '' : 'none';
+      }
 
       // Resolve tribe dashboard link for tribe leaders
-      if (link.key === 'tribe-dashboard' && member.tribe_id) {
-        (el as HTMLAnchorElement).href = `/admin/tribe/${member.tribe_id}`;
+      if (link.key === 'tribe-dashboard') {
+        const tribeId = isSimulating && getCookie('sim_tribe') ? parseInt(getCookie('sim_tribe')!) : member.tribe_id;
+        if (tribeId) (el as HTMLAnchorElement).href = `/admin/tribe/${tribeId}`;
       }
     });
   }
@@ -79,6 +133,7 @@ const adminLinksJson = JSON.stringify(ADMIN_LINKS);
     const m = (window as any).navGetMember?.();
     if (m) { updateAdminNav(); return; }
     window.addEventListener('nav:member', () => updateAdminNav());
+    window.addEventListener('simulation:changed', () => updateAdminNav());
     setTimeout(() => {
       if ((window as any).navGetMember?.()) updateAdminNav();
     }, 500);
