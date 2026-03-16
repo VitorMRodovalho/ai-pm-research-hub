@@ -24,6 +24,7 @@ const WK = {
   checkinDone: t('wk.checkinDone', lang),
   sectionMyTribe: t('wk.sectionMyTribe', lang),
   sectionSubprojects: t('wk.sectionSubprojects', lang),
+  myPublications: t('wk.myPublications', lang),
   sectionProduction: t('wk.sectionProduction', lang),
   sectionOnboarding: t('wk.sectionOnboarding', lang),
   onbProgress: t('wk.onbProgress', lang),
@@ -172,6 +173,16 @@ const WK = {
         <div id="wk-subprojects-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
       </section>
 
+      <!-- ═══ My Publications card (researcher self-service) ═══ -->
+      <section id="wk-my-pubs" class="hidden">
+        <h2 class="text-base font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+          <span class="text-lg">📄</span> {WK.myPublications || 'Minhas Publicações'}
+        </h2>
+        <div id="wk-my-pubs-card" class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5">
+          <p class="text-xs text-[var(--text-secondary)]">Carregando...</p>
+        </div>
+      </section>
+
       <!-- ═══ Section 3: Produção & Recursos ═══ -->
       <section id="wk-production">
         <h2 class="text-base font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
@@ -184,6 +195,7 @@ const WK = {
 
   <script id="wk-i18n" type="application/json" set:html={JSON.stringify(WK)}></script>
   <script>
+    import { hasPermission } from '../lib/permissions';
     // ── Workspace Cockpit — client-side orchestration ──
     (async () => {
       const i18n: Record<string, any> = JSON.parse(
@@ -353,7 +365,7 @@ const WK = {
         const tribeName = myTribeBoard.board_name?.replace(/^Board\s*/i, '') || `${i18n.tribePrefix} ${member.tribe_id}`;
 
         const tribeColor = getTribeColor(member.tribe_id);
-        const isLeader = member.operational_role === 'tribe_leader' || member.is_superadmin || member.operational_role === 'manager' || member.operational_role === 'deputy_manager';
+        const isLeader = hasPermission(member, 'board.edit_tribe_items');
 
         $tribeCard.innerHTML = `
           <a href="/tribe/${member.tribe_id}?tab=board" class="block no-underline group">
@@ -403,7 +415,7 @@ const WK = {
       }
 
       // ── Render Section 1.5: Alertas Operacionais (GP only) ──
-      const isGP = member.is_superadmin || member.operational_role === 'manager' || member.operational_role === 'deputy_manager';
+      const isGP = hasPermission(member, 'admin.access');
       if (isGP) {
         const $alertsSection = document.getElementById('wk-alerts');
         const $alertsCard = document.getElementById('wk-alerts-card');
@@ -490,6 +502,39 @@ const WK = {
           </div>
         `;
         $prodGrid.appendChild(card);
+      }
+
+      // ── My Publications Card ──
+      try {
+        const canSubmit = hasPermission(member, 'content.submit_publication');
+        if (canSubmit) {
+          const { data: allSubs } = await sb.rpc('get_publication_submissions', { p_status: null, p_tribe_id: null });
+          const mySubs = (allSubs || []).filter((s: any) =>
+            s.primary_author_id === member.id ||
+            (s.authors || []).some((a: any) => a.member_id === member.id)
+          );
+          const $myPubsSection = document.getElementById('wk-my-pubs');
+          const $myPubsCard = document.getElementById('wk-my-pubs-card');
+          if ($myPubsSection && $myPubsCard) {
+            const counts: Record<string, number> = {};
+            mySubs.forEach((s: any) => { counts[s.status] = (counts[s.status] || 0) + 1; });
+            const STATUS_PT: Record<string, string> = {
+              draft: 'rascunho', submitted: 'submetidos', under_review: 'em revisão',
+              revision_requested: 'revisão solicitada', accepted: 'aceitos',
+              rejected: 'rejeitados', published: 'publicados', presented: 'apresentados',
+            };
+            const parts = Object.entries(counts).map(([k, v]) => `${v} ${STATUS_PT[k] || k}`);
+            $myPubsCard.innerHTML = `
+              <div class="flex items-center justify-between">
+                <p class="text-sm text-[var(--text-secondary)]">${mySubs.length > 0 ? parts.join(' &middot; ') : 'Nenhuma submissão ainda'}</p>
+                <a href="/publications" class="text-xs font-bold text-teal no-underline hover:underline">Ver todas &rarr;</a>
+              </div>
+            `;
+            $myPubsSection.classList.remove('hidden');
+          }
+        }
+      } catch (e) {
+        console.warn('Workspace: my publications load failed:', e);
       }
 
       // ── Quick Check-in Banner ──
@@ -670,7 +715,7 @@ const WK = {
       document.getElementById('wk-attendance')?.classList.remove('hidden');
 
       // Show AttendanceForm for GP/leader
-      const canRegister = isGP || member.operational_role === 'tribe_leader';
+      const canRegister = hasPermission(member, 'event.create');
       if (canRegister) {
         document.getElementById('wk-attendance-form')?.classList.remove('hidden');
       }
