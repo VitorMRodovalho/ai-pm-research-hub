@@ -77,18 +77,37 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           completed: `<span class="px-2 py-0.5 rounded-full text-[.6rem] font-bold bg-blue-50 text-blue-700">${i('i18n-pilots-completed')}</span>`,
           draft: `<span class="px-2 py-0.5 rounded-full text-[.6rem] font-bold bg-gray-100 text-gray-500">${i('i18n-pilots-draft')}</span>`,
         };
-        pilotsList.innerHTML = pilotsData.pilots.map((p: any) => `
-          <div class="flex items-center justify-between p-3 rounded-lg bg-[var(--surface-base)]">
-            <div>
-              <span class="text-sm font-bold text-navy">PILOT #${p.pilot_number}</span>
-              <span class="ml-2 text-[.78rem] text-[var(--text-secondary)]">${p.title}</span>
-              ${STATUS_BADGE[p.status] || ''}
+        const esc = (s: string) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        pilotsList.innerHTML = pilotsData.pilots.map((p: any) => {
+          const metrics = Array.isArray(p.success_metrics) ? p.success_metrics : [];
+          const metricsHtml = metrics.length > 0
+            ? `<table class="w-full text-[.7rem] mt-2 border-collapse"><thead><tr class="bg-[var(--surface-section-cool)]"><th class="text-left px-2 py-1 font-bold">Métrica</th><th class="text-center px-2 py-1 font-bold">Meta</th><th class="text-center px-2 py-1 font-bold">Atual</th></tr></thead><tbody>${metrics.map((m: any) => `<tr class="border-t border-[var(--border-subtle)]"><td class="px-2 py-1">${esc(m.name || m.metric || '')}</td><td class="px-2 py-1 text-center">${m.target ?? '—'}</td><td class="px-2 py-1 text-center font-bold">${m.current ?? '—'}</td></tr>`).join('')}</tbody></table>`
+            : '<p class="text-[.68rem] text-[var(--text-muted)]">Sem métricas definidas</p>';
+          return `
+          <div class="rounded-lg bg-[var(--surface-base)] overflow-hidden">
+            <div class="flex items-center justify-between p-3 cursor-pointer hover:bg-[var(--surface-hover)] transition-colors" onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('[data-chevron]').classList.toggle('rotate-90')">
+              <div>
+                <span class="text-sm font-bold text-navy">PILOT #${p.pilot_number}</span>
+                <span class="ml-2 text-[.78rem] text-[var(--text-secondary)]">${esc(p.title)}</span>
+                ${STATUS_BADGE[p.status] || ''}
+                ${p.tribe_name ? `<span class="ml-2 text-[.65rem] px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded font-medium">${esc(p.tribe_name)}</span>` : ''}
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-[.7rem] text-[var(--text-muted)]">
+                  ${p.days_active}d · ${i('i18n-pilots-team')}: ${p.team_count || 0} · ${i('i18n-pilots-metrics')}: ${p.metrics_count}
+                </span>
+                <span data-chevron class="text-[var(--text-muted)] transition-transform text-xs">▶</span>
+              </div>
             </div>
-            <div class="text-[.7rem] text-[var(--text-muted)]">
-              ${p.days_active}d · ${i('i18n-pilots-team')}: ${p.team_count || 0} · ${i('i18n-pilots-metrics')}: ${p.metrics_count}
+            <div class="hidden border-t border-[var(--border-subtle)] px-4 py-3 space-y-3 text-[.78rem]">
+              ${p.hypothesis ? `<div><span class="font-bold text-navy text-[.7rem]">Hipótese:</span><p class="text-[var(--text-secondary)] mt-0.5">${esc(p.hypothesis)}</p></div>` : ''}
+              ${p.problem_statement ? `<div><span class="font-bold text-navy text-[.7rem]">Problema:</span><p class="text-[var(--text-secondary)] mt-0.5">${esc(p.problem_statement)}</p></div>` : ''}
+              ${p.scope ? `<div><span class="font-bold text-navy text-[.7rem]">Escopo:</span><p class="text-[var(--text-secondary)] mt-0.5">${esc(p.scope)}</p></div>` : ''}
+              <div><span class="font-bold text-navy text-[.7rem]">${i('i18n-pilots-metrics')}:</span>${metricsHtml}</div>
+              ${p.board_id ? `<a href="/board/${p.board_id}" class="inline-block mt-1 text-[.7rem] text-teal font-semibold hover:underline">Ver Board →</a>` : ''}
             </div>
-          </div>
-        `).join('');
+          </div>`;
+        }).join('');
       }
 
       // Render releases
