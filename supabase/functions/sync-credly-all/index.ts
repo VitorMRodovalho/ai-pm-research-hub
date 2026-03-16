@@ -295,6 +295,17 @@ async function processMember(
   return { success: true, member_id: member.id, total_points: result.totalPoints }
 }
 
+function extractError(err: unknown): string {
+  if (err && typeof err === 'object') {
+    const e = err as Record<string, unknown>
+    if (typeof e.message === 'string' && e.message) return e.message
+    if (typeof e.msg === 'string' && e.msg) return e.msg
+    if (typeof e.error_description === 'string') return e.error_description
+    try { return JSON.stringify(err) } catch { /* fallthrough */ }
+  }
+  return String(err || 'Unknown error')
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -320,7 +331,13 @@ Deno.serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')!
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
+    if (!anonKey) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Server config error: missing ANON_KEY' }),
+        { headers: jsonHeaders, status: 500 },
+      )
+    }
     const token = authHeader.replace(/^Bearer\s+/i, '')
     const isServiceRole = token === serviceRoleKey
 
@@ -334,19 +351,26 @@ Deno.serve(async (req) => {
       const ur = await uc.auth.getUser()
       if (ur.error || !ur.data?.user) {
         return new Response(
-          JSON.stringify({ success: false, error: 'Invalid token' }),
+          JSON.stringify({ success: false, error: `Auth failed: ${ur.error?.message || 'token invalid or expired'}` }),
           { headers: jsonHeaders, status: 401 },
         )
       }
-      const { data: caller } = await sb
+      const { data: caller, error: callerError } = await sb
         .from('members')
         .select('is_superadmin, operational_role')
         .eq('auth_id', ur.data.user.id)
         .single()
 
-      const isAdmin = caller?.is_superadmin === true
-        || caller?.operational_role === 'manager'
-        || caller?.operational_role === 'deputy_manager'
+      if (!caller) {
+        return new Response(
+          JSON.stringify({ success: false, error: `Member not found for auth_id: ${callerError?.message || ur.data.user.id}` }),
+          { headers: jsonHeaders, status: 401 },
+        )
+      }
+
+      const isAdmin = caller.is_superadmin === true
+        || caller.operational_role === 'manager'
+        || caller.operational_role === 'deputy_manager'
 
       if (!isAdmin) {
         return new Response(
@@ -406,9 +430,9 @@ Deno.serve(async (req) => {
       }),
       { headers: jsonHeaders },
     )
-  } catch (err: any) {
+  } catch (err: unknown) {
     return new Response(
-      JSON.stringify({ success: false, error: err?.message || 'Unknown error' }),
+      JSON.stringify({ success: false, error: extractError(err) }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 },
     )
   }
