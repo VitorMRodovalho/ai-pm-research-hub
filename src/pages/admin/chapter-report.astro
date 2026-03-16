@@ -91,6 +91,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 </BaseLayout>
 
 <script>
+  import { hasPermission } from '../../lib/permissions';
+
   let sb: any = null;
   let MEMBER: any = null;
   let isGP = false;
@@ -283,32 +285,34 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     loadSelectionMetrics(sel.value);
   }
 
+  let _gateApplied = false;
+
   async function boot() {
     sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(boot, 200); return; }
 
     window.addEventListener('nav:member', ((e: CustomEvent) => {
-      if (e.detail) { MEMBER = e.detail; applyGate(MEMBER); }
+      if (e.detail && !_gateApplied) { MEMBER = e.detail; _gateApplied = true; applyGate(MEMBER); }
     }) as EventListener);
 
     const m = (window as any).navGetMember?.();
-    if (m) { MEMBER = m; applyGate(MEMBER); return; }
+    if (m) { MEMBER = m; _gateApplied = true; applyGate(MEMBER); return; }
 
     try {
       const { data: { session } } = await sb.auth.getSession();
       if (session) {
         const { data } = await sb.rpc('get_member_by_auth');
-        MEMBER = data;
-        applyGate(MEMBER);
-        return;
+        if (data) { MEMBER = data; _gateApplied = true; applyGate(MEMBER); return; }
       }
     } catch (e) { console.warn('ChapterReport boot:', e); }
-    showDenied();
+
+    // Don't show denied immediately — nav:member event may still fire
+    setTimeout(() => { if (!_gateApplied) showDenied(); }, 3000);
   }
 
   function applyGate(m: any) {
     const desigs: string[] = m?.designations || [];
-    isGP = m?.is_superadmin || m?.operational_role === 'manager' || m?.operational_role === 'deputy_manager';
+    isGP = hasPermission(m, 'admin.access');
     const hasAccess = isGP || desigs.includes('sponsor') || desigs.includes('chapter_liaison');
     if (hasAccess) {
       showPanel();

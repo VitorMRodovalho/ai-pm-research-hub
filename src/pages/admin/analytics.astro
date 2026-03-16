@@ -915,15 +915,21 @@ const ANALYTICS_I18N = {
     renderTransitionMatrix(leadership);
   }
 
+  let _initDone = false;
+
   async function init() {
+    if (_initDone) return;
     sb = (window as any).navGetSb?.();
     MEMBER = (window as any).navGetMember?.();
 
-    if (!sb || !MEMBER || !canReadInternalAnalytics(MEMBER)) {
+    if (!sb || !MEMBER) return; // Not ready yet — don't show denied, just wait
+    if (!canReadInternalAnalytics(MEMBER)) {
+      _initDone = true;
       showDenied();
       return;
     }
 
+    _initDone = true;
     showPanel();
     setupConsentUi();
     bindPartnerUxActions();
@@ -938,7 +944,9 @@ const ANALYTICS_I18N = {
       return;
     }
     window.addEventListener('nav:member', () => init(), { once: true });
-    setTimeout(() => init(), 700);
+    // Retry pattern: check multiple times instead of single timeout
+    const retryIntervals = [500, 1000, 2000, 4000];
+    retryIntervals.forEach(ms => setTimeout(() => { if (!_initDone) init(); }, ms));
   }
 
   boot();
