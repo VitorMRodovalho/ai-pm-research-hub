@@ -43,7 +43,7 @@ BEGIN
     ), 0),
     'boards_active', (SELECT count(*) FROM project_boards WHERE is_active = true),
     'artifacts_total', COALESCE((
-      SELECT count(*) FROM board_items bi WHERE bi.status != 'archived' AND bi.is_active = true
+      SELECT count(*) FROM board_items bi WHERE bi.status != 'archived'
     ), 0),
     'governance_decisions', 65
   ) INTO v_overview;
@@ -59,8 +59,7 @@ BEGIN
   SELECT COALESCE(jsonb_agg(jsonb_build_object(
     'tribe_id', t.id,
     'name', t.name,
-    'leader', COALESCE((SELECT m.full_name FROM members m WHERE m.tribe_id = t.id AND m.operational_role = 'tribe_leader' LIMIT 1),
-                       (SELECT m.name FROM members m WHERE m.tribe_id = t.id AND m.operational_role = 'tribe_leader' LIMIT 1), '—'),
+    'leader', COALESCE((SELECT m.name FROM members m WHERE m.tribe_id = t.id AND m.operational_role = 'tribe_leader' LIMIT 1), '—'),
     'members_count', (SELECT count(*) FROM members WHERE tribe_id = t.id AND is_active = true),
     'artifacts_total', sub.total,
     'artifacts_completed', sub.completed,
@@ -80,7 +79,7 @@ BEGIN
       count(*) FILTER (WHERE bi.status IN ('in_progress', 'em_andamento', 'review')) as in_progress
     FROM board_items bi
     JOIN project_boards pb ON pb.id = bi.board_id AND pb.tribe_id = t.id
-    WHERE bi.status != 'archived' AND bi.is_active = true
+    WHERE bi.status != 'archived'
   ) sub ON true
   WHERE t.is_active = true;
 
@@ -117,12 +116,12 @@ BEGIN
         'tribe_name', sub2.tribe_name
       ))
       FROM (
-        SELECT COALESCE(m.full_name, m.name) as member_name, t.name as tribe_name, COALESCE(SUM(gp.points), 0) as total
+        SELECT m.name as member_name, t.name as tribe_name, COALESCE(SUM(gp.points), 0) as total
         FROM members m
         LEFT JOIN tribes t ON t.id = m.tribe_id
         LEFT JOIN gamification_points gp ON gp.member_id = m.id
         WHERE m.is_active = true
-        GROUP BY m.id, m.full_name, m.name, t.name
+        GROUP BY m.id, m.name, t.name
         ORDER BY total DESC LIMIT 5
       ) sub2
     ), '[]'::jsonb),
