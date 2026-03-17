@@ -173,6 +173,39 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           <div id="preview-body" class="prose max-w-none"></div>
         </div>
       </div>
+
+      <!-- Analytics Modal -->
+      <div id="analytics-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/60" id="analytics-modal-backdrop"></div>
+        <div class="relative bg-[var(--surface)] rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-6 mx-4">
+          <div class="flex justify-between items-center mb-6">
+            <div>
+              <h2 class="text-xl font-bold text-[var(--fg)]">📊 {t('campaigns.analytics', lang)}</h2>
+              <p id="analytics-subtitle" class="text-sm text-[var(--fg-muted)]"></p>
+            </div>
+            <button id="analytics-close" class="text-[var(--fg-muted)] hover:text-[var(--fg)] text-2xl">&times;</button>
+          </div>
+          <div id="analytics-loading" class="text-center py-8 text-[var(--fg-muted)]">{t('campaigns.loading', lang)}</div>
+          <div id="analytics-content" class="hidden space-y-6">
+            <!-- Funnel -->
+            <div>
+              <h3 class="text-sm font-semibold text-[var(--fg-muted)] uppercase tracking-wider mb-3">{t('campaigns.funnel', lang)}</h3>
+              <div id="analytics-funnel" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+              <div id="analytics-bounces" class="mt-2"></div>
+            </div>
+            <!-- By Role -->
+            <div>
+              <h3 class="text-sm font-semibold text-[var(--fg-muted)] uppercase tracking-wider mb-3">{t('campaigns.byTier', lang)}</h3>
+              <div id="analytics-by-role" class="overflow-x-auto"></div>
+            </div>
+            <!-- Recipients -->
+            <div>
+              <h3 class="text-sm font-semibold text-[var(--fg-muted)] uppercase tracking-wider mb-3">{t('campaigns.recipients', lang)}</h3>
+              <div id="analytics-recipients" class="overflow-x-auto"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </BaseLayout>
@@ -302,6 +335,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     document.getElementById('send-cancel')?.addEventListener('click', () => document.getElementById('send-modal')?.classList.add('hidden'));
     document.getElementById('preview-modal-backdrop')?.addEventListener('click', () => document.getElementById('preview-modal')?.classList.add('hidden'));
     document.getElementById('preview-close')?.addEventListener('click', () => document.getElementById('preview-modal')?.classList.add('hidden'));
+    document.getElementById('analytics-modal-backdrop')?.addEventListener('click', () => document.getElementById('analytics-modal')?.classList.add('hidden'));
+    document.getElementById('analytics-close')?.addEventListener('click', () => document.getElementById('analytics-modal')?.classList.add('hidden'));
 
     // Save template
     document.getElementById('tmpl-save')?.addEventListener('click', async () => {
@@ -504,27 +539,143 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       return;
     }
 
+    // Load aggregate analytics for mini-stats (sent campaigns only)
+    let analyticsMap: Record<string, any> = {};
+    try {
+      const { data: aggData } = await sb.rpc('get_campaign_analytics');
+      if (aggData?.recent_sends) {
+        for (const rs of aggData.recent_sends) {
+          analyticsMap[rs.id] = rs;
+        }
+      }
+    } catch { /* analytics RPC may not exist yet */ }
+
     container.innerHTML = data.map((s: any) => {
-      const statusColors: Record<string,string> = { draft: 'text-gray-400', scheduled: 'text-blue-400', sending: 'text-amber-400', sent: 'text-green-400', failed: 'text-red-400' };
+      const statusColors: Record<string,string> = { draft: 'text-gray-400', scheduled: 'text-blue-400', sending: 'text-amber-400', sent: 'text-green-400', failed: 'text-red-400', pending_delivery: 'text-amber-400' };
       const dt = s.sent_at ? new Date(s.sent_at).toLocaleString('pt-BR') : new Date(s.created_at).toLocaleString('pt-BR');
+      const stats = analyticsMap[s.id];
+      const miniStats = stats
+        ? `<span class="text-xs text-[var(--fg-muted)] mt-1 block">📬 ${stats.delivered} · 👁️ ${stats.opened} · 🖱️ ${stats.clicked}${stats.bounced > 0 ? ` · 🔴 ${stats.bounced}` : ''}</span>`
+        : '';
       return `<div class="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4 flex items-center justify-between">
         <div>
           <h3 class="font-semibold text-[var(--fg)]">${s.campaign_templates?.name || 'Template removido'}</h3>
           <p class="text-sm text-[var(--fg-muted)]">${s.recipient_count} destinatários · ${dt}</p>
           <span class="${statusColors[s.status] || 'text-gray-400'} text-sm font-medium">${s.status}</span>
+          ${miniStats}
         </div>
-        <button data-stats="${s.id}" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--surface-hover)] text-[var(--fg)]">Stats</button>
+        <button data-stats="${s.id}" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--surface-hover)] text-[var(--fg)] hover:bg-[var(--border)]">📊 Stats</button>
       </div>`;
     }).join('');
 
     container.querySelectorAll('[data-stats]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const { data } = await sb.rpc('admin_get_campaign_stats', { p_send_id: (btn as HTMLElement).dataset.stats });
-        if (data) {
-          (window as any).toast?.(`Entregues: ${data.delivered_count} · Abertos: ${data.open_count} · Desinscritos: ${data.unsubscribe_count}`, 'info');
-        }
-      });
+      btn.addEventListener('click', () => openAnalytics(sb, (btn as HTMLElement).dataset.stats!));
     });
+  }
+
+  async function openAnalytics(sb: any, sendId: string) {
+    document.getElementById('analytics-modal')?.classList.remove('hidden');
+    document.getElementById('analytics-loading')?.classList.remove('hidden');
+    document.getElementById('analytics-content')?.classList.add('hidden');
+
+    const { data, error } = await sb.rpc('get_campaign_analytics', { p_send_id: sendId });
+    if (error || !data) {
+      document.getElementById('analytics-loading')!.textContent = error?.message || 'Erro ao carregar analytics';
+      return;
+    }
+
+    // Subtitle
+    const send = data.send;
+    if (send) {
+      const dt = send.sent_at ? new Date(send.sent_at).toLocaleString('pt-BR') : new Date(send.created_at).toLocaleString('pt-BR');
+      document.getElementById('analytics-subtitle')!.textContent = `${send.template_name} · ${dt}`;
+    }
+
+    // Funnel
+    const f = data.funnel || {};
+    const rates = data.rates || {};
+    const funnelEl = document.getElementById('analytics-funnel')!;
+    const funnelSteps = [
+      { label: 'Enviados', count: f.total || 0, rate: '', color: 'bg-blue-900/30 text-blue-300 border-blue-700/30' },
+      { label: 'Entregues', count: f.delivered || 0, rate: rates.delivery_rate ? `${rates.delivery_rate}%` : '', color: 'bg-green-900/30 text-green-300 border-green-700/30' },
+      { label: 'Abriram', count: f.opened || 0, rate: rates.open_rate ? `${rates.open_rate}%` : '', color: 'bg-amber-900/30 text-amber-300 border-amber-700/30' },
+      { label: 'Clicaram', count: f.clicked || 0, rate: rates.click_rate ? `${rates.click_rate}%` : '', color: 'bg-purple-900/30 text-purple-300 border-purple-700/30' },
+    ];
+    funnelEl.innerHTML = funnelSteps.map(s => `
+      <div class="rounded-xl border p-4 text-center ${s.color}">
+        <div class="text-2xl font-bold">${s.count}</div>
+        <div class="text-xs font-semibold mt-1">${s.label}</div>
+        ${s.rate ? `<div class="text-xs opacity-70 mt-0.5">${s.rate}</div>` : ''}
+      </div>
+    `).join('');
+
+    // Bounces
+    const bouncesEl = document.getElementById('analytics-bounces')!;
+    if ((f.bounced || 0) > 0 || (f.complained || 0) > 0) {
+      bouncesEl.innerHTML = `<div class="flex gap-4 text-xs text-[var(--fg-muted)]">
+        ${f.bounced ? `<span>🔴 ${f.bounced} bounce(s)</span>` : ''}
+        ${f.complained ? `<span>⚠ ${f.complained} reclamação(ões)</span>` : ''}
+      </div>`;
+    } else {
+      bouncesEl.innerHTML = '';
+    }
+
+    // By Role table
+    const byRole = data.by_role || [];
+    const byRoleEl = document.getElementById('analytics-by-role')!;
+    if (byRole.length > 0) {
+      byRoleEl.innerHTML = `<table class="w-full text-sm">
+        <thead><tr class="border-b border-[var(--border)] text-[var(--fg-muted)]">
+          <th class="text-left py-2 px-2 font-medium">Papel</th>
+          <th class="text-right py-2 px-2 font-medium">Enviados</th>
+          <th class="text-right py-2 px-2 font-medium">Entregues</th>
+          <th class="text-right py-2 px-2 font-medium">Abriram</th>
+          <th class="text-right py-2 px-2 font-medium">Clicaram</th>
+        </tr></thead>
+        <tbody>${byRole.map((r: any) => `<tr class="border-b border-[var(--border)]/30">
+          <td class="py-2 px-2 text-[var(--fg)]">${r.role || '—'}</td>
+          <td class="py-2 px-2 text-right text-[var(--fg)]">${r.total}</td>
+          <td class="py-2 px-2 text-right text-[var(--fg)]">${r.delivered}</td>
+          <td class="py-2 px-2 text-right text-[var(--fg)]">${r.opened}</td>
+          <td class="py-2 px-2 text-right text-[var(--fg)]">${r.clicked}</td>
+        </tr>`).join('')}</tbody>
+      </table>`;
+    } else {
+      byRoleEl.innerHTML = '<p class="text-[var(--fg-muted)] text-sm">—</p>';
+    }
+
+    // Recipients table
+    const recipients = data.recipients || [];
+    const recipEl = document.getElementById('analytics-recipients')!;
+    const statusIcons: Record<string, string> = {
+      clicked: '🟢', opened: '🟡', delivered: '🔵', sent: '⚪', bounced: '🔴', complained: '⚠️',
+    };
+    if (recipients.length > 0) {
+      recipEl.innerHTML = `<table class="w-full text-sm">
+        <thead><tr class="border-b border-[var(--border)] text-[var(--fg-muted)]">
+          <th class="text-left py-2 px-2 font-medium">Nome</th>
+          <th class="text-left py-2 px-2 font-medium">Papel</th>
+          <th class="text-center py-2 px-2 font-medium">Status</th>
+          <th class="text-right py-2 px-2 font-medium">Aberturas</th>
+          <th class="text-right py-2 px-2 font-medium">Cliques</th>
+        </tr></thead>
+        <tbody>${recipients.map((r: any) => `<tr class="border-b border-[var(--border)]/30">
+          <td class="py-2 px-2 text-[var(--fg)]">${r.member_name || r.email || '—'}</td>
+          <td class="py-2 px-2 text-[var(--fg-muted)]">${r.role || '—'}</td>
+          <td class="py-2 px-2 text-center">${statusIcons[r.status] || '⚪'} ${r.status}</td>
+          <td class="py-2 px-2 text-right text-[var(--fg)]">${r.open_count > 0 ? r.open_count + 'x' : '—'}</td>
+          <td class="py-2 px-2 text-right text-[var(--fg)]">${r.click_count > 0 ? r.click_count + 'x' : '—'}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+      <div class="mt-2 text-xs text-[var(--fg-muted)]">
+        🟢 Clicou · 🟡 Abriu · 🔵 Entregue · ⚪ Enviado · 🔴 Bounce
+      </div>`;
+    } else {
+      recipEl.innerHTML = '<p class="text-[var(--fg-muted)] text-sm">—</p>';
+    }
+
+    document.getElementById('analytics-loading')?.classList.add('hidden');
+    document.getElementById('analytics-content')?.classList.remove('hidden');
   }
 
   boot();

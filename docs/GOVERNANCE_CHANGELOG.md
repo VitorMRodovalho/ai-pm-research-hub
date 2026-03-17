@@ -948,4 +948,20 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-071 — Resend Webhook Analytics (W-CAMP-ANALYTICS)
+
+**Data:** 2026-03-17
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Resend webhooks integrated for real-time email delivery tracking. Funnel visualization (sent→delivered→opened→clicked) in /admin/campaigns Stats view. Per-recipient status with role/tribe breakdown. Edge Function `resend-webhook` receives Resend events, `process_email_webhook` RPC updates `campaign_recipients` tracking columns idempotently, `get_campaign_analytics` RPC returns funnel + breakdown data.
+
+**LGPD:** Open/click tracking is standard for transactional email analytics. No additional PII stored beyond existing campaign_recipients data. `email_webhook_events` audit table is admin-only (RLS). Complained events auto-unsubscribe the recipient.
+
+**Zero-cost:** Resend webhooks are free. No additional services needed.
+
+**Impacto tecnico:** New columns on `campaign_recipients` (resend_id, delivered_at, opened_at, open_count, clicked_at, click_count, bounced_at, bounce_type, complained_at). New `email_webhook_events` table with RLS. New Edge Function `resend-webhook` (deployed --no-verify-jwt). `send-campaign` updated to store resend_id. `get_campaign_analytics` RPC returns funnel + by_role + recipients. Stats panel in `/admin/campaigns` with funnel cards, role breakdown table, and recipient status table. Manual step: configure webhook URL in Resend dashboard.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*
