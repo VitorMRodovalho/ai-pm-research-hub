@@ -2126,6 +2126,10 @@ const esLATAM: Record<string, string> = {
   'help.otherJourneys': 'Otros recorridos',
   'help.expandAll': 'Expandir todo',
   'help.collapseAll': 'Contraer todo',
+  'help.intro': 'Bienvenido al Centro de Ayuda del Hub. Seleccione un tema para ver la respuesta.',
+  'help.privacy': 'Política de Privacidad',
+  'help.version': 'Versión',
+  'help.contact': 'Contacto',
 
   // ── W130: Lead Capture ──
   'lead.title': '¿Interesado en participar?',

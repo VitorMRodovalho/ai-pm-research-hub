@@ -2128,6 +2128,10 @@ const ptBR: Record<string, string> = {
   'help.otherJourneys': 'Outras jornadas',
   'help.expandAll': 'Expandir tudo',
   'help.collapseAll': 'Recolher tudo',
+  'help.intro': 'Bem-vindo à Central de Ajuda do Hub. Selecione um tópico abaixo para ver a resposta.',
+  'help.privacy': 'Política de Privacidade',
+  'help.version': 'Versão',
+  'help.contact': 'Contato',
 
   // ── W130: Lead Capture ──
   'lead.title': 'Interessado em participar?',

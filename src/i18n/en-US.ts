@@ -2126,6 +2126,10 @@ const enUS: Record<string, string> = {
   'help.otherJourneys': 'Other journeys',
   'help.expandAll': 'Expand all',
   'help.collapseAll': 'Collapse all',
+  'help.intro': 'Welcome to the Hub Help Center. Select a topic below to see the answer.',
+  'help.privacy': 'Privacy Policy',
+  'help.version': 'Version',
+  'help.contact': 'Contact',
 
   // ── W130: Lead Capture ──
   'lead.title': 'Interested in joining?',
