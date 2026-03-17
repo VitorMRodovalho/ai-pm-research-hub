@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
     let memberMap: Record<string, { email: string; name: string; tribe_name: string; chapter: string }> = {}
     if (memberIds.length > 0) {
       const { data: members } = await sb.from('members')
-        .select('id, email, name, tribe_id, preferred_language')
+        .select('id, email, name, tribe_id')
         .in('id', memberIds)
       const tribeIds = [...new Set((members || []).filter(m => m.tribe_id).map(m => m.tribe_id))]
       let tribeMap: Record<number, { name: string; chapter: string }> = {}
@@ -175,7 +175,7 @@ Deno.serve(async (req) => {
     }
 
     // Update send status
-    const finalStatus = errors.length === 0 ? 'sent' : (delivered > 0 ? 'sent' : 'failed')
+    const finalStatus = delivered > 0 ? 'sent' : 'failed'
     await sb.from('campaign_sends').update({
       status: finalStatus,
       sent_at: new Date().toISOString(),
