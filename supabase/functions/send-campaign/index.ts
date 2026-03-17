@@ -18,6 +18,7 @@ Deno.serve(async (req) => {
     const srk = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     const anon = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     const rkey = Deno.env.get('RESEND_API_KEY') ?? ''
+    const fromAddress = Deno.env.get('RESEND_FROM_ADDRESS') || 'Nucleo IA & GP <onboarding@resend.dev>'
 
     if (!rkey) return json({ error: 'No RESEND key' }, 500)
 
@@ -150,7 +151,7 @@ Deno.serve(async (req) => {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${rkey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            from: 'Nucleo IA & GP <nucleoia@pmigo.org.br>',
+            from: fromAddress,
             to: [toEmail],
             subject,
             html,
