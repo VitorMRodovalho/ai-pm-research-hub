@@ -233,7 +233,7 @@ test('/admin/campaigns page exists', () => {
 test('/admin/campaigns has template editor', () => {
   const content = readFile('src/pages/admin/campaigns.astro');
   assert.ok(content.includes('tmpl-modal'), 'Must have template editor modal');
-  assert.ok(content.includes('tmpl-body'), 'Must have body editor');
+  assert.ok(content.includes('campaign-body') || content.includes('RichTextEditor'), 'Must have body editor (RichTextEditor)');
   assert.ok(content.includes('data-lang-tab'), 'Must have i18n language tabs');
   assert.ok(content.includes('var-btn'), 'Must have variable picker buttons');
 });
