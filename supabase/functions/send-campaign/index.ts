@@ -16,11 +16,14 @@ Deno.serve(async (req) => {
 
     const url = Deno.env.get('SUPABASE_URL') ?? ''
     const srk = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    const anon = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
     const rkey = Deno.env.get('RESEND_API_KEY') ?? ''
-    const fromAddress = Deno.env.get('RESEND_FROM_ADDRESS') || 'Nucleo IA & GP <onboarding@resend.dev>'
+    const from = Deno.env.get('RESEND_FROM_ADDRESS') || 'onboarding@resend.dev'
 
     if (!rkey) return json({ error: 'No RESEND key' }, 500)
+
+    // Sandbox mode: onboarding@resend.dev can only send to account owner
+    const sandbox = from.includes('onboarding@resend.dev')
+    console.log('[campaign] from:', from, 'sandbox:', sandbox)
 
     // Auth: verify caller (accepts both user JWT and service_role key)
     const ah = req.headers.get('Authorization') ?? ''
@@ -34,7 +37,6 @@ Deno.serve(async (req) => {
       const { data: { user }, error: userError } = await sb.auth.getUser(tk)
       if (userError || !user) return json({ error: `Auth failed: ${userError?.message || 'token invalid'}` }, 401)
 
-      // Verify caller is GP/DM
       const { data: caller } = await sb.from('members')
         .select('id, is_superadmin, operational_role')
         .eq('auth_id', user.id).single()
@@ -49,10 +51,10 @@ Deno.serve(async (req) => {
     if (!sendId) return json({ error: 'Missing send_id' }, 400)
 
     // Load send record
-    const { data: send } = await sb.from('campaign_sends')
+    const { data: send, error: sendErr } = await sb.from('campaign_sends')
       .select('*, campaign_templates(*)')
       .eq('id', sendId).single()
-    if (!send) return json({ error: 'Send not found' }, 404)
+    if (!send) return json({ error: 'Send not found', detail: sendErr?.message }, 404)
     if (send.status === 'sent') return json({ error: 'Already sent' }, 400)
 
     const tmpl = send.campaign_templates
@@ -62,21 +64,23 @@ Deno.serve(async (req) => {
     await sb.from('campaign_sends').update({ status: 'sending' }).eq('id', sendId)
 
     // Load recipients
-    const { data: recipients } = await sb.from('campaign_recipients')
+    const { data: recipients, error: recipErr } = await sb.from('campaign_recipients')
       .select('id, member_id, external_email, external_name, language, unsubscribed, unsubscribe_token')
       .eq('send_id', sendId)
     if (!recipients || recipients.length === 0) {
-      await sb.from('campaign_sends').update({ status: 'failed', error_log: 'No recipients' }).eq('id', sendId)
+      await sb.from('campaign_sends').update({ status: 'failed', error_log: `No recipients: ${recipErr?.message || 'empty'}` }).eq('id', sendId)
       return json({ error: 'No recipients' }, 400)
     }
+    console.log('[campaign] recipients:', recipients.length)
 
-    // Load member emails for member recipients
+    // Load member emails
     const memberIds = recipients.filter(r => r.member_id).map(r => r.member_id)
     let memberMap: Record<string, { email: string; name: string; tribe_name: string; chapter: string }> = {}
     if (memberIds.length > 0) {
-      const { data: members } = await sb.from('members')
+      const { data: members, error: memErr } = await sb.from('members')
         .select('id, email, name, tribe_id')
         .in('id', memberIds)
+      if (memErr) console.error('[campaign] members query error:', memErr.message)
       const tribeIds = [...new Set((members || []).filter(m => m.tribe_id).map(m => m.tribe_id))]
       let tribeMap: Record<number, { name: string; chapter: string }> = {}
       if (tribeIds.length > 0) {
@@ -92,6 +96,7 @@ Deno.serve(async (req) => {
           chapter: tribe?.chapter || '',
         }
       }
+      console.log('[campaign] memberMap entries:', Object.keys(memberMap).length)
     }
 
     const platformUrl = 'https://nucleoiagp.pages.dev'
@@ -99,14 +104,12 @@ Deno.serve(async (req) => {
     let errors: string[] = []
 
     for (const r of recipients) {
-      // Skip unsubscribed
       if (r.unsubscribed) continue
 
       const lang = r.language || 'pt'
       const langKey = lang === 'en' ? 'en' : lang === 'es' ? 'es' : 'pt'
 
       let toEmail = ''
-      let toName = ''
       let memberName = ''
       let tribeName = ''
       let chapterName = ''
@@ -114,17 +117,22 @@ Deno.serve(async (req) => {
       if (r.member_id && memberMap[r.member_id]) {
         const m = memberMap[r.member_id]
         toEmail = m.email
-        toName = m.name
         memberName = m.name
         tribeName = m.tribe_name
         chapterName = m.chapter
       } else if (r.external_email) {
         toEmail = r.external_email
-        toName = r.external_name || ''
         memberName = r.external_name || ''
       }
 
-      if (!toEmail) continue
+      if (!toEmail) {
+        console.log('[campaign] skip: no email for recipient', r.id)
+        continue
+      }
+
+      // Sandbox: override recipient to test address (Resend free tier only sends to account owner)
+      const sandboxTo = Deno.env.get('RESEND_TEST_TO') || 'nucleoia@pmigo.org.br'
+      const finalTo = sandbox ? [sandboxTo] : [toEmail]
 
       // Render template
       const subject = (tmpl.subject[langKey] || tmpl.subject['pt'] || '').replace('{member.name}', memberName)
@@ -147,24 +155,30 @@ Deno.serve(async (req) => {
 
       // Send via Resend
       try {
+        const payload = {
+          from,
+          to: finalTo,
+          subject: sandbox ? `[SANDBOX] ${subject}` : subject,
+          html,
+          text,
+          headers: { 'List-Unsubscribe': `<${unsubUrl}>` },
+        }
+        console.log('[campaign] sending to:', finalTo[0], 'from:', from)
+
         const res = await fetch('https://api.resend.com/emails', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${rkey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            from: fromAddress,
-            to: [toEmail],
-            subject,
-            html,
-            text,
-            headers: { 'List-Unsubscribe': `<${unsubUrl}>` },
-          }),
+          headers: { 'Authorization': 'Bearer ' + rkey, 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
         })
+
+        const rt = await res.text()
+        console.log('[campaign] resend:', res.status, rt)
+
         if (res.ok) {
           await sb.from('campaign_recipients').update({ delivered: true }).eq('id', r.id)
           delivered++
         } else {
-          const err = await res.text()
-          errors.push(`${toEmail}: ${err}`)
+          errors.push(`${toEmail}: ${rt}`)
         }
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e)
@@ -180,12 +194,14 @@ Deno.serve(async (req) => {
     await sb.from('campaign_sends').update({
       status: finalStatus,
       sent_at: new Date().toISOString(),
-      error_log: errors.length > 0 ? errors.join('\n') : null,
+      error_log: errors.length > 0 ? errors.join('\n') : (sandbox ? 'sandbox: sent to account owner only' : null),
     }).eq('id', sendId)
 
-    return json({ delivered, errors: errors.length, total: recipients.length, status: finalStatus })
+    console.log('[campaign] done:', { delivered, errors: errors.length, total: recipients.length, status: finalStatus, sandbox })
+    return json({ delivered, errors: errors.length, total: recipients.length, status: finalStatus, sandbox })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
+    console.error('[campaign] FATAL:', msg)
     return json({ error: msg }, 500)
   }
 })
