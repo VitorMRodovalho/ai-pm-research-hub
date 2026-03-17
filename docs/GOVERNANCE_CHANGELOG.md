@@ -974,6 +974,16 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 **Impacto tecnico:** HelpFloatingButton.tsx refactored from 3 separate language arrays to single multilingual FAQ_ITEMS array (26 items). Added troubleshooting section visible to all. Section emojis. Fixed accent on "Política de Privacidade/Privacidad". i18n keys: help.intro, help.privacy, help.version, help.contact.
 
+### GC-073 — TipTap Refinement + Reusable RichTextEditor
+
+**Data:** 2026-03-17
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Created reusable RichTextEditor component with 3 toolbar presets (full, basic, minimal). Applied to blog (full) and campaign templates (basic). Principle: no user should need to know HTML to use any Hub feature. Blog editor refactored to thin wrapper around shared component. Campaign template body_html textarea replaced with WYSIWYG editor.
+
+**Impacto tecnico:** src/components/shared/RichTextEditor.tsx wraps TipTap with toolbar presets. src/components/shared/RichTextEditorIsland.tsx provides generic Astro island bridge using richtext:{field}:set/change events. BlogEditor.tsx now thin wrapper with toolbar="full". campaigns.astro uses RichTextEditorIsland with toolbar="basic" for body_html editing. Focus ring added on editor border. Audit confirmed only blog and campaigns needed WYSIWYG — announcements, board items, and publications use plain text.
+
 ---
 
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*

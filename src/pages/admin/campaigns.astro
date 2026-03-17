@@ -5,6 +5,7 @@
  */
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import AdminNav from '../../components/nav/AdminNav.astro';
+import RichTextEditorIsland from '../../components/shared/RichTextEditorIsland';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
@@ -91,10 +92,16 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
               <input id="tmpl-subject" type="text" class="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--fg)]" />
             </div>
 
-            <!-- Body HTML per lang -->
+            <!-- Body HTML per lang (WYSIWYG) -->
             <div>
               <label class="block text-sm font-medium text-[var(--fg-muted)] mb-1">{t('campaigns.bodyHtml', lang)}</label>
-              <textarea id="tmpl-body" rows="12" class="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--fg)] font-mono text-xs"></textarea>
+              <RichTextEditorIsland
+                client:load
+                fieldName="campaign-body"
+                toolbar="basic"
+                placeholder="Escreva o conteúdo do email..."
+                minHeight="250px"
+              />
             </div>
 
             <!-- Variable picker -->
@@ -259,6 +266,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   let currentLang = 'pt';
   let editingTemplate: CampaignTemplate | null = null;
   let allTemplates: CampaignTemplate[] = [];
+  let campaignBodyHtml = '';
+
+  // Sync RichTextEditor content via event bridge
+  window.addEventListener('richtext:campaign-body:change', ((e: CustomEvent) => {
+    campaignBodyHtml = e.detail || '';
+  }) as EventListener);
 
   async function initCampaigns(sb: any, member: any) {
     if (!hasAccess(member)) { showDenied(); return; }
@@ -302,15 +315,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       });
     });
 
-    // Variable picker
+    // Variable picker — append variable text to editor content
     document.querySelectorAll('.var-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const v = (btn as HTMLElement).dataset.var!;
-        const ta = document.getElementById('tmpl-body') as HTMLTextAreaElement;
-        const pos = ta.selectionStart;
-        ta.value = ta.value.substring(0, pos) + v + ta.value.substring(pos);
-        ta.focus();
-        ta.setSelectionRange(pos + v.length, pos + v.length);
+        campaignBodyHtml = campaignBodyHtml + v;
+        window.dispatchEvent(new CustomEvent('richtext:campaign-body:set', { detail: campaignBodyHtml }));
       });
     });
 
@@ -321,7 +331,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       (document.getElementById('tmpl-name') as HTMLInputElement).value = '';
       (document.getElementById('tmpl-category') as HTMLSelectElement).value = 'operational';
       (document.getElementById('tmpl-subject') as HTMLInputElement).value = '';
-      (document.getElementById('tmpl-body') as HTMLTextAreaElement).value = '';
+      campaignBodyHtml = '';
+      window.dispatchEvent(new CustomEvent('richtext:campaign-body:set', { detail: '' }));
       (document.getElementById('aud-all') as HTMLInputElement).checked = false;
       (document.getElementById('aud-roles') as HTMLInputElement).value = '';
       (document.getElementById('aud-chapters') as HTMLInputElement).value = '';
@@ -357,8 +368,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       const record = {
         name, slug, category,
         subject: { ...subject, [currentLang]: (document.getElementById('tmpl-subject') as HTMLInputElement).value },
-        body_html: { ...body_html, [currentLang]: (document.getElementById('tmpl-body') as HTMLTextAreaElement).value },
-        body_text: { ...body_text, [currentLang]: (document.getElementById('tmpl-body') as HTMLTextAreaElement).value.replace(/<[^>]+>/g, '') },
+        body_html: { ...body_html, [currentLang]: campaignBodyHtml },
+        body_text: { ...body_text, [currentLang]: campaignBodyHtml.replace(/<[^>]+>/g, '') },
         target_audience: { roles, designations: [], chapters, all: allActive },
       };
 
@@ -377,13 +388,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   function saveLangFields() {
     if (!editingTemplate) return;
     editingTemplate.subject[currentLang] = (document.getElementById('tmpl-subject') as HTMLInputElement).value;
-    editingTemplate.body_html[currentLang] = (document.getElementById('tmpl-body') as HTMLTextAreaElement).value;
+    editingTemplate.body_html[currentLang] = campaignBodyHtml;
   }
 
   function loadLangFields() {
     if (!editingTemplate) return;
     (document.getElementById('tmpl-subject') as HTMLInputElement).value = editingTemplate.subject[currentLang] || '';
-    (document.getElementById('tmpl-body') as HTMLTextAreaElement).value = editingTemplate.body_html[currentLang] || '';
+    campaignBodyHtml = editingTemplate.body_html[currentLang] || '';
+    window.dispatchEvent(new CustomEvent('richtext:campaign-body:set', { detail: campaignBodyHtml }));
   }
 
   async function loadTemplates(sb: any, isSender: boolean) {
