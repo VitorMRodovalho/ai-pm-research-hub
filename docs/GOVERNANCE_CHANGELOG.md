@@ -964,4 +964,16 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-072 — Help Content Update + Collapsed UX
+
+**Data:** 2026-03-17
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Help floating panel FAQ items collapsed by default. Users scan all questions, expand on demand. Intro section always visible. 26 FAQ items across 5 sections (Getting Started 5, Workspace 6, Leaders 6, Admin 6, Troubleshooting 4). All trilingual (inline per-item). New troubleshooting section with common issues. Section headers with emojis. Links section with Privacy, GitHub, contact.
+
+**Impacto tecnico:** HelpFloatingButton.tsx refactored from 3 separate language arrays to single multilingual FAQ_ITEMS array (26 items). Added troubleshooting section visible to all. Section emojis. Fixed accent on "Política de Privacidade/Privacidad". i18n keys: help.intro, help.privacy, help.version, help.contact.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*
