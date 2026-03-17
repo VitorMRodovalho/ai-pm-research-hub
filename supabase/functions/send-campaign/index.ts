@@ -175,7 +175,13 @@ Deno.serve(async (req) => {
         console.log('[campaign] resend:', res.status, rt)
 
         if (res.ok) {
-          await sb.from('campaign_recipients').update({ delivered: true }).eq('id', r.id)
+          // Parse resend_id for webhook correlation
+          let resendId: string | undefined
+          try { resendId = JSON.parse(rt)?.id } catch { /* ignore */ }
+          await sb.from('campaign_recipients').update({
+            delivered: true,
+            ...(resendId ? { resend_id: resendId } : {}),
+          }).eq('id', r.id)
           delivered++
         } else {
           errors.push(`${toEmail}: ${rt}`)
