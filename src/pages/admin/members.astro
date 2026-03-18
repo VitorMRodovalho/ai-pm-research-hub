@@ -1,0 +1,14 @@
+---
+/**
+ * /admin/members — Dedicated member management page.
+ * React island with search, filters, edit modal, checkbox selection.
+ */
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import MemberListIsland from '../../components/admin/members/MemberListIsland';
+import Toast from '../../components/ui/Toast.astro';
+---
+
+<AdminLayout title="Membros" breadcrumbs={[{label:'Pessoas'},{label:'Membros'}]}>
+  <MemberListIsland client:load />
+  <Toast />
+</AdminLayout>

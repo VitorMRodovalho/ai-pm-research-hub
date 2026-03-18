@@ -45,6 +45,7 @@ const SECTIONS: SidebarSection[] = [
     id: 'people', emoji: '👥',
     label: { 'pt-BR': 'Pessoas', 'en-US': 'People', 'es-LATAM': 'Personas' },
     items: [
+      { href: '/admin/members', label: { 'pt-BR': 'Membros', 'en-US': 'Members', 'es-LATAM': 'Miembros' }, icon: 'Users', permission: 'admin.access' },
       { href: '/admin/tribes', label: { 'pt-BR': 'Tribos', 'en-US': 'Tribes', 'es-LATAM': 'Tribus' }, icon: 'Users', permission: 'admin.access' },
       { href: '/admin/selection', label: { 'pt-BR': 'Processo Seletivo', 'en-US': 'Selection Process', 'es-LATAM': 'Proceso Selectivo' }, icon: 'UserPlus', permission: 'admin.members.manage' },
       { href: '/admin/adoption', label: { 'pt-BR': 'Adoção', 'en-US': 'Adoption', 'es-LATAM': 'Adopción' }, icon: 'Activity', permission: 'admin.analytics' },
