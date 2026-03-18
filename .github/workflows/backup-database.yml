@@ -1,0 +1,98 @@
+name: Weekly Database Backup
+
+on:
+  schedule:
+    # Every Sunday at 23:00 UTC (20:00 BRT)
+    - cron: '0 23 * * 0'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-16
+
+      - name: Create backup
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          FILENAME="backup_${TIMESTAMP}.sql.gz"
+
+          echo "Starting backup at $(date -u)"
+          pg_dump "$DATABASE_URL" \
+            --format=plain \
+            --no-owner \
+            --no-privileges \
+            --clean \
+            --if-exists \
+            --exclude-schema=auth \
+            --exclude-schema=storage \
+            --exclude-schema=supabase_functions \
+            --exclude-schema=extensions \
+            --exclude-schema=graphql \
+            --exclude-schema=graphql_public \
+            --exclude-schema=realtime \
+            --exclude-schema=pgsodium \
+            --exclude-schema=vault \
+            --exclude-schema=supabase_migrations \
+            | gzip > "$FILENAME"
+
+          SIZE=$(du -h "$FILENAME" | cut -f1)
+          echo "Backup complete: $FILENAME ($SIZE)"
+          echo "BACKUP_FILE=$FILENAME" >> $GITHUB_ENV
+          echo "BACKUP_TIMESTAMP=$TIMESTAMP" >> $GITHUB_ENV
+
+      - name: Verify backup integrity
+        run: |
+          # Verify gzip is valid
+          gzip -t "$BACKUP_FILE"
+          echo "✅ Gzip integrity check passed"
+
+          # Verify SQL content exists (at least 1KB)
+          SIZE=$(stat -c%s "$BACKUP_FILE")
+          if [ "$SIZE" -lt 1024 ]; then
+            echo "❌ Backup file too small ($SIZE bytes) — likely empty or failed"
+            exit 1
+          fi
+          echo "✅ Backup size OK: $SIZE bytes"
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ env.BACKUP_TIMESTAMP }}
+          path: ${{ env.BACKUP_FILE }}
+          retention-days: 60
+          compression-level: 0  # Already gzipped
+
+      - name: Cleanup old artifacts (keep 8)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100,
+            });
+
+            const backups = artifacts.data.artifacts
+              .filter(a => a.name.startsWith('db-backup-'))
+              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            const toDelete = backups.slice(8); // Keep 8 most recent
+
+            for (const artifact of toDelete) {
+              console.log(`Deleting old backup: ${artifact.name} (${artifact.created_at})`);
+              await github.rest.actions.deleteArtifact({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                artifact_id: artifact.id,
+              });
+            }
+
+            console.log(`Kept ${Math.min(backups.length, 8)} backups, deleted ${toDelete.length}`);
