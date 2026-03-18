@@ -69,6 +69,13 @@ export default function MemberListIsland() {
   const [saving, setSaving] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  // Bulk operation state
+  const [showBulkAllocate, setShowBulkAllocate] = useState(false);
+  const [showBulkStatus, setShowBulkStatus] = useState(false);
+  const [bulkTribeId, setBulkTribeId] = useState('');
+  const [bulkActive, setBulkActive] = useState(true);
+  const [bulkSaving, setBulkSaving] = useState(false);
+
   // Edit form state
   const [editRole, setEditRole] = useState('');
   const [editDesigs, setEditDesigs] = useState<string[]>([]);
@@ -173,6 +180,46 @@ export default function MemberListIsland() {
     else setSelectedIds(new Set(members.map(m => m.id)));
   };
 
+  const handleBulkAllocate = async () => {
+    if (!bulkTribeId) return;
+    const sb = getSb();
+    if (!sb) return;
+    setBulkSaving(true);
+    const { data, error } = await sb.rpc('admin_bulk_allocate_tribe', {
+      p_member_ids: [...selectedIds],
+      p_tribe_id: parseInt(bulkTribeId),
+    });
+    if (!error && data?.success) {
+      (window as any).toast?.(`${data.count} membro(s) alocado(s)`, 'success');
+      setSelectedIds(new Set());
+      setShowBulkAllocate(false);
+      setBulkTribeId('');
+      await fetchMembers();
+    } else {
+      (window as any).toast?.(error?.message || 'Erro na operação', 'error');
+    }
+    setBulkSaving(false);
+  };
+
+  const handleBulkStatus = async () => {
+    const sb = getSb();
+    if (!sb) return;
+    setBulkSaving(true);
+    const { data, error } = await sb.rpc('admin_bulk_set_status', {
+      p_member_ids: [...selectedIds],
+      p_is_active: bulkActive,
+    });
+    if (!error && data?.success) {
+      (window as any).toast?.(`${data.count} membro(s) ${bulkActive ? 'ativado(s)' : 'desativado(s)'}`, 'success');
+      setSelectedIds(new Set());
+      setShowBulkStatus(false);
+      await fetchMembers();
+    } else {
+      (window as any).toast?.(error?.message || 'Erro na operação', 'error');
+    }
+    setBulkSaving(false);
+  };
+
   return (
     <div className="max-w-[1200px] mx-auto">
       {/* Stat cards */}
@@ -221,11 +268,21 @@ export default function MemberListIsland() {
         </select>
       </div>
 
-      {/* Selected count */}
+      {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="mb-3 px-4 py-2 bg-teal-600/10 border border-teal-500/30 rounded-lg text-sm text-teal-500 font-semibold flex items-center gap-2">
-          <span>✓ {selectedIds.size} membro(s) selecionado(s)</span>
-          <button onClick={() => setSelectedIds(new Set())} className="ml-auto text-xs underline bg-transparent border-0 text-teal-500 cursor-pointer">Limpar</button>
+        <div className="sticky top-0 z-10 mb-3 px-4 py-2.5 bg-teal-600/10 border border-teal-500/30 rounded-lg text-sm font-semibold flex items-center gap-2 flex-wrap">
+          <span className="text-teal-500">✓ {selectedIds.size} membro{selectedIds.size > 1 ? 's' : ''} selecionado{selectedIds.size > 1 ? 's' : ''}</span>
+          <div className="ml-auto flex gap-2">
+            <button onClick={() => setShowBulkAllocate(true)} className="px-3 py-1.5 text-[13px] bg-teal-600 text-white rounded-lg border-0 cursor-pointer hover:bg-teal-700">
+              Alocar em Tribo
+            </button>
+            <button onClick={() => setShowBulkStatus(true)} className="px-3 py-1.5 text-[13px] bg-amber-500 text-white rounded-lg border-0 cursor-pointer hover:bg-amber-600">
+              Mudar Status
+            </button>
+            <button onClick={() => setSelectedIds(new Set())} className="px-3 py-1.5 text-[13px] text-[var(--text-muted)] hover:text-[var(--text-primary)] bg-transparent border-0 cursor-pointer">
+              Cancelar
+            </button>
+          </div>
         </div>
       )}
 
@@ -378,6 +435,65 @@ export default function MemberListIsland() {
               <button onClick={closeEdit} className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer">Cancelar</button>
               <button onClick={saveEdit} disabled={saving} className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-teal-600 text-white border-0 hover:bg-teal-700 cursor-pointer disabled:opacity-50">
                 {saving ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Allocate Modal */}
+      {showBulkAllocate && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={() => setShowBulkAllocate(false)}>
+          <div className="bg-[var(--surface-card)] rounded-2xl w-full max-w-[400px] overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-[var(--border-default)]">
+              <h3 className="text-base font-bold text-[var(--text-primary)]">Alocar {selectedIds.size} membro(s) em tribo</h3>
+            </div>
+            <div className="p-5 space-y-4">
+              <select value={bulkTribeId} onChange={e => setBulkTribeId(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)]">
+                <option value="">Selecione uma tribo...</option>
+                {tribes.map(([id, name]) => <option key={id} value={String(id)}>T{String(id).padStart(2, '0')} — {name}</option>)}
+              </select>
+              <p className="text-sm text-[var(--text-muted)]">
+                Esta ação alocará {selectedIds.size} membro(s) na tribo selecionada.
+              </p>
+            </div>
+            <div className="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2">
+              <button onClick={() => setShowBulkAllocate(false)} className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer">Cancelar</button>
+              <button onClick={handleBulkAllocate} disabled={!bulkTribeId || bulkSaving} className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-teal-600 text-white border-0 hover:bg-teal-700 cursor-pointer disabled:opacity-50">
+                {bulkSaving ? 'Alocando...' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Status Modal */}
+      {showBulkStatus && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={() => setShowBulkStatus(false)}>
+          <div className="bg-[var(--surface-card)] rounded-2xl w-full max-w-[400px] overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-[var(--border-default)]">
+              <h3 className="text-base font-bold text-[var(--text-primary)]">Mudar status de {selectedIds.size} membro(s)</h3>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-[var(--text-primary)]">
+                  <input type="radio" name="bulk-status" checked={bulkActive} onChange={() => setBulkActive(true)} className="accent-teal-500" />
+                  🟢 Ativar
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-sm text-[var(--text-primary)]">
+                  <input type="radio" name="bulk-status" checked={!bulkActive} onChange={() => setBulkActive(false)} className="accent-red-500" />
+                  🔴 Desativar
+                </label>
+              </div>
+              <p className="text-sm text-[var(--text-muted)]">
+                Esta ação {bulkActive ? 'ativará' : 'desativará'} {selectedIds.size} membro(s).
+              </p>
+            </div>
+            <div className="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2">
+              <button onClick={() => setShowBulkStatus(false)} className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer">Cancelar</button>
+              <button onClick={handleBulkStatus} disabled={bulkSaving} className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-teal-600 text-white border-0 hover:bg-teal-700 cursor-pointer disabled:opacity-50">
+                {bulkSaving ? 'Processando...' : 'Confirmar'}
               </button>
             </div>
           </div>

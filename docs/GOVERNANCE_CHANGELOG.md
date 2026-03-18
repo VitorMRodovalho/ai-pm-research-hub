@@ -1028,4 +1028,28 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-078 — Admin Panel Modernization Phase 5: Audit Log System
+
+**Data:** 2026-03-18
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** All member-editing RPCs instrumented with admin_audit_log: admin_inactivate_member, admin_reactivate_member, admin_move_member_tribe, admin_deactivate_member, admin_change_tribe_leader. New /admin/audit-log page with filterable table (actor, action, date range) and pagination. Superadmin-only access via get_audit_log RPC. Added to sidebar under Operações with ClipboardList icon.
+
+**Impacto tecnico:** Migration 20260319100066 replaces 5 RPCs preserving original logic + adding audit INSERT. get_audit_log RPC (SECURITY DEFINER, superadmin-only, pagination, actor/action/date filters). AuditLogIsland.tsx (React island). /admin/audit-log.astro page. AdminSidebar updated with ClipboardList icon + audit-log link.
+
+---
+
+### GC-079 — Admin Panel Modernization Phase 6: Bulk Operations
+
+**Data:** 2026-03-18
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Checkbox selection in /admin/members with sticky bulk action bar when 1+ selected. Two bulk operations: Allocate to Tribe (modal with tribe dropdown + confirmation) and Change Status (modal with activate/deactivate radio + confirmation). Each operation creates N audit log entries with _bulk suffix. admin_bulk_allocate_tribe and admin_bulk_set_status RPCs with admin-only access.
+
+**Impacto tecnico:** MemberListIsland.tsx enhanced with bulk state, handlers, and two confirmation modals. Migration 20260319100067 creates admin_bulk_allocate_tribe and admin_bulk_set_status RPCs (SECURITY DEFINER, loop over member IDs, individual audit entries per member). No regression.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*
