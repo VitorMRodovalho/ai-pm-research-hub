@@ -18,11 +18,11 @@ test('/privacy page exists', () => {
 });
 
 test('/privacy page references LGPD via i18n keys', () => {
-  // LGPD is in the i18n keys (privacy.s6.title = "Seus Direitos (LGPD Art. 18)")
+  // GC-080 restructured sections: LGPD rights is now s7rights
   const ptBR = readFileSync(resolve(ROOT, 'src/i18n/pt-BR.ts'), 'utf8');
   assert.ok(ptBR.includes('LGPD'), 'pt-BR i18n must reference LGPD');
   const content = readFileSync(resolve(ROOT, 'src/pages/privacy.astro'), 'utf8');
-  assert.ok(content.includes('privacy.s6.title'), 'Page must use s6 (LGPD rights section)');
+  assert.ok(content.includes('privacy.s7rights.title'), 'Page must use s7rights (LGPD rights section)');
 });
 
 test('/privacy page has nucleoia@pmigo.org.br contact', () => {
@@ -30,10 +30,16 @@ test('/privacy page has nucleoia@pmigo.org.br contact', () => {
   assert.ok(content.includes('nucleoia@pmigo.org.br'), 'Must include contact email');
 });
 
-test('/privacy page has all 10 sections', () => {
+test('/privacy page has all 13 sections (GC-080 v2.0)', () => {
   const content = readFileSync(resolve(ROOT, 'src/pages/privacy.astro'), 'utf8');
-  for (let i = 1; i <= 10; i++) {
-    assert.ok(content.includes(`privacy.s${i}.title`), `Must include section ${i}`);
+  // GC-080 restructured: s1, s2, s3, s4, s5int, s6ret, s7rights, s8auto, s9sec, s10track, s11, s12, s13
+  const sections = [
+    's1.title', 's2.title', 's3.title', 's4.title',
+    's5int.title', 's6ret.title', 's7rights.title', 's8auto.title',
+    's9sec.title', 's10track.title', 's11.title', 's12.title', 's13.title',
+  ];
+  for (const key of sections) {
+    assert.ok(content.includes(`privacy.${key}`), `Must include privacy.${key}`);
   }
 });
 
@@ -47,9 +53,9 @@ test('privacy policy i18n keys exist in all languages', () => {
     const content = readFileSync(resolve(ROOT, `src/i18n/${lang}.ts`), 'utf8');
     assert.ok(content.includes('privacy.title'), `${lang} must have privacy.title key`);
     assert.ok(content.includes('privacy.s1.title'), `${lang} must have privacy.s1.title`);
-    assert.ok(content.includes('privacy.s6.title'), `${lang} must have privacy.s6.title (rights)`);
-    assert.ok(content.includes('privacy.s8.title'), `${lang} must have privacy.s8.title (cookies)`);
-    assert.ok(content.includes('privacy.s10.title'), `${lang} must have privacy.s10.title (contact)`);
+    assert.ok(content.includes('privacy.s7rights.title'), `${lang} must have privacy.s7rights.title (LGPD rights)`);
+    assert.ok(content.includes('privacy.s9sec.title'), `${lang} must have privacy.s9sec.title (security)`);
+    assert.ok(content.includes('privacy.s13.title'), `${lang} must have privacy.s13.title (contact)`);
   }
 });
 
