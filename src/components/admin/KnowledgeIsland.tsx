@@ -1,0 +1,197 @@
+import { useState, useEffect, useCallback } from 'react';
+
+interface HubResource {
+  id: string;
+  asset_type: string;
+  title: string;
+  description: string | null;
+  url: string | null;
+  tribe_id: number | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+const TYPE_ICONS: Record<string, string> = { course: '📖', reference: '📎', webinar: '🎥', other: '📁' };
+const TYPE_OPTIONS = [
+  { value: 'course', label: 'Curso' },
+  { value: 'reference', label: 'Referência' },
+  { value: 'webinar', label: 'Webinar' },
+  { value: 'other', label: 'Outro' },
+];
+
+export default function KnowledgeIsland() {
+  const [items, setItems] = useState<HubResource[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [form, setForm] = useState({ title: '', description: '', url: '', asset_type: 'course', tribe_id: '' });
+  const [saving, setSaving] = useState(false);
+
+  const getSb = useCallback(() => (window as any).navGetSb?.(), []);
+  const getMember = useCallback(() => (window as any).navGetMember?.(), []);
+  const toast = useCallback((msg: string, type = '') => (window as any).toast?.(msg, type), []);
+
+  const fetchItems = useCallback(async () => {
+    const sb = getSb();
+    if (!sb) return;
+    setLoading(true);
+    const { data, error } = await sb.from('hub_resources')
+      .select('id, asset_type, title, description, url, tribe_id, is_active, created_at')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (!error && data) setItems(data);
+    setLoading(false);
+  }, [getSb]);
+
+  useEffect(() => {
+    const boot = () => { if (getSb()) fetchItems(); else setTimeout(boot, 300); };
+    boot();
+    window.addEventListener('nav:member', () => fetchItems());
+  }, [getSb, fetchItems]);
+
+  const resetForm = () => {
+    setForm({ title: '', description: '', url: '', asset_type: 'course', tribe_id: '' });
+    setEditId(null);
+  };
+
+  const handleSave = async () => {
+    const sb = getSb();
+    if (!sb || !form.title.trim()) { toast('Preencha o título', 'error'); return; }
+    setSaving(true);
+    const payload = {
+      asset_type: form.asset_type,
+      title: form.title.trim(),
+      description: form.description.trim() || null,
+      url: form.url.trim() || null,
+      tribe_id: form.tribe_id ? parseInt(form.tribe_id, 10) : null,
+      author_id: getMember()?.id || null,
+    };
+    if (editId) {
+      const { error } = await sb.from('hub_resources').update(payload).eq('id', editId);
+      if (error) { toast('Erro: ' + error.message, 'error'); setSaving(false); return; }
+      toast('Recurso atualizado', 'success');
+    } else {
+      const { error } = await sb.from('hub_resources').insert(payload);
+      if (error) { toast('Erro: ' + error.message, 'error'); setSaving(false); return; }
+      toast('Recurso criado', 'success');
+    }
+    resetForm();
+    setSaving(false);
+    fetchItems();
+  };
+
+  const handleEdit = async (id: string) => {
+    const sb = getSb();
+    if (!sb) return;
+    const { data } = await sb.from('hub_resources').select('*').eq('id', id).single();
+    if (!data) return;
+    setForm({
+      title: data.title || '',
+      description: data.description || '',
+      url: data.url || '',
+      asset_type: data.asset_type || 'course',
+      tribe_id: data.tribe_id ? String(data.tribe_id) : '',
+    });
+    setEditId(id);
+  };
+
+  const handleToggle = async (id: string, active: boolean) => {
+    const sb = getSb();
+    if (!sb) return;
+    const { error } = await sb.from('hub_resources').update({ is_active: active }).eq('id', id);
+    if (error) { toast('Erro: ' + error.message, 'error'); return; }
+    toast(active ? 'Recurso ativado' : 'Recurso desativado', 'success');
+    fetchItems();
+  };
+
+  if (loading && items.length === 0) {
+    return <div className="text-center py-8 text-[var(--text-muted)] text-sm animate-pulse">Carregando recursos...</div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Form */}
+      <div className="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5">
+        <h3 className="text-sm font-bold text-navy mb-3">📚 {editId ? 'Editar Recurso' : 'Novo Recurso'}</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Título *</label>
+            <input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+              placeholder="Nome do recurso" className="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem] bg-[var(--surface-card)] text-[var(--text-primary)]" />
+          </div>
+          <div>
+            <label className="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Tipo</label>
+            <select value={form.asset_type} onChange={e => setForm(f => ({ ...f, asset_type: e.target.value }))}
+              className="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem] bg-[var(--surface-card)] text-[var(--text-primary)]">
+              {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+          <div className="sm:col-span-2">
+            <label className="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Descrição</label>
+            <input type="text" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              placeholder="Descrição breve" className="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem] bg-[var(--surface-card)] text-[var(--text-primary)]" />
+          </div>
+          <div>
+            <label className="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">URL</label>
+            <input type="url" value={form.url} onChange={e => setForm(f => ({ ...f, url: e.target.value }))}
+              placeholder="https://..." className="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem] bg-[var(--surface-card)] text-[var(--text-primary)]" />
+          </div>
+          <div>
+            <label className="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Tribo</label>
+            <select value={form.tribe_id} onChange={e => setForm(f => ({ ...f, tribe_id: e.target.value }))}
+              className="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem] bg-[var(--surface-card)] text-[var(--text-primary)]">
+              <option value="">Todas</option>
+              {[1,2,3,4,5,6,7,8].map(n => <option key={n} value={String(n)}>Tribo {n}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="flex gap-2 mt-4">
+          <button onClick={handleSave} disabled={saving}
+            className="px-4 py-2 rounded-lg bg-navy text-white text-xs font-semibold hover:opacity-90 cursor-pointer border-0 disabled:opacity-50">
+            {saving ? '...' : editId ? 'Salvar' : '+ Adicionar'}
+          </button>
+          {editId && (
+            <button onClick={resetForm}
+              className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-xs font-semibold text-[var(--text-secondary)] cursor-pointer bg-transparent hover:bg-[var(--surface-hover)]">
+              Cancelar
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* List */}
+      <div className="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] overflow-hidden">
+        <div className="px-5 py-3 border-b border-[var(--border-default)]">
+          <span className="text-sm font-bold text-navy">Recursos ({items.length})</span>
+        </div>
+        <div className="divide-y divide-[var(--border-subtle)]">
+          {items.length === 0 && (
+            <p className="text-center py-6 text-[var(--text-muted)] text-xs">Nenhum recurso cadastrado.</p>
+          )}
+          {items.map(a => (
+            <div key={a.id} className="flex items-center gap-2 px-5 py-2.5">
+              <span className="flex-shrink-0">{TYPE_ICONS[a.asset_type] || '📁'}</span>
+              <div className="flex-1 min-w-0">
+                <div className="text-[.78rem] font-semibold truncate text-[var(--text-primary)]">{a.title}</div>
+                {a.description && <div className="text-[.65rem] text-[var(--text-muted)] truncate">{a.description}</div>}
+              </div>
+              <span className={`text-[.58rem] font-bold px-1.5 py-0.5 rounded-full ${a.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-[var(--surface-section-cool)] text-[var(--text-muted)]'}`}>
+                {a.is_active ? 'Ativo' : 'Inativo'}
+              </span>
+              <span className="text-[.6rem] text-[var(--text-muted)] flex-shrink-0">
+                {new Date(a.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+              </span>
+              <button onClick={() => handleEdit(a.id)}
+                className="text-[.6rem] px-2 py-0.5 rounded bg-[var(--surface-base)] text-[var(--text-secondary)] hover:bg-navy hover:text-white border-0 cursor-pointer transition-all">
+                ✏️
+              </button>
+              <button onClick={() => handleToggle(a.id, !a.is_active)}
+                className={`text-[.6rem] px-2 py-0.5 rounded border-0 cursor-pointer transition-all ${a.is_active ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}>
+                {a.is_active ? 'Desativar' : 'Ativar'}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -6,6 +6,7 @@ import {
   Mail, Leaf, Rocket, Settings, Shield, Handshake, HelpCircle,
   ChevronLeft, ChevronRight, X,
   MonitorPlay, ClipboardList,
+  Library, SearchCheck, Tag,
 } from 'lucide-react';
 import { hasPermission as checkPermission } from '../../lib/permissions';
 
@@ -16,6 +17,7 @@ const ICONS: Record<string, React.FC<{ size?: number }>> = {
   BarChart3, Briefcase, FileText, Building, FileBarChart, GitCompare,
   Mail, Leaf, Rocket, Settings, Shield, Handshake, HelpCircle,
   MonitorPlay, ClipboardList,
+  Library, SearchCheck, Tag,
 };
 
 /* ────────────────────────── Sidebar data ────────────────────── */
@@ -60,6 +62,7 @@ const SECTIONS: SidebarSection[] = [
       { href: '/admin/curatorship', label: { 'pt-BR': 'Curadoria', 'en-US': 'Curatorship', 'es-LATAM': 'Curaduría' }, icon: 'CheckCircle', permission: 'admin.curation' },
       { href: '/admin/comms-ops', label: { 'pt-BR': 'Comunicação', 'en-US': 'Communications', 'es-LATAM': 'Comunicación' }, icon: 'Megaphone', permission: 'admin.campaigns' },
       { href: '/admin/webinars', label: { 'pt-BR': 'Webinars', 'en-US': 'Webinars', 'es-LATAM': 'Webinars' }, icon: 'MonitorPlay', permission: 'admin.access' },
+      { href: '/admin/knowledge', label: { 'pt-BR': 'Biblioteca de Recursos', 'en-US': 'Resource Library', 'es-LATAM': 'Biblioteca de Recursos' }, icon: 'Library', permission: 'admin.access' },
     ],
   },
   {
@@ -83,6 +86,8 @@ const SECTIONS: SidebarSection[] = [
       { href: '/admin/pilots', label: { 'pt-BR': 'Pilotos', 'en-US': 'Pilots', 'es-LATAM': 'Pilotos' }, icon: 'Rocket', permission: 'admin.portfolio' },
       { href: '/admin/settings', label: { 'pt-BR': 'Configurações', 'en-US': 'Settings', 'es-LATAM': 'Configuraciones' }, icon: 'Settings', permission: 'system.global_config' },
       { href: '/admin/audit-log', label: { 'pt-BR': 'Registro de Auditoria', 'en-US': 'Audit Log', 'es-LATAM': 'Registro de Auditoría' }, icon: 'ClipboardList', permission: 'system.global_config' },
+      { href: '/admin/data-health', label: { 'pt-BR': 'Data Health', 'en-US': 'Data Health', 'es-LATAM': 'Data Health' }, icon: 'SearchCheck', permission: 'system.global_config' },
+      { href: '/admin/tags', label: { 'pt-BR': 'Tags', 'en-US': 'Tags', 'es-LATAM': 'Tags' }, icon: 'Tag', permission: 'admin.access' },
       { href: '/admin/governance-v2', label: { 'pt-BR': 'Governança', 'en-US': 'Governance', 'es-LATAM': 'Gobernanza' }, icon: 'Shield', permission: 'admin.access' },
       { href: '/admin/partnerships', label: { 'pt-BR': 'Parcerias', 'en-US': 'Partnerships', 'es-LATAM': 'Alianzas' }, icon: 'Handshake', permission: 'admin.access' },
       { href: '/help', label: { 'pt-BR': 'Ajuda / Guia', 'en-US': 'Help / Guide', 'es-LATAM': 'Ayuda / Guía' }, icon: 'HelpCircle', permission: 'workspace.access' },

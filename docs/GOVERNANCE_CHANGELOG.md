@@ -1072,6 +1072,15 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 **Impacto tecnico:** 7 UPDATEs em transacao unica no Supabase. Zero alteracoes de schema, view ou functions (ja corretas pelo W143). Total de rows: 219 antes = 219 depois. Edge Function `sync-credly-all` corrigida e deployed (v33): `classifyBadge()` reescrita com 10 categorias W143 e XP corretos, `upsertCredlyPoints()` agora aceita e persiste `category` (antes hardcoded como 'course'), `analyzeBadges()` corrigida para usar category names W143. Proxima execucao pg_cron preservara os valores corrigidos.
 
+### GC-082 — Admin Monolith Cleanup
+**Data:** 2026-03-18 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisao:** Migrar 3 tabs unicas do admin/index.astro (4.178 linhas) para React islands standalone, remover 4 tabs duplicadas, reduzir index a redirect. Padrao React islands consolidado como unico padrao admin.
+
+**Justificativa:** admin/index.astro era um monolito com 7 tabs e script block monolitico misturando funcoes de todas as tabs. 4 tabs ja tinham paginas standalone duplicadas. Manutenibilidade comprometida.
+
+**Impacto tecnico:** 3 novos React islands criados (KnowledgeIsland.tsx, DataHealthIsland.tsx, TagManagementIsland.tsx) com 3 paginas Astro correspondentes (knowledge.astro, data-health.astro, tags.astro). AdminSidebar.tsx atualizado com 3 novos links (Biblioteca de Recursos, Data Health, Tags). admin/index.astro reduzido de 4.178 para 7 linhas (redirect). Build green. Zero regressoes.
+
 ---
 
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*

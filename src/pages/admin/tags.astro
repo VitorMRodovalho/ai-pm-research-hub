@@ -1,0 +1,26 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import TagManagementIsland from '../../components/admin/TagManagementIsland';
+import Toast from '../../components/ui/Toast.astro';
+---
+
+<AdminLayout title="Tags" breadcrumbs={[{label:'Sistema'},{label:'Tags'}]}>
+  <div class="max-w-[1100px] mx-auto px-4 pb-12">
+    <TagManagementIsland client:load />
+  </div>
+  <Toast />
+</AdminLayout>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    const check = () => {
+      const member = window.navGetMember?.();
+      if (!member) { setTimeout(check, 300); return; }
+      const isAdmin = member.is_superadmin || member.operational_role === 'manager' || member.operational_role === 'deputy_manager';
+      if (!isAdmin) {
+        document.querySelector('.max-w-\\[1100px\\]').innerHTML = '<div class="text-center py-20 text-[var(--text-muted)]">Acesso restrito a administradores.</div>';
+      }
+    };
+    check();
+  });
+</script>
