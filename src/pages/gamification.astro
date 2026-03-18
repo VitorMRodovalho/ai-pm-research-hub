@@ -550,6 +550,7 @@ const SCORING_I18N = {
     }
     await ensureLifetimePointsLoaded();
     renderLeaderboard();
+    try { if ((window as any).posthog) (window as any).posthog.capture('leaderboard_filtered', { filter_type: cycleOn ? 'cycle' : 'lifetime' }); } catch {}
   }
 
   function switchGamTab(el: HTMLElement, tab: string) {
@@ -1209,6 +1210,7 @@ const SCORING_I18N = {
     loadLeaderboard();
     loadMyTrailClarity();
     loadMembersDropdown();
+    try { if ((window as any).posthog) (window as any).posthog.capture('gamification_viewed', {}); } catch {}
   }
 
   // ── CENTRALIZED EVENT DELEGATION ──

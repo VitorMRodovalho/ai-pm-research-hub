@@ -24,7 +24,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         <div class="flex items-center gap-2">
           <select id="chr-chapter-select" class="px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem] bg-[var(--surface-card)] font-semibold">
           </select>
-          <button onclick="window.print()" class="px-3 py-2 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90">
+          <button id="chr-export-btn" class="px-3 py-2 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90">
             {t('chapterReport.exportPdf', lang)}
           </button>
         </div>
@@ -320,6 +320,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   }
 
   boot();
+
+  document.getElementById('chr-export-btn')?.addEventListener('click', () => {
+    try { if ((window as any).posthog) (window as any).posthog.capture('report_exported', { report_type: 'chapter' }); } catch {}
+    window.print();
+  });
 </script>
 
 <style>

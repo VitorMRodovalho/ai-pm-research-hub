@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { trackEvent } from '../../lib/analytics';
 import {
   DndContext,
   KeyboardSensor,
@@ -599,6 +600,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       return isSameLane ? prev : next;
     });
     await persistMove(itemId, targetLane, curLane);
+    if (curLane !== targetLane) trackEvent('board_card_moved', { tribe_id: tribeId, from_column: curLane, to_column: targetLane });
   }
 
   async function saveModal() {
@@ -622,9 +624,11 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       windowRef?.toast?.(error.message || 'Nao foi possivel salvar', 'error');
       return;
     }
+    const isNew = !modalItem.id || !items.some((row) => row.id === modalItem.id);
     setItems((prev) => prev.map((row) => (row.id === modalItem.id ? { ...modalItem } : row)));
     setModalItem(null);
     windowRef?.toast?.('Card salvo com sucesso', 'success');
+    if (isNew) trackEvent('board_card_created', { tribe_id: tribeId, card_type: modalItem.status || 'backlog' });
   }
 
   async function archiveModal() {

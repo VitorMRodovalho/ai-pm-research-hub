@@ -723,6 +723,7 @@ const WK = {
       // ── Done: show content ──
       $loading.classList.add('hidden');
       $content.classList.remove('hidden');
+      try { if ((window as any).posthog) (window as any).posthog.capture('workspace_visited', { tribe_id: member?.tribe_id || null }); } catch {}
       } // end loadWorkspaceData
 
       // ── Start loading ──

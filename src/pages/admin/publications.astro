@@ -582,6 +582,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
     if (error) { (window as any).toast?.(error.message, 'error'); return; }
     (window as any).toast?.('Submissão criada!', 'success');
+    try { if ((window as any).posthog) (window as any).posthog.capture('publication_submitted', { target_type: targetType || '' }); } catch {}
     document.getElementById('modal-new-sub')?.classList.add('hidden');
     await loadSubmissions();
     await loadPipelineSummary();

@@ -1226,6 +1226,7 @@ const PROFILE_I18N = {
         const total = data.total_badges || 0;
         const trailDetected = data.pmi_trail_count || 0;
         const trailSynced = data.pmi_trail_synced || 0;
+        try { if ((window as any).posthog) (window as any).posthog.capture('credly_verified', { badges_found: total, has_cpmai: !!data.has_cpmai }); } catch {}
         const msg = data.has_cpmai
           ? PROFILE_I18N.credlyCpmaiMsg.replace('{matched}', matched).replace('{total}', total).replace('{trailDetected}', trailDetected).replace('{trailSynced}', trailSynced)
           : matched > 0

@@ -90,6 +90,27 @@ const SIM_I18N = {
     initSentry();
   </script>
 
+  <!-- Sentry: Global error handlers — catches errors outside React islands -->
+  <script>
+    import { Sentry } from '../lib/sentry';
+    window.addEventListener('error', (event) => {
+      try {
+        Sentry.captureException(event.error || new Error(event.message), {
+          tags: { source: 'window.onerror' },
+          extra: { filename: event.filename, lineno: event.lineno, colno: event.colno }
+        });
+      } catch {}
+    });
+    window.addEventListener('unhandledrejection', (event) => {
+      try {
+        Sentry.captureException(
+          event.reason instanceof Error ? event.reason : new Error(String(event.reason)),
+          { tags: { source: 'unhandledrejection' } }
+        );
+      } catch {}
+    });
+  </script>
+
   <!-- PostHog Analytics -->
   <script>
     // @ts-nocheck
