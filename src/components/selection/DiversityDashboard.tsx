@@ -62,12 +62,12 @@ export default function DiversityDashboard() {
     <div className="space-y-6">
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <SummaryCard label="Total de Candidaturas" value={data.applicants_total} color="bg-blue-50 text-blue-700" />
-        <SummaryCard label="Aprovados" value={data.approved_total} color="bg-green-50 text-green-700" />
+        <SummaryCard label="Total de Candidaturas" value={data.applicants_total} color="bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300" />
+        <SummaryCard label="Aprovados" value={data.approved_total} color="bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-300" />
         <SummaryCard
           label="Taxa de Aprovação"
           value={data.applicants_total > 0 ? `${Math.round((data.approved_total / data.applicants_total) * 100)}%` : '0%'}
-          color="bg-indigo-50 text-indigo-700"
+          color="bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300"
         />
       </div>
 
@@ -85,7 +85,7 @@ export default function DiversityDashboard() {
           </ResponsiveContainer>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={data.by_gender} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
               <XAxis type="number" />
               <YAxis dataKey="gender" type="category" width={100} tick={{ fontSize: 11 }} />
               <Tooltip />
@@ -101,7 +101,7 @@ export default function DiversityDashboard() {
       <ChartCard title="Distribuição por Capítulo">
         <ResponsiveContainer width="100%" height={Math.max(200, (data.by_chapter?.length || 1) * 40)}>
           <BarChart data={data.by_chapter} layout="vertical">
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
             <XAxis type="number" />
             <YAxis dataKey="chapter" type="category" width={120} tick={{ fontSize: 11 }} />
             <Tooltip />
@@ -116,7 +116,7 @@ export default function DiversityDashboard() {
       <ChartCard title="Distribuição por Setor">
         <ResponsiveContainer width="100%" height={Math.max(200, (data.by_sector?.length || 1) * 35)}>
           <BarChart data={data.by_sector} layout="vertical">
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
             <XAxis type="number" />
             <YAxis dataKey="sector" type="category" width={130} tick={{ fontSize: 10 }} />
             <Tooltip />
@@ -131,7 +131,7 @@ export default function DiversityDashboard() {
       <ChartCard title="Distribuição por Senioridade">
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={data.by_seniority}>
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
             <XAxis dataKey="band" tick={{ fontSize: 10 }} />
             <YAxis />
             <Tooltip />
@@ -146,7 +146,7 @@ export default function DiversityDashboard() {
       <ChartCard title="Distribuição por Região">
         <ResponsiveContainer width="100%" height={Math.max(200, (data.by_region?.length || 1) * 35)}>
           <BarChart data={data.by_region} layout="vertical">
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
             <XAxis type="number" />
             <YAxis dataKey="region" type="category" width={100} tick={{ fontSize: 10 }} />
             <Tooltip />

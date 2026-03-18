@@ -115,22 +115,22 @@ export default function TribeDashboardIsland({ tribeId }: TribeDashboardProps) {
 
       {/* Alerts */}
       {engagement.members_inactive_30d > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
           ⚠️ {engagement.members_inactive_30d} membro(s) sem presença nos últimos 30 dias
         </div>
       )}
       {!tribe.meeting_slots?.length && (
-        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
+        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 text-sm text-red-700 dark:text-red-300">
           🔴 Sem reunião agendada — configure os horários da tribo
         </div>
       )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KpiCard label="Membros" value={members.total || 0} sub={`${members.active || 0} ativos`} color="bg-blue-50 text-blue-700" />
-        <KpiCard label="Presença" value={`${Math.round((engagement.attendance_rate || 0) * 100)}%`} sub={`${engagement.total_meetings || 0} reuniões`} color="bg-emerald-50 text-emerald-700" />
-        <KpiCard label="Cards" value={production.total_cards || 0} sub={`${production.articles_approved || 0} aprovados`} color="bg-indigo-50 text-indigo-700" />
-        <KpiCard label="XP Total" value={gamification.tribe_total_xp || 0} sub={`média ${gamification.tribe_avg_xp || 0}`} color="bg-amber-50 text-amber-700" />
+        <KpiCard label="Membros" value={members.total || 0} sub={`${members.active || 0} ativos`} color="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300" />
+        <KpiCard label="Presença" value={`${Math.round((engagement.attendance_rate || 0) * 100)}%`} sub={`${engagement.total_meetings || 0} reuniões`} color="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300" />
+        <KpiCard label="Cards" value={production.total_cards || 0} sub={`${production.articles_approved || 0} aprovados`} color="bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300" />
+        <KpiCard label="XP Total" value={gamification.tribe_total_xp || 0} sub={`média ${gamification.tribe_avg_xp || 0}`} color="bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300" />
       </div>
 
       {/* Tabs */}
@@ -202,7 +202,7 @@ function MembersTab({ members, sortBy, setSortBy }: { members: any; sortBy: stri
           <div className="text-[.68rem] font-semibold text-[var(--text-secondary)] mb-2">Por Papel</div>
           <div className="flex flex-wrap gap-1.5">
             {Object.entries(members.by_role || {}).map(([role, count]: any) => (
-              <span key={role} className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-md text-[.65rem] font-semibold">
+              <span key={role} className="px-2 py-1 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 rounded-md text-[.65rem] font-semibold">
                 {ROLE_LABELS[role] || role}: {count}
               </span>
             ))}
@@ -212,7 +212,7 @@ function MembersTab({ members, sortBy, setSortBy }: { members: any; sortBy: stri
           <div className="text-[.68rem] font-semibold text-[var(--text-secondary)] mb-2">Por Capítulo</div>
           <div className="flex flex-wrap gap-1.5">
             {Object.entries(members.by_chapter || {}).map(([ch, count]: any) => (
-              <span key={ch} className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-[.65rem] font-semibold">
+              <span key={ch} className="px-2 py-1 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 rounded-md text-[.65rem] font-semibold">
                 {ch}: {count}
               </span>
             ))}
@@ -271,7 +271,7 @@ function ProductionTab({ production, trends }: { production: any; trends: any })
           <>
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={statusData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
                 <XAxis type="number" />
                 <YAxis dataKey="status" type="category" width={90} tick={{ fontSize: 11 }} />
                 <Tooltip />
@@ -297,7 +297,7 @@ function ProductionTab({ production, trends }: { production: any; trends: any })
           <h3 className="text-sm font-bold text-navy mb-3">Tendência de Produção</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={prodTrend}>
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
               <XAxis dataKey="month" tick={{ fontSize: 10 }} />
               <YAxis />
               <Tooltip />
@@ -324,7 +324,7 @@ function EngagementTab({ engagement, trends }: { engagement: any; trends: any })
           <h3 className="text-sm font-bold text-navy mb-3">Tendência de Presença</h3>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={attendanceTrend}>
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
               <XAxis dataKey="month" tick={{ fontSize: 10 }} />
               <YAxis domain={[0, 1]} tickFormatter={(v: number) => `${Math.round(v * 100)}%`} />
               <Tooltip formatter={(v: number) => `${Math.round(v * 100)}%`} />
@@ -345,7 +345,7 @@ function EngagementTab({ engagement, trends }: { engagement: any; trends: any })
 
       {/* Inactive alert */}
       {engagement.members_inactive_30d > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
           ⚠️ <strong>{engagement.members_inactive_30d}</strong> membro(s) sem presença registrada nos últimos 30 dias
         </div>
       )}
@@ -395,7 +395,7 @@ function GamificationTab({ gamification, members }: { gamification: any; members
           <h3 className="text-sm font-bold text-navy mb-3">Distribuição de XP</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={xpData}>
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
               <XAxis dataKey="name" tick={{ fontSize: 10 }} />
               <YAxis />
               <Tooltip />
