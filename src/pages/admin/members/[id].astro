@@ -1,0 +1,24 @@
+---
+/**
+ * /admin/members/[id] — Member detail page with 7 sections.
+ * React island: MemberDetailIsland.
+ */
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import MemberDetailIsland from '../../../components/admin/members/MemberDetailIsland';
+import Toast from '../../../components/ui/Toast.astro';
+
+const { id } = Astro.params;
+if (!id) return Astro.redirect('/admin/members');
+---
+
+<AdminLayout
+  title="Detalhe do Membro"
+  breadcrumbs={[
+    { label: 'Pessoas', href: '/admin/members' },
+    { label: 'Membros', href: '/admin/members' },
+    { label: 'Detalhe' }
+  ]}
+>
+  <MemberDetailIsland client:load memberId={id} />
+  <Toast />
+</AdminLayout>

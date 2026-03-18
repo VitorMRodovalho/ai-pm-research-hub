@@ -264,7 +264,7 @@ export default function MemberListIsland() {
                         : <div className="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center text-white text-[.6rem] font-bold flex-shrink-0">{initials(m.full_name)}</div>
                       }
                       <div className="min-w-0">
-                        <a href={`/admin/member/${m.id}`} className="font-medium text-[var(--text-primary)] hover:underline truncate block no-underline">{m.full_name}</a>
+                        <a href={`/admin/members/${m.id}`} className="font-medium text-[var(--text-primary)] hover:underline truncate block no-underline">{m.full_name}</a>
                         <div className="text-[.7rem] text-[var(--text-muted)] truncate">{m.email}</div>
                       </div>
                     </div>
