@@ -378,7 +378,7 @@ export default function PortfolioGantt({ artifacts }: Props) {
                   y1={0}
                   x2={todayX}
                   y2={rows.length * ROW_H}
-                  stroke="#ef4444"
+                  stroke="var(--color-red-500, #ef4444)"
                   strokeWidth={1.5}
                   strokeDasharray="4,4"
                 />

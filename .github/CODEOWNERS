@@ -1,0 +1,9 @@
+# Core platform
+src/lib/           @VitorMRodovalho
+src/middleware/     @VitorMRodovalho
+supabase/          @VitorMRodovalho
+.github/workflows/ @VitorMRodovalho
+
+# Shared review
+src/components/admin/ @VitorMRodovalho
+src/i18n/             @VitorMRodovalho

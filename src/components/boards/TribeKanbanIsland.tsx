@@ -227,12 +227,12 @@ function SortableCard({
       ) : null}
       <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
         {attachments.length > 0 ? (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700">
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300">
             <Paperclip size={12} /> {attachments.length}
           </span>
         ) : null}
         {due ? (
-          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded ${due.getTime() < Date.now() && curation !== 'published' ? 'bg-red-50 text-red-700' : 'bg-[var(--surface-section-cool)] text-[var(--text-secondary)]'}`}>
+          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded ${due.getTime() < Date.now() && curation !== 'published' ? 'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-300' : 'bg-[var(--surface-section-cool)] text-[var(--text-secondary)]'}`}>
             <CalendarClock size={12} /> {due.toLocaleDateString('pt-BR')}
           </span>
         ) : null}
