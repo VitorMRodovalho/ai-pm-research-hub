@@ -47,3 +47,6 @@ scripts/data_science/
 # ETL manifests and local outputs
 scripts/bulk_knowledge_ingestion/upload_manifest.json
 scripts/bulk_knowledge_ingestion/upload_manifest_curated.json
+
+# Audit raw reports (inflated, see filtered summary)
+docs/audit/archive/
