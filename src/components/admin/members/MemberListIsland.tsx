@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Search, Edit2, Users, UserX, ShieldOff, Loader2, X } from 'lucide-react';
+import { trackEvent } from '../../../lib/analytics';
 
 /* ────── Types ────── */
 interface MemberRow {
@@ -110,7 +111,12 @@ export default function MemberListIsland() {
 
   // Re-fetch when filters change (debounce search)
   useEffect(() => {
-    const timer = setTimeout(fetchMembers, search ? 400 : 0);
+    const timer = setTimeout(() => {
+      fetchMembers();
+      if (search || tierFilter || tribeFilter || statusFilter) {
+        trackEvent('member_searched', { search_term_length: search.length, filter_count: [tierFilter, tribeFilter, statusFilter].filter(Boolean).length });
+      }
+    }, search ? 400 : 0);
     return () => clearTimeout(timer);
   }, [search, tierFilter, tribeFilter, statusFilter]);
 

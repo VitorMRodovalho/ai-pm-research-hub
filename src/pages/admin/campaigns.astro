@@ -523,6 +523,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
                     ? `Entregues: ${efData.delivered}/${efData.total} · ${efData.errors} erro(s)`
                     : `${efData.delivered} email(s) entregues com sucesso`;
                   (window as any).toast?.(msg, efData.errors > 0 ? 'error' : 'success');
+                  try { if ((window as any).posthog) (window as any).posthog.capture('campaign_sent', { delivered: efData.delivered || 0 }); } catch {}
                 }
               } catch (e: any) {
                 (window as any).toast?.('Campanha criada, mas entrega pode estar em andamento.', 'info');

@@ -1116,4 +1116,15 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-086 — PostHog Custom Events + Sentry Global Handler
+**Data:** 2026-03-18 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisao:** Ativacao completa de observabilidade: Sentry global error handlers (window.onerror + unhandledrejection) adicionados ao BaseLayout. PostHog custom event taxonomy (10 eventos) instrumentada: board_card_created, board_card_moved, gamification_viewed, leaderboard_filtered, publication_submitted, credly_verified, workspace_visited, report_exported, campaign_sent, member_searched. Helper trackEvent() com silent-fail pattern.
+
+**Justificativa:** Sentry so capturava erros de React islands via ErrorBoundary, ignorando erros globais de scripts inline e async. PostHog tinha zero custom events — so autocapture, insuficiente para medir feature adoption.
+
+**Impacto tecnico:** `src/lib/analytics.ts` (novo helper). Global error handlers em BaseLayout.astro. 10 eventos instrumentados em 8 arquivos (TribeKanbanIsland, gamification, profile, workspace, cycle-report, chapter-report, campaigns, publications, MemberListIsland). Todos com try/catch — analytics nunca quebra o app. Nenhum PII nos eventos.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*

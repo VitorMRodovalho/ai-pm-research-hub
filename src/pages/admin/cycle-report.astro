@@ -354,7 +354,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   }
 
   // Export PDF
-  document.getElementById('cr-export-pdf')?.addEventListener('click', () => window.print());
+  document.getElementById('cr-export-pdf')?.addEventListener('click', () => {
+    try { if ((window as any).posthog) (window as any).posthog.capture('report_exported', { report_type: 'cycle' }); } catch {}
+    window.print();
+  });
 
   bootCycleReport();
 </script>
