@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { usePageI18n } from '../../i18n/usePageI18n';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 
 interface TribeMetrics {
@@ -49,6 +50,7 @@ function getCellColor(value: number, sorted: number[], isPercent = false): strin
 }
 
 export default function CrossTribeIsland() {
+  const t = usePageI18n();
   const [tribes, setTribes] = useState<TribeMetrics[]>([]);
   const [alerts, setAlerts] = useState<AlertsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -190,9 +192,9 @@ export default function CrossTribeIsland() {
           <table className="w-full text-sm">
             <thead className="bg-[var(--surface-hover)]">
               <tr>
-                <SortHeader label="Tribo" sKey="tribe_name" />
-                <SortHeader label="Membros" sKey="member_count" />
-                <SortHeader label="Presença" sKey="attendance_rate" />
+                <SortHeader label={t('comp.cross.tribe', 'Tribo')} sKey="tribe_name" />
+                <SortHeader label={t('comp.tribe.members', 'Membros')} sKey="member_count" />
+                <SortHeader label={t('comp.tribe.attendance', 'Presença')} sKey="attendance_rate" />
                 <SortHeader label="Cards" sKey="cards_completed" />
                 <SortHeader label="XP" sKey="total_xp" />
                 <SortHeader label="Horas" sKey="total_hours" />

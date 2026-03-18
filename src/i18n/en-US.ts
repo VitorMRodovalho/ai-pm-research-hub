@@ -2374,6 +2374,54 @@ const enUS: Record<string, string> = {
   'guest.contactEmail': 'nucleoiagp@gmail.com',
   'guest.limitedAccess': 'You have limited access. Register as a member to participate.',
   'guest.navNotFound': 'Account not registered',
+
+  // ── Component labels (B9 i18n extraction) ──
+
+  // Tribe Dashboard
+  'comp.tribe.researcher': 'Researcher',
+  'comp.tribe.tribeLeader': 'Tribe Leader',
+  'comp.tribe.members': 'Members',
+  'comp.tribe.attendance': 'Attendance',
+  'comp.tribe.production': 'Production',
+  'comp.tribe.engagement': 'Engagement',
+  'comp.tribe.gamification': 'Gamification',
+  'comp.tribe.attendanceTrend': 'Attendance Trend',
+  'comp.tribe.byRole': 'By Role',
+  'comp.tribe.byChapter': 'By Chapter',
+  'comp.tribe.deliveries': 'Deliveries',
+  'comp.tribe.noData': 'No data available',
+  'comp.tribe.lowAttendanceWarning': 'Attendance below cycle target',
+  'comp.tribe.criticalAttendance': 'Critical attendance — disengagement risk',
+
+  // Report Page
+  'comp.report.activeMembers': 'Active Members',
+  'comp.report.tribes': 'Tribes',
+  'comp.report.totalAttendance': 'Total Attendance',
+  'comp.report.performanceByTribe': 'Performance by Tribe',
+  'comp.report.deliveriesByTribe': 'Deliveries by Tribe',
+
+  // Cross Tribe
+  'comp.cross.tribe': 'Tribe',
+
+  // Curatorship Board
+  'comp.curation.feedbackForTribe': 'Feedback for Tribe',
+  'comp.curation.returnToTribe': 'Return to Tribe',
+  'comp.curation.tribeItems': 'Tribe Items',
+
+  // Nav / Common
+  'comp.nav.visitor': 'Visitor',
+  'comp.nav.member': 'Member',
+  'comp.nav.observer': 'Observer',
+  'comp.nav.researchTribes': 'Research Tribes',
+
+  // Common
+  'comp.common.member': 'Member',
+  'comp.common.memberNoName': 'Unnamed member',
+  'comp.common.subject': 'Subject',
+  'comp.common.subjectRequired': 'Subject required',
+  'comp.common.searchSubject': 'Search subject',
+  'comp.common.copySubject': 'Copy subject',
+  'comp.common.suggestedSubject': 'Suggested subject',
 };
 
 export default enUS;

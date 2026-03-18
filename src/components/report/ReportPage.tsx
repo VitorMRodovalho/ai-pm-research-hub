@@ -4,6 +4,7 @@
  * Print-optimized layout with window.print() PDF export.
  */
 import { useState, useEffect } from 'react';
+import { usePageI18n } from '../../i18n/usePageI18n';
 
 function getSb() { return (window as any).navGetSb?.(); }
 
@@ -121,6 +122,7 @@ function ProgressBar({ pct, label }: { pct: number; label?: string }) {
 }
 
 export default function ReportPage() {
+  const t = usePageI18n();
   const [data, setData] = useState<ReportData | null>(null);
   const [config, setConfig] = useState<ReportConfig>(DEFAULT_CONFIG);
   const [loading, setLoading] = useState(true);
@@ -200,14 +202,14 @@ export default function ReportPage() {
         <section className="report-section">
           <h2 className="text-lg font-extrabold text-navy mb-3 border-b border-[var(--border-default)] pb-1">Visão Geral</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            <StatCard label="Membros Ativos" value={overview.active_members} accent="text-emerald-600" />
-            <StatCard label="Tribos" value={overview.tribes} />
+            <StatCard label={t('comp.report.activeMembers', 'Membros Ativos')} value={overview.active_members} accent="text-emerald-600" />
+            <StatCard label={t('comp.report.tribes', 'Tribos')} value={overview.tribes} />
             <StatCard label="Capítulos" value={overview.chapters} />
             <StatCard label="Entregáveis" value={overview.artifacts_total} />
             <StatCard label="Eventos" value={overview.events_count} />
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
-            <StatCard label="Presença Total" value={overview.total_attendance} />
+            <StatCard label={t('comp.report.totalAttendance', 'Presença Total')} value={overview.total_attendance} />
             <StatCard label="Horas de Impacto" value={`${overview.total_impact_hours}h`} accent="text-teal-600" />
             <StatCard label="Boards Ativos" value={overview.boards_active} />
           </div>
@@ -242,14 +244,14 @@ export default function ReportPage() {
       {/* ── TRIBES ── */}
       {sec.tribes && tribes && (
         <section className="report-section report-section-full">
-          <h2 className="text-lg font-extrabold text-navy mb-3 border-b border-[var(--border-default)] pb-1">Desempenho por Tribo</h2>
+          <h2 className="text-lg font-extrabold text-navy mb-3 border-b border-[var(--border-default)] pb-1">{t('comp.report.performanceByTribe', 'Desempenho por Tribo')}</h2>
           <div className="overflow-x-auto mb-4">
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-[var(--surface-base)] print:bg-gray-100">
                   <th className="text-left px-3 py-2 font-semibold">Tribo</th>
                   <th className="text-left px-3 py-2 font-semibold">Líder</th>
-                  <th className="text-center px-3 py-2 font-semibold">Membros</th>
+                  <th className="text-center px-3 py-2 font-semibold">{t('comp.tribe.members', 'Membros')}</th>
                   <th className="text-center px-3 py-2 font-semibold">Entregas</th>
                   <th className="text-center px-3 py-2 font-semibold">Concluídos</th>
                   <th className="text-center px-3 py-2 font-semibold">%</th>
@@ -269,7 +271,7 @@ export default function ReportPage() {
               </tbody>
             </table>
           </div>
-          <h3 className="text-sm font-bold text-navy mb-2">Entregas por Tribo</h3>
+          <h3 className="text-sm font-bold text-navy mb-2">{t('comp.report.deliveriesByTribe', 'Entregas por Tribo')}</h3>
           <HBar items={tribeChartItems} maxVal={maxArtifacts} />
           <div className="flex gap-4 mt-1 text-[9px] text-[var(--text-muted)]">
             <span><span className="inline-block w-3 h-2 rounded bg-emerald-600 mr-1" />Concluído</span>

@@ -80,6 +80,7 @@ type I18n = Record<string, string>;
 import { getSb, waitForSb } from '../../hooks/useBoard';
 import { useMemberContext } from '../../hooks/useBoardPermissions';
 import { hasPermission } from '../../lib/permissions';
+import { usePageI18n } from '../../i18n/usePageI18n';
 
 function daysUntilDue(dueAt: string | null | undefined): number | null {
   if (!dueAt) return null;
@@ -399,7 +400,7 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit, ui = {} }: {
             </section>
 
             <section className="space-y-2">
-              <label className="text-xs font-bold text-blue-900">{ui.feedbackLabel || 'Feedback para a Tribo'}</label>
+              <label className="text-xs font-bold text-blue-900">{ui.feedbackLabel || pt('comp.curation.feedbackForTribe', 'Feedback para a Tribo')}</label>
               <textarea
                 value={feedback} onChange={(e) => setFeedback(e.target.value)} rows={3}
                 placeholder="Obrigatório para devoluções e rejeições..."
@@ -414,7 +415,7 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit, ui = {} }: {
               </button>
               <button type="button" disabled={!feedback.trim() || submitting} onClick={() => handleAction('returned_for_revision')}
                 className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border-0 cursor-pointer">
-                {submitting ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />} {ui.returnToTribe || 'Devolver à Tribo'}
+                {submitting ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />} {ui.returnToTribe || pt('comp.curation.returnToTribe', 'Devolver à Tribo')}
               </button>
               <button type="button" disabled={!feedback.trim() || submitting} onClick={() => handleAction('rejected')}
                 className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-bold text-red-600 dark:text-red-300 bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-900 disabled:opacity-40 disabled:cursor-not-allowed transition-colors border-0 cursor-pointer">
@@ -441,6 +442,7 @@ function DragOverlayCard({ title }: { title: string }) {
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
+  const pt = usePageI18n();
   const { member: authMember, isLoading: memberLoading } = useMemberContext();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -720,7 +722,7 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
       <section>
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h2 className="text-lg font-extrabold text-blue-900">{ui.tribeItemsTitle || 'Itens das Tribos'}</h2>
+            <h2 className="text-lg font-extrabold text-blue-900">{ui.tribeItemsTitle || pt('comp.curation.tribeItems', 'Itens das Tribos')}</h2>
             <p className="text-xs text-[var(--text-secondary)]">{ui.tribeItemsDesc || 'Artefatos aprovados pelos líderes. Arraste para publicar ou clique para avaliar.'}</p>
           </div>
           <span className="px-3 py-1 bg-amber-100 text-amber-800 rounded-full text-[11px] font-bold">{tribeItems.length}{' '}{ui.pending || 'pendente'}{tribeItems.length !== 1 ? 's' : ''}</span>

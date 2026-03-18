@@ -2376,6 +2376,54 @@ const ptBR: Record<string, string> = {
   'guest.contactEmail': 'nucleoiagp@gmail.com',
   'guest.limitedAccess': 'Você tem acesso limitado. Cadastre-se como membro para participar.',
   'guest.navNotFound': 'Conta não cadastrada',
+
+  // ── Component labels (B9 i18n extraction) ──
+
+  // Tribe Dashboard
+  'comp.tribe.researcher': 'Pesquisador(a)',
+  'comp.tribe.tribeLeader': 'Líder de Tribo',
+  'comp.tribe.members': 'Membros',
+  'comp.tribe.attendance': 'Presença',
+  'comp.tribe.production': 'Produção',
+  'comp.tribe.engagement': 'Engajamento',
+  'comp.tribe.gamification': 'Gamificação',
+  'comp.tribe.attendanceTrend': 'Tendência de Presença',
+  'comp.tribe.byRole': 'Por Papel',
+  'comp.tribe.byChapter': 'Por Capítulo',
+  'comp.tribe.deliveries': 'Entregas',
+  'comp.tribe.noData': 'Sem dados disponíveis',
+  'comp.tribe.lowAttendanceWarning': 'Presença abaixo da meta do ciclo',
+  'comp.tribe.criticalAttendance': 'Presença crítica — risco de desengajamento',
+
+  // Report Page
+  'comp.report.activeMembers': 'Membros Ativos',
+  'comp.report.tribes': 'Tribos',
+  'comp.report.totalAttendance': 'Presença Total',
+  'comp.report.performanceByTribe': 'Desempenho por Tribo',
+  'comp.report.deliveriesByTribe': 'Entregas por Tribo',
+
+  // Cross Tribe
+  'comp.cross.tribe': 'Tribo',
+
+  // Curatorship Board
+  'comp.curation.feedbackForTribe': 'Feedback para a Tribo',
+  'comp.curation.returnToTribe': 'Devolver à Tribo',
+  'comp.curation.tribeItems': 'Itens das Tribos',
+
+  // Nav / Common
+  'comp.nav.visitor': 'Visitante',
+  'comp.nav.member': 'Membro',
+  'comp.nav.observer': 'Observador',
+  'comp.nav.researchTribes': 'Tribos de Pesquisa',
+
+  // Common
+  'comp.common.member': 'Membro',
+  'comp.common.memberNoName': 'Membro sem nome',
+  'comp.common.subject': 'Assunto',
+  'comp.common.subjectRequired': 'Assunto obrigatório',
+  'comp.common.searchSubject': 'Buscar assunto',
+  'comp.common.copySubject': 'Copiar assunto',
+  'comp.common.suggestedSubject': 'Assunto sugerido',
 };
 
 export default ptBR;

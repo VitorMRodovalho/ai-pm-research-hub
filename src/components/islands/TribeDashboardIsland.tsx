@@ -3,6 +3,7 @@ import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
+import { usePageI18n } from '../../i18n/usePageI18n';
 
 interface TribeDashboardProps {
   tribeId: string;
@@ -30,6 +31,7 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export default function TribeDashboardIsland({ tribeId }: TribeDashboardProps) {
+  const t = usePageI18n();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,10 +78,10 @@ export default function TribeDashboardIsland({ tribeId }: TribeDashboardProps) {
     : '';
 
   const tabs: { key: TabKey; label: string; icon: string }[] = [
-    { key: 'members', label: 'Membros', icon: '👥' },
-    { key: 'production', label: 'Produção', icon: '📄' },
-    { key: 'engagement', label: 'Engajamento', icon: '📊' },
-    { key: 'gamification', label: 'Gamificação', icon: '🏆' },
+    { key: 'members', label: t('comp.tribe.members', 'Membros'), icon: '👥' },
+    { key: 'production', label: t('comp.tribe.production', 'Produção'), icon: '📄' },
+    { key: 'engagement', label: t('comp.tribe.engagement', 'Engajamento'), icon: '📊' },
+    { key: 'gamification', label: t('comp.tribe.gamification', 'Gamificação'), icon: '🏆' },
   ];
 
   return (
@@ -127,8 +129,8 @@ export default function TribeDashboardIsland({ tribeId }: TribeDashboardProps) {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <KpiCard label="Membros" value={members.total || 0} sub={`${members.active || 0} ativos`} color="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300" />
-        <KpiCard label="Presença" value={`${Math.round((engagement.attendance_rate || 0) * 100)}%`} sub={`${engagement.total_meetings || 0} reuniões`} color="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300" />
+        <KpiCard label={t('comp.tribe.members', 'Membros')} value={members.total || 0} sub={`${members.active || 0} ativos`} color="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300" />
+        <KpiCard label={t('comp.tribe.attendance', 'Presença')} value={`${Math.round((engagement.attendance_rate || 0) * 100)}%`} sub={`${engagement.total_meetings || 0} reuniões`} color="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300" />
         <KpiCard label="Cards" value={production.total_cards || 0} sub={`${production.articles_approved || 0} aprovados`} color="bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300" />
         <KpiCard label="XP Total" value={gamification.tribe_total_xp || 0} sub={`média ${gamification.tribe_avg_xp || 0}`} color="bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300" />
       </div>
@@ -174,6 +176,12 @@ function KpiCard({ label, value, sub, color }: { label: string; value: string | 
 
 // ─── Members Tab ───
 function MembersTab({ members, sortBy, setSortBy }: { members: any; sortBy: string; setSortBy: (s: any) => void }) {
+  const t = usePageI18n();
+  const roleLabels: Record<string, string> = {
+    ...ROLE_LABELS,
+    researcher: t('comp.tribe.researcher', 'Pesquisador(a)'),
+    tribe_leader: t('comp.tribe.tribeLeader', 'Líder de Tribo'),
+  };
   const list = [...(members.list || [])].sort((a: any, b: any) => {
     if (sortBy === 'xp') return (b.xp_total || 0) - (a.xp_total || 0);
     if (sortBy === 'attendance') return (b.attendance_rate || 0) - (a.attendance_rate || 0);
@@ -199,17 +207,17 @@ function MembersTab({ members, sortBy, setSortBy }: { members: any; sortBy: stri
       {/* By role + chapter summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
         <div>
-          <div className="text-[.68rem] font-semibold text-[var(--text-secondary)] mb-2">Por Papel</div>
+          <div className="text-[.68rem] font-semibold text-[var(--text-secondary)] mb-2">{t('comp.tribe.byRole', 'Por Papel')}</div>
           <div className="flex flex-wrap gap-1.5">
             {Object.entries(members.by_role || {}).map(([role, count]: any) => (
               <span key={role} className="px-2 py-1 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 rounded-md text-[.65rem] font-semibold">
-                {ROLE_LABELS[role] || role}: {count}
+                {roleLabels[role] || role}: {count}
               </span>
             ))}
           </div>
         </div>
         <div>
-          <div className="text-[.68rem] font-semibold text-[var(--text-secondary)] mb-2">Por Capítulo</div>
+          <div className="text-[.68rem] font-semibold text-[var(--text-secondary)] mb-2">{t('comp.tribe.byChapter', 'Por Capítulo')}</div>
           <div className="flex flex-wrap gap-1.5">
             {Object.entries(members.by_chapter || {}).map(([ch, count]: any) => (
               <span key={ch} className="px-2 py-1 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 rounded-md text-[.65rem] font-semibold">
@@ -314,6 +322,7 @@ function ProductionTab({ production, trends }: { production: any; trends: any })
 
 // ─── Engagement Tab ───
 function EngagementTab({ engagement, trends }: { engagement: any; trends: any }) {
+  const t = usePageI18n();
   const attendanceTrend = trends.attendance_by_month || [];
 
   return (
@@ -321,7 +330,7 @@ function EngagementTab({ engagement, trends }: { engagement: any; trends: any })
       {/* Attendance trend line */}
       {attendanceTrend.length > 0 && (
         <div>
-          <h3 className="text-sm font-bold text-navy mb-3">Tendência de Presença</h3>
+          <h3 className="text-sm font-bold text-navy mb-3">{t('comp.tribe.attendanceTrend', 'Tendência de Presença')}</h3>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={attendanceTrend}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
