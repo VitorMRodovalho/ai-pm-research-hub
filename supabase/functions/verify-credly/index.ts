@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { classifyBadge, PMI_TRAIL_KEYWORDS } from '../_shared/classify-badge.ts'
 
 // Retry with exponential backoff for external API calls
 async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
@@ -19,45 +20,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// ── Tier 1: Master / Global Certifications (+50 XP) ──
-const TIER1_KEYWORDS = [
-  'pmp', 'cpmai', 'pmi-cpmai', 'cognitive project management',
-  'pmi-acp', 'pmi-cp', 'pgmp', 'pfmp', 'pmi-rmp', 'pmi-sp',
-  'project management professional',
-]
-
-// ── Tier 2: Specializations (+25 XP) ──
-const TIER2_KEYWORDS = [
-  'capm', 'pmi-pbsm', 'disciplined agile',
-  'professional scrum master', 'psm', 'pspo',
-  'safe', 'scaled agile', 'csm', 'certified scrum',
-  'prosci', 'change management',
-  'finops', 'aws certified', 'azure', 'google cloud certified',
-  'data analyst', 'data engineer', 'data scientist',
-  'itil', 'togaf', 'cobit',
-  'business intelligence', 'scrum foundation', 'sfpc',
-]
-
-// ── PMI AI Trail (strict KPI tracking — Tier 3: +15 XP) ──
-const PMI_TRAIL_KEYWORDS = [
-  { keywords: ['generative ai overview', 'project managers'], code: 'GENAI_OVERVIEW' },
-  { keywords: ['data landscape', 'genai', 'project managers'], code: 'DATA_LANDSCAPE' },
-  { keywords: ['prompt engineering', 'project managers'], code: 'PROMPT_ENG' },
-  { keywords: ['practical application', 'gen ai', 'project managers'], code: 'PRACTICAL_GENAI' },
-  { keywords: ['citizen developer', 'cdba'], code: 'CDBA_INTRO' },
-  { keywords: ['introduction', 'cognitive', 'cpmai'], code: 'CPMAI_INTRO' },
-  { keywords: ['ai in infrastructure', 'construction'], code: 'AI_INFRA' },
-  { keywords: ['ai in agile delivery'], code: 'AI_AGILE' },
-]
-
-// ── Broad knowledge categories (Tier 3: +15 XP for AI/PM, +10 XP for others) ──
-const AI_PM_KEYWORDS = [
-  'artificial intelligence', 'machine learning', 'deep learning',
-  'generative ai', 'gen ai', 'genai', 'prompt engineering',
-  'data science', 'data landscape', 'business intelligence',
-  'cognitive', 'ai ', ' ai', 'ml ', ' ml',
-  'project management', 'agile', 'scrum',
-]
+// classifyBadge and PMI_TRAIL_KEYWORDS imported from _shared/classify-badge.ts (GC-083)
 
 interface CredlyBadge {
   badge_template: { name: string; vanity_slug?: string }
@@ -103,11 +66,11 @@ async function fetchBadges(username: string): Promise<CredlyBadge[]> {
 async function upsertCredlyPoints(
   sb: ReturnType<typeof createClient>,
   memberId: string,
-  badge: { name: string; points: number; issued_at: string },
+  badge: { name: string; points: number; issued_at: string; category: string },
 ) {
   const reason = `Credly: ${badge.name}`
   const { data: rows, error: rowsError } = await sb.from('gamification_points')
-    .select('id, points, created_at')
+    .select('id, points, category, created_at')
     .eq('member_id', memberId)
     .eq('reason', reason)
     .order('created_at', { ascending: true })
@@ -120,7 +83,7 @@ async function upsertCredlyPoints(
       member_id: memberId,
       points: badge.points,
       reason,
-      category: 'course',
+      category: badge.category,
       created_at: badge.issued_at || new Date().toISOString(),
     })
     if (insertError) throw insertError
@@ -128,9 +91,10 @@ async function upsertCredlyPoints(
   }
 
   const keeper = rows[0]
-  if (keeper.points !== badge.points) {
+  const needsUpdate = keeper.points !== badge.points || keeper.category !== badge.category
+  if (needsUpdate) {
     const { error: updateError } = await sb.from('gamification_points')
-      .update({ points: badge.points })
+      .update({ points: badge.points, category: badge.category })
       .eq('id', keeper.id)
     if (updateError) throw updateError
   }
@@ -209,41 +173,12 @@ async function syncTrailProgressFromCredly(
   return { synced, missingCourses }
 }
 
-// ── Tier classification ──
-// Returns: { tier: 1|2|3|4, category: string, points: number }
-function classifyBadge(name: string, slug: string): { tier: number; category: string; points: number } {
-  const combined = (name + ' ' + slug).toLowerCase()
-
-  // PMI Trail (strict match — Tier 3 but category 'pmi_trail' for KPI tracking)
-  for (const trail of PMI_TRAIL_KEYWORDS) {
-    if (trail.keywords.every(kw => combined.includes(kw))) {
-      return { tier: 3, category: 'pmi_trail', points: 15 }
-    }
-  }
-
-  // Tier 1: Master certifications (+50 XP)
-  if (TIER1_KEYWORDS.some(kw => combined.includes(kw))) {
-    return { tier: 1, category: 'master_cert', points: 50 }
-  }
-
-  // Tier 2: Specializations (+25 XP)
-  if (TIER2_KEYWORDS.some(kw => combined.includes(kw))) {
-    return { tier: 2, category: 'specialization', points: 25 }
-  }
-
-  // Tier 3: AI/PM knowledge (+15 XP)
-  if (AI_PM_KEYWORDS.some(kw => combined.includes(kw))) {
-    return { tier: 3, category: 'knowledge_ai_pm', points: 15 }
-  }
-
-  // Tier 4: Other recognized badges (+10 XP)
-  return { tier: 4, category: 'other', points: 10 }
-}
+// classifyBadge imported from _shared/classify-badge.ts (GC-083 — W143-aligned 10 categories)
 
 function analyzeBadges(badges: CredlyBadge[]) {
   const pmiTrail: { code: string; name: string; issued_at: string }[] = []
   const cpmai: { name: string; issued_at: string }[] = []
-  const all: { name: string; issued_at: string; slug: string; category: string; tier: number; points: number }[] = []
+  const all: { name: string; issued_at: string; slug: string; category: string; points: number }[] = []
 
   for (const b of badges) {
     const name = b.badge_template?.name || ''
@@ -255,12 +190,10 @@ function analyzeBadges(badges: CredlyBadge[]) {
       issued_at: b.issued_at,
       slug,
       category: classification.category,
-      tier: classification.tier,
       points: classification.points,
     })
 
-    // Track PMI Trail separately for KPI
-    if (classification.category === 'pmi_trail') {
+    if (classification.category === 'trail') {
       const combined = (name + ' ' + slug).toLowerCase()
       for (const trail of PMI_TRAIL_KEYWORDS) {
         if (trail.keywords.every(kw => combined.includes(kw))) {
@@ -270,29 +203,12 @@ function analyzeBadges(badges: CredlyBadge[]) {
       }
     }
 
-    // Track CPMAI separately
-    if (classification.tier === 1) {
-      const combined = (name + ' ' + slug).toLowerCase()
-      if (['cpmai', 'cognitive project management', 'pmi-cpmai'].some(kw => combined.includes(kw))) {
-        cpmai.push({ name, issued_at: b.issued_at })
-      }
+    if (classification.category === 'cert_cpmai') {
+      cpmai.push({ name, issued_at: b.issued_at })
     }
   }
 
-  return {
-    pmiTrail,
-    cpmai,
-    all,
-    hasCPMAI: cpmai.length > 0,
-    pmiTrailCount: pmiTrail.length,
-    totalBadges: badges.length,
-    // Tier breakdown
-    tier1Count: all.filter(b => b.tier === 1).length,
-    tier2Count: all.filter(b => b.tier === 2).length,
-    tier3Count: all.filter(b => b.tier === 3).length,
-    tier4Count: all.filter(b => b.tier === 4).length,
-    totalPoints: all.reduce((sum, b) => sum + b.points, 0),
-  }
+  return { pmiTrail, cpmai, all, hasCPMAI: cpmai.length > 0, totalPoints: all.reduce((sum, b) => sum + b.points, 0) }
 }
 
 Deno.serve(async (req) => {
@@ -326,7 +242,7 @@ Deno.serve(async (req) => {
       const canonicalCredlyUrl = `https://www.credly.com/users/${username}`
       await sb.from('members').update({
         credly_verified_at: new Date().toISOString(),
-        credly_badges: result.all.filter(b => b.tier <= 3),
+        credly_badges: result.all.filter(b => b.category !== 'badge'),
         cpmai_certified: result.hasCPMAI,
         cpmai_certified_at: result.cpmai[0]?.issued_at || null,
         credly_url: credly_url || canonicalCredlyUrl,
@@ -358,40 +274,28 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({
         success: true,
         credly_username: username,
-        total_badges: result.totalBadges,
+        total_badges: badges.length,
         pmi_trail: result.pmiTrail,
-        pmi_trail_count: result.pmiTrailCount,
+        pmi_trail_count: result.pmiTrail.length,
         pmi_trail_synced: trailSync.synced,
         pmi_trail_missing_courses: trailSync.missingCourses,
         cpmai: result.cpmai,
         has_cpmai: result.hasCPMAI,
-        all_matched: result.all.filter(b => b.tier <= 3).length,
+        all_matched: result.all.filter(b => b.category !== 'badge').length,
         total_points: result.totalPoints,
-        tiers: {
-          master: result.tier1Count,
-          specialization: result.tier2Count,
-          trail_knowledge: result.tier3Count,
-          other: result.tier4Count,
-        },
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     return new Response(JSON.stringify({
       success: true,
       credly_username: username,
-      total_badges: result.totalBadges,
+      total_badges: badges.length,
       pmi_trail: result.pmiTrail,
-      pmi_trail_count: result.pmiTrailCount,
+      pmi_trail_count: result.pmiTrail.length,
       cpmai: result.cpmai,
       has_cpmai: result.hasCPMAI,
-      all_matched: result.all.filter(b => b.tier <= 3).length,
+      all_matched: result.all.filter(b => b.category !== 'badge').length,
       total_points: result.totalPoints,
-      tiers: {
-        master: result.tier1Count,
-        specialization: result.tier2Count,
-        trail_knowledge: result.tier3Count,
-        other: result.tier4Count,
-      },
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   } catch (err: any) {
   return new Response(

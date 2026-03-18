@@ -1,8 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
+import { POINTS_PER_ATTENDANCE, ATTENDANCE_CATEGORY } from '../_shared/attendance-xp.ts'
 
-const POINTS_PER_ATTENDANCE = 10
-const CATEGORY = 'attendance'
+const CATEGORY = ATTENDANCE_CATEGORY
 // Keep batch size small to avoid PostgREST URL length limits on .in() queries
 // Each UUID is 36 chars; 100 * 36 = 3.6KB, well within the ~8KB limit
 const LOOKUP_BATCH = 100
