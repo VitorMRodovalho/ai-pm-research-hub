@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { isSandboxMode } from '../_shared/email-utils.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -22,7 +23,7 @@ Deno.serve(async (req) => {
     if (!rkey) return json({ error: 'No RESEND key' }, 500)
 
     // Sandbox mode: onboarding@resend.dev can only send to account owner
-    const sandbox = from.includes('onboarding@resend.dev')
+    const sandbox = isSandboxMode(from)
     console.log('[campaign] from:', from, 'sandbox:', sandbox)
 
     // Auth: verify caller (accepts both user JWT and service_role key)

@@ -1083,4 +1083,15 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-083 — Edge Function Inventory Audit + Testing
+**Data:** 2026-03-18 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisao:** Auditoria completa de 16 Edge Functions. 3-layer testing (unit, static contracts, integration smoke). 4 shared modules extraidos. 2 orphan EFs reconstruidos no repo. 2 legacy EFs undeployed. verify-credly atualizado para W143 (10 categorias).
+
+**Justificativa:** Zero cobertura de teste para EFs. 2 EFs deployed sem codigo no repo (get-comms-metrics v13, sync-knowledge-youtube v10). 2 EFs de migracao one-time ainda deployed desnecessariamente. verify-credly usava classificacao tier-based obsoleta (pre-W143).
+
+**Impacto tecnico:** 4 shared modules criados em _shared/ (classify-badge.ts, attendance-xp.ts, email-utils.ts, webhook-parser.ts). 5 EFs atualizados para importar de _shared/ (sync-credly-all, verify-credly, sync-attendance-points, send-campaign, resend-webhook). verify-credly migrado de tier-based para W143 10-category system. 2 orphan EFs reconstruidos no repo (get-comms-metrics, sync-knowledge-youtube). 2 legacy EFs undeployed (import-trello-legacy, import-calendar-legacy) com _DEPRECATED.md. 174 novos testes (57 unit + 112 contract + 5 smoke). Suite total: 784 testes, 771 pass, 8 pre-existing fail, 5 smoke skipped. Todos 5 EFs modificados deployed com sucesso.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*

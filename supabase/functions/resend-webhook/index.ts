@@ -3,6 +3,7 @@
 // Deploy: npx supabase functions deploy resend-webhook --no-verify-jwt
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { parseWebhookEvent } from '../_shared/webhook-parser.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -20,16 +21,16 @@ Deno.serve(async (req) => {
     if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
     const payload = await req.json()
-    const eventType: string = payload.type // 'email.delivered', 'email.opened', etc.
-    const data = payload.data
-    const resendId: string | undefined = data?.email_id
-    const recipientEmail: string | undefined = data?.to?.[0]
+    const parsed = parseWebhookEvent(payload)
+    const { eventType, resendId, recipientEmail } = parsed
 
     console.log(`[resend-webhook] ${eventType} for ${resendId} to ${recipientEmail}`)
 
     if (!resendId || !eventType) {
       return json({ error: 'Missing resend_id or event_type' }, 400)
     }
+
+    const data = (payload.data || {}) as Record<string, unknown>
 
     const sb = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
