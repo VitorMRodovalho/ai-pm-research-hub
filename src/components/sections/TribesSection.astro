@@ -513,7 +513,7 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
         .eq('is_active', true)
         .order('day_of_week'),
       sb.from('tribes')
-        .select('id, name, notes, whatsapp_url, is_active')
+        .select('id, name, name_i18n, notes, whatsapp_url, is_active')
     ]);
 
     // Group slots by tribe
@@ -532,7 +532,8 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
       if (t.notes) notesMap[t.id] = t.notes;
       if (t.whatsapp_url) waMap[t.id] = t.whatsapp_url;
       if (typeof t.is_active === 'boolean') activeMap[t.id] = t.is_active;
-      if (t.name) nameMap[t.id] = t.name;
+      const _sl = location.pathname.startsWith('/en') ? 'en' : location.pathname.startsWith('/es') ? 'es' : 'pt';
+      if (t.name) nameMap[t.id] = t.name_i18n?.[_sl] || t.name;
     });
 
     // Update each tribe's meeting schedule display

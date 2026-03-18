@@ -58,7 +58,7 @@
 
         const { data: tribes } = await sb
           .from('tribes')
-          .select('id, name, meeting_link')
+          .select('id, name, name_i18n, meeting_link')
           .eq('is_active', true);
 
         if (!slots || !tribes) return;
@@ -72,7 +72,8 @@
           const tribe = tribeMap.get(slot.tribe_id);
           if (!tribe) continue;
           if (!byDay.has(slot.day_of_week)) byDay.set(slot.day_of_week, []);
-          byDay.get(slot.day_of_week)!.push({ ...slot, tribe_name: tribe.name, meeting_link: tribe.meeting_link });
+          const _sl = location.pathname.startsWith('/en') ? 'en' : location.pathname.startsWith('/es') ? 'es' : 'pt';
+          byDay.get(slot.day_of_week)!.push({ ...slot, tribe_name: tribe.name_i18n?.[_sl] || tribe.name, meeting_link: tribe.meeting_link });
         }
 
         const member = (window as any).navGetMember?.();

@@ -208,7 +208,7 @@ export default function AttendanceDashboard() {
               >
                 <option value="">Todas as tribos</option>
                 {tribes.map(t => (
-                  <option key={t.id} value={t.id}>Tribo {t.id} — {t.name}</option>
+                  <option key={t.id} value={t.id}>Tribo {t.id} — {(t as any).name_i18n?.[typeof window !== 'undefined' ? (window.location.pathname.startsWith('/en') ? 'en' : window.location.pathname.startsWith('/es') ? 'es' : 'pt') : 'pt'] || t.name}</option>
                 ))}
               </select>
             </div>

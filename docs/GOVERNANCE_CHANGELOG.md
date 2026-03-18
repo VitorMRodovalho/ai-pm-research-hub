@@ -1105,4 +1105,15 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-085 — Tribe Names i18n via Parallel Columns
+**Data:** 2026-03-18 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisao:** Internacionalizacao dos nomes de tribos e quadrantes via colunas paralelas jsonb (name_i18n, quadrant_name_i18n). 8 tribos x 3 locales (pt, en, es) populadas. 16 componentes frontend atualizados para usar name_i18n?.[lang] || name. 44 RPCs nao tocados (continuam usando name como PT-BR).
+
+**Justificativa:** Nomes de tribos apareciam em PT-BR nas paginas /en/ e /es/. Abordagem de colunas paralelas evita blast radius nos 44 RPCs e 47 functions que referenciam tribes.name.
+
+**Impacto tecnico:** Migration `20260319100068_gc085_tribe_names_i18n.sql` adiciona name_i18n e quadrant_name_i18n jsonb. Helper `getLocalizedName()` em `src/i18n/utils.ts`. 16 componentes atualizados: selects incluem name_i18n, rendering usa fallback pattern. Zero alteracoes em RPCs.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*

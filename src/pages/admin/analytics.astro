@@ -455,13 +455,14 @@ const ANALYTICS_I18N = {
   async function loadFilterOptions() {
     const [cyclesRes, tribesRes] = await Promise.all([
       sb.from('cycles').select('cycle_code, cycle_label, is_current, sort_order').order('sort_order', { ascending: false }),
-      sb.from('tribes').select('id, name, is_active').eq('is_active', true).order('id'),
+      sb.from('tribes').select('id, name, name_i18n, is_active').eq('is_active', true).order('id'),
     ]);
 
     const cycles = Array.isArray(cyclesRes.data) ? cyclesRes.data : [];
     const activeTribes = Array.isArray(tribesRes.data) ? tribesRes.data : [];
 
-    tribeMap = new Map(activeTribes.map((tribe: any) => [Number(tribe.id), buildTribeLabel(tribe)]));
+    const _sl = location.pathname.startsWith('/en') ? 'en' : location.pathname.startsWith('/es') ? 'es' : 'pt';
+    tribeMap = new Map(activeTribes.map((tribe: any) => [Number(tribe.id), buildTribeLabel({ ...tribe, name: tribe.name_i18n?.[_sl] || tribe.name })]));
 
     if (!filters.cycleCode) {
       const currentCycle = cycles.find((cycle: any) => cycle.is_current) || cycles[0];

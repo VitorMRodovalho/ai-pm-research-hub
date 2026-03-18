@@ -302,14 +302,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   async function loadTribes() {
     const sb = (window as any).navGetSb?.();
     if (!sb) return;
-    const { data } = await sb.from('tribes').select('id, name').eq('is_active', true).order('id');
+    const { data } = await sb.from('tribes').select('id, name, name_i18n').eq('is_active', true).order('id');
     tribes = data || [];
     const tribeSelectors = ['filter-tribe', 'new-tribe'];
     tribeSelectors.forEach(id => {
       const el = document.getElementById(id) as HTMLSelectElement;
       if (!el) return;
       const prefix = id === 'filter-tribe' ? '<option value="">Todas</option>' : '<option value="">Nenhuma</option>';
-      el.innerHTML = prefix + tribes.map((t: any) => `<option value="${t.id}">${escH(t.name)}</option>`).join('');
+      const _sl = location.pathname.startsWith('/en') ? 'en' : location.pathname.startsWith('/es') ? 'es' : 'pt';
+      el.innerHTML = prefix + tribes.map((t: any) => `<option value="${t.id}">${escH(t.name_i18n?.[_sl] || t.name)}</option>`).join('');
     });
   }
 

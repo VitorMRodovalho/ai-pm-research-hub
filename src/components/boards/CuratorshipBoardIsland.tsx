@@ -212,7 +212,10 @@ function LegacySortableCard({ item, onApprove, onReject, tribes = [], ui = {} }:
               className="cur-approve-tribe w-full rounded-lg border border-emerald-200 bg-emerald-50 text-[10px] px-2 py-1"
             >
               <option value="">{ui.noTribe || '— Sem tribo —'}</option>
-              {tribes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              {tribes.map((t) => {
+                const _sl = typeof window !== 'undefined' ? (window.location.pathname.startsWith('/en') ? 'en' : window.location.pathname.startsWith('/es') ? 'es' : 'pt') : 'pt';
+                return <option key={t.id} value={t.id}>{(t as any).name_i18n?.[_sl] || t.name}</option>;
+              })}
             </select>
             <div className="flex gap-1.5">
               <button
@@ -537,7 +540,7 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
 
       // Fetch tribes list for approve confirmation
       try {
-        const { data: tribesData } = await sb.from('tribes').select('id,name').eq('is_active', true).order('name');
+        const { data: tribesData } = await sb.from('tribes').select('id,name,name_i18n').eq('is_active', true).order('name');
         if (Array.isArray(tribesData)) setTribesList(tribesData);
       } catch { /* non-critical */ }
     } catch (err: any) {

@@ -399,8 +399,8 @@ export default function ImpactPageIsland({ lang = 'pt-BR' }: ImpactPageProps) {
                 <div className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: TRIBE_COLORS[i % 8] }}>
                   T{String(tribe.id).padStart(2, '0')}
                 </div>
-                <div className="font-bold text-sm text-[var(--text-primary)] mb-2">{tribe.name}</div>
-                <div className="text-xs text-[var(--text-secondary)]">{tribe.quadrant_name}</div>
+                <div className="font-bold text-sm text-[var(--text-primary)] mb-2">{tribe.name_i18n?.[typeof window !== 'undefined' ? (window.location.pathname.startsWith('/en') ? 'en' : window.location.pathname.startsWith('/es') ? 'es' : 'pt') : 'pt'] || tribe.name}</div>
+                <div className="text-xs text-[var(--text-secondary)]">{tribe.quadrant_name_i18n?.[typeof window !== 'undefined' ? (window.location.pathname.startsWith('/en') ? 'en' : window.location.pathname.startsWith('/es') ? 'es' : 'pt') : 'pt'] || tribe.quadrant_name}</div>
                 <div className="flex items-center justify-between mt-3">
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full text-white" style={{ background: TRIBE_COLORS[i % 8] }}>
                     {tribe.member_count} {l.membersCount}
