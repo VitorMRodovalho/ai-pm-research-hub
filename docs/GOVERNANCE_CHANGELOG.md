@@ -1004,6 +1004,16 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 **Impacto tecnico:** AdminLayout.astro extends BaseLayout, adds AdminSidebar (React island) + breadcrumbs + mobile hamburger. AdminSidebar.tsx uses lucide-react icons, 5 SECTIONS with permission-based visibility. Collapse state in localStorage (hub_admin_sidebar_collapsed). Mobile drawer with backdrop + Escape close. AdminNav.astro retained for test backward-compat but no longer imported by any page.
 
+### GC-076 — Admin Panel Modernization Phase 3: Dedicated Members Page
+
+**Data:** 2026-03-17
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Created dedicated /admin/members page with React MemberListIsland. Features: stat cards (total, active, inactive, no-tribe, no-auth), search by name/email, filters (role, tribe, status), member table with avatar/tags/tribe/chapter/status/last-seen, inline edit modal (3-axis: operational role, designations, superadmin + chapter + status), checkbox column for future bulk ops. admin_list_members RPC for server-side filtering with admin-only access. Sidebar updated with separate Members link under People.
+
+**Impacto tecnico:** /admin/members.astro + MemberListIsland.tsx (React island). admin_list_members RPC (SECURITY DEFINER, joins tribes for tribe_name, supports search/tier/tribe/status filters). Sidebar: added /admin/members entry in People section. admin/index.astro preserved (other tabs still needed). No regression.
+
 ---
 
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*
