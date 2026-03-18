@@ -1063,4 +1063,15 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-081 — XP Mass Correction + Publication Data Fix
+**Data:** 2026-03-18 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisao:** Correcao em massa de 116 rows em gamification_points across 7 categorias para valores XP corretos por tier (trail=20, knowledge_ai_pm=20, specialization=25, course=15, cert_pmi_practitioner=35, cert_pmi_mid=40, cert_pmi_entry=30). Publication submissions tribe_id: nao corrigido automaticamente — board central nao tem tribe_id, requer atribuicao manual.
+
+**Justificativa:** W143 reclassificou categorias mas reteve valores XP originais do Credly (10/15) em 53% dos rows. Rankings distorcidos para 13 membros incluindo 4 lideres de tribo e o GP. Edge Function sync-credly-all identificada com 3 bugs que reverteriam o fix na proxima sync (category hardcoded como 'course', XP trail=15 em vez de 20, nomes de categoria desatualizados).
+
+**Impacto tecnico:** 7 UPDATEs em transacao unica no Supabase. Zero alteracoes de schema, view ou functions (ja corretas pelo W143). Total de rows: 219 antes = 219 depois. Edge Function `sync-credly-all` corrigida e deployed (v33): `classifyBadge()` reescrita com 10 categorias W143 e XP corretos, `upsertCredlyPoints()` agora aceita e persiste `category` (antes hardcoded como 'course'), `analyzeBadges()` corrigida para usar category names W143. Proxima execucao pg_cron preservara os valores corrigidos.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*

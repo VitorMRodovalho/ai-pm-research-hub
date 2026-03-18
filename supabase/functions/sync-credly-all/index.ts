@@ -1,44 +1,86 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
-// ── Tier 1: Master / Global Certifications (+50 XP) ──
-const TIER1_KEYWORDS = [
-  'pmp', 'cpmai', 'pmi-cpmai', 'cognitive project management',
-  'pmi-acp', 'pmi-cp', 'pgmp', 'pfmp', 'pmi-rmp', 'pmi-sp',
-  'project management professional',
-]
+// ══════════════════════════════════════════════════════════════
+// W143-aligned category constants (GC-081 fix)
+// Categories and XP values must match gamification_points schema
+// ══════════════════════════════════════════════════════════════
 
-// ── Tier 2: Specializations (+25 XP) ──
-const TIER2_KEYWORDS = [
-  'capm', 'pmi-pbsm', 'disciplined agile',
-  'professional scrum master', 'psm', 'pspo',
-  'safe', 'scaled agile', 'csm', 'certified scrum',
-  'prosci', 'change management',
-  'finops', 'aws certified', 'azure', 'google cloud certified',
-  'data analyst', 'data engineer', 'data scientist',
-  'itil', 'togaf', 'cobit',
-  'business intelligence', 'scrum foundation', 'sfpc',
-]
-
-// ── PMI AI Trail (strict KPI tracking — Tier 3: +15 XP) ──
+// ── PMI AI Trail: 6 courses with Credly badges (20 XP, category: trail) ──
 const PMI_TRAIL_KEYWORDS = [
   { keywords: ['generative ai overview', 'project managers'], code: 'GENAI_OVERVIEW' },
   { keywords: ['data landscape', 'genai', 'project managers'], code: 'DATA_LANDSCAPE' },
   { keywords: ['prompt engineering', 'project managers'], code: 'PROMPT_ENG' },
   { keywords: ['practical application', 'gen ai', 'project managers'], code: 'PRACTICAL_GENAI' },
-  { keywords: ['citizen developer', 'cdba'], code: 'CDBA_INTRO' },
-  { keywords: ['introduction', 'cognitive', 'cpmai'], code: 'CPMAI_INTRO' },
   { keywords: ['ai in infrastructure', 'construction'], code: 'AI_INFRA' },
   { keywords: ['ai in agile delivery'], code: 'AI_AGILE' },
 ]
 
-// ── Broad knowledge categories (Tier 3: +15 XP for AI/PM, +10 XP for others) ──
-const AI_PM_KEYWORDS = [
+// ── Non-trail PMI courses (15 XP, category: course) ──
+const PMI_NONTRIAL_KEYWORDS = [
+  { keywords: ['citizen developer', 'cdba'], code: 'CDBA_INTRO' },
+  { keywords: ['introduction', 'cognitive', 'cpmai'], code: 'CPMAI_INTRO' },
+]
+
+// ── cert_cpmai (45 XP) — check BEFORE cert_pmi_senior since 'cpmai' overlaps ──
+const CERT_CPMAI_KEYWORDS = [
+  'cpmai', 'pmi-cpmai', 'cognitive project management',
+]
+
+// ── cert_pmi_senior (50 XP) ──
+const CERT_PMI_SENIOR_KEYWORDS = [
+  'pmp', 'project management professional',
+  'pmi-acp', 'pmi-cp', 'pgmp', 'pfmp',
+  'pmi-rmp', 'pmi risk management professional',
+  'pmi-sp', 'pmi scheduling professional',
+]
+
+// ── cert_pmi_mid (40 XP) ──
+const CERT_PMI_MID_KEYWORDS = [
+  'pmi-pmocp', 'pmi pmo certified professional',
+]
+
+// ── cert_pmi_practitioner (35 XP) — check BEFORE cert_pmi_entry (DASSM contains DASM) ──
+const CERT_PMI_PRACTITIONER_KEYWORDS = [
+  'disciplined agile senior scrum master', 'dassm',
+  'pmo certified practitioner', 'pmo-cp',
+]
+
+// ── cert_pmi_entry (30 XP) ──
+const CERT_PMI_ENTRY_KEYWORDS = [
+  'disciplined agile scrum master (dasm)',
+]
+
+// ── specialization (25 XP) ──
+const SPECIALIZATION_KEYWORDS = [
+  'capm', 'pmi-pbsm',
+  'professional scrum master', 'psm', 'pspo',
+  'safe', 'scaled agile', 'csm', 'certified scrum',
+  'prosci', 'finops',
+  'aws', 'azure', 'microsoft certified', 'microsoft 365 certified',
+  'microsoft certified trainer', 'google cloud certified',
+  'power bi', 'power platform',
+  'itil', 'togaf', 'cobit', 'prince2',
+  'lean six sigma', 'scrum alliance', 'scrum foundation', 'sfpc',
+  'authorized training partner',
+  'fortinet', 'isc2', 'cybersecurity', 'threat landscape',
+  'mta:', 'mcsa:', 'md-100',
+  'ibm business automation',
+  'remote work professional',
+]
+
+// ── knowledge_ai_pm (20 XP) ──
+const KNOWLEDGE_AI_PM_KEYWORDS = [
   'artificial intelligence', 'machine learning', 'deep learning',
   'generative ai', 'gen ai', 'genai', 'prompt engineering',
   'data science', 'data landscape', 'business intelligence',
   'cognitive', 'ai ', ' ai', 'ml ', ' ml',
-  'project management', 'agile', 'scrum',
+  'agile metrics', 'fundamentals of agile', 'fundamentals of predictive',
+  'fundamentos de gerenciamento', 'fundamentos do gerenciamento',
+  'enterprise design thinking', 'design sprint',
+  'value stream management', 'agile coach',
+  'ibm program manager', 'program manager capstone',
+  'ai-driven project manager',
 ]
 
 interface CredlyBadge {
@@ -82,34 +124,66 @@ async function fetchBadges(username: string): Promise<CredlyBadge[]> {
   return data.data || data || []
 }
 
-function classifyBadge(name: string, slug: string): { tier: number; category: string; points: number } {
+function classifyBadge(name: string, slug: string): { category: string; points: number } {
   const combined = (name + ' ' + slug).toLowerCase()
 
+  // PMI AI Trail courses → trail (20 XP)
   for (const trail of PMI_TRAIL_KEYWORDS) {
     if (trail.keywords.every(kw => combined.includes(kw))) {
-      return { tier: 3, category: 'pmi_trail', points: 15 }
+      return { category: 'trail', points: 20 }
     }
   }
 
-  if (TIER1_KEYWORDS.some(kw => combined.includes(kw))) {
-    return { tier: 1, category: 'master_cert', points: 50 }
+  // Non-trail PMI courses → course (15 XP)
+  for (const course of PMI_NONTRIAL_KEYWORDS) {
+    if (course.keywords.every(kw => combined.includes(kw))) {
+      return { category: 'course', points: 15 }
+    }
   }
 
-  if (TIER2_KEYWORDS.some(kw => combined.includes(kw))) {
-    return { tier: 2, category: 'specialization', points: 25 }
+  // cert_cpmai (45 XP) — check BEFORE cert_pmi_senior since 'cpmai' overlaps
+  if (CERT_CPMAI_KEYWORDS.some(kw => combined.includes(kw))) {
+    return { category: 'cert_cpmai', points: 45 }
   }
 
-  if (AI_PM_KEYWORDS.some(kw => combined.includes(kw))) {
-    return { tier: 3, category: 'knowledge_ai_pm', points: 15 }
+  // cert_pmi_senior (50 XP)
+  if (CERT_PMI_SENIOR_KEYWORDS.some(kw => combined.includes(kw))) {
+    return { category: 'cert_pmi_senior', points: 50 }
   }
 
-  return { tier: 4, category: 'other', points: 10 }
+  // cert_pmi_mid (40 XP)
+  if (CERT_PMI_MID_KEYWORDS.some(kw => combined.includes(kw))) {
+    return { category: 'cert_pmi_mid', points: 40 }
+  }
+
+  // cert_pmi_practitioner (35 XP) — check BEFORE cert_pmi_entry (DASSM contains DASM)
+  if (CERT_PMI_PRACTITIONER_KEYWORDS.some(kw => combined.includes(kw))) {
+    return { category: 'cert_pmi_practitioner', points: 35 }
+  }
+
+  // cert_pmi_entry (30 XP)
+  if (CERT_PMI_ENTRY_KEYWORDS.some(kw => combined.includes(kw))) {
+    return { category: 'cert_pmi_entry', points: 30 }
+  }
+
+  // specialization (25 XP)
+  if (SPECIALIZATION_KEYWORDS.some(kw => combined.includes(kw))) {
+    return { category: 'specialization', points: 25 }
+  }
+
+  // knowledge_ai_pm (20 XP)
+  if (KNOWLEDGE_AI_PM_KEYWORDS.some(kw => combined.includes(kw))) {
+    return { category: 'knowledge_ai_pm', points: 20 }
+  }
+
+  // Fallback: generic badge (10 XP)
+  return { category: 'badge', points: 10 }
 }
 
 function analyzeBadges(badges: CredlyBadge[]) {
   const pmiTrail: { code: string; name: string; issued_at: string }[] = []
   const cpmai: { name: string; issued_at: string }[] = []
-  const all: { name: string; issued_at: string; slug: string; category: string; tier: number; points: number }[] = []
+  const all: { name: string; issued_at: string; slug: string; category: string; points: number }[] = []
 
   for (const b of badges) {
     const name = b.badge_template?.name || ''
@@ -121,11 +195,10 @@ function analyzeBadges(badges: CredlyBadge[]) {
       issued_at: b.issued_at,
       slug,
       category: classification.category,
-      tier: classification.tier,
       points: classification.points,
     })
 
-    if (classification.category === 'pmi_trail') {
+    if (classification.category === 'trail') {
       const combined = (name + ' ' + slug).toLowerCase()
       for (const trail of PMI_TRAIL_KEYWORDS) {
         if (trail.keywords.every(kw => combined.includes(kw))) {
@@ -135,11 +208,8 @@ function analyzeBadges(badges: CredlyBadge[]) {
       }
     }
 
-    if (classification.tier === 1) {
-      const combined = (name + ' ' + slug).toLowerCase()
-      if (['cpmai', 'cognitive project management', 'pmi-cpmai'].some(kw => combined.includes(kw))) {
-        cpmai.push({ name, issued_at: b.issued_at })
-      }
+    if (classification.category === 'cert_cpmai') {
+      cpmai.push({ name, issued_at: b.issued_at })
     }
   }
 
@@ -149,11 +219,11 @@ function analyzeBadges(badges: CredlyBadge[]) {
 async function upsertCredlyPoints(
   sb: ReturnType<typeof createClient>,
   memberId: string,
-  badge: { name: string; points: number; issued_at: string },
+  badge: { name: string; points: number; issued_at: string; category: string },
 ) {
   const reason = `Credly: ${badge.name}`
   const { data: rows, error: rowsError } = await sb.from('gamification_points')
-    .select('id, points, created_at')
+    .select('id, points, category, created_at')
     .eq('member_id', memberId)
     .eq('reason', reason)
     .order('created_at', { ascending: true })
@@ -166,7 +236,7 @@ async function upsertCredlyPoints(
       member_id: memberId,
       points: badge.points,
       reason,
-      category: 'course',
+      category: badge.category,
       created_at: badge.issued_at || new Date().toISOString(),
     })
     if (insertError) throw insertError
@@ -174,9 +244,10 @@ async function upsertCredlyPoints(
   }
 
   const keeper = rows[0]
-  if (keeper.points !== badge.points) {
+  const needsUpdate = keeper.points !== badge.points || keeper.category !== badge.category
+  if (needsUpdate) {
     const { error: updateError } = await sb.from('gamification_points')
-      .update({ points: badge.points })
+      .update({ points: badge.points, category: badge.category })
       .eq('id', keeper.id)
     if (updateError) throw updateError
   }
@@ -269,7 +340,7 @@ async function processMember(
 
   await sb.from('members').update({
     credly_verified_at: new Date().toISOString(),
-    credly_badges: result.all.filter(b => b.tier <= 3),
+    credly_badges: result.all.filter(b => b.category !== 'badge'),
     cpmai_certified: result.hasCPMAI,
     cpmai_certified_at: result.cpmai[0]?.issued_at || null,
   }).eq('id', member.id)
