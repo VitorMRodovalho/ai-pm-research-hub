@@ -4,9 +4,8 @@
  * Single React Island: CuratorshipBoardIsland handles all UI, DnD, RPCs.
  * Access: admin+, curator, co_gp.
  */
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
-import AdminNav from '../../components/nav/AdminNav.astro';
 import CuratorshipBoardIsland from '../../components/boards/CuratorshipBoardIsland';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
@@ -43,10 +42,7 @@ const CUR_I18N = {
 };
 ---
 
-<BaseLayout title={CUR_I18N.meta} activePage="admin">
-  <div class="max-w-[1400px] mx-auto px-4 pt-6">
-    <AdminNav activeSub="curatorship" lang={lang} />
-  </div>
+<AdminLayout title={CUR_I18N.meta} breadcrumbs={[{label:'Conteúdo'},{label:'Curadoria'}]}>
   <div class="max-w-[1400px] mx-auto px-4 pb-8">
     <div class="mb-4">
       <h1 class="text-2xl font-extrabold text-navy">{CUR_I18N.title}</h1>
@@ -75,4 +71,4 @@ const CUR_I18N = {
       }
     }, DENY_TIMEOUT_MS);
   </script>
-</BaseLayout>
+</AdminLayout>

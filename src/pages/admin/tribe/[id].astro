@@ -1,17 +1,13 @@
 ---
-import BaseLayout from '../../../layouts/BaseLayout.astro';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
-import AdminNav from '../../../components/nav/AdminNav.astro';
 import TribeDashboardIsland from '../../../components/islands/TribeDashboardIsland';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 const tribeId = Astro.params.id!;
 ---
 
-<BaseLayout title={`${t('tribeDashboard.title', lang)} ${tribeId}`} activePage="admin">
-  <div class="max-w-[1200px] mx-auto px-4 pt-6">
-    <AdminNav activeSub="tribe-dashboard" lang={lang} />
-  </div>
+<AdminLayout title={`${t('tribeDashboard.title', lang)} ${tribeId}`} breadcrumbs={[{label:'Pessoas'},{label:'Tribo'}]}>
 
   <div id="td-denied" class="hidden max-w-[1100px] mx-auto px-4">
     <div class="bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
@@ -30,7 +26,7 @@ const tribeId = Astro.params.id!;
   <div id="td-loading" class="max-w-[1200px] mx-auto px-4 text-center py-16 text-[var(--text-muted)]">
     Carregando...
   </div>
-</BaseLayout>
+</AdminLayout>
 
 <script is:inline>
   (function () {

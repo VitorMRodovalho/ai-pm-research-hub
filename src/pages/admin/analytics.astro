@@ -1,7 +1,6 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
-import AdminNav from '../../components/nav/AdminNav.astro';
 import ChartCard from '../../components/analytics/ChartCard.astro';
 import { CHAPTER_FULL } from '../../lib/admin/constants';
 
@@ -50,10 +49,7 @@ const ANALYTICS_I18N = {
 };
 ---
 
-<BaseLayout title={t('admin.analytics.meta', lang)} activePage="admin">
-  <div class="max-w-[1200px] mx-auto px-4 pt-6">
-    <AdminNav activeSub="analytics" lang={lang} />
-  </div>
+<AdminLayout title={t('admin.analytics.meta', lang)} breadcrumbs={[{label:'Relatórios'},{label:'Analytics'}]}>
   <div class="max-w-[1200px] mx-auto px-4 pb-8">
     <div class="mb-6">
       <h1 class="text-2xl font-extrabold text-navy">{t('admin.analytics.title', lang)}</h1>
@@ -270,7 +266,7 @@ const ANALYTICS_I18N = {
       </section>
     </div>
   </div>
-</BaseLayout>
+</AdminLayout>
 
 <script is:inline define:vars={{ ANALYTICS_I18N, chapterOptions }}>
   window.__ANALYTICS_I18N = typeof ANALYTICS_I18N !== 'undefined' ? ANALYTICS_I18N : {};

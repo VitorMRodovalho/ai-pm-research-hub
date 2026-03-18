@@ -1,0 +1,75 @@
+---
+/**
+ * AdminLayout.astro — Shared layout for all admin pages.
+ * Wraps BaseLayout with sidebar navigation + breadcrumbs.
+ */
+import BaseLayout from './BaseLayout.astro';
+import AdminSidebar from '../components/admin/AdminSidebar.tsx';
+import { getLangFromURL, type Lang } from '../i18n/utils';
+
+interface Props {
+  title: string;
+  breadcrumbs?: Array<{ label: string; href?: string }>;
+  activePage?: string;
+}
+
+const { title, breadcrumbs = [], activePage = 'admin' } = Astro.props;
+const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/admin';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+---
+
+<BaseLayout title={title} activePage={activePage}>
+  <div class="flex min-h-[calc(100vh-64px)]">
+    <!-- Sidebar (React island) -->
+    <AdminSidebar
+      client:load
+      currentPath={currentPath}
+      locale={lang}
+    />
+
+    <!-- Main content area -->
+    <main class="flex-1 overflow-auto">
+      <!-- Mobile hamburger (only visible on small screens) -->
+      <button
+        class="lg:hidden fixed top-[72px] left-4 z-30 p-2 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] shadow-sm cursor-pointer"
+        id="admin-sidebar-toggle"
+      >
+        <svg class="w-5 h-5 text-[var(--text-secondary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+
+      <!-- Breadcrumbs -->
+      {breadcrumbs.length > 0 && (
+        <nav class="px-6 pt-4 text-sm text-[var(--text-muted)]">
+          <ol class="flex items-center gap-1.5">
+            <li><a href="/admin" class="hover:underline text-[var(--text-muted)] no-underline">Admin</a></li>
+            {breadcrumbs.map((crumb) => (
+              <>
+                <li class="text-[var(--text-muted)] opacity-50">›</li>
+                <li>
+                  {crumb.href
+                    ? <a href={crumb.href} class="hover:underline text-[var(--text-muted)] no-underline">{crumb.label}</a>
+                    : <span class="text-[var(--text-primary)] font-medium">{crumb.label}</span>
+                  }
+                </li>
+              </>
+            ))}
+          </ol>
+        </nav>
+      )}
+
+      <!-- Page content -->
+      <div class="p-6">
+        <slot />
+      </div>
+    </main>
+  </div>
+</BaseLayout>
+
+<script>
+  // Wire hamburger to sidebar toggle event
+  document.getElementById('admin-sidebar-toggle')?.addEventListener('click', () => {
+    window.dispatchEvent(new CustomEvent('admin:sidebar:toggle'));
+  });
+</script>

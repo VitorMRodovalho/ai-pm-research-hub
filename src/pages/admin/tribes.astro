@@ -1,16 +1,12 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import { getLangFromURL, type Lang } from '../../i18n/utils';
-import AdminNav from '../../components/nav/AdminNav.astro';
 import CrossTribeIsland from '../../components/islands/CrossTribeIsland';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
-<BaseLayout title="Comparativo de Tribos" activePage="admin">
-  <div class="max-w-[1200px] mx-auto px-4 pt-6">
-    <AdminNav activeSub="cross-tribes" lang={lang} />
-  </div>
+<AdminLayout title="Comparativo de Tribos" breadcrumbs={[{label:'Pessoas'},{label:'Tribos'}]}>
 
   <div id="cross-tribe-panel" class="max-w-[1200px] mx-auto px-4 pb-12">
     <div class="mb-6">
@@ -19,7 +15,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     </div>
     <CrossTribeIsland client:load />
   </div>
-</BaseLayout>
+</AdminLayout>
 
 <script is:inline>
   document.addEventListener('DOMContentLoaded', () => {

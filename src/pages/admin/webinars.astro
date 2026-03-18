@@ -1,11 +1,11 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
-<BaseLayout title={t('nav.adminWebinars', lang)} activePage="webinars">
+<AdminLayout title={t('nav.adminWebinars', lang)} activePage="webinars" breadcrumbs={[{label:'Conteúdo'},{label:'Webinars'}]}>
   <div id="webinars-loading" class="max-w-[1200px] mx-auto px-4 py-12 text-center text-[var(--text-muted)]">
     Carregando painel de webinars...
   </div>
@@ -159,7 +159,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       Voltar
     </a>
   </div>
-</BaseLayout>
+</AdminLayout>
 
 <script>
   import { canAccessWebinarsWorkspace } from '../../lib/admin/constants';

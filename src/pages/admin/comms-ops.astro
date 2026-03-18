@@ -1,12 +1,12 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import CommsDashboard from '../../components/admin/CommsDashboard';
 import BoardEngine from '../../components/islands/BoardEngine';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
-<BaseLayout title={t('nav.adminCommsOps', lang)} activePage="admin">
+<AdminLayout title={t('nav.adminCommsOps', lang)} breadcrumbs={[{label:'Conteúdo'},{label:'Comunicação'}]}>
   <div class="max-w-[1400px] mx-auto px-4 py-8 space-y-6">
     <div id="commsops-loading" class="text-[var(--text-muted)] text-sm">Carregando operações de comunicação...</div>
     <div id="commsops-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
@@ -24,7 +24,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       </div>
     </section>
   </div>
-</BaseLayout>
+</AdminLayout>
 
 <script is:inline>
   (function () {

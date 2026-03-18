@@ -994,6 +994,16 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 **Impacto tecnico:** admin/index.astro reduced from 4383 to 4178 lines (-205). Modals in src/components/admin/modals/. Types in src/lib/admin/types.ts. admin_audit_log table deployed with 3 indexes. constants.ts memberTags/memberTribeTag now use CSS vars (bg-[var(--surface-section-cool)], text-[var(--text-muted)]) instead of hardcoded Tailwind for dark mode.
 
+### GC-075 — Admin Panel Modernization Phase 2: AdminLayout + Sidebar
+
+**Data:** 2026-03-17
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** New AdminLayout.astro with collapsible sidebar replaces pill navigation. 5 categories: Overview, People, Content, Reports, Operations. 24 admin pages migrated (21 top-level + 3 sub-routes). Desktop: 240px open / 64px collapsed with localStorage persistence. Mobile: drawer overlay with hamburger trigger. Breadcrumbs on all pages. Sidebar labels trilingual (inline). Permission-aware: items hidden based on member permissions via hasPermission().
+
+**Impacto tecnico:** AdminLayout.astro extends BaseLayout, adds AdminSidebar (React island) + breadcrumbs + mobile hamburger. AdminSidebar.tsx uses lucide-react icons, 5 SECTIONS with permission-based visibility. Collapse state in localStorage (hub_admin_sidebar_collapsed). Mobile drawer with backdrop + Escape close. AdminNav.astro retained for test backward-compat but no longer imported by any page.
+
 ---
 
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*

@@ -3,17 +3,13 @@
  * admin/comms.astro — S-COM6 Dashboard Central de Mídia
  * Sections: native channel metrics, tribe impact ranking, and broadcast history.
  */
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
-import AdminNav from '../../components/nav/AdminNav.astro';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
-<BaseLayout title={t('admin.comms.meta', lang)} activePage="admin">
-  <div class="max-w-[1200px] mx-auto px-4 pt-6">
-    <AdminNav activeSub="comms" lang={lang} />
-  </div>
+<AdminLayout title={t('admin.comms.meta', lang)} breadcrumbs={[{label:'Conteúdo'},{label:'Comms'}]}>
   <div class="max-w-[1200px] mx-auto px-4 pb-8 space-y-6">
     <div class="mb-2">
       <h1 class="text-2xl font-extrabold text-navy">{t('admin.comms.title', lang)}</h1>
@@ -248,7 +244,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
     </div>
   </div>
-</BaseLayout>
+</AdminLayout>
 
 <script>
   import { canAccessAdminRoute } from '../../lib/admin/constants';
