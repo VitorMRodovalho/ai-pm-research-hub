@@ -120,7 +120,7 @@ export default function CommsDashboard() {
         {statusData.length > 0 ? (
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={statusData} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border-default, #e2e8f0)" />
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip formatter={(v: number) => [v, 'Itens']} />
