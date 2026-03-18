@@ -1,7 +1,24 @@
 ---
-// admin/index.astro — Redirect to Admin Dashboard
-// GC-082: Monolith cleanup. All tabs migrated to standalone pages.
-// Legacy tabs (tribes, members, reports, analytics) already had standalone pages.
-// New standalone pages: knowledge, data-health, tags.
-return Astro.redirect('/admin');
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import AdminDashboardIsland from '../../components/admin/dashboard/AdminDashboardIsland';
 ---
+
+<AdminLayout title="Dashboard" breadcrumbs={[{label:'Dashboard'}]}>
+  <div class="max-w-[1100px] mx-auto px-4 pb-12">
+    <AdminDashboardIsland client:load />
+  </div>
+</AdminLayout>
+
+<script is:inline>
+  document.addEventListener('DOMContentLoaded', () => {
+    const check = () => {
+      const member = window.navGetMember?.();
+      if (!member) { setTimeout(check, 300); return; }
+      const isAdmin = member.is_superadmin || member.operational_role === 'manager' || member.operational_role === 'deputy_manager';
+      if (!isAdmin) {
+        document.querySelector('.max-w-\\[1100px\\]').innerHTML = '<div class="text-center py-20 text-[var(--text-muted)]">Acesso restrito a administradores.</div>';
+      }
+    };
+    check();
+  });
+</script>
