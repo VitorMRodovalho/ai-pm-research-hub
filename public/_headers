@@ -1,14 +1,27 @@
 # Cloudflare Pages custom headers
 # SSR pages must not be cached at the edge to avoid stale content after deploys.
 # Static assets (_astro/*) already have content-hashed filenames from Vite.
+# Security headers added via GC-089 / B5.
 
+# Global security headers (all routes)
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+# SSR pages — no caching
 /tribe/*
   Cache-Control: no-cache, no-store, must-revalidate
 
 /admin/*
   Cache-Control: no-cache, no-store, must-revalidate
+  X-Robots-Tag: noindex, nofollow
 
 /profile
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/workspace
   Cache-Control: no-cache, no-store, must-revalidate
 
 /en/*

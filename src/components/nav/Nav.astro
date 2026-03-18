@@ -995,8 +995,18 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     }
   });
 
+  // Sync Supabase access_token to cookie for SSR middleware (GC-089)
+  function syncAuthCookie(session: any) {
+    if (session?.access_token) {
+      document.cookie = `sb-access-token=${session.access_token}; path=/; max-age=3600; SameSite=Lax; Secure`;
+    } else {
+      document.cookie = 'sb-access-token=; path=/; max-age=0; path=/';
+    }
+  }
+
   async function bootNav() {
     const { data: { session } } = await sb.auth.getSession();
+    syncAuthCookie(session);
     if (session) {
       _user = session.user;
       const { data } = await sb.rpc('get_member_by_auth');
@@ -1008,6 +1018,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       }
     }
     sb.auth.onAuthStateChange(async (event, session) => {
+      syncAuthCookie(session);
       if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
         _user = session?.user ?? null;
         if (_user && !_member) {
