@@ -100,6 +100,12 @@ const jsI18n = JSON.stringify({
   drawerAdmin: t('nav.drawerSection.admin', lang),
   sectionsDropdown: t('nav.sectionsDropdown', lang),
   workspace: t('nav.workspace', lang),
+  tierVisitor: t('comp.nav.visitor', lang),
+  tierMember: t('comp.nav.member', lang),
+  tierObserver: t('comp.nav.observer', lang),
+  tierLeader: t('nav.tribeLeader', lang),
+  tierAdmin: 'Admin',
+  tierSuperadmin: 'Superadmin',
 });
 
 const homeAnchorItems = mainItems.filter(i => i.group === 'home-anchors');
@@ -317,8 +323,12 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
   const navConfig: any[] = configEl ? JSON.parse(configEl.textContent || '[]') : [];
 
   const TIER_LABELS: Record<string, string> = {
-    visitor: 'Visitante', member: 'Membro', observer: 'Observador',
-    leader: 'Líder', admin: 'Admin', superadmin: 'Superadmin',
+    visitor: i18n.tierVisitor || 'Visitante',
+    member: i18n.tierMember || 'Membro',
+    observer: i18n.tierObserver || 'Observador',
+    leader: i18n.tierLeader || 'Líder',
+    admin: i18n.tierAdmin || 'Admin',
+    superadmin: i18n.tierSuperadmin || 'Superadmin',
   };
 
   function getItemAccessClient(item: any, tier: AccessTier, designations: string[]): { visible: boolean, enabled: boolean } {

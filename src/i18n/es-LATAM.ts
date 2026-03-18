@@ -2374,6 +2374,54 @@ const esLATAM: Record<string, string> = {
   'guest.contactEmail': 'nucleoiagp@gmail.com',
   'guest.limitedAccess': 'Tienes acceso limitado. Regístrate como miembro para participar.',
   'guest.navNotFound': 'Cuenta no registrada',
+
+  // ── Component labels (B9 i18n extraction) ──
+
+  // Tribe Dashboard
+  'comp.tribe.researcher': 'Investigador(a)',
+  'comp.tribe.tribeLeader': 'Líder de Tribu',
+  'comp.tribe.members': 'Miembros',
+  'comp.tribe.attendance': 'Asistencia',
+  'comp.tribe.production': 'Producción',
+  'comp.tribe.engagement': 'Compromiso',
+  'comp.tribe.gamification': 'Gamificación',
+  'comp.tribe.attendanceTrend': 'Tendencia de Asistencia',
+  'comp.tribe.byRole': 'Por Rol',
+  'comp.tribe.byChapter': 'Por Capítulo',
+  'comp.tribe.deliveries': 'Entregas',
+  'comp.tribe.noData': 'Sin datos disponibles',
+  'comp.tribe.lowAttendanceWarning': 'Asistencia por debajo de la meta del ciclo',
+  'comp.tribe.criticalAttendance': 'Asistencia crítica — riesgo de desvinculación',
+
+  // Report Page
+  'comp.report.activeMembers': 'Miembros Activos',
+  'comp.report.tribes': 'Tribus',
+  'comp.report.totalAttendance': 'Asistencia Total',
+  'comp.report.performanceByTribe': 'Desempeño por Tribu',
+  'comp.report.deliveriesByTribe': 'Entregas por Tribu',
+
+  // Cross Tribe
+  'comp.cross.tribe': 'Tribu',
+
+  // Curatorship Board
+  'comp.curation.feedbackForTribe': 'Feedback para la Tribu',
+  'comp.curation.returnToTribe': 'Devolver a la Tribu',
+  'comp.curation.tribeItems': 'Ítems de las Tribus',
+
+  // Nav / Common
+  'comp.nav.visitor': 'Visitante',
+  'comp.nav.member': 'Miembro',
+  'comp.nav.observer': 'Observador',
+  'comp.nav.researchTribes': 'Tribus de Investigación',
+
+  // Common
+  'comp.common.member': 'Miembro',
+  'comp.common.memberNoName': 'Miembro sin nombre',
+  'comp.common.subject': 'Asunto',
+  'comp.common.subjectRequired': 'Asunto obligatorio',
+  'comp.common.searchSubject': 'Buscar asunto',
+  'comp.common.copySubject': 'Copiar asunto',
+  'comp.common.suggestedSubject': 'Asunto sugerido',
 };
 
 export default esLATAM;
