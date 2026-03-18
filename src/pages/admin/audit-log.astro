@@ -1,0 +1,20 @@
+---
+/**
+ * /admin/audit-log — Audit log page (superadmin only).
+ * React island: AuditLogIsland.
+ */
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import AuditLogIsland from '../../components/admin/audit/AuditLogIsland';
+import Toast from '../../components/ui/Toast.astro';
+---
+
+<AdminLayout
+  title="Registro de Auditoria"
+  breadcrumbs={[
+    { label: 'Operações' },
+    { label: 'Registro de Auditoria' }
+  ]}
+>
+  <AuditLogIsland client:load />
+  <Toast />
+</AdminLayout>
