@@ -1,11 +1,11 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import PartnerPipelineIsland from '../../components/islands/PartnerPipelineIsland';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
-<BaseLayout title={t('partnerships.title', lang)} activePage="admin">
+<AdminLayout title={t('partnerships.title', lang)} breadcrumbs={[{label:'Operações'},{label:'Parcerias'}]}>
   <div class="max-w-[1100px] mx-auto px-4 py-8 space-y-4">
     <div id="partnerships-loading" class="text-[var(--text-muted)] text-sm">{t('common.loading', lang)}</div>
     <div id="partnerships-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
@@ -133,7 +133,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       </div>
     </div>
   </div>
-</BaseLayout>
+</AdminLayout>
 
 <script>
   import { hasPermission } from '../../lib/permissions';

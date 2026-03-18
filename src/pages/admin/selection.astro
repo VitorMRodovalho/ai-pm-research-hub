@@ -1,15 +1,11 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
-import AdminNav from '../../components/nav/AdminNav.astro';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
-<BaseLayout title="Processo Seletivo — Admin" activePage="admin">
-  <div class="max-w-[1200px] mx-auto px-4 pt-6">
-    <AdminNav activeSub="selection" lang={lang} />
-  </div>
+<AdminLayout title="Processo Seletivo — Admin" breadcrumbs={[{label:'Pessoas'},{label:'Processo Seletivo'}]}>
   <div class="max-w-[1200px] mx-auto px-4 pb-8">
     <div class="mb-6">
       <div class="flex items-center gap-3">
@@ -86,7 +82,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       </details>
     </div>
   </div>
-</BaseLayout>
+</AdminLayout>
 
 <script>
   import { canAccessAdminRoute } from '../../lib/admin/constants';

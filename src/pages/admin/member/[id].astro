@@ -1,5 +1,5 @@
 ---
-import BaseLayout from '../../../layouts/BaseLayout.astro';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
 import Toast from '../../../components/ui/Toast.astro';
 import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
 
@@ -7,7 +7,7 @@ const { id } = Astro.params;
 const isNew = id === 'new';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
-<BaseLayout title={isNew ? 'Novo Membro' : 'Editar Membro'} activePage="admin">
+<AdminLayout title={isNew ? 'Novo Membro' : 'Editar Membro'} breadcrumbs={[{label:'Pessoas'},{label:'Membro'}]}>
   <Toast />
   <div class="max-w-2xl mx-auto px-4 py-8">
     <div class="flex items-center gap-3 mb-6">
@@ -20,7 +20,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       <div class="text-center py-8 text-[var(--text-muted)]">{t('admin.loadingMembers', lang)}</div>
     </div>
   </div>
-</BaseLayout>
+</AdminLayout>
 
 <script is:inline define:vars={{ memberId: id, isNew }}>
   window.__MEMBER_EDIT = { memberId, isNew };

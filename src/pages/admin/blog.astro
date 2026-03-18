@@ -3,17 +3,15 @@
  * /admin/blog — Blog Post Management (GP/DM/comms_team)
  * CRUD for blog posts with i18n, status workflow, and preview.
  */
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import AdminNav from '../../components/nav/AdminNav.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import BlogEditorIsland from '../../components/admin/blog/BlogEditorIsland';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
-<BaseLayout activePage="admin" title={t('blog.adminTitle', lang)}>
+<AdminLayout title={t('blog.adminTitle', lang)} breadcrumbs={[{label:'Conteúdo'},{label:'Blog'}]}>
   <div class="max-w-[1200px] mx-auto px-4 py-8">
-    <AdminNav activeSub="blog" lang={lang} />
 
     <div id="blog-loading" class="text-center py-16 text-gray-400">{t('campaigns.loading', lang)}</div>
     <div id="blog-denied" class="hidden text-center py-16">
@@ -98,7 +96,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       </div>
     </div>
   </div>
-</BaseLayout>
+</AdminLayout>
 
 <script>
   import { hasPermission } from '../../lib/permissions';

@@ -1,16 +1,12 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
-import AdminNav from '../../components/nav/AdminNav.astro';
 import Toast from '../../components/ui/Toast.astro';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
-<BaseLayout title={t('nav.adminSettings', lang)} activePage="admin">
-  <div class="max-w-[1200px] mx-auto px-4 pt-6">
-    <AdminNav activeSub="settings" lang={lang} />
-  </div>
+<AdminLayout title={t('nav.adminSettings', lang)} breadcrumbs={[{label:'Operações'},{label:'Configurações'}]}>
   <div class="max-w-[700px] mx-auto px-4 pb-12">
     <div id="settings-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
       <div class="text-3xl mb-3">&#x1F512;</div>
@@ -120,7 +116,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     <div id="settings-loading" class="text-center py-16 text-[var(--text-muted)]">Carregando...</div>
   </div>
   <Toast />
-</BaseLayout>
+</AdminLayout>
 
 <script>
   import { hasPermission } from '../../lib/permissions';

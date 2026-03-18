@@ -1,14 +1,10 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import AdminNav from '../../components/nav/AdminNav.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
-<BaseLayout title={t('cycleReport.meta', lang)} activePage="admin">
-  <div class="max-w-[1400px] mx-auto px-4 pt-6 print:hidden">
-    <AdminNav activeSub="cycle-report" lang={lang} />
-  </div>
+<AdminLayout title={t('cycleReport.meta', lang)} breadcrumbs={[{label:'Relatórios'},{label:'Relatório do Ciclo'}]}>
 
   <div class="max-w-[1200px] mx-auto px-4 py-8">
     <div id="cr-loading" class="text-center py-10 text-[var(--text-muted)]">{t('cycleReport.loading', lang)}</div>
@@ -86,7 +82,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       </footer>
     </div>
   </div>
-</BaseLayout>
+</AdminLayout>
 
 <script>
   import Chart from 'chart.js/auto';

@@ -1,11 +1,11 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import PortfolioDashboard from '../../components/portfolio/PortfolioDashboard';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
-<BaseLayout title={t('nav.adminPortfolio', lang)} activePage="admin">
+<AdminLayout title={t('nav.adminPortfolio', lang)} breadcrumbs={[{label:'Relatórios'},{label:'Portfólio Executivo'}]}>
   <div class="max-w-[1100px] mx-auto px-4 py-8 space-y-4">
     <!-- W142: GP Portfolio Dashboard (React island) -->
     <section class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
@@ -46,7 +46,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       <div id="boards-list-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
     </section>
   </div>
-</BaseLayout>
+</AdminLayout>
 
 <script>
   import { hasPermission } from '../../lib/permissions';

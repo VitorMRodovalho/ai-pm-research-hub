@@ -1,12 +1,12 @@
 ---
-import BaseLayout from '../../../layouts/BaseLayout.astro';
+import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
 import BoardEngine from '../../../components/islands/BoardEngine';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 const boardId = Astro.params.id;
 ---
 
-<BaseLayout title="Board" activePage="admin">
+<AdminLayout title="Board" breadcrumbs={[{label:'Conteúdo'},{label:'Board'}]}>
   <div class="max-w-[1400px] mx-auto px-4 py-8 space-y-4">
     <div id="board-loading" class="text-[var(--text-muted)] text-sm">Carregando board...</div>
     <div id="board-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
@@ -16,7 +16,7 @@ const boardId = Astro.params.id;
       <BoardEngine client:load boardId={boardId} />
     </div>
   </div>
-</BaseLayout>
+</AdminLayout>
 
 <script is:inline>
   (function () {

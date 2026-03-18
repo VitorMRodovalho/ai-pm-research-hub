@@ -1,13 +1,11 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import AdminNav from '../../components/nav/AdminNav.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
-<BaseLayout title={t('pilots.title', lang)} activePage="admin">
+<AdminLayout title={t('pilots.title', lang)} breadcrumbs={[{label:'Operações'},{label:'Pilotos'}]}>
   <div class="max-w-[1100px] mx-auto px-4 py-8">
-    <AdminNav activeSub="pilots" lang={lang} />
 
     <h2 class="text-xl font-extrabold text-navy mb-1">{t('pilots.title', lang)}</h2>
     <p class="text-sm text-[var(--text-secondary)] mb-6">{t('pilots.subtitle', lang)}</p>
@@ -40,7 +38,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       </div>
     </div>
   </div>
-</BaseLayout>
+</AdminLayout>
 
 <span id="i18n-releases-current" class="hidden">{t('releases.current', lang)}</span>
 <span id="i18n-pilots-active" class="hidden">{t('pilots.active', lang)}</span>
