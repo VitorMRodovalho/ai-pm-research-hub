@@ -167,7 +167,7 @@ export default function ReportPage() {
 
   // Compute tribe chart data
   const tribeChartItems = (tribes || []).map((t: any) => ({
-    label: t.name?.length > 12 ? t.name.slice(0, 12) + '…' : t.name,
+    label: (() => { const _n = t.name_i18n?.[typeof window !== 'undefined' ? (window.location.pathname.startsWith('/en') ? 'en' : window.location.pathname.startsWith('/es') ? 'es' : 'pt') : 'pt'] || t.name; return _n?.length > 12 ? _n.slice(0, 12) + '…' : _n; })(),
     completed: t.artifacts_completed || 0,
     inProgress: t.artifacts_in_progress || 0,
     backlog: Math.max((t.artifacts_total || 0) - (t.artifacts_completed || 0) - (t.artifacts_in_progress || 0), 0),
@@ -258,7 +258,7 @@ export default function ReportPage() {
               <tbody>
                 {tribes.map((t: any, i: number) => (
                   <tr key={i} className="border-t border-[var(--border-subtle)]">
-                    <td className="px-3 py-2 font-semibold text-[var(--text-primary)]">{t.name}</td>
+                    <td className="px-3 py-2 font-semibold text-[var(--text-primary)]">{t.name_i18n?.[typeof window !== 'undefined' ? (window.location.pathname.startsWith('/en') ? 'en' : window.location.pathname.startsWith('/es') ? 'es' : 'pt') : 'pt'] || t.name}</td>
                     <td className="px-3 py-2 text-[var(--text-secondary)]">{t.leader}</td>
                     <td className="px-3 py-2 text-center">{t.members_count}</td>
                     <td className="px-3 py-2 text-center">{t.artifacts_total}</td>

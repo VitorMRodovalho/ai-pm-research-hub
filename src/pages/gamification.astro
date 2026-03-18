@@ -450,10 +450,12 @@ const SCORING_I18N = {
   async function loadRuntimeTribes() {
     if (!sb) return;
     try {
-      const { data, error } = await sb.from('tribes').select('id, name, quadrant').eq('is_active', true).order('id');
+      const { data, error } = await sb.from('tribes').select('id, name, name_i18n, quadrant').eq('is_active', true).order('id');
       if (error) throw error;
+      const _sl = location.pathname.startsWith('/en') ? 'en' : location.pathname.startsWith('/es') ? 'es' : 'pt';
       (data || []).forEach((tribe: any) => {
-        TRIBE_NAMES[tribe.id] = buildTribeLabel(tribe, { prefix: 'Tribo', fallbackNames: TRIBE_NAMES });
+        const localizedTribe = { ...tribe, name: tribe.name_i18n?.[_sl] || tribe.name };
+        TRIBE_NAMES[tribe.id] = buildTribeLabel(localizedTribe, { prefix: 'Tribo', fallbackNames: TRIBE_NAMES });
         TRIBE_COLORS[tribe.id] = getTribeColor(tribe);
       });
     } catch (error) {

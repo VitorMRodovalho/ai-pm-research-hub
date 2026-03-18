@@ -102,3 +102,26 @@ export function getLangFromURL(pathname: string): Lang {
   if (segments[0] === 'es') return 'es-LATAM';
   return 'pt-BR';
 }
+
+/**
+ * Map Lang code to short DB key used in name_i18n jsonb columns.
+ * e.g. 'en-US' → 'en', 'es-LATAM' → 'es', 'pt-BR' → 'pt'
+ */
+export function langToDbKey(lang: Lang): string {
+  const map: Record<Lang, string> = { 'pt-BR': 'pt', 'en-US': 'en', 'es-LATAM': 'es' };
+  return map[lang] || 'pt';
+}
+
+/**
+ * Get localized value from a jsonb i18n field (e.g. tribes.name_i18n).
+ * Falls back to PT, then to the plain fallback string.
+ */
+export function getLocalizedName(
+  i18nField: Record<string, string> | null | undefined,
+  fallback: string,
+  lang: Lang
+): string {
+  if (!i18nField) return fallback;
+  const key = langToDbKey(lang);
+  return i18nField[key] || i18nField['pt'] || fallback;
+}

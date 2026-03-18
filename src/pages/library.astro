@@ -270,11 +270,13 @@ const WORKSPACE_I18N = {
   async function loadRuntimeTribes() {
     if (!sb) return;
     try {
-      const { data, error } = await sb.from('tribes').select('id, name, is_active').order('id');
+      const { data, error } = await sb.from('tribes').select('id, name, name_i18n, is_active').order('id');
       if (error) throw error;
+      const _sl = location.pathname.startsWith('/en') ? 'en' : location.pathname.startsWith('/es') ? 'es' : 'pt';
       (data || []).forEach((tribe: any) => {
         if (isRuntimeTribeActive(tribe)) {
-          TRIBE_NAMES[tribe.id] = buildTribeLabel(tribe, { prefix: I18N.tribePrefix || 'Tribo', fallbackNames: TRIBE_NAMES });
+          const localizedTribe = { ...tribe, name: tribe.name_i18n?.[_sl] || tribe.name };
+          TRIBE_NAMES[tribe.id] = buildTribeLabel(localizedTribe, { prefix: I18N.tribePrefix || 'Tribo', fallbackNames: TRIBE_NAMES });
         }
       });
     } catch (error) {

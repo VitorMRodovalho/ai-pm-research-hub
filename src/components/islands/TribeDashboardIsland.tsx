@@ -67,6 +67,10 @@ export default function TribeDashboardIsland({ tribeId }: TribeDashboardProps) {
   const gamification = data.gamification || {};
   const trends = data.trends || {};
 
+  const _sl = typeof window !== 'undefined' ? (window.location.pathname.startsWith('/en') ? 'en' : window.location.pathname.startsWith('/es') ? 'es' : 'pt') : 'pt';
+  const tribeName = tribe.name_i18n?.[_sl] || tribe.name;
+  const quadrantName = tribe.quadrant_name_i18n?.[_sl] || tribe.quadrant_name;
+
   const meetingLabel = tribe.meeting_slots?.[0]
     ? `${DAY_NAMES[tribe.meeting_slots[0].day_of_week] || ''} ${tribe.meeting_slots[0].time_start || ''}`
     : '';
@@ -85,11 +89,11 @@ export default function TribeDashboardIsland({ tribeId }: TribeDashboardProps) {
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl font-extrabold text-navy">
-              Tribo {tribe.id}: {tribe.name}
+              Tribo {tribe.id}: {tribeName}
             </h1>
             <p className="text-sm text-[var(--text-secondary)] mt-1">
               {tribe.leader?.name ? `Líder: ${tribe.leader.name}` : ''}
-              {tribe.quadrant_name ? ` · ${tribe.quadrant_name}` : ''}
+              {quadrantName ? ` · ${quadrantName}` : ''}
             </p>
             <div className="flex flex-wrap gap-3 mt-2 text-xs text-[var(--text-secondary)]">
               {meetingLabel && <span>📅 {meetingLabel}</span>}

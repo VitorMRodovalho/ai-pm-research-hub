@@ -297,11 +297,11 @@ test('tribe catalog supports dynamic runtime entries and explicit active status'
   // Verify they exist in the migration RPCs instead
   assert.equal(nav.includes("select('id, name, whatsapp_url, quadrant, quadrant_name, is_active") && nav.includes('workstream_type'), true);
   assert.equal(tribe.includes('id="tribe-context-switch"'), true);
-  assert.equal(workspace.includes("sb.from('tribes').select('id, name, is_active').order('id')"), true);
+  assert.equal(workspace.includes("sb.from('tribes').select('id, name, name_i18n, is_active').order('id')"), true);
   assert.equal(artifacts.includes("sb.from('tribes').select('id, name, is_active').order('id')"), true);
-  assert.equal(gamification.includes("sb.from('tribes').select('id, name, quadrant').eq('is_active', true).order('id')"), true);
+  assert.equal(gamification.includes("sb.from('tribes').select('id, name, name_i18n, quadrant').eq('is_active', true).order('id')"), true);
   assert.equal(hero.includes(".eq('is_active', true)"), true);
-  assert.equal(tribesSection.includes(".select('id, name, notes, whatsapp_url, is_active')"), true);
+  assert.equal(tribesSection.includes(".select('id, name, name_i18n, notes, whatsapp_url, is_active')"), true);
   assert.equal(tribesSection.includes("if (card && activeMap[tid] === false)"), true);
   assert.equal(tribesSection.includes("if (title && nameMap[tid]) title.textContent = String(nameMap[tid]);"), true);
   assert.equal(catalog.includes('export function getTribeColor'), true);
@@ -346,7 +346,7 @@ test('analytics v2 grants readonly access without widening admin actions and shi
   assert.equal(analytics.includes('id="analytics-copy-summary"'), true);
   assert.equal(analytics.includes('function buildExecutiveSummary()'), true);
   assert.equal(analytics.includes("sb.from('cycles').select('cycle_code, cycle_label, is_current, sort_order')"), true);
-  assert.equal(analytics.includes("sb.from('tribes').select('id, name, is_active').eq('is_active', true).order('id')"), true);
+  assert.equal(analytics.includes("sb.from('tribes').select('id, name, name_i18n, is_active').eq('is_active', true).order('id')"), true);
   assert.equal(migration.includes('create or replace function public.can_read_internal_analytics()'), true);
   assert.equal(migration.includes('create or replace function public.analytics_member_scope('), true);
   assert.equal(migration.includes('create or replace function public.exec_funnel_v2('), true);

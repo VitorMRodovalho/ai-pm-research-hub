@@ -198,7 +198,7 @@ import { CHAPTER_CODES } from '../../data/chapters';
       // Tribe info
       if (member.tribe_id) {
         Promise.all([
-          sb.from('tribes').select('name, meeting_link').eq('id', member.tribe_id).single(),
+          sb.from('tribes').select('name, name_i18n, meeting_link').eq('id', member.tribe_id).single(),
           sb.from('tribe_meeting_slots').select('day_of_week, time_start, time_end')
             .eq('tribe_id', member.tribe_id).eq('is_active', true),
         ]).then(([tribeRes, slotRes]: [any, any]) => {
@@ -207,7 +207,9 @@ import { CHAPTER_CODES } from '../../data/chapters';
           const infoEl = document.getElementById('hero-tribe-info');
           if (!infoEl) return;
 
-          let html = `<div class="text-lg font-bold text-[#05BFE0]">T${member.tribe_id}: ${escHtml(tribe?.name || '...')}</div>`;
+          const _sl = location.pathname.startsWith('/en') ? 'en' : location.pathname.startsWith('/es') ? 'es' : 'pt';
+          const _tribeName = tribe?.name_i18n?.[_sl] || tribe?.name || '...';
+          let html = `<div class="text-lg font-bold text-[#05BFE0]">T${member.tribe_id}: ${escHtml(_tribeName)}</div>`;
           if (slots.length) {
             const slotLabels = slots.map((s: any) =>
               `${DAY_NAMES[s.day_of_week]} ${s.time_start}–${s.time_end}`

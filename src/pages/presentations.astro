@@ -54,6 +54,7 @@ const PRES_I18N = {
   let searchQuery = '';
   let tribes: any[] = [];
   let sb: any = null;
+  const _shortLang = location.pathname.startsWith('/en') ? 'en' : location.pathname.startsWith('/es') ? 'es' : 'pt';
 
   function applyRouteState() {
     const params = new URLSearchParams(window.location.search);
@@ -73,7 +74,7 @@ const PRES_I18N = {
 
     const [{ data: artifacts }, { data: tribeData }] = await Promise.all([
       sb.rpc('list_meeting_artifacts', { p_limit: 100 }),
-      sb.from('tribes').select('id, name').order('id'),
+      sb.from('tribes').select('id, name, name_i18n').order('id'),
     ]);
 
     allArtifacts = artifacts || [];
@@ -95,7 +96,7 @@ const PRES_I18N = {
       .filter((t: any) => tribsWithArtifacts.has(t.id))
       .map((t: any) =>
         '<button data-filter="tribe-' + t.id + '" class="px-3 py-1 text-[.72rem] font-semibold rounded-full border cursor-pointer transition-all border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] hover:border-purple/30">'
-        + 'T' + t.id + ': ' + escapeHtml(t.name)
+        + 'T' + t.id + ': ' + escapeHtml(t.name_i18n?.[_shortLang] || t.name)
         + '</button>'
       ).join('');
     container.querySelectorAll('button').forEach((btn: Element) => {
@@ -150,7 +151,7 @@ const PRES_I18N = {
   function cardHtml(a: any): string {
     const date = a.meeting_date || '';
     const tribe = a.tribe_id ? tribes.find((t: any) => t.id === a.tribe_id) : null;
-    const tribeLabel = tribe ? 'T' + tribe.id + ': ' + escapeHtml(tribe.name) : 'Geral';
+    const tribeLabel = tribe ? 'T' + tribe.id + ': ' + escapeHtml(tribe.name_i18n?.[_shortLang] || tribe.name) : 'Geral';
     const deliberations = (a.deliberations || []) as string[];
 
     return '<div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-subtle)] shadow-sm p-5 hover:shadow-md transition-shadow">'

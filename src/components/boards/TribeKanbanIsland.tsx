@@ -122,7 +122,8 @@ function canEditBoard(member: any, tribe: any): boolean {
   if (hasPermission(member, 'admin.access')) return true;
   if (hasPermission(member, 'board.edit_tribe_items') && Number(member.tribe_id || 0) === Number(tribe?.id || 0)) return true;
   const isCommsOperational = String(tribe?.workstream_type || '').toLowerCase() === 'operational'
-    && String(tribe?.name || '').toLowerCase().includes('comunica');
+    && (String(tribe?.name || '').toLowerCase().includes('comunica')
+      || String(tribe?.name_i18n?.en || '').toLowerCase().includes('communication'));
   if (isCommsOperational && hasPermission(member, 'board.view_global')) return true;
   return false;
 }
@@ -355,7 +356,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
 
     const { data: tribeData } = await sb
       .from('tribes')
-      .select('id,name,workstream_type')
+      .select('id,name,name_i18n,workstream_type')
       .eq('id', tribeId)
       .maybeSingle();
 
