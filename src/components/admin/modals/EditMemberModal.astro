@@ -1,0 +1,109 @@
+---
+import { t, type Lang } from '../../../i18n/utils';
+interface Props { lang: Lang; }
+const { lang } = Astro.props;
+---
+
+<!-- Modal: Edit Member (3-Axis Model) -->
+<div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-edit-member">
+  <div class="bg-[var(--surface-card)] rounded-2xl w-full max-w-[500px] overflow-hidden flex flex-col" style="max-height:90vh">
+    <div class="px-5 py-4 border-b border-[var(--border-default)] flex justify-between items-center flex-shrink-0">
+      <h3 class="text-base font-bold text-navy">{t('admin.modal.editMemberTitle', lang)}</h3>
+      <button class="bg-transparent border-0 text-xl cursor-pointer text-[var(--text-muted)]" data-action="close-edit-member">✕</button>
+    </div>
+    <div class="p-5 overflow-y-auto flex-1">
+      <input type="hidden" id="edit-m-id">
+      <div class="flex items-center gap-3 mb-5" id="edit-m-header"></div>
+
+      <!-- AXIS 1: Operational Role -->
+      <div class="mb-4 p-3 rounded-xl bg-[var(--surface-base)] border border-[var(--border-default)]">
+        <label class="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider block mb-2">{t('admin.modal.axis1Label', lang)}</label>
+        <p class="text-[.68rem] text-[var(--text-muted)] mb-2">{t('admin.modal.axis1Desc', lang)}</p>
+        <select id="edit-m-oprole" class="w-full px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
+          <option value="manager">{t('admin.modal.oprole.manager', lang)}</option>
+          <option value="deputy_manager">{t('admin.modal.oprole.deputy_manager', lang)}</option>
+          <option value="tribe_leader">{t('admin.modal.oprole.tribe_leader', lang)}</option>
+          <option value="researcher">{t('admin.modal.oprole.researcher', lang)}</option>
+          <option value="facilitator">{t('admin.modal.oprole.facilitator', lang)}</option>
+          <option value="communicator">{t('admin.modal.oprole.communicator', lang)}</option>
+          <option value="none">{t('admin.modal.oprole.none', lang)}</option>
+          <option value="guest">{t('admin.modal.oprole.guest', lang)}</option>
+        </select>
+      </div>
+
+      <!-- AXIS 2: Designations -->
+      <div class="mb-4 p-3 rounded-xl bg-[var(--surface-base)] border border-[var(--border-default)]">
+        <label class="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider block mb-2">{t('admin.modal.axis2Label', lang)}</label>
+        <p class="text-[.68rem] text-[var(--text-muted)] mb-2">{t('admin.modal.axis2Desc', lang)}</p>
+        <div class="grid grid-cols-2 gap-2">
+          <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] hover:bg-[var(--surface-hover)] cursor-pointer transition-all text-[.78rem]">
+            <input type="checkbox" value="sponsor" class="desig-cb accent-[#BE2027]"> <span style="color:#BE2027">●</span> {t('admin.desig.sponsor', lang)}
+          </label>
+          <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] hover:bg-[var(--surface-hover)] cursor-pointer transition-all text-[.78rem]">
+            <input type="checkbox" value="chapter_liaison" class="desig-cb accent-[#BE2027]"> <span style="color:#BE2027">○</span> {t('admin.desig.chapterLiaison', lang)}
+          </label>
+          <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] hover:bg-[var(--surface-hover)] cursor-pointer transition-all text-[.78rem]">
+            <input type="checkbox" value="ambassador" class="desig-cb accent-[#10B981]"> <span style="color:#10B981">●</span> {t('admin.desig.ambassador', lang)}
+          </label>
+          <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] hover:bg-[var(--surface-hover)] cursor-pointer transition-all text-[.78rem]">
+            <input type="checkbox" value="founder" class="desig-cb accent-[#7C3AED]"> <span style="color:#7C3AED">●</span> {t('admin.desig.founder', lang)}
+          </label>
+          <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] hover:bg-[var(--surface-hover)] cursor-pointer transition-all text-[.78rem]">
+            <input type="checkbox" value="curator" class="desig-cb accent-[#D97706]"> <span style="color:#D97706">●</span> {t('admin.desig.curator', lang)}
+          </label>
+          <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] hover:bg-[var(--surface-hover)] cursor-pointer transition-all text-[.78rem]">
+            <input type="checkbox" value="comms_team" class="desig-cb accent-[#06B6D4]"> <span style="color:#06B6D4">●</span> {t('admin.desig.comms', lang)}
+            <input type="checkbox" value="comms_leader" class="desig-cb accent-[#06B6D4]"> <span style="color:#06B6D4">●</span> Comms Leader
+            <input type="checkbox" value="comms_member" class="desig-cb accent-[#06B6D4]"> <span style="color:#06B6D4">●</span> Comms Member
+          </label>
+          <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] hover:bg-[var(--surface-hover)] cursor-pointer transition-all text-[.78rem]">
+            <input type="checkbox" value="co_gp" class="desig-cb accent-[#FF610F]"> <span style="color:#FF610F">●</span> {t('admin.desig.coGp', lang)}
+          </label>
+        </div>
+      </div>
+
+      <!-- AXIS 3: Platform Access -->
+      <div class="mb-4 p-3 rounded-xl bg-[var(--surface-base)] border border-[var(--border-default)]">
+        <label class="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider block mb-2">{t('admin.modal.axis3Label', lang)}</label>
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-[.78rem] font-semibold text-[var(--text-primary)]">{t('admin.modal.axis3Superadmin', lang)}</p>
+            <p class="text-[.68rem] text-[var(--text-muted)]">{t('admin.modal.axis3SuperadminDesc', lang)}</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="edit-m-superadmin" class="sr-only peer">
+            <div class="w-11 h-6 bg-[var(--border-strong)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--surface-card)] after:border-[var(--border-default)] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange"></div>
+          </label>
+        </div>
+        <div class="mt-2 text-[.68rem] text-[var(--text-muted)]" id="edit-m-tier-hint">
+          {t('admin.modal.tierHint', lang)}: <strong id="edit-m-tier-display">—</strong>
+        </div>
+      </div>
+
+      <!-- Chapter + Status -->
+      <div class="grid grid-cols-2 gap-3">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('admin.modal.labelChapter', lang)}</label>
+          <select id="edit-m-chapter" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)]">
+            <option value="PMI-GO">PMI-GO</option>
+            <option value="PMI-CE">PMI-CE</option>
+            <option value="PMI-DF">PMI-DF</option>
+            <option value="PMI-MG">PMI-MG</option>
+            <option value="PMI-RS">PMI-RS</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('admin.modal.labelStatus', lang)}</label>
+          <select id="edit-m-active" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)]">
+            <option value="true">{t('admin.modal.statusActive', lang)}</option>
+            <option value="false">{t('admin.modal.statusInactive', lang)}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2 flex-shrink-0">
+      <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer" data-action="close-edit-member">{t('admin.modal.cancel', lang)}</button>
+      <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer" data-action="save-edit-member">{t('admin.modal.save', lang)}</button>
+    </div>
+  </div>
+</div>

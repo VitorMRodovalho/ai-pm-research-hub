@@ -984,6 +984,16 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 **Impacto tecnico:** src/components/shared/RichTextEditor.tsx wraps TipTap with toolbar presets. src/components/shared/RichTextEditorIsland.tsx provides generic Astro island bridge using richtext:{field}:set/change events. BlogEditor.tsx now thin wrapper with toolbar="full". campaigns.astro uses RichTextEditorIsland with toolbar="basic" for body_html editing. Focus ring added on editor border. Audit confirmed only blog and campaigns needed WYSIWYG — announcements, board items, and publications use plain text.
 
+### GC-074 — Admin Panel Modernization Phase 1: Technical Refactor
+
+**Data:** 2026-03-17
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Phase 1 of 6-phase admin modernization. Eliminated duplicate function definitions (avatar, memberTags, memberTribeTag) by importing from constants.ts. Updated constants.ts to use CSS variables for dark mode compatibility. Extracted 4 modals to Astro components (AllocateTribeModal, EditMemberModal, CycleHistoryModal, NotifyAllocationModal). Created typed interfaces (Member, Tribe, AdminStats, AuditLogEntry). Created admin_audit_log table with RLS (superadmin read, actor-scoped insert) for Phase 5. Zero visual change — pure refactor.
+
+**Impacto tecnico:** admin/index.astro reduced from 4383 to 4178 lines (-205). Modals in src/components/admin/modals/. Types in src/lib/admin/types.ts. admin_audit_log table deployed with 3 indexes. constants.ts memberTags/memberTribeTag now use CSS vars (bg-[var(--surface-section-cool)], text-[var(--text-muted)]) instead of hardcoded Tailwind for dark mode.
+
 ---
 
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*
