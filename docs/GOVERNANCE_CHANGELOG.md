@@ -1094,4 +1094,15 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-084 — Database Backup Strategy via GitHub Actions
+**Data:** 2026-03-18 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisao:** Backup automatico semanal do banco via GitHub Actions. pg_dump do schema public (excluindo schemas internos Supabase), comprimido com gzip, armazenado como artifact do GitHub Actions. Retencao: 8 backups mais recentes (~2 meses). Custo zero (free tier).
+
+**Justificativa:** Supabase free tier nao tem backup automatico. Base tem 52 membros, 430 board_items, 219 gamification_points, 161 eventos. Um DELETE acidental ou incidente Supabase = perda de dados irrecuperavel.
+
+**Impacto tecnico:** Workflow `.github/workflows/backup-database.yml` (semanal domingo 23:00 UTC). Procedimento de restore documentado em `docs/RESTORE_DATABASE.md`. Requer secret `SUPABASE_DB_URL` configurado no GitHub (connection string session mode). Schemas excluidos: auth, storage, supabase_functions, extensions, graphql, realtime, pgsodium, vault, supabase_migrations.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*
