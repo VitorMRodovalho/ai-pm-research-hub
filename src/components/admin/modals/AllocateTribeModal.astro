@@ -1,0 +1,36 @@
+---
+import { t, type Lang } from '../../../i18n/utils';
+interface Props { lang: Lang; }
+const { lang } = Astro.props;
+---
+
+<!-- Modal: Allocate Tribe -->
+<div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-allocate">
+  <div class="bg-[var(--surface-card)] rounded-2xl w-full max-w-[400px] overflow-hidden">
+    <div class="px-5 py-4 border-b border-[var(--border-default)] flex justify-between items-center">
+      <h3 class="text-base font-bold text-navy">{t('admin.modal.allocateTitle', lang)}</h3>
+      <button class="bg-transparent border-0 text-xl cursor-pointer text-[var(--text-muted)]" data-action="close-allocate">✕</button>
+    </div>
+    <div class="p-5">
+      <input type="hidden" id="alloc-member-id">
+      <div class="text-sm font-semibold mb-1" id="alloc-member-name"></div>
+      <div class="text-[12px] text-[var(--text-secondary)] mb-4" id="alloc-member-info"></div>
+      <label class="text-[12px] font-semibold text-[var(--text-secondary)] block mb-1.5">{t('admin.modal.selectTribe', lang)}</label>
+      <select id="alloc-tribe" class="w-full px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
+        <option value="">{t('admin.modal.select', lang)}</option>
+        <option value="1">01 — Radar Tecnológico</option>
+        <option value="2">02 — Agentes Autônomos</option>
+        <option value="3">03 — TMO & PMO do Futuro</option>
+        <option value="4">04 — Cultura & Change</option>
+        <option value="5">05 — Talentos & Upskilling</option>
+        <option value="6">06 — ROI & Portfólio</option>
+        <option value="7">07 — Governança & Trustworthy AI</option>
+        <option value="8">08 — Inclusão & Colaboração</option>
+      </select>
+    </div>
+    <div class="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2">
+      <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer" data-action="close-allocate">{t('admin.modal.cancel', lang)}</button>
+      <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer" data-action="confirm-allocate">{t('admin.modal.allocate', lang)}</button>
+    </div>
+  </div>
+</div>

@@ -3,6 +3,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Toast from '../../components/ui/Toast.astro';
 import ConfirmModal from '../../components/ui/ConfirmModal.astro';
 import AdminNav from '../../components/nav/AdminNav.astro';
+import AllocateTribeModal from '../../components/admin/modals/AllocateTribeModal.astro';
+import EditMemberModal from '../../components/admin/modals/EditMemberModal.astro';
+import CycleHistoryModal from '../../components/admin/modals/CycleHistoryModal.astro';
+import NotifyAllocationModal from '../../components/admin/modals/NotifyAllocationModal.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 const ADMIN_I18N = {
@@ -1073,181 +1077,12 @@ const ADMIN_I18N = {
     </div>
   </div>
 
-  <!-- Modal: Allocate Tribe -->
-  <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-allocate">
-    <div class="bg-[var(--surface-card)] rounded-2xl w-full max-w-[400px] overflow-hidden">
-      <div class="px-5 py-4 border-b border-[var(--border-default)] flex justify-between items-center">
-        <h3 class="text-base font-bold text-navy">{t('admin.modal.allocateTitle', lang)}</h3>
-        <button class="bg-transparent border-0 text-xl cursor-pointer text-[var(--text-muted)]" data-action="close-allocate">✕</button>
-      </div>
-      <div class="p-5">
-        <input type="hidden" id="alloc-member-id">
-        <div class="text-sm font-semibold mb-1" id="alloc-member-name"></div>
-        <div class="text-[12px] text-[var(--text-secondary)] mb-4" id="alloc-member-info"></div>
-        <label class="text-[12px] font-semibold text-[var(--text-secondary)] block mb-1.5">{t('admin.modal.selectTribe', lang)}</label>
-        <select id="alloc-tribe" class="w-full px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
-          <option value="">{t('admin.modal.select', lang)}</option>
-          <option value="1">01 — Radar Tecnológico</option>
-          <option value="2">02 — Agentes Autônomos</option>
-          <option value="3">03 — TMO & PMO do Futuro</option>
-          <option value="4">04 — Cultura & Change</option>
-          <option value="5">05 — Talentos & Upskilling</option>
-          <option value="6">06 — ROI & Portfólio</option>
-          <option value="7">07 — Governança & Trustworthy AI</option>
-          <option value="8">08 — Inclusão & Colaboração</option>
-        </select>
-      </div>
-      <div class="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2">
-        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer" data-action="close-allocate">{t('admin.modal.cancel', lang)}</button>
-        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer" data-action="confirm-allocate">{t('admin.modal.allocate', lang)}</button>
-      </div>
-    </div>
-  </div>
+  <AllocateTribeModal lang={lang} />
 
-  <!-- Modal: Edit Member (3-Axis Model) -->
-  <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-edit-member">
-    <div class="bg-[var(--surface-card)] rounded-2xl w-full max-w-[500px] overflow-hidden flex flex-col" style="max-height:90vh">
-      <div class="px-5 py-4 border-b border-[var(--border-default)] flex justify-between items-center flex-shrink-0">
-        <h3 class="text-base font-bold text-navy">{t('admin.modal.editMemberTitle', lang)}</h3>
-        <button class="bg-transparent border-0 text-xl cursor-pointer text-[var(--text-muted)]" data-action="close-edit-member">✕</button>
-      </div>
-      <div class="p-5 overflow-y-auto flex-1">
-        <input type="hidden" id="edit-m-id">
-        <div class="flex items-center gap-3 mb-5" id="edit-m-header"></div>
+  <EditMemberModal lang={lang} />
+  <NotifyAllocationModal />
 
-        <!-- AXIS 1: Operational Role -->
-        <div class="mb-4 p-3 rounded-xl bg-[var(--surface-base)] border border-[var(--border-default)]">
-          <label class="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider block mb-2">{t('admin.modal.axis1Label', lang)}</label>
-          <p class="text-[.68rem] text-[var(--text-muted)] mb-2">{t('admin.modal.axis1Desc', lang)}</p>
-          <select id="edit-m-oprole" class="w-full px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
-            <option value="manager">{t('admin.modal.oprole.manager', lang)}</option>
-            <option value="deputy_manager">{t('admin.modal.oprole.deputy_manager', lang)}</option>
-            <option value="tribe_leader">{t('admin.modal.oprole.tribe_leader', lang)}</option>
-            <option value="researcher">{t('admin.modal.oprole.researcher', lang)}</option>
-            <option value="facilitator">{t('admin.modal.oprole.facilitator', lang)}</option>
-            <option value="communicator">{t('admin.modal.oprole.communicator', lang)}</option>
-            <option value="none">{t('admin.modal.oprole.none', lang)}</option>
-            <option value="guest">{t('admin.modal.oprole.guest', lang)}</option>
-          </select>
-        </div>
-
-        <!-- AXIS 2: Designations -->
-        <div class="mb-4 p-3 rounded-xl bg-[var(--surface-base)] border border-[var(--border-default)]">
-          <label class="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider block mb-2">{t('admin.modal.axis2Label', lang)}</label>
-          <p class="text-[.68rem] text-[var(--text-muted)] mb-2">{t('admin.modal.axis2Desc', lang)}</p>
-          <div class="grid grid-cols-2 gap-2">
-            <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] hover:bg-[var(--surface-hover)] cursor-pointer transition-all text-[.78rem]">
-              <input type="checkbox" value="sponsor" class="desig-cb accent-[#BE2027]"> <span style="color:#BE2027">●</span> {t('admin.desig.sponsor', lang)}
-            </label>
-            <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] hover:bg-[var(--surface-hover)] cursor-pointer transition-all text-[.78rem]">
-              <input type="checkbox" value="chapter_liaison" class="desig-cb accent-[#BE2027]"> <span style="color:#BE2027">○</span> {t('admin.desig.chapterLiaison', lang)}
-            </label>
-            <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] hover:bg-[var(--surface-hover)] cursor-pointer transition-all text-[.78rem]">
-              <input type="checkbox" value="ambassador" class="desig-cb accent-[#10B981]"> <span style="color:#10B981">●</span> {t('admin.desig.ambassador', lang)}
-            </label>
-            <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] hover:bg-[var(--surface-hover)] cursor-pointer transition-all text-[.78rem]">
-              <input type="checkbox" value="founder" class="desig-cb accent-[#7C3AED]"> <span style="color:#7C3AED">●</span> {t('admin.desig.founder', lang)}
-            </label>
-            <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] hover:bg-[var(--surface-hover)] cursor-pointer transition-all text-[.78rem]">
-              <input type="checkbox" value="curator" class="desig-cb accent-[#D97706]"> <span style="color:#D97706">●</span> {t('admin.desig.curator', lang)}
-            </label>
-            <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] hover:bg-[var(--surface-hover)] cursor-pointer transition-all text-[.78rem]">
-              <input type="checkbox" value="comms_team" class="desig-cb accent-[#06B6D4]"> <span style="color:#06B6D4">●</span> {t('admin.desig.comms', lang)}
-              <input type="checkbox" value="comms_leader" class="desig-cb accent-[#06B6D4]"> <span style="color:#06B6D4">●</span> Comms Leader
-              <input type="checkbox" value="comms_member" class="desig-cb accent-[#06B6D4]"> <span style="color:#06B6D4">●</span> Comms Member
-            </label>
-            <label class="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] hover:bg-[var(--surface-hover)] cursor-pointer transition-all text-[.78rem]">
-              <input type="checkbox" value="co_gp" class="desig-cb accent-[#FF610F]"> <span style="color:#FF610F">●</span> {t('admin.desig.coGp', lang)}
-            </label>
-          </div>
-        </div>
-
-        <!-- AXIS 3: Platform Access -->
-        <div class="mb-4 p-3 rounded-xl bg-[var(--surface-base)] border border-[var(--border-default)]">
-          <label class="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider block mb-2">{t('admin.modal.axis3Label', lang)}</label>
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-[.78rem] font-semibold text-[var(--text-primary)]">{t('admin.modal.axis3Superadmin', lang)}</p>
-              <p class="text-[.68rem] text-[var(--text-muted)]">{t('admin.modal.axis3SuperadminDesc', lang)}</p>
-            </div>
-            <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" id="edit-m-superadmin" class="sr-only peer">
-              <div class="w-11 h-6 bg-[var(--border-strong)] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[var(--surface-card)] after:border-[var(--border-default)] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange"></div>
-            </label>
-          </div>
-          <div class="mt-2 text-[.68rem] text-[var(--text-muted)]" id="edit-m-tier-hint">
-            {t('admin.modal.tierHint', lang)}: <strong id="edit-m-tier-display">—</strong>
-          </div>
-        </div>
-
-        <!-- Chapter + Status -->
-        <div class="grid grid-cols-2 gap-3">
-          <div class="flex flex-col gap-1.5">
-            <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('admin.modal.labelChapter', lang)}</label>
-            <select id="edit-m-chapter" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)]">
-              <option value="PMI-GO">PMI-GO</option>
-              <option value="PMI-CE">PMI-CE</option>
-              <option value="PMI-DF">PMI-DF</option>
-              <option value="PMI-MG">PMI-MG</option>
-              <option value="PMI-RS">PMI-RS</option>
-            </select>
-          </div>
-          <div class="flex flex-col gap-1.5">
-            <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('admin.modal.labelStatus', lang)}</label>
-            <select id="edit-m-active" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)]">
-              <option value="true">{t('admin.modal.statusActive', lang)}</option>
-              <option value="false">{t('admin.modal.statusInactive', lang)}</option>
-            </select>
-          </div>
-        </div>
-      </div>
-      <div class="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2 flex-shrink-0">
-        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer" data-action="close-edit-member">{t('admin.modal.cancel', lang)}</button>
-        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer" data-action="save-edit-member">{t('admin.modal.save', lang)}</button>
-      </div>
-    </div>
-  </div>
-  <!-- Modal: Notify Allocations Confirmation -->
-  <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-notify-alloc">
-    <div class="bg-[var(--surface-card)] rounded-2xl w-full max-w-[520px] overflow-hidden flex flex-col" style="max-height:90vh">
-      <div class="px-5 py-4 border-b border-[var(--border-default)] flex justify-between items-center flex-shrink-0">
-        <h3 class="text-base font-bold text-navy flex items-center gap-2">
-          <svg class="w-5 h-5 text-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-          Confirmar Notificacao de Alocacoes
-        </h3>
-        <button class="bg-transparent border-0 text-xl cursor-pointer text-[var(--text-muted)]" id="btn-close-notify-modal">&#x2715;</button>
-      </div>
-      <div class="p-5 overflow-y-auto flex-1" id="notify-modal-body">
-        <p class="text-[var(--text-muted)] text-sm text-center py-6">Carregando...</p>
-      </div>
-      <div class="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2 flex-shrink-0">
-        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer" id="btn-cancel-notify">Cancelar</button>
-        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold bg-teal text-white border-0 hover:bg-teal/90 cursor-pointer" id="btn-confirm-notify">
-          Confirmar e Enviar
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: Cycle History (Superadmin only) -->
-  <div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-cycle-history">
-    <div class="bg-[var(--surface-card)] rounded-2xl w-full max-w-[600px] overflow-hidden flex flex-col" style="max-height:90vh">
-      <div class="px-5 py-4 border-b border-[var(--border-default)] flex justify-between items-center flex-shrink-0">
-        <h3 class="text-base font-bold text-navy">{t('admin.modal.cycleHistoryTitle', lang)}</h3>
-        <button class="bg-transparent border-0 text-xl cursor-pointer text-[var(--text-muted)]" data-action="close-cycle-history">✕</button>
-      </div>
-      <div class="px-5 pt-3 pb-1">
-        <div class="text-sm font-semibold text-navy" id="ch-member-name"></div>
-        <div class="text-[.68rem] text-[var(--text-muted)] mb-3">{t('admin.modal.cycleHistoryHint', lang)}</div>
-      </div>
-      <div class="px-5 pb-4 overflow-y-auto flex-1" id="ch-cycles-area">
-        <p class="text-[var(--text-muted)] text-sm text-center py-6">{t('admin.loading', lang)}</p>
-      </div>
-      <div class="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2 flex-shrink-0">
-        <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer" data-action="close-cycle-history">{t('admin.modal.close', lang)}</button>
-      </div>
-    </div>
-  </div>
+  <CycleHistoryModal lang={lang} />
 </BaseLayout>
 
 <!-- define:vars forces is:inline and breaks imports; inject i18n separately -->
@@ -1270,6 +1105,9 @@ const ADMIN_I18N = {
     TRIBE_COLORS,
     TRIBE_LEADERS,
     TRIBE_NAMES,
+    avatar,
+    memberTags,
+    memberTribeTag,
     getAccessTier,
     canAccessAdminRoute,
     hasMinimumTier,
@@ -1346,12 +1184,6 @@ const ADMIN_I18N = {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
-  }
-
-  function avatar(m: any, size = 'w-8 h-8'): string {
-    return m.photo_url
-      ? `<img src="${m.photo_url}" class="${size} rounded-full object-cover flex-shrink-0" alt="">`
-      : `<div class="${size} rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.6rem] flex-shrink-0">${initials(m?.name)}</div>`;
   }
 
   function roleDots(m: any): string {
@@ -1930,43 +1762,6 @@ const ADMIN_I18N = {
   // ══════════════════════════════════════════
   // MEMBERS LIST (Enhanced with filters + tags)
   // ══════════════════════════════════════════
-
-  function memberTags(m: any): string {
-    const opRole = m.operational_role || 'guest';
-    const desigs: string[] = m.designations?.length ? m.designations : [];
-    let html = '';
-
-    // Operational role tag
-    if (opRole !== 'none' && opRole !== 'guest') {
-      const c = OPROLE_COLORS[opRole] || '#94A3B8';
-      html += `<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded" style="background:${c}18;color:${c}">${OPROLE_LABELS[opRole] || opRole}</span>`;
-    }
-
-    // Designation tags
-    desigs.forEach(d => {
-      const c = DESIG_COLORS[d] || '#94A3B8';
-      html += `<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded" style="background:${c}18;color:${c}">${DESIG_LABELS[d] || d}</span>`;
-    });
-
-    // Superadmin badge
-    if (m.is_superadmin) {
-      html += `<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded bg-orange/10 text-orange">🔧 SA</span>`;
-    }
-
-    // No role at all
-    if (opRole === 'guest' && desigs.length === 0) {
-      html += `<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded bg-[var(--surface-section-cool)] text-[var(--text-muted)]">Convidado</span>`;
-    }
-
-    return html;
-  }
-
-  function memberTribeTag(m: any): string {
-    const tid = m.selected_tribe_id || m.fixed_tribe_id || m.tribe_id;
-    if (!tid) return '<span class="text-[.6rem] text-[var(--text-muted)]">sem tribo</span>';
-    const color = TRIBE_COLORS[tid] || '#94A3B8';
-    return `<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded" style="background:${color}18;color:${color}">T${String(tid).padStart(2,'0')}</span>`;
-  }
 
   let allCycleHistory: any[] = [];
   let memberListCache: any[] = [];

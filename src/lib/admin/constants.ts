@@ -110,12 +110,12 @@ export function initials(name: string): string {
 export function avatar(m: any, size = 'w-8 h-8'): string {
   return m.photo_url
     ? `<img src="${m.photo_url}" class="${size} rounded-full object-cover flex-shrink-0" alt="">`
-    : `<div class="${size} rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.6rem] flex-shrink-0">${initials(m.name)}</div>`;
+    : `<div class="${size} rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.6rem] flex-shrink-0">${initials(m?.name)}</div>`;
 }
 
 export function memberTags(m: any): string {
   const opRole = m.operational_role || 'guest';
-  const desigs: string[] = (m.designations?.length ? m.designations : []).filter((d: string) => d !== opRole);
+  const desigs: string[] = m.designations?.length ? m.designations : [];
   let html = '';
 
   if (opRole !== 'none' && opRole !== 'guest') {
@@ -133,7 +133,7 @@ export function memberTags(m: any): string {
   }
 
   if (opRole === 'guest' && desigs.length === 0) {
-    html += `<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-400">Convidado</span>`;
+    html += `<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded bg-[var(--surface-section-cool)] text-[var(--text-muted)]">Convidado</span>`;
   }
 
   return html;
@@ -141,7 +141,7 @@ export function memberTags(m: any): string {
 
 export function memberTribeTag(m: any): string {
   const tid = m.selected_tribe_id || m.fixed_tribe_id || m.tribe_id;
-  if (!tid) return '<span class="text-[.6rem] text-slate-300">sem tribo</span>';
+  if (!tid) return '<span class="text-[.6rem] text-[var(--text-muted)]">sem tribo</span>';
   const color = TRIBE_COLORS[tid] || '#94A3B8';
   return `<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded" style="background:${color}18;color:${color}">T${String(tid).padStart(2,'0')}</span>`;
 }

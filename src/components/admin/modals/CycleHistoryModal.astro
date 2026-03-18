@@ -1,0 +1,25 @@
+---
+import { t, type Lang } from '../../../i18n/utils';
+interface Props { lang: Lang; }
+const { lang } = Astro.props;
+---
+
+<!-- Modal: Cycle History (Superadmin only) -->
+<div class="hidden fixed inset-0 bg-black/50 z-[100] items-center justify-center p-4" id="modal-cycle-history">
+  <div class="bg-[var(--surface-card)] rounded-2xl w-full max-w-[600px] overflow-hidden flex flex-col" style="max-height:90vh">
+    <div class="px-5 py-4 border-b border-[var(--border-default)] flex justify-between items-center flex-shrink-0">
+      <h3 class="text-base font-bold text-navy">{t('admin.modal.cycleHistoryTitle', lang)}</h3>
+      <button class="bg-transparent border-0 text-xl cursor-pointer text-[var(--text-muted)]" data-action="close-cycle-history">✕</button>
+    </div>
+    <div class="px-5 pt-3 pb-1">
+      <div class="text-sm font-semibold text-navy" id="ch-member-name"></div>
+      <div class="text-[.68rem] text-[var(--text-muted)] mb-3">{t('admin.modal.cycleHistoryHint', lang)}</div>
+    </div>
+    <div class="px-5 pb-4 overflow-y-auto flex-1" id="ch-cycles-area">
+      <p class="text-[var(--text-muted)] text-sm text-center py-6">{t('admin.loading', lang)}</p>
+    </div>
+    <div class="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2 flex-shrink-0">
+      <button class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer" data-action="close-cycle-history">{t('admin.modal.close', lang)}</button>
+    </div>
+  </div>
+</div>
