@@ -1016,4 +1016,16 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-077 — Admin Panel Modernization Phase 4: Member Detail + Dashboard
+
+**Data:** 2026-03-17
+**Autor:** Vitor Rodovalho (via Claude Code)
+**Status:** Implementado
+
+**Decisao:** Member detail page /admin/members/[id] with 7 sections (header, edit form, cycles, gamification, attendance, publications, audit log). Edit uses admin_update_member_audited RPC which updates member + auto-logs changes to admin_audit_log. get_member_detail RPC returns all sections in one call (member info, cycle history, gamification points/rank, attendance rate + recent events, publications, audit trail). Admin dashboard added to /admin with 6 KPI cards (active members, adoption 7d, deliverables, impact hours, CPMAI, chapters), operational alerts (no-tribe, no-auth stakeholders, dropout risk), and activity feed (audit log + campaigns + publications). get_admin_dashboard RPC returns KPIs, alerts, and recent activity.
+
+**Impacto tecnico:** /admin/members/[id].astro + MemberDetailIsland.tsx (React island). AdminDashboardIsland.tsx added to admin/index.astro. Two new RPCs: get_member_detail (SECURITY DEFINER, joins tribes/cycles/gamification/attendance/publications/audit), admin_update_member_audited (update + audit trail). get_admin_dashboard RPC (SECURITY DEFINER, KPIs from members/board_items/events/gamification_points/annual_kpi_targets, alerts from data quality checks, activity from audit_log/campaign_sends/publication_submissions). MemberListIsland link updated to /admin/members/[id]. No regression.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*

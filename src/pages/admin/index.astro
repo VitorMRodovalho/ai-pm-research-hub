@@ -1,5 +1,6 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
+import AdminDashboardIsland from '../../components/admin/dashboard/AdminDashboardIsland';
 import Toast from '../../components/ui/Toast.astro';
 import ConfirmModal from '../../components/ui/ConfirmModal.astro';
 import AllocateTribeModal from '../../components/admin/modals/AllocateTribeModal.astro';
@@ -128,6 +129,9 @@ const ADMIN_I18N = {
 <AdminLayout title={t('admin.meta', lang)} breadcrumbs={[]}>
   <Toast />
   <ConfirmModal />
+  <!-- Executive Dashboard (React island) -->
+  <AdminDashboardIsland client:load />
+  <hr class="my-8 border-[var(--border-default)]" />
   <div class="max-w-[1200px] mx-auto px-4 py-8">
     <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
       <div>
