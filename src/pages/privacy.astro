@@ -3,16 +3,21 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
+
+const S3_ROWS = [1,2,3,4,5,6,7,8,9,10] as const;
+const S6_ROWS = [1,2,3,4,5,6,7,8,9] as const;
 ---
 
 <BaseLayout title={t('privacy.pageTitle', lang)} activePage="privacy" lang={lang}>
   <div class="max-w-[820px] mx-auto px-4 py-10 space-y-10">
     <header class="text-center">
       <h1 class="text-2xl md:text-3xl font-extrabold text-navy">{t('privacy.title', lang)}</h1>
-      <p class="text-sm text-[var(--text-muted)] mt-2">{t('privacy.lastUpdated', lang)}: 2026-03-14</p>
+      <p class="text-sm text-[var(--text-muted)] mt-2">
+        {t('privacy.lastUpdated', lang)}: 2026-03-18 &middot; {t('privacy.version', lang)}
+      </p>
     </header>
 
-    {/* Section 1 */}
+    {/* S1 — Controlador */}
     <section class="space-y-2">
       <h2 class="text-lg font-bold text-[var(--text-primary)]">1. {t('privacy.s1.title', lang)}</h2>
       <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
@@ -23,7 +28,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       </ul>
     </section>
 
-    {/* Section 2 */}
+    {/* S2 — Dados coletados */}
     <section class="space-y-2">
       <h2 class="text-lg font-bold text-[var(--text-primary)]">2. {t('privacy.s2.title', lang)}</h2>
       <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
@@ -33,23 +38,40 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         <li><strong>{t('privacy.s2.production', lang)}:</strong> {t('privacy.s2.productionDesc', lang)}</li>
         <li><strong>{t('privacy.s2.application', lang)}:</strong> {t('privacy.s2.applicationDesc', lang)}</li>
         <li><strong>{t('privacy.s2.navigation', lang)}:</strong> {t('privacy.s2.navigationDesc', lang)}</li>
+        <li><strong>{t('privacy.s2.activityTracking', lang)}:</strong> {t('privacy.s2.activityTrackingDesc', lang)}</li>
+        <li><strong>{t('privacy.s2.emailInteraction', lang)}:</strong> {t('privacy.s2.emailInteractionDesc', lang)}</li>
+        <li><strong>{t('privacy.s2.adminAudit', lang)}:</strong> {t('privacy.s2.adminAuditDesc', lang)}</li>
+        <li><strong>{t('privacy.s2.credlySync', lang)}:</strong> {t('privacy.s2.credlySyncDesc', lang)}</li>
       </ul>
     </section>
 
-    {/* Section 3 */}
-    <section class="space-y-2">
+    {/* S3 — Finalidade e base legal (tabela) */}
+    <section class="space-y-3">
       <h2 class="text-lg font-bold text-[var(--text-primary)]">3. {t('privacy.s3.title', lang)}</h2>
-      <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
-        <li>{t('privacy.s3.research', lang)}</li>
-        <li>{t('privacy.s3.communication', lang)}</li>
-        <li>{t('privacy.s3.selection', lang)}</li>
-        <li>{t('privacy.s3.gamification', lang)}</li>
-        <li>{t('privacy.s3.analytics', lang)}</li>
-        <li>{t('privacy.s3.reports', lang)}</li>
-      </ul>
+      <p class="text-sm text-[var(--text-secondary)]">{t('privacy.s3.intro', lang)}</p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm border-collapse border border-[var(--border-default)]">
+          <thead>
+            <tr class="bg-[var(--surface-hover)]">
+              <th class="border border-[var(--border-default)] px-3 py-2 text-left text-[var(--text-primary)] font-semibold">{t('privacy.s3.table.header.purpose', lang)}</th>
+              <th class="border border-[var(--border-default)] px-3 py-2 text-left text-[var(--text-primary)] font-semibold">{t('privacy.s3.table.header.data', lang)}</th>
+              <th class="border border-[var(--border-default)] px-3 py-2 text-left text-[var(--text-primary)] font-semibold">{t('privacy.s3.table.header.legalBasis', lang)}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {S3_ROWS.map(n => (
+              <tr class="even:bg-[var(--surface-hover)]/50">
+                <td class="border border-[var(--border-default)] px-3 py-2 text-[var(--text-secondary)]">{t(`privacy.s3.row${n}.purpose` as any, lang)}</td>
+                <td class="border border-[var(--border-default)] px-3 py-2 text-[var(--text-secondary)]">{t(`privacy.s3.row${n}.data` as any, lang)}</td>
+                <td class="border border-[var(--border-default)] px-3 py-2 text-[var(--text-secondary)]">{t(`privacy.s3.row${n}.basis` as any, lang)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
 
-    {/* Section 4 */}
+    {/* S4 — Compartilhamento */}
     <section class="space-y-2">
       <h2 class="text-lg font-bold text-[var(--text-primary)]">4. {t('privacy.s4.title', lang)}</h2>
       <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
@@ -59,73 +81,131 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         <li>{t('privacy.s4.cloudflare', lang)}</li>
         <li>{t('privacy.s4.posthog', lang)}</li>
         <li>{t('privacy.s4.sentry', lang)}</li>
+        <li>{t('privacy.s4.resend', lang)}</li>
+        <li>{t('privacy.s4.credly', lang)}</li>
         <li>{t('privacy.s4.noCommercial', lang)}</li>
       </ul>
     </section>
 
-    {/* Section 5 */}
+    {/* S5 — Transferência internacional */}
     <section class="space-y-2">
-      <h2 class="text-lg font-bold text-[var(--text-primary)]">5. {t('privacy.s5.title', lang)}</h2>
+      <h2 class="text-lg font-bold text-[var(--text-primary)]">5. {t('privacy.s5int.title', lang)}</h2>
+      <p class="text-sm text-[var(--text-secondary)]">{t('privacy.s5int.intro', lang)}</p>
       <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
-        <li>{t('privacy.s5.active', lang)}</li>
-        <li>{t('privacy.s5.inactive', lang)}</li>
-        <li>{t('privacy.s5.notifications', lang)}</li>
-        <li>{t('privacy.s5.anomalyLogs', lang)}</li>
-        <li>{t('privacy.s5.applications', lang)}</li>
+        <li>{t('privacy.s5int.supabase', lang)}</li>
+        <li>{t('privacy.s5int.cloudflare', lang)}</li>
+        <li>{t('privacy.s5int.posthog', lang)}</li>
+        <li>{t('privacy.s5int.sentry', lang)}</li>
+        <li>{t('privacy.s5int.resend', lang)}</li>
+        <li>{t('privacy.s5int.credly', lang)}</li>
+      </ul>
+      <p class="text-sm text-[var(--text-secondary)]">{t('privacy.s5int.safeguards', lang)}</p>
+    </section>
+
+    {/* S6 — Retenção (tabela) */}
+    <section class="space-y-3">
+      <h2 class="text-lg font-bold text-[var(--text-primary)]">6. {t('privacy.s6ret.title', lang)}</h2>
+      <p class="text-sm text-[var(--text-secondary)]">{t('privacy.s6ret.intro', lang)}</p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm border-collapse border border-[var(--border-default)]">
+          <thead>
+            <tr class="bg-[var(--surface-hover)]">
+              <th class="border border-[var(--border-default)] px-3 py-2 text-left text-[var(--text-primary)] font-semibold">{t('privacy.s6ret.table.header.data', lang)}</th>
+              <th class="border border-[var(--border-default)] px-3 py-2 text-left text-[var(--text-primary)] font-semibold">{t('privacy.s6ret.table.header.retention', lang)}</th>
+              <th class="border border-[var(--border-default)] px-3 py-2 text-left text-[var(--text-primary)] font-semibold">{t('privacy.s6ret.table.header.after', lang)}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {S6_ROWS.map(n => (
+              <tr class="even:bg-[var(--surface-hover)]/50">
+                <td class="border border-[var(--border-default)] px-3 py-2 text-[var(--text-secondary)]">{t(`privacy.s6ret.row${n}.data` as any, lang)}</td>
+                <td class="border border-[var(--border-default)] px-3 py-2 text-[var(--text-secondary)]">{t(`privacy.s6ret.row${n}.retention` as any, lang)}</td>
+                <td class="border border-[var(--border-default)] px-3 py-2 text-[var(--text-secondary)]">{t(`privacy.s6ret.row${n}.after` as any, lang)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    {/* S7 — Direitos LGPD */}
+    <section class="space-y-2">
+      <h2 class="text-lg font-bold text-[var(--text-primary)]">7. {t('privacy.s7rights.title', lang)}</h2>
+      <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
+        <li><strong>{t('privacy.s7rights.access', lang)}:</strong> {t('privacy.s7rights.accessDesc', lang)}</li>
+        <li><strong>{t('privacy.s7rights.correction', lang)}:</strong> {t('privacy.s7rights.correctionDesc', lang)}</li>
+        <li><strong>{t('privacy.s7rights.deletion', lang)}:</strong> {t('privacy.s7rights.deletionDesc', lang)}</li>
+        <li><strong>{t('privacy.s7rights.portability', lang)}:</strong> {t('privacy.s7rights.portabilityDesc', lang)}</li>
+        <li><strong>{t('privacy.s7rights.revocation', lang)}:</strong> {t('privacy.s7rights.revocationDesc', lang)}</li>
+        <li><strong>{t('privacy.s7rights.opposition', lang)}:</strong> {t('privacy.s7rights.oppositionDesc', lang)}</li>
       </ul>
     </section>
 
-    {/* Section 6 */}
+    {/* S8 — Decisões automatizadas */}
     <section class="space-y-2">
-      <h2 class="text-lg font-bold text-[var(--text-primary)]">6. {t('privacy.s6.title', lang)}</h2>
+      <h2 class="text-lg font-bold text-[var(--text-primary)]">8. {t('privacy.s8auto.title', lang)}</h2>
+      <p class="text-sm text-[var(--text-secondary)]">{t('privacy.s8auto.intro', lang)}</p>
       <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
-        <li><strong>{t('privacy.s6.access', lang)}:</strong> {t('privacy.s6.accessDesc', lang)}</li>
-        <li><strong>{t('privacy.s6.correction', lang)}:</strong> {t('privacy.s6.correctionDesc', lang)}</li>
-        <li><strong>{t('privacy.s6.deletion', lang)}:</strong> {t('privacy.s6.deletionDesc', lang)}</li>
-        <li><strong>{t('privacy.s6.portability', lang)}:</strong> {t('privacy.s6.portabilityDesc', lang)}</li>
-        <li><strong>{t('privacy.s6.revocation', lang)}:</strong> {t('privacy.s6.revocationDesc', lang)}</li>
-        <li><strong>{t('privacy.s6.opposition', lang)}:</strong> {t('privacy.s6.oppositionDesc', lang)}</li>
+        <li>{t('privacy.s8auto.gamification', lang)}</li>
+        <li>{t('privacy.s8auto.credly', lang)}</li>
+        <li>{t('privacy.s8auto.attendance', lang)}</li>
+      </ul>
+      <p class="text-sm text-[var(--text-secondary)]">{t('privacy.s8auto.rights', lang)}</p>
+    </section>
+
+    {/* S9 — Segurança */}
+    <section class="space-y-2">
+      <h2 class="text-lg font-bold text-[var(--text-primary)]">9. {t('privacy.s9sec.title', lang)}</h2>
+      <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
+        <li>{t('privacy.s9sec.oauth', lang)}</li>
+        <li>{t('privacy.s9sec.rls', lang)}</li>
+        <li>{t('privacy.s9sec.securityDefiner', lang)}</li>
+        <li>{t('privacy.s9sec.https', lang)}</li>
+        <li>{t('privacy.s9sec.encryption', lang)}</li>
+        <li>{t('privacy.s9sec.noPasswords', lang)}</li>
+        <li>{t('privacy.s9sec.exifStripping', lang)}</li>
       </ul>
     </section>
 
-    {/* Section 7 */}
+    {/* S10 — Cookies, Analytics e Rastreamento */}
     <section class="space-y-2">
-      <h2 class="text-lg font-bold text-[var(--text-primary)]">7. {t('privacy.s7.title', lang)}</h2>
-      <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
-        <li>{t('privacy.s7.oauth', lang)}</li>
-        <li>{t('privacy.s7.rls', lang)}</li>
-        <li>{t('privacy.s7.securityDefiner', lang)}</li>
-        <li>{t('privacy.s7.https', lang)}</li>
-        <li>{t('privacy.s7.encryption', lang)}</li>
-        <li>{t('privacy.s7.noPasswords', lang)}</li>
-        <li>{t('privacy.s7.exifStripping', lang)}</li>
+      <h2 class="text-lg font-bold text-[var(--text-primary)]">10. {t('privacy.s10track.title', lang)}</h2>
+      <ul class="text-sm text-[var(--text-secondary)] space-y-2 list-disc pl-5">
+        <li>{t('privacy.s10track.functional', lang)}</li>
+        <li>{t('privacy.s10track.posthog', lang)}</li>
+        <li>{t('privacy.s10track.sentry', lang)}</li>
+        <li>{t('privacy.s10track.activity', lang)}</li>
+        <li>{t('privacy.s10track.email', lang)}</li>
       </ul>
+      <p class="text-sm text-[var(--text-secondary)] font-medium">{t('privacy.s10track.noAds', lang)}</p>
     </section>
 
-    {/* Section 8 */}
+    {/* S11 — Menores */}
     <section class="space-y-2">
-      <h2 class="text-lg font-bold text-[var(--text-primary)]">8. {t('privacy.s8.title', lang)}</h2>
-      <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
-        <li>{t('privacy.s8.posthog', lang)}</li>
-        <li>{t('privacy.s8.sentry', lang)}</li>
-        <li>{t('privacy.s8.supabaseAuth', lang)}</li>
-        <li>{t('privacy.s8.noCookies', lang)}</li>
-      </ul>
+      <h2 class="text-lg font-bold text-[var(--text-primary)]">11. {t('privacy.s11.title', lang)}</h2>
+      <p class="text-sm text-[var(--text-secondary)]">{t('privacy.s11.text', lang)}</p>
     </section>
 
-    {/* Section 9 */}
+    {/* S12 — Alterações */}
     <section class="space-y-2">
-      <h2 class="text-lg font-bold text-[var(--text-primary)]">9. {t('privacy.s9.title', lang)}</h2>
-      <p class="text-sm text-[var(--text-secondary)]">{t('privacy.s9.text', lang)}</p>
+      <h2 class="text-lg font-bold text-[var(--text-primary)]">12. {t('privacy.s12.title', lang)}</h2>
+      <p class="text-sm text-[var(--text-secondary)]">{t('privacy.s12.text', lang)}</p>
     </section>
 
-    {/* Section 10 */}
+    {/* S13 — Contato e ANPD */}
     <section class="space-y-2">
-      <h2 class="text-lg font-bold text-[var(--text-primary)]">10. {t('privacy.s10.title', lang)}</h2>
+      <h2 class="text-lg font-bold text-[var(--text-primary)]">13. {t('privacy.s13.title', lang)}</h2>
+      <p class="text-sm text-[var(--text-secondary)]">{t('privacy.s13.contact', lang)}</p>
       <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
-        <li>Email: nucleoia@pmigo.org.br</li>
-        <li>{t('privacy.s1.dpo', lang)}: Vitor Maia Rodovalho</li>
+        <li>{t('privacy.s13.email', lang)}</li>
+        <li>{t('privacy.s13.dpo', lang)}</li>
       </ul>
+      <p class="text-sm text-[var(--text-secondary)] mt-3">{t('privacy.s13.anpd', lang)}</p>
+      <p class="text-sm">
+        <a href={t('privacy.s13.anpdUrl', lang)} target="_blank" rel="noopener noreferrer" class="text-teal-500 hover:underline">
+          {t('privacy.s13.anpdUrl', lang)}
+        </a>
+      </p>
     </section>
   </div>
 </BaseLayout>

@@ -1052,4 +1052,15 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-080 — Privacy Policy LGPD Rewrite v2.0
+**Data:** 2026-03-18 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisao:** Privacy Policy reescrita para padrao LGPD formal v2.0. Expandida de 10 para 13 secoes. Adicionadas secoes: transferencia internacional de dados (Art. 33), decisoes automatizadas (Art. 20), publico-alvo e menores (Art. 14), contato e ANPD (Art. 18 §1). Declarados dados anteriormente nao informados: activity tracking (last_seen_at, total_sessions, last_active_pages, member_activity_sessions), email analytics (campaign_recipients opens/clicks, email_webhook_events), admin audit log (admin_audit_log), Credly sync (credly_badges). Processadores adicionados: Resend (email), Credly/Pearson VUE (certificacoes). Corrigida afirmacao factualmente incorreta sobre anonimizacao de analytics.
+
+**Justificativa:** Compliance gap ativo — a plataforma coletava dados pessoais identificados (activity tracking, email tracking) sem declarar na politica de privacidade, violando LGPD Art. 7. Secoes obrigatorias pela LGPD (transferencia internacional, decisoes automatizadas, menores, ANPD) estavam ausentes.
+
+**Impacto tecnico:** Reescrita completa de privacy.astro (10→13 secoes, 2 tabelas HTML responsivas). Substituicao do bloco privacy.* em 3 arquivos i18n (~70→~130 keys cada: pt-BR.ts, en-US.ts, es-LATAM.ts). Tabelas S3 (finalidade × base legal) e S6 (retencao) com overflow-x-auto para mobile. CSS variables para dark mode. Noindex mantido. Zero migrations SQL.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*
