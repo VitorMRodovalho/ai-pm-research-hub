@@ -97,44 +97,51 @@ BEGIN
     ),
 
     'recent_activity', (
-      SELECT COALESCE(jsonb_agg(activity ORDER BY ts DESC), '[]'::jsonb) FROM (
-        SELECT jsonb_build_object(
-          'type', 'audit',
-          'message', actor.full_name || ' ' || al.action || ' em ' || COALESCE(target.full_name, '?'),
-          'details', al.changes,
-          'timestamp', al.created_at
-        ) as activity, al.created_at as ts
-        FROM admin_audit_log al
-        LEFT JOIN members actor ON actor.id = al.actor_id
-        LEFT JOIN members target ON target.id = al.target_id
-        WHERE al.created_at > now() - interval '7 days'
-        ORDER BY al.created_at DESC LIMIT 10
+      SELECT COALESCE(jsonb_agg(r.activity ORDER BY r.ts DESC), '[]'::jsonb)
+      FROM (
+        SELECT * FROM (
+          SELECT jsonb_build_object(
+            'type', 'audit',
+            'message', actor.full_name || ' ' || al.action || ' em ' || COALESCE(target.full_name, '?'),
+            'details', al.changes,
+            'timestamp', al.created_at
+          ) as activity, al.created_at as ts
+          FROM admin_audit_log al
+          LEFT JOIN members actor ON actor.id = al.actor_id
+          LEFT JOIN members target ON target.id = al.target_id
+          WHERE al.created_at > now() - interval '7 days'
+          ORDER BY al.created_at DESC LIMIT 10
+        ) a1
 
         UNION ALL
 
-        SELECT jsonb_build_object(
-          'type', 'campaign',
-          'message', 'Campanha "' || ct.name || '" enviada',
-          'timestamp', cs.created_at
-        ), cs.created_at
-        FROM campaign_sends cs
-        JOIN campaign_templates ct ON ct.id = cs.template_id
-        WHERE cs.created_at > now() - interval '7 days'
-        ORDER BY cs.created_at DESC LIMIT 5
+        SELECT * FROM (
+          SELECT jsonb_build_object(
+            'type', 'campaign',
+            'message', 'Campanha "' || ct.name || '" enviada',
+            'timestamp', cs.created_at
+          ), cs.created_at
+          FROM campaign_sends cs
+          JOIN campaign_templates ct ON ct.id = cs.template_id
+          WHERE cs.created_at > now() - interval '7 days'
+          ORDER BY cs.created_at DESC LIMIT 5
+        ) a2
 
         UNION ALL
 
-        SELECT jsonb_build_object(
-          'type', 'publication',
-          'message', m.full_name || ' submeteu "' || ps.title || '"',
-          'timestamp', ps.submitted_at
-        ), ps.submitted_at
-        FROM publication_submissions ps
-        JOIN publication_submission_authors psa ON psa.submission_id = ps.id
-        JOIN members m ON m.id = psa.member_id
-        WHERE ps.submitted_at > now() - interval '30 days'
-        ORDER BY ps.submitted_at DESC LIMIT 5
-      ) sub
+        SELECT * FROM (
+          SELECT jsonb_build_object(
+            'type', 'publication',
+            'message', m.full_name || ' submeteu "' || ps.title || '"',
+            'timestamp', ps.submitted_at
+          ), ps.submitted_at
+          FROM publication_submissions ps
+          JOIN publication_submission_authors psa ON psa.submission_id = ps.id
+          JOIN members m ON m.id = psa.member_id
+          WHERE ps.submitted_at > now() - interval '30 days'
+          ORDER BY ps.submitted_at DESC LIMIT 5
+        ) a3
+      ) r
       LIMIT 15
     )
   ) INTO v_result;
