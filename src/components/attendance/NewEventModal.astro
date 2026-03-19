@@ -20,7 +20,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           <input type="text" id="ev-title" placeholder="Ex: Reunião Geral — Semana 1"
                  class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy transition-colors">
         </div>
-        <!-- W140: Multi-tag selector (replaces single type dropdown) -->
+        <!-- W140: Multi-tag selector -->
         <div class="flex flex-col gap-1.5 sm:col-span-2">
           <label class="text-[12px] font-semibold text-[var(--text-secondary)]">Tags</label>
           <div id="ev-tags-container" class="flex flex-wrap gap-1.5 min-h-[36px] px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] bg-[var(--surface-card)] cursor-pointer" data-action="toggle-tag-picker" data-target="ev-tag-picker">
@@ -31,16 +31,36 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           </div>
           <input type="hidden" id="ev-selected-tags" value="">
         </div>
-        <!-- Legacy type field (hidden, auto-derived from primary tag) -->
-        <input type="hidden" id="ev-type" value="general_meeting">
-        <div class="flex flex-col gap-1.5">
-          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.audience', lang)}</label>
-          <select id="ev-audience"
+        <!-- 3-level classification: Tipo de Público → Tribo → Natureza -->
+        <div class="flex flex-col gap-1.5 sm:col-span-2">
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.audienceType', lang)} *</label>
+          <select id="ev-type" required
                   class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
-            <option value="all_active_operational">Todos os operacionais ativos</option>
-            <option value="tribe">Tribo específica</option>
-            <option value="role">Por papel (liderança)</option>
-            <option value="specific_members">Membros específicos</option>
+            <option value="geral">Geral</option>
+            <option value="tribo">Tribo</option>
+            <option value="lideranca">Liderança</option>
+            <option value="kickoff">Kickoff</option>
+            <option value="comms">Comunicação</option>
+            <option value="parceria">Parceria</option>
+            <option value="entrevista">Entrevista</option>
+            <option value="1on1">1-on-1</option>
+            <option value="evento_externo">Evento Externo</option>
+          </select>
+        </div>
+        <div id="ev-tribe-wrapper" class="hidden flex flex-col gap-1.5 sm:col-span-2">
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.whichTribe', lang)} *</label>
+          <select id="ev-tribe-select" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)]">
+            <option value="">— select —</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.nature', lang)}</label>
+          <select id="ev-nature" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)]">
+            <option value="avulsa">Avulsa</option>
+            <option value="recorrente">Recorrente</option>
+            <option value="kickoff">Kickoff</option>
+            <option value="encerramento">Encerramento</option>
+            <option value="workshop">Workshop</option>
           </select>
         </div>
         <div class="flex flex-col gap-1.5">
@@ -49,22 +69,46 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
                  class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
         </div>
         <div class="flex flex-col gap-1.5">
-          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.duration', lang)}</label>
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.durationMin', lang)}</label>
           <input type="number" id="ev-duration" value="90" min="15" max="480"
                  class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
         </div>
         <div class="flex flex-col gap-1.5 sm:col-span-2">
-          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.meetingLink', lang)} (Google Meet, Zoom…)</label>
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.meetingLink', lang)}</label>
           <input type="url" id="ev-link" placeholder="https://meet.google.com/..."
                  class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
         </div>
-        <div class="flex flex-col gap-1.5">
-          <label class="flex items-center gap-2 text-[13px] font-medium cursor-pointer">
-            <input type="checkbox" id="ev-recorded" class="w-4 h-4 accent-navy">
-            {t('attendance.modal.recordedMeeting', lang)}
-          </label>
-        </div>
       </div>
+      <!-- Advanced section (collapsible) -->
+      <details id="ev-advanced" class="mt-4 border border-[var(--border-default)] rounded-xl">
+        <summary class="px-4 py-2.5 text-[12px] font-semibold text-[var(--text-secondary)] cursor-pointer select-none hover:bg-[var(--surface-hover)] rounded-xl">{t('attendance.modal.advanced', lang)}</summary>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 px-4 pb-4 pt-2">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.visibility', lang)}</label>
+            <select id="ev-visibility"
+                    class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
+              <option value="public">Público</option>
+              <option value="leadership">Liderança</option>
+              <option value="gp_only">GP only</option>
+            </select>
+          </div>
+          <div class="flex flex-col gap-1.5 sm:col-span-2">
+            <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('eventDetail.agenda', lang)}</label>
+            <textarea id="ev-agenda-text" rows="3" placeholder="Pauta em texto livre..."
+                      class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy resize-y"></textarea>
+          </div>
+          <div class="flex flex-col gap-1.5 sm:col-span-2">
+            <label class="text-[12px] font-semibold text-[var(--text-secondary)]">Agenda URL</label>
+            <input type="url" id="ev-agenda-url" placeholder="https://docs.google.com/..."
+                   class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
+          </div>
+          <div class="flex flex-col gap-1.5 sm:col-span-2">
+            <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.externalAttendees', lang)}</label>
+            <input type="text" id="ev-external-attendees" placeholder="email1@example.com, email2@example.com"
+                   class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
+          </div>
+        </div>
+      </details>
     </form>
     <div class="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2 flex-shrink-0">
       <button type="button" class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer" data-action="close-modal" data-modal-id="modal-new-event">{t('attendance.modal.cancel', lang)}</button>
