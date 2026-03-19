@@ -2585,6 +2585,49 @@ const ptBR: Record<string, string> = {
   'comp.memberList.willDeactivate': 'Esta ação desativará',
   'comp.memberList.processing': 'Processando...',
   'boards.overdue': 'Atrasado',
+
+  // ── Tribe Dashboard tabs ──
+  'tribe.gamificationTab': 'Gamificação',
+  'tribe.attendanceTab': 'Presença',
+
+  // ── Tribe Gamification (P2-2) ──
+  'tribe_dashboard.gamification.title': 'Gamificação da Tribo',
+  'tribe_dashboard.gamification.total_xp': 'XP Total',
+  'tribe_dashboard.gamification.avg_xp': 'XP Médio',
+  'tribe_dashboard.gamification.tribe_rank': 'Rank da Tribo',
+  'tribe_dashboard.gamification.cert_coverage': 'Cobertura de Certificações',
+  'tribe_dashboard.gamification.trail_completion': 'Conclusão da Trilha',
+  'tribe_dashboard.gamification.tribe_ranking': 'Ranking de Tribos por XP',
+  'tribe_dashboard.gamification.member_breakdown': 'XP por Membro',
+  'tribe_dashboard.gamification.xp_distribution': 'Distribuição de XP',
+  'tribe_dashboard.gamification.monthly_trend': 'Tendência Mensal',
+  'tribe_dashboard.gamification.rank': 'Rank',
+  'tribe_dashboard.gamification.name': 'Membro',
+  'tribe_dashboard.gamification.total': 'Total',
+  'tribe_dashboard.gamification.cycle': 'Ciclo',
+  'tribe_dashboard.gamification.attendance': 'Presença',
+  'tribe_dashboard.gamification.certs': 'Certs',
+  'tribe_dashboard.gamification.badges': 'Badges',
+  'tribe_dashboard.gamification.learning': 'Aprendizado',
+  'tribe_dashboard.gamification.cpmai': 'CPMAI',
+  'tribe_dashboard.gamification.trail': 'Trilha',
+
+  // ── Tribe Attendance Grid (P2-3) ──
+  'tribe_dashboard.attendance.title': 'Presença por Reunião',
+  'tribe_dashboard.attendance.overall_rate': 'Taxa Geral',
+  'tribe_dashboard.attendance.perfect': 'Presença 100%',
+  'tribe_dashboard.attendance.below_50': 'Abaixo de 50%',
+  'tribe_dashboard.attendance.total_events': 'Total de Eventos',
+  'tribe_dashboard.attendance.filter_all': 'Todas',
+  'tribe_dashboard.attendance.filter_general': 'Geral',
+  'tribe_dashboard.attendance.filter_tribe': 'Tribo',
+  'tribe_dashboard.attendance.filter_leadership': 'Liderança',
+  'tribe_dashboard.attendance.present': 'Presente',
+  'tribe_dashboard.attendance.absent': 'Ausente',
+  'tribe_dashboard.attendance.na': 'N/A',
+  'tribe_dashboard.attendance.rate': 'Taxa',
+  'tribe_dashboard.attendance.member': 'Membro',
+  'tribe_dashboard.attendance.no_data': 'Sem dados de presença',
 };
 
 export default ptBR;
