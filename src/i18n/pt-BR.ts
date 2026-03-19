@@ -648,7 +648,7 @@ const ptBR: Record<string, string> = {
   'resources.github.linkText': 'Abrir →',
   'resources.email.title': 'Email do Núcleo',
   'resources.email.text': 'Comunicações oficiais.',
-  'resources.email.linkText': 'nucleoiagp@gmail.com',
+  'resources.email.linkText': 'nucleoia@pmigo.org.br',
   'resources.portal.title': 'volunteer.pmi.org',
   'resources.portal.text': 'Aceite sua posição.',
   'resources.portal.linkText': 'Portal →',
@@ -671,6 +671,8 @@ const ptBR: Record<string, string> = {
   'role.communicator': 'Multiplicador',
   'role.guest': 'Visitante',
   'role.comms_team': 'Comunicação',
+  'role.comms_leader': 'Líder de Comunicação',
+  'role.comms_member': 'Membro de Comunicação',
   'role.chapter_liaison': 'Ponto Focal',
   'role.deputy_manager': 'Deputy PM',
 
@@ -1851,7 +1853,7 @@ const ptBR: Record<string, string> = {
   'onboarding.step1.link': 'https://volunteer.pmi.org',
   'onboarding.step1.linkText': 'Acessar PMI Volunteer →',
   'onboarding.step2.title': 'Confirme seu cadastro com o gestor',
-  'onboarding.step2.desc': 'Envie um email para nucleoiagp@gmail.com confirmando sua participação.',
+  'onboarding.step2.desc': 'Envie um email para nucleoia@pmigo.org.br confirmando sua participação.',
   'onboarding.step2.linkText': 'Enviar email →',
   'onboarding.step3.title': 'Faça login com Google ou LinkedIn',
   'onboarding.step3.desc': 'Use a mesma conta de email cadastrada para acessar a plataforma.',
@@ -2383,7 +2385,7 @@ const ptBR: Record<string, string> = {
   // ── Guest (authenticated but not registered) ──
   'guest.notRegistered': 'Sua conta foi autenticada, mas ainda não está cadastrada no Núcleo.',
   'guest.contactAdmin': 'Entre em contato com o gestor do projeto para ser incluído como membro.',
-  'guest.contactEmail': 'nucleoiagp@gmail.com',
+  'guest.contactEmail': 'nucleoia@pmigo.org.br',
   'guest.limitedAccess': 'Você tem acesso limitado. Cadastre-se como membro para participar.',
   'guest.navNotFound': 'Conta não cadastrada',
 

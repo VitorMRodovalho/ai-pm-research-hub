@@ -268,9 +268,9 @@ const FAQ_ITEMS: FaqItem[] = [
     id: 'report_bug', section: 'troubleshooting',
     question: { 'pt-BR': 'Como reportar um bug?', 'en-US': 'How do I report a bug?', 'es-LATAM': '¿Cómo reporto un error?' },
     answer: {
-      'pt-BR': 'Envie uma descrição do problema (o que fez, o que esperava, o que aconteceu) para nucleoiagp@gmail.com ou pelo WhatsApp do GP. Se possível, inclua um screenshot. Todo feedback é valioso — a plataforma está em Beta.',
-      'en-US': 'Send a description of the problem (what you did, what you expected, what happened) to nucleoiagp@gmail.com or via the GP\'s WhatsApp. If possible, include a screenshot. All feedback is valuable — the platform is in Beta.',
-      'es-LATAM': 'Envíe una descripción del problema (qué hizo, qué esperaba, qué pasó) a nucleoiagp@gmail.com o por WhatsApp del GP. Si es posible, incluya un screenshot. Todo feedback es valioso — la plataforma está en Beta.',
+      'pt-BR': 'Envie uma descrição do problema (o que fez, o que esperava, o que aconteceu) para nucleoia@pmigo.org.br ou pelo WhatsApp do GP. Se possível, inclua um screenshot. Todo feedback é valioso — a plataforma está em Beta.',
+      'en-US': 'Send a description of the problem (what you did, what you expected, what happened) to nucleoia@pmigo.org.br or via the GP\'s WhatsApp. If possible, include a screenshot. All feedback is valuable — the platform is in Beta.',
+      'es-LATAM': 'Envíe una descripción del problema (qué hizo, qué esperaba, qué pasó) a nucleoia@pmigo.org.br o por WhatsApp del GP. Si es posible, incluya un screenshot. Todo feedback es valioso — la plataforma está en Beta.',
     },
   },
 ];
@@ -452,8 +452,8 @@ export default function HelpFloatingButton({ locale = 'pt-BR' }: Props) {
                 <a href="https://github.com/VitorMRodovalho/ai-pm-research-hub" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-lg no-underline transition-colors">
                   💻 GitHub
                 </a>
-                <a href="mailto:nucleoiagp@gmail.com" className="flex items-center gap-2 px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-lg no-underline transition-colors">
-                  📧 nucleoiagp@gmail.com
+                <a href="mailto:nucleoia@pmigo.org.br" className="flex items-center gap-2 px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-lg no-underline transition-colors">
+                  📧 nucleoia@pmigo.org.br
                 </a>
               </div>
             </div>
