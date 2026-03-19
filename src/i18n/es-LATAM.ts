@@ -2872,6 +2872,24 @@ const esLATAM: Record<string, string> = {
   'meetings.recording.title': 'Grabación',
   'meetings.visibility.restricted': 'Contenido restringido',
   'meetings.visibility.gp_only': 'Solo GP/DM',
+
+  // Event Governance (3-level hierarchy)
+  'attendance.modal.audienceType': 'Tipo de Público',
+  'attendance.modal.whichTribe': 'Qué Tribu',
+  'attendance.modal.nature': 'Naturaleza',
+  'attendance.modal.advancedFields': 'Campos avanzados',
+  'attendance.modal.externalAttendees': 'Participantes externos',
+  'attendance.modal.recordingUrl': 'URL de grabación',
+  'attendance.modal.visibility': 'Visibilidad',
+  'attendance.modal.visibilityAll': 'Todos',
+  'attendance.modal.visibilityLeadership': 'Solo liderazgo',
+  'attendance.modal.visibilityGpOnly': 'Solo GP/DM',
+  'attendance.nature.kickoff': 'Kickoff',
+  'attendance.nature.recorrente': 'Recurrente',
+  'attendance.nature.avulsa': 'Puntual',
+  'attendance.nature.encerramento': 'Cierre',
+  'attendance.nature.workshop': 'Taller',
+  'attendance.nature.entrevista_selecao': 'Entrevista (Selección)',
 };
 
 export default esLATAM;

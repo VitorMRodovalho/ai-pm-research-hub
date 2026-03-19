@@ -2874,6 +2874,24 @@ const ptBR: Record<string, string> = {
   'meetings.recording.title': 'Gravação',
   'meetings.visibility.restricted': 'Conteúdo restrito',
   'meetings.visibility.gp_only': 'Visível apenas para GP/DM',
+
+  // Event Governance (3-level hierarchy)
+  'attendance.modal.audienceType': 'Tipo de Público',
+  'attendance.modal.whichTribe': 'Qual Tribo',
+  'attendance.modal.nature': 'Natureza',
+  'attendance.modal.advancedFields': 'Campos avançados',
+  'attendance.modal.externalAttendees': 'Participantes externos',
+  'attendance.modal.recordingUrl': 'Link de gravação',
+  'attendance.modal.visibility': 'Visibilidade',
+  'attendance.modal.visibilityAll': 'Todos',
+  'attendance.modal.visibilityLeadership': 'Liderança',
+  'attendance.modal.visibilityGpOnly': 'Apenas GP/DM',
+  'attendance.nature.kickoff': 'Kickoff',
+  'attendance.nature.recorrente': 'Recorrente',
+  'attendance.nature.avulsa': 'Avulsa',
+  'attendance.nature.encerramento': 'Encerramento',
+  'attendance.nature.workshop': 'Workshop',
+  'attendance.nature.entrevista_selecao': 'Entrevista (Seleção)',
 };
 
 export default ptBR;

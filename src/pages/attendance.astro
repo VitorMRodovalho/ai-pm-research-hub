@@ -392,6 +392,9 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
   function filteredEvents(): any[] {
     const query = ATTENDANCE_ROUTE.query.toLowerCase();
     return ALL_EVENTS.filter((ev: any) => {
+      // Visibility filtering: hide restricted events from unauthorized users
+      if (ev.visibility === 'gp_only' && !CAN_MANAGE) return false;
+      if (ev.visibility === 'leadership' && !CAN_MANAGE && MEMBER.operational_role !== 'tribe_leader') return false;
       // Hide interviews from non-managers; for managers, respect toggle
       if (ev.type === 'interview') {
         if (!CAN_MANAGE) return false;
@@ -1140,11 +1143,32 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
     (document.getElementById('edit-ev-id') as HTMLInputElement).value = ev.id;
     (document.getElementById('edit-ev-title') as HTMLInputElement).value = ev.title || '';
     (document.getElementById('edit-ev-type') as HTMLSelectElement).value = ev.type || 'geral';
+    (document.getElementById('edit-ev-nature') as HTMLSelectElement).value = ev.nature || 'avulsa';
+    // Show/hide tribe selector based on type
+    const tribeWrapper = document.getElementById('edit-ev-tribe-wrapper')!;
+    if (ev.type === 'tribo') {
+      tribeWrapper.classList.remove('hidden');
+      (document.getElementById('edit-ev-tribe-select') as HTMLSelectElement).value = ev.tribe_id || '';
+    } else {
+      tribeWrapper.classList.add('hidden');
+    }
+    // Listen for type changes to toggle tribe selector
+    const typeSelect = document.getElementById('edit-ev-type') as HTMLSelectElement;
+    typeSelect.onchange = () => {
+      if (typeSelect.value === 'tribo') {
+        tribeWrapper.classList.remove('hidden');
+      } else {
+        tribeWrapper.classList.add('hidden');
+      }
+    };
     (document.getElementById('edit-ev-date') as HTMLInputElement).value = ev.date || '';
     (document.getElementById('edit-ev-duration') as HTMLInputElement).value = ev.duration_minutes || 90;
     (document.getElementById('edit-ev-link') as HTMLInputElement).value = ev.meeting_link || '';
     (document.getElementById('edit-ev-youtube') as HTMLInputElement).value = ev.youtube_url || '';
     (document.getElementById('edit-ev-recorded') as HTMLInputElement).checked = ev.is_recorded || false;
+    (document.getElementById('edit-ev-visibility') as HTMLSelectElement).value = ev.visibility || 'public';
+    (document.getElementById('edit-ev-recording-url') as HTMLInputElement).value = ev.recording_url || '';
+    (document.getElementById('edit-ev-external-attendees') as HTMLInputElement).value = ev.external_attendees || '';
     // W140: map legacy audience_level to new audience values
     const legacyMap: Record<string, string> = { all: 'all_active_operational', leadership: 'role', tribe: 'tribe', curators: 'specific_members' };
     const mappedAudience = legacyMap[ev.audience_level] || ev.audience_level || 'all_active_operational';
@@ -1171,6 +1195,11 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
     const recorded = (document.getElementById('edit-ev-recorded') as HTMLInputElement).checked;
     const audience = (document.getElementById('edit-ev-audience') as HTMLSelectElement).value;
     const editType = (document.getElementById('edit-ev-type') as HTMLSelectElement).value;
+    const nature = (document.getElementById('edit-ev-nature') as HTMLSelectElement).value;
+    const visibility = (document.getElementById('edit-ev-visibility') as HTMLSelectElement).value;
+    const recordingUrl = (document.getElementById('edit-ev-recording-url') as HTMLInputElement).value.trim() || null;
+    const externalAttendees = (document.getElementById('edit-ev-external-attendees') as HTMLInputElement).value.trim() || null;
+    const tribeId = editType === 'tribo' ? (document.getElementById('edit-ev-tribe-select') as HTMLSelectElement).value || null : null;
     const tagIds = getSelectedTagIds('edit-ev-selected-tags');
 
     try {
@@ -1182,8 +1211,12 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
       });
       if (error) throw error;
       if (data?.success) {
-        // Save event type via direct table update (update_event RPC doesn't accept p_type)
-        await sb.from('events').update({ type: editType }).eq('id', id);
+        // Save event type, nature, visibility, tribe_id via direct table update (update_event RPC doesn't accept these)
+        const updateFields: Record<string, any> = { type: editType, nature, visibility };
+        if (recordingUrl !== undefined) updateFields.recording_url = recordingUrl;
+        if (externalAttendees !== undefined) updateFields.external_attendees = externalAttendees;
+        if (tribeId !== null) updateFields.tribe_id = tribeId;
+        await sb.from('events').update(updateFields).eq('id', id);
         // W140: update tags and audience rules
         await assignEventTagsAndAudience(id, tagIds, audience);
         closeModal('modal-edit-event');
