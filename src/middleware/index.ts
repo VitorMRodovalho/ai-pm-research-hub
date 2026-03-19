@@ -31,14 +31,27 @@ function isAdminRoute(canonicalPath: string): boolean {
   return canonicalPath.startsWith("/admin");
 }
 
+// Security headers applied to ALL responses
+function addSecurityHeaders(response: Response, canonicalPath: string): Response {
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  if (canonicalPath.startsWith("/admin")) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  }
+  return response;
+}
+
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
   const canonicalPath = stripLocale(pathname);
   const localePrefix = getLocalePrefix(pathname);
 
-  // Skip non-protected routes (public pages, API, assets)
+  // Public routes: pass through with security headers
   if (!isProtectedRoute(canonicalPath)) {
-    return next();
+    const response = await next();
+    return addSecurityHeaders(response, canonicalPath);
   }
 
   // Bypass for test/CI environments with mock Supabase
@@ -84,12 +97,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
       }
     }
 
-    return next();
+    const response = await next();
+    return addSecurityHeaders(response, canonicalPath);
   } catch {
     // On any unexpected error, fail-closed for admin, fail-open for others
     if (isAdminRoute(canonicalPath)) {
       return context.redirect(`${localePrefix}/?auth=error`);
     }
-    return next();
+    const response = await next();
+    return addSecurityHeaders(response, canonicalPath);
   }
 });
