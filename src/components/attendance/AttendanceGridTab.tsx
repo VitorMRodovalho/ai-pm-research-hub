@@ -327,7 +327,7 @@ export default function AttendanceGridTab() {
     if (!data) return [];
     return data.events.filter((ev) => {
       if (typeFilter !== 'all' && ev.type !== typeFilter) return false;
-      if (tribeFilter !== 'all' && ev.tribe_id !== tribeFilter) return false;
+      if (tribeFilter !== 'all' && String(ev.tribe_id) !== tribeFilter) return false;
       return true;
     });
   }, [data, typeFilter, tribeFilter]);
@@ -336,7 +336,7 @@ export default function AttendanceGridTab() {
   const filteredRows = useMemo(() => {
     let rows = flatRows;
     if (tribeFilter !== 'all') {
-      rows = rows.filter((r) => r.tribeId === tribeFilter);
+      rows = rows.filter((r) => String(r.tribeId) === tribeFilter);
     }
     if (detractorFilter !== 'all') {
       rows = rows.filter((r) => {

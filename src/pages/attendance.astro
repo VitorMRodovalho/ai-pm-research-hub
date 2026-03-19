@@ -568,15 +568,23 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
       return;
     }
 
-    const typeLabel: Record<string, string> = { tribe_meeting: I18N.eventTypeTribe, general_meeting: I18N.eventTypeGeneral, webinar: I18N.eventTypeWebinar, kickoff: 'Kickoff', leadership_meeting: 'Liderança', interview: 'Entrevista', other: I18N.eventTypeOther };
+    const typeLabel: Record<string, string> = { tribo: I18N.eventTypeTribe, geral: I18N.eventTypeGeneral, webinar: I18N.eventTypeWebinar, kickoff: 'Kickoff', lideranca: 'Liderança', entrevista: 'Entrevista', comms: 'Comunicação', parceria: 'Parceria', '1on1': '1:1', evento_externo: 'Evento Externo', other: I18N.eventTypeOther,
+      // Legacy fallbacks
+      tribe_meeting: I18N.eventTypeTribe, general_meeting: I18N.eventTypeGeneral, leadership_meeting: 'Liderança', interview: 'Entrevista' };
     const badgeClass: Record<string, string> = {
-      tribe_meeting: 'bg-blue-50 text-navy',
-      general_meeting: 'bg-green-50 text-green-800',
-      webinar: 'bg-orange-50 text-amber-800',
-      kickoff: 'bg-purple-50 text-purple-800',
-      leadership_meeting: 'bg-indigo-50 text-indigo-800',
-      interview: 'bg-yellow-50 text-yellow-800',
-      other: 'bg-blue-50 text-navy',
+      tribo: 'bg-blue-50 text-navy dark:bg-blue-950/30 dark:text-blue-300',
+      geral: 'bg-green-50 text-green-800 dark:bg-green-950/30 dark:text-green-300',
+      webinar: 'bg-orange-50 text-amber-800 dark:bg-orange-950/30 dark:text-amber-300',
+      kickoff: 'bg-purple-50 text-purple-800 dark:bg-purple-950/30 dark:text-purple-300',
+      lideranca: 'bg-indigo-50 text-indigo-800 dark:bg-indigo-950/30 dark:text-indigo-300',
+      entrevista: 'bg-yellow-50 text-yellow-800 dark:bg-yellow-950/30 dark:text-yellow-300',
+      comms: 'bg-cyan-50 text-cyan-800 dark:bg-cyan-950/30 dark:text-cyan-300',
+      parceria: 'bg-rose-50 text-rose-800 dark:bg-rose-950/30 dark:text-rose-300',
+      '1on1': 'bg-gray-50 text-gray-700 dark:bg-gray-950/30 dark:text-gray-300',
+      evento_externo: 'bg-teal-50 text-teal-800 dark:bg-teal-950/30 dark:text-teal-300',
+      // Legacy
+      tribe_meeting: 'bg-blue-50 text-navy', general_meeting: 'bg-green-50 text-green-800',
+      leadership_meeting: 'bg-indigo-50 text-indigo-800', interview: 'bg-yellow-50 text-yellow-800',
     };
     const audienceLabel: Record<string, string> = { leadership: I18N.audienceLeadership, tribe: I18N.audienceTribe, curators: I18N.audienceCurators };
 
