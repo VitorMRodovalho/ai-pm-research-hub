@@ -7,7 +7,10 @@
 DROP FUNCTION IF EXISTS public.create_event(text, text, date, integer, uuid, text);
 DROP FUNCTION IF EXISTS public.create_event(text, text, date, integer, uuid);
 
--- P0-3: Fix admin_list_members — m.full_name → m.name
+-- P0-3a: Drop legacy 6-param overload of admin_list_members (ambiguity with 4-param)
+DROP FUNCTION IF EXISTS public.admin_list_members(text, text, text, boolean, integer, integer);
+
+-- P0-3b: Fix admin_list_members — m.full_name → m.name
 CREATE OR REPLACE FUNCTION public.admin_list_members(
   p_search text DEFAULT NULL,
   p_tier text DEFAULT NULL,
