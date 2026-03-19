@@ -292,21 +292,6 @@ import { CHAPTER_CODES } from '../../data/chapters';
     });
 
     // ── Helpers ──
-    function getNextWeekday(dayIndex: number): Date {
-      const now = new Date();
-      const today = now.getDay();
-      let diff = (dayIndex - today + 7) % 7;
-      // If today IS the target day and before 20:00 BRT, show today
-      if (diff === 0) {
-        const brtHour = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' })).getHours();
-        if (brtHour >= 20) diff = 7;
-      }
-      if (diff === 0) diff = 0; // today
-      const next = new Date(now);
-      next.setDate(now.getDate() + diff);
-      return next;
-    }
-
     function animateCounter(id: string, target: number, suffix = '') {
       const el = document.getElementById(id);
       if (!el) return;
