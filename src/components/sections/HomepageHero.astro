@@ -80,7 +80,7 @@ import { CHAPTER_CODES } from '../../data/chapters';
       <div class="bg-white/8 border border-white/10 rounded-2xl p-5">
         <div class="text-[.75rem] font-bold text-white/50 uppercase tracking-wider mb-2">📅 Próxima Geral</div>
         <div id="hero-general-date" class="text-lg font-bold text-[#05BFE0]">...</div>
-        <div id="hero-general-time" class="text-sm text-white/60 mt-0.5">20:00 BRT</div>
+        <div id="hero-general-time" class="text-sm text-white/60 mt-0.5">19:30 BRT</div>
         <a id="hero-general-link" href="#" target="_blank" rel="noopener"
           class="hidden mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-[#05BFE0] text-navy rounded-lg text-[.8rem] font-bold no-underline hover:opacity-90 transition-all">
           Entrar no Meet →
@@ -177,24 +177,34 @@ import { CHAPTER_CODES } from '../../data/chapters';
       const nameEl = document.getElementById('hero-name');
       if (nameEl) nameEl.textContent = (member.name || '').split(' ')[0] || member.name || 'Membro';
 
-      // Next general meeting
-      const nextMeeting = getNextWeekday(3); // Wednesday
+      // Next general meeting — from real events in DB
+      const _locale = location.pathname.startsWith('/en') ? 'en-US' : location.pathname.startsWith('/es') ? 'es' : 'pt-BR';
       const dateEl = document.getElementById('hero-general-date');
-      if (dateEl) {
-        dateEl.textContent = nextMeeting.toLocaleDateString('pt-BR', {
-          weekday: 'long', day: '2-digit', month: 'short'
-        });
-      }
+      const timeEl = document.getElementById('hero-general-time');
+      const linkEl = document.getElementById('hero-general-link') as HTMLAnchorElement;
 
-      // Load meeting link
-      sb.from('site_config').select('value').eq('key', 'general_meeting_link').single()
-        .then(({ data }: any) => {
-          if (data?.value) {
-            const link = document.getElementById('hero-general-link') as HTMLAnchorElement;
-            if (link) {
-              try { link.href = JSON.parse(data.value); } catch { link.href = String(data.value); }
-              link.classList.remove('hidden');
+      sb.from('events')
+        .select('id, title, date, meeting_link, recording_url, duration_minutes')
+        .eq('type', 'geral')
+        .gte('date', new Date(Date.now() - 86400000).toISOString().slice(0,10))
+        .order('date', { ascending: true })
+        .limit(1)
+        .then(({ data: evts }: any) => {
+          const ev = evts?.[0];
+          if (ev && dateEl) {
+            const evDate = new Date(ev.date + 'T19:30:00');
+            const isToday = ev.date === new Date().toISOString().slice(0,10);
+            dateEl.textContent = isToday
+              ? (_locale === 'en-US' ? 'Today' : _locale === 'es' ? 'Hoy' : 'Hoje') + ' 🔴'
+              : evDate.toLocaleDateString(_locale, { weekday: 'long', day: '2-digit', month: 'short' });
+            if (timeEl) timeEl.textContent = '19:30 BRT';
+            if (ev.meeting_link && linkEl) {
+              linkEl.href = ev.meeting_link;
+              linkEl.classList.remove('hidden');
             }
+          } else if (dateEl) {
+            dateEl.textContent = _locale === 'en-US' ? 'No upcoming meetings' : _locale === 'es' ? 'Sin reuniones próximas' : 'Sem reuniões próximas';
+            if (timeEl) timeEl.textContent = '';
           }
         });
 
