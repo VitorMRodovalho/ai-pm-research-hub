@@ -122,12 +122,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
     if (!member || !sb) {
       crBootRetries++;
-      if (crBootRetries >= 20) {
+      if (crBootRetries >= 60) {
         loading?.classList.add('hidden');
         denied?.classList.remove('hidden');
         return;
       }
-      setTimeout(bootCycleReport, 150);
+      setTimeout(bootCycleReport, 300);
       return;
     }
 
