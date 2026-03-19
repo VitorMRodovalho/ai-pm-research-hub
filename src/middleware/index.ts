@@ -10,21 +10,34 @@ const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciO
 
 const ADMIN_ROLES = new Set(["manager", "deputy_manager", "stakeholder", "tribe_leader", "curator"]);
 
-// Routes that require authentication
-function isProtectedRoute(path: string): boolean {
-  return path.startsWith("/admin") || path.startsWith("/workspace") || path.startsWith("/profile");
+// Strip locale prefix to get the canonical path
+function stripLocale(path: string): string {
+  return path.replace(/^\/(en|es)(?=\/|$)/, "") || "/";
+}
+
+// Extract locale prefix for redirect preservation
+function getLocalePrefix(path: string): string {
+  const match = path.match(/^\/(en|es)(?=\/|$)/);
+  return match ? `/${match[1]}` : "";
+}
+
+// Routes that require authentication (checked against locale-stripped path)
+function isProtectedRoute(canonicalPath: string): boolean {
+  return canonicalPath.startsWith("/admin") || canonicalPath.startsWith("/workspace") || canonicalPath.startsWith("/profile");
 }
 
 // Routes that require admin-level access
-function isAdminRoute(path: string): boolean {
-  return path.startsWith("/admin");
+function isAdminRoute(canonicalPath: string): boolean {
+  return canonicalPath.startsWith("/admin");
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
+  const canonicalPath = stripLocale(pathname);
+  const localePrefix = getLocalePrefix(pathname);
 
   // Skip non-protected routes (public pages, API, assets)
-  if (!isProtectedRoute(pathname)) {
+  if (!isProtectedRoute(canonicalPath)) {
     return next();
   }
 
@@ -37,7 +50,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   const token = context.cookies.get("sb-access-token")?.value;
 
   if (!token) {
-    return context.redirect(`/?auth=required`);
+    return context.redirect(`${localePrefix}/?auth=required`);
   }
 
   try {
@@ -50,17 +63,16 @@ export const onRequest = defineMiddleware(async (context, next) => {
     const { data: { user }, error: authError } = await sb.auth.getUser(token);
 
     if (authError || !user) {
-      // Clear stale cookie and redirect
       context.cookies.delete("sb-access-token", { path: "/" });
-      return context.redirect(`/?auth=expired`);
+      return context.redirect(`${localePrefix}/?auth=expired`);
     }
 
     // For admin routes, verify the user has an appropriate role
-    if (isAdminRoute(pathname)) {
+    if (isAdminRoute(canonicalPath)) {
       const { data: member } = await sb.rpc("get_member_by_auth");
 
       if (!member) {
-        return context.redirect("/workspace?unauthorized=true");
+        return context.redirect(`${localePrefix}/workspace?unauthorized=true`);
       }
 
       const hasAdminAccess =
@@ -68,15 +80,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
         ADMIN_ROLES.has(member.operational_role);
 
       if (!hasAdminAccess) {
-        return context.redirect("/workspace?unauthorized=true");
+        return context.redirect(`${localePrefix}/workspace?unauthorized=true`);
       }
     }
 
     return next();
   } catch {
-    // On any unexpected error (network, Supabase down), fail-closed for admin, fail-open for others
-    if (isAdminRoute(pathname)) {
-      return context.redirect(`/?auth=error`);
+    // On any unexpected error, fail-closed for admin, fail-open for others
+    if (isAdminRoute(canonicalPath)) {
+      return context.redirect(`${localePrefix}/?auth=error`);
     }
     return next();
   }
