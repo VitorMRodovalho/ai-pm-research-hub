@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Users, TrendingUp, Package, Clock, Award, Building, AlertTriangle, AlertCircle, CheckCircle, Activity, Loader2 } from 'lucide-react';
+import { usePageI18n } from '../../../i18n/usePageI18n';
 
 /* ────── Types ────── */
 interface DashboardData {
@@ -30,6 +31,7 @@ interface DashboardData {
 }
 
 /* ────── Helpers ────── */
+// NOTE: timeAgo contains Portuguese strings but is a module-scope helper; i18n deferred.
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -53,6 +55,7 @@ const ACTIVITY_ICONS: Record<string, string> = {
 
 /* ────── Component ────── */
 export default function AdminDashboardIsland() {
+  const t = usePageI18n();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -81,7 +84,7 @@ export default function AdminDashboardIsland() {
     return (
       <div className="flex items-center justify-center py-20 text-[var(--text-muted)]">
         <Loader2 className="animate-spin mr-2" size={20} />
-        Carregando dashboard...
+        {t('comp.adminDash.loading', 'Carregando dashboard...')}
       </div>
     );
   }
@@ -90,7 +93,7 @@ export default function AdminDashboardIsland() {
     return (
       <div className="flex items-center justify-center py-20 text-[var(--text-muted)]">
         <AlertCircle className="mr-2" size={20} />
-        Erro ao carregar dashboard.
+        {t('comp.adminDash.error', 'Erro ao carregar dashboard.')}
       </div>
     );
   }
@@ -100,21 +103,21 @@ export default function AdminDashboardIsland() {
   /* ── KPI card definitions ── */
   const kpiCards = [
     {
-      label: 'Membros Ativos',
+      label: t('comp.adminDash.activeMembers', 'Membros Ativos'),
       value: String(kpis.active_members),
       icon: Users,
       color: 'rgb(20 184 166)', // teal-500
       href: '/admin/members',
     },
     {
-      label: 'Adoção 7d',
+      label: t('comp.adminDash.adoption7d', 'Adoção 7d'),
       value: `${kpis.adoption_7d}%`,
       icon: TrendingUp,
       color: 'rgb(59 130 246)', // blue-500
       href: '/admin/adoption',
     },
     {
-      label: 'Entregas',
+      label: t('comp.adminDash.deliverables', 'Entregas'),
       value: `${kpis.deliverables_completed}/${kpis.deliverables_total}`,
       icon: Package,
       color: 'rgb(168 85 247)', // purple-500
@@ -122,7 +125,7 @@ export default function AdminDashboardIsland() {
       progress: kpis.deliverables_total > 0 ? kpis.deliverables_completed / kpis.deliverables_total : 0,
     },
     {
-      label: 'Horas de Impacto',
+      label: t('comp.adminDash.impactHours', 'Horas de Impacto'),
       value: `${kpis.impact_hours}h`,
       icon: Clock,
       color: 'rgb(245 158 11)', // amber-500
@@ -137,7 +140,7 @@ export default function AdminDashboardIsland() {
       progress: kpis.cpmai_target ? kpis.cpmai_current / kpis.cpmai_target : undefined,
     },
     {
-      label: 'Capítulos',
+      label: t('comp.adminDash.chapters', 'Capítulos'),
       value: `${kpis.chapters_current}/${kpis.chapters_target ?? '?'}`,
       icon: Building,
       color: 'rgb(249 115 22)', // orange-500
@@ -156,9 +159,9 @@ export default function AdminDashboardIsland() {
     <div className="max-w-[1100px] mx-auto">
       {/* ── Title Row ── */}
       <div className="mb-8">
-        <h1 className="text-2xl font-extrabold text-[var(--text-primary)]">Dashboard do Núcleo</h1>
+        <h1 className="text-2xl font-extrabold text-[var(--text-primary)]">{t('comp.adminDash.title', 'Dashboard do Núcleo')}</h1>
         <p className="text-sm text-[var(--text-muted)] mt-1">
-          Ciclo atual &middot; Gerado {timeAgo(data.generated_at)}
+          {t('comp.adminDash.currentCycle', 'Ciclo atual')} &middot; {t('comp.adminDash.generated', 'Gerado')} {timeAgo(data.generated_at)}
         </p>
       </div>
 
@@ -197,7 +200,7 @@ export default function AdminDashboardIsland() {
       <div className="mb-8">
         <h2 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2 mb-4">
           <AlertTriangle size={20} />
-          Alertas Operacionais
+          {t('comp.adminDash.operationalAlerts', 'Alertas Operacionais')}
         </h2>
         <div className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-5">
           {alerts && alerts.length > 0 ? (
@@ -218,7 +221,7 @@ export default function AdminDashboardIsland() {
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-[var(--text-muted)]">Nenhum alerta operacional</p>
+            <p className="text-sm text-[var(--text-muted)]">{t('comp.adminDash.noAlerts', 'Nenhum alerta operacional')}</p>
           )}
         </div>
       </div>
@@ -227,7 +230,7 @@ export default function AdminDashboardIsland() {
       <div className="mb-8">
         <h2 className="text-lg font-bold text-[var(--text-primary)] flex items-center gap-2 mb-4">
           <Activity size={20} />
-          Atividade Recente
+          {t('comp.adminDash.recentActivity', 'Atividade Recente')}
         </h2>
         <div className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-5">
           {recent_activity && recent_activity.length > 0 ? (
@@ -243,7 +246,7 @@ export default function AdminDashboardIsland() {
               ))}
             </ul>
           ) : (
-            <p className="text-sm text-[var(--text-muted)]">Nenhuma atividade recente</p>
+            <p className="text-sm text-[var(--text-muted)]">{t('comp.adminDash.noActivity', 'Nenhuma atividade recente')}</p>
           )}
         </div>
       </div>
