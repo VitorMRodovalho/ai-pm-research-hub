@@ -139,9 +139,22 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 <script>
   import { hasPermission } from '../../lib/permissions';
 
+  let pilotsBootRetries = 0;
+
   async function bootAdminPilots() {
     const sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(bootAdminPilots, 300); return; }
+    const member = (window as any).navGetMember?.();
+
+    if (!sb || !member) {
+      pilotsBootRetries++;
+      if (pilotsBootRetries >= 60) {
+        const loading = document.getElementById('admin-pilots-loading');
+        if (loading) loading.textContent = 'Timeout — recarregue a página.';
+        return;
+      }
+      setTimeout(bootAdminPilots, 300);
+      return;
+    }
 
     const loading = document.getElementById('admin-pilots-loading');
     const content = document.getElementById('admin-pilots-content');
@@ -150,7 +163,6 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const i = (id: string) => document.getElementById(id)?.textContent || '';
 
     // Check permission
-    const member = (window as any).navGetMember?.();
     const canWrite = hasPermission(member, 'admin.portfolio');
 
     // Show "New Pilot" button if permitted
