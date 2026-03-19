@@ -5,100 +5,119 @@ import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
-<AdminLayout title="Processo Seletivo — Admin" breadcrumbs={[{label:'Pessoas'},{label:'Processo Seletivo'}]}>
+<AdminLayout title={t('selection.title', lang)} breadcrumbs={[{label:'Pessoas'},{label: t('selection.title', lang)}]}>
   <div class="max-w-[1200px] mx-auto px-4 pb-8">
-    <div class="mb-6">
-      <div class="flex items-center gap-3">
-        <h1 class="text-2xl font-extrabold text-navy">Processo Seletivo</h1>
-        <span class="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full uppercase">LGPD</span>
-      </div>
-      <p class="text-sm text-[var(--text-secondary)] mt-1">Dados de voluntários PMI por ciclo sincronizado</p>
-    </div>
 
+    <!-- Loading -->
     <div id="sel-loading" class="text-center py-10 text-[var(--text-muted)]">Carregando...</div>
 
+    <!-- Access denied -->
     <div id="sel-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
       <div class="text-2xl mb-2">&#x1F512;</div>
-      <p class="font-semibold text-amber-800">Acesso restrito a administradores</p>
+      <p class="font-semibold text-amber-800">{t('selection.denied', lang)}</p>
       <a href="/admin" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">Voltar ao Admin</a>
     </div>
 
+    <!-- Main panel -->
     <div id="sel-panel" class="hidden space-y-5">
-      <!-- Cycle tabs -->
-      <div class="flex gap-2 flex-wrap" id="sel-cycle-tabs"></div>
 
-      <!-- KPI cards -->
-      <div id="sel-kpis" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+      <!-- A) HEADER + CYCLE STATUS -->
+      <div class="flex flex-wrap items-center gap-3">
+        <h1 class="text-2xl font-extrabold text-navy">{t('selection.title', lang)}</h1>
+        <span id="sel-cycle-badge" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase bg-gray-100 text-gray-600">—</span>
+      </div>
 
-      <!-- Search -->
-      <div class="flex gap-3 items-center">
-        <input type="text" id="sel-search" placeholder="Buscar por nome, estado, certificação..."
-          data-action="selection-search"
-          class="flex-1 px-3 py-2 border border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple/40" />
+      <!-- Quick stats -->
+      <div id="sel-quick-stats" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+
+      <!-- B) FILTERS -->
+      <div class="flex flex-wrap gap-3 items-center">
+        <!-- Role toggle -->
+        <div class="flex rounded-lg overflow-hidden border border-[var(--border-default)]" id="sel-role-toggle">
+          <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-navy text-white" data-role="all">Todos</button>
+          <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)]" data-role="researcher">Pesquisador</button>
+          <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)]" data-role="leader">Líder</button>
+        </div>
+
+        <!-- Chapter dropdown -->
+        <select id="sel-chapter" class="px-3 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-card)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-purple/40">
+          <option value="all">Todos os Capítulos</option>
+        </select>
+
+        <!-- Status dropdown -->
+        <select id="sel-status" class="px-3 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-card)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-purple/40">
+          <option value="all">Todos os Status</option>
+          <option value="submitted">Submitted</option>
+          <option value="screening">Screening</option>
+          <option value="objective_eval">Objective Eval</option>
+          <option value="objective_cutoff">Objective Cutoff</option>
+          <option value="interview_pending">Interview Pending</option>
+          <option value="interview_scheduled">Interview Scheduled</option>
+          <option value="interview_done">Interview Done</option>
+          <option value="interview_noshow">Interview No-Show</option>
+          <option value="final_eval">Final Eval</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+          <option value="waitlist">Waitlist</option>
+          <option value="converted">Converted</option>
+          <option value="withdrawn">Withdrawn</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+
+        <!-- Search -->
+        <input type="text" id="sel-search" placeholder="Buscar nome ou e-mail..."
+          class="flex-1 min-w-[180px] px-3 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-card)] focus:outline-none focus:ring-2 focus:ring-purple/40" />
+
         <span id="sel-count" class="text-[12px] text-[var(--text-muted)] font-semibold whitespace-nowrap"></span>
       </div>
 
-      <!-- Table -->
+      <!-- C) PIPELINE KANBAN -->
+      <div id="sel-kanban" class="grid grid-cols-2 sm:grid-cols-5 gap-3"></div>
+
+      <!-- D) TABLE -->
       <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-left text-[13px]">
             <thead>
               <tr class="bg-[var(--surface-base)] border-b border-[var(--border-default)]">
-                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Nome</th>
-                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Ciclo</th>
+                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="applicant_name">Nome</th>
+                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Papel</th>
+                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Capítulo</th>
+                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="objective_score_avg">Obj. Score</th>
+                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="final_score">Final Score</th>
+                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="rank_chapter">Rank (Cap.)</th>
                 <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Status</th>
-                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Certificações</th>
-                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Local</th>
-                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Membro?</th>
-                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Snapshot</th>
+                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Ações</th>
               </tr>
             </thead>
             <tbody id="sel-tbody" class="divide-y divide-[var(--border-subtle)]"></tbody>
           </table>
         </div>
-        <div id="sel-pagination" class="flex items-center justify-between px-4 py-3 border-t border-[var(--border-subtle)]">
-          <button id="sel-prev" data-action="selection-prev" class="px-3 py-1.5 text-[12px] font-semibold bg-[var(--surface-base)] text-[var(--text-secondary)] rounded-lg cursor-pointer border-0 hover:bg-[var(--surface-hover)] disabled:opacity-40 disabled:cursor-default" disabled>Anterior</button>
-          <span id="sel-page-info" class="text-[12px] text-[var(--text-muted)]"></span>
-          <button id="sel-next" data-action="selection-next" class="px-3 py-1.5 text-[12px] font-semibold bg-[var(--surface-base)] text-[var(--text-secondary)] rounded-lg cursor-pointer border-0 hover:bg-[var(--surface-hover)] disabled:opacity-40 disabled:cursor-default" disabled>Próximo</button>
-        </div>
       </div>
 
-      <!-- Snapshot comparison -->
-      <div id="sel-snapshot-section" class="hidden">
-        <h3 id="sel-snapshot-title" class="text-[15px] font-bold text-navy mb-3">Comparação de Snapshots</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="sel-snapshot-cards"></div>
-      </div>
-
-      <!-- Import guide -->
-      <details class="bg-[var(--surface-base)] border border-[var(--border-default)] rounded-xl">
-        <summary class="px-4 py-3 cursor-pointer text-[13px] font-semibold text-[var(--text-secondary)] hover:text-navy">Como importar novos dados CSV</summary>
-        <div class="px-4 pb-4 text-[12px] text-[var(--text-secondary)] space-y-2">
-          <p>1. Exporte os dados de voluntários da plataforma PMI (formato CSV)</p>
-          <p>2. Coloque o arquivo em <code class="bg-[var(--border-strong)] px-1 rounded">/Downloads/data/raw-drive-exports/Sensitive/Export voluntarios inscritos plataforma PMI/</code></p>
-          <p>3. Execute o script de importação:</p>
-          <pre class="bg-[var(--surface-section-dark)] text-white/90 px-3 py-2 rounded-lg overflow-x-auto">SUPABASE_URL="..." SUPABASE_SERVICE_ROLE_KEY="..." npx tsx scripts/volunteer_csv_importer.ts</pre>
-          <p>4. O script é idempotente — re-executar não cria duplicatas.</p>
-        </div>
-      </details>
     </div>
   </div>
 </AdminLayout>
 
 <script>
   import { canAccessAdminRoute } from '../../lib/admin/constants';
-  import { getCurrentCycle, loadCycles } from '../../lib/cycles';
 
+  /* ── state ────────────────────────────────────────── */
   let sb: any = null;
   let MEMBER: any = null;
-  let currentCycle: number | null = null;
-  let currentSearch = '';
-  let currentPage = 0;
-  const PAGE_SIZE = 30;
-  let latestSelectionCycle: number | null = null;
-  let cycleLabelByNumber: Record<number, string> = {};
+  let allRows: any[] = [];
+  let filteredRows: any[] = [];
 
-  function escapeHtml(s: string): string {
-    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  let filterRole = 'all';
+  let filterChapter = 'all';
+  let filterStatus = 'all';
+  let filterSearch = '';
+  let sortCol = 'final_score';
+  let sortAsc = false;
+
+  /* ── helpers ──────────────────────────────────────── */
+  function esc(s: any): string {
+    return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   function showDenied() {
@@ -109,244 +128,325 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   function showPanel() {
     document.getElementById('sel-loading')?.classList.add('hidden');
     document.getElementById('sel-panel')?.classList.remove('hidden');
-    loadData();
   }
 
-  function selectionDisplayLabel(cycleNumber: number): string {
-    return cycleLabelByNumber[cycleNumber] || `Ciclo ${cycleNumber}`;
+  /* ── status helpers ───────────────────────────────── */
+  const STATUS_GROUPS: Record<string, { label: string; color: string; bg: string; statuses: string[] }> = {
+    submitted:  { label: 'Submetidos',  color: 'text-gray-700',    bg: 'bg-gray-100',    statuses: ['submitted'] },
+    evaluation: { label: 'Avaliação',   color: 'text-blue-700',    bg: 'bg-blue-50',     statuses: ['screening', 'objective_eval', 'objective_cutoff'] },
+    interview:  { label: 'Entrevista',  color: 'text-yellow-700',  bg: 'bg-yellow-50',   statuses: ['interview_pending', 'interview_scheduled', 'interview_done', 'interview_noshow'] },
+    approved:   { label: 'Aprovados',   color: 'text-emerald-700', bg: 'bg-emerald-50',  statuses: ['approved', 'converted'] },
+    rejected:   { label: 'Rejeitados',  color: 'text-red-700',     bg: 'bg-red-50',      statuses: ['rejected', 'cancelled', 'withdrawn'] },
+  };
+
+  function statusGroup(status: string): string {
+    for (const [key, g] of Object.entries(STATUS_GROUPS)) {
+      if (g.statuses.includes(status)) return key;
+    }
+    return 'submitted';
   }
 
-  function renderCycleTabs() {
-    const host = document.getElementById('sel-cycle-tabs');
-    if (!host) return;
-    const entries = Object.entries(cycleLabelByNumber)
-      .map(([cycle, label]) => ({ cycle: Number(cycle), label }))
-      .sort((a, b) => a.cycle - b.cycle);
-    host.innerHTML = [
-      `<button class="sel-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white transition-all" data-action="switch-cycle" data-cycle="all">Todos</button>`,
-      ...entries.map(({ cycle, label }) => `
-        <button class="sel-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
-          data-action="switch-cycle" data-cycle="${cycle}" title="${escapeHtml(label)}">${escapeHtml(label)}</button>
-      `),
-    ].join('');
-  }
+  const STATUS_BADGE: Record<string, { color: string; bg: string }> = {
+    submitted:           { color: 'text-gray-700',    bg: 'bg-gray-100' },
+    screening:           { color: 'text-blue-700',    bg: 'bg-blue-50' },
+    objective_eval:      { color: 'text-blue-700',    bg: 'bg-blue-50' },
+    objective_cutoff:    { color: 'text-blue-700',    bg: 'bg-blue-50' },
+    interview_pending:   { color: 'text-yellow-700',  bg: 'bg-yellow-50' },
+    interview_scheduled: { color: 'text-yellow-700',  bg: 'bg-yellow-50' },
+    interview_done:      { color: 'text-yellow-700',  bg: 'bg-yellow-50' },
+    interview_noshow:    { color: 'text-orange-700',  bg: 'bg-orange-50' },
+    final_eval:          { color: 'text-indigo-700',  bg: 'bg-indigo-50' },
+    approved:            { color: 'text-emerald-700', bg: 'bg-emerald-50' },
+    converted:           { color: 'text-emerald-700', bg: 'bg-emerald-50' },
+    rejected:            { color: 'text-red-700',     bg: 'bg-red-50' },
+    cancelled:           { color: 'text-red-700',     bg: 'bg-red-50' },
+    withdrawn:           { color: 'text-red-600',     bg: 'bg-red-50' },
+    waitlist:            { color: 'text-amber-700',   bg: 'bg-amber-50' },
+  };
 
-  async function loadSelectionCycles() {
-    const cycles = await loadCycles(sb);
-    const current = getCurrentCycle(cycles);
-    cycleLabelByNumber = {};
-    cycles.forEach((cycle: any) => {
-      const match = String(cycle.cycle_code || '').match(/^cycle_(\d+)$/);
-      if (!match) return;
-      cycleLabelByNumber[Number(match[1])] = cycle.cycle_label || `Ciclo ${match[1]}`;
-    });
-    const sorted = Object.keys(cycleLabelByNumber).map(Number).sort((a, b) => a - b);
-    const parsedCurrent = String(current?.cycle_code || '').match(/^cycle_(\d+)$/);
-    latestSelectionCycle = parsedCurrent ? Number(parsedCurrent[1]) : (sorted[sorted.length - 1] || null);
-    renderCycleTabs();
-  }
+  const ROLE_LABELS: Record<string, string> = {
+    researcher: 'Pesquisador',
+    leader: 'Líder',
+    both: 'Ambos',
+  };
 
-  async function loadData() {
-    await Promise.all([loadKpis(), loadTable()]);
-  }
+  const CYCLE_STATUS_COLORS: Record<string, { color: string; bg: string }> = {
+    draft:       { color: 'text-gray-600',    bg: 'bg-gray-100' },
+    open:        { color: 'text-emerald-700', bg: 'bg-emerald-50' },
+    evaluation:  { color: 'text-blue-700',    bg: 'bg-blue-50' },
+    interview:   { color: 'text-yellow-700',  bg: 'bg-yellow-50' },
+    decision:    { color: 'text-purple-700',  bg: 'bg-purple-50' },
+    closed:      { color: 'text-red-700',     bg: 'bg-red-50' },
+  };
 
-  async function loadKpis() {
+  /* ── cycle status badge ───────────────────────────── */
+  async function loadCycleStatus() {
     if (!sb) return;
     try {
-      const args: any = {};
-      if (currentCycle !== null) args.p_cycle = currentCycle;
-      const { data, error } = await sb.rpc('volunteer_funnel_summary', args);
-      if (error || !data) return;
-
-      const byCycle = data.by_cycle || [];
-      let total = 0, unique = 0, matched = 0, active = 0;
-      byCycle.forEach((c: any) => {
-        total += c.total_applications || 0;
-        unique += c.unique_applicants || 0;
-        matched += c.matched_members || 0;
-        active += c.active_applications || 0;
-      });
-
-      const kpiEl = document.getElementById('sel-kpis');
-      if (kpiEl) {
-        const kpis = [
-          { label: 'Candidaturas', value: total, icon: '&#x1F4CB;' },
-          { label: 'Únicos', value: unique, icon: '&#x1F464;' },
-          { label: 'Membros Existentes', value: matched, icon: '&#x1F91D;' },
-          { label: 'Ativos', value: active, icon: '&#x2705;' },
-        ];
-        kpiEl.innerHTML = kpis.map(k =>
-          `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-3 text-center">
-            <div class="text-lg">${k.icon}</div>
-            <div class="text-xl font-extrabold text-navy">${k.value}</div>
-            <div class="text-[.65rem] text-[var(--text-secondary)] font-semibold">${escapeHtml(k.label)}</div>
-          </div>`
-        ).join('');
+      const { data } = await sb.from('selection_cycles')
+        .select('status, title')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      if (!data) return;
+      const badge = document.getElementById('sel-cycle-badge');
+      if (badge) {
+        const cs = CYCLE_STATUS_COLORS[data.status] || CYCLE_STATUS_COLORS.draft;
+        badge.className = `text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase ${cs.bg} ${cs.color}`;
+        badge.textContent = data.status.toUpperCase();
       }
-
-      const snapshotCycle = currentCycle ?? latestSelectionCycle;
-      const snapshotCycleData = byCycle.find((c: any) => c.cycle === snapshotCycle);
-      const snapSection = document.getElementById('sel-snapshot-section');
-      const snapCards = document.getElementById('sel-snapshot-cards');
-      const snapTitle = document.getElementById('sel-snapshot-title');
-      if (snapshotCycleData && snapshotCycleData.earliest_snapshot !== snapshotCycleData.latest_snapshot && snapSection && snapCards) {
-        snapSection.classList.remove('hidden');
-        if (snapTitle && snapshotCycle !== null) {
-          snapTitle.textContent = `Comparação de Snapshots — ${selectionDisplayLabel(snapshotCycle)}`;
-        }
-        snapCards.innerHTML = [
-          { label: `Snapshot ${snapshotCycleData.earliest_snapshot}`, total: '—', unique: '—', note: 'Primeiro snapshot' },
-          { label: `Snapshot ${snapshotCycleData.latest_snapshot}`, total: snapshotCycleData.total_applications, unique: snapshotCycleData.unique_applicants, note: 'Último snapshot' },
-        ].map(s => `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4">
-          <h4 class="text-[13px] font-bold text-navy mb-2">${escapeHtml(s.label)}</h4>
-          <p class="text-[11px] text-[var(--text-muted)] mb-2">${escapeHtml(s.note)}</p>
-          <div class="flex gap-4">
-            <div><div class="text-lg font-extrabold text-navy">${s.total}</div><div class="text-[10px] text-[var(--text-muted)]">Total</div></div>
-            <div><div class="text-lg font-extrabold text-navy">${s.unique}</div><div class="text-[10px] text-[var(--text-muted)]">Únicos</div></div>
-          </div>
-        </div>`).join('');
-      } else if (snapSection) {
-        snapSection.classList.add('hidden');
-      }
-    } catch (e) { console.warn('Selection KPIs:', e); }
+    } catch (e) { console.warn('Cycle status:', e); }
   }
 
-  async function loadTable() {
+  /* ── load data ────────────────────────────────────── */
+  async function loadApplications() {
     if (!sb) return;
-    const tbody = document.getElementById('sel-tbody');
-    const countEl = document.getElementById('sel-count');
-    const pageInfo = document.getElementById('sel-page-info');
-    if (!tbody) return;
-
-    tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-[var(--text-muted)]">Carregando...</td></tr>';
-
     try {
-      const args: any = { p_limit: PAGE_SIZE, p_offset: currentPage * PAGE_SIZE };
-      if (currentCycle !== null) args.p_cycle = currentCycle;
-      if (currentSearch) args.p_search = currentSearch;
-
-      const { data, error } = await sb.rpc('list_volunteer_applications', args);
+      const { data, error } = await sb.from('selection_applications')
+        .select('*')
+        .order('final_score', { ascending: false });
       if (error) throw error;
-
-      const total = data?.total || 0;
-      const rows = data?.rows || [];
-
-      if (countEl) countEl.textContent = `${total} resultado${total !== 1 ? 's' : ''}`;
-      if (pageInfo) pageInfo.textContent = `Página ${currentPage + 1} de ${Math.max(1, Math.ceil(total / PAGE_SIZE))}`;
-
-      const prevBtn = document.getElementById('sel-prev') as HTMLButtonElement;
-      const nextBtn = document.getElementById('sel-next') as HTMLButtonElement;
-      if (prevBtn) prevBtn.disabled = currentPage === 0;
-      if (nextBtn) nextBtn.disabled = (currentPage + 1) * PAGE_SIZE >= total;
-
-      if (!rows.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-6 text-center text-[var(--text-muted)]">Nenhum voluntário encontrado</td></tr>';
-        return;
-      }
-
-      tbody.innerHTML = rows.map((r: any) => {
-        const certs = (r.certifications || []).slice(0, 3).map((c: string) => `<span class="text-[10px] bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded font-medium">${escapeHtml(c)}</span>`).join(' ');
-        const location = [r.city, r.state, r.country].filter(Boolean).join(', ');
-        const matchBadge = r.is_existing_member
-          ? `<span class="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold">Sim</span>`
-          : `<span class="text-[10px] bg-[var(--surface-base)] text-[var(--text-muted)] px-1.5 py-0.5 rounded">Não</span>`;
-        const statusColor = r.app_status === 'Active' ? 'text-emerald-600' : 'text-[var(--text-secondary)]';
-        return `<tr class="hover:bg-[var(--surface-hover)]">
-          <td class="px-4 py-2.5 font-semibold text-navy">${escapeHtml(r.first_name)} ${escapeHtml(r.last_name)}</td>
-          <td class="px-4 py-2.5"><span class="text-[11px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-bold">C${r.cycle}</span></td>
-          <td class="px-4 py-2.5 ${statusColor} font-medium text-[12px]">${escapeHtml(r.app_status || '—')}</td>
-          <td class="px-4 py-2.5">${certs || '<span class="text-[var(--text-muted)]">—</span>'}</td>
-          <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]">${escapeHtml(location) || '—'}</td>
-          <td class="px-4 py-2.5">${matchBadge}</td>
-          <td class="px-4 py-2.5 text-[11px] text-[var(--text-muted)]">${r.snapshot_date || '—'}</td>
-        </tr>`;
-      }).join('');
+      allRows = data || [];
+      populateChapterDropdown();
+      applyFilters();
     } catch (e: any) {
-      console.error('Selection table:', e);
-      tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-red-500">Erro: ${escapeHtml(e.message || 'desconhecido')}</td></tr>`;
+      console.error('Selection load:', e);
+      const tbody = document.getElementById('sel-tbody');
+      if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-6 text-center text-red-500">Erro: ${esc(e.message || 'desconhecido')}</td></tr>`;
+      }
     }
   }
 
-  function switchCycle(cycle: string) {
-    currentCycle = cycle === 'all' ? null : parseInt(cycle, 10);
-    currentPage = 0;
+  function populateChapterDropdown() {
+    const sel = document.getElementById('sel-chapter') as HTMLSelectElement | null;
+    if (!sel) return;
+    const chapters = [...new Set(allRows.map(r => r.chapter).filter(Boolean))].sort();
+    const current = sel.value;
+    sel.innerHTML = '<option value="all">Todos os Capítulos</option>' +
+      chapters.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    sel.value = current;
+  }
 
-    document.querySelectorAll('.sel-tab').forEach(btn => {
-      const isActive = (btn as HTMLElement).dataset.cycle === cycle;
-      btn.classList.toggle('bg-navy', isActive);
-      btn.classList.toggle('text-white', isActive);
-      btn.classList.toggle('border-navy', isActive);
-      btn.classList.toggle('bg-[var(--surface-card)]', !isActive);
-      btn.classList.toggle('text-[var(--text-secondary)]', !isActive);
-      btn.classList.toggle('border-[var(--border-default)]', !isActive);
+  /* ── filtering + sorting ──────────────────────────── */
+  function applyFilters() {
+    const search = filterSearch.toLowerCase();
+    filteredRows = allRows.filter(r => {
+      if (filterRole !== 'all' && r.role_applied !== filterRole) return false;
+      if (filterChapter !== 'all' && r.chapter !== filterChapter) return false;
+      if (filterStatus !== 'all' && r.status !== filterStatus) return false;
+      if (search) {
+        const name = (r.applicant_name || '').toLowerCase();
+        const email = (r.email || '').toLowerCase();
+        if (!name.includes(search) && !email.includes(search)) return false;
+      }
+      return true;
     });
 
-    loadData();
+    // sort
+    filteredRows.sort((a, b) => {
+      let va = a[sortCol], vb = b[sortCol];
+      if (va == null && vb == null) return 0;
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      if (typeof va === 'string') va = va.toLowerCase();
+      if (typeof vb === 'string') vb = vb.toLowerCase();
+      if (va < vb) return sortAsc ? -1 : 1;
+      if (va > vb) return sortAsc ? 1 : -1;
+      return 0;
+    });
+
+    renderQuickStats();
+    renderKanban();
+    renderTable();
   }
 
+  /* ── quick stats ──────────────────────────────────── */
+  function renderQuickStats() {
+    const el = document.getElementById('sel-quick-stats');
+    if (!el) return;
+    const total = filteredRows.length;
+    const approved = filteredRows.filter(r => r.status === 'approved' || r.status === 'converted').length;
+    const rejected = filteredRows.filter(r => r.status === 'rejected' || r.status === 'cancelled' || r.status === 'withdrawn').length;
+    const pending = total - approved - rejected;
+    const stats = [
+      { label: 'Total',     value: total,    color: 'text-navy' },
+      { label: 'Aprovados', value: approved, color: 'text-emerald-600' },
+      { label: 'Rejeitados', value: rejected, color: 'text-red-600' },
+      { label: 'Pendentes', value: pending,  color: 'text-amber-600' },
+    ];
+    el.innerHTML = stats.map(s =>
+      `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-3 text-center">
+        <div class="text-xl font-extrabold ${s.color}">${s.value}</div>
+        <div class="text-[.65rem] text-[var(--text-secondary)] font-semibold">${esc(s.label)}</div>
+      </div>`
+    ).join('');
+  }
+
+  /* ── kanban ───────────────────────────────────────── */
+  function renderKanban() {
+    const el = document.getElementById('sel-kanban');
+    if (!el) return;
+    const counts: Record<string, number> = {};
+    for (const key of Object.keys(STATUS_GROUPS)) counts[key] = 0;
+    filteredRows.forEach(r => { counts[statusGroup(r.status)]++; });
+
+    el.innerHTML = Object.entries(STATUS_GROUPS).map(([key, g]) =>
+      `<div class="border border-[var(--border-default)] rounded-xl p-3 text-center ${g.bg}">
+        <div class="text-2xl font-extrabold ${g.color}">${counts[key]}</div>
+        <div class="text-[.65rem] ${g.color} font-bold">${esc(g.label)}</div>
+      </div>`
+    ).join('');
+  }
+
+  /* ── table ────────────────────────────────────────── */
+  function renderTable() {
+    const tbody = document.getElementById('sel-tbody');
+    const countEl = document.getElementById('sel-count');
+    if (!tbody) return;
+
+    if (countEl) countEl.textContent = `${filteredRows.length} resultado${filteredRows.length !== 1 ? 's' : ''}`;
+
+    if (!filteredRows.length) {
+      tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-6 text-center text-[var(--text-muted)]">Nenhum candidato encontrado</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = filteredRows.map(r => {
+      const sb2 = STATUS_BADGE[r.status] || STATUS_BADGE.submitted;
+      const objScore = r.objective_score_avg != null ? Number(r.objective_score_avg).toFixed(1) : '—';
+      const finalScore = r.final_score != null ? Number(r.final_score).toFixed(1) : '—';
+      const rank = r.rank_chapter != null ? `#${r.rank_chapter}` : '—';
+      const roleLabel = ROLE_LABELS[r.role_applied] || r.role_applied || '—';
+      const statusLabel = (r.status || '').replace(/_/g, ' ');
+
+      return `<tr class="hover:bg-[var(--surface-hover)] cursor-pointer" data-action="view-applicant" data-id="${esc(r.id)}">
+        <td class="px-4 py-2.5 font-semibold text-navy">${esc(r.applicant_name)}</td>
+        <td class="px-4 py-2.5 text-[12px]">${esc(roleLabel)}</td>
+        <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]">${esc(r.chapter || '—')}</td>
+        <td class="px-4 py-2.5 text-[12px] font-mono font-semibold">${objScore}</td>
+        <td class="px-4 py-2.5 text-[12px] font-mono font-bold text-navy">${finalScore}</td>
+        <td class="px-4 py-2.5 text-[12px] font-semibold">${rank}</td>
+        <td class="px-4 py-2.5"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${sb2.bg} ${sb2.color}">${esc(statusLabel)}</span></td>
+        <td class="px-4 py-2.5">
+          ${r.linkedin_url ? `<a href="${esc(r.linkedin_url)}" target="_blank" rel="noopener" class="text-[11px] text-blue-600 hover:underline mr-2" title="LinkedIn">LinkedIn</a>` : ''}
+          <button class="text-[11px] text-purple-600 hover:underline cursor-pointer bg-transparent border-0 p-0" data-action="view-applicant" data-id="${esc(r.id)}">Detalhes</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  /* ── event handling (delegated) ───────────────────── */
   let searchTimeout: any = null;
 
-  function applyGate(m: any) {
-    if (m && canAccessAdminRoute(m, 'admin_selection')) showPanel();
-    else showDenied();
+  function bindEvents() {
+    // Role toggle
+    document.getElementById('sel-role-toggle')?.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('.sel-role-btn');
+      if (!btn) return;
+      filterRole = btn.dataset.role || 'all';
+      document.querySelectorAll('.sel-role-btn').forEach(b => {
+        const isActive = (b as HTMLElement).dataset.role === filterRole;
+        b.classList.toggle('bg-navy', isActive);
+        b.classList.toggle('text-white', isActive);
+        b.classList.toggle('bg-[var(--surface-card)]', !isActive);
+        b.classList.toggle('text-[var(--text-secondary)]', !isActive);
+      });
+      applyFilters();
+    });
+
+    // Chapter dropdown
+    document.getElementById('sel-chapter')?.addEventListener('change', (e) => {
+      filterChapter = (e.target as HTMLSelectElement).value;
+      applyFilters();
+    });
+
+    // Status dropdown
+    document.getElementById('sel-status')?.addEventListener('change', (e) => {
+      filterStatus = (e.target as HTMLSelectElement).value;
+      applyFilters();
+    });
+
+    // Search
+    document.getElementById('sel-search')?.addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        filterSearch = ((e.target as HTMLInputElement).value || '').trim();
+        applyFilters();
+      }, 300);
+    });
+
+    // Column sorting
+    document.querySelectorAll<HTMLElement>('[data-sort]').forEach(th => {
+      th.addEventListener('click', () => {
+        const col = th.dataset.sort!;
+        if (sortCol === col) {
+          sortAsc = !sortAsc;
+        } else {
+          sortCol = col;
+          sortAsc = col === 'applicant_name'; // name asc, scores desc
+        }
+        applyFilters();
+      });
+    });
+
+    // Row click → detail
+    document.addEventListener('click', (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest<HTMLElement>('[data-action="view-applicant"]');
+      if (!target) return;
+      const id = target.dataset.id;
+      const row = allRows.find(r => r.id === id);
+      if (row) {
+        const info = [
+          `Nome: ${row.applicant_name}`,
+          `Email: ${row.email}`,
+          `Papel: ${ROLE_LABELS[row.role_applied] || row.role_applied}`,
+          `Capítulo: ${row.chapter || '—'}`,
+          `Status: ${row.status}`,
+          `Obj. Score: ${row.objective_score_avg ?? '—'}`,
+          `Final Score: ${row.final_score ?? '—'}`,
+          `Rank (Cap.): ${row.rank_chapter ?? '—'}`,
+          `Rank (Geral): ${row.rank_overall ?? '—'}`,
+          `Tags: ${(row.tags || []).join(', ') || '—'}`,
+          `Feedback: ${row.feedback || '—'}`,
+        ].join('\n');
+        alert(info);
+      }
+    });
   }
 
-  let selBootRetries = 0;
+  /* ── permission gate ──────────────────────────────── */
+  function applyGate(m: any) {
+    if (m && canAccessAdminRoute(m, 'admin_selection')) {
+      showPanel();
+      loadCycleStatus();
+      loadApplications();
+    } else {
+      showDenied();
+    }
+  }
+
+  /* ── boot ─────────────────────────────────────────── */
+  let bootRetries = 0;
   async function boot() {
     sb = (window as any).navGetSb?.();
     const m = (window as any).navGetMember?.();
 
     if (!sb || !m) {
-      selBootRetries += 1;
-      if (selBootRetries >= 20) { showDenied(); return; }
+      bootRetries += 1;
+      if (bootRetries >= 20) { showDenied(); return; }
       setTimeout(boot, 200);
       return;
     }
 
     MEMBER = m;
+    bindEvents();
 
     window.addEventListener('nav:member', ((e: CustomEvent) => {
       if (e.detail) { MEMBER = e.detail; applyGate(MEMBER); }
     }) as EventListener);
 
-    try {
-      await loadSelectionCycles();
-    } catch (e) {
-      console.warn('Selection cycles:', e);
-    }
-
     applyGate(MEMBER);
-  }
-
-  if (!(window as any).__selectionDelegationBound) {
-    (window as any).__selectionDelegationBound = true;
-    document.addEventListener('click', (e: MouseEvent) => {
-      const target = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
-      if (!target) return;
-      switch (target.dataset.action) {
-        case 'switch-cycle':
-          switchCycle(target.dataset.cycle || 'all');
-          break;
-        case 'selection-prev':
-          if (currentPage > 0) { currentPage--; loadTable(); }
-          break;
-        case 'selection-next':
-          currentPage++;
-          loadTable();
-          break;
-      }
-    });
-
-    document.addEventListener('input', (e: Event) => {
-      const target = e.target as HTMLElement | null;
-      if (!(target instanceof HTMLInputElement) || target.dataset.action !== 'selection-search') return;
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => {
-        currentSearch = target.value.trim();
-        currentPage = 0;
-        loadTable();
-      }, 400);
-    });
   }
 
   boot();
