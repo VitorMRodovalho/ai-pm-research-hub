@@ -740,7 +740,7 @@ const enUS: Record<string, string> = {
   'attendance.modal.selectAll': 'Select All',
   'attendance.modal.bulkConfirm': 'Confirm Attendance',
   'attendance.modal.bulkSuccess': '{n} attendances recorded',
-  'attendance.checkin.windowExpired': 'The 24h check-in window has expired. Ask your manager.',
+  'attendance.checkin.windowExpired': 'The 48h check-in window has expired. Ask your manager.',
   'attendance.checkin.tooEarly': 'Check-in opens 2h before the event.',
   'attendance.feedback.cycleTotal': 'Cycle total',
   'attendance.feedback.events': 'events',
