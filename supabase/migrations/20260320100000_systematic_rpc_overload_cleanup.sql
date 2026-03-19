@@ -25,3 +25,8 @@ DROP FUNCTION IF EXISTS public.admin_list_members(text, text, text, boolean, int
 
 -- get_admin_dashboard: fix gamification_points.cycle column reference (doesn't exist)
 -- Uses created_at >= cycle_start instead. Applied via separate CREATE OR REPLACE.
+
+-- exec_cycle_report: designations ?| (jsonb operator) → && (text[] overlap)
+-- designations column is text[], not jsonb. ?| only works on jsonb.
+-- Fixed via dynamic DO block in production; recorded here for local parity.
+-- Also fixed: c.code→c.cycle_code, c.name→c.cycle_label, c.start_date→c.cycle_start, c.end_date→c.cycle_end
