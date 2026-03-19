@@ -2787,6 +2787,16 @@ const enUS: Record<string, string> = {
   'attendance.grid.showing': 'Showing',
   'attendance.grid.of': 'of',
   'attendance.grid.members': 'members',
+  'attendance.grid.typeKickoff': 'Kickoff',
+  'attendance.grid.typeComms': 'Comms',
+  'attendance.grid.filterAll': 'All Statuses',
+  'attendance.grid.filterDetractors': 'Detractors',
+  'attendance.grid.filterAtRisk': 'At Risk',
+  'attendance.grid.filterRegular': 'Regular',
+  'attendance.grid.legend': 'Legend',
+  'attendance.grid.week': 'Week',
+  'attendance.grid.leader': 'Leader',
+  'attendance.grid.avg': 'Avg',
 
   // ── attendance event types ──
   'attendance.type.geral': 'General',

@@ -2787,6 +2787,16 @@ const esLATAM: Record<string, string> = {
   'attendance.grid.showing': 'Mostrando',
   'attendance.grid.of': 'de',
   'attendance.grid.members': 'miembros',
+  'attendance.grid.typeKickoff': 'Kickoff',
+  'attendance.grid.typeComms': 'Comms',
+  'attendance.grid.filterAll': 'Todos',
+  'attendance.grid.filterDetractors': 'Detractores',
+  'attendance.grid.filterAtRisk': 'En Riesgo',
+  'attendance.grid.filterRegular': 'Regulares',
+  'attendance.grid.legend': 'Leyenda',
+  'attendance.grid.week': 'Sem',
+  'attendance.grid.leader': 'Líder',
+  'attendance.grid.avg': 'Promedio',
 
   // ── attendance event types ──
   'attendance.type.geral': 'General',

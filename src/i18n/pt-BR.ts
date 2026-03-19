@@ -2789,6 +2789,16 @@ const ptBR: Record<string, string> = {
   'attendance.grid.showing': 'Exibindo',
   'attendance.grid.of': 'de',
   'attendance.grid.members': 'membros',
+  'attendance.grid.typeKickoff': 'Kickoff',
+  'attendance.grid.typeComms': 'Comms',
+  'attendance.grid.filterAll': 'Todos',
+  'attendance.grid.filterDetractors': 'Detratores',
+  'attendance.grid.filterAtRisk': 'Em Risco',
+  'attendance.grid.filterRegular': 'Regulares',
+  'attendance.grid.legend': 'Legenda',
+  'attendance.grid.week': 'Sem',
+  'attendance.grid.leader': 'Líder',
+  'attendance.grid.avg': 'Média',
 
   // ── attendance event types ──
   'attendance.type.geral': 'Geral',
