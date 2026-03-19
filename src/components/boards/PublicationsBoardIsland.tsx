@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { usePageI18n } from '../../i18n/usePageI18n';
 import {
   DndContext,
   PointerSensor,
@@ -38,28 +39,6 @@ const LANES: Lane[] = [
   { key: 'done', label: 'Concluído' },
 ];
 
-const UI = {
-  duePrefix: 'Prazo:',
-  publishedBadge: 'Publicado',
-  loadingBoard: 'Carregando quadro global...',
-  deniedBoard: 'Acesso restrito para esta área.',
-  modalTitle: 'Metadados de submissão PMI',
-  fieldChannel: 'Canal',
-  fieldSubmittedAt: 'Data da submissão',
-  fieldOutcome: 'Resultado',
-  fieldNotes: 'Notas',
-  fieldExternalLink: 'URL de publicação externa',
-  fieldPublishedAt: 'Data de publicação efetiva',
-  cancel: 'Cancelar',
-  save: 'Salvar',
-  untitled: 'Sem título',
-  optionPending: 'pending',
-  optionSubmitted: 'submitted',
-  optionApproved: 'approved',
-  optionRejected: 'rejected',
-  optionWithdrawn: 'withdrawn',
-};
-
 const OUTCOME_OPTIONS = ['pending', 'submitted', 'approved', 'rejected', 'withdrawn'] as const;
 
 function canAccessPublicationsWorkspace(member: any): boolean {
@@ -76,6 +55,7 @@ function SortableCard({
   onLaneKeyboardMove: (item: BoardItem, direction: -1 | 1) => void;
   onOpen: (item: BoardItem) => void;
 }) {
+  const t = usePageI18n();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -103,13 +83,13 @@ function SortableCard({
       onDoubleClick={() => onOpen(item)}
       className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3 shadow-sm cursor-grab active:cursor-grabbing"
     >
-      <h3 className="text-[12px] font-bold text-navy mb-1">{item.title || UI.untitled}</h3>
+      <h3 className="text-[12px] font-bold text-navy mb-1">{item.title || t('comp.pubBoard.untitled', 'Sem título')}</h3>
       {item.description ? (
         <p className="text-[11px] text-[var(--text-secondary)] line-clamp-3 mb-2">{item.description}</p>
       ) : null}
       <div className="flex flex-wrap gap-1 items-center">
         {item.due_date ? (
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">{[UI.duePrefix, item.due_date].join(' ')}</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">{[t('comp.pubBoard.duePrefix', 'Prazo:'), item.due_date].join(' ')}</span>
         ) : null}
         {Array.isArray(item.tags)
           ? item.tags.map((tag) => (
@@ -125,10 +105,10 @@ function SortableCard({
             rel="noreferrer"
             className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 hover:opacity-90"
             onClick={(event) => event.stopPropagation()}
-            aria-label="Abrir publicação externa"
+            aria-label={t('comp.pubBoard.openExternalPub', 'Abrir publicação externa')}
           >
             <ExternalLink size={12} />
-            {UI.publishedBadge}
+            {t('comp.pubBoard.publishedBadge', 'Publicado')}
           </a>
         ) : null}
       </div>
@@ -137,6 +117,7 @@ function SortableCard({
 }
 
 export default function PublicationsBoardIsland() {
+  const t = usePageI18n();
   const [loading, setLoading] = useState(true);
   const [denied, setDenied] = useState(false);
   const [boardId, setBoardId] = useState<string>('');
@@ -152,6 +133,14 @@ export default function PublicationsBoardIsland() {
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const windowRef = globalThis as any;
+
+  const laneLabels: Record<string, string> = {
+    backlog: t('comp.pubBoard.lane.backlog', 'Backlog'),
+    todo: t('comp.pubBoard.lane.todo', 'A fazer'),
+    in_progress: t('comp.pubBoard.lane.inProgress', 'Em progresso'),
+    review: t('comp.pubBoard.lane.review', 'Em revisão'),
+    done: t('comp.pubBoard.lane.done', 'Concluído'),
+  };
 
   const itemsByLane = useMemo(() => {
     return LANES.reduce<Record<string, BoardItem[]>>((acc, lane) => {
@@ -247,11 +236,11 @@ export default function PublicationsBoardIsland() {
       p_position: 0,
     });
     if (error) {
-      windowRef?.toast?.(error.message || 'Falha ao mover card', 'error');
+      windowRef?.toast?.(error.message || t('comp.pubBoard.errorMoveCard', 'Falha ao mover card'), 'error');
       return;
     }
     setItems((prev) => prev.map((row) => (row.id === itemId ? { ...row, status: nextLane } : row)));
-    windowRef?.toast?.('Status atualizado', 'success');
+    windowRef?.toast?.(t('comp.pubBoard.statusUpdated', 'Status atualizado'), 'success');
   }
 
   async function moveViaKeyboard(item: BoardItem, direction: -1 | 1) {
@@ -267,11 +256,11 @@ export default function PublicationsBoardIsland() {
       p_position: 0,
     });
     if (error) {
-      windowRef?.toast?.(error.message || 'Falha ao mover card', 'error');
+      windowRef?.toast?.(error.message || t('comp.pubBoard.errorMoveCard', 'Falha ao mover card'), 'error');
       return;
     }
     setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, status: targetLane.key } : row)));
-    windowRef?.toast?.(`Card movido para ${targetLane.label}`, 'success');
+    windowRef?.toast?.(`${t('comp.pubBoard.cardMovedTo', 'Card movido para')} ${laneLabels[targetLane.key] || targetLane.label}`, 'success');
   }
 
   async function saveSubmissionMetadata() {
@@ -288,14 +277,14 @@ export default function PublicationsBoardIsland() {
       p_published_at: metaPublishedAt ? new Date(metaPublishedAt).toISOString() : null,
     });
     if (error) {
-      windowRef?.toast?.(error.message || 'Falha ao salvar metadados de submissão', 'error');
+      windowRef?.toast?.(error.message || t('comp.pubBoard.errorSaveMetadata', 'Falha ao salvar metadados de submissão'), 'error');
       return;
     }
     setItems((prev) => prev.map((row) => (row.id === modalItem.id
       ? { ...row, external_link: metaExternalLink || null, published_at: metaPublishedAt || null }
       : row)));
     setModalItem(null);
-    windowRef?.toast?.('Metadados de submissão atualizados', 'success');
+    windowRef?.toast?.(t('comp.pubBoard.metadataUpdated', 'Metadados de submissão atualizados'), 'success');
   }
 
   function openSubmissionModal(item: BoardItem) {
@@ -309,12 +298,12 @@ export default function PublicationsBoardIsland() {
   }
 
   if (loading) {
-    return <div className="text-center py-10 text-[var(--text-muted)]">{UI.loadingBoard}</div>;
+    return <div className="text-center py-10 text-[var(--text-muted)]">{t('comp.pubBoard.loadingBoard', 'Carregando quadro global...')}</div>;
   }
   if (denied) {
     return (
       <div className="text-center py-10 text-[var(--text-secondary)]">
-        {UI.deniedBoard}
+        {t('comp.pubBoard.deniedBoard', 'Acesso restrito para esta área.')}
       </div>
     );
   }
@@ -330,7 +319,7 @@ export default function PublicationsBoardIsland() {
         {LANES.map((lane) => (
           <section key={lane.key} className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-[12px] font-bold text-[var(--text-primary)]">{lane.label}</h2>
+              <h2 className="text-[12px] font-bold text-[var(--text-primary)]">{laneLabels[lane.key] || lane.label}</h2>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--surface-base)] text-[var(--text-secondary)]">
                 {itemsByLane[lane.key]?.length || 0}
               </span>
@@ -346,7 +335,7 @@ export default function PublicationsBoardIsland() {
                 ))}
                 {itemsByLane[lane.key].length === 0 ? (
                   <div className="text-[11px] text-[var(--text-muted)] py-6 text-center">
-                    {draggingId ? 'Solte o card aqui' : 'Sem cards'}
+                    {draggingId ? t('comp.pubBoard.dropCardHere', 'Solte o card aqui') : t('comp.pubBoard.noCards', 'Sem cards')}
                   </div>
                 ) : null}
               </div>
@@ -359,18 +348,18 @@ export default function PublicationsBoardIsland() {
       <div className="fixed inset-0 z-50">
         <button type="button" className="absolute inset-0 bg-black/40 border-0 p-0 m-0" aria-label="close-modal-overlay" onClick={() => setModalItem(null)} />
         <div className="absolute top-1/2 left-1/2 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-xl">
-          <h3 className="text-base font-bold text-[var(--text-primary)] mb-3">{UI.modalTitle}</h3>
+          <h3 className="text-base font-bold text-[var(--text-primary)] mb-3">{t('comp.pubBoard.modalTitle', 'Metadados de submissão PMI')}</h3>
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{UI.fieldChannel}</label>
+              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('comp.pubBoard.fieldChannel', 'Canal')}</label>
               <input value={metaChannel} onChange={(e) => setMetaChannel(e.target.value)} className="w-full rounded-lg border border-[var(--border-default)] px-3 py-2 text-sm bg-[var(--surface-card)]" />
             </div>
             <div>
-              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{UI.fieldSubmittedAt}</label>
+              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('comp.pubBoard.fieldSubmittedAt', 'Data da submissão')}</label>
               <input type="datetime-local" value={metaSubmittedAt} onChange={(e) => setMetaSubmittedAt(e.target.value)} className="w-full rounded-lg border border-[var(--border-default)] px-3 py-2 text-sm bg-[var(--surface-card)]" />
             </div>
             <div>
-              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{UI.fieldOutcome}</label>
+              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('comp.pubBoard.fieldOutcome', 'Resultado')}</label>
               <DropdownMenu.Root>
                 <DropdownMenu.Trigger asChild>
                   <button type="button" className="w-full text-left rounded-lg border border-[var(--border-default)] px-3 py-2 text-sm bg-[var(--surface-card)]">
@@ -393,11 +382,11 @@ export default function PublicationsBoardIsland() {
               </DropdownMenu.Root>
             </div>
             <div>
-              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{UI.fieldNotes}</label>
+              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('comp.pubBoard.fieldNotes', 'Notas')}</label>
               <textarea value={metaNotes} onChange={(e) => setMetaNotes(e.target.value)} rows={4} className="w-full rounded-lg border border-[var(--border-default)] px-3 py-2 text-sm bg-[var(--surface-card)]" />
             </div>
             <div>
-              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{UI.fieldExternalLink}</label>
+              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('comp.pubBoard.fieldExternalLink', 'URL de publicação externa')}</label>
               <input
                 type="url"
                 value={metaExternalLink}
@@ -407,7 +396,7 @@ export default function PublicationsBoardIsland() {
               />
             </div>
             <div>
-              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{UI.fieldPublishedAt}</label>
+              <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('comp.pubBoard.fieldPublishedAt', 'Data de publicação efetiva')}</label>
               <input
                 type="datetime-local"
                 value={metaPublishedAt}
@@ -417,8 +406,8 @@ export default function PublicationsBoardIsland() {
             </div>
           </div>
           <div className="mt-4 flex justify-end gap-2">
-            <button type="button" onClick={() => setModalItem(null)} className="px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm">{UI.cancel}</button>
-            <button type="button" onClick={saveSubmissionMetadata} className="px-3 py-2 rounded-lg bg-navy text-white text-sm">{UI.save}</button>
+            <button type="button" onClick={() => setModalItem(null)} className="px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm">{t('comp.pubBoard.cancel', 'Cancelar')}</button>
+            <button type="button" onClick={saveSubmissionMetadata} className="px-3 py-2 rounded-lg bg-navy text-white text-sm">{t('comp.pubBoard.save', 'Salvar')}</button>
           </div>
         </div>
       </div>

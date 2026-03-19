@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Search, Edit2, Users, UserX, ShieldOff, Loader2, X } from 'lucide-react';
 import { trackEvent } from '../../../lib/analytics';
+import { usePageI18n } from '../../../i18n/usePageI18n';
 
 /* ────── Types ────── */
 interface MemberRow {
@@ -21,6 +22,8 @@ interface MemberRow {
   credly_username: string | null;
 }
 
+// NOTE: OPROLE_LABELS and DESIG_LABELS are module-scope constants with Portuguese strings;
+// i18n for these labels is deferred (would require refactoring to per-render lookup).
 const OPROLE_LABELS: Record<string, string> = {
   manager: 'GP', deputy_manager: 'Vice-GP', tribe_leader: 'Líder de Tribo',
   researcher: 'Pesquisador(a)', facilitator: 'Facilitador(a)',
@@ -60,6 +63,7 @@ function timeAgo(dateStr: string): string {
 
 /* ────── Component ────── */
 export default function MemberListIsland() {
+  const t = usePageI18n();
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -160,11 +164,11 @@ export default function MemberListIsland() {
       if (editSuperadmin !== editMember.is_superadmin) {
         await sb.from('members').update({ is_superadmin: editSuperadmin }).eq('id', editMember.id);
       }
-      (window as any).toast?.('Membro atualizado', 'success');
+      (window as any).toast?.(t('comp.memberList.memberUpdated', 'Membro atualizado'), 'success');
       closeEdit();
       await fetchMembers();
     } else {
-      (window as any).toast?.(error.message || 'Erro ao salvar', 'error');
+      (window as any).toast?.(error.message || t('comp.memberList.saveError', 'Erro ao salvar'), 'error');
     }
     setSaving(false);
   };
@@ -196,13 +200,13 @@ export default function MemberListIsland() {
       p_tribe_id: parseInt(bulkTribeId),
     });
     if (!error && data?.success) {
-      (window as any).toast?.(`${data.count} membro(s) alocado(s)`, 'success');
+      (window as any).toast?.(`${data.count} ${t('comp.memberList.membersAllocated', 'membro(s) alocado(s)')}`, 'success');
       setSelectedIds(new Set());
       setShowBulkAllocate(false);
       setBulkTribeId('');
       await fetchMembers();
     } else {
-      (window as any).toast?.(error?.message || 'Erro na operação', 'error');
+      (window as any).toast?.(error?.message || t('comp.memberList.operationError', 'Erro na operação'), 'error');
     }
     setBulkSaving(false);
   };
@@ -216,12 +220,12 @@ export default function MemberListIsland() {
       p_is_active: bulkActive,
     });
     if (!error && data?.success) {
-      (window as any).toast?.(`${data.count} membro(s) ${bulkActive ? 'ativado(s)' : 'desativado(s)'}`, 'success');
+      (window as any).toast?.(`${data.count} ${bulkActive ? t('comp.memberList.membersActivated', 'membro(s) ativado(s)') : t('comp.memberList.membersDeactivated', 'membro(s) desativado(s)')}`, 'success');
       setSelectedIds(new Set());
       setShowBulkStatus(false);
       await fetchMembers();
     } else {
-      (window as any).toast?.(error?.message || 'Erro na operação', 'error');
+      (window as any).toast?.(error?.message || t('comp.memberList.operationError', 'Erro na operação'), 'error');
     }
     setBulkSaving(false);
   };
@@ -231,11 +235,11 @@ export default function MemberListIsland() {
       {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
         {[
-          { label: 'Total', value: total, icon: <Users size={16} /> },
-          { label: 'Ativos', value: active, color: 'text-emerald-500' },
-          { label: 'Inativos', value: inactive, color: 'text-red-400' },
-          { label: 'Sem tribo', value: noTribe, color: 'text-amber-500' },
-          { label: 'Sem login', value: noAuth, color: 'text-slate-400' },
+          { label: t('comp.memberList.total', 'Total'), value: total, icon: <Users size={16} /> },
+          { label: t('comp.memberList.active', 'Ativos'), value: active, color: 'text-emerald-500' },
+          { label: t('comp.memberList.inactive', 'Inativos'), value: inactive, color: 'text-red-400' },
+          { label: t('comp.memberList.noTribe', 'Sem tribo'), value: noTribe, color: 'text-amber-500' },
+          { label: t('comp.memberList.noLogin', 'Sem login'), value: noAuth, color: 'text-slate-400' },
         ].map(s => (
           <div key={s.label} className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3 text-center">
             <div className={`text-2xl font-black ${s.color || 'text-[var(--text-primary)]'}`}>{s.value}</div>
@@ -250,7 +254,7 @@ export default function MemberListIsland() {
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
           <input
             type="text"
-            placeholder="Buscar por nome ou email..."
+            placeholder={t('comp.memberList.searchPlaceholder', 'Buscar por nome ou email...')}
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-teal-500"
@@ -258,35 +262,35 @@ export default function MemberListIsland() {
         </div>
         <select value={tierFilter} onChange={e => setTierFilter(e.target.value)}
           className="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)]">
-          <option value="">Todos os papéis</option>
+          <option value="">{t('comp.memberList.allRoles', 'Todos os papéis')}</option>
           {ALL_ROLES.map(r => <option key={r} value={r}>{OPROLE_LABELS[r] || r}</option>)}
         </select>
         <select value={tribeFilter} onChange={e => setTribeFilter(e.target.value)}
           className="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)]">
-          <option value="">Todas as tribos</option>
+          <option value="">{t('comp.memberList.allTribes', 'Todas as tribos')}</option>
           {tribes.map(([id, name]) => <option key={id} value={String(id)}>T{String(id).padStart(2, '0')} — {name}</option>)}
         </select>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
           className="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)]">
-          <option value="active">Ativos</option>
-          <option value="inactive">Inativos</option>
-          <option value="all">Todos</option>
+          <option value="active">{t('comp.memberList.active', 'Ativos')}</option>
+          <option value="inactive">{t('comp.memberList.inactive', 'Inativos')}</option>
+          <option value="all">{t('comp.memberList.all', 'Todos')}</option>
         </select>
       </div>
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
         <div className="sticky top-0 z-10 mb-3 px-4 py-2.5 bg-teal-600/10 border border-teal-500/30 rounded-lg text-sm font-semibold flex items-center gap-2 flex-wrap">
-          <span className="text-teal-500">✓ {selectedIds.size} membro{selectedIds.size > 1 ? 's' : ''} selecionado{selectedIds.size > 1 ? 's' : ''}</span>
+          <span className="text-teal-500">✓ {selectedIds.size} {t('comp.memberList.selected', 'selecionado(s)')}</span>
           <div className="ml-auto flex gap-2">
             <button onClick={() => setShowBulkAllocate(true)} className="px-3 py-1.5 text-[13px] bg-teal-600 text-white rounded-lg border-0 cursor-pointer hover:bg-teal-700">
-              Alocar em Tribo
+              {t('comp.memberList.allocateToTribe', 'Alocar em Tribo')}
             </button>
             <button onClick={() => setShowBulkStatus(true)} className="px-3 py-1.5 text-[13px] bg-amber-500 text-white rounded-lg border-0 cursor-pointer hover:bg-amber-600">
-              Mudar Status
+              {t('comp.memberList.changeStatus', 'Mudar Status')}
             </button>
             <button onClick={() => setSelectedIds(new Set())} className="px-3 py-1.5 text-[13px] text-[var(--text-muted)] hover:text-[var(--text-primary)] bg-transparent border-0 cursor-pointer">
-              Cancelar
+              {t('comp.memberList.cancel', 'Cancelar')}
             </button>
           </div>
         </div>
@@ -295,7 +299,7 @@ export default function MemberListIsland() {
       {/* Table */}
       {loading ? (
         <div className="flex items-center justify-center py-16 text-[var(--text-muted)]">
-          <Loader2 size={24} className="animate-spin mr-2" /> Carregando membros...
+          <Loader2 size={24} className="animate-spin mr-2" /> {t('comp.memberList.loading', 'Carregando membros...')}
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-[var(--border-default)]">
@@ -305,13 +309,13 @@ export default function MemberListIsland() {
                 <th className="px-3 py-2 text-left w-10">
                   <input type="checkbox" checked={selectedIds.size === members.length && members.length > 0} onChange={toggleSelectAll} className="accent-teal-500" />
                 </th>
-                <th className="px-3 py-2 text-left">Membro</th>
-                <th className="px-3 py-2 text-left">Papel / Designações</th>
-                <th className="px-3 py-2 text-left">Tribo</th>
-                <th className="px-3 py-2 text-left">Capítulo</th>
-                <th className="px-3 py-2 text-center">Status</th>
-                <th className="px-3 py-2 text-left">Último acesso</th>
-                <th className="px-3 py-2 text-center w-16">Ações</th>
+                <th className="px-3 py-2 text-left">{t('comp.memberList.thMember', 'Membro')}</th>
+                <th className="px-3 py-2 text-left">{t('comp.memberList.thRoleDesig', 'Papel / Designações')}</th>
+                <th className="px-3 py-2 text-left">{t('comp.memberList.thTribe', 'Tribo')}</th>
+                <th className="px-3 py-2 text-left">{t('comp.memberList.thChapter', 'Capítulo')}</th>
+                <th className="px-3 py-2 text-center">{t('comp.memberList.thStatus', 'Status')}</th>
+                <th className="px-3 py-2 text-left">{t('comp.memberList.thLastSeen', 'Último acesso')}</th>
+                <th className="px-3 py-2 text-center w-16">{t('comp.memberList.thActions', 'Ações')}</th>
               </tr>
             </thead>
             <tbody>
@@ -354,7 +358,7 @@ export default function MemberListIsland() {
                   <td className="px-3 py-2 text-center">{m.is_active ? '🟢' : '🔴'}</td>
                   <td className="px-3 py-2 text-[var(--text-muted)] text-[.8rem]">{m.last_seen_at ? timeAgo(m.last_seen_at) : '—'}</td>
                   <td className="px-3 py-2 text-center">
-                    <button onClick={() => openEdit(m)} className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-muted)] bg-transparent border-0 cursor-pointer" title="Editar">
+                    <button onClick={() => openEdit(m)} className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-muted)] bg-transparent border-0 cursor-pointer" title={t('comp.memberList.edit', 'Editar')}>
                       <Edit2 size={14} />
                     </button>
                   </td>
@@ -363,7 +367,7 @@ export default function MemberListIsland() {
             </tbody>
           </table>
           {members.length === 0 && !loading && (
-            <div className="text-center py-12 text-[var(--text-muted)]">Nenhum membro encontrado.</div>
+            <div className="text-center py-12 text-[var(--text-muted)]">{t('comp.memberList.noMembers', 'Nenhum membro encontrado.')}</div>
           )}
         </div>
       )}
@@ -373,7 +377,7 @@ export default function MemberListIsland() {
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={closeEdit}>
           <div className="bg-[var(--surface-card)] rounded-2xl w-full max-w-[480px] overflow-hidden flex flex-col" style={{ maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-[var(--border-default)] flex justify-between items-center flex-shrink-0">
-              <h3 className="text-base font-bold text-[var(--text-primary)]">Editar Membro</h3>
+              <h3 className="text-base font-bold text-[var(--text-primary)]">{t('comp.memberList.editMember', 'Editar Membro')}</h3>
               <button onClick={closeEdit} className="bg-transparent border-0 text-xl cursor-pointer text-[var(--text-muted)]"><X size={18} /></button>
             </div>
             <div className="p-5 overflow-y-auto flex-1 space-y-4">
@@ -391,7 +395,7 @@ export default function MemberListIsland() {
 
               {/* Operational Role */}
               <div className="p-3 rounded-xl bg-[var(--surface-base)] border border-[var(--border-default)]">
-                <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase tracking-wider block mb-2">Eixo 1 — Papel Operacional</label>
+                <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase tracking-wider block mb-2">{t('comp.memberList.axis1Role', 'Eixo 1 — Papel Operacional')}</label>
                 <select value={editRole} onChange={e => setEditRole(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-card)] text-[var(--text-primary)]">
                   {ALL_ROLES.map(r => <option key={r} value={r}>{OPROLE_LABELS[r] || r}</option>)}
@@ -400,7 +404,7 @@ export default function MemberListIsland() {
 
               {/* Designations */}
               <div className="p-3 rounded-xl bg-[var(--surface-base)] border border-[var(--border-default)]">
-                <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase tracking-wider block mb-2">Eixo 2 — Designações</label>
+                <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase tracking-wider block mb-2">{t('comp.memberList.axis2Desig', 'Eixo 2 — Designações')}</label>
                 <div className="grid grid-cols-2 gap-1.5">
                   {ALL_DESIGS.map(d => (
                     <label key={d} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] hover:bg-[var(--surface-hover)] cursor-pointer text-[.75rem]">
@@ -414,22 +418,22 @@ export default function MemberListIsland() {
               {/* Superadmin + Chapter + Status */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase">Capítulo</label>
+                  <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase">{t('comp.memberList.chapter', 'Capítulo')}</label>
                   <select value={editChapter} onChange={e => setEditChapter(e.target.value)}
                     className="px-2 py-1.5 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-card)] text-[var(--text-primary)]">
                     {['PMI-GO', 'PMI-CE', 'PMI-DF', 'PMI-MG', 'PMI-RS'].map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase">Status</label>
+                  <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase">{t('comp.memberList.status', 'Status')}</label>
                   <select value={String(editActive)} onChange={e => setEditActive(e.target.value === 'true')}
                     className="px-2 py-1.5 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-card)] text-[var(--text-primary)]">
-                    <option value="true">Ativo</option>
-                    <option value="false">Inativo</option>
+                    <option value="true">{t('comp.memberList.activeStatus', 'Ativo')}</option>
+                    <option value="false">{t('comp.memberList.inactiveStatus', 'Inativo')}</option>
                   </select>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase">Superadmin</label>
+                  <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase">{t('comp.memberList.superadmin', 'Superadmin')}</label>
                   <label className="flex items-center gap-2 cursor-pointer pt-1">
                     <input type="checkbox" checked={editSuperadmin} onChange={e => setEditSuperadmin(e.target.checked)} className="accent-orange-500" />
                     <span className="text-sm text-[var(--text-secondary)]">🔧 SA</span>
@@ -438,9 +442,9 @@ export default function MemberListIsland() {
               </div>
             </div>
             <div className="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2 flex-shrink-0">
-              <button onClick={closeEdit} className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer">Cancelar</button>
+              <button onClick={closeEdit} className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer">{t('comp.memberList.cancel', 'Cancelar')}</button>
               <button onClick={saveEdit} disabled={saving} className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-teal-600 text-white border-0 hover:bg-teal-700 cursor-pointer disabled:opacity-50">
-                {saving ? 'Salvando...' : 'Salvar'}
+                {saving ? t('comp.memberList.saving', 'Salvando...') : t('comp.memberList.save', 'Salvar')}
               </button>
             </div>
           </div>
@@ -452,22 +456,22 @@ export default function MemberListIsland() {
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={() => setShowBulkAllocate(false)}>
           <div className="bg-[var(--surface-card)] rounded-2xl w-full max-w-[400px] overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-[var(--border-default)]">
-              <h3 className="text-base font-bold text-[var(--text-primary)]">Alocar {selectedIds.size} membro(s) em tribo</h3>
+              <h3 className="text-base font-bold text-[var(--text-primary)]">{t('comp.memberList.allocateTitle', 'Alocar')} {selectedIds.size} {t('comp.memberList.membersInTribe', 'membro(s) em tribo')}</h3>
             </div>
             <div className="p-5 space-y-4">
               <select value={bulkTribeId} onChange={e => setBulkTribeId(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)]">
-                <option value="">Selecione uma tribo...</option>
+                <option value="">{t('comp.memberList.selectTribe', 'Selecione uma tribo...')}</option>
                 {tribes.map(([id, name]) => <option key={id} value={String(id)}>T{String(id).padStart(2, '0')} — {name}</option>)}
               </select>
               <p className="text-sm text-[var(--text-muted)]">
-                Esta ação alocará {selectedIds.size} membro(s) na tribo selecionada.
+                {t('comp.memberList.allocateConfirmPre', 'Esta ação alocará')} {selectedIds.size} {t('comp.memberList.allocateConfirmPost', 'membro(s) na tribo selecionada.')}
               </p>
             </div>
             <div className="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2">
-              <button onClick={() => setShowBulkAllocate(false)} className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer">Cancelar</button>
+              <button onClick={() => setShowBulkAllocate(false)} className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer">{t('comp.memberList.cancel', 'Cancelar')}</button>
               <button onClick={handleBulkAllocate} disabled={!bulkTribeId || bulkSaving} className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-teal-600 text-white border-0 hover:bg-teal-700 cursor-pointer disabled:opacity-50">
-                {bulkSaving ? 'Alocando...' : 'Confirmar'}
+                {bulkSaving ? t('comp.memberList.allocating', 'Alocando...') : t('comp.memberList.confirm', 'Confirmar')}
               </button>
             </div>
           </div>
@@ -479,27 +483,27 @@ export default function MemberListIsland() {
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={() => setShowBulkStatus(false)}>
           <div className="bg-[var(--surface-card)] rounded-2xl w-full max-w-[400px] overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="px-5 py-4 border-b border-[var(--border-default)]">
-              <h3 className="text-base font-bold text-[var(--text-primary)]">Mudar status de {selectedIds.size} membro(s)</h3>
+              <h3 className="text-base font-bold text-[var(--text-primary)]">{t('comp.memberList.changeStatusOf', 'Mudar status de')} {selectedIds.size} {t('comp.memberList.membersParens', 'membro(s)')}</h3>
             </div>
             <div className="p-5 space-y-4">
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 cursor-pointer text-sm text-[var(--text-primary)]">
                   <input type="radio" name="bulk-status" checked={bulkActive} onChange={() => setBulkActive(true)} className="accent-teal-500" />
-                  🟢 Ativar
+                  🟢 {t('comp.memberList.activate', 'Ativar')}
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer text-sm text-[var(--text-primary)]">
                   <input type="radio" name="bulk-status" checked={!bulkActive} onChange={() => setBulkActive(false)} className="accent-red-500" />
-                  🔴 Desativar
+                  🔴 {t('comp.memberList.deactivate', 'Desativar')}
                 </label>
               </div>
               <p className="text-sm text-[var(--text-muted)]">
-                Esta ação {bulkActive ? 'ativará' : 'desativará'} {selectedIds.size} membro(s).
+                {bulkActive ? t('comp.memberList.willActivate', 'Esta ação ativará') : t('comp.memberList.willDeactivate', 'Esta ação desativará')} {selectedIds.size} {t('comp.memberList.membersParens', 'membro(s)')}.
               </p>
             </div>
             <div className="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2">
-              <button onClick={() => setShowBulkStatus(false)} className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer">Cancelar</button>
+              <button onClick={() => setShowBulkStatus(false)} className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer">{t('comp.memberList.cancel', 'Cancelar')}</button>
               <button onClick={handleBulkStatus} disabled={bulkSaving} className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-teal-600 text-white border-0 hover:bg-teal-700 cursor-pointer disabled:opacity-50">
-                {bulkSaving ? 'Processando...' : 'Confirmar'}
+                {bulkSaving ? t('comp.memberList.processing', 'Processando...') : t('comp.memberList.confirm', 'Confirmar')}
               </button>
             </div>
           </div>

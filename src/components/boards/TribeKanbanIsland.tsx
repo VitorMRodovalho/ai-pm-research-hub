@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { usePageI18n } from '../../i18n/usePageI18n';
 import { trackEvent } from '../../lib/analytics';
 import {
   DndContext,
@@ -156,6 +157,7 @@ function SortableCard({
   onApproveLeader: (item: BoardItem) => void;
   i18n: Record<string, string>;
 }) {
+  const t = usePageI18n();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
     disabled: !canEdit,
@@ -208,7 +210,7 @@ function SortableCard({
         type="button"
         onClick={(e) => { e.stopPropagation(); onOpen(item); }}
         className="text-[13px] font-semibold text-[var(--text-primary)] mb-1 line-clamp-2 text-left w-full bg-transparent border-0 p-0 cursor-pointer hover:underline"
-      >{item.title || 'Sem titulo'}</button>
+      >{item.title || t('comp.kanban.untitled', 'Sem titulo')}</button>
       {item.is_legacy && item.origin_tribe_name ? (
         <span className="inline-block text-[9px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 font-bold mb-1">
           {i18n.legacyLabel || 'Legado:'} {item.origin_tribe_name}
@@ -220,7 +222,7 @@ function SortableCard({
         ) : (
           <UserCircle2 size={16} />
         )}
-        <span className="truncate">{item.assignee_name || 'Sem responsavel'}</span>
+        <span className="truncate">{item.assignee_name || t('comp.kanban.noAssignee', 'Sem responsavel')}</span>
       </div>
       {item.reviewer_name && curation === 'peer_review' ? (
         <div className="text-[10px] text-amber-600 mt-0.5">{i18n.reviewerLabel || 'Revisor:'} {item.reviewer_name}</div>
@@ -263,7 +265,7 @@ function SortableCard({
                     onClick={() => { onRequestReview(item, m.id); }}
                     className="block w-full text-left px-2 py-1.5 rounded hover:bg-[var(--surface-hover)] text-sm"
                   >
-                    {m.name || 'Membro'}
+                    {m.name || t('comp.kanban.member', 'Membro')}
                   </button>
                 ))}
                 {peers.length === 0 ? (
@@ -297,6 +299,7 @@ function SortableCard({
 }
 
 export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; i18n: TribeKanbanI18n }) {
+  const t = usePageI18n();
   const windowRef = globalThis as any;
   const [loading, setLoading] = useState(true);
   const [denied, setDenied] = useState(false);
@@ -309,26 +312,37 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
   const [tribeData, setTribeData] = useState<any>(null);
   const [currentMember, setCurrentMember] = useState<any>(null);
   const ui = {
-    deniedBoard: i18n?.deniedBoard || 'Acesso restrito para este quadro.',
-    checklist: i18n?.checklist || 'Checklist',
-    status: i18n?.status || 'Status',
-    assignee: i18n?.assignee || 'Responsavel',
-    noAssignee: i18n?.noAssignee || 'Sem responsavel',
-    dueDate: i18n?.dueDate || 'Prazo',
-    archiveCard: i18n?.archiveCard || 'Arquivar card',
-    cancel: i18n?.cancel || 'Cancelar',
-    save: i18n?.save || 'Salvar',
-    requestReview: i18n?.requestReview || 'Solicitar Revisao',
-    approvePeer: i18n?.approvePeer || 'Aprovar (Peer)',
-    approveForCuration: i18n?.approveForCuration || 'Aprovar para Curadoria',
-    selectReviewer: i18n?.selectReviewer || 'Selecionar revisor',
-    legacyLabel: i18n?.legacyLabel || 'Legado:',
-    reviewerLabel: i18n?.reviewerLabel || 'Revisor:',
-    noPeersAvailable: i18n?.noPeersAvailable || 'Nenhum colega disponivel',
-    tribeBoardTitle: i18n?.tribeBoardTitle || 'Quadro da Tribo',
-    curationPipelineTitle: i18n?.curationPipelineTitle || 'Esteira de Curadoria',
-    cardsCount: i18n?.cardsCount || 'cards',
-    editCardTitle: i18n?.editCardTitle || 'Editar card',
+    deniedBoard: i18n?.deniedBoard || t('comp.kanban.deniedBoard', 'Acesso restrito para este quadro.'),
+    checklist: i18n?.checklist || t('comp.kanban.checklist', 'Checklist'),
+    status: i18n?.status || t('comp.kanban.status', 'Status'),
+    assignee: i18n?.assignee || t('comp.kanban.assignee', 'Responsavel'),
+    noAssignee: i18n?.noAssignee || t('comp.kanban.noAssignee', 'Sem responsavel'),
+    dueDate: i18n?.dueDate || t('comp.kanban.dueDate', 'Prazo'),
+    archiveCard: i18n?.archiveCard || t('comp.kanban.archiveCard', 'Arquivar card'),
+    cancel: i18n?.cancel || t('comp.kanban.cancel', 'Cancelar'),
+    save: i18n?.save || t('comp.kanban.save', 'Salvar'),
+    requestReview: i18n?.requestReview || t('comp.kanban.requestReview', 'Solicitar Revisao'),
+    approvePeer: i18n?.approvePeer || t('comp.kanban.approvePeer', 'Aprovar (Peer)'),
+    approveForCuration: i18n?.approveForCuration || t('comp.kanban.approveForCuration', 'Aprovar para Curadoria'),
+    selectReviewer: i18n?.selectReviewer || t('comp.kanban.selectReviewer', 'Selecionar revisor'),
+    legacyLabel: i18n?.legacyLabel || t('comp.kanban.legacyLabel', 'Legado:'),
+    reviewerLabel: i18n?.reviewerLabel || t('comp.kanban.reviewerLabel', 'Revisor:'),
+    noPeersAvailable: i18n?.noPeersAvailable || t('comp.kanban.noPeersAvailable', 'Nenhum colega disponivel'),
+    tribeBoardTitle: i18n?.tribeBoardTitle || t('comp.kanban.tribeBoardTitle', 'Quadro da Tribo'),
+    curationPipelineTitle: i18n?.curationPipelineTitle || t('comp.kanban.curationPipelineTitle', 'Esteira de Curadoria'),
+    cardsCount: i18n?.cardsCount || t('comp.kanban.cardsCount', 'cards'),
+    editCardTitle: i18n?.editCardTitle || t('comp.kanban.editCardTitle', 'Editar card'),
+  };
+
+  const laneLabels: Record<string, string> = {
+    backlog: t('comp.kanban.lane.backlog', 'Backlog'),
+    todo: t('comp.kanban.lane.todo', 'A Fazer'),
+    doing: t('comp.kanban.lane.doing', 'Em Progresso'),
+    done: t('comp.kanban.lane.done', 'Concluido'),
+    peer_review: t('comp.kanban.lane.peerReview', 'Revisao por par'),
+    leader_review: t('comp.kanban.lane.leaderReview', 'Revisao do lider'),
+    curation_pending: t('comp.kanban.lane.curationPending', 'Aguard. curadoria'),
+    published: t('comp.kanban.lane.published', 'Publicado'),
   };
 
   const sensors = useSensors(
@@ -435,7 +449,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       });
       if (error) {
         rollbackMove(itemId, previousLane);
-        windowRef?.toast?.(error.message || 'Falha ao reordenar', 'error');
+        windowRef?.toast?.(error.message || t('comp.kanban.errorReorder', 'Falha ao reordenar'), 'error');
       }
       return;
     }
@@ -448,7 +462,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       });
       if (error) {
         rollbackMove(itemId, previousLane);
-        windowRef?.toast?.(error.message || 'Falha ao mover', 'error');
+        windowRef?.toast?.(error.message || t('comp.kanban.errorMove', 'Falha ao mover'), 'error');
       }
       return;
     }
@@ -457,10 +471,10 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       const { error } = await sb.rpc('advance_board_item_curation', { p_item_id: itemId, p_action: 'approve_peer', p_reviewer_id: null });
       if (error) {
         rollbackMove(itemId, previousLane);
-        windowRef?.toast?.(error.message || 'Falha', 'error');
+        windowRef?.toast?.(error.message || t('comp.kanban.errorGeneric', 'Falha'), 'error');
         return;
       }
-      windowRef?.toast?.('Aprovado (Peer)', 'success');
+      windowRef?.toast?.(t('comp.kanban.approvedPeer', 'Aprovado (Peer)'), 'success');
       return;
     }
     if (previousLane === 'leader_review' && targetLane === 'curation_pending') {
@@ -469,15 +483,15 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
         const { error } = await sb.rpc('advance_board_item_curation', { p_item_id: itemId, p_action: 'approve_leader', p_reviewer_id: null });
         if (error) {
           rollbackMove(itemId, previousLane);
-          windowRef?.toast?.(error.message || 'Falha', 'error');
+          windowRef?.toast?.(error.message || t('comp.kanban.errorGeneric', 'Falha'), 'error');
           return;
         }
-        windowRef?.toast?.('Enviado para curadoria', 'success');
+        windowRef?.toast?.(t('comp.kanban.sentToCuration', 'Enviado para curadoria'), 'success');
         return;
       }
     }
     rollbackMove(itemId, previousLane);
-    windowRef?.toast?.('Transicao nao permitida', 'error');
+    windowRef?.toast?.(t('comp.kanban.transitionNotAllowed', 'Transicao nao permitida'), 'error');
   }
 
   async function moveViaKeyboard(item: BoardItem, direction: -1 | 1) {
@@ -516,12 +530,12 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       p_reviewer_id: reviewerId,
     });
     if (error) {
-      windowRef?.toast?.(error.message || 'Falha ao solicitar revisao', 'error');
+      windowRef?.toast?.(error.message || t('comp.kanban.errorRequestReview', 'Falha ao solicitar revisao'), 'error');
       return;
     }
     const reviewer = members.find((m) => m.id === reviewerId);
     setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, curation_status: 'peer_review', reviewer_id: reviewerId, reviewer_name: reviewer?.name } : row)));
-    windowRef?.toast?.('Revisao solicitada', 'success');
+    windowRef?.toast?.(t('comp.kanban.reviewRequested', 'Revisao solicitada'), 'success');
   }
 
   async function handleApprovePeer(item: BoardItem) {
@@ -533,11 +547,11 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       p_reviewer_id: null,
     });
     if (error) {
-      windowRef?.toast?.(error.message || 'Falha ao aprovar', 'error');
+      windowRef?.toast?.(error.message || t('comp.kanban.errorApprove', 'Falha ao aprovar'), 'error');
       return;
     }
     setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, curation_status: 'leader_review' } : row)));
-    windowRef?.toast?.('Aprovado (Peer)', 'success');
+    windowRef?.toast?.(t('comp.kanban.approvedPeer', 'Aprovado (Peer)'), 'success');
   }
 
   async function handleApproveLeader(item: BoardItem) {
@@ -549,11 +563,11 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       p_reviewer_id: null,
     });
     if (error) {
-      windowRef?.toast?.(error.message || 'Falha ao aprovar para curadoria', 'error');
+      windowRef?.toast?.(error.message || t('comp.kanban.errorApproveCuration', 'Falha ao aprovar para curadoria'), 'error');
       return;
     }
     setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, curation_status: 'curation_pending' } : row)));
-    windowRef?.toast?.('Enviado para curadoria', 'success');
+    windowRef?.toast?.(t('comp.kanban.sentToCuration', 'Enviado para curadoria'), 'success');
   }
 
   async function onDragEnd(event: DragEndEvent) {
@@ -621,13 +635,13 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       p_attachments: parseAttachments(modalItem.attachments),
     });
     if (error) {
-      windowRef?.toast?.(error.message || 'Nao foi possivel salvar', 'error');
+      windowRef?.toast?.(error.message || t('comp.kanban.errorSave', 'Nao foi possivel salvar'), 'error');
       return;
     }
     const isNew = !modalItem.id || !items.some((row) => row.id === modalItem.id);
     setItems((prev) => prev.map((row) => (row.id === modalItem.id ? { ...modalItem } : row)));
     setModalItem(null);
-    windowRef?.toast?.('Card salvo com sucesso', 'success');
+    windowRef?.toast?.(t('comp.kanban.cardSaved', 'Card salvo com sucesso'), 'success');
     if (isNew) trackEvent('board_card_created', { tribe_id: tribeId, card_type: modalItem.status || 'backlog' });
   }
 
@@ -640,16 +654,16 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       p_reason: 'Archived from TribeKanbanIsland',
     });
     if (error) {
-      windowRef?.toast?.(error.message || 'Nao foi possivel arquivar', 'error');
+      windowRef?.toast?.(error.message || t('comp.kanban.errorArchive', 'Nao foi possivel arquivar'), 'error');
       return;
     }
     setItems((prev) => prev.filter((row) => row.id !== modalItem.id));
     setModalItem(null);
-    windowRef?.toast?.('Card arquivado', 'success');
+    windowRef?.toast?.(t('comp.kanban.cardArchived', 'Card arquivado'), 'success');
   }
 
   if (loading) {
-    return <div className="text-center py-10 text-[var(--text-muted)]">{i18n.loading || 'Carregando...'}</div>;
+    return <div className="text-center py-10 text-[var(--text-muted)]">{i18n.loading || t('comp.kanban.loading', 'Carregando...')}</div>;
   }
   if (denied) {
     return <div className="text-center py-10 text-[var(--text-secondary)]">{ui.deniedBoard}</div>;
@@ -678,7 +692,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
             {BOARD_LANES.map((lane) => (
               <section key={lane.key} className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-[12px] font-bold text-[var(--text-primary)]">{lane.label}</h3>
+                  <h3 className="text-[12px] font-bold text-[var(--text-primary)]">{laneLabels[lane.key] || lane.label}</h3>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--surface-section-cool)] text-[var(--text-secondary)]">
                     {itemsByLane[lane.key]?.length || 0}
                   </span>
@@ -708,7 +722,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
                     ))}
                     {(itemsByLane[lane.key]?.length || 0) === 0 ? (
                       <div className="text-[11px] text-[var(--text-muted)] py-6 text-center">
-                        {activeId ? 'Solte o card aqui' : 'Sem cards'}
+                        {activeId ? t('comp.kanban.dropCardHere', 'Solte o card aqui') : t('comp.kanban.noCards', 'Sem cards')}
                       </div>
                     ) : null}
                   </div>
@@ -729,7 +743,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
               {CURATION_LANES.map((lane) => (
                 <section key={lane.key} className="rounded-2xl border border-purple-200 dark:border-purple-800 bg-purple-50/30 dark:bg-purple-900/10 p-3">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-[12px] font-bold text-purple-700 dark:text-purple-300">{lane.label}</h3>
+                    <h3 className="text-[12px] font-bold text-purple-700 dark:text-purple-300">{laneLabels[lane.key] || lane.label}</h3>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300">
                       {itemsByLane[lane.key]?.length || 0}
                     </span>
@@ -759,7 +773,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
                       ))}
                       {(itemsByLane[lane.key]?.length || 0) === 0 ? (
                         <div className="text-[11px] text-[var(--text-muted)] py-6 text-center">
-                          {activeId ? 'Solte o card aqui' : 'Sem cards'}
+                          {activeId ? t('comp.kanban.dropCardHere', 'Solte o card aqui') : t('comp.kanban.noCards', 'Sem cards')}
                         </div>
                       ) : null}
                     </div>
@@ -797,7 +811,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
                   onChange={(e) => setModalItem((prev) => (prev ? { ...prev, description: e.target.value } : prev))}
                   rows={8}
                   className="w-full text-sm border border-[var(--border-default)] rounded-lg px-3 py-2 bg-[var(--surface-card)] text-[var(--text-primary)]"
-                  placeholder="Descricao do card..."
+                  placeholder={t('comp.kanban.descriptionPlaceholder', 'Descricao do card...')}
                 />
                 <div className="space-y-2">
                   <p className="text-[12px] font-semibold text-[var(--text-secondary)]">{ui.checklist}</p>
@@ -832,7 +846,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
                     className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 bg-[var(--surface-card)] text-[var(--text-primary)]"
                   >
                     {ALL_LANES.map((lane) => (
-                      <option key={lane.key} value={lane.key}>{lane.label}</option>
+                      <option key={lane.key} value={lane.key}>{laneLabels[lane.key] || lane.label}</option>
                     ))}
                   </select>
                 </div>
@@ -848,7 +862,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
                   >
                     <option value="">{ui.noAssignee}</option>
                     {members.map((member) => (
-                      <option key={member.id} value={member.id}>{member.name || 'Membro'}</option>
+                      <option key={member.id} value={member.id}>{member.name || t('comp.kanban.member', 'Membro')}</option>
                     ))}
                   </select>
                 </div>
