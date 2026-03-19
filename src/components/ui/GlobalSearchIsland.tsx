@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Command } from 'cmdk';
 import { Search } from 'lucide-react';
+import { usePageI18n } from '../../i18n/usePageI18n';
 
 type SearchResult = {
   chunk_id: string;
@@ -21,6 +22,7 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function GlobalSearchIsland() {
+  const t = usePageI18n();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -82,10 +84,10 @@ export default function GlobalSearchIsland() {
         data-action="open-global-search"
         onClick={() => setOpen(true)}
         className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[.73rem] font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all"
-        title="Buscar... (⌘K)"
+        title={t('comp.globalSearch.trigger', 'Buscar... (⌘K)')}
       >
         <Search size={14} />
-        <span>Buscar... (⌘K)</span>
+        <span>{t('comp.globalSearch.trigger', 'Buscar... (⌘K)')}</span>
       </button>
       {open && (
         <div
@@ -99,24 +101,24 @@ export default function GlobalSearchIsland() {
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}
             role="dialog"
-            aria-label="Busca global"
+            aria-label={t('comp.globalSearch.ariaLabel', 'Busca global')}
           >
             <Command
               className="[&_[cmdk-input]]:h-12 [&_[cmdk-input]]:px-4 [&_[cmdk-input]]:text-[15px] [&_[cmdk-input]]:border-0 [&_[cmdk-input]]:focus:ring-0"
               shouldFilter={false}
             >
               <Command.Input
-                placeholder="Buscar em pesquisas e conhecimento..."
+                placeholder={t('comp.globalSearch.placeholder', 'Buscar em pesquisas e conhecimento...')}
                 value={query}
                 onValueChange={setQuery}
                 autoFocus
               />
               <Command.List className="max-h-[320px] overflow-y-auto p-2">
                 {loading && (
-                  <div className="py-6 text-center text-[var(--text-secondary)] text-sm">Buscando...</div>
+                  <div className="py-6 text-center text-[var(--text-secondary)] text-sm">{t('comp.globalSearch.searching', 'Buscando...')}</div>
                 )}
                 {!loading && query.length >= 2 && results.length === 0 && (
-                  <div className="py-6 text-center text-[var(--text-secondary)] text-sm">Nenhum resultado encontrado.</div>
+                  <div className="py-6 text-center text-[var(--text-secondary)] text-sm">{t('comp.globalSearch.noResults', 'Nenhum resultado encontrado.')}</div>
                 )}
                 {!loading &&
                   results.map((r) => (
@@ -126,7 +128,7 @@ export default function GlobalSearchIsland() {
                       className="flex flex-col items-stretch gap-1 px-3 py-2 rounded-lg cursor-pointer data-[selected=true]:bg-[var(--surface-base)] data-[selected=true]:outline-none"
                     >
                       <div className="text-[13px] font-semibold text-[var(--text-primary)] truncate">
-                        {r.theme_title || 'Sem título'}
+                        {r.theme_title || t('comp.globalSearch.noTitle', 'Sem título')}
                       </div>
                       <div className="text-[12px] text-[var(--text-secondary)] line-clamp-2">
                         {r.content_snippet}
