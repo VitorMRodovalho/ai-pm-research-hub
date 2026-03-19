@@ -7,7 +7,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 <AdminLayout title={t('pilots.title', lang)} breadcrumbs={[{label:'Operações'},{label:'Pilotos'}]}>
   <div class="max-w-[1100px] mx-auto px-4 py-8">
 
-    <h2 class="text-xl font-extrabold text-navy mb-1">{t('pilots.title', lang)}</h2>
+    <div class="flex items-center justify-between mb-1">
+      <h2 class="text-xl font-extrabold text-navy">{t('pilots.title', lang)}</h2>
+      <button id="btn-new-pilot"
+        class="hidden px-3 py-1.5 rounded-lg bg-navy text-white text-[11px] font-semibold cursor-pointer border-0 hover:bg-blue-800 transition-colors">
+        + {t('pilots.new', lang)}
+      </button>
+    </div>
     <p class="text-sm text-[var(--text-secondary)] mb-6">{t('pilots.subtitle', lang)}</p>
 
     <!-- Pilots management -->
@@ -18,7 +24,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     <div id="admin-pilots-content" class="hidden space-y-6">
       <!-- Pilots section -->
       <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5">
-        <h3 class="text-sm font-bold text-navy mb-4">🚀 {t('pilots.title', lang)}</h3>
+        <h3 class="text-sm font-bold text-navy mb-4">{t('pilots.title', lang)}</h3>
         <div id="pilots-list" class="space-y-3"></div>
       </div>
 
@@ -40,14 +46,99 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   </div>
 </AdminLayout>
 
+<!-- Pilot Modal -->
+<div id="pilot-modal" class="hidden fixed inset-0 z-[9999] flex items-center justify-center">
+  <div class="absolute inset-0 bg-black/40" id="pilot-modal-backdrop"></div>
+  <div class="relative bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+    <div class="p-5">
+      <h3 id="pilot-modal-title" class="text-base font-bold text-navy mb-4">{t('pilots.newPilot', lang)}</h3>
+      <form id="pilot-form" class="space-y-4">
+        <input type="hidden" id="pilot-form-id" value="" />
+
+        <div>
+          <label class="block text-xs font-bold text-navy mb-1">{t('pilots.title', lang)} *</label>
+          <input type="text" id="pilot-form-title" required
+            class="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-navy/30" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-navy mb-1">{t('pilots.status', lang)}</label>
+            <select id="pilot-form-status"
+              class="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-navy/30">
+              <option value="draft">{t('pilots.draft', lang)}</option>
+              <option value="active">{t('pilots.active', lang)}</option>
+              <option value="completed">{t('pilots.completed', lang)}</option>
+              <option value="cancelled">{t('pilots.cancelled', lang)}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-navy mb-1">{t('pilots.tribe', lang)}</label>
+            <select id="pilot-form-tribe"
+              class="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-navy/30">
+              <option value="">{t('pilots.selectTribe', lang)}</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-navy mb-1">{t('pilots.hypothesis', lang)}</label>
+          <textarea id="pilot-form-hypothesis" rows="2"
+            class="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-navy/30 resize-y"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-navy mb-1">{t('pilots.problem', lang)}</label>
+          <textarea id="pilot-form-problem" rows="2"
+            class="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-navy/30 resize-y"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-navy mb-1">{t('pilots.scope', lang)}</label>
+          <textarea id="pilot-form-scope" rows="2"
+            class="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-navy/30 resize-y"></textarea>
+        </div>
+
+        <div class="flex items-center justify-between pt-2">
+          <div>
+            <button type="button" id="pilot-form-delete"
+              class="hidden px-3 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold cursor-pointer border-0 hover:bg-red-700 transition-colors">
+              {t('common.delete', lang)}
+            </button>
+          </div>
+          <div class="flex gap-2">
+            <button type="button" id="pilot-form-cancel"
+              class="px-4 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-secondary)] text-xs font-semibold cursor-pointer hover:bg-[var(--surface-hover)] transition-colors">
+              {t('common.cancel', lang)}
+            </button>
+            <button type="submit"
+              class="px-4 py-1.5 rounded-lg bg-navy text-white text-xs font-semibold cursor-pointer border-0 hover:bg-blue-800 transition-colors">
+              {t('common.save', lang)}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <span id="i18n-releases-current" class="hidden">{t('releases.current', lang)}</span>
 <span id="i18n-pilots-active" class="hidden">{t('pilots.active', lang)}</span>
 <span id="i18n-pilots-completed" class="hidden">{t('pilots.completed', lang)}</span>
 <span id="i18n-pilots-draft" class="hidden">{t('pilots.draft', lang)}</span>
+<span id="i18n-pilots-cancelled" class="hidden">{t('pilots.cancelled', lang)}</span>
 <span id="i18n-pilots-metrics" class="hidden">{t('pilots.metrics', lang)}</span>
 <span id="i18n-pilots-team" class="hidden">{t('pilots.team', lang)}</span>
+<span id="i18n-pilots-editPilot" class="hidden">{t('pilots.editPilot', lang)}</span>
+<span id="i18n-pilots-newPilot" class="hidden">{t('pilots.newPilot', lang)}</span>
+<span id="i18n-pilots-confirmDelete" class="hidden">{t('pilots.confirmDelete', lang)}</span>
+<span id="i18n-pilots-saveSuccess" class="hidden">{t('pilots.saveSuccess', lang)}</span>
+<span id="i18n-pilots-deleteSuccess" class="hidden">{t('pilots.deleteSuccess', lang)}</span>
+<span id="i18n-common-edit" class="hidden">{t('common.edit', lang)}</span>
 
 <script>
+  import { hasPermission } from '../../lib/permissions';
+
   async function bootAdminPilots() {
     const sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(bootAdminPilots, 300); return; }
@@ -57,6 +148,212 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     if (!loading || !content) return;
 
     const i = (id: string) => document.getElementById(id)?.textContent || '';
+
+    // Check permission
+    const member = (window as any).navGetMember?.();
+    const canWrite = hasPermission(member, 'admin.portfolio');
+
+    // Show "New Pilot" button if permitted
+    const btnNewPilot = document.getElementById('btn-new-pilot');
+    if (canWrite && btnNewPilot) btnNewPilot.classList.remove('hidden');
+
+    // Tribes cache for modal select
+    let tribesCache: any[] = [];
+
+    async function loadTribes() {
+      if (tribesCache.length > 0) return tribesCache;
+      const { data } = await sb.from('tribes').select('id, name, name_i18n').order('id');
+      tribesCache = data || [];
+      return tribesCache;
+    }
+
+    function populateTribeSelect(tribes: any[]) {
+      const sel = document.getElementById('pilot-form-tribe') as HTMLSelectElement | null;
+      if (!sel) return;
+      // Keep the first option (placeholder), remove the rest
+      while (sel.options.length > 1) sel.remove(1);
+      for (const t of tribes) {
+        const opt = document.createElement('option');
+        opt.value = String(t.id);
+        opt.textContent = t.name_i18n?.pt || t.name_i18n?.en || t.name || `Tribe ${t.id}`;
+        sel.appendChild(opt);
+      }
+    }
+
+    // Modal helpers
+    const modal = document.getElementById('pilot-modal')!;
+    const modalTitle = document.getElementById('pilot-modal-title')!;
+    const formId = document.getElementById('pilot-form-id') as HTMLInputElement;
+    const formTitle = document.getElementById('pilot-form-title') as HTMLInputElement;
+    const formStatus = document.getElementById('pilot-form-status') as HTMLSelectElement;
+    const formTribe = document.getElementById('pilot-form-tribe') as HTMLSelectElement;
+    const formHypothesis = document.getElementById('pilot-form-hypothesis') as HTMLTextAreaElement;
+    const formProblem = document.getElementById('pilot-form-problem') as HTMLTextAreaElement;
+    const formScope = document.getElementById('pilot-form-scope') as HTMLTextAreaElement;
+    const formDelete = document.getElementById('pilot-form-delete') as HTMLButtonElement;
+
+    function openModal(pilot?: any) {
+      modalTitle.textContent = pilot ? i('i18n-pilots-editPilot') : i('i18n-pilots-newPilot');
+      formId.value = pilot?.id || '';
+      formTitle.value = pilot?.title || '';
+      formStatus.value = pilot?.status || 'draft';
+      formTribe.value = pilot?.tribe_id ? String(pilot.tribe_id) : '';
+      formHypothesis.value = pilot?.hypothesis || '';
+      formProblem.value = pilot?.problem_statement || '';
+      formScope.value = pilot?.scope || '';
+
+      // Show delete button only in edit mode
+      if (pilot?.id && canWrite) {
+        formDelete.classList.remove('hidden');
+      } else {
+        formDelete.classList.add('hidden');
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      modal.classList.add('hidden');
+    }
+
+    // Bind modal close
+    document.getElementById('pilot-modal-backdrop')?.addEventListener('click', closeModal);
+    document.getElementById('pilot-form-cancel')?.addEventListener('click', closeModal);
+
+    // New pilot button
+    btnNewPilot?.addEventListener('click', async () => {
+      const tribes = await loadTribes();
+      populateTribeSelect(tribes);
+      openModal();
+    });
+
+    // Form submit
+    document.getElementById('pilot-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = formId.value;
+      const payload: any = {
+        p_title: formTitle.value.trim(),
+        p_status: formStatus.value,
+        p_tribe_id: formTribe.value ? parseInt(formTribe.value) : null,
+        p_hypothesis: formHypothesis.value.trim() || null,
+        p_problem_statement: formProblem.value.trim() || null,
+        p_scope: formScope.value.trim() || null,
+      };
+
+      try {
+        let result;
+        if (id) {
+          payload.p_id = id;
+          result = await sb.rpc('update_pilot', payload);
+        } else {
+          result = await sb.rpc('create_pilot', payload);
+        }
+
+        if (result.error) throw result.error;
+        const data = result.data;
+        if (data && data.success === false) throw new Error(data.error || 'Unknown error');
+
+        (window as any).toast?.(i('i18n-pilots-saveSuccess'), 'success');
+        closeModal();
+        await reloadPilots();
+      } catch (err: any) {
+        (window as any).toast?.(err.message || 'Error saving pilot', 'error');
+      }
+    });
+
+    // Delete handler
+    formDelete?.addEventListener('click', async () => {
+      const id = formId.value;
+      if (!id) return;
+      if (!confirm(i('i18n-pilots-confirmDelete'))) return;
+
+      try {
+        const result = await sb.rpc('delete_pilot', { p_id: id });
+        if (result.error) throw result.error;
+        const data = result.data;
+        if (data && data.success === false) throw new Error(data.error || 'Unknown error');
+
+        (window as any).toast?.(i('i18n-pilots-deleteSuccess'), 'success');
+        closeModal();
+        await reloadPilots();
+      } catch (err: any) {
+        (window as any).toast?.(err.message || 'Error deleting pilot', 'error');
+      }
+    });
+
+    // Store pilots data for edit
+    let pilotsStore: any[] = [];
+
+    async function reloadPilots() {
+      const { data: pilotsData } = await sb.rpc('get_pilots_summary');
+      renderPilots(pilotsData);
+    }
+
+    function renderPilots(pilotsData: any) {
+      const pilotsList = document.getElementById('pilots-list');
+      if (!pilotsList || !pilotsData?.pilots) return;
+
+      pilotsStore = pilotsData.pilots;
+
+      const STATUS_BADGE: Record<string, string> = {
+        active: `<span class="px-2 py-0.5 rounded-full text-[.6rem] font-bold bg-emerald-50 text-emerald-700">${i('i18n-pilots-active')}</span>`,
+        completed: `<span class="px-2 py-0.5 rounded-full text-[.6rem] font-bold bg-blue-50 text-blue-700">${i('i18n-pilots-completed')}</span>`,
+        draft: `<span class="px-2 py-0.5 rounded-full text-[.6rem] font-bold bg-gray-100 text-gray-500">${i('i18n-pilots-draft')}</span>`,
+        cancelled: `<span class="px-2 py-0.5 rounded-full text-[.6rem] font-bold bg-red-50 text-red-600">${i('i18n-pilots-cancelled')}</span>`,
+      };
+      const esc = (s: string) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+      const editBtnHtml = canWrite
+        ? `<button data-edit-pilot class="px-2 py-0.5 rounded text-[.65rem] font-semibold bg-navy/10 text-navy hover:bg-navy/20 transition-colors cursor-pointer border-0">${i('i18n-common-edit')}</button>`
+        : '';
+
+      pilotsList.innerHTML = pilotsData.pilots.map((p: any, idx: number) => {
+        const metrics = Array.isArray(p.success_metrics) ? p.success_metrics : [];
+        const metricsHtml = metrics.length > 0
+          ? `<table class="w-full text-[.7rem] mt-2 border-collapse"><thead><tr class="bg-[var(--surface-section-cool)]"><th class="text-left px-2 py-1 font-bold">Métrica</th><th class="text-center px-2 py-1 font-bold">Meta</th><th class="text-center px-2 py-1 font-bold">Atual</th></tr></thead><tbody>${metrics.map((m: any) => `<tr class="border-t border-[var(--border-subtle)]"><td class="px-2 py-1">${esc(m.name || m.metric || '')}</td><td class="px-2 py-1 text-center">${m.target ?? '—'}</td><td class="px-2 py-1 text-center font-bold">${m.current ?? '—'}</td></tr>`).join('')}</tbody></table>`
+          : '<p class="text-[.68rem] text-[var(--text-muted)]">Sem métricas definidas</p>';
+        return `
+        <div class="rounded-lg bg-[var(--surface-base)] overflow-hidden">
+          <div class="flex items-center justify-between p-3 cursor-pointer hover:bg-[var(--surface-hover)] transition-colors" onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('[data-chevron]').classList.toggle('rotate-90')">
+            <div>
+              <span class="text-sm font-bold text-navy">PILOT #${p.pilot_number}</span>
+              <span class="ml-2 text-[.78rem] text-[var(--text-secondary)]">${esc(p.title)}</span>
+              ${STATUS_BADGE[p.status] || ''}
+              ${p.tribe_name ? `<span class="ml-2 text-[.65rem] px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded font-medium">${esc(p.tribe_name)}</span>` : ''}
+            </div>
+            <div class="flex items-center gap-3">
+              ${editBtnHtml ? `<span data-pilot-idx="${idx}">${editBtnHtml}</span>` : ''}
+              <span class="text-[.7rem] text-[var(--text-muted)]">
+                ${p.days_active}d · ${i('i18n-pilots-team')}: ${p.team_count || 0} · ${i('i18n-pilots-metrics')}: ${p.metrics_count}
+              </span>
+              <span data-chevron class="text-[var(--text-muted)] transition-transform text-xs">▶</span>
+            </div>
+          </div>
+          <div class="hidden border-t border-[var(--border-subtle)] px-4 py-3 space-y-3 text-[.78rem]">
+            ${p.hypothesis ? `<div><span class="font-bold text-navy text-[.7rem]">Hipótese:</span><p class="text-[var(--text-secondary)] mt-0.5">${esc(p.hypothesis)}</p></div>` : ''}
+            ${p.problem_statement ? `<div><span class="font-bold text-navy text-[.7rem]">Problema:</span><p class="text-[var(--text-secondary)] mt-0.5">${esc(p.problem_statement)}</p></div>` : ''}
+            ${p.scope ? `<div><span class="font-bold text-navy text-[.7rem]">Escopo:</span><p class="text-[var(--text-secondary)] mt-0.5">${esc(p.scope)}</p></div>` : ''}
+            <div><span class="font-bold text-navy text-[.7rem]">${i('i18n-pilots-metrics')}:</span>${metricsHtml}</div>
+            ${p.board_id ? `<a href="/admin/board/${p.board_id}" class="inline-block mt-1 text-[.7rem] text-teal font-semibold hover:underline">Ver Board →</a>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+
+      // Bind edit buttons
+      if (canWrite) {
+        pilotsList.querySelectorAll('[data-edit-pilot]').forEach((btn) => {
+          btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const wrapper = (btn as HTMLElement).closest('[data-pilot-idx]');
+            const idx = parseInt(wrapper?.getAttribute('data-pilot-idx') || '-1');
+            if (idx < 0 || idx >= pilotsStore.length) return;
+            const tribes = await loadTribes();
+            populateTribeSelect(tribes);
+            openModal(pilotsStore[idx]);
+          });
+        });
+      }
+    }
 
     try {
       // Load pilots
@@ -68,45 +365,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       content.classList.remove('hidden');
 
       // Render pilots
-      const pilotsList = document.getElementById('pilots-list');
-      if (pilotsList && pilotsData?.pilots) {
-        const STATUS_BADGE: Record<string, string> = {
-          active: `<span class="px-2 py-0.5 rounded-full text-[.6rem] font-bold bg-emerald-50 text-emerald-700">${i('i18n-pilots-active')}</span>`,
-          completed: `<span class="px-2 py-0.5 rounded-full text-[.6rem] font-bold bg-blue-50 text-blue-700">${i('i18n-pilots-completed')}</span>`,
-          draft: `<span class="px-2 py-0.5 rounded-full text-[.6rem] font-bold bg-gray-100 text-gray-500">${i('i18n-pilots-draft')}</span>`,
-        };
-        const esc = (s: string) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        pilotsList.innerHTML = pilotsData.pilots.map((p: any) => {
-          const metrics = Array.isArray(p.success_metrics) ? p.success_metrics : [];
-          const metricsHtml = metrics.length > 0
-            ? `<table class="w-full text-[.7rem] mt-2 border-collapse"><thead><tr class="bg-[var(--surface-section-cool)]"><th class="text-left px-2 py-1 font-bold">Métrica</th><th class="text-center px-2 py-1 font-bold">Meta</th><th class="text-center px-2 py-1 font-bold">Atual</th></tr></thead><tbody>${metrics.map((m: any) => `<tr class="border-t border-[var(--border-subtle)]"><td class="px-2 py-1">${esc(m.name || m.metric || '')}</td><td class="px-2 py-1 text-center">${m.target ?? '—'}</td><td class="px-2 py-1 text-center font-bold">${m.current ?? '—'}</td></tr>`).join('')}</tbody></table>`
-            : '<p class="text-[.68rem] text-[var(--text-muted)]">Sem métricas definidas</p>';
-          return `
-          <div class="rounded-lg bg-[var(--surface-base)] overflow-hidden">
-            <div class="flex items-center justify-between p-3 cursor-pointer hover:bg-[var(--surface-hover)] transition-colors" onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('[data-chevron]').classList.toggle('rotate-90')">
-              <div>
-                <span class="text-sm font-bold text-navy">PILOT #${p.pilot_number}</span>
-                <span class="ml-2 text-[.78rem] text-[var(--text-secondary)]">${esc(p.title)}</span>
-                ${STATUS_BADGE[p.status] || ''}
-                ${p.tribe_name ? `<span class="ml-2 text-[.65rem] px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded font-medium">${esc(p.tribe_name)}</span>` : ''}
-              </div>
-              <div class="flex items-center gap-3">
-                <span class="text-[.7rem] text-[var(--text-muted)]">
-                  ${p.days_active}d · ${i('i18n-pilots-team')}: ${p.team_count || 0} · ${i('i18n-pilots-metrics')}: ${p.metrics_count}
-                </span>
-                <span data-chevron class="text-[var(--text-muted)] transition-transform text-xs">▶</span>
-              </div>
-            </div>
-            <div class="hidden border-t border-[var(--border-subtle)] px-4 py-3 space-y-3 text-[.78rem]">
-              ${p.hypothesis ? `<div><span class="font-bold text-navy text-[.7rem]">Hipótese:</span><p class="text-[var(--text-secondary)] mt-0.5">${esc(p.hypothesis)}</p></div>` : ''}
-              ${p.problem_statement ? `<div><span class="font-bold text-navy text-[.7rem]">Problema:</span><p class="text-[var(--text-secondary)] mt-0.5">${esc(p.problem_statement)}</p></div>` : ''}
-              ${p.scope ? `<div><span class="font-bold text-navy text-[.7rem]">Escopo:</span><p class="text-[var(--text-secondary)] mt-0.5">${esc(p.scope)}</p></div>` : ''}
-              <div><span class="font-bold text-navy text-[.7rem]">${i('i18n-pilots-metrics')}:</span>${metricsHtml}</div>
-              ${p.board_id ? `<a href="/admin/board/${p.board_id}" class="inline-block mt-1 text-[.7rem] text-teal font-semibold hover:underline">Ver Board →</a>` : ''}
-            </div>
-          </div>`;
-        }).join('');
-      }
+      renderPilots(pilotsData);
 
       // Render releases
       const releasesList = document.getElementById('releases-list');
