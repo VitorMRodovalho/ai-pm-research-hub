@@ -26,12 +26,12 @@ BEGIN
   SELECT jsonb_build_object(
     'member', (
       SELECT jsonb_build_object(
-        'id', m.id, 'full_name', m.full_name, 'email', m.email,
+        'id', m.id, 'full_name', m.name, 'email', m.email,
         'photo_url', m.photo_url, 'operational_role', m.operational_role,
         'designations', m.designations, 'is_superadmin', m.is_superadmin,
         'is_active', m.is_active, 'tribe_id', m.tribe_id,
         'tribe_name', t.name, 'chapter', m.chapter,
-        'auth_id', m.auth_id, 'credly_username', m.credly_username,
+        'auth_id', m.auth_id, 'credly_username', m.credly_url,
         'last_seen_at', m.last_seen_at, 'total_sessions', COALESCE(m.total_sessions, 0),
         'credly_badges', COALESCE(m.credly_badges, '[]'::jsonb)
       )
@@ -108,7 +108,7 @@ BEGIN
       SELECT COALESCE(jsonb_agg(jsonb_build_object(
         'action', al.action,
         'changes', al.changes,
-        'actor_name', actor.full_name,
+        'actor_name', actor.name,
         'created_at', al.created_at
       ) ORDER BY al.created_at DESC), '[]'::jsonb)
       FROM admin_audit_log al
