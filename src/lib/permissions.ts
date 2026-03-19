@@ -112,20 +112,26 @@ export const TIER_PERMISSIONS: Record<OperationalTier, Permission[]> = {
   ],
 
   sponsor: [
-    'admin.analytics.chapter', 'data.view_analytics',
+    'admin.access', 'admin.analytics', 'admin.analytics.chapter',
+    'admin.portfolio', 'admin.sustainability', 'admin.partners',
+    'data.view_analytics',
     'event.view_all', 'gamification.view_ranking',
     'content.view_publications',
     'workspace.access',
   ],
 
   chapter_liaison: [
-    'admin.analytics.chapter', 'data.view_analytics',
+    'admin.access', 'admin.analytics', 'admin.analytics.chapter',
+    'admin.portfolio', 'admin.partners',
+    'data.view_analytics',
     'event.view_all', 'gamification.view_ranking',
     'content.view_publications', 'content.curate',
     'workspace.access',
   ],
 
   tribe_leader: [
+    'admin.access', 'admin.analytics', 'admin.analytics.chapter',
+    'admin.portfolio', 'admin.sustainability', 'admin.partners',
     'board.view_own_tribe', 'board.view_global', 'board.create_item',
     'board.edit_tribe_items', 'board.manage_checklist', 'board.create_mirror',
     'event.create', 'event.edit', 'event.attendance_batch', 'event.view_own_tribe',
