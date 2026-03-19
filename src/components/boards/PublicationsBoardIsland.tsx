@@ -56,6 +56,7 @@ function SortableCard({
   onOpen: (item: BoardItem) => void;
 }) {
   const t = usePageI18n();
+  const isOverdue = item.due_date && new Date(item.due_date) < new Date() && item.status !== 'published';
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -89,7 +90,7 @@ function SortableCard({
       ) : null}
       <div className="flex flex-wrap gap-1 items-center">
         {item.due_date ? (
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">{[t('comp.pubBoard.duePrefix', 'Prazo:'), item.due_date].join(' ')}</span>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${isOverdue ? 'bg-red-100 dark:bg-red-950/30 text-red-700 dark:text-red-300 animate-pulse' : 'bg-amber-100 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300'}`}>{[t('comp.pubBoard.duePrefix', 'Prazo:'), item.due_date].join(' ')}</span>
         ) : null}
         {Array.isArray(item.tags)
           ? item.tags.map((tag) => (

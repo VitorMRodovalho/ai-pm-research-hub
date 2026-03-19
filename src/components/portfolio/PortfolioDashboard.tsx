@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { usePortfolio } from '../../hooks/usePortfolio';
 import PortfolioKPIs from './PortfolioKPIs';
 import PortfolioFilters from './PortfolioFilters';
@@ -19,6 +19,18 @@ const TABS: { key: Tab; label: string }[] = [
 export default function PortfolioDashboard() {
   const { data, filtered, filters, setFilters, clearFilters, hasActiveFilters, loading, error } = usePortfolio(3);
   const [tab, setTab] = useState<Tab>('table');
+
+  const filteredSummary = useMemo(() => {
+    if (!filtered || !filtered.length) return data?.summary || ({} as any);
+    return {
+      total_artifacts: filtered.length,
+      completed: filtered.filter((a: any) => a.health === 'completed').length,
+      on_track: filtered.filter((a: any) => a.health === 'on_track').length,
+      at_risk: filtered.filter((a: any) => a.health === 'at_risk').length,
+      delayed: filtered.filter((a: any) => a.health === 'delayed').length,
+      no_baseline: filtered.filter((a: any) => a.health === 'no_baseline').length,
+    };
+  }, [filtered, data?.summary]);
 
   if (loading) {
     return (
@@ -47,7 +59,7 @@ export default function PortfolioDashboard() {
 
   return (
     <div className="space-y-4">
-      <PortfolioKPIs summary={data.summary} />
+      <PortfolioKPIs summary={filteredSummary} />
 
       <PortfolioFilters
         filters={filters}

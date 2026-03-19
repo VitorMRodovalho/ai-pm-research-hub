@@ -2574,6 +2574,7 @@ const ptBR: Record<string, string> = {
   'comp.memberList.willActivate': 'Esta ação ativará',
   'comp.memberList.willDeactivate': 'Esta ação desativará',
   'comp.memberList.processing': 'Processando...',
+  'boards.overdue': 'Atrasado',
 };
 
 export default ptBR;
