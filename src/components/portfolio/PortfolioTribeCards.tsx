@@ -59,9 +59,14 @@ export default function PortfolioTribeCards({ tribes }: Props) {
             </div>
 
             {/* Next deadline */}
-            <div className="text-[11px] text-[var(--text-secondary)] mb-2">
-              Próx. entrega: <strong>{fmtDate(tribe.next_deadline)}</strong>
-            </div>
+            {(() => {
+              const isDeadlineOverdue = tribe.next_deadline && new Date(tribe.next_deadline) < new Date();
+              return (
+                <div className={`text-[11px] mb-2 ${isDeadlineOverdue ? 'text-red-600 dark:text-red-400' : 'text-[var(--text-secondary)]'}`}>
+                  {isDeadlineOverdue ? '⚠ ' : ''}Próx. entrega: <strong>{fmtDate(tribe.next_deadline)}</strong>
+                </div>
+              );
+            })()}
 
             {/* Checklist progress */}
             <div className="text-[11px] text-[var(--text-secondary)] mb-2">

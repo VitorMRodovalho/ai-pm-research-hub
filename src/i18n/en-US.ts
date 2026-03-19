@@ -2572,6 +2572,7 @@ const enUS: Record<string, string> = {
   'comp.memberList.willActivate': 'This action will activate',
   'comp.memberList.willDeactivate': 'This action will deactivate',
   'comp.memberList.processing': 'Processing...',
+  'boards.overdue': 'Overdue',
 };
 
 export default enUS;

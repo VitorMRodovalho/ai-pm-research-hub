@@ -2572,6 +2572,7 @@ const esLATAM: Record<string, string> = {
   'comp.memberList.willActivate': 'Esta acción activará',
   'comp.memberList.willDeactivate': 'Esta acción desactivará',
   'comp.memberList.processing': 'Procesando...',
+  'boards.overdue': 'Atrasado',
 };
 
 export default esLATAM;
