@@ -102,7 +102,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
               ${p.problem_statement ? `<div><span class="font-bold text-navy text-[.7rem]">Problema:</span><p class="text-[var(--text-secondary)] mt-0.5">${esc(p.problem_statement)}</p></div>` : ''}
               ${p.scope ? `<div><span class="font-bold text-navy text-[.7rem]">Escopo:</span><p class="text-[var(--text-secondary)] mt-0.5">${esc(p.scope)}</p></div>` : ''}
               <div><span class="font-bold text-navy text-[.7rem]">${i('i18n-pilots-metrics')}:</span>${metricsHtml}</div>
-              ${p.board_id ? `<a href="/board/${p.board_id}" class="inline-block mt-1 text-[.7rem] text-teal font-semibold hover:underline">Ver Board →</a>` : ''}
+              ${p.board_id ? `<a href="/admin/board/${p.board_id}" class="inline-block mt-1 text-[.7rem] text-teal font-semibold hover:underline">Ver Board →</a>` : ''}
             </div>
           </div>`;
         }).join('');
