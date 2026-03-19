@@ -2797,6 +2797,7 @@ const esLATAM: Record<string, string> = {
   'attendance.grid.week': 'Sem',
   'attendance.grid.leader': 'Líder',
   'attendance.grid.avg': 'Promedio',
+  'attendance.grid.crossFunctional': 'Funciones Transversales',
 
   // ── attendance event types ──
   'attendance.type.geral': 'General',

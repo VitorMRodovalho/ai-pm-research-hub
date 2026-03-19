@@ -33,6 +33,21 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           </div>
           <input type="hidden" id="edit-ev-selected-tags" value="">
         </div>
+        <div class="flex flex-col gap-1.5 sm:col-span-2">
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.eventType', lang)} *</label>
+          <select id="edit-ev-type" required
+                  class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
+            <option value="geral">Geral</option>
+            <option value="tribo">Tribo</option>
+            <option value="lideranca">Liderança</option>
+            <option value="kickoff">Kickoff</option>
+            <option value="comms">Comunicação</option>
+            <option value="parceria">Parceria</option>
+            <option value="entrevista">Entrevista</option>
+            <option value="1on1">1-on-1</option>
+            <option value="evento_externo">Evento Externo</option>
+          </select>
+        </div>
         <div class="flex flex-col gap-1.5">
           <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.date', lang)}</label>
           <input type="date" id="edit-ev-date"

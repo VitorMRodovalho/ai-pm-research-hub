@@ -2799,6 +2799,7 @@ const ptBR: Record<string, string> = {
   'attendance.grid.week': 'Sem',
   'attendance.grid.leader': 'Líder',
   'attendance.grid.avg': 'Média',
+  'attendance.grid.crossFunctional': 'Funções Transversais',
 
   // ── attendance event types ──
   'attendance.type.geral': 'Geral',

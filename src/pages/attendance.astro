@@ -1139,6 +1139,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
   async function openEditEvent(ev: any) {
     (document.getElementById('edit-ev-id') as HTMLInputElement).value = ev.id;
     (document.getElementById('edit-ev-title') as HTMLInputElement).value = ev.title || '';
+    (document.getElementById('edit-ev-type') as HTMLSelectElement).value = ev.type || 'geral';
     (document.getElementById('edit-ev-date') as HTMLInputElement).value = ev.date || '';
     (document.getElementById('edit-ev-duration') as HTMLInputElement).value = ev.duration_minutes || 90;
     (document.getElementById('edit-ev-link') as HTMLInputElement).value = ev.meeting_link || '';
@@ -1169,6 +1170,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
     const youtube = (document.getElementById('edit-ev-youtube') as HTMLInputElement).value.trim() || null;
     const recorded = (document.getElementById('edit-ev-recorded') as HTMLInputElement).checked;
     const audience = (document.getElementById('edit-ev-audience') as HTMLSelectElement).value;
+    const editType = (document.getElementById('edit-ev-type') as HTMLSelectElement).value;
     const tagIds = getSelectedTagIds('edit-ev-selected-tags');
 
     try {
@@ -1180,6 +1182,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
       });
       if (error) throw error;
       if (data?.success) {
+        // Save event type via direct table update (update_event RPC doesn't accept p_type)
+        await sb.from('events').update({ type: editType }).eq('id', id);
         // W140: update tags and audience rules
         await assignEventTagsAndAudience(id, tagIds, audience);
         closeModal('modal-edit-event');

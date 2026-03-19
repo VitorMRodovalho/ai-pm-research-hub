@@ -2797,6 +2797,7 @@ const enUS: Record<string, string> = {
   'attendance.grid.week': 'Week',
   'attendance.grid.leader': 'Leader',
   'attendance.grid.avg': 'Avg',
+  'attendance.grid.crossFunctional': 'Cross-functional',
 
   // ── attendance event types ──
   'attendance.type.geral': 'General',
