@@ -507,7 +507,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     try {
       const { data } = await sb.from('impact_hours_total').select('*').single();
       if (!data) return;
-      const hrs = parseFloat(data.total_impact_hours || 0).toFixed(1);
+      const hrs = Math.round(parseFloat(data.total_impact_hours || 0));
       const pct = parseFloat(data.percent_of_target || 0);
       const el = (id: string) => document.getElementById(id);
       el('kpi-hours')!.textContent = hrs + 'h';

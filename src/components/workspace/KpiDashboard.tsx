@@ -44,8 +44,8 @@ function KpiCard({ kpi, cyclePct }: { kpi: KpiItem; cyclePct: number }) {
 
       <h4 className="text-xs font-bold text-[var(--text-primary)] mb-1">{kpi.name}</h4>
       <p className="text-lg font-extrabold text-[var(--text-primary)]">
-        {kpi.current.toLocaleString('pt-BR')}
-        <span className="text-xs font-normal text-[var(--text-muted)]"> / {kpi.target.toLocaleString('pt-BR')} {kpi.unit}</span>
+        {Math.round(kpi.current).toLocaleString('pt-BR')}
+        <span className="text-xs font-normal text-[var(--text-muted)]"> / {Math.round(kpi.target).toLocaleString('pt-BR')} {kpi.unit}</span>
       </p>
 
       {/* Progress bar */}
@@ -56,7 +56,7 @@ function KpiCard({ kpi, cyclePct }: { kpi: KpiItem; cyclePct: number }) {
       {/* Tooltip on hover */}
       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10">
         <div className="bg-[var(--surface-elevated)] border border-[var(--border-default)] rounded-lg px-3 py-2 shadow-lg text-[10px] text-[var(--text-secondary)] whitespace-nowrap">
-          {kpi.current} de {kpi.target} ({pct}%) — Projeção linear esperada: {cyclePct}%
+          {Math.round(kpi.current)} de {Math.round(kpi.target)} ({pct}%) — Projeção linear esperada: {cyclePct}%
         </div>
       </div>
     </div>
