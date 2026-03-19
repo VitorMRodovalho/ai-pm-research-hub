@@ -2872,6 +2872,24 @@ const enUS: Record<string, string> = {
   'meetings.recording.title': 'Recording',
   'meetings.visibility.restricted': 'Restricted content',
   'meetings.visibility.gp_only': 'GP/DM only',
+
+  // Event Governance (3-level hierarchy)
+  'attendance.modal.audienceType': 'Audience Type',
+  'attendance.modal.whichTribe': 'Which Tribe',
+  'attendance.modal.nature': 'Nature',
+  'attendance.modal.advancedFields': 'Advanced fields',
+  'attendance.modal.externalAttendees': 'External attendees',
+  'attendance.modal.recordingUrl': 'Recording URL',
+  'attendance.modal.visibility': 'Visibility',
+  'attendance.modal.visibilityAll': 'Everyone',
+  'attendance.modal.visibilityLeadership': 'Leadership only',
+  'attendance.modal.visibilityGpOnly': 'GP/DM only',
+  'attendance.nature.kickoff': 'Kickoff',
+  'attendance.nature.recorrente': 'Recurring',
+  'attendance.nature.avulsa': 'Ad-hoc',
+  'attendance.nature.encerramento': 'Closing',
+  'attendance.nature.workshop': 'Workshop',
+  'attendance.nature.entrevista_selecao': 'Interview (Selection)',
 };
 
 export default enUS;

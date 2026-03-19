@@ -34,7 +34,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           <input type="hidden" id="edit-ev-selected-tags" value="">
         </div>
         <div class="flex flex-col gap-1.5 sm:col-span-2">
-          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.eventType', lang)} *</label>
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.audienceType', lang)} *</label>
           <select id="edit-ev-type" required
                   class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
             <option value="geral">Geral</option>
@@ -46,6 +46,22 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
             <option value="entrevista">Entrevista</option>
             <option value="1on1">1-on-1</option>
             <option value="evento_externo">Evento Externo</option>
+          </select>
+        </div>
+        <div id="edit-ev-tribe-wrapper" class="hidden flex flex-col gap-1.5 sm:col-span-2">
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.whichTribe', lang)} *</label>
+          <select id="edit-ev-tribe-select" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)]">
+            <option value="">— select —</option>
+          </select>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.nature', lang)}</label>
+          <select id="edit-ev-nature" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)]">
+            <option value="avulsa">Avulsa</option>
+            <option value="recorrente">Recorrente</option>
+            <option value="kickoff">Kickoff</option>
+            <option value="encerramento">Encerramento</option>
+            <option value="workshop">Workshop</option>
           </select>
         </div>
         <div class="flex flex-col gap-1.5">
@@ -63,28 +79,53 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           <input type="url" id="edit-ev-link"
                  class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
         </div>
-        <div class="flex flex-col gap-1.5 sm:col-span-2">
-          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.youtubeLink', lang)}</label>
-          <input type="url" id="edit-ev-youtube" placeholder="https://youtu.be/..."
-                 class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
-        </div>
-        <div class="flex flex-col gap-1.5">
-          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.audience', lang)}</label>
-          <select id="edit-ev-audience"
-                  class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
-            <option value="all_active_operational">Todos os operacionais ativos</option>
-            <option value="tribe">Tribo específica</option>
-            <option value="role">Por papel (liderança)</option>
-            <option value="specific_members">Membros específicos</option>
-          </select>
-        </div>
-        <div class="flex flex-col gap-1.5">
-          <label class="flex items-center gap-2 text-[13px] font-medium cursor-pointer">
-            <input type="checkbox" id="edit-ev-recorded" class="w-4 h-4 accent-navy">
-            {t('attendance.modal.recordedMeeting', lang)}
-          </label>
-        </div>
       </div>
+      <!-- Advanced section (collapsible) -->
+      <details id="edit-ev-advanced" class="mt-4 border border-[var(--border-default)] rounded-xl">
+        <summary class="px-4 py-2.5 text-[12px] font-semibold text-[var(--text-secondary)] cursor-pointer select-none hover:bg-[var(--surface-hover)] rounded-xl">{t('attendance.modal.advanced', lang)}</summary>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 px-4 pb-4 pt-2">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.visibility', lang)}</label>
+            <select id="edit-ev-visibility"
+                    class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
+              <option value="public">Público</option>
+              <option value="leadership">Liderança</option>
+              <option value="gp_only">GP only</option>
+            </select>
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.audience', lang)}</label>
+            <select id="edit-ev-audience"
+                    class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
+              <option value="all_active_operational">Todos os operacionais ativos</option>
+              <option value="tribe">Tribo específica</option>
+              <option value="role">Por papel (liderança)</option>
+              <option value="specific_members">Membros específicos</option>
+            </select>
+          </div>
+          <div class="flex flex-col gap-1.5 sm:col-span-2">
+            <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.recordingUrl', lang)}</label>
+            <input type="url" id="edit-ev-recording-url" placeholder="https://..."
+                   class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
+          </div>
+          <div class="flex flex-col gap-1.5 sm:col-span-2">
+            <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.youtubeLink', lang)}</label>
+            <input type="url" id="edit-ev-youtube" placeholder="https://youtu.be/..."
+                   class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
+          </div>
+          <div class="flex flex-col gap-1.5 sm:col-span-2">
+            <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.externalAttendees', lang)}</label>
+            <input type="text" id="edit-ev-external-attendees" placeholder="email1@example.com, email2@example.com"
+                   class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label class="flex items-center gap-2 text-[13px] font-medium cursor-pointer">
+              <input type="checkbox" id="edit-ev-recorded" class="w-4 h-4 accent-navy">
+              {t('attendance.modal.recordedMeeting', lang)}
+            </label>
+          </div>
+        </div>
+      </details>
     </form>
     <div class="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2 flex-shrink-0">
       <button type="button" class="px-4 py-2 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer" data-action="close-modal" data-modal-id="modal-edit-event">{t('attendance.modal.cancel', lang)}</button>

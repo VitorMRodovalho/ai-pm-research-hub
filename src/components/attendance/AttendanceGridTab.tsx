@@ -231,6 +231,8 @@ export default function AttendanceGridTab() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [detractorFilter, setDetractorFilter] = useState<DetractorFilter>('all');
   const [search, setSearch] = useState('');
+  // TODO: add nature to get_attendance_grid events output
+  // const [natureFilter, setNatureFilter] = useState('all');
   const [sorting, setSorting] = useState<SortingState>([{ id: 'rate', desc: false }]);
   const [isMobile, setIsMobile] = useState(false);
   const [expandedTribes, setExpandedTribes] = useState<Set<string>>(new Set());
@@ -362,6 +364,17 @@ export default function AttendanceGridTab() {
     }
     return rows;
   }, [flatRows, tribeFilter, detractorFilter, search]);
+
+  /* Filtered KPIs — computed from filteredRows so KPI cards reflect active filters */
+  const filteredKPIs = useMemo(() => {
+    const members = filteredRows;
+    const total = members.length;
+    const avgRate = total > 0 ? members.reduce((s, m) => s + m.rate, 0) / total : 0;
+    const totalHours = members.reduce((s, m) => s + m.hours, 0);
+    const detractors = members.filter(m => m.detractorStatus === 'detractor').length;
+    const atRisk = members.filter(m => m.detractorStatus === 'at_risk').length;
+    return { total, avgRate, totalHours, detractors, atRisk };
+  }, [filteredRows]);
 
   /* Best tribe */
   const bestTribe = useMemo(() => {
@@ -630,39 +643,37 @@ export default function AttendanceGridTab() {
 
   if (!data) return null;
 
-  const { summary } = data;
-
   return (
     <div className="space-y-5">
-      {/* KPI Cards */}
+      {/* KPI Cards — driven by filteredKPIs so they reflect active filters */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <KpiCard
           icon={Users}
           label={t('attendance.grid.totalMembers', 'Total Members')}
-          value={summary.total_members}
+          value={filteredKPIs.total}
         />
         <KpiCard
           icon={Percent}
           label={t('attendance.grid.overallRate', 'Overall Rate')}
-          value={`${Math.round(summary.overall_rate)}%`}
-          accent={summary.overall_rate < 75 ? 'text-amber-500' : 'text-green-500'}
+          value={`${Math.round(filteredKPIs.avgRate)}%`}
+          accent={filteredKPIs.avgRate < 75 ? 'text-amber-500' : 'text-green-500'}
         />
         <KpiCard
           icon={Clock}
           label={t('attendance.grid.totalHours', 'Total Hours')}
-          value={Math.round(summary.total_hours)}
+          value={Math.round(filteredKPIs.totalHours)}
           suffix="h"
         />
         <KpiCard
           icon={ShieldAlert}
           label={t('attendance.grid.detractors', 'Detractors')}
-          value={summary.detractors_count}
+          value={filteredKPIs.detractors}
           accent="text-red-500"
         />
         <KpiCard
           icon={AlertTriangle}
           label={t('attendance.grid.atRisk', 'At Risk')}
-          value={summary.at_risk_count}
+          value={filteredKPIs.atRisk}
           accent="text-amber-500"
         />
         <KpiCard
