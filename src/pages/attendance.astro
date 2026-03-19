@@ -8,8 +8,11 @@ import EditEventModal from '../components/attendance/EditEventModal.astro';
 import RosterModal from '../components/attendance/RosterModal.astro';
 import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
+import { buildPageI18n } from '../i18n/pageI18n';
+import AttendanceGridTab from '../components/attendance/AttendanceGridTab';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
+const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang);
 ---
 
 <BaseLayout title={t('attendance.meta', lang)} activePage="attendance">
@@ -53,6 +56,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         <button class="tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
                 data-tab="ranking" data-action="switch-tab">
           {t('attendance.ranking', lang)}
+        </button>
+        <button class="tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
+                data-tab="grid" data-action="switch-tab">
+          📊 Quadro de Presença
         </button>
         <button class="hidden tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
                 id="tab-new-event" data-action="open-new-event">
@@ -110,6 +117,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           </div>
         </div>
       </div>
+
+      <!-- Grid tab -->
+      <div id="tab-grid" class="hidden">
+        <AttendanceGridTab client:load />
+      </div>
     </main>
   </div>
 
@@ -118,6 +130,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   <RecurringModal />
   <EditEventModal />
   <RosterModal />
+  <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
 </BaseLayout>
 
 <script is:inline define:vars={{ __ATTENDANCE_I18N: JSON.stringify({
@@ -499,6 +512,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     el.classList.add('bg-navy', 'text-white', 'border-navy');
     document.getElementById('tab-events')!.classList.toggle('hidden', name !== 'events');
     document.getElementById('tab-ranking')!.classList.toggle('hidden', name !== 'ranking');
+    document.getElementById('tab-grid')!.classList.toggle('hidden', name !== 'grid');
     if (name === 'ranking') loadRanking();
   }
 
@@ -566,15 +580,49 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     };
     const audienceLabel: Record<string, string> = { leadership: I18N.audienceLeadership, tribe: I18N.audienceTribe, curators: I18N.audienceCurators };
 
+    function artifactBadges(ev: any): string {
+      const today = new Date();
+      const evDate = new Date(ev.date + 'T23:59:59');
+      const isPast = evDate < today;
+      const hoursAfter = (today.getTime() - evDate.getTime()) / (1000 * 60 * 60);
+
+      // Agenda: ✅ if present, ❌ if event date <= today and missing
+      const hasAgenda = !!(ev.agenda_text || ev.agenda_url);
+      const agendaBadge = hasAgenda
+        ? '<span class="px-1.5 py-0.5 rounded text-[10px]" title="Agenda disponível">📋✅</span>'
+        : (isPast ? '<span class="px-1.5 py-0.5 rounded text-[10px] opacity-60" title="Agenda ausente">📋❌</span>' : '');
+
+      // Minutes: ✅ if present, ⏳ if missing >48h after event, ⬜ otherwise
+      const hasMinutes = !!(ev.minutes_text || ev.minutes_url);
+      let minutesBadge = '';
+      if (hasMinutes) {
+        minutesBadge = '<span class="px-1.5 py-0.5 rounded text-[10px]" title="Ata disponível">📝✅</span>';
+      } else if (isPast && hoursAfter > 48) {
+        minutesBadge = '<span class="px-1.5 py-0.5 rounded text-[10px]" title="Ata pendente (>48h)">📝⏳</span>';
+      } else if (isPast) {
+        minutesBadge = '<span class="px-1.5 py-0.5 rounded text-[10px] opacity-40" title="Ata pendente">📝⬜</span>';
+      }
+
+      // Recording: ✅ if recording_url or youtube_url present
+      const hasRecording = !!(ev.recording_url || ev.youtube_url);
+      const recBadge = hasRecording
+        ? '<span class="px-1.5 py-0.5 rounded text-[10px]" title="Gravação disponível">🎥✅</span>'
+        : (isPast && ev.is_recorded ? '<span class="px-1.5 py-0.5 rounded text-[10px] opacity-60" title="Gravação pendente">🎥⏳</span>' : '');
+
+      const badges = [agendaBadge, minutesBadge, recBadge].filter(Boolean).join('');
+      return badges ? `<span class="inline-flex gap-0.5 items-center">${badges}</span>` : '';
+    }
+
     function eventBadges(ev: any): string {
       const rec = ev.is_recorded ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-50 text-red-700">${I18N.badgeRecorded}</span>` : '';
       const focus = ev.id === ATTENDANCE_ROUTE.eventId
         ? '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">Foco atual</span>'
         : '';
+      const artifacts = artifactBadges(ev);
       if (ev.audience_level && audienceLabel[ev.audience_level]) {
-        return `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-green-50 text-green-800">${audienceLabel[ev.audience_level]}</span>${rec}${focus}`;
+        return `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-green-50 text-green-800">${audienceLabel[ev.audience_level]}</span>${rec}${focus}${artifacts}`;
       }
-      return `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${badgeClass[ev.type] || 'bg-blue-50 text-navy'}">${typeLabel[ev.type] || ev.type}</span>${rec}${focus}`;
+      return `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${badgeClass[ev.type] || 'bg-blue-50 text-navy'}">${typeLabel[ev.type] || ev.type}</span>${rec}${focus}${artifacts}`;
     }
 
     const paged = filtered.slice(0, VISIBLE_COUNT);
