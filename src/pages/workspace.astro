@@ -358,7 +358,7 @@ const WK = {
         if (meetingSlots.length > 0) {
           const slot = meetingSlots[0];
           const day = dayNames[slot.day_of_week] || `Dia ${slot.day_of_week}`;
-          meetingLabel = `${day} ${slot.time_start || ''}`;
+          meetingLabel = `${day} · ${(slot.time_start||'').substring(0,5).replace(/:00$/, 'h').replace(/:(\d\d)$/, 'h$1')}–${(slot.time_end||'').substring(0,5).replace(/:00$/, 'h').replace(/:(\d\d)$/, 'h$1')}`;
         }
 
         // Find tribe name from static data in DOM or fallback
