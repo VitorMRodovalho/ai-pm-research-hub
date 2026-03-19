@@ -104,15 +104,17 @@ const safeKpis = Array.isArray(KPIS) ? KPIS : [];
         label.style.color = color;
         const suffix = item.unit === 'percent' ? '%' : '';
         const unitLabel = item.unit === 'hours' ? 'h' : '';
-        label.textContent = `${item.current}${suffix}${unitLabel} / ${item.target}${suffix}${unitLabel}`;
-        label.title = `${item.current}${suffix}${unitLabel} de ${item.target}${suffix}${unitLabel} — progresso: ${pct}%`;
+        const cur = Math.round(Number(item.current) || 0);
+        const tgt = Math.round(Number(item.target) || 0);
+        label.textContent = `${cur}${suffix}${unitLabel} / ${tgt}${suffix}${unitLabel}`;
+        label.title = `${cur}${suffix}${unitLabel} de ${tgt}${suffix}${unitLabel} — progresso: ${pct}%`;
         barContainer.classList.remove('hidden');
 
         // Quarterly label
         const qLabel = card.querySelector<HTMLElement>('.kpi-quarter-label');
         if (qLabel && item.quarter && item.quarter_cumulative > 0) {
-          const qCur = item.current;
-          const qTgt = item.quarter_cumulative;
+          const qCur = cur;
+          const qTgt = Math.round(Number(item.quarter_cumulative) || 0);
           qLabel.textContent = `Q${item.quarter}: ${qCur}${suffix}${unitLabel} / ${qTgt}${suffix}${unitLabel}`;
           qLabel.classList.remove('hidden');
         }
