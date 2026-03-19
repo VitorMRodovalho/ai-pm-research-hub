@@ -97,9 +97,9 @@ BEGIN
         'id', ps.id,
         'title', ps.title,
         'status', ps.status,
-        'submitted_at', ps.submitted_at,
+        'submitted_at', ps.submission_date,
         'target_type', ps.target_type
-      ) ORDER BY ps.submitted_at DESC), '[]'::jsonb)
+      ) ORDER BY ps.submission_date DESC), '[]'::jsonb)
       FROM publication_submissions ps
       JOIN publication_submission_authors psa ON psa.submission_id = ps.id
       WHERE psa.member_id = p_member_id
