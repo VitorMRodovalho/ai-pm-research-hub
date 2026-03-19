@@ -81,6 +81,19 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           </div>
         </div>
 
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-navy mb-1">{t('pilots.startDate', lang)}</label>
+            <input type="date" id="pilot-form-started"
+              class="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-navy/30" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-navy mb-1">{t('pilots.completionDate', lang)}</label>
+            <input type="date" id="pilot-form-completed"
+              class="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-navy/30" />
+          </div>
+        </div>
+
         <div>
           <label class="block text-xs font-bold text-navy mb-1">{t('pilots.hypothesis', lang)}</label>
           <textarea id="pilot-form-hypothesis" rows="2"
@@ -135,6 +148,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 <span id="i18n-pilots-saveSuccess" class="hidden">{t('pilots.saveSuccess', lang)}</span>
 <span id="i18n-pilots-deleteSuccess" class="hidden">{t('pilots.deleteSuccess', lang)}</span>
 <span id="i18n-common-edit" class="hidden">{t('common.edit', lang)}</span>
+<span id="i18n-pilots-startDate" class="hidden">{t('pilots.startDate', lang)}</span>
+<span id="i18n-pilots-completionDate" class="hidden">{t('pilots.completionDate', lang)}</span>
+<span id="i18n-pilots-baseline" class="hidden">{t('pilots.baseline', lang)}</span>
+<span id="i18n-pilots-target" class="hidden">{t('pilots.target', lang)}</span>
+<span id="i18n-pilots-current" class="hidden">{t('pilots.current', lang)}</span>
 
 <script>
   import { hasPermission } from '../../lib/permissions';
@@ -203,6 +221,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     const formProblem = document.getElementById('pilot-form-problem') as HTMLTextAreaElement;
     const formScope = document.getElementById('pilot-form-scope') as HTMLTextAreaElement;
     const formDelete = document.getElementById('pilot-form-delete') as HTMLButtonElement;
+    const formStarted = document.getElementById('pilot-form-started') as HTMLInputElement;
+    const formCompleted = document.getElementById('pilot-form-completed') as HTMLInputElement;
 
     function openModal(pilot?: any) {
       modalTitle.textContent = pilot ? i('i18n-pilots-editPilot') : i('i18n-pilots-newPilot');
@@ -213,6 +233,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       formHypothesis.value = pilot?.hypothesis || '';
       formProblem.value = pilot?.problem_statement || '';
       formScope.value = pilot?.scope || '';
+      formStarted.value = pilot?.started_at || '';
+      formCompleted.value = pilot?.completed_at || '';
 
       // Show delete button only in edit mode
       if (pilot?.id && canWrite) {
@@ -250,6 +272,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         p_hypothesis: formHypothesis.value.trim() || null,
         p_problem_statement: formProblem.value.trim() || null,
         p_scope: formScope.value.trim() || null,
+        p_started_at: formStarted.value || null,
+        p_completed_at: formCompleted.value || null,
       };
 
       try {
@@ -293,12 +317,38 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       }
     });
 
-    // Store pilots data for edit
+    // Store pilots data for edit (enriched with metrics + team names)
     let pilotsStore: any[] = [];
 
     async function reloadPilots() {
       const { data: pilotsData } = await sb.rpc('get_pilots_summary');
-      renderPilots(pilotsData);
+      if (!pilotsData?.pilots) return;
+
+      // Enrich each pilot with resolved metrics + team names
+      const enriched = await Promise.all(pilotsData.pilots.map(async (p: any) => {
+        // Fix 1: get resolved metrics (auto_query → current values)
+        const { data: metricsData } = await sb.rpc('get_pilot_metrics', { p_pilot_id: p.id });
+        const resolvedMetrics = metricsData?.metrics || p.success_metrics || [];
+        const pilotDetail = metricsData?.pilot || {};
+
+        // Fix 3: resolve team member names
+        const teamIds = pilotDetail.team_member_ids || [];
+        let teamNames: string[] = [];
+        if (teamIds.length > 0) {
+          const { data: teamData } = await sb.from('members').select('id, name').in('id', teamIds);
+          teamNames = (teamData || []).map((m: any) => m.name);
+        }
+
+        return {
+          ...p,
+          resolved_metrics: resolvedMetrics,
+          team_names: teamNames,
+          started_at: pilotDetail.started_at || null,
+          completed_at: pilotDetail.completed_at || null,
+        };
+      }));
+
+      renderPilots({ ...pilotsData, pilots: enriched });
     }
 
     function renderPilots(pilotsData: any) {
@@ -320,10 +370,21 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         : '';
 
       pilotsList.innerHTML = pilotsData.pilots.map((p: any, idx: number) => {
-        const metrics = Array.isArray(p.success_metrics) ? p.success_metrics : [];
+        // Fix 1: use resolved_metrics (with current values from get_pilot_metrics)
+        const metrics = Array.isArray(p.resolved_metrics) ? p.resolved_metrics : (Array.isArray(p.success_metrics) ? p.success_metrics : []);
         const metricsHtml = metrics.length > 0
-          ? `<table class="w-full text-[.7rem] mt-2 border-collapse"><thead><tr class="bg-[var(--surface-section-cool)]"><th class="text-left px-2 py-1 font-bold">Métrica</th><th class="text-center px-2 py-1 font-bold">Meta</th><th class="text-center px-2 py-1 font-bold">Atual</th></tr></thead><tbody>${metrics.map((m: any) => `<tr class="border-t border-[var(--border-subtle)]"><td class="px-2 py-1">${esc(m.name || m.metric || '')}</td><td class="px-2 py-1 text-center">${m.target ?? '—'}</td><td class="px-2 py-1 text-center font-bold">${m.current ?? '—'}</td></tr>`).join('')}</tbody></table>`
+          ? `<table class="w-full text-[.7rem] mt-2 border-collapse"><thead><tr class="bg-[var(--surface-section-cool)]"><th class="text-left px-2 py-1 font-bold">${i('i18n-pilots-metrics')}</th><th class="text-center px-2 py-1 font-bold">${i('i18n-pilots-target')}</th><th class="text-center px-2 py-1 font-bold">${i('i18n-pilots-current')}</th></tr></thead><tbody>${metrics.map((m: any) => {
+            const current = m.current != null ? m.current : '—';
+            const currentClass = m.current != null ? 'font-bold text-emerald-700' : '';
+            return `<tr class="border-t border-[var(--border-subtle)]"><td class="px-2 py-1">${esc(m.name || m.metric || '')}</td><td class="px-2 py-1 text-center">${m.target ?? '—'}</td><td class="px-2 py-1 text-center ${currentClass}">${current}</td></tr>`;
+          }).join('')}</tbody></table>`
           : '<p class="text-[.68rem] text-[var(--text-muted)]">Sem métricas definidas</p>';
+
+        // Fix 3: team names
+        const teamHtml = Array.isArray(p.team_names) && p.team_names.length > 0
+          ? `<div><span class="font-bold text-navy text-[.7rem]">${i('i18n-pilots-team')}:</span> <span class="text-[var(--text-secondary)]">${p.team_names.map(esc).join(', ')} (${p.team_names.length})</span></div>`
+          : '';
+
         return `
         <div class="rounded-lg bg-[var(--surface-base)] overflow-hidden">
           <div class="flex items-center justify-between p-3 cursor-pointer hover:bg-[var(--surface-hover)] transition-colors" onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('[data-chevron]').classList.toggle('rotate-90')">
@@ -345,6 +406,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
             ${p.hypothesis ? `<div><span class="font-bold text-navy text-[.7rem]">Hipótese:</span><p class="text-[var(--text-secondary)] mt-0.5">${esc(p.hypothesis)}</p></div>` : ''}
             ${p.problem_statement ? `<div><span class="font-bold text-navy text-[.7rem]">Problema:</span><p class="text-[var(--text-secondary)] mt-0.5">${esc(p.problem_statement)}</p></div>` : ''}
             ${p.scope ? `<div><span class="font-bold text-navy text-[.7rem]">Escopo:</span><p class="text-[var(--text-secondary)] mt-0.5">${esc(p.scope)}</p></div>` : ''}
+            ${teamHtml}
             <div><span class="font-bold text-navy text-[.7rem]">${i('i18n-pilots-metrics')}:</span>${metricsHtml}</div>
             ${p.board_id ? `<a href="/admin/board/${p.board_id}" class="inline-block mt-1 text-[.7rem] text-teal font-semibold hover:underline">Ver Board →</a>` : ''}
           </div>
@@ -368,16 +430,35 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     }
 
     try {
-      // Load pilots
-      const { data: pilotsData } = await sb.rpc('get_pilots_summary');
-      // Load releases
-      const { data: releases } = await sb.from('releases').select('*').order('released_at', { ascending: false });
+      // Load pilots + releases in parallel
+      const [pilotsResult, releasesResult] = await Promise.all([
+        sb.rpc('get_pilots_summary'),
+        sb.from('releases').select('*').order('released_at', { ascending: false }),
+      ]);
+      const pilotsData = pilotsResult.data;
+      const releases = releasesResult.data;
 
       loading.classList.add('hidden');
       content.classList.remove('hidden');
 
-      // Render pilots
-      renderPilots(pilotsData);
+      // Enrich pilots with resolved metrics + team names
+      if (pilotsData?.pilots) {
+        const enriched = await Promise.all(pilotsData.pilots.map(async (p: any) => {
+          const { data: metricsData } = await sb.rpc('get_pilot_metrics', { p_pilot_id: p.id });
+          const resolvedMetrics = metricsData?.metrics || p.success_metrics || [];
+          const pilotDetail = metricsData?.pilot || {};
+          const teamIds = pilotDetail.team_member_ids || [];
+          let teamNames: string[] = [];
+          if (teamIds.length > 0) {
+            const { data: teamData } = await sb.from('members').select('id, name').in('id', teamIds);
+            teamNames = (teamData || []).map((m: any) => m.name);
+          }
+          return { ...p, resolved_metrics: resolvedMetrics, team_names: teamNames, started_at: pilotDetail.started_at || null, completed_at: pilotDetail.completed_at || null };
+        }));
+        renderPilots({ ...pilotsData, pilots: enriched });
+      } else {
+        renderPilots(pilotsData);
+      }
 
       // Render releases
       const releasesList = document.getElementById('releases-list');
