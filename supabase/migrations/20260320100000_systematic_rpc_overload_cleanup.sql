@@ -30,3 +30,4 @@ DROP FUNCTION IF EXISTS public.admin_list_members(text, text, text, boolean, int
 -- designations column is text[], not jsonb. ?| only works on jsonb.
 -- Fixed via dynamic DO block in production; recorded here for local parity.
 -- Also fixed: c.code→c.cycle_code, c.name→c.cycle_label, c.start_date→c.cycle_start, c.end_date→c.cycle_end
+-- Also fixed: jsonb_array_length(cycles)→COALESCE(array_length(cycles,1),0) — cycles is text[], not jsonb
