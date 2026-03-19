@@ -2893,6 +2893,10 @@ const esLATAM: Record<string, string> = {
   'attendance.nature.encerramento': 'Cierre',
   'attendance.nature.workshop': 'Taller',
   'attendance.nature.entrevista_selecao': 'Entrevista (Selección)',
+
+  // Selection
+  'selection.title': 'Proceso de Selección',
+  'selection.denied': 'Acceso denegado al módulo de selección.',
 };
 
 export default esLATAM;

@@ -179,34 +179,28 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     closed:      { color: 'text-red-700',     bg: 'bg-red-50' },
   };
 
-  /* ── cycle status badge ───────────────────────────── */
-  async function loadCycleStatus() {
+  /* ── load data via RPC ────────────────────────────── */
+  async function loadDashboard() {
     if (!sb) return;
     try {
-      const { data } = await sb.from('selection_cycles')
-        .select('status, title')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-      if (!data) return;
-      const badge = document.getElementById('sel-cycle-badge');
-      if (badge) {
-        const cs = CYCLE_STATUS_COLORS[data.status] || CYCLE_STATUS_COLORS.draft;
-        badge.className = `text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase ${cs.bg} ${cs.color}`;
-        badge.textContent = data.status.toUpperCase();
-      }
-    } catch (e) { console.warn('Cycle status:', e); }
-  }
+      const { data: dashboard } = await sb.rpc('get_selection_dashboard');
+      if (dashboard?.error) { showDenied(); return; }
+      const cycle = dashboard.cycle;
+      const applications = dashboard.applications || [];
+      const stats = dashboard.stats;
 
-  /* ── load data ────────────────────────────────────── */
-  async function loadApplications() {
-    if (!sb) return;
-    try {
-      const { data, error } = await sb.from('selection_applications')
-        .select('*')
-        .order('final_score', { ascending: false });
-      if (error) throw error;
-      allRows = data || [];
+      // Update cycle status badge
+      if (cycle) {
+        const badge = document.getElementById('sel-cycle-badge');
+        if (badge) {
+          const cs = CYCLE_STATUS_COLORS[cycle.status] || CYCLE_STATUS_COLORS.draft;
+          badge.className = `text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase ${cs.bg} ${cs.color}`;
+          badge.textContent = cycle.status.toUpperCase();
+        }
+      }
+
+      // Load applications
+      allRows = applications;
       populateChapterDropdown();
       applyFilters();
     } catch (e: any) {
@@ -419,8 +413,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   function applyGate(m: any) {
     if (m && canAccessAdminRoute(m, 'admin_selection')) {
       showPanel();
-      loadCycleStatus();
-      loadApplications();
+      loadDashboard();
     } else {
       showDenied();
     }
