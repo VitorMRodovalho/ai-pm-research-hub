@@ -742,7 +742,7 @@ const ptBR: Record<string, string> = {
   'attendance.modal.selectAll': 'Selecionar Todos',
   'attendance.modal.bulkConfirm': 'Confirmar Presenças',
   'attendance.modal.bulkSuccess': '{n} presenças registradas',
-  'attendance.checkin.windowExpired': 'O prazo de 24h para check-in expirou. Solicite ao gestor.',
+  'attendance.checkin.windowExpired': 'O prazo de 48h para check-in expirou. Solicite ao gestor.',
   'attendance.checkin.tooEarly': 'O check-in abre 2h antes do evento.',
   'attendance.feedback.cycleTotal': 'Total no ciclo',
   'attendance.feedback.events': 'eventos',

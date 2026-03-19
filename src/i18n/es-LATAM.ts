@@ -740,7 +740,7 @@ const esLATAM: Record<string, string> = {
   'attendance.modal.selectAll': 'Seleccionar Todos',
   'attendance.modal.bulkConfirm': 'Confirmar Asistencias',
   'attendance.modal.bulkSuccess': '{n} asistencias registradas',
-  'attendance.checkin.windowExpired': 'El plazo de 24h para check-in expiró. Solicite al gestor.',
+  'attendance.checkin.windowExpired': 'El plazo de 48h para check-in expiró. Solicite al gestor.',
   'attendance.checkin.tooEarly': 'El check-in abre 2h antes del evento.',
   'attendance.feedback.cycleTotal': 'Total del ciclo',
   'attendance.feedback.events': 'eventos',
