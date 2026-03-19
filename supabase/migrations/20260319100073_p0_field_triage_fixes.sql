@@ -135,9 +135,9 @@ BEGIN
         ) a2
         UNION ALL
         SELECT * FROM (
-          SELECT jsonb_build_object('type', 'publication', 'message', m.name || ' submeteu "' || ps.title || '"', 'timestamp', ps.submitted_at), ps.submitted_at
+          SELECT jsonb_build_object('type', 'publication', 'message', m.name || ' submeteu "' || ps.title || '"', 'timestamp', ps.submission_date), ps.submission_date
           FROM publication_submissions ps JOIN publication_submission_authors psa ON psa.submission_id = ps.id JOIN members m ON m.id = psa.member_id
-          WHERE ps.submitted_at > now() - interval '30 days' ORDER BY ps.submitted_at DESC LIMIT 5
+          WHERE ps.submission_date > now() - interval '30 days' ORDER BY ps.submission_date DESC LIMIT 5
         ) a3
       ) r LIMIT 15
     )
