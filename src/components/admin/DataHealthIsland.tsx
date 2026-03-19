@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { usePageI18n } from '../../i18n/usePageI18n';
 
 interface AnomalyItem {
   id: string;
@@ -46,6 +47,7 @@ const ANOMALY_LABELS: Record<string, string> = {
 };
 
 export default function DataHealthIsland() {
+  const t = usePageI18n();
   const [report, setReport] = useState<AnomalyReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [detecting, setDetecting] = useState(false);
@@ -63,7 +65,7 @@ export default function DataHealthIsland() {
     setLoading(true);
     const { data, error } = await sb.rpc('admin_get_anomaly_report');
     if (!error && data) setReport(data);
-    else if (error) toast('Erro ao carregar relatório: ' + error.message, 'error');
+    else if (error) toast(t('comp.dataHealth.errorLoad', 'Erro ao carregar relatório: ') + error.message, 'error');
     setLoading(false);
   }, [getSb, toast]);
 
@@ -79,13 +81,13 @@ export default function DataHealthIsland() {
     autoFix ? setFixing(true) : setDetecting(true);
     const { data, error } = await sb.rpc('admin_detect_data_anomalies', { p_auto_fix: autoFix });
     if (error) {
-      toast('Erro ao processar anomalias.', 'error');
+      toast(t('comp.dataHealth.errorProcess', 'Erro ao processar anomalias.'), 'error');
     } else {
       const s = data?.summary || {};
       toast(
         autoFix
-          ? `Correções aplicadas: ${s.fixed || 0} corrigidas, ${s.pending || 0} pendentes.`
-          : `Detecção concluída: ${(s.fixed || 0) + (s.pending || 0)} anomalias encontradas.`,
+          ? `${t('comp.dataHealth.fixesApplied', 'Correções aplicadas:')} ${s.fixed || 0} ${t('comp.dataHealth.fixed', 'corrigidas')}, ${s.pending || 0} ${t('comp.dataHealth.pendingCount', 'pendentes')}.`
+          : `${t('comp.dataHealth.detectionDone', 'Detecção concluída:')} ${(s.fixed || 0) + (s.pending || 0)} ${t('comp.dataHealth.anomaliesFound', 'anomalias encontradas')}.`,
         'success'
       );
     }
@@ -99,15 +101,15 @@ export default function DataHealthIsland() {
     const sb = getSb();
     if (!sb) return;
     const { error } = await sb.rpc('admin_resolve_anomaly', { p_anomaly_id: resolveId, p_notes: resolveNotes });
-    if (error) toast('Erro ao resolver anomalia.', 'error');
-    else toast('Anomalia resolvida com sucesso.', 'success');
+    if (error) toast(t('comp.dataHealth.errorResolve', 'Erro ao resolver anomalia.'), 'error');
+    else toast(t('comp.dataHealth.resolvedSuccess', 'Anomalia resolvida com sucesso.'), 'success');
     setResolveId(null);
     setResolveNotes('');
     fetchReport();
   };
 
   if (loading && !report) {
-    return <div className="text-center py-8 text-[var(--text-muted)] text-sm animate-pulse">Carregando data health...</div>;
+    return <div className="text-center py-8 text-[var(--text-muted)] text-sm animate-pulse">{t('comp.dataHealth.loading', 'Carregando data health...')}</div>;
   }
 
   const summary = report?.summary || { total_pending: 0, total_fixed: 0, by_severity: {} };
@@ -120,16 +122,16 @@ export default function DataHealthIsland() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-lg font-extrabold text-navy">Data Health</h2>
-          <p className="text-xs text-[var(--text-secondary)]">Detecção e correção automática de anomalias nos dados</p>
+          <p className="text-xs text-[var(--text-secondary)]">{t('comp.dataHealth.subtitle', 'Detecção e correção automática de anomalias nos dados')}</p>
         </div>
         <div className="flex gap-2">
           <button onClick={() => handleDetect(false)} disabled={detecting}
             className="px-3 py-2 rounded-lg border border-[var(--border-default)] text-[var(--text-primary)] text-xs font-semibold hover:bg-[var(--surface-hover)] cursor-pointer bg-transparent disabled:opacity-50">
-            {detecting ? '...' : 'Executar Detecção'}
+            {detecting ? '...' : t('comp.dataHealth.runDetection', 'Executar Detecção')}
           </button>
           <button onClick={() => handleDetect(true)} disabled={fixing}
             className="px-3 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:opacity-90 cursor-pointer border-0 disabled:opacity-50">
-            {fixing ? '...' : 'Corrigir Automáticas'}
+            {fixing ? '...' : t('comp.dataHealth.autoFix', 'Corrigir Automáticas')}
           </button>
         </div>
       </div>
@@ -151,9 +153,9 @@ export default function DataHealthIsland() {
 
       {/* Pending */}
       <div>
-        <h3 className="text-sm font-bold text-navy mb-2">Pendentes</h3>
+        <h3 className="text-sm font-bold text-navy mb-2">{t('comp.dataHealth.pending', 'Pendentes')}</h3>
         <div className="space-y-2">
-          {pending.length === 0 && <p className="text-xs text-[var(--text-muted)]">Nenhuma anomalia pendente.</p>}
+          {pending.length === 0 && <p className="text-xs text-[var(--text-muted)]">{t('comp.dataHealth.noPending', 'Nenhuma anomalia pendente.')}</p>}
           {pending.map(a => {
             const sc = SEVERITY_COLORS[a.severity] || SEVERITY_COLORS.info;
             const label = ANOMALY_LABELS[a.anomaly_type] || a.anomaly_type;
@@ -171,7 +173,7 @@ export default function DataHealthIsland() {
                 {!a.auto_fixable && (
                   <button onClick={() => { setResolveId(a.id); setResolveDesc(a.description); setResolveNotes(''); }}
                     className="px-2 py-1 rounded-lg border border-[var(--border-default)] text-[10px] font-semibold cursor-pointer hover:bg-[var(--surface-hover)] bg-transparent text-[var(--text-primary)]">
-                    Resolver
+                    {t('comp.dataHealth.resolve', 'Resolver')}
                   </button>
                 )}
               </div>
@@ -182,9 +184,9 @@ export default function DataHealthIsland() {
 
       {/* History */}
       <div>
-        <h3 className="text-sm font-bold text-navy mb-2">Histórico</h3>
+        <h3 className="text-sm font-bold text-navy mb-2">{t('comp.dataHealth.history', 'Histórico')}</h3>
         <div className="space-y-2">
-          {history.length === 0 && <p className="text-xs text-[var(--text-muted)]">Nenhuma correção registrada.</p>}
+          {history.length === 0 && <p className="text-xs text-[var(--text-muted)]">{t('comp.dataHealth.noHistory', 'Nenhuma correção registrada.')}</p>}
           {history.slice(0, 20).map((h, i) => {
             const label = ANOMALY_LABELS[h.anomaly_type] || h.anomaly_type;
             return (
@@ -204,19 +206,19 @@ export default function DataHealthIsland() {
       {resolveId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setResolveId(null)}>
           <div className="bg-[var(--surface-card)] rounded-2xl shadow-xl w-full max-w-md mx-4 p-5" onClick={e => e.stopPropagation()}>
-            <h3 className="text-sm font-bold text-navy mb-2">Resolver Anomalia</h3>
+            <h3 className="text-sm font-bold text-navy mb-2">{t('comp.dataHealth.resolveTitle', 'Resolver Anomalia')}</h3>
             <p className="text-xs text-[var(--text-secondary)] mb-3">{resolveDesc}</p>
             <textarea value={resolveNotes} onChange={e => setResolveNotes(e.target.value)}
-              placeholder="Notas de resolução (opcional)"
+              placeholder={t('comp.dataHealth.resolveNotesPlaceholder', 'Notas de resolução (opcional)')}
               className="w-full border border-[var(--border-default)] rounded-lg px-3 py-2 text-xs bg-[var(--surface-card)] text-[var(--text-primary)] mb-3" rows={3} />
             <div className="flex gap-2 justify-end">
               <button onClick={() => setResolveId(null)}
                 className="px-3 py-2 rounded-lg border border-[var(--border-default)] text-xs font-semibold cursor-pointer bg-transparent text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]">
-                Cancelar
+                {t('comp.dataHealth.cancel', 'Cancelar')}
               </button>
               <button onClick={handleResolve}
                 className="px-3 py-2 rounded-lg bg-emerald-600 text-white text-xs font-semibold hover:opacity-90 cursor-pointer border-0">
-                Confirmar Resolução
+                {t('comp.dataHealth.confirmResolve', 'Confirmar Resolução')}
               </button>
             </div>
           </div>

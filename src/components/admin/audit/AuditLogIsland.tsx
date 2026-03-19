@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { usePageI18n } from '../../../i18n/usePageI18n';
 
 /* ────── Types ────── */
 interface AuditEntry {
@@ -39,6 +40,7 @@ function formatChanges(changes: any): string {
 
 /* ────── Component ────── */
 export default function AuditLogIsland() {
+  const t = usePageI18n();
   const [data, setData] = useState<AuditData | null>(null);
   const [loading, setLoading] = useState(true);
   const [actorFilter, setActorFilter] = useState('');
@@ -107,8 +109,8 @@ export default function AuditLogIsland() {
     <div className="max-w-[1100px] mx-auto">
       {/* Title */}
       <div className="mb-6">
-        <h1 className="text-2xl font-extrabold text-[var(--text-primary)]">Registro de Auditoria</h1>
-        <p className="text-sm text-[var(--text-muted)]">Todas as ações administrativas registradas</p>
+        <h1 className="text-2xl font-extrabold text-[var(--text-primary)]">{t('comp.auditLog.title', 'Registro de Auditoria')}</h1>
+        <p className="text-sm text-[var(--text-muted)]">{t('comp.auditLog.subtitle', 'Todas as ações administrativas registradas')}</p>
       </div>
 
       {/* Filter bar */}
@@ -118,7 +120,7 @@ export default function AuditLogIsland() {
           onChange={e => setActorFilter(e.target.value)}
           className={inputClass}
         >
-          <option value="">Todos os atores</option>
+          <option value="">{t('comp.auditLog.allActors', 'Todos os atores')}</option>
           {data?.actors?.map(a => (
             <option key={a.id} value={a.id}>{a.name}</option>
           ))}
@@ -126,7 +128,7 @@ export default function AuditLogIsland() {
 
         <input
           type="text"
-          placeholder="Filtrar por ação..."
+          placeholder={t('comp.auditLog.filterAction', 'Filtrar por ação...')}
           value={actionFilter}
           onChange={e => setActionFilter(e.target.value)}
           className={inputClass}
@@ -137,7 +139,7 @@ export default function AuditLogIsland() {
           value={dateFrom}
           onChange={e => setDateFrom(e.target.value)}
           className={inputClass}
-          title="Data início"
+          title={t('comp.auditLog.dateFrom', 'Data início')}
         />
 
         <input
@@ -145,7 +147,7 @@ export default function AuditLogIsland() {
           value={dateTo}
           onChange={e => setDateTo(e.target.value)}
           className={inputClass}
-          title="Data fim"
+          title={t('comp.auditLog.dateTo', 'Data fim')}
         />
 
         <button
@@ -153,14 +155,14 @@ export default function AuditLogIsland() {
           className="px-4 py-2 rounded-lg bg-teal-600 text-white text-sm font-medium hover:bg-teal-700 transition-colors"
         >
           <Filter className="inline w-4 h-4 mr-1 -mt-0.5" />
-          Filtrar
+          {t('comp.auditLog.filter', 'Filtrar')}
         </button>
 
         <button
           onClick={clearFilters}
           className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm text-[var(--text-muted)] hover:bg-[var(--surface-hover)] transition-colors"
         >
-          Limpar
+          {t('comp.auditLog.clear', 'Limpar')}
         </button>
       </div>
 
@@ -170,7 +172,7 @@ export default function AuditLogIsland() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
           <input
             type="text"
-            placeholder="Buscar membro afetado..."
+            placeholder={t('comp.auditLog.searchTarget', 'Buscar membro afetado...')}
             value={targetSearch}
             onChange={e => setTargetSearch(e.target.value)}
             className={`${inputClass} pl-9 w-full`}
@@ -188,7 +190,7 @@ export default function AuditLogIsland() {
       {/* Empty state */}
       {!loading && filteredEntries.length === 0 && (
         <div className="text-center py-16 text-[var(--text-muted)]">
-          Nenhuma ação registrada
+          {t('comp.auditLog.noActions', 'Nenhuma ação registrada')}
         </div>
       )}
 
@@ -199,11 +201,11 @@ export default function AuditLogIsland() {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-[var(--surface-section-cool)] text-[var(--text-muted)] text-[.7rem] uppercase tracking-wider">
-                  <th className="px-4 py-3">Data/Hora</th>
-                  <th className="px-4 py-3">Ator</th>
-                  <th className="px-4 py-3">Ação</th>
-                  <th className="px-4 py-3">Membro Afetado</th>
-                  <th className="px-4 py-3">Detalhes</th>
+                  <th className="px-4 py-3">{t('comp.auditLog.colDateTime', 'Data/Hora')}</th>
+                  <th className="px-4 py-3">{t('comp.auditLog.colActor', 'Ator')}</th>
+                  <th className="px-4 py-3">{t('comp.auditLog.colAction', 'Ação')}</th>
+                  <th className="px-4 py-3">{t('comp.auditLog.colTarget', 'Membro Afetado')}</th>
+                  <th className="px-4 py-3">{t('comp.auditLog.colDetails', 'Detalhes')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -244,7 +246,7 @@ export default function AuditLogIsland() {
           {/* Pagination */}
           <div className="flex items-center justify-between mt-4">
             <span className="text-sm text-[var(--text-muted)]">
-              Mostrando {from}–{to} de {total} registros
+              {t('comp.auditLog.showing', 'Mostrando')} {from}–{to} {t('comp.auditLog.of', 'de')} {total} {t('comp.auditLog.records', 'registros')}
             </span>
             <div className="flex gap-2">
               <button
@@ -253,14 +255,14 @@ export default function AuditLogIsland() {
                 className="px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-sm text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
               >
                 <ChevronLeft className="w-4 h-4" />
-                Anterior
+                {t('comp.auditLog.prev', 'Anterior')}
               </button>
               <button
                 disabled={page >= lastPage}
                 onClick={() => setPage(p => p + 1)}
                 className="px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-sm text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
               >
-                Próximo
+                {t('comp.auditLog.next', 'Próximo')}
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>

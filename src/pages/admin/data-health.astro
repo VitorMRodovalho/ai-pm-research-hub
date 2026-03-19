@@ -2,9 +2,14 @@
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import DataHealthIsland from '../../components/admin/DataHealthIsland';
 import Toast from '../../components/ui/Toast.astro';
+import { getLangFromURL, type Lang } from '../../i18n/utils';
+import { buildPageI18n } from '../../i18n/pageI18n';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+const i18nBundle = buildPageI18n(['comp.dataHealth', 'comp.common'], lang);
 ---
 
 <AdminLayout title="Data Health" breadcrumbs={[{label:'Sistema'},{label:'Data Health'}]}>
+  <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
   <div class="max-w-[1100px] mx-auto px-4 pb-12">
     <DataHealthIsland client:load />
   </div>
