@@ -125,7 +125,10 @@ function getLocale(): string {
 
 function fmtDate(iso: string): string {
   const locale = getLocale();
-  return new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: '2-digit' });
+  const date = new Date(iso + 'T12:00:00');
+  const day = date.toLocaleDateString(locale, { day: '2-digit' });
+  const month = date.toLocaleDateString(locale, { month: 'short' }).replace('.', '');
+  return `${day}/${month.charAt(0).toUpperCase() + month.slice(1)}`;
 }
 
 /** Ensure rate is displayed as 0-100 percentage. If RPC returns 0-1, multiply by 100. */
@@ -285,9 +288,11 @@ export default function AttendanceGridTab() {
 
         setData(parsed);
 
-        /* Initialize expanded tribes — all expanded by default */
+        /* Initialize expanded tribes — all expanded by default (include cross-functional) */
         if (parsed && parsed.tribes) {
-          setExpandedTribes(new Set(parsed.tribes.map((tr) => tr.tribe_id)));
+          const ids = parsed.tribes.map((tr) => tr.tribe_id);
+          ids.push('__cross_functional__');
+          setExpandedTribes(new Set(ids));
         }
       } catch (e: any) {
         setError(e?.message || t('attendance.grid.errorGeneric', 'Failed to load attendance grid'));
@@ -365,6 +370,7 @@ export default function AttendanceGridTab() {
   }, [data]);
 
   /* FIX 1: Week-grouped event columns */
+  /* FIX 4: Within each week, sub-group by date */
   const weekGroups = useMemo(() => {
     const weekMap = new Map<number, GridEvent[]>();
     filteredEvents.forEach((e) => {
@@ -372,7 +378,17 @@ export default function AttendanceGridTab() {
       if (!weekMap.has(week)) weekMap.set(week, []);
       weekMap.get(week)!.push(e);
     });
-    return Array.from(weekMap.entries()).sort(([a], [b]) => a - b);
+    return Array.from(weekMap.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([week, evts]) => {
+        const dateMap = new Map<string, GridEvent[]>();
+        evts.forEach((e) => {
+          if (!dateMap.has(e.date)) dateMap.set(e.date, []);
+          dateMap.get(e.date)!.push(e);
+        });
+        const dateGroups = Array.from(dateMap.entries()).sort(([a], [b]) => a.localeCompare(b));
+        return { week, evts, dateGroups };
+      });
   }, [filteredEvents]);
 
   /* Columns with week grouping */
@@ -414,31 +430,32 @@ export default function AttendanceGridTab() {
       },
     ];
 
-    /* FIX 1+3: event columns grouped by week with date + type abbreviation header */
-    for (const [, evts] of weekGroups) {
-      for (const ev of evts) {
-        const abbr = TYPE_ABBR[ev.type] || ev.type.charAt(0).toUpperCase();
-        const fullTypeName = TYPE_FULL[abbr] || ev.type;
-        cols.push({
-          id: `ev_${ev.id}`,
-          header: () => (
-            <span title={`${fullTypeName} — ${ev.title}`} className="cursor-help">
-              {fmtDate(ev.date)}{' '}
-              <span className="font-extrabold">{abbr}</span>
-            </span>
-          ),
-          size: 78,
-          enableSorting: false,
-          meta: { weekNumber: ev.week_number },
-          cell: ({ row }) => {
-            const st = statusCell(row.original.attendance[ev.id]);
-            return (
-              <span className={`inline-flex items-center justify-center w-full h-full text-xs ${st.bg} rounded px-1`}>
-                {st.label}
+    /* FIX 1+3+4: event columns grouped by week > date > type abbreviation */
+    for (const { dateGroups } of weekGroups) {
+      for (const [, dateEvts] of dateGroups) {
+        for (const ev of dateEvts) {
+          const abbr = TYPE_ABBR[ev.type] || ev.type.charAt(0).toUpperCase();
+          const fullTypeName = TYPE_FULL[abbr] || ev.type;
+          cols.push({
+            id: `ev_${ev.id}`,
+            header: () => (
+              <span title={`${fullTypeName} — ${ev.title}`} className="cursor-help font-extrabold">
+                {abbr}
               </span>
-            );
-          },
-        });
+            ),
+            size: 52,
+            enableSorting: false,
+            meta: { weekNumber: ev.week_number, date: ev.date },
+            cell: ({ row }) => {
+              const st = statusCell(row.original.attendance[ev.id]);
+              return (
+                <span className={`inline-flex items-center justify-center w-full h-full text-xs ${st.bg} rounded px-1`}>
+                  {st.label}
+                </span>
+              );
+            },
+          });
+        }
       }
     }
 
@@ -471,6 +488,17 @@ export default function AttendanceGridTab() {
   });
 
   /* FIX 5: Group rows by tribe for collapsible rendering */
+  /* FIX 5b: Include cross-functional members (tribe_id is null) */
+  const CROSS_FUNCTIONAL_ID = '__cross_functional__';
+  const crossFunctionalTribe: GridTribe = useMemo(() => ({
+    tribe_id: CROSS_FUNCTIONAL_ID,
+    tribe_name: t('attendance.grid.crossFunctional', 'Cross-functional'),
+    leader_name: '\u2014',
+    avg_rate: 0,
+    member_count: 0,
+    members: [],
+  }), [t]);
+
   const groupedByTribe = useMemo(() => {
     if (!data) return [];
     const sortedRows = table.getRowModel().rows;
@@ -480,15 +508,26 @@ export default function AttendanceGridTab() {
       tribeMap.set(tribe.tribe_id, { tribe, rows: [] });
     }
 
+    const orphanRows: typeof sortedRows = [];
+
     for (const row of sortedRows) {
       const entry = tribeMap.get(row.original.tribeId);
       if (entry) {
         entry.rows.push(row);
+      } else {
+        orphanRows.push(row);
       }
     }
 
-    return Array.from(tribeMap.values()).filter((g) => g.rows.length > 0);
-  }, [data, table.getRowModel().rows]);
+    const groups = Array.from(tribeMap.values()).filter((g) => g.rows.length > 0);
+
+    /* Add cross-functional group for members with no tribe */
+    if (orphanRows.length > 0) {
+      groups.push({ tribe: crossFunctionalTribe, rows: orphanRows });
+    }
+
+    return groups;
+  }, [data, table.getRowModel().rows, crossFunctionalTribe]);
 
   const toggleTribe = useCallback((tribeId: string) => {
     setExpandedTribes((prev) => {
@@ -735,7 +774,7 @@ export default function AttendanceGridTab() {
                     style={{ ...STICKY_LEFT_BASE, left: 0 }}
                   />
                   {/* Week group headers */}
-                  {weekGroups.map(([week, evts]) => (
+                  {weekGroups.map(({ week, evts }) => (
                     <th
                       key={`wk-${week}`}
                       colSpan={evts.length}
@@ -747,6 +786,32 @@ export default function AttendanceGridTab() {
                   {/* Spacer for rate column */}
                   <th
                     className="px-2 py-1 bg-[var(--surface-base)]"
+                    style={STICKY_RIGHT}
+                  />
+                </tr>
+              )}
+
+              {/* FIX 4: Date sub-group header row */}
+              {weekGroups.length > 0 && (
+                <tr className="border-b border-[var(--border-subtle)]">
+                  <th
+                    colSpan={4}
+                    className="px-2 py-0.5 bg-[var(--surface-base)]"
+                    style={{ ...STICKY_LEFT_BASE, left: 0 }}
+                  />
+                  {weekGroups.flatMap(({ dateGroups }) =>
+                    dateGroups.map(([date, dateEvts]) => (
+                      <th
+                        key={`dt-${date}`}
+                        colSpan={dateEvts.length}
+                        className="px-1 py-0.5 text-center text-[10px] font-semibold text-[var(--text-muted)] bg-[var(--surface-base)] border-l border-[var(--border-subtle)] whitespace-nowrap"
+                      >
+                        {fmtDate(date)}
+                      </th>
+                    ))
+                  )}
+                  <th
+                    className="px-2 py-0.5 bg-[var(--surface-base)]"
                     style={STICKY_RIGHT}
                   />
                 </tr>
