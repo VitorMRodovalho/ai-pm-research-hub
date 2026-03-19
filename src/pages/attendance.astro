@@ -1138,17 +1138,37 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
     }
   }
 
+  // ── TRIBES CACHE for modal ──
+  let _tribesCache: any[] = [];
+  async function ensureTribesLoaded() {
+    if (_tribesCache.length > 0) return _tribesCache;
+    const { data } = await sb.from('tribes').select('id, name').eq('is_active', true).order('id');
+    _tribesCache = data || [];
+    const sel = document.getElementById('edit-ev-tribe-select') as HTMLSelectElement;
+    if (sel) {
+      while (sel.options.length > 1) sel.remove(1);
+      for (const t of _tribesCache) {
+        const opt = document.createElement('option');
+        opt.value = String(t.id);
+        opt.textContent = t.name;
+        sel.appendChild(opt);
+      }
+    }
+    return _tribesCache;
+  }
+
   // ── EDIT EVENT ──
   async function openEditEvent(ev: any) {
     (document.getElementById('edit-ev-id') as HTMLInputElement).value = ev.id;
     (document.getElementById('edit-ev-title') as HTMLInputElement).value = ev.title || '';
     (document.getElementById('edit-ev-type') as HTMLSelectElement).value = ev.type || 'geral';
     (document.getElementById('edit-ev-nature') as HTMLSelectElement).value = ev.nature || 'avulsa';
-    // Show/hide tribe selector based on type
+    // Load tribes and show/hide tribe selector based on type
+    await ensureTribesLoaded();
     const tribeWrapper = document.getElementById('edit-ev-tribe-wrapper')!;
     if (ev.type === 'tribo') {
       tribeWrapper.classList.remove('hidden');
-      (document.getElementById('edit-ev-tribe-select') as HTMLSelectElement).value = ev.tribe_id || '';
+      (document.getElementById('edit-ev-tribe-select') as HTMLSelectElement).value = String(ev.tribe_id || '');
     } else {
       tribeWrapper.classList.add('hidden');
     }
