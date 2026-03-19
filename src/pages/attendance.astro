@@ -1052,20 +1052,72 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
   }
 
   // ── NEW EVENT ──
-  function openNewEventModal() {
+  async function openNewEventModal() {
+    (document.getElementById('ev-title') as HTMLInputElement).value = '';
     (document.getElementById('ev-date') as HTMLInputElement).value = today();
+    (document.getElementById('ev-duration') as HTMLInputElement).value = '90';
     (document.getElementById('ev-link') as HTMLInputElement).value = '';
+    (document.getElementById('ev-type') as HTMLSelectElement).value = 'geral';
+    (document.getElementById('ev-nature') as HTMLSelectElement).value = 'avulsa';
+    (document.getElementById('ev-visibility') as HTMLSelectElement).value = 'public';
+    (document.getElementById('ev-agenda-text') as HTMLTextAreaElement).value = '';
+    (document.getElementById('ev-agenda-url') as HTMLInputElement).value = '';
+    (document.getElementById('ev-external-attendees') as HTMLInputElement).value = '';
+    // Load tribes for tribe selector
+    await ensureTribesLoaded();
+    const tribeSelCreate = document.getElementById('ev-tribe-select') as HTMLSelectElement;
+    if (tribeSelCreate && tribeSelCreate.options.length <= 1) {
+      for (const t of _tribesCache) {
+        const opt = document.createElement('option');
+        opt.value = String(t.id);
+        opt.textContent = t.name;
+        tribeSelCreate.appendChild(opt);
+      }
+    }
+    // Show/hide tribe wrapper based on type
+    const tribeWrapper = document.getElementById('ev-tribe-wrapper')!;
+    tribeWrapper.classList.add('hidden');
+    const typeSelect = document.getElementById('ev-type') as HTMLSelectElement;
+    typeSelect.onchange = () => {
+      if (typeSelect.value === 'tribo') {
+        tribeWrapper.classList.remove('hidden');
+      } else {
+        tribeWrapper.classList.add('hidden');
+      }
+      // Auto-set visibility for certain types
+      const visEl = document.getElementById('ev-visibility') as HTMLSelectElement;
+      if (['lideranca', '1on1'].includes(typeSelect.value)) {
+        visEl.value = 'leadership';
+      } else if (typeSelect.value === 'geral' || typeSelect.value === 'kickoff') {
+        visEl.value = 'public';
+      }
+    };
+    // For leaders: lock type to 'tribo' and lock tribe to own tribe
+    if (MEMBER?.role === 'leader' && MEMBER?.tribe_id) {
+      typeSelect.value = 'tribo';
+      typeSelect.disabled = true;
+      tribeWrapper.classList.remove('hidden');
+      tribeSelCreate.value = String(MEMBER.tribe_id);
+      tribeSelCreate.disabled = true;
+    } else {
+      typeSelect.disabled = false;
+      tribeSelCreate.disabled = false;
+    }
     openModal('modal-new-event');
   }
 
   async function createEvent() {
     const title = (document.getElementById('ev-title') as HTMLInputElement).value.trim();
-    const type = (document.getElementById('ev-type') as HTMLInputElement).value;
+    const type = (document.getElementById('ev-type') as HTMLSelectElement).value;
     const date = (document.getElementById('ev-date') as HTMLInputElement).value;
     const duration = parseInt((document.getElementById('ev-duration') as HTMLInputElement).value);
     const link = (document.getElementById('ev-link') as HTMLInputElement).value.trim() || null;
-    const recorded = (document.getElementById('ev-recorded') as HTMLInputElement).checked;
-    const audience = (document.getElementById('ev-audience') as HTMLSelectElement).value;
+    const tribeId = type === 'tribo' ? parseInt((document.getElementById('ev-tribe-select') as HTMLSelectElement).value) : null;
+    const nature = (document.getElementById('ev-nature') as HTMLSelectElement).value;
+    const visibility = (document.getElementById('ev-visibility') as HTMLSelectElement)?.value || 'public';
+    const agendaText = (document.getElementById('ev-agenda-text') as HTMLTextAreaElement)?.value?.trim() || null;
+    const agendaUrl = (document.getElementById('ev-agenda-url') as HTMLInputElement)?.value?.trim() || null;
+    const externalAttendees = (document.getElementById('ev-external-attendees') as HTMLInputElement)?.value?.trim() || null;
     const tagIds = getSelectedTagIds('ev-selected-tags');
     if (!title || !date) return toast(I18N.msgFillTitleDate, 'error');
 
@@ -1073,16 +1125,20 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
       const { data, error } = await sb.rpc('create_event', {
         p_type: type, p_title: title, p_date: date,
         p_duration_minutes: duration,
-        p_tribe_id: type === 'tribe_meeting' ? MEMBER.tribe_id : null,
-        p_audience_level: audience === 'all_active_operational' ? 'all' : audience
+        p_tribe_id: tribeId,
+        p_meeting_link: link,
+        p_nature: nature,
+        p_visibility: visibility,
+        p_agenda_text: agendaText,
+        p_agenda_url: agendaUrl,
+        p_external_attendees: externalAttendees ? externalAttendees.split('\n').map(s => s.trim()).filter(Boolean) : null,
       });
       if (error) throw error;
       if (data?.success) {
-        if (link || recorded) {
-          await sb.rpc('update_event', { p_event_id: data.event_id, p_meeting_link: link, p_is_recorded: recorded });
+        // W140: assign tags
+        if (tagIds.length) {
+          await assignEventTagsAndAudience(data.event_id, tagIds, 'all_active_operational');
         }
-        // W140: assign tags and audience rules
-        await assignEventTagsAndAudience(data.event_id, tagIds, audience);
         closeModal('modal-new-event');
         toast(I18N.msgEventCreated, 'success');
         loadEvents(); loadKPIs();
@@ -1144,14 +1200,17 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
     if (_tribesCache.length > 0) return _tribesCache;
     const { data } = await sb.from('tribes').select('id, name').eq('is_active', true).order('id');
     _tribesCache = data || [];
-    const sel = document.getElementById('edit-ev-tribe-select') as HTMLSelectElement;
-    if (sel) {
-      while (sel.options.length > 1) sel.remove(1);
-      for (const t of _tribesCache) {
-        const opt = document.createElement('option');
-        opt.value = String(t.id);
-        opt.textContent = t.name;
-        sel.appendChild(opt);
+    // Populate both edit and create tribe selects
+    for (const selId of ['edit-ev-tribe-select', 'ev-tribe-select']) {
+      const sel = document.getElementById(selId) as HTMLSelectElement;
+      if (sel) {
+        while (sel.options.length > 1) sel.remove(1);
+        for (const t of _tribesCache) {
+          const opt = document.createElement('option');
+          opt.value = String(t.id);
+          opt.textContent = t.name;
+          sel.appendChild(opt);
+        }
       }
     }
     return _tribesCache;
