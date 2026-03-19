@@ -15,10 +15,13 @@ interface Props {
 }
 
 const {
-  title = 'Núcleo IA & GP — Ciclo 03',
-  description = 'The AI & PM Study and Research Hub — A Joint Initiative of the PMI Brazilian Chapters',
   activePage = '',
   lang = 'pt-BR',
+} = Astro.props;
+
+const {
+  title = t('meta.title', lang),
+  description = t('meta.description', lang),
 } = Astro.props;
 
 const roleLabels = JSON.stringify(getRoleLabelsMap(lang));
