@@ -66,7 +66,7 @@ BEGIN
   INSERT INTO events (type, title, date, duration_minutes, tribe_id, audience_level, meeting_link,
     nature, visibility, agenda_text, agenda_url, external_attendees, invited_member_ids, created_by)
   VALUES (p_type, p_title, p_date, p_duration_minutes, p_tribe_id, v_audience, p_meeting_link,
-    p_nature, p_visibility, p_agenda_text, p_agenda_url, p_external_attendees, p_invited_member_ids, v_member.id)
+    p_nature, p_visibility, p_agenda_text, p_agenda_url, p_external_attendees, p_invited_member_ids, auth.uid())
   RETURNING id INTO v_event_id;
 
   IF p_agenda_text IS NOT NULL OR p_agenda_url IS NOT NULL THEN

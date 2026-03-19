@@ -2880,6 +2880,7 @@ const enUS: Record<string, string> = {
   'attendance.modal.whichTribe': 'Which Tribe',
   'attendance.modal.nature': 'Nature',
   'attendance.modal.advancedFields': 'Advanced fields',
+  'attendance.modal.advanced': 'Advanced settings',
   'attendance.modal.externalAttendees': 'External attendees',
   'attendance.modal.recordingUrl': 'Recording URL',
   'attendance.modal.visibility': 'Visibility',
