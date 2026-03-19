@@ -400,9 +400,9 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     } else if (slots?.length) {
       scheduleHtml = slots.map(s => {
         const day = DAY_NAMES[s.day_of_week] || '?';
-        const start = s.time_start?.substring(0, 5) || '';
-        const end = s.time_end?.substring(0, 5) || '';
-        return `${day} ${start}–${end}`;
+        const start = (s.time_start || '').substring(0, 5).replace(/:00$/, 'h').replace(/:(\d\d)$/, 'h$1');
+        const end = (s.time_end || '').substring(0, 5).replace(/:00$/, 'h').replace(/:(\d\d)$/, 'h$1');
+        return `${day} · ${start}–${end}`;
       }).join(' · ');
     } else {
       scheduleHtml = '<span class="text-[var(--text-muted)] italic">—</span>';

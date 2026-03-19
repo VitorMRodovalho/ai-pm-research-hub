@@ -238,12 +238,36 @@ const PRES_I18N = {
   document.getElementById('pres-btn-skip')?.addEventListener('click', closeModal);
   document.getElementById('pres-end-backdrop')?.addEventListener('click', closeModal);
 
+  function shouldRemoveLayer(member: any): boolean {
+    if (!member) return true;
+    if (member.is_superadmin) return false;
+    if (member.operational_role === 'manager' || member.operational_role === 'deputy_manager') return false;
+    return true;
+  }
+
   (function bootPres() {
     sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(bootPres, 300); return; }
     const m = (window as any).navGetMember?.();
-    if (m) showToggle(m);
-    window.addEventListener('nav:member', (e: any) => showToggle(e.detail));
+    if (m) {
+      if (shouldRemoveLayer(m)) {
+        document.getElementById('pres-toggle-container')?.remove();
+        document.getElementById('pres-end-modal')?.remove();
+        document.getElementById('pres-data-overlay')?.remove();
+        return;
+      }
+      showToggle(m);
+    }
+    window.addEventListener('nav:member', (e: any) => {
+      const member = e.detail;
+      if (shouldRemoveLayer(member)) {
+        document.getElementById('pres-toggle-container')?.remove();
+        document.getElementById('pres-end-modal')?.remove();
+        document.getElementById('pres-data-overlay')?.remove();
+        return;
+      }
+      showToggle(member);
+    });
   })();
 </script>
 

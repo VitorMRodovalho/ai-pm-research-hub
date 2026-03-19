@@ -103,11 +103,14 @@ import { CHAPTER_CODES } from '../../data/chapters';
         </div>
       </div>
 
-      <!-- Workspace CTA -->
-      <div class="flex items-center justify-center bg-white/5 border border-white/10 rounded-2xl p-5">
-        <a href="/workspace" class="px-6 py-3 bg-teal text-white rounded-xl text-[.9rem] font-bold no-underline hover:opacity-90 transition-all">
-          Ir para Workspace →
-        </a>
+      <!-- Quick Actions -->
+      <div class="bg-white/8 border border-white/10 rounded-2xl p-5">
+        <div class="text-sm font-bold text-[var(--text-primary)] mb-2">⚡ Quick Actions</div>
+        <div class="space-y-2">
+          <a href="/attendance" class="block px-3 py-2 rounded-lg bg-navy/5 text-navy text-xs font-semibold hover:bg-navy/10 no-underline">📅 Criar Evento</a>
+          <a href="/attendance" class="block px-3 py-2 rounded-lg bg-navy/5 text-navy text-xs font-semibold hover:bg-navy/10 no-underline">✅ Registrar Presença</a>
+          <a href="/gamification" class="block px-3 py-2 rounded-lg bg-navy/5 text-navy text-xs font-semibold hover:bg-navy/10 no-underline">🏆 Ver Ranking</a>
+        </div>
       </div>
     </div>
 
@@ -211,9 +214,11 @@ import { CHAPTER_CODES } from '../../data/chapters';
           const _tribeName = tribe?.name_i18n?.[_sl] || tribe?.name || '...';
           let html = `<div class="text-lg font-bold text-[#05BFE0]">T${member.tribe_id}: ${escHtml(_tribeName)}</div>`;
           if (slots.length) {
-            const slotLabels = slots.map((s: any) =>
-              `${DAY_NAMES[s.day_of_week]} ${s.time_start}–${s.time_end}`
-            ).join(' · ');
+            const slotLabels = slots.map((s: any) => {
+              const start = (s.time_start || '').substring(0,5).replace(/:00$/, 'h').replace(/:(\d\d)$/, 'h$1');
+              const end = (s.time_end || '').substring(0,5).replace(/:00$/, 'h').replace(/:(\d\d)$/, 'h$1');
+              return `${DAY_NAMES[s.day_of_week]} · ${start}–${end}`;
+            }).join(' · ');
             html += `<div class="text-sm text-white/60 mt-1">${slotLabels}</div>`;
           }
           if (tribe?.meeting_link) {
@@ -239,10 +244,12 @@ import { CHAPTER_CODES } from '../../data/chapters';
         if (!myRow) { attEl.innerHTML = '<div class="text-sm text-white/50">Sem dados ainda</div>'; return; }
         const gPct = myRow.general_pct || 0;
         const tPct = myRow.tribe_pct || 0;
+        const tribeEvents = myRow.tribe_events_count ?? myRow.tribe_total ?? 0;
+        const tribeDisplay = tribeEvents > 0 ? `${tPct}%` : '—';
         const combined = myRow.combined_pct || 0;
         const color = combined >= 75 ? '#10B981' : combined >= 50 ? '#F59E0B' : '#EF4444';
         attEl.innerHTML = `
-          <div class="text-sm text-white/60">Geral: <b class="text-white">${gPct}%</b> · Tribo: <b class="text-white">${tPct}%</b></div>
+          <div class="text-sm text-white/60">Geral: <b class="text-white">${gPct}%</b> · Tribo: <b class="text-white">${tribeDisplay}</b></div>
           <div class="text-xl font-extrabold mt-1" style="color:${color}">Combinado: ${combined}%</div>`;
       }).catch(() => {});
 
