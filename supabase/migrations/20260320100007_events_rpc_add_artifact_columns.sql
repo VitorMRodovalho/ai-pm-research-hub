@@ -1,5 +1,7 @@
 -- Add agenda/minutes/recording columns to get_events_with_attendance RPC
 -- so the attendance page can display artifact badges on event cards.
+-- DROP old version (returns json) to allow return type change to TABLE.
+DROP FUNCTION IF EXISTS public.get_events_with_attendance(int, int);
 
 CREATE OR REPLACE FUNCTION public.get_events_with_attendance(
   p_limit  int DEFAULT 40,
@@ -15,7 +17,7 @@ RETURNS TABLE (
   youtube_url      text,
   is_recorded      boolean,
   audience_level   text,
-  tribe_id         uuid,
+  tribe_id         integer,
   attendee_count   bigint,
   agenda_text      text,
   agenda_url       text,
@@ -27,6 +29,7 @@ RETURNS TABLE (
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
   SELECT
     e.id,
