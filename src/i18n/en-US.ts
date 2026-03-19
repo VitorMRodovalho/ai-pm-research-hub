@@ -6,7 +6,7 @@ const enUS: Record<string, string> = {
   'meta.description': 'AI & PM Study and Research Hub — A Joint Initiative of the PMI Brazilian Chapters',
 
   // ── Nav ──
-  'nav.brand': 'AI & PM Hub — Cycle 03',
+  'nav.brand': 'AI & PM Research Hub — Cycle 03',
   'nav.agenda': 'Agenda',
   'nav.quadrants': 'Quadrants',
   'nav.tribes': 'Research Streams',

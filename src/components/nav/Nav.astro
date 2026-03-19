@@ -125,7 +125,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
 <nav class="sticky top-0 z-[200] bg-navy/97 backdrop-blur-md border-b-2 border-orange
             px-4 sm:px-6 flex items-center justify-between h-14">
   <a href={base + "/"} class="text-white font-bold text-sm no-underline flex-shrink-0">
-    <Fragment set:html={t('nav.brand', lang).replace('IA & GP', '<span class="text-orange">IA & GP</span>')} />
+    <Fragment set:html={t('nav.brand', lang).replace(/IA & GP|AI & PM/g, (m) => `<span class="text-orange">${m}</span>`)} />
   </a>
 
   <!-- Desktop links -->
