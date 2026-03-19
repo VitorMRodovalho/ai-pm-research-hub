@@ -646,7 +646,7 @@ const esLATAM: Record<string, string> = {
   'resources.github.linkText': 'Abrir →',
   'resources.email.title': 'Email del Núcleo',
   'resources.email.text': 'Comunicaciones oficiales.',
-  'resources.email.linkText': 'nucleoiagp@gmail.com',
+  'resources.email.linkText': 'nucleoia@pmigo.org.br',
   'resources.portal.title': 'volunteer.pmi.org',
   'resources.portal.text': 'Acepta tu posición.',
   'resources.portal.linkText': 'Portal →',
@@ -669,6 +669,8 @@ const esLATAM: Record<string, string> = {
   'role.communicator': 'Multiplicador',
   'role.guest': 'Visitante',
   'role.comms_team': 'Comunicación',
+  'role.comms_leader': 'Líder de Comunicación',
+  'role.comms_member': 'Miembro de Comunicación',
   'role.chapter_liaison': 'Punto Focal',
   'role.deputy_manager': 'Deputy PM',
 
@@ -1849,7 +1851,7 @@ const esLATAM: Record<string, string> = {
   'onboarding.step1.link': 'https://volunteer.pmi.org',
   'onboarding.step1.linkText': 'Ir a PMI Volunteer →',
   'onboarding.step2.title': 'Confirma tu registro con el gestor',
-  'onboarding.step2.desc': 'Envía un email a nucleoiagp@gmail.com confirmando tu participación.',
+  'onboarding.step2.desc': 'Envía un email a nucleoia@pmigo.org.br confirmando tu participación.',
   'onboarding.step2.linkText': 'Enviar email →',
   'onboarding.step3.title': 'Inicia sesión con Google o LinkedIn',
   'onboarding.step3.desc': 'Usa la misma cuenta de email registrada para acceder a la plataforma.',
@@ -2381,7 +2383,7 @@ const esLATAM: Record<string, string> = {
   // ── Guest (authenticated but not registered) ──
   'guest.notRegistered': 'Tu cuenta fue autenticada, pero aún no está registrada en el Núcleo.',
   'guest.contactAdmin': 'Contacta al gestor del proyecto para ser incluido como miembro.',
-  'guest.contactEmail': 'nucleoiagp@gmail.com',
+  'guest.contactEmail': 'nucleoia@pmigo.org.br',
   'guest.limitedAccess': 'Tienes acceso limitado. Regístrate como miembro para participar.',
   'guest.navNotFound': 'Cuenta no registrada',
 

@@ -501,7 +501,7 @@ export default function ImpactPageIsland({ lang = 'pt-BR' }: ImpactPageProps) {
         <div className="flex flex-wrap justify-center gap-4">
           <a href="/admin/selection" className="px-6 py-3 bg-teal text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all no-underline">{l.ctaSelection}</a>
           <a href="/publications" className="px-6 py-3 bg-navy text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all no-underline">{l.ctaArticles}</a>
-          <a href="mailto:nucleoiagp@gmail.com" className="px-6 py-3 border-2 border-navy text-navy rounded-xl font-semibold text-sm hover:bg-navy hover:text-white transition-all no-underline">{l.ctaContact}</a>
+          <a href="mailto:nucleoia@pmigo.org.br" className="px-6 py-3 border-2 border-navy text-navy rounded-xl font-semibold text-sm hover:bg-navy hover:text-white transition-all no-underline">{l.ctaContact}</a>
         </div>
       </section>
     </div>

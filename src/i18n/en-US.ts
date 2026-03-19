@@ -646,7 +646,7 @@ const enUS: Record<string, string> = {
   'resources.github.linkText': 'Open →',
   'resources.email.title': 'Hub Email',
   'resources.email.text': 'Official communications.',
-  'resources.email.linkText': 'nucleoiagp@gmail.com',
+  'resources.email.linkText': 'nucleoia@pmigo.org.br',
   'resources.portal.title': 'volunteer.pmi.org',
   'resources.portal.text': 'Accept your position.',
   'resources.portal.linkText': 'Portal →',
@@ -669,6 +669,8 @@ const enUS: Record<string, string> = {
   'role.communicator': 'Communicator',
   'role.guest': 'Guest',
   'role.comms_team': 'Communications',
+  'role.comms_leader': 'Communications Lead',
+  'role.comms_member': 'Communications Member',
   'role.chapter_liaison': 'Chapter Liaison',
   'role.deputy_manager': 'Deputy PM',
 
@@ -1849,7 +1851,7 @@ const enUS: Record<string, string> = {
   'onboarding.step1.link': 'https://volunteer.pmi.org',
   'onboarding.step1.linkText': 'Go to PMI Volunteer →',
   'onboarding.step2.title': 'Confirm your registration with the manager',
-  'onboarding.step2.desc': 'Send an email to nucleoiagp@gmail.com confirming your participation.',
+  'onboarding.step2.desc': 'Send an email to nucleoia@pmigo.org.br confirming your participation.',
   'onboarding.step2.linkText': 'Send email →',
   'onboarding.step3.title': 'Sign in with Google or LinkedIn',
   'onboarding.step3.desc': 'Use the same registered email account to access the platform.',
@@ -2381,7 +2383,7 @@ const enUS: Record<string, string> = {
   // ── Guest (authenticated but not registered) ──
   'guest.notRegistered': 'Your account was authenticated, but is not yet registered in the Hub.',
   'guest.contactAdmin': 'Contact the project manager to be added as a member.',
-  'guest.contactEmail': 'nucleoiagp@gmail.com',
+  'guest.contactEmail': 'nucleoia@pmigo.org.br',
   'guest.limitedAccess': 'You have limited access. Register as a member to participate.',
   'guest.navNotFound': 'Account not registered',
 
