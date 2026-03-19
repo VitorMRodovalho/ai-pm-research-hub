@@ -74,7 +74,7 @@ const SECTIONS: SidebarSection[] = [
       { href: '/admin/cycle-report', label: { 'pt-BR': 'Relatório do Ciclo', 'en-US': 'Cycle Report', 'es-LATAM': 'Informe del Ciclo' }, icon: 'FileText', permission: 'admin.analytics' },
       { href: '/admin/chapter-report', label: { 'pt-BR': 'Relatório por Capítulo', 'en-US': 'Chapter Report', 'es-LATAM': 'Informe por Capítulo' }, icon: 'Building', permission: 'admin.analytics.chapter' },
       { href: '/admin/report', label: { 'pt-BR': 'Relatório Executivo', 'en-US': 'Executive Report', 'es-LATAM': 'Informe Ejecutivo' }, icon: 'FileBarChart', permission: 'admin.analytics' },
-      { href: '/admin/tribe-comparison', label: { 'pt-BR': 'Comparativo de Tribos', 'en-US': 'Tribe Comparison', 'es-LATAM': 'Comparativo de Tribus' }, icon: 'GitCompare', permission: 'admin.access' },
+      { href: '/admin/tribes', label: { 'pt-BR': 'Comparativo de Tribos', 'en-US': 'Tribe Comparison', 'es-LATAM': 'Comparativo de Tribus' }, icon: 'GitCompare', permission: 'admin.access' },
     ],
   },
   {
