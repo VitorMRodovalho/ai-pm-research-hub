@@ -186,6 +186,24 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       ].join('');
     }
 
+    // Role label map (i18n)
+    const roleLabels: Record<string, Record<string, string>> = {
+      'pt-BR': { researcher: 'Pesquisador', tribe_leader: 'Líder de Tribo', sponsor: 'Patrocinador', chapter_liaison: 'Ponto Focal', manager: 'Gerente', deputy_manager: 'Deputy', observer: 'Observador', communicator: 'Comunicação', none: 'Sem papel' },
+      'en-US': { researcher: 'Researcher', tribe_leader: 'Tribe Leader', sponsor: 'Sponsor', chapter_liaison: 'Chapter Liaison', manager: 'Manager', deputy_manager: 'Deputy Manager', observer: 'Observer', communicator: 'Communications', none: 'No role' },
+      'es': { researcher: 'Investigador', tribe_leader: 'Líder de Línea', sponsor: 'Patrocinador', chapter_liaison: 'Enlace', manager: 'Gerente', deputy_manager: 'Subgerente', observer: 'Observador', communicator: 'Comunicación', none: 'Sin rol' },
+    };
+    const rl = roleLabels[lang] || roleLabels['pt-BR'];
+
+    const chapterPalette: Record<string, string> = { 'PMI-GO': '#0F6E56', 'PMI-CE': '#534AB7', 'PMI-DF': '#D85A30', 'PMI-MG': '#185FA5', 'PMI-RS': '#639922' };
+    const rolePalette: Record<string, string> = { researcher: '#378ADD', tribe_leader: '#1D9E75', sponsor: '#BA7517', chapter_liaison: '#7F77DD', manager: '#D85A30', deputy_manager: '#D4537E', observer: '#888780', communicator: '#639922', none: '#B4B2A9' };
+
+    // Dark mode support
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDark ? '#c2c0b6' : '#3d3d3a';
+    const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+    const borderColor = isDark ? '#1a2332' : '#ffffff';
+    Chart.defaults.color = textColor;
+
     // Chart: by chapter (horizontal bar)
     const chaptersCanvas = document.getElementById('cr-chart-chapters') as HTMLCanvasElement;
     if (chaptersCanvas && Array.isArray(ms.by_chapter) && ms.by_chapter.length > 0) {
@@ -195,7 +213,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           labels: ms.by_chapter.map((c: any) => c.chapter),
           datasets: [{
             data: ms.by_chapter.map((c: any) => c.count),
-            backgroundColor: CHART_COLORS.slice(0, ms.by_chapter.length),
+            backgroundColor: ms.by_chapter.map((c: any) => chapterPalette[c.chapter] || CHART_COLORS[0]),
             borderWidth: 0,
             borderRadius: 4,
           }],
@@ -206,31 +224,31 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           maintainAspectRatio: false,
           plugins: { legend: { display: false } },
           scales: {
-            x: { beginAtZero: true, ticks: { precision: 0 } },
-            y: { ticks: { font: { size: 11 } } },
+            x: { beginAtZero: true, ticks: { precision: 0, color: textColor }, grid: { color: gridColor } },
+            y: { ticks: { font: { size: 11 }, color: textColor }, grid: { display: false } },
           },
         },
       });
     }
 
-    // Chart: by role (donut)
+    // Chart: by role (donut) — translated labels
     const rolesCanvas = document.getElementById('cr-chart-roles') as HTMLCanvasElement;
     if (rolesCanvas && Array.isArray(ms.by_role) && ms.by_role.length > 0) {
       new Chart(rolesCanvas, {
         type: 'doughnut',
         data: {
-          labels: ms.by_role.map((r: any) => r.role || 'none'),
+          labels: ms.by_role.map((r: any) => rl[r.role] || r.role || 'Outro'),
           datasets: [{
             data: ms.by_role.map((r: any) => r.count),
-            backgroundColor: CHART_COLORS.slice(0, ms.by_role.length),
+            backgroundColor: ms.by_role.map((r: any) => rolePalette[r.role] || '#B4B2A9'),
             borderWidth: 2,
-            borderColor: '#fff',
+            borderColor: borderColor,
           }],
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } },
+          plugins: { legend: { position: 'bottom', labels: { font: { size: 10 }, color: textColor, padding: 12 } } },
         },
       });
     }
