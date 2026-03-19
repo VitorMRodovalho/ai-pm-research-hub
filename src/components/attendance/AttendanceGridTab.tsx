@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   useReactTable,
   getCoreRowModel,
@@ -7,6 +7,7 @@ import {
   flexRender,
   type ColumnDef,
   type SortingState,
+  type ColumnGroup,
 } from '@tanstack/react-table';
 import { usePageI18n } from '../../i18n/usePageI18n';
 import {
@@ -20,6 +21,7 @@ import {
   Search,
   ChevronUp,
   ChevronDown,
+  ChevronRight,
   Loader2,
   AlertCircle,
 } from 'lucide-react';
@@ -103,11 +105,33 @@ const TYPE_ABBR: Record<string, string> = {
   tribo: 'T',
   lideranca: 'L',
   kickoff: 'K',
+  comms: 'C',
 };
 
-function fmtDate(iso: string) {
-  const d = new Date(iso);
-  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+const TYPE_FULL: Record<string, string> = {
+  G: 'Geral',
+  T: 'Tribo',
+  L: 'Liderança',
+  K: 'Kickoff',
+  C: 'Comms',
+};
+
+function getLocale(): string {
+  const lang = document.documentElement.lang || 'pt-BR';
+  if (lang.startsWith('en')) return 'en-US';
+  if (lang.startsWith('es')) return 'es';
+  return 'pt-BR';
+}
+
+function fmtDate(iso: string): string {
+  const locale = getLocale();
+  return new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: '2-digit' });
+}
+
+/** Ensure rate is displayed as 0-100 percentage. If RPC returns 0-1, multiply by 100. */
+function normalizeRate(raw: number): number {
+  if (raw >= 0 && raw <= 1 && raw !== 0) return raw * 100;
+  return raw;
 }
 
 function statusCell(v: string | undefined) {
@@ -128,6 +152,33 @@ function rowTint(rate: number) {
   if (rate < 75) return 'bg-amber-50/60 dark:bg-amber-950/20';
   return '';
 }
+
+/* Sticky column styles */
+const STICKY_LEFT_BASE: React.CSSProperties = {
+  position: 'sticky' as const,
+  zIndex: 10,
+  background: 'var(--surface-base)',
+};
+
+const STICKY_RIGHT: React.CSSProperties = {
+  position: 'sticky' as const,
+  right: 0,
+  zIndex: 10,
+  background: 'var(--surface-base)',
+};
+
+const STICKY_LEFT_TD_BASE: React.CSSProperties = {
+  position: 'sticky' as const,
+  zIndex: 5,
+  background: 'inherit',
+};
+
+const STICKY_RIGHT_TD: React.CSSProperties = {
+  position: 'sticky' as const,
+  right: 0,
+  zIndex: 5,
+  background: 'inherit',
+};
 
 /* ------------------------------------------------------------------ */
 /*  KPI Cards                                                          */
@@ -164,6 +215,8 @@ function KpiCard({
 /*  Main Component                                                     */
 /* ------------------------------------------------------------------ */
 
+type DetractorFilter = 'all' | 'detractor' | 'at_risk' | 'regular';
+
 export default function AttendanceGridTab() {
   const t = usePageI18n();
 
@@ -173,9 +226,11 @@ export default function AttendanceGridTab() {
   const [error, setError] = useState<string | null>(null);
   const [tribeFilter, setTribeFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [detractorFilter, setDetractorFilter] = useState<DetractorFilter>('all');
   const [search, setSearch] = useState('');
   const [sorting, setSorting] = useState<SortingState>([{ id: 'rate', desc: false }]);
   const [isMobile, setIsMobile] = useState(false);
+  const [expandedTribes, setExpandedTribes] = useState<Set<string>>(new Set());
 
   /* Responsive */
   useEffect(() => {
@@ -186,7 +241,7 @@ export default function AttendanceGridTab() {
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  /* Fetch */
+  /* Fetch — FIX 6: proper error handling for RPC response */
   useEffect(() => {
     (async () => {
       try {
@@ -201,7 +256,39 @@ export default function AttendanceGridTab() {
           p_event_type: null,
         });
         if (rpcErr) throw rpcErr;
-        setData(result as GridData);
+
+        /* FIX 6: check if RPC result itself contains an error key */
+        if (result && typeof result === 'object' && 'error' in result && result.error) {
+          setError(
+            typeof result.error === 'string'
+              ? result.error
+              : result.error?.message || t('attendance.grid.errorGeneric', 'Failed to load attendance grid'),
+          );
+          setLoading(false);
+          return;
+        }
+
+        const parsed = result as GridData;
+
+        /* FIX 8: normalize rates from 0-1 to 0-100 if needed */
+        if (parsed && parsed.summary) {
+          parsed.summary.overall_rate = normalizeRate(parsed.summary.overall_rate);
+        }
+        if (parsed && parsed.tribes) {
+          for (const tribe of parsed.tribes) {
+            tribe.avg_rate = normalizeRate(tribe.avg_rate);
+            for (const m of tribe.members) {
+              m.rate = normalizeRate(m.rate);
+            }
+          }
+        }
+
+        setData(parsed);
+
+        /* Initialize expanded tribes — all expanded by default */
+        if (parsed && parsed.tribes) {
+          setExpandedTribes(new Set(parsed.tribes.map((tr) => tr.tribe_id)));
+        }
       } catch (e: any) {
         setError(e?.message || t('attendance.grid.errorGeneric', 'Failed to load attendance grid'));
       } finally {
@@ -245,11 +332,19 @@ export default function AttendanceGridTab() {
     });
   }, [data, typeFilter, tribeFilter]);
 
-  /* Filtered rows */
+  /* Filtered rows — FIX 7: detractor status filter */
   const filteredRows = useMemo(() => {
     let rows = flatRows;
     if (tribeFilter !== 'all') {
       rows = rows.filter((r) => r.tribeId === tribeFilter);
+    }
+    if (detractorFilter !== 'all') {
+      rows = rows.filter((r) => {
+        if (detractorFilter === 'detractor') return r.detractorStatus === 'detractor';
+        if (detractorFilter === 'at_risk') return r.detractorStatus === 'at_risk';
+        if (detractorFilter === 'regular') return !r.detractorStatus || r.detractorStatus === 'regular';
+        return true;
+      });
     }
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -261,7 +356,7 @@ export default function AttendanceGridTab() {
       );
     }
     return rows;
-  }, [flatRows, tribeFilter, search]);
+  }, [flatRows, tribeFilter, detractorFilter, search]);
 
   /* Best tribe */
   const bestTribe = useMemo(() => {
@@ -269,7 +364,18 @@ export default function AttendanceGridTab() {
     return data.tribes.reduce((best, cur) => (cur.avg_rate > best.avg_rate ? cur : best), data.tribes[0]);
   }, [data]);
 
-  /* Columns */
+  /* FIX 1: Week-grouped event columns */
+  const weekGroups = useMemo(() => {
+    const weekMap = new Map<number, GridEvent[]>();
+    filteredEvents.forEach((e) => {
+      const week = e.week_number;
+      if (!weekMap.has(week)) weekMap.set(week, []);
+      weekMap.get(week)!.push(e);
+    });
+    return Array.from(weekMap.entries()).sort(([a], [b]) => a - b);
+  }, [filteredEvents]);
+
+  /* Columns with week grouping */
   const columns = useMemo<ColumnDef<FlatRow, any>[]>(() => {
     const cols: ColumnDef<FlatRow, any>[] = [
       {
@@ -277,6 +383,7 @@ export default function AttendanceGridTab() {
         header: '',
         size: 36,
         enableSorting: false,
+        meta: { sticky: 'left', leftOffset: 0 },
         cell: ({ row }) => {
           const d = row.original.detractorStatus;
           if (d === 'detractor') return <span title={t('attendance.grid.detractor', 'Detractor')}>🔴</span>;
@@ -289,44 +396,59 @@ export default function AttendanceGridTab() {
         header: t('attendance.grid.name', 'Name'),
         size: 160,
         enableSorting: true,
+        meta: { sticky: 'left', leftOffset: 36 },
       },
       {
         accessorKey: 'tribeName',
         header: t('attendance.grid.tribe', 'Tribe'),
         size: 120,
         enableSorting: true,
+        meta: { sticky: 'left', leftOffset: 196 },
       },
       {
         accessorKey: 'chapter',
         header: t('attendance.grid.chapter', 'Chapter'),
         size: 100,
         enableSorting: true,
+        meta: { sticky: 'left', leftOffset: 316 },
       },
     ];
 
-    for (const ev of filteredEvents) {
-      const abbr = TYPE_ABBR[ev.type] || ev.type.charAt(0).toUpperCase();
-      cols.push({
-        id: `ev_${ev.id}`,
-        header: `${fmtDate(ev.date)} ${abbr}`,
-        size: 72,
-        enableSorting: false,
-        cell: ({ row }) => {
-          const st = statusCell(row.original.attendance[ev.id]);
-          return (
-            <span className={`inline-flex items-center justify-center w-full h-full text-xs ${st.bg} rounded px-1`}>
-              {st.label}
+    /* FIX 1+3: event columns grouped by week with date + type abbreviation header */
+    for (const [, evts] of weekGroups) {
+      for (const ev of evts) {
+        const abbr = TYPE_ABBR[ev.type] || ev.type.charAt(0).toUpperCase();
+        const fullTypeName = TYPE_FULL[abbr] || ev.type;
+        cols.push({
+          id: `ev_${ev.id}`,
+          header: () => (
+            <span title={`${fullTypeName} — ${ev.title}`} className="cursor-help">
+              {fmtDate(ev.date)}{' '}
+              <span className="font-extrabold">{abbr}</span>
             </span>
-          );
-        },
-      });
+          ),
+          size: 78,
+          enableSorting: false,
+          meta: { weekNumber: ev.week_number },
+          cell: ({ row }) => {
+            const st = statusCell(row.original.attendance[ev.id]);
+            return (
+              <span className={`inline-flex items-center justify-center w-full h-full text-xs ${st.bg} rounded px-1`}>
+                {st.label}
+              </span>
+            );
+          },
+        });
+      }
     }
 
+    /* FIX 4: Rate column sticky right */
     cols.push({
       accessorKey: 'rate',
       header: t('attendance.grid.rate', 'Rate %'),
       size: 80,
       enableSorting: true,
+      meta: { sticky: 'right' },
       cell: ({ getValue }) => {
         const v = getValue() as number;
         const color = v < 50 ? 'text-red-600' : v < 75 ? 'text-amber-600' : 'text-green-600';
@@ -335,7 +457,7 @@ export default function AttendanceGridTab() {
     });
 
     return cols;
-  }, [filteredEvents, t]);
+  }, [weekGroups, t]);
 
   /* Table instance */
   const table = useReactTable({
@@ -348,10 +470,48 @@ export default function AttendanceGridTab() {
     getFilteredRowModel: getFilteredRowModel(),
   });
 
+  /* FIX 5: Group rows by tribe for collapsible rendering */
+  const groupedByTribe = useMemo(() => {
+    if (!data) return [];
+    const sortedRows = table.getRowModel().rows;
+    const tribeMap = new Map<string, { tribe: GridTribe; rows: typeof sortedRows }>();
+
+    for (const tribe of data.tribes) {
+      tribeMap.set(tribe.tribe_id, { tribe, rows: [] });
+    }
+
+    for (const row of sortedRows) {
+      const entry = tribeMap.get(row.original.tribeId);
+      if (entry) {
+        entry.rows.push(row);
+      }
+    }
+
+    return Array.from(tribeMap.values()).filter((g) => g.rows.length > 0);
+  }, [data, table.getRowModel().rows]);
+
+  const toggleTribe = useCallback((tribeId: string) => {
+    setExpandedTribes((prev) => {
+      const next = new Set(prev);
+      if (next.has(tribeId)) {
+        next.delete(tribeId);
+      } else {
+        next.add(tribeId);
+      }
+      return next;
+    });
+  }, []);
+
   /* CSV Export */
   function exportCsv() {
     if (!data) return;
-    const headers = ['Name', 'Tribe', 'Chapter', ...filteredEvents.map((e) => `${fmtDate(e.date)} ${TYPE_ABBR[e.type] || e.type}`), 'Rate %'];
+    const headers = [
+      'Name',
+      'Tribe',
+      'Chapter',
+      ...filteredEvents.map((e) => `${fmtDate(e.date)} ${TYPE_ABBR[e.type] || e.type}`),
+      'Rate %',
+    ];
     const csvRows = [headers.join(',')];
     for (const row of table.getRowModel().rows) {
       const r = row.original;
@@ -374,6 +534,24 @@ export default function AttendanceGridTab() {
     URL.revokeObjectURL(url);
   }
 
+  /* Helper to get sticky style for a column */
+  function getStickyThStyle(meta: any): React.CSSProperties {
+    if (!meta) return {};
+    if (meta.sticky === 'left') return { ...STICKY_LEFT_BASE, left: meta.leftOffset ?? 0 };
+    if (meta.sticky === 'right') return STICKY_RIGHT;
+    return {};
+  }
+
+  function getStickyTdStyle(meta: any): React.CSSProperties {
+    if (!meta) return {};
+    if (meta.sticky === 'left') return { ...STICKY_LEFT_TD_BASE, left: meta.leftOffset ?? 0 };
+    if (meta.sticky === 'right') return STICKY_RIGHT_TD;
+    return {};
+  }
+
+  /* Total column count for colSpan */
+  const totalColCount = columns.length;
+
   /* ---------------------------------------------------------------- */
   /*  Render                                                           */
   /* ---------------------------------------------------------------- */
@@ -384,7 +562,10 @@ export default function AttendanceGridTab() {
       <div className="space-y-4">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-4 animate-pulse">
+            <div
+              key={i}
+              className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-4 animate-pulse"
+            >
               <div className="h-3 bg-[var(--border-subtle)] rounded w-16 mb-2" />
               <div className="h-6 bg-[var(--border-subtle)] rounded w-20" />
             </div>
@@ -416,14 +597,23 @@ export default function AttendanceGridTab() {
     <div className="space-y-5">
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KpiCard icon={Users} label={t('attendance.grid.totalMembers', 'Total Members')} value={summary.total_members} />
+        <KpiCard
+          icon={Users}
+          label={t('attendance.grid.totalMembers', 'Total Members')}
+          value={summary.total_members}
+        />
         <KpiCard
           icon={Percent}
           label={t('attendance.grid.overallRate', 'Overall Rate')}
           value={`${Math.round(summary.overall_rate)}%`}
           accent={summary.overall_rate < 75 ? 'text-amber-500' : 'text-green-500'}
         />
-        <KpiCard icon={Clock} label={t('attendance.grid.totalHours', 'Total Hours')} value={Math.round(summary.total_hours)} suffix="h" />
+        <KpiCard
+          icon={Clock}
+          label={t('attendance.grid.totalHours', 'Total Hours')}
+          value={Math.round(summary.total_hours)}
+          suffix="h"
+        />
         <KpiCard
           icon={ShieldAlert}
           label={t('attendance.grid.detractors', 'Detractors')}
@@ -471,11 +661,28 @@ export default function AttendanceGridTab() {
           <option value="geral">{t('attendance.grid.typeGeral', 'Geral')}</option>
           <option value="tribo">{t('attendance.grid.typeTribo', 'Tribo')}</option>
           <option value="lideranca">{t('attendance.grid.typeLideranca', 'Lideranca')}</option>
+          <option value="kickoff">{t('attendance.grid.typeKickoff', 'Kickoff')}</option>
+          <option value="comms">{t('attendance.grid.typeComms', 'Comms')}</option>
+        </select>
+
+        {/* FIX 7: Detractor Status Filter */}
+        <select
+          value={detractorFilter}
+          onChange={(e) => setDetractorFilter(e.target.value as DetractorFilter)}
+          className="bg-[var(--surface-base)] border border-[var(--border-default)] rounded-lg px-3 py-1.5 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-teal)]"
+        >
+          <option value="all">{t('attendance.grid.filterAll', 'Todos')}</option>
+          <option value="detractor">{t('attendance.grid.filterDetractors', 'Detratores')}</option>
+          <option value="at_risk">{t('attendance.grid.filterAtRisk', 'Em Risco')}</option>
+          <option value="regular">{t('attendance.grid.filterRegular', 'Regulares')}</option>
         </select>
 
         {/* Search */}
         <div className="relative flex-1 min-w-[180px]">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+          <Search
+            size={14}
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+          />
           <input
             type="text"
             value={search}
@@ -495,6 +702,22 @@ export default function AttendanceGridTab() {
         </button>
       </div>
 
+      {/* FIX 3: Legend bar */}
+      <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-muted)] bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-lg px-3 py-2">
+        <span className="font-semibold text-[var(--text-primary)]">
+          {t('attendance.grid.legend', 'Legenda')}:
+        </span>
+        <span><strong>G</strong> = Geral</span>
+        <span className="text-[var(--border-default)]">|</span>
+        <span><strong>T</strong> = Tribo</span>
+        <span className="text-[var(--border-default)]">|</span>
+        <span><strong>K</strong> = Kickoff</span>
+        <span className="text-[var(--border-default)]">|</span>
+        <span><strong>L</strong> = Liderança</span>
+        <span className="text-[var(--border-default)]">|</span>
+        <span><strong>C</strong> = Comms</span>
+      </div>
+
       {/* Grid / Mobile */}
       {isMobile ? (
         <MobileCardList rows={table.getRowModel().rows} events={filteredEvents} t={t} />
@@ -502,41 +725,89 @@ export default function AttendanceGridTab() {
         <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-xl overflow-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
-              {table.getHeaderGroups().map((hg) => (
-                <tr key={hg.id} className="border-b border-[var(--border-subtle)]">
-                  {hg.headers.map((header) => (
+              {/* FIX 1: Week group header row */}
+              {weekGroups.length > 0 && (
+                <tr className="border-b border-[var(--border-subtle)]">
+                  {/* Spacer for the 4 fixed columns */}
+                  <th
+                    colSpan={4}
+                    className="px-2 py-1 text-left text-xs font-bold text-[var(--text-muted)] bg-[var(--surface-base)]"
+                    style={{ ...STICKY_LEFT_BASE, left: 0 }}
+                  />
+                  {/* Week group headers */}
+                  {weekGroups.map(([week, evts]) => (
                     <th
-                      key={header.id}
-                      className="px-2 py-2 text-left text-xs font-bold text-[var(--text-muted)] bg-[var(--surface-base)] whitespace-nowrap sticky top-0 z-10 select-none"
-                      style={{ width: header.getSize() }}
-                      onClick={header.column.getCanSort() ? header.column.getToggleSortingHandler() : undefined}
+                      key={`wk-${week}`}
+                      colSpan={evts.length}
+                      className="px-2 py-1 text-center text-xs font-bold text-[var(--color-teal)] bg-[var(--surface-base)] border-l border-[var(--border-subtle)]"
                     >
-                      <span className={`inline-flex items-center gap-1 ${header.column.getCanSort() ? 'cursor-pointer hover:text-[var(--text-primary)]' : ''}`}>
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {header.column.getIsSorted() === 'asc' && <ChevronUp size={12} />}
-                        {header.column.getIsSorted() === 'desc' && <ChevronDown size={12} />}
-                      </span>
+                      {t('attendance.grid.week', 'Sem')} {week}
                     </th>
                   ))}
+                  {/* Spacer for rate column */}
+                  <th
+                    className="px-2 py-1 bg-[var(--surface-base)]"
+                    style={STICKY_RIGHT}
+                  />
+                </tr>
+              )}
+
+              {/* Column headers */}
+              {table.getHeaderGroups().map((hg) => (
+                <tr key={hg.id} className="border-b border-[var(--border-subtle)]">
+                  {hg.headers.map((header) => {
+                    const meta = header.column.columnDef.meta as any;
+                    return (
+                      <th
+                        key={header.id}
+                        className="px-2 py-2 text-left text-xs font-bold text-[var(--text-muted)] bg-[var(--surface-base)] whitespace-nowrap sticky top-0 select-none"
+                        style={{
+                          width: header.getSize(),
+                          ...getStickyThStyle(meta),
+                        }}
+                        onClick={
+                          header.column.getCanSort()
+                            ? header.column.getToggleSortingHandler()
+                            : undefined
+                        }
+                      >
+                        <span
+                          className={`inline-flex items-center gap-1 ${header.column.getCanSort() ? 'cursor-pointer hover:text-[var(--text-primary)]' : ''}`}
+                        >
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                          {header.column.getIsSorted() === 'asc' && <ChevronUp size={12} />}
+                          {header.column.getIsSorted() === 'desc' && <ChevronDown size={12} />}
+                        </span>
+                      </th>
+                    );
+                  })}
                 </tr>
               ))}
             </thead>
             <tbody>
-              {table.getRowModel().rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className={`border-b border-[var(--border-subtle)] hover:bg-[var(--surface-base)] transition-colors ${rowTint(row.original.rate)}`}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-2 py-1.5 whitespace-nowrap text-[var(--text-primary)]">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-              {table.getRowModel().rows.length === 0 && (
+              {/* FIX 5: Row grouping by tribe with collapsible headers */}
+              {groupedByTribe.length > 0 ? (
+                groupedByTribe.map(({ tribe, rows: tribeRows }) => {
+                  const isExpanded = expandedTribes.has(tribe.tribe_id);
+                  return (
+                    <TribeGroup
+                      key={tribe.tribe_id}
+                      tribe={tribe}
+                      rows={tribeRows}
+                      isExpanded={isExpanded}
+                      onToggle={() => toggleTribe(tribe.tribe_id)}
+                      totalColCount={totalColCount}
+                      getStickyTdStyle={getStickyTdStyle}
+                      t={t}
+                    />
+                  );
+                })
+              ) : (
                 <tr>
-                  <td colSpan={columns.length} className="px-4 py-12 text-center text-[var(--text-muted)] text-sm">
+                  <td
+                    colSpan={totalColCount}
+                    className="px-4 py-12 text-center text-[var(--text-muted)] text-sm"
+                  >
                     {t('attendance.grid.noResults', 'No members found.')}
                   </td>
                 </tr>
@@ -552,6 +823,85 @@ export default function AttendanceGridTab() {
         {t('attendance.grid.of', 'of')} {flatRows.length} {t('attendance.grid.members', 'members')}
       </p>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Tribe Group (collapsible)                                          */
+/* ------------------------------------------------------------------ */
+
+function TribeGroup({
+  tribe,
+  rows,
+  isExpanded,
+  onToggle,
+  totalColCount,
+  getStickyTdStyle,
+  t,
+}: {
+  tribe: GridTribe;
+  rows: any[];
+  isExpanded: boolean;
+  onToggle: () => void;
+  totalColCount: number;
+  getStickyTdStyle: (meta: any) => React.CSSProperties;
+  t: (key: string, fb?: string) => string;
+}) {
+  const chevronClass = isExpanded
+    ? 'transform rotate-90 transition-transform'
+    : 'transition-transform';
+
+  return (
+    <>
+      {/* Tribe header row */}
+      <tr
+        className="border-b border-[var(--border-subtle)] bg-[var(--surface-base)] cursor-pointer hover:bg-[var(--border-subtle)] transition-colors"
+        onClick={onToggle}
+      >
+        <td
+          colSpan={totalColCount}
+          className="px-3 py-2 text-sm font-bold text-[var(--text-primary)]"
+        >
+          <span className="inline-flex items-center gap-2">
+            <ChevronRight size={14} className={chevronClass} />
+            <span>{tribe.tribe_name}</span>
+            {tribe.leader_name && (
+              <span className="text-[var(--text-muted)] font-normal text-xs">
+                ({t('attendance.grid.leader', 'Líder')}: {tribe.leader_name})
+              </span>
+            )}
+            <span className="text-xs font-semibold text-[var(--color-teal)]">
+              — {t('attendance.grid.avg', 'Média')}: {Math.round(tribe.avg_rate)}%
+            </span>
+            <span className="text-xs text-[var(--text-muted)] font-normal">
+              ({rows.length} {t('attendance.grid.members', 'members')})
+            </span>
+          </span>
+        </td>
+      </tr>
+
+      {/* Member rows */}
+      {isExpanded &&
+        rows.map((row: any) => (
+          <tr
+            key={row.id}
+            className={`border-b border-[var(--border-subtle)] hover:bg-[var(--surface-base)] transition-colors ${rowTint(row.original.rate)}`}
+          >
+            {row.getVisibleCells().map((cell: any) => {
+              const meta = cell.column.columnDef.meta as any;
+              return (
+                <td
+                  key={cell.id}
+                  className="px-2 py-1.5 whitespace-nowrap text-[var(--text-primary)]"
+                  style={getStickyTdStyle(meta)}
+                >
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </td>
+              );
+            })}
+          </tr>
+        ))}
+    </>
   );
 }
 
@@ -580,9 +930,14 @@ function MobileCardList({
     <div className="space-y-3">
       {rows.map((row: any) => {
         const r: FlatRow = row.original;
-        const rateColor = r.rate < 50 ? 'text-red-600' : r.rate < 75 ? 'text-amber-600' : 'text-green-600';
+        const rateColor =
+          r.rate < 50 ? 'text-red-600' : r.rate < 75 ? 'text-amber-600' : 'text-green-600';
         const statusPrefix =
-          r.detractorStatus === 'detractor' ? '🔴 ' : r.detractorStatus === 'at_risk' ? '🟡 ' : '';
+          r.detractorStatus === 'detractor'
+            ? '🔴 '
+            : r.detractorStatus === 'at_risk'
+              ? '🟡 '
+              : '';
 
         return (
           <div
@@ -592,7 +947,8 @@ function MobileCardList({
             <div className="flex items-center justify-between mb-2">
               <div>
                 <p className="text-sm font-bold text-[var(--text-primary)]">
-                  {statusPrefix}{r.name}
+                  {statusPrefix}
+                  {r.name}
                 </p>
                 <p className="text-xs text-[var(--text-muted)]">
                   {r.tribeName} &middot; {r.chapter}
