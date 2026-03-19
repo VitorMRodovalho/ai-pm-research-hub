@@ -2880,6 +2880,7 @@ const esLATAM: Record<string, string> = {
   'attendance.modal.whichTribe': 'Qué Tribu',
   'attendance.modal.nature': 'Naturaleza',
   'attendance.modal.advancedFields': 'Campos avanzados',
+  'attendance.modal.advanced': 'Configuración avanzada',
   'attendance.modal.externalAttendees': 'Participantes externos',
   'attendance.modal.recordingUrl': 'URL de grabación',
   'attendance.modal.visibility': 'Visibilidad',

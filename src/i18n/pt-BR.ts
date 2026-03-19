@@ -2882,6 +2882,7 @@ const ptBR: Record<string, string> = {
   'attendance.modal.whichTribe': 'Qual Tribo',
   'attendance.modal.nature': 'Natureza',
   'attendance.modal.advancedFields': 'Campos avançados',
+  'attendance.modal.advanced': 'Configurações avançadas',
   'attendance.modal.externalAttendees': 'Participantes externos',
   'attendance.modal.recordingUrl': 'Link de gravação',
   'attendance.modal.visibility': 'Visibilidade',
