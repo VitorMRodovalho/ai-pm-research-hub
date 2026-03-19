@@ -38,6 +38,7 @@
     "@sentry/browser": "^10.43.0",
     "@supabase/supabase-js": "^2.98.0",
     "@tailwindcss/vite": "^4.2.1",
+    "@tanstack/react-table": "^8.21.3",
     "@tiptap/extension-image": "^2.27.2",
     "@tiptap/extension-link": "^2.27.2",
     "@tiptap/extension-placeholder": "^2.27.2",
@@ -50,7 +51,9 @@
     "lucide-react": "^0.577.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "react-markdown": "^10.1.0",
     "recharts": "^2.15.0",
+    "remark-gfm": "^4.0.1",
     "tailwindcss": "^4.2.1"
   },
   "devDependencies": {
