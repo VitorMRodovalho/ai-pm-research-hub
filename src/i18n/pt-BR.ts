@@ -2895,6 +2895,10 @@ const ptBR: Record<string, string> = {
   'attendance.nature.encerramento': 'Encerramento',
   'attendance.nature.workshop': 'Workshop',
   'attendance.nature.entrevista_selecao': 'Entrevista (Seleção)',
+
+  // Selection
+  'selection.title': 'Processo Seletivo',
+  'selection.denied': 'Acesso negado ao módulo de seleção.',
 };
 
 export default ptBR;

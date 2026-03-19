@@ -2893,6 +2893,10 @@ const enUS: Record<string, string> = {
   'attendance.nature.encerramento': 'Closing',
   'attendance.nature.workshop': 'Workshop',
   'attendance.nature.entrevista_selecao': 'Interview (Selection)',
+
+  // Selection
+  'selection.title': 'Selection Process',
+  'selection.denied': 'Access denied to the selection module.',
 };
 
 export default enUS;
