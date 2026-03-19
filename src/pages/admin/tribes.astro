@@ -25,7 +25,7 @@ const i18nBundle = buildPageI18n(['comp.cross', 'comp.tribe', 'comp.common'], la
     const check = () => {
       const member = (window as any).navMember;
       if (!member) { setTimeout(check, 300); return; }
-      const isGP = member.is_superadmin || member.operational_role === 'manager' || member.operational_role === 'deputy_manager';
+      const isGP = member.is_superadmin || ['manager', 'deputy_manager', 'tribe_leader', 'sponsor', 'chapter_liaison'].includes(member.operational_role) || (member.designations || []).some(function(d) { return d === 'deputy_manager' || d === 'curator'; });
       if (!isGP) {
         const panel = document.getElementById('cross-tribe-panel');
         if (panel) panel.innerHTML = '<div class="text-center py-20"><p class="text-lg font-bold text-red-500">Acesso restrito a GP/DM</p></div>';
