@@ -37,14 +37,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4">
             <h3 class="text-sm font-bold text-navy mb-2">{t('cycleReport.byChapter', lang)}</h3>
-            <div style="position: relative; height: 300px; width: 100%;">
-              <canvas id="cr-chart-chapters"></canvas>
+            <div style="position: relative; height: 300px; max-height: 300px; width: 100%; overflow: hidden;">
+              <canvas id="cr-chart-chapters" style="max-height: 300px;"></canvas>
             </div>
           </div>
           <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4">
             <h3 class="text-sm font-bold text-navy mb-2">{t('cycleReport.byRole', lang)}</h3>
-            <div style="position: relative; height: 300px; width: 100%;">
-              <canvas id="cr-chart-roles"></canvas>
+            <div style="position: relative; height: 300px; max-height: 300px; width: 100%; overflow: hidden;">
+              <canvas id="cr-chart-roles" style="max-height: 300px;"></canvas>
             </div>
           </div>
         </div>
@@ -93,6 +93,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   import { hasPermission } from '../../lib/permissions';
 
   let crBootRetries = 0;
+  let crChapterChart: Chart | null = null;
+  let crRoleChart: Chart | null = null;
 
   const STATUS_STYLES: Record<string, { bg: string; border: string; text: string }> = {
     green:  { bg: '#D1FAE5', border: '#6EE7B7', text: '#047857' },
@@ -209,9 +211,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     Chart.defaults.color = textColor;
 
     // Chart: by chapter (horizontal bar)
+    if (crChapterChart) { crChapterChart.destroy(); crChapterChart = null; }
+    if (crRoleChart) { crRoleChart.destroy(); crRoleChart = null; }
+
     const chaptersCanvas = document.getElementById('cr-chart-chapters') as HTMLCanvasElement;
     if (chaptersCanvas && Array.isArray(ms.by_chapter) && ms.by_chapter.length > 0) {
-      new Chart(chaptersCanvas, {
+      crChapterChart = new Chart(chaptersCanvas, {
         type: 'bar',
         data: {
           labels: ms.by_chapter.map((c: any) => c.chapter),
@@ -238,7 +243,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     // Chart: by role (donut) — translated labels
     const rolesCanvas = document.getElementById('cr-chart-roles') as HTMLCanvasElement;
     if (rolesCanvas && Array.isArray(ms.by_role) && ms.by_role.length > 0) {
-      new Chart(rolesCanvas, {
+      crRoleChart = new Chart(rolesCanvas, {
         type: 'doughnut',
         data: {
           labels: ms.by_role.map((r: any) => rl[r.role] || r.role || 'Outro'),
