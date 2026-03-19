@@ -311,12 +311,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
     if (!member || !sb) {
       bootRetries += 1;
-      if (bootRetries >= 20) {
+      if (bootRetries >= 60) {
         loading?.classList.add('hidden');
         denied?.classList.remove('hidden');
         return;
       }
-      setTimeout(() => bootPartnershipsPage(), 150);
+      setTimeout(() => bootPartnershipsPage(), 300);
       return;
     }
 
