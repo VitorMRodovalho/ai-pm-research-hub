@@ -282,18 +282,17 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
 
   const { summary, events } = data;
 
-  // Group events by week for header row
-  const weekGroups = useMemo(() => {
-    const map = new Map<number, AttendanceEvent[]>();
-    events.forEach(ev => {
+  // Group events by week for header row (primitive-only output to avoid React #310)
+  const weekGroups: Array<{ week: number; count: number }> = useMemo(() => {
+    const map = new Map<number, number>();
+    for (const ev of events) {
       const raw = (ev as any).week_number;
-      const w = typeof raw === 'number' ? raw : Number(raw) || getISOWeek(ev.date);
-      if (!map.has(w)) map.set(w, []);
-      map.get(w)!.push(ev);
-    });
+      const w = typeof raw === 'number' ? raw : (parseInt(String(raw), 10) || getISOWeek(ev.date));
+      map.set(w, (map.get(w) || 0) + 1);
+    }
     return Array.from(map.entries())
-      .sort(([a], [b]) => a - b)
-      .map(([week, evts]) => ({ week, count: evts.length }));
+      .sort((a, b) => a[0] - b[0])
+      .map(e => ({ week: e[0], count: e[1] }));
   }, [events]);
 
   /* ---------------------------------------------------------------- */
