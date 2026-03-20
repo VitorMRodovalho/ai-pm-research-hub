@@ -767,6 +767,7 @@ const ptBR: Record<string, string> = {
   'attendance.toggle.remove': 'Clique para remover presença',
   'attendance.error.permission': 'Sem permissão para esta ação.',
   'attendance.error.tribe': 'Apenas eventos da sua tribo.',
+  'attendance.toast_undo': 'Desfazer',
   'attendance.feedback.cycleTotal': 'Total no ciclo',
   'attendance.feedback.events': 'eventos',
   'attendance.feedback.streak': 'presenças consecutivas!',

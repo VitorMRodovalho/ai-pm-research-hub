@@ -765,6 +765,7 @@ const enUS: Record<string, string> = {
   'attendance.toggle.remove': 'Click to remove',
   'attendance.error.permission': 'Permission denied.',
   'attendance.error.tribe': 'Only your tribe events.',
+  'attendance.toast_undo': 'Undo',
   'attendance.feedback.cycleTotal': 'Cycle total',
   'attendance.feedback.events': 'events',
   'attendance.feedback.streak': 'consecutive attendances!',
