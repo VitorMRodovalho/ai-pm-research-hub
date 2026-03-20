@@ -73,21 +73,6 @@ function formatDate(iso: string): string {
   return `${dd}/${mmm}`;
 }
 
-const EVENT_TYPE_LETTER: Record<string, { letter: string; color: string }> = {
-  geral: { letter: 'G', color: 'bg-blue-100 text-blue-700' },
-  tribo: { letter: 'T', color: 'bg-green-100 text-green-700' },
-  kickoff: { letter: 'K', color: 'bg-purple-100 text-purple-700' },
-  lideranca: { letter: 'L', color: 'bg-amber-100 text-amber-700' },
-  comms: { letter: 'C', color: 'bg-pink-100 text-pink-700' },
-};
-
-function getISOWeek(dateStr: string): number {
-  const d = new Date(dateStr + 'T12:00:00');
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-}
 
 function rateColor(rate: number): string {
   if (rate < 50) return 'var(--color-danger, #ef4444)';
@@ -282,19 +267,6 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
 
   const { summary, events } = data;
 
-  // Group events by week for header row (primitive-only output to avoid React #310)
-  const weekGroups: Array<{ week: number; count: number }> = useMemo(() => {
-    const map = new Map<number, number>();
-    for (const ev of events) {
-      const raw = (ev as any).week_number;
-      const w = typeof raw === 'number' ? raw : (parseInt(String(raw), 10) || getISOWeek(ev.date));
-      map.set(w, (map.get(w) || 0) + 1);
-    }
-    return Array.from(map.entries())
-      .sort((a, b) => a[0] - b[0])
-      .map(e => ({ week: e[0], count: e[1] }));
-  }, [events]);
-
   /* ---------------------------------------------------------------- */
   /*  Main render                                                     */
   /* ---------------------------------------------------------------- */
@@ -350,53 +322,31 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
       <div className="overflow-x-auto rounded-lg border border-[var(--border-color,#e5e7eb)]">
         <table className="w-full border-collapse text-xs">
           <thead>
-            {/* Week grouping row */}
             <tr className="bg-[var(--bg-secondary,#f9fafb)]">
               <th
                 onClick={() => toggleSort('name')}
-                rowSpan={2}
-                className="sticky left-0 z-20 bg-[var(--bg-secondary,#f9fafb)] px-3 py-2 text-left text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wide cursor-pointer hover:text-[var(--text-primary)] whitespace-nowrap select-none min-w-[140px]"
+                className="sticky left-0 z-10 bg-[var(--bg-secondary,#f9fafb)] px-3 py-2 text-left text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wide cursor-pointer hover:text-[var(--text-primary)] whitespace-nowrap select-none min-w-[140px]"
               >
                 {t('attendance.col.member', 'Membro')}{' '}
                 {sortKey === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
               </th>
-              {weekGroups.map(wg => (
+              {events.map(ev => (
                 <th
-                  key={`w${wg.week}`}
-                  colSpan={wg.count}
-                  className="px-1 py-1.5 text-center text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider border-b border-[var(--border-color,#e5e7eb)]"
+                  key={ev.id}
+                  title={ev.title}
+                  className={`px-1.5 py-2 text-center text-[10px] font-medium text-[var(--text-secondary)] whitespace-nowrap ${(ev as any).is_future ? 'opacity-50' : ''}`}
                 >
-                  {`Sem ${wg.week}`}
+                  <div>{formatDate(ev.date)}</div>
+                  <div className="text-[9px]">{EVENT_TYPE_ICON[ev.type] || '🌐'}</div>
                 </th>
               ))}
               <th
                 onClick={() => toggleSort('rate')}
-                rowSpan={2}
-                className="sticky right-0 z-20 bg-[var(--bg-secondary,#f9fafb)] px-3 py-2 text-right text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wide cursor-pointer hover:text-[var(--text-primary)] whitespace-nowrap select-none min-w-[64px]"
+                className="sticky right-0 z-10 bg-[var(--bg-secondary,#f9fafb)] px-3 py-2 text-right text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wide cursor-pointer hover:text-[var(--text-primary)] whitespace-nowrap select-none min-w-[64px]"
               >
                 {t('attendance.col.rate', 'Taxa')}{' '}
                 {sortKey === 'rate' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
               </th>
-            </tr>
-            {/* Date + type badge row */}
-            <tr className="bg-[var(--bg-secondary,#f9fafb)]">
-              {events.map(ev => {
-                const badge = EVENT_TYPE_LETTER[ev.type];
-                return (
-                  <th
-                    key={ev.id}
-                    title={ev.title}
-                    className={`px-1.5 py-1.5 text-center text-[10px] font-medium text-[var(--text-secondary)] whitespace-nowrap ${(ev as any).is_future ? 'opacity-50' : ''}`}
-                  >
-                    <div>{formatDate(ev.date)}</div>
-                    {badge && (
-                      <span className={`inline-block mt-0.5 px-1 rounded text-[8px] font-bold ${badge.color}`}>
-                        {badge.letter}
-                      </span>
-                    )}
-                  </th>
-                );
-              })}
             </tr>
           </thead>
 
