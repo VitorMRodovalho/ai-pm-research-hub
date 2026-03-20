@@ -284,17 +284,16 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
 
   // Group events by week for header row
   const weekGroups = useMemo(() => {
-    const groups: { week: number; events: typeof events }[] = [];
-    const map = new Map<number, typeof events>();
+    const map = new Map<number, AttendanceEvent[]>();
     events.forEach(ev => {
-      const w = (ev as any).week_number ?? getISOWeek(ev.date);
+      const raw = (ev as any).week_number;
+      const w = typeof raw === 'number' ? raw : Number(raw) || getISOWeek(ev.date);
       if (!map.has(w)) map.set(w, []);
       map.get(w)!.push(ev);
     });
-    Array.from(map.entries()).sort(([a], [b]) => a - b).forEach(([week, evts]) => {
-      groups.push({ week, events: evts });
-    });
-    return groups;
+    return Array.from(map.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([week, evts]) => ({ week, count: evts.length }));
   }, [events]);
 
   /* ---------------------------------------------------------------- */
@@ -365,10 +364,10 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
               {weekGroups.map(wg => (
                 <th
                   key={`w${wg.week}`}
-                  colSpan={wg.events.length}
+                  colSpan={wg.count}
                   className="px-1 py-1.5 text-center text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider border-b border-[var(--border-color,#e5e7eb)]"
                 >
-                  Sem {wg.week}
+                  {`Sem ${wg.week}`}
                 </th>
               ))}
               <th
