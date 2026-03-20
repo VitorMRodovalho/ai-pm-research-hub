@@ -53,6 +53,8 @@ const STATUS_ICON: Record<string, string> = {
   present: '✅',
   absent: '❌',
   na: '—',
+  scheduled: '📅',
+  excused: '⚠️',
 };
 
 const EVENT_TYPE_ICON: Record<string, string> = {
@@ -293,8 +295,8 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <KpiCard
           label={t('attendance.kpi.overall', 'Overall Rate')}
-          value={`${Math.round(summary.overall_rate)}%`}
-          accent={rateColor(summary.overall_rate)}
+          value={`${Math.round(summary.overall_rate <= 1 ? summary.overall_rate * 100 : summary.overall_rate)}%`}
+          accent={rateColor(summary.overall_rate <= 1 ? summary.overall_rate * 100 : summary.overall_rate)}
         />
         <KpiCard
           label={t('attendance.kpi.perfect', 'Perfect Attendance')}
@@ -307,8 +309,8 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
           accent="var(--color-danger, #ef4444)"
         />
         <KpiCard
-          label={t('attendance.kpi.events', 'Total Events')}
-          value={String(events.length)}
+          label={t('attendance.kpi.events_past', 'Eventos Realizados')}
+          value={String((summary as any).past_events ?? events.filter((e: any) => !e.is_future).length)}
           accent="var(--accent, #6366f1)"
         />
       </div>
@@ -355,12 +357,13 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
 
           <tbody>
             {sortedMembers.map(member => {
-              const pct = Math.round(member.rate);
+              const rawRate = member.rate <= 1 ? member.rate * 100 : member.rate;
+              const pct = Math.round(rawRate);
               return (
                 <tr
                   key={member.id}
                   className="border-t border-[var(--border-color,#e5e7eb)] hover:bg-[var(--bg-tertiary,#f3f4f6)] transition-colors"
-                  style={{ backgroundColor: rateBg(member.rate) }}
+                  style={{ backgroundColor: rateBg(rawRate) }}
                 >
                   {/* Name */}
                   <td className="sticky left-0 z-[5] px-3 py-1.5 font-medium text-[var(--text-primary)] whitespace-nowrap"
@@ -398,7 +401,7 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
                     className="sticky right-0 z-[5] px-3 py-1.5 text-right font-bold whitespace-nowrap"
                     style={{
                       backgroundColor: 'inherit',
-                      color: rateColor(member.rate),
+                      color: rateColor(rawRate),
                     }}
                   >
                     {pct}%

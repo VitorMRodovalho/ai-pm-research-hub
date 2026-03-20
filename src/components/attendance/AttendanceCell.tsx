@@ -21,8 +21,8 @@ export function AttendanceCell({
   onCheckIn,
   loading = false,
 }: AttendanceCellProps) {
-  if (status === 'na') {
-    return <span className="text-gray-400 select-none">—</span>;
+  if (status === 'na' || status === 'scheduled') {
+    return <span className="text-gray-400 select-none" title={status === 'scheduled' ? 'Evento agendado' : ''}>{status === 'scheduled' ? '📅' : '—'}</span>;
   }
 
   if (isSelf && canSelfCheckIn && status === 'absent' && isWithinWindow) {
