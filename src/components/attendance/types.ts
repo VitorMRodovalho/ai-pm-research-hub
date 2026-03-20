@@ -1,4 +1,4 @@
-export type CellStatus = 'present' | 'absent' | 'na' | 'excused';
+export type CellStatus = 'present' | 'absent' | 'na' | 'excused' | 'scheduled';
 
 export interface AttendanceEvent {
   id: string;

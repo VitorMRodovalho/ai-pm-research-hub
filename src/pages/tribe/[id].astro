@@ -100,6 +100,9 @@ const TRIBE_I18N = {
   recurringSlot: t('tribe.recurringSlot', lang),
   eligible: t('tribe.eligible', lang),
   attendees: t('tribe.attendees', lang),
+  viewMinutes: t('events.view_minutes', lang),
+  viewAgenda: t('events.view_agenda', lang),
+  watchRecording: t('events.watch_recording', lang),
   radarGlobal: t('tribe.radarGlobal', lang),
   radarWebinars: t('tribe.radarWebinars', lang),
   radarPublications: t('tribe.radarPublications', lang),
@@ -604,17 +607,31 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
           const recLabel = e.has_recording
             ? `<a href="${escapeHtml(recUrl)}" target="_blank" rel="noopener" class="text-xs font-semibold text-teal no-underline hover:underline">▶️ ${I18N.recordingAvailable || 'Gravação'}</a>`
             : `<span class="text-xs text-[var(--text-muted)]">⚠️ ${I18N.noRecording || 'Sem gravação'}</span>`;
-          return `<div class="flex items-start gap-3 py-2.5 border-b border-[var(--border-subtle)] last:border-0">
-            <span class="text-base mt-0.5">${typeIcon(e.type)}</span>
-            <div class="flex-1 min-w-0">
-              <div class="text-sm font-medium text-[var(--text-primary)]">${escapeHtml(e.title)}</div>
-              <div class="text-xs text-[var(--text-secondary)] flex flex-wrap gap-x-3 mt-0.5">
-                <span>${d}</span>
-                ${recLabel}
-                <span>📊 ${e.attendee_count}/${e.eligible_count}</span>
-                ${e.duration_minutes ? `<span>⏱️ ${e.duration_minutes}min</span>` : ''}
+          // Content badges
+          const badges: string[] = [];
+          if (e.minutes_text) badges.push('<span class="px-1.5 py-0.5 rounded text-[.6rem] font-semibold bg-green-100 text-green-700">📝 Ata</span>');
+          if (e.has_recording) badges.push('<span class="px-1.5 py-0.5 rounded text-[.6rem] font-semibold bg-blue-100 text-blue-700">🎥</span>');
+          if (e.agenda_text) badges.push('<span class="px-1.5 py-0.5 rounded text-[.6rem] font-semibold bg-yellow-100 text-yellow-700">📋 Pauta</span>');
+          const badgesHtml = badges.length ? `<div class="flex gap-1 mt-1">${badges.join('')}</div>` : '';
+          // Expandable minutes
+          const minutesHtml = e.minutes_text
+            ? `<details class="mt-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-section-cool)] overflow-hidden"><summary class="px-3 py-2 text-[.65rem] font-bold uppercase tracking-wider text-[var(--text-muted)] cursor-pointer hover:bg-[var(--surface-hover)]">${I18N.viewMinutes || 'Ver ata'}</summary><div class="px-3 pb-2 text-sm text-[var(--text-secondary)] whitespace-pre-wrap">${escapeHtml(e.minutes_text)}</div></details>`
+            : '';
+          return `<div class="py-2.5 border-b border-[var(--border-subtle)] last:border-0">
+            <div class="flex items-start gap-3">
+              <span class="text-base mt-0.5">${typeIcon(e.type)}</span>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-[var(--text-primary)]">${escapeHtml(e.title)}</div>
+                <div class="text-xs text-[var(--text-secondary)] flex flex-wrap gap-x-3 mt-0.5">
+                  <span>${d}</span>
+                  ${recLabel}
+                  <span>📊 ${e.attendee_count}/${e.eligible_count}</span>
+                  ${e.duration_minutes ? `<span>⏱️ ${e.duration_minutes}min</span>` : ''}
+                </div>
+                ${badgesHtml}
               </div>
             </div>
+            ${minutesHtml}
           </div>`;
         }).join('');
       }
