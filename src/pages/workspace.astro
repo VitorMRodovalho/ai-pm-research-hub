@@ -601,16 +601,10 @@ const WK = {
 
       // ── Load Onboarding Checklist ──
       try {
-        // Find the member's application with onboarding in progress
-        const { data: onbApps } = await sb
-          .from('onboarding_progress')
-          .select('application_id')
-          .eq('member_id', member.id)
-          .limit(1);
-
-        if (onbApps?.length > 0) {
-          const appId = onbApps[0].application_id;
-          const { data: onbStatus } = await sb.rpc('get_onboarding_status', { p_application_id: appId });
+        // Uses RPC wrapper to avoid direct query on RLS deny-all table
+        {
+          const { data: onbStatus } = await sb.rpc('get_my_onboarding');
+          const appId = onbStatus?.application_id;
 
           if (onbStatus && onbStatus.steps?.length > 0) {
             const $onbSection = document.getElementById('wk-onboarding')!;

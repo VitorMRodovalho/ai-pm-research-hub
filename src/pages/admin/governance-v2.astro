@@ -6,17 +6,60 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
 
 <AdminLayout title={t('nav.adminBoardGovernance', lang)} breadcrumbs={[{label:'Operações'},{label:'Governança'}]}>
-  <div class="max-w-[1100px] mx-auto px-4 py-8 space-y-4">
-    <div id="boardgov-loading" class="text-[var(--text-muted)] text-sm">Carregando governança de boards...</div>
+  <div class="max-w-[1100px] mx-auto px-4 py-8 space-y-6">
+
+    <!-- ═══ Org Chart ═══ -->
+    <section id="orgchart-section" class="hidden">
+      <h1 class="text-xl font-extrabold text-navy mb-1">{t('orgChart.title', lang)}</h1>
+      <p class="text-xs text-[var(--text-muted)] mb-4">{t('orgChart.copNote', lang)}</p>
+
+      <!-- Dim 1: Superadmins -->
+      <div class="mb-4">
+        <h2 class="text-sm font-bold text-purple mb-2">{t('orgChart.dim1', lang)}</h2>
+        <div id="oc-superadmins" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      <!-- Dim 2: Operational Roles -->
+      <div class="mb-4">
+        <h2 class="text-sm font-bold text-navy mb-2">{t('orgChart.dim2', lang)}</h2>
+        <div class="space-y-2" id="oc-tiers"></div>
+      </div>
+
+      <!-- Dim 3: Designations -->
+      <div class="mb-4">
+        <h2 class="text-sm font-bold text-teal mb-2">{t('orgChart.dim3', lang)}</h2>
+        <div class="space-y-2" id="oc-designations"></div>
+      </div>
+
+      <!-- Stakeholder Gap Alert -->
+      <div id="oc-gap-alert" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm font-semibold"></div>
+    </section>
+
+    <!-- ═══ Board Governance (existing) ═══ -->
+    <div id="boardgov-loading" class="text-[var(--text-muted)] text-sm">Carregando governança...</div>
     <div id="boardgov-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
       Acesso restrito a gestão de projeto.
     </div>
     <section id="boardgov-panel" class="hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
-      <h1 class="text-xl font-extrabold text-navy mb-3">Governança de Boards Arquivados</h1>
+      <h2 class="text-lg font-extrabold text-navy mb-3">Governança de Boards Arquivados</h2>
       <div id="boardgov-list" class="space-y-2"></div>
     </section>
   </div>
 </AdminLayout>
+
+<span id="i18n-oc-tier1" class="hidden">{t('orgChart.tier1', lang)}</span>
+<span id="i18n-oc-tier2" class="hidden">{t('orgChart.tier2', lang)}</span>
+<span id="i18n-oc-tier3" class="hidden">{t('orgChart.tier3', lang)}</span>
+<span id="i18n-oc-tier5" class="hidden">{t('orgChart.tier5', lang)}</span>
+<span id="i18n-oc-tier7" class="hidden">{t('orgChart.tier7', lang)}</span>
+<span id="i18n-oc-tier8" class="hidden">{t('orgChart.tier8', lang)}</span>
+<span id="i18n-oc-curators" class="hidden">{t('orgChart.curators', lang)}</span>
+<span id="i18n-oc-comms" class="hidden">{t('orgChart.comms', lang)}</span>
+<span id="i18n-oc-ambassadors" class="hidden">{t('orgChart.ambassadors', lang)}</span>
+<span id="i18n-oc-founders" class="hidden">{t('orgChart.founders', lang)}</span>
+<span id="i18n-oc-noAccount" class="hidden">{t('orgChart.noAccount', lang)}</span>
+<span id="i18n-oc-stakeholderGap" class="hidden">{t('orgChart.stakeholderGap', lang)}</span>
+<span id="i18n-oc-people" class="hidden">{t('orgChart.people', lang)}</span>
 
 <script>
   import { hasPermission } from '../../lib/permissions';
@@ -100,4 +143,122 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   });
 
   bootBoardGovPage();
+
+  // ═══ Org Chart ═══
+  const oc = (id: string) => document.getElementById(id)?.textContent || '';
+  const escOc = (s: string) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  function personBadge(name: string, extra = '') {
+    return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[var(--surface-base)] border border-[var(--border-default)] text-xs font-medium text-[var(--text-primary)]">${escOc(name)}${extra ? ` <span class="text-[.6rem] text-[var(--text-muted)]">${extra}</span>` : ''}</span>`;
+  }
+
+  function tierCard(label: string, count: number | string, content: string, color = 'navy') {
+    return `<details class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] overflow-hidden">
+      <summary class="flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-[var(--surface-hover)] transition-colors">
+        <span class="text-xs font-bold text-${color}">${label}</span>
+        <span class="text-[.65rem] text-[var(--text-muted)] font-semibold">${count} ${oc('i18n-oc-people')}</span>
+      </summary>
+      <div class="px-4 pb-3 flex flex-wrap gap-1.5">${content}</div>
+    </details>`;
+  }
+
+  async function bootOrgChart() {
+    const sb = (window as any).navGetSb?.();
+    const member = (window as any).navGetMember?.();
+    if (!sb || !member) return;
+
+    const { data, error } = await sb.rpc('get_org_chart');
+    if (error || !data || data.error) return;
+
+    const section = document.getElementById('orgchart-section');
+    if (!section) return;
+    section.classList.remove('hidden');
+
+    // Dim 1: Superadmins
+    const saEl = document.getElementById('oc-superadmins');
+    if (saEl && Array.isArray(data.superadmins)) {
+      saEl.innerHTML = data.superadmins.map((s: any) => personBadge(s.name, s.role === 'manager' ? 'GP' : 'Deputy')).join('');
+    }
+
+    // Dim 2: Tiers
+    const tiersEl = document.getElementById('oc-tiers');
+    if (tiersEl && data.tiers) {
+      const t = data.tiers;
+      const cards: string[] = [];
+
+      // Tier 1
+      if (Array.isArray(t.tier1)) {
+        cards.push(tierCard(oc('i18n-oc-tier1'), t.tier1.length,
+          t.tier1.map((p: any) => personBadge(p.name, p.role === 'manager' ? 'GP' : 'Deputy')).join(''), 'purple'));
+      }
+
+      // Tier 2
+      if (Array.isArray(t.tier2)) {
+        const noAccountLabel = oc('i18n-oc-noAccount');
+        cards.push(tierCard(oc('i18n-oc-tier2'), t.tier2.length,
+          t.tier2.map((p: any) => personBadge(p.name, `${p.chapter || ''}${!p.has_account ? ` · ${noAccountLabel}` : ''}`)).join(''), 'amber-700'));
+      }
+
+      // Tier 3
+      if (Array.isArray(t.tier3)) {
+        cards.push(tierCard(oc('i18n-oc-tier3'), t.tier3.length,
+          t.tier3.map((p: any) => personBadge(p.name, p.tribe_name || `T${p.tribe_id}`)).join(''), 'emerald-700'));
+      }
+
+      // Tier 5 (count only)
+      if (t.tier5_count != null) {
+        cards.push(tierCard(oc('i18n-oc-tier5'), t.tier5_count, `<span class="text-xs text-[var(--text-secondary)]">${t.tier5_count} ${oc('i18n-oc-people')}</span>`, 'blue-600'));
+      }
+
+      // Tier 7 (count only)
+      if (t.tier7_count != null) {
+        cards.push(tierCard(oc('i18n-oc-tier7'), t.tier7_count, `<span class="text-xs text-[var(--text-secondary)]">${t.tier7_count} ${oc('i18n-oc-people')}</span>`, 'gray-500'));
+      }
+
+      // Tier 8 (count only)
+      if (t.tier8_count != null && t.tier8_count > 0) {
+        cards.push(tierCard(oc('i18n-oc-tier8'), t.tier8_count, `<span class="text-xs text-[var(--text-secondary)]">${t.tier8_count} ${oc('i18n-oc-people')}</span>`, 'gray-400'));
+      }
+
+      tiersEl.innerHTML = cards.join('');
+    }
+
+    // Dim 3: Designations
+    const desigEl = document.getElementById('oc-designations');
+    if (desigEl && data.designations) {
+      const d = data.designations;
+      const cards: string[] = [];
+
+      if (Array.isArray(d.curators) && d.curators.length > 0) {
+        cards.push(tierCard(oc('i18n-oc-curators'), d.curators.length,
+          d.curators.map((p: any) => personBadge(p.name, p.is_active === false ? 'inativa' : '')).join(''), 'teal'));
+      }
+      if (Array.isArray(d.comms) && d.comms.length > 0) {
+        cards.push(tierCard(oc('i18n-oc-comms'), d.comms.length,
+          d.comms.map((p: any) => personBadge(p.name)).join(''), 'teal'));
+      }
+      if (Array.isArray(d.ambassadors) && d.ambassadors.length > 0) {
+        cards.push(tierCard(oc('i18n-oc-ambassadors'), d.ambassadors.length,
+          d.ambassadors.map((p: any) => personBadge(p.name, p.chapter || '')).join(''), 'teal'));
+      }
+      if (Array.isArray(d.founders) && d.founders.length > 0) {
+        cards.push(tierCard(oc('i18n-oc-founders'), d.founders.length,
+          d.founders.map((p: any) => personBadge(p.name)).join(''), 'teal'));
+      }
+
+      desigEl.innerHTML = cards.join('');
+    }
+
+    // Stakeholder gap alert
+    if (data.stakeholder_auth_gap > 0) {
+      const gapEl = document.getElementById('oc-gap-alert');
+      if (gapEl) {
+        gapEl.textContent = `⚠️ ${data.stakeholder_auth_gap} ${oc('i18n-oc-stakeholderGap')}`;
+        gapEl.classList.remove('hidden');
+      }
+    }
+  }
+
+  // Boot org chart after board governance loads
+  setTimeout(bootOrgChart, 500);
 </script>
