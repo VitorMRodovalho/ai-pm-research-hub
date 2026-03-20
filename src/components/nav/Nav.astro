@@ -651,7 +651,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
           : `<div class="w-7 h-7 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.65rem]">${safeInitials}</div>`
         }
         <span class="text-white text-[.8rem] font-semibold hidden sm:inline">${safeFirst}</span>
-        <span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded uppercase hidden sm:inline" style="background:${color}33;color:${color}">${safeLabel}</span>
+        <span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded uppercase hidden sm:inline" style="background:${color};color:#fff">${safeLabel}</span>
         <span id="notif-badge" class="hidden w-4 h-4 rounded-full bg-red-500 text-white text-[.55rem] font-bold flex items-center justify-center"></span>
         <span class="text-white/40 text-[.6rem]">▾</span>
       </button>`;
@@ -806,7 +806,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
         }
         <div class="min-w-0">
           <div class="font-bold text-[.9rem] text-navy">${name}</div>
-          <span class="text-[.62rem] font-bold px-1.5 py-0.5 rounded inline-block mt-0.5" style="background:${color}22;color:${color}">${getRoleLabel(r)}</span>
+          <span class="text-[.62rem] font-bold px-1.5 py-0.5 rounded inline-block mt-0.5 text-white" style="background:${color}">${getRoleLabel(r)}</span>
           <div class="text-[.67rem] text-[var(--text-secondary)] truncate mt-0.5">${_member.email||''}</div>
         </div>
       </div>
