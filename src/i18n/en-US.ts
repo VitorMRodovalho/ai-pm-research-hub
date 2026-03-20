@@ -2615,6 +2615,17 @@ const enUS: Record<string, string> = {
   // ── Tribe Dashboard tabs ──
   'tribe.gamificationTab': 'Gamification',
   'tribe.attendanceTab': 'Attendance',
+  'tribe.viewingOther': 'Viewing',
+  'tribe.crossTribeNotice': 'Cross-team viewing',
+  'tribe.curatorAccess': 'Curator Access',
+  'tribe.upcomingEvents': 'Upcoming Tribe Events',
+  'tribe.pastMeetings': 'Past Meetings',
+  'tribe.recordingAvailable': 'Recording',
+  'tribe.noRecording': 'No recording',
+  'tribe.createEvent': 'Create Event',
+  'tribe.viewAllEvents': 'View all events',
+  'tribe.eligibleMembers': 'eligible members',
+  'tribe.readOnly': 'Read-only',
 
   // ── Tribe Gamification (P2-2) ──
   'tribe_dashboard.gamification.title': 'Tribe Gamification',

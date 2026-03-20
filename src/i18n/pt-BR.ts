@@ -2617,6 +2617,18 @@ const ptBR: Record<string, string> = {
   // ── Tribe Dashboard tabs ──
   'tribe.gamificationTab': 'Gamificação',
   'tribe.attendanceTab': 'Presença',
+  // ── Tribe cross-tribe + events (GC-105) ──
+  'tribe.viewingOther': 'Visualizando',
+  'tribe.crossTribeNotice': 'Modo gestão cruzada',
+  'tribe.curatorAccess': 'Acesso de Curadoria',
+  'tribe.upcomingEvents': 'Próximos Eventos da Tribo',
+  'tribe.pastMeetings': 'Reuniões Anteriores',
+  'tribe.recordingAvailable': 'Gravação',
+  'tribe.noRecording': 'Sem gravação',
+  'tribe.createEvent': 'Criar Evento',
+  'tribe.viewAllEvents': 'Ver todos os eventos',
+  'tribe.eligibleMembers': 'membros elegíveis',
+  'tribe.readOnly': 'Somente leitura',
 
   // ── Tribe Gamification (P2-2) ──
   'tribe_dashboard.gamification.title': 'Gamificação da Tribo',
