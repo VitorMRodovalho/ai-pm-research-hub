@@ -46,7 +46,7 @@ interface Props {
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-type EventTypeFilter = 'all' | 'general' | 'tribe' | 'leadership';
+type EventTypeFilter = 'all' | 'geral' | 'tribo' | 'lideranca';
 type SortKey = 'rate' | 'name';
 
 const STATUS_ICON: Record<string, string> = {
@@ -56,9 +56,10 @@ const STATUS_ICON: Record<string, string> = {
 };
 
 const EVENT_TYPE_ICON: Record<string, string> = {
-  general: '🌐',
-  tribe: '🏠',
-  leadership: '👑',
+  geral: '🌐',
+  tribo: '🔬',
+  lideranca: '👥',
+  kickoff: '🚀',
 };
 
 function formatDate(iso: string): string {
@@ -111,22 +112,43 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
     }
   } catch { /* permissions unavailable — read-only mode */ }
 
-  // Toggle handler
+  // Toggle handler with toast + undo
+  const [undoToast, setUndoToast] = useState<{ msg: string; undo: () => void } | null>(null);
+
+  const refreshGrid = useCallback(async () => {
+    const sb = getSb();
+    if (!sb) return;
+    const eventType = filter === 'all' ? null : filter;
+    const { data: result } = await sb.rpc('get_tribe_attendance_grid', { p_tribe_id: tribeId, p_event_type: eventType });
+    if (result) setData(result as AttendanceGrid);
+  }, [getSb, tribeId, filter]);
+
   const handleToggle = useCallback(async (eventId: string, memberId: string, currentStatus: CellStatus) => {
     if (currentStatus === 'na') return;
     const sb = getSb();
     if (!sb) return;
     const newPresent = currentStatus !== 'present';
+    const memberName = data?.members.find(m => m.id === memberId)?.name || '';
     try {
       await sb.rpc('mark_member_present', { p_event_id: eventId, p_member_id: memberId, p_present: newPresent });
-      // Refresh grid
-      const eventType = filter === 'all' ? null : filter;
-      const { data: result } = await sb.rpc('get_tribe_attendance_grid', { p_tribe_id: tribeId, p_event_type: eventType });
-      if (result) setData(result as AttendanceGrid);
+      await refreshGrid();
+      // Show toast with undo
+      const msg = `${memberName}: ${newPresent ? '✅ Presente' : '❌ Ausente'}`;
+      setUndoToast({
+        msg,
+        undo: async () => {
+          try {
+            await sb.rpc('mark_member_present', { p_event_id: eventId, p_member_id: memberId, p_present: !newPresent });
+            await refreshGrid();
+          } catch {}
+          setUndoToast(null);
+        },
+      });
+      setTimeout(() => setUndoToast(prev => prev?.msg === msg ? null : prev), 5000);
     } catch (e: any) {
       (window as any).toast?.(e.message || 'Erro', 'error');
     }
-  }, [getSb, tribeId, filter]);
+  }, [getSb, tribeId, filter, data, refreshGrid]);
 
   // Self check-in handler
   const handleSelfCheckIn = useCallback(async (eventId: string) => {
@@ -135,17 +157,15 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
     try {
       const { data: res } = await sb.rpc('register_own_presence', { p_event_id: eventId });
       if (res?.success) {
-        (window as any).toast?.('Presença registrada!', 'success');
-        const eventType = filter === 'all' ? null : filter;
-        const { data: result } = await sb.rpc('get_tribe_attendance_grid', { p_tribe_id: tribeId, p_event_type: eventType });
-        if (result) setData(result as AttendanceGrid);
+        (window as any).toast?.('✅ Presença registrada!', 'success');
+        await refreshGrid();
       } else {
         (window as any).toast?.(res?.message || res?.error || 'Erro', 'error');
       }
     } catch (e: any) {
       (window as any).toast?.(e.message || 'Erro', 'error');
     }
-  }, [getSb, tribeId, filter]);
+  }, [getSb, refreshGrid]);
 
   // Check-in window helper
   const isWithinCheckInWindow = (eventDate: string): boolean => {
@@ -204,9 +224,9 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
 
   const filterOptions: { value: EventTypeFilter; label: string }[] = [
     { value: 'all', label: t('attendance.filter.all', 'All') },
-    { value: 'general', label: t('attendance.filter.general', 'General') },
-    { value: 'tribe', label: t('attendance.filter.tribe', 'Tribe') },
-    { value: 'leadership', label: t('attendance.filter.leadership', 'Leadership') },
+    { value: 'geral', label: t('attendance.filter.general', 'Gerais') },
+    { value: 'tribo', label: t('attendance.filter.tribe', 'Tribo') },
+    { value: 'lideranca', label: t('attendance.filter.leadership', 'Liderança') },
   ];
 
   /* ---------------------------------------------------------------- */
@@ -309,11 +329,7 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
 
               {/* Event columns */}
               {events.map(ev => {
-                const icon = ev.is_leadership
-                  ? EVENT_TYPE_ICON.leadership
-                  : ev.is_tribe_event
-                    ? EVENT_TYPE_ICON.tribe
-                    : EVENT_TYPE_ICON.general;
+                const icon = EVENT_TYPE_ICON[ev.type] || (ev.is_leadership ? '👥' : ev.is_tribe_event ? '🔬' : '🌐');
                 return (
                   <th
                     key={ev.id}
@@ -393,6 +409,16 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
           </tbody>
         </table>
       </div>
+
+      {/* Undo toast */}
+      {undoToast && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-[var(--surface-elevated,#1f2937)] text-[var(--text-primary,#fff)] px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 text-sm border border-[var(--border-default)]">
+          <span>{undoToast.msg}</span>
+          <button onClick={undoToast.undo} className="text-blue-400 font-semibold hover:text-blue-300 border-0 bg-transparent cursor-pointer text-sm">
+            {t('attendance.toast_undo', 'Desfazer')}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

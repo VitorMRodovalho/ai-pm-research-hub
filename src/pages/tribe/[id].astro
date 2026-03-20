@@ -1566,8 +1566,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
       renderMembers(allMembers);
 
-      // Geral: Radar Global (webinars + publicações)
-      loadRadarGlobal();
+      // Geral: Radar Global first (uses innerHTML), then Events Timeline (prepends)
+      await loadRadarGlobal();
       loadEventsTimeline();
 
       // Project Board is now handled by React island (TribeKanbanIsland).

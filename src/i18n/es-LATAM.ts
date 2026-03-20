@@ -765,6 +765,7 @@ const esLATAM: Record<string, string> = {
   'attendance.toggle.remove': 'Clic para remover asistencia',
   'attendance.error.permission': 'Sin permiso para esta acción.',
   'attendance.error.tribe': 'Solo eventos de su línea.',
+  'attendance.toast_undo': 'Deshacer',
   'attendance.feedback.cycleTotal': 'Total del ciclo',
   'attendance.feedback.events': 'eventos',
   'attendance.feedback.streak': 'asistencias consecutivas!',
