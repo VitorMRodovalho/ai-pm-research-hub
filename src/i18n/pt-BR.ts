@@ -953,6 +953,7 @@ const ptBR: Record<string, string> = {
   'authModal.title': 'Acessar plataforma',
   'authModal.subtitle': 'Entre com seu email cadastrado no Núcleo.',
   'authModal.google': 'Entrar com Google',
+  'authModal.microsoft': 'Entrar com Microsoft',
   'authModal.linkedin': 'Entrar com LinkedIn',
   'authModal.or': 'ou',
   'authModal.emailPlaceholder': 'seu@email.com',

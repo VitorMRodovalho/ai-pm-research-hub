@@ -951,6 +951,7 @@ const enUS: Record<string, string> = {
   'authModal.title': 'Access platform',
   'authModal.subtitle': 'Sign in with your email registered in the Hub.',
   'authModal.google': 'Sign in with Google',
+  'authModal.microsoft': 'Sign in with Microsoft',
   'authModal.linkedin': 'Sign in with LinkedIn',
   'authModal.or': 'or',
   'authModal.emailPlaceholder': 'you@email.com',

@@ -951,6 +951,7 @@ const esLATAM: Record<string, string> = {
   'authModal.title': 'Acceder a la plataforma',
   'authModal.subtitle': 'Ingresa con tu e-mail registrado en el Núcleo.',
   'authModal.google': 'Ingresar con Google',
+  'authModal.microsoft': 'Ingresar con Microsoft',
   'authModal.linkedin': 'Ingresar con LinkedIn',
   'authModal.or': 'o',
   'authModal.emailPlaceholder': 'tu@email.com',
