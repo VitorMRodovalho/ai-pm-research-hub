@@ -1488,6 +1488,8 @@ const enUS: Record<string, string> = {
   'wk.tribeOpen': 'Open',
   'wk.tribeNoTribe': 'You are not assigned to a stream yet.',
   'wk.tribeNoTribeDesc': 'Contact the Hub management to get assigned.',
+  'wk.allTribesAccess': 'Access to all research streams',
+  'wk.exploreTribes': 'Explore Streams',
   'wk.commsHub': 'Communications Hub',
   'wk.commsBoard': 'Comms Board',
   'wk.pubBoard': 'Publications Board',
