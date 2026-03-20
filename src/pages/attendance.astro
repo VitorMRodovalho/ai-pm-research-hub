@@ -394,12 +394,16 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
     const query = ATTENDANCE_ROUTE.query.toLowerCase();
     const typeF = getTypeFilter();
     const tribeF = getTribeFilter();
+    const gp = isGPLevel();
     return ALL_EVENTS.filter((ev: any) => {
-      // Visibility filtering
-      if (ev.visibility === 'gp_only' && !CAN_MANAGE) return false;
-      if (ev.visibility === 'leadership' && !CAN_MANAGE && MEMBER.operational_role !== 'tribe_leader') return false;
-      if ((ev.type === 'interview' || ev.type === 'entrevista') && !CAN_MANAGE) return false;
-      if ((ev.type === '1on1' || ev.type === 'parceria') && !CAN_MANAGE) return false;
+      // Participant override: user always sees events they participated in
+      const isParticipant = ev.i_attended != null; // has attendance record
+      // Visibility filtering (unless participant)
+      if (!isParticipant && !gp) {
+        if (ev.visibility === 'gp_only') return false;
+        if ((ev.type === '1on1' || ev.type === 'parceria' || ev.type === 'entrevista' || ev.type === 'interview') && !CAN_MANAGE) return false;
+      }
+      if (ev.visibility === 'leadership' && !CAN_MANAGE && MEMBER?.operational_role !== 'tribe_leader' && !isParticipant) return false;
       // Type filter
       if (typeF !== 'todos' && ev.type !== typeF) return false;
       // Tribe filter
@@ -542,6 +546,30 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
   }
 
   // ── EVENTS LIST ──
+  function isGPLevel(): boolean {
+    return MEMBER?.is_superadmin === true
+      || ['manager'].includes(MEMBER?.operational_role || '')
+      || (MEMBER?.designations || []).includes('deputy_manager');
+  }
+
+  function populateTypeDropdown() {
+    const sel = document.getElementById('events-type-filter') as HTMLSelectElement;
+    if (!sel) return;
+    // Remove old options except "Todos"
+    while (sel.options.length > 1) sel.remove(1);
+    // Determine which types the user can see
+    const gp = isGPLevel();
+    // Also check if user has participation in GP-only event types
+    const participatedTypes = new Set(ALL_EVENTS.filter((ev: any) => ev.i_attended != null).map((ev: any) => ev.type));
+    SECTION_ORDER.forEach(s => {
+      if (s.gpOnly && !gp && !participatedTypes.has(s.type)) return;
+      const opt = document.createElement('option');
+      opt.value = s.type;
+      opt.textContent = `${s.icon} ${s.label}`;
+      sel.appendChild(opt);
+    });
+  }
+
   function renderEventCard(ev: any): string {
     const isPast = new Date(ev.date + 'T23:59:59') < new Date();
     const attIcon = ev.i_attended === true ? '✅' : ev.i_attended === false ? '❌' : '—';
@@ -619,9 +647,11 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
       g.future.sort((a: any, b: any) => a.date.localeCompare(b.date));
     });
 
-    const isGP = CAN_MANAGE;
+    const gp = isGPLevel();
+    // For section visibility: show GP-only sections if GP OR if user has events in that type
+    const participatedTypes = new Set(filtered.filter((ev: any) => ev.i_attended != null).map((ev: any) => ev.type));
     const sections = SECTION_ORDER
-      .filter(s => !s.gpOnly || isGP)
+      .filter(s => !s.gpOnly || gp || participatedTypes.has(s.type))
       .filter(s => groups[s.type])
       .map(s => {
         const g = groups[s.type];
@@ -788,18 +818,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
     });
     // Tribe filter dropdown
     document.getElementById('events-tribe-filter')?.addEventListener('change', () => renderEvents());
-    // Populate type dropdown from SECTION_ORDER
-    {
-      const sel = document.getElementById('events-type-filter') as HTMLSelectElement;
-      if (sel) {
-        SECTION_ORDER.filter(s => !s.gpOnly || CAN_MANAGE).forEach(s => {
-          const opt = document.createElement('option');
-          opt.value = s.type;
-          opt.textContent = `${s.icon} ${s.label}`;
-          sel.appendChild(opt);
-        });
-      }
-    }
+    // Type dropdown populated later in populateTypeDropdown() after CAN_MANAGE is set
     // Populate tribe dropdown
     (async () => {
       try {
@@ -1510,7 +1529,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
     if (routeTabBtn) switchTab(routeTabBtn, ATTENDANCE_ROUTE.tab);
     loadTags();
     loadKPIs();
-    loadEvents();
+    await loadEvents();
+    populateTypeDropdown();
 
     // PostHog: track page view
     const safePH = (window as any).__safePH;
