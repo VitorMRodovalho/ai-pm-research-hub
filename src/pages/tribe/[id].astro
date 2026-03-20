@@ -550,7 +550,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     if (!el || !sb) return;
     try {
       const { data, error } = await sb.rpc('get_tribe_events_timeline', {
-        p_tribe_id: TRIBE_ID, p_upcoming_limit: 5, p_past_limit: 5,
+        p_tribe_id: TRIBE_ID, p_upcoming_limit: 3, p_past_limit: 5,
       });
       if (error || !data) return;
 

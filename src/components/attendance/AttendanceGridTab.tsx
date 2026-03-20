@@ -329,15 +329,28 @@ export default function AttendanceGridTab() {
     return rows;
   }, [data]);
 
-  /* Filtered events */
+  /* Filtered events — show general events even when tribe-filtered if any
+     filtered member has a non-"na" status for that event */
   const filteredEvents = useMemo(() => {
     if (!data) return [];
     return data.events.filter((ev) => {
       if (typeFilter !== 'all' && ev.type !== typeFilter) return false;
-      if (tribeFilter !== 'all' && String(ev.tribe_id) !== tribeFilter) return false;
+      if (tribeFilter !== 'all') {
+        // Tribe-specific events: only show if they belong to the filtered tribe
+        if (ev.tribe_id !== null && String(ev.tribe_id) !== tribeFilter) return false;
+        // General events (tribe_id=null): show if any filtered member has non-"na" status
+        if (ev.tribe_id === null) {
+          const tribeMembers = flatRows.filter((r) => String(r.tribeId) === tribeFilter);
+          const anyRelevant = tribeMembers.some((m) => {
+            const status = m.attendance?.[ev.id];
+            return status && status !== 'na';
+          });
+          if (!anyRelevant) return false;
+        }
+      }
       return true;
     });
-  }, [data, typeFilter, tribeFilter]);
+  }, [data, typeFilter, tribeFilter, flatRows]);
 
   /* Filtered rows — FIX 7: detractor status filter */
   const filteredRows = useMemo(() => {

@@ -188,9 +188,21 @@ import { CHAPTER_CODES } from '../../data/chapters';
         .eq('type', 'geral')
         .gte('date', new Date(Date.now() - 86400000).toISOString().slice(0,10))
         .order('date', { ascending: true })
-        .limit(1)
+        .limit(3)
         .then(({ data: evts }: any) => {
-          const ev = evts?.[0];
+          // Time-aware filter: skip today's event if meeting has likely ended
+          var now = new Date();
+          var todayStr = now.toISOString().slice(0,10);
+          var ev = (evts || []).find(function(e: any) {
+            if (e.date > todayStr) return true; // future day — always upcoming
+            if (e.date === todayStr) {
+              // Event is today — check if it has ended (assume 19:30 BRT start)
+              var endMinutes = 19 * 60 + 30 + (e.duration_minutes || 60);
+              var nowMinutes = now.getHours() * 60 + now.getMinutes();
+              return nowMinutes < endMinutes;
+            }
+            return false; // past day
+          });
           if (ev && dateEl) {
             const evDate = new Date(ev.date + 'T19:30:00');
             const isToday = ev.date === new Date().toISOString().slice(0,10);
