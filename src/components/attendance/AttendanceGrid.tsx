@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAttendance } from '../../hooks/useAttendance';
 import { AttendanceCell } from './AttendanceCell';
-import { getTribePermissions } from '../../lib/permissions';
+import { getTribePermissions } from '../../lib/tribePermissions';
 import type { AttendanceEvent } from './types';
 
 interface MemberContext {

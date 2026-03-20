@@ -281,7 +281,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   import { getCurrentCycle, loadCycles } from '../../lib/cycles';
   import { canExploreTribes, canManageTribeLifecycle, canSeeInactiveTribes } from '../../lib/tribes/access';
   import { buildTribeLabel } from '../../lib/tribes/catalog';
-  import { hasPermission, getTribePermissions } from '../../lib/permissions';
+  import { hasPermission } from '../../lib/permissions';
+  import { getTribePermissions } from '../../lib/tribePermissions';
 
   const I18N = (typeof window !== 'undefined' && (window as any).__TRIBE_I18N) || {};
   const TRIBE_ID: number = (typeof window !== 'undefined' && (window as any).__TRIBE_ID) || 0;
@@ -1504,23 +1505,25 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       // Render header
       renderHeader(tribeRes.data, headerLeader, headerSlots);
 
-      // Cross-tribe banner
-      if (currentMember) {
-        const tp = getTribePermissions(currentMember, TRIBE_ID);
-        const banner = document.getElementById('cross-tribe-banner');
-        const tribeName = tribeData?.name || `Tribo ${TRIBE_ID}`;
-        if (banner) {
-          if (tp.showCuratorBanner) {
-            banner.className = 'rounded-xl px-4 py-3 text-sm mb-4 flex items-center gap-2 bg-purple-50 border border-purple-200 text-purple-800';
-            banner.innerHTML = `<span class="text-base">🔍</span> <span><strong>${I18N.curatorAccess || 'Acesso de Curadoria'}:</strong> ${tribeName}</span>`;
-            banner.classList.remove('hidden');
-          } else if (tp.showCrossTribeBanner) {
-            banner.className = 'rounded-xl px-4 py-3 text-sm mb-4 flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-800';
-            banner.innerHTML = `<span class="text-base">🔍</span> <span><strong>${I18N.viewingOther || 'Visualizando'}:</strong> ${tribeName}</span>`;
-            banner.classList.remove('hidden');
+      // Cross-tribe banner (defensive — never breaks page load)
+      try {
+        if (currentMember) {
+          const tp = getTribePermissions(currentMember, TRIBE_ID);
+          const banner = document.getElementById('cross-tribe-banner');
+          const tribeName = tribeData?.name || `Tribo ${TRIBE_ID}`;
+          if (banner) {
+            if (tp.showCuratorBanner) {
+              banner.className = 'rounded-xl px-4 py-3 text-sm mb-4 flex items-center gap-2 bg-purple-50 border border-purple-200 text-purple-800';
+              banner.innerHTML = `<span class="text-base">🔍</span> <span><strong>${I18N.curatorAccess || 'Acesso de Curadoria'}:</strong> ${tribeName}</span>`;
+              banner.classList.remove('hidden');
+            } else if (tp.showCrossTribeBanner) {
+              banner.className = 'rounded-xl px-4 py-3 text-sm mb-4 flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-800';
+              banner.innerHTML = `<span class="text-base">🔍</span> <span><strong>${I18N.viewingOther || 'Visualizando'}:</strong> ${tribeName}</span>`;
+              banner.classList.remove('hidden');
+            }
           }
         }
-      }
+      } catch (bannerErr) { console.warn('Cross-tribe banner error:', bannerErr); }
 
       // Merge members: direct (tribe_id set) + selections
       const directIds = new Set(allDirectMembers.map((m: any) => m.id));
