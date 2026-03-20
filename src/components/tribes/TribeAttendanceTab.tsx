@@ -1,5 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { usePageI18n } from '../../i18n/usePageI18n';
+import { AttendanceCell } from '../attendance/AttendanceCell';
+import { getTribePermissions } from '../../lib/permissions';
+import type { CellStatus } from '../attendance/types';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -92,6 +95,57 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
+  const getMember = useCallback(() => (window as any).navGetMember?.(), []);
+
+  // Permissions
+  const member = getMember();
+  const perms = member ? getTribePermissions(member, tribeId) : null;
+  const canToggleAttendance = perms?.canToggleAttendance ?? false;
+  const canSelfCheckIn = (perms?.canSelfCheckIn && perms?.selfCheckInHasWindow) ?? false;
+  const currentMemberId = member?.id ?? '';
+
+  // Toggle handler
+  const handleToggle = useCallback(async (eventId: string, memberId: string, currentStatus: CellStatus) => {
+    if (currentStatus === 'na') return;
+    const sb = getSb();
+    if (!sb) return;
+    const newPresent = currentStatus !== 'present';
+    try {
+      await sb.rpc('mark_member_present', { p_event_id: eventId, p_member_id: memberId, p_present: newPresent });
+      // Refresh grid
+      const eventType = filter === 'all' ? null : filter;
+      const { data: result } = await sb.rpc('get_tribe_attendance_grid', { p_tribe_id: tribeId, p_event_type: eventType });
+      if (result) setData(result as AttendanceGrid);
+    } catch (e: any) {
+      (window as any).toast?.(e.message || 'Erro', 'error');
+    }
+  }, [getSb, tribeId, filter]);
+
+  // Self check-in handler
+  const handleSelfCheckIn = useCallback(async (eventId: string) => {
+    const sb = getSb();
+    if (!sb) return;
+    try {
+      const { data: res } = await sb.rpc('register_own_presence', { p_event_id: eventId });
+      if (res?.success) {
+        (window as any).toast?.('Presença registrada!', 'success');
+        const eventType = filter === 'all' ? null : filter;
+        const { data: result } = await sb.rpc('get_tribe_attendance_grid', { p_tribe_id: tribeId, p_event_type: eventType });
+        if (result) setData(result as AttendanceGrid);
+      } else {
+        (window as any).toast?.(res?.message || res?.error || 'Erro', 'error');
+      }
+    } catch (e: any) {
+      (window as any).toast?.(e.message || 'Erro', 'error');
+    }
+  }, [getSb, tribeId, filter]);
+
+  // Check-in window helper
+  const isWithinCheckInWindow = (eventDate: string): boolean => {
+    const eventTs = new Date(eventDate + 'T12:00:00').getTime();
+    const now = Date.now();
+    return now >= eventTs - 2 * 60 * 60 * 1000 && now <= eventTs + 48 * 60 * 60 * 1000;
+  };
 
   /* ---- data loading ---- */
   useEffect(() => {
@@ -292,16 +346,26 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
                     {member.name}
                   </td>
 
-                  {/* Attendance cells */}
+                  {/* Attendance cells — interactive via AttendanceCell */}
                   {events.map(ev => {
-                    const status = member.attendance[ev.id] ?? 'na';
+                    const status = (member.attendance[ev.id] ?? 'na') as CellStatus;
+                    const isSelf = member.id === currentMemberId;
+
                     return (
                       <td
                         key={ev.id}
                         className="px-1.5 py-1.5 text-center whitespace-nowrap"
                         title={`${member.name} — ${ev.title}: ${status}`}
                       >
-                        {STATUS_ICON[status]}
+                        <AttendanceCell
+                          status={status}
+                          canToggle={canToggleAttendance}
+                          isSelf={isSelf}
+                          canSelfCheckIn={isSelf && canSelfCheckIn}
+                          isWithinWindow={isWithinCheckInWindow(ev.date)}
+                          onToggle={() => handleToggle(ev.id, member.id, status)}
+                          onCheckIn={() => handleSelfCheckIn(ev.id)}
+                        />
                       </td>
                     );
                   })}
