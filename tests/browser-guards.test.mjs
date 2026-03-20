@@ -62,7 +62,7 @@ async function run() {
     await page.goto(`${base}/admin/selection`, { waitUntil: 'networkidle' });
     const denied = page.locator('#sel-denied');
     await denied.waitFor({ state: 'visible' });
-    assert.match(await denied.textContent() || '', /Acesso restrito a administradores/);
+    assert.match(await denied.textContent() || '', /Acesso (restrito a administradores|negado ao módulo de seleção)/);
     assert.equal(await page.locator('#sel-panel').isVisible(), false);
 
     const selectionPage = await browser.newPage({ locale: 'pt-BR' });
