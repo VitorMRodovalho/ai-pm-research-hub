@@ -769,6 +769,9 @@ const ptBR: Record<string, string> = {
   'attendance.error.tribe': 'Apenas eventos da sua tribo.',
   'attendance.toast_undo': 'Desfazer',
   'attendance.cell_scheduled': 'Evento agendado',
+  'attendance.cell_excused': 'Justificado',
+  'attendance.week_header': 'Sem',
+  'attendance.legend': 'G = Geral · T = Tribo · K = Kickoff · L = Liderança · C = Comunicação',
   'attendance.kpi.events_past': 'Eventos Realizados',
   // ── Events content (GC-110) ──
   'events.minutes': 'Ata',

@@ -64,11 +64,29 @@ const EVENT_TYPE_ICON: Record<string, string> = {
   kickoff: '🚀',
 };
 
+const MONTH_ABBR_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
 function formatDate(iso: string): string {
-  const d = new Date(iso);
+  const d = new Date(iso + 'T12:00:00');
   const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  return `${dd}/${mm}`;
+  const mmm = MONTH_ABBR_PT[d.getMonth()] || String(d.getMonth() + 1).padStart(2, '0');
+  return `${dd}/${mmm}`;
+}
+
+const EVENT_TYPE_LETTER: Record<string, { letter: string; color: string }> = {
+  geral: { letter: 'G', color: 'bg-blue-100 text-blue-700' },
+  tribo: { letter: 'T', color: 'bg-green-100 text-green-700' },
+  kickoff: { letter: 'K', color: 'bg-purple-100 text-purple-700' },
+  lideranca: { letter: 'L', color: 'bg-amber-100 text-amber-700' },
+  comms: { letter: 'C', color: 'bg-pink-100 text-pink-700' },
+};
+
+function getISOWeek(dateStr: string): number {
+  const d = new Date(dateStr + 'T12:00:00');
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
 }
 
 function rateColor(rate: number): string {
@@ -264,6 +282,21 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
 
   const { summary, events } = data;
 
+  // Group events by week for header row
+  const weekGroups = useMemo(() => {
+    const groups: { week: number; events: typeof events }[] = [];
+    const map = new Map<number, typeof events>();
+    events.forEach(ev => {
+      const w = (ev as any).week_number ?? getISOWeek(ev.date);
+      if (!map.has(w)) map.set(w, []);
+      map.get(w)!.push(ev);
+    });
+    Array.from(map.entries()).sort(([a], [b]) => a - b).forEach(([week, evts]) => {
+      groups.push({ week, events: evts });
+    });
+    return groups;
+  }, [events]);
+
   /* ---------------------------------------------------------------- */
   /*  Main render                                                     */
   /* ---------------------------------------------------------------- */
@@ -319,39 +352,53 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
       <div className="overflow-x-auto rounded-lg border border-[var(--border-color,#e5e7eb)]">
         <table className="w-full border-collapse text-xs">
           <thead>
+            {/* Week grouping row */}
             <tr className="bg-[var(--bg-secondary,#f9fafb)]">
-              {/* Member name column */}
               <th
                 onClick={() => toggleSort('name')}
-                className="sticky left-0 z-10 bg-[var(--bg-secondary,#f9fafb)] px-3 py-2 text-left text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wide cursor-pointer hover:text-[var(--text-primary)] whitespace-nowrap select-none min-w-[140px]"
+                rowSpan={2}
+                className="sticky left-0 z-20 bg-[var(--bg-secondary,#f9fafb)] px-3 py-2 text-left text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wide cursor-pointer hover:text-[var(--text-primary)] whitespace-nowrap select-none min-w-[140px]"
               >
-                {t('attendance.col.member', 'Member')}{' '}
+                {t('attendance.col.member', 'Membro')}{' '}
                 {sortKey === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
               </th>
-
-              {/* Event columns */}
+              {weekGroups.map(wg => (
+                <th
+                  key={`w${wg.week}`}
+                  colSpan={wg.events.length}
+                  className="px-1 py-1.5 text-center text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider border-b border-[var(--border-color,#e5e7eb)]"
+                >
+                  Sem {wg.week}
+                </th>
+              ))}
+              <th
+                onClick={() => toggleSort('rate')}
+                rowSpan={2}
+                className="sticky right-0 z-20 bg-[var(--bg-secondary,#f9fafb)] px-3 py-2 text-right text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wide cursor-pointer hover:text-[var(--text-primary)] whitespace-nowrap select-none min-w-[64px]"
+              >
+                {t('attendance.col.rate', 'Taxa')}{' '}
+                {sortKey === 'rate' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
+              </th>
+            </tr>
+            {/* Date + type badge row */}
+            <tr className="bg-[var(--bg-secondary,#f9fafb)]">
               {events.map(ev => {
-                const icon = EVENT_TYPE_ICON[ev.type] || (ev.is_leadership ? '👥' : ev.is_tribe_event ? '🔬' : '🌐');
+                const badge = EVENT_TYPE_LETTER[ev.type];
                 return (
                   <th
                     key={ev.id}
                     title={ev.title}
-                    className="px-1.5 py-2 text-center text-[10px] font-medium text-[var(--text-secondary)] whitespace-nowrap"
+                    className={`px-1.5 py-1.5 text-center text-[10px] font-medium text-[var(--text-secondary)] whitespace-nowrap ${(ev as any).is_future ? 'opacity-50' : ''}`}
                   >
                     <div>{formatDate(ev.date)}</div>
-                    <div className="text-[9px]">{icon}</div>
+                    {badge && (
+                      <span className={`inline-block mt-0.5 px-1 rounded text-[8px] font-bold ${badge.color}`}>
+                        {badge.letter}
+                      </span>
+                    )}
                   </th>
                 );
               })}
-
-              {/* Rate column */}
-              <th
-                onClick={() => toggleSort('rate')}
-                className="sticky right-0 z-10 bg-[var(--bg-secondary,#f9fafb)] px-3 py-2 text-right text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wide cursor-pointer hover:text-[var(--text-primary)] whitespace-nowrap select-none min-w-[64px]"
-              >
-                {t('attendance.col.rate', 'Rate')}{' '}
-                {sortKey === 'rate' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
-              </th>
             </tr>
           </thead>
 
