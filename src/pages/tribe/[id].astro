@@ -10,6 +10,7 @@ import TribeKanbanIsland from '../../components/boards/TribeKanbanIsland';
 import BoardEngine from '../../components/islands/BoardEngine';
 import TribeGamificationTab from '../../components/tribes/TribeGamificationTab';
 import TribeAttendanceTab from '../../components/tribes/TribeAttendanceTab';
+import EventMinutesIsland from '../../components/events/EventMinutesIsland';
 import { getStaticTribeFallback } from '../../lib/tribes/catalog';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 const i18nBundle = buildPageI18n(['comp.kanban', 'comp.common', 'tribe_dashboard'], lang);
@@ -214,6 +215,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       <TribeAttendanceTab client:load tribeId={tribeId} />
     </div>
     <div id="panel-broadcast" class="hidden"></div>
+    <EventMinutesIsland client:load />
     </div>
   </div>
 
@@ -563,6 +565,16 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       const locale = I18N.dateLocale || 'pt-BR';
       const perms = currentMember ? getTribePermissions(currentMember, TRIBE_ID) : null;
 
+      // Minutes edit permission: superadmin, GP, deputy, or tribe leader for own tribe
+      const canEditMinutes = (evtTribeId: number | null) => {
+        if (!currentMember) return false;
+        if (currentMember.is_superadmin) return true;
+        if (['manager'].includes(currentMember.operational_role)) return true;
+        if ((currentMember.designations || []).includes('deputy_manager')) return true;
+        if (currentMember.operational_role === 'tribe_leader' && currentMember.tribe_id === evtTribeId) return true;
+        return false;
+      };
+
       const typeIcon = (t: string) => t === 'geral' ? '🌐' : t === 'lideranca' ? '👥' : '🔬';
 
       // Upcoming events
@@ -613,9 +625,14 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
           if (e.has_recording) badges.push('<span class="px-1.5 py-0.5 rounded text-[.6rem] font-semibold bg-blue-100 text-blue-700">🎥</span>');
           if (e.agenda_text) badges.push('<span class="px-1.5 py-0.5 rounded text-[.6rem] font-semibold bg-yellow-100 text-yellow-700">📋 Pauta</span>');
           const badgesHtml = badges.length ? `<div class="flex gap-1 mt-1">${badges.join('')}</div>` : '';
-          // Expandable minutes
+          // Expandable minutes (render HTML from TipTap with prose class)
           const minutesHtml = e.minutes_text
-            ? `<details class="mt-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-section-cool)] overflow-hidden"><summary class="px-3 py-2 text-[.65rem] font-bold uppercase tracking-wider text-[var(--text-muted)] cursor-pointer hover:bg-[var(--surface-hover)]">${I18N.viewMinutes || 'Ver ata'}</summary><div class="px-3 pb-2 text-sm text-[var(--text-secondary)] whitespace-pre-wrap">${escapeHtml(e.minutes_text)}</div></details>`
+            ? `<details class="mt-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-section-cool)] overflow-hidden"><summary class="px-3 py-2 text-[.65rem] font-bold uppercase tracking-wider text-[var(--text-muted)] cursor-pointer hover:bg-[var(--surface-hover)]">${I18N.viewMinutes || 'Ver ata'}</summary><div class="px-3 pb-2 text-sm text-[var(--text-secondary)] prose prose-sm max-w-none">${e.minutes_text}</div></details>`
+            : '';
+          // Edit buttons (permission-gated)
+          const showEditBtn = canEditMinutes(e.tribe_id);
+          const editMinutesBtn = showEditBtn
+            ? `<button data-action="open-minutes-editor" data-event-id="${e.id}" data-event-title="${escapeHtml(e.title)}" data-mode="minutes" data-content="${escapeHtml(e.minutes_text || '')}" class="text-[.65rem] font-semibold text-navy hover:underline cursor-pointer border-0 bg-transparent px-0">${e.minutes_text ? '✏️ Editar ata' : '📝 Adicionar ata'}</button>`
             : '';
           return `<div class="py-2.5 border-b border-[var(--border-subtle)] last:border-0">
             <div class="flex items-start gap-3">
@@ -629,6 +646,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
                   ${e.duration_minutes ? `<span>⏱️ ${e.duration_minutes}min</span>` : ''}
                 </div>
                 ${badgesHtml}
+                ${editMinutesBtn ? `<div class="mt-1">${editMinutesBtn}</div>` : ''}
               </div>
             </div>
             ${minutesHtml}
@@ -1586,6 +1604,26 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       // Geral: Radar Global first (uses innerHTML), then Events Timeline (prepends)
       await loadRadarGlobal();
       loadEventsTimeline();
+
+      // Minutes editor: delegate clicks on edit buttons
+      document.getElementById('panel-general')?.addEventListener('click', (evt) => {
+        const btn = (evt.target as HTMLElement).closest('[data-action="open-minutes-editor"]') as HTMLElement;
+        if (!btn) return;
+        window.dispatchEvent(new CustomEvent('open-event-editor', {
+          detail: {
+            eventId: btn.dataset.eventId,
+            eventTitle: btn.dataset.eventTitle,
+            mode: btn.dataset.mode || 'minutes',
+            initialContent: btn.dataset.content || '',
+            initialUrl: '',
+          },
+        }));
+      });
+
+      // Refresh timeline after minutes save
+      window.addEventListener('event-editor-saved', () => {
+        loadEventsTimeline();
+      });
 
       // Project Board is now handled by React island (TribeKanbanIsland).
 
