@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { usePageI18n } from '../../i18n/usePageI18n';
 import { AttendanceCell } from '../attendance/AttendanceCell';
-import { getTribePermissions } from '../../lib/permissions';
+import { getTribePermissions } from '../../lib/tribePermissions';
 import type { CellStatus } from '../attendance/types';
 
 /* ------------------------------------------------------------------ */
@@ -97,12 +97,19 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
   const getMember = useCallback(() => (window as any).navGetMember?.(), []);
 
-  // Permissions
-  const member = getMember();
-  const perms = member ? getTribePermissions(member, tribeId) : null;
-  const canToggleAttendance = perms?.canToggleAttendance ?? false;
-  const canSelfCheckIn = (perms?.canSelfCheckIn && perms?.selfCheckInHasWindow) ?? false;
-  const currentMemberId = member?.id ?? '';
+  // Permissions (defensive — never crashes render)
+  let canToggleAttendance = false;
+  let canSelfCheckIn = false;
+  let currentMemberId = '';
+  try {
+    const member = getMember();
+    if (member) {
+      const perms = getTribePermissions(member, tribeId);
+      canToggleAttendance = perms.canToggleAttendance;
+      canSelfCheckIn = !!(perms.canSelfCheckIn && perms.selfCheckInHasWindow);
+      currentMemberId = member.id || '';
+    }
+  } catch { /* permissions unavailable — read-only mode */ }
 
   // Toggle handler
   const handleToggle = useCallback(async (eventId: string, memberId: string, currentStatus: CellStatus) => {
