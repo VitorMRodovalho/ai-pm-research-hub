@@ -1490,6 +1490,8 @@ const ptBR: Record<string, string> = {
   'wk.tribeOpen': 'Abrir',
   'wk.tribeNoTribe': 'Você ainda não está vinculado a uma tribo.',
   'wk.tribeNoTribeDesc': 'Entre em contato com a gestão do Núcleo para ser alocado.',
+  'wk.allTribesAccess': 'Acesso a todas as tribos',
+  'wk.exploreTribes': 'Explorar Tribos',
   'wk.commsHub': 'Hub de Comunicação',
   'wk.commsBoard': 'Board Comunicação',
   'wk.pubBoard': 'Board Publicações',

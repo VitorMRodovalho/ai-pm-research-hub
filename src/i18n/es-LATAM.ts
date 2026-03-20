@@ -1488,6 +1488,8 @@ const esLATAM: Record<string, string> = {
   'wk.tribeOpen': 'Abrir',
   'wk.tribeNoTribe': 'Aún no estás asignado a una línea.',
   'wk.tribeNoTribeDesc': 'Contacta a la gestión del Núcleo para ser asignado.',
+  'wk.allTribesAccess': 'Acceso a todas las líneas',
+  'wk.exploreTribes': 'Explorar Líneas',
   'wk.commsHub': 'Hub de Comunicación',
   'wk.commsBoard': 'Board Comunicación',
   'wk.pubBoard': 'Board Publicaciones',
