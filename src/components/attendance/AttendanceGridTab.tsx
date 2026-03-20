@@ -330,10 +330,13 @@ export default function AttendanceGridTab() {
   }, [data]);
 
   /* Filtered events — show general events even when tribe-filtered if any
-     filtered member has a non-"na" status for that event */
+     filtered member has a non-"na" status for that event.
+     Exclude events more than 7 days in the future to avoid grid clutter. */
   const filteredEvents = useMemo(() => {
     if (!data) return [];
+    const maxDate = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
     return data.events.filter((ev) => {
+      if (ev.date > maxDate) return false;
       if (typeFilter !== 'all' && ev.type !== typeFilter) return false;
       if (tribeFilter !== 'all') {
         // Tribe-specific events: only show if they belong to the filtered tribe
