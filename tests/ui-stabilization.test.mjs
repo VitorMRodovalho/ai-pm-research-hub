@@ -47,7 +47,8 @@ test('selection page no longer hardcodes cycle tabs or snapshot cycle title', ()
   const content = read('src/pages/admin/selection.astro');
   assert.equal(content.includes('data-cycle="3"'), false);
   assert.equal(content.includes('Comparação de Snapshots — Ciclo 3'), false);
-  assert.equal(content.includes('loadSelectionCycles()'), true);
+  // Selection page now uses get_selection_dashboard RPC with dynamic cycle info
+  assert.equal(content.includes('get_selection_dashboard'), true);
 });
 
 test('confirm dialog no longer mutates confirm button onclick directly', () => {
