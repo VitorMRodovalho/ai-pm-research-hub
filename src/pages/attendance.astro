@@ -542,6 +542,50 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
   }
 
   // ── EVENTS LIST ──
+  function renderEventCard(ev: any): string {
+    const isPast = new Date(ev.date + 'T23:59:59') < new Date();
+    const attIcon = ev.i_attended === true ? '✅' : ev.i_attended === false ? '❌' : '—';
+    const linkHtml = ev.meeting_link && !isPast
+      ? ` · <a href="${ev.meeting_link}" target="_blank" rel="noopener" class="text-navy font-semibold no-underline text-[11px]">🔗 Entrar</a>`
+      : '';
+    const recHtml = ev.youtube_url
+      ? ` · <a href="${ev.youtube_url}" target="_blank" rel="noopener" class="text-red-600 font-semibold no-underline text-[11px]">🎥</a>`
+      : '';
+    const hasMinutes = !!(ev.minutes_text || ev.minutes_url);
+    const hasAgenda = !!(ev.agenda_text || ev.agenda_url);
+    const badges = [
+      hasMinutes ? '<span class="text-[10px]" title="Ata">📝</span>' : '',
+      hasAgenda ? '<span class="text-[10px]" title="Pauta">📋</span>' : '',
+    ].filter(Boolean).join('');
+    const canRoster = CAN_MANAGE;
+    const canEdit = CAN_MANAGE || ev.created_by === MEMBER?.auth_id;
+
+    ((window as any).__attendanceEventsById = (window as any).__attendanceEventsById || {})[ev.id] = ev;
+
+    return `<div class="py-2 border-b border-[var(--border-subtle)] last:border-b-0 flex items-center gap-2">
+      <span class="text-xs">${attIcon}</span>
+      <div class="flex-1 min-w-0">
+        <div class="text-[13px] font-medium text-[var(--text-primary)] truncate">${ev.title}</div>
+        <div class="text-[11px] text-[var(--text-muted)]">${fmtDate(ev.date)} · ${ev.duration_minutes || 60}min${isPast ? ` · ${ev.attendee_count || 0} presentes` : ''}${linkHtml}${recHtml} ${badges}</div>
+      </div>
+      <div class="flex gap-1 items-center flex-shrink-0">
+        ${ev.i_attended !== true ? `<button class="px-2 py-1 rounded text-[11px] font-semibold bg-navy text-white border-0 cursor-pointer" data-action="check-in" data-event-id="${ev.id}">Check-In</button>` : ''}
+        ${canRoster ? `<button class="px-1.5 py-1 text-xs bg-[var(--surface-base)] border border-[var(--border-default)] rounded cursor-pointer" data-action="open-roster" data-event-id="${ev.id}" data-event-title="${ev.title || ''}">📋</button>` : ''}
+        ${canEdit ? `<button class="px-1.5 py-1 text-xs bg-[var(--surface-base)] border border-[var(--border-default)] rounded cursor-pointer" data-action="edit-event" data-event-id="${ev.id}">✏️</button>` : ''}
+      </div>
+    </div>`;
+  }
+
+  const SECTION_ORDER = [
+    { type: 'geral',     icon: '🌐', label: 'Gerais',     gpOnly: false },
+    { type: 'tribo',     icon: '🔬', label: 'Tribos',     gpOnly: false },
+    { type: 'kickoff',   icon: '🚀', label: 'Kickoff',    gpOnly: false },
+    { type: 'lideranca', icon: '👥', label: 'Liderança',  gpOnly: false },
+    { type: '1on1',      icon: '🔒', label: '1-on-1',     gpOnly: true  },
+    { type: 'parceria',  icon: '🤝', label: 'Parcerias',  gpOnly: true  },
+    { type: 'comms',     icon: '📢', label: 'Comunicação', gpOnly: false },
+  ];
+
   function renderEvents() {
     const el = document.getElementById('events-list')!;
     const filtered = filteredEvents();
@@ -550,149 +594,64 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
       const cta = CAN_MANAGE
         ? `<button class="mt-3 px-4 py-2 bg-navy text-white rounded-xl text-[12px] font-semibold border-0 cursor-pointer hover:opacity-90" data-action="open-new-event">${I18N.emptyNewEvent}</button>`
         : `<button class="mt-3 px-4 py-2 bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-secondary)] rounded-xl text-[12px] font-semibold cursor-pointer hover:bg-[var(--surface-hover)]" data-action="refresh-events">${I18N.emptyRefresh}</button>`;
-      el.innerHTML = `
-        <div class="text-center py-8">
-          <div class="text-3xl mb-2">📅</div>
-          <div class="font-semibold text-[var(--text-secondary)] text-sm">${I18N.noEvents}</div>
-          <p class="text-[var(--text-muted)] text-[12px] mt-1">${CAN_MANAGE ? I18N.emptyManagerHint : I18N.emptyMemberHint}</p>
-          ${cta}
-        </div>
-      `;
+      el.innerHTML = `<div class="text-center py-8"><div class="text-3xl mb-2">📅</div><div class="font-semibold text-[var(--text-secondary)] text-sm">${I18N.noEvents}</div><p class="text-[var(--text-muted)] text-[12px] mt-1">${CAN_MANAGE ? I18N.emptyManagerHint : I18N.emptyMemberHint}</p>${cta}</div>`;
       return;
     }
     if (!filtered.length) {
-      el.innerHTML = `
-        <div class="text-center py-8">
-          <div class="text-3xl mb-2">🔎</div>
-          <div class="font-semibold text-[var(--text-secondary)] text-sm">Nenhum evento corresponde ao filtro atual.</div>
-          <button class="mt-3 px-4 py-2 bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-secondary)] rounded-xl text-[12px] font-semibold cursor-pointer hover:bg-[var(--surface-hover)]" data-action="clear-event-filters">Limpar filtros</button>
-        </div>
-      `;
+      el.innerHTML = `<div class="text-center py-8"><div class="text-3xl mb-2">🔎</div><div class="font-semibold text-[var(--text-secondary)] text-sm">Nenhum evento corresponde ao filtro atual.</div><button class="mt-3 px-4 py-2 bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-secondary)] rounded-xl text-[12px] font-semibold cursor-pointer hover:bg-[var(--surface-hover)]" data-action="clear-event-filters">Limpar filtros</button></div>`;
       return;
     }
 
-    const typeLabel: Record<string, string> = { tribo: I18N.eventTypeTribe, geral: I18N.eventTypeGeneral, webinar: I18N.eventTypeWebinar, kickoff: 'Kickoff', lideranca: 'Liderança', entrevista: 'Entrevista', comms: 'Comunicação', parceria: 'Parceria', '1on1': '1:1', evento_externo: 'Evento Externo', other: I18N.eventTypeOther,
-      // Legacy fallbacks
-      tribe_meeting: I18N.eventTypeTribe, general_meeting: I18N.eventTypeGeneral, leadership_meeting: 'Liderança', interview: 'Entrevista' };
-    const badgeClass: Record<string, string> = {
-      tribo: 'bg-blue-50 text-navy dark:bg-blue-950/30 dark:text-blue-300',
-      geral: 'bg-green-50 text-green-800 dark:bg-green-950/30 dark:text-green-300',
-      webinar: 'bg-orange-50 text-amber-800 dark:bg-orange-950/30 dark:text-amber-300',
-      kickoff: 'bg-purple-50 text-purple-800 dark:bg-purple-950/30 dark:text-purple-300',
-      lideranca: 'bg-indigo-50 text-indigo-800 dark:bg-indigo-950/30 dark:text-indigo-300',
-      entrevista: 'bg-yellow-50 text-yellow-800 dark:bg-yellow-950/30 dark:text-yellow-300',
-      comms: 'bg-cyan-50 text-cyan-800 dark:bg-cyan-950/30 dark:text-cyan-300',
-      parceria: 'bg-rose-50 text-rose-800 dark:bg-rose-950/30 dark:text-rose-300',
-      '1on1': 'bg-gray-50 text-gray-700 dark:bg-gray-950/30 dark:text-gray-300',
-      evento_externo: 'bg-teal-50 text-teal-800 dark:bg-teal-950/30 dark:text-teal-300',
-      // Legacy
-      tribe_meeting: 'bg-blue-50 text-navy', general_meeting: 'bg-green-50 text-green-800',
-      leadership_meeting: 'bg-indigo-50 text-indigo-800', interview: 'bg-yellow-50 text-yellow-800',
-    };
-    const audienceLabel: Record<string, string> = { leadership: I18N.audienceLeadership, tribe: I18N.audienceTribe, curators: I18N.audienceCurators };
+    // Group by type → past/future
+    const now = new Date();
+    const groups: Record<string, { past: any[]; future: any[] }> = {};
+    filtered.forEach((ev: any) => {
+      const t = ev.type || 'other';
+      if (!groups[t]) groups[t] = { past: [], future: [] };
+      if (new Date(ev.date + 'T23:59:59') < now) groups[t].past.push(ev);
+      else groups[t].future.push(ev);
+    });
+    Object.values(groups).forEach(g => {
+      g.past.sort((a: any, b: any) => b.date.localeCompare(a.date));
+      g.future.sort((a: any, b: any) => a.date.localeCompare(b.date));
+    });
 
-    function artifactBadges(ev: any): string {
-      const today = new Date();
-      const evDate = new Date(ev.date + 'T23:59:59');
-      const isPast = evDate < today;
-      const hoursAfter = (today.getTime() - evDate.getTime()) / (1000 * 60 * 60);
+    const isGP = CAN_MANAGE;
+    const sections = SECTION_ORDER
+      .filter(s => !s.gpOnly || isGP)
+      .filter(s => groups[s.type])
+      .map(s => {
+        const g = groups[s.type];
+        const pastCount = g.past.length;
+        const futureCount = g.future.length;
+        return { ...s, past: g.past, future: g.future, pastCount, futureCount };
+      });
 
-      // Agenda: ✅ if present, ❌ if event date <= today and missing
-      const hasAgenda = !!(ev.agenda_text || ev.agenda_url);
-      const agendaBadge = hasAgenda
-        ? '<span class="px-1.5 py-0.5 rounded text-[10px]" title="Agenda disponível">📋✅</span>'
-        : (isPast ? '<span class="px-1.5 py-0.5 rounded text-[10px] opacity-60" title="Agenda ausente">📋❌</span>' : '');
-
-      // Minutes: ✅ if present, ⏳ if missing >48h after event, ⬜ otherwise
-      const hasMinutes = !!(ev.minutes_text || ev.minutes_url);
-      let minutesBadge = '';
-      if (hasMinutes) {
-        minutesBadge = '<span class="px-1.5 py-0.5 rounded text-[10px]" title="Ata disponível">📝✅</span>';
-      } else if (isPast && hoursAfter > 48) {
-        minutesBadge = '<span class="px-1.5 py-0.5 rounded text-[10px]" title="Ata pendente (>48h)">📝⏳</span>';
-      } else if (isPast) {
-        minutesBadge = '<span class="px-1.5 py-0.5 rounded text-[10px] opacity-40" title="Ata pendente">📝⬜</span>';
+    // Also collect any types not in SECTION_ORDER
+    const knownTypes = new Set(SECTION_ORDER.map(s => s.type));
+    Object.entries(groups).forEach(([type, g]) => {
+      if (!knownTypes.has(type) && (g.past.length || g.future.length)) {
+        sections.push({ type, icon: '📌', label: type, gpOnly: false, past: g.past, future: g.future, pastCount: g.past.length, futureCount: g.future.length });
       }
+    });
 
-      // Recording: ✅ if recording_url or youtube_url present
-      const hasRecording = !!(ev.recording_url || ev.youtube_url);
-      const recBadge = hasRecording
-        ? '<span class="px-1.5 py-0.5 rounded text-[10px]" title="Gravação disponível">🎥✅</span>'
-        : (isPast && ev.is_recorded ? '<span class="px-1.5 py-0.5 rounded text-[10px] opacity-60" title="Gravação pendente">🎥⏳</span>' : '');
+    el.innerHTML = sections.map(s => {
+      const countLabel = [
+        s.pastCount > 0 ? `${s.pastCount} realizados` : '',
+        s.futureCount > 0 ? `${s.futureCount} agendados` : '',
+      ].filter(Boolean).join(' · ');
 
-      const badges = [agendaBadge, minutesBadge, recBadge].filter(Boolean).join('');
-      return badges ? `<span class="inline-flex gap-0.5 items-center">${badges}</span>` : '';
-    }
+      const gpBadge = s.gpOnly ? ' <span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-bold ml-1">GP</span>' : '';
 
-    function eventBadges(ev: any): string {
-      const rec = ev.is_recorded ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-50 text-red-700">${I18N.badgeRecorded}</span>` : '';
-      const focus = ev.id === ATTENDANCE_ROUTE.eventId
-        ? '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">Foco atual</span>'
-        : '';
-      const artifacts = artifactBadges(ev);
-      if (ev.audience_level && audienceLabel[ev.audience_level]) {
-        return `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-green-50 text-green-800">${audienceLabel[ev.audience_level]}</span>${rec}${focus}${artifacts}`;
-      }
-      return `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${badgeClass[ev.type] || 'bg-blue-50 text-navy'}">${typeLabel[ev.type] || ev.type}</span>${rec}${focus}${artifacts}`;
-    }
+      const pastHtml = s.past.length ? `<div class="mb-2"><div class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">📌 Realizados</div>${s.past.map((ev: any) => renderEventCard(ev)).join('')}</div>` : '';
 
-    const paged = filtered.slice(0, VISIBLE_COUNT);
-    const hasMore = filtered.length > VISIBLE_COUNT;
+      const FUTURE_LIMIT = 3;
+      const visibleFuture = s.future.slice(0, FUTURE_LIMIT);
+      const hiddenFuture = s.future.slice(FUTURE_LIMIT);
+      const futureHtml = s.future.length ? `<div><div class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">📅 Agendados</div>${visibleFuture.map((ev: any) => renderEventCard(ev)).join('')}${hiddenFuture.length ? `<div id="more-${s.type}" class="hidden">${hiddenFuture.map((ev: any) => renderEventCard(ev)).join('')}</div><button class="text-xs text-navy font-semibold mt-1 cursor-pointer border-0 bg-transparent hover:underline" onclick="document.getElementById('more-${s.type}').classList.remove('hidden');this.remove()">Ver todos os ${s.futureCount} agendados ▾</button>` : ''}</div>` : '';
 
-    el.innerHTML = paged.map((ev: any) => {
-      const attIcon = ev.i_attended === true ? '✅' : ev.i_attended === false ? '❌' : '—';
-      const attBg = ev.i_attended === true ? 'bg-green-100 text-green-800' : ev.i_attended === false ? 'bg-red-100 text-red-800' : 'bg-[var(--surface-section-cool)] text-[var(--text-secondary)]';
-      const canEdit = CAN_MANAGE || ev.created_by === MEMBER.auth_id;
-      const canRoster = CAN_MANAGE;
-      const isFocused = ev.id === ATTENDANCE_ROUTE.eventId;
-      const wrapperClass = isFocused
-        ? 'rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-3.5 my-2'
-        : 'py-3.5 border-b border-[var(--border-subtle)] last:border-b-0';
-
-      const isPast = new Date(ev.date + 'T23:59:59') < new Date();
-      const linkHtml = ev.meeting_link && !isPast
-        ? `<a href="${ev.meeting_link}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-navy font-semibold no-underline px-2 py-0.5 bg-blue-50 rounded-md text-[12px]">${I18N.eventJoin}</a>`
-        : '';
-      const ytHtml = ev.youtube_url
-        ? `<a href="${ev.youtube_url}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-white font-semibold no-underline px-2 py-0.5 bg-red-600 rounded-md text-[12px]">${I18N.eventYoutube}</a>`
-        : (ev.is_recorded ? `<span class="text-[11px] text-[var(--text-muted)] italic">${I18N.eventYoutubeSoon}</span>` : '');
-
-      ((window as any).__attendanceEventsById = (window as any).__attendanceEventsById || {})[ev.id] = ev;
-      return `
-      <div id="attendance-event-${escapeAttr(ev.id)}" class="${wrapperClass}">
-        <div class="flex items-center gap-2.5">
-          <div class="w-7 h-7 rounded-full flex items-center justify-center text-[13px] flex-shrink-0 ${attBg}">${attIcon}</div>
-          <div class="flex-1 min-w-0">
-            <div class="text-sm font-semibold">${ev.title}</div>
-            <div class="text-[12px] text-[var(--text-secondary)] mt-0.5 flex items-center gap-2 flex-wrap">
-              <span>${fmtDate(ev.date)}</span><span>·</span>
-              <span>${ev.duration_minutes}min</span><span>·</span>
-              <span>${ev.attendee_count || 0} ${I18N.eventAttendees}</span>
-              ${linkHtml ? '<span>·</span>' + linkHtml : ''}
-              ${ytHtml ? '<span>·</span>' + ytHtml : ''}
-            </div>
-          </div>
-          <div class="flex gap-1.5 items-center flex-wrap">${eventBadges(ev)}</div>
-          <div class="flex gap-1.5 items-center flex-shrink-0">
-            ${ev.i_attended !== true
-              ? `<button type="button" class="px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-navy text-white border-0 cursor-pointer hover:opacity-90" data-action="check-in" data-event-id="${escapeAttr(ev.id)}">${I18N.eventCheckIn}</button>`
-              : `<button class="px-3 py-1.5 rounded-lg text-[12px] font-semibold border-[1.5px] border-navy text-navy bg-transparent cursor-not-allowed opacity-40" disabled>✓</button>`}
-            ${canRoster ? `<button type="button" class="px-2 py-1.5 text-sm bg-[var(--surface-base)] border border-[var(--border-default)] rounded-md cursor-pointer" title="${I18N.eventRosterTooltip}" data-action="open-roster" data-event-id="${escapeAttr(ev.id)}" data-event-title="${escapeAttr(ev.title || '')}">📋</button>` : ''}
-            ${canEdit ? `<button type="button" class="px-2 py-1.5 text-sm bg-[var(--surface-base)] border border-[var(--border-default)] rounded-md cursor-pointer" title="${I18N.eventEditTooltip}" data-action="edit-event" data-event-id="${escapeAttr(ev.id)}">✏️</button>` : ''}
-          </div>
-        </div>
-      </div>`;
+      return `<details class="border-b border-[var(--border-subtle)] last:border-b-0"><summary class="flex items-center justify-between px-1 py-3 cursor-pointer hover:bg-[var(--surface-hover)] transition-colors select-none"><span class="text-sm font-semibold text-[var(--text-primary)]">${s.icon} ${s.label}${gpBadge}</span><span class="text-[11px] text-[var(--text-muted)]">${countLabel}</span></summary><div class="pl-2 pr-1 pb-3 space-y-2">${pastHtml}${futureHtml}</div></details>`;
     }).join('');
-
-    if (hasMore) {
-      el.innerHTML += `
-        <div class="text-center py-4">
-          <button type="button" class="px-5 py-2.5 rounded-xl text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer transition-colors"
-                  data-action="load-more-events">
-            Carregar mais (${filtered.length - VISIBLE_COUNT} restantes)
-          </button>
-        </div>`;
-    }
 
     maybeHandleFocusedEvent(filtered);
   }
