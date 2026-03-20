@@ -2615,6 +2615,17 @@ const esLATAM: Record<string, string> = {
   // ── Tribe Dashboard tabs ──
   'tribe.gamificationTab': 'Gamificación',
   'tribe.attendanceTab': 'Asistencia',
+  'tribe.viewingOther': 'Visualizando',
+  'tribe.crossTribeNotice': 'Modo gestión cruzada',
+  'tribe.curatorAccess': 'Acceso de Curación',
+  'tribe.upcomingEvents': 'Próximos Eventos',
+  'tribe.pastMeetings': 'Reuniones Anteriores',
+  'tribe.recordingAvailable': 'Grabación',
+  'tribe.noRecording': 'Sin grabación',
+  'tribe.createEvent': 'Crear Evento',
+  'tribe.viewAllEvents': 'Ver todos los eventos',
+  'tribe.eligibleMembers': 'miembros elegibles',
+  'tribe.readOnly': 'Solo lectura',
 
   // ── Tribe Gamification (P2-2) ──
   'tribe_dashboard.gamification.title': 'Gamificación de la Tribu',

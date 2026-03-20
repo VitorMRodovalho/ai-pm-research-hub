@@ -315,6 +315,49 @@ export function getEffectiveTribeId(member: MemberForPermission): number | null 
   return member.tribe_id ?? null;
 }
 
+// ==========================================
+// TRIBE DASHBOARD PERMISSIONS (GC-105)
+// Single source of truth for tribe page UI
+// ==========================================
+
+export function getTribePermissions(member: MemberForPermission, viewingTribeId: number) {
+  const isOwnTribe = member.tribe_id === viewingTribeId;
+  const isSuperadmin = !!member.is_superadmin;
+  const isGP = ['manager'].includes(member.operational_role)
+    || (member.designations || []).some(d => ['deputy_manager', 'co_gp'].includes(d));
+  const isAdmin = isSuperadmin || isGP;
+  const isStakeholder = ['sponsor', 'chapter_liaison'].includes(member.operational_role);
+  const isLeader = member.operational_role === 'tribe_leader';
+  const isLeaderOwnTribe = isLeader && isOwnTribe;
+  const isResearcher = member.operational_role === 'researcher';
+  const isObserver = member.operational_role === 'observer';
+  const isCurator = (member.designations || []).includes('curator');
+  const isComms = (member.designations || []).some(d => ['comms_leader', 'comms_member'].includes(d));
+
+  return {
+    canSeeAllTribes: true,
+    hasHomeTribe: member.tribe_id != null,
+    isViewingOwnTribe: isOwnTribe,
+    showCrossTribeBanner: !isOwnTribe && !isAdmin && member.tribe_id != null,
+    showCuratorBanner: isCurator && !isOwnTribe,
+    canCreateEvent: isAdmin || isLeaderOwnTribe,
+    canEditTribeInfo: isAdmin || isLeaderOwnTribe,
+    canToggleAttendance: isAdmin || isLeaderOwnTribe,
+    canSelfCheckIn: !isStakeholder && !isObserver && (isOwnTribe || isAdmin),
+    selfCheckInHasWindow: isResearcher && !isSuperadmin,
+    canSeeExcuseReason: isAdmin,
+    showDetailedMetrics: isOwnTribe || isAdmin || isStakeholder,
+    canEditBoardItems: isAdmin || isLeaderOwnTribe || (isResearcher && isOwnTribe),
+    canReviewCuration: isCurator,
+    canSeeFullGamification: true,
+    isAdmin,
+    isStakeholder,
+    isLeaderOwnTribe,
+    isCurator,
+    isComms,
+  };
+}
+
 // Get all permissions for display/audit
 export function getEffectivePermissions(member: MemberForPermission): Permission[] {
   if (_simulation.active && _simulation.tier) {

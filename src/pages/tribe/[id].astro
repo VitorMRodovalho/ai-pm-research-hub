@@ -86,6 +86,15 @@ const TRIBE_I18N = {
   lgpdTooltip: t('tribe.lgpdTooltip', lang),
   broadcastTab: t('tribe.broadcastTab', lang),
   generalTab: t('tribe.generalTab', lang),
+  viewingOther: t('tribe.viewingOther', lang),
+  curatorAccess: t('tribe.curatorAccess', lang),
+  upcomingEvents: t('tribe.upcomingEvents', lang),
+  pastMeetings: t('tribe.pastMeetings', lang),
+  recordingAvailable: t('tribe.recordingAvailable', lang),
+  noRecording: t('tribe.noRecording', lang),
+  createEvent: t('tribe.createEvent', lang),
+  viewAllEvents: t('tribe.viewAllEvents', lang),
+  eligibleMembers: t('tribe.eligibleMembers', lang),
   radarGlobal: t('tribe.radarGlobal', lang),
   radarWebinars: t('tribe.radarWebinars', lang),
   radarPublications: t('tribe.radarPublications', lang),
@@ -161,6 +170,10 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     </div>
     <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
     <div id="tribe-access-note" class="hidden mb-4"></div>
+
+    <!-- Cross-tribe viewing banner -->
+    <div id="cross-tribe-banner" class="hidden rounded-xl px-4 py-3 text-sm mb-4 flex items-center gap-2">
+    </div>
 
     <!-- Tabs: Cockpit simplificado [Geral | Kanban | Membros] -->
     <div class="flex gap-2 mb-5 flex-wrap" id="tribe-tabs">
@@ -263,7 +276,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   import { getCurrentCycle, loadCycles } from '../../lib/cycles';
   import { canExploreTribes, canManageTribeLifecycle, canSeeInactiveTribes } from '../../lib/tribes/access';
   import { buildTribeLabel } from '../../lib/tribes/catalog';
-  import { hasPermission } from '../../lib/permissions';
+  import { hasPermission, getTribePermissions } from '../../lib/permissions';
 
   const I18N = (typeof window !== 'undefined' && (window as any).__TRIBE_I18N) || {};
   const TRIBE_ID: number = (typeof window !== 'undefined' && (window as any).__TRIBE_ID) || 0;
@@ -1382,6 +1395,24 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
       // Render header
       renderHeader(tribeRes.data, headerLeader, headerSlots);
+
+      // Cross-tribe banner
+      if (currentMember) {
+        const tp = getTribePermissions(currentMember, TRIBE_ID);
+        const banner = document.getElementById('cross-tribe-banner');
+        const tribeName = tribeData?.name || `Tribo ${TRIBE_ID}`;
+        if (banner) {
+          if (tp.showCuratorBanner) {
+            banner.className = 'rounded-xl px-4 py-3 text-sm mb-4 flex items-center gap-2 bg-purple-50 border border-purple-200 text-purple-800';
+            banner.innerHTML = `<span class="text-base">🔍</span> <span><strong>${I18N.curatorAccess || 'Acesso de Curadoria'}:</strong> ${tribeName}</span>`;
+            banner.classList.remove('hidden');
+          } else if (tp.showCrossTribeBanner) {
+            banner.className = 'rounded-xl px-4 py-3 text-sm mb-4 flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-800';
+            banner.innerHTML = `<span class="text-base">🔍</span> <span><strong>${I18N.viewingOther || 'Visualizando'}:</strong> ${tribeName}</span>`;
+            banner.classList.remove('hidden');
+          }
+        }
+      }
 
       // Merge members: direct (tribe_id set) + selections
       const directIds = new Set(allDirectMembers.map((m: any) => m.id));
