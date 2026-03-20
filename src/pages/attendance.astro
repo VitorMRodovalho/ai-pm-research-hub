@@ -84,11 +84,6 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
               <select id="events-type-filter"
                 class="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-input)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-navy">
                 <option value="todos">Todos os tipos</option>
-                <option value="geral">🌐 Gerais</option>
-                <option value="tribo">🔬 Tribos</option>
-                <option value="kickoff">🚀 Kickoff</option>
-                <option value="lideranca">👥 Liderança</option>
-                <option value="comms">📢 Comunicação</option>
               </select>
               <select id="events-tribe-filter" class="hidden px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-input)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-navy">
                 <option value="">Todas as Tribos</option>
@@ -582,13 +577,16 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
   }
 
   const SECTION_ORDER = [
-    { type: 'geral',     icon: '🌐', label: 'Gerais',     gpOnly: false },
-    { type: 'tribo',     icon: '🔬', label: 'Tribos',     gpOnly: false },
-    { type: 'kickoff',   icon: '🚀', label: 'Kickoff',    gpOnly: false },
-    { type: 'lideranca', icon: '👥', label: 'Liderança',  gpOnly: false },
-    { type: '1on1',      icon: '🔒', label: '1-on-1',     gpOnly: true  },
-    { type: 'parceria',  icon: '🤝', label: 'Parcerias',  gpOnly: true  },
-    { type: 'comms',     icon: '📢', label: 'Comunicação', gpOnly: false },
+    { type: 'geral',          icon: '🌐', label: 'Gerais',          gpOnly: false },
+    { type: 'tribo',          icon: '🔬', label: 'Tribos',          gpOnly: false },
+    { type: 'kickoff',        icon: '🚀', label: 'Kickoff',         gpOnly: false },
+    { type: 'lideranca',      icon: '👥', label: 'Liderança',       gpOnly: false },
+    { type: 'webinar',        icon: '🎙️', label: 'Webinar',         gpOnly: false },
+    { type: 'evento_externo', icon: '🌍', label: 'Evento Externo',  gpOnly: false },
+    { type: 'comms',          icon: '📢', label: 'Comunicação',      gpOnly: false },
+    { type: '1on1',           icon: '🔒', label: '1-on-1',          gpOnly: true  },
+    { type: 'parceria',       icon: '🤝', label: 'Parcerias',       gpOnly: true  },
+    { type: 'entrevista',     icon: '📌', label: 'Entrevistas',     gpOnly: true  },
   ];
 
   function renderEvents() {
@@ -790,14 +788,14 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
     });
     // Tribe filter dropdown
     document.getElementById('events-tribe-filter')?.addEventListener('change', () => renderEvents());
-    // Populate GP-only options
-    if (CAN_MANAGE) {
+    // Populate type dropdown from SECTION_ORDER
+    {
       const sel = document.getElementById('events-type-filter') as HTMLSelectElement;
       if (sel) {
-        ['1on1:🔒 1-on-1', 'parceria:🤝 Parcerias', 'entrevista:📌 Entrevista'].forEach(s => {
-          const [val, label] = s.split(':');
+        SECTION_ORDER.filter(s => !s.gpOnly || CAN_MANAGE).forEach(s => {
           const opt = document.createElement('option');
-          opt.value = val; opt.textContent = label;
+          opt.value = s.type;
+          opt.textContent = `${s.icon} ${s.label}`;
           sel.appendChild(opt);
         });
       }
