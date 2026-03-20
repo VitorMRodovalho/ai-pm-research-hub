@@ -360,7 +360,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
   // ── Tab switching ──
   function switchTab(tabName: string) {
-    const panels = ['general', 'board', 'members', 'commshub', 'broadcast'];
+    const panels = ['general', 'board', 'members', 'commshub', 'broadcast', 'gamification', 'attendance'];
     panels.forEach(p => {
       const el = document.getElementById(`panel-${p}`);
       if (el) el.classList.toggle('hidden', p !== tabName);
@@ -1339,7 +1339,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
       revealTribeShell();
       const urlTab = new URLSearchParams(window.location.search).get('tab');
-      const validTabs = ['general', 'board', 'members'];
+      const validTabs = ['general', 'board', 'members', 'gamification', 'attendance'];
       switchTab(urlTab && validTabs.includes(urlTab) ? urlTab : 'general');
       checkEditPermission();
       checkBroadcastAccess();
