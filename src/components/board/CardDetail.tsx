@@ -1064,17 +1064,18 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
           </div>
         </div>
 
-        {/* Sticky save bar — always visible when dirty */}
-        {dirty && canEdit && (
-          <div className="sticky bottom-0 left-0 right-0 px-6 py-3 bg-[var(--surface-elevated)] border-t border-[var(--border-default)] flex items-center justify-between z-20">
-            <span className="text-xs text-amber-600 font-semibold">⚠️ Alterações não salvas</span>
-            <button onClick={handleSave}
-              className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold cursor-pointer hover:bg-blue-700 border-0 transition-colors">
-              💾 {i18n.save || 'Salvar'}
-            </button>
-          </div>
-        )}
       </div>
+
+      {/* Fixed save bar — always visible when dirty */}
+      {dirty && canEdit && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[650] px-6 py-3 bg-[var(--surface-elevated)] border border-[var(--border-default)] rounded-xl shadow-2xl flex items-center gap-4">
+          <span className="text-xs text-amber-600 font-semibold">⚠️ Alterações não salvas</span>
+          <button onClick={handleSave}
+            className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold cursor-pointer hover:bg-blue-700 border-0 transition-colors">
+            💾 {i18n.save || 'Salvar'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
