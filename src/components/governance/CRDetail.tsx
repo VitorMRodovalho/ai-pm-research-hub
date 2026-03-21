@@ -13,7 +13,7 @@ interface Props {
 
 const TYPE_COLORS: Record<string, string> = { editorial: 'bg-gray-100 text-gray-700', operational: 'bg-blue-100 text-blue-700', structural: 'bg-amber-100 text-amber-700', emergency: 'bg-red-100 text-red-700' };
 const IMPACT_COLORS: Record<string, string> = { low: 'bg-gray-100 text-gray-600', medium: 'bg-blue-100 text-blue-700', high: 'bg-amber-100 text-amber-700', critical: 'bg-red-100 text-red-700' };
-const STATUS_COLORS: Record<string, string> = { draft: 'bg-gray-100 text-gray-600', submitted: 'bg-blue-100 text-blue-700', under_review: 'bg-yellow-100 text-yellow-700', approved: 'bg-green-100 text-green-700', rejected: 'bg-red-100 text-red-700', implemented: 'bg-emerald-100 text-emerald-700' };
+const STATUS_COLORS: Record<string, string> = { draft: 'bg-gray-100 text-gray-600', submitted: 'bg-blue-100 text-blue-700', under_review: 'bg-yellow-100 text-yellow-700', approved: 'bg-green-100 text-green-700', rejected: 'bg-red-100 text-red-700', implemented: 'bg-emerald-100 text-emerald-700', withdrawn: 'bg-gray-200 text-gray-500' };
 
 export default function CRDetail({ cr, sections, canReview, member, t, getSb, onClose, onReload }: Props) {
   const [notes, setNotes] = useState('');
@@ -22,6 +22,8 @@ export default function CRDetail({ cr, sections, canReview, member, t, getSb, on
   const isGP = member?.is_superadmin || member?.operational_role === 'manager' || (member?.designations || []).includes('deputy_manager');
   const canApprove = canReview && ['draft', 'submitted', 'under_review'].includes(cr.status);
   const canImplement = isGP && cr.status === 'approved';
+  const canWithdraw = isGP && ['draft', 'submitted', 'under_review'].includes(cr.status);
+  const canResubmit = cr.status === 'under_review';
 
   const handleAction = async (action: string) => {
     if ((action === 'reject' || action === 'request_changes') && !notes.trim()) {
@@ -114,7 +116,7 @@ export default function CRDetail({ cr, sections, canReview, member, t, getSb, on
         </div>
 
         {/* Review actions */}
-        {canReview && (canApprove || canImplement) && (
+        {(canReview || canWithdraw || canResubmit) && (canApprove || canImplement || canWithdraw || canResubmit) && (
           <div className="px-5 py-4 border-t border-[var(--border-default)] space-y-3">
             <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
               placeholder={t('governance.cr_review_notes', 'Notas de revisão...')}
@@ -140,6 +142,18 @@ export default function CRDetail({ cr, sections, canReview, member, t, getSb, on
                 <button onClick={() => handleAction('implement')} disabled={loading}
                   className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold cursor-pointer border-0 disabled:opacity-50">
                   {t('governance.cr_implement', 'Implementar')}
+                </button>
+              )}
+              {canWithdraw && (
+                <button onClick={() => { if (confirm(t('governance.withdraw_confirm', 'Retirar esta CR?'))) handleAction('withdraw'); }} disabled={loading}
+                  className="px-3 py-1.5 rounded-lg bg-gray-500 text-white text-xs font-semibold cursor-pointer border-0 disabled:opacity-50">
+                  {t('governance.withdraw', 'Retirar')}
+                </button>
+              )}
+              {canResubmit && (
+                <button onClick={() => handleAction('resubmit')} disabled={loading}
+                  className="px-3 py-1.5 rounded-lg bg-blue-500 text-white text-xs font-semibold cursor-pointer border-0 disabled:opacity-50">
+                  {t('governance.resubmit', 'Re-submeter')}
                 </button>
               )}
             </div>

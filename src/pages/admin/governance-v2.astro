@@ -1,12 +1,19 @@
 ---
 // Route: /admin/governance-v2 (renamed from board-governance to bypass Cloudflare FS cache)
 import AdminLayout from '../../layouts/AdminLayout.astro';
+import GovernanceAdminIsland from '../../components/admin/GovernanceAdminIsland';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import { buildPageI18n } from '../../i18n/pageI18n';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
+const i18nBundle = buildPageI18n(['governance'], lang);
 ---
 
 <AdminLayout title={t('nav.adminBoardGovernance', lang)} breadcrumbs={[{label:'Operações'},{label:'Governança'}]}>
+  <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
   <div class="max-w-[1100px] mx-auto px-4 py-8 space-y-6">
+
+    <!-- ═══ Admin Governance Island (GC-122) ═══ -->
+    <GovernanceAdminIsland client:load />
 
     <!-- ═══ Org Chart ═══ -->
     <section id="orgchart-section" class="hidden">
