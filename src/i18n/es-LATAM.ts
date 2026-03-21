@@ -273,6 +273,7 @@ const esLATAM: Record<string, string> = {
   'partnerships.contactName': 'Contacto',
   'partnerships.contactEmail': 'Correo',
   'nav.adminCycleReport': '📄 Informe del Ciclo',
+  'nav.governance': '⚖️ Gobernanza',
   'nav.adminHelp': 'Ayuda / Guía',
   'cycleReport.meta': 'Informe del Ciclo — Admin',
   'cycleReport.loading': 'Generando informe del ciclo...',
