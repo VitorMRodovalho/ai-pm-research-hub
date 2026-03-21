@@ -381,10 +381,28 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   };
 
   // ── Tag helpers ──
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
+  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
+
+  const loadTagSuggestions = useCallback(async () => {
+    if (tagSuggestions.length > 0) return;
+    try {
+      const sb = (window as any).navGetSb?.();
+      if (!sb || !item.board_id) return;
+      const { data } = await sb.rpc('get_board_tags', { p_board_id: item.board_id });
+      if (Array.isArray(data)) setTagSuggestions(data);
+    } catch {}
+  }, [item.board_id, tagSuggestions.length]);
+
+  const filteredSuggestions = tagInput.trim()
+    ? tagSuggestions.filter(s => s.toLowerCase().includes(tagInput.toLowerCase()) && !tags.includes(s))
+    : tagSuggestions.filter(s => !tags.includes(s));
+
   const addTag = (t: string) => {
-    const clean = t.trim().toLowerCase();
-    if (clean && !tags.includes(clean)) { setTags([...tags, clean]); setDirty(true); }
+    const clean = t.trim();
+    if (clean && !tags.includes(clean.toLowerCase())) { setTags([...tags, clean.toLowerCase()]); setDirty(true); }
     setTagInput('');
+    setShowTagSuggestions(false);
   };
 
   const checkDone = checklist.filter((c) => c.done).length;
@@ -844,12 +862,25 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                 ))}
               </div>
               {canEdit && (
-                <input type="text" value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(tagInput); } }}
-                  placeholder="Tag + Enter"
-                  className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1 text-[11px]
-                    outline-none focus:border-blue-400" />
+                <div className="relative">
+                  <input type="text" value={tagInput}
+                    onChange={(e) => { setTagInput(e.target.value); setShowTagSuggestions(true); }}
+                    onFocus={() => { loadTagSuggestions(); setShowTagSuggestions(true); }}
+                    onBlur={() => setTimeout(() => setShowTagSuggestions(false), 200)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(tagInput); } if (e.key === 'Escape') setShowTagSuggestions(false); }}
+                    placeholder="Tag + Enter"
+                    className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1 text-[11px] outline-none focus:border-blue-400 bg-[var(--surface-base)] text-[var(--text-primary)]" />
+                  {showTagSuggestions && filteredSuggestions.length > 0 && (
+                    <div className="absolute z-50 top-full left-0 right-0 mt-0.5 bg-[var(--surface-elevated)] border border-[var(--border-default)] rounded-lg shadow-lg max-h-[120px] overflow-y-auto">
+                      {filteredSuggestions.slice(0, 8).map(s => (
+                        <button key={s} onMouseDown={() => addTag(s)}
+                          className="w-full text-left px-2 py-1 text-[11px] text-[var(--text-primary)] hover:bg-[var(--surface-hover)] cursor-pointer border-0 bg-transparent">
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
