@@ -1,0 +1,18 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BoardEngine from '../../components/islands/BoardEngine';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+const { id } = Astro.params;
+---
+<BaseLayout title={t('boards.title', lang)} activePage="boards" lang={lang}>
+  <main class="max-w-[1400px] mx-auto px-4 py-6">
+    <div class="mb-4">
+      <a href={lang === 'pt-BR' ? '/boards' : `/${lang.split('-')[0]}/boards`}
+        class="text-xs font-semibold text-navy no-underline hover:underline">
+        ← {t('boards.title', lang)}
+      </a>
+    </div>
+    <BoardEngine client:load boardId={id} />
+  </main>
+</BaseLayout>

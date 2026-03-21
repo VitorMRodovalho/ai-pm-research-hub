@@ -90,6 +90,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'admin-portfolio', labelKey: 'nav.adminPortfolio', href: '/admin/portfolio', minTier: 'admin',    requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison', 'curator'] },
   { key: 'admin-cycle-report', labelKey: 'nav.adminCycleReport', href: '/report', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['sponsor', 'chapter_liaison'] },
   { key: 'admin-exec-report', labelKey: 'nav.adminReport', href: '/admin/report', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison'] },
+  { key: 'boards', labelKey: 'nav.boards', href: '/boards', minTier: 'member', requiresAuth: true, section: 'both', group: 'admin-sub', drawerSection: 'admin', navSlot: 'none' },
   { key: 'governance', labelKey: 'nav.governance', href: '/governance', minTier: 'member', requiresAuth: true, section: 'both', group: 'admin-sub', drawerSection: 'admin', navSlot: 'none' },
   { key: 'admin-governance-v2', labelKey: 'nav.adminBoardGovernance', href: '/admin/governance-v2', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['curator', 'co_gp'] },
   { key: 'admin-curatorship', labelKey: 'nav.adminCuratorship', href: '/admin/curatorship', minTier: 'observer', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none' },
