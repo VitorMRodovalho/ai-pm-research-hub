@@ -17,24 +17,39 @@ export default function GovernancePage() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    let retries = 0;
+
+    async function boot() {
       const sb = getSb();
-      if (!sb) { setTimeout(() => { if (!cancelled) setLoading(false); }, 2000); return; }
-
       const m = (window as any).navGetMember?.();
-      if (m && !cancelled) setMember(m);
 
-      const [secRes, crRes] = await Promise.all([
-        sb.rpc('get_manual_sections', { p_version: 'R2' }),
-        sb.rpc('get_change_requests', { p_status: null, p_cr_type: null }),
-      ]);
-
-      if (!cancelled) {
-        setSections(Array.isArray(secRes.data) ? secRes.data : []);
-        setCrs(Array.isArray(crRes.data) ? crRes.data : []);
-        setLoading(false);
+      if ((!sb || !m) && retries < 30) {
+        retries++;
+        setTimeout(boot, 300);
+        return;
       }
-    })();
+
+      if (m && !cancelled) setMember(m);
+      if (!sb) { if (!cancelled) setLoading(false); return; }
+
+      try {
+        const [secRes, crRes] = await Promise.all([
+          sb.rpc('get_manual_sections', { p_version: 'R2' }),
+          sb.rpc('get_change_requests', { p_status: null, p_cr_type: null }),
+        ]);
+
+        if (!cancelled) {
+          setSections(Array.isArray(secRes.data) ? secRes.data : []);
+          setCrs(Array.isArray(crRes.data) ? crRes.data : []);
+        }
+      } catch (e) {
+        console.warn('Governance load error:', e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    boot();
     return () => { cancelled = true; };
   }, [getSb]);
 
