@@ -86,13 +86,13 @@ export default function ManualBrowser({ sections, crs, t, onSwitchToCr }: Props)
         <div
           className="flex items-center justify-between py-2 px-3 hover:bg-[var(--surface-hover)] transition-colors rounded-lg cursor-pointer"
           style={{ paddingLeft: `${12 + indent}px` }}
-          onClick={() => hasChildren && toggle(s.id)}
+          onClick={() => toggle(s.id)}
         >
           <div className="flex items-center gap-2 min-w-0">
             {hasChildren ? (
               <span className="text-[10px] text-[var(--text-muted)] w-3">{isOpen ? '▼' : '▶'}</span>
             ) : (
-              <span className="w-3" />
+              <span className="text-[10px] text-[var(--text-muted)] w-3">{(s as any).content_pt ? (isOpen ? '▼' : '▶') : '·'}</span>
             )}
             <span className="text-xs font-bold text-navy">{s.section_number}</span>
             <span className="text-sm text-[var(--text-primary)] truncate">{s.title_pt}</span>
@@ -100,6 +100,11 @@ export default function ManualBrowser({ sections, crs, t, onSwitchToCr }: Props)
           </div>
           <span className="text-[10px] text-[var(--text-muted)] whitespace-nowrap ml-2">{pageLabel(s)}</span>
         </div>
+        {isOpen && (s as any).content_pt && !hasChildren && (
+          <div className="mx-3 mb-2 px-4 py-2 rounded-lg bg-[var(--surface-section-cool)] text-xs text-[var(--text-secondary)] whitespace-pre-wrap max-h-[200px] overflow-y-auto" style={{ marginLeft: `${12 + indent + 20}px` }}>
+            {(s as any).content_pt}
+          </div>
+        )}
         {isOpen && children.map(child => renderSection(child, depth + 1))}
       </div>
     );
@@ -107,9 +112,19 @@ export default function ManualBrowser({ sections, crs, t, onSwitchToCr }: Props)
 
   return (
     <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] overflow-hidden">
-      <div className="px-5 py-3.5 border-b border-[var(--border-default)]">
-        <h2 className="text-sm font-bold text-navy">{t('governance.manual_tab', 'Manual')} R2</h2>
-        <p className="text-xs text-[var(--text-muted)]">33 {t('governance.section', 'seções').toLowerCase()}s · 22 páginas</p>
+      <div className="px-5 py-3.5 border-b border-[var(--border-default)] flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-bold text-navy">{t('governance.manual_tab', 'Manual')} R2</h2>
+          <p className="text-xs text-[var(--text-muted)]">33 {t('governance.section', 'seções').toLowerCase()}s · 22 páginas</p>
+        </div>
+        <a
+          href="https://www.canva.com/design/DAG1Nc3jhC4/gWGhQCJyv7axeCbKozD1gg/view"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-xs font-semibold text-navy hover:bg-[var(--surface-hover)] no-underline transition-colors"
+        >
+          📄 {t('governance.view_pdf', 'Ver PDF Original')}
+        </a>
       </div>
       <div className="py-1">
         {topLevel.map(s => renderSection(s, 0))}
