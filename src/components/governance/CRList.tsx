@@ -58,35 +58,39 @@ export default function CRList({ crs, sections, member, canSubmit, canReview, t,
 
   return (
     <div className="space-y-4">
-      {/* Filters + New CR button */}
+      {/* New CR button */}
+      {canSubmit && (
+        <div className="flex justify-end">
+          <button onClick={() => setShowSubmit(true)}
+            className="px-4 py-2 rounded-lg bg-navy text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">
+            + {t('governance.cr_new', 'Nova Solicitação')}
+          </button>
+        </div>
+      )}
+
+      {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
-          className="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-input)] text-sm">
+          className="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-input)] text-sm text-[var(--text-primary)]">
           <option value="">{t('governance.cr_status', 'Status')}: Todos</option>
           {['draft','submitted','under_review','approved','rejected','implemented'].map(s => (
             <option key={s} value={s}>{t(`governance.status_${s}`, s)}</option>
           ))}
         </select>
         <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
-          className="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-input)] text-sm">
+          className="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-input)] text-sm text-[var(--text-primary)]">
           <option value="">{t('governance.cr_type', 'Tipo')}: Todos</option>
           {['editorial','operational','structural','emergency'].map(s => (
             <option key={s} value={s}>{t(`governance.type_${s}`, s)}</option>
           ))}
         </select>
         <select value={impactFilter} onChange={e => setImpactFilter(e.target.value)}
-          className="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-input)] text-sm">
+          className="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-input)] text-sm text-[var(--text-primary)]">
           <option value="">{t('governance.cr_impact', 'Impacto')}: Todos</option>
           {['low','medium','high','critical'].map(s => (
             <option key={s} value={s}>{t(`governance.impact_${s}`, s)}</option>
           ))}
         </select>
-        {canSubmit && (
-          <button onClick={() => setShowSubmit(true)}
-            className="px-4 py-2 rounded-lg bg-navy text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">
-            + {t('governance.cr_new', 'Nova Solicitação')}
-          </button>
-        )}
       </div>
 
       {/* CR table */}

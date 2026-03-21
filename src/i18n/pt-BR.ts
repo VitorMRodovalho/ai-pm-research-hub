@@ -273,6 +273,7 @@ const ptBR: Record<string, string> = {
   'partnerships.contactName': 'Contato',
   'partnerships.contactEmail': 'E-mail',
   'nav.adminCycleReport': '📄 Relatório do Ciclo',
+  'nav.governance': '⚖️ Governança',
   'nav.adminHelp': 'Ajuda / Guia',
   'cycleReport.meta': 'Relatório do Ciclo — Admin',
   'cycleReport.loading': 'Gerando relatório do ciclo...',

@@ -273,6 +273,7 @@ const enUS: Record<string, string> = {
   'partnerships.contactName': 'Contact',
   'partnerships.contactEmail': 'Email',
   'nav.adminCycleReport': '📄 Cycle Report',
+  'nav.governance': '⚖️ Governance',
   'nav.adminHelp': 'Help / Guide',
   'cycleReport.meta': 'Cycle Report — Admin',
   'cycleReport.loading': 'Generating cycle report...',
