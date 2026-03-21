@@ -2,14 +2,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { usePageI18n } from '../../i18n/usePageI18n';
 import ManualBrowser from './ManualBrowser';
 import CRList from './CRList';
+import DocumentsList from './DocumentsList';
 
-type Tab = 'manual' | 'crs';
+type Tab = 'manual' | 'crs' | 'documents';
 
 export default function GovernancePage() {
   const t = usePageI18n();
   const [tab, setTab] = useState<Tab>('manual');
   const [sections, setSections] = useState<any[]>([]);
   const [crs, setCrs] = useState<any[]>([]);
+  const [docs, setDocs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState<any>(null);
 
@@ -33,14 +35,16 @@ export default function GovernancePage() {
       if (!sb) { if (!cancelled) setLoading(false); return; }
 
       try {
-        const [secRes, crRes] = await Promise.all([
+        const [secRes, crRes, docRes] = await Promise.all([
           sb.rpc('get_manual_sections', { p_version: 'R2' }),
           sb.rpc('get_change_requests', { p_status: null, p_cr_type: null }),
+          sb.rpc('get_governance_documents'),
         ]);
 
         if (!cancelled) {
           setSections(Array.isArray(secRes.data) ? secRes.data : []);
           setCrs(Array.isArray(crRes.data) ? crRes.data : []);
+          setDocs(Array.isArray(docRes.data) ? docRes.data : []);
         }
       } catch (e) {
         console.warn('Governance load error:', e);
@@ -75,46 +79,44 @@ export default function GovernancePage() {
     );
   }
 
+  const tabs: { key: Tab; icon: string; labelKey: string; fallback: string }[] = [
+    { key: 'manual', icon: '📖', labelKey: 'governance.manual_tab', fallback: 'Manual' },
+    { key: 'crs', icon: '📋', labelKey: 'governance.cr_tab', fallback: 'Solicitações de Mudança' },
+    { key: 'documents', icon: '📄', labelKey: 'governance.documents_tab', fallback: 'Documentos' },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-extrabold text-navy">{t('governance.title', 'Governança & Controle de Mudanças')}</h1>
         <p className="text-sm text-[var(--text-secondary)] mt-1">{t('governance.manual_version', 'Manual de Governança e Operações — R2')}</p>
         <p className="text-xs text-[var(--text-muted)]">{t('governance.docusign_ref', 'DocuSign B2AFB185 · Aprovado 22/Set/2025')}</p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2">
-        {(['manual', 'crs'] as Tab[]).map(t2 => (
+      <div className="flex gap-2 flex-wrap">
+        {tabs.map(tb => (
           <button
-            key={t2}
-            onClick={() => setTab(t2)}
+            key={tb.key}
+            onClick={() => setTab(tb.key)}
             className={`px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 transition-all ${
-              tab === t2
+              tab === tb.key
                 ? 'border-navy bg-navy text-white'
                 : 'border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]'
             }`}
           >
-            {t2 === 'manual' ? `📖 ${t('governance.manual_tab', 'Manual')}` : `📋 ${t('governance.cr_tab', 'Solicitações de Mudança')}`}
+            {tb.icon} {t(tb.labelKey, tb.fallback)}
           </button>
         ))}
       </div>
 
-      {/* Tab content */}
-      {tab === 'manual' ? (
-        <ManualBrowser sections={sections} crs={crs} t={t} onSwitchToCr={(crNum) => { setTab('crs'); }} />
-      ) : (
-        <CRList
-          crs={crs}
-          sections={sections}
-          member={member}
-          canSubmit={canSubmit}
-          canReview={canReview}
-          t={t}
-          getSb={getSb}
-          onReload={reload}
-        />
+      {tab === 'manual' && (
+        <ManualBrowser sections={sections} crs={crs} t={t} onSwitchToCr={() => setTab('crs')} />
+      )}
+      {tab === 'crs' && (
+        <CRList crs={crs} sections={sections} member={member} canSubmit={canSubmit} canReview={canReview} t={t} getSb={getSb} onReload={reload} />
+      )}
+      {tab === 'documents' && (
+        <DocumentsList docs={docs} t={t} />
       )}
     </div>
   );
