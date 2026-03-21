@@ -384,15 +384,16 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
 
+  const boardId = board?.id || item.board_id;
   const loadTagSuggestions = useCallback(async () => {
-    if (tagSuggestions.length > 0) return;
+    if (tagSuggestions.length > 0 || !boardId) return;
     try {
       const sb = (window as any).navGetSb?.();
-      if (!sb || !item.board_id) return;
-      const { data } = await sb.rpc('get_board_tags', { p_board_id: item.board_id });
+      if (!sb) return;
+      const { data } = await sb.rpc('get_board_tags', { p_board_id: boardId });
       if (Array.isArray(data)) setTagSuggestions(data);
     } catch {}
-  }, [item.board_id, tagSuggestions.length]);
+  }, [boardId, tagSuggestions.length]);
 
   const filteredSuggestions = tagInput.trim()
     ? tagSuggestions.filter(s => s.toLowerCase().includes(tagInput.toLowerCase()) && !tags.includes(s))
@@ -405,6 +406,11 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
     setShowTagSuggestions(false);
   };
 
+  const handleClose = useCallback(async () => {
+    if (dirty) { try { await handleSave(); } catch {} }
+    onClose();
+  }, [dirty, handleSave, onClose]);
+
   const checkDone = checklist.filter((c) => c.done).length;
   const checkTotal = checklist.length;
   const checkPct = checkTotal > 0 ? Math.round((checkDone / checkTotal) * 100) : 0;
@@ -412,7 +418,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   return (
     <div ref={panelRef} tabIndex={-1}
       className="fixed inset-0 z-[600] flex items-start justify-center bg-black/40 backdrop-blur-sm p-4 pt-16 overflow-y-auto outline-none"
-      onClick={onClose} role="dialog" aria-modal="true" aria-label={item.title}>
+      onClick={handleClose} role="dialog" aria-modal="true" aria-label={item.title}>
       <div className="bg-[var(--surface-elevated)] rounded-2xl shadow-2xl w-full max-w-3xl" onClick={(e) => e.stopPropagation()}>
         {/* Top bar */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)]">
@@ -431,7 +437,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                 💾 {i18n.save}
               </button>
             )}
-            <button onClick={onClose}
+            <button onClick={handleClose}
               className="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer bg-transparent border-0 text-lg">✕</button>
           </div>
         </div>
@@ -1057,6 +1063,17 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
             )}
           </div>
         </div>
+
+        {/* Sticky save bar — always visible when dirty */}
+        {dirty && canEdit && (
+          <div className="sticky bottom-0 left-0 right-0 px-6 py-3 bg-[var(--surface-elevated)] border-t border-[var(--border-default)] flex items-center justify-between z-20">
+            <span className="text-xs text-amber-600 font-semibold">⚠️ Alterações não salvas</span>
+            <button onClick={handleSave}
+              className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold cursor-pointer hover:bg-blue-700 border-0 transition-colors">
+              💾 {i18n.save || 'Salvar'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
