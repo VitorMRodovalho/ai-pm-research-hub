@@ -1,0 +1,59 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname);
+---
+<BaseLayout title={t('boards.title', lang)} activePage="boards" lang={lang}>
+  <main class="max-w-6xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-extrabold text-navy mb-2">{t('boards.title', lang)}</h1>
+    <p class="text-sm text-[var(--text-secondary)] mb-6">{t('boards.subtitle', lang)}</p>
+    <div id="boards-loading" class="text-center py-10 text-[var(--text-muted)]">{t('common.loading', lang)}</div>
+    <div id="boards-list" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+  </main>
+</BaseLayout>
+
+<script>
+  async function bootBoards() {
+    const sb = (window as any).navGetSb?.();
+    const member = (window as any).navGetMember?.();
+    if (!sb || !member) { setTimeout(bootBoards, 300); return; }
+
+    const loading = document.getElementById('boards-loading');
+    const list = document.getElementById('boards-list');
+    if (!loading || !list) return;
+
+    try {
+      const { data, error } = await sb.rpc('list_active_boards');
+      if (error) throw error;
+      const boards = Array.isArray(data) ? data : [];
+
+      loading.classList.add('hidden');
+      list.classList.remove('hidden');
+
+      if (!boards.length) {
+        list.innerHTML = '<div class="col-span-full text-center py-10 text-[var(--text-muted)]">Nenhum quadro disponível.</div>';
+        return;
+      }
+
+      const base = document.documentElement.lang === 'en' ? '/en' : document.documentElement.lang === 'es' ? '/es' : '';
+
+      list.innerHTML = boards.map((b: any) => {
+        const scope = b.board_scope === 'tribe' ? `T${b.tribe_id}` : 'Global';
+        return `<a href="${base}/boards/${b.id}" class="block no-underline group">
+          <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-5 hover:shadow-lg hover:border-navy/30 transition-all">
+            <div class="flex items-center justify-between mb-2">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${b.board_scope === 'tribe' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}">${scope}</span>
+              <span class="text-xs text-[var(--text-muted)]">${b.item_count || 0} cards</span>
+            </div>
+            <h3 class="text-sm font-bold text-navy group-hover:underline">${b.board_name || b.title || 'Board'}</h3>
+            ${b.domain_key ? `<p class="text-xs text-[var(--text-muted)] mt-1">${b.domain_key}</p>` : ''}
+          </div>
+        </a>`;
+      }).join('');
+    } catch (e: any) {
+      loading.textContent = 'Erro ao carregar quadros.';
+      console.warn('Boards load error:', e);
+    }
+  }
+  bootBoards();
+</script>
