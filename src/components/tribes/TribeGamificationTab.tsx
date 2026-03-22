@@ -133,7 +133,7 @@ export default function TribeGamificationTab({ tribeId }: TribeGamificationTabPr
 
   if (!data) return null;
 
-  const { summary, tribe_ranking, monthly_trend } = data;
+  const { summary = {} as any, tribe_ranking, monthly_trend } = data as any;
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
