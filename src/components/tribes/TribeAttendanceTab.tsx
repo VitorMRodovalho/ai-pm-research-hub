@@ -133,7 +133,7 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
     const sb = getSb();
     if (!sb) return;
     const newPresent = currentStatus !== 'present';
-    const memberName = data?.members.find(m => m.id === memberId)?.name || '';
+    const memberName = (Array.isArray(data?.members) ? data.members : []).find(m => m.id === memberId)?.name || '';
     try {
       await sb.rpc('mark_member_present', { p_event_id: eventId, p_member_id: memberId, p_present: newPresent });
       await refreshGrid();
@@ -216,7 +216,7 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
 
   const sortedMembers = useMemo(() => {
     if (!data) return [];
-    const arr = [...data.members];
+    const arr = [...(Array.isArray(data.members) ? data.members : [])];
     const dir = sortDir === 'asc' ? 1 : -1;
     arr.sort((a, b) => {
       if (sortKey === 'rate') return dir * (a.rate - b.rate);
@@ -257,7 +257,7 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
     );
   }
 
-  if (!data || data.members.length === 0) {
+  if (!data || !Array.isArray(data.members) || data.members.length === 0) {
     return (
       <div className="text-center py-16 text-[var(--text-secondary)] text-sm">
         {t('attendance.empty', 'No attendance data available for this tribe.')}

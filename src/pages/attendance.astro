@@ -1329,7 +1329,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
   // ── ROSTER ──
   async function openRoster(eventId: string, title: string) {
     CURRENT_EVENT_ID = eventId;
-    document.getElementById('roster-title')!.textContent = '📋 ' + title;
+    const rosterTitle = document.getElementById('roster-title');
+    if (rosterTitle) rosterTitle.textContent = '📋 ' + title;
     // Reset search
     const searchInput = document.getElementById('roster-search') as HTMLInputElement;
     if (searchInput) searchInput.value = '';
@@ -1344,7 +1345,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
       bulkAllBtn?.classList.add('hidden');
       bulkConfirmBtn?.classList.add('hidden');
     }
-    document.getElementById('roster-body')!.innerHTML = `<tr><td colspan="3" class="text-center py-5 text-[var(--text-secondary)]">${I18N.rosterLoading}</td></tr>`;
+    const rosterBody = document.getElementById('roster-body');
+    if (rosterBody) rosterBody.innerHTML = `<tr><td colspan="3" class="text-center py-5 text-[var(--text-secondary)]">${I18N.rosterLoading}</td></tr>`;
     let data: any;
     try {
       const res = await sb.rpc('get_tribe_event_roster', { p_event_id: eventId });
@@ -1353,10 +1355,11 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
     } catch (e: any) {
       toast(e?.message || I18N.msgError, 'error');
       console.error('get_tribe_event_roster failed:', e);
-      document.getElementById('roster-body')!.innerHTML = `<tr><td colspan="3" class="text-center py-5 text-red-500 text-sm">Error loading roster</td></tr>`;
+      if (rosterBody) rosterBody.innerHTML = `<tr><td colspan="3" class="text-center py-5 text-red-500 text-sm">Error loading roster</td></tr>`;
       return;
     }
-    const tbody = document.getElementById('roster-body')!;
+    const tbody = rosterBody;
+    if (!tbody) return;
     if (!data?.length) {
       tbody.innerHTML = `<tr><td colspan="3" class="text-center text-[var(--text-secondary)] py-5">${I18N.rosterNoParticipants}</td></tr>`;
       return;

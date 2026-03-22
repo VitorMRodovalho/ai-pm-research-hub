@@ -341,9 +341,9 @@ const langCode = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
           $role.textContent = roleText;
           $modal.classList.remove('hidden');
 
-          function dismissOnboarding() {
+          async function dismissOnboarding() {
             $modal.classList.add('hidden');
-            sb.rpc('dismiss_onboarding').catch((e) => console.warn('dismiss_onboarding failed:', e));
+            try { await sb.rpc('dismiss_onboarding'); } catch (e) { console.warn('dismiss_onboarding failed:', e); }
           }
 
           document.getElementById('onb-modal-dismiss')?.addEventListener('click', dismissOnboarding);

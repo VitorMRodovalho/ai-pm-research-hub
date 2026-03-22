@@ -222,41 +222,7 @@ const WK = {
       const sb = (window as any).navGetSb?.();
       if (!sb) { setTimeout(() => location.reload(), 300); return; }
 
-      let member: any = null;
-
-      // Listen for future nav:member events
-      window.addEventListener('nav:member', ((e: CustomEvent) => {
-        if (e.detail) {
-          member = e.detail;
-          onMemberReady();
-        } else {
-          $loading.classList.add('hidden');
-          $authGate.classList.remove('hidden');
-        }
-      }) as EventListener);
-
-      // 1) Check if nav already has a member loaded
-      const m = (window as any).navGetMember?.();
-      if (m) {
-        member = m;
-      } else {
-        // 2) Nav might not be ready yet — check session directly
-        const { data: { session } } = await sb.auth.getSession();
-        if (session) {
-          const { data } = await sb.rpc('get_member_by_auth');
-          if (data) {
-            member = data;
-          }
-        }
-      }
-
-      if (!member) {
-        $loading.classList.add('hidden');
-        $authGate.classList.remove('hidden');
-        return;
-      }
-
-      // ── Helpers (must be before loadWorkspaceData to avoid TDZ) ──
+      // ── Helpers (declared before any async/event code to avoid TDZ) ──
       function escHtml(s: string): string {
         const d = document.createElement('div');
         d.textContent = s;
@@ -298,7 +264,41 @@ const WK = {
         return meetsTier || hasDesig;
       }
 
+      let member: any = null;
       let _wsLoaded = false;
+
+      // Listen for future nav:member events
+      window.addEventListener('nav:member', ((e: CustomEvent) => {
+        if (e.detail) {
+          member = e.detail;
+          onMemberReady();
+        } else {
+          $loading.classList.add('hidden');
+          $authGate.classList.remove('hidden');
+        }
+      }) as EventListener);
+
+      // 1) Check if nav already has a member loaded
+      const m = (window as any).navGetMember?.();
+      if (m) {
+        member = m;
+      } else {
+        // 2) Nav might not be ready yet — check session directly
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) {
+          const { data } = await sb.rpc('get_member_by_auth');
+          if (data) {
+            member = data;
+          }
+        }
+      }
+
+      if (!member) {
+        $loading.classList.add('hidden');
+        $authGate.classList.remove('hidden');
+        return;
+      }
+
       async function onMemberReady() {
         if (_wsLoaded) return;
         // Re-run data loading when member becomes available later
