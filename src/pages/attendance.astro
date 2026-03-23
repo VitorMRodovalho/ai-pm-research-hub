@@ -681,7 +681,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
       const FUTURE_LIMIT = 3;
       const visibleFuture = s.future.slice(0, FUTURE_LIMIT);
       const hiddenFuture = s.future.slice(FUTURE_LIMIT);
-      const futureHtml = s.future.length ? `<div><div class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">📅 Agendados</div>${visibleFuture.map((ev: any) => renderEventCard(ev)).join('')}${hiddenFuture.length ? `<div id="more-${s.type}" class="hidden">${hiddenFuture.map((ev: any) => renderEventCard(ev)).join('')}</div><button class="text-xs text-navy font-semibold mt-1 cursor-pointer border-0 bg-transparent hover:underline" onclick="document.getElementById('more-${s.type}').classList.remove('hidden');this.remove()">Ver todos os ${s.futureCount} agendados ▾</button>` : ''}</div>` : '';
+      const futureHtml = s.future.length ? `<div><div class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">📅 Agendados</div>${visibleFuture.map((ev: any) => renderEventCard(ev)).join('')}${hiddenFuture.length ? `<div id="more-${s.type}" class="hidden">${hiddenFuture.map((ev: any) => renderEventCard(ev)).join('')}</div><button class="text-xs text-navy font-semibold mt-1 cursor-pointer border-0 bg-transparent hover:underline js-show-more" data-target="more-${s.type}">Ver todos os ${s.futureCount} agendados ▾</button>` : ''}</div>` : '';
 
       const autoExpand = (getTypeFilter() !== 'todos' || ATTENDANCE_ROUTE.query) ? ' open' : '';
       return `<details class="border-b border-[var(--border-subtle)] last:border-b-0"${autoExpand}><summary class="flex items-center justify-between px-1 py-3 cursor-pointer hover:bg-[var(--surface-hover)] transition-colors select-none"><span class="text-sm font-semibold text-[var(--text-primary)]">${s.icon} ${s.label}${gpBadge}</span><span class="text-[11px] text-[var(--text-muted)]">${countLabel}</span></summary><div class="pl-2 pr-1 pb-3 space-y-2">${pastHtml}${futureHtml}</div></details>`;
@@ -765,6 +765,14 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
         case 'roster-bulk-confirm':
           bulkConfirmPresence();
           break;
+      }
+      // Show-more buttons (delegated from template literals)
+      const showMoreBtn = (e.target as HTMLElement).closest('.js-show-more') as HTMLElement | null;
+      if (showMoreBtn) {
+        const tgt = document.getElementById(showMoreBtn.dataset.target || '');
+        if (tgt) tgt.classList.remove('hidden');
+        showMoreBtn.remove();
+        return;
       }
       // W140: tag filter buttons (not data-action based, use data-tag-filter)
       const tagFilterBtn = (e.target as HTMLElement).closest('.tag-filter-btn') as HTMLElement | null;
