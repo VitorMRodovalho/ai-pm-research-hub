@@ -1,4 +1,4 @@
-export type BoardViewMode = 'kanban' | 'table' | 'list' | 'calendar' | 'timeline';
+export type BoardViewMode = 'kanban' | 'table' | 'list' | 'calendar' | 'timeline' | 'activities';
 
 interface Props {
   current: BoardViewMode;
@@ -11,6 +11,7 @@ const VIEWS: { mode: BoardViewMode; icon: string; label: string }[] = [
   { mode: 'list', icon: '📑', label: 'Lista' },
   { mode: 'calendar', icon: '📅', label: 'Calendário' },
   { mode: 'timeline', icon: '📈', label: 'Timeline' },
+  { mode: 'activities', icon: '☑️', label: 'Atividades' },
 ];
 
 export default function ViewToggle({ current, onChange }: Props) {

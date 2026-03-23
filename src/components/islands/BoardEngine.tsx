@@ -29,6 +29,7 @@ import TableView from '../board/TableView';
 import GroupedListView from '../board/GroupedListView';
 import CalendarView from '../board/CalendarView';
 import TimelineView from '../board/TimelineView';
+import BoardActivitiesView from '../board/BoardActivitiesView';
 
 export default function BoardEngine(props: BoardEngineProps) {
   const i18n: BoardI18n = { ...DEFAULT_I18N, ...props.i18n };
@@ -336,6 +337,18 @@ export default function BoardEngine(props: BoardEngineProps) {
           items={filterHook.filtered}
           i18n={i18n}
           onOpenDetail={(item) => setDetailItem(item)}
+        />
+      )}
+
+      {/* Activities View */}
+      {viewMode === 'activities' && board && (
+        <BoardActivitiesView
+          boardId={board.id}
+          members={boardMembers as any}
+          onOpenCard={(cardId) => {
+            const item = items.find((i) => i.id === cardId);
+            if (item) setDetailItem(item);
+          }}
         />
       )}
 

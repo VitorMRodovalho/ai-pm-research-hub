@@ -7,6 +7,7 @@ import KpiDashboard from '../components/workspace/KpiDashboard';
 import AttendanceDashboard from '../components/workspace/AttendanceDashboard';
 import AttendanceForm from '../components/workspace/AttendanceForm';
 import DropoutRiskBanner from '../components/workspace/DropoutRiskBanner';
+import MyTasksIsland from '../components/workspace/MyTasksIsland';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname);
@@ -173,6 +174,14 @@ const WK = {
           <span class="text-lg">📋</span> {WK.sectionSubprojects}
         </h2>
         <div id="wk-subprojects-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+      </section>
+
+      <!-- ═══ My Tasks (cross-board) ═══ -->
+      <section id="wk-my-tasks">
+        <h2 class="text-base font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+          <span class="text-lg">☑️</span> {t('boards.my_tasks', lang) || 'Minhas atividades'}
+        </h2>
+        <MyTasksIsland client:load lang={lang} />
       </section>
 
       <!-- ═══ My Publications card (researcher self-service) ═══ -->

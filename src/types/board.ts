@@ -52,6 +52,8 @@ export interface BoardItem {
   created_at: string;
   updated_at: string;
   assignments?: ItemAssignment[];
+  is_portfolio_item?: boolean;
+  baseline_locked_at?: string | null;
 }
 
 export type AssignmentRole = 'author' | 'reviewer' | 'contributor' | 'curation_reviewer';
@@ -324,10 +326,10 @@ export const DEFAULT_I18N: BoardI18n = {
   reviewer: 'Revisor',
   tags: 'Tags',
   dueDate: 'Data limite',
-  checklist: 'Checklist',
+  checklist: 'Atividades',
   attachments: 'Anexos',
   timeline: 'Histórico',
-  addItem: 'Adicionar item',
+  addItem: 'Adicionar atividade',
   noAssignee: 'Sem responsável',
   noReviewer: 'Sem revisor',
   overdue: 'Vencido',

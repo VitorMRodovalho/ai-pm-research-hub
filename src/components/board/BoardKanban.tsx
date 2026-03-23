@@ -110,6 +110,9 @@ function SortableCard({ item, i18n, onClick, onQuickMove, columns, mode, canMove
         {item.source_card_id && (
           <span className="text-[9px] px-1 py-0.5 rounded bg-blue-50 text-blue-500 font-medium">🟦</span>
         )}
+        {item.is_portfolio_item && (
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 font-semibold" title="Entregável — aparece no Portfólio Executivo">📊 Portfólio</span>
+        )}
       </div>
 
       {/* Tags */}

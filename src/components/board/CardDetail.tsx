@@ -69,6 +69,18 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const isCurator = permissions.canCurate;
   const isCurationItem = item.curation_status === 'curation_pending';
 
+  // ── Governance role checks (D1-D20) ──
+  const isGP = permissions.member?.is_superadmin || ['manager','deputy_manager'].includes(permissions.member?.operational_role || '');
+  const isLeader = permissions.member?.operational_role === 'tribe_leader';
+  const isCardOwner = item.assignee_id === permissions.member?.id;
+  const canEditBaseline = (isGP || isLeader) && !item.baseline_locked_at;
+  const canUnlockBaseline = isGP;
+  const canEditForecast = isGP || isLeader || isCardOwner;
+  const canEditPortfolioFlag = isGP || isLeader;
+  const [showBaselineModal, setShowBaselineModal] = useState(false);
+  const [newBaselineDate, setNewBaselineDate] = useState('');
+  const [baselineReason, setBaselineReason] = useState('');
+
   // ── Attachment upload ──
   const ALLOWED_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'];
   const ALLOWED_EXTENSIONS = /\.(pdf|png|jpg|jpeg|docx|xlsx|pptx)$/i;
@@ -790,8 +802,17 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                         {ev.action === 'forecast_update' && `alterou forecast: ${ev.previous_status || '—'} → ${ev.new_status || '—'}`}
                         {ev.action === 'actual_completion' && `conclusão real: ${ev.new_status || '—'}`}
                         {ev.action === 'mirror_created' && 'criou card espelho'}
-                        {!['status_change', 'created', 'assigned', 'archived', 'moved_out', 'moved_in', 'submitted_for_curation', 'reviewer_assigned', 'curation_review', 'curation_approved', 'forecast_update', 'actual_completion', 'mirror_created'].includes(ev.action) && ev.action}
-                        {ev.reason && ev.action !== 'assigned' && <span className="text-[var(--text-muted)] ml-1">— {ev.reason}</span>}
+                        {ev.action === 'baseline_set' && (ev.reason || 'definiu baseline')}
+                        {ev.action === 'baseline_locked' && (ev.reason || 'baseline locked')}
+                        {ev.action === 'baseline_changed' && 'alterou baseline'}
+                        {ev.action === 'forecast_changed' && (ev.reason || 'alterou forecast')}
+                        {ev.action === 'title_changed' && 'alterou título'}
+                        {ev.action === 'portfolio_flag_changed' && (ev.reason || 'alterou flag portfólio')}
+                        {ev.action === 'activity_completed' && (ev.reason || 'concluiu atividade')}
+                        {ev.action === 'activity_reopened' && (ev.reason || 'reabriu atividade')}
+                        {ev.action === 'activity_assigned' && (ev.reason || 'atribuiu atividade')}
+                        {!['status_change', 'created', 'assigned', 'archived', 'moved_out', 'moved_in', 'submitted_for_curation', 'reviewer_assigned', 'curation_review', 'curation_approved', 'forecast_update', 'actual_completion', 'mirror_created', 'baseline_set', 'baseline_locked', 'baseline_changed', 'forecast_changed', 'title_changed', 'portfolio_flag_changed', 'activity_completed', 'activity_reopened', 'activity_assigned'].includes(ev.action) && ev.action}
+                        {ev.reason && !['assigned', 'baseline_set', 'baseline_locked', 'baseline_changed', 'forecast_changed', 'portfolio_flag_changed', 'activity_completed', 'activity_reopened', 'activity_assigned'].includes(ev.action) && <span className="text-[var(--text-muted)] ml-1">— {ev.reason}</span>}
                       </span>
                     </div>
                   ))}
@@ -890,25 +911,93 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
               )}
             </div>
 
+            {/* Portfolio flag (D17-D19) */}
+            <div className="flex items-center gap-2">
+              <input type="checkbox"
+                checked={!!item.is_portfolio_item}
+                onChange={async (e) => {
+                  await onUpdate({ is_portfolio_item: e.target.checked });
+                }}
+                disabled={!canEditPortfolioFlag}
+                className="w-3.5 h-3.5 rounded accent-amber-600 cursor-pointer" />
+              <span className="text-[10px] font-semibold text-[var(--text-secondary)]">
+                📊 Entregável reportável (Portfólio)
+              </span>
+            </div>
+
             {/* PMBOK Dates */}
             <div>
               <label className="text-[10px] font-semibold text-[var(--text-secondary)] mb-1 block uppercase tracking-wide">Datas</label>
               <div className="space-y-2">
                 <div>
-                  <span className="text-[9px] text-[var(--text-muted)] block mb-0.5">Baseline (pactuada)</span>
-                  <input type="date" value={baselineDate}
-                    onChange={(e) => { setBaselineDate(e.target.value); if (!forecastDate) setForecastDate(e.target.value); setDirty(true); }}
-                    disabled={!canEdit || (!!item.baseline_date && !permissions.canEditAny)}
-                    className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1 text-[11px] bg-[var(--surface-card)]
-                      outline-none focus:border-blue-400 disabled:opacity-60" />
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="text-[9px] text-[var(--text-muted)]">Baseline (pactuada)</span>
+                    {item.baseline_locked_at ? (
+                      <span className="text-[9px] text-amber-600 font-bold" title={`Locked em ${new Date(item.baseline_locked_at).toLocaleDateString('pt-BR')}`}>🔒</span>
+                    ) : baselineDate ? (
+                      (() => {
+                        const daysSince = Math.round((Date.now() - new Date(baselineDate).getTime()) / 86400000);
+                        const remaining = 7 - daysSince;
+                        return remaining > 0
+                          ? <span className="text-[9px] text-blue-500 font-medium">🔓 ({remaining}d restantes)</span>
+                          : <span className="text-[9px] text-amber-500 font-medium">🔒 auto-lock no próximo save</span>;
+                      })()
+                    ) : null}
+                  </div>
+                  {item.baseline_locked_at && !showBaselineModal ? (
+                    <div>
+                      <input type="date" value={baselineDate} disabled
+                        className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1 text-[11px] bg-gray-100
+                          outline-none opacity-60 cursor-not-allowed" />
+                      {canUnlockBaseline && (
+                        <button onClick={() => { setNewBaselineDate(baselineDate); setBaselineReason(''); setShowBaselineModal(true); }}
+                          className="mt-1 text-[10px] text-amber-600 font-semibold cursor-pointer bg-transparent border-0 hover:underline">
+                          🔓 Alterar baseline
+                        </button>
+                      )}
+                    </div>
+                  ) : showBaselineModal ? (
+                    <div className="bg-amber-50 rounded-lg p-2 border border-amber-200 space-y-1.5">
+                      <input type="date" value={newBaselineDate}
+                        onChange={(e) => setNewBaselineDate(e.target.value)}
+                        className="w-full rounded-lg border border-amber-300 px-2 py-1 text-[11px] bg-white outline-none focus:border-amber-500" />
+                      <textarea value={baselineReason}
+                        onChange={(e) => setBaselineReason(e.target.value)}
+                        placeholder="Razão da alteração (obrigatório)"
+                        rows={2}
+                        className="w-full rounded-lg border border-amber-300 px-2 py-1 text-[10px] bg-white outline-none focus:border-amber-500 resize-none" />
+                      <div className="flex gap-1.5">
+                        <button onClick={async () => {
+                          if (!baselineReason.trim()) { (window as any).toast?.('Razão obrigatória', 'error'); return; }
+                          await onUpdate({ baseline_date: newBaselineDate || null, reason: baselineReason });
+                          setBaselineDate(newBaselineDate);
+                          setShowBaselineModal(false);
+                          setDirty(false);
+                        }}
+                          className="px-2 py-1 rounded bg-amber-600 text-white text-[10px] font-bold cursor-pointer border-0 hover:bg-amber-700">
+                          Confirmar
+                        </button>
+                        <button onClick={() => setShowBaselineModal(false)}
+                          className="px-2 py-1 rounded border border-amber-300 text-amber-700 text-[10px] font-semibold cursor-pointer bg-transparent hover:bg-amber-100">
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <input type="date" value={baselineDate}
+                      onChange={(e) => { setBaselineDate(e.target.value); if (!forecastDate) setForecastDate(e.target.value); setDirty(true); }}
+                      disabled={!canEditBaseline}
+                      className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1 text-[11px] bg-[var(--surface-card)]
+                        outline-none focus:border-blue-400 disabled:opacity-60" />
+                  )}
                 </div>
                 <div>
                   <span className="text-[9px] text-[var(--text-muted)] block mb-0.5">Forecast (previsão)</span>
                   <input type="date" value={forecastDate}
                     onChange={(e) => { setForecastDate(e.target.value); setDirty(true); }}
-                    disabled={!canEdit}
+                    disabled={!canEditForecast}
                     className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1 text-[11px] bg-[var(--surface-card)]
-                      outline-none focus:border-blue-400" />
+                      outline-none focus:border-blue-400 disabled:opacity-60" />
                 </div>
                 {actualDate && (
                   <div>
