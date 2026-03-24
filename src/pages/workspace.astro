@@ -95,6 +95,16 @@ const WK = {
       <LoadingSkeleton variant="card" count={3} />
     </div>
 
+    <!-- Observer Banner -->
+    <div id="wk-observer-banner" class="hidden rounded-2xl border border-amber-200 bg-amber-50 p-5 mb-6">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="text-2xl">👁</span>
+        <h2 class="text-base font-bold text-amber-800">Modo Observer</h2>
+      </div>
+      <p class="text-sm text-amber-700 mb-2">Você está acompanhando o Núcleo de forma passiva. Acesse o blog, recursos e gravações livremente.</p>
+      <p class="text-xs text-amber-600">Quer voltar a participar activamente? Fale com o GP.</p>
+    </div>
+
     <!-- Main content (hidden until loaded) -->
     <div id="wk-content" class="hidden space-y-8">
 
@@ -751,6 +761,10 @@ const WK = {
 
       // ── Done: show content ──
       $loading.classList.add('hidden');
+      // Observer mode: show banner, hide main operational content
+      if (member?.member_status === 'observer') {
+        document.getElementById('wk-observer-banner')?.classList.remove('hidden');
+      }
       $content.classList.remove('hidden');
       try { if ((window as any).posthog) (window as any).posthog.capture('workspace_visited', { tribe_id: member?.tribe_id || null }); } catch {}
       } // end loadWorkspaceData

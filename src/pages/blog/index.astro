@@ -26,7 +26,7 @@ const langKey = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
     if (!sb) { setTimeout(loadBlog, 200); return; }
 
     const { data, error } = await sb.from('blog_posts')
-      .select('slug, title, excerpt, category, tags, published_at, is_featured, cover_image_url')
+      .select('slug, title, excerpt, category, tags, published_at, is_featured, cover_image_url, view_count')
       .eq('status', 'published')
       .order('published_at', { ascending: false });
 
@@ -53,6 +53,7 @@ const langKey = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
         <div class="flex items-center gap-3 text-xs text-[var(--fg-muted)]">
           <span>${date}</span>
           <span class="px-2 py-0.5 rounded ${catBadge}">${p.category}</span>
+          ${p.view_count ? '<span>' + p.view_count + ' views</span>' : ''}
           ${(p.tags || []).map(t => '<span class="px-2 py-0.5 rounded bg-[var(--surface-hover)]">' + t + '</span>').join('')}
         </div>
       </a>`;
