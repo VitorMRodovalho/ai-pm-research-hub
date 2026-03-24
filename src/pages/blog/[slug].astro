@@ -26,6 +26,10 @@ const { slug } = Astro.params;
         <span id="post-category" class="px-2 py-0.5 rounded bg-[var(--surface-hover)]"></span>
         <span id="post-author" class="text-[var(--fg)]"></span>
         <span id="post-views" class="text-[var(--fg-muted)]"></span>
+        <button id="post-like-btn" class="hidden flex items-center gap-1 text-sm cursor-pointer bg-transparent border-0 hover:scale-110 transition-transform">
+          <span id="post-like-icon">🤍</span>
+          <span id="post-like-count" class="text-[var(--fg-muted)]">0</span>
+        </button>
       </div>
       <div id="post-body" class="prose prose-invert max-w-none
         [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-[var(--fg)] [&_h1]:mt-8 [&_h1]:mb-4
@@ -86,6 +90,43 @@ const { slug } = Astro.params;
 
     // Update page title
     document.title = (data.title?.[langKey] || data.title?.pt || 'Blog') + ' | Nucleo IA & GP';
+
+    // Like button
+    const likeBtn = document.getElementById('post-like-btn');
+    const likeIcon = document.getElementById('post-like-icon');
+    const likeCount = document.getElementById('post-like-count');
+    if (likeBtn && data.id) {
+      likeBtn.classList.remove('hidden');
+      let currentLiked = false;
+      let currentCount = data.like_count || 0;
+
+      // Load like state
+      const { data: likeData } = await sb.rpc('get_blog_post_likes', { p_post_id: data.id });
+      if (likeData) {
+        currentLiked = likeData.liked || false;
+        currentCount = likeData.like_count || 0;
+      }
+      if (likeIcon) likeIcon.textContent = currentLiked ? '❤️' : '🤍';
+      if (likeCount) likeCount.textContent = String(currentCount);
+
+      likeBtn.addEventListener('click', async () => {
+        const member = window.navGetMember?.();
+        if (!member) { document.dispatchEvent(new CustomEvent('open-auth')); return; }
+        // Optimistic update
+        currentLiked = !currentLiked;
+        currentCount += currentLiked ? 1 : -1;
+        if (likeIcon) likeIcon.textContent = currentLiked ? '❤️' : '🤍';
+        if (likeCount) likeCount.textContent = String(currentCount);
+        // RPC
+        const { data: toggleData } = await sb.rpc('toggle_blog_like', { p_post_id: data.id });
+        if (toggleData) {
+          currentLiked = toggleData.liked;
+          currentCount = toggleData.like_count;
+          if (likeIcon) likeIcon.textContent = currentLiked ? '❤️' : '🤍';
+          if (likeCount) likeCount.textContent = String(currentCount);
+        }
+      });
+    }
   }
   loadPost();
 </script>
