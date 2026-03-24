@@ -13,6 +13,7 @@ interface MemberRow {
   designations: string[];
   is_superadmin: boolean;
   is_active: boolean;
+  member_status: string;
   tribe_id: number | null;
   tribe_name: string | null;
   chapter: string;
@@ -20,6 +21,8 @@ interface MemberRow {
   last_seen_at: string | null;
   total_sessions: number;
   credly_username: string | null;
+  offboarded_at: string | null;
+  status_change_reason: string | null;
 }
 
 // NOTE: OPROLE_LABELS and DESIG_LABELS are module-scope constants with Portuguese strings;
@@ -132,12 +135,38 @@ export default function MemberListIsland() {
     return () => clearTimeout(timer);
   }, [search, tierFilter, tribeFilter, statusFilter]);
 
-  // Stats
-  const total = members.length;
-  const active = members.filter(m => m.is_active).length;
-  const inactive = total - active;
-  const noAuth = members.filter(m => !m.auth_id).length;
-  const noTribe = members.filter(m => !m.tribe_id && m.is_active).length;
+  // Stats (always fetch 'all' for accurate counts)
+  const [allMembers, setAllMembers] = useState<MemberRow[]>([]);
+  useEffect(() => {
+    (async () => {
+      const sb = getSb(); if (!sb) return;
+      const { data } = await sb.rpc('admin_list_members', { p_status: 'all' });
+      if (data) setAllMembers(data);
+    })();
+  }, [members, getSb]);
+  const total = allMembers.length || members.length;
+  const active = allMembers.filter(m => m.member_status === 'active').length;
+  const observers = allMembers.filter(m => m.member_status === 'observer').length;
+  const alumni = allMembers.filter(m => m.member_status === 'alumni').length;
+  const noAuth = allMembers.filter(m => !m.auth_id).length;
+  const noTribe = allMembers.filter(m => !m.tribe_id && m.member_status === 'active').length;
+
+  // History modal state
+  const [historyMemberId, setHistoryMemberId] = useState<string | null>(null);
+  const [historyMemberName, setHistoryMemberName] = useState('');
+  const [transitions, setTransitions] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const openHistory = async (m: MemberRow) => {
+    setHistoryMemberId(m.id);
+    setHistoryMemberName(m.full_name);
+    setHistoryLoading(true);
+    setTransitions([]);
+    const sb = getSb(); if (!sb) return;
+    const { data } = await sb.rpc('get_member_transitions', { p_member_id: m.id });
+    if (data?.transitions) setTransitions(data.transitions);
+    setHistoryLoading(false);
+  };
 
   // Unique tribes for filter
   const tribes = [...new Map(members.filter(m => m.tribe_id).map(m => [m.tribe_id, m.tribe_name])).entries()]
@@ -281,11 +310,12 @@ export default function MemberListIsland() {
   return (
     <div className="max-w-[1200px] mx-auto">
       {/* Stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-6">
         {[
           { label: t('comp.memberList.total', 'Total'), value: total, icon: <Users size={16} /> },
           { label: t('comp.memberList.active', 'Ativos'), value: active, color: 'text-emerald-500' },
-          { label: t('comp.memberList.inactive', 'Inativos'), value: inactive, color: 'text-red-400' },
+          { label: 'Observers', value: observers, color: 'text-blue-500' },
+          { label: 'Alumni', value: alumni, color: 'text-slate-500' },
           { label: t('comp.memberList.noTribe', 'Sem tribo'), value: noTribe, color: 'text-amber-500' },
           { label: t('comp.memberList.noLogin', 'Sem login'), value: noAuth, color: 'text-slate-400' },
         ].map(s => (
@@ -405,11 +435,20 @@ export default function MemberListIsland() {
                     {m.tribe_name ? <span className="text-[.75rem]">T{String(m.tribe_id).padStart(2, '0')} {m.tribe_name}</span> : <span className="text-[var(--text-muted)]">—</span>}
                   </td>
                   <td className="px-3 py-2 text-[var(--text-secondary)] text-[.8rem]">{m.chapter || '—'}</td>
-                  <td className="px-3 py-2 text-center">{m.is_active ? '🟢' : '🔴'}</td>
-                  <td className="px-3 py-2 text-[var(--text-muted)] text-[.8rem]">{m.last_seen_at ? timeAgo(m.last_seen_at) : '—'}</td>
                   <td className="px-3 py-2 text-center">
+                    {m.member_status === 'active' && '🟢'}
+                    {m.member_status === 'observer' && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold">👁 Observer</span>}
+                    {m.member_status === 'alumni' && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 font-semibold">🎓 Alumni</span>}
+                    {m.member_status === 'inactive' && '🔴'}
+                    {!m.member_status && (m.is_active ? '🟢' : '🔴')}
+                  </td>
+                  <td className="px-3 py-2 text-[var(--text-muted)] text-[.8rem]">{m.last_seen_at ? timeAgo(m.last_seen_at) : '—'}</td>
+                  <td className="px-3 py-2 text-center whitespace-nowrap">
                     <button onClick={() => openEdit(m)} className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-muted)] bg-transparent border-0 cursor-pointer" title={t('comp.memberList.edit', 'Editar')}>
                       <Edit2 size={14} />
+                    </button>
+                    <button onClick={() => openHistory(m)} className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] text-[var(--text-muted)] bg-transparent border-0 cursor-pointer" title="Histórico">
+                      📋
                     </button>
                   </td>
                 </tr>
@@ -574,6 +613,50 @@ export default function MemberListIsland() {
           </div>
         </div>
       )}
+      {/* History Modal */}
+      {historyMemberId && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={() => setHistoryMemberId(null)}>
+          <div className="bg-[var(--surface-card)] rounded-2xl w-full max-w-[480px] overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-[var(--border-default)] flex justify-between items-center">
+              <h3 className="text-base font-bold text-[var(--text-primary)]">Histórico — {historyMemberName}</h3>
+              <button onClick={() => setHistoryMemberId(null)} className="bg-transparent border-0 text-xl cursor-pointer text-[var(--text-muted)]"><X size={18} /></button>
+            </div>
+            <div className="p-5 max-h-[400px] overflow-y-auto">
+              {historyLoading ? (
+                <p className="text-sm text-[var(--text-muted)]">Carregando...</p>
+              ) : transitions.length === 0 ? (
+                <p className="text-sm text-[var(--text-muted)]">Nenhuma movimentação registrada.</p>
+              ) : (
+                <div className="space-y-3">
+                  {transitions.map((tr: any) => {
+                    const icon = tr.new_status === 'observer' ? '👁' : tr.new_status === 'alumni' ? '🎓' : tr.new_status === 'inactive' ? '⏸' : tr.new_status === 'active' && tr.previous_status !== 'active' ? '🔄' : tr.new_tribe_id ? '🔀' : '📝';
+                    const d = new Date(tr.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+                    return (
+                      <div key={tr.id} className="flex gap-2 text-[12px]">
+                        <span className="text-base">{icon}</span>
+                        <div className="flex-1">
+                          <div className="text-[10px] text-[var(--text-muted)]">{d} — {tr.actor_name || 'Sistema'}</div>
+                          <div className="font-semibold text-[var(--text-primary)]">
+                            {tr.previous_status} → {tr.new_status}
+                            {tr.reason_category && <span className="text-[var(--text-muted)] font-normal ml-1">({tr.reason_category})</span>}
+                          </div>
+                          {tr.previous_tribe_id && tr.new_tribe_id && (
+                            <div className="text-[var(--text-secondary)]">T{tr.previous_tribe_id} → T{tr.new_tribe_id}</div>
+                          )}
+                          {tr.reason_detail && (
+                            <div className="text-[var(--text-muted)] mt-0.5">"{tr.reason_detail}"</div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Offboarding Modal */}
       {offboardMember && (
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={() => setOffboardMember(null)}>
