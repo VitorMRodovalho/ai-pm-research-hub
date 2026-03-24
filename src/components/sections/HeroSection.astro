@@ -125,6 +125,8 @@ const recurringMeeting = `${t('hero.recurringMeetingPrefix', lang)} · ${recurri
         <span class="text-[.78rem] text-white/60" id="cycle-tribe-count"></span>
         <span class="text-white/20">|</span>
         <span class="text-[.78rem] text-white/60" id="cycle-member-count"></span>
+        <span class="text-white/20 hidden" id="cycle-observer-sep">|</span>
+        <span class="text-[.78rem] text-white/60 hidden" id="cycle-observer-count"></span>
       </div>
     </div>
 
@@ -317,6 +319,14 @@ const recurringMeeting = `${t('hero.recurringMeetingPrefix', lang)} · ${recurri
       const membersEl = document.getElementById('cycle-member-count');
       if (tribesEl) tribesEl.textContent = (tribeCount || 0) + ' ' + (hi18n.cycleTribes || 'tribos ativas');
       if (membersEl) membersEl.textContent = (memberCount || 0) + ' ' + (hi18n.cycleMembers || 'pesquisadores');
+      // Observer count
+      const { count: observerCount } = await sb.from('public_members').select('id', { count: 'exact', head: true }).eq('member_status', 'observer');
+      if (observerCount && observerCount > 0) {
+        const obsEl = document.getElementById('cycle-observer-count');
+        const obsSep = document.getElementById('cycle-observer-sep');
+        if (obsEl) { obsEl.textContent = observerCount + ' observers'; obsEl.classList.remove('hidden'); }
+        if (obsSep) obsSep.classList.remove('hidden');
+      }
     } catch (e) { console.warn('cycle status:', e); }
   }
 

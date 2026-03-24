@@ -780,7 +780,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   }
 
   // ── Members tab ──
-  function renderMembers(members: any[]) {
+  async function renderMembers(members: any[]) {
     const el = document.getElementById('panel-members');
     if (!el) return;
 
@@ -793,7 +793,29 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       return;
     }
 
-    el.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">${members.map(memberCardHtml).join('')}</div>`;
+    let html = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">${members.map(memberCardHtml).join('')}</div>`;
+
+    // Fetch observers for this tribe
+    try {
+      const sb = getSb();
+      if (sb) {
+        const { data: observers } = await sb.from('public_members')
+          .select('id, name, photo_url, chapter, operational_role, member_status')
+          .eq('tribe_id', TRIBE_ID)
+          .eq('member_status', 'observer');
+        if (observers && observers.length > 0) {
+          html += `<div class="mt-6 pt-4 border-t border-[var(--border-subtle)]">
+            <h3 class="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-3">👁 Observadores (${observers.length})</h3>
+            <div class="flex flex-wrap gap-3">${observers.map((o: any) => `<div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface-base)] border border-[var(--border-subtle)]">
+              <span class="text-xs text-[var(--text-secondary)]">${escapeHtml(o.name)}</span>
+              <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-600 font-semibold">Observer</span>
+            </div>`).join('')}</div>
+          </div>`;
+        }
+      }
+    } catch (_) { /* non-critical */ }
+
+    el.innerHTML = html;
   }
 
   function memberCardHtml(m: any): string {
@@ -1527,9 +1549,17 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         showDenied(I18N.notFound || 'Tribo não encontrada.');
         return;
       }
-      if (!canSeeInactiveTribes(currentMember) && tribeData.is_active === false) {
-        showDenied('Esta tribo está inativa e visível apenas para Superadmin.');
-        return;
+      if (tribeData.is_active === false) {
+        if (!canSeeInactiveTribes(currentMember)) {
+          showDenied('Esta linha de pesquisa está inativa neste ciclo. Os dados históricos são preservados.');
+          return;
+        }
+        // Superadmin can see but show banner
+        const bannerEl = document.createElement('div');
+        bannerEl.className = 'rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 mb-4 text-sm text-amber-800';
+        bannerEl.innerHTML = '⚠️ <strong>Tribo inativa</strong> — Esta linha de pesquisa está inativa desde Março/2026. Dados históricos preservados.';
+        const content = document.getElementById('tribe-content');
+        if (content) content.prepend(bannerEl);
       }
 
       // Find tribe leader
