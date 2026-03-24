@@ -33,7 +33,7 @@ export interface ResolvedTribe {
   videoDuration: string;
 }
 
-export const MAX_SLOTS = 6;
+export const MAX_SLOTS = 10;
 export const MIN_SLOTS = 3;
 
 export const TRIBES: Tribe[] = [
