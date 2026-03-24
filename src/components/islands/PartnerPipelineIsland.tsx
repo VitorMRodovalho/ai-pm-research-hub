@@ -257,10 +257,15 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
     const sb = getSb(); if (!sb) return;
     try {
       const { data: d } = await sb.rpc('get_partner_entity_attachments', { p_entity_id: partnerId });
-      if (d?.attachments) setAttachments(d.attachments);
-      else setAttachments([]);
+      // RPC returns jsonb — may be array directly or {attachments: [...]}
+      const arr = Array.isArray(d) ? d : d?.attachments ? d.attachments : [];
+      setAttachments(arr);
     } catch { setAttachments([]); }
   }, [getSb]);
+
+  function sanitizeStoragePath(name: string): string {
+    return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_+/g, '_');
+  }
 
   const handleUploadAttachment = useCallback(async (file: File) => {
     if (!selected) return;
@@ -268,7 +273,8 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
     const sb = getSb(); if (!sb) return;
     setUploading(true);
     try {
-      const filePath = `${selected.id}/${Date.now()}_${file.name}`;
+      const safeName = sanitizeStoragePath(file.name);
+      const filePath = `${selected.id}/${Date.now()}_${safeName}`;
       const { error: uploadErr } = await sb.storage.from('partner-attachments').upload(filePath, file);
       if (uploadErr) throw uploadErr;
       const { data: result, error: rpcErr } = await sb.rpc('add_partner_attachment', {
