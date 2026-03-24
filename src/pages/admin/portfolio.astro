@@ -1,6 +1,7 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import PortfolioDashboard from '../../components/portfolio/PortfolioDashboard';
+import PlannedVsActualSection from '../../components/portfolio/PlannedVsActualSection';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname);
 ---
@@ -12,6 +13,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       <h2 class="text-lg font-extrabold text-navy mb-1">{t('portfolio.title', lang)}</h2>
       <p class="text-xs text-[var(--text-secondary)] mb-4">{t('portfolio.subtitle', lang)}</p>
       <PortfolioDashboard client:load />
+    </section>
+
+    <!-- Planned vs Actual -->
+    <section class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
+      <h2 class="text-lg font-extrabold text-navy mb-1">Planejado × Realizado</h2>
+      <p class="text-xs text-[var(--text-secondary)] mb-4">Performance por tribo — entregáveis planejados vs concluídos, SPI e desvio médio.</p>
+      <PlannedVsActualSection client:load />
     </section>
 
     <div id="portfolio-loading" class="text-[var(--text-muted)] text-sm">{t('portfolio.loading', lang)}</div>
