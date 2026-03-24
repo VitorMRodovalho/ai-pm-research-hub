@@ -141,11 +141,26 @@ export default function MemberPickerMulti({ members, assignments, onAdd, onRemov
                   ))}
                 </div>
               </div>
+              {/* Helper text */}
+              <div className="px-2 py-1 text-[10px] text-[var(--text-muted)]">
+                Selecione para adicionar como <strong className={ROLE_LABELS[selectedRole].color}>{getRoleLabel(selectedRole, i18n)}</strong>
+              </div>
               <Command.List className="max-h-[180px] overflow-y-auto px-1 pb-1">
                 {members
                   .filter((m) => !search || m.name.toLowerCase().includes(search.toLowerCase()))
+                  .filter((m) => {
+                    // FIX 1: Curador tab only shows curators
+                    if (selectedRole === 'curation_reviewer') {
+                      return m.designations?.includes('curator');
+                    }
+                    return true;
+                  })
                   .map((m) => {
                     const isAssigned = assignedIds.has(`${m.id}:${selectedRole}`);
+                    // FIX 3: Check for cross-role assignment
+                    const existingOtherRole = assignments.find(
+                      (a) => a.member_id === m.id && a.role !== selectedRole
+                    );
                     return (
                       <Command.Item
                         key={m.id}
@@ -157,7 +172,7 @@ export default function MemberPickerMulti({ members, assignments, onAdd, onRemov
                         }}
                         className={`flex items-center gap-2 px-2 py-1.5 text-[12px] rounded-md cursor-pointer
                           data-[selected=true]:bg-[var(--surface-hover)]
-                          ${isAssigned ? 'opacity-40' : ''}`}
+                          ${isAssigned ? 'opacity-40 pointer-events-none' : ''}`}
                       >
                         {m.avatar_url ? (
                           <img src={m.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover flex-shrink-0" />
@@ -168,10 +183,18 @@ export default function MemberPickerMulti({ members, assignments, onAdd, onRemov
                         )}
                         <span className="text-[var(--text-primary)] truncate">{m.name}</span>
                         {isAssigned && <span className="ml-auto text-teal text-[10px]">✓</span>}
+                        {existingOtherRole && !isAssigned && (
+                          <span className={`ml-auto text-[8px] px-1 py-0.5 rounded ${ROLE_LABELS[existingOtherRole.role as AssignmentRole]?.bgColor || 'bg-gray-100'} ${ROLE_LABELS[existingOtherRole.role as AssignmentRole]?.color || 'text-gray-600'}`}>
+                            {getRoleLabel(existingOtherRole.role as AssignmentRole, i18n)}
+                          </span>
+                        )}
                       </Command.Item>
                     );
                   })}
-                {members.filter((m) => !search || m.name.toLowerCase().includes(search.toLowerCase())).length === 0 && (
+                {members
+                  .filter((m) => !search || m.name.toLowerCase().includes(search.toLowerCase()))
+                  .filter((m) => selectedRole !== 'curation_reviewer' || m.designations?.includes('curator'))
+                  .length === 0 && (
                   <div className="px-2 py-3 text-center text-[11px] text-[var(--text-muted)]">Nenhum membro encontrado</div>
                 )}
               </Command.List>

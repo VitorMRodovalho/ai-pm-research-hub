@@ -520,7 +520,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                             onChange={(e) => assignCheckItem(ci.id!, e.target.value, ci.target_date || undefined)}
                             className="rounded border border-[var(--border-default)] px-1.5 py-0.5 text-[10px] bg-[var(--surface-card)] outline-none">
                             <option value="">— Responsável —</option>
-                            {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                            {members.filter(m => !m.board_role || ['tribe_member', 'admin', 'editor'].includes(m.board_role)).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                           </select>
                         ) : ci.assigned_to ? (
                           <span className="text-[10px] text-[var(--text-secondary)]">👤 {members.find(m => m.id === ci.assigned_to)?.name || 'Membro'}</span>

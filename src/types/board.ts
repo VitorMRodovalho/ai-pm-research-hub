@@ -139,6 +139,8 @@ export interface BoardMember {
   name: string;
   avatar_url: string | null;
   operational_role: string;
+  board_role?: string;
+  designations?: string[];
 }
 
 // ─── Board Summary (for selectors) ──────────────────────────────────────────
