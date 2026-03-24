@@ -26,7 +26,7 @@ const langKey = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
     if (!sb) { setTimeout(loadBlog, 200); return; }
 
     const { data, error } = await sb.from('blog_posts')
-      .select('slug, title, excerpt, category, tags, published_at, is_featured, cover_image_url, view_count')
+      .select('id, slug, title, excerpt, category, tags, published_at, is_featured, cover_image_url, view_count, like_count')
       .eq('status', 'published')
       .order('published_at', { ascending: false });
 
@@ -54,10 +54,26 @@ const langKey = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
           <span>${date}</span>
           <span class="px-2 py-0.5 rounded ${catBadge}">${p.category}</span>
           ${p.view_count ? '<span>' + p.view_count + ' views</span>' : ''}
+          <span class="blog-like-badge" data-post-id="${p.id}" data-like-count="${p.like_count || 0}">🤍 ${p.like_count || 0}</span>
           ${(p.tags || []).map(t => '<span class="px-2 py-0.5 rounded bg-[var(--surface-hover)]">' + t + '</span>').join('')}
         </div>
       </a>`;
     }).join('');
+
+    // Batch load like status for logged-in user
+    const member = window.navGetMember?.();
+    if (member) {
+      const postIds = data.map(p => p.id);
+      const { data: likesData } = await sb.rpc('get_blog_likes_batch', { p_post_ids: postIds });
+      if (likesData && typeof likesData === 'object') {
+        Object.entries(likesData).forEach(([postId, info]) => {
+          const badge = container.querySelector(`[data-post-id="${postId}"]`);
+          if (badge && info && info.liked) {
+            badge.textContent = '❤️ ' + (info.like_count || 0);
+          }
+        });
+      }
+    }
   }
   loadBlog();
 </script>
