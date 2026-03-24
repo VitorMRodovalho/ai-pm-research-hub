@@ -820,6 +820,26 @@ const PROFILE_I18N = {
         </div>
       </div>
 
+      <!-- Card: Photo + Name -->
+      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="relative group">
+            <div id="self-avatar" class="w-16 h-16 rounded-full bg-teal/20 flex items-center justify-center text-teal text-lg font-bold overflow-hidden">
+              ${m.photo_url ? `<img src="${m.photo_url}" class="w-16 h-16 rounded-full object-cover" alt="">` : (m.name || '?').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()}
+            </div>
+            <label class="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
+              <span class="text-white text-[10px] font-semibold">📷</span>
+              <input type="file" id="self-photo-input" accept="image/jpeg,image/png" class="hidden">
+            </label>
+          </div>
+          <div class="flex-1">
+            <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Nome</label>
+            <input type="text" id="self-name" value="${m.name || ''}"
+              class="w-full px-3 py-2 border-[1.5px] border-[var(--border-default)] rounded-xl text-sm font-semibold focus:outline-none focus:border-teal">
+          </div>
+        </div>
+      </div>
+
       <!-- Card: Personal data -->
       <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
         <h2 class="text-sm font-bold text-navy mb-4">${PROFILE_I18N.personalDataTitle}</h2>
@@ -869,12 +889,25 @@ const PROFILE_I18N = {
             ` : ''}
           </div>
         </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+          <div>
+            <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Estado</label>
+            <input type="text" id="self-state" value="${m.state || ''}" placeholder="Ex: GO, SP, CE"
+              class="w-full px-3 py-2 border-[1.5px] border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:border-teal">
+          </div>
+          <div>
+            <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">País</label>
+            <input type="text" id="self-country" value="${m.country || ''}" placeholder="Ex: Brasil"
+              class="w-full px-3 py-2 border-[1.5px] border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:border-teal">
+          </div>
+        </div>
         <div class="mt-5 flex justify-end">
           <button data-action="save-self"
             class="px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all cursor-pointer border-0">
             ${PROFILE_I18N.saveChanges}
           </button>
         </div>
+        <p class="text-[.65rem] text-[var(--text-muted)] mt-2">🔒 Email, capítulo, papel e tribo são geridos pelo GP.</p>
       </div>
 
       <!-- Card: LGPD Data Export -->
@@ -963,6 +996,30 @@ const PROFILE_I18N = {
     input.type = input.type === 'password' ? 'text' : 'password';
   }
 
+  // ── Photo upload ──
+  document.getElementById('self-photo-input')?.addEventListener('change', async (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { (window as any).toast?.('Foto excede 2MB', 'error'); return; }
+    const sb = (window as any).navGetSb?.();
+    if (!sb || !currentMember) return;
+    try {
+      const sanitized = (currentMember.email || 'user').replace(/[@.]/g, '_');
+      const ext = file.type === 'image/png' ? 'png' : 'jpg';
+      const path = `avatars/${sanitized}.${ext}`;
+      const { error: uploadErr } = await sb.storage.from('member-photos').upload(path, file, { upsert: true });
+      if (uploadErr) throw uploadErr;
+      const { data: urlData } = sb.storage.from('member-photos').getPublicUrl(path);
+      const photoUrl = urlData.publicUrl + '?t=' + Date.now();
+      await sb.rpc('update_my_profile', { p_fields: { photo_url: photoUrl } });
+      const avatarEl = document.getElementById('self-avatar');
+      if (avatarEl) avatarEl.innerHTML = `<img src="${photoUrl}" class="w-16 h-16 rounded-full object-cover" alt="">`;
+      (window as any).toast?.('Foto atualizada!', 'success');
+    } catch (err: any) {
+      (window as any).toast?.(err.message || 'Erro ao enviar foto', 'error');
+    }
+  });
+
   // ── Save profile ──
   async function saveSelf() {
     const sb = (window as any).navGetSb?.();
@@ -983,13 +1040,41 @@ const PROFILE_I18N = {
       credlyToSave = currentMember.credly_url;
     }
     const shareWaEl = document.getElementById('self-share-wa') as HTMLInputElement | null;
-    const { data } = await sb.rpc('member_self_update', {
-      p_pmi_id: (document.getElementById('self-pmi') as HTMLInputElement)?.value.trim() || null,
-      p_phone: (document.getElementById('self-phone') as HTMLInputElement)?.value.trim() || null,
-      p_linkedin_url: (document.getElementById('self-li') as HTMLInputElement)?.value.trim() || null,
-      p_credly_url: credlyToSave,
-      p_share_whatsapp: shareWaEl?.checked ?? false,
-    });
+    const nameVal = (document.getElementById('self-name') as HTMLInputElement)?.value.trim();
+    if (nameVal && nameVal.length < 2) {
+      (window as any).toast?.('Nome precisa ter pelo menos 2 caracteres', 'error');
+      return;
+    }
+
+    // Try new RPC first, fallback to old
+    const fields: Record<string, any> = {};
+    if (nameVal && nameVal !== currentMember.name) fields.name = nameVal;
+    const phone = (document.getElementById('self-phone') as HTMLInputElement)?.value.trim() || null;
+    if (phone !== (currentMember.phone || null)) fields.phone = phone;
+    const li = (document.getElementById('self-li') as HTMLInputElement)?.value.trim() || null;
+    if (li !== (currentMember.linkedin_url || null)) fields.linkedin_url = li;
+    if (credlyToSave !== (currentMember.credly_url || null)) fields.credly_url = credlyToSave;
+    const pmiId = (document.getElementById('self-pmi') as HTMLInputElement)?.value.trim() || null;
+    if (pmiId !== (currentMember.pmi_id || null)) fields.pmi_id = pmiId;
+    const shareWa = shareWaEl?.checked ?? false;
+    if (shareWa !== currentMember.share_whatsapp) fields.share_whatsapp = shareWa;
+    const stateVal = (document.getElementById('self-state') as HTMLInputElement)?.value.trim() || null;
+    if (stateVal !== (currentMember.state || null)) fields.state = stateVal;
+    const countryVal = (document.getElementById('self-country') as HTMLInputElement)?.value.trim() || null;
+    if (countryVal !== (currentMember.country || null)) fields.country = countryVal;
+
+    let data: any;
+    if (Object.keys(fields).length > 0) {
+      const res = await sb.rpc('update_my_profile', { p_fields: fields });
+      data = res.data;
+    } else {
+      // No changes, but still call old RPC for backward compat
+      const res = await sb.rpc('member_self_update', {
+        p_pmi_id: pmiId, p_phone: phone, p_linkedin_url: li,
+        p_credly_url: credlyToSave, p_share_whatsapp: shareWa,
+      });
+      data = res.data;
+    }
     if (data?.error) (window as any).toast?.(data.error, 'error');
     else {
       (window as any).toast?.(PROFILE_I18N.dataSaved, 'success');
