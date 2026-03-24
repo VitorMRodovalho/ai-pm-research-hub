@@ -29,6 +29,17 @@ interface Interaction {
   created_at: string;
 }
 
+interface Attachment {
+  id: string;
+  file_name: string;
+  file_url: string;
+  file_size: number;
+  file_type: string;
+  description: string | null;
+  uploaded_by_name: string | null;
+  created_at: string;
+}
+
 interface StalePartner {
   id: string;
   name: string;
@@ -206,6 +217,8 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
   const [ixOutcome, setIxOutcome] = useState('');
   const [ixNext, setIxNext] = useState('');
   const [ixFollowUp, setIxFollowUp] = useState('');
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [advancingId, setAdvancingId] = useState<string | null>(null);
   const [advanceNote, setAdvanceNote] = useState('');
   const [showCreate, setShowCreate] = useState(false);
@@ -240,6 +253,57 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
     setIxLoading(false);
   }, [getSb]);
 
+  const loadAttachments = useCallback(async (partnerId: string) => {
+    const sb = getSb(); if (!sb) return;
+    try {
+      const { data: d } = await sb.rpc('get_partner_entity_attachments', { p_entity_id: partnerId });
+      if (d?.attachments) setAttachments(d.attachments);
+      else setAttachments([]);
+    } catch { setAttachments([]); }
+  }, [getSb]);
+
+  const handleUploadAttachment = useCallback(async (file: File) => {
+    if (!selected) return;
+    if (file.size > 5 * 1024 * 1024) { (window as any).toast?.('Arquivo excede 5MB', 'error'); return; }
+    const sb = getSb(); if (!sb) return;
+    setUploading(true);
+    try {
+      const filePath = `${selected.id}/${Date.now()}_${file.name}`;
+      const { error: uploadErr } = await sb.storage.from('partner-attachments').upload(filePath, file);
+      if (uploadErr) throw uploadErr;
+      const { data: result, error: rpcErr } = await sb.rpc('add_partner_attachment', {
+        p_entity_id: selected.id,
+        p_file_name: file.name,
+        p_file_url: filePath,
+        p_file_size: file.size,
+        p_file_type: file.type,
+      });
+      if (rpcErr || result?.error) throw new Error(result?.error || rpcErr?.message);
+      (window as any).toast?.('Documento anexado!', 'success');
+      loadAttachments(selected.id);
+    } catch (e: any) {
+      (window as any).toast?.(e.message || 'Erro ao anexar', 'error');
+    }
+    setUploading(false);
+  }, [selected, getSb, loadAttachments]);
+
+  const handleDeleteAttachment = useCallback(async (att: Attachment) => {
+    if (!confirm('Excluir anexo?')) return;
+    const sb = getSb(); if (!sb) return;
+    try {
+      await sb.storage.from('partner-attachments').remove([att.file_url]);
+      await sb.rpc('delete_partner_attachment', { p_attachment_id: att.id });
+      (window as any).toast?.('Anexo excluído', 'success');
+      if (selected) loadAttachments(selected.id);
+    } catch { (window as any).toast?.('Erro ao excluir', 'error'); }
+  }, [selected, getSb, loadAttachments]);
+
+  const handleDownloadAttachment = useCallback(async (att: Attachment) => {
+    const sb = getSb(); if (!sb) return;
+    const { data } = await sb.storage.from('partner-attachments').createSignedUrl(att.file_url, 3600);
+    if (data?.signedUrl) window.open(data.signedUrl);
+  }, [getSb]);
+
   const openDetail = useCallback((partner: Partner) => {
     setSelected(partner);
     setEditing(false);
@@ -253,7 +317,8 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
     setShowIxForm(false);
     setIxSummary(''); setIxOutcome(''); setIxNext(''); setIxFollowUp(''); setIxType('email');
     loadInteractions(partner.id);
-  }, [loadInteractions]);
+    loadAttachments(partner.id);
+  }, [loadInteractions, loadAttachments]);
 
   const handleAddInteraction = useCallback(async () => {
     if (!selected || !ixSummary.trim()) {
@@ -629,6 +694,32 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Attachments Section */}
+            <div className="mt-4 pt-3 border-t border-[var(--border-subtle)]">
+              <h3 className="text-xs font-bold text-[var(--text-secondary)] mb-2">📎 Documentos {attachments.length > 0 && `(${attachments.length})`}</h3>
+              {attachments.length > 0 && (
+                <div className="space-y-1.5 mb-2">
+                  {attachments.map((att) => (
+                    <div key={att.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-[var(--surface-section-cool)] text-[11px]">
+                      <span className="cursor-pointer hover:underline text-[var(--text-primary)] font-medium flex-1 truncate"
+                        onClick={() => handleDownloadAttachment(att)}>
+                        📄 {att.file_name}
+                      </span>
+                      <span className="text-[var(--text-muted)] text-[9px]">{Math.round(att.file_size / 1024)}KB</span>
+                      <button onClick={() => handleDeleteAttachment(att)}
+                        className="text-red-400 hover:text-red-600 bg-transparent border-0 cursor-pointer text-[10px]">🗑️</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <label className={`inline-flex items-center gap-1 text-[10px] text-teal font-semibold cursor-pointer ${uploading ? 'opacity-50' : ''}`}>
+                <input type="file" className="hidden" accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.pptx"
+                  disabled={uploading}
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUploadAttachment(f); e.target.value = ''; }} />
+                {uploading ? '...' : '+ Anexar documento'}
+              </label>
             </div>
 
             <div className="flex flex-wrap gap-2 mt-5 pt-3 border-t border-[var(--border-subtle)]">
