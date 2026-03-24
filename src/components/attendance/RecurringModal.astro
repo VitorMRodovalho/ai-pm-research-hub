@@ -40,10 +40,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
           <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.audience', lang)}</label>
           <select id="rec-audience"
                   class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)] focus:outline-none focus:border-navy">
-            <option value="all_active_operational">Todos os operacionais ativos</option>
+            <option value="all">Todos os operacionais ativos</option>
             <option value="tribe">Tribo específica</option>
-            <option value="role">Por papel (liderança)</option>
-            <option value="specific_members">Membros específicos</option>
+            <option value="leadership">Por papel (liderança)</option>
+            <option value="curators">Curadores</option>
           </select>
         </div>
         <div class="flex flex-col gap-1.5">

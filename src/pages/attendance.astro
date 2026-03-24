@@ -1020,12 +1020,12 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
       if (primaryTag) {
         const audienceMap: Record<string, string> = {
           tribe_meeting: 'tribe',
-          general_meeting: 'all_active_operational',
-          webinar: 'all_active_operational',
-          kickoff: 'all_active_operational',
-          leadership_meeting: 'role',
-          interview: 'specific_members',
-          external_event: 'all_active_operational',
+          general_meeting: 'all',
+          webinar: 'all',
+          kickoff: 'all',
+          leadership_meeting: 'leadership',
+          interview: 'curators',
+          external_event: 'all',
         };
         const mapped = audienceMap[primaryTag.name];
         if (mapped) (document.getElementById(audienceId) as HTMLSelectElement).value = mapped;
@@ -1073,8 +1073,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
   // ── AUDIENCE HELPER (legacy) ──
   function updateAudienceFromType(audienceId: string, typeId: string) {
     const type = (document.getElementById(typeId) as HTMLSelectElement).value;
-    const map: Record<string, string> = { tribe_meeting: 'tribe', general_meeting: 'all_active_operational', webinar: 'all_active_operational', other: 'all_active_operational' };
-    (document.getElementById(audienceId) as HTMLSelectElement).value = map[type] || 'all_active_operational';
+    const map: Record<string, string> = { tribe_meeting: 'tribe', general_meeting: 'all', webinar: 'all', other: 'all' };
+    (document.getElementById(audienceId) as HTMLSelectElement).value = map[type] || 'all';
   }
 
   // ── NEW EVENT ──
@@ -1200,7 +1200,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
         p_meeting_link: link,
         p_tribe_id: type === 'tribe_meeting' ? MEMBER.tribe_id : null,
         p_is_recorded: recorded,
-        p_audience_level: audience === 'all_active_operational' ? 'all' : audience
+        p_audience_level: audience
       });
       if (error) throw error;
       if (data?.success) {
@@ -1274,10 +1274,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
     (document.getElementById('edit-ev-visibility') as HTMLSelectElement).value = ev.visibility || 'public';
     (document.getElementById('edit-ev-recording-url') as HTMLInputElement).value = ev.recording_url || '';
     (document.getElementById('edit-ev-external-attendees') as HTMLInputElement).value = ev.external_attendees || '';
-    // W140: map legacy audience_level to new audience values
-    const legacyMap: Record<string, string> = { all: 'all_active_operational', leadership: 'role', tribe: 'tribe', curators: 'specific_members' };
-    const mappedAudience = legacyMap[ev.audience_level] || ev.audience_level || 'all_active_operational';
-    (document.getElementById('edit-ev-audience') as HTMLSelectElement).value = mappedAudience;
+    // audience_level values now match DB constraint directly (all, leadership, tribe, curators)
+    (document.getElementById('edit-ev-audience') as HTMLSelectElement).value = ev.audience_level || 'all';
     // W140: load event tags
     try {
       const { data: tagData } = await sb.rpc('get_event_tags', { p_event_id: ev.id });
@@ -1312,7 +1310,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
         p_event_id: id, p_title: title, p_date: date,
         p_duration_minutes: duration, p_meeting_link: link,
         p_youtube_url: youtube, p_is_recorded: recorded,
-        p_audience_level: audience === 'all_active_operational' ? 'all' : audience
+        p_audience_level: audience
       });
       if (error) throw error;
       if (data?.success) {
