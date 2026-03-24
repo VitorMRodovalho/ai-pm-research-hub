@@ -88,6 +88,14 @@ export default function MemberListIsland() {
   const [editActive, setEditActive] = useState(true);
   const [editSuperadmin, setEditSuperadmin] = useState(false);
 
+  // Offboarding state
+  const [offboardMember, setOffboardMember] = useState<MemberRow | null>(null);
+  const [offboardStatus, setOffboardStatus] = useState('observer');
+  const [offboardCategory, setOffboardCategory] = useState('time');
+  const [offboardDetail, setOffboardDetail] = useState('');
+  const [offboardReassign, setOffboardReassign] = useState('');
+  const [offboardSaving, setOffboardSaving] = useState(false);
+
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
 
   const fetchMembers = useCallback(async () => {
@@ -171,6 +179,46 @@ export default function MemberListIsland() {
       (window as any).toast?.(error.message || t('comp.memberList.saveError', 'Erro ao salvar'), 'error');
     }
     setSaving(false);
+  };
+
+  const handleOffboard = async () => {
+    if (!offboardMember) return;
+    const sb = getSb();
+    if (!sb) return;
+    setOffboardSaving(true);
+    const { data, error } = await sb.rpc('admin_offboard_member', {
+      p_member_id: offboardMember.id,
+      p_new_status: offboardStatus,
+      p_reason_category: offboardCategory,
+      p_reason_detail: offboardDetail || null,
+      p_reassign_to: offboardReassign || null,
+    });
+    setOffboardSaving(false);
+    if (error || data?.error) {
+      (window as any).toast?.(data?.error || error?.message || 'Erro', 'error');
+      return;
+    }
+    (window as any).toast?.(`${offboardMember.full_name} → ${offboardStatus}`, 'success');
+    setOffboardMember(null);
+    await fetchMembers();
+  };
+
+  const handleReactivate = async (member: MemberRow) => {
+    const sb = getSb();
+    if (!sb) return;
+    const tribeId = prompt('Tribe ID para reactivação (1-8):');
+    if (!tribeId) return;
+    const { data, error } = await sb.rpc('admin_reactivate_member', {
+      p_member_id: member.id,
+      p_tribe_id: parseInt(tribeId, 10),
+      p_role: 'researcher',
+    });
+    if (error || data?.error) {
+      (window as any).toast?.(data?.error || error?.message || 'Erro', 'error');
+      return;
+    }
+    (window as any).toast?.(`${member.full_name} reactivado!`, 'success');
+    await fetchMembers();
   };
 
   const toggleDesig = (d: string) => {
@@ -273,6 +321,8 @@ export default function MemberListIsland() {
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
           className="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)]">
           <option value="active">{t('comp.memberList.active', 'Ativos')}</option>
+          <option value="observer">Observer</option>
+          <option value="alumni">Alumni</option>
           <option value="inactive">{t('comp.memberList.inactive', 'Inativos')}</option>
           <option value="all">{t('comp.memberList.all', 'Todos')}</option>
         </select>
@@ -441,11 +491,26 @@ export default function MemberListIsland() {
                 </div>
               </div>
             </div>
-            <div className="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2 flex-shrink-0">
-              <button onClick={closeEdit} className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer">{t('comp.memberList.cancel', 'Cancelar')}</button>
-              <button onClick={saveEdit} disabled={saving} className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-teal-600 text-white border-0 hover:bg-teal-700 cursor-pointer disabled:opacity-50">
-                {saving ? t('comp.memberList.saving', 'Salvando...') : t('comp.memberList.save', 'Salvar')}
-              </button>
+            <div className="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-between gap-2 flex-shrink-0">
+              <div className="flex gap-2">
+                {editMember.is_active ? (
+                  <button onClick={() => { setOffboardMember(editMember); setOffboardStatus('observer'); setOffboardCategory('time'); setOffboardDetail(''); setOffboardReassign(''); closeEdit(); }}
+                    className="px-3 py-2 rounded-lg text-[12px] font-semibold border border-amber-300 text-amber-700 bg-transparent hover:bg-amber-50 cursor-pointer">
+                    Gerenciar Status
+                  </button>
+                ) : (
+                  <button onClick={() => { handleReactivate(editMember); closeEdit(); }}
+                    className="px-3 py-2 rounded-lg text-[12px] font-semibold border border-emerald-300 text-emerald-700 bg-transparent hover:bg-emerald-50 cursor-pointer">
+                    Reactivar
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={closeEdit} className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer">{t('comp.memberList.cancel', 'Cancelar')}</button>
+                <button onClick={saveEdit} disabled={saving} className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-teal-600 text-white border-0 hover:bg-teal-700 cursor-pointer disabled:opacity-50">
+                  {saving ? t('comp.memberList.saving', 'Salvando...') : t('comp.memberList.save', 'Salvar')}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -504,6 +569,80 @@ export default function MemberListIsland() {
               <button onClick={() => setShowBulkStatus(false)} className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer">{t('comp.memberList.cancel', 'Cancelar')}</button>
               <button onClick={handleBulkStatus} disabled={bulkSaving} className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-teal-600 text-white border-0 hover:bg-teal-700 cursor-pointer disabled:opacity-50">
                 {bulkSaving ? t('comp.memberList.processing', 'Processando...') : t('comp.memberList.confirm', 'Confirmar')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Offboarding Modal */}
+      {offboardMember && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={() => setOffboardMember(null)}>
+          <div className="bg-[var(--surface-card)] rounded-2xl w-full max-w-[480px] overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-5 py-4 border-b border-[var(--border-default)]">
+              <h3 className="text-base font-bold text-[var(--text-primary)]">Gerenciar Status</h3>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 font-bold text-sm">{initials(offboardMember.full_name)}</div>
+                <div>
+                  <div className="font-semibold text-[var(--text-primary)]">{offboardMember.full_name}</div>
+                  <div className="text-xs text-[var(--text-muted)]">{OPROLE_LABELS[offboardMember.operational_role] || offboardMember.operational_role} — T{offboardMember.tribe_id || '?'}</div>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase block mb-1">Novo Status</label>
+                <div className="flex gap-2">
+                  {(['observer', 'alumni', 'inactive'] as const).map(s => (
+                    <button key={s} onClick={() => setOffboardStatus(s)}
+                      className={`flex-1 px-3 py-2 rounded-lg text-xs font-semibold border cursor-pointer ${offboardStatus === s ? 'bg-amber-100 border-amber-400 text-amber-800' : 'border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)]'}`}>
+                      {s === 'observer' ? '👁 Observer' : s === 'alumni' ? '🎓 Alumni' : '⛔ Inativo'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase block mb-1">Categoria</label>
+                <select value={offboardCategory} onChange={e => setOffboardCategory(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-card)] text-[var(--text-primary)]">
+                  <option value="professional">Profissional</option>
+                  <option value="personal">Pessoal</option>
+                  <option value="time">Falta de tempo</option>
+                  <option value="interest_shift">Mudanca de interesses</option>
+                  <option value="inactivity">Inatividade</option>
+                  <option value="administrative">Administrativo</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase block mb-1">Detalhes (opcional)</label>
+                <textarea value={offboardDetail} onChange={e => setOffboardDetail(e.target.value)}
+                  rows={2} className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-card)] text-[var(--text-primary)] resize-none" />
+              </div>
+
+              <div>
+                <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase block mb-1">Reatribuir cards a (opcional)</label>
+                <select value={offboardReassign} onChange={e => setOffboardReassign(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-card)] text-[var(--text-primary)]">
+                  <option value="">— Nenhum —</option>
+                  {members.filter(m => m.is_active && m.id !== offboardMember.id).map(m => (
+                    <option key={m.id} value={m.id}>{m.full_name} (T{m.tribe_id})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="text-[10px] text-[var(--text-muted)] space-y-0.5 bg-[var(--surface-section-cool)] rounded-lg p-3">
+                <div>Marcara is_active = false</div>
+                <div>Removera da homepage/tribos</div>
+                <div>Preservara contribuicoes</div>
+                <div>Registara no log de transicoes</div>
+              </div>
+            </div>
+            <div className="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2">
+              <button onClick={() => setOffboardMember(null)} className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer">Cancelar</button>
+              <button onClick={handleOffboard} disabled={offboardSaving} className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-amber-600 text-white border-0 hover:bg-amber-700 cursor-pointer disabled:opacity-50">
+                {offboardSaving ? 'Processando...' : 'Confirmar'}
               </button>
             </div>
           </div>

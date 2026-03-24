@@ -25,6 +25,7 @@ const { slug } = Astro.params;
         <span id="post-date"></span>
         <span id="post-category" class="px-2 py-0.5 rounded bg-[var(--surface-hover)]"></span>
         <span id="post-author" class="text-[var(--fg)]"></span>
+        <span id="post-views" class="text-[var(--fg-muted)]"></span>
       </div>
       <div id="post-body" class="prose prose-invert max-w-none
         [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-[var(--fg)] [&_h1]:mt-8 [&_h1]:mb-4
@@ -69,6 +70,19 @@ const { slug } = Astro.params;
     document.getElementById('post-date').textContent = data.published_at
       ? new Date(data.published_at).toLocaleDateString(langKey === 'pt' ? 'pt-BR' : langKey === 'es' ? 'es-ES' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
       : '';
+
+    // View count (session dedup)
+    const viewKey = `blog_viewed_${slug}`;
+    if (!sessionStorage.getItem(viewKey)) {
+      sb.rpc('increment_blog_view', { p_slug: slug });
+      sessionStorage.setItem(viewKey, '1');
+    }
+
+    // Show view count
+    if (data.view_count != null) {
+      const viewEl = document.getElementById('post-views');
+      if (viewEl) viewEl.textContent = `${data.view_count + 1} visualizações`;
+    }
 
     // Update page title
     document.title = (data.title?.[langKey] || data.title?.pt || 'Blog') + ' | Nucleo IA & GP';
