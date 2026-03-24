@@ -3,7 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Toast from '../components/ui/Toast.astro';
 import ConfirmModal from '../components/ui/ConfirmModal.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
-const lang: Lang = getLangFromURL(Astro.url.pathname);
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const PROFILE_I18N = {
   emailAlreadyRegistered: t('profile.emailAlreadyRegistered', lang),
   emailAdded: t('profile.emailAdded', lang),

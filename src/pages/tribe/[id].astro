@@ -12,7 +12,7 @@ import TribeGamificationTab from '../../components/tribes/TribeGamificationTab';
 import TribeAttendanceTab from '../../components/tribes/TribeAttendanceTab';
 import EventMinutesIsland from '../../components/events/EventMinutesIsland';
 import { getStaticTribeFallback } from '../../lib/tribes/catalog';
-const lang: Lang = getLangFromURL(Astro.url.pathname);
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const i18nBundle = buildPageI18n(['comp.kanban', 'comp.common', 'tribe_dashboard'], lang);
 const { id } = Astro.params;
 const tribeId = parseInt(id || '0', 10);

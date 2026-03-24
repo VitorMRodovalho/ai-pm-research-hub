@@ -4,7 +4,7 @@ import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import ChartCard from '../../components/analytics/ChartCard.astro';
 import { CHAPTER_FULL } from '../../lib/admin/constants';
 
-const lang: Lang = getLangFromURL(Astro.url.pathname);
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const chapterOptions = Object.entries(CHAPTER_FULL).map(([code, label]) => ({ code, label }));
 const ANALYTICS_I18N = {
   consentGranted: t('admin.analytics.consentGranted', lang),

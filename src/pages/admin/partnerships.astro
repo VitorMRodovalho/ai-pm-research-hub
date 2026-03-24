@@ -2,7 +2,7 @@
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import PartnerPipelineIsland from '../../components/islands/PartnerPipelineIsland';
-const lang: Lang = getLangFromURL(Astro.url.pathname);
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 ---
 
 <AdminLayout title={t('partnerships.title', lang)} breadcrumbs={[{label:'Operações'},{label:'Parcerias'}]}>

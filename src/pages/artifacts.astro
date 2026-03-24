@@ -3,7 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import Toast from '../components/ui/Toast.astro';
 import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
-const lang: Lang = getLangFromURL(Astro.url.pathname);
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const tribeOptions = Array.from({length: 8}, (_, i) => ({
   value: String(i + 1),
   label: `${String(i + 1).padStart(2, '0')} — ${t(`data.tribe${i + 1}.name`, lang)}`,

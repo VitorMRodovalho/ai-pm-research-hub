@@ -4,7 +4,7 @@ import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
 import { buildPageI18n } from '../../../i18n/pageI18n';
 import TribeDashboardIsland from '../../../components/islands/TribeDashboardIsland';
 
-const lang: Lang = getLangFromURL(Astro.url.pathname);
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const tribeId = Astro.params.id!;
 const i18nBundle = buildPageI18n(['comp.tribe', 'comp.common'], lang);
 ---

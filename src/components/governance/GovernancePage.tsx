@@ -6,8 +6,19 @@ import DocumentsList from './DocumentsList';
 
 type Tab = 'manual' | 'crs' | 'documents';
 
+function detectLang(): string {
+  if (typeof window === 'undefined') return 'pt-BR';
+  const params = new URLSearchParams(window.location.search);
+  const langParam = params.get('lang');
+  if (langParam) return langParam;
+  if (window.location.pathname.startsWith('/en')) return 'en-US';
+  if (window.location.pathname.startsWith('/es')) return 'es-LATAM';
+  return 'pt-BR';
+}
+
 export default function GovernancePage() {
   const t = usePageI18n();
+  const lang = detectLang();
   const [tab, setTab] = useState<Tab>('manual');
   const [sections, setSections] = useState<any[]>([]);
   const [crs, setCrs] = useState<any[]>([]);
@@ -110,7 +121,7 @@ export default function GovernancePage() {
       </div>
 
       {tab === 'manual' && (
-        <ManualBrowser sections={sections} crs={crs} t={t} onSwitchToCr={() => setTab('crs')} />
+        <ManualBrowser sections={sections} crs={crs} t={t} onSwitchToCr={() => setTab('crs')} lang={lang} />
       )}
       {tab === 'crs' && (
         <CRList crs={crs} sections={sections} member={member} canSubmit={canSubmit} canReview={canReview} t={t} getSb={getSb} onReload={reload} />

@@ -4,7 +4,7 @@ import GovernancePage from '../components/governance/GovernancePage';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 import { buildPageI18n } from '../i18n/pageI18n';
 
-const lang: Lang = getLangFromURL(Astro.url.pathname);
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const i18nBundle = buildPageI18n(['governance'], lang);
 ---
 <BaseLayout title={t('governance.title', lang)} activePage="governance" lang={lang}>
