@@ -2595,6 +2595,12 @@ const enUS: Record<string, string> = {
   'audit.category_boards': 'Boards',
   'audit.category_settings': 'Settings',
   'audit.category_partnerships': 'Partnerships',
+  'attendance.legend_present': 'Present',
+  'attendance.legend_absent': 'Absent',
+  'attendance.legend_not_required': 'Not required',
+  'attendance.legend_general': 'General',
+  'attendance.legend_tribe': 'Tribe',
+  'attendance.legend_leadership': 'Leadership',
 
   // ── Executive Report (W105) ──
   'report.title': 'Executive Report',

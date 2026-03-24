@@ -318,6 +318,18 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
         />
       </div>
 
+      {/* ---------- Legend ---------- */}
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-[var(--text-muted)] mb-2 px-1">
+        <span>✅ {t('attendance.legend_present', 'Presente')}</span>
+        <span>❌ {t('attendance.legend_absent', 'Ausente')}</span>
+        <span>— {t('attendance.legend_not_required', 'Não convocado')}</span>
+        <span className="text-[var(--border-color)]">|</span>
+        <span>🌐 {t('attendance.legend_general', 'Geral')}</span>
+        <span>🔬 {t('attendance.legend_tribe', 'Tribo')}</span>
+        <span>👥 {t('attendance.legend_leadership', 'Liderança')}</span>
+        <span>🚀 Kickoff</span>
+      </div>
+
       {/* ---------- Attendance Grid ---------- */}
       <div className="overflow-x-auto rounded-lg border border-[var(--border-color,#e5e7eb)]">
         <table className="w-full border-collapse text-xs">

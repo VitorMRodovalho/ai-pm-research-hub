@@ -2595,6 +2595,12 @@ const esLATAM: Record<string, string> = {
   'audit.category_boards': 'Boards',
   'audit.category_settings': 'Configuraciones',
   'audit.category_partnerships': 'Alianzas',
+  'attendance.legend_present': 'Presente',
+  'attendance.legend_absent': 'Ausente',
+  'attendance.legend_not_required': 'No convocado',
+  'attendance.legend_general': 'General',
+  'attendance.legend_tribe': 'Tribu',
+  'attendance.legend_leadership': 'Liderazgo',
 
   // ── Executive Report (W105) ──
   'report.title': 'Informe Ejecutivo',
