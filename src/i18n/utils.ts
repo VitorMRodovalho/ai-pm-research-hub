@@ -96,10 +96,20 @@ export function getRoleLabelsMap(lang: Lang = DEFAULT_LANG): Record<string, stri
  * Detect lang from URL path (works for both index and internal pages).
  * e.g. '/en/attendance' → 'en-US', '/attendance' → 'pt-BR', '/es/' → 'es-LATAM'
  */
-export function getLangFromURL(pathname: string): Lang {
+export function getLangFromURL(pathnameOrUrl: string): Lang {
+  // Check path prefix first
+  const pathname = pathnameOrUrl.split('?')[0];
   const segments = pathname.split('/').filter(Boolean);
   if (segments[0] === 'en') return 'en-US';
   if (segments[0] === 'es') return 'es-LATAM';
+  // Fallback: check ?lang= query parameter (used by locale redirect stubs)
+  const qIdx = pathnameOrUrl.indexOf('?');
+  if (qIdx >= 0) {
+    const params = new URLSearchParams(pathnameOrUrl.slice(qIdx));
+    const langParam = params.get('lang');
+    if (langParam === 'en-US') return 'en-US';
+    if (langParam === 'es-LATAM') return 'es-LATAM';
+  }
   return 'pt-BR';
 }
 

@@ -2,7 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 
-const lang: Lang = getLangFromURL(Astro.url.pathname);
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
 const S3_ROWS = [1,2,3,4,5,6,7,8,9,10] as const;
 const S6_ROWS = [1,2,3,4,5,6,7,8,9] as const;

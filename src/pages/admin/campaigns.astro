@@ -7,7 +7,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 import RichTextEditorIsland from '../../components/shared/RichTextEditorIsland';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 
-const lang: Lang = getLangFromURL(Astro.url.pathname);
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 ---
 
 <AdminLayout title={t('campaigns.title', lang)} breadcrumbs={[{label:'Operações'},{label:'Campanhas'}]}>

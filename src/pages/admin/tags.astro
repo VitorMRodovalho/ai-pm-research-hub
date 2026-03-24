@@ -4,7 +4,7 @@ import TagManagementIsland from '../../components/admin/TagManagementIsland';
 import Toast from '../../components/ui/Toast.astro';
 import { getLangFromURL, type Lang } from '../../i18n/utils';
 import { buildPageI18n } from '../../i18n/pageI18n';
-const lang: Lang = getLangFromURL(Astro.url.pathname);
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const i18nBundle = buildPageI18n(['comp.tagMgmt', 'comp.common'], lang);
 ---
 

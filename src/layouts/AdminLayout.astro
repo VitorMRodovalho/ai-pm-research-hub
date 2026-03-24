@@ -15,7 +15,7 @@ interface Props {
 
 const { title, breadcrumbs = [], activePage = 'admin' } = Astro.props;
 const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/admin';
-const lang: Lang = getLangFromURL(Astro.url.pathname);
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 ---
 
 <BaseLayout title={title} activePage={activePage}>

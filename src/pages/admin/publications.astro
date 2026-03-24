@@ -3,7 +3,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import Toast from '../../components/ui/Toast.astro';
 
-const lang: Lang = getLangFromURL(Astro.url.pathname);
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 ---
 
 <AdminLayout title={t('publications.title', lang)} breadcrumbs={[{label:'Conteúdo'},{label:'Publicações'}]}>

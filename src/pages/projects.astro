@@ -2,7 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PilotsIsland from '../components/islands/PilotsIsland';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
-const lang: Lang = getLangFromURL(Astro.url.pathname);
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
 const PILOTS_I18N: Record<string, string> = {
   loading: t('common.loading', lang),

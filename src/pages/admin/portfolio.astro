@@ -3,7 +3,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 import PortfolioDashboard from '../../components/portfolio/PortfolioDashboard';
 import PlannedVsActualSection from '../../components/portfolio/PlannedVsActualSection';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
-const lang: Lang = getLangFromURL(Astro.url.pathname);
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 ---
 
 <AdminLayout title={t('nav.adminPortfolio', lang)} breadcrumbs={[{label:'Relatórios'},{label:'Portfólio Executivo'}]}>
