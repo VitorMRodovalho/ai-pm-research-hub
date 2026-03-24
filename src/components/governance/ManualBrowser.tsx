@@ -5,6 +5,10 @@ interface Section {
   section_number: string;
   title_pt: string;
   title_en: string | null;
+  title_es: string | null;
+  content_pt: string | null;
+  content_en: string | null;
+  content_es: string | null;
   parent_section_id: string | null;
   sort_order: number;
   page_start: number | null;
@@ -16,9 +20,22 @@ interface Props {
   crs: any[];
   t: (key: string, fallback?: string) => string;
   onSwitchToCr: (crNumber: string) => void;
+  lang?: string;
 }
 
-export default function ManualBrowser({ sections, crs, t, onSwitchToCr }: Props) {
+function getTitle(s: Section, lang?: string): string {
+  if (lang === 'en-US' || lang === 'en') return s.title_en || s.title_pt;
+  if (lang === 'es-LATAM' || lang === 'es') return s.title_es || s.title_pt;
+  return s.title_pt;
+}
+
+function getContent(s: any, lang?: string): string | null {
+  if (lang === 'en-US' || lang === 'en') return s.content_en || s.content_pt;
+  if (lang === 'es-LATAM' || lang === 'es') return s.content_es || s.content_pt;
+  return s.content_pt;
+}
+
+export default function ManualBrowser({ sections, crs, t, onSwitchToCr, lang }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const toggle = (id: string) => {
@@ -92,17 +109,17 @@ export default function ManualBrowser({ sections, crs, t, onSwitchToCr }: Props)
             {hasChildren ? (
               <span className="text-[10px] text-[var(--text-muted)] w-3">{isOpen ? '▼' : '▶'}</span>
             ) : (
-              <span className="text-[10px] text-[var(--text-muted)] w-3">{(s as any).content_pt ? (isOpen ? '▼' : '▶') : '·'}</span>
+              <span className="text-[10px] text-[var(--text-muted)] w-3">{getContent(s, lang) ? (isOpen ? '▼' : '▶') : '·'}</span>
             )}
             <span className="text-xs font-bold text-navy">{s.section_number}</span>
-            <span className="text-sm text-[var(--text-primary)] truncate">{s.title_pt}</span>
+            <span className="text-sm text-[var(--text-primary)] truncate">{getTitle(s, lang)}</span>
             {crBadge(s.id)}
           </div>
           <span className="text-[10px] text-[var(--text-muted)] whitespace-nowrap ml-2">{pageLabel(s)}</span>
         </div>
-        {isOpen && (s as any).content_pt && !hasChildren && (
+        {isOpen && getContent(s, lang) && !hasChildren && (
           <div className="mx-3 mb-2 px-4 py-2 rounded-lg bg-[var(--surface-section-cool)] text-xs text-[var(--text-secondary)] whitespace-pre-wrap max-h-[200px] overflow-y-auto" style={{ marginLeft: `${12 + indent + 20}px` }}>
-            {(s as any).content_pt}
+            {getContent(s, lang)}
           </div>
         )}
         {isOpen && children.map(child => renderSection(child, depth + 1))}
