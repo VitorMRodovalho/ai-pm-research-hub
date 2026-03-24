@@ -208,6 +208,9 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
   const [ixFollowUp, setIxFollowUp] = useState('');
   const [advancingId, setAdvancingId] = useState<string | null>(null);
   const [advanceNote, setAdvanceNote] = useState('');
+  const [showCreate, setShowCreate] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editFields, setEditFields] = useState({ name: '', entity_type: 'association', description: '', contact_name: '', contact_email: '', status: 'prospect', partnership_date: '' });
   const l = LABELS[lang] || LABELS['pt-BR'];
   const cl = COL_LABELS[lang] || COL_LABELS['pt-BR'];
 
@@ -239,6 +242,13 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
 
   const openDetail = useCallback((partner: Partner) => {
     setSelected(partner);
+    setEditing(false);
+    setEditFields({
+      name: partner.name, entity_type: partner.entity_type,
+      description: '', contact_name: partner.contact_name || '',
+      contact_email: partner.contact_email || '', status: partner.status,
+      partnership_date: partner.partnership_date || '',
+    });
     setInteractions([]);
     setShowIxForm(false);
     setIxSummary(''); setIxOutcome(''); setIxNext(''); setIxFollowUp(''); setIxType('email');
@@ -334,6 +344,71 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
     } catch {}
   };
 
+  const handleSaveEdit = async () => {
+    if (!selected) return;
+    const sb = getSb();
+    if (!sb) return;
+    try {
+      const { data: result, error } = await sb.rpc('admin_manage_partner_entity', {
+        p_action: 'update',
+        p_id: selected.id,
+        p_name: editFields.name,
+        p_entity_type: editFields.entity_type,
+        p_description: editFields.description || null,
+        p_contact_name: editFields.contact_name || null,
+        p_contact_email: editFields.contact_email || null,
+        p_status: editFields.status,
+        p_partnership_date: editFields.partnership_date || null,
+      });
+      if (error || (result && !result.success)) {
+        (window as any).toast?.(result?.error || 'Erro ao salvar.', 'error');
+        return;
+      }
+      (window as any).toast?.('Parceria atualizada!', 'success');
+      setEditing(false);
+      setSelected(null);
+      setLoading(true);
+      await loadPipeline();
+    } catch {
+      (window as any).toast?.('Erro inesperado.', 'error');
+    }
+  };
+
+  const handleCreate = async () => {
+    const sb = getSb();
+    if (!sb) return;
+    if (!editFields.name.trim()) {
+      (window as any).toast?.('Nome obrigatório.', 'error');
+      return;
+    }
+    try {
+      const { data: result, error } = await sb.rpc('admin_manage_partner_entity', {
+        p_action: 'create',
+        p_name: editFields.name,
+        p_entity_type: editFields.entity_type,
+        p_description: editFields.description || null,
+        p_contact_name: editFields.contact_name || null,
+        p_contact_email: editFields.contact_email || null,
+        p_status: editFields.status,
+        p_partnership_date: editFields.partnership_date || new Date().toISOString().slice(0, 10),
+      });
+      if (error || (result && !result.success)) {
+        (window as any).toast?.(result?.error || 'Erro ao criar.', 'error');
+        return;
+      }
+      (window as any).toast?.('Parceria criada!', 'success');
+      setShowCreate(false);
+      setLoading(true);
+      await loadPipeline();
+    } catch {
+      (window as any).toast?.('Erro inesperado.', 'error');
+    }
+  };
+
+  const PREV_STATUS: Record<string, string> = {
+    contact: 'prospect', negotiation: 'contact', active: 'negotiation',
+  };
+
   if (loading) return <div className="text-center py-12 text-[var(--text-muted)]">{l.loading}</div>;
   if (!data) return null;
 
@@ -352,6 +427,13 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
             <span className="font-bold text-[var(--text-primary)]">{data.total}</span> {l.total} &middot;{' '}
             <span className="font-bold text-emerald-600">{data.active}</span> {l.activeCount}
           </div>
+          <button onClick={() => {
+            setEditFields({ name: '', entity_type: 'association', description: '', contact_name: '', contact_email: '', status: 'prospect', partnership_date: new Date().toISOString().slice(0, 10) });
+            setShowCreate(true);
+          }}
+            className="px-3 py-2 rounded-lg bg-teal text-white text-xs font-semibold hover:opacity-90 cursor-pointer border-0">
+            {l.addPartner}
+          </button>
         </div>
       </div>
 
@@ -409,24 +491,57 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
           <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-xl w-full max-w-2xl p-5 mx-4 max-h-[85vh] overflow-y-auto">
             <h2 className="text-lg font-extrabold text-navy mb-4">{l.detailTitle}</h2>
             <div className="space-y-3">
-              <div>
-                <div className="font-bold text-sm text-[var(--text-primary)]">{selected.name}</div>
-                <div className="text-xs text-[var(--text-muted)]">{TYPE_LABELS[selected.entity_type] || selected.entity_type}</div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${COL_HEADER_COLORS[selected.status] || 'bg-gray-100 text-gray-600'}`}>
-                  {cl[selected.status] || selected.status}
-                </span>
-                <span className="text-[10px] text-[var(--text-muted)]">{selected.days_in_stage} {l.daysInStage}</span>
-              </div>
-              {selected.contact_name && (
-                <div><span className="text-xs font-semibold text-[var(--text-secondary)]">{l.contact}:</span> <span className="text-xs text-[var(--text-primary)]">{selected.contact_name}</span></div>
-              )}
-              {selected.contact_email && (
-                <div><span className="text-xs font-semibold text-[var(--text-secondary)]">{l.email}:</span> <a href={`mailto:${selected.contact_email}`} className="text-xs text-teal hover:underline">{selected.contact_email}</a></div>
-              )}
-              {selected.partnership_date && (
-                <div><span className="text-xs font-semibold text-[var(--text-secondary)]">{l.partnershipDate}:</span> <span className="text-xs text-[var(--text-primary)]">{selected.partnership_date}</span></div>
+              {editing ? (
+                /* Edit mode */
+                <>
+                  <input type="text" value={editFields.name} onChange={(e) => setEditFields(f => ({ ...f, name: e.target.value }))}
+                    className="w-full text-sm font-bold rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <select value={editFields.entity_type} onChange={(e) => setEditFields(f => ({ ...f, entity_type: e.target.value }))}
+                      className="text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5">
+                      {Object.entries(TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    </select>
+                    <input type="date" value={editFields.partnership_date} onChange={(e) => setEditFields(f => ({ ...f, partnership_date: e.target.value }))}
+                      className="text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input type="text" value={editFields.contact_name} onChange={(e) => setEditFields(f => ({ ...f, contact_name: e.target.value }))}
+                      placeholder={l.contact} className="text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" />
+                    <input type="email" value={editFields.contact_email} onChange={(e) => setEditFields(f => ({ ...f, contact_email: e.target.value }))}
+                      placeholder={l.email} className="text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" />
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={handleSaveEdit} className="px-3 py-1.5 rounded-lg bg-teal text-white text-xs font-semibold hover:opacity-90 cursor-pointer border-0">{l.confirm}</button>
+                    <button onClick={() => setEditing(false)} className="px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-xs font-semibold cursor-pointer bg-transparent">{l.cancel}</button>
+                  </div>
+                </>
+              ) : (
+                /* View mode */
+                <>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="font-bold text-sm text-[var(--text-primary)]">{selected.name}</div>
+                      <div className="text-xs text-[var(--text-muted)]">{TYPE_LABELS[selected.entity_type] || selected.entity_type}</div>
+                    </div>
+                    <button onClick={() => setEditing(true)}
+                      className="text-[10px] text-teal font-semibold cursor-pointer bg-transparent border-0 hover:underline">{l.edit}</button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${COL_HEADER_COLORS[selected.status] || 'bg-gray-100 text-gray-600'}`}>
+                      {cl[selected.status] || selected.status}
+                    </span>
+                    <span className="text-[10px] text-[var(--text-muted)]">{selected.days_in_stage} {l.daysInStage}</span>
+                  </div>
+                  {selected.contact_name && (
+                    <div><span className="text-xs font-semibold text-[var(--text-secondary)]">{l.contact}:</span> <span className="text-xs text-[var(--text-primary)]">{selected.contact_name}</span></div>
+                  )}
+                  {selected.contact_email && (
+                    <div><span className="text-xs font-semibold text-[var(--text-secondary)]">{l.email}:</span> <a href={`mailto:${selected.contact_email}`} className="text-xs text-teal hover:underline">{selected.contact_email}</a></div>
+                  )}
+                  {selected.partnership_date && (
+                    <div><span className="text-xs font-semibold text-[var(--text-secondary)]">{l.partnershipDate}:</span> <span className="text-xs text-[var(--text-primary)]">{selected.partnership_date}</span></div>
+                  )}
+                </>
               )}
               {selected.next_action && (
                 <div className="flex items-start gap-1.5">
@@ -517,15 +632,28 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
             </div>
 
             <div className="flex flex-wrap gap-2 mt-5 pt-3 border-t border-[var(--border-subtle)]">
+              {PREV_STATUS[selected.status] && (
+                <button onClick={async () => {
+                  const sb = getSb(); if (!sb) return;
+                  const prev = PREV_STATUS[selected.status];
+                  const { error } = await sb.rpc('admin_update_partner_status', { p_partner_id: selected.id, p_new_status: prev, p_notes: 'Retrocedido via pipeline' });
+                  if (error) { (window as any).toast?.('Erro ao retroceder.', 'error'); return; }
+                  (window as any).toast?.('Status retrocedido.', 'success');
+                  setSelected(null); setLoading(true); await loadPipeline();
+                }}
+                  className="px-3 py-2 rounded-lg border border-gray-300 text-gray-600 text-xs font-semibold hover:bg-gray-50 cursor-pointer">
+                  ← {cl[PREV_STATUS[selected.status]]}
+                </button>
+              )}
               {NEXT_STATUS[selected.status] && (
                 <button onClick={() => handleAdvance(selected)}
-                  className="px-3 py-2 rounded-lg bg-teal text-white text-xs font-semibold hover:opacity-90">
+                  className="px-3 py-2 rounded-lg bg-teal text-white text-xs font-semibold hover:opacity-90 cursor-pointer border-0">
                   {l.advance} →
                 </button>
               )}
               {selected.status !== 'inactive' && selected.status !== 'churned' && (
                 <button onClick={() => handleArchive(selected)}
-                  className="px-3 py-2 rounded-lg border border-gray-300 text-gray-600 text-xs font-semibold hover:bg-gray-50">
+                  className="px-3 py-2 rounded-lg border border-gray-300 text-gray-600 text-xs font-semibold hover:bg-gray-50 cursor-pointer">
                   {l.archive}
                 </button>
               )}
@@ -564,6 +692,41 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
                 </>
               );
             })()}
+          </div>
+        </div>
+      )}
+
+      {/* Create Partner Modal */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={(e) => { if (e.target === e.currentTarget) setShowCreate(false); }}>
+          <div className="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-xl w-full max-w-md p-5 mx-4">
+            <h3 className="text-sm font-extrabold text-navy mb-3">{l.addPartner}</h3>
+            <div className="space-y-2">
+              <input type="text" value={editFields.name} onChange={(e) => setEditFields(f => ({ ...f, name: e.target.value }))}
+                placeholder="Nome" className="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2" />
+              <div className="grid grid-cols-2 gap-2">
+                <select value={editFields.entity_type} onChange={(e) => setEditFields(f => ({ ...f, entity_type: e.target.value }))}
+                  className="text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5">
+                  {Object.entries(TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+                <select value={editFields.status} onChange={(e) => setEditFields(f => ({ ...f, status: e.target.value }))}
+                  className="text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5">
+                  {COLUMNS.map(s => <option key={s} value={s}>{cl[s]}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <input type="text" value={editFields.contact_name} onChange={(e) => setEditFields(f => ({ ...f, contact_name: e.target.value }))}
+                  placeholder={l.contact} className="text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" />
+                <input type="email" value={editFields.contact_email} onChange={(e) => setEditFields(f => ({ ...f, contact_email: e.target.value }))}
+                  placeholder={l.email} className="text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" />
+              </div>
+              <input type="date" value={editFields.partnership_date} onChange={(e) => setEditFields(f => ({ ...f, partnership_date: e.target.value }))}
+                className="w-full text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" />
+            </div>
+            <div className="flex gap-2 justify-end mt-4">
+              <button onClick={() => setShowCreate(false)} className="px-3 py-2 rounded-lg border border-[var(--border-default)] text-xs font-semibold cursor-pointer bg-transparent">{l.cancel}</button>
+              <button onClick={handleCreate} className="px-3 py-2 rounded-lg bg-teal text-white text-xs font-semibold hover:opacity-90 cursor-pointer border-0">{l.confirm}</button>
+            </div>
           </div>
         </div>
       )}
