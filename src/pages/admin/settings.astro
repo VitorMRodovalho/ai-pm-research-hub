@@ -47,6 +47,17 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         </div>
       </div>
 
+      <!-- ── Platform Settings (Configurable Limits) ── -->
+      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
+          <h2 class="text-sm font-bold text-navy">Limites da Plataforma</h2>
+          <p class="text-[.68rem] text-[var(--text-muted)] mt-0.5">Limites configuráveis. Alterações requerem justificativa e são registadas no log de auditoria.</p>
+        </div>
+        <div id="platform-settings" class="p-5 space-y-3">
+          <p class="text-[.7rem] text-[var(--text-muted)]">Carregando...</p>
+        </div>
+      </div>
+
       <!-- ── W111: Cycle Management ── -->
       <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div class="px-5 py-3.5 border-b border-[var(--border-default)] flex items-center justify-between">
@@ -134,13 +145,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     document.getElementById('settings-denied')?.classList.remove('hidden');
   }
 
-  function showPanel() {
-    document.getElementById('settings-loading')?.classList.add('hidden');
-    document.getElementById('settings-denied')?.classList.add('hidden');
-    document.getElementById('settings-panel')?.classList.remove('hidden');
-    loadConfig();
-    loadCycles();
-  }
+  // showPanel defined below with loadPlatformSettings
 
   async function loadConfig() {
     if (!sb) return;
@@ -347,6 +352,67 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
   document.getElementById('cycle-modal-overlay')?.addEventListener('click', (e) => {
     if (e.target === e.currentTarget) closeCycleModal();
   });
+
+  // ── Platform Settings ──
+  const SETTING_LABELS: Record<string, { label: string; desc: string; type: string }> = {
+    max_researchers_per_tribe: { label: 'Pesquisadores por tribo', desc: 'Limite máximo de pesquisadores por tribo', type: 'number' },
+    max_tribes: { label: 'Máximo de tribos ativas', desc: 'Limite de tribos activas no sistema', type: 'number' },
+    baseline_grace_period_days: { label: 'Grace period baseline (dias)', desc: 'Dias antes do lock automático de baseline', type: 'number' },
+  };
+
+  async function loadPlatformSettings() {
+    if (!sb) return;
+    const container = document.getElementById('platform-settings');
+    if (!container) return;
+    try {
+      const { data, error } = await sb.from('platform_settings').select('*');
+      if (error) throw error;
+      const settings = (data || []).filter((s: any) => SETTING_LABELS[s.key]);
+      if (settings.length === 0) { container.innerHTML = '<p class="text-[.7rem] text-[var(--text-muted)]">Nenhuma configuração encontrada.</p>'; return; }
+      container.innerHTML = settings.map((s: any) => {
+        const meta = SETTING_LABELS[s.key];
+        const lastChanged = s.changed_at ? new Date(s.changed_at).toLocaleDateString('pt-BR') : '';
+        return `<div class="flex items-center gap-3 p-3 rounded-lg border border-[var(--border-subtle)]">
+          <div class="flex-1">
+            <div class="text-[.78rem] font-semibold text-[var(--text-primary)]">${meta.label}</div>
+            <div class="text-[.6rem] text-[var(--text-muted)]">${meta.desc}</div>
+            ${s.change_reason ? `<div class="text-[.6rem] text-[var(--text-muted)] mt-0.5">Último ajuste: ${lastChanged} — "${escapeHtml(s.change_reason)}"</div>` : ''}
+          </div>
+          <input type="${meta.type}" value="${JSON.parse(JSON.stringify(s.value))}" data-setting-key="${s.key}"
+            class="w-20 px-2 py-1.5 border border-[var(--border-default)] rounded-lg text-[.78rem] text-center" />
+          <button data-save-setting="${s.key}" class="px-3 py-1.5 text-[.65rem] font-semibold rounded-lg bg-navy text-white border-0 hover:opacity-90 cursor-pointer">Salvar</button>
+        </div>`;
+      }).join('');
+
+      container.querySelectorAll('[data-save-setting]').forEach((btn: Element) => {
+        btn.addEventListener('click', async () => {
+          const key = (btn as HTMLElement).dataset.saveSetting!;
+          const input = container.querySelector(`[data-setting-key="${key}"]`) as HTMLInputElement;
+          if (!input) return;
+          const reason = prompt('Razão da alteração (obrigatório):');
+          if (!reason || !reason.trim()) { (window as any).toast?.('Razão obrigatória.', 'error'); return; }
+          const { data: result, error } = await sb.rpc('admin_update_setting', {
+            p_key: key, p_new_value: JSON.parse(input.value), p_reason: reason.trim(),
+          });
+          if (error || result?.error) { (window as any).toast?.(result?.error || error?.message || 'Erro', 'error'); return; }
+          (window as any).toast?.('Configuração atualizada!', 'success');
+          loadPlatformSettings();
+        });
+      });
+    } catch (e: any) {
+      console.error('Load platform settings:', e);
+      if (container) container.innerHTML = '<p class="text-[.7rem] text-red-600">Erro ao carregar.</p>';
+    }
+  }
+
+  function showPanel() {
+    document.getElementById('settings-loading')?.classList.add('hidden');
+    document.getElementById('settings-denied')?.classList.add('hidden');
+    document.getElementById('settings-panel')?.classList.remove('hidden');
+    loadConfig();
+    loadCycles();
+    loadPlatformSettings();
+  }
 
   boot();
 </script>
