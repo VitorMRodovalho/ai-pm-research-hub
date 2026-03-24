@@ -2859,6 +2859,7 @@ const enUS: Record<string, string> = {
   'boards.baseline_change': 'Change baseline',
   'boards.baseline_reason': 'Change reason (required)',
   'boards.history': 'History',
+  'boards.assign_as_role': 'Select to add as {role}',
   'boards.history_load_more': 'Load more',
   'boards.gate_completed': 'Only Leader or GP can mark as completed',
   'boards.gate_create_card': 'Only Leader or GP can create cards',

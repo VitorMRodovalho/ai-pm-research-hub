@@ -2864,6 +2864,7 @@ const ptBR: Record<string, string> = {
   'boards.baseline_change': 'Alterar baseline',
   'boards.baseline_reason': 'Razão da alteração (obrigatório)',
   'boards.history': 'Histórico',
+  'boards.assign_as_role': 'Selecione para adicionar como {role}',
   'boards.history_load_more': 'Carregar mais',
   'boards.gate_completed': 'Apenas Leader ou GP pode marcar como concluído',
   'boards.gate_create_card': 'Apenas Leader ou GP pode criar cards',

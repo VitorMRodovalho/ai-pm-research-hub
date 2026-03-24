@@ -2859,6 +2859,7 @@ const esLATAM: Record<string, string> = {
   'boards.baseline_change': 'Cambiar línea base',
   'boards.baseline_reason': 'Razón del cambio (obligatorio)',
   'boards.history': 'Historial',
+  'boards.assign_as_role': 'Seleccione para agregar como {role}',
   'boards.history_load_more': 'Cargar más',
   'boards.gate_completed': 'Solo Leader o GP puede marcar como completado',
   'boards.gate_create_card': 'Solo Leader o GP puede crear tarjetas',
