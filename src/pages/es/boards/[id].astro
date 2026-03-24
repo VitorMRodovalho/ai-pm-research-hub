@@ -1,4 +1,4 @@
 ---
-import BoardPage from '../../boards/[id].astro';
+const { id } = Astro.params;
 ---
-<BoardPage />
+<meta http-equiv="refresh" content={`0;url=/boards/${id}?lang=es-LATAM`}>
