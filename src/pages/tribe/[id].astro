@@ -38,6 +38,8 @@ const TRIBE_I18N = {
   statusCancelled: t('tribe.statusCancelled', lang),
   loading: t('tribe.loading', lang),
   notFound: t('tribe.notFound', lang),
+  tribeInactive: t('members.tribe_inactive', lang),
+  tribeInactiveBanner: t('members.tribe_inactive', lang),
   leader: t('tribe.leader', lang),
   quadrant: t('tribe.quadrant', lang),
   dueDate: t('tribe.dueDate', lang),
@@ -1551,13 +1553,13 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       }
       if (tribeData.is_active === false) {
         if (!canSeeInactiveTribes(currentMember)) {
-          showDenied('Esta linha de pesquisa está inativa neste ciclo. Os dados históricos são preservados.');
+          showDenied(I18N.tribeInactive || 'This research stream is inactive this cycle.');
           return;
         }
         // Superadmin can see but show banner
         const bannerEl = document.createElement('div');
         bannerEl.className = 'rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 mb-4 text-sm text-amber-800';
-        bannerEl.innerHTML = '⚠️ <strong>Tribo inativa</strong> — Esta linha de pesquisa está inativa desde Março/2026. Dados históricos preservados.';
+        bannerEl.innerHTML = '⚠️ <strong>' + (I18N.tribeInactiveBanner || 'Inactive') + '</strong>';
         const content = document.getElementById('tribe-content');
         if (content) content.prepend(bannerEl);
       }
