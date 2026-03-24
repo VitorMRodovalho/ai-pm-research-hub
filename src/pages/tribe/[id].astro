@@ -606,7 +606,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       }
 
       const createEventBtn = perms?.canCreateEvent
-        ? `<a href="/admin/events?tribe_id=${TRIBE_ID}&type=tribo" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-navy text-white text-xs font-semibold no-underline hover:opacity-90 mt-2">+ ${I18N.createEvent || 'Criar Evento'}</a>`
+        ? `<a href="/attendance?tribe=${TRIBE_ID}" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-navy text-white text-xs font-semibold no-underline hover:opacity-90 mt-2">+ ${I18N.createEvent || 'Criar Evento'}</a>`
         : '';
 
       // Past meetings
