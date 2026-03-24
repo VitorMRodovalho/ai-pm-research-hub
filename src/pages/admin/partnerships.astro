@@ -63,7 +63,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
 
     <!-- Modal -->
     <div id="partner-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-xl w-full max-w-md p-5 mx-4">
+      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 mx-4">
         <h2 id="modal-title" class="text-lg font-extrabold text-navy mb-4">{t('partnerships.addPartner', lang)}</h2>
         <input type="hidden" id="modal-partner-id" />
         <div class="space-y-3">
@@ -117,6 +117,40 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
             </div>
           </div>
         </div>
+
+        <!-- Interaction Section (only shown when editing) -->
+        <div id="interaction-section" class="hidden mt-5 pt-4 border-t border-[var(--border-subtle)]">
+          <!-- Log Interaction Form -->
+          <details class="mb-4">
+            <summary class="text-xs font-bold text-[var(--text-secondary)] cursor-pointer mb-2">+ Registar interacao</summary>
+            <div class="space-y-2 mt-2 p-3 rounded-lg bg-[var(--surface-section-cool)]">
+              <div class="grid grid-cols-2 gap-2">
+                <select id="ix-type" class="text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5">
+                  <option value="email">Email</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="linkedin">LinkedIn</option>
+                  <option value="call">Ligacao</option>
+                  <option value="meeting">Reuniao</option>
+                  <option value="note">Nota</option>
+                </select>
+                <input id="ix-followup" type="date" placeholder="Follow-up" class="text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" />
+              </div>
+              <input id="ix-summary" type="text" placeholder="Resumo da interacao..." class="w-full text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" />
+              <input id="ix-outcome" type="text" placeholder="Resultado (opcional)" class="w-full text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" />
+              <input id="ix-next" type="text" placeholder="Proximo passo (opcional)" class="w-full text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" />
+              <button id="btn-add-interaction" class="px-3 py-1.5 rounded-lg bg-teal text-white text-xs font-semibold hover:opacity-90 cursor-pointer border-0">
+                + Registar
+              </button>
+            </div>
+          </details>
+
+          <!-- Timeline -->
+          <div>
+            <h3 class="text-xs font-bold text-[var(--text-secondary)] mb-2">Timeline</h3>
+            <div id="interaction-timeline" class="space-y-2 max-h-[250px] overflow-y-auto"></div>
+          </div>
+        </div>
+
         <div class="flex justify-between mt-5">
           <button id="btn-delete-partner" class="hidden px-3 py-2 rounded-lg border border-red-300 text-red-600 text-xs font-semibold hover:bg-red-50">
             {t('common.delete', lang)}
@@ -229,7 +263,100 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
       else deleteBtn.classList.add('hidden');
     }
 
+    // Show/hide interaction section
+    const ixSection = document.getElementById('interaction-section');
+    if (ixSection) {
+      if (partner?.id) {
+        ixSection.classList.remove('hidden');
+        loadInteractions(partner.id);
+      } else {
+        ixSection.classList.add('hidden');
+      }
+    }
+
     modal.classList.remove('hidden');
+  }
+
+  const IX_ICONS: Record<string, string> = {
+    email: '📧', whatsapp: '📱', linkedin: '💬', call: '📞', meeting: '🤝', note: '📝', status_change: '🔄',
+  };
+
+  async function loadInteractions(partnerId: string) {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    const timeline = document.getElementById('interaction-timeline');
+    if (!timeline) return;
+    timeline.innerHTML = '<p class="text-[10px] text-[var(--text-muted)]">Carregando...</p>';
+
+    const { data, error } = await sb.rpc('get_partner_interactions', { p_partner_id: partnerId });
+    if (error || !data) {
+      timeline.innerHTML = '<p class="text-[10px] text-red-500">Erro ao carregar interacoes.</p>';
+      return;
+    }
+
+    const interactions = data.interactions || [];
+    if (interactions.length === 0) {
+      timeline.innerHTML = '<p class="text-[10px] text-[var(--text-muted)]">Nenhuma interacao registada.</p>';
+      return;
+    }
+
+    timeline.innerHTML = interactions.map((ix: any) => {
+      const icon = IX_ICONS[ix.interaction_type] || '📝';
+      const d = new Date(ix.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+      return `<div class="flex gap-2 text-[11px] pb-2 border-b border-[var(--border-subtle)] last:border-0">
+        <span class="text-base">${icon}</span>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-0.5">
+            <span class="text-[var(--text-muted)] text-[10px]">${d}</span>
+            ${ix.actor_name ? `<span class="text-[var(--text-secondary)] font-semibold text-[10px]">${ix.actor_name}</span>` : ''}
+          </div>
+          <p class="text-[var(--text-primary)] font-medium">${ix.summary}</p>
+          ${ix.outcome ? `<p class="text-[var(--text-secondary)] text-[10px] mt-0.5">Resultado: ${ix.outcome}</p>` : ''}
+          ${ix.next_action ? `<p class="text-blue-600 text-[10px] mt-0.5">→ ${ix.next_action}</p>` : ''}
+          ${ix.follow_up_date ? `<p class="text-amber-600 text-[10px] mt-0.5">📅 Follow-up: ${new Date(ix.follow_up_date + 'T00:00:00').toLocaleDateString('pt-BR')}</p>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function addInteraction(sb: any) {
+    const partnerId = (document.getElementById('modal-partner-id') as HTMLInputElement)?.value;
+    if (!partnerId) return;
+
+    const type = (document.getElementById('ix-type') as HTMLSelectElement)?.value;
+    const summary = (document.getElementById('ix-summary') as HTMLInputElement)?.value?.trim();
+    const outcome = (document.getElementById('ix-outcome') as HTMLInputElement)?.value?.trim() || null;
+    const nextAction = (document.getElementById('ix-next') as HTMLInputElement)?.value?.trim() || null;
+    const followUp = (document.getElementById('ix-followup') as HTMLInputElement)?.value || null;
+
+    if (!summary) {
+      (window as any).toast?.('Resumo obrigatorio.', 'error');
+      return;
+    }
+
+    const { data, error } = await sb.rpc('add_partner_interaction', {
+      p_partner_id: partnerId,
+      p_interaction_type: type,
+      p_summary: summary,
+      p_details: null,
+      p_outcome: outcome,
+      p_next_action: nextAction,
+      p_follow_up_date: followUp,
+    });
+
+    if (error || !data?.success) {
+      (window as any).toast?.(data?.error || 'Erro ao registar.', 'error');
+      return;
+    }
+
+    (window as any).toast?.('Interacao registada!', 'success');
+    // Clear form
+    (document.getElementById('ix-summary') as HTMLInputElement).value = '';
+    (document.getElementById('ix-outcome') as HTMLInputElement).value = '';
+    (document.getElementById('ix-next') as HTMLInputElement).value = '';
+    (document.getElementById('ix-followup') as HTMLInputElement).value = '';
+    // Refresh timeline
+    loadInteractions(partnerId);
   }
 
   function closeModal() {
@@ -356,6 +483,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     document.getElementById('btn-cancel-modal')?.addEventListener('click', closeModal);
     document.getElementById('btn-save-partner')?.addEventListener('click', () => savePartner(sb));
     document.getElementById('btn-delete-partner')?.addEventListener('click', () => deletePartner(sb));
+    document.getElementById('btn-add-interaction')?.addEventListener('click', () => addInteraction(sb));
     document.getElementById('filter-type')?.addEventListener('change', renderPartners);
     document.getElementById('filter-status')?.addEventListener('change', renderPartners);
 
