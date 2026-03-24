@@ -159,28 +159,28 @@ function rowTint(rate: number) {
 /* Sticky column styles */
 const STICKY_LEFT_BASE: React.CSSProperties = {
   position: 'sticky' as const,
-  zIndex: 10,
-  background: 'var(--surface-base)',
+  zIndex: 20,
+  background: 'var(--surface-base, #f9fafb)',
 };
 
 const STICKY_RIGHT: React.CSSProperties = {
   position: 'sticky' as const,
   right: 0,
-  zIndex: 10,
-  background: 'var(--surface-base)',
+  zIndex: 20,
+  background: 'var(--surface-base, #f9fafb)',
 };
 
 const STICKY_LEFT_TD_BASE: React.CSSProperties = {
   position: 'sticky' as const,
-  zIndex: 5,
-  background: 'inherit',
+  zIndex: 10,
+  background: 'var(--surface-card, #fff)',
 };
 
 const STICKY_RIGHT_TD: React.CSSProperties = {
   position: 'sticky' as const,
   right: 0,
-  zIndex: 5,
-  background: 'inherit',
+  zIndex: 10,
+  background: 'var(--surface-card, #fff)',
 };
 
 /* ------------------------------------------------------------------ */

@@ -337,7 +337,7 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
             <tr className="bg-[var(--bg-secondary,#f9fafb)]">
               <th
                 onClick={() => toggleSort('name')}
-                className="sticky left-0 z-10 bg-[var(--bg-secondary,#f9fafb)] px-3 py-2 text-left text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wide cursor-pointer hover:text-[var(--text-primary)] whitespace-nowrap select-none min-w-[140px]"
+                className="sticky left-0 z-20 bg-[var(--bg-secondary,#f9fafb)] px-3 py-2 text-left text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wide cursor-pointer hover:text-[var(--text-primary)] whitespace-nowrap select-none min-w-[140px]"
               >
                 {t('attendance.col.member', 'Membro')}{' '}
                 {sortKey === 'name' ? (sortDir === 'asc' ? '↑' : '↓') : ''}
@@ -373,8 +373,7 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
                   style={{ backgroundColor: rateBg(rawRate) }}
                 >
                   {/* Name */}
-                  <td className="sticky left-0 z-[5] px-3 py-1.5 font-medium text-[var(--text-primary)] whitespace-nowrap"
-                    style={{ backgroundColor: 'inherit' }}
+                  <td className="sticky left-0 z-10 px-3 py-1.5 font-medium text-[var(--text-primary)] whitespace-nowrap bg-[var(--surface-card,#fff)]"
                   >
                     {member.name}
                     {member.member_status === 'observer' && <span className="text-[9px] text-blue-500 ml-1">(Observer)</span>}
