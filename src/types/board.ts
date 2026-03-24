@@ -202,6 +202,21 @@ export const COLUMN_PRESETS: Record<string, Omit<ColumnMeta, 'id'>> = {
   },
 };
 
+// i18n-aware column label lookup
+const COLUMN_LABELS_I18N: Record<string, Record<string, string>> = {
+  backlog:     { 'pt-BR': 'Backlog', 'en-US': 'Backlog', 'es-LATAM': 'Backlog' },
+  todo:        { 'pt-BR': 'A Fazer', 'en-US': 'To Do', 'es-LATAM': 'Por Hacer' },
+  in_progress: { 'pt-BR': 'Em Andamento', 'en-US': 'In Progress', 'es-LATAM': 'En Progreso' },
+  review:      { 'pt-BR': 'Revisão', 'en-US': 'Review', 'es-LATAM': 'Revisión' },
+  done:        { 'pt-BR': 'Concluído', 'en-US': 'Done', 'es-LATAM': 'Completado' },
+  archived:    { 'pt-BR': 'Arquivado', 'en-US': 'Archived', 'es-LATAM': 'Archivado' },
+};
+
+export function getColumnLabel(key: string, lang?: string): string {
+  const locale = lang || (typeof window !== 'undefined' && (window as any).__CURRENT_LANG) || 'pt-BR';
+  return COLUMN_LABELS_I18N[key]?.[locale] || COLUMN_PRESETS[key]?.label || key;
+}
+
 /** Safely coerce checklist to array — handles string, null, undefined */
 /** Safely coerce any value to an array — handles string JSON, null, undefined, non-array */
 export function safeArray<T = any>(v: unknown): T[] {
@@ -215,9 +230,9 @@ export function safeChecklist(cl: unknown): ChecklistItem[] {
   return safeArray<ChecklistItem>(cl);
 }
 
-export function getColumnMeta(colId: string): ColumnMeta {
+export function getColumnMeta(colId: string, lang?: string): ColumnMeta {
   const preset = COLUMN_PRESETS[colId];
-  if (preset) return { id: colId, ...preset };
+  if (preset) return { id: colId, ...preset, label: getColumnLabel(colId, lang) };
   // Fallback for unknown columns
   return {
     id: colId, label: colId, icon: '📄', color: 'slate',
