@@ -377,6 +377,8 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
                     style={{ backgroundColor: 'inherit' }}
                   >
                     {member.name}
+                    {member.member_status === 'observer' && <span className="text-[9px] text-blue-500 ml-1">(Observer)</span>}
+                    {member.member_status === 'alumni' && <span className="text-[9px] text-gray-400 ml-1">(Alumni)</span>}
                   </td>
 
                   {/* Attendance cells — interactive via AttendanceCell */}
