@@ -97,12 +97,12 @@ export function getRoleLabelsMap(lang: Lang = DEFAULT_LANG): Record<string, stri
  * e.g. '/en/attendance' → 'en-US', '/attendance' → 'pt-BR', '/es/' → 'es-LATAM'
  */
 export function getLangFromURL(pathnameOrUrl: string): Lang {
-  // Check path prefix first
+  // 1. Check path prefix first (/en/, /es/)
   const pathname = pathnameOrUrl.split('?')[0];
   const segments = pathname.split('/').filter(Boolean);
   if (segments[0] === 'en') return 'en-US';
   if (segments[0] === 'es') return 'es-LATAM';
-  // Fallback: check ?lang= query parameter (used by locale redirect stubs)
+  // 2. Check ?lang= query parameter
   const qIdx = pathnameOrUrl.indexOf('?');
   if (qIdx >= 0) {
     const params = new URLSearchParams(pathnameOrUrl.slice(qIdx));
@@ -110,7 +110,39 @@ export function getLangFromURL(pathnameOrUrl: string): Lang {
     if (langParam === 'en-US') return 'en-US';
     if (langParam === 'es-LATAM') return 'es-LATAM';
   }
+  // 3. Check localStorage (browser only — persists across navigations)
+  if (typeof localStorage !== 'undefined') {
+    const stored = localStorage.getItem('preferred_locale');
+    if (stored === 'en-US' || stored === 'es-LATAM') return stored;
+  }
   return 'pt-BR';
+}
+
+/**
+ * Get effective locale for client-side use. Persists to localStorage when
+ * detected from URL path or query param, so internal navigation keeps locale.
+ */
+export function getEffectiveLocale(): Lang {
+  if (typeof window === 'undefined') return 'pt-BR';
+  const fromUrl = getLangFromURL(window.location.pathname + window.location.search);
+  // Persist non-PT locale to localStorage
+  if (fromUrl !== 'pt-BR') {
+    localStorage.setItem('preferred_locale', fromUrl);
+  }
+  return fromUrl;
+}
+
+/**
+ * Append ?lang= to an href if current locale is not PT-BR.
+ * Used by sidebar, nav, and any internal links to propagate locale.
+ */
+export function localizeHref(href: string, lang?: Lang): string {
+  const locale = lang || (typeof window !== 'undefined' ? getEffectiveLocale() : 'pt-BR');
+  if (locale === 'pt-BR') return href;
+  // Don't double-add
+  if (href.includes('lang=')) return href;
+  const sep = href.includes('?') ? '&' : '?';
+  return `${href}${sep}lang=${locale}`;
 }
 
 /**

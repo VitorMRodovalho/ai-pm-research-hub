@@ -67,7 +67,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   </div>
 </BaseLayout>
 
-<script>
+<script is:inline define:vars={{ lang }}>
+  // Persist locale to localStorage for navigation continuity
+  if (lang && lang !== 'pt-BR') {
+    localStorage.setItem('preferred_locale', lang);
+  }
   // Wire hamburger to sidebar toggle event
   document.getElementById('admin-sidebar-toggle')?.addEventListener('click', () => {
     window.dispatchEvent(new CustomEvent('admin:sidebar:toggle'));
