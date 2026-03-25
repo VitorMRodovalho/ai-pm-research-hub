@@ -1,0 +1,12 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import ChapterDashboard from '../../components/chapter/ChapterDashboard';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+---
+
+<AdminLayout title={t('chapter.title', lang)} breadcrumbs={[{label: t('chapter.breadcrumb', lang)}]}>
+  <div class="max-w-[1100px] mx-auto px-4 py-8">
+    <ChapterDashboard client:load lang={lang} />
+  </div>
+</AdminLayout>
