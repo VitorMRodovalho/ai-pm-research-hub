@@ -2099,6 +2099,8 @@ const enUS: Record<string, string> = {
   'tribe.ctxResearch': 'Active (Research)',
   'tribe.ctxOperations': 'Sub-projects (Operations)',
   'tribe.ctxLegacy': 'Legacy (Read-only)',
+  'tribe.deniedExplore': 'Active research streams can be browsed in read-only mode by active members; actions remain restricted to leadership and management.',
+  'tribe.openProfile': 'Open profile',
   'tribe.requestReview': 'Request Review',
   'tribe.approvePeer': 'Approve (Peer)',
   'tribe.approveForCuration': 'Approve for Curation',

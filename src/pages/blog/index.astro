@@ -9,7 +9,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langKey = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
 ---
 
-<BaseLayout activePage="blog" title={t('blog.title', lang)}>
+<BaseLayout activePage="blog" title={t('blog.title', lang)} lang={lang}>
   <div class="max-w-[900px] mx-auto px-4 py-12">
     <h1 class="text-3xl font-bold text-[var(--fg)] mb-2">{t('blog.title', lang)}</h1>
     <p class="text-[var(--fg-muted)] mb-8">{t('blog.subtitle', lang)}</p>
@@ -20,7 +20,7 @@ const langKey = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
   </div>
 </BaseLayout>
 
-<script define:vars={{ langKey }}>
+<script define:vars={{ langKey, langPrefix: lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es' }}>
   async function loadBlog() {
     const sb = window.navGetSb?.();
     if (!sb) { setTimeout(loadBlog, 200); return; }
@@ -46,7 +46,7 @@ const langKey = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
       const date = p.published_at ? new Date(p.published_at).toLocaleDateString(langKey === 'pt' ? 'pt-BR' : langKey === 'es' ? 'es-ES' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
       const catBadge = { 'case-study': 'bg-blue-900/30 text-blue-300', tutorial: 'bg-green-900/30 text-green-300', announcement: 'bg-purple-900/30 text-purple-300', opinion: 'bg-amber-900/30 text-amber-300' }[p.category] || 'bg-gray-700 text-gray-300';
 
-      return `<a href="/blog/${p.slug}" class="block bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 hover:border-teal-500/50 transition-colors no-underline">
+      return `<a href="${langPrefix}/blog/${p.slug}" class="block bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 hover:border-teal-500/50 transition-colors no-underline">
         ${p.is_featured ? '<span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-teal-900/30 text-teal-300 mb-2">Featured</span>' : ''}
         <h2 class="text-xl font-bold text-[var(--fg)] mb-2">${title}</h2>
         <p class="text-[var(--fg-muted)] text-sm mb-3">${excerpt}</p>

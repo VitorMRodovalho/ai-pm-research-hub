@@ -2099,6 +2099,8 @@ const esLATAM: Record<string, string> = {
   'tribe.ctxResearch': 'Activas (Investigación)',
   'tribe.ctxOperations': 'Subproyectos (Operación)',
   'tribe.ctxLegacy': 'Legado (Solo lectura)',
+  'tribe.deniedExplore': 'Las líneas activas pueden explorarse en modo lectura por miembros activos; las acciones siguen restringidas al liderazgo y gestión.',
+  'tribe.openProfile': 'Abrir perfil',
   'tribe.requestReview': 'Solicitar revisión',
   'tribe.approvePeer': 'Aprobar (par)',
   'tribe.approveForCuration': 'Aprobar para curaduría',
