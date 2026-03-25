@@ -65,7 +65,11 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const [submittingReview, setSubmittingReview] = useState(false);
   const [itemAssignments, setItemAssignments] = useState<ItemAssignment[]>(safeArray(item.assignments));
 
-  const canEdit = mode !== 'readonly' && (permissions.canEditAny || (permissions.canEditOwn && permissions.member?.id === item.assignee_id));
+  const isCardAssignee = permissions.member?.id && (
+    item.assignee_id === permissions.member.id ||
+    safeArray(item.assignments).some((a: any) => a.member_id === permissions.member.id)
+  );
+  const canEdit = mode !== 'readonly' && (permissions.canEditAny || (permissions.canEditOwn && isCardAssignee));
   const isCurator = permissions.canCurate;
   const isCurationItem = item.curation_status === 'curation_pending';
 
