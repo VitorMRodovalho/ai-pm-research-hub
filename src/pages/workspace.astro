@@ -663,7 +663,7 @@ const WK = {
             const $onbBar = document.getElementById('wk-onb-bar')!;
             const $onbDone = document.getElementById('wk-onb-done')!;
 
-            const pct = onbStatus.progress_pct || 0;
+            const pct = onbStatus.total_steps > 0 ? Math.round((onbStatus.completed_steps / onbStatus.total_steps) * 100) : 0;
             $onbLabel.textContent = `${onbStatus.completed_steps}/${onbStatus.total_steps} ${i18n.onbProgress}`;
             $onbPct.textContent = `${pct}%`;
             $onbBar.style.width = `${pct}%`;
@@ -672,6 +672,7 @@ const WK = {
               $onbSteps.classList.add('hidden');
               $onbDone.classList.remove('hidden');
             } else {
+              const _wkLang = location.pathname.startsWith('/en') ? 'en' : location.pathname.startsWith('/es') ? 'es' : (new URLSearchParams(location.search).get('lang') || localStorage.getItem('preferred_locale') || 'pt-BR').startsWith('en') ? 'en' : 'pt';
               for (const step of onbStatus.steps) {
                 const isDone = step.status === 'completed' || step.status === 'skipped';
                 const isOverdue = step.is_overdue;
@@ -693,13 +694,16 @@ const WK = {
                     })()
                   : '';
 
+                const stepLabel = _wkLang === 'en' ? (step.label_en || step.label_pt || step.step_key || '') : _wkLang === 'es' ? (step.label_es || step.label_pt || step.step_key || '') : (step.label_pt || step.step_key || '');
+                const stepDesc = _wkLang === 'en' ? (step.description_en || step.description_pt || '') : _wkLang === 'es' ? (step.description_es || step.description_pt || '') : (step.description_pt || '');
                 stepEl.innerHTML = `
-                  <span class="text-base">${statusIcon}</span>
+                  <span class="text-base">${step.icon || statusIcon}</span>
                   <div class="flex-1 min-w-0">
-                    <div class="text-sm font-semibold text-[var(--text-primary)]">${escHtml((step.step_key || '').replace(/_/g, ' '))}</div>
+                    <div class="text-sm font-semibold text-[var(--text-primary)]">${escHtml(stepLabel)}</div>
+                    ${stepDesc ? `<div class="text-[.68rem] text-[var(--text-muted)] mt-0.5">${escHtml(stepDesc)}</div>` : ''}
                     ${slaLabel}
                   </div>
-                  ${!isDone ? `<button class="onb-mark-btn px-3 py-1.5 text-[.7rem] font-bold rounded-lg bg-teal text-white border-0 cursor-pointer hover:opacity-90" data-app="${appId}" data-step="${step.step_key}">${i18n.onbMarkDone}</button>` : `<span class="text-[.65rem] text-green-600 font-semibold">${i18n.onbCompleted}</span>`}
+                  ${!isDone ? `<button class="onb-mark-btn px-3 py-1.5 text-[.7rem] font-bold rounded-lg bg-teal text-white border-0 cursor-pointer hover:opacity-90" data-app="${appId}" data-step="${step.step_id || step.step_key}">${i18n.onbMarkDone}</button>` : `<span class="text-[.65rem] text-green-600 font-semibold">${i18n.onbCompleted}</span>`}
                 `;
                 $onbSteps.appendChild(stepEl);
               }
