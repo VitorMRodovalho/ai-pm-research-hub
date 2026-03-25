@@ -702,6 +702,7 @@ const enUS: Record<string, string> = {
   'governance.communication_note': 'Each CR status is visible at /governance. For rejections, record a clear justification in review_notes.',
   'governance.pending_review_section': 'Pending Review',
   'governance.all_crs_section': 'All CRs',
+  'governance.changelog_section': 'Governance Log',
   'cpmai.title': 'CPMAI Prep Course',
   'cpmai.subtitle': 'Preparatory course for the PMI-CPMAI™ certification',
   'cpmai.disclaimer': 'This preparatory course is an initiative of the AI & PM Research Hub and does NOT replace the official 21-hour PMI course, which is a mandatory prerequisite to schedule the PMI-CPMAI™ exam.',

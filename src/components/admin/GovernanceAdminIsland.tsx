@@ -107,6 +107,53 @@ export default function GovernanceAdminIsland() {
         <GovernanceCRTable crs={crs} sections={sections} member={member} preFilter="all" t={t} getSb={getSb} onRefresh={handleRefresh} />
       </div>
 
+      {/* Governance Log — approved/implemented CRs as changelog */}
+      {(() => {
+        const logEntries = crs
+          .filter(cr => ['approved', 'implemented'].includes(cr.status))
+          .sort((a, b) => (b.approved_at || b.updated_at || '').localeCompare(a.approved_at || a.updated_at || ''));
+        if (logEntries.length === 0) return null;
+        const TYPE_BADGE: Record<string, string> = {
+          amendment: 'bg-purple-100 text-purple-700',
+          correction: 'bg-blue-100 text-blue-700',
+          addition: 'bg-emerald-100 text-emerald-700',
+          removal: 'bg-red-100 text-red-700',
+          critical: 'bg-red-100 text-red-700',
+        };
+        return (
+          <div>
+            <h2 className="text-sm font-extrabold text-navy mb-3 flex items-center gap-2">
+              {t('governance.changelog_section', 'Governance Log')}
+              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-bold">{logEntries.length}</span>
+            </h2>
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              {logEntries.map((cr: any) => (
+                <div key={cr.id} className="flex items-start gap-3 px-3 py-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-base)]">
+                  <span className="text-[11px] font-bold text-navy whitespace-nowrap">{cr.cr_number}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[12px] font-medium text-[var(--text-primary)] truncate">{cr.title}</div>
+                    {cr.description && <div className="text-[10px] text-[var(--text-muted)] mt-0.5 line-clamp-1">{cr.description}</div>}
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {cr.cr_type && (
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${TYPE_BADGE[cr.cr_type] || 'bg-gray-100 text-gray-600'}`}>{cr.cr_type}</span>
+                    )}
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${cr.status === 'implemented' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'}`}>
+                      {cr.status === 'implemented' ? '✅' : '✓'} {cr.status}
+                    </span>
+                    {(cr.approved_at || cr.updated_at) && (
+                      <span className="text-[9px] text-[var(--text-muted)]">
+                        {new Date(cr.approved_at || cr.updated_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Footer notes */}
       <div className="space-y-2 pt-2 border-t border-[var(--border-subtle)]">
         <p className="text-xs text-[var(--text-muted)]">
