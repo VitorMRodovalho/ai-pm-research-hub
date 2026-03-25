@@ -266,7 +266,7 @@ test('tribe exploration and lifecycle management honor active-member access plus
   assert.equal(tribe.includes('id="tribe-denied"'), true);
   assert.equal(tribe.includes('id="tribe-shell" class="hidden"'), true);
   assert.equal(tribe.includes('canExploreTribes(currentMember)'), true);
-  assert.equal(tribe.includes('Modo exploração:'), true);
+  assert.equal(tribe.includes('explorationMode'), true);
   assert.equal(tribe.includes(".eq('current_cycle_active', true)"), true);
   // GC-082: canManageTribeLifecycle moved from admin/index.astro monolith to tribe/[id].astro
   assert.equal(tribe.includes('canManageTribeLifecycle'), true);
@@ -928,13 +928,13 @@ test('portfolio and board governance admin pages are wired', () => {
   assert.equal(portfolio.includes("sb.rpc('exec_portfolio_board_summary'"), true);
   assert.equal(portfolio.includes('id="portfolio-denied"'), true);
   assert.equal(portfolio.includes('id="portfolio-macros"'), true);
-  assert.equal(portfolio.includes('Total de Membros Ativos'), true);
-  assert.equal(portfolio.includes('Total de Tribos Ativas'), true);
-  assert.equal(portfolio.includes('Total de Boards Operando'), true);
-  assert.equal(portfolio.includes('Total de Cards Atrasados'), true);
-  assert.equal(portfolio.includes('🟢 Tribos de Pesquisa'), true);
-  assert.equal(portfolio.includes('⚙️ Operações'), true);
-  assert.equal(portfolio.includes('🌍 Global'), true);
+  assert.equal(portfolio.includes("_i18n.totalActiveMembers || 'Total Active Members'"), true);
+  assert.equal(portfolio.includes("_i18n.totalActiveTribes || 'Total Active Streams'"), true);
+  assert.equal(portfolio.includes("_i18n.totalBoardsOperating || 'Total Boards Operating'"), true);
+  assert.equal(portfolio.includes("_i18n.totalOverdueCards || 'Total Overdue Cards'"), true);
+  assert.equal(portfolio.includes("_i18n.researchTribes || '🟢 Research Streams'"), true);
+  assert.equal(portfolio.includes("_i18n.operations || '⚙️ Operations'"), true);
+  assert.equal(portfolio.includes("_i18n.global || '🌍 Global'"), true);
   assert.equal(portfolio.includes('text-red-600 font-bold'), true);
   assert.equal(portfolio.includes('⚠️'), true);
   assert.equal(boardGov.includes("sb.rpc('admin_list_archived_board_items'"), true);
