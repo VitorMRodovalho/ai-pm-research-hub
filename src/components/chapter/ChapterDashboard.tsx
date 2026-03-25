@@ -26,7 +26,7 @@ const T: Record<string, Record<string, string>> = {
     attendanceLbl: 'Presença', trailLbl: 'Trilha', topTitle: 'Top Contribuidores',
     noData: 'Sem dados para este capítulo.', loading: 'Carregando...',
     observers: 'Observadores', alumni: 'Alumni', completed: 'Cards concluídos',
-    publications: 'Publicações', hubAvg: 'vs Núcleo',
+    publications: 'Publicações', hubAvg: 'vs Núcleo', other: 'Outros',
   },
   'en-US': {
     subtitle: 'Executive view of your chapter contribution to the Hub.',
@@ -40,7 +40,7 @@ const T: Record<string, Record<string, string>> = {
     attendanceLbl: 'Attendance', trailLbl: 'Trail', topTitle: 'Top Contributors',
     noData: 'No data for this chapter.', loading: 'Loading...',
     observers: 'Observers', alumni: 'Alumni', completed: 'Cards completed',
-    publications: 'Publications', hubAvg: 'vs Hub',
+    publications: 'Publications', hubAvg: 'vs Hub', other: 'Other',
   },
   'es-LATAM': {
     subtitle: 'Vista ejecutiva de la contribución de su capítulo al Hub.',
@@ -54,7 +54,7 @@ const T: Record<string, Record<string, string>> = {
     attendanceLbl: 'Asistencia', trailLbl: 'Ruta', topTitle: 'Top Contribuidores',
     noData: 'Sin datos para este capítulo.', loading: 'Cargando...',
     observers: 'Observadores', alumni: 'Egresados', completed: 'Cards completados',
-    publications: 'Publicaciones', hubAvg: 'vs Hub',
+    publications: 'Publicaciones', hubAvg: 'vs Hub', other: 'Otros',
   },
 };
 
@@ -174,8 +174,8 @@ export default function ChapterDashboard({ lang: propLang }: Props) {
         <MetricCard icon="📄" label={t.output} value={o.board_cards_completed || 0} sub={`${o.publications_submitted || 0} ${t.publications}`} />
         <MetricCard icon="📊" label={t.attendance} value={`${a.rate_pct || 0}%`} sub={`${a.total_events_attended || 0} events`} />
         <MetricCard icon="⏱️" label={t.hours} value={`${h.total_hours || 0}h`} sub={`${t.pdu}: ${h.pdu_equivalent || 0}`} />
-        <MetricCard icon="🎓" label={t.certs} value={c.total_certs || 0} sub={`PMP: ${c.pmp || 0} · CPMAI: ${c.cpmai || 0}`} />
-        <MetricCard icon="🤝" label={t.partnerships} value={pr.total || 0} sub={`${pr.active || 0} ${t.active} · ${pr.negotiation || 0} ${t.negotiation}`} />
+        <MetricCard icon="🎓" label={t.certs} value={c.total_certs || 0} sub={`PMP: ${c.pmp || 0} · CPMAI: ${c.cpmai || 0}${(c.total_certs || 0) - (c.pmp || 0) - (c.cpmai || 0) > 0 ? ` · ${t.other}: ${(c.total_certs || 0) - (c.pmp || 0) - (c.cpmai || 0)}` : ''}`} />
+        <MetricCard icon="🤝" label={t.partnerships} value={pr.total || 0} sub={`${pr.active || 0} ${t.active} · ${pr.negotiation || 0} ${t.negotiation}${(pr.total || 0) - (pr.active || 0) - (pr.negotiation || 0) > 0 ? ` · ${(pr.total || 0) - (pr.active || 0) - (pr.negotiation || 0)} ${t.other}` : ''}`} />
         <MetricCard icon="🏆" label={t.gamification} value={g.avg_xp || 0} sub={`${t.hubAvg}: ${g.hub_avg_xp || 0}`} />
       </div>
 
