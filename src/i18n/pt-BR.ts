@@ -746,6 +746,9 @@ const ptBR: Record<string, string> = {
   'gamification.cert.publish': 'Publicar',
   'gamification.cert.saveDraft': 'Salvar Rascunho',
   'gamification.cert.verify': 'Verificar',
+  'gamification.cert.filterAll': 'Todos',
+  'gamification.cert.downloaded': 'Baixado',
+  'gamification.cert.search': 'Buscar por nome, título ou código',
   // ── CPMAI Prep Course (GC-120) ──
   'cpmai.title': 'Preparatório CPMAI',
   'cpmai.subtitle': 'Curso preparatório para a certificação PMI-CPMAI™',
