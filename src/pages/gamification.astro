@@ -255,6 +255,8 @@ const SCORING_I18N = {
               id="tab-mycerts" data-tab="mycerts" data-action="switch-tab">{t('gamification.tab.certs', lang)}</button>
       <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]"
               id="tab-admin-certs" data-tab="admin-certs" data-action="switch-tab">{t('gamification.tab.issue', lang)}</button>
+      <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]"
+              id="tab-manage-certs" data-tab="manage-certs" data-action="switch-tab">{t('gamification.cert.manage', lang)}</button>
     </div>
 
     <!-- Trail Clarity (logged user) -->
@@ -405,6 +407,28 @@ const SCORING_I18N = {
               {t('gamification.cert.issueBtn', lang)}
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin: Manage Certificates -->
+    <div id="panel-manage-certs" class="hidden">
+      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
+          <h2 class="text-sm font-bold text-navy">{t('gamification.cert.manage', lang)}</h2>
+        </div>
+        <div class="p-5">
+          <div id="manage-certs-summary" class="grid grid-cols-5 gap-3 mb-4"></div>
+          <div class="flex gap-2 mb-4">
+            <select id="manage-certs-filter" class="text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] px-2 py-1.5">
+              <option value="">{t('gamification.cert.filterAll', lang) || 'Todos'}</option>
+              <option value="issued">{t('gamification.cert.statusIssued', lang)}</option>
+              <option value="draft">{t('gamification.cert.statusDraft', lang)}</option>
+              <option value="revoked">{t('gamification.cert.statusRevoked', lang)}</option>
+            </select>
+            <input type="text" id="manage-certs-search" placeholder="Buscar..." class="flex-1 text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] px-2 py-1.5">
+          </div>
+          <div id="manage-certs-table" class="text-xs text-[var(--text-muted)]">{t('common.loading', lang)}</div>
         </div>
       </div>
     </div>
@@ -583,7 +607,7 @@ const SCORING_I18N = {
     });
     el.classList.remove('bg-[var(--surface-card)]', 'text-[var(--text-secondary)]', 'border-[var(--border-default)]');
     el.classList.add('bg-navy', 'text-white', 'border-navy');
-    ['leaderboard', 'tribes', 'achievements', 'mypoints', 'mycerts', 'admin-certs'].forEach(p => {
+    ['leaderboard', 'tribes', 'achievements', 'mypoints', 'mycerts', 'admin-certs', 'manage-certs'].forEach(p => {
       document.getElementById(`panel-${p}`)?.classList.toggle('hidden', p !== tab);
     });
     if (tab === 'leaderboard') loadLeaderboard();
@@ -591,6 +615,7 @@ const SCORING_I18N = {
     if (tab === 'achievements') loadAchievements();
     if (tab === 'mypoints') loadMyPoints();
     if (tab === 'mycerts') loadMyCertificates();
+    if (tab === 'manage-certs') loadManageCerts();
   }
 
   function setTribeMode(mode: 'cycle' | 'lifetime') {
@@ -996,6 +1021,7 @@ const SCORING_I18N = {
         sb.from('certificates')
           .select('*')
           .eq('member_id', MEMBER.id)
+          .eq('status', 'issued')
           .order('issued_at', { ascending: false }),
       );
       if (error) throw error;
@@ -1017,7 +1043,8 @@ const SCORING_I18N = {
           ${c.description ? `<div class="text-[12px] text-[var(--text-secondary)] mt-0.5">${c.description}</div>` : ''}
           <div class="text-[10px] text-[var(--text-muted)] mt-0.5 font-mono">${I.certCode}: ${c.verification_code}</div>
         </div>
-        ${c.pdf_url ? `<a href="${c.pdf_url}" target="_blank" class="px-3 py-1.5 bg-navy text-white rounded-lg text-[12px] font-semibold no-underline hover:opacity-90">📥 PDF</a>` : ''}
+        <button class="px-3 py-1.5 bg-navy text-white rounded-lg text-[10px] font-semibold cursor-pointer border-0 hover:opacity-90" onclick="(async()=>{await sb.rpc('record_certificate_download',{p_cert_id:'${c.id}'});window.downloadCertificatePDF({member_name:'${MEMBER.name}',type:'${c.type}',title:'${c.title||''}',period_start:'${c.period_start||''}',period_end:'${c.period_end||''}',function_role:'${c.function_role||''}',language:'${c.language||'pt-BR'}',verification_code:'${c.verification_code||''}'})})()">📥 PDF</button>
+        <a href="/verify/${c.verification_code}" target="_blank" class="text-[10px] text-blue-500 hover:underline no-underline ml-1">🔗 ${I.certVerify || 'Verificar'}</a>
       </div>`;
       }).join('');
     } catch (e: any) {
@@ -1236,6 +1263,7 @@ const SCORING_I18N = {
     if (canSync) {
       document.getElementById('btn-sync')?.classList.remove('hidden');
       document.getElementById('tab-admin-certs')?.classList.remove('hidden');
+      document.getElementById('tab-manage-certs')?.classList.remove('hidden');
     }
     loadLeaderboard();
     loadMyTrailClarity();
@@ -1272,6 +1300,66 @@ const SCORING_I18N = {
         break;
     }
   });
+
+  // ── MANAGE CERTIFICATES (GP tab) ──
+  async function loadManageCerts() {
+    const filter = (document.getElementById('manage-certs-filter') as HTMLSelectElement)?.value || null;
+    const search = (document.getElementById('manage-certs-search') as HTMLInputElement)?.value?.trim() || null;
+    const { data, error } = await sb.rpc('get_all_certificates', { p_status_filter: filter || null, p_search: search || null });
+    if (error || data?.error) return;
+    const s = data.summary || {};
+    const summaryEl = document.getElementById('manage-certs-summary');
+    if (summaryEl) {
+      summaryEl.innerHTML = [
+        { l: 'Total', v: s.total || 0, c: '' },
+        { l: I.certStatusIssued || 'Emitido', v: s.issued || 0, c: 'text-emerald-600' },
+        { l: I.certStatusDraft || 'Rascunho', v: s.draft || 0, c: 'text-amber-600' },
+        { l: I.certStatusRevoked || 'Revogado', v: s.revoked || 0, c: 'text-red-600' },
+        { l: I.certDownloaded || 'Baixado', v: s.downloaded || 0, c: 'text-blue-600' },
+      ].map(x => `<div class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] p-2 text-center"><div class="text-lg font-black ${x.c}">${x.v}</div><div class="text-[9px] text-[var(--text-muted)] uppercase">${x.l}</div></div>`).join('');
+    }
+    const certs = data.certificates || [];
+    const tableEl = document.getElementById('manage-certs-table');
+    if (!tableEl) return;
+    if (certs.length === 0) { tableEl.innerHTML = '<p class="text-center py-4 text-[var(--text-muted)]">Nenhum certificado.</p>'; return; }
+    const STATUS_BADGE: Record<string, string> = { issued: 'bg-emerald-100 text-emerald-700', draft: 'bg-amber-100 text-amber-700', revoked: 'bg-red-100 text-red-700' };
+    tableEl.innerHTML = `<div class="overflow-x-auto"><table class="w-full text-[11px]"><thead><tr class="bg-[var(--surface-section-cool)]">
+      <th class="px-2 py-2 text-left">Participante</th><th class="px-2 py-2">Tipo</th><th class="px-2 py-2">Título</th><th class="px-2 py-2">Período</th><th class="px-2 py-2">Código</th><th class="px-2 py-2">Status</th><th class="px-2 py-2">Ações</th>
+    </tr></thead><tbody>${certs.map((c: any) => `<tr class="border-t border-[var(--border-subtle)] hover:bg-[var(--surface-hover)] ${c.status === 'revoked' ? 'opacity-50 line-through' : ''}">
+      <td class="px-2 py-1.5 font-medium">${c.member_name}</td>
+      <td class="px-2 py-1.5 text-center">${c.type}</td>
+      <td class="px-2 py-1.5">${c.title || ''}</td>
+      <td class="px-2 py-1.5 text-center">${c.period_start || ''} → ${c.period_end || ''}</td>
+      <td class="px-2 py-1.5 text-center font-mono text-[9px]">${c.verification_code || ''}</td>
+      <td class="px-2 py-1.5 text-center"><span class="px-1.5 py-0.5 rounded-full text-[9px] font-semibold ${STATUS_BADGE[c.status] || ''}">${c.status}</span></td>
+      <td class="px-2 py-1.5 text-center whitespace-nowrap">
+        ${c.status === 'draft' ? `<button class="text-emerald-600 hover:underline cursor-pointer bg-transparent border-0 text-[10px] mr-1" data-action="publish-cert" data-cert-id="${c.id}">✅ Publicar</button>` : ''}
+        ${c.status !== 'revoked' ? `<button class="text-red-500 hover:underline cursor-pointer bg-transparent border-0 text-[10px] mr-1" data-action="revoke-cert" data-cert-id="${c.id}">🔴 Revogar</button>` : ''}
+        <a href="/verify/${c.verification_code}" target="_blank" class="text-blue-500 hover:underline text-[10px] no-underline">🔗</a>
+      </td>
+    </tr>`).join('')}</tbody></table></div>`;
+    // Bind actions
+    tableEl.querySelectorAll('[data-action="publish-cert"]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = (btn as HTMLElement).dataset.certId;
+        await sb.rpc('update_certificate', { p_cert_id: id, p_updates: { status: 'issued' } });
+        toast(I.certIssued || 'Publicado!', 'success');
+        loadManageCerts();
+      });
+    });
+    tableEl.querySelectorAll('[data-action="revoke-cert"]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = (btn as HTMLElement).dataset.certId;
+        const reason = prompt(I.certRevokeReason || 'Motivo da revogação:');
+        if (!reason) return;
+        await sb.rpc('revoke_certificate', { p_cert_id: id, p_reason: reason });
+        toast('Revogado', 'success');
+        loadManageCerts();
+      });
+    });
+  }
+  document.getElementById('manage-certs-filter')?.addEventListener('change', () => loadManageCerts());
+  document.getElementById('manage-certs-search')?.addEventListener('input', () => { clearTimeout((window as any).__mcSearch); (window as any).__mcSearch = setTimeout(loadManageCerts, 300); });
 
   // ── CERTIFICATE PDF (print-based) ──
   (window as any).downloadCertificatePDF = function(certData: any) {
