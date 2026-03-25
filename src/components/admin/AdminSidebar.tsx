@@ -219,7 +219,7 @@ export default function AdminSidebar({ currentPath, locale }: Props) {
                 return (
                   <a
                     key={item.href}
-                    href={item.href}
+                    href={loc !== 'pt-BR' ? `${item.href}${item.href.includes('?') ? '&' : '?'}lang=${loc}` : item.href}
                     onClick={() => isMobile && setMobileOpen(false)}
                     title={collapsed && !isMobile ? label : undefined}
                     className={`flex items-center gap-2.5 mx-2 px-2.5 py-[7px] rounded-lg text-[13px] no-underline transition-colors ${

@@ -115,7 +115,12 @@ export default function CRList({ crs, sections, member, canSubmit, canReview, t,
                   <tr key={cr.id} onClick={() => setSelectedCr(cr)}
                     className="border-t border-[var(--border-subtle)] hover:bg-[var(--surface-hover)] cursor-pointer transition-colors">
                     <td className="px-4 py-2.5 font-bold text-navy whitespace-nowrap">{cr.cr_number}</td>
-                    <td className="px-4 py-2.5 text-[var(--text-primary)]">{cr.title}</td>
+                    <td className="px-4 py-2.5 text-[var(--text-primary)]">
+                      {cr.title}
+                      {typeof window !== 'undefined' && !window.location.pathname.startsWith('/') === false && (window.location.pathname.startsWith('/en') || window.location.search.includes('lang=en') || localStorage.getItem('preferred_locale') === 'en-US') && (
+                        <span className="ml-1.5 text-[8px] px-1 py-0.5 rounded bg-gray-100 text-gray-400 font-medium">PT</span>
+                      )}
+                    </td>
                     <td className="px-4 py-2.5 text-center">{cr.cr_type && badge(cr.cr_type, TYPE_COLORS, 'type')}</td>
                     <td className="px-4 py-2.5 text-center">{cr.status && badge(cr.status, STATUS_COLORS, 'status')}</td>
                     <td className="px-4 py-2.5 text-center">{cr.impact_level && badge(cr.impact_level, IMPACT_COLORS, 'impact')}</td>

@@ -130,8 +130,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       <!-- Section 2: Channel Metrics Chart -->
       <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div class="px-4 py-3 border-b border-[var(--border-default)]">
-          <h2 class="text-sm font-bold text-navy">Métricas por Canal (Visual)</h2>
-          <p class="text-[.68rem] text-[var(--text-muted)]">Alcance e engajamento dos últimos 14 dias</p>
+          <h2 class="text-sm font-bold text-navy">{t('comms.channelMetrics', lang)}</h2>
+          <p class="text-[.68rem] text-[var(--text-muted)]">{t('comms.channelMetricsDesc', lang)}</p>
         </div>
         <div class="p-4" style="height:220px">
           <canvas id="comms-bar-chart"></canvas>
@@ -246,7 +246,21 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   </div>
 </AdminLayout>
 
+<script is:inline define:vars={{ commsI18n: JSON.stringify({
+  token: t('comms.token', lang),
+  configured: t('comms.configured', lang),
+  pending: t('comms.pending', lang),
+  expiration: t('comms.expiration', lang),
+  lastSync: t('comms.lastSync', lang),
+  editConfig: t('comms.editConfig', lang),
+  configure: t('comms.configure', lang),
+  configureChannel: t('comms.configureChannel', lang),
+}) }}>
+  window.__COMMS_I18N = JSON.parse(commsI18n);
+</script>
+
 <script>
+  const CI18N = (window as any).__COMMS_I18N || { token:'Token', configured:'Configured', pending:'Pending', expiration:'Expiration', lastSync:'Last sync', editConfig:'Edit Config', configure:'Configure', configureChannel:'Configure' };
   import { canAccessAdminRoute } from '../../lib/admin/constants';
   import { buildAttendanceFromCommsRoute, buildCommsPlaybookTemplates } from '../../lib/webinars/context-aids';
 
@@ -357,9 +371,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       Chart.register(BarController, CategoryScale, LinearScale, BarElement, Legend, Tooltip);
       const canvas = document.getElementById('comms-bar-chart') as HTMLCanvasElement;
       if (!canvas) return;
+      // Destroy existing chart to avoid canvas reuse error
+      if ((window as any).__commsBarChart) { (window as any).__commsBarChart.destroy(); }
       const channels = [...new Set(data.map((r: any) => r.channel))];
       const PALETTE = ['#0d9488', '#7c3aed', '#2563eb', '#e11d48', '#ea580c'];
-      new Chart(canvas, {
+      (window as any).__commsBarChart = new Chart(canvas, {
         type: 'bar',
         data: {
           labels: channels,
@@ -632,12 +648,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
             <span class="ml-auto text-[10px] px-2 py-0.5 rounded-full font-semibold ${s.cls}">${s.dot} ${s.label}</span>
           </div>
           <div class="space-y-1 text-[11px] text-[var(--text-secondary)]">
-            <div>Token: ${hasToken ? '<span class="text-emerald-600 font-semibold">Configurado</span>' : '<span class="text-[var(--text-muted)]">Pendente</span>'}</div>
-            <div>Expiração: ${warningExpiry ? '<span class="text-amber-600 font-semibold">' + expiryInfo + '</span>' : expiryInfo}</div>
-            <div>Último sync: ${timeAgo(ch.last_sync_at)}</div>
+            <div>${CI18N.token}: ${hasToken ? '<span class="text-emerald-600 font-semibold">' + CI18N.configured + '</span>' : '<span class="text-[var(--text-muted)]">' + CI18N.pending + '</span>'}</div>
+            <div>${CI18N.expiration}: ${warningExpiry ? '<span class="text-amber-600 font-semibold">' + expiryInfo + '</span>' : expiryInfo}</div>
+            <div>${CI18N.lastSync}: ${timeAgo(ch.last_sync_at)}</div>
           </div>
           <button class="mt-3 w-full px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-[var(--text-primary)] text-[10px] font-semibold hover:bg-[var(--surface-hover)] transition-colors" data-action="config-channel" data-channel="${ch.channel}" data-config='${JSON.stringify(ch.config || {})}' data-has-apikey="${ch.has_api_key}" data-has-oauth="${ch.has_oauth_token}">
-            ${hasToken ? 'Editar Config' : 'Configurar'}
+            ${hasToken ? CI18N.editConfig : CI18N.configure}
           </button>
         </article>`;
       }).join('');
@@ -661,7 +677,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     if (!modal) return;
 
     (document.getElementById('channel-modal-name') as HTMLInputElement).value = channel;
-    if (title) title.textContent = `Configurar ${channel.charAt(0).toUpperCase() + channel.slice(1)}`;
+    if (title) title.textContent = `${CI18N.configureChannel} ${channel.charAt(0).toUpperCase() + channel.slice(1)}`;
 
     const isYoutube = channel === 'youtube';
     document.getElementById('channel-apikey-row')!.classList.toggle('hidden', !isYoutube);
