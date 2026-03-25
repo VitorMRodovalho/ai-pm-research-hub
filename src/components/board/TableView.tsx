@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { safeChecklist, COLUMN_PRESETS, type BoardItem, type BoardI18n } from '../../types/board';
+import { safeChecklist, COLUMN_PRESETS, getColumnLabel, type BoardItem, type BoardI18n } from '../../types/board';
 
 interface Props {
   items: BoardItem[];
@@ -105,7 +105,7 @@ export default function TableView({ items, columns, i18n, onOpenDetail, onMove }
                     onChange={(e) => { e.stopPropagation(); onMove(item.id, e.target.value); }}
                     className="rounded border border-[var(--border-default)] px-1 py-0.5 text-[10px] bg-[var(--surface-card)] outline-none cursor-pointer">
                     {columns.map(col => (
-                      <option key={col} value={col}>{COLUMN_PRESETS[col]?.label ?? col}</option>
+                      <option key={col} value={col}>{getColumnLabel(col)}</option>
                     ))}
                   </select>
                 </td>

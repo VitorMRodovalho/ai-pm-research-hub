@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { BoardI18n, BoardMember } from '../../types/board';
-import { COLUMN_PRESETS } from '../../types/board';
+import { COLUMN_PRESETS, getColumnLabel } from '../../types/board';
 import { getSb } from '../../hooks/useBoard';
 import MemberPicker from './MemberPicker';
 
@@ -117,7 +117,7 @@ export default function CardCreate({ boardId, columns, i18n, onClose, onCreate }
                 className="w-full rounded-xl border border-[var(--border-default)] px-2 py-2 text-[12px] bg-[var(--surface-card)]
                   outline-none focus:border-blue-400 cursor-pointer">
                 {columns.map((col) => (
-                  <option key={col} value={col}>{COLUMN_PRESETS[col]?.label ?? col}</option>
+                  <option key={col} value={col}>{getColumnLabel(col)}</option>
                 ))}
               </select>
             </div>

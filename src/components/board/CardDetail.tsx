@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { safeChecklist, safeArray, COLUMN_PRESETS, type Board, type BoardItem, type BoardI18n, type LifecycleEvent, type BoardMember, type BoardSummary, type CurationHistory, type RubricScore, type ItemAssignment, type AssignmentRole } from '../../types/board';
+import { safeChecklist, safeArray, COLUMN_PRESETS, getColumnLabel, type Board, type BoardItem, type BoardI18n, type LifecycleEvent, type BoardMember, type BoardSummary, type CurationHistory, type RubricScore, type ItemAssignment, type AssignmentRole } from '../../types/board';
 import { getSb } from '../../hooks/useBoard';
 import MemberPicker from './MemberPicker';
 import MemberPickerMulti from './MemberPickerMulti';
@@ -438,7 +438,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
             <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold
               ${COLUMN_PRESETS[item.status]?.badgeBg ?? 'bg-[var(--surface-section-cool)]'} 
               ${COLUMN_PRESETS[item.status]?.badgeText ?? 'text-[var(--text-secondary)]'}`}>
-              {COLUMN_PRESETS[item.status]?.label ?? item.status}
+              {getColumnLabel(item.status)}
             </span>
             {item.source_card_id && <span className="text-[9px] text-blue-400">🟦 Trello</span>}
           </div>
@@ -789,7 +789,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                       <span className="text-[var(--text-secondary)]">
                         {ev.actor_name && <strong>{ev.actor_name}</strong>}
                         {' '}
-                        {ev.action === 'status_change' && `moveu de "${COLUMN_PRESETS[ev.previous_status || '']?.label ?? ev.previous_status}" para "${COLUMN_PRESETS[ev.new_status || '']?.label ?? ev.new_status}"`}
+                        {ev.action === 'status_change' && `${getColumnLabel(ev.previous_status || '')} → ${getColumnLabel(ev.new_status || '')}`}
                         {ev.action === 'created' && 'criou este card'}
                         {ev.action === 'assigned' && (ev.reason || 'atribuiu responsável')}
                         {ev.action === 'archived' && 'arquivou este card'}
@@ -832,7 +832,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                 className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1.5 text-[12px] bg-[var(--surface-card)]
                   outline-none focus:border-blue-400 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
                 {board.columns.map((col: string) => (
-                  <option key={col} value={col}>{COLUMN_PRESETS[col]?.label ?? col}</option>
+                  <option key={col} value={col}>{getColumnLabel(col)}</option>
                 ))}
               </select>
             </div>
@@ -1099,7 +1099,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                         onChange={(e) => setMirrorTargetStatus(e.target.value)}
                         className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1 text-[11px] bg-[var(--surface-card)] outline-none">
                         {board.columns.map((col: string) => (
-                          <option key={col} value={col}>{COLUMN_PRESETS[col]?.label ?? col}</option>
+                          <option key={col} value={col}>{getColumnLabel(col)}</option>
                         ))}
                       </select>
                       <textarea value={mirrorNotes}
