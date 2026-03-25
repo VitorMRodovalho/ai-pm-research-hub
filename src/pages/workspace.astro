@@ -696,7 +696,7 @@ const WK = {
                 stepEl.innerHTML = `
                   <span class="text-base">${statusIcon}</span>
                   <div class="flex-1 min-w-0">
-                    <div class="text-sm font-semibold text-[var(--text-primary)]">${escHtml(step.step_key.replace(/_/g, ' '))}</div>
+                    <div class="text-sm font-semibold text-[var(--text-primary)]">${escHtml((step.step_key || '').replace(/_/g, ' '))}</div>
                     ${slaLabel}
                   </div>
                   ${!isDone ? `<button class="onb-mark-btn px-3 py-1.5 text-[.7rem] font-bold rounded-lg bg-teal text-white border-0 cursor-pointer hover:opacity-90" data-app="${appId}" data-step="${step.step_key}">${i18n.onbMarkDone}</button>` : `<span class="text-[.65rem] text-green-600 font-semibold">${i18n.onbCompleted}</span>`}
