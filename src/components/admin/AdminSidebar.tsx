@@ -69,13 +69,11 @@ const SECTIONS: SidebarSection[] = [
     id: 'reports', emoji: '📈',
     label: { 'pt-BR': 'Relatórios', 'en-US': 'Reports', 'es-LATAM': 'Informes' },
     items: [
-      { href: '/admin/analytics', label: { 'pt-BR': 'Analytics', 'en-US': 'Analytics', 'es-LATAM': 'Analytics' }, icon: 'BarChart3', permission: 'admin.analytics' },
       { href: '/admin/portfolio', label: { 'pt-BR': 'Portfólio Executivo', 'en-US': 'Executive Portfolio', 'es-LATAM': 'Portafolio Ejecutivo' }, icon: 'Briefcase', permission: 'admin.portfolio' },
+      { href: '/admin/report', label: { 'pt-BR': 'Gerador de Relatório', 'en-US': 'Report Builder', 'es-LATAM': 'Generador de Informes' }, icon: 'FileBarChart', permission: 'admin.portfolio' },
       { href: '/admin/cycle-report', label: { 'pt-BR': 'Relatório do Ciclo', 'en-US': 'Cycle Report', 'es-LATAM': 'Informe del Ciclo' }, icon: 'FileText', permission: 'admin.analytics' },
-      { href: '/admin/chapter-report', label: { 'pt-BR': 'Relatório por Capítulo', 'en-US': 'Chapter Report', 'es-LATAM': 'Informe por Capítulo' }, icon: 'Building', permission: 'admin.analytics.chapter' },
-      { href: '/admin/chapter', label: { 'pt-BR': 'Meu Capítulo', 'en-US': 'My Chapter', 'es-LATAM': 'Mi Capítulo' }, icon: 'Building', permission: 'admin.access' },
-      { href: '/admin/report', label: { 'pt-BR': 'Relatório Executivo', 'en-US': 'Executive Report', 'es-LATAM': 'Informe Ejecutivo' }, icon: 'FileBarChart', permission: 'admin.analytics' },
-      { href: '/admin/tribes', label: { 'pt-BR': 'Comparativo de Tribos', 'en-US': 'Tribe Comparison', 'es-LATAM': 'Comparativo de Tribus' }, icon: 'GitCompare', permission: 'admin.access' },
+      { href: '/admin/chapter', label: { 'pt-BR': 'Meu Capítulo', 'en-US': 'My Chapter', 'es-LATAM': 'Mi Capítulo' }, icon: 'Building', permission: 'admin.analytics.chapter' },
+      { href: '/admin/analytics', label: { 'pt-BR': 'Analytics', 'en-US': 'Analytics', 'es-LATAM': 'Analytics' }, icon: 'BarChart3', permission: 'admin.analytics' },
     ],
   },
   {
