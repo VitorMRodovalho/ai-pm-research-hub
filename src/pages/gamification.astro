@@ -1401,47 +1401,50 @@ const SCORING_I18N = {
         ${c.status !== 'revoked' ? `<button class="text-red-500 hover:underline cursor-pointer bg-transparent border-0 text-[10px]" data-action="revoke-cert" data-cert-id="${c.id}">🔴</button>` : ''}
       </td>
     </tr>`).join('')}</tbody></table></div>`;
-    // Bind actions
-    tableEl.querySelectorAll('[data-action="publish-cert"]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = (btn as HTMLElement).dataset.certId;
-        await sb.rpc('update_certificate', { p_cert_id: id, p_updates: { status: 'issued' } });
-        toast(I.certIssued || 'Publicado!', 'success');
-        loadManageCerts();
-      });
-    });
-    tableEl.querySelectorAll('[data-action="download-cert"]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        try { const d = JSON.parse((btn as HTMLElement).dataset.cert || '{}'); await (window as any).downloadCertificatePDF(d); } catch {}
-      });
-    });
-    tableEl.querySelectorAll('[data-action="revoke-cert"]').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = (btn as HTMLElement).dataset.certId;
-        const reason = prompt(I.certRevokeReason || 'Motivo da revogação:');
-        if (!reason) return;
-        await sb.rpc('revoke_certificate', { p_cert_id: id, p_reason: reason });
-        toast('Revogado', 'success');
-        loadManageCerts();
-      });
-    });
-    tableEl.querySelectorAll('[data-action="edit-cert"]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const el = btn as HTMLElement;
-        enterEditMode(el.dataset.certId || '', {
-          type: el.dataset.certType || '',
-          title: el.dataset.certTitle || '',
-          desc: (el.dataset.certDesc || '').replace(/&#10;/g, '\n'),
-          periodStart: el.dataset.certPeriodStart || '',
-          periodEnd: el.dataset.certPeriodEnd || '',
-          role: el.dataset.certRole || '',
-          lang: el.dataset.certLang || 'pt-BR',
-        });
-      });
-    });
   }
   document.getElementById('manage-certs-filter')?.addEventListener('change', () => loadManageCerts());
   document.getElementById('manage-certs-search')?.addEventListener('input', () => { clearTimeout((window as any).__mcSearch); (window as any).__mcSearch = setTimeout(loadManageCerts, 300); });
+
+  // ── Manage tab: document-level delegation for dynamically rendered buttons ──
+  document.addEventListener('click', async (e) => {
+    const target = e.target as HTMLElement;
+    const publishBtn = target.closest('[data-action="publish-cert"]') as HTMLElement;
+    if (publishBtn) {
+      const id = publishBtn.dataset.certId;
+      await sb.rpc('update_certificate', { p_cert_id: id, p_updates: { status: 'issued' } });
+      toast(I.certIssued || 'Publicado!', 'success');
+      loadManageCerts();
+      return;
+    }
+    const downloadBtn = target.closest('[data-action="download-cert"]') as HTMLElement;
+    if (downloadBtn) {
+      try { const d = JSON.parse(downloadBtn.dataset.cert || '{}'); await (window as any).downloadCertificatePDF(d); } catch {}
+      return;
+    }
+    const revokeBtn = target.closest('[data-action="revoke-cert"]') as HTMLElement;
+    if (revokeBtn) {
+      const id = revokeBtn.dataset.certId;
+      const reason = prompt(I.certRevokeReason || 'Motivo da revogação:');
+      if (!reason) return;
+      await sb.rpc('revoke_certificate', { p_cert_id: id, p_reason: reason });
+      toast('Revogado', 'success');
+      loadManageCerts();
+      return;
+    }
+    const editBtn = target.closest('[data-action="edit-cert"]') as HTMLElement;
+    if (editBtn) {
+      enterEditMode(editBtn.dataset.certId || '', {
+        type: editBtn.dataset.certType || '',
+        title: editBtn.dataset.certTitle || '',
+        desc: (editBtn.dataset.certDesc || '').replace(/&#10;/g, '\n'),
+        periodStart: editBtn.dataset.certPeriodStart || '',
+        periodEnd: editBtn.dataset.certPeriodEnd || '',
+        role: editBtn.dataset.certRole || '',
+        lang: editBtn.dataset.certLang || 'pt-BR',
+      });
+      return;
+    }
+  });
 
   // ── CERTIFICATE PDF (print-based, portrait A4) ──
   (window as any).downloadCertificatePDF = async function(certData: any) {
