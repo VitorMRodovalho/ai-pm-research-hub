@@ -84,6 +84,9 @@ const GAM_I18N = {
   certRevokeReason: t('gamification.cert.revokeReason', lang),
   certPublish: t('gamification.cert.publish', lang),
   certVerify: t('gamification.cert.verify', lang),
+  certEdit: t('gamification.cert.edit', lang) || 'Editar',
+  certSaveChanges: t('gamification.cert.saveChanges', lang) || 'Salvar Alterações',
+  certUpdated: t('gamification.cert.updated', lang) || 'Certificado atualizado!',
   syncAttendanceError: t('gamification.sync.attendanceError', lang),
   syncAttendanceFail: t('gamification.sync.attendanceFail', lang),
   syncAttendanceSuccess: t('gamification.sync.attendanceSuccess', lang),
@@ -1185,18 +1188,67 @@ const SCORING_I18N = {
     }
   }
 
-  // ── ISSUE CERTIFICATE (admin) ──
+  // ── ISSUE / EDIT CERTIFICATE (admin) ──
+  let editingCertId: string | null = null;
+
+  function enterEditMode(certId: string, data: Record<string, string>) {
+    editingCertId = certId;
+    (document.getElementById('cert-type') as HTMLSelectElement).value = data.type || 'participation';
+    (document.getElementById('cert-title') as HTMLInputElement).value = data.title || '';
+    (document.getElementById('cert-desc') as HTMLTextAreaElement).value = data.desc || '';
+    (document.getElementById('cert-period-start') as HTMLInputElement).value = data.periodStart || '';
+    (document.getElementById('cert-period-end') as HTMLInputElement).value = data.periodEnd || '';
+    (document.getElementById('cert-role') as HTMLInputElement).value = data.role || '';
+    const langRadio = document.querySelector(`input[name="cert-lang"][value="${data.lang || 'pt-BR'}"]`) as HTMLInputElement;
+    if (langRadio) langRadio.checked = true;
+    const issueBtn = document.querySelector('[data-action="issue-certificate"]') as HTMLButtonElement;
+    if (issueBtn) issueBtn.textContent = I.certSaveChanges;
+    // Disable member select during edit
+    const memberSel = document.getElementById('cert-member') as HTMLSelectElement;
+    if (memberSel) memberSel.disabled = true;
+    // Scroll to form
+    document.getElementById('cert-title')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function exitEditMode() {
+    editingCertId = null;
+    const issueBtn = document.querySelector('[data-action="issue-certificate"]') as HTMLButtonElement;
+    if (issueBtn) issueBtn.textContent = I.certIssueBtn;
+    const memberSel = document.getElementById('cert-member') as HTMLSelectElement;
+    if (memberSel) memberSel.disabled = false;
+    (document.getElementById('cert-title') as HTMLInputElement).value = '';
+    (document.getElementById('cert-desc') as HTMLTextAreaElement).value = '';
+    (document.getElementById('cert-period-start') as HTMLInputElement).value = '';
+    (document.getElementById('cert-period-end') as HTMLInputElement).value = '';
+    (document.getElementById('cert-role') as HTMLInputElement).value = '';
+  }
+
   async function issueCertificate() {
-    const memberId = (document.getElementById('cert-member') as HTMLSelectElement).value;
     const type = (document.getElementById('cert-type') as HTMLSelectElement).value;
     const title = (document.getElementById('cert-title') as HTMLInputElement).value.trim();
     const desc = (document.getElementById('cert-desc') as HTMLTextAreaElement).value.trim() || null;
-    const cycle = parseInt((document.getElementById('cert-cycle') as HTMLInputElement).value);
     const periodStart = (document.getElementById('cert-period-start') as HTMLInputElement)?.value.trim() || null;
     const periodEnd = (document.getElementById('cert-period-end') as HTMLInputElement)?.value.trim() || null;
     const functionRole = (document.getElementById('cert-role') as HTMLInputElement)?.value.trim() || null;
     const certLang = (document.querySelector('input[name="cert-lang"]:checked') as HTMLInputElement)?.value || 'pt-BR';
 
+    if (editingCertId) {
+      // UPDATE mode
+      if (!title) { toast(I.certFillFields, 'error'); return; }
+      const { error } = await sb.rpc('update_certificate', {
+        p_cert_id: editingCertId,
+        p_updates: { title, description: desc, type, period_start: periodStart, period_end: periodEnd, function_role: functionRole, language: certLang }
+      });
+      if (error) { toast(error.message || 'Error', 'error'); return; }
+      toast(I.certUpdated, 'success');
+      exitEditMode();
+      loadManageCerts();
+      return;
+    }
+
+    // ISSUE mode
+    const memberId = (document.getElementById('cert-member') as HTMLSelectElement).value;
+    const cycle = parseInt((document.getElementById('cert-cycle') as HTMLInputElement).value);
     if (!memberId || !title) { toast(I.certFillFields, 'error'); return; }
 
     const { data, error } = await sb.rpc('issue_certificate', {
@@ -1205,7 +1257,6 @@ const SCORING_I18N = {
 
     if (error || data?.error) { toast(data?.error || error?.message || 'Error', 'error'); return; }
     toast(`${I.certIssued} — ${data.verification_code}`, 'success');
-    // Show download button
     const lastCert = { ...data, type, title, description: desc, period_start: periodStart, period_end: periodEnd, function_role: functionRole, language: certLang };
     (window as any).__lastCert = lastCert;
     (document.getElementById('cert-title') as HTMLInputElement).value = '';
@@ -1345,6 +1396,7 @@ const SCORING_I18N = {
       <td class="px-2 py-1.5 text-center whitespace-nowrap">
         <button class="text-navy hover:underline cursor-pointer bg-transparent border-0 text-[10px] mr-1" data-action="download-cert" data-cert='${JSON.stringify({member_name:c.member_name,type:c.type,title:c.title||'',period_start:c.period_start||'',period_end:c.period_end||'',function_role:c.function_role||'',language:c.language||'pt-BR',verification_code:c.verification_code||'',description:c.description||'',issued_by:c.issued_by||''}).replace(/'/g,"&#39;")}'>📄 PDF</button>
         <a href="/verify/${c.verification_code}" target="_blank" class="text-blue-500 hover:underline text-[10px] no-underline mr-1">🔗</a>
+        ${c.status !== 'revoked' ? `<button class="text-navy hover:underline cursor-pointer bg-transparent border-0 text-[10px] mr-1" data-action="edit-cert" data-cert-id="${c.id}" data-cert-title="${(c.title||'').replace(/"/g,'&quot;')}" data-cert-desc="${(c.description||'').replace(/"/g,'&quot;').replace(/\n/g,'&#10;')}" data-cert-period-start="${c.period_start||''}" data-cert-period-end="${c.period_end||''}" data-cert-role="${c.function_role||''}" data-cert-type="${c.type||''}" data-cert-lang="${c.language||'pt-BR'}">✏️</button>` : ''}
         ${c.status === 'draft' ? `<button class="text-emerald-600 hover:underline cursor-pointer bg-transparent border-0 text-[10px] mr-1" data-action="publish-cert" data-cert-id="${c.id}">✅</button>` : ''}
         ${c.status !== 'revoked' ? `<button class="text-red-500 hover:underline cursor-pointer bg-transparent border-0 text-[10px]" data-action="revoke-cert" data-cert-id="${c.id}">🔴</button>` : ''}
       </td>
@@ -1373,6 +1425,20 @@ const SCORING_I18N = {
         loadManageCerts();
       });
     });
+    tableEl.querySelectorAll('[data-action="edit-cert"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const el = btn as HTMLElement;
+        enterEditMode(el.dataset.certId || '', {
+          type: el.dataset.certType || '',
+          title: el.dataset.certTitle || '',
+          desc: (el.dataset.certDesc || '').replace(/&#10;/g, '\n'),
+          periodStart: el.dataset.certPeriodStart || '',
+          periodEnd: el.dataset.certPeriodEnd || '',
+          role: el.dataset.certRole || '',
+          lang: el.dataset.certLang || 'pt-BR',
+        });
+      });
+    });
   }
   document.getElementById('manage-certs-filter')?.addEventListener('change', () => loadManageCerts());
   document.getElementById('manage-certs-search')?.addEventListener('input', () => { clearTimeout((window as any).__mcSearch); (window as any).__mcSearch = setTimeout(loadManageCerts, 300); });
@@ -1398,7 +1464,7 @@ const SCORING_I18N = {
     const bodyKey = 'body' + (certData.type || 'participation').charAt(0).toUpperCase() + (certData.type || 'participation').slice(1);
     const bodyText = (tpl[bodyKey] || tpl.bodyParticipation).replace('{role}', certData.function_role || '');
     const period = certData.period_start && certData.period_end ? tpl.period.replace('{start}', certData.period_start).replace('{end}', certData.period_end) : '';
-    const descSection = certData.description ? `<div style="margin:24px auto;max-width:420px;text-align:left"><div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:6px">${tpl.contributions}</div><div style="font-size:12px;color:#666;line-height:1.6">${certData.description}</div></div>` : '';
+    const descSection = certData.description ? `<div style="margin:24px auto;max-width:420px;text-align:left"><div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:6px">${tpl.contributions}</div><div style="font-size:12px;color:#666;line-height:1.6">${certData.description.replace(/\n/g, '<br>')}</div></div>` : '';
     const sigImg = certData.signature_url ? `<img src="${certData.signature_url}" style="max-width:180px;max-height:60px;margin-bottom:4px" crossorigin="anonymous">` : '';
     const w = window.open('', '_blank');
     if (!w) return;
