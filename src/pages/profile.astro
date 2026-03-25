@@ -1034,9 +1034,11 @@ const PROFILE_I18N = {
     }
   });
 
-  // ── Signature upload ──
-  document.getElementById('sig-upload')?.addEventListener('change', async (e) => {
-    const file = (e.target as HTMLInputElement).files?.[0];
+  // ── Signature upload (event delegation — input may be re-rendered) ──
+  document.addEventListener('change', async (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.id !== 'sig-upload') return;
+    const file = target.files?.[0];
     if (!file) return;
     if (file.size > 500 * 1024) { (window as any).toast?.('Max 500KB', 'error'); return; }
     if (file.type !== 'image/png') { (window as any).toast?.('PNG only', 'error'); return; }
@@ -1045,16 +1047,20 @@ const PROFILE_I18N = {
     if (!sb || !member) return;
     try {
       const path = `signatures/${(member.email || 'user').replace(/[@.]/g, '_')}.png`;
-      await sb.storage.from('member-signatures').upload(path, file, { upsert: true });
+      const { error } = await sb.storage.from('member-signatures').upload(path, file, { upsert: true });
+      if (error) throw error;
       const { data: urlData } = sb.storage.from('member-signatures').getPublicUrl(path);
       const sigUrl = urlData.publicUrl + '?t=' + Date.now();
       await sb.rpc('update_my_profile', { p_fields: { signature_url: sigUrl } });
       const preview = document.getElementById('sig-preview');
       if (preview) preview.innerHTML = `<img src="${sigUrl}" class="max-w-[200px] max-h-[70px] border border-[var(--border-subtle)] rounded p-1" alt="">`;
       (window as any).toast?.('Assinatura salva!', 'success');
+      target.value = '';
     } catch (err: any) { (window as any).toast?.(err.message || 'Erro', 'error'); }
   });
-  document.getElementById('sig-remove')?.addEventListener('click', async () => {
+  document.addEventListener('click', async (e) => {
+    const target = e.target as HTMLElement;
+    if (target.id !== 'sig-remove' && !target.closest('#sig-remove')) return;
     const sb = (window as any).navGetSb?.();
     const member = (window as any).navGetMember?.();
     if (!sb || !member) return;
