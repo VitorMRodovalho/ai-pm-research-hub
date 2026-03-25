@@ -601,7 +601,8 @@ const WK = {
               : i18n.checkinStartsSoon.replace('{m}', String(Math.abs(diffMin)));
 
             banner.innerHTML = `
-              <div class="bg-teal/10 border-2 border-teal rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 animate-pulse-border">
+              <div class="bg-teal/10 border-2 border-teal rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 animate-pulse-border relative">
+                <button type="button" id="wk-checkin-dismiss" class="absolute top-1.5 right-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] bg-transparent border-0 cursor-pointer text-base leading-none" aria-label="Dismiss">&times;</button>
                 <div class="flex-1 min-w-0">
                   <div class="font-bold text-[var(--text-primary)] text-sm truncate">${escHtml(ev.event_title)}</div>
                   <div class="text-xs text-[var(--text-secondary)] mt-0.5">${timeLabel}</div>
@@ -641,6 +642,9 @@ const WK = {
                 btn.textContent = i18n.checkinBanner;
                 btn.removeAttribute('disabled');
               }
+            });
+            document.getElementById('wk-checkin-dismiss')?.addEventListener('click', () => {
+              banner.classList.add('hidden');
             });
           }
         }
