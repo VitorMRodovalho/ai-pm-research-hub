@@ -130,6 +130,10 @@ const PROFILE_I18N = {
   notifPrefsTypePublication: t('notifications.prefs.typePublication', lang),
   notifPrefsTypeSystem: t('notifications.prefs.typeSystem', lang),
   notifPrefsTypeMention: t('notifications.prefs.typeMention', lang),
+  notifPrefAttendanceReminder: t('notifications.prefs.attendanceReminder', lang),
+  notifPrefDetractor: t('notifications.prefs.detractor', lang),
+  notifPrefCr: t('notifications.prefs.cr', lang),
+  notifPrefCertificate: t('notifications.prefs.certificate', lang),
   notifPrefsSaved: t('notifications.prefs.saved', lang),
 };
 ---
@@ -976,6 +980,18 @@ const PROFILE_I18N = {
               <label class="inline-flex items-center gap-1.5 text-[.75rem] text-navy cursor-pointer">
                 <input type="checkbox" id="mute-mention" class="accent-teal w-3.5 h-3.5"> ${PROFILE_I18N.notifPrefsTypeMention}
               </label>
+              <label class="inline-flex items-center gap-1.5 text-[.75rem] text-navy cursor-pointer">
+                <input type="checkbox" id="mute-attendance_reminder" class="accent-teal w-3.5 h-3.5"> ${PROFILE_I18N.notifPrefAttendanceReminder || 'Event reminders'}
+              </label>
+              <label class="inline-flex items-center gap-1.5 text-[.75rem] text-navy cursor-pointer">
+                <input type="checkbox" id="mute-attendance_detractor" class="accent-teal w-3.5 h-3.5"> ${PROFILE_I18N.notifPrefDetractor || 'Detractor alerts'}
+              </label>
+              <label class="inline-flex items-center gap-1.5 text-[.75rem] text-navy cursor-pointer">
+                <input type="checkbox" id="mute-cr_approved" class="accent-teal w-3.5 h-3.5"> ${PROFILE_I18N.notifPrefCr || 'CR updates'}
+              </label>
+              <label class="inline-flex items-center gap-1.5 text-[.75rem] text-navy cursor-pointer">
+                <input type="checkbox" id="mute-certificate_issued" class="accent-teal w-3.5 h-3.5"> ${PROFILE_I18N.notifPrefCertificate || 'Certificates'}
+              </label>
             </div>
           </div>
           <div class="flex justify-end pt-2">
@@ -1223,7 +1239,7 @@ const PROFILE_I18N = {
     if (!sb || !currentMember) return;
     const inApp = (document.getElementById('pref-in-app') as HTMLInputElement)?.checked ?? true;
     const emailDigest = (document.getElementById('pref-email-digest') as HTMLInputElement)?.checked ?? true;
-    const muteIds = ['assignment', 'curation_status', 'publication', 'system', 'mention'];
+    const muteIds = ['assignment', 'curation_status', 'publication', 'system', 'mention', 'attendance_reminder', 'attendance_detractor', 'cr_approved', 'certificate_issued'];
     const mutedTypes = muteIds.filter(t => (document.getElementById(`mute-${t}`) as HTMLInputElement)?.checked);
     const { error } = await sb.rpc('update_notification_preferences', {
       p_prefs: { in_app: inApp, email_digest: emailDigest, muted_types: mutedTypes }

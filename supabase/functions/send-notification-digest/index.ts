@@ -81,11 +81,26 @@ Deno.serve(async (req) => {
         .order('created_at', { ascending: false })
         .limit(50)
 
-      if (!notifs || notifs.length === 0) continue
+      // Fetch upcoming events (next 7 days)
+      const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+      const today = new Date().toISOString().slice(0, 10)
+      const { data: upcomingEvents } = await sb
+        .from('events')
+        .select('title, date, type')
+        .gte('date', today)
+        .lte('date', nextWeek)
+        .order('date')
+        .limit(10)
 
-      // Group by type
+      // Fetch attendance streak
+      const { data: ahRows } = await sb.rpc('get_member_attendance_hours', { p_member_id: pref.member_id })
+      const streak = ahRows?.[0]?.current_streak || 0
+
+      if ((!notifs || notifs.length === 0) && (!upcomingEvents || upcomingEvents.length === 0)) continue
+
+      // Group notifications by type
       const grouped: Record<string, any[]> = {}
-      for (const n of notifs) {
+      for (const n of (notifs || [])) {
         const t = n.type || 'system'
         if (!grouped[t]) grouped[t] = []
         grouped[t].push(n)
@@ -93,12 +108,19 @@ Deno.serve(async (req) => {
 
       const typeLabels: Record<string, string> = {
         assignment: 'Atribuições',
+        assignment_new: 'Atribuições',
         curation_status: 'Curadoria',
         publication: 'Publicações',
         system: 'Sistema',
         mention: 'Menções',
+        attendance_reminder: 'Lembretes',
+        attendance_detractor: 'Alertas',
+        cr_approved: 'Mudanças Aprovadas',
+        cr_status_changed: 'Solicitações de Mudança',
+        certificate_issued: 'Certificados',
       }
 
+      const notifsCount = notifs?.length || 0
       const sectionsHtml = Object.entries(grouped).map(([type, items]) => {
         const label = typeLabels[type] || type
         const itemsHtml = items.map((n: any) => {
@@ -114,6 +136,20 @@ Deno.serve(async (req) => {
         `
       }).join('')
 
+      // Upcoming events section
+      const eventsHtml = upcomingEvents && upcomingEvents.length > 0
+        ? `<h3 style="font-size:14px;color:#0f172a;margin:16px 0 8px;padding-bottom:4px;border-bottom:2px solid #f59e0b">📅 Próximos Eventos (${upcomingEvents.length})</h3>
+           <table style="width:100%;border-collapse:collapse">${upcomingEvents.map((e: any) => {
+             const d = new Date(e.date + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })
+             return `<tr><td style="padding:6px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#334155">${e.title}</td><td style="padding:6px 12px;border-bottom:1px solid #f1f5f9;font-size:12px;color:#94a3b8;white-space:nowrap">${d}</td></tr>`
+           }).join('')}</table>`
+        : ''
+
+      // Streak badge
+      const streakHtml = streak >= 3
+        ? `<div style="text-align:center;margin:16px 0;padding:10px;background:#fef3c7;border-radius:8px;font-size:13px;color:#92400e">🔥 <strong>${streak} presenças consecutivas!</strong> Continue assim!</div>`
+        : ''
+
       const firstName = (member.name || 'Membro').split(' ')[0]
       const html = `
         <div style="max-width:560px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
@@ -122,8 +158,10 @@ Deno.serve(async (req) => {
             <p style="color:#94a3b8;font-size:13px;margin:4px 0 0">Resumo semanal de notificações</p>
           </div>
           <div style="background:#fff;padding:24px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px">
-            <p style="font-size:14px;color:#334155">Olá <strong>${firstName}</strong>, você tem <strong>${notifs.length}</strong> notificação(ões) não lida(s) esta semana:</p>
+            <p style="font-size:14px;color:#334155">Olá <strong>${firstName}</strong>${notifsCount > 0 ? `, você tem <strong>${notifsCount}</strong> notificação(ões) não lida(s) esta semana` : ', confira seu resumo semanal'}:</p>
+            ${streakHtml}
             ${sectionsHtml}
+            ${eventsHtml}
             <div style="margin-top:24px;text-align:center">
               <a href="https://nucleoiagp.com/notifications" style="display:inline-block;padding:10px 28px;background:#14b8a6;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px">Ver notificações</a>
             </div>
@@ -141,7 +179,7 @@ Deno.serve(async (req) => {
           body: JSON.stringify({
             from: fromAddr,
             to: [member.email],
-            subject: `Núcleo IA & GP — Resumo da semana: ${notifs.length} novidade(s)`,
+            subject: `Núcleo IA & GP — Seu resumo semanal`,
             html,
           }),
         })
