@@ -198,7 +198,7 @@ const PRES_I18N = {
           .select('name, operational_role, current_cycle_active')
           .eq('tribe_id', CTX.tribeId)
           .eq('current_cycle_active', true),
-        sb.rpc('list_tribe_deliverables', { p_tribe_id: CTX.tribeId, p_status: 'in_progress' }),
+        sb.rpc('list_tribe_deliverables', { p_tribe_id: CTX.tribeId }),
       ]);
 
       const presEl = document.getElementById('pres-layer-presence');
