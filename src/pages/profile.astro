@@ -1041,9 +1041,10 @@ const PROFILE_I18N = {
     if (file.size > 500 * 1024) { (window as any).toast?.('Max 500KB', 'error'); return; }
     if (file.type !== 'image/png') { (window as any).toast?.('PNG only', 'error'); return; }
     const sb = (window as any).navGetSb?.();
-    if (!sb || !currentMember) return;
+    const member = (window as any).navGetMember?.();
+    if (!sb || !member) return;
     try {
-      const path = `signatures/${(currentMember.email || 'user').replace(/[@.]/g, '_')}.png`;
+      const path = `signatures/${(member.email || 'user').replace(/[@.]/g, '_')}.png`;
       await sb.storage.from('member-signatures').upload(path, file, { upsert: true });
       const { data: urlData } = sb.storage.from('member-signatures').getPublicUrl(path);
       const sigUrl = urlData.publicUrl + '?t=' + Date.now();
@@ -1055,7 +1056,8 @@ const PROFILE_I18N = {
   });
   document.getElementById('sig-remove')?.addEventListener('click', async () => {
     const sb = (window as any).navGetSb?.();
-    if (!sb || !currentMember) return;
+    const member = (window as any).navGetMember?.();
+    if (!sb || !member) return;
     await sb.rpc('update_my_profile', { p_fields: { signature_url: '' } });
     const preview = document.getElementById('sig-preview');
     if (preview) preview.innerHTML = '<span class="text-[.7rem] text-[var(--text-muted)]">Nenhuma assinatura</span>';
