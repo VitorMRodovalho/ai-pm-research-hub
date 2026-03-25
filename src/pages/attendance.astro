@@ -15,7 +15,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang);
 ---
 
-<BaseLayout title={t('attendance.meta', lang)} activePage="attendance">
+<BaseLayout title={t('attendance.meta', lang)} activePage="attendance" lang={lang}>
   <Toast />
 
   <!-- AUTH GATE (hidden by default, shown only if no session) -->
