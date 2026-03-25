@@ -721,6 +721,8 @@ const ptBR: Record<string, string> = {
   'onboarding.admin.fullyOnboarded': 'Totalmente integrados',
   'onboarding.admin.inProgress': 'Em progresso',
   'onboarding.admin.notStarted': 'Não iniciaram',
+  'chapter.title': 'Painel do Capítulo',
+  'chapter.breadcrumb': 'Meu Capítulo',
   // ── CPMAI Prep Course (GC-120) ──
   'cpmai.title': 'Preparatório CPMAI',
   'cpmai.subtitle': 'Curso preparatório para a certificação PMI-CPMAI™',

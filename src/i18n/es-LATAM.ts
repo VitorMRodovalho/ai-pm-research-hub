@@ -719,6 +719,8 @@ const esLATAM: Record<string, string> = {
   'onboarding.admin.fullyOnboarded': 'Totalmente integrados',
   'onboarding.admin.inProgress': 'En progreso',
   'onboarding.admin.notStarted': 'No iniciaron',
+  'chapter.title': 'Panel del Capítulo',
+  'chapter.breadcrumb': 'Mi Capítulo',
   'cpmai.title': 'Preparatorio CPMAI',
   'cpmai.subtitle': 'Curso preparatorio para la certificación PMI-CPMAI™',
   'cpmai.disclaimer': 'Este curso preparatorio es una iniciativa del Núcleo IA & GP y NO reemplaza el curso oficial del PMI de 21 horas, que es un prerequisito obligatorio para agendar el examen PMI-CPMAI™.',

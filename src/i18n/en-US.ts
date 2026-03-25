@@ -719,6 +719,8 @@ const enUS: Record<string, string> = {
   'onboarding.admin.fullyOnboarded': 'Fully onboarded',
   'onboarding.admin.inProgress': 'In progress',
   'onboarding.admin.notStarted': 'Not started',
+  'chapter.title': 'Chapter Dashboard',
+  'chapter.breadcrumb': 'My Chapter',
   'cpmai.title': 'CPMAI Prep Course',
   'cpmai.subtitle': 'Preparatory course for the PMI-CPMAI™ certification',
   'cpmai.disclaimer': 'This preparatory course is an initiative of the AI & PM Research Hub and does NOT replace the official 21-hour PMI course, which is a mandatory prerequisite to schedule the PMI-CPMAI™ exam.',
