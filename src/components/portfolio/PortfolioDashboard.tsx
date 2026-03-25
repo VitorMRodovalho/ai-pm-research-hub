@@ -9,12 +9,22 @@ import PortfolioTribeCards from './PortfolioTribeCards';
 
 type Tab = 'table' | 'gantt' | 'heatmap' | 'tribes';
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'table', label: 'Tabela' },
-  { key: 'gantt', label: 'Gantt' },
-  { key: 'heatmap', label: 'Heatmap' },
-  { key: 'tribes', label: 'Tribos' },
-];
+function detectLang(): string {
+  if (typeof window === 'undefined') return 'pt-BR';
+  if (window.location.pathname.startsWith('/en')) return 'en-US';
+  if (window.location.pathname.startsWith('/es')) return 'es-LATAM';
+  const p = new URLSearchParams(window.location.search).get('lang');
+  if (p) return p;
+  return localStorage.getItem('preferred_locale') || 'pt-BR';
+}
+
+const TAB_LABELS: Record<string, Record<Tab, string>> = {
+  'pt-BR':   { table: 'Tabela', gantt: 'Gantt', heatmap: 'Heatmap', tribes: 'Tribos' },
+  'en-US':   { table: 'Table', gantt: 'Gantt', heatmap: 'Heatmap', tribes: 'Streams' },
+  'es-LATAM': { table: 'Tabla', gantt: 'Gantt', heatmap: 'Heatmap', tribes: 'Líneas' },
+};
+
+const TABS: Tab[] = ['table', 'gantt', 'heatmap', 'tribes'];
 
 export default function PortfolioDashboard() {
   const { data, filtered, filters, setFilters, clearFilters, hasActiveFilters, loading, error } = usePortfolio(3);
@@ -46,10 +56,13 @@ export default function PortfolioDashboard() {
     );
   }
 
+  const lang = detectLang();
+  const tabLabels = TAB_LABELS[lang] || TAB_LABELS['pt-BR'];
+
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-        <p className="font-bold text-red-700">Erro ao carregar portfólio</p>
+        <p className="font-bold text-red-700">{lang.startsWith('en') ? 'Failed to load portfolio' : lang.startsWith('es') ? 'Error al cargar portafolio' : 'Erro ao carregar portfólio'}</p>
         <p className="text-sm text-red-600 mt-1">{error}</p>
       </div>
     );
@@ -72,17 +85,17 @@ export default function PortfolioDashboard() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-[var(--surface-section-cool)] rounded-xl p-1">
-        {TABS.map(t => (
+        {TABS.map(k => (
           <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
+            key={k}
+            onClick={() => setTab(k)}
             className={`flex-1 px-3 py-2 rounded-lg text-xs font-bold border-0 cursor-pointer transition-all ${
-              tab === t.key
+              tab === k
                 ? 'bg-[var(--surface-card)] text-[var(--text-primary)] shadow-sm'
                 : 'bg-transparent text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
             }`}
           >
-            {t.label}
+            {tabLabels[k]}
           </button>
         ))}
       </div>
