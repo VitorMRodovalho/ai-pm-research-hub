@@ -968,6 +968,8 @@ const enUS: Record<string, string> = {
   'attendance.checkin.windowExpired': 'The 48h check-in window has expired. Ask your manager.',
   'attendance.checkin.tooEarly': 'Check-in opens 2h before the event.',
   'attendance.checkin.success': 'Attendance recorded!',
+  'attendance.windowClosed': 'Check-in closed',
+  'attendance.adminOverride': 'Register (Admin)',
   'attendance.toggle.mark': 'Click to mark present',
   'attendance.toggle.remove': 'Click to remove',
   'attendance.error.permission': 'Permission denied.',
