@@ -24,6 +24,7 @@ interface Permissions {
   canAssign: boolean;
   canCurate: boolean;
   canDelete: boolean;
+  canManageBoard: boolean;
   isLoading: boolean;
   member: MemberContext | null;
 }
@@ -103,7 +104,7 @@ export function useBoardPermissions(board: Board | null): Permissions {
     return {
       canView: false, canCreate: false, canEditOwn: false, canEditAny: false,
       canMove: false, canAssign: false, canCurate: false, canDelete: false,
-      isLoading, member: null,
+      canManageBoard: false, isLoading, member: null,
     };
   }
 
@@ -123,15 +124,18 @@ export function useBoardPermissions(board: Board | null): Permissions {
   const isComms = effectiveDesig.some((d: string) => ['comms_leader', 'comms_member'].includes(d));
   const isCurator = effectiveDesig.includes('curator') || effectiveDesig.includes('co_gp');
 
+  const canManageBoard = isSuperadmin || isManager || (isLeader && isOwnTribe);
+
   return {
     canView: isSuperadmin || isManager || isGlobal || isOwnTribe,
-    canCreate: isSuperadmin || isManager || (isLeader && isOwnTribe) || (isComms && isGlobal) || tier <= 4,
+    canCreate: canManageBoard || (isComms && isGlobal) || (isOwnTribe && tier <= 4),
     canEditOwn: tier <= 4,
-    canEditAny: isSuperadmin || isManager || (isLeader && isOwnTribe),
-    canMove: isSuperadmin || isManager || (isLeader && isOwnTribe) || (isComms && isGlobal) || tier <= 4,
-    canAssign: isSuperadmin || isManager || (isLeader && isOwnTribe) || (isComms && isGlobal),
-    canCurate: isSuperadmin || isManager || (isLeader && isOwnTribe) || isCurator,
-    canDelete: isSuperadmin || isManager || (isLeader && isOwnTribe),
+    canEditAny: canManageBoard,
+    canMove: canManageBoard || (isComms && isGlobal) || (isOwnTribe && tier <= 4),
+    canAssign: canManageBoard || (isComms && isGlobal),
+    canCurate: canManageBoard || isCurator,
+    canDelete: canManageBoard,
+    canManageBoard,
     isLoading,
     member,
   };
