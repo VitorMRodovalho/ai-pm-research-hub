@@ -4,9 +4,36 @@ import PortfolioDashboard from '../../components/portfolio/PortfolioDashboard';
 import PlannedVsActualSection from '../../components/portfolio/PlannedVsActualSection';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+
+// Build i18n bundle for client-side script
+const scriptI18n = JSON.stringify({
+  accessDenied: t('portfolio.script.accessDenied', lang),
+  loadError: t('portfolio.script.loadError', lang),
+  totalActiveMembers: t('portfolio.script.totalActiveMembers', lang),
+  totalActiveTribes: t('portfolio.script.totalActiveTribes', lang),
+  totalBoardsOperating: t('portfolio.script.totalBoardsOperating', lang),
+  totalOverdueCards: t('portfolio.script.totalOverdueCards', lang),
+  researchTribes: t('portfolio.script.researchTribes', lang),
+  operations: t('portfolio.script.operations', lang),
+  global: t('portfolio.script.global', lang),
+  overdue: t('portfolio.script.overdue', lang),
+  orphans: t('portfolio.script.orphans', lang),
+  cards: t('portfolio.script.cards', lang),
+  taxonomyFail: t('portfolio.script.taxonomyFail', lang),
+  taxonomyDone: t('portfolio.script.taxonomyDone', lang),
+  sanityFail: t('portfolio.script.sanityFail', lang),
+  sanityOk: t('portfolio.script.sanityOk', lang),
+  sanityInactive: t('portfolio.script.sanityInactive', lang),
+  tribe: t('portfolio.script.tribe', lang),
+  globalScope: t('portfolio.script.global_scope', lang),
+  board: t('portfolio.script.board', lang),
+});
 ---
 
-<AdminLayout title={t('nav.adminPortfolio', lang)} breadcrumbs={[{label:'Relatórios'},{label:'Portfólio Executivo'}]}>
+<AdminLayout title={t('nav.adminPortfolio', lang)} breadcrumbs={[{label: t('portfolio.breadcrumb.reports', lang)},{label: t('portfolio.breadcrumb.executive', lang)}]}>
+  <!-- i18n bundle for client-side script -->
+  <script id="portfolio-i18n" type="application/json" set:html={scriptI18n}></script>
+
   <div class="max-w-[1100px] mx-auto px-4 py-8 space-y-4">
     <!-- W142: GP Portfolio Dashboard (React island) -->
     <section class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
@@ -17,8 +44,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
     <!-- Planned vs Actual -->
     <section class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
-      <h2 class="text-lg font-extrabold text-navy mb-1">Planejado × Realizado</h2>
-      <p class="text-xs text-[var(--text-secondary)] mb-4">Performance por tribo — entregáveis planejados vs concluídos, SPI e desvio médio.</p>
+      <h2 class="text-lg font-extrabold text-navy mb-1">{t('portfolio.plannedVsActual.title', lang)}</h2>
+      <p class="text-xs text-[var(--text-secondary)] mb-4">{t('portfolio.plannedVsActual.subtitle', lang)}</p>
       <PlannedVsActualSection client:load />
     </section>
 
@@ -59,6 +86,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 <script>
   import { hasPermission } from '../../lib/permissions';
 
+  // Read i18n bundle injected by Astro template
+  const _i18n = JSON.parse(document.getElementById('portfolio-i18n')?.textContent || '{}');
+
   let portfolioBootRetries = 0;
 
   function hasPortfolioAccess(member: any): boolean {
@@ -72,8 +102,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     return `
       <article class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-3">
         <div class="text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">${entry.board_scope} · ${entry.domain_key} ${hasNoActiveCards ? '<span class="ml-1 text-amber-600">⚠️</span>' : ''}</div>
-        <div class="mt-1 text-sm text-[var(--text-primary)]">Cards: <strong>${entry.total_cards || 0}</strong></div>
-        <div class="text-xs text-[var(--text-secondary)] mt-1">Atrasados: <span class="${overdueClass}">${entry.overdue_cards || 0}</span> · Órfãos: ${entry.orphan_cards || 0}</div>
+        <div class="mt-1 text-sm text-[var(--text-primary)]">${_i18n.cards || 'Cards:'} <strong>${entry.total_cards || 0}</strong></div>
+        <div class="text-xs text-[var(--text-secondary)] mt-1">${_i18n.overdue || 'Overdue:'} <span class="${overdueClass}">${entry.overdue_cards || 0}</span> · ${_i18n.orphans || 'Orphans:'} ${entry.orphan_cards || 0}</div>
       </article>
     `;
   }
@@ -124,7 +154,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       if (portfolioBootRetries >= 20) {
         loading?.classList.add('hidden');
         denied?.classList.remove('hidden');
-        denied!.textContent = 'Acesso restrito a administração e audiência executiva.';
+        denied!.textContent = _i18n.accessDenied || 'Access restricted.';
         return;
       }
       setTimeout(() => bootPortfolioPage(), 150);
@@ -143,7 +173,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     ]);
     if (error) {
       denied?.classList.remove('hidden');
-      denied!.textContent = 'Falha ao carregar visão executiva de portfólio.';
+      denied!.textContent = _i18n.loadError || 'Failed to load portfolio.';
       return;
     }
     const rows = Array.isArray(data?.by_lane) ? data.by_lane : [];
@@ -158,17 +188,17 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     panel?.classList.remove('hidden');
     if (macros) {
       macros.innerHTML = [
-        macroHtml('Total de Membros Ativos', totalMembers),
-        macroHtml('Total de Tribos Ativas', totalTribes),
-        macroHtml('Total de Boards Operando', totalBoardsOperating),
-        macroHtml('Total de Cards Atrasados', totalOverdue, totalOverdue > 0 ? 'text-red-600' : 'text-[var(--text-primary)]'),
+        macroHtml(_i18n.totalActiveMembers || 'Total Active Members', totalMembers),
+        macroHtml(_i18n.totalActiveTribes || 'Total Active Streams', totalTribes),
+        macroHtml(_i18n.totalBoardsOperating || 'Total Boards Operating', totalBoardsOperating),
+        macroHtml(_i18n.totalOverdueCards || 'Total Overdue Cards', totalOverdue, totalOverdue > 0 ? 'text-red-600' : 'text-[var(--text-primary)]'),
       ].join('');
     }
     if (summary) {
       summary.innerHTML = [
-        sectionHtml('🟢 Tribos de Pesquisa', grouped.research),
-        sectionHtml('⚙️ Operações', grouped.operations),
-        sectionHtml('🌍 Global', grouped.global),
+        sectionHtml(_i18n.researchTribes || '🟢 Research Streams', grouped.research),
+        sectionHtml(_i18n.operations || '⚙️ Operations', grouped.operations),
+        sectionHtml(_i18n.global || '🌍 Global', grouped.global),
       ].join('');
     }
 
@@ -183,10 +213,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     if (!sb) return;
     const { data, error } = await sb.rpc('admin_detect_board_taxonomy_drift');
     if (error) {
-      (window as any).toast?.('Falha ao detectar drift taxonomy.', 'error');
+      (window as any).toast?.(_i18n.taxonomyFail || 'Taxonomy drift detection failed.', 'error');
       return;
     }
-    (window as any).toast?.(`Detecção concluída. Alertas abertos: ${data?.open_alerts ?? 'n/a'}`, 'success');
+    (window as any).toast?.(`${_i18n.taxonomyDone || 'Detection complete. Open alerts:'} ${data?.open_alerts ?? 'n/a'}`, 'success');
   });
 
   document.getElementById('portfolio-run-sanity')?.addEventListener('click', async () => {
@@ -194,11 +224,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     if (!sb) return;
     const { data, error } = await sb.rpc('admin_run_portfolio_data_sanity');
     if (error) {
-      (window as any).toast?.('Falha na execução do data sanity.', 'error');
+      (window as any).toast?.(_i18n.sanityFail || 'Data sanity check failed.', 'error');
       return;
     }
     const summary = data?.summary || {};
-    (window as any).toast?.(`Sanity OK. Orfãos: ${summary.orphan_items ?? 0} · Inativos: ${summary.items_in_inactive_board ?? 0}`, 'success');
+    (window as any).toast?.(`${_i18n.sanityOk || 'Sanity OK. Orphans:'} ${summary.orphan_items ?? 0} · ${_i18n.sanityInactive || 'Inactive:'} ${summary.items_in_inactive_board ?? 0}`, 'success');
   });
 
   // ─── KPI Health (W104) — now uses get_annual_kpis ───
@@ -223,7 +253,6 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       behind:   { bg: 'bg-red-50',     border: 'border-red-200',     accent: 'text-red-700',      bar: '#BE2027' },
     };
 
-    // Summary bar
     const s = data.summary;
     const summaryHtml = `<div class="col-span-full flex items-center gap-3 text-[.7rem] font-semibold mb-1">
       <span class="text-emerald-600">🟢 ${s.achieved}</span>
@@ -247,7 +276,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
     function renderKpiCard(k: any): string {
       const h = HEALTH_STYLES[k.health] || HEALTH_STYLES.behind;
-      const label = langKey === 'en' && k.label_en ? k.label_en : k.label_pt;
+      const label = langKey === 'en' && k.label_en ? k.label_en : langKey === 'es' && k.label_es ? k.label_es : k.label_pt;
       const pct = Math.min(Number(k.progress_pct) || 0, 999);
       const displayPct = Math.min(pct, 100);
       const unitLabel = k.unit === '%' ? '%' : k.unit === 'R$' ? ' R$' : '';
@@ -269,7 +298,6 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       </article>`;
     }
 
-    // Group KPIs by category
     const grouped = new Map<string, any[]>();
     for (const k of kpis) {
       const cat = k.category || 'other';
@@ -307,10 +335,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
     panel.classList.remove('hidden');
     grid.innerHTML = boards.map((b: any) => {
-      const scope = b.board_scope === 'tribe' ? 'Tribo' : b.board_scope === 'global' ? 'Global' : b.board_scope || '';
+      const scope = b.board_scope === 'tribe'
+        ? (_i18n.tribe || 'Stream')
+        : b.board_scope === 'global'
+          ? (_i18n.globalScope || 'Global')
+          : b.board_scope || '';
       return `
         <a href="/admin/board/${b.id}" class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-3 no-underline hover:border-teal transition-all block">
-          <div class="text-sm font-semibold text-navy">${escH(b.board_name || 'Board')}</div>
+          <div class="text-sm font-semibold text-navy">${escH(b.board_name || (_i18n.board || 'Board'))}</div>
           <div class="text-[.68rem] text-[var(--text-muted)] mt-1">${escH(scope)} · ${escH(b.domain_key || '')}</div>
         </a>
       `;
