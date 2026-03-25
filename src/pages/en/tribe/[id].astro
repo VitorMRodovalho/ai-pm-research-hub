@@ -1,14 +1,4 @@
 ---
-import BaseLayout from '../../../layouts/BaseLayout.astro';
-import { t } from '../../../i18n/utils';
-const lang = 'en-US' as const;
-const { id } = Astro.params;
-const tribeId = parseInt(id || '0', 10);
-if (tribeId < 1) return Astro.redirect('/en');
+import TribePage from '../../tribe/[id].astro';
 ---
-<BaseLayout title={t('tribe.meta', lang).replace('{name}', `T${tribeId}`)} activePage="tribes" lang={lang}>
-  <meta http-equiv="refresh" content={`0;url=/tribe/${id}?lang=en-US`}>
-  <div class="flex items-center justify-center min-h-[60vh]">
-    <p class="text-[var(--text-muted)] text-sm">{t('common.loading', lang)}</p>
-  </div>
-</BaseLayout>
+<TribePage />

@@ -18,7 +18,7 @@ const currentPath = Astro.url.pathname.replace(/\/$/, '') || '/admin';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 ---
 
-<BaseLayout title={title} activePage={activePage}>
+<BaseLayout title={title} activePage={activePage} lang={lang}>
   <div class="flex min-h-[calc(100vh-64px)]">
     <!-- Sidebar (React island) -->
     <AdminSidebar
