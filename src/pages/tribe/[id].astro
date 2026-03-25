@@ -1584,6 +1584,11 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       // Render header
       renderHeader(tribeRes.data, headerLeader, headerSlots);
 
+      // G6: Auto-complete 'meet_tribe' onboarding step when visiting own tribe
+      if (currentMember && currentMember.tribe_id === TRIBE_ID) {
+        getSb()?.rpc('complete_onboarding_step', { p_step_id: 'meet_tribe' }).catch(() => {});
+      }
+
       // Cross-tribe banner (defensive — never breaks page load)
       try {
         if (currentMember) {

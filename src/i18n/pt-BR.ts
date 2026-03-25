@@ -714,6 +714,13 @@ const ptBR: Record<string, string> = {
   'notifications.crStatusChanged': 'CR "{title}" foi {status}',
   'notifications.detractorAlert': '{member} tem {count} faltas consecutivas',
   'notifications.preferences': 'Preferências de notificação',
+  'onboarding.title': 'Complete seu Onboarding',
+  'onboarding.progress': '{completed}/{total} concluídos',
+  'onboarding.complete': 'Onboarding concluído! Bem-vindo ao Núcleo! 🎉',
+  'onboarding.admin.title': 'Status de Onboarding',
+  'onboarding.admin.fullyOnboarded': 'Totalmente integrados',
+  'onboarding.admin.inProgress': 'Em progresso',
+  'onboarding.admin.notStarted': 'Não iniciaram',
   // ── CPMAI Prep Course (GC-120) ──
   'cpmai.title': 'Preparatório CPMAI',
   'cpmai.subtitle': 'Curso preparatório para a certificação PMI-CPMAI™',

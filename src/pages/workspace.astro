@@ -8,6 +8,7 @@ import AttendanceDashboard from '../components/workspace/AttendanceDashboard';
 import AttendanceForm from '../components/workspace/AttendanceForm';
 import DropoutRiskBanner from '../components/workspace/DropoutRiskBanner';
 import MyTasksIsland from '../components/workspace/MyTasksIsland';
+import OnboardingChecklist from '../components/onboarding/OnboardingChecklist';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
@@ -94,6 +95,9 @@ const WK = {
       <LoadingSkeleton variant="profile" />
       <LoadingSkeleton variant="card" count={3} />
     </div>
+
+    <!-- Onboarding Checklist -->
+    <OnboardingChecklist client:load lang={lang} />
 
     <!-- Observer Banner -->
     <div id="wk-observer-banner" class="hidden rounded-2xl border border-amber-200 bg-amber-50 p-5 mb-6">
