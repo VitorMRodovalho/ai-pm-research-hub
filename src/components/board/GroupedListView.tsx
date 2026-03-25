@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { safeChecklist, COLUMN_PRESETS, type BoardItem, type BoardI18n } from '../../types/board';
+import { safeChecklist, COLUMN_PRESETS, getColumnLabel, type BoardItem, type BoardI18n } from '../../types/board';
 
 interface Props {
   items: BoardItem[];
@@ -28,7 +28,7 @@ export default function GroupedListView({ items, i18n, onOpenDetail }: Props) {
             : item.assignee_name ? [item.assignee_name] : ['(sem responsável)'];
           break;
         case 'status':
-          keys = [COLUMN_PRESETS[item.status]?.label ?? item.status];
+          keys = [getColumnLabel(item.status)];
           break;
         default:
           keys = ['—'];
@@ -102,7 +102,7 @@ export default function GroupedListView({ items, i18n, onOpenDetail }: Props) {
                       <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold
                         ${COLUMN_PRESETS[item.status]?.badgeBg ?? 'bg-gray-100'}
                         ${COLUMN_PRESETS[item.status]?.badgeText ?? 'text-gray-600'}`}>
-                        {COLUMN_PRESETS[item.status]?.label ?? item.status}
+                        {getColumnLabel(item.status)}
                       </span>
                       <span className="text-[10px] text-[var(--text-muted)] w-16 text-right">
                         {item.forecast_date || item.due_date || '—'}

@@ -87,10 +87,13 @@ export default function BoardEngine(props: BoardEngineProps) {
   }, []);
 
   // ── Column config (from DB) ──
+  const _lang = typeof window !== 'undefined'
+    ? (window.location.pathname.startsWith('/en') ? 'en-US' : window.location.pathname.startsWith('/es') ? 'es-LATAM' : new URLSearchParams(window.location.search).get('lang') || localStorage.getItem('preferred_locale') || 'pt-BR')
+    : 'pt-BR';
   const columns = useMemo(() => {
     if (!board?.columns) return [];
-    return board.columns.map((colId: string) => getColumnMeta(colId));
-  }, [board]);
+    return board.columns.map((colId: string) => getColumnMeta(colId, _lang));
+  }, [board, _lang]);
 
   // ── Group items by column ──
   const columnItems = useMemo(() => {
