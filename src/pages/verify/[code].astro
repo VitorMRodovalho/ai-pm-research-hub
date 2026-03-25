@@ -1,0 +1,60 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getLangFromURL, type Lang } from '../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const { code } = Astro.params;
+const L: Record<string, Record<string, string>> = {
+  'pt-BR': { title: 'Verificação de Certificado', hub: 'Núcleo de Estudos e Pesquisa em IA & GP', valid: 'Certificado válido', revoked: 'Este certificado foi revogado', notFound: 'Certificado não encontrado', issuedAt: 'Emitido em', period: 'Período', type: 'Tipo', loading: 'Verificando...', disclaimer: 'PMI®, PMBOK®, PMP® e PMI-CPMAI™ são marcas registradas do PMI, Inc.' },
+  'en-US': { title: 'Certificate Verification', hub: 'AI & PM Study and Research Hub', valid: 'Valid certificate', revoked: 'This certificate has been revoked', notFound: 'Certificate not found', issuedAt: 'Issued on', period: 'Period', type: 'Type', loading: 'Verifying...', disclaimer: 'PMI®, PMBOK®, PMP® and PMI-CPMAI™ are registered marks of PMI, Inc.' },
+  'es-LATAM': { title: 'Verificación de Certificado', hub: 'Hub de Estudios e Investigación en IA y GP', valid: 'Certificado válido', revoked: 'Este certificado fue revocado', notFound: 'Certificado no encontrado', issuedAt: 'Emitido el', period: 'Período', type: 'Tipo', loading: 'Verificando...', disclaimer: 'PMI®, PMBOK®, PMP® y PMI-CPMAI™ son marcas registradas de PMI, Inc.' },
+};
+const t = L[lang] || L['pt-BR'];
+---
+
+<BaseLayout title={t.title} lang={lang}>
+  <div class="max-w-[500px] mx-auto px-4 py-16">
+    <div class="text-center mb-8">
+      <div class="text-sm font-bold text-navy tracking-wide uppercase">{t.hub}</div>
+      <h1 class="text-xl font-extrabold text-[var(--text-primary)] mt-2">{t.title}</h1>
+    </div>
+    <div id="verify-loading" class="text-center py-8 text-[var(--text-muted)]">{t.loading}</div>
+    <div id="verify-result" class="hidden"></div>
+    <div class="text-center mt-8 text-[8px] text-[var(--text-muted)]">{t.disclaimer}</div>
+  </div>
+</BaseLayout>
+
+<script define:vars={{ code, lang }}>
+  async function verify() {
+    const sb = window.navGetSb?.();
+    if (!sb) { setTimeout(verify, 300); return; }
+    const { data } = await sb.rpc('verify_certificate', { p_code: code });
+    document.getElementById('verify-loading')?.classList.add('hidden');
+    const el = document.getElementById('verify-result');
+    if (!el) return;
+    el.classList.remove('hidden');
+    const L = { 'pt-BR': { valid:'Certificado válido', revoked:'Este certificado foi revogado', notFound:'Certificado não encontrado', issuedAt:'Emitido em', period:'Período' }, 'en-US': { valid:'Valid certificate', revoked:'This certificate has been revoked', notFound:'Certificate not found', issuedAt:'Issued on', period:'Period' }, 'es-LATAM': { valid:'Certificado válido', revoked:'Este certificado fue revocado', notFound:'Certificado no encontrado', issuedAt:'Emitido el', period:'Período' } };
+    const t = L[lang] || L['pt-BR'];
+    if (!data || !data.valid) {
+      const msg = data?.message || t.notFound;
+      const isRevoked = msg.includes('revoked') || msg.includes('revogado');
+      el.innerHTML = `<div class="rounded-2xl border-2 ${isRevoked ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-gray-50'} p-8 text-center">
+        <div class="text-3xl mb-3">${isRevoked ? '🔴' : '❓'}</div>
+        <div class="text-lg font-bold ${isRevoked ? 'text-red-700' : 'text-gray-600'}">${msg}</div>
+      </div>`;
+      return;
+    }
+    const d = data;
+    const dateStr = d.issued_at ? new Date(d.issued_at).toLocaleDateString(lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es' : 'pt-BR', { day:'2-digit', month:'long', year:'numeric' }) : '';
+    const period = d.period_start && d.period_end ? `${t.period}: ${d.period_start} → ${d.period_end}` : '';
+    el.innerHTML = `<div class="rounded-2xl border-2 border-emerald-300 bg-emerald-50 p-8 text-center">
+      <div class="text-3xl mb-3">✅</div>
+      <div class="text-lg font-bold text-emerald-700 mb-4">${t.valid}</div>
+      <div class="text-xl font-extrabold text-navy mb-1">${d.member_name}</div>
+      <div class="text-sm text-gray-600 mb-1">${d.title || ''}</div>
+      ${period ? `<div class="text-xs text-gray-500 mb-1">${period}</div>` : ''}
+      <div class="text-xs text-gray-500">${t.issuedAt}: ${dateStr}</div>
+      <div class="mt-3 text-[10px] text-gray-400 font-mono">${d.verification_code}</div>
+    </div>`;
+  }
+  verify();
+</script>
