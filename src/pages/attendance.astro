@@ -182,6 +182,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
   checkinTooEarly: t('attendance.checkin.tooEarly', lang),
   feedbackCycleTotal: t('attendance.feedback.cycleTotal', lang),
   feedbackEvents: t('attendance.feedback.events', lang),
+  windowClosed: t('attendance.windowClosed', lang),
+  adminOverride: t('attendance.adminOverride', lang),
 }) }}>
   window.__ATTENDANCE_I18N = JSON.parse(__ATTENDANCE_I18N);
 </script>
@@ -552,6 +554,19 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
       || (MEMBER?.designations || []).includes('deputy_manager');
   }
 
+  function canAdminCheckin(): boolean {
+    return isGPLevel() || MEMBER?.operational_role === 'tribe_leader';
+  }
+
+  function isInCheckinWindow(ev: any): boolean {
+    if (!ev?.date) return false;
+    const now = Date.now();
+    const evStart = new Date(ev.date + 'T00:00:00').getTime();
+    const windowOpen = evStart - 2 * 60 * 60 * 1000;   // -2h
+    const windowClose = evStart + 24 * 60 * 60 * 1000;  // +24h
+    return now >= windowOpen && now <= windowClose;
+  }
+
   function populateTypeDropdown() {
     const sel = document.getElementById('events-type-filter') as HTMLSelectElement;
     if (!sel) return;
@@ -597,7 +612,12 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
         <div class="text-[11px] text-[var(--text-muted)]">${fmtDate(ev.date)} · ${ev.duration_minutes || 60}min${isPast ? ` · ${ev.attendee_count || 0} presentes` : ''}${linkHtml}${recHtml} ${badges}</div>
       </div>
       <div class="flex gap-1 items-center flex-shrink-0">
-        ${ev.i_attended !== true ? `<button class="px-2 py-1 rounded text-[11px] font-semibold bg-navy text-white border-0 cursor-pointer" data-action="check-in" data-event-id="${ev.id}">Check-In</button>` : ''}
+        ${ev.i_attended !== true ? (isInCheckinWindow(ev)
+          ? `<button class="px-2 py-1 rounded text-[11px] font-semibold bg-navy text-white border-0 cursor-pointer" data-action="check-in" data-event-id="${ev.id}">Check-In</button>`
+          : (canAdminCheckin()
+            ? `<button class="px-2 py-1 rounded text-[11px] font-semibold bg-amber-600 text-white border-0 cursor-pointer" data-action="admin-check-in" data-event-id="${ev.id}">${I18N.adminOverride || 'Register (Admin)'}</button>`
+            : `<span class="px-2 py-1 rounded text-[10px] text-[var(--text-muted)] bg-[var(--surface-section-cool)]">${I18N.windowClosed || 'Check-in closed'}</span>`
+          )) : ''}
         ${canRoster ? `<button class="px-1.5 py-1 text-xs bg-[var(--surface-base)] border border-[var(--border-default)] rounded cursor-pointer" data-action="open-roster" data-event-id="${ev.id}" data-event-title="${ev.title || ''}">📋</button>` : ''}
         ${canEdit ? `<button class="px-1.5 py-1 text-xs bg-[var(--surface-base)] border border-[var(--border-default)] rounded cursor-pointer" data-action="edit-event" data-event-id="${ev.id}">✏️</button>` : ''}
       </div>
@@ -744,6 +764,9 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
           break;
         case 'check-in':
           checkIn(target.dataset.eventId || '');
+          break;
+        case 'admin-check-in':
+          adminCheckIn(target.dataset.eventId || '');
           break;
         case 'open-roster':
           openRoster(target.dataset.eventId || '', target.dataset.eventTitle || '');
@@ -912,6 +935,27 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
       toast(errMsg, 'error');
       safePH?.('capture', 'checkin_failed', { event_id: eventId, error: errMsg });
       console.error('register_own_presence failed:', e);
+    }
+  }
+
+  // ── ADMIN CHECK-IN (bypasses time window) ──
+  async function adminCheckIn(eventId: string) {
+    if (!canAdminCheckin()) return;
+    try {
+      const { data, error } = await sb.rpc('mark_member_present', {
+        p_event_id: eventId,
+        p_member_id: MEMBER.id,
+        p_present: true,
+      });
+      if (error) throw error;
+      if (data?.success) {
+        toast(I18N.msgCheckedIn, 'success');
+        loadEvents(); loadKPIs();
+      } else {
+        toast(data?.error || I18N.msgCheckInError, 'error');
+      }
+    } catch (e: any) {
+      toast(e?.message || I18N.msgCheckInError, 'error');
     }
   }
 

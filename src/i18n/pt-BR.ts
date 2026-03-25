@@ -972,6 +972,8 @@ const ptBR: Record<string, string> = {
   'attendance.checkin.windowExpired': 'O prazo de 48h para check-in expirou. Solicite ao gestor.',
   'attendance.checkin.tooEarly': 'O check-in abre 2h antes do evento.',
   'attendance.checkin.success': 'Presença registrada!',
+  'attendance.windowClosed': 'Check-in encerrado',
+  'attendance.adminOverride': 'Registrar (Admin)',
   'attendance.toggle.mark': 'Clique para marcar presente',
   'attendance.toggle.remove': 'Clique para remover presença',
   'attendance.error.permission': 'Sem permissão para esta ação.',

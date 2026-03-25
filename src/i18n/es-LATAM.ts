@@ -968,6 +968,8 @@ const esLATAM: Record<string, string> = {
   'attendance.checkin.windowExpired': 'El plazo de 48h para check-in expiró. Solicite al gestor.',
   'attendance.checkin.tooEarly': 'El check-in abre 2h antes del evento.',
   'attendance.checkin.success': 'Asistencia registrada!',
+  'attendance.windowClosed': 'Check-in cerrado',
+  'attendance.adminOverride': 'Registrar (Admin)',
   'attendance.toggle.mark': 'Clic para marcar presente',
   'attendance.toggle.remove': 'Clic para remover asistencia',
   'attendance.error.permission': 'Sin permiso para esta acción.',
