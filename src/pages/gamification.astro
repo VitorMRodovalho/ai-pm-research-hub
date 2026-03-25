@@ -1343,9 +1343,10 @@ const SCORING_I18N = {
       <td class="px-2 py-1.5 text-center font-mono text-[9px]">${c.verification_code || ''}</td>
       <td class="px-2 py-1.5 text-center"><span class="px-1.5 py-0.5 rounded-full text-[9px] font-semibold ${STATUS_BADGE[c.status] || ''}">${c.status}</span></td>
       <td class="px-2 py-1.5 text-center whitespace-nowrap">
-        ${c.status === 'draft' ? `<button class="text-emerald-600 hover:underline cursor-pointer bg-transparent border-0 text-[10px] mr-1" data-action="publish-cert" data-cert-id="${c.id}">✅ Publicar</button>` : ''}
-        ${c.status !== 'revoked' ? `<button class="text-red-500 hover:underline cursor-pointer bg-transparent border-0 text-[10px] mr-1" data-action="revoke-cert" data-cert-id="${c.id}">🔴 Revogar</button>` : ''}
-        <a href="/verify/${c.verification_code}" target="_blank" class="text-blue-500 hover:underline text-[10px] no-underline">🔗</a>
+        <button class="text-navy hover:underline cursor-pointer bg-transparent border-0 text-[10px] mr-1" data-action="download-cert" data-cert='${JSON.stringify({member_name:c.member_name,type:c.type,title:c.title||'',period_start:c.period_start||'',period_end:c.period_end||'',function_role:c.function_role||'',language:c.language||'pt-BR',verification_code:c.verification_code||''}).replace(/'/g,"&#39;")}'>📄 PDF</button>
+        <a href="/verify/${c.verification_code}" target="_blank" class="text-blue-500 hover:underline text-[10px] no-underline mr-1">🔗</a>
+        ${c.status === 'draft' ? `<button class="text-emerald-600 hover:underline cursor-pointer bg-transparent border-0 text-[10px] mr-1" data-action="publish-cert" data-cert-id="${c.id}">✅</button>` : ''}
+        ${c.status !== 'revoked' ? `<button class="text-red-500 hover:underline cursor-pointer bg-transparent border-0 text-[10px]" data-action="revoke-cert" data-cert-id="${c.id}">🔴</button>` : ''}
       </td>
     </tr>`).join('')}</tbody></table></div>`;
     // Bind actions
@@ -1355,6 +1356,11 @@ const SCORING_I18N = {
         await sb.rpc('update_certificate', { p_cert_id: id, p_updates: { status: 'issued' } });
         toast(I.certIssued || 'Publicado!', 'success');
         loadManageCerts();
+      });
+    });
+    tableEl.querySelectorAll('[data-action="download-cert"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        try { const d = JSON.parse((btn as HTMLElement).dataset.cert || '{}'); (window as any).downloadCertificatePDF(d); } catch {}
       });
     });
     tableEl.querySelectorAll('[data-action="revoke-cert"]').forEach(btn => {
