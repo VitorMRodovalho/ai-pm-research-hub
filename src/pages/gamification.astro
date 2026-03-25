@@ -1193,6 +1193,10 @@ const SCORING_I18N = {
 
   function enterEditMode(certId: string, data: Record<string, string>) {
     editingCertId = certId;
+    // Switch to Emitir tab so the form is visible
+    const emitTab = document.querySelector('[data-tab="admin-certs"]') as HTMLElement;
+    if (emitTab) switchGamTab(emitTab, 'admin-certs');
+    // Populate fields
     (document.getElementById('cert-type') as HTMLSelectElement).value = data.type || 'participation';
     (document.getElementById('cert-title') as HTMLInputElement).value = data.title || '';
     (document.getElementById('cert-desc') as HTMLTextAreaElement).value = data.desc || '';
@@ -1206,8 +1210,8 @@ const SCORING_I18N = {
     // Disable member select during edit
     const memberSel = document.getElementById('cert-member') as HTMLSelectElement;
     if (memberSel) memberSel.disabled = true;
-    // Scroll to form
-    document.getElementById('cert-title')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Scroll form into view
+    document.getElementById('cert-member')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   function exitEditMode() {
@@ -1221,6 +1225,9 @@ const SCORING_I18N = {
     (document.getElementById('cert-period-start') as HTMLInputElement).value = '';
     (document.getElementById('cert-period-end') as HTMLInputElement).value = '';
     (document.getElementById('cert-role') as HTMLInputElement).value = '';
+    // Switch back to Gerenciar tab
+    const manageTab = document.querySelector('[data-tab="manage-certs"]') as HTMLElement;
+    if (manageTab) switchGamTab(manageTab, 'manage-certs');
   }
 
   async function issueCertificate() {
@@ -1339,9 +1346,7 @@ const SCORING_I18N = {
     const target = el.closest<HTMLElement>('[data-action]');
     if (!target) return;
 
-    const action = target.dataset.action;
-    console.log('[GAM] ACTION:', action, target.tagName, target.dataset);
-    switch (action) {
+    switch (target.dataset.action) {
       case 'sync-points':
         syncPoints();
         break;
@@ -1384,19 +1389,15 @@ const SCORING_I18N = {
         break;
       }
       case 'edit-cert': {
-        console.log('[GAM] EDIT-CERT hit, certId:', target.dataset.certId);
-        try {
-          enterEditMode(target.dataset.certId || '', {
-            type: target.dataset.certType || '',
-            title: target.dataset.certTitle || '',
-            desc: (target.dataset.certDesc || '').replace(/&#10;/g, '\n'),
-            periodStart: target.dataset.certPeriodStart || '',
-            periodEnd: target.dataset.certPeriodEnd || '',
-            role: target.dataset.certRole || '',
-            lang: target.dataset.certLang || 'pt-BR',
-          });
-          console.log('[GAM] enterEditMode completed');
-        } catch (err) { console.error('[GAM] enterEditMode error:', err); }
+        enterEditMode(target.dataset.certId || '', {
+          type: target.dataset.certType || '',
+          title: target.dataset.certTitle || '',
+          desc: (target.dataset.certDesc || '').replace(/&#10;/g, '\n'),
+          periodStart: target.dataset.certPeriodStart || '',
+          periodEnd: target.dataset.certPeriodEnd || '',
+          role: target.dataset.certRole || '',
+          lang: target.dataset.certLang || 'pt-BR',
+        });
         break;
       }
     }
