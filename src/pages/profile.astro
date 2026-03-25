@@ -910,6 +910,16 @@ const PROFILE_I18N = {
         <p class="text-[.65rem] text-[var(--text-muted)] mt-2">🔒 Email, capítulo, papel e tribo são geridos pelo GP.</p>
       </div>
 
+      <!-- Card: Notification Preferences -->
+      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
+        <h2 class="text-sm font-bold text-navy mb-3">🔔 ${PROFILE_I18N.notificationPrefs || 'Preferências de Notificação'}</h2>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" id="notif-enabled" checked class="accent-teal-500 w-4 h-4">
+          <span class="text-sm text-[var(--text-primary)]">${PROFILE_I18N.notifEnabled || 'Notificações ativadas'}</span>
+        </label>
+        <p class="text-[.65rem] text-[var(--text-muted)] mt-2">📧 Email digest — em breve (pendente verificação de domínio).</p>
+      </div>
+
       <!-- Card: LGPD Data Export -->
       <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
         <h2 class="text-sm font-bold text-navy mb-2">${PROFILE_I18N.lgpdTitle || 'Meus Dados (LGPD)'}</h2>
@@ -1018,6 +1028,15 @@ const PROFILE_I18N = {
     } catch (err: any) {
       (window as any).toast?.(err.message || 'Erro ao enviar foto', 'error');
     }
+  });
+
+  // ── Notification preferences ──
+  document.getElementById('notif-enabled')?.addEventListener('change', async (e) => {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    const enabled = (e.target as HTMLInputElement).checked;
+    await sb.rpc('update_notification_preferences', { p_prefs: { enabled } });
+    (window as any).toast?.(enabled ? '🔔 Notifications enabled' : '🔕 Notifications muted', 'success');
   });
 
   // ── Save profile ──
