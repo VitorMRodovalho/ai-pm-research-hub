@@ -723,6 +723,12 @@ const ptBR: Record<string, string> = {
   'onboarding.admin.notStarted': 'Não iniciaram',
   'chapter.title': 'Painel do Capítulo',
   'chapter.breadcrumb': 'Meu Capítulo',
+  'gamification.cert.periodFrom': 'Período de',
+  'gamification.cert.periodTo': 'Período até',
+  'gamification.cert.functionRole': 'Função/Papel',
+  'gamification.cert.language': 'Idioma do certificado',
+  'gamification.cert.download': 'Baixar PDF',
+  'gamification.cert.verificationCode': 'Código de verificação',
   // ── CPMAI Prep Course (GC-120) ──
   'cpmai.title': 'Preparatório CPMAI',
   'cpmai.subtitle': 'Curso preparatório para a certificação PMI-CPMAI™',

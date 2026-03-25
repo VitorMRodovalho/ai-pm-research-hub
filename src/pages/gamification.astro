@@ -366,6 +366,29 @@ const SCORING_I18N = {
               <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('gamification.cert.cycle', lang)}</label>
               <input type="number" id="cert-cycle" value="3" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
             </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[12px] font-semibold text-[var(--text-secondary)]">Período de</label>
+              <input type="text" id="cert-period-start" placeholder="Ciclo 1 (Set 2024)"
+                     class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[12px] font-semibold text-[var(--text-secondary)]">Período até</label>
+              <input type="text" id="cert-period-end" placeholder="Ciclo 3 (Mar 2026)"
+                     class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
+            </div>
+            <div class="flex flex-col gap-1.5 sm:col-span-2">
+              <label class="text-[12px] font-semibold text-[var(--text-secondary)]">Função/Papel</label>
+              <input type="text" id="cert-role" placeholder="Ex: Time de Comunicação — Design"
+                     class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
+            </div>
+            <div class="flex flex-col gap-1.5 sm:col-span-2">
+              <label class="text-[12px] font-semibold text-[var(--text-secondary)]">Idioma</label>
+              <div class="flex gap-3 text-sm">
+                <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="cert-lang" value="pt-BR" checked class="accent-navy"> 🇧🇷 PT</label>
+                <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="cert-lang" value="en-US" class="accent-navy"> 🇺🇸 EN</label>
+                <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="cert-lang" value="es-LATAM" class="accent-navy"> 🇪🇸 ES</label>
+              </div>
+            </div>
             <div class="flex flex-col gap-1.5 sm:col-span-2">
               <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('gamification.cert.certTitle', lang)}</label>
               <input type="text" id="cert-title" placeholder={t('gamification.cert.titlePlaceholder', lang)}
@@ -1132,15 +1155,22 @@ const SCORING_I18N = {
     const title = (document.getElementById('cert-title') as HTMLInputElement).value.trim();
     const desc = (document.getElementById('cert-desc') as HTMLTextAreaElement).value.trim() || null;
     const cycle = parseInt((document.getElementById('cert-cycle') as HTMLInputElement).value);
+    const periodStart = (document.getElementById('cert-period-start') as HTMLInputElement)?.value.trim() || null;
+    const periodEnd = (document.getElementById('cert-period-end') as HTMLInputElement)?.value.trim() || null;
+    const functionRole = (document.getElementById('cert-role') as HTMLInputElement)?.value.trim() || null;
+    const certLang = (document.querySelector('input[name="cert-lang"]:checked') as HTMLInputElement)?.value || 'pt-BR';
 
     if (!memberId || !title) { toast(I.certFillFields, 'error'); return; }
 
-    const { error } = await sb.from('certificates').insert({
-      member_id: memberId, type, title, description: desc, cycle, issued_by: MEMBER.id,
+    const { data, error } = await sb.rpc('issue_certificate', {
+      p_data: { member_id: memberId, type, title, description: desc, cycle, period_start: periodStart, period_end: periodEnd, function_role: functionRole, language: certLang }
     });
 
-    if (error) { toast(I.msgErrorPrefix + error.message, 'error'); return; }
-    toast(I.certIssued, 'success');
+    if (error || data?.error) { toast(data?.error || error?.message || 'Error', 'error'); return; }
+    toast(`${I.certIssued} — ${data.verification_code}`, 'success');
+    // Show download button
+    const lastCert = { ...data, type, title, description: desc, period_start: periodStart, period_end: periodEnd, function_role: functionRole, language: certLang };
+    (window as any).__lastCert = lastCert;
     (document.getElementById('cert-title') as HTMLInputElement).value = '';
     (document.getElementById('cert-desc') as HTMLTextAreaElement).value = '';
   }
@@ -1242,6 +1272,36 @@ const SCORING_I18N = {
         break;
     }
   });
+
+  // ── CERTIFICATE PDF (print-based) ──
+  (window as any).downloadCertificatePDF = function(certData: any) {
+    const TEMPLATES: Record<string, Record<string, string>> = {
+      'pt-BR': { participation: 'Certificamos que {name} participou como pesquisador(a) voluntário(a) do Núcleo de Estudos e Pesquisa em Inteligência Artificial e Gerenciamento de Projetos.', contribution: 'Certificamos que {name} contribuiu como voluntário(a) do Núcleo, desempenhando a função de {role}.', completion: 'Certificamos que {name} concluiu a Trilha PMI de Inteligência Artificial.', excellence: 'Certificamos que {name} recebeu reconhecimento de Excelência por contribuição excepcional.', title: 'CERTIFICADO', period: 'Período: {start} a {end}', footer: 'Iniciativa colaborativa entre PMI-GO, PMI-CE, PMI-DF, PMI-MG e PMI-RS' },
+      'en-US': { participation: 'This certifies that {name} served as a volunteer researcher at the AI & PM Study and Research Hub.', contribution: 'This certifies that {name} contributed as a volunteer, serving as {role}.', completion: 'This certifies that {name} completed the PMI AI Trail.', excellence: 'This certifies that {name} received the Excellence Award for outstanding contribution.', title: 'CERTIFICATE', period: 'Period: {start} to {end}', footer: 'A collaborative initiative among PMI-GO, PMI-CE, PMI-DF, PMI-MG and PMI-RS' },
+      'es-LATAM': { participation: 'Se certifica que {name} participó como investigador(a) voluntario(a) del Hub de Estudios e Investigación en IA y Gestión de Proyectos.', contribution: 'Se certifica que {name} contribuyó como voluntario(a), desempeñando la función de {role}.', completion: 'Se certifica que {name} completó la Ruta PMI de Inteligencia Artificial.', excellence: 'Se certifica que {name} recibió el reconocimiento de Excelencia.', title: 'CERTIFICADO', period: 'Período: {start} a {end}', footer: 'Iniciativa colaborativa entre PMI-GO, PMI-CE, PMI-DF, PMI-MG y PMI-RS' },
+    };
+    const tpl = TEMPLATES[certData.language] || TEMPLATES['pt-BR'];
+    const body = (tpl[certData.type] || tpl.participation).replace('{name}', certData.member_name).replace('{role}', certData.function_role || '');
+    const period = certData.period_start && certData.period_end ? tpl.period.replace('{start}', certData.period_start).replace('{end}', certData.period_end) : '';
+    const w = window.open('', '_blank');
+    if (!w) return;
+    w.document.write(`<html><head><title>${tpl.title} — ${certData.member_name}</title><style>@page{size:landscape;margin:0}body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#fff;font-family:Georgia,serif}</style></head><body>
+      <div style="width:794px;min-height:560px;padding:48px;border:3px solid #1a365d;position:relative;background:#fff">
+        <div style="position:absolute;top:16px;left:16px;right:16px;bottom:16px;border:1px solid #cbd5e0;pointer-events:none"></div>
+        <div style="text-align:center;margin-bottom:32px"><div style="font-size:14px;color:#666;letter-spacing:2px;text-transform:uppercase">Núcleo de Estudos e Pesquisa em IA & GP</div><div style="font-size:10px;color:#999;margin-top:4px">The AI & PM Study and Research Hub</div></div>
+        <div style="text-align:center;margin-bottom:24px"><div style="font-size:28px;font-weight:bold;color:#1a365d">${tpl.title}</div></div>
+        <div style="text-align:center;font-size:16px;line-height:1.8;color:#333;max-width:600px;margin:0 auto">${body}</div>
+        <div style="margin-top:32px;text-align:center;font-size:13px;color:#555">${period}${certData.function_role ? '<br>' + certData.function_role : ''}</div>
+        <div style="position:absolute;bottom:48px;left:48px;right:48px;display:flex;justify-content:space-between;align-items:end">
+          <div style="font-size:10px;color:#999"><div>Código: ${certData.verification_code}</div><div>${new Date().toLocaleDateString()}</div></div>
+          <div style="text-align:center"><div style="border-top:1px solid #333;width:200px;padding-top:4px;font-size:11px">Vitor Maia Rodovalho, PMP</div><div style="font-size:10px;color:#666">Gestor do Projeto</div></div>
+          <div style="font-size:9px;color:#bbb;text-align:right;max-width:180px">${tpl.footer}</div>
+        </div>
+      </div>
+    </body></html>`);
+    w.document.close();
+    setTimeout(() => w.print(), 500);
+  };
 
   boot();
 </script>
