@@ -9,6 +9,7 @@
 import { t, type Lang } from '../../i18n/utils';
 import LangSwitcher from './LangSwitcher.astro';
 import GlobalSearchIsland from '../ui/GlobalSearchIsland';
+import NotificationBell from '../notifications/NotificationBell';
 import { NAV_ITEMS, type NavItem } from '../../lib/navigation.config';
 
 interface Props { activePage?: string; lang?: Lang; }
@@ -175,6 +176,9 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       <GlobalSearchIsland client:load />
     </div>
     <LangSwitcher currentLang={lang} currentPath={currentPath} />
+
+    <!-- Notification bell (React island, shows only when authenticated) -->
+    <NotificationBell client:load />
 
     <!-- Auth area: populated by client script -->
     <div id="nav-auth" class="flex items-center gap-2 flex-shrink-0">
