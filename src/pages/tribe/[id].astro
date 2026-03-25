@@ -160,17 +160,29 @@ const TRIBE_I18N = {
     t('common.days.wed', lang), t('common.days.thu', lang), t('common.days.fri', lang),
     t('common.days.sat', lang),
   ],
+  accessRestricted: t('tribe.accessRestricted', lang),
+  crossManagementMode: t('tribe.crossManagementMode', lang),
+  explorationMode: t('tribe.explorationMode', lang),
+  highlights: t('tribe.highlights', lang),
+  highlightsDesc: t('tribe.highlightsDesc', lang),
+  sharedRefs: t('tribe.sharedRefs', lang),
+  showcase: t('tribe.showcase', lang),
+  webinarsEvents: t('tribe.webinarsEvents', lang),
+  knowledgeBase: t('tribe.knowledgeBase', lang),
+  ctxResearch: t('tribe.ctxResearch', lang),
+  ctxOperations: t('tribe.ctxOperations', lang),
+  ctxLegacy: t('tribe.ctxLegacy', lang),
 };
 const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name || `T${tribeId}`);
 ---
-<BaseLayout title={pageTitle} activePage="tribes">
+<BaseLayout title={pageTitle} activePage="tribes" lang={lang}>
   <Toast />
   <ConfirmModal />
   <div class="max-w-[1400px] mx-auto px-4 py-8">
     <div id="tribe-loading" class="text-center py-10 text-[var(--text-muted)]">{t('tribe.loading', lang)}</div>
     <div id="tribe-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
       <div class="text-2xl mb-2">🔒</div>
-      <p class="font-semibold text-amber-800">Acesso restrito a membros ativos da plataforma.</p>
+      <p class="font-semibold text-amber-800">{TRIBE_I18N.accessRestricted}</p>
       <p class="text-sm text-amber-700 mt-1">Tribos ativas podem ser exploradas em modo leitura por membros ativos; ações seguem restritas pela liderança e gestão.</p>
       <a href="/profile" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90 transition-all">Abrir perfil</a>
     </div>
@@ -354,11 +366,11 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     note.classList.remove('hidden');
     if (canEdit) {
       note.className = 'mb-4 rounded-2xl border border-purple-200 bg-purple-50 px-4 py-3 text-sm text-purple-800';
-      note.innerHTML = 'Modo gestão cruzada: você está em outra tribo com permissão de coordenação. Edições continuam restritas aos controles de gestão e liderança.';
+      note.innerHTML = I18N.crossManagementMode || 'Cross-management mode: you are in another stream with coordination permission.';
       return;
     }
     note.className = 'mb-4 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-base)] px-4 py-3 text-sm text-[var(--text-secondary)]';
-    note.innerHTML = 'Modo exploração: você pode consultar os membros ativos, recursos e quadro desta tribo, mas as ações seguem restritas à liderança local e à gestão.';
+    note.innerHTML = I18N.explorationMode || 'Exploration mode: you can browse members, resources and board, but actions remain restricted to local leadership.';
   }
 
   function escapeHtml(s: string): string {
@@ -531,9 +543,9 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     `);
 
     el.innerHTML = [
-      renderContextSection('Ativas (Pesquisa)', activeLinks),
-      renderContextSection('Subprojetos (Operação)', opWithWebinars),
-      renderContextSection('Legado (Read-only)', legacyLinks),
+      renderContextSection(I18N.ctxResearch || 'Active (Research)', activeLinks),
+      renderContextSection(I18N.ctxOperations || 'Sub-projects (Operations)', opWithWebinars),
+      renderContextSection(I18N.ctxLegacy || 'Legacy (Read-only)', legacyLinks),
     ].join('');
   }
 
@@ -738,8 +750,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     el.innerHTML = `
       <div class="space-y-6">
         <div>
-          <h2 class="text-xl font-semibold text-navy mb-4">Destaques do Núcleo</h2>
-          <p class="text-[13px] text-[var(--text-secondary)] mb-4">Artefatos oficiais, webinars e publicações aprovadas pela curadoria.</p>
+          <h2 class="text-xl font-semibold text-navy mb-4">{TRIBE_I18N.highlights}</h2>
+          <p class="text-[13px] text-[var(--text-secondary)] mb-4">{TRIBE_I18N.highlightsDesc}</p>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] overflow-hidden">
               <div class="px-5 py-3.5 border-b border-[var(--border-subtle)] flex items-center gap-2">
@@ -758,22 +770,22 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
           </div>
         </div>
         <div>
-          <h2 class="text-xl font-semibold text-navy mb-4">Referências Compartilhadas</h2>
+          <h2 class="text-xl font-semibold text-navy mb-4">{TRIBE_I18N.sharedRefs}</h2>
           <p class="text-[13px] text-[var(--text-secondary)] mb-4">Materiais de estudo, rascunhos públicos e recursos curados pela comunidade.</p>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <a href="/publications" class="group flex flex-col items-center gap-2 p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] hover:border-navy/30 hover:shadow-md transition-all no-underline">
               <span class="text-2xl">📚</span>
-              <span class="text-sm font-bold text-navy group-hover:underline">Vitrine de Publicações</span>
+              <span class="text-sm font-bold text-navy group-hover:underline">{TRIBE_I18N.showcase}</span>
               <span class="text-[11px] text-[var(--text-muted)]">Todos os artefatos publicados</span>
             </a>
             <a href="/webinars" class="group flex flex-col items-center gap-2 p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] hover:border-navy/30 hover:shadow-md transition-all no-underline">
               <span class="text-2xl">🎓</span>
-              <span class="text-sm font-bold text-navy group-hover:underline">Webinars & Eventos</span>
+              <span class="text-sm font-bold text-navy group-hover:underline">{TRIBE_I18N.webinarsEvents}</span>
               <span class="text-[11px] text-[var(--text-muted)]">Agenda e gravações</span>
             </a>
             <a href="/admin/knowledge" class="group flex flex-col items-center gap-2 p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] hover:border-navy/30 hover:shadow-md transition-all no-underline">
               <span class="text-2xl">🔗</span>
-              <span class="text-sm font-bold text-navy group-hover:underline">Base de Conhecimento</span>
+              <span class="text-sm font-bold text-navy group-hover:underline">{TRIBE_I18N.knowledgeBase}</span>
               <span class="text-[11px] text-[var(--text-muted)]">Artigos, cursos e referências</span>
             </a>
           </div>
@@ -1465,7 +1477,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       const e = evt as CustomEvent;
       currentMember = e.detail;
       if (!canExploreTribes(currentMember)) {
-        showDenied('Acesso restrito a membros ativos da plataforma.');
+        showDenied(I18N.accessRestricted || 'Access restricted to active platform members.');
         return;
       }
       revealTribeShell();
@@ -1514,7 +1526,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       }
 
       if (!canExploreTribes(currentMember)) {
-        showDenied('Acesso restrito a membros ativos da plataforma.');
+        showDenied(I18N.accessRestricted || 'Access restricted to active platform members.');
         return;
       }
 
