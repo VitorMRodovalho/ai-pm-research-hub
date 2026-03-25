@@ -1333,8 +1333,10 @@ const SCORING_I18N = {
   }
 
   // ── CENTRALIZED EVENT DELEGATION ──
-  document.addEventListener('click', (e: Event) => {
-    const target = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
+  document.addEventListener('click', async (e: Event) => {
+    const el = e.target as HTMLElement;
+    if (!el?.closest) return;
+    const target = el.closest<HTMLElement>('[data-action]');
     if (!target) return;
 
     switch (target.dataset.action) {
@@ -1359,6 +1361,38 @@ const SCORING_I18N = {
       case 'issue-certificate':
         issueCertificate();
         break;
+      case 'publish-cert': {
+        const id = target.dataset.certId;
+        await sb.rpc('update_certificate', { p_cert_id: id, p_updates: { status: 'issued' } });
+        toast(I.certIssued || 'Publicado!', 'success');
+        loadManageCerts();
+        break;
+      }
+      case 'download-cert': {
+        try { const d = JSON.parse(target.dataset.cert || '{}'); await (window as any).downloadCertificatePDF(d); } catch {}
+        break;
+      }
+      case 'revoke-cert': {
+        const id = target.dataset.certId;
+        const reason = prompt(I.certRevokeReason || 'Motivo da revogação:');
+        if (!reason) return;
+        await sb.rpc('revoke_certificate', { p_cert_id: id, p_reason: reason });
+        toast('Revogado', 'success');
+        loadManageCerts();
+        break;
+      }
+      case 'edit-cert': {
+        enterEditMode(target.dataset.certId || '', {
+          type: target.dataset.certType || '',
+          title: target.dataset.certTitle || '',
+          desc: (target.dataset.certDesc || '').replace(/&#10;/g, '\n'),
+          periodStart: target.dataset.certPeriodStart || '',
+          periodEnd: target.dataset.certPeriodEnd || '',
+          role: target.dataset.certRole || '',
+          lang: target.dataset.certLang || 'pt-BR',
+        });
+        break;
+      }
     }
   });
 
@@ -1404,47 +1438,6 @@ const SCORING_I18N = {
   }
   document.getElementById('manage-certs-filter')?.addEventListener('change', () => loadManageCerts());
   document.getElementById('manage-certs-search')?.addEventListener('input', () => { clearTimeout((window as any).__mcSearch); (window as any).__mcSearch = setTimeout(loadManageCerts, 300); });
-
-  // ── Manage tab: document-level delegation for dynamically rendered buttons ──
-  document.addEventListener('click', async (e) => {
-    const target = e.target as HTMLElement;
-    const publishBtn = target.closest('[data-action="publish-cert"]') as HTMLElement;
-    if (publishBtn) {
-      const id = publishBtn.dataset.certId;
-      await sb.rpc('update_certificate', { p_cert_id: id, p_updates: { status: 'issued' } });
-      toast(I.certIssued || 'Publicado!', 'success');
-      loadManageCerts();
-      return;
-    }
-    const downloadBtn = target.closest('[data-action="download-cert"]') as HTMLElement;
-    if (downloadBtn) {
-      try { const d = JSON.parse(downloadBtn.dataset.cert || '{}'); await (window as any).downloadCertificatePDF(d); } catch {}
-      return;
-    }
-    const revokeBtn = target.closest('[data-action="revoke-cert"]') as HTMLElement;
-    if (revokeBtn) {
-      const id = revokeBtn.dataset.certId;
-      const reason = prompt(I.certRevokeReason || 'Motivo da revogação:');
-      if (!reason) return;
-      await sb.rpc('revoke_certificate', { p_cert_id: id, p_reason: reason });
-      toast('Revogado', 'success');
-      loadManageCerts();
-      return;
-    }
-    const editBtn = target.closest('[data-action="edit-cert"]') as HTMLElement;
-    if (editBtn) {
-      enterEditMode(editBtn.dataset.certId || '', {
-        type: editBtn.dataset.certType || '',
-        title: editBtn.dataset.certTitle || '',
-        desc: (editBtn.dataset.certDesc || '').replace(/&#10;/g, '\n'),
-        periodStart: editBtn.dataset.certPeriodStart || '',
-        periodEnd: editBtn.dataset.certPeriodEnd || '',
-        role: editBtn.dataset.certRole || '',
-        lang: editBtn.dataset.certLang || 'pt-BR',
-      });
-      return;
-    }
-  });
 
   // ── CERTIFICATE PDF (print-based, portrait A4) ──
   (window as any).downloadCertificatePDF = async function(certData: any) {
