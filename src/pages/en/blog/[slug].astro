@@ -1,4 +1,4 @@
 ---
-const { slug } = Astro.params;
+import BlogPost from '../../blog/[slug].astro';
 ---
-<meta http-equiv="refresh" content={`0;url=/blog/${slug}?lang=en-US`}>
+<BlogPost />

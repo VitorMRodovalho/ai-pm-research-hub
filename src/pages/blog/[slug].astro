@@ -7,19 +7,20 @@ import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langKey = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const { slug } = Astro.params;
 ---
 
-<BaseLayout activePage="blog" title={t('blog.title', lang)}>
+<BaseLayout activePage="blog" title={t('blog.title', lang)} lang={lang}>
   <div class="max-w-[800px] mx-auto px-4 py-12">
     <div id="post-loading" class="text-center py-16 text-gray-400">{t('campaigns.loading', lang)}</div>
     <div id="post-not-found" class="hidden text-center py-16">
       <p class="text-[var(--fg-muted)]">{t('blog.notFound', lang)}</p>
-      <a href="/blog" class="text-teal-400 hover:underline mt-2 inline-block">{t('blog.backToList', lang)}</a>
+      <a href={`${langPrefix}/blog`} class="text-teal-400 hover:underline mt-2 inline-block">{t('blog.backToList', lang)}</a>
     </div>
 
     <article id="post-content" class="hidden">
-      <a href="/blog" class="text-sm text-teal-400 hover:underline mb-6 inline-block">&larr; {t('blog.backToList', lang)}</a>
+      <a href={`${langPrefix}/blog`} class="text-sm text-teal-400 hover:underline mb-6 inline-block">&larr; {t('blog.backToList', lang)}</a>
       <h1 id="post-title" class="text-3xl font-bold text-[var(--fg)] mb-4"></h1>
       <div class="flex items-center gap-4 text-sm text-[var(--fg-muted)] mb-8">
         <span id="post-date"></span>

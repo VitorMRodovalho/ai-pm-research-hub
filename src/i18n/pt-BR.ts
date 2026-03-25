@@ -2104,6 +2104,8 @@ const ptBR: Record<string, string> = {
   'tribe.ctxResearch': 'Ativas (Pesquisa)',
   'tribe.ctxOperations': 'Subprojetos (Operação)',
   'tribe.ctxLegacy': 'Legado (Read-only)',
+  'tribe.deniedExplore': 'Tribos ativas podem ser exploradas em modo leitura por membros ativos; ações seguem restritas pela liderança e gestão.',
+  'tribe.openProfile': 'Abrir perfil',
   'tribe.requestReview': 'Solicitar Revisão',
   'tribe.approvePeer': 'Aprovar (Peer)',
   'tribe.approveForCuration': 'Aprovar para Curadoria',

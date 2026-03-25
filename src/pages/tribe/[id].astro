@@ -183,8 +183,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     <div id="tribe-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
       <div class="text-2xl mb-2">🔒</div>
       <p class="font-semibold text-amber-800">{TRIBE_I18N.accessRestricted}</p>
-      <p class="text-sm text-amber-700 mt-1">Tribos ativas podem ser exploradas em modo leitura por membros ativos; ações seguem restritas pela liderança e gestão.</p>
-      <a href="/profile" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90 transition-all">Abrir perfil</a>
+      <p class="text-sm text-amber-700 mt-1">{t('tribe.deniedExplore', lang)}</p>
+      <a href="/profile" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90 transition-all">{t('tribe.openProfile', lang)}</a>
     </div>
     <div id="tribe-shell" class="hidden">
     <!-- Header -->
