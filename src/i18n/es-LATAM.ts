@@ -702,6 +702,7 @@ const esLATAM: Record<string, string> = {
   'governance.communication_note': 'El estado de cada CR es visible en /governance. Para rechazos, registre justificación clara en review_notes.',
   'governance.pending_review_section': 'Pendientes de Revisión',
   'governance.all_crs_section': 'Todas las CRs',
+  'governance.changelog_section': 'Registro de Gobernanza',
   'cpmai.title': 'Preparatorio CPMAI',
   'cpmai.subtitle': 'Curso preparatorio para la certificación PMI-CPMAI™',
   'cpmai.disclaimer': 'Este curso preparatorio es una iniciativa del Núcleo IA & GP y NO reemplaza el curso oficial del PMI de 21 horas, que es un prerequisito obligatorio para agendar el examen PMI-CPMAI™.',

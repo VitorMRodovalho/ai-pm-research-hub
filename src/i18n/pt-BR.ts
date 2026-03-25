@@ -704,6 +704,7 @@ const ptBR: Record<string, string> = {
   'governance.communication_note': 'O estado de cada CR é visível em /governance. Para rejeições, registre justificativa clara em review_notes.',
   'governance.pending_review_section': 'Pendentes de Revisão',
   'governance.all_crs_section': 'Todas as CRs',
+  'governance.changelog_section': 'Registro de Governança',
   // ── CPMAI Prep Course (GC-120) ──
   'cpmai.title': 'Preparatório CPMAI',
   'cpmai.subtitle': 'Curso preparatório para a certificação PMI-CPMAI™',
