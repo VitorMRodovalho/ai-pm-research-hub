@@ -15,8 +15,11 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
+          PUBLIC_SUPABASE_URL: https://ldrfrvwhxsmgaabwmaik.supabase.co
+          PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkcmZydndoeHNtZ2FhYndtYWlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MjU5NDQsImV4cCI6MjA4ODMwMTk0NH0.gzibKd7Jyck3Ya61vzrloX1YZt-0pNReTuefdi4mAmw
           PUBLIC_POSTHOG_KEY: phc_aPbKQqJXRluiUL2EFCfrGYzNPVGGFZ8bNYOG5Dgm57Q
           PUBLIC_POSTHOG_HOST: https://us.posthog.com
+          PUBLIC_SENTRY_DSN: ${{ secrets.PUBLIC_SENTRY_DSN }}
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
