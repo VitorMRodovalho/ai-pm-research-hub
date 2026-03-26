@@ -1127,4 +1127,15 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-135 — Offboarding Daniel Bittencourt → Observer
+**Data:** 2026-03-26 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisao:** Daniel Bittencourt transicionado de researcher para observer por desligamento voluntario (novo desafio profissional). Mantém is_active=true para acesso de leitura à plataforma, current_cycle_active=false.
+
+**Justificativa:** Desligamento voluntário comunicado pelo membro. Segue padrão GC-124 (Marcel→alumni, Leandro/Maurício→observer).
+
+**Impacto tecnico:** UPDATE members SET operational_role='observer', current_cycle_active=false. Transição registada em member_status_transitions (reason_category='professional'). Tribo 2 mantém 6 membros ativos — acima do mínimo operacional.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*
