@@ -1,4 +1,4 @@
-name = "hub"
+name = "platform"
 main = "@astrojs/cloudflare/entrypoints/server"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
