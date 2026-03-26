@@ -31,12 +31,26 @@ function isAdminRoute(canonicalPath: string): boolean {
   return canonicalPath.startsWith("/admin");
 }
 
+// CSP policy — _headers doesn't work on Workers, so we set it here
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://us-assets.i.posthog.com https://us.posthog.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com",
+  "img-src 'self' data: blob: https://ldrfrvwhxsmgaabwmaik.supabase.co https://*.googleusercontent.com",
+  "connect-src 'self' https://ldrfrvwhxsmgaabwmaik.supabase.co https://us.posthog.com https://us-assets.i.posthog.com https://*.ingest.sentry.io",
+  "frame-src 'none'",
+  "object-src 'none'",
+  "base-uri 'self'",
+].join("; ");
+
 // Security headers applied to ALL responses
 function addSecurityHeaders(response: Response, canonicalPath: string): Response {
   response.headers.set("X-Frame-Options", "DENY");
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  response.headers.set("Content-Security-Policy", CSP);
   if (canonicalPath.startsWith("/admin")) {
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
   }
