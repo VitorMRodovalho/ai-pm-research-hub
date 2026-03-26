@@ -5,3 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [assets]
 directory = "./dist/client/"
+
+[[kv_namespaces]]
+binding = "SESSION"
+id = "6ffb04524d664228b19ce1595d08cbc5"
