@@ -39,7 +39,7 @@ const CSP = [
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: blob: https://ldrfrvwhxsmgaabwmaik.supabase.co https://*.googleusercontent.com",
   "connect-src 'self' https://ldrfrvwhxsmgaabwmaik.supabase.co wss://ldrfrvwhxsmgaabwmaik.supabase.co https://us.posthog.com https://us-assets.i.posthog.com https://*.sentry.io",
-  "frame-src 'none'",
+  "frame-src https://accounts.google.com https://login.microsoftonline.com https://www.linkedin.com",
   "object-src 'none'",
   "base-uri 'self'",
 ].join("; ");
