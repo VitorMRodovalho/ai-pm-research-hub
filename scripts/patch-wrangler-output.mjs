@@ -20,6 +20,7 @@ if (!existsSync(WRANGLER_JSON)) {
 // Fields that Cloudflare Pages accepts in wrangler config
 const PAGES_ALLOWED_FIELDS = new Set([
   'name',
+  'main',
   'pages_build_output_dir',
   'compatibility_date',
   'compatibility_flags',
