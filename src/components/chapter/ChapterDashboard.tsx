@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-interface Props { lang?: string; }
+interface Props { lang?: string; stakeholderMode?: boolean; }
 
 function useLang(propLang?: string): string {
   if (propLang) return propLang;
@@ -71,7 +71,7 @@ function MetricCard({ value, label, sub, icon }: { value: string | number; label
   );
 }
 
-export default function ChapterDashboard({ lang: propLang }: Props) {
+export default function ChapterDashboard({ lang: propLang, stakeholderMode }: Props) {
   const lang = useLang(propLang);
   const t = T[lang] || T['pt-BR'];
   const dateLocale = lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es' : 'pt-BR';
@@ -185,8 +185,8 @@ export default function ChapterDashboard({ lang: propLang }: Props) {
         <div style={{ height: '180px' }}><canvas ref={chartRef} /></div>
       </div>
 
-      {/* Top Contributors */}
-      {g.top_contributors && g.top_contributors.length > 0 && (
+      {/* Top Contributors (hidden in stakeholder mode — no PII) */}
+      {!stakeholderMode && g.top_contributors && g.top_contributors.length > 0 && (
         <div>
           <h2 className="text-sm font-bold text-navy mb-2">{t.topTitle}</h2>
           <div className="flex gap-3">
@@ -203,8 +203,8 @@ export default function ChapterDashboard({ lang: propLang }: Props) {
         </div>
       )}
 
-      {/* Member Table */}
-      <div className="member-table">
+      {/* Member Table (hidden in stakeholder mode — no PII) */}
+      {!stakeholderMode && <div className="member-table">
         <h2 className="text-sm font-bold text-navy mb-2">{t.membersTitle}</h2>
         <div className="overflow-x-auto rounded-xl border border-[var(--border-default)]">
           <table className="w-full text-[11px]">
@@ -230,7 +230,7 @@ export default function ChapterDashboard({ lang: propLang }: Props) {
             </tbody>
           </table>
         </div>
-      </div>
+      </div>}
 
       {/* Print CSS */}
       <style>{`
