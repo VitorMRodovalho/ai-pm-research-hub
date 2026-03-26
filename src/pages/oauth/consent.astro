@@ -1,0 +1,159 @@
+---
+// src/pages/oauth/consent.astro
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+<BaseLayout title="Autorizar Aplicativo" noIndex={true}>
+  <div id="consent-root" class="min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-[var(--surface-card)] rounded-2xl p-8 border border-[var(--border-default)]">
+      <!-- Loading state -->
+      <div id="loading" class="text-center">
+        <div class="animate-spin w-8 h-8 border-2 border-[var(--accent)] border-t-transparent rounded-full mx-auto mb-4"></div>
+        <p class="text-[var(--text-secondary)] text-sm">Carregando...</p>
+      </div>
+
+      <!-- Consent form (hidden initially) -->
+      <div id="consent-form" class="hidden">
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 bg-[var(--accent)]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-2xl">🤖</span>
+          </div>
+          <h1 class="text-xl font-bold text-[var(--text-primary)] mb-2">Autorizar acesso</h1>
+          <p class="text-sm text-[var(--text-secondary)]">
+            <span id="client-name" class="font-semibold text-[var(--text-primary)]"></span>
+            quer acessar sua conta no Núcleo IA & GP
+          </p>
+        </div>
+
+        <div class="bg-[var(--surface-base)] rounded-lg p-4 mb-6 text-sm">
+          <p class="font-medium text-[var(--text-primary)] mb-2">Este aplicativo poderá:</p>
+          <ul class="space-y-1.5 text-[var(--text-secondary)]">
+            <li>✓ Ver seu perfil e dados da tribo</li>
+            <li>✓ Consultar quadro de tarefas e entregas</li>
+            <li>✓ Ver presença e ranking de XP</li>
+            <li>✓ Ler atas de reuniões e notificações</li>
+          </ul>
+          <p class="mt-3 text-xs text-[var(--text-tertiary)]">
+            Acesso somente leitura. Nenhuma ação será executada em seu nome.
+          </p>
+        </div>
+
+        <div class="flex gap-3">
+          <button id="deny-btn" class="flex-1 px-4 py-2.5 rounded-lg border border-[var(--border-default)] text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors">
+            Negar
+          </button>
+          <button id="approve-btn" class="flex-1 px-4 py-2.5 rounded-lg bg-[var(--accent)] text-white text-sm font-medium hover:opacity-90 transition-opacity">
+            Autorizar
+          </button>
+        </div>
+      </div>
+
+      <!-- Error state -->
+      <div id="error-state" class="hidden text-center">
+        <p class="text-red-500 mb-2">⚠️ Erro</p>
+        <p id="error-msg" class="text-sm text-[var(--text-secondary)]"></p>
+        <a href="/" class="text-sm text-[var(--accent)] mt-4 inline-block">Voltar ao início</a>
+      </div>
+
+      <!-- Success state -->
+      <div id="success-state" class="hidden text-center">
+        <p class="text-green-500 text-4xl mb-4">✓</p>
+        <p class="text-[var(--text-primary)] font-medium">Autorizado com sucesso</p>
+        <p class="text-sm text-[var(--text-secondary)] mt-2">Pode fechar esta janela e voltar ao seu aplicativo de IA.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // @ts-nocheck
+    import { createClient } from '@supabase/supabase-js';
+
+    const supabase = createClient(
+      import.meta.env.PUBLIC_SUPABASE_URL,
+      import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+    );
+
+    const loading = document.getElementById('loading')!;
+    const consentForm = document.getElementById('consent-form')!;
+    const errorState = document.getElementById('error-state')!;
+    const errorMsg = document.getElementById('error-msg')!;
+    const successState = document.getElementById('success-state')!;
+    const clientName = document.getElementById('client-name')!;
+    const approveBtn = document.getElementById('approve-btn') as HTMLButtonElement;
+    const denyBtn = document.getElementById('deny-btn') as HTMLButtonElement;
+
+    function showError(msg: string) {
+      loading.classList.add('hidden');
+      consentForm.classList.add('hidden');
+      errorState.classList.remove('hidden');
+      errorMsg.textContent = msg;
+    }
+
+    function showSuccess() {
+      loading.classList.add('hidden');
+      consentForm.classList.add('hidden');
+      successState.classList.remove('hidden');
+    }
+
+    async function init() {
+      const params = new URLSearchParams(window.location.search);
+      const authorizationId = params.get('authorization_id');
+
+      if (!authorizationId) {
+        showError('Parâmetro authorization_id ausente.');
+        return;
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        const returnUrl = `/oauth/consent?authorization_id=${authorizationId}`;
+        window.dispatchEvent(new CustomEvent('open-auth', { detail: { returnUrl } }));
+        sessionStorage.setItem('oauth_return', returnUrl);
+        return;
+      }
+
+      try {
+        const { data: authDetails, error } = await (supabase.auth as any).oauth.getAuthorizationDetails(authorizationId);
+
+        if (error || !authDetails) {
+          showError(error?.message || 'Solicitação de autorização inválida.');
+          return;
+        }
+
+        clientName.textContent = authDetails.client?.name || 'Aplicativo desconhecido';
+        loading.classList.add('hidden');
+        consentForm.classList.remove('hidden');
+
+        approveBtn.addEventListener('click', async () => {
+          approveBtn.disabled = true;
+          approveBtn.textContent = 'Autorizando...';
+          try {
+            const { error: approveError } = await (supabase.auth as any).oauth.approveAuthorization(authorizationId);
+            if (approveError) {
+              showError(approveError.message);
+            } else {
+              showSuccess();
+            }
+          } catch (e: any) {
+            showError('Erro ao autorizar: ' + e.message);
+          }
+        });
+
+        denyBtn.addEventListener('click', async () => {
+          denyBtn.disabled = true;
+          try {
+            await (supabase.auth as any).oauth.denyAuthorization(authorizationId);
+            showError('Acesso negado. Pode fechar esta janela.');
+          } catch (e: any) {
+            showError('Erro ao negar: ' + e.message);
+          }
+        });
+
+      } catch (e: any) {
+        showError('Erro ao carregar detalhes: ' + e.message);
+      }
+    }
+
+    init();
+  </script>
+</BaseLayout>
