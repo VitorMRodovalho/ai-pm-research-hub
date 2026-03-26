@@ -14,6 +14,9 @@ jobs:
           node-version: 22
       - run: npm ci
       - run: npm run build
+        env:
+          PUBLIC_POSTHOG_KEY: phc_aPbKQqJXRluiUL2EFCfrGYzNPVGGFZ8bNYOG5Dgm57Q
+          PUBLIC_POSTHOG_HOST: https://us.posthog.com
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
