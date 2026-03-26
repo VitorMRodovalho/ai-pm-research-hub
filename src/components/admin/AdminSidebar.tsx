@@ -73,6 +73,7 @@ const SECTIONS: SidebarSection[] = [
       { href: '/admin/report', label: { 'pt-BR': 'Gerador de Relatório', 'en-US': 'Report Builder', 'es-LATAM': 'Generador de Informes' }, icon: 'FileBarChart', permission: 'admin.portfolio' },
       { href: '/admin/cycle-report', label: { 'pt-BR': 'Relatório do Ciclo', 'en-US': 'Cycle Report', 'es-LATAM': 'Informe del Ciclo' }, icon: 'FileText', permission: 'admin.analytics' },
       { href: '/admin/chapter', label: { 'pt-BR': 'Meu Capítulo', 'en-US': 'My Chapter', 'es-LATAM': 'Mi Capítulo' }, icon: 'Building', permission: 'admin.analytics.chapter' },
+      { href: '/stakeholder', label: { 'pt-BR': 'Painel do Capítulo', 'en-US': 'Chapter Dashboard', 'es-LATAM': 'Panel del Capítulo' }, icon: 'BarChart3', permission: 'admin.access' },
       { href: '/admin/analytics', label: { 'pt-BR': 'Analytics', 'en-US': 'Analytics', 'es-LATAM': 'Analytics' }, icon: 'BarChart3', permission: 'admin.analytics' },
     ],
   },
