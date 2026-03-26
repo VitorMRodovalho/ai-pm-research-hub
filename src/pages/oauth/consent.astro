@@ -63,11 +63,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           </ul>
         </div>
 
-        <div class="flex gap-3">
-          <button id="deny-btn" class="flex-1 px-4 py-2.5 rounded-lg border border-[var(--border-default)] text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors">
+        <div class="flex flex-wrap gap-3">
+          <button id="deny-btn" class="flex-1 min-w-[120px] px-4 py-2.5 rounded-lg border border-[var(--border-default)] text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors">
             Negar
           </button>
-          <button id="approve-btn" class="flex-1 px-4 py-2.5 rounded-lg bg-[var(--accent)] text-white text-sm font-medium hover:opacity-90 transition-opacity">
+          <button id="approve-btn" class="flex-1 min-w-[120px] px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors shadow-sm">
             Autorizar
           </button>
         </div>
