@@ -1,5 +1,6 @@
 ---
 // src/pages/oauth/consent.astro
+// OAuth consent page — user logs in via Supabase Auth then approves MCP access
 import BaseLayout from '../../layouts/BaseLayout.astro';
 ---
 <BaseLayout title="Autorizar Aplicativo" noIndex={true}>
@@ -11,30 +12,55 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         <p class="text-[var(--text-secondary)] text-sm">Carregando...</p>
       </div>
 
-      <!-- Consent form (hidden initially) -->
+      <!-- Login state -->
+      <div id="login-form" class="hidden">
+        <div class="text-center mb-6">
+          <div class="w-16 h-16 bg-[var(--accent)]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-2xl">&#x1F916;</span>
+          </div>
+          <h1 class="text-xl font-bold text-[var(--text-primary)] mb-2">Conectar IA ao Nucleo</h1>
+          <p class="text-sm text-[var(--text-secondary)]">
+            Faca login para autorizar o acesso
+          </p>
+        </div>
+
+        <div class="space-y-3">
+          <button id="btn-google" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[var(--border-default)] text-sm font-medium hover:bg-[var(--surface-hover)] transition-colors">
+            <svg class="w-5 h-5" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+            Google
+          </button>
+          <button id="btn-azure" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[var(--border-default)] text-sm font-medium hover:bg-[var(--surface-hover)] transition-colors">
+            <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#f25022" d="M1 1h10v10H1z"/><path fill="#00a4ef" d="M1 13h10v10H1z"/><path fill="#7fba00" d="M13 1h10v10H13z"/><path fill="#ffb900" d="M13 13h10v10H13z"/></svg>
+            Microsoft
+          </button>
+          <button id="btn-linkedin" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-[var(--border-default)] text-sm font-medium hover:bg-[var(--surface-hover)] transition-colors">
+            <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="#0077B5" d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            LinkedIn
+          </button>
+        </div>
+      </div>
+
+      <!-- Consent form -->
       <div id="consent-form" class="hidden">
         <div class="text-center mb-6">
           <div class="w-16 h-16 bg-[var(--accent)]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span class="text-2xl">🤖</span>
+            <span class="text-2xl">&#x1F916;</span>
           </div>
           <h1 class="text-xl font-bold text-[var(--text-primary)] mb-2">Autorizar acesso</h1>
           <p class="text-sm text-[var(--text-secondary)]">
-            <span id="client-name" class="font-semibold text-[var(--text-primary)]"></span>
-            quer acessar sua conta no Núcleo IA & GP
+            O assistente de IA quer acessar sua conta no Nucleo IA & GP
           </p>
         </div>
 
         <div class="bg-[var(--surface-base)] rounded-lg p-4 mb-6 text-sm">
-          <p class="font-medium text-[var(--text-primary)] mb-2">Este aplicativo poderá:</p>
+          <p class="font-medium text-[var(--text-primary)] mb-2">Este aplicativo podera:</p>
           <ul class="space-y-1.5 text-[var(--text-secondary)]">
-            <li>✓ Ver seu perfil e dados da tribo</li>
-            <li>✓ Consultar quadro de tarefas e entregas</li>
-            <li>✓ Ver presença e ranking de XP</li>
-            <li>✓ Ler atas de reuniões e notificações</li>
+            <li>&#x2713; Ver seu perfil e dados da tribo</li>
+            <li>&#x2713; Consultar quadro de tarefas e entregas</li>
+            <li>&#x2713; Ver presenca e ranking de XP</li>
+            <li>&#x2713; Ler atas de reunioes e notificacoes</li>
+            <li>&#x2713; Criar cards, atas e registrar presenca (lideres)</li>
           </ul>
-          <p class="mt-3 text-xs text-[var(--text-tertiary)]">
-            Acesso somente leitura. Nenhuma ação será executada em seu nome.
-          </p>
         </div>
 
         <div class="flex gap-3">
@@ -49,16 +75,16 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
       <!-- Error state -->
       <div id="error-state" class="hidden text-center">
-        <p class="text-red-500 mb-2">⚠️ Erro</p>
+        <p class="text-red-500 mb-2">&#x26A0;&#xFE0F; Erro</p>
         <p id="error-msg" class="text-sm text-[var(--text-secondary)]"></p>
-        <a href="/" class="text-sm text-[var(--accent)] mt-4 inline-block">Voltar ao início</a>
+        <a href="/" class="text-sm text-[var(--accent)] mt-4 inline-block">Voltar ao inicio</a>
       </div>
 
       <!-- Success state -->
       <div id="success-state" class="hidden text-center">
-        <p class="text-green-500 text-4xl mb-4">✓</p>
+        <p class="text-green-500 text-4xl mb-4">&#x2713;</p>
         <p class="text-[var(--text-primary)] font-medium">Autorizado com sucesso</p>
-        <p class="text-sm text-[var(--text-secondary)] mt-2">Pode fechar esta janela e voltar ao seu aplicativo de IA.</p>
+        <p class="text-sm text-[var(--text-secondary)] mt-2">Redirecionando de volta ao seu aplicativo de IA...</p>
       </div>
     </div>
   </div>
@@ -72,85 +98,115 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       import.meta.env.PUBLIC_SUPABASE_ANON_KEY
     );
 
-    const loading = document.getElementById('loading')!;
-    const consentForm = document.getElementById('consent-form')!;
-    const errorState = document.getElementById('error-state')!;
-    const errorMsg = document.getElementById('error-msg')!;
-    const successState = document.getElementById('success-state')!;
-    const clientName = document.getElementById('client-name')!;
-    const approveBtn = document.getElementById('approve-btn') as HTMLButtonElement;
-    const denyBtn = document.getElementById('deny-btn') as HTMLButtonElement;
+    const loading = document.getElementById('loading');
+    const loginForm = document.getElementById('login-form');
+    const consentForm = document.getElementById('consent-form');
+    const errorState = document.getElementById('error-state');
+    const errorMsg = document.getElementById('error-msg');
+    const successState = document.getElementById('success-state');
 
-    function showError(msg: string) {
+    function showError(msg) {
       loading.classList.add('hidden');
+      loginForm.classList.add('hidden');
       consentForm.classList.add('hidden');
       errorState.classList.remove('hidden');
       errorMsg.textContent = msg;
     }
 
+    function showLogin() {
+      loading.classList.add('hidden');
+      loginForm.classList.remove('hidden');
+    }
+
+    function showConsent() {
+      loading.classList.add('hidden');
+      loginForm.classList.add('hidden');
+      consentForm.classList.remove('hidden');
+    }
+
     function showSuccess() {
       loading.classList.add('hidden');
+      loginForm.classList.add('hidden');
       consentForm.classList.add('hidden');
       successState.classList.remove('hidden');
     }
 
-    async function init() {
-      const params = new URLSearchParams(window.location.search);
-      const authorizationId = params.get('authorization_id');
+    const params = new URLSearchParams(window.location.search);
+    const mcpState = params.get('mcp_state');
+    const oauthData = params.get('oauth_data') || sessionStorage.getItem('mcp_oauth_data') || '';
 
-      if (!authorizationId) {
-        showError('Parâmetro authorization_id ausente.');
-        return;
-      }
+    // Persist oauth_data across social login redirect
+    if (oauthData) sessionStorage.setItem('mcp_oauth_data', oauthData);
 
-      const { data: { user } } = await supabase.auth.getUser();
+    if (!mcpState) {
+      showError('Parametro mcp_state ausente. Abra esta pagina pelo fluxo OAuth do seu assistente de IA.');
+    }
 
-      if (!user) {
-        const returnUrl = `/oauth/consent?authorization_id=${authorizationId}`;
-        window.dispatchEvent(new CustomEvent('open-auth', { detail: { returnUrl } }));
-        sessionStorage.setItem('oauth_return', returnUrl);
-        return;
-      }
+    // Social login handlers
+    async function loginWith(provider) {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: window.location.origin + '/oauth/consent?mcp_state=' + encodeURIComponent(mcpState) + '&oauth_data=' + encodeURIComponent(oauthData),
+        },
+      });
+      if (error) showError(error.message);
+    }
+
+    document.getElementById('btn-google')?.addEventListener('click', () => loginWith('google'));
+    document.getElementById('btn-azure')?.addEventListener('click', () => loginWith('azure'));
+    document.getElementById('btn-linkedin')?.addEventListener('click', () => loginWith('linkedin_oidc'));
+
+    // Approve handler
+    document.getElementById('approve-btn')?.addEventListener('click', async () => {
+      const btn = document.getElementById('approve-btn');
+      btn.disabled = true;
+      btn.textContent = 'Autorizando...';
 
       try {
-        const { data: authDetails, error } = await (supabase.auth as any).oauth.getAuthorizationDetails(authorizationId);
-
-        if (error || !authDetails) {
-          showError(error?.message || 'Solicitação de autorização inválida.');
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+          showError('Sessao expirada. Faca login novamente.');
           return;
         }
 
-        clientName.textContent = authDetails.client?.name || 'Aplicativo desconhecido';
-        loading.classList.add('hidden');
-        consentForm.classList.remove('hidden');
-
-        approveBtn.addEventListener('click', async () => {
-          approveBtn.disabled = true;
-          approveBtn.textContent = 'Autorizando...';
-          try {
-            const { error: approveError } = await (supabase.auth as any).oauth.approveAuthorization(authorizationId);
-            if (approveError) {
-              showError(approveError.message);
-            } else {
-              showSuccess();
-            }
-          } catch (e: any) {
-            showError('Erro ao autorizar: ' + e.message);
-          }
+        const res = await fetch('/oauth/exchange', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            access_token: session.access_token,
+            oauth_data: oauthData,
+          }),
         });
 
-        denyBtn.addEventListener('click', async () => {
-          denyBtn.disabled = true;
-          try {
-            await (supabase.auth as any).oauth.denyAuthorization(authorizationId);
-            showError('Acesso negado. Pode fechar esta janela.');
-          } catch (e: any) {
-            showError('Erro ao negar: ' + e.message);
-          }
-        });
+        const data = await res.json();
+        if (data.redirect_url) {
+          showSuccess();
+          setTimeout(() => {
+            window.location.href = data.redirect_url;
+          }, 500);
+        } else {
+          showError(data.error || 'Erro ao gerar codigo de autorizacao.');
+        }
+      } catch (e) {
+        showError('Erro: ' + e.message);
+      }
+    });
 
-      } catch (e: any) {
-        showError('Erro ao carregar detalhes: ' + e.message);
+    // Deny handler
+    document.getElementById('deny-btn')?.addEventListener('click', () => {
+      showError('Acesso negado. Pode fechar esta janela.');
+    });
+
+    // Init — check if already logged in
+    async function init() {
+      if (!mcpState) return;
+
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        showConsent();
+      } else {
+        showLogin();
       }
     }
 
