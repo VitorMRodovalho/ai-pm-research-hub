@@ -1075,6 +1075,7 @@ const PROFILE_I18N = {
     } catch (err: any) { (window as any).toast?.(err.message || 'Erro', 'error'); }
   });
   document.addEventListener('click', async (e) => {
+    if (!(e.target instanceof Element)) return;
     const target = e.target as HTMLElement;
     if (target.id !== 'sig-remove' && !target.closest('#sig-remove')) return;
     const sb = (window as any).navGetSb?.();
@@ -1251,6 +1252,7 @@ const PROFILE_I18N = {
   if (!(window as any).__profileDelegationBound) {
     (window as any).__profileDelegationBound = true;
     document.addEventListener('click', (e: MouseEvent) => {
+      if (!(e.target instanceof Element)) return;
       const target = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
       if (!target) return;
       switch (target.dataset.action) {

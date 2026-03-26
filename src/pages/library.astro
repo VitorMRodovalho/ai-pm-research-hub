@@ -310,6 +310,7 @@ const WORKSPACE_I18N = {
   if (!(window as any).__workspaceDelegationBound) {
     (window as any).__workspaceDelegationBound = true;
     document.addEventListener('click', function(e: MouseEvent) {
+      if (!(e.target instanceof Element)) return;
       const target = e.target as HTMLElement;
       const actionEl = target.closest('[data-action]') as HTMLElement | null;
       if (!actionEl) return;

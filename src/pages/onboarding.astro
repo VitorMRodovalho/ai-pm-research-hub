@@ -299,6 +299,7 @@ const totalSteps = phases.reduce((sum, p) => sum + p.steps.length, 0);
   }
 
   document.addEventListener('click', (e) => {
+    if (!(e.target instanceof Element)) return;
     const target = e.target as HTMLElement;
 
     const toggle = target.closest('.step-toggle');

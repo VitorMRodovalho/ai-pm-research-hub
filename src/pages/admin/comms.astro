@@ -580,6 +580,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   if (!(window as any).__commsDelegationBound) {
     (window as any).__commsDelegationBound = true;
     document.addEventListener('click', (e: Event) => {
+      if (!(e.target instanceof Element)) return;
       const target = (e.target as HTMLElement).closest('[data-action="copy-template"]') as HTMLElement | null;
       if (!target) return;
       copyTemplate(target.dataset.copyValue || '', target.dataset.copyLabel || 'texto');
