@@ -1,76 +1,36 @@
-# Docs Index por Persona
+# 📚 Documentação — AI & PM Research Hub
 
-Mapa rápido de leitura para acelerar onboarding e execução no Hub.
+Índice de toda a documentação do projeto.
 
-## 1) GP / PM (coordenação executiva)
+---
 
-Ordem recomendada:
+## Para todos
 
-1. `README.md`
-2. `backlog-wave-planning-updated.md`
-3. `docs/project-governance/PROJECT_GOVERNANCE_RUNBOOK.md`
-4. `docs/project-governance/SPRINT_IMPLEMENTATION_PRACTICES.md`
-5. `docs/RELEASE_LOG.md`
-6. `docs/GOVERNANCE_CHANGELOG.md`
+| Documento | Descrição |
+|-----------|-----------|
+| [../README.md](../README.md) | Visão geral, stack, início rápido |
 
-## 2) Líder de Tribo / Operação
+## Para desenvolvedores
 
-Ordem recomendada:
+| Documento | Descrição |
+|-----------|-----------|
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Arquitetura do sistema, camadas, padrões de segurança, modelo de permissões |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Como contribuir: branch, commit, PR, checklist obrigatório |
+| [BOARD_ENGINE_SPEC.md](BOARD_ENGINE_SPEC.md) | Especificação completa do BoardEngine (Kanban, DnD, schema) |
 
-1. `docs/PERMISSIONS_MATRIX.md`
-2. `docs/MIGRATION.md`
-3. `docs/QA_RELEASE_VALIDATION.md`
-4. `docs/DEPLOY_CHECKLIST.md`
-5. `DEBUG_HOLISTIC_PLAYBOOK.md`
-6. `docs/DISASTER_RECOVERY.md`
+## Para operadores (GP / Deputy)
 
-## 3) Contributor (frontend/backend/sql)
+| Documento | Descrição |
+|-----------|-----------|
+| [RUNBOOK.md](RUNBOOK.md) | Deploy, pg_cron, email, auth, monitoramento, emergências |
+| [GOVERNANCE_CHANGELOG.md](GOVERNANCE_CHANGELOG.md) | Histórico de decisões estruturais (GC-001 → GC-131+) |
 
-Ordem recomendada:
+---
 
-1. `AGENTS.md`
-2. `CONTRIBUTING.md`
-3. `docs/project-governance/BRANCH_ENFORCEMENT.md`
-4. `docs/adr/README.md`
-5. `docs/project-governance/PROJECT_AUTOMATION_SHORT_GUIDE.md`
-6. `docs/MIGRATION.md`
-7. `docs/RELEASE_PROCESS.md`
+## Convenções
 
-## 4) Sponsor / Chapter Liaison (leitura executiva)
-
-Ordem recomendada:
-
-1. `README.md`
-2. `docs/RELEASE_LOG.md`
-3. `docs/project-governance/ANALYTICS_V2_PARTNER_VALIDATION.md`
-4. `docs/project-governance/REPO_SYNC_STRATEGY.md`
-5. `docs/project-governance/ROADMAP_SEQUENCIAL_AGRUPADO.md`
-
-## 5) Rotas de referência por tema
-
-- **Governança**: `docs/project-governance/`
-- **Decisões arquiteturais (ADR)**: `docs/adr/README.md`
-- **Migrations e runbooks SQL**: `docs/migrations/`
-- **Sprints específicas**: `docs/sprints/`
-- **Webinars**: `docs/WEBINARS_MODULE_DISCOVERY.md` e `docs/WEBINARS_CONVERGENCE_PROPOSAL.md`
-- **Replicação para outros capítulos**: `docs/REPLICATION_GUIDE.md`
-
-## 6) Regra operacional
-
-Qualquer mudança com impacto de produção deve refletir em:
-
-1. `docs/RELEASE_LOG.md` (o que mudou + validação)
-2. Documento de governança pertinente (`docs/project-governance/*`)
-3. Runbook/migration pertinente (`docs/migrations/*`) quando houver SQL
-
-## 7) Verificação rápida do índice
-
-Para garantir que os links/referências do índice continuam válidos:
-
-```bash
-./scripts/audit_docs_index_links.sh
-```
-
-```bash
-./scripts/audit_adr_index.sh
-```
+- **GC-XXX:** Governance Changelog entry — decisão estrutural documentada
+- **CR-XXX:** Change Request — proposta de mudança pendente de aprovação
+- **S-XXX:** Sprint/spec identifier (ex: S-SENTRY-1, S-RM1)
+- **W-XXX:** Work item identifier (ex: W106, W139)
+- **H-X:** Horizon item (H3, H4 = short/medium-term goals)

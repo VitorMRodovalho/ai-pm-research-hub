@@ -1,256 +1,182 @@
-# 🌐 AI & PM Research Hub
+# 🧠 AI & PM Research Hub
 
-**The AI & Project Management Study and Research Hub**  
-*A Joint Initiative of the PMI Brazilian Chapters*
+**Plataforma de pesquisa colaborativa do Núcleo de Estudos e Pesquisa em IA & Gestão de Projetos**
 
-[🇺🇸 English](#overview) · [🇧🇷 Português](#visão-geral) · [🇪🇸 Español](#descripción-general)
-
----
-
-## Overview
-
-The **AI & PM Research Hub** (originally *Núcleo de Estudos e Pesquisa em Inteligência Artificial e Gerenciamento de Projetos*) is a multi-chapter research initiative under the PMI® Brazilian ecosystem, dedicated to advancing the intersection of Artificial Intelligence and Project Management.
-
-Founded in 2024 as a pilot within PMI Goiás (PMI GO), the initiative has grown into a structured alliance of five PMI chapters — **PMI GO, PMI CE, PMI DF, PMI MG, and PMI RS** — with active collaborators organized across 8 research streams and 4 strategic knowledge quadrants.
-
-### Strategic Knowledge Quadrants
-
-| # | Quadrant | Research Streams |
-|---|----------|------------------|
-| Q1 | **The Augmented Practitioner** | AI Tools & Ecosystem for PM |
-| Q2 | **AI Project Management** | Autonomous Agents & Hybrid Teams |
-| Q3 | **Organizational Leadership** | TMO & PMO of the Future · Culture & Change · Talent & Upskilling · ROI & Portfolio Strategy |
-| Q4 | **Future & Responsibility** | Governance & Trustworthy AI · Inclusion & Human AI Collaboration |
-
-### Project Governance
-
-This project operates under a formal governance model with hierarchical access levels, a peer review committee (*Comitê de Curadoria*), and merit based selection processes. Operations align with PMI® branding standards, LGPD aware data handling, and the PMI Code of Ethics and Professional Conduct.
-
-**Project Manager:** Vitor Maia Rodovalho
+[![Live](https://img.shields.io/badge/Live-ai--pm--research--hub.pages.dev-blue)](https://ai-pm-research-hub.pages.dev)
+[![Version](https://img.shields.io/badge/version-v1.0.0--beta-orange)]()
+[![Tests](https://img.shields.io/badge/tests-779%2B%20unit%20%2B%208%20e2e-green)]()
+[![License](https://img.shields.io/badge/license-MIT-lightgrey)]()
 
 ---
 
-## Current Platform Scope
+## O que é
 
-The platform currently serves as the operational hub for the initiative, supporting:
+Uma plataforma web trilíngue (PT-BR · EN-US · ES-LATAM) que conecta 5 capítulos do PMI no Brasil em torno de pesquisa aplicada sobre Inteligência Artificial na Gestão de Projetos.
 
-- member onboarding and profile management
-- tribe selection and cycle participation
-- attendance tracking and impact hour visibility
-- gamification, certificates, and leaderboard experiences
-- artifact submission and review flow
-- admin visibility for governance and operational coordination
-- multilingual public experience in Portuguese, English, and Spanish
-
-This repository is therefore both a **product** and a **knowledge infrastructure asset** for the Núcleo.
+**Números atuais (Ciclo 3 — 2026/1):**
+- 52 membros ativos · 7 tribos de pesquisa · 4 quadrantes estratégicos
+- 5 capítulos: PMI-GO, PMI-CE, PMI-DF, PMI-MG, PMI-RS
+- 56 artefatos de pesquisa nos boards das tribos
+- Custo operacional zero para as instituições
 
 ---
 
-## March 2026 Operational Status
+## Stack
 
-The repository received an extended stabilization and feature cycle through March 2026.
-
-### Recent highlights
-
-- **Dark mode** — Full theme system via CSS custom properties (`theme.css`). Zero hardcoded slate classes remaining. WCAG AA contrast compliance.
-- **Workspace** — New `/workspace` page as the authenticated member's operational hub, with subproject cards, tribe summary, and quick actions.
-- **Nav Redesign** — Unified navigation config (`navigation.config.ts`) powering desktop navbar, mobile drawer, and keyboard shortcuts. Tier-based route visibility.
-- **BoardEngine** — Generic Kanban engine (drag-and-drop, card detail, MemberPicker, attachments, real-time sync) powering tribe boards, publications, comms-ops, and curatorship.
-- **Curatorship workflow** — Peer review → leader review → curation pending → published, with SLA tracking and super-kanban at `/admin/curatorship`.
-- **Data sanitation** — Synced `members.tribe_id` from `tribe_selections` (32 rows), set roles for liaisons/sponsors, sync trigger to prevent drift.
-- **Branch protection** — CI status checks required (`validate` + `browser_guards`), force push blocked.
-- **Comms migration** — 54 Trello items imported to Hub board, team permissions verified, storage bucket created.
-
-### Known open gaps
-
-- 10 active members without `tribe_id` (cross-tribe roles or haven't selected yet).
-- The tier-based Credly scoring is not yet fully reflected in all rank and gamification UI surfaces.
-- Mobile paste behavior for the Credly URL field still requires dedicated validation on iOS Safari and Chrome.
-
----
-
-## Product Direction
-
-The medium term direction of the Hub is to evolve from a public facing research platform into a **relational knowledge workspace** across tribes.
-
-This does **not** mean cloning external software. The strategy is to build **entity based relational views** on top of the Supabase data model already being structured for members, events, artifacts, cycles, and future knowledge assets.
-
-Planned direction includes:
-
-- cross tribe knowledge visibility
-- workspace style views for in progress artifacts, studies, and events
-- stronger relational traceability between courses, studies, and final outputs
-- long term preservation of institutional memory across cycles
-
-The Hub should become the living graph of the initiative, not a cemetery of links lost in WhatsApp threads and whiteboards.
+| Camada | Tecnologia |
+|--------|-----------|
+| Framework | [Astro 5](https://astro.build/) (SSR on Cloudflare Pages) |
+| UI Islands | [React 19](https://react.dev/) |
+| Styling | [Tailwind CSS 4](https://tailwindcss.com/) |
+| Database | [Supabase](https://supabase.com/) (PostgreSQL + Auth + Edge Functions + Storage) |
+| Hosting | [Cloudflare Pages](https://pages.cloudflare.com/) |
+| Auth | Google · LinkedIn · Microsoft Azure |
+| Analytics | [PostHog](https://posthog.com/) |
+| Error Tracking | [Sentry](https://sentry.io/) |
+| Email | [Resend](https://resend.com/) |
+| DnD | [@dnd-kit](https://dndkit.com/) |
+| Rich Text | [TipTap](https://tiptap.dev/) |
+| Charts | [Chart.js](https://www.chartjs.org/) |
+| Tables | [@tanstack/react-table](https://tanstack.com/table) |
+| Tests | Vitest (unit) + [Playwright](https://playwright.dev/) (e2e) |
+| Cron | pg_cron (Supabase) |
+| Badges | Credly API sync |
 
 ---
 
-## Architecture Principles
+## Funcionalidades
 
-### 1. Zero Cost, High Value Architecture
+### Para Pesquisadores
+- Dashboard individual com XP, badges e ranking
+- Sistema de presença com check-in e time window
+- BoardEngine (Kanban/Table/Calendar/Timeline) para entregáveis da tribo
+- Certificados digitais com verificação por código
+- Notificações (6 tipos + digest)
+- Blog trilíngue
 
-The Núcleo adopts a **Zero Cost, High Value** philosophy. As a volunteer initiative tied to the PMI community, the architecture is intentionally designed to avoid dependency on expensive enterprise tooling whenever an open, free tier, or native solution is enough.
+### Para Líderes de Tribo
+- Dashboard da tribo (5 abas: Visão Geral, Presença, Gamificação, Entregáveis, Configurações)
+- Gestão de entregáveis via BoardEngine
+- Atas de reunião (TipTap editor)
 
-### 2. Hub as Source of Truth
+### Para Stakeholders (Sponsors / Pontos Focais)
+- Dashboard por capítulo com métricas reais
+- Comparativo entre capítulos
+- Acesso PII-free (sem dados pessoais sensíveis)
 
-The Hub is the single source of truth for:
-
-- member state
-- cycle participation
-- gamification logic
-- operational metrics
-- artifacts and research outputs
-
-External tools may integrate with the Hub, but they do not replace it.
-
-### 3. Cycle Aware Data Model
-
-The `members` table should be treated as the **current snapshot** of the person. Historical roles, promotions, tribe participation, and cycle specific states must live in `member_cycle_history` and related fact tables.
-
-### 4. Legacy Deprecation Discipline
-
-Legacy columns and compatibility layers may exist temporarily to avoid breaking production, but they must be explicitly documented and removed after migration windows close.
-
----
-
-## Technical Stack
-
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| Frontend | Astro + Tailwind CSS | Fast multilingual interface with low operational cost |
-| Hosting | Cloudflare Pages | Free CDN delivery and static plus server hybrid deployment |
-| Database | Supabase PostgreSQL | Relational data model, auth, storage, RLS |
-| Server Logic | Supabase Edge Functions | Lightweight backend logic and integrations |
-| Docs | Markdown in repo | Version controlled operational and governance docs |
-| Analytics | Chart.js + Supabase RPCs | Native internal dashboards in protected admin routes |
-| External Media Metrics | Supabase + admin dashboards | Communications metrics managed inside the Hub |
+### Para GP / Admin
+- Painel administrativo completo
+- Gestão de eventos e presença
+- Governança: Change Requests, aprovação em lote, changelog versionado
+- Emissão de certificados (individual e em lote)
+- Gamificação com sync automático (Credly + pg_cron)
+- Campanhas de email (Resend)
+- Parcerias (CRUD + níveis de interação)
+- Dashboards de KPIs e sustentabilidade
 
 ---
 
-## Product Analytics and Governance Notes
+## Início Rápido
 
-### Internal analytics
+### Pré-requisitos
 
-The current production pattern is to use **native Chart.js dashboards** powered by Supabase RPCs in restricted admin routes.
+- Node.js 22+ (recomendado via [nvm](https://github.com/nvm-sh/nvm))
+- Git
+- Conta Supabase (para desenvolvimento local)
+- Supabase CLI (`npm i -g supabase`)
 
-Guidelines:
-
-- use `member_id` or at most `operational_role`, not email or full name
-- keep LGPD-sensitive analytics admin-only
-- allow `/admin/analytics` as internal read-only for `sponsor`, `chapter_liaison`, and `curator` without widening admin write paths
-- maintain a right to be forgotten operational delete path
-
-### External communications analytics
-
-The current production pattern is to keep communications metrics in Supabase-backed admin dashboards, avoiding brittle direct social API integrations in core Astro flows.
-
----
-
-## Immediate Engineering Priorities
-
-1. Comms team pilot: validate `/admin/comms-ops` with Mayanna, Leticia, and Andressa. Clean stale backlog items and assign cards.
-2. Expand browser test coverage to authenticated workflows (card detail, drag-and-drop, curatorship approval).
-3. Analytics V2 validation on real partner-facing reads (funnel, ROI, certification delta).
-4. Knowledge Hub Phase A: cross-tribe artifact visibility and search.
-5. Approve webinar convergence direction: `docs/WEBINARS_CONVERGENCE_PROPOSAL.md`.
-
----
-
-## Project Board and Governance
-
-- **Sprint board**: [GitHub Project — AI PM Hub](https://github.com/users/VitorMRodovalho/projects/1/)
-- Backlog and waves: `backlog-wave-planning-updated.md`
-- How to work with the board: `docs/project-governance/PROJECT_GOVERNANCE_RUNBOOK.md`
-- Board ↔ docs sync (gestão à vista): `docs/AGENT_BOARD_SYNC.md`
-- Dev ↔ prod sync strategy: `docs/project-governance/REPO_SYNC_STRATEGY.md`
-- Comms integration roadmap: `docs/project-governance/COMMS_INTEGRATION_ROADMAP.md`
-
----
-
-## Repository Documentation Map
-
-- `docs/INDEX.md` → entrypoint por persona para navegação de documentação
-- `docs/adr/README.md` → índice de decisões arquiteturais (ADR) e histórico técnico durável
-- `README.md` → project entry point, product context, stack, and current status
-- `AGENTS.md` → context for AI assistants (Cursor) and contributors; conventions and doc map
-- `CONTRIBUTING.md` → how to contribute, quality gates, release discipline
-- `backlog-wave-planning-updated.md` → wave planning, completed work, debt, and next priorities
-- `docs/GOVERNANCE_CHANGELOG.md` → governance and product engineering decisions
-- `docs/MIGRATION.md` → technical transition notes and compatibility guidance
-- `docs/RELEASE_LOG.md` → operational release and hotfix history
-- `docs/WEBINARS_MODULE_DISCOVERY.md` → webinars MVP scope, source-of-truth decision, and rollout boundaries
-- `docs/WEBINARS_CONVERGENCE_PROPOSAL.md` → recommended path for deprecating or converging the standalone `webinars` table
-- `docs/project-governance/KNOWLEDGE_HUB_DESIGN_SPEC.md` → specification for phased Knowledge Hub implementation
-- `docs/project-governance/KNOWLEDGE_HUB_PHASE_A_CONTRACTS.md` → phase A contracts and operational acceptance checklist
-- `docs/project-governance/KANBAN_UX_DARKMODE_EPIC.md` → incremental UX/accessibility epic and Astro Islands direction for Kanban evolution
-- `docs/CURSOR_SETUP.md` → first-use checklist for Cursor IDE
-- `docs/REPLICATION_GUIDE.md` → how to replicate the Hub for another project
-- `DEBUG_HOLISTIC_PLAYBOOK.md` → holistic debugging and troubleshooting guide
-- `docs/SPRINT_SANATION_PLAN.md` → plan to stabilize P0 and resume sprints
-- `docs/DEPLOY_CHECKLIST.md` → pending production steps (HF5, secrets, workflows)
-- `docs/DISASTER_RECOVERY.md` → DR runbook (Supabase backup/PITR, Cloudflare rollback)
-- `docs/GITHUB_SETTINGS.md` → branch protection rules and CI workflow reference
-- `docs/DATA_SANITATION_LOG.md` → member data cleanup history and verification queries
-- `docs/COMMS_MIGRATION_CHECKLIST.md` → Trello → Hub migration status for comms team
-- `docs/RPC_REGISTRY.md` → Supabase RPC audit (unused, deprecated, duplicate definitions)
-- `docs/PENDING_PRODUCTION_SQL.md` → compiled SQL for production application
-
----
-
-## Recommended Local Workflow
+### Setup
 
 ```bash
+# 1. Clone
+git clone git@github.com:VitorMRodovalho/ai-pm-research-hub.git
+cd ai-pm-research-hub
+
+# 2. Node version
+nvm use  # usa a versão do .nvmrc (Node 22)
+
+# 3. Dependências
 npm install
+
+# 4. Variáveis de ambiente
+cp .env.example .env
+# Preencher: SUPABASE_URL, SUPABASE_ANON_KEY, SENTRY_DSN, etc.
+
+# 5. Dev server
+npm run dev
+# → http://localhost:4321
+
+# 6. Build
 npm run build
-npm run dev -- --host 0.0.0.0 --port 4321
-npm test
-npm run smoke:routes
+
+# 7. Testes
+npm test              # unit tests (Vitest)
+npx playwright test   # e2e tests
+```
+
+### Estrutura do projeto
+
+```
+ai-pm-research-hub/
+├── src/
+│   ├── components/       # React islands + Astro components
+│   ├── i18n/             # pt-BR.ts · en-US.ts · es-LATAM.ts
+│   ├── layouts/          # BaseLayout.astro
+│   ├── lib/              # supabaseClient, permissions, utils
+│   ├── pages/            # Astro pages (/, /en/, /es/)
+│   └── styles/           # Tailwind + globals
+├── supabase/
+│   ├── functions/        # Edge Functions (16)
+│   └── migrations/       # SQL migrations
+├── tests/                # Unit + e2e
+├── docs/                 # Documentação do projeto
+│   ├── ARCHITECTURE.md
+│   ├── CONTRIBUTING.md
+│   ├── GOVERNANCE_CHANGELOG.md
+│   ├── BOARD_ENGINE_SPEC.md
+│   └── RUNBOOK.md
+├── .nvmrc                # Node 22
+├── astro.config.mjs
+├── tailwind.config.ts
+└── playwright.config.ts
 ```
 
 ---
 
-## Visão Geral
+## Documentação
 
-O **AI & PM Research Hub** (originalmente *Núcleo de Estudos e Pesquisa em Inteligência Artificial e Gerenciamento de Projetos*) é uma iniciativa multi capítulo de pesquisa sob o ecossistema PMI® brasileiro, dedicada a avançar a interseção entre Inteligência Artificial e Gerenciamento de Projetos.
-
-Fundado em 2024 como piloto no PMI Goiás (PMI GO), o projeto evoluiu para uma aliança estruturada entre cinco capítulos PMI — **PMI GO, PMI CE, PMI DF, PMI MG e PMI RS** — com colaboradores ativos organizados em 8 frentes de pesquisa e 4 quadrantes estratégicos de conhecimento.
-
-### Quadrantes Estratégicos de Conhecimento
-
-| # | Quadrante | Tribos de Pesquisa |
-|---|-----------|--------------------|
-| Q1 | **O Praticante Aumentado** | AI Tools & Ecosystem for PM |
-| Q2 | **Gestão de Projetos de IA** | Autonomous Agents & Hybrid Teams |
-| Q3 | **Liderança Organizacional** | TMO & PMO do Futuro · Cultura & Change · Talentos & Upskilling · ROI & Portfólio |
-| Q4 | **Futuro e Responsabilidade** | Governança & Trustworthy AI · Inclusão & Colaboração Humano IA |
-
-**Gerente de Projeto:** Vitor Maia Rodovalho
+| Documento | Descrição |
+|-----------|-----------|
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arquitetura do sistema, diagrama de camadas, padrões de segurança |
+| [CONTRIBUTING.md](docs/CONTRIBUTING.md) | Guia para contribuidores |
+| [GOVERNANCE_CHANGELOG.md](docs/GOVERNANCE_CHANGELOG.md) | Histórico de decisões estruturais (GC-001 → GC-131) |
+| [BOARD_ENGINE_SPEC.md](docs/BOARD_ENGINE_SPEC.md) | Especificação do BoardEngine |
+| [RUNBOOK.md](docs/RUNBOOK.md) | Operações: deploy, pg_cron, email, backups |
 
 ---
 
-## Descripción General
+## Governança
 
-El **AI & PM Research Hub** (originalmente *Núcleo de Estudos e Pesquisa em Inteligência Artificial e Gerenciamento de Projetos*) es una iniciativa de investigación multi capítulo dentro del ecosistema PMI® brasileño, dedicada a avanzar la intersección entre Inteligencia Artificial y Gestión de Proyectos.
+Este é um **projeto**, não uma associação. Decisões estruturais são documentadas em `GOVERNANCE_CHANGELOG.md` com código (GC-XXX), data, contexto e justificativa. Não há atas, votações ou cargos eletivos.
 
-Fundado en 2024 como piloto en PMI Goiás (PMI GO), el proyecto evolucionó hacia una alianza estructurada entre cinco capítulos PMI — **PMI GO, PMI CE, PMI DF, PMI MG y PMI RS** — con colaboradores activos organizados en 8 líneas de investigación y 4 cuadrantes estratégicos de conocimiento.
-
-### Cuadrantes Estratégicos de Conocimiento
-
-| # | Cuadrante | Líneas de Investigación |
-|---|-----------|-------------------------|
-| Q1 | **El Practicante Aumentado** | AI Tools & Ecosystem for PM |
-| Q2 | **Gestión de Proyectos de IA** | Autonomous Agents & Hybrid Teams |
-| Q3 | **Liderazgo Organizacional** | TMO & PMO del Futuro · Cultura & Change · Talento & Upskilling · ROI & Portafolio |
-| Q4 | **Futuro y Responsabilidad** | Gobernanza & Trustworthy AI · Inclusión & Colaboración Humano IA |
-
-**Director del Proyecto:** Vitor Maia Rodovalho
+**Modelo organizacional:**
+- Seleção por mérito (processo seletivo aberto a cada ciclo)
+- Custo zero para capítulos (infraestrutura mantida pelo GP)
+- Código aberto (MIT)
+- Changelog versionado como em desenvolvimento de software
 
 ---
 
-## License
+## Autor
 
-Documentation is licensed under CC BY SA 4.0.  
-Code is licensed under MIT.
+**Vitor Maia Rodovalho** — Gestor do Projeto (GP)
+- PMI ID: 5975367
+- Capítulo: PMI Goiás
 
-<sub>PMI®, PMBOK®, PMP® and PMI CPMAI™ are registered marks of the Project Management Institute, Inc. This initiative is a collaborative project of independent PMI chapters and is not directly affiliated with or endorsed by PMI Global.</sub>
+Concebido em 2024 por Ivan Lourenço (Presidente PMI-GO) como projeto piloto. Formalizado em 2025 com PMI-CE. Ciclo 3 (2026) com 5 capítulos.
+
+---
+
+## Licença
+
+MIT — veja [LICENSE](LICENSE) para detalhes.
