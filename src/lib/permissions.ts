@@ -297,6 +297,7 @@ export function hasPermission(
   }
 
   // ── Real mode ──
+  if (!member) return false;
   if (member.is_superadmin) return true;
 
   const tier = member.operational_role as OperationalTier;
@@ -328,6 +329,7 @@ export function getEffectivePermissions(member: MemberForPermission): Permission
     return [...new Set([...tierPerms, ...desigPerms])];
   }
 
+  if (!member) return [];
   if (member.is_superadmin) {
     return [...new Set(Object.values(TIER_PERMISSIONS).flat())];
   }

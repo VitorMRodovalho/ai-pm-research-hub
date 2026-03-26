@@ -228,13 +228,13 @@ const WK = {
       );
       const dayNames: string[] = i18n.dayNames || ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
-      const $loading = document.getElementById('wk-loading')!;
-      const $authGate = document.getElementById('wk-auth-gate')!;
-      const $content = document.getElementById('wk-content')!;
-      const $noTribe = document.getElementById('wk-no-tribe')!;
-      const $tribeCard = document.getElementById('wk-tribe-card')!;
-      const $subGrid = document.getElementById('wk-subprojects-grid')!;
-      const $prodGrid = document.getElementById('wk-production-grid')!;
+      const $loading = document.getElementById('wk-loading');
+      const $authGate = document.getElementById('wk-auth-gate');
+      const $content = document.getElementById('wk-content');
+      const $noTribe = document.getElementById('wk-no-tribe');
+      const $tribeCard = document.getElementById('wk-tribe-card');
+      const $subGrid = document.getElementById('wk-subprojects-grid');
+      const $prodGrid = document.getElementById('wk-production-grid');
 
       // Login button
       document.getElementById('wk-login-btn')?.addEventListener('click', () => {
@@ -296,8 +296,8 @@ const WK = {
           member = e.detail;
           onMemberReady();
         } else {
-          $loading.classList.add('hidden');
-          $authGate.classList.remove('hidden');
+          $loading?.classList.add('hidden');
+          $authGate?.classList.remove('hidden');
         }
       }) as EventListener);
 
@@ -317,16 +317,16 @@ const WK = {
       }
 
       if (!member) {
-        $loading.classList.add('hidden');
-        $authGate.classList.remove('hidden');
+        $loading?.classList.add('hidden');
+        $authGate?.classList.remove('hidden');
         return;
       }
 
       async function onMemberReady() {
         if (_wsLoaded) return;
         // Re-run data loading when member becomes available later
-        $authGate.classList.add('hidden');
-        $loading.classList.remove('hidden');
+        $authGate?.classList.add('hidden');
+        $loading?.classList.remove('hidden');
         await loadWorkspaceData();
       }
 
@@ -392,7 +392,7 @@ const WK = {
         const tribeColor = getTribeColor(member.tribe_id);
         const isLeader = hasPermission(member, 'board.edit_tribe_items');
 
-        $tribeCard.innerHTML = `
+        if ($tribeCard) $tribeCard.innerHTML = `
           <a href="/tribe/${member.tribe_id}?tab=board" class="block no-underline group">
             <div class="bg-[var(--surface-card)] border-2 rounded-2xl p-5 transition-all hover:shadow-lg hover:border-opacity-60"
                  style="border-color: ${tribeColor}">
@@ -423,7 +423,7 @@ const WK = {
             </div>
           </a>
         `;
-        $tribeCard.classList.remove('hidden');
+        $tribeCard?.classList.remove('hidden');
       } else if (!member.tribe_id) {
         // Check if admin/stakeholder — show "access to all tribes" instead of "no tribe"
         const isAdminOrStakeholder = member.is_superadmin
@@ -432,7 +432,7 @@ const WK = {
           || ['sponsor', 'chapter_liaison'].includes(member.operational_role);
 
         if (isAdminOrStakeholder) {
-          $tribeCard.innerHTML = `
+          if ($tribeCard) $tribeCard.innerHTML = `
             <a href="/tribe/1" class="block no-underline group">
               <div class="bg-[var(--surface-card)] border-2 border-navy/20 rounded-2xl p-5 hover:shadow-md transition-all">
                 <div class="flex items-center gap-3">
@@ -445,13 +445,13 @@ const WK = {
               </div>
             </a>
           `;
-          $tribeCard.classList.remove('hidden');
+          $tribeCard?.classList.remove('hidden');
         } else {
-          $noTribe.classList.remove('hidden');
+          $noTribe?.classList.remove('hidden');
         }
       } else {
         // Has tribe but no board yet
-        $tribeCard.innerHTML = `
+        if ($tribeCard) $tribeCard.innerHTML = `
           <a href="/tribe/${member.tribe_id}" class="block no-underline">
             <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5 hover:shadow-md transition-all">
               <h3 class="text-base font-bold text-[var(--text-primary)]">${i18n.tribePrefix} ${member.tribe_id}</h3>
@@ -459,7 +459,7 @@ const WK = {
             </div>
           </a>
         `;
-        $tribeCard.classList.remove('hidden');
+        $tribeCard?.classList.remove('hidden');
       }
 
       // ── Render Section 1.5: Alertas Operacionais (GP only) ──
@@ -530,7 +530,7 @@ const WK = {
             ${itemCount > 0 ? `<p class="text-xs text-[var(--text-secondary)]">${itemCount} ${i18n.subprojectItems}</p>` : ''}
           </div>
         `;
-        $subGrid.appendChild(card);
+        $subGrid?.appendChild(card);
       }
 
       // ── Render Section 3: Produção & Recursos ──
@@ -550,7 +550,7 @@ const WK = {
             <h3 class="text-sm font-bold text-[var(--text-primary)]">${escHtml(item.label)}</h3>
           </div>
         `;
-        $prodGrid.appendChild(card);
+        $prodGrid?.appendChild(card);
       }
 
       // ── My Publications Card ──
@@ -772,12 +772,12 @@ const WK = {
       }
 
       // ── Done: show content ──
-      $loading.classList.add('hidden');
+      $loading?.classList.add('hidden');
       // Observer mode: show banner, hide main operational content
       if (member?.member_status === 'observer') {
         document.getElementById('wk-observer-banner')?.classList.remove('hidden');
       }
-      $content.classList.remove('hidden');
+      $content?.classList.remove('hidden');
       try { if ((window as any).posthog) (window as any).posthog.capture('workspace_visited', { tribe_id: member?.tribe_id || null }); } catch {}
       } // end loadWorkspaceData
 

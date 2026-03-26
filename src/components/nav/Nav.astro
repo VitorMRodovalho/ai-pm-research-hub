@@ -849,6 +849,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
 
   // ── Event delegation (no inline onclick per .cursorrules) ──
   document.addEventListener('click', (e: MouseEvent) => {
+    if (!(e.target instanceof HTMLElement)) return;
     const target = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
     if (!target) return;
     const action = target.dataset.action;
