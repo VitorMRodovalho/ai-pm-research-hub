@@ -1,4 +1,7 @@
-name = "ai-pm-hub-v2"
+name = "ai-pm-research-hub"
+main = "@astrojs/cloudflare/entrypoints/server"
 compatibility_date = "2025-01-01"
-compatibility_flags = [ "nodejs_compat" ]
-pages_build_output_dir = "dist"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./dist/client/"

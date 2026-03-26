@@ -15,9 +15,9 @@ import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const workerDir = resolve(__dirname, '..', 'dist', '_worker.js');
+const workerDir = resolve(__dirname, '..', 'dist', 'server');
 const chunksDir = join(workerDir, 'chunks');
-const entryFile = join(workerDir, 'index.js');
+const entryFile = join(workerDir, 'entry.mjs');
 
 const POLYFILL = 'if(typeof globalThis.MessageChannel==="undefined"){globalThis.MessageChannel=class{constructor(){let a=null,b=null;this.port1={set onmessage(f){a=f},get onmessage(){return a},postMessage(d){if(b)setTimeout(()=>b({data:d}),0)},close(){}};this.port2={set onmessage(f){b=f},get onmessage(){return b},postMessage(d){if(a)setTimeout(()=>a({data:d}),0)},close(){}}}}}\n';
 
