@@ -1,77 +1,146 @@
-# MCP Server Setup Guide — Núcleo IA & GP
+# MCP Setup Guide — Núcleo IA & GP Research Hub
 
-Connect your AI assistant (Claude, Cursor, VS Code) to the Hub platform.
-10 read-only tools for tribe leaders: profile, board, attendance, XP, meetings, notifications, search.
+## What is MCP?
 
-## Quick Setup
+MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact with external services. The Núcleo server exposes 15 tools that let you query and manage project data directly from your AI assistant using natural language.
 
-### Claude Desktop / Claude Code
+## Universal URL
 
-Add to your MCP config (`~/.claude.json` or Claude Desktop settings):
+All clients use the same URL:
+
+```
+https://platform.ai-pm-research-hub.workers.dev/mcp
+```
+
+Authentication: OAuth 2.1 — you'll be redirected to log in with the same account you use on the platform (Google, LinkedIn, or Microsoft).
+
+## Compatibility
+
+| Client | Status | Notes |
+|--------|--------|-------|
+| Claude.ai | ✅ Stable | Web and desktop app |
+| Claude Code | ✅ Stable | Terminal — see token workaround below |
+| Cursor | ✅ Stable | Settings → MCP → Add |
+| VS Code | ✅ Stable | MCP extension required |
+| ChatGPT | ⏳ Beta | Settings → Apps → Connectors → Advanced → New App |
+
+## Setup by Client
+
+### Claude.ai (Web / Desktop)
+
+1. Open Claude.ai → Settings → Integrations → MCP
+2. Click "Add MCP Server"
+3. Paste URL: `https://platform.ai-pm-research-hub.workers.dev/mcp`
+4. A browser window opens — log in with your Núcleo account
+5. Approve the OAuth consent
+6. Done — ask Claude anything about the project
+
+### Claude Code (Terminal)
+
+Claude Code doesn't auto-initiate OAuth. Workaround:
+
+1. Open the platform in your browser and log in
+2. Open DevTools → Application → Local Storage → find `sb-ldrfrvwhxsmgaabwmaik-auth-token`
+3. Copy the `access_token` value
+4. In Claude Code config (`.claude/settings.json` or `--mcp-config`):
 
 ```json
 {
   "mcpServers": {
     "nucleo-ia": {
-      "url": "https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-mcp/mcp"
+      "type": "url",
+      "url": "https://platform.ai-pm-research-hub.workers.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_TOKEN_HERE"
+      }
     }
   }
 }
 ```
 
-### Cursor
+Token expires in 1 hour. Refresh by repeating step 2-3.
 
-Settings → MCP → Add Server → paste the URL:
-```
-https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-mcp/mcp
-```
+### Cursor / VS Code
 
-### VS Code (MCP Extension)
+1. Open Settings → MCP Servers → Add
+2. URL: `https://platform.ai-pm-research-hub.workers.dev/mcp`
+3. Authentication: OAuth (automatic flow)
+4. Save and test
 
-MCP extension → Add server → paste the URL above.
+### ChatGPT (Beta)
 
-## First Connection
+1. Go to chatgpt.com → Settings → Apps → Connectors → Advanced
+2. Click "New App"
+3. Name: `Nucleo-IA`
+4. MCP Server URL: `https://platform.ai-pm-research-hub.workers.dev/mcp`
+5. Authentication: OAuth
+6. Check "I understand and want to continue"
+7. Click Create
 
-1. Your AI assistant will open a browser window
-2. Login with Google / LinkedIn / Microsoft
-3. Approve the consent screen ("Autorizar acesso")
-4. Done — the assistant now has read-only access to your Hub data
+> Note: ChatGPT MCP support is in beta. If you see "Internal Server Error", this is a known ChatGPT-side issue. The server is compatible — it will work once their beta stabilizes.
 
 ## Available Tools
 
+### Read Tools (all members)
+
 | Tool | Description |
 |------|-------------|
-| `get_my_profile` | Your member profile, role, tribe, certifications |
-| `get_my_board_status` | Tribe board cards grouped by status |
-| `get_my_tribe_attendance` | Attendance grid for your tribe |
-| `get_my_tribe_members` | Active members in your tribe |
-| `get_upcoming_events` | Events in the next 7 days |
-| `get_my_xp_and_ranking` | XP breakdown and leaderboard position |
-| `get_meeting_notes` | Recent meeting minutes for your tribe |
-| `get_my_notifications` | Your unread notifications |
-| `search_board_cards` | Full-text search across board cards |
-| `get_hub_announcements` | Active Hub announcements |
+| `get_my_profile` | Your profile, role, tribe, and status |
+| `get_my_board_status` | Your tribe's board cards grouped by status |
+| `get_my_tribe_attendance` | Attendance records for your tribe |
+| `get_my_tribe_members` | Members of your tribe with roles |
+| `get_upcoming_events` | Next events with dates, times, and links |
+| `get_my_xp_and_ranking` | Your XP breakdown and leaderboard position |
+| `get_meeting_notes` | Meeting minutes from your tribe |
+| `get_my_notifications` | Your unread and recent notifications |
+| `search_board_cards` | Search cards across boards you have access to |
+| `get_hub_announcements` | Platform-wide announcements |
 
-## Security
+### Write Tools (tribe leaders, GP, deputy only)
 
-- **Read-only**: No tool can modify data
-- **RLS enforced**: You only see data your role allows
-- **OAuth 2.1**: Standard authorization flow, revocable anytime
-- **No PII exposed**: Email and phone are never returned
+| Tool | Description |
+|------|-------------|
+| `create_board_card` | Create a new card on your tribe's board |
+| `update_card_status` | Move a card to a different column |
+| `create_meeting_notes` | Create meeting minutes |
+| `register_attendance` | Register attendance for a tribe meeting |
+| `send_notification_to_tribe` | Send a notification to all tribe members |
+
+## Security Model
+
+- **OAuth 2.1** with PKCE — industry standard
+- **Row Level Security (RLS)** enforced on every query — you only see data your role permits
+- **No personal data exposed** — emails, phones are excluded from tool responses
+- **Write guards** — only tribe leaders, GP, and deputy can use write tools
+- **Tokens expire** in 1 hour — no persistent access
 
 ## Troubleshooting
 
-- **"Not authenticated"**: Re-authorize via browser
-- **Empty results**: You may not have a tribe assigned yet
-- **Connection refused**: Check if your firewall blocks Supabase
+| Problem | Solution |
+|---------|----------|
+| "Unauthorized" | Token expired — log in again |
+| "Permission denied" | Your role doesn't have access to that tool |
+| Empty response | You may not have data in that category yet |
+| ChatGPT "Internal Server Error" | Known ChatGPT beta issue — try again later |
+| OAuth window doesn't open | Check browser popup blocker settings |
 
-## MCP Endpoint
+## Architecture
 
 ```
-https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-mcp/mcp
+Your AI Client → Workers Proxy → Supabase Edge Function (nucleo-mcp)
+                  ↓                        ↓
+         OAuth Discovery          RLS-enforced queries
+         (.well-known/)           (your JWT → your data)
 ```
 
-Health check:
-```
-https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-mcp/health
-```
+The Workers proxy at `platform.ai-pm-research-hub.workers.dev` routes:
+- `/mcp` → Supabase Edge Function `nucleo-mcp`
+- `/.well-known/oauth-authorization-server` → OAuth discovery JSON
+
+This ensures OAuth discovery is at the domain root (required by some clients like ChatGPT).
+
+## Source Code
+
+- Platform: [github.com/VitorMRodovalho/ai-pm-research-hub](https://github.com/VitorMRodovalho/ai-pm-research-hub)
+- Edge Function: `supabase/functions/nucleo-mcp/`
+- This guide: `docs/MCP_SETUP_GUIDE.md`
