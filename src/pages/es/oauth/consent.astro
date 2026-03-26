@@ -1,0 +1,10 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+const lang = 'es-LATAM' as const;
+---
+<BaseLayout title="Autorizar Aplicación" noIndex={true} lang={lang}>
+  <meta http-equiv="refresh" content="0;url=/oauth/consent{Astro.url.search}">
+  <div class="flex items-center justify-center min-h-[60vh]">
+    <p class="text-[var(--text-muted)] text-sm">Redirigiendo...</p>
+  </div>
+</BaseLayout>
