@@ -1215,6 +1215,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   if (!(window as any).__tribeDelegationBound) {
     (window as any).__tribeDelegationBound = true;
     document.addEventListener('click', (e: MouseEvent) => {
+      if (!(e.target instanceof Element)) return;
       const target = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
       if (!target) return;
       const action = target.dataset.action;

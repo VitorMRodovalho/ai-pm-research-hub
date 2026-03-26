@@ -728,6 +728,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
     (window as any).__attendanceDelegationBound = true;
 
     document.addEventListener('click', (e: MouseEvent) => {
+      if (!(e.target instanceof Element)) return;
       const target = (e.target as HTMLElement).closest('[data-action]') as HTMLElement | null;
       if (!target) return;
 

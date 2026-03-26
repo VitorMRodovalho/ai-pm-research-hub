@@ -637,6 +637,7 @@ const ARTIFACTS_I18N = {
   if (!(window as any).__artifactsDelegationBound) {
     (window as any).__artifactsDelegationBound = true;
     document.addEventListener('click', (e: MouseEvent) => {
+      if (!(e.target instanceof Element)) return;
       const target = e.target as HTMLElement;
       const actionEl = target.closest('[data-action]') as HTMLElement | null;
       if (actionEl) {

@@ -386,6 +386,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
     // Row click → detail
     document.addEventListener('click', (e: MouseEvent) => {
+      if (!(e.target instanceof Element)) return;
       const target = (e.target as HTMLElement).closest<HTMLElement>('[data-action="view-applicant"]');
       if (!target) return;
       const id = target.dataset.id;

@@ -274,6 +274,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   if (!(window as any).__adminMemberDelegationBound) {
     (window as any).__adminMemberDelegationBound = true;
     document.addEventListener('click', (e: MouseEvent) => {
+      if (!(e.target instanceof Element)) return;
       const target = e.target as HTMLElement;
       const actionEl = target.closest('[data-action]') as HTMLElement | null;
       if (actionEl) {

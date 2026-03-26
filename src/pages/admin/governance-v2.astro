@@ -135,6 +135,7 @@ const i18nBundle = buildPageI18n(['governance'], lang);
   }
 
   document.addEventListener('click', async (event) => {
+    if (!(event.target instanceof Element)) return;
     const target = (event.target as HTMLElement).closest<HTMLElement>('[data-action="restore-archived-item"]');
     if (!target) return;
     const itemId = target.dataset.itemId || '';
