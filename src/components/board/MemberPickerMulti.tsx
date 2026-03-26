@@ -79,7 +79,7 @@ export default function MemberPickerMulti({ members, assignments, onAdd, onRemov
                     <img src={a.avatar_url} alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
                   ) : (
                     <span className="w-3.5 h-3.5 rounded-full bg-navy/10 flex items-center justify-center text-[7px] font-bold text-navy">
-                      {a.name.charAt(0).toUpperCase()}
+                      {(a.name ?? '?').charAt(0).toUpperCase()}
                     </span>
                   )}
                   <span className="truncate max-w-[80px]">{a.name}</span>
@@ -174,7 +174,7 @@ export default function MemberPickerMulti({ members, assignments, onAdd, onRemov
                           <img src={m.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover flex-shrink-0" />
                         ) : (
                           <span className="w-5 h-5 rounded-full bg-navy/10 flex items-center justify-center text-[9px] font-bold text-navy flex-shrink-0">
-                            {m.name.charAt(0).toUpperCase()}
+                            {(m.name ?? '?').charAt(0).toUpperCase()}
                           </span>
                         )}
                         <span className="text-[var(--text-primary)] truncate">{m.name}</span>

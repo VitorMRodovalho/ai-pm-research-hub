@@ -84,7 +84,7 @@ export default function MemberPicker({ members, value, onChange, placeholder = '
                     <img src={m.avatar_url} alt="" className="w-5 h-5 rounded-full object-cover flex-shrink-0" />
                   ) : (
                     <span className="w-5 h-5 rounded-full bg-navy/10 flex items-center justify-center text-[9px] font-bold text-navy flex-shrink-0">
-                      {m.name.charAt(0).toUpperCase()}
+                      {(m.name ?? '?').charAt(0).toUpperCase()}
                     </span>
                   )}
                   <span className="text-[var(--text-primary)] truncate">{m.name}</span>
