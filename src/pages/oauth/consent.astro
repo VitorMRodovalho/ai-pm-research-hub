@@ -142,15 +142,40 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       showError('Parametro mcp_state ausente. Abra esta pagina pelo fluxo OAuth do seu assistente de IA.');
     }
 
-    // Social login handlers
+    // Social login handlers — use window.open for popup compatibility (ChatGPT, Claude.ai)
     async function loginWith(provider) {
-      const { error } = await supabase.auth.signInWithOAuth({
+      if (!mcpState) return;
+
+      const redirectTo = window.location.origin + '/oauth/consent?mcp_state=' + encodeURIComponent(mcpState) + '&oauth_data=' + encodeURIComponent(oauthData);
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: window.location.origin + '/oauth/consent?mcp_state=' + encodeURIComponent(mcpState) + '&oauth_data=' + encodeURIComponent(oauthData),
+          skipBrowserRedirect: true,
+          redirectTo,
         },
       });
-      if (error) showError(error.message);
+
+      if (error) { showError(error.message); return; }
+      if (!data?.url) { showError('Erro ao iniciar login.'); return; }
+
+      // Open social login in a new window — works in popup contexts
+      const authWindow = window.open(data.url, '_blank', 'width=500,height=650,popup=yes');
+
+      // Poll for session completion (social login redirects back, sets session)
+      const pollInterval = setInterval(async () => {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            clearInterval(pollInterval);
+            if (authWindow && !authWindow.closed) authWindow.close();
+            showConsent();
+          }
+        } catch {}
+      }, 1000);
+
+      // Stop polling after 5 minutes
+      setTimeout(() => clearInterval(pollInterval), 300000);
     }
 
     document.getElementById('btn-google')?.addEventListener('click', () => loginWith('google'));
