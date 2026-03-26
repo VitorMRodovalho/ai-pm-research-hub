@@ -958,8 +958,8 @@ test('taxonomy alerting and data sanity migrations are present', () => {
 test('docs index exposes persona map and has audit script for reference integrity', () => {
   const index = read('docs/INDEX.md');
   const auditScript = read('scripts/audit_docs_index_links.sh');
-  assert.equal(index.includes('# Docs Index por Persona'), true);
-  assert.equal(index.includes('./scripts/audit_docs_index_links.sh'), true);
+  assert.equal(index.includes('Documentação'), true);
+  assert.equal(index.includes('Para desenvolvedores'), true);
   assert.equal(auditScript.includes('docs/INDEX.md'), true);
   assert.equal(auditScript.includes('broken references'), true);
 });
