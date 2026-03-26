@@ -18,6 +18,8 @@ description: >
 - **Auth:** Supabase Auth (Google + LinkedIn + Microsoft (Azure) + Magic Link)
 - **Hosting:** Cloudflare Workers
 - **Live URL:** https://platform.ai-pm-research-hub.workers.dev
+- **MCP Server:** 15 tools (10 read + 5 write) at `/mcp` — proxied to Supabase EF `nucleo-mcp`
+- **OAuth 2.1 Server:** Custom implementation in Workers (DCR + PKCE + KV code storage)
 - **i18n:** 3 locales: PT-BR (default, no prefix), EN-US (`/en/`), ES-LATAM (`/es/`)
 - **Charts:** Chart.js (NOT recharts)
 - **DnD:** @dnd-kit
@@ -296,6 +298,30 @@ const isTier3Plus = ['manager','deputy_manager','tribe_leader','sponsor','chapte
 - ES-LATAM: "Líneas de Investigación"
 
 "CoP" exists in the underlying data model but is NOT surfaced externally.
+
+---
+
+## CRITICAL RULE 11: MCP Server + OAuth 2.1
+
+**MCP Server:** Supabase Edge Function `nucleo-mcp` (15 tools), proxied via Workers at `/mcp`.
+- Source: `supabase/functions/nucleo-mcp/index.ts`
+- Deploy: `supabase functions deploy nucleo-mcp --no-verify-jwt`
+- Health: `curl https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-mcp/health`
+
+**Write tools auth guard:** `canWrite()` checks `manager`, `deputy_manager`, `tribe_leader`, or `is_superadmin`.
+
+**OAuth 2.1 Server (custom, in Workers):**
+- Discovery: `/.well-known/oauth-authorization-server` + `/.well-known/oauth-protected-resource` (RFC 9728)
+- DCR: `POST /oauth/register` → returns fixed Supabase client_id
+- Authorize: `GET /oauth/authorize` → 302 → `/oauth/consent` (login + approve)
+- Exchange: `POST /oauth/exchange` → generates auth code, stores code→JWT in KV (`SESSION` namespace)
+- Token: `POST /oauth/token` → PKCE verification, returns Supabase JWT from KV
+- Consent page: `src/pages/oauth/consent.astro` (social login via Supabase Auth, then approve)
+
+**Why custom OAuth instead of Supabase OAuth provider:**
+Supabase Auth requires `apikey` header on all endpoints and doesn't support DCR (`/oauth/register` returns 404). Claude.ai needs DCR (RFC 7591) to register before starting OAuth flow.
+
+**KV storage:** `SESSION` namespace stores `mcp_code:{code}` entries (TTL: 120s) and `mcp_oauth:{state}` entries (TTL: 600s).
 
 ---
 
