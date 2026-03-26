@@ -142,12 +142,16 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       showError('Parametro mcp_state ausente. Abra esta pagina pelo fluxo OAuth do seu assistente de IA.');
     }
 
-    // Social login handlers — use window.open for popup compatibility (ChatGPT, Claude.ai)
+    // Social login handlers — open window synchronously in click handler to avoid popup blocker
     async function loginWith(provider) {
       if (!mcpState) return;
 
+      // 1. Open blank window SYNCHRONOUSLY inside click handler (preserves user gesture)
+      const authWindow = window.open('about:blank', '_blank', 'width=500,height=650,popup=yes');
+
       const redirectTo = window.location.origin + '/oauth/consent?mcp_state=' + encodeURIComponent(mcpState) + '&oauth_data=' + encodeURIComponent(oauthData);
 
+      // 2. Get OAuth URL from Supabase (async — ok because window already exists)
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
@@ -156,13 +160,22 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         },
       });
 
-      if (error) { showError(error.message); return; }
-      if (!data?.url) { showError('Erro ao iniciar login.'); return; }
+      if (error || !data?.url) {
+        if (authWindow) authWindow.close();
+        showError(error?.message || 'Erro ao iniciar login.');
+        return;
+      }
 
-      // Open social login in a new window — works in popup contexts
-      const authWindow = window.open(data.url, '_blank', 'width=500,height=650,popup=yes');
+      // 3. Navigate the already-open window to the OAuth URL
+      if (authWindow) {
+        authWindow.location.href = data.url;
+      } else {
+        // Fallback: direct redirect if popup was still blocked
+        window.location.href = data.url;
+        return;
+      }
 
-      // Poll for session completion (social login redirects back, sets session)
+      // 4. Poll for session completion
       const pollInterval = setInterval(async () => {
         try {
           const { data: { session } } = await supabase.auth.getSession();
