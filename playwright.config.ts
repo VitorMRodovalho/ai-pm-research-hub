@@ -17,7 +17,7 @@ export default defineConfig({
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     env: {
-      PUBLIC_SUPABASE_URL: 'https://mock.supabase.co',
+      PUBLIC_SUPABASE_URL: 'http://localhost:54321',
       PUBLIC_SUPABASE_ANON_KEY: 'mock-key-for-build',
     },
   },
