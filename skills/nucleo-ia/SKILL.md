@@ -3,7 +3,7 @@ name: nucleo-ia-hub
 description: >
   Use this skill for ALL work on the AI & PM Research Hub (Núcleo IA & GP) platform.
   This covers: Supabase RPC patterns, RLS-protected tables, auth.uid() vs members.id mapping,
-  Astro 5 + React 19 island architecture, i18n trilingual requirements, Chart.js configuration,
+  Astro 6 + React 19 island architecture, i18n trilingual requirements, Chart.js configuration,
   event governance schema, attendance system, and the pre-commit QA checklist.
   Activate whenever touching: SQL/RPCs, React components, Astro pages, i18n files,
   Supabase queries, Chart.js, events, attendance, or admin panel features.
@@ -12,11 +12,12 @@ description: >
 # AI & PM Research Hub — Project Skill
 
 ## Stack
-- **Framework:** Astro 5 (SSR on Cloudflare Pages) + React 19 islands
+- **Framework:** Astro 6 (SSR on Cloudflare Workers) + React 19 islands
 - **Styling:** Tailwind CSS 4
 - **Database:** Supabase (PostgreSQL) — project ID: `ldrfrvwhxsmgaabwmaik`
-- **Auth:** Supabase Auth (Google + LinkedIn + Magic Link)
-- **Hosting:** Cloudflare Pages
+- **Auth:** Supabase Auth (Google + LinkedIn + Microsoft (Azure) + Magic Link)
+- **Hosting:** Cloudflare Workers
+- **Live URL:** https://platform.ai-pm-research-hub.workers.dev
 - **i18n:** 3 locales: PT-BR (default, no prefix), EN-US (`/en/`), ES-LATAM (`/es/`)
 - **Charts:** Chart.js (NOT recharts)
 - **DnD:** @dnd-kit
