@@ -121,9 +121,8 @@ const visitorNavItems = isHomePage
   : [...homeAnchorItems.filter(i => ['tribes', 'trail'].includes(i.key)), ...primaryPublicItems];
 
 const navConfigJson = JSON.stringify(NAV_ITEMS);
-const runtimeEnv = ((Astro.locals as any)?.runtime?.env ?? {}) as Record<string, string | undefined>;
-const NAV_PUBLIC_SUPABASE_URL = (import.meta.env.PUBLIC_SUPABASE_URL || runtimeEnv.PUBLIC_SUPABASE_URL || '').trim();
-const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY || runtimeEnv.PUBLIC_SUPABASE_ANON_KEY || '').trim();
+const NAV_PUBLIC_SUPABASE_URL = (import.meta.env.PUBLIC_SUPABASE_URL || '').trim();
+const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '').trim();
 ---
 
 <nav class="sticky top-0 z-[200] bg-navy/97 backdrop-blur-md border-b-2 border-orange

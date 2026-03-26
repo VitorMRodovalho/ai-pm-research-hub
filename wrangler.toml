@@ -1,3 +1,4 @@
+main = "@astrojs/cloudflare/entrypoints/server"
 name = "ai-pm-hub-v2"
 compatibility_date = "2025-01-01"
 compatibility_flags = [ "nodejs_compat" ]
