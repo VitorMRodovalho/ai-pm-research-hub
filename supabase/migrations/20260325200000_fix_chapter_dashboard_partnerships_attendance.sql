@@ -1,0 +1,12 @@
+-- Fix 1: Partnerships were counting NULL-chapter records (16 of 18)
+-- Changed: WHERE pe.chapter = v_chapter OR pe.chapter IS NULL
+-- To:      WHERE pe.chapter = v_chapter
+--
+-- Fix 2: Attendance rate was 100% because attendance table only has present=true records.
+-- Old formula: count(present) / count(*) = 100% always
+-- New formula: attended_events / (eligible_events × chapter_members) × 100
+--
+-- Applied directly via execute_sql. This file documents the change.
+-- See get_chapter_dashboard RPC in DB for current definition.
+
+-- Already applied to production DB on 2026-03-25.
