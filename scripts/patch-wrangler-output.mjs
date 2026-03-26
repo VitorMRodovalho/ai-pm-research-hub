@@ -3,24 +3,31 @@
  * Post-build patch for @astrojs/cloudflare v13 + Cloudflare Pages.
  *
  * The adapter generates dist/server/wrangler.json designed for Workers.
- * Many fields are incompatible with Pages deployments. Instead of
- * stripping them one by one, we use an allowlist of Pages-supported fields.
+ * Many fields are incompatible with Pages deployments.
+ *
+ * Two-step fix:
+ * 1. Strip non-Pages fields from wrangler.json (including "main")
+ * 2. Copy dist/server/ contents into dist/_worker.js/ directory
+ *    Pages convention: dist/_worker.js/ is auto-detected as the worker bundle
  *
  * Reference: https://developers.cloudflare.com/pages/functions/wrangler-configuration/
  */
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, cpSync, mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 
 const WRANGLER_JSON = 'dist/server/wrangler.json';
+const WORKER_DIR = 'dist/_worker.js';
 
 if (!existsSync(WRANGLER_JSON)) {
   console.log('[patch-wrangler] No dist/server/wrangler.json found, skipping.');
   process.exit(0);
 }
 
+// --- Step 1: Clean wrangler.json ---
+
 // Fields that Cloudflare Pages accepts in wrangler config
 const PAGES_ALLOWED_FIELDS = new Set([
   'name',
-  'main',
   'pages_build_output_dir',
   'compatibility_date',
   'compatibility_flags',
@@ -59,7 +66,7 @@ for (const key of Object.keys(config)) {
   }
 }
 
-// Also strip kv_namespaces entries without an id (auto-generated Sessions)
+// Strip kv_namespaces entries without an id (auto-generated Sessions)
 if (config.kv_namespaces) {
   const valid = config.kv_namespaces.filter(kv => kv.id);
   if (valid.length === 0) {
@@ -70,9 +77,17 @@ if (config.kv_namespaces) {
   }
 }
 
+writeFileSync(WRANGLER_JSON, JSON.stringify(config, null, 2) + '\n');
 if (removed.length > 0) {
-  writeFileSync(WRANGLER_JSON, JSON.stringify(config, null, 2) + '\n');
   console.log(`[patch-wrangler] Removed non-Pages fields: ${removed.join(', ')}`);
-} else {
-  console.log('[patch-wrangler] No incompatible fields found.');
 }
+
+// --- Step 2: Create _worker.js directory bundle ---
+// Pages auto-detects dist/_worker.js/ as the advanced-mode worker.
+// Copy the entire server output there so entry.mjs can resolve ./chunks/
+
+mkdirSync(WORKER_DIR, { recursive: true });
+cpSync('dist/server/chunks', join(WORKER_DIR, 'chunks'), { recursive: true });
+cpSync('dist/server/entry.mjs', join(WORKER_DIR, 'index.js'));
+
+console.log('[patch-wrangler] Created dist/_worker.js/ bundle (entry + chunks)');
