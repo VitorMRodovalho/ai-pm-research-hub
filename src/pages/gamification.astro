@@ -87,6 +87,15 @@ const GAM_I18N = {
   certEdit: t('gamification.cert.edit', lang) || 'Editar',
   certSaveChanges: t('gamification.cert.saveChanges', lang) || 'Salvar Alterações',
   certUpdated: t('gamification.cert.updated', lang) || 'Certificado atualizado!',
+  certBulkTab: t('gamification.cert.bulkTab', lang) || 'Emissão em Lote',
+  certBulkOnly: t('gamification.cert.bulkOnly', lang) || 'Apenas Participação/Conclusão em lote',
+  certRequiresIndividual: t('gamification.cert.requiresIndividual', lang) || 'Requer descrição individual',
+  certSelectMembers: t('gamification.cert.selectMembers', lang) || 'Selecionar Membros',
+  certSelectAll: t('gamification.cert.selectAll', lang) || 'Selecionar Todos',
+  certSelected: t('gamification.cert.selected', lang) || '{n} de {total} selecionados',
+  certAlreadyIssued: t('gamification.cert.alreadyIssued', lang) || 'Já emitido',
+  certBulkConfirm: t('gamification.cert.bulkConfirm', lang) || 'Emitir {n} Certificados',
+  certBulkDone: t('gamification.cert.bulkDone', lang) || '{n} certificados emitidos com sucesso!',
   syncAttendanceError: t('gamification.sync.attendanceError', lang),
   syncAttendanceFail: t('gamification.sync.attendanceFail', lang),
   syncAttendanceSuccess: t('gamification.sync.attendanceSuccess', lang),
@@ -418,6 +427,71 @@ const SCORING_I18N = {
           <div class="mt-4 flex justify-end">
             <button data-action="issue-certificate" class="px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm cursor-pointer border-0 hover:opacity-90 transition-all">
               {t('gamification.cert.issueBtn', lang)}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bulk Issuance -->
+      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] overflow-hidden mt-4" id="bulk-cert-panel">
+        <div class="px-5 py-3.5 border-b border-[var(--border-default)] flex items-center justify-between cursor-pointer" data-action="toggle-bulk-panel">
+          <h3 class="text-sm font-bold text-navy">📦 {t('gamification.cert.bulkTab', lang) || 'Emissão em Lote'}</h3>
+          <span id="bulk-panel-arrow" class="text-[var(--text-muted)] text-xs">▼</span>
+        </div>
+        <div id="bulk-cert-body" class="hidden p-5">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('gamification.cert.type', lang)}</label>
+              <select id="bulk-type" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] bg-[var(--surface-card)]">
+                <option value="participation">{t('gamification.cert.type.participation', lang)}</option>
+                <option value="completion">{t('gamification.cert.type.completion', lang)}</option>
+              </select>
+              <span class="text-[10px] text-[var(--text-muted)]">{t('gamification.cert.bulkOnly', lang) || 'Apenas Participação/Conclusão em lote'}</span>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('gamification.cert.cycle', lang)}</label>
+              <input type="number" id="bulk-cycle" value="3" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
+            </div>
+            <div class="flex flex-col gap-1.5 sm:col-span-2">
+              <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('gamification.cert.certTitle', lang)}</label>
+              <input type="text" id="bulk-title" value="Certificado de Participação" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[12px] font-semibold text-[var(--text-secondary)]">Período de</label>
+              <input type="text" id="bulk-period-start" placeholder="Ciclo 1 (Mai 2024)" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-[12px] font-semibold text-[var(--text-secondary)]">Período até</label>
+              <input type="text" id="bulk-period-end" placeholder="Ciclo 3 (Mar 2026)" class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
+            </div>
+            <div class="flex flex-col gap-1.5 sm:col-span-2">
+              <label class="text-[12px] font-semibold text-[var(--text-secondary)]">Idioma</label>
+              <div class="flex gap-3 text-sm">
+                <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="bulk-lang" value="pt-BR" checked class="accent-navy"> 🇧🇷 PT</label>
+                <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="bulk-lang" value="en-US" class="accent-navy"> 🇺🇸 EN</label>
+                <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="bulk-lang" value="es-LATAM" class="accent-navy"> 🇪🇸 ES</label>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 border-t border-[var(--border-default)] pt-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[12px] font-bold text-[var(--text-secondary)]">{t('gamification.cert.selectMembers', lang) || 'Selecionar Membros'}</span>
+              <div class="flex gap-2 items-center">
+                <select id="bulk-tribe-filter" class="text-[11px] rounded border border-[var(--border-default)] bg-[var(--surface-base)] px-1.5 py-1">
+                  <option value="">Todas as tribos</option>
+                </select>
+                <button data-action="bulk-select-all" class="text-[11px] px-2 py-1 rounded bg-[var(--surface-section-cool)] border border-[var(--border-default)] cursor-pointer">{t('gamification.cert.selectAll', lang) || 'Selecionar Todos'}</button>
+                <span id="bulk-counter" class="text-[11px] text-[var(--text-muted)]">0 / 0</span>
+              </div>
+            </div>
+            <div id="bulk-member-list" class="max-h-[280px] overflow-y-auto border border-[var(--border-default)] rounded-lg bg-[var(--surface-base)]">
+              <div class="p-3 text-center text-[var(--text-muted)] text-xs">Carregando...</div>
+            </div>
+          </div>
+          <div id="bulk-preview" class="hidden mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-[12px] text-amber-800"></div>
+          <div class="mt-4 flex justify-end">
+            <button data-action="bulk-issue" class="px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-semibold text-sm cursor-pointer border-0 hover:opacity-90 transition-all" disabled>
+              {t('gamification.cert.bulkConfirm', lang) || 'Emitir 0 Certificados'}
             </button>
           </div>
         </div>
@@ -1400,6 +1474,26 @@ const SCORING_I18N = {
         });
         break;
       }
+      case 'toggle-bulk-panel': {
+        const body = document.getElementById('bulk-cert-body');
+        const arrow = document.getElementById('bulk-panel-arrow');
+        if (body) {
+          const hidden = body.classList.toggle('hidden');
+          if (arrow) arrow.textContent = hidden ? '▼' : '▲';
+          if (!hidden) loadBulkMembers();
+        }
+        break;
+      }
+      case 'bulk-select-all': {
+        const cbs = document.querySelectorAll('.bulk-member-cb') as NodeListOf<HTMLInputElement>;
+        const allChecked = Array.from(cbs).every(cb => cb.checked);
+        cbs.forEach(cb => { cb.checked = !allChecked; });
+        updateBulkCounter();
+        break;
+      }
+      case 'bulk-issue':
+        bulkIssueCerts();
+        break;
     }
   });
 
@@ -1445,6 +1539,114 @@ const SCORING_I18N = {
   }
   document.getElementById('manage-certs-filter')?.addEventListener('change', () => loadManageCerts());
   document.getElementById('manage-certs-search')?.addEventListener('input', () => { clearTimeout((window as any).__mcSearch); (window as any).__mcSearch = setTimeout(loadManageCerts, 300); });
+
+  // ── BULK CERTIFICATE ISSUANCE ──
+  let bulkMembers: any[] = [];
+  let bulkExistingCerts: Set<string> = new Set();
+
+  async function loadBulkMembers() {
+    const listEl = document.getElementById('bulk-member-list');
+    if (!listEl) return;
+    const tribeFilter = (document.getElementById('bulk-tribe-filter') as HTMLSelectElement)?.value || '';
+    const bType = (document.getElementById('bulk-type') as HTMLSelectElement)?.value || 'participation';
+    const bStart = (document.getElementById('bulk-period-start') as HTMLInputElement)?.value.trim() || '';
+    const bEnd = (document.getElementById('bulk-period-end') as HTMLInputElement)?.value.trim() || '';
+
+    // Load members + existing certs in parallel
+    const [membersRes, certsRes] = await Promise.all([
+      sb.from('public_members').select('id, name, operational_role, tribe_id, current_cycle_active').eq('is_active', true).eq('current_cycle_active', true).order('name'),
+      (bStart && bEnd) ? sb.from('certificates').select('member_id').eq('type', bType).eq('period_start', bStart).eq('period_end', bEnd).neq('status', 'revoked') : Promise.resolve({ data: [] }),
+    ]);
+
+    bulkMembers = membersRes.data || [];
+    bulkExistingCerts = new Set((certsRes.data || []).map((c: any) => c.member_id));
+
+    // Populate tribe filter if empty
+    const tribeSelect = document.getElementById('bulk-tribe-filter') as HTMLSelectElement;
+    if (tribeSelect && tribeSelect.options.length <= 1) {
+      const tribes = [...new Set(bulkMembers.filter((m: any) => m.tribe_id).map((m: any) => m.tribe_id))].sort();
+      for (const tid of tribes) { const o = document.createElement('option'); o.value = String(tid); o.textContent = `Tribo ${tid}`; tribeSelect.appendChild(o); }
+    }
+
+    const filtered = tribeFilter ? bulkMembers.filter((m: any) => String(m.tribe_id) === tribeFilter) : bulkMembers;
+
+    listEl.innerHTML = filtered.map((m: any) => {
+      const hasExisting = bulkExistingCerts.has(m.id);
+      return `<label class="flex items-center gap-2 px-3 py-1.5 hover:bg-[var(--surface-hover)] cursor-pointer text-[12px] border-b border-[var(--border-subtle)] last:border-0">
+        <input type="checkbox" class="bulk-member-cb accent-navy w-3.5 h-3.5" value="${m.id}" ${hasExisting ? '' : ''}>
+        <span class="flex-1 truncate ${hasExisting ? 'text-[var(--text-muted)]' : ''}">${m.name}</span>
+        <span class="text-[10px] text-[var(--text-muted)]">${m.operational_role || ''}</span>
+        ${hasExisting ? `<span class="text-[9px] px-1 py-0.5 rounded bg-amber-100 text-amber-700">⚠️ ${I.certAlreadyIssued}</span>` : ''}
+      </label>`;
+    }).join('') || '<div class="p-3 text-center text-xs text-[var(--text-muted)]">Nenhum membro encontrado</div>';
+    updateBulkCounter();
+  }
+
+  function updateBulkCounter() {
+    const checked = document.querySelectorAll('.bulk-member-cb:checked').length;
+    const total = document.querySelectorAll('.bulk-member-cb').length;
+    const counterEl = document.getElementById('bulk-counter');
+    if (counterEl) counterEl.textContent = I.certSelected.replace('{n}', String(checked)).replace('{total}', String(total));
+    const btn = document.querySelector('[data-action="bulk-issue"]') as HTMLButtonElement;
+    if (btn) {
+      btn.disabled = checked === 0;
+      btn.textContent = I.certBulkConfirm.replace('{n}', String(checked));
+    }
+    // Preview
+    const preview = document.getElementById('bulk-preview');
+    if (preview) {
+      if (checked > 0) {
+        const bType = (document.getElementById('bulk-type') as HTMLSelectElement)?.value || 'participation';
+        const bStart = (document.getElementById('bulk-period-start') as HTMLInputElement)?.value || '?';
+        const bEnd = (document.getElementById('bulk-period-end') as HTMLInputElement)?.value || '?';
+        preview.textContent = `📦 Emitir ${checked} certificados de ${bType} | Período: ${bStart} → ${bEnd}`;
+        preview.classList.remove('hidden');
+      } else preview.classList.add('hidden');
+    }
+  }
+
+  async function bulkIssueCerts() {
+    const checkedEls = document.querySelectorAll('.bulk-member-cb:checked') as NodeListOf<HTMLInputElement>;
+    const memberIds = Array.from(checkedEls).map(el => el.value);
+    if (!memberIds.length) return;
+
+    const bType = (document.getElementById('bulk-type') as HTMLSelectElement)?.value || 'participation';
+    const bTitle = (document.getElementById('bulk-title') as HTMLInputElement)?.value.trim();
+    const bStart = (document.getElementById('bulk-period-start') as HTMLInputElement)?.value.trim();
+    const bEnd = (document.getElementById('bulk-period-end') as HTMLInputElement)?.value.trim();
+    const bCycle = parseInt((document.getElementById('bulk-cycle') as HTMLInputElement)?.value) || 3;
+    const bLang = (document.querySelector('input[name="bulk-lang"]:checked') as HTMLInputElement)?.value || 'pt-BR';
+
+    if (!bTitle || !bStart || !bEnd) { toast(I.certFillFields, 'error'); return; }
+
+    const btn = document.querySelector('[data-action="bulk-issue"]') as HTMLButtonElement;
+    if (btn) { btn.disabled = true; btn.textContent = `⏳ 0/${memberIds.length}...`; }
+
+    try {
+      const { data, error } = await sb.rpc('bulk_issue_certificates', {
+        p_type: bType, p_title: bTitle, p_period_start: bStart, p_period_end: bEnd,
+        p_language: bLang, p_cycle: bCycle, p_member_ids: memberIds,
+      });
+      if (error) throw error;
+      if (data?.error) { toast(data.error, 'error'); return; }
+      toast(I.certBulkDone.replace('{n}', String(data.issued || 0)), 'success');
+      // Switch to manage tab
+      const manageTab = document.querySelector('[data-tab="manage-certs"]') as HTMLElement;
+      if (manageTab) switchGamTab(manageTab, 'manage-certs');
+      loadManageCerts();
+    } catch (e: any) {
+      toast(e?.message || 'Error', 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = I.certBulkConfirm.replace('{n}', String(memberIds.length)); }
+    }
+  }
+
+  // Bulk listeners
+  document.getElementById('bulk-tribe-filter')?.addEventListener('change', () => loadBulkMembers());
+  document.getElementById('bulk-type')?.addEventListener('change', () => loadBulkMembers());
+  document.getElementById('bulk-period-start')?.addEventListener('change', () => loadBulkMembers());
+  document.getElementById('bulk-period-end')?.addEventListener('change', () => loadBulkMembers());
+  document.addEventListener('change', (e) => { if ((e.target as HTMLElement)?.classList?.contains('bulk-member-cb')) updateBulkCounter(); });
 
   // ── CERTIFICATE PDF (print-based, portrait A4) ──
   (window as any).downloadCertificatePDF = async function(certData: any) {
