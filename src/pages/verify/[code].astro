@@ -1,60 +1,158 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getLangFromURL, type Lang } from '../../i18n/utils';
+import { getLangFromURL, t, type Lang } from '../../i18n/utils';
+
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const { code } = Astro.params;
-const L: Record<string, Record<string, string>> = {
-  'pt-BR': { title: 'Verificação de Certificado', hub: 'Núcleo de Estudos e Pesquisa em IA & GP', valid: 'Certificado válido', revoked: 'Este certificado foi revogado', notFound: 'Certificado não encontrado', issuedAt: 'Emitido em', period: 'Período', type: 'Tipo', loading: 'Verificando...', disclaimer: 'PMI®, PMBOK®, PMP® e PMI-CPMAI™ são marcas registradas do PMI, Inc.' },
-  'en-US': { title: 'Certificate Verification', hub: 'AI & PM Study and Research Hub', valid: 'Valid certificate', revoked: 'This certificate has been revoked', notFound: 'Certificate not found', issuedAt: 'Issued on', period: 'Period', type: 'Type', loading: 'Verifying...', disclaimer: 'PMI®, PMBOK®, PMP® and PMI-CPMAI™ are registered marks of PMI, Inc.' },
-  'es-LATAM': { title: 'Verificación de Certificado', hub: 'Hub de Estudios e Investigación en IA y GP', valid: 'Certificado válido', revoked: 'Este certificado fue revocado', notFound: 'Certificado no encontrado', issuedAt: 'Emitido el', period: 'Período', type: 'Tipo', loading: 'Verificando...', disclaimer: 'PMI®, PMBOK®, PMP® y PMI-CPMAI™ son marcas registradas de PMI, Inc.' },
-};
-const t = L[lang] || L['pt-BR'];
 ---
 
-<BaseLayout title={t.title} lang={lang}>
-  <div class="max-w-[500px] mx-auto px-4 py-16">
+<BaseLayout title={t('verify.title', lang)} lang={lang}>
+  <main class="max-w-[560px] mx-auto px-4 py-12">
     <div class="text-center mb-8">
-      <div class="text-sm font-bold text-navy tracking-wide uppercase">{t.hub}</div>
-      <h1 class="text-xl font-extrabold text-[var(--text-primary)] mt-2">{t.title}</h1>
+      <div class="text-4xl mb-3">🔍</div>
+      <h1 class="text-xl font-bold text-[var(--text-primary)]">{t('verify.title', lang)}</h1>
     </div>
-    <div id="verify-loading" class="text-center py-8 text-[var(--text-muted)]">{t.loading}</div>
+
+    <div id="verify-loading" class="text-center py-8 text-[var(--text-muted)] text-sm">...</div>
     <div id="verify-result" class="hidden"></div>
-    <div class="text-center mt-8 text-[8px] text-[var(--text-muted)]">{t.disclaimer}</div>
-  </div>
+
+    <div class="mt-8 pt-6 border-t border-[var(--border-subtle)]">
+      <form id="verify-form" class="flex gap-2">
+        <input id="verify-input" type="text" value={code || ''}
+          class="flex-1 px-4 py-2.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-input)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-navy"
+          placeholder={t('verify.searchPlaceholder', lang)} />
+        <button type="submit"
+          class="px-5 py-2.5 rounded-lg bg-navy text-white text-sm font-semibold border-0 cursor-pointer hover:opacity-90">
+          {t('verify.search', lang)}
+        </button>
+      </form>
+    </div>
+
+    <div class="text-center mt-6 text-[8px] text-[var(--text-muted)]">PMI®, PMBOK®, PMP® e PMI-CPMAI™ são marcas registradas do PMI, Inc.</div>
+  </main>
 </BaseLayout>
 
-<script define:vars={{ code, lang }}>
-  async function verify() {
-    const sb = window.navGetSb?.();
-    if (!sb) { setTimeout(verify, 300); return; }
-    const { data } = await sb.rpc('verify_certificate', { p_code: code });
-    document.getElementById('verify-loading')?.classList.add('hidden');
-    const el = document.getElementById('verify-result');
-    if (!el) return;
-    el.classList.remove('hidden');
-    const L = { 'pt-BR': { valid:'Certificado válido', revoked:'Este certificado foi revogado', notFound:'Certificado não encontrado', issuedAt:'Emitido em', period:'Período' }, 'en-US': { valid:'Valid certificate', revoked:'This certificate has been revoked', notFound:'Certificate not found', issuedAt:'Issued on', period:'Period' }, 'es-LATAM': { valid:'Certificado válido', revoked:'Este certificado fue revocado', notFound:'Certificado no encontrado', issuedAt:'Emitido el', period:'Período' } };
-    const t = L[lang] || L['pt-BR'];
-    if (!data || !data.valid) {
-      const msg = data?.message || t.notFound;
-      const isRevoked = msg.includes('revoked') || msg.includes('revogado');
-      el.innerHTML = `<div class="rounded-2xl border-2 ${isRevoked ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-gray-50'} p-8 text-center">
-        <div class="text-3xl mb-3">${isRevoked ? '🔴' : '❓'}</div>
-        <div class="text-lg font-bold ${isRevoked ? 'text-red-700' : 'text-gray-600'}">${msg}</div>
+<script is:inline define:vars={{ lang, code }}>
+  window.__verifyLang = lang;
+  window.__verifyCode = code || '';
+</script>
+
+<script>
+  import { getSupabase } from '../../lib/supabase';
+  import { t } from '../../i18n/utils';
+  import type { Lang } from '../../i18n/utils';
+
+  function esc(s: any): string { return String(s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  function fmtDate(dateStr: string, lang: Lang): string {
+    if (!dateStr) return '';
+    const clean = String(dateStr).slice(0, 10);
+    const d = new Date(clean + 'T12:00:00');
+    if (isNaN(d.getTime())) return String(dateStr);
+    const locale = lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-ES' : 'pt-BR';
+    return d.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' });
+  }
+
+  function row(label: string, value: string): string {
+    return `<div class="flex justify-between items-center gap-4 py-1.5"><span class="text-[var(--text-muted)] shrink-0 text-sm">${label}</span><span class="font-medium text-[var(--text-primary)] text-sm text-right">${value}</span></div>`;
+  }
+
+  function renderResult(data: any, lang: Lang): string {
+    if (!data || data.error === 'not_found') {
+      return `<div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-6 text-center">
+        <div class="text-3xl mb-2">\u26A0\uFE0F</div>
+        <p class="font-semibold text-amber-800 dark:text-amber-300">${t('verify.notFound', lang)}</p>
+        <p class="text-sm text-amber-600 dark:text-amber-400 mt-1">${t('verify.notFoundHint', lang)}</p>
       </div>`;
-      return;
     }
-    const d = data;
-    const dateStr = d.issued_at ? new Date(d.issued_at).toLocaleDateString(lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es' : 'pt-BR', { day:'2-digit', month:'long', year:'numeric' }) : '';
-    const period = d.period_start && d.period_end ? `${t.period}: ${d.period_start} → ${d.period_end}` : '';
-    el.innerHTML = `<div class="rounded-2xl border-2 border-emerald-300 bg-emerald-50 p-8 text-center">
-      <div class="text-3xl mb-3">✅</div>
-      <div class="text-lg font-bold text-emerald-700 mb-4">${t.valid}</div>
-      <div class="text-xl font-extrabold text-navy mb-1">${d.member_name}</div>
-      <div class="text-sm text-gray-600 mb-1">${d.title || ''}</div>
-      ${period ? `<div class="text-xs text-gray-500 mb-1">${period}</div>` : ''}
-      <div class="text-xs text-gray-500">${t.issuedAt}: ${dateStr}</div>
-      <div class="mt-3 text-[10px] text-gray-400 font-mono">${d.verification_code}</div>
+
+    if (data.revoked) {
+      return `<div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6">
+        <div class="text-center mb-4"><div class="text-3xl mb-2">\u274C</div>
+          <p class="font-bold text-red-800 dark:text-red-300 text-lg">${t('verify.revoked', lang)}</p></div>
+        <div class="divide-y divide-[var(--border-subtle)]">
+          ${row(t('verify.type', lang), esc(data.title))}
+          ${row(t('verify.issuedTo', lang), esc(data.member_name))}
+          ${data.revoked_at ? row(t('verify.revokedAt', lang), `<span class="text-red-600 dark:text-red-400">${fmtDate(data.revoked_at, lang)}</span>`) : ''}
+          ${data.revoked_reason ? row(t('verify.revokedReason', lang), esc(data.revoked_reason)) : ''}
+        </div>
+      </div>`;
+    }
+
+    const rows = [
+      row(t('verify.type', lang), esc(data.type || data.title)),
+      row(t('verify.issuedTo', lang), `<span class="font-bold">${esc(data.member_name)}</span>`),
+      data.issued_at ? row(t('verify.issuedAt', lang), fmtDate(data.issued_at, lang)) : '',
+      data.issued_by ? row(t('verify.issuedBy', lang), esc(data.issued_by)) : '',
+      data.counter_signed_by ? row(t('verify.counterSignedBy', lang), esc(data.counter_signed_by)) : '',
+      data.cycle ? row(t('verify.cycle', lang), `${data.cycle}${data.period_start && data.period_end ? ` (${data.period_start} — ${data.period_end})` : ''}`) : '',
+      row(t('verify.code', lang), `<code class="text-[12px] bg-[var(--surface-hover)] px-2 py-0.5 rounded font-mono">${esc(data.verification_code)}</code>`),
+    ].filter(Boolean).join('');
+
+    return `<div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-6">
+      <div class="text-center mb-4"><div class="text-3xl mb-2">\u2705</div>
+        <p class="font-bold text-emerald-800 dark:text-emerald-300 text-lg">${t('verify.valid', lang)}</p></div>
+      <div class="divide-y divide-[var(--border-subtle)]">${rows}</div>
     </div>`;
   }
-  verify();
+
+  async function doVerify(code: string) {
+    const lang = ((window as any).__verifyLang || 'pt-BR') as Lang;
+    const loading = document.getElementById('verify-loading');
+    const result = document.getElementById('verify-result');
+    if (!result) return;
+
+    if (!code?.trim()) {
+      if (loading) loading.classList.add('hidden');
+      result.classList.add('hidden');
+      return;
+    }
+
+    if (loading) { loading.classList.remove('hidden'); loading.textContent = '...'; }
+    result.classList.add('hidden');
+
+    let sb = (window as any).navGetSb?.();
+    if (!sb) { try { sb = getSupabase(); } catch { /* noop */ } }
+    if (!sb) {
+      if (loading) loading.classList.add('hidden');
+      result.classList.remove('hidden');
+      result.innerHTML = renderResult(null, lang);
+      return;
+    }
+
+    try {
+      const { data, error } = await sb.rpc('verify_certificate', { p_code: code.trim() });
+      if (error) throw error;
+      if (loading) loading.classList.add('hidden');
+      result.classList.remove('hidden');
+      result.innerHTML = renderResult(data, lang);
+    } catch (err) {
+      console.error('Verify failed:', err);
+      if (loading) loading.classList.add('hidden');
+      result.classList.remove('hidden');
+      result.innerHTML = renderResult(null, lang);
+    }
+  }
+
+  document.getElementById('verify-form')?.addEventListener('submit', (e: Event) => {
+    e.preventDefault();
+    const input = document.getElementById('verify-input') as HTMLInputElement;
+    if (input?.value?.trim()) {
+      history.replaceState(null, '', `/verify/${encodeURIComponent(input.value.trim())}`);
+      doVerify(input.value.trim());
+    }
+  });
+
+  // Auto-verify if code in URL
+  const initialCode = (window as any).__verifyCode;
+  if (initialCode) {
+    const waitAndVerify = () => {
+      const sb = (window as any).navGetSb?.();
+      if (sb) { doVerify(initialCode); }
+      else { setTimeout(waitAndVerify, 300); }
+    };
+    setTimeout(waitAndVerify, 500);
+  } else {
+    document.getElementById('verify-loading')?.classList.add('hidden');
+  }
 </script>
