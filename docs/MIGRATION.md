@@ -29,7 +29,7 @@ This document tracks active technical transition points so the team can distingu
 ## 1. Navigation and production stabilization
 
 ### Applied
-- Cloudflare Pages SPA fallback redirects introduced.
+- Cloudflare Workers SPA fallback redirects introduced.
 - Legacy aliases restored for `/teams`, `/rank`, and `/ranks`.
 - `TribesSection.astro` guarded against missing `deliverables` during SSR.
 - Repeatable smoke tests added with `npm run smoke:routes`.
@@ -205,4 +205,4 @@ For the first webinar MVP, webinar operations should remain **events-first** and
 - If the product later approves external registration, reusable speaker entities, or webinar-specific certificate automation, define the new data model and migration path before adding more schema.
 
 ### Supporting reference
-See `docs/WEBINARS_MODULE_DISCOVERY.md` for the approved discovery scope and rollout boundaries, and `docs/WEBINARS_CONVERGENCE_PROPOSAL.md` for the recommended path on deprecating or converging the standalone `webinars` table.
+See `docs/archive/WEBINARS_MODULE_DISCOVERY.md` for the approved discovery scope and rollout boundaries, and `docs/archive/WEBINARS_CONVERGENCE_PROPOSAL.md` for the recommended path on deprecating or converging the standalone `webinars` table.

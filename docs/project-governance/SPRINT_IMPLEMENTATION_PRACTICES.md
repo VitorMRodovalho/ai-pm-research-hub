@@ -57,6 +57,6 @@ Toda sprint DEVE completar esta sequência antes de iniciar a próxima. Este pro
 
 ### Fase 5: Deploy
 - `git add -A && git commit` — mensagem seguindo conventional commits.
-- `git push origin main` — deploy automático via Cloudflare Pages.
+- `git push origin main` — deploy automático via Cloudflare Workers.
 - `git tag -a vX.Y.Z -m "descricao"` + `git push origin vX.Y.Z` — tag de release.
 - Verificação final em produção (navegação manual nas funcionalidades entregues).

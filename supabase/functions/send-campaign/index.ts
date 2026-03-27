@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
       console.log('[campaign] memberMap entries:', Object.keys(memberMap).length)
     }
 
-    const platformUrl = 'https://nucleoiagp.pages.dev'
+    const platformUrl = 'https://platform.ai-pm-research-hub.workers.dev'
     let delivered = 0
     let errors: string[] = []
 

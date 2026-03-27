@@ -13,7 +13,7 @@ A branch `main` é protegida.
 - Pushes diretos para a `main` devem ser evitados.
 
 ## 3. Log de Release Manual
-Após um deploy com sucesso em produção (Cloudflare Pages), o desenvolvedor deve atualizar o arquivo `docs/RELEASE_LOG.md` com as evidências.
+Após um deploy com sucesso em produção (Cloudflare Workers), o desenvolvedor deve atualizar o arquivo `docs/RELEASE_LOG.md` com as evidências.
 
 ## 4. Checklist UX Operacional (Dark Mode + Kanban)
 

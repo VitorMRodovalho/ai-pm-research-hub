@@ -5,7 +5,7 @@ Checklist para configurar o Cursor e começar a trabalhar no projeto.
 ## Fluxo rápido (clone → run)
 
 ```bash
-cd /caminho/para/ai-pm-hub-v2
+cd /caminho/para/ai-pm-research-hub
 cp .env.example .env
 # Edite .env: PUBLIC_SUPABASE_URL e PUBLIC_SUPABASE_ANON_KEY
 npm install
@@ -18,7 +18,7 @@ Acesse `http://localhost:4321`. Tempo estimado: < 15 min (com Supabase já criad
 ## 1. Abrir o projeto
 
 ```bash
-cd /caminho/para/ai-pm-hub-v2
+cd /caminho/para/ai-pm-research-hub
 cursor .
 ```
 

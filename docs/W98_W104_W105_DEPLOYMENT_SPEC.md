@@ -256,7 +256,7 @@ Seções na ordem:
 5. **Produção:** Pipeline de artigos (funnel: ideias → redação → revisão → curadoria → publicado)
 6. **Engajamento:** Horas de impacto acumuladas + presença média + certificação
 7. **Curadoria:** Throughput + SLA compliance
-8. **Footer:** "Gerado em [data] · Núcleo IA & GP · ai-pm-research-hub.pages.dev"
+8. **Footer:** "Gerado em [data] · Núcleo IA & GP · platform.ai-pm-research-hub.workers.dev"
 
 **Print-to-PDF:**
 - Botão "📄 Exportar PDF" no topo

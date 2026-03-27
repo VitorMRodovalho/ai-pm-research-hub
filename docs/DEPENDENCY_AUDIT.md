@@ -12,8 +12,8 @@
 
 | Pacote | Versao Instalada | Importado em | Uso |
 |--------|-----------------|-------------|-----|
-| `astro` | 5.18.0 | `astro.config.mjs`, `src/middleware/index.ts`, `src/pages/api/search.ts` | Framework principal SSR |
-| `@astrojs/cloudflare` | 12.6.12 | `astro.config.mjs` | Adapter para deploy Cloudflare Pages |
+| `astro` | 6.x | `astro.config.mjs`, `src/middleware/index.ts`, `src/pages/api/search.ts` | Framework principal SSR |
+| `@astrojs/cloudflare` | 13.x | `astro.config.mjs` | Adapter para deploy Cloudflare Workers SSR |
 | `@astrojs/react` | 5.0.0 | `astro.config.mjs` | Integracao React (islands) |
 | `react` | 19.2.4 | 13+ componentes em `src/components/` e `src/hooks/` | Biblioteca UI (islands architecture) |
 | `react-dom` | 19.2.4 | Dependencia implícita do `@astrojs/react` | Renderizacao DOM do React |
@@ -110,7 +110,7 @@ Chunk de build `sortable.esm.DPM9dlb0.js` = ~47 KB (nao-comprimido). Todos os bo
 
 **Nenhum polyfill classico encontrado** (core-js, regenerator-runtime, whatwg-fetch, etc.).
 
-O unico polyfill existente e o **MessageChannel polyfill** em `scripts/patch-worker-polyfill.mjs`, que e injetado pos-build nos chunks do Cloudflare Worker. Isso e necessario porque o React 19 (`react-dom/server`) chama `new MessageChannel()` durante inicializacao do modulo, e o ambiente de validacao do Cloudflare Pages nao disponibiliza essa API.
+O unico polyfill existente e o **MessageChannel polyfill** em `scripts/patch-worker-polyfill.mjs`, que e injetado pos-build nos chunks do Cloudflare Worker. Isso e necessario porque o React 19 (`react-dom/server`) chama `new MessageChannel()` durante inicializacao do modulo, e o ambiente de validacao do Cloudflare Workers nao disponibiliza essa API.
 
 **Veredicto:** O polyfill e necessario e especifico ao ambiente de deploy. Nao ha libs legadas desnecessarias.
 

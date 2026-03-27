@@ -8,11 +8,11 @@
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    CLOUDFLARE PAGES                       │
+│                   CLOUDFLARE WORKERS                      │
 │                   (SSR + Static Assets)                   │
 │                                                           │
 │  ┌─────────────┐  ┌──────────────┐  ┌────────────────┐  │
-│  │  Astro 5    │  │ React 19     │  │  Static Assets │  │
+│  │  Astro 6    │  │ React 19     │  │  Static Assets │  │
 │  │  SSR Pages  │  │ Islands      │  │  (CSS/JS/img)  │  │
 │  │  (routing,  │  │ (interactive │  │                │  │
 │  │   i18n,     │  │  components) │  │                │  │
@@ -29,7 +29,7 @@
 │                                                           │
 │  ┌──────────┐  ┌──────────────┐  ┌───────────────────┐  │
 │  │ Auth     │  │ PostgreSQL   │  │ Edge Functions    │  │
-│  │ (Google, │  │ (300+ RPCs,  │  │ (16 functions,   │  │
+│  │ (Google, │  │ (300+ RPCs,  │  │ (17 functions,   │  │
 │  │ LinkedIn,│  │  RLS, Views, │  │  Credly sync,    │  │
 │  │ Azure)   │  │  pg_cron)    │  │  email, etc.)    │  │
 │  └──────────┘  └──────────────┘  └───────────────────┘  │
@@ -55,7 +55,11 @@
 
 ### 1. Apresentação (Astro + React)
 
-**Astro 5** opera em modo SSR via Cloudflare Pages adapter. Páginas são `.astro` files que podem conter React islands para interatividade.
+**Astro 6** opera em modo SSR via Cloudflare Workers adapter (`@astrojs/cloudflare` v13). Env access via `import { env } from 'cloudflare:workers'` (NOT `locals.runtime.env`). Páginas são `.astro` files que podem conter React islands para interatividade.
+
+**MCP Server:** OAuth 2.1-authenticated MCP endpoint at `platform.ai-pm-research-hub.workers.dev/mcp` with 15 tools (10 read + 5 write). See `docs/MCP_SETUP_GUIDE.md`.
+
+**CSP Middleware:** Content Security Policy headers applied via Astro middleware (`src/middleware.ts`), not via `_headers` file.
 
 **Padrão de i18n:**
 ```
@@ -120,13 +124,14 @@ Jobs cron usam funções `_cron` separadas (sem `auth.uid()` check) com `REVOKE`
 
 ### 4. Edge Functions
 
-16 Edge Functions (Deno runtime no Supabase):
+17 Edge Functions (Deno runtime no Supabase):
 
 | Categoria | Functions | Notas |
 |-----------|-----------|-------|
 | Credly sync | sync-credly-all, verify-credly, sync-attendance-points | 3 com `--no-verify-jwt` |
-| Email/Campaign | send-campaign, etc. | Via Resend API |
-| Utility | Várias | Funções auxiliares |
+| Email/Campaign | send-campaign, send-global-onboarding, send-allocation-notify | Via Resend API |
+| MCP | nucleo-mcp | OAuth 2.1, 15 tools |
+| Utility | detect-detractors, attendance-reminders, etc. | 1 com `--no-verify-jwt` |
 | Legacy | 2 não-deployed | Mantidas por referência |
 
 ### 5. Observabilidade
@@ -207,7 +212,7 @@ Motor genérico de boards (Kanban/Table/Calendar/Timeline/GroupedList) servindo:
 
 ## Constraints
 
-- **Zero-cost:** Supabase free tier, Cloudflare Pages free, PostHog free, Sentry free
+- **Zero-cost:** Supabase free tier, Cloudflare Workers free, PostHog free, Sentry free
 - **LGPD:** Views `members_public_safe` para dados públicos, `excuse_reason` nunca exposto abaixo de GP/Deputy
 - **Governance terminology:** Sem linguagem associativa (ata, votos, membros → substituídos por equivalentes de projeto)
 - **CoP terminology:** "Tribos" (PT-BR) / "Research Streams" (EN) — nunca "CoP" em texto user-facing

@@ -102,5 +102,5 @@ O workflow `project-governance-sync` faz auditoria periódica; ele não move car
 2. Atualizar `package.json` version (opcional, para npm)
 3. Criar tag e push
 4. Criar GitHub Release com changelog
-5. Executar deploy (Cloudflare Pages, etc.) conforme `docs/DEPLOY_CHECKLIST.md`
+5. Executar deploy (Cloudflare Workers, etc.) conforme `docs/DEPLOY_CHECKLIST.md`
 6. Pós-deploy: smoke em produção, registrar em RELEASE_LOG
