@@ -3351,6 +3351,21 @@ const ptBR: Record<string, string> = {
   // Selection
   'selection.title': 'Processo Seletivo',
   'selection.denied': 'Acesso negado ao módulo de seleção.',
+
+  // Changelog
+  'changelog.title': 'Novidades',
+  'changelog.subtitle': 'Evolução da plataforma',
+  'changelog.current': 'Versão Atual',
+  'changelog.category.feature': 'Novidades',
+  'changelog.category.improvement': 'Melhorias',
+  'changelog.category.fix': 'Correções',
+  'changelog.category.infrastructure': 'Infraestrutura',
+  'changelog.category.governance': 'Governança',
+  'changelog.stats.members': 'membros',
+  'changelog.stats.tribes': 'tribos',
+  'changelog.stats.chapters': 'capítulos',
+  'changelog.noReleases': 'Nenhuma release encontrada.',
+  'nav.changelog': 'Novidades',
 };
 
 export default ptBR;

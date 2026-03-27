@@ -1,0 +1,159 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getLangFromURL, t, type Lang } from '../i18n/utils';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+---
+
+<BaseLayout
+  title={t('changelog.title', lang)}
+  description={t('changelog.subtitle', lang)}
+  activePage="changelog"
+>
+  <div class="max-w-[800px] mx-auto px-4 py-8">
+    <header class="mb-8">
+      <h1 class="text-2xl font-bold text-[var(--text-primary)]">{t('changelog.title', lang)}</h1>
+      <p class="text-[var(--text-secondary)] mt-1">{t('changelog.subtitle', lang)}</p>
+    </header>
+
+    <div id="changelog-timeline" class="space-y-6">
+      <p class="text-[var(--text-muted)] text-sm" id="changelog-loading">...</p>
+    </div>
+  </div>
+</BaseLayout>
+
+<script is:inline define:vars={{ lang }}>
+  window.__changelogLang = lang;
+</script>
+
+<script>
+  import { getSupabase } from '../lib/supabase';
+  import { t } from '../i18n/utils';
+  import type { Lang } from '../i18n/utils';
+
+  const CATEGORY_META: Record<string, { emoji: string; key: string }> = {
+    feature:        { emoji: '\u{1F195}', key: 'changelog.category.feature' },
+    improvement:    { emoji: '\u2728',    key: 'changelog.category.improvement' },
+    fix:            { emoji: '\u{1F527}', key: 'changelog.category.fix' },
+    infrastructure: { emoji: '\u2699\uFE0F', key: 'changelog.category.infrastructure' },
+    governance:     { emoji: '\u{1F4CB}', key: 'changelog.category.governance' },
+  };
+
+  const RELEASE_TYPE_COLORS: Record<string, string> = {
+    major: 'bg-blue-600 text-white',
+    minor: 'bg-emerald-600 text-white',
+    patch: 'bg-[var(--text-muted)] text-white',
+    beta:  'bg-amber-500 text-white',
+  };
+
+  function getLocalizedField(item: any, field: string, lang: Lang): string {
+    const suffix = lang === 'en-US' ? '_en' : lang === 'es-LATAM' ? '_es' : '_pt';
+    return item[field + suffix] || item[field + '_pt'] || item[field] || '';
+  }
+
+  function formatDate(dateStr: string, lang: Lang): string {
+    const d = new Date(dateStr + 'T00:00:00');
+    const locale = lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-ES' : 'pt-BR';
+    return d.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  function renderStats(stats: any, lang: Lang): string {
+    if (!stats || typeof stats !== 'object') return '';
+    const parts: string[] = [];
+    if (stats.members) parts.push(`${stats.members} ${t('changelog.stats.members', lang)}`);
+    if (stats.tribes) parts.push(`${stats.tribes} ${t('changelog.stats.tribes', lang)}`);
+    if (stats.chapters) parts.push(`${stats.chapters} ${t('changelog.stats.chapters', lang)}`);
+    if (!parts.length) return '';
+    return `<div class="flex flex-wrap gap-3 mt-2 text-xs text-[var(--text-muted)]">${parts.map(p => `<span class="bg-[var(--surface-hover)] px-2 py-0.5 rounded-full">${p}</span>`).join('')}</div>`;
+  }
+
+  function renderRelease(release: any, lang: Lang): string {
+    const typeColor = RELEASE_TYPE_COLORS[release.release_type] || RELEASE_TYPE_COLORS.patch;
+    const currentBadge = release.is_current
+      ? `<span class="ml-2 text-[10px] font-bold uppercase tracking-wide bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded-full">${t('changelog.current', lang)}</span>`
+      : '';
+
+    const items: any[] = release.items || [];
+    const grouped: Record<string, any[]> = {};
+    for (const item of items) {
+      const cat = item.category || 'feature';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(item);
+    }
+
+    const categoryOrder = ['feature', 'improvement', 'fix', 'infrastructure', 'governance'];
+    let itemsHtml = '';
+    for (const cat of categoryOrder) {
+      const catItems = grouped[cat];
+      if (!catItems?.length) continue;
+      const meta = CATEGORY_META[cat] || CATEGORY_META.feature;
+      itemsHtml += `
+        <div class="mt-3">
+          <h4 class="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)] mb-1.5">${meta.emoji} ${t(meta.key, lang)}</h4>
+          <ul class="space-y-1.5">
+            ${catItems.map((item: any) => {
+              const title = getLocalizedField(item, 'title', lang);
+              const desc = getLocalizedField(item, 'description', lang);
+              return `<li class="text-sm">
+                <span class="text-[var(--text-primary)] font-medium">${title}</span>
+                ${desc ? `<p class="text-[var(--text-secondary)] text-xs mt-0.5 leading-relaxed">${desc}</p>` : ''}
+              </li>`;
+            }).join('')}
+          </ul>
+        </div>`;
+    }
+
+    const title = getLocalizedField(release, 'title', lang) || release.version;
+    const statsHtml = renderStats(release.stats, lang);
+
+    return `
+      <article class="relative pl-6 border-l-2 border-[var(--border-default)]">
+        <div class="absolute -left-[7px] top-1 w-3 h-3 rounded-full bg-[var(--border-default)] border-2 border-[var(--bg-primary)]"></div>
+        <div class="bg-[var(--surface-elevated)] rounded-xl border border-[var(--border-default)] p-5 shadow-sm">
+          <div class="flex items-center flex-wrap gap-2">
+            <span class="${typeColor} text-xs font-bold px-2 py-0.5 rounded-full">${release.version}</span>
+            ${currentBadge}
+            <span class="text-xs text-[var(--text-muted)] ml-auto">${formatDate(release.released_at, lang)}</span>
+          </div>
+          <h3 class="text-base font-semibold text-[var(--text-primary)] mt-2">${title}</h3>
+          ${statsHtml}
+          ${itemsHtml}
+        </div>
+      </article>`;
+  }
+
+  (async () => {
+    const lang = ((window as any).__changelogLang || 'pt-BR') as Lang;
+    const container = document.getElementById('changelog-timeline');
+    if (!container) return;
+
+    let sb = (window as any).navGetSb?.();
+    if (!sb) {
+      await new Promise<void>(r => {
+        const check = () => { sb = (window as any).navGetSb?.(); if (sb) r(); else setTimeout(check, 300); };
+        setTimeout(check, 300);
+        setTimeout(r, 5000);
+      });
+    }
+    if (!sb) {
+      try { sb = getSupabase(); } catch { /* noop */ }
+    }
+    if (!sb) {
+      container.innerHTML = `<p class="text-[var(--text-muted)] text-sm">${t('changelog.noReleases', lang)}</p>`;
+      return;
+    }
+
+    try {
+      const { data, error } = await sb.rpc('get_changelog');
+      if (error) throw error;
+      if (!data?.length) {
+        container.innerHTML = `<p class="text-[var(--text-muted)] text-sm">${t('changelog.noReleases', lang)}</p>`;
+        return;
+      }
+      container.innerHTML = data.map((r: any) => renderRelease(r, lang)).join('');
+    } catch (err) {
+      console.error('Changelog load failed:', err);
+      container.innerHTML = `<p class="text-[var(--text-muted)] text-sm">${t('changelog.noReleases', lang)}</p>`;
+    }
+  })();
+</script>
