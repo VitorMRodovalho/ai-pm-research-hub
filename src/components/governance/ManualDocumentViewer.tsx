@@ -294,7 +294,7 @@ function MergedSectionBlock({ merged: m, lang, regRef }: { merged: MergedSection
       )}
 
       {content && (
-        <div className="prose prose-sm prose-slate dark:prose-invert max-w-none text-[var(--text-secondary)]">
+        <div className="prose prose-sm prose-slate dark:prose-invert max-w-none text-[var(--text-secondary)] overflow-x-auto">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
         </div>
       )}
@@ -316,7 +316,7 @@ function MergedSectionBlock({ merged: m, lang, regRef }: { merged: MergedSection
                   {cs.badge && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${cs.badgeCls}`}>{cs.badge}</span>}
                 </h3>
                 {cContent && (
-                  <div className="prose prose-sm prose-slate dark:prose-invert max-w-none text-[var(--text-secondary)]">
+                  <div className="prose prose-sm prose-slate dark:prose-invert max-w-none text-[var(--text-secondary)] overflow-x-auto">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{cContent}</ReactMarkdown>
                   </div>
                 )}
