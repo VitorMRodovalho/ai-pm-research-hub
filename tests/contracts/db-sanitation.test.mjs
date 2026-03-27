@@ -93,24 +93,24 @@ test('W132 bulk-assigns tribe_leaders to unassigned items', () => {
 // Reference docs (extraction docs committed to repo)
 // ═══════════════════════════════════════════════════
 
-test('Miro extraction doc exists', () => {
+test('Miro extraction doc exists (archived)', () => {
   assert.ok(
-    existsSync(resolve(ROOT, 'docs/MIRO_DRIVE_EXTRACTION_CICLO2.md')),
-    'Miro extraction doc must be committed'
+    existsSync(resolve(ROOT, 'docs/archive/MIRO_DRIVE_EXTRACTION_CICLO2.md')),
+    'Miro extraction doc must be committed (archived)'
   );
 });
 
-test('Comms friction analysis doc exists', () => {
+test('Comms friction analysis doc exists (archived)', () => {
   assert.ok(
-    existsSync(resolve(ROOT, 'docs/COMMS_TEAM_FRICTION_ANALYSIS.md')),
-    'Comms friction analysis must be committed'
+    existsSync(resolve(ROOT, 'docs/archive/COMMS_TEAM_FRICTION_ANALYSIS.md')),
+    'Comms friction analysis must be committed (archived)'
   );
 });
 
-test('DB audit plan doc exists', () => {
+test('DB audit plan doc exists (archived)', () => {
   assert.ok(
-    existsSync(resolve(ROOT, 'docs/DB_AUDIT_AND_SANITATION_PLAN.md')),
-    'DB audit plan must be committed'
+    existsSync(resolve(ROOT, 'docs/archive/DB_AUDIT_AND_SANITATION_PLAN.md')),
+    'DB audit plan must be committed (archived)'
   );
 });
 
