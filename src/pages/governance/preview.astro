@@ -12,6 +12,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       <p class="text-[var(--text-secondary)] mt-1 text-sm">{t('governance.preview.subtitle', lang)}</p>
     </header>
 
+    <div class="mb-4 print:hidden">
+      <a href="/governance" class="inline-flex items-center gap-1 text-sm text-navy font-semibold no-underline hover:underline">
+        ← {t('governance.dashboard.title', lang)}
+      </a>
+    </div>
+
     <div id="preview-loading" class="text-[var(--text-muted)] text-sm py-8 text-center">...</div>
     <div id="preview-content" class="hidden space-y-6"></div>
   </main>
