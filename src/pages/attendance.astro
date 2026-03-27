@@ -720,12 +720,12 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
   async function loadEventTagMap() {
     if (!ALL_EVENTS.length || !ALL_TAGS.length) return;
     try {
-      const results = await Promise.all(
-        ALL_EVENTS.map(ev => sb.rpc('get_event_tags', { p_event_id: ev.id }).then((r: any) => ({ id: ev.id, tags: r.data || [] })))
-      );
+      const eventIds = ALL_EVENTS.map((ev: any) => ev.id);
+      const { data: allTags } = await sb.rpc('get_event_tags_batch', { p_event_ids: eventIds });
       EVENT_TAG_MAP = {};
-      results.forEach((r: any) => {
-        EVENT_TAG_MAP[r.id] = r.tags.map((t: any) => t.tag_name);
+      (allTags || []).forEach((t: any) => {
+        if (!EVENT_TAG_MAP[t.event_id]) EVENT_TAG_MAP[t.event_id] = [];
+        EVENT_TAG_MAP[t.event_id].push(t.tag_name);
       });
     } catch { /* tag map load is best-effort */ }
   }
