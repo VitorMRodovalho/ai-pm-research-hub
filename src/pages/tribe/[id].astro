@@ -306,6 +306,9 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   const I18N = (typeof window !== 'undefined' && (window as any).__TRIBE_I18N) || {};
   const TRIBE_ID: number = (typeof window !== 'undefined' && (window as any).__TRIBE_ID) || 0;
 
+  // Supabase client helper — used throughout the tribe dashboard
+  function getSb() { return (window as any).navGetSb?.(); }
+
   const OPROLE_LABELS: Record<string, string> = I18N.oproleLabels || {};
   const OPROLE_COLORS: Record<string, string> = {
     manager: '#FF610F', deputy_manager: '#FF610F', tribe_leader: '#4F17A8', researcher: '#EC4899',
