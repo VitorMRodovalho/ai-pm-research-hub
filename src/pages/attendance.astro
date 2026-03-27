@@ -93,6 +93,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
                      placeholder="🔍 Buscar evento..." />
             </div>
           </div>
+          <div id="attendance-tag-filter" class="hidden px-5 py-2 border-b border-[var(--border-subtle)] flex gap-2 flex-wrap"></div>
           <div class="p-5" id="events-list">
             <LoadingSkeleton variant="row" count={3} />
           </div>
@@ -259,6 +260,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
   let ALL_EVENTS: any[] = [];
   let ALL_TAGS: any[] = [];
   let ACTIVE_TAG_FILTER = '';
+  let EVENT_TAG_MAP: Record<string, string[]> = {}; // event_id → tag_names[]
   let SHOW_INTERVIEWS = false;
   const PAGE_SIZE = 20;
   let VISIBLE_COUNT = PAGE_SIZE;
@@ -324,7 +326,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
     ATTENDANCE_ROUTE.action = params.get('action') || '';
     ATTENDANCE_ROUTE.edit = params.get('edit') === '1';
     const searchInput = document.getElementById('attendance-search') as HTMLInputElement | null;
-    const typeSelect = document.getElementById('attendance-type-filter') as HTMLSelectElement | null;
+    const typeSelect = document.getElementById('events-type-filter') as HTMLSelectElement | null;
     if (searchInput) searchInput.value = ATTENDANCE_ROUTE.query;
     if (typeSelect) typeSelect.value = ATTENDANCE_ROUTE.type;
   }
@@ -410,6 +412,11 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
       if (typeF !== 'todos' && ev.type !== typeF) return false;
       // Tribe filter
       if (tribeF && ev.tribe_id !== tribeF) return false;
+      // Tag filter
+      if (ACTIVE_TAG_FILTER) {
+        const evTags = EVENT_TAG_MAP[ev.id] || [];
+        if (!evTags.includes(ACTIVE_TAG_FILTER)) return false;
+      }
       // Search
       const matchesQuery = !query
         || (ev.title || '').toLowerCase().includes(query)
@@ -450,9 +457,9 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
     ATTENDANCE_ROUTE.scrolled = true;
     VISIBLE_COUNT = PAGE_SIZE;
     const searchInput = document.getElementById('attendance-search') as HTMLInputElement | null;
-    const typeSelect = document.getElementById('attendance-type-filter') as HTMLSelectElement | null;
+    const typeSelect = document.getElementById('events-type-filter') as HTMLSelectElement | null;
     if (searchInput) searchInput.value = '';
-    if (typeSelect) typeSelect.value = '';
+    if (typeSelect) typeSelect.value = 'todos';
     renderEvents();
   }
 
@@ -710,6 +717,19 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
     maybeHandleFocusedEvent(filtered);
   }
 
+  async function loadEventTagMap() {
+    if (!ALL_EVENTS.length || !ALL_TAGS.length) return;
+    try {
+      const results = await Promise.all(
+        ALL_EVENTS.map(ev => sb.rpc('get_event_tags', { p_event_id: ev.id }).then((r: any) => ({ id: ev.id, tags: r.data || [] })))
+      );
+      EVENT_TAG_MAP = {};
+      results.forEach((r: any) => {
+        EVENT_TAG_MAP[r.id] = r.tags.map((t: any) => t.tag_name);
+      });
+    } catch { /* tag map load is best-effort */ }
+  }
+
   async function loadEvents() {
     const el = document.getElementById('events-list')!;
     el.innerHTML = loadingRows(3);
@@ -828,9 +848,11 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
       if (target instanceof HTMLSelectElement) {
         if (target.id === 'ev-type') updateAudienceFromType('ev-audience', 'ev-type');
         if (target.id === 'rec-type') updateAudienceFromType('rec-audience', 'rec-type');
-        if (target.id === 'attendance-type-filter') {
+        if (target.id === 'events-type-filter') {
           ATTENDANCE_ROUTE.type = target.value;
           VISIBLE_COUNT = PAGE_SIZE;
+          const tribeSel = document.getElementById('events-tribe-filter');
+          if (tribeSel) tribeSel.classList.toggle('hidden', target.value !== 'todos' && target.value !== 'tribo');
           renderEvents();
         }
       }
@@ -841,14 +863,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
       }
     });
 
-    // Type filter dropdown
-    document.getElementById('events-type-filter')?.addEventListener('change', () => {
-      const typeF = getTypeFilter();
-      const tribeSel = document.getElementById('events-tribe-filter');
-      if (tribeSel) tribeSel.classList.toggle('hidden', typeF !== 'todos' && typeF !== 'tribo');
-      renderEvents();
-    });
-    // Tribe filter dropdown
+    // Tribe filter dropdown (type filter handled by delegated change handler above)
     document.getElementById('events-tribe-filter')?.addEventListener('change', () => renderEvents());
     // Type dropdown populated later in populateTypeDropdown() after CAN_MANAGE is set
     // Populate tribe dropdown
@@ -1003,6 +1018,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
     const bar = document.getElementById('attendance-tag-filter');
     if (!bar) return;
     const systemTags = ALL_TAGS.filter(t => t.tier === 'system');
+    if (!systemTags.length) return;
+    bar.classList.remove('hidden');
     bar.innerHTML = `
       <button type="button" class="tag-filter-btn px-2.5 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border border-navy bg-navy text-white" data-tag-filter="">Todos</button>
       ${systemTags.map(tag => `
@@ -1581,10 +1598,13 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
     showApp();
     const routeTabBtn = document.querySelector(`[data-tab="${ATTENDANCE_ROUTE.tab}"]`) as HTMLElement | null;
     if (routeTabBtn) switchTab(routeTabBtn, ATTENDANCE_ROUTE.tab);
-    loadTags();
-    loadKPIs();
+    await Promise.all([loadTags(), loadKPIs()]);
     await loadEvents();
     populateTypeDropdown();
+    // Load event-tag mappings in background for tag filter bar
+    loadEventTagMap().then(() => {
+      if (ACTIVE_TAG_FILTER) renderEvents();
+    });
 
     // PostHog: track page view
     const safePH = (window as any).__safePH;
