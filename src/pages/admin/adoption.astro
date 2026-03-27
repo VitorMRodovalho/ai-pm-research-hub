@@ -16,9 +16,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
     <div id="adp-panel" class="hidden space-y-6">
       <!-- Header -->
-      <div>
-        <h1 class="text-2xl font-extrabold text-navy">{t('adoption.title', lang)}</h1>
-        <p class="text-sm text-[var(--text-secondary)] mt-1">{t('adoption.subtitle', lang)}</p>
+      <div class="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 class="text-2xl font-extrabold text-navy">{t('adoption.title', lang)}</h1>
+          <p class="text-sm text-[var(--text-secondary)] mt-1">{t('adoption.subtitle', lang)}</p>
+        </div>
+        <button onclick="window.print()" class="print:hidden px-4 py-2 rounded-lg bg-navy text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">
+          Exportar Relatório
+        </button>
       </div>
 
       <!-- KPI Cards -->
@@ -81,8 +86,20 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         </div>
       </div>
 
-      <!-- Member List -->
-      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+      <!-- Lifecycle & Founders (LGPD-safe aggregates) -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
+          <h3 class="text-sm font-bold text-navy mb-3">Ciclo de Vida dos Membros</h3>
+          <div id="adp-lifecycle" class="grid grid-cols-2 gap-2"></div>
+        </div>
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
+          <h3 class="text-sm font-bold text-navy mb-3">Stakeholders & Founders</h3>
+          <div id="adp-stakeholders" class="space-y-2"></div>
+        </div>
+      </div>
+
+      <!-- Member List (print:hidden — contains PII: names, last_seen, sessions) -->
+      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden print:hidden">
         <div class="px-5 py-3.5 border-b border-[var(--border-default)] flex items-center justify-between">
           <div>
             <h3 class="text-sm font-bold text-navy">{t('adoption.memberList', lang)}</h3>
@@ -187,6 +204,55 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     ].join('');
   }
 
+  function renderLifecycle(lc: any) {
+    // Lifecycle cards (LGPD-safe aggregates)
+    const lcEl = document.getElementById('adp-lifecycle');
+    if (lcEl) {
+      const miniCard = (label: string, value: any, accent = '') =>
+        `<div class="rounded-lg border border-[var(--border-subtle)] p-2.5">
+          <div class="text-[10px] uppercase tracking-wide font-semibold text-[var(--text-muted)]">${label}</div>
+          <div class="text-lg font-extrabold ${accent || 'text-[var(--text-primary)]'}">${value}</div>
+        </div>`;
+      lcEl.innerHTML = [
+        miniCard('Total histórico', lc.total_ever || 0, 'text-navy'),
+        miniCard('Ativos C3', lc.active_c3 || 0, 'text-emerald-600'),
+        miniCard('Alumni/Inativos', lc.alumni || 0, 'text-gray-500'),
+        miniCard('Observers ativos', lc.observers_active || 0),
+        miniCard('Retenção C2→C3', `${lc.retention_c2_c3 || 0}%`, 'text-blue-600'),
+        miniCard('Founders ativos', `${lc.founders_active || 0}/${lc.founders_total || 0}`, lc.founders_active >= lc.founders_total ? 'text-emerald-600' : 'text-amber-600'),
+      ].join('');
+    }
+
+    // Stakeholders
+    const stEl = document.getElementById('adp-stakeholders');
+    if (stEl) {
+      const bar = (label: string, current: number, total: number, color: string) => {
+        const pct = total > 0 ? Math.round(current / total * 100) : 0;
+        return `<div>
+          <div class="flex justify-between text-[11px] mb-1">
+            <span class="font-semibold text-[var(--text-primary)]">${label}</span>
+            <span class="text-[var(--text-muted)]">${current}/${total} com auth</span>
+          </div>
+          <div class="w-full h-2 rounded-full bg-[var(--border-subtle)] overflow-hidden">
+            <div class="h-full rounded-full ${color}" style="width:${pct}%"></div>
+          </div>
+        </div>`;
+      };
+      stEl.innerHTML = [
+        bar('Sponsors (Presidentes)', lc.sponsors_with_auth || 0, lc.sponsors_total || 5, 'bg-red-500'),
+        bar('Pontos Focais', lc.liaisons_with_auth || 0, lc.liaisons_total || 3, 'bg-amber-500'),
+        bar('Founders', lc.founders_with_auth || 0, lc.founders_total || 9, 'bg-blue-500'),
+      ].join('');
+
+      // Alert if sponsors have 0 auth
+      if ((lc.sponsors_with_auth || 0) === 0) {
+        stEl.innerHTML += `<div class="mt-2 p-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-[11px] text-red-700 dark:text-red-400">
+          ⚠️ Nenhum presidente logou na plataforma. O workflow de aprovação de CRs requer auth.
+        </div>`;
+      }
+    }
+  }
+
   function renderChart(daily: any[]) {
     const chart = document.getElementById('adp-chart');
     const labels = document.getElementById('adp-chart-labels');
@@ -275,6 +341,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       if (!data) return;
 
       renderKpis(data.summary || {});
+      renderLifecycle(data.lifecycle || {});
       renderChart(data.daily_activity || []);
       renderTribeTable(data.by_tribe || []);
       renderTierTable(data.by_tier || []);
@@ -335,7 +402,25 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
 <style>
   @media print {
-    nav, select, input, button, #adp-denied, [data-admin-nav] { display: none !important; }
+    /* Hide UI chrome */
+    nav, aside, select, input, button, #adp-denied, [data-admin-nav],
+    .admin-sidebar, #admin-sidebar-toggle, #announcements-area, .ann-banner,
+    footer.bg-\[\#200F3B\], #consent-banner, .print\:hidden,
+    [class*="TierViewer"], [class*="print:hidden"] { display: none !important; }
+
+    /* Show content */
     #adp-panel { display: block !important; }
+
+    /* LGPD: hide member table (contains names, last_seen = PII) */
+    .print\:hidden { display: none !important; }
+
+    /* Layout reset */
+    body { background: white !important; color: black !important; }
+    .flex.min-h-\[calc\(100vh-64px\)\] { display: block !important; }
+    main { width: 100% !important; max-width: 100% !important; }
+    .p-6, .max-w-\[1100px\] { padding: 0.5rem !important; max-width: 100% !important; }
+
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    @page { margin: 1.5cm; size: A4 portrait; }
   }
 </style>
