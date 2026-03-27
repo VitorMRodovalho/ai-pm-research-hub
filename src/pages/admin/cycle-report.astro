@@ -497,7 +497,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     .site-header { display: none !important; }
 
     /* Announcement banner */
-    #announcements-area { display: none !important; }
+    #announcements-area,
+    .ann-banner,
+    [data-ann-id] { display: none !important; }
 
     /* AdminSidebar */
     [class*="AdminSidebar"],
