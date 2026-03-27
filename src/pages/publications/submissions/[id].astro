@@ -1,0 +1,228 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { getLangFromURL, t, type Lang } from '../../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const { id } = Astro.params;
+---
+<BaseLayout title={t('publications.title', lang)} activePage="publications" lang={lang}>
+  <main class="max-w-[800px] mx-auto px-4 py-8" id="pub-detail-app">
+    <div class="text-center py-12 text-[var(--text-muted)]">...</div>
+  </main>
+</BaseLayout>
+
+<script is:inline define:vars={{ lang, id }}>
+  window.__pubDetailLang = lang;
+  window.__pubDetailId = id;
+</script>
+
+<script>
+  import { t } from '../../../i18n/utils';
+  import type { Lang } from '../../../i18n/utils';
+
+  function esc(s: any): string { return String(s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function fmtDate(d: string, lang: Lang): string {
+    if (!d) return '—';
+    const dt = new Date(String(d).slice(0, 10) + 'T12:00:00');
+    if (isNaN(dt.getTime())) return String(d);
+    return dt.toLocaleDateString(lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-ES' : 'pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  const STATUS_COLORS: Record<string, string> = {
+    draft: 'bg-gray-100 text-gray-600 dark:bg-gray-800/50 dark:text-gray-400',
+    submitted: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    under_review: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+    revision_requested: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+    accepted: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    rejected: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+    published: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
+    presented: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
+  };
+  const STATUSES = ['draft','submitted','under_review','revision_requested','accepted','rejected','published','presented'];
+
+  let sb: any = null;
+  let MEMBER: any = null;
+
+  function canManage(sub: any): boolean {
+    if (!MEMBER) return false;
+    if (MEMBER.is_superadmin) return true;
+    if (MEMBER.operational_role === 'tribe_leader' || (MEMBER.designations || []).includes('curator')) return true;
+    return sub.primary_author_id === MEMBER.id;
+  }
+
+  function row(label: string, value: string): string {
+    return `<div class="flex justify-between items-start gap-4 py-1.5 border-b border-[var(--border-subtle)] last:border-b-0">
+      <span class="text-xs text-[var(--text-muted)] shrink-0">${label}</span>
+      <span class="text-sm text-[var(--text-primary)] text-right">${value}</span></div>`;
+  }
+
+  async function render() {
+    const lang = ((window as any).__pubDetailLang || 'pt-BR') as Lang;
+    const subId = (window as any).__pubDetailId;
+    const app = document.getElementById('pub-detail-app')!;
+    if (!subId) { app.innerHTML = '<p class="text-center text-[var(--text-muted)]">No ID</p>'; return; }
+
+    try {
+      const { data: sub, error } = await sb.rpc('get_publication_submission_detail', { p_submission_id: subId });
+      if (error) throw error;
+      if (!sub) { app.innerHTML = '<p class="text-center text-[var(--text-muted)]">Not found</p>'; return; }
+
+      const manage = canManage(sub);
+      const statusCls = STATUS_COLORS[sub.status] || STATUS_COLORS.draft;
+      const coauthors: any[] = sub.authors || [];
+      const events: any[] = sub.lifecycle_events || [];
+
+      app.innerHTML = `
+        <a href="/publications/submissions" class="inline-flex items-center gap-1 text-sm text-navy font-semibold no-underline hover:underline mb-4">\u2190 ${t('publications.detail.back', lang)}</a>
+
+        <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5 mb-4">
+          <div class="flex items-center gap-2 flex-wrap mb-2">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${statusCls}">${t('publications.status.' + sub.status, lang)}</span>
+            <span class="text-[10px] text-[var(--text-muted)]">${t('publications.target.' + (sub.target_type || 'other'), lang)}</span>
+          </div>
+          <h1 class="text-lg font-bold text-[var(--text-primary)] mb-2">${esc(sub.title)}</h1>
+          ${row(t('publications.card.author', lang), esc(sub.author_name || '—'))}
+          ${sub.tribe_name ? row(t('publications.card.tribe', lang), esc(sub.tribe_name)) : ''}
+          ${sub.target_name ? row(t('publications.card.target', lang), sub.target_url ? `<a href="${esc(sub.target_url)}" target="_blank" class="text-navy no-underline hover:underline">${esc(sub.target_name)}</a>` : esc(sub.target_name)) : ''}
+          ${sub.estimated_cost_brl ? row(t('publications.card.cost', lang), 'R$ ' + Number(sub.estimated_cost_brl).toFixed(2)) : ''}
+          ${sub.doi_or_url ? row('DOI/URL', `<a href="${esc(sub.doi_or_url)}" target="_blank" class="text-navy no-underline hover:underline">${esc(sub.doi_or_url)}</a>`) : ''}
+        </div>
+
+        ${sub.abstract ? `<div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5 mb-4">
+          <h3 class="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-2">${t('publications.detail.abstract', lang)}</h3>
+          <p class="text-sm text-[var(--text-secondary)] leading-relaxed whitespace-pre-line">${esc(sub.abstract)}</p>
+        </div>` : ''}
+
+        <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5 mb-4">
+          <h3 class="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-2">${t('publications.detail.dates', lang)}</h3>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs">
+            <div class="py-2 rounded-lg bg-[var(--surface-hover)]"><div class="font-bold text-[var(--text-primary)]">${fmtDate(sub.submission_date, lang)}</div><div class="text-[var(--text-muted)]">Submissão</div></div>
+            <div class="py-2 rounded-lg bg-[var(--surface-hover)]"><div class="font-bold text-[var(--text-primary)]">${fmtDate(sub.review_deadline, lang)}</div><div class="text-[var(--text-muted)]">Review</div></div>
+            <div class="py-2 rounded-lg bg-[var(--surface-hover)]"><div class="font-bold text-[var(--text-primary)]">${fmtDate(sub.acceptance_date, lang)}</div><div class="text-[var(--text-muted)]">Aceite</div></div>
+            <div class="py-2 rounded-lg bg-[var(--surface-hover)]"><div class="font-bold text-[var(--text-primary)]">${fmtDate(sub.presentation_date, lang)}</div><div class="text-[var(--text-muted)]">Apresentação</div></div>
+          </div>
+        </div>
+
+        <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5 mb-4">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)]">${t('publications.detail.coauthors', lang)}</h3>
+            ${manage ? `<button id="pub-add-coauthor" class="text-[11px] font-semibold text-navy cursor-pointer border-0 bg-transparent hover:underline">+ ${t('publications.detail.addCoauthor', lang)}</button>` : ''}
+          </div>
+          ${coauthors.length ? `<div class="space-y-1">${coauthors.map((a: any) => `
+            <div class="flex items-center justify-between py-1.5 border-b border-[var(--border-subtle)] last:border-b-0">
+              <span class="text-sm text-[var(--text-primary)]">${esc(a.member_name || a.name)} ${a.is_corresponding ? '<span class="text-[9px] px-1 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">corresp.</span>' : ''}</span>
+              ${manage ? `<button class="text-red-500 text-[11px] cursor-pointer border-0 bg-transparent hover:underline" data-remove-author="${a.member_id}">remover</button>` : ''}
+            </div>`).join('')}</div>`
+          : `<p class="text-xs text-[var(--text-muted)]">${t('publications.detail.noCoauthors', lang)}</p>`}
+        </div>
+
+        ${manage ? `<div class="flex gap-2 flex-wrap">
+          <button id="pub-edit-btn" class="px-4 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm font-semibold text-[var(--text-primary)] cursor-pointer hover:bg-[var(--surface-hover)]">${t('publications.detail.edit', lang)}</button>
+          <button id="pub-status-btn" class="px-4 py-2 rounded-lg bg-navy text-white text-sm font-semibold border-0 cursor-pointer hover:opacity-90">${t('publications.detail.statusChange', lang)}</button>
+        </div>
+
+        <!-- Status change modal -->
+        <div id="pub-status-modal" class="fixed inset-0 z-[500] flex items-center justify-center bg-black/50 p-4 hidden">
+          <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-6 max-w-sm w-full shadow-xl">
+            <h3 class="text-sm font-bold text-[var(--text-primary)] mb-3">${t('publications.detail.statusChange', lang)}</h3>
+            <select id="pub-new-status" class="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-input)] text-sm mb-3">
+              ${STATUSES.map(s => `<option value="${s}" ${s === sub.status ? 'selected' : ''}>${t('publications.status.' + s, lang)}</option>`).join('')}
+            </select>
+            <textarea id="pub-status-notes" placeholder="${t('publications.form.notes', lang)}" class="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-input)] text-sm resize-none h-16 mb-3"></textarea>
+            <div class="flex gap-2 justify-end">
+              <button id="pub-status-cancel" class="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-semibold cursor-pointer bg-[var(--surface-card)] text-[var(--text-secondary)]">Cancelar</button>
+              <button id="pub-status-save" class="px-4 py-2 rounded-lg bg-navy text-white text-sm font-semibold border-0 cursor-pointer">OK</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add co-author modal -->
+        <div id="pub-coauthor-modal" class="fixed inset-0 z-[500] flex items-center justify-center bg-black/50 p-4 hidden">
+          <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-6 max-w-sm w-full shadow-xl">
+            <h3 class="text-sm font-bold text-[var(--text-primary)] mb-3">${t('publications.detail.addCoauthor', lang)}</h3>
+            <div id="pub-coauthor-members" class="max-h-48 overflow-y-auto border border-[var(--border-default)] rounded-lg mb-3"></div>
+            <div class="flex gap-2 justify-end">
+              <button id="pub-coauthor-cancel" class="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-semibold cursor-pointer bg-[var(--surface-card)] text-[var(--text-secondary)]">Cancelar</button>
+            </div>
+          </div>
+        </div>` : ''}`;
+
+      // Bind events
+      if (manage) {
+        document.getElementById('pub-status-btn')?.addEventListener('click', () => document.getElementById('pub-status-modal')?.classList.remove('hidden'));
+        document.getElementById('pub-status-cancel')?.addEventListener('click', () => document.getElementById('pub-status-modal')?.classList.add('hidden'));
+        document.getElementById('pub-status-save')?.addEventListener('click', async () => {
+          const newStatus = (document.getElementById('pub-new-status') as HTMLSelectElement).value;
+          const notes = (document.getElementById('pub-status-notes') as HTMLTextAreaElement).value;
+          try {
+            await sb.rpc('update_publication_submission_status', { p_submission_id: subId, p_new_status: newStatus, p_notes: notes || null });
+            (window as any).toast?.(t('publications.statusChanged', lang), 'success');
+            document.getElementById('pub-status-modal')?.classList.add('hidden');
+            await render();
+          } catch (e) { console.error(e); (window as any).toast?.('Error', 'error'); }
+        });
+
+        document.getElementById('pub-edit-btn')?.addEventListener('click', () => {
+          // Simple edit: prompt for key fields
+          const newTitle = prompt(t('publications.form.title', lang), sub.title);
+          if (newTitle === null) return;
+          sb.rpc('update_publication_submission', { p_id: subId, p_title: newTitle || sub.title }).then(() => {
+            (window as any).toast?.(t('publications.saved', lang), 'success');
+            render();
+          }).catch((e: any) => { console.error(e); (window as any).toast?.('Error', 'error'); });
+        });
+
+        document.getElementById('pub-add-coauthor')?.addEventListener('click', async () => {
+          const modal = document.getElementById('pub-coauthor-modal')!;
+          const list = document.getElementById('pub-coauthor-members')!;
+          modal.classList.remove('hidden');
+          // Load tribe members
+          try {
+            const { data: members } = await sb.rpc('get_member_by_auth').then(() => sb.from('members').select('id, name, tribe_id').eq('is_active', true).order('name'));
+            list.innerHTML = (members || []).filter((m: any) => !coauthors.some((a: any) => a.member_id === m.id) && m.id !== sub.primary_author_id)
+              .map((m: any) => `<button class="w-full text-left px-3 py-2 text-sm hover:bg-[var(--surface-hover)] cursor-pointer border-0 bg-transparent text-[var(--text-primary)]" data-add-member="${m.id}">${esc(m.name)}</button>`).join('') || '<p class="p-3 text-xs text-[var(--text-muted)]">No members</p>';
+          } catch { list.innerHTML = '<p class="p-3 text-xs text-[var(--text-muted)]">Error</p>'; }
+        });
+        document.getElementById('pub-coauthor-cancel')?.addEventListener('click', () => document.getElementById('pub-coauthor-modal')?.classList.add('hidden'));
+
+        // Delegation for dynamic buttons
+        document.addEventListener('click', async (e: MouseEvent) => {
+          const target = (e.target as HTMLElement);
+          const addBtn = target.closest('[data-add-member]') as HTMLElement;
+          if (addBtn) {
+            try {
+              await sb.rpc('add_publication_submission_author', { p_submission_id: subId, p_member_id: addBtn.dataset.addMember });
+              (window as any).toast?.(t('publications.coauthorAdded', lang), 'success');
+              document.getElementById('pub-coauthor-modal')?.classList.add('hidden');
+              await render();
+            } catch (e) { console.error(e); (window as any).toast?.('Error', 'error'); }
+          }
+          const rmBtn = target.closest('[data-remove-author]') as HTMLElement;
+          if (rmBtn && confirm('Remove co-author?')) {
+            try {
+              await sb.rpc('remove_publication_submission_author', { p_submission_id: subId, p_member_id: rmBtn.dataset.removeAuthor });
+              (window as any).toast?.(t('publications.coauthorRemoved', lang), 'success');
+              await render();
+            } catch (e) { console.error(e); (window as any).toast?.('Error', 'error'); }
+          }
+        });
+      }
+    } catch (e) {
+      console.error('Detail load failed:', e);
+      app.innerHTML = '<p class="text-center py-12 text-[var(--text-muted)]">Error loading submission</p>';
+    }
+  }
+
+  (async () => {
+    const waitSb = () => new Promise<void>(r => {
+      const c = () => { sb = (window as any).navGetSb?.(); if (sb) r(); else setTimeout(c, 300); };
+      setTimeout(c, 300); setTimeout(r, 5000);
+    });
+    await waitSb();
+    MEMBER = (window as any).navGetMember?.();
+    if (!sb || !MEMBER) {
+      document.getElementById('pub-detail-app')!.innerHTML = '<div class="text-center py-12"><button class="px-4 py-2 bg-navy text-white rounded-lg border-0 cursor-pointer text-sm" onclick="document.dispatchEvent(new CustomEvent(\'open-auth\'))">Login</button></div>';
+      return;
+    }
+    await render();
+  })();
+</script>
