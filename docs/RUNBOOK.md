@@ -10,7 +10,7 @@
 | Serviço | URL | Quem tem acesso |
 |---------|-----|-----------------|
 | Supabase Dashboard | https://supabase.com/dashboard/project/ldrfrvwhxsmgaabwmaik | GP (owner), Deputy (editor) |
-| Cloudflare Pages | https://dash.cloudflare.com/ | GP (owner) |
+| Cloudflare Workers | https://dash.cloudflare.com/ | GP (owner) |
 | GitHub repo | https://github.com/VitorMRodovalho/ai-pm-research-hub | GP (owner), Deputy (collaborator) |
 | Sentry | https://nucleo-ia.sentry.io/ | GP, Deputy |
 | PostHog | https://us.posthog.com/ | GP |
@@ -22,17 +22,17 @@
 
 ### Deploy automático (padrão)
 
-Cada push para `main` no GitHub dispara deploy automático no Cloudflare Pages.
+Cada push para `main` no GitHub dispara GitHub Actions → Wrangler → deploy no Cloudflare Workers.
 
 ```bash
 git push origin main
-# → Cloudflare Pages detecta, builda (Astro SSR), deploya em ~2 min
-# → URL: ai-pm-research-hub.pages.dev
+# → GitHub Actions runs wrangler deploy (Astro 6 SSR), deploys in ~3 min
+# → URL: platform.ai-pm-research-hub.workers.dev
 ```
 
 ### Verificação pós-deploy
 
-1. Abrir https://ai-pm-research-hub.pages.dev
+1. Abrir https://platform.ai-pm-research-hub.workers.dev
 2. Login com Google → verificar que o dashboard carrega
 3. Verificar Sentry: https://nucleo-ia.sentry.io/ — 0 novos erros
 4. Verificar PostHog: pageviews chegando
@@ -40,7 +40,7 @@ git push origin main
 ### Rollback
 
 ```bash
-# No Cloudflare Dashboard → Pages → ai-pm-research-hub → Deployments
+# No Cloudflare Dashboard → Workers & Pages → ai-pm-research-hub → Deployments
 # Clicar no deploy anterior → "Rollback to this deployment"
 ```
 
@@ -242,7 +242,7 @@ WHERE name ILIKE '%Nome%';
 ### Site fora do ar
 
 1. Verificar Cloudflare Status: https://www.cloudflarestatus.com/
-2. Verificar último deploy: Cloudflare Dashboard → Pages → Deployments
+2. Verificar último deploy: Cloudflare Dashboard → Workers & Pages → Deployments
 3. Se deploy quebrou: rollback para deploy anterior
 4. Se Supabase down: verificar https://status.supabase.com/
 

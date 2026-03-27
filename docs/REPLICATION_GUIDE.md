@@ -8,7 +8,7 @@ Este guia permite replicar o AI & PM Hub para outro chapter PMI, iniciativa de p
 
 - Node.js 18+
 - Conta [Supabase](https://supabase.com) (free tier suficiente para dev)
-- (Opcional) Cloudflare Pages para hosting
+- (Opcional) Cloudflare Workers para hosting
 - (Opcional) Supabase CLI para migrações e Edge Functions
 
 ---
@@ -16,7 +16,7 @@ Este guia permite replicar o AI & PM Hub para outro chapter PMI, iniciativa de p
 ## 1. Clone e instale
 
 ```bash
-git clone https://github.com/VitorMRodovalho/ai-pm-hub-v2.git seu-projeto
+git clone https://github.com/VitorMRodovalho/ai-pm-research-hub.git seu-projeto
 cd seu-projeto
 npm install
 ```
@@ -81,9 +81,9 @@ Acesse `http://localhost:4321`.
 
 ---
 
-## 5. Deploy (Cloudflare Pages)
+## 5. Deploy (Cloudflare Workers)
 
-1. Conecte o repositório ao Cloudflare Pages
+1. Conecte o repositório ao Cloudflare Workers
 2. Build command: `npm run build`
 3. Output directory: `dist`
 4. Environment variables: configure `PUBLIC_SUPABASE_URL` e `PUBLIC_SUPABASE_ANON_KEY`

@@ -129,7 +129,7 @@ Referência normativa: Manual de Governança e Operações R2 (DocuSign B2AFB185
 
 | Serviço | Uso | Limite Free Tier | Uso Atual | Risco |
 |---|---|---|---|---|
-| Cloudflare Pages | SSR hosting + CDN | Ilimitado | ~200 deploys/mês | Baixo |
+| Cloudflare Workers | SSR hosting + CDN | Ilimitado | ~200 deploys/mês | Baixo |
 | Supabase | PostgreSQL + Auth + Storage + Edge Functions | 500MB DB, 1GB storage, 50k auth | ~60MB DB, ~100MB storage | Médio |
 | PostHog | Product analytics | 1M events/mês | ~10k events/mês | Baixo |
 | GitHub | Repos + CI/CD (Actions) | Ilimitado para público, 2k min Actions | ~500 min/mês | Baixo |
@@ -1124,6 +1124,350 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 **Justificativa:** Sentry so capturava erros de React islands via ErrorBoundary, ignorando erros globais de scripts inline e async. PostHog tinha zero custom events — so autocapture, insuficiente para medir feature adoption.
 
 **Impacto tecnico:** `src/lib/analytics.ts` (novo helper). Global error handlers em BaseLayout.astro. 10 eventos instrumentados em 8 arquivos (TribeKanbanIsland, gamification, profile, workspace, cycle-report, chapter-report, campaigns, publications, MemberListIsland). Todos com try/catch — analytics nunca quebra o app. Nenhum PII nos eventos.
+
+---
+
+### GC-087 — W139 Active Members View + Publication Tracking Schema
+**Data:** 2026-03-14 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Criar view `active_members` e tabela `publication_submissions` para tracking de publicações por tribo.
+**Nota:** Detalhes completos a serem adicionados durante curadoria de governança.
+
+---
+
+### GC-088 — RPC Column Fixes + CI Hardening
+**Data:** 2026-03-18 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Corrigir colunas em get_member_detail (full_name→name, credly_username→credly_url), atualizar .nvmrc para Node 24, habilitar CodeQL upload, adicionar release-tag gate no CI.
+**Impacto tecnico:** 4 ficheiros alterados. CI agora falha se tag de release não corresponder ao CHANGELOG.
+
+---
+
+### GC-089 — Security Hardening Sprint (search_path + SSR + CSP)
+**Data:** 2026-03-18 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** (1) Adicionar `SET search_path = 'public', 'pg_temp'` a todas as SECURITY DEFINER functions. (2) Implementar security headers via middleware SSR (CSP, HSTS, X-Frame-Options). (3) Dark mode audit (45 bugs visuais corrigidos). (4) Extrair 35 hardcoded PT-BR strings para i18n.
+**Impacto tecnico:** 3 commits: security headers, dark mode fixes, i18n extraction. CODEOWNERS adicionado. Board SLA defaults configurados.
+
+---
+
+### GC-090 — Dark Mode Implementation Completion
+**Data:** 2026-03-18 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Completar implementação de dark mode em toda a plataforma. 45 bugs visuais identificados e corrigidos durante audit.
+**Nota:** Detalhes completos a serem adicionados durante curadoria de governança.
+
+---
+
+### GC-091 — P0 Field Triage (Jefferson, Fabricio, Vitor)
+**Data:** 2026-03-18 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Corrigir 8 colunas inexistentes em RPCs detectadas em campo por Jefferson (T8), Fabricio (deputy), e Vitor (GP). Resolver ambiguidade em create_event (2 overloads), admin RPCs com schema mismatch, e broken links no admin sidebar.
+**Impacto tecnico:** Systematic column reference cleanup em todos os admin RPCs. Legacy admin_list_members 6-param overload removida.
+
+---
+
+### GC-092 — Trilingual Admin Islands
+**Data:** 2026-03-18 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Completar cobertura i18n trilingual em todos os React islands do admin: TribeKanban, PublicationsBoard, AdminDashboard, MemberList.
+**Nota:** Detalhes completos a serem adicionados durante curadoria de governança.
+
+---
+
+### GC-093 — Systematic RPC Overload Cleanup
+**Data:** 2026-03-18 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Eliminar todas as ambiguidades de overload em RPCs PostgreSQL. Zero ambiguidade restante após cleanup.
+**Impacto tecnico:** exec_cycle_report corrigido (designations ?| → && para text[] overlap, jsonb_array_length → array_length).
+
+---
+
+### GC-094 — Tier 3 Read-Only Access + KPI Filters + Leader Features
+**Data:** 2026-03-18 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** (1) Sponsor/chapter_liaison obtêm acesso read-only a painéis executivos. (2) KPIs filtrados por capítulo. (3) Overdue badges em entregáveis. (4) Leader attendance grid.
+**Impacto tecnico:** P1-1 a P1-7 implementados. Pilots CRUD (create/edit/delete RPCs + admin UI).
+
+---
+
+### GC-095 — Create Event Form + Governance Schema Alignment
+**Data:** 2026-03-19 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Alinhar formulário de criação de eventos com schema de governança. Corrigir FK violation (auth.uid() vs members.id) e i18n key attendance.modal.advanced.
+**Impacto tecnico:** create_event RPC reescrita para fazer lookup de member_id via auth_id. i18n keys adicionadas em 3 locales.
+
+---
+
+### GC-096 — Homepage Agenda Section Fix
+**Data:** 2026-03-19 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Corrigir seção de agenda do homepage: (1) Hero card "Próxima Geral" usa dados reais do DB em vez de "quarta 20:00" hardcoded. (2) Horário corrigido para "quinta 19:30". (3) Dead code removido.
+**Impacto tecnico:** 5 gaps corrigidos: meeting data, time format, attendance, quick actions, presentation. 3 commits.
+
+---
+
+### GC-097 — Pre-Deploy Validation Gate (QA Gate)
+**Data:** 2026-03-19 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Estabelecer gate de validação obrigatório antes de todo deploy. Regras codificadas em CLAUDE.md: verificar FKs, auth.uid() vs members.id, column names, i18n em 3 locales, rotas i18n, RPC signatures (DROP+CREATE). Build deve passar com 0 novos erros.
+**Justificativa:** 4 incidentes em campo (GC-091, GC-090, GC-095) revelaram que bugs em RPCs e i18n chegavam a produção sem detecção.
+**Impacto tecnico:** CLAUDE.md atualizado com regras. docs/GC097_QA_GATE_PRE_DEPLOY.md criado com checklist detalhado.
+
+---
+
+### GC-098 — Selection Pipeline Dashboard Phase A
+**Data:** 2026-03-19 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Implementar dashboard de pipeline de seleção para ciclo C3.
+**Impacto tecnico:** Selection dashboard com RPCs filtradas por RLS. fix(P0): RLS blocks direct queries → use RPC instead.
+
+---
+
+### GC-099 — Cycle Report Charts Fix (i18n + Dark Mode)
+**Data:** 2026-03-19 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Corrigir gráficos do relatório de ciclo: role labels i18n, cores por capítulo, suporte dark mode.
+**Nota:** Detalhes completos a serem adicionados durante curadoria de governança.
+
+---
+
+### GC-100 — Project Skill + Chart Infinite Loop Fix
+**Data:** 2026-03-19 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Criar `skills/nucleo-ia/SKILL.md` com 10 regras críticas derivadas de bugs anteriores. Corrigir infinite loop em Chart.js (container height + destroy + requestAnimationFrame). Corrigir race condition em pilots page (aguardar sb AND member).
+**Impacto tecnico:** Novo ficheiro SKILL.md. Chart.js cycle-report fix. Pilots boot fix.
+
+---
+
+### GC-101 — Pilots Schema Alignment
+**Data:** 2026-03-19 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Resolver métricas via `get_pilot_metrics` (auto_query values). Date inputs no edit modal (p_started_at/p_completed_at). Team member names resolvidos na detail view.
+**Nota:** Detalhes completos a serem adicionados durante curadoria de governança.
+
+---
+
+### GC-102 — Org Chart + Workspace Audit
+**Data:** 2026-03-19 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Criar `get_org_chart()` RPC com estrutura interativa de 3 dimensões. Criar `get_my_onboarding()` RPC (substitui query direta em tabela deny-all). Workspace audit: zero violações encontradas.
+**Impacto tecnico:** 2 novas RPCs SECURITY DEFINER.
+
+---
+
+### GC-103 — Microsoft OAuth (Azure Provider)
+**Data:** 2026-03-19 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Adicionar "Entrar com Microsoft" como terceiro provider OAuth. Permite stakeholders (sponsors de capítulos) fazerem login com emails institucionais @pmi*.org.
+**Justificativa:** Sponsors utilizam contas Microsoft institucionais. Sem este provider, não conseguiriam acessar a plataforma.
+**Impacto tecnico:** Azure provider configurado no Supabase Auth (App ID: aea7f167, tenant: common). Scopes: email, profile, openid. Botão adicionado ao auth modal.
+
+---
+
+### GC-104 — Enable Gamification + Attendance Tabs
+**Data:** 2026-03-19 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Ativar tabs de gamificação e presença no tribe dashboard. switchTab() e validTabs arrays atualizados.
+**Nota:** Detalhes completos a serem adicionados durante curadoria de governança.
+
+---
+
+### GC-105 — Tribe Navigation + Access Matrix
+**Data:** 2026-03-19 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** (105) Workspace hero card "Acesso a todas as tribos" para admins sem tribe_id. (105b) getTribePermissions() helper com 18 permission flags. Cross-tribe viewing banner (azul para membros, roxo para curadores).
+**Impacto tecnico:** 2 commits: hero card fix + permissions helper + cross-tribe banner.
+
+---
+
+### GC-106 — Tribe Dashboard Events Timeline
+**Data:** 2026-03-19 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Adicionar blocos "Próximos Eventos" e "Reuniões Anteriores" na tab Geral do tribe dashboard. Meeting link para hoje/amanhã, attendance fractions, recording links. Botão "Criar Evento" (permission-gated).
+**Impacto tecnico:** get_tribe_events_timeline RPC com agenda_text nos upcoming events. i18n em 3 locales.
+
+---
+
+### GC-107 — Attendance Interaction Layer
+**Data:** 2026-03-19 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Implementar layer de interação para presença: useAttendance hook (fetchGrid, toggleMember, selfCheckIn, batchToggle), AttendanceCell (5 estados visuais), AttendanceGrid (sticky cols, filtros, summary cards), SelfCheckInButton, toggle com toast + undo.
+**Impacto tecnico:** 4 componentes React. Optimistic updates com rollback.
+
+---
+
+### GC-108 — Visual Review Sprint (3 Frontend Fixes)
+**Data:** 2026-03-19 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** 3 correções de frontend identificadas em revisão visual.
+**Nota:** Detalhes completos a serem adicionados durante curadoria de governança.
+
+---
+
+### GC-109 — Admin Attendance Grid Fix
+**Data:** 2026-03-20 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Esconder eventos futuros distantes do grid de presença admin. Corrigir visibilidade de colunas.
+**Nota:** Detalhes completos a serem adicionados durante curadoria de governança.
+
+---
+
+### GC-110 — Attendance Rate Fix + Minutes/Agenda READ
+**Data:** 2026-03-20 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** (1) Célula `scheduled` para eventos futuros (📅, não clicável). (2) Normalização de taxa (0-1 → 0-100%). (3) EventContentBadges + ExpandableContent reutilizáveis. (4) agenda_text no get_tribe_events_timeline.
+**Impacto tecnico:** 4 RPCs corrigidas para boundar queries com `AND e.date <= CURRENT_DATE`.
+
+---
+
+### GC-111 — Tribe Grid Visual Parity
+**Data:** 2026-03-20 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Implementar week grouping headers, formato dd/MMM, event type letter badges no grid de presença da tribo.
+**Impacto tecnico:** CI fix: ui-stabilization test atualizado para get_selection_dashboard.
+
+---
+
+### GC-112 — TipTap Meeting Minutes Editor
+**Data:** 2026-03-20 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Criar EventMinutesEditor modal com TipTap rich text (reutiliza RichTextEditor). EventMinutesIsland React island para comunicação Astro ↔ React. Eventos passados mostram "Adicionar/Editar ata" (permission-gated). Renderização com prose class.
+**Impacto tecnico:** Novo React island + modal. Reuso do RichTextEditor criado anteriormente.
+
+---
+
+### GC-113 — Future Events Denominator Fix (4 RPCs)
+**Data:** 2026-03-20 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Corrigir denominador de eventos futuros em 4 RPCs: exec_cross_tribe_comparison (6 queries), exec_tribe_dashboard (5 queries), get_annual_kpis (LEAST com CURRENT_DATE), get_portfolio_dashboard (status overdue).
+**Justificativa:** KPIs inflados por contarem eventos futuros no denominador.
+**Impacto tecnico:** Todas as queries de eventos limitadas a CURRENT_DATE.
+
+---
+
+### GC-114 — /attendance Events List Redesign
+**Data:** 2026-03-20 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Redesenhar lista de eventos em /attendance: seções colapsáveis por tipo (7 públicas + 3 GP-only), eventos passados primeiro, futuros limitados a 3 com "Ver todos", dropdowns de tipo + tribo + search (gerados dinamicamente). Seções GP-only visíveis apenas para GP/superadmin.
+**Impacto tecnico:** 2 commits: layout base + substituição de pill filters por dropdowns + search.
+
+---
+
+### GC-115 — Attendance Production Stabilization
+**Data:** 2026-03-20 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Resolver erros de produção na tab Presença: React error #310 (week grouping), week headers removidos para unblock tab.
+**Nota:** Detalhes completos a serem adicionados durante curadoria de governança.
+
+---
+
+### GC-116 — Governance Change Management Infrastructure
+**Data:** 2026-03-20 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Criar infraestrutura de Change Management para governança: tabela manual_sections (33 seções R2 com hierarquia, títulos bilíngues PT/EN, refs de página), 12 novos campos em change_requests (cr_type, impact_level, manual_section_ids, approval workflow, implementation tracking, version tracking), 5 RPCs SECURITY DEFINER, 13 CRs candidatos (draft), RLS manual_sections read-only.
+**Justificativa:** Necessário para o fluxo de aprovação de Change Requests conforme Manual R2 Seção 7.
+**Impacto tecnico:** manual_sections table. change_requests com 12 novos campos. 5 novas RPCs. João Santos (PMI-RS) designado como chapter_liaison.
+
+---
+
+### GC-117 — Governance Frontend (Manual Browser + Change Requests)
+**Data:** 2026-03-20 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Criar frontend de governança: browser do manual R2, lista de change requests, formulário de submissão, ações de revisão.
+**Impacto tecnico:** 3 commits: base + hotfix (sidebar link, submit button, review actions) + i18n key fix.
+
+---
+
+### GC-118 — Governance Batch (Documents Table + 8 CRs + Corrections)
+**Data:** 2026-03-21 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Criar tabela governance_documents, adicionar 8 novos CRs, implementar quadrants view, corrigir dados de CRs existentes.
+**Impacto tecnico:** governance_documents table populada. CRs corrigidos e expandidos.
+
+---
+
+### GC-119 — Governance Documents Tab + PDF
+**Data:** 2026-03-21 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Adicionar tab de documentos na página de governança com link para PDF e display de conteúdo.
+**Nota:** Detalhes completos a serem adicionados durante curadoria de governança.
+
+---
+
+### GC-120 — CPMAI Prep Course (Board + Schema + Landing)
+**Data:** 2026-03-21 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Implementar curso preparatório CPMAI: design board no BoardEngine, schema DB, RPCs, landing page frontend.
+**Impacto tecnico:** 2 commits: schema + RPCs, frontend landing page.
+
+---
+
+### GC-121 — Boards Pages + Nav Link
+**Data:** 2026-03-21 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Desbloquear BoardEngine para todos os membros via páginas dedicadas e link na navegação.
+**Nota:** Detalhes completos a serem adicionados durante curadoria de governança.
+
+---
+
+### GC-122 — Sentry Issue Resolution Sprint
+**Data:** 2026-03-21 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Resolver issues Sentry: workspace TDZ, tribe tab guards, DOM null safety.
+**Nota:** Detalhes completos a serem adicionados durante curadoria de governança.
+
+---
+
+### GC-123 — BoardEngine Governance (Baseline Lock + Activity Permissions)
+**Data:** 2026-03-23 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Implementar governance no BoardEngine: baseline lock, activity permissions, portfolio flag, activity views.
+**Impacto tecnico:** Portfolio filter by is_portfolio_item. CI attendance-ui test atualizado.
+
+---
+
+### GC-124 — Member Offboarding System
+**Data:** 2026-03-23 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Implementar sistema de offboarding de membros com transições observer/alumni/inactive. Marcel → alumni, Leandro/Maurício → observer.
+**Justificativa:** Necessário para manter dados limpos e distinguir membros ativos de inativos/alumni.
+**Impacto tecnico:** member_status_transitions table. RPCs de transição. Configurable tribe limits + unified audit log RPCs.
+
+---
+
+### GC-125 — Partnership Interaction Tracking + Blog Posts
+**Data:** 2026-03-23 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Implementar tracking de interações com parcerias (timeline, modal CRUD) e atualizar blog posts.
+**Impacto tecnico:** Partnership pipeline modal com interaction tracking, timeline, CRUD, bidirectional move.
+
+---
+
+### GC-126 — Historical Data Preservation Audit (D39-D44)
+**Data:** 2026-03-23 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Audit de preservação de dados históricos. T8 attendance issues corrigidos (missing event, leader toggle, meeting schedule, legend). Admin members com todos os statuses, badges, per-member history log.
+**Nota:** Detalhes completos a serem adicionados durante curadoria de governança.
+
+---
+
+### GC-127 — Homepage + Profile UX Sprint
+**Data:** 2026-03-24 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** (1) Homepage tribe counts corrigidos, inactive tribe banner, observer section. (2) CardDetail participant tabs (curator filter, role badges). (3) Blog likes (heart toggle). (4) Self-service profile editing (name, photo, state, country). (5) Partnership attachments (upload, download, delete).
+**Impacto tecnico:** Múltiplos componentes atualizados. File name sanitization para attachments.
+
+---
+
+### GC-128 — Planned vs Actual Dashboard + i18n Structural Remediation
+**Data:** 2026-03-24 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** (1) Dashboard Planned vs Actual com timeline. (2) Rotas internacionais para governance. (3) i18n structural remediation: locale persistence, link propagation, content gaps, import pattern for EN stubs.
+**Impacto tecnico:** 8+ commits para resolver bugs i18n em cascata. Board column labels fully locale-aware.
+
+---
+
+### GC-129 — Governance Changelog in Admin + Notifications + Onboarding
+**Data:** 2026-03-25 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** (1) Governance changelog visível no admin panel. (2) Notification system v1 (bell + dropdown + 5 tipos + preferences). (3) Structured onboarding system (7 steps, trilingual, auto-detect).
+**Impacto tecnico:** 3 features implementadas em sequência. Onboarding bugs fixados (DB overload dropped, null guard on step_key).
+
+---
+
+### GC-130 — Chapter Dashboard + Platform Health Monitor
+**Data:** 2026-03-25 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** (1) Chapter dashboard com 7 métricas, comparison chart, member table, trilingual, print-ready. (2) Platform health monitor com usage tracking e sustainability tier display.
+**Impacto tecnico:** Sidebar reports reorganizados. Report Builder renomeado.
+
+---
+
+### GC-131 — Certificate Issuance System v2/v3
+**Data:** 2026-03-25 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Implementar sistema completo de emissão de certificados: multi-cycle, role-based, trilingual PDF, verification code, lifecycle management (revocation, draft mode), GP manage tab, download tracking, portrait layout, description fields, profile signature upload.
+**Impacto tecnico:** Múltiplos commits. Board permissions modelo C (researcher creates/moves own cards, leader completes). Bulk certificate issuance RPC + UI.
+
+---
+
+### GC-132 — W-MCP-1 Phase 1: MCP Server for Tribe Leaders
+**Data:** 2026-03-26 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Criar MCP server custom para líderes de tribo acessarem dados da plataforma via Claude/ChatGPT. Phase 1: 10 read-only tools (get_my_profile, get_my_tribe_members, get_my_board_status, search_board_cards, get_my_xp_and_ranking, get_upcoming_events, get_my_notifications, get_hub_announcements, get_my_tribe_attendance, get_meeting_notes).
+**Justificativa:** Líderes de tribo precisam acessar dados operacionais rapidamente sem navegar pela plataforma. MCP permite integração com assistentes AI.
+**Impacto tecnico:** nucleo-mcp Edge Function. OAuth 2.1 authentication. skills/nucleo-ia/SKILL.md com tool definitions.
+
+---
+
+### GC-133 — W-ASTRO6: Astro 5→6 Migration + Workers
+**Data:** 2026-03-26 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Migrar plataforma de Astro 5 + Cloudflare Pages para Astro 6 + Cloudflare Workers SSR. @astrojs/cloudflare v13 dropped Pages support, requiring Workers migration.
+**Justificativa:** @astrojs/cloudflare v13 (required by Astro 6) only supports Workers mode. CSP headers moved from _headers to middleware. Env access changed to `import { env } from 'cloudflare:workers'`.
+**Impacto tecnico:** astro.config.mjs, wrangler.toml, deploy.yml rewritten. Vite 7 upgrade included. Build and deploy verified.
+
+---
+
+### GC-134 — W-MCP-1 Phase 2: Write Tools + Workers Proxy
+**Data:** 2026-03-26 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+**Decisao:** Adicionar 5 write tools ao MCP server (create_board_card, update_card_status, register_attendance, send_notification_to_tribe, create_meeting_notes). Implementar Workers proxy para OAuth discovery (ChatGPT requer /.well-known no domínio raíz). Publicar blog post #8 sobre MCP.
+**Justificativa:** Phase 2 completa o ciclo de escrita para líderes de tribo. Proxy necessário porque ChatGPT não suporta MCP endpoints em subpaths.
+**Impacto tecnico:** nucleo-mcp Edge Function atualizada. Workers proxy em wrangler.toml. Blog post adicionado ao DB.
 
 ---
 

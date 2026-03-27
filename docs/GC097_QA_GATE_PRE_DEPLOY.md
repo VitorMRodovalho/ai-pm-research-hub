@@ -25,7 +25,7 @@
 ### Root cause:
 - **CI testa build e tipos, não comportamento.** 590 testes passam, mas nenhum teste simula "líder cria evento" ou "visitante EN acessa blog".
 - **Claude Code não tem contexto de banco.** Ele escreve SQL sintaticamente correto mas semanticamente errado (ex: `auth.uid()` vs `members.id`) porque não consulta o schema real.
-- **Não existe smoke test pós-deploy.** O merge vai direto para produção via Cloudflare Pages auto-deploy.
+- **Não existe smoke test pós-deploy.** O merge vai direto para produção via Cloudflare Workers auto-deploy.
 - **O GP é o QA.** Vitor e Jefferson estão encontrando bugs que um checklist de 5 minutos pegaria.
 
 ---

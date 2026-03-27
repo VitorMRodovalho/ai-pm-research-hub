@@ -8,7 +8,7 @@ Checklist único para concluir a configuração e deploy dos itens pendentes.
 
 ---
 
-## 0. Code scanning (CodeQL) — habilitar no GitHub [#59](https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/59)
+## 0. Code scanning (CodeQL) — habilitar no GitHub [#59](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/59)
 
 O workflow `codeql-analysis.yml` roda em todo push/PR. Enquanto Code scanning não estiver habilitado, os resultados não são exibidos na aba Security, mas a análise executa.
 
@@ -20,7 +20,7 @@ O workflow `codeql-analysis.yml` roda em todo push/PR. Enquanto Code scanning n�
 
 ---
 
-## 1. HF5 — Data Patch (ação manual em produção) — [#56](https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/56)
+## 1. HF5 — Data Patch (ação manual em produção) — [#56](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/56)
 
 **Artefatos**: `docs/migrations/hf5-apply-data-patch.sql`, `docs/migrations/HF5_PRODUCTION_RUNBOOK.md`
 
@@ -33,7 +33,7 @@ O workflow `codeql-analysis.yml` roda em todo push/PR. Enquanto Code scanning n�
 
 ---
 
-## 2. sync-comms-metrics — Edge Function — [#57](https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/57)
+## 2. sync-comms-metrics — Edge Function — [#57](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/57)
 
 **Runbook**: `docs/migrations/COMMS_METRICS_V2_RUNBOOK.md`
 
@@ -73,7 +73,7 @@ Se usar o workflow `.github/workflows/comms-metrics-sync.yml`, configurar secret
 
 ---
 
-## 3. Credly Auto Sync (S10) — [#58](https://github.com/VitorMRodovalho/ai-pm-hub-v2/issues/58)
+## 3. Credly Auto Sync (S10) — [#58](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/58)
 
 **Workflow**: `.github/workflows/credly-auto-sync.yml`
 
@@ -87,8 +87,8 @@ O workflow roda toda segunda às 08:00 UTC e pode ser disparado manualmente.
 
 ## 4. Variáveis de ambiente (frontend)
 
-### Cloudflare Pages (ou ambiente de build)
-Em Cloudflare Pages → Settings → Environment variables:
+### Cloudflare Workers (via GitHub Actions + Wrangler)
+Env vars are set in `.github/workflows/deploy.yml` build step:
 
 | Variável | Obrigatório | Descrição |
 |----------|-------------|-----------|
@@ -150,7 +150,7 @@ O upload de anexos em cards do BoardEngine requer o bucket `board-attachments` n
 
 ## 8. PostHog Analytics (opcional)
 
-Para habilitar analytics PostHog, configurar no Cloudflare Pages:
+Para habilitar analytics PostHog, configurar nas env vars do deploy:
 
 | Variável | Obrigatório | Descrição |
 |----------|-------------|-----------|

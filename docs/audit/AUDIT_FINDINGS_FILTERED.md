@@ -54,7 +54,7 @@
 | localStorage onboarding como vulnerabilidade | 🔴 Crítica | Atende 5-10 novos membros/ciclo. Tabela server-side existe para uso futuro. Over-engineering migrar agora. |
 | `navSimulatedTier` como bypass de segurança | 🟠 Alta | Frontend-only. Não bypassa nenhuma RPC/RLS. Reclassificado como P3. |
 | pgvector / RAG "manco" | 🔴 Crítica | Fundação para Ciclo 3+. 1 asset ingerido. Ativar embeddings sem volume de conteúdo é desperdício. |
-| Astro 5→6 como "bloqueante para P3" | 🔴 Alta | Zero features bloqueadas. Major upgrade com breaking changes deve ser sprint dedicada. |
+| ~~Astro 5→6 como "bloqueante para P3"~~ | ✅ Concluído | Migração concluída (GC-133, 2026-03-28). Astro 6 + Workers SSR em produção. |
 | `consent_log` como P0 LGPD | 🔴 Alta | Voluntários assinaram termo (step 5 onboarding). Consent tracking formal é Ciclo 4+. |
 | ROPA / DPO como obrigatórios | 🟡 Média | Relevante quando houver parceria institucional. Não agora. |
 | `assignee_id` obrigatório na criação | P0 | Quebraria workflow de importação sem benefício imediato. Reclassificado como P2 (bulk-assign legado). |

@@ -8,7 +8,7 @@
 
 Este documento cobre:
 - **Supabase** (PostgreSQL, auth, storage, Edge Functions)
-- **Cloudflare Pages** (frontend)
+- **Cloudflare Workers** (frontend)
 - **GitHub** (repositório — backup implícito via controle de versão)
 
 ---
@@ -86,7 +86,7 @@ Secrets são configurados no Dashboard; conferir após restore do projeto.
 
 ---
 
-## 3. Cloudflare Pages
+## 3. Cloudflare Workers
 
 ### 3.1 Rollback de deploy
 
@@ -125,7 +125,7 @@ Conferir em Settings → Environment variables. Em caso de perda, recriar a part
 
 - **Supabase Docs**: https://supabase.com/docs/guides/platform/backups
 - **PITR**: https://supabase.com/docs/guides/platform/manage-your-usage/point-in-time-recovery
-- **Cloudflare Pages**: https://developers.cloudflare.com/pages/
+- **Cloudflare Workers**: https://developers.cloudflare.com/pages/
 - **Repositório**: fonte de verdade para código; migrations em `supabase/migrations/`
 
 ---
@@ -145,7 +145,7 @@ Objetivo: validar que um segundo operador consegue executar recuperação e depl
 3. Operador secundário valida acesso a:
    - GitHub repo/settings essenciais
    - Supabase project
-   - Cloudflare Pages
+   - Cloudflare Workers
 4. Resultado do drill é registrado em `docs/RELEASE_LOG.md` com:
    - quem executou
    - data/hora

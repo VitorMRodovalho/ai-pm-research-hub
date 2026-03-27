@@ -125,7 +125,7 @@ Todas as issues encontradas sao de baixo risco e nao bloqueiam o Beta.
 
 | # | Item | Esforco | Risco |
 |---|------|---------|-------|
-| 5 | Upgrade Astro 5 → 6 (major) | 1 sprint | Alto |
+| 5 | ~~Upgrade Astro 5 → 6 (major)~~ | ✅ Done (GC-133) | — |
 | 6 | Upgrade recharts 2 → 3 (major) | 1/2 sprint | Medio |
 | 7 | Upgrade eslint 9 → 10 (major) | 1/2 sprint | Baixo |
 

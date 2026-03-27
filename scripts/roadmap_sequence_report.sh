@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-REPO="${1:-VitorMRodovalho/ai-pm-hub-v2}"
+REPO="${1:-VitorMRodovalho/ai-pm-research-hub}"
 
 gh issue list --repo "$REPO" --state all --limit 300 --json number,title,state,url > /tmp/issues_seq.json
 

@@ -8,7 +8,8 @@ Welcome! The **AI & PM Research Hub** is the operational platform for the *Núcl
 
 ### Prerequisites
 
-- **Node.js** 20+
+- **Node.js** 24+
+- **Wrangler CLI** (`npm install -g wrangler`) — required for Workers deploy
 - A Supabase project (or access to the shared development instance)
 
 ### Local development
@@ -47,9 +48,11 @@ All three must pass before you open a PR.
 
 | Layer | Tech |
 |-------|------|
-| Frontend | Astro + Tailwind CSS (utility-only) |
+| Frontend | Astro 6 + React 19 + Tailwind 4 (utility-only) |
 | Database | Supabase (PostgreSQL, RLS, Edge Functions) |
-| Hosting | Cloudflare Pages |
+| Hosting | Cloudflare Workers SSR |
+| Auth | Google + LinkedIn (OIDC) + Microsoft (Azure) |
+| Deploy | Push to main → GitHub Actions → Wrangler → Workers |
 | i18n | PT-BR, EN, ES — keys in `src/i18n/` |
 
 ### Rules
@@ -104,7 +107,8 @@ docs: add March 2026 stabilization notes to RELEASE_LOG
 - [ ] i18n keys added for any new user-facing strings
 - [ ] Production-impacting changes documented in `docs/RELEASE_LOG.md`
 - [ ] DB changes include a migration in `supabase/migrations/`
-- [ ] Sprint docs updated when closing a sprint (`backlog-wave-planning-updated.md`, `docs/GOVERNANCE_CHANGELOG.md`)
+- [ ] Sprint docs updated when closing a sprint (`docs/GOVERNANCE_CHANGELOG.md`)
+- [ ] Pre-commit QA rules from CLAUDE.md (GC-097) followed
 
 CI runs automatically on PRs to `main`. All checks must be green before merge.
 
@@ -145,7 +149,7 @@ Use the **Feature Request** issue template. Include the problem you're solving, 
 |----------|---------|
 | [`AGENTS.md`](./AGENTS.md) | AI agent structure, conventions, doc map, and lane boundaries |
 | [`docs/project-governance/`](./docs/project-governance/) | Governance runbook, sprint practices, roadmap, and project snapshots |
-| [`backlog-wave-planning-updated.md`](./backlog-wave-planning-updated.md) | Wave planning, execution order, and debt tracking |
+| [`docs/BACKLOG.md`](./docs/BACKLOG.md) | Current priorities and backlog |
 | [`docs/RELEASE_LOG.md`](./docs/RELEASE_LOG.md) | Release and hotfix history |
 | [`DEBUG_HOLISTIC_PLAYBOOK.md`](./DEBUG_HOLISTIC_PLAYBOOK.md) | Debugging and troubleshooting guide |
 

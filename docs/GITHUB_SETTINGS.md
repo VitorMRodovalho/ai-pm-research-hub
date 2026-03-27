@@ -57,4 +57,4 @@ EOF
 - Direct pushes to `main` still work (no PR required)
 - But CI must pass — if `validate` or `browser_guards` fail, push is blocked
 - Force push to main is blocked
-- Cloudflare Pages autodeploys on every successful push
+- Cloudflare Workers autodeploys on every successful push

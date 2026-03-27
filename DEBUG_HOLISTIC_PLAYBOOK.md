@@ -54,7 +54,7 @@ Guia holístico de debugging e troubleshooting para o **AI & PM Research Hub**. 
 | Sintoma | Possíveis causas | Ações |
 |---------|------------------|-------|
 | `/teams`, `/rank`, `/ranks` quebrados | Aliases removidos ou incorretos | Manter redirects conforme `docs/GOVERNANCE_CHANGELOG.md`. Smoke: `npm run smoke:routes`. |
-| SPA fallback não funciona | Cloudflare Pages config | Verificar `public/_redirects` para SPA mode. |
+| SPA fallback não funciona | Cloudflare Workers config | Verificar `public/_redirects` para SPA mode. |
 | Build local OK, deploy falha | Env vars; diferença Node/Deno | Comparar `.env` local vs secrets no Cloudflare/Supabase. Checar logs do deploy. |
 
 ---
