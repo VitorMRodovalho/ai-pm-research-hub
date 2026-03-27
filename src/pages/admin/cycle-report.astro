@@ -13,13 +13,24 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     </div>
 
     <div id="cr-report" class="hidden space-y-8">
-      <!-- Header -->
-      <header class="flex items-center justify-between print:justify-center flex-wrap gap-4">
+      <!-- Print-only institutional header -->
+      <div id="cr-print-header" class="hidden print:block text-center mb-6 pb-4 border-b-2 border-navy">
+        <div class="text-[10px] font-bold uppercase tracking-[.2em] text-gray-500 mb-1">Núcleo de Estudos e Pesquisa em IA & Gerenciamento de Projetos</div>
+        <h1 class="text-xl font-extrabold text-navy">Relatório de Evolução — Ciclo 3 (2026/1)</h1>
+        <div class="text-xs text-gray-600 mt-2 space-y-0.5">
+          <div>Emitido por: <strong>Vitor Maia Rodovalho</strong> (Gerente de Projeto)</div>
+          <div>Data de geração: <strong id="cr-print-date"></strong></div>
+          <div>Código: <strong id="cr-print-code"></strong></div>
+        </div>
+      </div>
+
+      <!-- Screen header -->
+      <header class="flex items-center justify-between print:hidden flex-wrap gap-4">
         <div>
           <h1 class="text-2xl font-extrabold text-navy" id="cr-title">{t('cycleReport.title', lang)}</h1>
           <p class="text-sm text-[var(--text-secondary)]" id="cr-subtitle"></p>
         </div>
-        <button id="cr-export-pdf" class="print:hidden px-4 py-2 rounded-lg bg-navy text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">
+        <button id="cr-export-pdf" class="px-4 py-2 rounded-lg bg-navy text-white text-sm font-semibold cursor-pointer border-0 hover:opacity-90">
           {t('cycleReport.exportPdf', lang)}
         </button>
       </header>
@@ -86,9 +97,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         <div id="cr-attendance" class="overflow-x-auto"></div>
       </section>
 
-      <!-- Footer -->
-      <footer class="text-center text-xs text-[var(--text-muted)] pt-4 border-t border-[var(--border-default)]">
+      <!-- Footer (screen) -->
+      <footer class="text-center text-xs text-[var(--text-muted)] pt-4 border-t border-[var(--border-default)] print:hidden">
         <span id="cr-footer"></span>
+      </footer>
+      <!-- Footer (print-only) -->
+      <footer class="hidden print:block text-center text-[8px] text-gray-400 pt-4 mt-8 border-t border-gray-300">
+        <div>Documento gerado automaticamente pela plataforma digital do Núcleo de Estudos e Pesquisa em IA & GP</div>
+        <div>platform.ai-pm-research-hub.workers.dev · Verificável via código do relatório</div>
+        <div class="mt-1">PMI®, PMBOK®, PMP® e PMI-CPMAI™ são marcas registradas do PMI, Inc.</div>
       </footer>
     </div>
   </div>
@@ -450,7 +467,16 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
   // Export PDF
   document.getElementById('cr-export-pdf')?.addEventListener('click', () => {
-    try { if ((window as any).posthog) (window as any).posthog.capture('report_exported', { report_type: 'cycle' }); } catch {}
+    // Generate timestamp and verification code for print header
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const code = 'RPT-' + now.getFullYear() + '-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    const printDate = document.getElementById('cr-print-date');
+    const printCode = document.getElementById('cr-print-code');
+    if (printDate) printDate.textContent = dateStr;
+    if (printCode) printCode.textContent = code;
+
+    try { if ((window as any).posthog) (window as any).posthog.capture('report_exported', { report_type: 'cycle', code }); } catch {}
     window.print();
   });
 
@@ -458,3 +484,43 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     requestAnimationFrame(() => bootCycleReport());
   });
 </script>
+
+<style>
+  @media print {
+    /* Hide AdminLayout chrome */
+    nav, .admin-sidebar, [data-sidebar], aside,
+    .tier-viewer-bar, [class*="TierViewer"],
+    .breadcrumb, [class*="breadcrumb"],
+    header:has(.admin-sidebar),
+    [class*="print:hidden"], .print\:hidden,
+    button:not(#cr-print-header *) {
+      display: none !important;
+    }
+
+    /* Reset layout */
+    body { margin: 0; padding: 0; background: white !important; color: black !important; }
+    main, .max-w-\[1200px\], [class*="max-w-"] { max-width: 100% !important; margin: 0 !important; padding: 1rem !important; }
+
+    /* Show print header/footer */
+    #cr-print-header { display: block !important; }
+
+    /* Ensure stat cards print well */
+    .cr-section { page-break-inside: avoid; margin-bottom: 1rem; }
+
+    /* Charts: force canvas visibility */
+    canvas { max-height: 250px !important; }
+
+    /* Dark mode override for print */
+    [data-theme="dark"] * {
+      color: black !important;
+      background: white !important;
+      border-color: #ddd !important;
+    }
+
+    /* Page margins */
+    @page {
+      margin: 1.5cm 1.5cm 2cm 1.5cm;
+      size: A4 portrait;
+    }
+  }
+</style>
