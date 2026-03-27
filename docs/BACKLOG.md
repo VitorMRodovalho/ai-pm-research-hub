@@ -16,8 +16,8 @@
 
 | ID | Item | Status | Est. effort | Notes |
 |----|------|--------|-------------|-------|
-| — | Relatório Evolução C2→C3 | Not started | 1 session | Deadline 4 April. Sponsors read this for renewal. |
-| — | Resend DNS pmigo.org.br | Blocked (Ivan/HostGator) | — | Investigate plan B (alt domain or escalate) |
+| — | Relatório Evolução C2→C3 | ✅ Done | — | Integrated into /admin/cycle-report with evolution section + PDF export |
+| — | Resend DNS pmigo.org.br | ✅ Done (27/Mar) | — | DNS verified, email sent from nucleoia@pmigo.org.br, new API key deployed to EF secrets |
 | — | Sentry TDZ monitoring | Monitoring | — | 14 workspace.astro issues. Watch post-deploy 97287b5. |
 | W-ASTRO6 | Astro 5→6 migration | ✅ Done (GC-133, 2026-03-28) | — | Completed: Astro 6, @astrojs/cloudflare v13, Vite 7, Workers SSR. |
 
