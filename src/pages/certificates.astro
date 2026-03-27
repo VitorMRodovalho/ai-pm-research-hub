@@ -1,0 +1,95 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getLangFromURL, t, type Lang } from '../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+---
+<BaseLayout title={t('certificates.title', lang)} activePage="certificates" lang={lang}>
+  <main class="max-w-[700px] mx-auto px-4 py-8">
+    <h1 class="text-xl font-bold text-[var(--text-primary)] mb-6">{t('certificates.title', lang)}</h1>
+    <div id="certs-list" class="space-y-3">
+      <p class="text-[var(--text-muted)] text-sm text-center py-8">...</p>
+    </div>
+  </main>
+</BaseLayout>
+
+<script is:inline define:vars={{ lang }}>
+  window.__certsLang = lang;
+</script>
+
+<script>
+  import { getSupabase } from '../lib/supabase';
+  import { t } from '../i18n/utils';
+  import type { Lang } from '../i18n/utils';
+
+  const TYPE_ICONS: Record<string, string> = {
+    volunteer_agreement: '\uD83D\uDCC4',
+    contribution: '\uD83C\uDFC6',
+    participation: '\uD83C\uDF93',
+    completion: '\uD83C\uDFC5',
+    excellence: '\u2B50',
+  };
+
+  function esc(s: any): string { return String(s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function fmtDate(d: string, lang: Lang): string {
+    if (!d) return '';
+    const clean = String(d).slice(0, 10);
+    const dt = new Date(clean + 'T12:00:00');
+    if (isNaN(dt.getTime())) return String(d);
+    return dt.toLocaleDateString(lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-ES' : 'pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  (async () => {
+    const lang = ((window as any).__certsLang || 'pt-BR') as Lang;
+    const container = document.getElementById('certs-list');
+    if (!container) return;
+
+    let sb = (window as any).navGetSb?.();
+    if (!sb) { await new Promise<void>(r => { const c = () => { sb = (window as any).navGetSb?.(); if (sb) r(); else setTimeout(c, 300); }; setTimeout(c, 300); setTimeout(r, 5000); }); }
+    if (!sb) { try { sb = getSupabase(); } catch {} }
+    if (!sb) { container.innerHTML = `<p class="text-center text-[var(--text-muted)] text-sm">${t('certificates.empty', lang)}</p>`; return; }
+
+    try {
+      const { data, error } = await sb.rpc('get_my_certificates');
+      if (error) throw error;
+      if (!data?.length) {
+        container.innerHTML = `<div class="text-center py-12">
+          <div class="text-3xl mb-3">\uD83D\uDCC4</div>
+          <p class="text-[var(--text-muted)] text-sm mb-4">${t('certificates.empty', lang)}</p>
+          <a href="/volunteer-agreement" class="inline-block px-4 py-2 rounded-lg bg-navy text-white text-sm font-semibold no-underline hover:opacity-90">${t('certificates.signTerm', lang)}</a>
+        </div>`;
+        return;
+      }
+
+      container.innerHTML = data.map((c: any) => {
+        const icon = TYPE_ICONS[c.type] || '\uD83D\uDCC3';
+        const statusBadge = c.has_counter_signature
+          ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">${t('certificates.status.counterSigned', lang)}</span>`
+          : `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">${t('certificates.status.pending', lang)}</span>`;
+
+        return `<div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-4">
+          <div class="flex items-start gap-3">
+            <span class="text-2xl">${icon}</span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap mb-1">
+                <span class="text-sm font-semibold text-[var(--text-primary)]">${esc(c.title)}</span>
+                ${statusBadge}
+              </div>
+              <div class="text-xs text-[var(--text-muted)] space-y-0.5">
+                <div>${t('volunteer.success.date', lang)}: ${fmtDate(c.issued_at, lang)}</div>
+                ${c.counter_signed_by_name ? `<div>${t('certificates.counterSignedBy', lang)}: ${esc(c.counter_signed_by_name)}</div>` : ''}
+                <div class="font-mono text-[10px]">${esc(c.verification_code)}</div>
+              </div>
+            </div>
+            <a href="/verify/${encodeURIComponent(c.verification_code || '')}" target="_blank"
+              class="shrink-0 px-3 py-1.5 rounded-lg bg-[var(--surface-hover)] border border-[var(--border-default)] text-[11px] font-semibold text-navy no-underline hover:bg-navy hover:text-white transition-colors">
+              ${t('certificates.verify', lang)}
+            </a>
+          </div>
+        </div>`;
+      }).join('');
+    } catch (e) {
+      console.error('Certificates load failed:', e);
+      container.innerHTML = `<p class="text-center text-[var(--text-muted)] text-sm">${t('certificates.empty', lang)}</p>`;
+    }
+  })();
+</script>
