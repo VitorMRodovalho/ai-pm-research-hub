@@ -61,6 +61,7 @@ export default function ManualDocumentViewer({ lang: langProp }: Props) {
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('');
   const [tocOpen, setTocOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'r2' | 'preview'>('preview'); // default: show preview if R3 exists
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
 
@@ -92,6 +93,10 @@ export default function ManualDocumentViewer({ lang: langProp }: Props) {
 
   // Merge R2 + R3 into unified list
   const merged = mergeSections(r2Sections, r3Sections);
+
+  // R2-only view helpers
+  const r2TopLevel = r2Sections.filter(s => !s.parent_section_id);
+  const r2Children = (parentId: string) => r2Sections.filter(s => s.parent_section_id === parentId);
 
   // Scroll-spy
   useEffect(() => {
@@ -154,22 +159,67 @@ export default function ManualDocumentViewer({ lang: langProp }: Props) {
         <div className="text-center mb-6 pb-5 border-b border-[var(--border-default)]">
           <div className="text-[10px] font-bold uppercase tracking-[.2em] text-[var(--text-muted)] mb-1">Núcleo de Estudos e Pesquisa em IA & Gerenciamento de Projetos</div>
           <h1 className="text-2xl font-extrabold text-[var(--text-primary)]">Manual de Governança e Operações</h1>
-          <div className="text-sm text-[var(--text-secondary)] mt-1">
-            {hasR3 ? 'Preview R3' : 'Versão R2'} · DocuSign B2AFB185
-          </div>
+
+          {/* Version toggle */}
           {hasR3 && (
+            <div className="flex justify-center gap-2 mt-3 print:hidden">
+              <button onClick={() => setViewMode('r2')}
+                className={`px-4 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 transition-all ${
+                  viewMode === 'r2' ? 'border-navy bg-navy text-white' : 'border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]'
+                }`}>
+                R2 (Aprovado)
+              </button>
+              <button onClick={() => setViewMode('preview')}
+                className={`px-4 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 transition-all ${
+                  viewMode === 'preview' ? 'border-amber-500 bg-amber-500 text-white' : 'border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]'
+                }`}>
+                Simulação R3
+              </button>
+            </div>
+          )}
+
+          {/* Version info */}
+          <div className="text-sm text-[var(--text-secondary)] mt-2">
+            {viewMode === 'r2' ? (
+              <span>Versão R2 · DocuSign B2AFB185 · <strong className="text-emerald-600 dark:text-emerald-400">Aprovado 22/Set/2025</strong></span>
+            ) : hasR3 ? (
+              <span className="text-amber-700 dark:text-amber-400 font-semibold">⚠ SIMULAÇÃO — Preview da próxima revisão. Este documento NÃO está aprovado.</span>
+            ) : (
+              <span>Versão R2 · DocuSign B2AFB185</span>
+            )}
+          </div>
+
+          {/* Preview stats + legend */}
+          {viewMode === 'preview' && hasR3 && (
             <div className="flex flex-wrap justify-center gap-2 mt-3 text-[11px]">
               <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-semibold">{newCount} novas secções</span>
               <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 font-semibold">{updCount} atualizadas</span>
+              <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800/50 dark:text-gray-400 font-semibold">{merged.length - newCount - updCount} inalteradas</span>
             </div>
           )}
+
+          {/* Actions: PDF export + R2 download */}
+          <div className="flex justify-center gap-2 mt-3 print:hidden">
+            <button onClick={() => window.print()}
+              className="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[11px] font-semibold text-[var(--text-secondary)] cursor-pointer hover:bg-[var(--surface-hover)]">
+              📄 {viewMode === 'r2' ? 'Exportar R2 PDF' : 'Exportar Simulação PDF'}
+            </button>
+          </div>
         </div>
 
-        {/* Sections */}
+        {/* Sections — render based on viewMode */}
         <div className="space-y-8">
-          {merged.map(m => (
-            <MergedSectionBlock key={m.section_number} merged={m} lang={lang} regRef={regRef} />
-          ))}
+          {viewMode === 'r2' ? (
+            /* R2 ONLY — pure original document, no diff markers */
+            r2TopLevel.map(section => (
+              <R2SectionBlock key={section.id} section={section} children={r2Children(section.id)} lang={lang} regRef={regRef} />
+            ))
+          ) : (
+            /* PREVIEW — merged R2+R3 with diff markers */
+            merged.map(m => (
+              <MergedSectionBlock key={m.section_number} merged={m} lang={lang} regRef={regRef} />
+            ))
+          )}
         </div>
       </article>
     </div>
@@ -318,6 +368,51 @@ function MergedSectionBlock({ merged: m, lang, regRef }: { merged: MergedSection
                 {cContent && (
                   <div className="prose prose-sm prose-slate dark:prose-invert max-w-none text-[var(--text-secondary)] overflow-x-auto">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{cContent}</ReactMarkdown>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ── R2-only section (no diff markers, clean document) ──
+
+function R2SectionBlock({ section, children, lang, regRef }: {
+  section: Section; children: Section[]; lang: string;
+  regRef: (id: string, el: HTMLElement | null) => void;
+}) {
+  const a = anchor(section.section_number);
+  const content = getContent(section, lang);
+  const title = getTitle(section, lang);
+
+  return (
+    <section id={a} ref={el => regRef(a, el)} className="scroll-mt-20">
+      <h2 className="text-lg font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+        <span className="text-[var(--text-muted)] text-sm font-mono">§{section.section_number}</span>
+        {title}
+      </h2>
+      {content && (
+        <div className="prose prose-sm prose-slate dark:prose-invert max-w-none text-[var(--text-secondary)] overflow-x-auto">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+        </div>
+      )}
+      {children.length > 0 && (
+        <div className="mt-4 space-y-5 pl-4 border-l-2 border-[var(--border-subtle)]">
+          {children.map(child => {
+            const ca = anchor(child.section_number);
+            return (
+              <div key={child.id} id={ca} ref={el => regRef(ca, el)} className="scroll-mt-20">
+                <h3 className="text-base font-semibold text-[var(--text-primary)] mb-2 flex items-center gap-2">
+                  <span className="text-[var(--text-muted)] text-xs font-mono">§{child.section_number}</span>
+                  {getTitle(child, lang)}
+                </h3>
+                {getContent(child, lang) && (
+                  <div className="prose prose-sm prose-slate dark:prose-invert max-w-none text-[var(--text-secondary)] overflow-x-auto">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{getContent(child, lang)}</ReactMarkdown>
                   </div>
                 )}
               </div>

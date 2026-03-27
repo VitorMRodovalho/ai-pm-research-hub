@@ -13,3 +13,13 @@ const i18nBundle = buildPageI18n(['governance'], lang);
     <GovernancePage client:load />
   </main>
 </BaseLayout>
+
+<style>
+  @media print {
+    nav, footer, [class*="print:hidden"], .print\:hidden { display: none !important; }
+    main { max-width: 100% !important; padding: 1rem !important; }
+    details { display: block !important; }
+    details > summary { display: none !important; }
+    details > div, details > pre, details > p { display: block !important; }
+  }
+</style>
