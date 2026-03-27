@@ -3,8 +3,9 @@ import { usePageI18n } from '../../i18n/usePageI18n';
 import ManualBrowser from './ManualBrowser';
 import CRList from './CRList';
 import DocumentsList from './DocumentsList';
+import GovernanceApprovalTab from './GovernanceApprovalTab';
 
-type Tab = 'manual' | 'crs' | 'documents';
+type Tab = 'manual' | 'crs' | 'documents' | 'approvals';
 
 function detectLang(): string {
   if (typeof window === 'undefined') return 'pt-BR';
@@ -19,7 +20,7 @@ function detectLang(): string {
 export default function GovernancePage() {
   const t = usePageI18n();
   const lang = detectLang();
-  const [tab, setTab] = useState<Tab>('manual');
+  const [tab, setTab] = useState<Tab>('approvals');
   const [sections, setSections] = useState<any[]>([]);
   const [crs, setCrs] = useState<any[]>([]);
   const [docs, setDocs] = useState<any[]>([]);
@@ -90,7 +91,9 @@ export default function GovernancePage() {
     );
   }
 
+  const isSponsor = member?.operational_role === 'sponsor';
   const tabs: { key: Tab; icon: string; labelKey: string; fallback: string }[] = [
+    { key: 'approvals', icon: '🗳️', labelKey: 'governance.approvals_tab', fallback: 'Aprovações' },
     { key: 'manual', icon: '📖', labelKey: 'governance.manual_tab', fallback: 'Manual' },
     { key: 'crs', icon: '📋', labelKey: 'governance.cr_tab', fallback: 'Solicitações de Mudança' },
     { key: 'documents', icon: '📄', labelKey: 'governance.documents_tab', fallback: 'Documentos' },
@@ -128,6 +131,9 @@ export default function GovernancePage() {
       )}
       {tab === 'documents' && (
         <DocumentsList docs={docs} t={t} />
+      )}
+      {tab === 'approvals' && (
+        <GovernanceApprovalTab t={t} getSb={getSb} member={member} />
       )}
     </div>
   );
