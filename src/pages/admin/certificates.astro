@@ -1,0 +1,105 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { getLangFromURL, t, type Lang } from '../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+---
+
+<AdminLayout title={t('admin.certificates.title', lang)} breadcrumbs={[{label:'Pessoas'},{label:'Certificados'}]}>
+  <main class="space-y-6">
+    <h1 class="text-xl font-bold text-[var(--text-primary)]">{t('admin.certificates.title', lang)}</h1>
+
+    <div id="admin-certs-pending" class="space-y-3"></div>
+    <div id="admin-certs-all" class="space-y-3"></div>
+    <div id="admin-certs-loading" class="text-center py-8 text-[var(--text-muted)] text-sm">...</div>
+  </main>
+</AdminLayout>
+
+<script is:inline define:vars={{ lang }}>
+  window.__adminCertsLang = lang;
+</script>
+
+<script>
+  import { t } from '../../i18n/utils';
+  import type { Lang } from '../../i18n/utils';
+
+  function esc(s: any): string { return String(s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function fmtDate(d: string, lang: Lang): string {
+    if (!d) return '';
+    const clean = String(d).slice(0, 10);
+    const dt = new Date(clean + 'T12:00:00');
+    if (isNaN(dt.getTime())) return String(d);
+    return dt.toLocaleDateString(lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-ES' : 'pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  async function counterSign(sb: any, certId: string, lang: Lang) {
+    if (!confirm(t('admin.certificates.confirmCounterSign', lang))) return;
+    try {
+      const { data, error } = await sb.rpc('counter_sign_certificate', { p_certificate_id: certId });
+      if (error) throw error;
+      if (data?.error) { alert(data.error); return; }
+      (window as any).toast?.(t('admin.certificates.success', lang), 'success');
+      location.reload();
+    } catch (e) {
+      console.error('Counter-sign failed:', e);
+      (window as any).toast?.('Error', 'error');
+    }
+  }
+
+  (async () => {
+    const lang = ((window as any).__adminCertsLang || 'pt-BR') as Lang;
+    const pendingEl = document.getElementById('admin-certs-pending');
+    const allEl = document.getElementById('admin-certs-all');
+    const loadingEl = document.getElementById('admin-certs-loading');
+    if (!pendingEl || !allEl) return;
+
+    let sb: any = null;
+    const wait = () => new Promise<void>(r => {
+      const c = () => { sb = (window as any).navGetSb?.(); if (sb) r(); else setTimeout(c, 300); };
+      setTimeout(c, 300); setTimeout(r, 5000);
+    });
+    await wait();
+    if (!sb) { if (loadingEl) loadingEl.textContent = 'No data'; return; }
+
+    try {
+      const { data: pending } = await sb.rpc('get_pending_countersign');
+      if (loadingEl) loadingEl.classList.add('hidden');
+
+      if (pending?.length) {
+        pendingEl.innerHTML = `
+          <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl overflow-hidden">
+            <div class="px-5 py-3 border-b border-amber-200 dark:border-amber-800">
+              <h3 class="text-sm font-bold text-amber-800 dark:text-amber-300">${t('admin.certificates.pending', lang)} (${pending.length})</h3>
+            </div>
+            <div class="divide-y divide-amber-100 dark:divide-amber-800/50">
+              ${pending.map((c: any) => `
+                <div class="px-5 py-3 flex items-center gap-3 flex-wrap">
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium text-[var(--text-primary)]">${esc(c.member_name)}</div>
+                    <div class="text-xs text-[var(--text-muted)]">${esc(c.title)} \u00B7 ${fmtDate(c.issued_at, lang)} \u00B7 ${esc(c.verification_code)}</div>
+                    ${c.tribe_name ? `<div class="text-[10px] text-[var(--text-muted)]">${esc(c.tribe_name)} \u00B7 ${esc(c.member_role)}</div>` : ''}
+                  </div>
+                  <button class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[12px] font-semibold border-0 cursor-pointer hover:bg-emerald-700"
+                    data-countersign="${c.id}">
+                    \u270D\uFE0F ${t('admin.certificates.counterSign', lang)}
+                  </button>
+                </div>
+              `).join('')}
+            </div>
+          </div>`;
+      }
+
+      // All certificates (use get_my_certificates won't work for admin - use pending list for now)
+      // For MVP, pending section is the primary admin view
+
+    } catch (e) {
+      console.error('Admin certs load failed:', e);
+      if (loadingEl) loadingEl.textContent = 'Error loading certificates';
+    }
+
+    // Delegation for counter-sign buttons
+    document.addEventListener('click', (e: MouseEvent) => {
+      const btn = (e.target as HTMLElement)?.closest('[data-countersign]') as HTMLElement;
+      if (btn) counterSign(sb, btn.dataset.countersign!, lang);
+    });
+  })();
+</script>
