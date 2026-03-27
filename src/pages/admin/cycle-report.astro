@@ -24,6 +24,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         </button>
       </header>
 
+      <!-- Evolution C2→C3 -->
+      <section class="cr-section" id="cr-evolution-section">
+        <h2 class="text-lg font-extrabold text-navy mb-3">Evolução C2 → C3</h2>
+        <div id="cr-evolution" class="space-y-4"></div>
+      </section>
+
       <!-- KPIs Semaphore -->
       <section class="cr-section">
         <h2 class="text-lg font-extrabold text-navy mb-3">{t('cycleReport.kpisTitle', lang)}</h2>
@@ -150,8 +156,70 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       return;
     }
 
+    // Also fetch evolution data
+    const { data: evoData } = await sb.rpc('get_cycle_evolution');
+
     report?.classList.remove('hidden');
     renderReport(data);
+    if (evoData) renderEvolution(evoData);
+  }
+
+  function renderEvolution(evo: any) {
+    const el = document.getElementById('cr-evolution');
+    if (!el) return;
+
+    const cycles = evo.cycles || [];
+    const highlights = evo.highlights || {};
+
+    // Timeline table
+    const timelineRows = cycles.map((c: any) => {
+      const isC3 = c.cycle_code === 'cycle_3';
+      const bold = isC3 ? 'font-bold text-navy' : '';
+      return `<tr class="border-t border-[var(--border-subtle)] ${isC3 ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}">
+        <td class="px-3 py-2 ${bold}">${c.cycle_label}</td>
+        <td class="px-3 py-2 text-center ${bold}">${c.members}</td>
+        <td class="px-3 py-2 text-center">${c.chapters || '—'}</td>
+        <td class="px-3 py-2 text-center">${c.tribes || '—'}</td>
+        <td class="px-3 py-2 text-center">${c.events || '—'}</td>
+        <td class="px-3 py-2 text-center">${c.growth ? `<span class="text-emerald-600 font-bold">+${c.growth}%</span>` : '—'}</td>
+      </tr>`;
+    }).join('');
+
+    // Key milestones
+    const milestones = [
+      highlights.new_chapters ? `🏛 ${highlights.new_chapters} novos capítulos integrados (${highlights.chapter_names || ''})` : null,
+      highlights.platform_version ? `🚀 Plataforma ${highlights.platform_version} em produção` : null,
+      highlights.governance_digital ? '📋 Governança digital: manual versionável, CRs com aprovação por quorum SHA-256' : null,
+      highlights.mcp_server ? '🤖 Servidor MCP: 15 ferramentas para assistentes IA' : null,
+      highlights.total_articles ? `📄 ${highlights.total_articles} artigos submetidos a plataformas internacionais` : null,
+      highlights.total_events_c3 ? `📅 ${highlights.total_events_c3} eventos realizados no C3` : null,
+    ].filter(Boolean);
+
+    el.innerHTML = `
+      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="bg-[var(--surface-base)]">
+              <th class="text-left px-3 py-2 font-semibold text-[var(--text-secondary)]">Ciclo</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">Membros</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">Capítulos</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">Tribos</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">Eventos</th>
+              <th class="text-center px-3 py-2 font-semibold text-[var(--text-secondary)]">Crescimento</th>
+            </tr>
+          </thead>
+          <tbody>${timelineRows}</tbody>
+        </table>
+      </div>
+      ${milestones.length ? `
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4">
+          <h3 class="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-2">Marcos do Ciclo 3</h3>
+          <ul class="space-y-1.5 text-sm text-[var(--text-primary)]">
+            ${milestones.map(m => `<li>${m}</li>`).join('')}
+          </ul>
+        </div>
+      ` : ''}
+    `;
   }
 
   function renderReport(r: any) {
