@@ -3345,6 +3345,21 @@ const enUS: Record<string, string> = {
   // Selection
   'selection.title': 'Selection Process',
   'selection.denied': 'Access denied to the selection module.',
+
+  // Changelog
+  'changelog.title': "What's New",
+  'changelog.subtitle': 'Platform evolution',
+  'changelog.current': 'Current Version',
+  'changelog.category.feature': 'New Features',
+  'changelog.category.improvement': 'Improvements',
+  'changelog.category.fix': 'Fixes',
+  'changelog.category.infrastructure': 'Infrastructure',
+  'changelog.category.governance': 'Governance',
+  'changelog.stats.members': 'members',
+  'changelog.stats.tribes': 'tribes',
+  'changelog.stats.chapters': 'chapters',
+  'changelog.noReleases': 'No releases found.',
+  'nav.changelog': "What's New",
 };
 
 export default enUS;

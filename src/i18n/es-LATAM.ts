@@ -3345,6 +3345,21 @@ const esLATAM: Record<string, string> = {
   // Selection
   'selection.title': 'Proceso de Selección',
   'selection.denied': 'Acceso denegado al módulo de selección.',
+
+  // Changelog
+  'changelog.title': 'Novedades',
+  'changelog.subtitle': 'Evolución de la plataforma',
+  'changelog.current': 'Versión Actual',
+  'changelog.category.feature': 'Novedades',
+  'changelog.category.improvement': 'Mejoras',
+  'changelog.category.fix': 'Correcciones',
+  'changelog.category.infrastructure': 'Infraestructura',
+  'changelog.category.governance': 'Gobernanza',
+  'changelog.stats.members': 'miembros',
+  'changelog.stats.tribes': 'tribus',
+  'changelog.stats.chapters': 'capítulos',
+  'changelog.noReleases': 'No se encontraron releases.',
+  'nav.changelog': 'Novedades',
 };
 
 export default esLATAM;
