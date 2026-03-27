@@ -1,25 +1,30 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getLangFromURL, t, type Lang } from '../../i18n/utils';
+import ManualDocumentViewer from '../../components/governance/ManualDocumentViewer';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 ---
 
 <BaseLayout title={t('governance.preview.title', lang)} activePage="governance" lang={lang}>
-  <main class="max-w-[900px] mx-auto px-4 py-8">
-    <header class="mb-6 print:mb-4">
-      <h1 class="text-2xl font-bold text-[var(--text-primary)]">{t('governance.preview.title', lang)}</h1>
-      <p class="text-[var(--text-secondary)] mt-1 text-sm">{t('governance.preview.subtitle', lang)}</p>
-    </header>
-
+  <main class="max-w-[1100px] mx-auto px-4 py-8">
     <div class="mb-4 print:hidden">
       <a href="/governance" class="inline-flex items-center gap-1 text-sm text-navy font-semibold no-underline hover:underline">
         ← {t('governance.dashboard.title', lang)}
       </a>
     </div>
 
-    <div id="preview-loading" class="text-[var(--text-muted)] text-sm py-8 text-center">...</div>
-    <div id="preview-content" class="hidden space-y-6"></div>
+    <!-- Manual Document (prose typography, TOC scroll-spy) -->
+    <ManualDocumentViewer client:load lang={lang} />
+
+    <!-- CR Pipeline (existing, below the document) -->
+    <div class="mt-12 pt-8 border-t-2 border-[var(--border-default)]">
+      <h2 class="text-xl font-bold text-[var(--text-primary)] mb-2">{t('governance.preview.crListTitle', lang)}</h2>
+      <p class="text-sm text-[var(--text-secondary)] mb-4">{t('governance.preview.subtitle', lang)}</p>
+
+      <div id="preview-loading" class="text-[var(--text-muted)] text-sm py-8 text-center">...</div>
+      <div id="preview-content" class="hidden space-y-6"></div>
+    </div>
   </main>
 </BaseLayout>
 
