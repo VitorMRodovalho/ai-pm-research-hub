@@ -75,7 +75,7 @@ test('dark mode styling uses CSS custom property tokens instead of dark: prefix 
   const themeCSS = read('src/styles/theme.css');
   const globalCSS = read('src/styles/global.css');
   const darkAuditScript = read('scripts/audit_dark_mode_a11y.sh');
-  const darkChecklist = read('docs/project-governance/DARK_MODE_A11Y_CHECKLIST.md');
+  const darkChecklist = read('docs/archive/project-governance/DARK_MODE_A11Y_CHECKLIST.md');
   assert.equal(tribe.includes('<BoardEngine client:load'), true);
   assert.equal(tribe.includes('id="deliverable-modal"'), true);
   assert.equal(tribe.includes('close-deliverable-modal'), true);
@@ -880,7 +880,7 @@ test('workflows force JavaScript actions onto Node 24 runtime', () => {
 });
 
 test('cloudflare public env parity runbook includes preview checks and local audit script', () => {
-  const runbook = read('docs/project-governance/CLOUDFLARE_ENV_INJECTION_VALIDATION.md');
+  const runbook = read('docs/archive/project-governance/CLOUDFLARE_ENV_INJECTION_VALIDATION.md');
   const script = read('scripts/audit_cloudflare_public_env_parity.sh');
   assert.equal(runbook.includes('./scripts/audit_cloudflare_public_env_parity.sh'), true);
   assert.equal(runbook.includes('Checklist de validação (preview)'), true);
