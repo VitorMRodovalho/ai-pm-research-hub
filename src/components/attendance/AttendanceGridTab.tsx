@@ -34,6 +34,19 @@ function getSb() {
   return (window as any).navGetSb?.();
 }
 
+function getMember() {
+  return (window as any).navGetMember?.();
+}
+
+function canManageAttendance(): boolean {
+  const m = getMember();
+  if (!m) return false;
+  if (m.is_superadmin) return true;
+  if (['manager', 'tribe_leader'].includes(m.operational_role)) return true;
+  if ((m.designations || []).includes('deputy_manager')) return true;
+  return false;
+}
+
 interface GridEvent {
   id: string;
   date: string;
@@ -101,11 +114,16 @@ interface FlatRow {
 /* ------------------------------------------------------------------ */
 
 const TYPE_ABBR: Record<string, string> = {
-  geral: 'G',
-  tribo: 'T',
-  lideranca: 'L',
-  kickoff: 'K',
-  comms: 'C',
+  geral: '\uD83C\uDFE0 G',
+  tribo: '\uD83D\uDD37 T',
+  lideranca: '\uD83D\uDC65 L',
+  kickoff: '\uD83D\uDE80 K',
+  comms: '\uD83D\uDCE2 C',
+  webinar: '\uD83C\uDF99\uFE0F W',
+  evento_externo: '\uD83C\uDF0D E',
+  '1on1': '\uD83D\uDD12 1',
+  parceria: '\uD83E\uDD1D P',
+  entrevista: '\uD83D\uDCCC I',
 };
 
 const TYPE_FULL: Record<string, string> = {
@@ -236,6 +254,55 @@ export default function AttendanceGridTab() {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'rate', desc: false }]);
   const [isMobile, setIsMobile] = useState(false);
   const [expandedTribes, setExpandedTribes] = useState<Set<string>>(new Set());
+  const [toggling, setToggling] = useState<string | null>(null);
+
+  /* Toggle attendance cell — click handler for managers */
+  const handleToggle = useCallback(async (eventId: string, memberId: string, current: string) => {
+    const sb = getSb();
+    if (!sb || toggling) return;
+    const cellKey = `${eventId}:${memberId}`;
+    setToggling(cellKey);
+    try {
+      const newPresent = current !== 'present';
+      const { error: rpcErr } = await sb.rpc('mark_member_present', {
+        p_event_id: eventId, p_member_id: memberId, p_present: newPresent,
+      });
+      if (rpcErr) throw rpcErr;
+      // Optimistic update in local data
+      setData(prev => {
+        if (!prev) return prev;
+        const updated = JSON.parse(JSON.stringify(prev)) as GridData;
+        for (const tribe of updated.tribes) {
+          for (const m of tribe.members) {
+            if (m.member_id === memberId) {
+              m.attendance[eventId] = newPresent ? 'present' : 'absent';
+            }
+          }
+        }
+        return updated;
+      });
+      (window as any).toast?.(newPresent ? '✅ Presente' : '❌ Ausente', 'success');
+    } catch (e: any) {
+      console.error('Toggle failed:', e);
+      (window as any).toast?.('Erro ao registrar presença', 'error');
+    } finally {
+      setToggling(null);
+    }
+  }, [toggling]);
+
+  /* Document-level click delegation for attendance cells */
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement)?.closest('[data-toggle-event]') as HTMLElement;
+      if (!target) return;
+      const eventId = target.dataset.toggleEvent!;
+      const memberId = target.dataset.toggleMember!;
+      const current = target.dataset.toggleCurrent || 'none';
+      handleToggle(eventId, memberId, current);
+    };
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, [handleToggle]);
 
   /* Responsive */
   useEffect(() => {
@@ -477,8 +544,18 @@ export default function AttendanceGridTab() {
             meta: { weekNumber: ev.week_number, date: ev.date },
             cell: ({ row }) => {
               const st = statusCell(row.original.attendance[ev.id]);
+              const manage = canManageAttendance();
               return (
-                <span className={`inline-flex items-center justify-center w-full h-full text-xs ${st.bg} rounded px-1`}>
+                <span
+                  className={`inline-flex items-center justify-center w-full h-full text-xs ${st.bg} rounded px-1 ${manage ? 'cursor-pointer hover:ring-2 hover:ring-navy/30' : ''}`}
+                  {...(manage ? {
+                    'data-toggle-event': ev.id,
+                    'data-toggle-member': row.original.memberId,
+                    'data-toggle-current': row.original.attendance[ev.id] || 'none',
+                    role: 'button',
+                    tabIndex: 0,
+                  } : {})}
+                >
                   {st.label}
                 </span>
               );
