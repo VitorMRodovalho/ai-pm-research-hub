@@ -1,182 +1,259 @@
-# 🧠 AI & PM Research Hub
+<div align="center">
 
-**Plataforma de pesquisa colaborativa do Núcleo de Estudos e Pesquisa em IA & Gestão de Projetos**
+# 🌐 AI & PM Research Hub
 
-[![Live](https://img.shields.io/badge/Live-ai--pm--research--hub.pages.dev-blue)](https://ai-pm-research-hub.pages.dev)
-[![Version](https://img.shields.io/badge/version-v1.0.0--beta-orange)]()
-[![Tests](https://img.shields.io/badge/tests-779%2B%20unit%20%2B%208%20e2e-green)]()
-[![License](https://img.shields.io/badge/license-MIT-lightgrey)]()
+**The AI & Project Management Study and Research Hub**
+*A Joint Initiative of the PMI Brazilian Chapters*
 
----
+[![License: MIT](https://img.shields.io/badge/Code-MIT-blue.svg)](LICENSE)
+[![License: CC BY-SA 4.0](https://img.shields.io/badge/Docs-CC%20BY--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
+[![Astro](https://img.shields.io/badge/Astro-6-BC52EE?logo=astro&logoColor=white)](https://astro.build)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
+[![MCP](https://img.shields.io/badge/MCP-15%20Tools-D97757?logo=claude&logoColor=white)](#mcp-server--ai-integration)
+[![PostHog](https://img.shields.io/badge/PostHog-Analytics-F9BD2B?logo=posthog&logoColor=white)](https://posthog.com)
+[![Sentry](https://img.shields.io/badge/Sentry-Monitoring-362D59?logo=sentry&logoColor=white)](https://sentry.io)
+[![Cost](https://img.shields.io/badge/Infra%20Cost-%240%2Fmo-brightgreen)]()
 
-## O que é
+[🇧🇷 Português](README.pt-BR.md) · [🇪🇸 Español](README.es.md)
 
-Uma plataforma web trilíngue (PT-BR · EN-US · ES-LATAM) que conecta 5 capítulos do PMI no Brasil em torno de pesquisa aplicada sobre Inteligência Artificial na Gestão de Projetos.
+[**Live Platform**](https://platform.ai-pm-research-hub.workers.dev) · [**MCP Server**](https://platform.ai-pm-research-hub.workers.dev/mcp) · [**Blog**](https://platform.ai-pm-research-hub.workers.dev/blog) · [**Governance**](docs/GOVERNANCE_CHANGELOG.md)
 
-**Números atuais (Ciclo 3 — 2026/1):**
-- 52 membros ativos · 7 tribos de pesquisa · 4 quadrantes estratégicos
-- 5 capítulos: PMI-GO, PMI-CE, PMI-DF, PMI-MG, PMI-RS
-- 56 artefatos de pesquisa nos boards das tribos
-- Custo operacional zero para as instituições
-
----
-
-## Stack
-
-| Camada | Tecnologia |
-|--------|-----------|
-| Framework | [Astro 5](https://astro.build/) (SSR on Cloudflare Pages) |
-| UI Islands | [React 19](https://react.dev/) |
-| Styling | [Tailwind CSS 4](https://tailwindcss.com/) |
-| Database | [Supabase](https://supabase.com/) (PostgreSQL + Auth + Edge Functions + Storage) |
-| Hosting | [Cloudflare Pages](https://pages.cloudflare.com/) |
-| Auth | Google · LinkedIn · Microsoft Azure |
-| Analytics | [PostHog](https://posthog.com/) |
-| Error Tracking | [Sentry](https://sentry.io/) |
-| Email | [Resend](https://resend.com/) |
-| DnD | [@dnd-kit](https://dndkit.com/) |
-| Rich Text | [TipTap](https://tiptap.dev/) |
-| Charts | [Chart.js](https://www.chartjs.org/) |
-| Tables | [@tanstack/react-table](https://tanstack.com/table) |
-| Tests | Vitest (unit) + [Playwright](https://playwright.dev/) (e2e) |
-| Cron | pg_cron (Supabase) |
-| Badges | Credly API sync |
+</div>
 
 ---
 
-## Funcionalidades
+## Overview
 
-### Para Pesquisadores
-- Dashboard individual com XP, badges e ranking
-- Sistema de presença com check-in e time window
-- BoardEngine (Kanban/Table/Calendar/Timeline) para entregáveis da tribo
-- Certificados digitais com verificação por código
-- Notificações (6 tipos + digest)
-- Blog trilíngue
+The **AI & PM Research Hub** (*Núcleo de Estudos e Pesquisa em Inteligência Artificial e Gerenciamento de Projetos*) is a multi-chapter research initiative under the PMI® Brazilian ecosystem, advancing the intersection of Artificial Intelligence and Project Management.
 
-### Para Líderes de Tribo
-- Dashboard da tribo (5 abas: Visão Geral, Presença, Gamificação, Entregáveis, Configurações)
-- Gestão de entregáveis via BoardEngine
-- Atas de reunião (TipTap editor)
+Founded in 2024 as a pilot within PMI Goiás, the initiative has grown into a structured alliance of five PMI chapters — **PMI-GO, PMI-CE, PMI-DF, PMI-MG, and PMI-RS** — with 50 active researchers organized across 7 research streams and 4 strategic knowledge quadrants.
 
-### Para Stakeholders (Sponsors / Pontos Focais)
-- Dashboard por capítulo com métricas reais
-- Comparativo entre capítulos
-- Acesso PII-free (sem dados pessoais sensíveis)
-
-### Para GP / Admin
-- Painel administrativo completo
-- Gestão de eventos e presença
-- Governança: Change Requests, aprovação em lote, changelog versionado
-- Emissão de certificados (individual e em lote)
-- Gamificação com sync automático (Credly + pg_cron)
-- Campanhas de email (Resend)
-- Parcerias (CRUD + níveis de interação)
-- Dashboards de KPIs e sustentabilidade
+> **Project Manager:** Vitor Maia Rodovalho
 
 ---
 
-## Início Rápido
+## Key Numbers
 
-### Pré-requisitos
+| Indicator | Value |
+|-----------|-------|
+| Active researchers (Cycle 3) | 50 |
+| Research streams (Tribos) | 7 |
+| PMI chapters | 5 (GO · CE · DF · MG · RS) |
+| Governance entries | 135+ |
+| Blog posts | 9 |
+| MCP tools | 15 (10 read · 5 write) |
+| Edge Functions | 17 |
+| i18n keys | 2,350+ (3 locales) |
+| Tests | 784+ |
+| Monthly cost | $0 |
 
-- Node.js 22+ (recomendado via [nvm](https://github.com/nvm-sh/nvm))
-- Git
-- Conta Supabase (para desenvolvimento local)
-- Supabase CLI (`npm i -g supabase`)
+---
 
-### Setup
+## Strategic Knowledge Quadrants
+
+| # | Quadrant | Research Streams |
+|---|----------|-----------------|
+| Q1 | **The Augmented Practitioner** | AI Tools & Ecosystem for PM |
+| Q2 | **AI Project Management** | Autonomous Agents & Hybrid Teams |
+| Q3 | **Organizational Leadership** | TMO & PMO of the Future · Culture & Change · Talent & Upskilling · ROI & Portfolio |
+| Q4 | **Future & Responsibility** | Governance & Trustworthy AI · Inclusion & Human-AI Collaboration |
+
+---
+
+## Architecture
+
+```mermaid
+graph LR
+    subgraph Client
+        A[Browser] --> B[Astro 6 SSR]
+        C[AI Assistant] --> D[MCP Protocol]
+    end
+
+    subgraph "Cloudflare Workers"
+        B --> E[Pages + API Routes]
+        D --> F["/mcp Proxy"]
+        E --> G[OAuth 2.1 Server]
+        F --> G
+    end
+
+    subgraph "Supabase"
+        G --> H[Auth<br/>Google · LinkedIn · Microsoft]
+        E --> I[PostgreSQL<br/>189+ RPC · RLS]
+        F --> J[Edge Functions<br/>17 deployed]
+        I --> K[pg_cron<br/>4 jobs]
+    end
+
+    subgraph "Observability"
+        B --> L[PostHog<br/>Analytics]
+        B --> M[Sentry<br/>Error Tracking]
+    end
+
+    style A fill:#1a1a2e,color:#fff
+    style C fill:#1a1a2e,color:#fff
+    style E fill:#F38020,color:#fff
+    style F fill:#F38020,color:#fff
+    style I fill:#3FCF8E,color:#fff
+    style J fill:#3FCF8E,color:#fff
+```
+
+---
+
+## Technical Stack
+
+| Layer | Technology | Details |
+|-------|-----------|---------|
+| **Frontend** | Astro 6 + React 19 + Tailwind 4 | SSR with island architecture, trilingual |
+| **Hosting** | Cloudflare Workers | Edge SSR, OAuth proxy, MCP proxy |
+| **Database** | Supabase PostgreSQL | 189+ SECURITY DEFINER functions, RLS |
+| **Auth** | Google + LinkedIn + Microsoft | OAuth 2.1, PKCE, dynamic client registration |
+| **MCP** | Custom server (15 tools) | AI assistants query platform via natural language |
+| **Server Logic** | Supabase Edge Functions (17) | Credly sync, attendance, MCP, campaigns |
+| **Analytics** | PostHog | Product analytics, session replay |
+| **Errors** | Sentry | Real-time error monitoring |
+| **Cron** | pg_cron (4 jobs) | Credly sync, attendance, detractor alerts, reminders |
+| **DnD** | @dnd-kit | BoardEngine Kanban |
+| **Rich Text** | TipTap | Meeting minutes, blog editor |
+
+---
+
+## MCP Server — AI Integration
+
+Any member can connect Claude, ChatGPT, Cursor, or VS Code to the platform via the Model Context Protocol. 15 tools authenticated via OAuth 2.1 with full Row Level Security enforcement.
+
+```
+https://platform.ai-pm-research-hub.workers.dev/mcp
+```
+
+```mermaid
+sequenceDiagram
+    participant User as AI Assistant
+    participant W as Workers Proxy
+    participant S as Supabase Auth
+    participant EF as Edge Function
+
+    User->>W: POST /mcp (no token)
+    W-->>User: 401 + WWW-Authenticate
+    User->>W: POST /oauth/register (DCR)
+    W-->>User: client_id
+    User->>W: GET /oauth/authorize
+    W->>S: Login (Google/LinkedIn/MS)
+    S-->>W: JWT
+    W-->>User: authorization code
+    User->>W: POST /oauth/token (PKCE)
+    W-->>User: access_token
+    User->>W: POST /mcp + Bearer token
+    W->>EF: Proxy with JWT
+    EF->>EF: RLS-enforced query
+    EF-->>User: Tool result
+```
+
+| Compatibility | Status |
+|--------------|--------|
+| Claude.ai | Stable |
+| ChatGPT | Stable |
+| Claude Code | Stable |
+| Cursor / VS Code | Stable |
+
+**[MCP Setup Guide](docs/MCP_SETUP_GUIDE.md)**
+
+---
+
+## Key Features
+
+### For Researchers
+- Personal workspace with XP, ranking, and Credly badge tracking
+- Tribe dashboard with meetings, attendance, and deliverables
+- BoardEngine (Kanban, table, calendar, timeline, grouped views)
+- Gamification with 10 XP categories
+- Trilingual interface (PT-BR · EN-US · ES-LATAM)
+
+### For Tribe Leaders
+- Full board management (create, assign, move, archive)
+- Attendance registration and reporting
+- Meeting minutes (TipTap rich text)
+- Tribe notifications and broadcast
+
+### For Administration
+- Admin panel with KPI dashboards and governance
+- 28+ Change Requests tracking manual updates
+- Stakeholder landing page
+- Selection process with blind review
+- Sustainability CRUD with financial projections
+
+---
+
+## Governance
+
+This project operates under a formal governance model with hierarchical access tiers, a peer review committee (*Comitê de Curadoria*), and merit-based selection processes. All decisions tracked in the changelog.
+
+- [Governance Changelog](docs/GOVERNANCE_CHANGELOG.md) — 135+ entries (GC-001 → GC-135+)
+- [Sprint Board](https://github.com/users/VitorMRodovalho/projects/1/)
+- [Contributing Guide](CONTRIBUTING.md)
+
+---
+
+## Architecture Principles
+
+1. **Zero-Cost, High-Value** — All infrastructure on free tiers (Supabase, Cloudflare, PostHog, Sentry)
+2. **Platform as Source of Truth** — Member state, gamification, governance, and research outputs live here
+3. **Security by Design** — All writes via SECURITY DEFINER RPCs, RLS per member/tribe/role, LGPD compliant
+4. **Data Centralization** — Schedules, links, meeting slots in the database — never hardcoded
+
+---
+
+## Local Development
 
 ```bash
-# 1. Clone
-git clone git@github.com:VitorMRodovalho/ai-pm-research-hub.git
-cd ai-pm-research-hub
-
-# 2. Node version
-nvm use  # usa a versão do .nvmrc (Node 22)
-
-# 3. Dependências
 npm install
-
-# 4. Variáveis de ambiente
-cp .env.example .env
-# Preencher: SUPABASE_URL, SUPABASE_ANON_KEY, SENTRY_DSN, etc.
-
-# 5. Dev server
-npm run dev
-# → http://localhost:4321
-
-# 6. Build
 npm run build
-
-# 7. Testes
-npm test              # unit tests (Vitest)
-npx playwright test   # e2e tests
+npm run dev -- --host 0.0.0.0 --port 4321
+npm test
 ```
 
-### Estrutura do projeto
+**Prerequisites:** Node.js 24+ (nvm), Supabase CLI, Wrangler CLI. See `.env.example` for variables.
+
+---
+
+## Repository Structure
 
 ```
-ai-pm-research-hub/
 ├── src/
-│   ├── components/       # React islands + Astro components
-│   ├── i18n/             # pt-BR.ts · en-US.ts · es-LATAM.ts
-│   ├── layouts/          # BaseLayout.astro
-│   ├── lib/              # supabaseClient, permissions, utils
-│   ├── pages/            # Astro pages (/, /en/, /es/)
-│   └── styles/           # Tailwind + globals
+│   ├── pages/          # Astro pages (trilingual routes)
+│   ├── components/     # React islands + Astro components
+│   ├── lib/            # Supabase client, auth, utilities
+│   └── middleware/      # CSP, auth, i18n
 ├── supabase/
-│   ├── functions/        # Edge Functions (16)
-│   └── migrations/       # SQL migrations
-├── tests/                # Unit + e2e
-├── docs/                 # Documentação do projeto
-│   ├── ARCHITECTURE.md
-│   ├── CONTRIBUTING.md
-│   ├── GOVERNANCE_CHANGELOG.md
-│   ├── BOARD_ENGINE_SPEC.md
-│   └── RUNBOOK.md
-├── .nvmrc                # Node 22
-├── astro.config.mjs
-├── tailwind.config.ts
-└── playwright.config.ts
+│   ├── functions/      # 17 Edge Functions
+│   └── migrations/     # Database migrations
+├── tests/              # 784+ test assertions
+├── docs/               # Governance, guides, specs
+└── scripts/            # Audit and utility scripts
 ```
 
 ---
 
-## Documentação
+## Documentation
 
-| Documento | Descrição |
-|-----------|-----------|
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arquitetura do sistema, diagrama de camadas, padrões de segurança |
-| [CONTRIBUTING.md](docs/CONTRIBUTING.md) | Guia para contribuidores |
-| [GOVERNANCE_CHANGELOG.md](docs/GOVERNANCE_CHANGELOG.md) | Histórico de decisões estruturais (GC-001 → GC-131) |
-| [BOARD_ENGINE_SPEC.md](docs/BOARD_ENGINE_SPEC.md) | Especificação do BoardEngine |
-| [RUNBOOK.md](docs/RUNBOOK.md) | Operações: deploy, pg_cron, email, backups |
-
----
-
-## Governança
-
-Este é um **projeto**, não uma associação. Decisões estruturais são documentadas em `GOVERNANCE_CHANGELOG.md` com código (GC-XXX), data, contexto e justificativa. Não há atas, votações ou cargos eletivos.
-
-**Modelo organizacional:**
-- Seleção por mérito (processo seletivo aberto a cada ciclo)
-- Custo zero para capítulos (infraestrutura mantida pelo GP)
-- Código aberto (MIT)
-- Changelog versionado como em desenvolvimento de software
+| Document | Purpose |
+|----------|---------|
+| [`README.md`](README.md) | Project entry point (EN) |
+| [`README.pt-BR.md`](README.pt-BR.md) | Versao em Portugues |
+| [`README.es.md`](README.es.md) | Version en Espanol |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to contribute |
+| [`AGENTS.md`](AGENTS.md) | Context for AI assistants |
+| [`docs/GOVERNANCE_CHANGELOG.md`](docs/GOVERNANCE_CHANGELOG.md) | All governance decisions |
+| [`docs/MCP_SETUP_GUIDE.md`](docs/MCP_SETUP_GUIDE.md) | MCP server setup |
+| [`docs/BOARD_ENGINE_SPEC.md`](docs/BOARD_ENGINE_SPEC.md) | BoardEngine architecture |
+| [`docs/DISASTER_RECOVERY.md`](docs/DISASTER_RECOVERY.md) | Backup & recovery |
 
 ---
 
-## Autor
+## License
 
-**Vitor Maia Rodovalho** — Gestor do Projeto (GP)
-- PMI ID: 5975367
-- Capítulo: PMI Goiás
+Code is licensed under [MIT](LICENSE).
+Documentation is licensed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
 
-Concebido em 2024 por Ivan Lourenço (Presidente PMI-GO) como projeto piloto. Formalizado em 2025 com PMI-CE. Ciclo 3 (2026) com 5 capítulos.
-
----
-
-## Licença
-
-MIT — veja [LICENSE](LICENSE) para detalhes.
+PMI®, PMBOK®, PMP® and PMI-CPMAI™ are registered marks of the Project Management Institute, Inc.
+This initiative is a collaborative project of independent PMI chapters and is not directly affiliated with or endorsed by PMI Global.
