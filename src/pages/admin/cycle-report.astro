@@ -487,40 +487,76 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
 <style>
   @media print {
-    /* Hide AdminLayout chrome */
-    nav, .admin-sidebar, [data-sidebar], aside,
-    .tier-viewer-bar, [class*="TierViewer"],
-    .breadcrumb, [class*="breadcrumb"],
-    header:has(.admin-sidebar),
-    [class*="print:hidden"], .print\:hidden,
-    button:not(#cr-print-header *) {
-      display: none !important;
-    }
+    /* ═══ HIDE EVERYTHING THAT ISN'T REPORT CONTENT ═══ */
 
-    /* Reset layout */
-    body { margin: 0; padding: 0; background: white !important; color: black !important; }
-    main, .max-w-\[1200px\], [class*="max-w-"] { max-width: 100% !important; margin: 0 !important; padding: 1rem !important; }
+    /* Nav bar (BaseLayout) */
+    body > div > nav,
+    body > div > header,
+    [class*="nav-"],
+    #site-nav,
+    .site-header { display: none !important; }
 
-    /* Show print header/footer */
+    /* Announcement banner */
+    #announcements-area { display: none !important; }
+
+    /* AdminSidebar */
+    [class*="AdminSidebar"],
+    .flex.min-h-\[calc\(100vh-64px\)\] > div:first-child,
+    aside { display: none !important; }
+
+    /* Breadcrumbs */
+    nav:has(ol) { display: none !important; }
+
+    /* Mobile hamburger */
+    #admin-sidebar-toggle { display: none !important; }
+
+    /* TierViewerBar */
+    [class*="TierViewer"],
+    [class*="tier-viewer"] { display: none !important; }
+
+    /* Cookie consent */
+    #consent-banner { display: none !important; }
+
+    /* Help floating button */
+    [class*="HelpFloating"],
+    button[aria-label*="help" i],
+    .fixed.bottom-4.right-4 { display: none !important; }
+
+    /* Footer (BaseLayout) */
+    body > div > footer,
+    footer.bg-\[\#200F3B\] { display: none !important; }
+
+    /* All buttons except inside report */
+    #cr-export-pdf { display: none !important; }
+
+    /* Generic print:hidden */
+    .print\:hidden, [class*="print:hidden"] { display: none !important; }
+
+    /* ═══ LAYOUT RESET ═══ */
+    body { margin: 0 !important; padding: 0 !important; background: white !important; color: black !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    /* Remove sidebar flex layout — make content full width */
+    .flex.min-h-\[calc\(100vh-64px\)\] { display: block !important; }
+    main { width: 100% !important; max-width: 100% !important; padding: 0.5rem !important; overflow: visible !important; }
+    .max-w-\[1200px\] { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+    .p-6 { padding: 0 !important; }
+
+    /* ═══ SHOW PRINT ELEMENTS ═══ */
     #cr-print-header { display: block !important; }
 
-    /* Ensure stat cards print well */
+    /* ═══ CONTENT FORMATTING ═══ */
     .cr-section { page-break-inside: avoid; margin-bottom: 1rem; }
-
-    /* Charts: force canvas visibility */
     canvas { max-height: 250px !important; }
 
-    /* Dark mode override for print */
-    [data-theme="dark"] * {
-      color: black !important;
-      background: white !important;
-      border-color: #ddd !important;
-    }
+    /* Force colors to print (stat cards, progress bars) */
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 
-    /* Page margins */
-    @page {
-      margin: 1.5cm 1.5cm 2cm 1.5cm;
-      size: A4 portrait;
-    }
+    /* Dark mode override */
+    [data-theme="dark"] .cr-section,
+    [data-theme="dark"] .cr-section * { color: black !important; background: white !important; border-color: #ddd !important; }
+
+    /* ═══ PAGE SETUP ═══ */
+    @page { margin: 1.5cm; size: A4 portrait; }
+    @page :first { margin-top: 1cm; }
   }
 </style>
