@@ -65,8 +65,7 @@ export default function ManualDocumentViewer({ lang: langProp }: Props) {
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
-  const member = typeof window !== 'undefined' ? (window as any).navGetMember?.() : null;
-  const isAdmin = member?.is_superadmin || member?.operational_role === 'manager';
+  // Admin badge is now in the parent GovernancePage header
 
   useEffect(() => {
     let cancelled = false;
@@ -165,15 +164,6 @@ export default function ManualDocumentViewer({ lang: langProp }: Props) {
             </div>
           )}
         </div>
-
-        {/* Admin cross-link */}
-        {isAdmin && (
-          <div className="mb-4 print:hidden">
-            <a href="/admin/governance-v2" className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--text-muted)] bg-[var(--surface-hover)] px-2 py-1 rounded no-underline hover:text-[var(--text-primary)]">
-              ⚙️ Admin
-            </a>
-          </div>
-        )}
 
         {/* Sections */}
         <div className="space-y-8">
