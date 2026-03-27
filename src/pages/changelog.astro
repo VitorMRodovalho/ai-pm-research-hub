@@ -52,7 +52,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   }
 
   function formatDate(dateStr: string, lang: Lang): string {
-    const d = new Date(dateStr + 'T00:00:00');
+    if (!dateStr) return '';
+    // Handle both date-only (2026-03-28) and full ISO (2026-03-28T00:00:00+00:00)
+    const clean = String(dateStr).slice(0, 10);
+    const d = new Date(clean + 'T12:00:00');
+    if (isNaN(d.getTime())) return String(dateStr);
     const locale = lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-ES' : 'pt-BR';
     return d.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' });
   }
