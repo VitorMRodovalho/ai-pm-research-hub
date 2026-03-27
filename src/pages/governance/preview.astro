@@ -207,24 +207,73 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     }
 
     try {
-      const { data, error } = await sb.rpc('get_governance_preview');
-      if (error) throw error;
-      if (!data) {
-        loading.textContent = t('governance.preview.noData', lang);
-        return;
-      }
+      const [previewRes, diffRes] = await Promise.all([
+        sb.rpc('get_governance_preview'),
+        sb.rpc('get_manual_diff'),
+      ]);
+      if (previewRes.error) throw previewRes.error;
+      const data = previewRes.data;
+      const diff = diffRes.data || {};
+      if (!data) { loading.textContent = t('governance.preview.noData', lang); return; }
+
+      const isSuperadmin = (window as any).navGetMember?.()?.is_superadmin;
+      const approvedReady = diff.total_approved_ready || 0;
+      const currentVer = diff.current_version || 'R2';
+
+      // Diff banner
+      const diffBanner = `
+        <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-4 print:hidden">
+          <div class="flex flex-wrap items-center gap-3 text-sm">
+            <span class="font-bold text-[var(--text-primary)]">Versao actual: ${esc(currentVer)}</span>
+            <span class="text-[var(--text-muted)]">|</span>
+            <span class="text-emerald-600 dark:text-emerald-400 font-semibold">${approvedReady} CRs aprovados prontos</span>
+            <span class="text-[var(--text-muted)]">|</span>
+            <span class="text-amber-600 dark:text-amber-400 font-semibold">${diff.total_pending || 0} pendentes</span>
+            ${isSuperadmin && approvedReady > 0 ? `
+              <button id="gen-version-btn" class="ml-auto px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[12px] font-semibold border-0 cursor-pointer hover:bg-emerald-700">
+                Gerar Manual R3
+              </button>` : ''}
+          </div>
+        </div>`;
+
+      // Print header (only visible in print)
+      const printHeader = `
+        <div class="hidden print:block text-center mb-8 manual-header">
+          <div class="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Nucleo de Estudos e Pesquisa em IA & Gerenciamento de Projetos</div>
+          <h1 class="text-xl font-extrabold">Manual de Governanca e Operacoes</h1>
+          <div class="text-sm text-gray-600 mt-1">Versao: ${esc(currentVer)} (Preview) | Data: ${new Date().toLocaleDateString('pt-BR')}</div>
+          <div class="text-xs text-gray-400 mt-1">${data.total_crs || 0} Change Requests | Gerado automaticamente pela plataforma</div>
+          <div class="text-[8px] text-gray-400 mt-2">platform.ai-pm-research-hub.workers.dev/governance/preview</div>
+        </div>`;
 
       loading.classList.add('hidden');
       content.classList.remove('hidden');
       content.innerHTML = [
+        printHeader,
+        diffBanner,
         renderSummary(data, lang),
         renderManualStructure(data.manual_structure || [], lang),
         renderCRSections(data.sections || [], lang),
         renderApprovals(lang),
-        `<div class="flex justify-end print:hidden">
+        `<div class="flex justify-end gap-2 print:hidden">
           <button onclick="window.print()" class="px-4 py-2 rounded-lg bg-navy text-white text-sm font-semibold border-0 cursor-pointer hover:opacity-90">${t('governance.preview.exportPdf', lang)}</button>
         </div>`,
       ].join('');
+
+      // Generate version modal
+      document.getElementById('gen-version-btn')?.addEventListener('click', async () => {
+        const label = prompt('Label da versao (ex: R3):', 'R3');
+        if (!label) return;
+        const notes = prompt('Notas (opcional):', '');
+        if (!confirm('Isto marcara ' + approvedReady + ' CRs como implementados. Continuar?')) return;
+        try {
+          const { data: r, error: e } = await sb.rpc('generate_manual_version', { p_version_label: label, p_notes: notes || null });
+          if (e) throw e;
+          if (r?.error) { alert(r.error); return; }
+          (window as any).toast?.('Manual ' + label + ' gerado! ' + approvedReady + ' CRs implementados.', 'success');
+          setTimeout(() => location.reload(), 1500);
+        } catch (err) { console.error(err); (window as any).toast?.('Erro ao gerar versao', 'error'); }
+      });
     } catch (err) {
       console.error('Preview load failed:', err);
       loading.textContent = t('governance.preview.noData', lang);
@@ -234,7 +283,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
 <style>
   @media print {
-    nav, footer, .print\\:hidden { display: none !important; }
-    main { max-width: 100% !important; padding: 0 !important; }
+    nav, footer, .print\:hidden, [class*="print\:hidden"] { display: none !important; }
+    main { max-width: 100% !important; padding: 1rem !important; }
+    .manual-header { display: block !important; }
+    details { display: block !important; }
+    details > summary { display: none !important; }
+    details > div, details > pre, details > p { display: block !important; }
   }
 </style>
