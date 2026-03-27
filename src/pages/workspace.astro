@@ -241,9 +241,26 @@ const WK = {
         window.dispatchEvent(new CustomEvent('open-auth-modal'));
       });
 
-      // ── Auth (matches attendance.astro pattern) ──
-      const sb = (window as any).navGetSb?.();
-      if (!sb) { setTimeout(() => location.reload(), 300); return; }
+      // ── Auth — retry pattern (no page reload) ──
+      let sb = (window as any).navGetSb?.();
+      if (!sb) {
+        let retries = 0;
+        await new Promise<void>(resolve => {
+          const check = () => {
+            sb = (window as any).navGetSb?.();
+            if (sb) { resolve(); return; }
+            retries++;
+            if (retries >= 30) { resolve(); return; }
+            setTimeout(check, 300);
+          };
+          setTimeout(check, 300);
+        });
+      }
+      if (!sb) {
+        $loading?.classList.add('hidden');
+        $authGate?.classList.remove('hidden');
+        return;
+      }
 
       // ── Helpers (declared before any async/event code to avoid TDZ) ──
       function escHtml(s: string): string {
