@@ -6,14 +6,16 @@ const RETAIN_COUNT = 7
 
 Deno.serve(async (req) => {
   try {
-    // Auth: either service_role bearer or pg_cron trigger
+    // Auth: service_role key OR dedicated BACKUP_SECRET
     const authHeader = req.headers.get('Authorization')
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+    const backupSecret = Deno.env.get('BACKUP_SECRET') || ''
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
 
-    // Validate caller
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '')
+    // Validate caller — accept service_role_key or BACKUP_SECRET
+    const token = (authHeader || '').replace('Bearer ', '')
+    if (!token || (token !== serviceRoleKey && (backupSecret && token !== backupSecret))) {
+      // If no BACKUP_SECRET is configured, only service_role_key works
       if (token !== serviceRoleKey) {
         return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401 })
       }
@@ -34,31 +36,16 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false }
     })
 
-    // Get all public tables
-    const { data: tables, error: tablesError } = await sb.rpc('get_backup_table_list')
-      .throwOnError()
-      .then(() => { throw new Error('use raw query') })
-      .catch(async () => {
-        // Fallback: query information_schema directly
-        const { data, error } = await sb.from('information_schema.tables' as any).select('table_name')
-        if (error) {
-          // Use known critical tables as fallback
-          return {
-            data: [
-              'members', 'tribes', 'events', 'attendance', 'board_items', 'board_item_assignments',
-              'certificates', 'gamification_points', 'notifications', 'partner_entities',
-              'partner_interactions', 'partner_attachments', 'governance_documents',
-              'change_requests', 'cr_approvals', 'manual_sections', 'blog_posts',
-              'announcements', 'tags', 'event_tag_assignments', 'releases', 'release_items',
-              'admin_audit_log', 'member_status_transitions', 'onboarding_progress',
-            ].map(t => ({ table_name: t })),
-            error: null
-          }
-        }
-        return { data, error }
-      })
-
-    const tableNames: string[] = (tables || []).map((t: any) => t.table_name)
+    // Critical tables to backup (known list — avoids schema queries that fail with RLS)
+    const tableNames = [
+      'members', 'tribes', 'events', 'attendance', 'board_items', 'board_item_assignments',
+      'board_lifecycle_events', 'certificates', 'gamification_points', 'notifications',
+      'partner_entities', 'partner_interactions', 'partner_attachments',
+      'governance_documents', 'change_requests', 'cr_approvals', 'manual_sections',
+      'blog_posts', 'announcements', 'tags', 'event_tag_assignments',
+      'releases', 'release_items', 'admin_audit_log', 'member_status_transitions',
+      'onboarding_progress', 'member_cycle_history', 'tribe_selections',
+    ]
 
     // Dump each table
     const backup: Record<string, any> = {}
