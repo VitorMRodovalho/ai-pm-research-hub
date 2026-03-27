@@ -182,13 +182,17 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
   /* ---- data loading ---- */
   useEffect(() => {
     let cancelled = false;
+    let retries = 0;
     setLoading(true);
     setError(null);
 
-    (async () => {
+    async function load() {
       try {
         const sb = getSb();
-        if (!sb) throw new Error('Supabase client unavailable');
+        if (!sb) {
+          if (retries < 30) { retries++; setTimeout(load, 300); return; }
+          throw new Error('Supabase client unavailable');
+        }
 
         const eventType = filter === 'all' ? null : filter;
         const { data: result, error: rpcErr } = await sb.rpc(
@@ -203,7 +207,8 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
       } finally {
         if (!cancelled) setLoading(false);
       }
-    })();
+    }
+    load();
 
     return () => { cancelled = true; };
   }, [tribeId, filter, getSb]);
