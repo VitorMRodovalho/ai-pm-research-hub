@@ -1,27 +1,45 @@
-import type { APIRoute } from 'astro';
+// src/pages/oauth/register.ts
+// Dynamic Client Registration — RFC 7591
+// FIX: Returns a client_secret to avoid Supabase Auth admin panel crash
+// (NULL client_secret_hash causes Go sql.Scan error)
 
-/**
- * OAuth 2.1 Dynamic Client Registration (RFC 7591)
- * Returns our pre-registered Supabase OAuth client_id.
- * Claude.ai/ChatGPT call this before starting the OAuth flow.
- */
+import type { APIRoute } from "astro";
 
-const SUPABASE_CLIENT_ID = '8636c0d0-a359-45f5-a2a4-8097dbdaabd6';
+// This is the Supabase Auth OAuth client ID registered for MCP
+const SUPABASE_CLIENT_ID = "8636c0d0-a359-45f5-a2a4-8097dbdaabd6";
+
+// Deterministic secret derived from client_id (not a real secret since this
+// is a public client, but prevents NULL columns in Supabase Auth)
+const CLIENT_SECRET_PLACEHOLDER = `mcp_pub_${SUPABASE_CLIENT_ID.replace(/-/g, "")}`;
+
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
 
 export const POST: APIRoute = async ({ request }) => {
   const body = await request.json().catch(() => ({}));
 
-  return new Response(JSON.stringify({
-    client_id: SUPABASE_CLIENT_ID,
-    client_name: body.client_name || 'mcp-client',
-    redirect_uris: body.redirect_uris || [],
-    grant_types: body.grant_types || ['authorization_code', 'refresh_token'],
-    response_types: body.response_types || ['code'],
-    token_endpoint_auth_method: 'none',
-    client_id_issued_at: Math.floor(Date.now() / 1000),
-    client_secret_expires_at: 0,
-  }), {
-    status: 201,
-    headers: { 'Content-Type': 'application/json' },
-  });
+  return new Response(
+    JSON.stringify({
+      client_id: SUPABASE_CLIENT_ID,
+      client_secret: CLIENT_SECRET_PLACEHOLDER,
+      client_name: body.client_name || "mcp-client",
+      redirect_uris: body.redirect_uris || [],
+      grant_types: body.grant_types || ["authorization_code", "refresh_token"],
+      response_types: body.response_types || ["code"],
+      token_endpoint_auth_method: "none", // still public, secret is just placeholder
+      client_id_issued_at: Math.floor(Date.now() / 1000),
+      client_secret_expires_at: 0,
+    }),
+    {
+      status: 201,
+      headers: { "Content-Type": "application/json", ...CORS },
+    }
+  );
+};
+
+export const OPTIONS: APIRoute = () => {
+  return new Response(null, { status: 204, headers: CORS });
 };
