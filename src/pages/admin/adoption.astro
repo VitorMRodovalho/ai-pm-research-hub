@@ -170,41 +170,60 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       <div id="panel-analytics" class="hidden space-y-6">
         <div class="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h2 class="text-lg font-extrabold text-navy">Analytics — PostHog</h2>
+            <h2 class="text-lg font-extrabold text-navy">Analytics</h2>
             <p class="text-[.72rem] text-[var(--text-muted)]">Dados de uso da plataforma via PostHog</p>
           </div>
           <div class="flex items-center gap-2">
-            <select id="analytics-dashboard-select" class="px-3 py-1.5 border border-[var(--border-default)] rounded-lg text-[.78rem] bg-[var(--surface-card)]">
-              <option value="1407425">Adocao & Engajamento</option>
-              <option value="1407510">Saude da Plataforma</option>
-            </select>
+            <div id="period-selector" class="flex rounded-lg border border-[var(--border-default)] overflow-hidden">
+              <button data-period="7" class="px-3 py-1.5 text-[.72rem] font-semibold bg-[var(--surface-card)] hover:bg-[var(--surface-hover)] cursor-pointer border-0 border-r border-[var(--border-default)]">7d</button>
+              <button data-period="14" class="px-3 py-1.5 text-[.72rem] font-semibold bg-[var(--surface-card)] hover:bg-[var(--surface-hover)] cursor-pointer border-0 border-r border-[var(--border-default)]">14d</button>
+              <button data-period="30" class="px-3 py-1.5 text-[.72rem] font-semibold bg-navy text-white cursor-pointer border-0 border-r border-[var(--border-default)]">30d</button>
+              <button data-period="60" class="px-3 py-1.5 text-[.72rem] font-semibold bg-[var(--surface-card)] hover:bg-[var(--surface-hover)] cursor-pointer border-0">60d</button>
+            </div>
             <a href="https://us.posthog.com/project/334261" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold no-underline hover:bg-[var(--surface-hover)]">
-              Abrir PostHog
+              PostHog
             </a>
           </div>
         </div>
 
-        <!-- Stats row -->
-        <div id="analytics-stats" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
-
-        <!-- Insights grid -->
-        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
-          <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
-            <h3 class="text-sm font-bold text-navy">Insights</h3>
+        <!-- Row 1: DAU/WAU + Rage Clicks -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="lg:col-span-2 bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
+            <h3 class="text-sm font-bold text-navy mb-3">Visitantes Ativos</h3>
+            <div id="chart-dau-wau" class="h-[220px]"><canvas id="canvas-dau-wau"></canvas></div>
+            <div id="chart-dau-wau-empty" class="hidden text-sm text-[var(--text-muted)] text-center py-8">Sem dados de visitantes</div>
           </div>
-          <div id="analytics-insights" class="p-5">
-            <div class="text-sm text-[var(--text-muted)] text-center py-8">Selecione a aba Analytics para carregar.</div>
+          <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
+            <h3 class="text-sm font-bold text-navy mb-3">Cliques de Frustracao</h3>
+            <div id="chart-rage" class="h-[220px] flex items-center justify-center"></div>
           </div>
         </div>
 
-        <!-- Annotations -->
-        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
-          <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
-            <h3 class="text-sm font-bold text-navy">Anotacoes</h3>
-            <p class="text-[.68rem] text-[var(--text-muted)]">Marcos e observacoes registrados no PostHog</p>
+        <!-- Row 2: Top Pages + Traffic Sources -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
+            <h3 class="text-sm font-bold text-navy mb-3">Paginas Mais Visitadas</h3>
+            <div id="chart-pages" class="h-[280px]"><canvas id="canvas-pages"></canvas></div>
+            <div id="chart-pages-empty" class="hidden text-sm text-[var(--text-muted)] text-center py-8">Sem dados de navegacao</div>
           </div>
-          <div id="analytics-annotations" class="p-5"></div>
+          <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
+            <h3 class="text-sm font-bold text-navy mb-3">Fontes de Trafego</h3>
+            <div id="chart-traffic" class="h-[280px]"><canvas id="canvas-traffic"></canvas></div>
+            <div id="chart-traffic-empty" class="hidden text-sm text-[var(--text-muted)] text-center py-8">Sem dados de referencia</div>
+          </div>
         </div>
+
+        <!-- Row 3: Retention -->
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
+          <h3 class="text-sm font-bold text-navy mb-3">Retencao Semanal</h3>
+          <div id="chart-retention" class="overflow-x-auto"></div>
+        </div>
+
+        <!-- Collapsed Phase 1 details -->
+        <details class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+          <summary class="px-5 py-3.5 cursor-pointer text-sm font-bold text-navy hover:bg-[var(--surface-hover)]">Detalhes dos insights PostHog</summary>
+          <div id="analytics-insights-detail" class="p-5"></div>
+        </details>
       </div><!-- /panel-analytics -->
 
     </div>
@@ -531,104 +550,175 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     }
   }
 
-  // ── Analytics Tab ──
-  const POSTHOG_PROJECT_URL = 'https://us.posthog.com/project/334261';
+  // ── Analytics Tab — Phase 2 Native Charts ──
+  const PROXY_BASE = 'https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/posthog-proxy';
   let analyticsLoaded = false;
-  let analyticsCache: Record<string, any> = {};
+  let analyticsPeriod = 30;
+  let chartInstances: any[] = [];
 
-  async function fetchPostHog(endpoint: string, id?: string) {
-    const cacheKey = `${endpoint}:${id || ''}`;
-    if (analyticsCache[cacheKey]) return analyticsCache[cacheKey];
+  async function phQuery(q: string, days?: number) {
     try {
       const session = await sb.auth.getSession();
       const token = session.data.session?.access_token;
-      if (!token) throw new Error('No session');
+      if (!token) return null;
+      const d = days || analyticsPeriod;
+      const resp = await fetch(`${PROXY_BASE}?action=query&q=${q}&days=${d}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!resp.ok) return null;
+      return await resp.json();
+    } catch { return null; }
+  }
+
+  async function phGet(endpoint: string, id?: string) {
+    try {
+      const session = await sb.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) return null;
       const params = new URLSearchParams({ endpoint });
       if (id) params.set('id', id);
-      const url = `https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/posthog-proxy?${params.toString()}`;
-      const resp = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}`, 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9' }
+      const resp = await fetch(`${PROXY_BASE}?${params}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (!resp.ok) throw new Error(`${resp.status} ${resp.statusText}`);
-      const data = await resp.json();
-      analyticsCache[cacheKey] = data;
-      return data;
-    } catch (e: any) {
-      console.warn('PostHog fetch error:', e);
-      return null;
-    }
+      if (!resp.ok) return null;
+      return await resp.json();
+    } catch { return null; }
+  }
+
+  function destroyCharts() {
+    chartInstances.forEach(c => { try { c.destroy(); } catch {} });
+    chartInstances = [];
   }
 
   async function loadAnalytics() {
-    const insightsEl = document.getElementById('analytics-insights')!;
-    const annotationsEl = document.getElementById('analytics-annotations')!;
-    const statsEl = document.getElementById('analytics-stats')!;
-    const dashboardId = (document.getElementById('analytics-dashboard-select') as HTMLSelectElement)?.value || '1407425';
+    destroyCharts();
 
-    insightsEl.innerHTML = '<div class="text-sm text-[var(--text-muted)] text-center py-8">Carregando analytics...</div>';
-    annotationsEl.innerHTML = '<div class="text-sm text-[var(--text-muted)] text-center py-4">Carregando...</div>';
-
-    const [dashData, annotData] = await Promise.all([
-      fetchPostHog('dashboards', dashboardId),
-      fetchPostHog('annotations'),
+    // Fetch all 5 queries + Phase 1 details in parallel
+    const [dauWau, topPages, traffic, rage, retention, dashData] = await Promise.all([
+      phQuery('dau_wau'),
+      phQuery('top_pages'),
+      phQuery('traffic_sources'),
+      phQuery('rage_clicks'),
+      phQuery('retention_weekly', Math.max(analyticsPeriod, 60)),
+      phGet('dashboards', '1407425'),
     ]);
 
-    // Render insights
-    if (dashData?.tiles || dashData?.results) {
-      const tiles = dashData.tiles || dashData.results || [];
-      const insights = tiles.filter((t: any) => t.insight || t.name).slice(0, 20);
-      statsEl.innerHTML = [
-        `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center"><div class="text-2xl font-extrabold text-navy">${insights.length}</div><div class="text-[.68rem] text-[var(--text-muted)]">Insights</div></div>`,
-        `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center"><div class="text-2xl font-extrabold text-teal">2</div><div class="text-[.68rem] text-[var(--text-muted)]">Dashboards</div></div>`,
-        `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center"><div class="text-2xl font-extrabold text-purple-600">${(annotData?.results || []).length}</div><div class="text-[.68rem] text-[var(--text-muted)]">Anotacoes</div></div>`,
-        `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center"><div class="text-2xl font-extrabold text-[var(--text-secondary)]">${dashData.last_modified_at ? new Date(dashData.last_modified_at).toLocaleDateString('pt-BR') : '—'}</div><div class="text-[.68rem] text-[var(--text-muted)]">Atualizado</div></div>`,
-      ].join('');
+    const { Chart, LineController, BarController, DoughnutController, CategoryScale, LinearScale,
+      PointElement, LineElement, BarElement, ArcElement, Legend, Tooltip, Filler } = await import('chart.js');
+    Chart.register(LineController, BarController, DoughnutController, CategoryScale, LinearScale,
+      PointElement, LineElement, BarElement, ArcElement, Legend, Tooltip, Filler);
 
-      if (insights.length === 0) {
-        insightsEl.innerHTML = '<div class="text-sm text-[var(--text-muted)] text-center py-8">Nenhum insight neste dashboard.</div>';
-      } else {
-        insightsEl.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-3">${insights.map((tile: any) => {
-          const insight = tile.insight || tile;
-          const name = insight.name || tile.name || 'Insight';
-          const desc = insight.description || tile.description || '';
-          const shortId = insight.short_id || '';
-          const lastMod = insight.last_modified_at || tile.last_modified_at;
-          const href = shortId ? `${POSTHOG_PROJECT_URL}/insights/${shortId}` : POSTHOG_PROJECT_URL;
-          return `<article class="rounded-xl border border-[var(--border-default)] p-4">
-            <div class="flex items-start justify-between gap-2">
-              <div class="min-w-0 flex-1">
-                <h4 class="text-sm font-bold text-navy truncate">${esc(name)}</h4>
-                ${desc ? `<p class="text-[.68rem] text-[var(--text-muted)] mt-1 line-clamp-2">${esc(desc)}</p>` : ''}
-                ${lastMod ? `<div class="text-[.6rem] text-[var(--text-muted)] mt-2">${new Date(lastMod).toLocaleDateString('pt-BR')}</div>` : ''}
-              </div>
-              <a href="${esc(href)}" target="_blank" rel="noopener" class="shrink-0 px-2 py-1 rounded-lg bg-[var(--surface-base)] border border-[var(--border-default)] text-[.68rem] font-semibold text-[var(--text-primary)] no-underline hover:bg-[var(--surface-hover)]">Abrir</a>
-            </div>
-          </article>`;
-        }).join('')}</div>`;
-      }
+    // 1. DAU/WAU Line Chart
+    const dauEl = document.getElementById('canvas-dau-wau') as HTMLCanvasElement;
+    const dauEmpty = document.getElementById('chart-dau-wau-empty')!;
+    if (dauWau?.series?.length && dauWau.series[0]?.data?.length) {
+      dauEmpty.classList.add('hidden');
+      dauEl.parentElement!.classList.remove('hidden');
+      const labels = (dauWau.series[0].labels || []).map((l: string) => l.length > 6 ? l.slice(-5) : l);
+      const ch = new Chart(dauEl, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'DAU', data: dauWau.series[0]?.data || [], borderColor: '#003B5C', backgroundColor: 'rgba(0,59,92,0.1)', fill: true, tension: 0.3, pointRadius: 1 },
+            ...(dauWau.series[1] ? [{ label: 'WAU', data: dauWau.series[1].data, borderColor: '#93C5FD', borderDash: [5, 5], fill: false, tension: 0.3, pointRadius: 0 }] : []),
+          ],
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } }, scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false }, ticks: { maxTicksLimit: 10, font: { size: 9 } } } } },
+      });
+      chartInstances.push(ch);
     } else {
-      statsEl.innerHTML = '';
-      insightsEl.innerHTML = `<div class="text-sm text-[var(--text-muted)] text-center py-8">
-        ${dashData === null ? 'Erro ao carregar dados do PostHog. Verifique se o proxy esta ativo.' : 'Nenhum dado disponivel.'}
-        <a href="${POSTHOG_PROJECT_URL}" target="_blank" rel="noopener" class="block mt-2 text-teal font-semibold no-underline hover:underline">Abrir PostHog diretamente</a>
-      </div>`;
+      dauEl.parentElement!.classList.add('hidden');
+      dauEmpty.classList.remove('hidden');
     }
 
-    // Render annotations
-    const annotations = annotData?.results || [];
-    if (annotations.length === 0) {
-      annotationsEl.innerHTML = '<div class="text-[.78rem] text-[var(--text-muted)] text-center py-4">Nenhuma anotacao registrada.</div>';
+    // 2. Rage Clicks
+    const rageEl = document.getElementById('chart-rage')!;
+    const rageTotal = rage?.series?.[0]?.count || 0;
+    if (rageTotal === 0) {
+      rageEl.innerHTML = `<div class="text-center"><div class="text-4xl font-extrabold text-emerald-600">0</div><div class="text-sm text-emerald-600 mt-1">Nenhum clique de frustracao</div></div>`;
     } else {
-      annotationsEl.innerHTML = `<div class="space-y-2">${annotations.slice(0, 15).map((a: any) => `
-        <div class="flex items-start gap-3 text-[.78rem]">
-          <div class="shrink-0 w-1.5 h-1.5 rounded-full bg-teal mt-1.5"></div>
-          <div>
-            <span class="font-semibold text-[var(--text-primary)]">${a.date_marker ? new Date(a.date_marker).toLocaleDateString('pt-BR') : '—'}</span>
-            <span class="text-[var(--text-secondary)] ml-2">${esc(a.content || '')}</span>
-            <span class="text-[.6rem] text-[var(--text-muted)] ml-1">(${a.scope || 'project'})</span>
-          </div>
-        </div>
-      `).join('')}</div>`;
+      const color = rageTotal > 50 ? 'text-red-600' : rageTotal > 10 ? 'text-amber-600' : 'text-[var(--text-primary)]';
+      rageEl.innerHTML = `<div class="text-center"><div class="text-4xl font-extrabold ${color}">${rageTotal}</div><div class="text-sm ${color} mt-1">cliques de frustracao</div><div class="text-[.68rem] text-[var(--text-muted)] mt-2">nos ultimos ${analyticsPeriod} dias</div></div>`;
+    }
+
+    // 3. Top Pages Bar Chart
+    const pagesCanvas = document.getElementById('canvas-pages') as HTMLCanvasElement;
+    const pagesEmpty = document.getElementById('chart-pages-empty')!;
+    if (topPages?.series?.length) {
+      const items = topPages.series.filter((s: any) => s.breakdown_value).sort((a: any, b: any) => (b.data?.[0] || 0) - (a.data?.[0] || 0)).slice(0, 10);
+      if (items.length) {
+        pagesEmpty.classList.add('hidden');
+        pagesCanvas.parentElement!.classList.remove('hidden');
+        const ch = new Chart(pagesCanvas, {
+          type: 'bar',
+          data: {
+            labels: items.map((s: any) => String(s.breakdown_value || '').replace(/^\/(pt-BR|en|es)/, '')),
+            datasets: [{ label: 'Views', data: items.map((s: any) => s.data?.[0] || 0), backgroundColor: '#003B5C', borderRadius: 4 }],
+          },
+          options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, grid: { color: '#f1f5f9' } }, y: { grid: { display: false }, ticks: { font: { size: 9 } } } } },
+        });
+        chartInstances.push(ch);
+      } else { pagesCanvas.parentElement!.classList.add('hidden'); pagesEmpty.classList.remove('hidden'); }
+    } else { pagesCanvas.parentElement!.classList.add('hidden'); pagesEmpty.classList.remove('hidden'); }
+
+    // 4. Traffic Sources Doughnut
+    const trafficCanvas = document.getElementById('canvas-traffic') as HTMLCanvasElement;
+    const trafficEmpty = document.getElementById('chart-traffic-empty')!;
+    if (traffic?.series?.length) {
+      const items = traffic.series.filter((s: any) => s.breakdown_value);
+      if (items.length) {
+        trafficEmpty.classList.add('hidden');
+        trafficCanvas.parentElement!.classList.remove('hidden');
+        const COLORS = ['#003B5C', '#10B981', '#F59E0B', '#7C3AED', '#94A3B8', '#EC4899', '#06B6D4', '#EF4444'];
+        const ch = new Chart(trafficCanvas, {
+          type: 'doughnut',
+          data: {
+            labels: items.map((s: any) => s.breakdown_value || 'Directo'),
+            datasets: [{ data: items.map((s: any) => s.count || s.data?.[0] || 0), backgroundColor: COLORS.slice(0, items.length) }],
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { size: 10 } } } } },
+        });
+        chartInstances.push(ch);
+      } else { trafficCanvas.parentElement!.classList.add('hidden'); trafficEmpty.classList.remove('hidden'); }
+    } else { trafficCanvas.parentElement!.classList.add('hidden'); trafficEmpty.classList.remove('hidden'); }
+
+    // 5. Retention Grid (HTML table)
+    const retEl = document.getElementById('chart-retention')!;
+    if (retention?.retention?.length) {
+      const cohorts = retention.retention;
+      const maxWeeks = Math.max(...cohorts.map((c: any) => c.values?.length || 0));
+      let html = '<table class="w-full text-[.68rem] border-collapse"><thead><tr><th class="text-left px-2 py-1 text-[var(--text-muted)]">Cohort</th><th class="text-center px-2 py-1 text-[var(--text-muted)]">Tamanho</th>';
+      for (let w = 0; w < maxWeeks; w++) html += `<th class="text-center px-2 py-1 text-[var(--text-muted)]">S${w}</th>`;
+      html += '</tr></thead><tbody>';
+      cohorts.forEach((c: any) => {
+        const size = c.cohort_size || 0;
+        html += `<tr><td class="px-2 py-1 font-semibold text-navy">${c.date ? new Date(c.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : c.label}</td><td class="text-center px-2 py-1 font-bold">${size}</td>`;
+        (c.values || []).forEach((v: any, i: number) => {
+          const pct = size > 0 ? Math.round((v.count / size) * 100) : 0;
+          const intensity = Math.round(pct * 2.55);
+          const bg = i === 0 ? 'bg-navy text-white' : `bg-emerald-${pct > 50 ? '200' : pct > 20 ? '100' : '50'}`;
+          html += `<td class="text-center px-2 py-1 ${i === 0 ? 'bg-navy/10 font-bold' : ''}" style="${i > 0 ? `background:rgba(16,185,129,${pct / 100 * 0.4});` : ''}">${pct}%<div class="text-[9px] text-[var(--text-muted)]">${v.count}</div></td>`;
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      retEl.innerHTML = html;
+    } else {
+      retEl.innerHTML = '<div class="text-sm text-[var(--text-muted)] text-center py-6">Dados insuficientes para retencao (min. 2 semanas)</div>';
+    }
+
+    // Phase 1 details (collapsed)
+    const detailEl = document.getElementById('analytics-insights-detail');
+    if (detailEl && dashData?.tiles) {
+      const tiles = dashData.tiles.filter((t: any) => t.insight || t.name).slice(0, 20);
+      detailEl.innerHTML = tiles.length ? `<div class="grid grid-cols-1 md:grid-cols-2 gap-3">${tiles.map((tile: any) => {
+        const insight = tile.insight || tile;
+        const name = insight.name || tile.name || 'Insight';
+        const shortId = insight.short_id || '';
+        const href = shortId ? `https://us.posthog.com/project/334261/insights/${shortId}` : '#';
+        return `<article class="rounded-xl border border-[var(--border-default)] p-3"><div class="flex items-center justify-between gap-2"><span class="text-[.78rem] font-semibold text-navy truncate">${esc(name)}</span><a href="${esc(href)}" target="_blank" rel="noopener" class="text-[.68rem] text-teal no-underline hover:underline shrink-0">Abrir</a></div></article>`;
+      }).join('')}</div>` : '<div class="text-sm text-[var(--text-muted)] text-center py-4">Nenhum insight encontrado.</div>';
     }
 
     analyticsLoaded = true;
@@ -663,11 +753,19 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     document.querySelectorAll('[data-tab-switch]').forEach(btn => {
       btn.addEventListener('click', () => switchTab((btn as HTMLElement).dataset.tabSwitch!));
     });
-    // Dashboard selector reload
-    document.getElementById('analytics-dashboard-select')?.addEventListener('change', () => {
-      analyticsLoaded = false;
-      analyticsCache = {};
-      loadAnalytics();
+    // Period selector
+    document.querySelectorAll('#period-selector button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const days = parseInt((btn as HTMLElement).dataset.period || '30');
+        analyticsPeriod = days;
+        document.querySelectorAll('#period-selector button').forEach(b => {
+          b.classList.toggle('bg-navy', (b as HTMLElement).dataset.period === String(days));
+          b.classList.toggle('text-white', (b as HTMLElement).dataset.period === String(days));
+          b.classList.toggle('bg-[var(--surface-card)]', (b as HTMLElement).dataset.period !== String(days));
+        });
+        analyticsLoaded = false;
+        loadAnalytics();
+      });
     });
   }
 
