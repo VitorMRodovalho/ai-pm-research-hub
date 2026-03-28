@@ -1,28 +1,25 @@
-import { defineMiddleware } from 'astro:middleware';
+// src/middleware.ts
+// FIX: Add /.well-known/ to bypass prefixes so OAuth discovery
+// endpoints get proper origin headers and aren't blocked by auth middleware.
 
-/**
- * Bypass Astro's CSRF origin check for OAuth 2.1 and MCP proxy routes.
- * These endpoints receive POST from external origins (Claude.ai, ChatGPT)
- * and handle their own authentication (PKCE, JWT).
- *
- * All other routes benefit from checkOrigin: true in astro.config.
- */
+import { defineMiddleware, sequence } from "astro:middleware";
 
-const BYPASS_PREFIXES = ['/oauth/', '/mcp'];
+const BYPASS_PREFIXES = ["/oauth/", "/mcp", "/.well-known/"];
 
-export const onRequest = defineMiddleware((context, next) => {
+const corsMiddleware = defineMiddleware((context, next) => {
   const path = context.url.pathname;
-  const needsBypass = BYPASS_PREFIXES.some(p => path.startsWith(p));
+  const needsBypass = BYPASS_PREFIXES.some((p) => path.startsWith(p));
 
   if (needsBypass) {
-    // Set the origin header to match the URL so Astro's check passes
     const url = context.url;
     const origin = `${url.protocol}//${url.host}`;
     const headers = new Headers(context.request.headers);
-    headers.set('origin', origin);
+    headers.set("origin", origin);
     const patched = new Request(context.request, { headers });
     return next(patched);
   }
 
   return next();
 });
+
+export const onRequest = sequence(corsMiddleware);

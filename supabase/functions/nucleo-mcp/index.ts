@@ -1,6 +1,7 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.2.0 — 23 tools (17R + 6W) + usage logging
+// MCP server v2.2.1 — 23 tools (17R + 6W) + usage logging
 // Transport: @modelcontextprotocol/sdk (official) — Streamable HTTP
+// FIX: Removed duplicate /.well-known/oauth-authorization-server (Worker handles it)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
 import { Hono } from "jsr:@hono/hono";
@@ -166,7 +167,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // ===== WRITE TOOLS (11-15) =====
+  // ===== WRITE TOOLS (11-15, 18) =====
 
   // TOOL 11: create_board_card
   mcp.tool("create_board_card", "Create a new card on your tribe's board.", { title: { type: "string", description: "Card title" }, description: { type: "string", description: "Card description" }, priority: { type: "string", description: "low|medium|high|urgent" }, due_date: { type: "string", description: "Due date YYYY-MM-DD" }, tags: { type: "string", description: "Comma-separated tags" } }, async (params: any) => {
@@ -354,7 +355,7 @@ app.all("/mcp", async (c) => {
   const token = authHeader?.replace("Bearer ", "");
 
   const sb = createAuthenticatedClient(token);
-  const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.2.0" });
+  const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.2.1" });
   registerTools(mcp, sb);
 
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
@@ -363,22 +364,12 @@ app.all("/mcp", async (c) => {
   return transport.handleRequest(c.req.raw);
 });
 
-// OAuth 2.1 Authorization Server Metadata
-app.get("/.well-known/oauth-authorization-server", (c) => {
-  const projectRef = "ldrfrvwhxsmgaabwmaik";
-  return c.json({
-    issuer: `https://${projectRef}.supabase.co/auth/v1`,
-    authorization_endpoint: `https://${projectRef}.supabase.co/auth/v1/oauth/authorize`,
-    token_endpoint: `https://${projectRef}.supabase.co/auth/v1/oauth/token`,
-    registration_endpoint: `https://${projectRef}.supabase.co/auth/v1/oauth/register`,
-    response_types_supported: ["code"],
-    grant_types_supported: ["authorization_code", "refresh_token"],
-    code_challenge_methods_supported: ["S256"],
-    token_endpoint_auth_methods_supported: ["none"],
-  });
-});
+// FIX: REMOVED duplicate /.well-known/oauth-authorization-server
+// The Worker (Cloudflare) handles all OAuth discovery. Having two different
+// metadata endpoints (Worker → issuer=Worker, Edge Fn → issuer=Supabase)
+// confuses MCP clients that follow the upstream response instead.
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.2.0", tools: 23 }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.2.1", tools: 23 }));
 
 Deno.serve(app.fetch);
