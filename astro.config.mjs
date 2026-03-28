@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   output: 'server',
-  security: { checkOrigin: false },
+  security: { checkOrigin: true },
   adapter: cloudflare({
     platformProxy: {
       enabled: true,

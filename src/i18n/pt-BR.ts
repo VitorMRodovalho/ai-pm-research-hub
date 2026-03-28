@@ -3495,10 +3495,7 @@ const ptBR: Record<string, string> = {
   'admin.certificates.success': 'Contra-assinatura registada com sucesso.',
   'admin.certificates.all': 'Todos os certificados',
 
-  // Publications
-  'publications.title': 'Publicações',
-  'publications.subtitle': 'Pipeline de Pesquisa',
-  'publications.new': 'Nova Submissão',
+  // Publications (submissions pipeline)
   'publications.filter.tribe': 'Tribo',
   'publications.filter.status': 'Status',
   'publications.filter.all': 'Todas',
@@ -3532,14 +3529,6 @@ const ptBR: Record<string, string> = {
   'publications.form.order': 'Ordem',
   'publications.form.corresponding': 'Correspondente',
   'publications.form.member': 'Membro',
-  'publications.status.draft': 'Rascunho',
-  'publications.status.submitted': 'Submetida',
-  'publications.status.under_review': 'Em Revisão',
-  'publications.status.revision_requested': 'Revisão Solicitada',
-  'publications.status.accepted': 'Aceita',
-  'publications.status.rejected': 'Rejeitada',
-  'publications.status.published': 'Publicada',
-  'publications.status.presented': 'Apresentada',
   'publications.stats.submitted': 'Submetidas',
   'publications.stats.under_review': 'Em Revisão',
   'publications.stats.published': 'Publicadas',
@@ -3550,14 +3539,6 @@ const ptBR: Record<string, string> = {
   'publications.statusChanged': 'Status atualizado!',
   'publications.coauthorAdded': 'Co-autor adicionado!',
   'publications.coauthorRemoved': 'Co-autor removido!',
-  'nav.publications': 'Publicações',
-  'publications.target.pmi_global_conference': 'Conferência PMI Global',
-  'publications.target.pmi_chapter_event': 'Evento de Capítulo PMI',
-  'publications.target.academic_journal': 'Periódico Acadêmico',
-  'publications.target.academic_conference': 'Conferência Acadêmica',
-  'publications.target.webinar': 'Webinar',
-  'publications.target.blog_post': 'Blog Post',
-  'publications.target.other': 'Outro',
 };
 
 export default ptBR;

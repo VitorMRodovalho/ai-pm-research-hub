@@ -3489,10 +3489,7 @@ const esLATAM: Record<string, string> = {
   'admin.certificates.success': 'Contra-firma registrada exitosamente.',
   'admin.certificates.all': 'Todos los certificados',
 
-  // Publications
-  'publications.title': 'Publicaciones',
-  'publications.subtitle': 'Pipeline de Investigación',
-  'publications.new': 'Nueva Submisión',
+  // Publications (submissions pipeline)
   'publications.filter.tribe': 'Tribu',
   'publications.filter.status': 'Estado',
   'publications.filter.all': 'Todas',
@@ -3526,14 +3523,6 @@ const esLATAM: Record<string, string> = {
   'publications.form.order': 'Orden',
   'publications.form.corresponding': 'Correspondiente',
   'publications.form.member': 'Miembro',
-  'publications.status.draft': 'Borrador',
-  'publications.status.submitted': 'Enviada',
-  'publications.status.under_review': 'En Revisión',
-  'publications.status.revision_requested': 'Revisión Solicitada',
-  'publications.status.accepted': 'Aceptada',
-  'publications.status.rejected': 'Rechazada',
-  'publications.status.published': 'Publicada',
-  'publications.status.presented': 'Presentada',
   'publications.stats.submitted': 'Enviadas',
   'publications.stats.under_review': 'En Revisión',
   'publications.stats.published': 'Publicadas',
@@ -3544,14 +3533,6 @@ const esLATAM: Record<string, string> = {
   'publications.statusChanged': '¡Estado actualizado!',
   'publications.coauthorAdded': '¡Co-autor agregado!',
   'publications.coauthorRemoved': '¡Co-autor removido!',
-  'nav.publications': 'Publicaciones',
-  'publications.target.pmi_global_conference': 'Conferencia PMI Global',
-  'publications.target.pmi_chapter_event': 'Evento de Capítulo PMI',
-  'publications.target.academic_journal': 'Periódico Académico',
-  'publications.target.academic_conference': 'Conferencia Académica',
-  'publications.target.webinar': 'Webinar',
-  'publications.target.blog_post': 'Blog Post',
-  'publications.target.other': 'Otro',
 };
 
 export default esLATAM;

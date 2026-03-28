@@ -91,35 +91,28 @@ test('dark mode styling uses CSS custom property tokens instead of dark: prefix 
   assert.equal(darkChecklist.includes('./scripts/audit_dark_mode_a11y.sh'), true);
 });
 
-test('admin webinars now reuses the events stack instead of staying a placeholder', () => {
+test('admin webinars uses webinar governance with CRUD modal and list_webinars_v2', () => {
   const content = read('src/pages/admin/webinars.astro');
   const publicRoute = read('src/pages/webinars.astro');
   assert.equal(content.includes('Em Breve'), false);
-  assert.equal(content.includes("sb.rpc('get_events_with_attendance'"), true);
-  assert.equal(content.includes("sb.rpc('list_meeting_artifacts'"), true);
-  assert.equal(content.includes("sb.from('hub_resources').select('*').eq('is_active', true).eq('asset_type', 'webinar')"), true);
-  assert.equal(content.includes("ev.type === 'webinar'"), true);
+  assert.equal(content.includes("sb.rpc('list_webinars_v2'"), true);
+  assert.equal(content.includes("sb.rpc('upsert_webinar'"), true);
+  assert.equal(content.includes("sb.rpc('link_webinar_event'"), true);
+  assert.equal(content.includes("sb.rpc('get_webinar_lifecycle'"), true);
   assert.equal(content.includes('canAccessWebinarsWorkspace(member)'), true);
   assert.equal(content.includes("navSb?.auth?.getSession"), true);
-  assert.equal(content.includes('list_webinars'), false);
-  assert.equal(content.includes('Agenda & Presenca'), true);
   assert.equal(content.includes('/admin/comms'), true);
-  assert.equal(content.includes('Publicacao de replay'), true);
-  assert.equal(content.includes("publicationBadge('Presentations'"), true);
-  assert.equal(content.includes("publicationBadge('Workspace'"), true);
-  assert.equal(content.includes('Acoes rapidas prioritarias'), true);
-  assert.equal(content.includes('function operatorAction(ev: any)'), true);
-  assert.equal(content.includes('buildAttendanceHref(ev: any'), true);
-  assert.equal(content.includes('buildCommsHref(ev: any'), true);
-  assert.equal(content.includes('buildPresentationsHref(ev: any)'), true);
-  assert.equal(content.includes('buildWorkspaceHref(ev: any)'), true);
-  assert.equal(content.includes("params.set('eventId', String(ev.id))"), true);
-  assert.equal(content.includes("params.set('focus', 'broadcasts')"), true);
-  assert.equal(content.includes("params.set('tab', 'events')"), true);
-  assert.equal(content.includes("params.set('type', 'webinar')"), true);
-  assert.equal(content.includes('Proxima acao:'), true);
-  assert.equal(content.includes('renderActions(webinars);'), true);
-  assert.equal(publicRoute.includes("import WebinarsPanel from './admin/webinars.astro';"), true);
+  assert.equal(content.includes('Webinar Governance'), true);
+  assert.equal(content.includes('webinar-modal'), true);
+  assert.equal(content.includes('btn-new-webinar'), true);
+  assert.equal(content.includes('modal-chapter'), true);
+  assert.equal(content.includes('co_managers'), true);
+  assert.equal(content.includes('Acoes prioritarias'), true);
+  assert.equal(content.includes('function nextAction(w: any)'), true);
+  assert.equal(content.includes('renderAll(ALL_WEBINARS)'), true);
+  assert.equal(content.includes('filter-status'), true);
+  assert.equal(content.includes('filter-chapter'), true);
+  assert.equal(publicRoute.includes("list_webinars_v2"), true);
 });
 
 test('presentations and workspace accept deep-link query filters for webinar follow-through', () => {
