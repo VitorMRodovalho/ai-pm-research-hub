@@ -3489,10 +3489,7 @@ const enUS: Record<string, string> = {
   'admin.certificates.success': 'Counter-signature recorded successfully.',
   'admin.certificates.all': 'All certificates',
 
-  // Publications
-  'publications.title': 'Publications',
-  'publications.subtitle': 'Research Pipeline',
-  'publications.new': 'New Submission',
+  // Publications (submissions pipeline)
   'publications.filter.tribe': 'Tribe',
   'publications.filter.status': 'Status',
   'publications.filter.all': 'All',
@@ -3526,14 +3523,6 @@ const enUS: Record<string, string> = {
   'publications.form.order': 'Order',
   'publications.form.corresponding': 'Corresponding',
   'publications.form.member': 'Member',
-  'publications.status.draft': 'Draft',
-  'publications.status.submitted': 'Submitted',
-  'publications.status.under_review': 'Under Review',
-  'publications.status.revision_requested': 'Revision Requested',
-  'publications.status.accepted': 'Accepted',
-  'publications.status.rejected': 'Rejected',
-  'publications.status.published': 'Published',
-  'publications.status.presented': 'Presented',
   'publications.stats.submitted': 'Submitted',
   'publications.stats.under_review': 'Under Review',
   'publications.stats.published': 'Published',
@@ -3544,14 +3533,6 @@ const enUS: Record<string, string> = {
   'publications.statusChanged': 'Status updated!',
   'publications.coauthorAdded': 'Co-author added!',
   'publications.coauthorRemoved': 'Co-author removed!',
-  'nav.publications': 'Publications',
-  'publications.target.pmi_global_conference': 'PMI Global Conference',
-  'publications.target.pmi_chapter_event': 'PMI Chapter Event',
-  'publications.target.academic_journal': 'Academic Journal',
-  'publications.target.academic_conference': 'Academic Conference',
-  'publications.target.webinar': 'Webinar',
-  'publications.target.blog_post': 'Blog Post',
-  'publications.target.other': 'Other',
 };
 
 export default enUS;

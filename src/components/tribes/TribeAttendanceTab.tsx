@@ -62,6 +62,12 @@ const EVENT_TYPE_ICON: Record<string, string> = {
   tribo: '🔬',
   lideranca: '👥',
   kickoff: '🚀',
+  comms: '📢',
+  webinar: '🎙️',
+  evento_externo: '🌍',
+  '1on1': '🔒',
+  parceria: '🤝',
+  entrevista: '📌',
 };
 
 const MONTH_ABBR_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];

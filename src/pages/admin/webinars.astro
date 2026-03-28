@@ -3,6 +3,7 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
 ---
 
 <AdminLayout title={t('nav.adminWebinars', lang)} activePage="webinars" breadcrumbs={[{label:'Conteúdo'},{label:'Webinars'}]}>
@@ -11,421 +12,361 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   </div>
 
   <div id="webinars-content" class="hidden max-w-[1200px] mx-auto px-4 pb-12 space-y-6">
+    <!-- Header -->
     <section class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
       <div class="p-6 sm:p-8">
         <div class="flex items-start justify-between gap-4 flex-wrap">
           <div class="max-w-3xl">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[.72rem] font-semibold text-emerald-700 mb-3">
-              <span>Events-first MVP</span>
+              <span>Webinar Governance</span>
               <span class="text-emerald-400">•</span>
-              <span>Member-first</span>
+              <span>Multi-Entity</span>
             </div>
             <h1 class="text-2xl font-extrabold text-navy mb-2">Webinars</h1>
             <p class="text-sm text-[var(--text-secondary)] leading-relaxed">
-              Esta area agora orquestra webinars internos usando o stack ja existente da plataforma:
-              agenda e presenca via eventos, comunicacao via painel de comms, replay em apresentacoes
-              e biblioteca no workspace. Registro externo, speaker CRM e schema novo seguem fora de escopo.
+              Gestao integrada de webinars com co-gerenciamento por capitulo, notificacoes automaticas
+              para Comms e lideres de tribo, e rastreabilidade completa do pipeline ao replay.
             </p>
           </div>
-          <div class="grid grid-cols-2 gap-2 min-w-[280px]">
-            <a href="/attendance" class="px-4 py-2.5 rounded-xl bg-navy text-white text-[.78rem] font-semibold no-underline text-center hover:opacity-90 transition-all">
-              Agenda & Presenca
-            </a>
-            <a href="/admin/comms" class="px-4 py-2.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold no-underline text-center hover:bg-[var(--overlay-card-hover)] transition-all">
-              Comms
-            </a>
-            <a href="/presentations" class="px-4 py-2.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold no-underline text-center hover:bg-[var(--overlay-card-hover)] transition-all">
-              Replays
-            </a>
-            <a href="/library" class="px-4 py-2.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold no-underline text-center hover:bg-[var(--overlay-card-hover)] transition-all">
-              Biblioteca
+          <div class="flex flex-col gap-2 min-w-[200px]">
+            <button id="btn-new-webinar" type="button" class="px-4 py-2.5 rounded-xl bg-navy text-white text-[.78rem] font-semibold border-0 cursor-pointer hover:opacity-90 transition-all">
+              + Novo Webinar
+            </button>
+            <a href="/attendance?tab=events&type=webinar" class="px-4 py-2.5 rounded-xl bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold no-underline text-center hover:bg-[var(--overlay-card-hover)] transition-all">
+              Attendance
             </a>
           </div>
         </div>
       </div>
     </section>
 
-    <section id="webinars-stats" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"></section>
+    <!-- Filters -->
+    <section class="flex items-center gap-3 flex-wrap">
+      <select id="filter-status" class="text-[.78rem] rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-primary)] px-3 py-2">
+        <option value="">Todos os status</option>
+        <option value="planned">Planejado</option>
+        <option value="confirmed">Confirmado</option>
+        <option value="completed">Realizado</option>
+        <option value="cancelled">Cancelado</option>
+      </select>
+      <select id="filter-chapter" class="text-[.78rem] rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-primary)] px-3 py-2">
+        <option value="">Todos os capitulos</option>
+        {CHAPTERS.map(ch => <option value={ch}>{ch === 'ALL' ? 'Geral (ALL)' : `PMI-${ch}`}</option>)}
+      </select>
+    </section>
 
+    <!-- Stats -->
+    <section id="webinars-stats" class="grid grid-cols-2 sm:grid-cols-4 gap-4"></section>
+
+    <!-- Priority Actions -->
     <section class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
       <div class="px-5 py-4 border-b border-[var(--border-default)]">
-        <h2 class="text-sm font-bold text-navy">Acoes rapidas prioritarias</h2>
-        <p class="text-[.72rem] text-[var(--text-muted)]">Proxima acao sugerida por webinar, usando apenas os modulos ja existentes</p>
+        <h2 class="text-sm font-bold text-navy">Acoes prioritarias</h2>
+        <p class="text-[.72rem] text-[var(--text-muted)]">Proxima acao sugerida por webinar</p>
       </div>
       <div id="webinars-actions" class="p-5"></div>
     </section>
 
+    <!-- Upcoming + Follow-up -->
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-[var(--border-default)]">
           <h2 class="text-sm font-bold text-navy">Proximos webinars</h2>
-          <p class="text-[.72rem] text-[var(--text-muted)]">Sessões futuras ja cadastradas como `events.type='webinar'`</p>
         </div>
         <div id="webinars-upcoming" class="p-5"></div>
       </div>
-
       <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-[var(--border-default)]">
           <h2 class="text-sm font-bold text-navy">Fila de follow-up</h2>
-          <p class="text-[.72rem] text-[var(--text-muted)]">Webinars concluidos que ainda precisam de replay ou fechamento operacional</p>
         </div>
         <div id="webinars-followup" class="p-5"></div>
       </div>
     </section>
 
+    <!-- Operational Flow -->
     <section class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
       <div class="px-5 py-4 border-b border-[var(--border-default)]">
-        <h2 class="text-sm font-bold text-navy">Publicacao de replay</h2>
-        <p class="text-[.72rem] text-[var(--text-muted)]">Status do replay entre `Presentations` e `Workspace` para webinars ja realizados</p>
+        <h2 class="text-sm font-bold text-navy">Fluxo operacional</h2>
       </div>
-      <div id="webinars-publication" class="p-5"></div>
-    </section>
-
-    <section class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
-      <div class="px-5 py-4 border-b border-[var(--border-default)]">
-        <h2 class="text-sm font-bold text-navy">Fluxo operacional do MVP</h2>
-        <p class="text-[.72rem] text-[var(--text-muted)]">Sem schema novo: apenas orquestracao sobre modulos existentes</p>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 p-5">
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 p-5">
         <div class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
-          <div class="text-lg mb-2">1. 📅</div>
+          <div class="text-lg mb-2">1.</div>
           <h3 class="text-[.82rem] font-bold text-navy mb-1">Planejar</h3>
-          <p class="text-[.74rem] text-[var(--text-secondary)]">Crie a sessão em `Attendance` como webinar e defina data, duracao, audiencia e link.</p>
+          <p class="text-[.74rem] text-[var(--text-secondary)]">Crie o webinar aqui com capitulo, tribo e organizador.</p>
         </div>
         <div class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
-          <div class="text-lg mb-2">2. 📣</div>
-          <h3 class="text-[.82rem] font-bold text-navy mb-1">Promover</h3>
-          <p class="text-[.74rem] text-[var(--text-secondary)]">Use `Admin Comms` para convites e lembretes, sem abrir uma trilha paralela de registro externo.</p>
+          <div class="text-lg mb-2">2.</div>
+          <h3 class="text-[.82rem] font-bold text-navy mb-1">Confirmar</h3>
+          <p class="text-[.74rem] text-[var(--text-secondary)]">Mude para Confirmado — Comms e lider recebem notificacao.</p>
         </div>
         <div class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
-          <div class="text-lg mb-2">3. ✅</div>
-          <h3 class="text-[.82rem] font-bold text-navy mb-1">Registrar presenca</h3>
-          <p class="text-[.74rem] text-[var(--text-secondary)]">Capture presenca com check-in autenticado e correcao de roster por lideranca ou admin.</p>
+          <div class="text-lg mb-2">3.</div>
+          <h3 class="text-[.82rem] font-bold text-navy mb-1">Sessao</h3>
+          <p class="text-[.74rem] text-[var(--text-secondary)]">Crie o evento em Attendance para check-in e presenca.</p>
         </div>
         <div class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
-          <div class="text-lg mb-2">4. ▶️</div>
-          <h3 class="text-[.82rem] font-bold text-navy mb-1">Publicar replay</h3>
-          <p class="text-[.74rem] text-[var(--text-secondary)]">Feche o webinar com `youtube_url`, materiais e distribuicao em `Presentations` ou `Workspace`.</p>
+          <div class="text-lg mb-2">4.</div>
+          <h3 class="text-[.82rem] font-bold text-navy mb-1">Realizar</h3>
+          <p class="text-[.74rem] text-[var(--text-secondary)]">Marque como Realizado — follow-up e replay entram na fila.</p>
+        </div>
+        <div class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
+          <div class="text-lg mb-2">5.</div>
+          <h3 class="text-[.82rem] font-bold text-navy mb-1">Publicar</h3>
+          <p class="text-[.74rem] text-[var(--text-secondary)]">Replay em Presentations e Workspace fecha o ciclo.</p>
         </div>
       </div>
     </section>
 
-    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
-        <div class="px-5 py-4 border-b border-[var(--border-default)]">
-          <h2 class="text-sm font-bold text-navy">Incluido agora</h2>
-        </div>
-        <ul class="p-5 space-y-2 text-[.8rem] text-[var(--text-secondary)]">
-          <li>Agenda e sessao operacional sobre `events.type='webinar'`</li>
-          <li>Presenca autenticada com `attendance`</li>
-          <li>Replay com `youtube_url` e artefatos existentes</li>
-          <li>Comunicacao usando `Admin Comms`</li>
-          <li>Analytics agregados com eventos e presenca</li>
-        </ul>
-      </div>
-
-      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
-        <div class="px-5 py-4 border-b border-[var(--border-default)]">
-          <h2 class="text-sm font-bold text-navy">Fora de escopo desta fase</h2>
-        </div>
-        <ul class="p-5 space-y-2 text-[.8rem] text-[var(--text-secondary)]">
-          <li>Registro anonimo ou publico dentro do Hub</li>
-          <li>CRM de speakers e perfis reutilizaveis</li>
-          <li>Integracoes nativas com Zoom, Meet ou YouTube</li>
-          <li>Certificados automaticos em lote</li>
-          <li>Nova trilha SQL para `webinar_*` sem convergencia aprovada</li>
-        </ul>
-      </div>
-    </section>
-
+    <!-- Full List -->
     <section class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-sm overflow-hidden">
-      <div class="px-5 py-4 border-b border-[var(--border-default)] flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h2 class="text-sm font-bold text-navy">Sessoes cadastradas</h2>
-          <p class="text-[.72rem] text-[var(--text-muted)]">Visao consolidada dos webinars ja presentes no fluxo atual de eventos</p>
-        </div>
-        <a href="/attendance" class="text-[.78rem] font-semibold text-teal no-underline hover:underline">
-          Abrir gestao de eventos
-        </a>
+      <div class="px-5 py-4 border-b border-[var(--border-default)]">
+        <h2 class="text-sm font-bold text-navy">Todos os webinars</h2>
       </div>
       <div id="webinars-list" class="p-5"></div>
     </section>
   </div>
 
+  <!-- Denied -->
   <div id="webinars-denied" class="hidden max-w-[900px] mx-auto px-4 py-16 text-center">
     <div class="text-4xl mb-3">🔒</div>
     <p class="font-semibold text-[var(--text-secondary)]">Acesso restrito a liderancas, comms, curadoria e facilitadores convidados.</p>
-    <a href="/" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
-      Voltar
-    </a>
+    <a href="/" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">Voltar</a>
+  </div>
+
+  <!-- CRUD Modal -->
+  <div id="webinar-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-xl w-full max-w-lg p-6 mx-4 max-h-[90vh] overflow-y-auto">
+      <h2 id="modal-title" class="text-lg font-extrabold text-navy mb-4">Novo Webinar</h2>
+      <input type="hidden" id="modal-id" />
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Titulo</label>
+          <input id="modal-wTitle" type="text" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2" />
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Descricao</label>
+          <textarea id="modal-desc" rows="2" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Data e hora</label>
+            <input id="modal-date" type="datetime-local" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2" />
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Duracao (min)</label>
+            <input id="modal-duration" type="number" value="60" min="15" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Capitulo PMI</label>
+            <select id="modal-chapter" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2">
+              <option value="ALL">Geral</option>
+              <option value="CE">PMI-CE</option>
+              <option value="DF">PMI-DF</option>
+              <option value="GO">PMI-GO</option>
+              <option value="MG">PMI-MG</option>
+              <option value="RS">PMI-RS</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Status</label>
+            <select id="modal-status" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2">
+              <option value="planned">Planejado</option>
+              <option value="confirmed">Confirmado</option>
+              <option value="completed">Realizado</option>
+              <option value="cancelled">Cancelado</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Tribo responsavel</label>
+          <select id="modal-tribe" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2">
+            <option value="">— Opcional —</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Link da reuniao</label>
+          <input id="modal-link" type="url" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2" placeholder="https://..." />
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">URL do YouTube (replay)</label>
+          <input id="modal-youtube" type="url" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2" placeholder="https://youtube.com/..." />
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Observacoes</label>
+          <textarea id="modal-notes" rows="2" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2"></textarea>
+        </div>
+      </div>
+      <div id="modal-lifecycle" class="hidden mt-4 pt-4 border-t border-[var(--border-default)]">
+        <h3 class="text-xs font-bold text-navy mb-2">Historico</h3>
+        <div id="modal-lifecycle-body" class="space-y-1 text-[.72rem] text-[var(--text-secondary)] max-h-32 overflow-y-auto"></div>
+      </div>
+      <div class="flex items-center justify-between gap-3 mt-5 pt-4 border-t border-[var(--border-default)]">
+        <div class="flex gap-2">
+          <button id="btn-create-event" type="button" class="hidden px-3 py-2 rounded-lg bg-teal text-white text-[.78rem] font-semibold border-0 cursor-pointer hover:opacity-90">
+            Criar sessao Attendance
+          </button>
+        </div>
+        <div class="flex gap-2">
+          <button id="btn-modal-cancel" type="button" class="px-4 py-2 rounded-lg bg-[var(--surface-base)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold cursor-pointer hover:bg-[var(--surface-hover)]">
+            Cancelar
+          </button>
+          <button id="btn-modal-save" type="button" class="px-4 py-2 rounded-lg bg-navy text-white text-[.78rem] font-semibold border-0 cursor-pointer hover:opacity-90">
+            Salvar
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </AdminLayout>
 
 <script>
   import { canAccessWebinarsWorkspace } from '../../lib/admin/constants';
 
+  const TRIBE_NAMES: Record<number, string> = {
+    1: 'Radar Tecnologico', 2: 'Agentes Autonomos', 3: 'TMO & PMO do Futuro',
+    4: 'Cultura & Change', 5: 'Talentos & Upskilling', 6: 'ROI & Portfolio',
+    7: 'Governanca & Trustworthy AI', 8: 'Inclusao & Colaboracao'
+  };
+
+  const STATUS_LABELS: Record<string, string> = {
+    planned: 'Planejado', confirmed: 'Confirmado', completed: 'Realizado', cancelled: 'Cancelado'
+  };
+  const STATUS_TONES: Record<string, string> = {
+    planned: 'bg-gray-100 text-gray-700 border-gray-200',
+    confirmed: 'bg-blue-50 text-blue-700 border-blue-200',
+    completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    cancelled: 'bg-red-50 text-red-700 border-red-200',
+  };
+
   let sb: any = null;
-  let webinarArtifactsByEventId = new Map<string, any>();
-  let webinarWorkspaceByKey = new Map<string, any>();
+  let MEMBER: any = null;
+  let ALL_WEBINARS: any[] = [];
 
   function showDenied() {
     document.getElementById('webinars-loading')?.classList.add('hidden');
     document.getElementById('webinars-content')?.classList.add('hidden');
     document.getElementById('webinars-denied')?.classList.remove('hidden');
   }
-
   function showPanel() {
     document.getElementById('webinars-loading')?.classList.add('hidden');
     document.getElementById('webinars-denied')?.classList.add('hidden');
     document.getElementById('webinars-content')?.classList.remove('hidden');
   }
-
-  function escapeHtml(value: string): string {
-    return String(value || '')
-      .replace(/&/g, '&amp;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+  function esc(s: any): string {
+    return String(s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function fmtDate(iso: string): string {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return String(iso).slice(0,10);
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+  function fmtDateTime(iso: string): string {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return String(iso);
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) + ' ' +
+      d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
+  function isFuture(iso: string): boolean {
+    return new Date(iso).getTime() > Date.now();
+  }
+  function canEdit(): boolean {
+    if (!MEMBER) return false;
+    return MEMBER.is_superadmin || ['manager','deputy_manager'].includes(MEMBER.operational_role)
+      || (MEMBER.designations || []).includes('co_gp');
   }
 
-  function formatDateLabel(dateIso: string): string {
-    const date = new Date(`${dateIso}T12:00:00`);
-    if (Number.isNaN(date.getTime())) return dateIso;
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
-  }
-
-  function isPastEvent(dateIso: string): boolean {
-    const date = new Date(`${dateIso}T23:59:59`);
-    return !Number.isNaN(date.getTime()) && date.getTime() < Date.now();
-  }
-
-  function audienceLabel(audience: string | null | undefined): string {
-    if (audience === 'leadership') return 'Lideranca';
-    if (audience === 'tribe') return 'Tribo';
-    if (audience === 'curators') return 'Curadoria';
-    return 'Geral';
-  }
-
-  function normalizeUrl(url: string | null | undefined): string {
-    return String(url || '').trim().replace(/\/+$/, '').toLowerCase();
-  }
-
-  function normalizeTitle(title: string | null | undefined): string {
-    return String(title || '').trim().toLowerCase();
-  }
-
-  function workspaceKey(title: string | null | undefined, tribeId: number | null | undefined): string {
-    return `${normalizeTitle(title)}::${tribeId || 0}`;
-  }
-
-  function publicationBadge(label: string, published: boolean): string {
-    return published
-      ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700">${label}: publicado</span>`
-      : `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[var(--surface-base)] text-[var(--text-secondary)]">${label}: pendente</span>`;
-  }
-
-  function buildPresentationsHref(ev: any): string {
-    const params = new URLSearchParams();
-    if (ev.tribe_id) params.set('tribe', String(ev.tribe_id));
-    else params.set('filter', 'general');
-    if (ev.title) params.set('q', String(ev.title));
-    return `/presentations?${params.toString()}`;
-  }
-
-  function buildAttendanceHref(ev: any, action = '', openEdit = false): string {
-    const params = new URLSearchParams();
-    params.set('tab', 'events');
-    params.set('type', 'webinar');
-    if (ev.id) params.set('eventId', String(ev.id));
-    if (ev.title) params.set('q', String(ev.title));
-    if (action) params.set('action', action);
-    if (openEdit) params.set('edit', '1');
-    return `/attendance?${params.toString()}`;
-  }
-
-  function buildCommsHref(ev: any, stage = 'invite'): string {
-    const params = new URLSearchParams();
-    params.set('focus', 'broadcasts');
-    params.set('context', 'webinar');
-    params.set('stage', stage);
-    if (ev.id) params.set('eventId', String(ev.id));
-    if (ev.title) {
-      params.set('q', String(ev.title));
-      params.set('title', String(ev.title));
+  function nextAction(w: any): { label: string; href: string; tone: string; priority: number } {
+    const future = isFuture(w.scheduled_at);
+    if (w.status === 'planned') {
+      return { label: 'Confirmar webinar', href: '#', tone: 'bg-amber-50 text-amber-700 border-amber-200', priority: 1 };
     }
-    if (ev.date) params.set('date', String(ev.date));
-    return `/admin/comms?${params.toString()}`;
+    if (w.status === 'confirmed' && future && !w.event_id) {
+      return { label: 'Criar sessao Attendance', href: '#', tone: 'bg-amber-50 text-amber-700 border-amber-200', priority: 2 };
+    }
+    if (w.status === 'confirmed' && future && !w.meeting_link) {
+      return { label: 'Adicionar link da reuniao', href: '#', tone: 'bg-amber-50 text-amber-700 border-amber-200', priority: 3 };
+    }
+    if (w.status === 'confirmed' && future) {
+      return { label: 'Preparar divulgacao', href: `/admin/comms?context=webinar&title=${encodeURIComponent(w.title)}&stage=invite`, tone: 'bg-blue-50 text-blue-700 border-blue-200', priority: 5 };
+    }
+    if (w.status === 'confirmed' && !future) {
+      return { label: 'Marcar como realizado', href: '#', tone: 'bg-purple-50 text-purple-700 border-purple-200', priority: 2 };
+    }
+    if (w.status === 'completed' && !w.youtube_url) {
+      return { label: 'Publicar replay', href: '#', tone: 'bg-amber-50 text-amber-700 border-amber-200', priority: 3 };
+    }
+    if (w.status === 'completed' && w.youtube_url) {
+      return { label: 'Follow-up Comms', href: `/admin/comms?context=webinar&title=${encodeURIComponent(w.title)}&stage=followup`, tone: 'bg-teal-50 text-teal-700 border-teal-200', priority: 6 };
+    }
+    return { label: 'Completo', href: '#', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200', priority: 9 };
   }
 
-  function buildWorkspaceHref(ev: any): string {
-    const params = new URLSearchParams();
-    params.set('type', 'webinar');
-    if (ev.tribe_id) params.set('tribe', String(ev.tribe_id));
-    if (ev.title) params.set('q', String(ev.title));
-    return `/library?${params.toString()}`;
-  }
-
-  function operatorAction(ev: any): { label: string; href: string; note: string; tone: string; done?: boolean; priority: number } {
-    const past = isPastEvent(ev.date);
-    if (!past && !ev.meeting_link) {
-      return {
-        label: 'Completar link da sessao',
-        href: buildAttendanceHref(ev, 'meeting-link', true),
-        note: 'Webinar futuro ainda sem meeting link operacional.',
-        tone: 'bg-amber-50 text-amber-700 border-amber-200',
-        priority: 1,
-      };
-    }
-    if (past && ev.is_recorded && !ev.youtube_url) {
-      return {
-        label: 'Publicar replay no Attendance',
-        href: buildAttendanceHref(ev, 'youtube-url', true),
-        note: 'A sessao foi marcada como gravada, mas ainda nao recebeu `youtube_url`.',
-        tone: 'bg-amber-50 text-amber-700 border-amber-200',
-        priority: 2,
-      };
-    }
-    if (past && ev.youtube_url && !ev.presentationPublished) {
-      return {
-        label: 'Publicar em Presentations',
-        href: buildPresentationsHref(ev),
-        note: 'O replay existe, mas ainda nao apareceu na trilha de apresentacoes.',
-        tone: 'bg-purple-50 text-purple-700 border-purple-200',
-        priority: 3,
-      };
-    }
-    if (past && ev.youtube_url && !ev.workspacePublished) {
-      return {
-        label: 'Adicionar no Workspace',
-        href: buildWorkspaceHref(ev),
-        note: 'O replay ainda nao foi refletido na biblioteca de recursos.',
-        tone: 'bg-teal-50 text-teal-700 border-teal-200',
-        priority: 4,
-      };
-    }
-    if (!past) {
-      return {
-        label: 'Preparar divulgacao',
-        href: buildCommsHref(ev, 'invite'),
-        note: 'Sessao futura com dados minimos prontos para convite e lembrete.',
-        tone: 'bg-blue-50 text-blue-700 border-blue-200',
-        priority: 5,
-      };
-    }
-    return {
-      label: 'Fluxo completo',
-      href: '/webinars',
-      note: 'Replay e publicacao ja estao alinhados nas superficies atuais.',
-      tone: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      done: true,
-      priority: 6,
-    };
-  }
-
-  function enrichWebinar(ev: any): any {
-    const artifact = webinarArtifactsByEventId.get(ev.id) || null;
-    const workspaceResource = webinarWorkspaceByKey.get(normalizeUrl(ev.youtube_url))
-      || webinarWorkspaceByKey.get(workspaceKey(ev.title, ev.tribe_id))
-      || null;
-    return {
-      ...ev,
-      artifact,
-      workspaceResource,
-      presentationPublished: !!artifact,
-      workspacePublished: !!workspaceResource,
-      action: operatorAction({
-        ...ev,
-        artifact,
-        workspaceResource,
-        presentationPublished: !!artifact,
-        workspacePublished: !!workspaceResource,
-      }),
-    };
-  }
+  // ── Rendering ──
 
   function renderStats(webinars: any[]) {
-    const statsEl = document.getElementById('webinars-stats');
-    if (!statsEl) return;
-    const upcoming = webinars.filter((ev: any) => !isPastEvent(ev.date)).length;
-    const completed = webinars.filter((ev: any) => isPastEvent(ev.date)).length;
-    const replayPending = webinars.filter((ev: any) => isPastEvent(ev.date) && ev.is_recorded && !ev.youtube_url).length;
-    const fullyPublished = webinars.filter((ev: any) => ev.youtube_url && ev.presentationPublished && ev.workspacePublished).length;
+    const el = document.getElementById('webinars-stats');
+    if (!el) return;
+    const planned = webinars.filter(w => w.status === 'planned').length;
+    const confirmed = webinars.filter(w => w.status === 'confirmed').length;
+    const completed = webinars.filter(w => w.status === 'completed').length;
+    const totalAttendees = webinars.reduce((s: number, w: any) => s + Number(w.attendee_count || 0), 0);
     const cards = [
-      { label: 'Proximos webinars', value: upcoming, tone: 'bg-blue-50 text-blue-700 border-blue-200' },
-      { label: 'Ja realizados', value: completed, tone: 'bg-[var(--surface-base)] text-[var(--text-primary)] border-[var(--border-default)]' },
-      { label: 'Replay pendente', value: replayPending, tone: 'bg-amber-50 text-amber-700 border-amber-200' },
-      { label: 'Replay em 2 superficies', value: fullyPublished, tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+      { label: 'Planejados', value: planned, tone: 'bg-gray-50 text-gray-700 border-gray-200' },
+      { label: 'Confirmados', value: confirmed, tone: 'bg-blue-50 text-blue-700 border-blue-200' },
+      { label: 'Realizados', value: completed, tone: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+      { label: 'Total presentes', value: totalAttendees, tone: 'bg-purple-50 text-purple-700 border-purple-200' },
     ];
-    statsEl.innerHTML = cards.map((card) => `
-      <div class="rounded-2xl border ${card.tone} p-4">
-        <div class="text-[.72rem] font-semibold uppercase tracking-wide opacity-75">${card.label}</div>
-        <div class="text-2xl font-extrabold mt-2">${card.value}</div>
+    el.innerHTML = cards.map(c => `
+      <div class="rounded-2xl border ${c.tone} p-4">
+        <div class="text-[.72rem] font-semibold uppercase tracking-wide opacity-75">${c.label}</div>
+        <div class="text-2xl font-extrabold mt-2">${c.value}</div>
       </div>
     `).join('');
   }
 
-  function webinarCard(ev: any): string {
-    const isPast = isPastEvent(ev.date);
-    const attendanceHref = buildAttendanceHref(ev);
-    const commsHref = buildCommsHref(ev, 'invite');
-    const presentationsHref = buildPresentationsHref(ev);
-    const workspaceHref = buildWorkspaceHref(ev);
-    const replayStatus = ev.youtube_url
-      ? '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-red-50 text-red-700">Replay publicado</span>'
-      : (ev.is_recorded && isPast
-        ? '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700">Replay pendente</span>'
-        : '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-[var(--surface-base)] text-[var(--text-secondary)]">Sem replay</span>');
-    const meetLink = ev.meeting_link && !isPast
-      ? `<a href="${escapeHtml(ev.meeting_link)}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-[.72rem] font-semibold no-underline hover:bg-blue-100 transition-all">Entrar</a>`
+  function webinarCard(w: any): string {
+    const action = nextAction(w);
+    const statusBadge = `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold border ${STATUS_TONES[w.status] || ''}">${STATUS_LABELS[w.status] || w.status}</span>`;
+    const chapterBadge = `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-200">${w.chapter_code === 'ALL' ? 'Geral' : 'PMI-' + w.chapter_code}</span>`;
+    const tribeBadge = w.tribe_name ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700">${esc(w.tribe_name)}</span>` : '';
+    const eventBadge = w.event_id
+      ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-teal-50 text-teal-700">Sessao vinculada</span>`
+      : `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-gray-100 text-gray-500">Sem sessao</span>`;
+    const coManagers = (w.co_managers || []).length
+      ? `<div class="text-[.68rem] text-[var(--text-muted)] mt-1">Co-gestores: ${(w.co_managers || []).map((cm: any) => esc(cm.name)).join(', ')}</div>`
       : '';
-    const replayLink = ev.youtube_url
-      ? `<a href="${escapeHtml(ev.youtube_url)}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 text-[.72rem] font-semibold no-underline hover:bg-red-100 transition-all">Replay</a>`
-      : '';
-    const presentationsLink = ev.artifact
-      ? `<a href="${escapeHtml(presentationsHref)}" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.72rem] font-semibold no-underline hover:bg-[var(--surface-hover)] transition-all">Presentations</a>`
-      : '';
-    const workspaceLink = ev.workspaceResource?.url
-      ? `<a href="${escapeHtml(workspaceHref)}" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.72rem] font-semibold no-underline hover:bg-[var(--surface-hover)] transition-all">Workspace</a>`
-      : '';
-    const nextAction = ev.action || operatorAction(ev);
+    const replayLink = w.youtube_url ? `<a href="${esc(w.youtube_url)}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 text-[.72rem] font-semibold no-underline hover:bg-red-100">Replay</a>` : '';
+    const meetLink = w.meeting_link && isFuture(w.scheduled_at) ? `<a href="${esc(w.meeting_link)}" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 text-[.72rem] font-semibold no-underline hover:bg-blue-100">Entrar</a>` : '';
 
     return `
       <article class="rounded-2xl border border-[var(--border-default)] p-4">
         <div class="flex items-start justify-between gap-3 flex-wrap">
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2 flex-wrap mb-1">
-              <h3 class="text-sm font-bold text-navy">${escapeHtml(ev.title || 'Webinar')}</h3>
-              <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-orange-50 text-amber-800">Webinar</span>
-              <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-green-50 text-green-800">${escapeHtml(audienceLabel(ev.audience_level))}</span>
-              ${replayStatus}
+              <h3 class="text-sm font-bold text-navy">${esc(w.title)}</h3>
+              ${statusBadge} ${chapterBadge} ${tribeBadge} ${eventBadge}
             </div>
             <div class="text-[.76rem] text-[var(--text-secondary)] flex items-center gap-2 flex-wrap">
-              <span>${formatDateLabel(ev.date)}</span>
+              <span>${fmtDateTime(w.scheduled_at)}</span>
               <span>·</span>
-              <span>${Number(ev.duration_minutes || 0)} min</span>
-              <span>·</span>
-              <span>${Number(ev.attendee_count || 0)} presentes</span>
+              <span>${w.duration_min} min</span>
+              ${w.attendee_count > 0 ? `<span>·</span><span>${w.attendee_count} presentes</span>` : ''}
+              ${w.organizer_name ? `<span>·</span><span>Org: ${esc(w.organizer_name)}</span>` : ''}
             </div>
-            <div class="flex items-center gap-2 flex-wrap mt-2">
-              ${publicationBadge('Presentations', ev.presentationPublished)}
-              ${publicationBadge('Workspace', ev.workspacePublished)}
-              <span class="px-2 py-0.5 rounded-full text-[11px] font-bold border ${nextAction.tone}">Proxima acao: ${nextAction.label}</span>
+            ${coManagers}
+            ${w.board_item_title ? `<div class="text-[.68rem] text-[var(--text-muted)] mt-1">Card: ${esc(w.board_item_title)} (${esc(w.board_item_status)})</div>` : ''}
+            <div class="mt-2 inline-flex items-center gap-2 px-2.5 py-1 rounded-full border text-[.68rem] font-bold ${action.tone}">
+              ${esc(action.label)}
             </div>
-            <p class="text-[.74rem] text-[var(--text-secondary)] mt-2">${escapeHtml(nextAction.note)}</p>
           </div>
           <div class="flex items-center gap-2 flex-wrap">
-            <a href="${escapeHtml(attendanceHref)}" class="px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold no-underline hover:opacity-90 transition-all">Gerenciar</a>
-            <a href="${escapeHtml(nextAction.href)}" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.72rem] font-semibold no-underline hover:bg-[var(--surface-hover)] transition-all">${nextAction.label}</a>
-            ${!isPast ? `<a href="${escapeHtml(commsHref)}" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.72rem] font-semibold no-underline hover:bg-[var(--surface-hover)] transition-all">Comms</a>` : ''}
-            ${meetLink}
-            ${replayLink}
-            ${presentationsLink}
-            ${workspaceLink}
+            ${canEdit() ? `<button type="button" data-edit="${w.id}" class="px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold border-0 cursor-pointer hover:opacity-90">Editar</button>` : ''}
+            ${meetLink} ${replayLink}
+            <a href="/admin/comms?context=webinar&title=${encodeURIComponent(w.title)}&stage=${w.status === 'completed' ? 'followup' : 'invite'}" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.72rem] font-semibold no-underline hover:bg-[var(--surface-hover)]">Comms</a>
           </div>
         </div>
       </article>
@@ -433,160 +374,251 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   }
 
   function renderUpcoming(webinars: any[]) {
-    const container = document.getElementById('webinars-upcoming');
-    if (!container) return;
-    const upcoming = webinars
-      .filter((ev: any) => !isPastEvent(ev.date))
-      .sort((a: any, b: any) => String(a.date).localeCompare(String(b.date)))
-      .slice(0, 5);
-    if (!upcoming.length) {
-      container.innerHTML = `
-        <div class="rounded-2xl border border-dashed border-[var(--border-default)] p-5 text-center">
-          <div class="text-3xl mb-2">📭</div>
-          <div class="text-sm font-semibold text-[var(--text-secondary)]">Nenhum webinar futuro cadastrado.</div>
-          <p class="text-[.75rem] text-[var(--text-muted)] mt-1">Use o fluxo de eventos em Attendance para abrir a proxima sessao.</p>
-        </div>
-      `;
-      return;
-    }
-    container.innerHTML = `<div class="space-y-3">${upcoming.map(webinarCard).join('')}</div>`;
+    const el = document.getElementById('webinars-upcoming');
+    if (!el) return;
+    const items = webinars.filter(w => isFuture(w.scheduled_at) && w.status !== 'cancelled').slice(0, 5);
+    el.innerHTML = items.length
+      ? `<div class="space-y-3">${items.map(webinarCard).join('')}</div>`
+      : `<div class="rounded-2xl border border-dashed border-[var(--border-default)] p-5 text-center"><div class="text-3xl mb-2">📭</div><div class="text-sm font-semibold text-[var(--text-secondary)]">Nenhum webinar futuro.</div></div>`;
   }
 
   function renderFollowup(webinars: any[]) {
-    const container = document.getElementById('webinars-followup');
-    if (!container) return;
-    const followups = webinars
-      .filter((ev: any) => isPastEvent(ev.date) && (ev.is_recorded || !ev.youtube_url))
-      .sort((a: any, b: any) => String(b.date).localeCompare(String(a.date)))
-      .slice(0, 5);
-    if (!followups.length) {
-      container.innerHTML = `
-        <div class="rounded-2xl border border-dashed border-emerald-200 bg-emerald-50 p-5 text-center">
-          <div class="text-3xl mb-2">✅</div>
-          <div class="text-sm font-semibold text-emerald-700">Sem fila critica no momento.</div>
-          <p class="text-[.75rem] text-emerald-600 mt-1">Os webinars recentes ja estao com replay ou nao dependem de fechamento adicional.</p>
-        </div>
-      `;
-      return;
-    }
-    container.innerHTML = `<div class="space-y-3">${followups.map(webinarCard).join('')}</div>`;
+    const el = document.getElementById('webinars-followup');
+    if (!el) return;
+    const items = webinars.filter(w => !isFuture(w.scheduled_at) && w.status === 'completed' && !w.youtube_url).slice(0, 5);
+    el.innerHTML = items.length
+      ? `<div class="space-y-3">${items.map(webinarCard).join('')}</div>`
+      : `<div class="rounded-2xl border border-dashed border-emerald-200 bg-emerald-50 p-5 text-center"><div class="text-3xl mb-2">✅</div><div class="text-sm font-semibold text-emerald-700">Sem fila de follow-up.</div></div>`;
   }
 
   function renderActions(webinars: any[]) {
-    const container = document.getElementById('webinars-actions');
-    if (!container) return;
-    const actionItems = [...webinars]
-      .sort((a: any, b: any) => {
-        const prioDiff = Number(a.action?.priority || 99) - Number(b.action?.priority || 99);
-        if (prioDiff !== 0) return prioDiff;
-        return String(a.date).localeCompare(String(b.date));
-      })
+    const el = document.getElementById('webinars-actions');
+    if (!el) return;
+    const items = webinars.filter(w => w.status !== 'cancelled')
+      .map(w => ({ ...w, _action: nextAction(w) }))
+      .sort((a, b) => a._action.priority - b._action.priority)
       .slice(0, 6);
-    if (!actionItems.length) {
-      container.innerHTML = `
-        <div class="rounded-2xl border border-dashed border-[var(--border-default)] p-5 text-center">
-          <div class="text-3xl mb-2">🧭</div>
-          <div class="text-sm font-semibold text-[var(--text-secondary)]">Nenhuma acao prioritaria no momento.</div>
-        </div>
-      `;
+    if (!items.length) {
+      el.innerHTML = `<div class="text-sm text-[var(--text-muted)] text-center py-4">Nenhum webinar cadastrado.</div>`;
       return;
     }
-    container.innerHTML = `
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        ${actionItems.map((ev: any) => `
-          <article class="rounded-2xl border border-[var(--border-default)] p-4">
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0">
-                <div class="text-sm font-bold text-navy">${escapeHtml(ev.title || 'Webinar')}</div>
-                <div class="text-[.72rem] text-[var(--text-muted)] mt-1">${formatDateLabel(ev.date)} · ${Number(ev.attendee_count || 0)} presentes</div>
-                <div class="mt-2 inline-flex items-center gap-2 px-2.5 py-1 rounded-full border text-[.68rem] font-bold ${ev.action.tone}">
-                  ${escapeHtml(ev.action.label)}
-                </div>
-                <p class="text-[.74rem] text-[var(--text-secondary)] mt-2">${escapeHtml(ev.action.note)}</p>
-              </div>
-              <a href="${escapeHtml(ev.action.href)}" class="shrink-0 px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold no-underline hover:opacity-90 transition-all">
-                Abrir
-              </a>
-            </div>
-          </article>
-        `).join('')}
-      </div>
-    `;
-  }
-
-  function renderPublication(webinars: any[]) {
-    const container = document.getElementById('webinars-publication');
-    if (!container) return;
-    const replayWebinars = webinars
-      .filter((ev: any) => isPastEvent(ev.date) && !!ev.youtube_url)
-      .sort((a: any, b: any) => String(b.date).localeCompare(String(a.date)))
-      .slice(0, 8);
-    if (!replayWebinars.length) {
-      container.innerHTML = `
-        <div class="rounded-2xl border border-dashed border-[var(--border-default)] p-5 text-center">
-          <div class="text-3xl mb-2">📼</div>
-          <div class="text-sm font-semibold text-[var(--text-secondary)]">Ainda nao ha webinars com replay publicado.</div>
-          <p class="text-[.75rem] text-[var(--text-muted)] mt-1">Quando um webinar ganhar replay publicado, esta trilha mostrara se ele chegou em Presentations e Workspace.</p>
+    el.innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-2 gap-3">${items.map((w: any) => `
+      <article class="rounded-2xl border border-[var(--border-default)] p-4">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="text-sm font-bold text-navy">${esc(w.title)}</div>
+            <div class="text-[.72rem] text-[var(--text-muted)] mt-1">${fmtDate(w.scheduled_at)} · ${w.chapter_code === 'ALL' ? 'Geral' : 'PMI-' + w.chapter_code}</div>
+            <div class="mt-2 inline-flex items-center gap-2 px-2.5 py-1 rounded-full border text-[.68rem] font-bold ${w._action.tone}">${esc(w._action.label)}</div>
+          </div>
+          ${canEdit() ? `<button type="button" data-edit="${w.id}" class="shrink-0 px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold border-0 cursor-pointer hover:opacity-90">Abrir</button>` : ''}
         </div>
-      `;
-      return;
-    }
-    container.innerHTML = `<div class="space-y-3">${replayWebinars.map(webinarCard).join('')}</div>`;
+      </article>
+    `).join('')}</div>`;
   }
 
   function renderList(webinars: any[]) {
-    const listEl = document.getElementById('webinars-list');
-    if (!listEl) return;
+    const el = document.getElementById('webinars-list');
+    if (!el) return;
     if (!webinars.length) {
-      listEl.innerHTML = `
+      el.innerHTML = `
         <div class="rounded-2xl border border-dashed border-[var(--border-default)] p-10 text-center">
           <div class="text-4xl mb-3">🎥</div>
-          <div class="text-sm font-semibold text-[var(--text-secondary)]">Ainda nao existem webinars no fluxo atual.</div>
-          <p class="text-[.78rem] text-[var(--text-muted)] mt-1 mb-4">A partir desta wave, o modulo passa a usar o mesmo backbone operacional de eventos e presenca.</p>
-          <a href="/attendance" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold no-underline hover:opacity-90 transition-all">
-            Abrir Attendance
-          </a>
-        </div>
-      `;
+          <div class="text-sm font-semibold text-[var(--text-secondary)]">Nenhum webinar cadastrado ainda.</div>
+          <p class="text-[.78rem] text-[var(--text-muted)] mt-1 mb-4">Clique em "+ Novo Webinar" para comecar.</p>
+        </div>`;
       return;
     }
-    listEl.innerHTML = `<div class="space-y-3">${webinars.map(webinarCard).join('')}</div>`;
+    el.innerHTML = `<div class="space-y-3">${webinars.map(webinarCard).join('')}</div>`;
   }
 
-  async function loadWebinars() {
-    const [{ data: events, error: eventsError }, { data: artifacts, error: artifactsError }, { data: resources, error: resourcesError }] = await Promise.all([
-      sb.rpc('get_events_with_attendance', { p_limit: 60, p_offset: 0 }),
-      sb.rpc('list_meeting_artifacts', { p_limit: 100 }),
-      sb.from('hub_resources').select('*').eq('is_active', true).eq('asset_type', 'webinar').order('created_at', { ascending: false }),
-    ]);
-    if (eventsError) throw eventsError;
-    if (artifactsError) throw artifactsError;
-    if (resourcesError) throw resourcesError;
-
-    webinarArtifactsByEventId = new Map(
-      (artifacts || [])
-        .filter((artifact: any) => artifact?.event_id)
-        .map((artifact: any) => [artifact.event_id, artifact])
-    );
-    webinarWorkspaceByKey = new Map();
-    (resources || []).forEach((resource: any) => {
-      const urlKey = normalizeUrl(resource.url);
-      const titleKey = workspaceKey(resource.title, resource.tribe_id);
-      if (urlKey && !webinarWorkspaceByKey.has(urlKey)) webinarWorkspaceByKey.set(urlKey, resource);
-      if (titleKey && !webinarWorkspaceByKey.has(titleKey)) webinarWorkspaceByKey.set(titleKey, resource);
-    });
-
-    const webinars = (events || [])
-      .filter((ev: any) => ev.type === 'webinar')
-      .map((ev: any) => enrichWebinar(ev))
-      .sort((a: any, b: any) => String(b.date).localeCompare(String(a.date)));
+  function renderAll(webinars: any[]) {
     renderStats(webinars);
     renderActions(webinars);
     renderUpcoming(webinars);
     renderFollowup(webinars);
-    renderPublication(webinars);
     renderList(webinars);
+    // Attach edit handlers
+    document.querySelectorAll('[data-edit]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = (btn as HTMLElement).dataset.edit;
+        const w = ALL_WEBINARS.find((x: any) => x.id === id);
+        if (w) openModal(w);
+      });
+    });
   }
+
+  // ── Modal ──
+
+  function openModal(w?: any) {
+    const modal = document.getElementById('webinar-modal')!;
+    const titleEl = document.getElementById('modal-title')!;
+    const idEl = document.getElementById('modal-id') as HTMLInputElement;
+    const wTitleEl = document.getElementById('modal-wTitle') as HTMLInputElement;
+    const descEl = document.getElementById('modal-desc') as HTMLTextAreaElement;
+    const dateEl = document.getElementById('modal-date') as HTMLInputElement;
+    const durationEl = document.getElementById('modal-duration') as HTMLInputElement;
+    const chapterEl = document.getElementById('modal-chapter') as HTMLSelectElement;
+    const statusEl = document.getElementById('modal-status') as HTMLSelectElement;
+    const tribeEl = document.getElementById('modal-tribe') as HTMLSelectElement;
+    const linkEl = document.getElementById('modal-link') as HTMLInputElement;
+    const youtubeEl = document.getElementById('modal-youtube') as HTMLInputElement;
+    const notesEl = document.getElementById('modal-notes') as HTMLTextAreaElement;
+    const createEventBtn = document.getElementById('btn-create-event')!;
+    const lifecycleSection = document.getElementById('modal-lifecycle')!;
+
+    // Populate tribe select
+    tribeEl.innerHTML = '<option value="">— Opcional —</option>';
+    Object.entries(TRIBE_NAMES).forEach(([id, name]) => {
+      tribeEl.innerHTML += `<option value="${id}">${name}</option>`;
+    });
+
+    if (w) {
+      titleEl.textContent = 'Editar Webinar';
+      idEl.value = w.id;
+      wTitleEl.value = w.title || '';
+      descEl.value = w.description || '';
+      const dt = w.scheduled_at ? new Date(w.scheduled_at) : null;
+      dateEl.value = dt ? dt.toISOString().slice(0, 16) : '';
+      durationEl.value = String(w.duration_min || 60);
+      chapterEl.value = w.chapter_code || 'ALL';
+      statusEl.value = w.status || 'planned';
+      tribeEl.value = w.tribe_id ? String(w.tribe_id) : '';
+      linkEl.value = w.meeting_link || '';
+      youtubeEl.value = w.youtube_url || '';
+      notesEl.value = w.notes || '';
+
+      // Show create event button if no event linked
+      if (!w.event_id && w.status !== 'cancelled') {
+        createEventBtn.classList.remove('hidden');
+        createEventBtn.onclick = () => linkEvent(w.id);
+      } else {
+        createEventBtn.classList.add('hidden');
+      }
+
+      // Load lifecycle
+      loadLifecycle(w.id);
+    } else {
+      titleEl.textContent = 'Novo Webinar';
+      idEl.value = '';
+      wTitleEl.value = '';
+      descEl.value = '';
+      dateEl.value = '';
+      durationEl.value = '60';
+      chapterEl.value = 'ALL';
+      statusEl.value = 'planned';
+      tribeEl.value = '';
+      linkEl.value = '';
+      youtubeEl.value = '';
+      notesEl.value = '';
+      createEventBtn.classList.add('hidden');
+      lifecycleSection.classList.add('hidden');
+    }
+
+    modal.classList.remove('hidden');
+  }
+
+  function closeModal() {
+    document.getElementById('webinar-modal')?.classList.add('hidden');
+  }
+
+  async function loadLifecycle(webinarId: string) {
+    const section = document.getElementById('modal-lifecycle')!;
+    const body = document.getElementById('modal-lifecycle-body')!;
+    try {
+      const { data, error } = await sb.rpc('get_webinar_lifecycle', { p_webinar_id: webinarId });
+      if (error || !data?.length) {
+        section.classList.add('hidden');
+        return;
+      }
+      const events = Array.isArray(data) ? data : JSON.parse(data);
+      section.classList.remove('hidden');
+      body.innerHTML = events.map((e: any) => {
+        const actionLabel: Record<string, string> = {
+          created: 'Criado', status_change: 'Status alterado', event_linked: 'Sessao vinculada',
+        };
+        return `<div class="flex items-center gap-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-teal shrink-0"></span>
+          <span class="font-semibold">${actionLabel[e.action] || e.action}</span>
+          ${e.old_status && e.new_status ? `<span>${e.old_status} → ${e.new_status}</span>` : ''}
+          <span class="text-[var(--text-muted)]">— ${esc(e.actor_name || '?')} · ${fmtDate(e.created_at)}</span>
+        </div>`;
+      }).join('');
+    } catch { section.classList.add('hidden'); }
+  }
+
+  async function saveWebinar() {
+    const id = (document.getElementById('modal-id') as HTMLInputElement).value || undefined;
+    const title = (document.getElementById('modal-wTitle') as HTMLInputElement).value.trim();
+    const description = (document.getElementById('modal-desc') as HTMLTextAreaElement).value.trim() || undefined;
+    const scheduled_at = (document.getElementById('modal-date') as HTMLInputElement).value;
+    const duration_min = Number((document.getElementById('modal-duration') as HTMLInputElement).value) || 60;
+    const chapter_code = (document.getElementById('modal-chapter') as HTMLSelectElement).value;
+    const status = (document.getElementById('modal-status') as HTMLSelectElement).value;
+    const tribe_id = Number((document.getElementById('modal-tribe') as HTMLSelectElement).value) || undefined;
+    const meeting_link = (document.getElementById('modal-link') as HTMLInputElement).value.trim() || undefined;
+    const youtube_url = (document.getElementById('modal-youtube') as HTMLInputElement).value.trim() || undefined;
+    const notes = (document.getElementById('modal-notes') as HTMLTextAreaElement).value.trim() || undefined;
+
+    if (!title || !scheduled_at) {
+      alert('Titulo e data sao obrigatorios.');
+      return;
+    }
+
+    try {
+      const params: any = {
+        p_title: title,
+        p_description: description,
+        p_scheduled_at: new Date(scheduled_at).toISOString(),
+        p_duration_min: duration_min,
+        p_status: status,
+        p_chapter_code: chapter_code,
+        p_tribe_id: tribe_id || null,
+        p_meeting_link: meeting_link || null,
+        p_youtube_url: youtube_url || null,
+        p_notes: notes || null,
+      };
+      if (id) params.p_id = id;
+
+      const { error } = await sb.rpc('upsert_webinar', params);
+      if (error) throw error;
+
+      closeModal();
+      await reload();
+    } catch (err: any) {
+      alert('Erro ao salvar: ' + (err?.message || err));
+    }
+  }
+
+  async function linkEvent(webinarId: string) {
+    try {
+      const { data, error } = await sb.rpc('link_webinar_event', { p_webinar_id: webinarId });
+      if (error) throw error;
+      closeModal();
+      await reload();
+      alert('Sessao de Attendance criada com sucesso!');
+    } catch (err: any) {
+      alert('Erro ao criar sessao: ' + (err?.message || err));
+    }
+  }
+
+  // ── Load & Filter ──
+
+  async function reload() {
+    const statusFilter = (document.getElementById('filter-status') as HTMLSelectElement)?.value || undefined;
+    const chapterFilter = (document.getElementById('filter-chapter') as HTMLSelectElement)?.value || undefined;
+
+    const params: any = {};
+    if (statusFilter) params.p_status = statusFilter;
+    if (chapterFilter) params.p_chapter = chapterFilter;
+
+    const { data, error } = await sb.rpc('list_webinars_v2', params);
+    if (error) throw error;
+
+    ALL_WEBINARS = Array.isArray(data) ? data : (data ? JSON.parse(data) : []);
+    renderAll(ALL_WEBINARS);
+  }
+
+  // ── Boot ──
 
   async function boot() {
     const member = (window as any).navGetMember?.();
@@ -601,41 +633,41 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       const navSb = (window as any).navGetSb?.();
       if (navSb?.auth?.getSession) {
         const { data: { session } } = await navSb.auth.getSession();
-        if (!session) {
-          showDenied();
-          return;
-        }
+        if (!session) { showDenied(); return; }
       }
       return;
     }
 
-    if (!canAccessWebinarsWorkspace(member)) {
-      showDenied();
-      return;
-    }
+    MEMBER = member;
+    if (!canAccessWebinarsWorkspace(member)) { showDenied(); return; }
 
     sb = (window as any).navGetSb?.();
-    if (!sb) {
-      setTimeout(boot, 300);
-      return;
+    if (!sb) { setTimeout(boot, 300); return; }
+
+    // Hide new button if not admin
+    if (!canEdit()) {
+      document.getElementById('btn-new-webinar')?.classList.add('hidden');
     }
 
     try {
-      await loadWebinars();
+      await reload();
       showPanel();
-    } catch (error) {
-      console.warn('Webinars panel:', error);
+    } catch (err) {
+      console.warn('Webinars panel:', err);
       showPanel();
-      const listEl = document.getElementById('webinars-list');
-      if (listEl) {
-        listEl.innerHTML = `
-          <div class="rounded-2xl border border-red-200 bg-red-50 p-5 text-center">
-            <div class="text-sm font-semibold text-red-700">Nao foi possivel carregar os webinars agora.</div>
-            <p class="text-[.75rem] text-red-600 mt-1">Tente novamente em instantes ou abra o fluxo de eventos em Attendance.</p>
-          </div>
-        `;
-      }
     }
+
+    // Event listeners
+    document.getElementById('btn-new-webinar')?.addEventListener('click', () => openModal());
+    document.getElementById('btn-modal-cancel')?.addEventListener('click', closeModal);
+    document.getElementById('btn-modal-save')?.addEventListener('click', saveWebinar);
+    document.getElementById('filter-status')?.addEventListener('change', reload);
+    document.getElementById('filter-chapter')?.addEventListener('change', reload);
+
+    // Close modal on backdrop click
+    document.getElementById('webinar-modal')?.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).id === 'webinar-modal') closeModal();
+    });
   }
 
   boot();

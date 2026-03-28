@@ -26,8 +26,23 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         </button>
       </div>
 
+      <!-- Tabs -->
+      <div class="flex gap-1 border-b border-[var(--border-default)]">
+        <button id="tab-members" class="px-4 py-2 text-sm font-semibold border-b-2 border-navy text-navy cursor-pointer bg-transparent" data-tab-switch="members">Membros</button>
+        <button id="tab-analytics" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-[var(--text-muted)] cursor-pointer bg-transparent hover:text-navy" data-tab-switch="analytics">Analytics</button>
+      </div>
+
+      <!-- Members Tab Content -->
+      <div id="panel-members">
+
       <!-- KPI Cards -->
       <div id="adp-kpis" class="grid grid-cols-2 md:grid-cols-5 gap-3"></div>
+
+      <!-- MCP + Auth Cards -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div id="adp-mcp" class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5"></div>
+        <div id="adp-auth" class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5"></div>
+      </div>
 
       <!-- Daily Activity Chart -->
       <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
@@ -111,6 +126,22 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
               <option value="inactive">{t('adoption.status.inactive', lang)}</option>
               <option value="dormant">{t('adoption.status.dormant', lang)}</option>
               <option value="never">{t('adoption.status.never', lang)}</option>
+              <option disabled>── Papel ──</option>
+              <option value="role:researcher">Pesquisador</option>
+              <option value="role:tribe_leader">Líder de Tribo</option>
+              <option value="role:sponsor">Sponsor</option>
+              <option value="role:chapter_liaison">Chapter Liaison</option>
+              <option value="role:manager">Gerente</option>
+              <option value="role:facilitator">Facilitador</option>
+              <option value="role:communicator">Comunicador</option>
+              <option disabled>── Designação ──</option>
+              <option value="desig:ambassador">Ambassador</option>
+              <option value="desig:founder">Founder</option>
+              <option value="desig:curator">Curator</option>
+              <option value="desig:comms_leader">Comms Leader</option>
+              <option value="desig:comms_member">Comms Member</option>
+              <option value="desig:co_gp">Co-GP</option>
+              <option value="desig:none">Sem designação</option>
             </select>
             <input id="adp-search" type="text" placeholder="Buscar..." class="px-2 py-1 border border-[var(--border-default)] rounded-lg text-[.72rem] bg-[var(--surface-card)] w-36" />
           </div>
@@ -124,6 +155,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
                 <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">{t('adoption.tribe', lang)}</th>
                 <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)] cursor-pointer" data-sort="last_seen">{t('adoption.lastSeen', lang)}</th>
                 <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)] cursor-pointer" data-sort="sessions">{t('adoption.sessions', lang)}</th>
+                <th id="adp-mcp-col" class="hidden text-center px-3 py-2 font-bold text-[var(--text-secondary)]">MCP</th>
                 <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Status</th>
               </tr>
             </thead>
@@ -131,6 +163,50 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
           </table>
         </div>
       </div>
+
+      </div><!-- /panel-members -->
+
+      <!-- Analytics Tab Content -->
+      <div id="panel-analytics" class="hidden space-y-6">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h2 class="text-lg font-extrabold text-navy">Analytics — PostHog</h2>
+            <p class="text-[.72rem] text-[var(--text-muted)]">Dados de uso da plataforma via PostHog</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <select id="analytics-dashboard-select" class="px-3 py-1.5 border border-[var(--border-default)] rounded-lg text-[.78rem] bg-[var(--surface-card)]">
+              <option value="1407425">Adocao & Engajamento</option>
+              <option value="1407510">Saude da Plataforma</option>
+            </select>
+            <a href="https://us.posthog.com/project/334261" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold no-underline hover:bg-[var(--surface-hover)]">
+              Abrir PostHog
+            </a>
+          </div>
+        </div>
+
+        <!-- Stats row -->
+        <div id="analytics-stats" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+
+        <!-- Insights grid -->
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+          <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
+            <h3 class="text-sm font-bold text-navy">Insights</h3>
+          </div>
+          <div id="analytics-insights" class="p-5">
+            <div class="text-sm text-[var(--text-muted)] text-center py-8">Selecione a aba Analytics para carregar.</div>
+          </div>
+        </div>
+
+        <!-- Annotations -->
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+          <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
+            <h3 class="text-sm font-bold text-navy">Anotacoes</h3>
+            <p class="text-[.68rem] text-[var(--text-muted)]">Marcos e observacoes registrados no PostHog</p>
+          </div>
+          <div id="analytics-annotations" class="p-5"></div>
+        </div>
+      </div><!-- /panel-analytics -->
+
     </div>
 
     <div id="adp-loading" class="text-center py-16 text-[var(--text-muted)]">Carregando...</div>
@@ -143,6 +219,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
   let sb: any = null;
   let allMembers: any[] = [];
+  let mcpUserIds: Set<string> = new Set();
+  let hasMcpData = false;
   let sortField = 'last_seen';
   let sortAsc = false;
 
@@ -300,14 +378,102 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     `).join('');
   }
 
+  function renderMcpCard(mcp: any) {
+    const el = document.getElementById('adp-mcp');
+    if (!el) return;
+    const calls = mcp?.total_calls || 0;
+    const users = mcp?.unique_users || 0;
+    const calls7d = mcp?.calls_last_7d || 0;
+    const topTools = mcp?.top_tools || [];
+    const errRate = mcp?.error_rate || 0;
+    hasMcpData = calls > 0;
+
+    if (!hasMcpData) {
+      el.innerHTML = `
+        <h3 class="text-sm font-bold text-navy mb-3">MCP (IA Assistente)</h3>
+        <div class="grid grid-cols-3 gap-3 mb-3">
+          <div class="text-center"><div class="text-xl font-extrabold text-[var(--text-muted)]">0</div><div class="text-[.6rem] text-[var(--text-muted)]">Chamadas</div></div>
+          <div class="text-center"><div class="text-xl font-extrabold text-[var(--text-muted)]">0</div><div class="text-[.6rem] text-[var(--text-muted)]">Usuarios</div></div>
+          <div class="text-center"><div class="text-xl font-extrabold text-[var(--text-muted)]">—</div><div class="text-[.6rem] text-[var(--text-muted)]">Top Tool</div></div>
+        </div>
+        <div class="text-[.72rem] text-[var(--text-muted)] bg-[var(--surface-base)] rounded-lg p-3">
+          Nenhum lider conectou ainda. O MCP server esta ativo com 19 tools.
+        </div>`;
+      return;
+    }
+
+    const topTool = topTools[0];
+    el.innerHTML = `
+      <h3 class="text-sm font-bold text-navy mb-3">MCP (IA Assistente)</h3>
+      <div class="grid grid-cols-3 gap-3 mb-3">
+        <div class="text-center"><div class="text-xl font-extrabold text-navy">${calls}</div><div class="text-[.6rem] text-[var(--text-muted)]">Chamadas</div></div>
+        <div class="text-center"><div class="text-xl font-extrabold text-teal">${users}</div><div class="text-[.6rem] text-[var(--text-muted)]">Usuarios</div></div>
+        <div class="text-center"><div class="text-xl font-extrabold text-purple-600">${calls7d}</div><div class="text-[.6rem] text-[var(--text-muted)]">7 dias</div></div>
+      </div>
+      ${topTool ? `<div class="text-[.72rem] text-[var(--text-secondary)]">Top: <strong>${esc(topTool.tool_name)}</strong> (${topTool.calls}x, ${topTool.users} user${topTool.users > 1 ? 's' : ''})</div>` : ''}
+      ${errRate > 0 ? `<div class="text-[.68rem] text-amber-600 mt-1">Taxa de erro: ${errRate}%</div>` : ''}`;
+
+    // Build MCP user set for member table column
+    if (topTools.length > 0) {
+      // We'll populate mcpUserIds from mcp_usage_log in a separate query if needed
+      // For now, show the column header
+      document.getElementById('adp-mcp-col')?.classList.remove('hidden');
+    }
+  }
+
+  function renderAuthCard(auth: any) {
+    const el = document.getElementById('adp-auth');
+    if (!el) return;
+    const providers = auth?.providers || [];
+    const ghosts = auth?.ghost_count || 0;
+    const secondary = auth?.members_with_secondary_auth || 0;
+    const totalAuth = auth?.total_auth_users || 0;
+
+    const maxProv = Math.max(1, ...providers.map((p: any) => p.total));
+    const provBars = providers.map((p: any) => {
+      const pct = Math.round((p.total / totalAuth) * 100);
+      const barW = Math.round((p.total / maxProv) * 100);
+      const provName = (p.provider || 'unknown').replace('google', 'Google').replace('linkedin_oidc', 'LinkedIn').replace('azure', 'Azure').replace('email', 'Magic Link');
+      return `<div class="flex items-center gap-2 text-[.72rem]">
+        <span class="w-20 font-semibold text-[var(--text-primary)]">${esc(provName)}</span>
+        <span class="text-[var(--text-muted)] w-8 text-right">${p.total}</span>
+        <div class="flex-1 h-2 rounded-full bg-[var(--border-subtle)] overflow-hidden">
+          <div class="h-full rounded-full bg-navy" style="width:${barW}%"></div>
+        </div>
+        <span class="text-[var(--text-muted)] w-10 text-right">${pct}%</span>
+      </div>`;
+    }).join('');
+
+    el.innerHTML = `
+      <h3 class="text-sm font-bold text-navy mb-3">Provedores de Auth</h3>
+      <div class="space-y-1.5 mb-3">${provBars}</div>
+      <div class="flex gap-4 text-[.68rem] text-[var(--text-muted)]">
+        ${ghosts > 0 ? `<span>👻 ${ghosts} visitante${ghosts > 1 ? 's' : ''} externo${ghosts > 1 ? 's' : ''}</span>` : ''}
+        ${secondary > 0 ? `<span>🔗 ${secondary} com login secundario</span>` : ''}
+      </div>`;
+  }
+
   function renderMemberTable() {
     const body = document.getElementById('adp-member-body');
     if (!body) return;
-    const filterStatus = (document.getElementById('adp-filter-status') as HTMLSelectElement)?.value || '';
+    const filterVal = (document.getElementById('adp-filter-status') as HTMLSelectElement)?.value || '';
     const search = ((document.getElementById('adp-search') as HTMLInputElement)?.value || '').toLowerCase();
 
     let filtered = allMembers;
-    if (filterStatus) filtered = filtered.filter((m: any) => m.status === filterStatus);
+
+    // Apply filter
+    if (filterVal.startsWith('role:')) {
+      const role = filterVal.slice(5);
+      filtered = filtered.filter((m: any) => m.tier === role);
+    } else if (filterVal === 'desig:none') {
+      filtered = filtered.filter((m: any) => !m.designations || m.designations.length === 0);
+    } else if (filterVal.startsWith('desig:')) {
+      const desig = filterVal.slice(6);
+      filtered = filtered.filter((m: any) => (m.designations || []).includes(desig));
+    } else if (filterVal) {
+      filtered = filtered.filter((m: any) => m.status === filterVal);
+    }
+
     if (search) filtered = filtered.filter((m: any) => (m.name || '').toLowerCase().includes(search));
 
     // Sort
@@ -321,16 +487,26 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       return 0;
     });
 
-    body.innerHTML = filtered.map((m: any) => `
+    const mcpCol = hasMcpData ? `<td class="px-3 py-2 text-center">${mcpUserIds.has('placeholder') ? '🤖' : '—'}</td>` : '';
+
+    body.innerHTML = filtered.map((m: any) => {
+      const desigBadges = (m.designations || []).map((d: string) =>
+        `<span class="inline-block px-1 py-0.5 rounded text-[9px] font-bold bg-[var(--surface-section-cool)] text-[var(--text-muted)]">${esc(d)}</span>`
+      ).join(' ');
+      return `
       <tr class="border-t border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">
-        <td class="px-4 py-2 font-semibold text-navy">${esc(m.name || '—')}</td>
+        <td class="px-4 py-2">
+          <div class="font-semibold text-navy">${esc(m.name || '—')}</div>
+          ${desigBadges ? `<div class="mt-0.5 flex gap-1 flex-wrap">${desigBadges}</div>` : ''}
+        </td>
         <td class="px-3 py-2 text-center text-[.68rem]">${esc(ROLE_LABELS[m.tier] || m.tier || '—')}</td>
         <td class="px-3 py-2 text-center text-[.68rem]">${m.tribe_name ? esc(m.tribe_name) : '—'}</td>
         <td class="px-3 py-2 text-center">${relativeTime(m.last_seen)}</td>
         <td class="px-3 py-2 text-center font-bold">${m.total_sessions || 0}</td>
+        ${hasMcpData ? `<td class="px-3 py-2 text-center">${mcpUserIds.has(m.id) ? '🤖' : '—'}</td>` : ''}
         <td class="px-3 py-2 text-center">${STATUS_ICONS[m.status] || ''}</td>
-      </tr>
-    `).join('');
+      </tr>`;
+    }).join('');
   }
 
   async function loadDashboard() {
@@ -341,6 +517,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       if (!data) return;
 
       renderKpis(data.summary || {});
+      renderMcpCard(data.mcp_usage || {});
+      renderAuthCard(data.auth_providers || {});
       renderLifecycle(data.lifecycle || {});
       renderChart(data.daily_activity || []);
       renderTribeTable(data.by_tribe || []);
@@ -353,6 +531,123 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     }
   }
 
+  // ── Analytics Tab ──
+  const POSTHOG_PROJECT_URL = 'https://us.posthog.com/project/334261';
+  let analyticsLoaded = false;
+  let analyticsCache: Record<string, any> = {};
+
+  async function fetchPostHog(endpoint: string, id?: string) {
+    const cacheKey = `${endpoint}:${id || ''}`;
+    if (analyticsCache[cacheKey]) return analyticsCache[cacheKey];
+    try {
+      const session = await sb.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) throw new Error('No session');
+      const params = new URLSearchParams({ endpoint });
+      if (id) params.set('id', id);
+      const url = `https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/posthog-proxy?${params.toString()}`;
+      const resp = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}`, 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9' }
+      });
+      if (!resp.ok) throw new Error(`${resp.status} ${resp.statusText}`);
+      const data = await resp.json();
+      analyticsCache[cacheKey] = data;
+      return data;
+    } catch (e: any) {
+      console.warn('PostHog fetch error:', e);
+      return null;
+    }
+  }
+
+  async function loadAnalytics() {
+    const insightsEl = document.getElementById('analytics-insights')!;
+    const annotationsEl = document.getElementById('analytics-annotations')!;
+    const statsEl = document.getElementById('analytics-stats')!;
+    const dashboardId = (document.getElementById('analytics-dashboard-select') as HTMLSelectElement)?.value || '1407425';
+
+    insightsEl.innerHTML = '<div class="text-sm text-[var(--text-muted)] text-center py-8">Carregando analytics...</div>';
+    annotationsEl.innerHTML = '<div class="text-sm text-[var(--text-muted)] text-center py-4">Carregando...</div>';
+
+    const [dashData, annotData] = await Promise.all([
+      fetchPostHog('dashboards', dashboardId),
+      fetchPostHog('annotations'),
+    ]);
+
+    // Render insights
+    if (dashData?.tiles || dashData?.results) {
+      const tiles = dashData.tiles || dashData.results || [];
+      const insights = tiles.filter((t: any) => t.insight || t.name).slice(0, 20);
+      statsEl.innerHTML = [
+        `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center"><div class="text-2xl font-extrabold text-navy">${insights.length}</div><div class="text-[.68rem] text-[var(--text-muted)]">Insights</div></div>`,
+        `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center"><div class="text-2xl font-extrabold text-teal">2</div><div class="text-[.68rem] text-[var(--text-muted)]">Dashboards</div></div>`,
+        `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center"><div class="text-2xl font-extrabold text-purple-600">${(annotData?.results || []).length}</div><div class="text-[.68rem] text-[var(--text-muted)]">Anotacoes</div></div>`,
+        `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center"><div class="text-2xl font-extrabold text-[var(--text-secondary)]">${dashData.last_modified_at ? new Date(dashData.last_modified_at).toLocaleDateString('pt-BR') : '—'}</div><div class="text-[.68rem] text-[var(--text-muted)]">Atualizado</div></div>`,
+      ].join('');
+
+      if (insights.length === 0) {
+        insightsEl.innerHTML = '<div class="text-sm text-[var(--text-muted)] text-center py-8">Nenhum insight neste dashboard.</div>';
+      } else {
+        insightsEl.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-3">${insights.map((tile: any) => {
+          const insight = tile.insight || tile;
+          const name = insight.name || tile.name || 'Insight';
+          const desc = insight.description || tile.description || '';
+          const shortId = insight.short_id || '';
+          const lastMod = insight.last_modified_at || tile.last_modified_at;
+          const href = shortId ? `${POSTHOG_PROJECT_URL}/insights/${shortId}` : POSTHOG_PROJECT_URL;
+          return `<article class="rounded-xl border border-[var(--border-default)] p-4">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0 flex-1">
+                <h4 class="text-sm font-bold text-navy truncate">${esc(name)}</h4>
+                ${desc ? `<p class="text-[.68rem] text-[var(--text-muted)] mt-1 line-clamp-2">${esc(desc)}</p>` : ''}
+                ${lastMod ? `<div class="text-[.6rem] text-[var(--text-muted)] mt-2">${new Date(lastMod).toLocaleDateString('pt-BR')}</div>` : ''}
+              </div>
+              <a href="${esc(href)}" target="_blank" rel="noopener" class="shrink-0 px-2 py-1 rounded-lg bg-[var(--surface-base)] border border-[var(--border-default)] text-[.68rem] font-semibold text-[var(--text-primary)] no-underline hover:bg-[var(--surface-hover)]">Abrir</a>
+            </div>
+          </article>`;
+        }).join('')}</div>`;
+      }
+    } else {
+      statsEl.innerHTML = '';
+      insightsEl.innerHTML = `<div class="text-sm text-[var(--text-muted)] text-center py-8">
+        ${dashData === null ? 'Erro ao carregar dados do PostHog. Verifique se o proxy esta ativo.' : 'Nenhum dado disponivel.'}
+        <a href="${POSTHOG_PROJECT_URL}" target="_blank" rel="noopener" class="block mt-2 text-teal font-semibold no-underline hover:underline">Abrir PostHog diretamente</a>
+      </div>`;
+    }
+
+    // Render annotations
+    const annotations = annotData?.results || [];
+    if (annotations.length === 0) {
+      annotationsEl.innerHTML = '<div class="text-[.78rem] text-[var(--text-muted)] text-center py-4">Nenhuma anotacao registrada.</div>';
+    } else {
+      annotationsEl.innerHTML = `<div class="space-y-2">${annotations.slice(0, 15).map((a: any) => `
+        <div class="flex items-start gap-3 text-[.78rem]">
+          <div class="shrink-0 w-1.5 h-1.5 rounded-full bg-teal mt-1.5"></div>
+          <div>
+            <span class="font-semibold text-[var(--text-primary)]">${a.date_marker ? new Date(a.date_marker).toLocaleDateString('pt-BR') : '—'}</span>
+            <span class="text-[var(--text-secondary)] ml-2">${esc(a.content || '')}</span>
+            <span class="text-[.6rem] text-[var(--text-muted)] ml-1">(${a.scope || 'project'})</span>
+          </div>
+        </div>
+      `).join('')}</div>`;
+    }
+
+    analyticsLoaded = true;
+  }
+
+  function switchTab(tab: string) {
+    document.getElementById('panel-members')?.classList.toggle('hidden', tab !== 'members');
+    document.getElementById('panel-analytics')?.classList.toggle('hidden', tab !== 'analytics');
+    document.getElementById('tab-members')?.classList.toggle('border-navy', tab === 'members');
+    document.getElementById('tab-members')?.classList.toggle('text-navy', tab === 'members');
+    document.getElementById('tab-members')?.classList.toggle('border-transparent', tab !== 'members');
+    document.getElementById('tab-members')?.classList.toggle('text-[var(--text-muted)]', tab !== 'members');
+    document.getElementById('tab-analytics')?.classList.toggle('border-navy', tab === 'analytics');
+    document.getElementById('tab-analytics')?.classList.toggle('text-navy', tab === 'analytics');
+    document.getElementById('tab-analytics')?.classList.toggle('border-transparent', tab !== 'analytics');
+    document.getElementById('tab-analytics')?.classList.toggle('text-[var(--text-muted)]', tab !== 'analytics');
+    if (tab === 'analytics' && !analyticsLoaded) loadAnalytics();
+  }
+
   function bindFilters() {
     document.getElementById('adp-filter-status')?.addEventListener('change', renderMemberTable);
     document.getElementById('adp-search')?.addEventListener('input', renderMemberTable);
@@ -363,6 +658,16 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         else { sortField = field; sortAsc = field === 'name'; }
         renderMemberTable();
       });
+    });
+    // Tab switching
+    document.querySelectorAll('[data-tab-switch]').forEach(btn => {
+      btn.addEventListener('click', () => switchTab((btn as HTMLElement).dataset.tabSwitch!));
+    });
+    // Dashboard selector reload
+    document.getElementById('analytics-dashboard-select')?.addEventListener('change', () => {
+      analyticsLoaded = false;
+      analyticsCache = {};
+      loadAnalytics();
     });
   }
 

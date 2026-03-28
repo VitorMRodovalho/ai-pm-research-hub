@@ -811,6 +811,28 @@ const SCORING_I18N = {
   async function loadLeaderboard() {
     setPanelMessage('leaderboard-list', I.loading, 'loading');
     try {
+      // Anon/Ghost: use public leaderboard RPC (no PII, LGPD-safe)
+      if (!MEMBER) {
+        const { data: pubData, error: pubError } = await sb.rpc('get_public_leaderboard', { p_limit: 50 });
+        if (pubError) throw pubError;
+        const rows = Array.isArray(pubData) ? pubData : [];
+        if (!rows.length) { setPanelMessage('leaderboard-list', I.lbEmpty, 'empty'); return; }
+        leaderboardData = rows.map((r: any, i: number) => ({
+          member_id: null,
+          name: r.member_name,
+          chapter: r.chapter,
+          tribe_name: r.tribe_name,
+          cycle_points: r.xp_total,
+          lifetime_points: r.xp_total,
+          level_name: r.level_name,
+        }));
+        credlyByMember = {};
+        trailProgressByMember = {};
+        lifetimePointsByMember = {};
+        renderLeaderboard();
+        return;
+      }
+
       const { data, error } = await sb.from('gamification_leaderboard').select('*');
       if (error) throw error;
       const { data: courseRows, error: courseRowsError } = await sb.from('course_progress')

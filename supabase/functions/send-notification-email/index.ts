@@ -8,6 +8,9 @@ const CRITICAL_TYPES = [
   'volunteer_agreement_signed',
   'certificate_ready',
   'attendance_detractor',
+  'webinar_status_confirmed',
+  'webinar_status_completed',
+  'webinar_status_cancelled',
 ]
 
 const TYPE_SUBJECTS: Record<string, string> = {
@@ -17,6 +20,9 @@ const TYPE_SUBJECTS: Record<string, string> = {
   volunteer_agreement_signed: 'Termo de Voluntariado assinado',
   certificate_ready: 'Certificado disponivel',
   attendance_detractor: 'Alerta de presenca',
+  webinar_status_confirmed: 'Webinar confirmado',
+  webinar_status_completed: 'Webinar realizado',
+  webinar_status_cancelled: 'Webinar cancelado',
 }
 
 function buildHtml(notification: any): string {

@@ -255,6 +255,16 @@ export default function AttendanceGridTab() {
   const [isMobile, setIsMobile] = useState(false);
   const [expandedTribes, setExpandedTribes] = useState<Set<string>>(new Set());
   const [toggling, setToggling] = useState<string | null>(null);
+  const [memberReady, setMemberReady] = useState(!!getMember());
+
+  /* Wait for member to be available (nav loads async) */
+  useEffect(() => {
+    if (memberReady) return;
+    const check = () => { if (getMember()) setMemberReady(true); };
+    window.addEventListener('nav:member', check, { once: true });
+    const timer = setInterval(() => { if (getMember()) { setMemberReady(true); clearInterval(timer); } }, 500);
+    return () => { window.removeEventListener('nav:member', check); clearInterval(timer); };
+  }, [memberReady]);
 
   /* Toggle attendance cell — click handler for managers */
   const handleToggle = useCallback(async (eventId: string, memberId: string, current: string) => {
@@ -580,7 +590,7 @@ export default function AttendanceGridTab() {
     });
 
     return cols;
-  }, [weekGroups, t]);
+  }, [weekGroups, t, memberReady]);
 
   /* Table instance */
   const table = useReactTable({

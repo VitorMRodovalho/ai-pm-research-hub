@@ -213,6 +213,18 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         </div>
       </section>
 
+      <!-- Section: Webinars pendentes de comunicacao -->
+      <section id="comms-webinars" class="hidden bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-[var(--border-default)] flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h2 class="text-sm font-bold text-navy">Webinars pendentes de campanha</h2>
+            <p class="text-[.68rem] text-[var(--text-muted)]">Webinars confirmados ou realizados que precisam de acao de comunicacao</p>
+          </div>
+          <a href="/admin/webinars" class="text-[.78rem] font-semibold text-teal no-underline hover:underline">Ver todos</a>
+        </div>
+        <div id="comms-webinars-body" class="p-4"></div>
+      </section>
+
       <!-- Section 3: Broadcast History -->
       <section id="broadcast-section" class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div class="px-4 py-3 border-b border-[var(--border-default)] flex items-center justify-between gap-3 flex-wrap">
@@ -357,6 +369,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     loadRanking();
     loadBroadcasts();
     loadNativeTable();
+    loadCommsWebinars();
     loadCommsChart();
     loadChannelConfig();
     loadTokenAlerts();
@@ -387,6 +400,41 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } }, scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } }
       });
     } catch (e) { console.warn('Comms chart:', e); }
+  }
+
+  async function loadCommsWebinars() {
+    const section = document.getElementById('comms-webinars');
+    const body = document.getElementById('comms-webinars-body');
+    if (!section || !body) return;
+    try {
+      const { data, error } = await sb.rpc('webinars_pending_comms');
+      if (error) throw error;
+      const webinars = Array.isArray(data) ? data : (data ? JSON.parse(data) : []);
+      if (!webinars.length) { section.classList.add('hidden'); return; }
+      section.classList.remove('hidden');
+      const actionTones: Record<string, string> = {
+        invite: 'bg-blue-50 text-blue-700 border-blue-200',
+        followup: 'bg-purple-50 text-purple-700 border-purple-200',
+        awaiting_replay: 'bg-amber-50 text-amber-700 border-amber-200',
+        replay_ready: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        info: 'bg-gray-50 text-gray-700 border-gray-200',
+      };
+      body.innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-2 gap-3">${webinars.map((w: any) => {
+        const tone = actionTones[w.comms_action] || actionTones.info;
+        const commsHref = `/admin/comms?context=webinar&title=${encodeURIComponent(w.title)}&stage=${w.comms_action === 'followup' || w.comms_action === 'replay_ready' ? 'followup' : 'invite'}`;
+        const fmtDt = w.scheduled_at ? new Date(w.scheduled_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '—';
+        return `<article class="rounded-xl border border-[var(--border-default)] p-3">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-sm font-bold text-navy">${String(w.title || '').replace(/</g,'&lt;')}</div>
+              <div class="text-[.72rem] text-[var(--text-muted)] mt-0.5">${fmtDt} · ${w.chapter_code === 'ALL' ? 'Geral' : 'PMI-' + w.chapter_code}${w.tribe_name ? ' · ' + String(w.tribe_name).replace(/</g,'&lt;') : ''}</div>
+              <div class="mt-1.5 inline-flex items-center px-2 py-0.5 rounded-full border text-[.68rem] font-bold ${tone}">${String(w.comms_label || '').replace(/</g,'&lt;')}</div>
+            </div>
+            <a href="${commsHref}" class="shrink-0 px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold no-underline hover:opacity-90">Preparar</a>
+          </div>
+        </article>`;
+      }).join('')}</div>`;
+    } catch (e) { console.warn('Comms webinars:', e); section.classList.add('hidden'); }
   }
 
   async function loadRanking() {
