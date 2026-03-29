@@ -100,7 +100,7 @@ async function run() {
     await assertContains('/admin/partnerships', 'id="partnerships-denied"');
     await assertContains('/admin/sustainability', 'id="sust-denied"');
     await assertContains('/admin/chapter-report', 'id="chr-denied"');
-    await assertContains('/webinars', 'id="webinars-denied"');
+    await assertContains('/webinars', 'id="pub-loading"'); // public page (GC-160)
     await assertContains('/tribe/1', 'id="tribe-denied"');
     await assertRedirect('/rank', '/gamification');
     await assertRedirect('/ranks', '/gamification');

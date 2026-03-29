@@ -31,10 +31,12 @@ import {
 /* ------------------------------------------------------------------ */
 
 function getSb() {
+  if (typeof window === 'undefined') return null;
   return (window as any).navGetSb?.();
 }
 
 function getMember() {
+  if (typeof window === 'undefined') return null;
   return (window as any).navGetMember?.();
 }
 
