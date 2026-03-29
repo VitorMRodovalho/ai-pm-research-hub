@@ -4,7 +4,7 @@
 
 import type { APIRoute } from "astro";
 
-const BASE = "https://platform.ai-pm-research-hub.workers.dev";
+const BASE = "https://mcp.vitormr.dev";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
