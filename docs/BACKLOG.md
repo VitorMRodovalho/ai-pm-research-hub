@@ -7,11 +7,11 @@
 
 | # | Item | Est. | Status | Notes |
 |---|------|------|--------|-------|
-| 1 | Attendance cross-tribe | 1-2h | Open | "Supabase client unavailable" on /tribe/N for GP cross-management |
-| 2 | 2 attendance corrections | UI fix | Open | Guilherme Matricarde (934580d0), Gustavo Batista (ba2b9bf9) |
-| 3 | Migration repair 26/Mar | 5 min | Open | `supabase migration repair --status applied` for 6 RPCs |
-| 4 | i18n server-side locale | 1-2h | Open | EN locale broken since 24/Mar — server-side resolution |
-| 5 | MCP OAuth connector | — | In progress | v2.2.1 deployed, custom domain active, debugging token exchange |
+| 1 | Attendance cross-tribe | 1-2h | Monitoring | Retry pattern deployed (30×300ms). Intermittent — cannot reproduce reliably. Monitor. |
+| 2 | 2 attendance corrections | — | ✅ Done | Guilherme + Gustavo confirmed present in DB |
+| 3 | Migration repair 26/Mar | 5 min | ✅ Done (29/Mar) | All migrations synced |
+| 4 | i18n server-side locale | — | ✅ Verified (29/Mar) | EN/ES resolve correctly server-side. Not a bug. |
+| 5 | MCP OAuth connector | — | In progress | v2.2.1, custom domain, debug KV logging deployed. Token exchange works manually. |
 
 ---
 
@@ -22,7 +22,7 @@
 | 6 | S3.3 Custom PostHog events | 3-4h | Ready | 8 instrumentations: board_card_created/moved, webinar_viewed, blog_post_read, profile_updated, mcp_tool_called, certificate_issued, governance_cr_submitted |
 | 7 | S3.2 Designation filter everywhere | 2-3h | Ready | Expand adoption filter to /admin/members, /admin/attendance, /teams |
 | 8 | Phase 2 smoke-test.sh (GC-097) | 2h | Ready | Scripted QA gate layer 2 |
-| 9 | pg_cron verification | 30 min | Ready | Verify detractor weekly + reminders daily from H4 |
+| 9 | pg_cron verification | — | ✅ Done (29/Mar) | 7 jobs active: credly, attendance, detractor, reminders, backup, archive, email |
 | 10 | URL migration notice | Note | FYI | Débora + Marcos using legacy .pages.dev (redirect works) |
 
 ---
