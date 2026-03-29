@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
 
     const from = Deno.env.get('RESEND_FROM_ADDRESS') || 'onboarding@resend.dev'
     const sandbox = from.includes('onboarding@resend.dev')
-    const portalUrl = 'https://platform.ai-pm-research-hub.workers.dev'
+    const portalUrl = 'https://nucleoia.vitormr.dev'
     let totalSent = 0
     const errors: string[] = []
 

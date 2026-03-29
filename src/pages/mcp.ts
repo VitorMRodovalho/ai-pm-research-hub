@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 
 const UPSTREAM = 'https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-mcp/mcp';
-const BASE = 'https://mcp.vitormr.dev';
+const BASE = 'https://nucleoia.vitormr.dev';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',

@@ -104,7 +104,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       <!-- Footer (print-only) -->
       <footer class="hidden print:block text-center text-[8px] text-gray-400 pt-4 mt-8 border-t border-gray-300">
         <div>Documento gerado automaticamente pela plataforma digital do Núcleo de Estudos e Pesquisa em IA & GP</div>
-        <div>platform.ai-pm-research-hub.workers.dev · Verificável via código do relatório</div>
+        <div>nucleoia.vitormr.dev · Verificável via código do relatório</div>
         <div class="mt-1">PMI®, PMBOK®, PMP® e PMI-CPMAI™ são marcas registradas do PMI, Inc.</div>
       </footer>
     </div>
@@ -461,7 +461,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     // Footer
     const footer = document.getElementById('cr-footer');
     if (footer) {
-      footer.textContent = `Gerado em ${new Date().toLocaleDateString('pt-BR')} · Núcleo IA & GP · platform.ai-pm-research-hub.workers.dev`;
+      footer.textContent = `Gerado em ${new Date().toLocaleDateString('pt-BR')} · Núcleo IA & GP · nucleoia.vitormr.dev`;
     }
   }
 

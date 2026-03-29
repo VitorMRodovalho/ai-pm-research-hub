@@ -23,7 +23,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     { property: 'og:title', content: 'Núcleo de Estudos e Pesquisa em IA & Gerenciamento de Projetos' },
     { property: 'og:description', content: 'Iniciativa colaborativa entre 5 capítulos do PMI® no Brasil. 44+ pesquisadores, 8 tribos de pesquisa, 10+ artigos publicados.' },
     { property: 'og:type', content: 'website' },
-    { property: 'og:url', content: 'https://platform.ai-pm-research-hub.workers.dev/about' },
+    { property: 'og:url', content: 'https://nucleoia.vitormr.dev/about' },
   ];
   metas.forEach(m => {
     if (!document.querySelector(`meta[property="${m.property}"]`)) {
@@ -42,7 +42,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       "@type": "ResearchOrganization",
       "name": "Núcleo de Estudos e Pesquisa em IA & Gerenciamento de Projetos",
       "description": "Iniciativa colaborativa entre capítulos do PMI® no Brasil",
-      "url": "https://platform.ai-pm-research-hub.workers.dev",
+      "url": "https://nucleoia.vitormr.dev",
       "parentOrganization": { "@type": "Organization", "name": "Project Management Institute" },
       "numberOfEmployees": { "@type": "QuantitativeValue", "value": 44 }
     });
