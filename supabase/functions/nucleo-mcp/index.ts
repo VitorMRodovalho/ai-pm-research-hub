@@ -6,7 +6,7 @@
 
 import { Hono } from "jsr:@hono/hono";
 import { McpServer } from "npm:@modelcontextprotocol/sdk@1.12.1/server/mcp.js";
-import { StreamableHTTPServerTransport } from "npm:@modelcontextprotocol/sdk@1.12.1/server/streamableHttp.js";
+import { InMemoryTransport } from "npm:@modelcontextprotocol/sdk@1.12.1/inMemory.js";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const app = new Hono().basePath("/nucleo-mcp");
@@ -349,19 +349,41 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 }
 
-// MCP endpoint — Streamable HTTP transport (stateless, per-request)
+// MCP endpoint — JSON-RPC over HTTP (stateless, per-request)
+// Uses InMemoryTransport because StreamableHTTPServerTransport requires Node.js HTTP (writeHead)
 app.all("/mcp", async (c) => {
-  const authHeader = c.req.header("Authorization");
-  const token = authHeader?.replace("Bearer ", "");
+  try {
+    const authHeader = c.req.header("Authorization");
+    const token = authHeader?.replace("Bearer ", "");
 
-  const sb = createAuthenticatedClient(token);
-  const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.2.1" });
-  registerTools(mcp, sb);
+    const sb = createAuthenticatedClient(token);
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.2.1" });
+    registerTools(mcp, sb);
 
-  const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-  await mcp.connect(transport);
+    // Create paired in-memory transports
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    await mcp.connect(serverTransport);
 
-  return transport.handleRequest(c.req.raw);
+    // Parse incoming JSON-RPC request
+    const body = await c.req.json();
+
+    // Send through the transport and collect response
+    const responsePromise = new Promise<any>((resolve) => {
+      clientTransport.onmessage = (msg: any) => resolve(msg);
+      // Timeout after 30s
+      setTimeout(() => resolve({ jsonrpc: "2.0", id: body.id, error: { code: -32000, message: "Timeout" } }), 30000);
+    });
+
+    await clientTransport.send(body);
+    const response = await responsePromise;
+
+    await mcp.close();
+
+    return c.json(response);
+  } catch (e: any) {
+    console.error("[MCP] Handler error:", e.message, e.stack?.substring(0, 300));
+    return c.json({ jsonrpc: "2.0", id: null, error: { code: -32603, message: e.message } }, 500);
+  }
 });
 
 // FIX: REMOVED duplicate /.well-known/oauth-authorization-server
