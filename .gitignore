@@ -3,6 +3,9 @@ node_modules/
 .env
 .env.*
 !.env.example
+
+# Claude Code local settings (not committed)
+.claude/settings.local.json
 .DS_Store
 *.local
 *.tar.gz

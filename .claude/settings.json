@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(supabase *)",
+      "Bash(curl *)",
+      "Bash(wc *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(diff *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(sed *)",
+      "Bash(mkdir *)",
+      "Bash(cp *)",
+      "Bash(echo *)",
+      "Bash(source *)",
+      "Bash(timeout *)",
+      "Bash(sleep *)",
+      "Bash(du *)",
+      "Bash(dig *)",
+      "Bash(host *)",
+      "Bash(python3 *)",
+      "Bash(node *)",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "Agent"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Edit(.env)",
+      "Write(.env)",
+      "Write(.git/*)"
+    ]
+  }
+}
