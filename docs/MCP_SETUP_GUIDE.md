@@ -9,7 +9,7 @@ MCP (Model Context Protocol) is an open protocol that allows AI assistants to in
 All clients use the same URL:
 
 ```
-https://platform.ai-pm-research-hub.workers.dev/mcp
+https://nucleoia.vitormr.dev/mcp
 ```
 
 Authentication: OAuth 2.1 — you'll be redirected to log in with the same account you use on the platform (Google, LinkedIn, or Microsoft).
@@ -30,7 +30,7 @@ Authentication: OAuth 2.1 — you'll be redirected to log in with the same accou
 
 1. Open Claude.ai → Settings → Integrations → MCP
 2. Click "Add MCP Server"
-3. Paste URL: `https://platform.ai-pm-research-hub.workers.dev/mcp`
+3. Paste URL: `https://nucleoia.vitormr.dev/mcp`
 4. A browser window opens — log in with your Núcleo account
 5. Approve the OAuth consent
 6. Done — ask Claude anything about the project
@@ -49,7 +49,7 @@ Claude Code doesn't auto-initiate OAuth. Workaround:
   "mcpServers": {
     "nucleo-ia": {
       "type": "url",
-      "url": "https://platform.ai-pm-research-hub.workers.dev/mcp",
+      "url": "https://nucleoia.vitormr.dev/mcp",
       "headers": {
         "Authorization": "Bearer YOUR_TOKEN_HERE"
       }
@@ -63,7 +63,7 @@ Token expires in 1 hour. Refresh by repeating step 2-3.
 ### Cursor / VS Code
 
 1. Open Settings → MCP Servers → Add
-2. URL: `https://platform.ai-pm-research-hub.workers.dev/mcp`
+2. URL: `https://nucleoia.vitormr.dev/mcp`
 3. Authentication: OAuth (automatic flow)
 4. Save and test
 
@@ -72,7 +72,7 @@ Token expires in 1 hour. Refresh by repeating step 2-3.
 1. Go to chatgpt.com → Settings → Apps → Connectors → Advanced
 2. Click "New App"
 3. Name: `Nucleo-IA`
-4. MCP Server URL: `https://platform.ai-pm-research-hub.workers.dev/mcp`
+4. MCP Server URL: `https://nucleoia.vitormr.dev/mcp`
 5. Authentication: OAuth
 6. Check "I understand and want to continue"
 7. Click Create
@@ -133,7 +133,7 @@ Your AI Client → Workers Proxy → Supabase Edge Function (nucleo-mcp)
          (.well-known/)           (your JWT → your data)
 ```
 
-The Workers proxy at `platform.ai-pm-research-hub.workers.dev` routes:
+The Workers proxy at `nucleoia.vitormr.dev` routes:
 - `/mcp` → Supabase Edge Function `nucleo-mcp`
 - `/.well-known/oauth-authorization-server` → OAuth discovery JSON
 

@@ -57,7 +57,7 @@
 
 **Astro 6** opera em modo SSR via Cloudflare Workers adapter (`@astrojs/cloudflare` v13). Env access via `import { env } from 'cloudflare:workers'` (NOT `locals.runtime.env`). Páginas são `.astro` files que podem conter React islands para interatividade.
 
-**MCP Server:** OAuth 2.1-authenticated MCP endpoint at `platform.ai-pm-research-hub.workers.dev/mcp` with 15 tools (10 read + 5 write). See `docs/MCP_SETUP_GUIDE.md`.
+**MCP Server:** OAuth 2.1-authenticated MCP endpoint at `nucleoia.vitormr.dev/mcp` with 15 tools (10 read + 5 write). See `docs/MCP_SETUP_GUIDE.md`.
 
 **CSP Middleware:** Content Security Policy headers applied via Astro middleware (`src/middleware.ts`), not via `_headers` file.
 

@@ -2,7 +2,7 @@
 
 **Data:** 2026-03-13
 **Análise por:** CXO, Senior Product Lead, Data Architect, AI Engineer, PM/FP&A Consultant
-**Plataforma:** platform.ai-pm-research-hub.workers.dev (produção)
+**Plataforma:** nucleoia.vitormr.dev (produção)
 
 ---
 
