@@ -58,6 +58,22 @@
 
 ---
 
+## Frontend ↔ Backend Parity Gaps (audit 29/Mar)
+
+RPCs with backend ready but no frontend surface. To be specced and implemented in grouped sprints.
+
+| # | RPC | Current State | Recommended Frontend | Sprint |
+|---|-----|---------------|---------------------|--------|
+| F1 | `get_public_platform_stats` | Orphan — created but unused | Homepage `/` stats section (active members, tribes, events, retention) | S4 |
+| F2 | Co-managers selector | Display-only in webinar cards | Member multi-select picker in `/admin/webinars` CRUD modal | S4 |
+| F3 | Board card webinar badge | `board_items.webinar_id` FK exists, no UI | Badge in CardDetail showing linked webinar status | S4 |
+| F4 | `search_hub_resources` | MCP only (T21) | Upgrade `/library` search from client-side filter to server-side RPC | S4 |
+| F5 | `get_my_attendance_history` | MCP only (T16) | Personal attendance tab in `/profile` or section in `/attendance` | S5 |
+
+**Note:** These are not bugs — all backend functionality works correctly via MCP or internal RPCs. The gap is frontend surface for web users. Each should be specced by Chat Claude before implementation.
+
+---
+
 ## Recently Completed (session 28-29/Mar)
 
 - GC-160: Webinar Governance (full stack)
