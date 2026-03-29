@@ -367,10 +367,19 @@ app.all("/mcp", async (c) => {
     // Parse incoming JSON-RPC request
     const body = await c.req.json();
 
-    // Send through the transport and collect response
+    // JSON-RPC notifications (no "id") don't expect a response
+    const isNotification = body.id === undefined || body.id === null;
+
+    if (isNotification) {
+      await clientTransport.send(body);
+      await mcp.close();
+      // 202 Accepted for notifications (no response body per MCP spec)
+      return new Response(null, { status: 202 });
+    }
+
+    // Regular requests — wait for response
     const responsePromise = new Promise<any>((resolve) => {
       clientTransport.onmessage = (msg: any) => resolve(msg);
-      // Timeout after 30s
       setTimeout(() => resolve({ jsonrpc: "2.0", id: body.id, error: { code: -32000, message: "Timeout" } }), 30000);
     });
 
