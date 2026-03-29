@@ -15,7 +15,16 @@ const CORS_HEADERS = {
 };
 
 export const ALL: APIRoute = async ({ request }) => {
-  await kvLog("mcp", { method: request.method, hasAuth: !!request.headers.get("authorization"), userAgent: request.headers.get("user-agent")?.substring(0, 60) });
+  const reqBody = request.method === 'POST' ? await request.clone().text() : null;
+  await kvLog("mcp-request", {
+    method: request.method,
+    hasAuth: !!request.headers.get("authorization"),
+    contentType: request.headers.get("content-type"),
+    accept: request.headers.get("accept"),
+    mcpSessionId: request.headers.get("mcp-session-id"),
+    userAgent: request.headers.get("user-agent")?.substring(0, 80),
+    bodyPreview: reqBody?.substring(0, 300),
+  });
 
   // CORS preflight — allow without auth
   if (request.method === 'OPTIONS') {
@@ -23,7 +32,6 @@ export const ALL: APIRoute = async ({ request }) => {
   }
 
   // RFC 9728: if no Authorization header, return 401 to trigger OAuth flow
-  // Claude.ai only initiates OAuth when it receives 401 + WWW-Authenticate
   const authHeader = request.headers.get('authorization');
   if (!authHeader) {
     return new Response(JSON.stringify({ error: 'unauthorized', error_description: 'Bearer token required' }), {
@@ -36,29 +44,46 @@ export const ALL: APIRoute = async ({ request }) => {
     });
   }
 
+  // Build upstream request
   const headers = new Headers();
-  // Forward auth and content headers
   for (const key of ['authorization', 'content-type', 'accept', 'mcp-session-id']) {
     const val = request.headers.get(key);
     if (val) headers.set(key, val);
   }
 
-  const upstream = new Request(UPSTREAM, {
-    method: request.method,
-    headers,
-    body: request.method !== 'GET' && request.method !== 'HEAD' ? request.body : null,
-    // @ts-ignore — duplex needed for streaming body in Workers
-    duplex: 'half',
-  });
+  try {
+    const upstream = new Request(UPSTREAM, {
+      method: request.method,
+      headers,
+      body: request.method !== 'GET' && request.method !== 'HEAD' ? request.body : null,
+      // @ts-ignore — duplex needed for streaming body in Workers
+      duplex: 'half',
+    });
 
-  const res = await fetch(upstream);
+    const res = await fetch(upstream);
+    const resBody = await res.text();
 
-  // Forward response with CORS
-  const respHeaders = new Headers(res.headers);
-  for (const [k, v] of Object.entries(CORS_HEADERS)) respHeaders.set(k, v);
+    await kvLog("mcp-upstream", {
+      status: res.status,
+      contentType: res.headers.get("content-type"),
+      bodyLen: resBody.length,
+      bodyPreview: resBody.substring(0, 500),
+      headers: Object.fromEntries([...res.headers.entries()].filter(([k]) => !k.startsWith('x-') && k !== 'date')),
+    });
 
-  return new Response(res.body, {
-    status: res.status,
-    headers: respHeaders,
-  });
+    // Forward response with CORS
+    const respHeaders = new Headers(res.headers);
+    for (const [k, v] of Object.entries(CORS_HEADERS)) respHeaders.set(k, v);
+
+    return new Response(resBody, {
+      status: res.status,
+      headers: respHeaders,
+    });
+  } catch (e: any) {
+    await kvLog("mcp-error", { error: e.message, stack: e.stack?.substring(0, 300) });
+    return new Response(JSON.stringify({ error: 'proxy_error', detail: e.message }), {
+      status: 502,
+      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+    });
+  }
 };
