@@ -34,11 +34,11 @@ function buildHtml(notification: any): string {
       <div style="padding: 24px; background: #f8f9fa; border: 1px solid #e9ecef;">
         <h2 style="color: #003B5C; font-size: 16px; margin: 0 0 12px 0;">${notification.title || ''}</h2>
         <p style="color: #495057; font-size: 14px; line-height: 1.6; margin: 0 0 16px 0;">${notification.body || ''}</p>
-        ${notification.link ? `<a href="https://platform.ai-pm-research-hub.workers.dev${notification.link}" style="display: inline-block; background: #003B5C; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">Ver na plataforma</a>` : ''}
+        ${notification.link ? `<a href="https://nucleoia.vitormr.dev${notification.link}" style="display: inline-block; background: #003B5C; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">Ver na plataforma</a>` : ''}
       </div>
       <div style="padding: 16px; text-align: center; font-size: 11px; color: #868e96;">
         <p>Nucleo de Estudos e Pesquisa em IA &amp; GP</p>
-        <p>Enviado automaticamente pela plataforma. <a href="https://platform.ai-pm-research-hub.workers.dev/profile" style="color: #003B5C;">Gerir preferencias</a></p>
+        <p>Enviado automaticamente pela plataforma. <a href="https://nucleoia.vitormr.dev/profile" style="color: #003B5C;">Gerir preferencias</a></p>
       </div>
     </div>`
 }

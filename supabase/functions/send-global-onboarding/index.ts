@@ -47,8 +47,8 @@ function buildSignatureHtml(sender: Record<string, any>, cycleName: string): str
   return sig
 }
 
-const HELP_URL = 'https://platform.ai-pm-research-hub.workers.dev/admin/help'
-const HUB_URL = 'https://platform.ai-pm-research-hub.workers.dev'
+const HELP_URL = 'https://nucleoia.vitormr.dev/admin/help'
+const HUB_URL = 'https://nucleoia.vitormr.dev'
 
 function buildOnboardingHtml(tribeName: string, memberNames: string[], signatureHtml: string): string {
   const greeting = memberNames.length > 3
