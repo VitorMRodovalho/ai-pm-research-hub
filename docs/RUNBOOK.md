@@ -27,12 +27,12 @@ Cada push para `main` no GitHub dispara GitHub Actions → Wrangler → deploy n
 ```bash
 git push origin main
 # → GitHub Actions runs wrangler deploy (Astro 6 SSR), deploys in ~3 min
-# → URL: platform.ai-pm-research-hub.workers.dev
+# → URL: nucleoia.vitormr.dev
 ```
 
 ### Verificação pós-deploy
 
-1. Abrir https://platform.ai-pm-research-hub.workers.dev
+1. Abrir https://nucleoia.vitormr.dev
 2. Login com Google → verificar que o dashboard carrega
 3. Verificar Sentry: https://nucleo-ia.sentry.io/ — 0 novos erros
 4. Verificar PostHog: pageviews chegando
