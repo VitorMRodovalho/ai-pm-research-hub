@@ -26,6 +26,7 @@
       "Bash(host *)",
       "Bash(python3 *)",
       "Bash(node *)",
+      "Bash(chmod *)",
       "Read",
       "Edit",
       "Write",
@@ -38,6 +39,18 @@
       "Edit(.env)",
       "Write(.env)",
       "Write(.git/*)"
+    ]
+  },
+  "hooks": {
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/post-compact.sh"
+          }
+        ]
+      }
     ]
   }
 }
