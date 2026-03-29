@@ -1,7 +1,7 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.2.1 — 23 tools (17R + 6W) + usage logging
-// Transport: @modelcontextprotocol/sdk (official) — Streamable HTTP
-// FIX: Removed duplicate /.well-known/oauth-authorization-server (Worker handles it)
+// MCP server v2.3.0 — 23 tools (17R + 6W) + usage logging
+// Transport: @modelcontextprotocol/sdk (official) — InMemoryTransport + SSE wrapping
+// FIX v2.3.0: SSE response wrapping for Claude.ai compatibility (Accept: text/event-stream)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
 import { Hono } from "jsr:@hono/hono";
@@ -349,15 +349,33 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 }
 
+// SSE response wrapper for Claude.ai compatibility
+function sseResponse(jsonRpc: any): Response {
+  const payload = JSON.stringify(jsonRpc);
+  const body = `event: message\ndata: ${payload}\n\n`;
+  return new Response(body, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+    },
+  });
+}
+
 // MCP endpoint — JSON-RPC over HTTP (stateless, per-request)
 // Uses InMemoryTransport because StreamableHTTPServerTransport requires Node.js HTTP (writeHead)
+// Supports SSE responses when Accept: text/event-stream (required by Claude.ai)
 app.all("/mcp", async (c) => {
   try {
+    const accept = c.req.header("Accept") || "";
+    const wantsSSE = accept.includes("text/event-stream");
+
     const authHeader = c.req.header("Authorization");
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.2.1" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.3.0" });
     registerTools(mcp, sb);
 
     // Create paired in-memory transports
@@ -388,6 +406,10 @@ app.all("/mcp", async (c) => {
 
     await mcp.close();
 
+    // SSE response if client requests it (Claude.ai sends Accept: text/event-stream)
+    if (wantsSSE) {
+      return sseResponse(response);
+    }
     return c.json(response);
   } catch (e: any) {
     console.error("[MCP] Handler error:", e.message, e.stack?.substring(0, 300));
@@ -395,12 +417,7 @@ app.all("/mcp", async (c) => {
   }
 });
 
-// FIX: REMOVED duplicate /.well-known/oauth-authorization-server
-// The Worker (Cloudflare) handles all OAuth discovery. Having two different
-// metadata endpoints (Worker → issuer=Worker, Edge Fn → issuer=Supabase)
-// confuses MCP clients that follow the upstream response instead.
-
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.2.1", tools: 23 }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.3.0", tools: 23 }));
 
 Deno.serve(app.fetch);
