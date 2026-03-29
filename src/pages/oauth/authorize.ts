@@ -1,4 +1,9 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
+
+async function kvLog(endpoint: string, data: any) {
+  try { const kv = (env as any).SESSION; if (kv) await kv.put(`debug:${endpoint}:${Date.now()}`, JSON.stringify({ timestamp: new Date().toISOString(), endpoint, ...data }), { expirationTtl: 3600 }); } catch {}
+}
 
 /**
  * OAuth 2.1 Authorization endpoint.
@@ -7,6 +12,7 @@ import type { APIRoute } from 'astro';
 export const GET: APIRoute = async ({ request }) => {
   const url = new URL(request.url);
   const state = url.searchParams.get('state') || '';
+  await kvLog("authorize", { method: request.method, params: Object.fromEntries(url.searchParams), userAgent: request.headers.get("user-agent") });
   const redirectUri = url.searchParams.get('redirect_uri') || '';
   const codeChallenge = url.searchParams.get('code_challenge') || '';
   const codeChallengeMethod = url.searchParams.get('code_challenge_method') || 'S256';

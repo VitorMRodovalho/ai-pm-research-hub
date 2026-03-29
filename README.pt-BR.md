@@ -18,7 +18,7 @@
 
 [🇺🇸 English](README.md) · [🇪🇸 Español](README.es.md)
 
-[**Plataforma**](https://platform.ai-pm-research-hub.workers.dev) · [**Servidor MCP**](https://platform.ai-pm-research-hub.workers.dev/mcp) · [**Blog**](https://platform.ai-pm-research-hub.workers.dev/blog) · [**Governanca**](docs/GOVERNANCE_CHANGELOG.md)
+[**Plataforma**](https://nucleoia.vitormr.dev) · [**Servidor MCP**](https://nucleoia.vitormr.dev/mcp) · [**Blog**](https://nucleoia.vitormr.dev/blog) · [**Governanca**](docs/GOVERNANCE_CHANGELOG.md)
 
 </div>
 
@@ -44,7 +44,7 @@ Fundado em 2024 como piloto no PMI Goias, o projeto evoluiu para uma alianca est
 | Entradas de governanca | 135+ |
 | Posts no blog | 9 |
 | Ferramentas MCP | 15 (10 leitura · 5 escrita) |
-| Edge Functions | 17 |
+| Edge Functions | 19 |
 | Chaves i18n | 2.350+ (3 idiomas) |
 | Testes | 784+ |
 | Custo mensal | $0 |
@@ -123,7 +123,7 @@ graph LR
 Qualquer membro pode conectar Claude, ChatGPT, Cursor ou VS Code a plataforma via Model Context Protocol. 15 ferramentas autenticadas via OAuth 2.1 com Row Level Security.
 
 ```
-https://platform.ai-pm-research-hub.workers.dev/mcp
+https://nucleoia.vitormr.dev/mcp
 ```
 
 ```mermaid
@@ -225,7 +225,7 @@ npm test
 │   ├── lib/            # Cliente Supabase, auth, utilitarios
 │   └── middleware/      # CSP, auth, i18n
 ├── supabase/
-│   ├── functions/      # 17 Edge Functions
+│   ├── functions/      # 19 Edge Functions
 │   └── migrations/     # Migracoes do banco de dados
 ├── tests/              # 784+ assercoes de teste
 ├── docs/               # Governanca, guias, specs

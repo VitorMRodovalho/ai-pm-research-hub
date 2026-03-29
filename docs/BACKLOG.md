@@ -1,61 +1,72 @@
 # BACKLOG — AI & PM Research Hub
-## Updated: 27 March 2026
+## Updated: 29 March 2026
 
 ---
 
-## P0 — Immediate (this week)
+## P0 — Bugs / Active Tech Debt
 
-| ID | Item | Status | Owner | Notes |
-|----|------|--------|-------|-------|
-| — | Andressa Martins 1-on-1 | ⏳ Prazo sexta 28/Mar | Vitor | 3 meses ausente, comms team |
-| — | Lídia Do Vale 1-on-1 | ⏳ Prazo sexta 28/Mar | Vitor | 3 meses ausente, T1 |
-
----
-
-## P1 — This sprint (next 2 weeks)
-
-| ID | Item | Status | Est. effort | Notes |
-|----|------|--------|-------------|-------|
-| — | Relatório Evolução C2→C3 | ✅ Done | — | Integrated into /admin/cycle-report with evolution section + PDF export |
-| — | Resend DNS pmigo.org.br | ✅ Done (27/Mar) | — | DNS verified, email sent from nucleoia@pmigo.org.br, new API key deployed to EF secrets |
-| — | Sentry TDZ monitoring | Monitoring | — | 14 workspace.astro issues. Watch post-deploy 97287b5. |
-| W-ASTRO6 | Astro 5→6 migration | ✅ Done (GC-133, 2026-03-28) | — | Completed: Astro 6, @astrojs/cloudflare v13, Vite 7, Workers SSR. |
+| # | Item | Est. | Status | Notes |
+|---|------|------|--------|-------|
+| 1 | Attendance cross-tribe | 1-2h | Open | "Supabase client unavailable" on /tribe/N for GP cross-management |
+| 2 | 2 attendance corrections | UI fix | Open | Guilherme Matricarde (934580d0), Gustavo Batista (ba2b9bf9) |
+| 3 | Migration repair 26/Mar | 5 min | Open | `supabase migration repair --status applied` for 6 RPCs |
+| 4 | i18n server-side locale | 1-2h | Open | EN locale broken since 24/Mar — server-side resolution |
+| 5 | MCP OAuth connector | — | In progress | v2.2.1 deployed, custom domain active, debugging token exchange |
 
 ---
 
-## P2 — April (second half)
+## P1 — Ready to Execute (no blockers)
 
-| ID | Item | Status | Est. effort | Notes |
-|----|------|--------|-------------|-------|
-| W-MCP-1 | Custom MCP server for tribe leaders | Investigation complete | 2 sessions | Phase 1: 10 read-only tools (mcp-lite + Edge Function). Phase 2: write tools + Fabrício pilot. See W_MCP_1_INVESTIGATION.md. Target: week 14-18/Apr. |
-| — | GitHub Copilot opt-out | Not started | 15 min | Deadline 24 April |
-
----
-
-## P3 — Backlog (unscheduled)
-
-| ID | Item | Status | Notes |
-|----|------|--------|-------|
-| — | Admin panel Phase 2-4 modularization | Deferred | Internal refactoring, invisible to users |
-| — | Ana Carla T8 Notion import → BoardEngine | Deferred | Wait for BoardEngine maturity |
-| — | 7 remote-only migrations | Tech debt | Low priority, doesn't block anything |
-| — | Manual R3 (ethics, audit, PMBOK 8th ed) | Not started | Content from governance team |
-| — | National expansion (3+ chapters) | Planning | Dependent on Relatório + sponsor approval |
-| — | 4 ghost researchers | ✅ Resolved | Zero remaining (verified 27/Mar) |
-| W-MCP-1-P3 | REST API for ChatGPT/Gemini users | Not started | Phase 3 of MCP initiative. Deferred until MCP pilot validates. |
+| # | Item | Est. | Status | Notes |
+|---|------|------|--------|-------|
+| 6 | S3.3 Custom PostHog events | 3-4h | Ready | 8 instrumentations: board_card_created/moved, webinar_viewed, blog_post_read, profile_updated, mcp_tool_called, certificate_issued, governance_cr_submitted |
+| 7 | S3.2 Designation filter everywhere | 2-3h | Ready | Expand adoption filter to /admin/members, /admin/attendance, /teams |
+| 8 | Phase 2 smoke-test.sh (GC-097) | 2h | Ready | Scripted QA gate layer 2 |
+| 9 | pg_cron verification | 30 min | Ready | Verify detractor weekly + reminders daily from H4 |
+| 10 | URL migration notice | Note | FYI | Débora + Marcos using legacy .pages.dev (redirect works) |
 
 ---
 
-## Completed (27 March 2026 session)
+## P2 — Needs External Input / Decision
 
-| Item | Commit/Status |
-|------|---------------|
-| Migration repair (6 RPCs + 1 policy) | ✅ f631c8f |
-| pg_cron detractor + attendance reminders | ✅ 93a874c |
-| Stakeholder attendance verification | ✅ Validated (5 chapters, numbers coherent) |
-| Blog posts 3-5 curadoria + publishing | ✅ Corrected (T1-T8 accurate) |
-| Cristiano Oliveira → alumni | ✅ DB updated |
-| Ghost researchers audit | ✅ Zero remaining |
-| Sentry triagem (37 issues, 5 fixes) | ✅ 97287b5 |
-| Documentation (README, ARCHITECTURE, CONTRIBUTING, RUNBOOK, INDEX) | ✅ c25aeb9 |
-| W-MCP-1 investigation | ✅ Complete (docs produced) |
+| # | Item | Blocker | Notes |
+|---|------|---------|-------|
+| 11 | Mario Trentim demo | 2026-04-03 10:00 ET | One-pager + demo script ready. Meet: wzh-tsmg-ven |
+| 12 | Brantlee Underhill outreach | Post-Mario | PMI Staff AI/Innovation. linkedin.com/in/brantleeunderhill/ |
+| 13 | nucleoia.pmigo.org.br CNAME | Waiting Ivan | HostGator DNS |
+| 14 | Relatório C2→C3 | Deferred | Waiting Ivan to define needs |
+| 15 | R3 Manual batch approve | Waiting Ivan | 29+ CRs pending approval |
+| 16 | S2.3 Executive sponsor view | 5 sponsors no auth | Spec after auth onboarding |
+| 17 | PMI-GO institutional page | Waiting Ivan | WordPress content sent |
+
+---
+
+## P3 — Sprint 3+ / Cycle 4
+
+| # | Item | Est. | Notes |
+|---|------|------|-------|
+| 18 | Pre-onboarding gamification spec | 2h Chat | Candidate journey feature |
+| 19 | Playwright e2e expansion | Cycle 4 | 8→30+ tests |
+| 20 | Sustainability frontend | Pending | P6 |
+| 21 | W107 Pilot #1 handler | Pending | — |
+| 22 | BoardEngine polish | Pending | Spec in BOARD_ENGINE_SPEC.md, @dnd-kit |
+| 23 | Admin modularization Phases 2-4 | Pending | Phase 1 done |
+| 24 | Advisor: 10 Security Definer Views | Pending | — |
+| 25 | legacy_tribes table cleanup | Low | G13 |
+| 26 | Git history cleanup | Low | 29MB PPTX in git history (G16) |
+| 27 | Co-managers member picker | Low | Webinar modal G10 |
+
+---
+
+## Recently Completed (session 28-29/Mar)
+
+- GC-160: Webinar Governance (full stack)
+- GC-161: MCP P1 (19 tools + usage logging)
+- GC-162: LGPD RLS Hardening (29 policies, ~20 tables)
+- GC-163: Adoption Dashboard v2 (auth providers, MCP card, PostHog native charts)
+- GC-164: MCP P2 (23 tools + transport fix @modelcontextprotocol/sdk)
+- OAuth fixes: CORS, secret placeholder, issuer dedup
+- Custom domain: nucleoia.vitormr.dev
+- Gap fixes: G1 (checkOrigin), G2 (PPTX), G4 (public /webinars), G5 (6 webinars), G7 (certificates i18n)
+- Attendance bugs: toggle fix, event type icons, SSR guard
+- CI fixes: public /webinars test, AttendanceGridTab window guard

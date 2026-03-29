@@ -11,14 +11,14 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
-[![MCP](https://img.shields.io/badge/MCP-15%20Tools-D97757?logo=claude&logoColor=white)](#mcp-server--ai-integration)
+[![MCP](https://img.shields.io/badge/MCP-23%20Tools-D97757?logo=claude&logoColor=white)](#mcp-server--ai-integration)
 [![PostHog](https://img.shields.io/badge/PostHog-Analytics-F9BD2B?logo=posthog&logoColor=white)](https://posthog.com)
 [![Sentry](https://img.shields.io/badge/Sentry-Monitoring-362D59?logo=sentry&logoColor=white)](https://sentry.io)
 [![Cost](https://img.shields.io/badge/Infra%20Cost-%240%2Fmo-brightgreen)]()
 
 [🇧🇷 Português](README.pt-BR.md) · [🇪🇸 Español](README.es.md)
 
-[**Live Platform**](https://platform.ai-pm-research-hub.workers.dev) · [**MCP Server**](https://platform.ai-pm-research-hub.workers.dev/mcp) · [**Blog**](https://platform.ai-pm-research-hub.workers.dev/blog) · [**Governance**](docs/GOVERNANCE_CHANGELOG.md)
+[**Live Platform**](https://nucleoia.vitormr.dev) · [**MCP Server**](https://nucleoia.vitormr.dev/mcp) · [**Blog**](https://nucleoia.vitormr.dev/blog) · [**Governance**](docs/GOVERNANCE_CHANGELOG.md)
 
 </div>
 
@@ -43,10 +43,10 @@ Founded in 2024 as a pilot within PMI Goiás, the initiative has grown into a st
 | PMI chapters | 5 (GO · CE · DF · MG · RS) |
 | Governance entries | 135+ |
 | Blog posts | 9 |
-| MCP tools | 15 (10 read · 5 write) |
-| Edge Functions | 17 |
-| i18n keys | 2,350+ (3 locales) |
-| Tests | 784+ |
+| MCP tools | 23 (17 read · 6 write) |
+| Edge Functions | 19 |
+| i18n keys | 3,500+ (3 locales) |
+| Tests | 779 passing |
 | Monthly cost | $0 |
 
 ---
@@ -108,8 +108,8 @@ graph LR
 | **Hosting** | Cloudflare Workers | Edge SSR, OAuth proxy, MCP proxy |
 | **Database** | Supabase PostgreSQL | 189+ SECURITY DEFINER functions, RLS |
 | **Auth** | Google + LinkedIn + Microsoft | OAuth 2.1, PKCE, dynamic client registration |
-| **MCP** | Custom server (15 tools) | AI assistants query platform via natural language |
-| **Server Logic** | Supabase Edge Functions (17) | Credly sync, attendance, MCP, campaigns |
+| **MCP** | Custom server (23 tools) | AI assistants query platform via natural language |
+| **Server Logic** | Supabase Edge Functions (19) | Credly sync, attendance, MCP, campaigns, PostHog proxy |
 | **Analytics** | PostHog | Product analytics, session replay |
 | **Errors** | Sentry | Real-time error monitoring |
 | **Cron** | pg_cron (4 jobs) | Credly sync, attendance, detractor alerts, reminders |
@@ -120,10 +120,10 @@ graph LR
 
 ## MCP Server — AI Integration
 
-Any member can connect Claude, ChatGPT, Cursor, or VS Code to the platform via the Model Context Protocol. 15 tools authenticated via OAuth 2.1 with full Row Level Security enforcement.
+Any member can connect Claude, ChatGPT, Cursor, or VS Code to the platform via the Model Context Protocol. 23 tools (17 read + 6 write) authenticated via OAuth 2.1 with full Row Level Security enforcement.
 
 ```
-https://platform.ai-pm-research-hub.workers.dev/mcp
+https://nucleoia.vitormr.dev/mcp
 ```
 
 ```mermaid
@@ -225,9 +225,9 @@ npm test
 │   ├── lib/            # Supabase client, auth, utilities
 │   └── middleware/      # CSP, auth, i18n
 ├── supabase/
-│   ├── functions/      # 17 Edge Functions
+│   ├── functions/      # 19 Edge Functions
 │   └── migrations/     # Database migrations
-├── tests/              # 784+ test assertions
+├── tests/              # 779 passing tests
 ├── docs/               # Governance, guides, specs
 └── scripts/            # Audit and utility scripts
 ```
