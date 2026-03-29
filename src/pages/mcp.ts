@@ -1,4 +1,9 @@
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
+
+async function kvLog(endpoint: string, data: any) {
+  try { const kv = (env as any).SESSION; if (kv) await kv.put(`debug:${endpoint}:${Date.now()}`, JSON.stringify({ timestamp: new Date().toISOString(), endpoint, ...data }), { expirationTtl: 3600 }); } catch {}
+}
 
 const UPSTREAM = 'https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-mcp/mcp';
 const BASE = 'https://nucleoia.vitormr.dev';
@@ -10,6 +15,8 @@ const CORS_HEADERS = {
 };
 
 export const ALL: APIRoute = async ({ request }) => {
+  await kvLog("mcp", { method: request.method, hasAuth: !!request.headers.get("authorization"), userAgent: request.headers.get("user-agent")?.substring(0, 60) });
+
   // CORS preflight — allow without auth
   if (request.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: CORS_HEADERS });

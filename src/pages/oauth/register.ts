@@ -4,6 +4,11 @@
 // (NULL client_secret_hash causes Go sql.Scan error)
 
 import type { APIRoute } from "astro";
+import { env } from "cloudflare:workers";
+
+async function kvLog(endpoint: string, data: any) {
+  try { const kv = (env as any).SESSION; if (kv) await kv.put(`debug:${endpoint}:${Date.now()}`, JSON.stringify({ timestamp: new Date().toISOString(), endpoint, ...data }), { expirationTtl: 3600 }); } catch {}
+}
 
 // This is the Supabase Auth OAuth client ID registered for MCP
 const SUPABASE_CLIENT_ID = "8636c0d0-a359-45f5-a2a4-8097dbdaabd6";
@@ -19,7 +24,9 @@ const CORS = {
 };
 
 export const POST: APIRoute = async ({ request }) => {
-  const body = await request.json().catch(() => ({}));
+  const rawBody = await request.text();
+  await kvLog("register", { method: request.method, body: rawBody, userAgent: request.headers.get("user-agent") });
+  const body = JSON.parse(rawBody || "{}") as any;
 
   return new Response(
     JSON.stringify({

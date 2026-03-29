@@ -1,5 +1,52 @@
 # Changelog
 
+## 2026-03-28/29 — v2.2.1: Webinar Governance, LGPD, MCP 23 Tools, Analytics, Custom Domain
+
+### GC-160: Webinar Governance
+- `webinars` + `webinar_lifecycle_events` tables with co-management (co_manager_ids, event_id, board_item_id)
+- 5 RPCs: list_webinars_v2, upsert_webinar, link_webinar_event, get_webinar_lifecycle, webinars_pending_comms
+- /admin/webinars rewritten: CRUD modal, filters, lifecycle timeline
+- /admin/comms: "Webinars pendentes de campanha" section
+- /webinars: public view (confirmed + replays)
+- 6 pipeline webinars migrated from board_items
+- Notification triggers for 4 stakeholder groups
+
+### GC-161: MCP P1 (19 tools)
+- 4 new tools: get_my_attendance_history, list_tribe_webinars, create_tribe_event, get_comms_pending_webinars
+- mcp_usage_log table + log_mcp_usage RPC + get_mcp_adoption_stats
+- Usage logging on all 19 tools
+
+### GC-162: LGPD RLS Hardening (P0 Security)
+- ~20 tables locked: members PII, attendance, gamification, boards, events, CRs, publications
+- Anon/Ghost blocked from PII; public RPCs: get_public_leaderboard, get_public_platform_stats
+- /gamification public fallback via RPC
+
+### GC-163: Adoption Dashboard v2
+- get_auth_provider_stats RPC (auth providers, ghost visitors, secondary auth)
+- get_adoption_dashboard enhanced: mcp_usage, auth_providers, designation_counts
+- MCP card + Auth providers card + designation filter + MCP column
+- PostHog native charts: DAU/WAU line, top pages bar, traffic doughnut, rage clicks, retention heatmap
+- posthog-proxy v2 EF with Query API (5 whitelisted queries)
+
+### GC-164: MCP P2 (23 tools)
+- Transport fix: mcp-lite@0.10.0 → @modelcontextprotocol/sdk@1.12.1
+- 4 new tools: get_my_certificates, search_hub_resources, get_adoption_metrics, get_chapter_kpis
+- Version: v2.2.0 → v2.2.1
+
+### Infrastructure
+- Custom domain: nucleoia.vitormr.dev (bypasses .workers.dev Bot Fight Mode)
+- Middleware: 301 redirects from legacy hosts + manual CSRF (checkOrigin bypass for OAuth/MCP)
+- OAuth fixes: CORS on .well-known, client_secret placeholder, issuer dedup
+- 4 EFs redeployed with nucleoia.vitormr.dev URLs
+- i18n: 19 duplicate publication keys removed
+
+### Bug Fixes
+- Attendance toggle: memberReady state + useMemo deps
+- TribeAttendanceTab: 6 event type icons added
+- AttendanceGridTab: SSR window guard
+- CI: public /webinars test assertions updated
+- Certificates i18n redirects (en/es)
+
 ## 2026-03-21
 
 ### GC-116: Governance Change Management Infrastructure

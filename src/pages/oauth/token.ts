@@ -1,6 +1,10 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 
+async function kvLog(endpoint: string, data: any) {
+  try { const kv = (env as any).SESSION; if (kv) await kv.put(`debug:${endpoint}:${Date.now()}`, JSON.stringify({ timestamp: new Date().toISOString(), endpoint, ...data }), { expirationTtl: 3600 }); } catch {}
+}
+
 /**
  * OAuth 2.1 Token endpoint.
  * Exchanges authorization code for access_token.
@@ -18,6 +22,7 @@ async function sha256base64url(input: string): Promise<string> {
 export const POST: APIRoute = async ({ request }) => {
   try {
     const contentType = request.headers.get('Content-Type') || '';
+    await kvLog("token-request", { contentType, userAgent: request.headers.get("user-agent") });
     let params: Record<string, string> = {};
 
     if (contentType.includes('application/x-www-form-urlencoded')) {
@@ -28,7 +33,8 @@ export const POST: APIRoute = async ({ request }) => {
       params = await request.json();
     }
 
-    const { grant_type, code, code_verifier, client_id } = params;
+    const { grant_type, code, code_verifier, client_id, redirect_uri } = params;
+    await kvLog("token-params", { grant_type, client_id, code: code?.substring(0, 8), redirect_uri, verifierLen: code_verifier?.length });
 
     if (grant_type !== 'authorization_code') {
       return new Response(JSON.stringify({ error: 'unsupported_grant_type' }), {
@@ -55,6 +61,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Look up code
     const raw = await kv.get(`mcp_code:${code}`);
+    await kvLog("token-kv", { codeExists: !!raw });
     if (!raw) {
       return new Response(JSON.stringify({ error: 'invalid_grant', error_description: 'code expired or invalid' }), {
         status: 400,
@@ -66,6 +73,8 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Verify PKCE
     const computedChallenge = await sha256base64url(code_verifier);
+    const pkceValid = computedChallenge === stored.code_challenge;
+    await kvLog("token-pkce", { valid: pkceValid, computed: computedChallenge?.substring(0, 16), stored: stored.code_challenge?.substring(0, 16) });
     if (computedChallenge !== stored.code_challenge) {
       return new Response(JSON.stringify({ error: 'invalid_grant', error_description: 'PKCE verification failed' }), {
         status: 400,
@@ -77,6 +86,7 @@ export const POST: APIRoute = async ({ request }) => {
     await kv.delete(`mcp_code:${code}`);
 
     // Return the Supabase access_token
+    await kvLog("token-success", { tokenLen: stored.access_token?.length });
     return new Response(JSON.stringify({
       access_token: stored.access_token,
       token_type: 'Bearer',
