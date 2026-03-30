@@ -151,11 +151,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   }
 
   // Wait for nav to be ready (provides supabase client)
-  if ((window as any).navGetSb?.()) {
-    boot();
-  } else {
-    window.addEventListener('nav:member', () => boot(), { once: true });
-    // Fallback if nav never fires (unauthenticated)
-    setTimeout(boot, 2000);
+  let booted = false;
+  function tryBoot() { if (booted) return; if ((window as any).navGetSb?.()) { booted = true; boot(); } }
+  tryBoot();
+  if (!booted) {
+    window.addEventListener('nav:member', () => tryBoot(), { once: true });
+    // Poll until navGetSb is ready (Nav creates client before auth resolves)
+    const poll = setInterval(function() { if ((window as any).navGetSb?.()) { clearInterval(poll); tryBoot(); } }, 300);
+    setTimeout(function() { clearInterval(poll); tryBoot(); }, 5000);
   }
 </script>
