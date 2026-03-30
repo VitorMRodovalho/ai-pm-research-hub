@@ -1018,6 +1018,8 @@ const ptBR: Record<string, string> = {
   // ── Attendance page (script / client-side) ──
   'attendance.dateLocale': 'pt-BR',
   'attendance.filterAllRoles': 'Todos os papéis',
+  'attendance.filterAllDesignations': 'Todas as designações',
+  'attendance.role.chapterLiaison': 'Ponto Focal',
   'attendance.role.manager': 'Gerente de Projeto',
   'attendance.role.deputy_manager': 'Deputy PM',
   'attendance.role.tribe_leader': 'Líder de Tribo',
