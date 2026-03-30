@@ -1,0 +1,84 @@
+---
+import { t, type Lang } from '../../i18n/utils';
+
+interface Props { lang?: Lang }
+const { lang = 'pt-BR' } = Astro.props;
+---
+
+<section id="platform-stats" class="py-12 bg-[var(--surface-base)]">
+  <div class="max-w-6xl mx-auto px-4">
+    <h2 class="text-center text-2xl font-bold text-navy mb-8">
+      {t('homepage.stats.title', lang)}
+    </h2>
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 text-center">
+      <div class="stat-card">
+        <span id="stat-members" class="text-3xl font-extrabold text-navy">&mdash;</span>
+        <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.members', lang)}</span>
+      </div>
+      <div class="stat-card">
+        <span id="stat-tribes" class="text-3xl font-extrabold text-navy">&mdash;</span>
+        <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.tribes', lang)}</span>
+      </div>
+      <div class="stat-card">
+        <span id="stat-chapters" class="text-3xl font-extrabold text-navy">&mdash;</span>
+        <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.chapters', lang)}</span>
+      </div>
+      <div class="stat-card">
+        <span id="stat-events" class="text-3xl font-extrabold text-navy">&mdash;</span>
+        <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.events', lang)}</span>
+      </div>
+      <div class="stat-card">
+        <span id="stat-resources" class="text-3xl font-extrabold text-navy">&mdash;</span>
+        <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.resources', lang)}</span>
+      </div>
+      <div class="stat-card">
+        <span id="stat-retention" class="text-3xl font-extrabold text-navy">&mdash;</span>
+        <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.retention', lang)}</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    background: var(--surface-card, #fff);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+</style>
+
+<script>
+(function loadPlatformStats() {
+  var url = (window as any).__PUBLIC_SUPABASE_URL;
+  var key = (window as any).__PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) { setTimeout(loadPlatformStats, 200); return; }
+
+  fetch(url + '/rest/v1/rpc/get_public_platform_stats', {
+    method: 'POST',
+    headers: { 'apikey': key, 'Content-Type': 'application/json' },
+    body: '{}',
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (!data || data.error) return;
+    var el: HTMLElement | null;
+    el = document.getElementById('stat-members');
+    if (el) el.textContent = String(data.active_members || 0);
+    el = document.getElementById('stat-tribes');
+    if (el) el.textContent = String(data.total_tribes || 0);
+    el = document.getElementById('stat-chapters');
+    if (el) el.textContent = String(data.total_chapters || 0);
+    el = document.getElementById('stat-events');
+    if (el) el.textContent = String(data.total_events || 0);
+    el = document.getElementById('stat-resources');
+    if (el) el.textContent = String(data.total_resources || 0);
+    el = document.getElementById('stat-retention');
+    if (el) el.textContent = (data.retention_rate || 0).toFixed(0) + '%';
+  })
+  .catch(function() { /* silently degrade — dashes remain */ });
+})();
+</script>
