@@ -80,5 +80,6 @@ const { lang = 'pt-BR' } = Astro.props;
     if (el) el.textContent = (data.retention_rate || 0).toFixed(0) + '%';
   })
   .catch(function() { /* silently degrade — dashes remain */ });
+  try { if ((window as any).posthog) (window as any).posthog.capture('homepage_stats_viewed'); } catch(e) {}
 })();
 </script>
