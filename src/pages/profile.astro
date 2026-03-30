@@ -135,6 +135,25 @@ const PROFILE_I18N = {
   notifPrefCr: t('notifications.prefs.cr', lang),
   notifPrefCertificate: t('notifications.prefs.certificate', lang),
   notifPrefsSaved: t('notifications.prefs.saved', lang),
+  historyTitle: t('profile.history.title', lang),
+  historyDate: t('profile.history.date', lang),
+  historyEvent: t('profile.history.event', lang),
+  historyType: t('profile.history.type', lang),
+  historyStatus: t('profile.history.status', lang),
+  historyPresent: t('profile.history.present', lang),
+  historyAbsent: t('profile.history.absent', lang),
+  historyExcused: t('profile.history.excused', lang),
+  historySummary: t('profile.history.summary', lang),
+  historyEmpty: t('profile.history.empty', lang),
+  historyError: t('profile.history.error', lang),
+  historyTypeGeral: t('profile.history.typeGeral', lang),
+  historyTypeTribo: t('profile.history.typeTribo', lang),
+  historyTypeLideranca: t('profile.history.typeLideranca', lang),
+  historyTypeComms: t('profile.history.typeComms', lang),
+  historyTypeParceria: t('profile.history.typeParceria', lang),
+  historyTypeEntrevista: t('profile.history.typeEntrevista', lang),
+  historyType1on1: t('profile.history.type1on1', lang),
+  historyTypeExterno: t('profile.history.typeExterno', lang),
 };
 ---
 <BaseLayout title={t('profile.title', lang)} activePage="profile">
@@ -186,7 +205,15 @@ const PROFILE_I18N = {
     sponsor: '#BE2027', chapter_liaison: '#BE2027', ambassador: '#10B981', founder: '#7C3AED', curator: '#D97706', comms_team: '#06B6D4', comms_leader: '#06B6D4', comms_member: '#06B6D4', co_gp: '#FF610F', tribe_leader: '#4F17A8'
   };
 
+  const HISTORY_TYPE_LABELS: Record<string, string> = {
+    geral: PROFILE_I18N.historyTypeGeral, tribo: PROFILE_I18N.historyTypeTribo,
+    lideranca: PROFILE_I18N.historyTypeLideranca, comms: PROFILE_I18N.historyTypeComms,
+    parceria: PROFILE_I18N.historyTypeParceria, entrevista: PROFILE_I18N.historyTypeEntrevista,
+    '1on1': PROFILE_I18N.historyType1on1, evento_externo: PROFILE_I18N.historyTypeExterno,
+  };
+
   let currentMember: any = null;
+  let attendanceHistory: any[] = [];
   let cycleHistory: any[] = [];
   let cycleStats: any = null;
   let journeyStats: any = null;
@@ -355,6 +382,12 @@ const PROFILE_I18N = {
       cycleStats = null;
       (window as any).toast?.('Could not load cycle statistics. Some data may be incomplete.', 'error');
     }
+
+    // Load attendance history (F5)
+    try {
+      const { data: histData } = await sb.rpc('get_my_attendance_history', { p_limit: 20 });
+      attendanceHistory = Array.isArray(histData) ? histData : [];
+    } catch (_) { attendanceHistory = []; }
 
     // Load My Week data
     try {
@@ -729,6 +762,68 @@ const PROFILE_I18N = {
   }
 
   // ── Main render ──
+  function attendanceHistoryHtml(): string {
+    if (!attendanceHistory || attendanceHistory.length === 0) {
+      return `
+        <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
+          <h2 class="text-sm font-bold text-navy mb-3">${PROFILE_I18N.historyTitle}</h2>
+          <p class="text-[.78rem] text-[var(--text-muted)]">${PROFILE_I18N.historyEmpty}</p>
+        </div>`;
+    }
+    var attended = attendanceHistory.filter(function(r: any) { return r.present; }).length;
+    var total = attendanceHistory.length;
+    var rate = total > 0 ? Math.round((attended / total) * 100) : 0;
+    var barColor = rate >= 75 ? '#22c55e' : rate >= 50 ? '#f59e0b' : '#ef4444';
+    var summaryText = (PROFILE_I18N.historySummary || '')
+      .replace('{attended}', String(attended))
+      .replace('{total}', String(total))
+      .replace('{rate}', String(rate));
+
+    var locale = location.pathname.startsWith('/en') ? 'en-US' : location.pathname.startsWith('/es') ? 'es' : 'pt-BR';
+
+    var rows = attendanceHistory.map(function(r: any) {
+      var dateStr = '';
+      try { dateStr = new Date(r.event_date + 'T00:00:00').toLocaleDateString(locale); } catch (_) { dateStr = r.event_date; }
+      var typeLabel = HISTORY_TYPE_LABELS[r.event_type] || r.event_type || '';
+      var statusDot = r.present
+        ? '<span class="inline-block w-2.5 h-2.5 rounded-full bg-green-500" title="' + (PROFILE_I18N.historyPresent || '') + '"></span>'
+        : r.excused
+          ? '<span class="inline-block w-2.5 h-2.5 rounded-full bg-yellow-500" title="' + (PROFILE_I18N.historyExcused || '') + '"></span>'
+          : '<span class="inline-block w-2.5 h-2.5 rounded-full bg-red-400" title="' + (PROFILE_I18N.historyAbsent || '') + '"></span>';
+
+      return '<tr class="border-t border-[var(--border-default)] hover:bg-[var(--surface-hover)]">'
+        + '<td class="px-3 py-2 whitespace-nowrap text-[.78rem]">' + dateStr + '</td>'
+        + '<td class="px-3 py-2 text-[.78rem]">' + (r.event_title || '') + '</td>'
+        + '<td class="px-3 py-2 whitespace-nowrap"><span class="px-2 py-0.5 rounded text-[.68rem] bg-[var(--surface-base)]">' + typeLabel + '</span></td>'
+        + '<td class="px-3 py-2 text-center">' + statusDot + '</td>'
+        + '</tr>';
+    }).join('');
+
+    return `
+      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
+        <h2 class="text-sm font-bold text-navy mb-3">${PROFILE_I18N.historyTitle}</h2>
+        <div class="mb-4 flex items-center gap-3">
+          <div class="flex-1 h-3 rounded-full bg-[var(--surface-base)] overflow-hidden">
+            <div class="h-full rounded-full transition-all" style="width:${rate}%;background:${barColor}"></div>
+          </div>
+          <span class="text-[.78rem] font-medium text-[var(--text-secondary)] whitespace-nowrap">${summaryText}</span>
+        </div>
+        <div class="overflow-x-auto rounded-lg border border-[var(--border-default)]">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-[var(--surface-base)] text-[var(--text-secondary)]">
+                <th class="px-3 py-2 text-left font-medium text-[.75rem]">${PROFILE_I18N.historyDate}</th>
+                <th class="px-3 py-2 text-left font-medium text-[.75rem]">${PROFILE_I18N.historyEvent}</th>
+                <th class="px-3 py-2 text-left font-medium text-[.75rem]">${PROFILE_I18N.historyType}</th>
+                <th class="px-3 py-2 text-center font-medium text-[.75rem]">${PROFILE_I18N.historyStatus}</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
   function renderProfile(m: any) {
     const el = document.getElementById('profile-content');
     if (!el) return;
@@ -794,6 +889,9 @@ const PROFILE_I18N = {
 
       <!-- Timeline: Cycle History -->
       ${timelineHtml()}
+
+      <!-- Attendance History (F5) -->
+      ${attendanceHistoryHtml()}
 
       <!-- Card: Emails -->
       <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
