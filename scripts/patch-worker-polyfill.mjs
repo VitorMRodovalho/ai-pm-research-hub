@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 /**
  * Post-build patch: injects a MessageChannel polyfill into Worker chunks
- * that reference it. Cloudflare Pages' publish validation evaluates ES
+ * that reference it.
+ *
+ * NOTE (2026-03-31): React 19.2.4 + Astro 6.1.1 no longer produce
+ * MessageChannel refs in server chunks — this script is now a no-op.
+ * Kept as safety net in case future deps reintroduce the issue.
+ *
+ * Original issue: Cloudflare Pages' publish validation evaluates ES
  * module top-level code in an environment where MessageChannel is
  * unavailable. React 19's browser build of react-dom/server calls
  * new MessageChannel() during module init.

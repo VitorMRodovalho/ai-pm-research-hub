@@ -43,7 +43,7 @@ Founded in 2024 as a pilot within PMI Goiás, the initiative has grown into a st
 | PMI chapters | 5 (GO · CE · DF · MG · RS) |
 | Governance entries | 135+ |
 | Blog posts | 9 |
-| MCP tools | 26 (20 read · 6 write) |
+| MCP tools | 29 (23 read · 6 write) |
 | Edge Functions | 19 |
 | i18n keys | 3,500+ (3 locales) |
 | Tests | 779 passing |
@@ -108,7 +108,7 @@ graph LR
 | **Hosting** | Cloudflare Workers | Edge SSR, OAuth proxy, MCP proxy |
 | **Database** | Supabase PostgreSQL | 189+ SECURITY DEFINER functions, RLS |
 | **Auth** | Google + LinkedIn + Microsoft | OAuth 2.1, PKCE, dynamic client registration |
-| **MCP** | Custom server (26 tools) | AI assistants query platform via natural language |
+| **MCP** | Custom server (29 tools) | AI assistants query platform via natural language |
 | **Server Logic** | Supabase Edge Functions (19) | Credly sync, attendance, MCP, campaigns, PostHog proxy |
 | **Analytics** | PostHog | Product analytics, session replay |
 | **Errors** | Sentry | Real-time error monitoring |
@@ -120,7 +120,7 @@ graph LR
 
 ## MCP Server — AI Integration
 
-Any member can connect Claude, ChatGPT, Cursor, or VS Code to the platform via the Model Context Protocol. 26 tools (20 read + 6 write) authenticated via OAuth 2.1 with full Row Level Security enforcement.
+Any member can connect Claude, ChatGPT, Cursor, or VS Code to the platform via the Model Context Protocol. 29 tools (20 read + 6 write) authenticated via OAuth 2.1 with full Row Level Security enforcement.
 
 ```
 https://nucleoia.vitormr.dev/mcp
@@ -151,7 +151,7 @@ sequenceDiagram
 
 | Compatibility | Status |
 |--------------|--------|
-| Claude.ai | Verified (26 tools) |
+| Claude.ai | Verified (29 tools) |
 | Claude Code | Stable |
 | ChatGPT | Server-compatible (beta) |
 | Cursor / VS Code | Server-compatible |

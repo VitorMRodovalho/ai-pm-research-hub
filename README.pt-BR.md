@@ -11,7 +11,7 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
-[![MCP](https://img.shields.io/badge/MCP-26%20Tools-D97757?logo=claude&logoColor=white)](#servidor-mcp--integracao-com-ia)
+[![MCP](https://img.shields.io/badge/MCP-29%20Tools-D97757?logo=claude&logoColor=white)](#servidor-mcp--integracao-com-ia)
 [![PostHog](https://img.shields.io/badge/PostHog-Analytics-F9BD2B?logo=posthog&logoColor=white)](https://posthog.com)
 [![Sentry](https://img.shields.io/badge/Sentry-Monitoring-362D59?logo=sentry&logoColor=white)](https://sentry.io)
 [![Cost](https://img.shields.io/badge/Infra%20Cost-%240%2Fmo-brightgreen)]()
@@ -43,7 +43,7 @@ Fundado em 2024 como piloto no PMI Goias, o projeto evoluiu para uma alianca est
 | Capitulos PMI | 5 (GO · CE · DF · MG · RS) |
 | Entradas de governanca | 135+ |
 | Posts no blog | 9 |
-| Ferramentas MCP | 26 (20 leitura · 6 escrita) |
+| Ferramentas MCP | 29 (23 leitura · 6 escrita) |
 | Edge Functions | 19 |
 | Chaves i18n | 3.500+ (3 idiomas) |
 | Testes | 779 |
@@ -108,7 +108,7 @@ graph LR
 | **Hospedagem** | Cloudflare Workers | SSR na edge, proxy OAuth, proxy MCP |
 | **Banco de Dados** | Supabase PostgreSQL | 189+ funcoes SECURITY DEFINER, RLS |
 | **Auth** | Google + LinkedIn + Microsoft | OAuth 2.1, PKCE, registro dinamico de clientes |
-| **MCP** | Servidor customizado (26 ferramentas) | Assistentes de IA consultam a plataforma via linguagem natural |
+| **MCP** | Servidor customizado (29 ferramentas) | Assistentes de IA consultam a plataforma via linguagem natural |
 | **Logica Server** | Supabase Edge Functions (19) | Sync Credly, presenca, MCP, campanhas, PostHog proxy |
 | **Analytics** | PostHog | Analytics de produto, session replay |
 | **Erros** | Sentry | Monitoramento de erros em tempo real |
@@ -120,7 +120,7 @@ graph LR
 
 ## Servidor MCP — Integracao com IA
 
-Qualquer membro pode conectar Claude, ChatGPT, Cursor ou VS Code a plataforma via Model Context Protocol. 26 ferramentas (20 leitura + 6 escrita) autenticadas via OAuth 2.1 com Row Level Security.
+Qualquer membro pode conectar Claude, ChatGPT, Cursor ou VS Code a plataforma via Model Context Protocol. 29 ferramentas (20 leitura + 6 escrita) autenticadas via OAuth 2.1 com Row Level Security.
 
 ```
 https://nucleoia.vitormr.dev/mcp
@@ -151,7 +151,7 @@ sequenceDiagram
 
 | Compatibilidade | Status |
 |----------------|--------|
-| Claude.ai | Verificado (26 ferramentas) |
+| Claude.ai | Verificado (29 ferramentas) |
 | Claude Code | Estavel |
 | ChatGPT | Compativel (beta) |
 | Cursor / VS Code | Compativel |
