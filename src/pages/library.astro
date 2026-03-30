@@ -19,6 +19,9 @@ const WORKSPACE_I18N = {
   tribePrefix: t('workspace.tribePrefix', lang),
   error: t('workspace.error', lang),
   search: t('workspace.search', lang),
+  searchPlaceholder: t('library.search.placeholder', lang),
+  searching: t('library.search.searching', lang),
+  searchResults: t('library.search.results', lang),
   tags: t('workspace.tags', lang),
   tagAll: t('workspace.tagAll', lang),
   prev: t('workspace.prev', lang),
@@ -121,6 +124,8 @@ const WORKSPACE_I18N = {
   let activeTag = '';
   let searchQuery = '';
   let currentPage = 1;
+  let searchRpcResults: any[] | null = null;
+  let isSearching = false;
 
   const esc = (s: string) => String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -143,11 +148,12 @@ const WORKSPACE_I18N = {
   }
 
   function getFiltered(): any[] {
-    let filtered = allResources;
+    let filtered = searchRpcResults !== null ? searchRpcResults : allResources;
     if (activeType) filtered = filtered.filter(r => r.asset_type === activeType);
     if (activeTribe) filtered = filtered.filter(r => String(r.tribe_id) === activeTribe);
     if (activeTag) filtered = filtered.filter(r => (r.tags || []).includes(activeTag));
-    if (searchQuery) {
+    // Client-side fallback when no RPC results
+    if (searchRpcResults === null && searchQuery) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(r =>
         (r.title || '').toLowerCase().includes(q) ||
@@ -307,6 +313,28 @@ const WORKSPACE_I18N = {
 
   let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
+  function updateSearchIndicator() {
+    let indicator = document.getElementById('ws-search-indicator');
+    if (!indicator) {
+      const searchInput = document.getElementById('ws-search');
+      if (searchInput && searchInput.parentElement) {
+        indicator = document.createElement('span');
+        indicator.id = 'ws-search-indicator';
+        indicator.className = 'text-[.7rem] text-[var(--text-muted)] ml-2';
+        searchInput.parentElement.appendChild(indicator);
+      }
+    }
+    if (indicator) {
+      if (isSearching) {
+        indicator.textContent = I18N.searching || 'Buscando...';
+      } else if (searchRpcResults !== null) {
+        indicator.textContent = searchRpcResults.length + ' ' + (I18N.searchResults || 'resultados');
+      } else {
+        indicator.textContent = '';
+      }
+    }
+  }
+
   if (!(window as any).__workspaceDelegationBound) {
     (window as any).__workspaceDelegationBound = true;
     document.addEventListener('click', function(e: MouseEvent) {
@@ -351,10 +379,32 @@ const WORKSPACE_I18N = {
       const target = e.target as HTMLElement;
       if (target.id === 'ws-search') {
         if (searchTimer) clearTimeout(searchTimer);
-        searchTimer = setTimeout(function() {
+        searchTimer = setTimeout(async function() {
           searchQuery = (target as HTMLInputElement).value.trim();
+          if (searchQuery.length >= 2 && sb) {
+            isSearching = true;
+            updateSearchIndicator();
+            try {
+              const { data } = await sb.rpc('search_hub_resources', {
+                p_query: searchQuery,
+                p_asset_type: null,
+                p_limit: 50,
+              });
+              if (Array.isArray(data)) {
+                searchRpcResults = data;
+              } else {
+                searchRpcResults = null;
+              }
+            } catch (_) {
+              searchRpcResults = null;
+            }
+            isSearching = false;
+            updateSearchIndicator();
+          } else {
+            searchRpcResults = null;
+          }
           applyFilters();
-        }, 250);
+        }, 300);
       }
     });
   }
