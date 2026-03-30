@@ -197,6 +197,13 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
           <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Observacoes</label>
           <textarea id="modal-notes" rows="2" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2"></textarea>
         </div>
+        <div>
+          <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Co-gestores</label>
+          <div id="modal-co-managers" class="max-h-48 overflow-y-auto rounded-lg border border-[var(--border-default)] p-2 space-y-1">
+            <span class="text-[.72rem] text-[var(--text-muted)]">Carregando membros...</span>
+          </div>
+          <p id="modal-co-count" class="mt-1 text-[.68rem] text-[var(--text-secondary)] hidden"></p>
+        </div>
       </div>
       <div id="modal-lifecycle" class="hidden mt-4 pt-4 border-t border-[var(--border-default)]">
         <h3 class="text-xs font-bold text-navy mb-2">Historico</h3>
@@ -243,6 +250,8 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
   let sb: any = null;
   let MEMBER: any = null;
   let ALL_WEBINARS: any[] = [];
+  let coManagerIds: string[] = [];
+  let allActiveMembers: { id: string; name: string; operational_role: string }[] = [];
 
   function showDenied() {
     document.getElementById('webinars-loading')?.classList.add('hidden');
@@ -449,6 +458,65 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
 
   // ── Modal ──
 
+  async function loadActiveMembers() {
+    if (allActiveMembers.length > 0) return;
+    try {
+      const { data } = await sb.from('public_members')
+        .select('id, name, operational_role')
+        .eq('current_cycle_active', true)
+        .order('name');
+      if (data) allActiveMembers = data;
+    } catch (_) {}
+  }
+
+  function renderCoManagerSelector() {
+    const container = document.getElementById('modal-co-managers');
+    const countEl = document.getElementById('modal-co-count');
+    if (!container) return;
+    if (allActiveMembers.length === 0) {
+      container.innerHTML = '<span class="text-[.72rem] text-[var(--text-muted)]">Nenhum membro encontrado.</span>';
+      return;
+    }
+    const ROLE_SHORT: Record<string, string> = {
+      manager: 'GP', deputy_manager: 'Vice-GP', tribe_leader: 'Lider', researcher: 'Pesq.',
+      facilitator: 'Facil.', communicator: 'Comms', none: '—', guest: 'Guest'
+    };
+    container.innerHTML = allActiveMembers.map(function(m) {
+      var checked = coManagerIds.includes(m.id) ? 'checked' : '';
+      return '<label class="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-[var(--surface-hover)] cursor-pointer text-sm">'
+        + '<input type="checkbox" data-cm-id="' + m.id + '" ' + checked + ' class="rounded border-[var(--border-default)]" />'
+        + '<span class="text-[var(--text-primary)]">' + esc(m.name) + '</span>'
+        + '<span class="text-[.68rem] text-[var(--text-muted)]">(' + (ROLE_SHORT[m.operational_role] || m.operational_role) + ')</span>'
+        + '</label>';
+    }).join('');
+
+    // Bind change events
+    container.querySelectorAll('input[data-cm-id]').forEach(function(cb) {
+      cb.addEventListener('change', function() {
+        var input = cb as HTMLInputElement;
+        var mid = input.dataset.cmId || '';
+        if (input.checked) {
+          if (!coManagerIds.includes(mid)) coManagerIds.push(mid);
+        } else {
+          coManagerIds = coManagerIds.filter(function(x) { return x !== mid; });
+        }
+        updateCoCount();
+      });
+    });
+    updateCoCount();
+  }
+
+  function updateCoCount() {
+    var countEl = document.getElementById('modal-co-count');
+    if (!countEl) return;
+    if (coManagerIds.length > 0) {
+      countEl.textContent = coManagerIds.length + ' selecionados';
+      countEl.classList.remove('hidden');
+    } else {
+      countEl.classList.add('hidden');
+    }
+  }
+
   function openModal(w?: any) {
     if (w) { try { if ((window as any).posthog) (window as any).posthog.capture('webinar_viewed', { webinar_id: w.id, webinar_title: w.title, status: w.status, chapter: w.chapter_code }); } catch {} }
     const modal = document.getElementById('webinar-modal')!;
@@ -472,6 +540,10 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
     Object.entries(TRIBE_NAMES).forEach(([id, name]) => {
       tribeEl.innerHTML += `<option value="${id}">${name}</option>`;
     });
+
+    // Co-managers
+    coManagerIds = w?.co_managers?.map((cm: any) => cm.id) || [];
+    loadActiveMembers().then(renderCoManagerSelector);
 
     if (w) {
       titleEl.textContent = 'Editar Webinar';
@@ -577,6 +649,7 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
         p_meeting_link: meeting_link || null,
         p_youtube_url: youtube_url || null,
         p_notes: notes || null,
+        p_co_manager_ids: coManagerIds.length > 0 ? coManagerIds : null,
       };
       if (id) params.p_id = id;
 
