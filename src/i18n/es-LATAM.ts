@@ -205,6 +205,7 @@ const esLATAM: Record<string, string> = {
   'adoption.neverSeen': 'Nunca accedió',
   'adoption.adoptionPct': 'Adopción',
   'adoption.avgSessions': 'Sesiones/miembro',
+  'adoption.mcpHealth': 'Salud MCP por Ruta',
   'adoption.dailyActivity': 'Actividad Diaria',
   'adoption.last30d': 'Últimos 30 días',
   'adoption.byTribe': 'Por Tribu',

@@ -112,6 +112,23 @@
   --badge-draft-bg: #F1F5F9;             /* slate-100 */
   --badge-draft-text: #475569;           /* slate-600 */
 
+  /* ── Status Cards (funnel, category badges, etc.) — WCAG AA ≥4.5:1 ── */
+  --status-info-bg: #DBEAFE;              /* blue-100 */
+  --status-info-text: #1E40AF;            /* blue-800 */
+  --status-info-border: #93C5FD;          /* blue-300 */
+  --status-success-bg: #D1FAE5;           /* emerald-100 */
+  --status-success-text: #065F46;         /* emerald-800 */
+  --status-success-border: #6EE7B7;       /* emerald-300 */
+  --status-warning-bg: #FEF3C7;           /* amber-100 */
+  --status-warning-text: #92400E;         /* amber-800 */
+  --status-warning-border: #FCD34D;       /* amber-300 */
+  --status-accent-bg: #EDE9FE;            /* violet-100 */
+  --status-accent-text: #5B21B6;          /* violet-800 */
+  --status-accent-border: #C4B5FD;        /* violet-300 */
+  --status-danger-bg: #FEE2E2;            /* red-100 */
+  --status-danger-text: #991B1B;          /* red-800 */
+  --status-danger-border: #FCA5A5;        /* red-300 */
+
   /* ── KPI ── */
   --kpi-bg: rgba(30, 58, 138, 0.1);      /* blue-900/10 */
   --kpi-text: #1E3A8A;                   /* blue-900 */
@@ -211,6 +228,23 @@
   --badge-pending-text: #FDE68A;
   --badge-draft-bg: rgba(148, 163, 184, 0.15);
   --badge-draft-text: #CBD5E1;
+
+  /* ── Status Cards (funnel, category badges, etc.) — WCAG AA ≥4.5:1 ── */
+  --status-info-bg: rgba(59, 130, 246, 0.15);    /* blue/15 */
+  --status-info-text: #93C5FD;                    /* blue-300 */
+  --status-info-border: rgba(59, 130, 246, 0.30);
+  --status-success-bg: rgba(16, 185, 129, 0.15); /* emerald/15 */
+  --status-success-text: #6EE7B7;                 /* emerald-300 */
+  --status-success-border: rgba(16, 185, 129, 0.30);
+  --status-warning-bg: rgba(245, 158, 11, 0.15); /* amber/15 */
+  --status-warning-text: #FCD34D;                 /* amber-300 */
+  --status-warning-border: rgba(245, 158, 11, 0.30);
+  --status-accent-bg: rgba(139, 92, 246, 0.15);  /* violet/15 */
+  --status-accent-text: #C4B5FD;                  /* violet-300 */
+  --status-accent-border: rgba(139, 92, 246, 0.30);
+  --status-danger-bg: rgba(239, 68, 68, 0.15);   /* red/15 */
+  --status-danger-text: #FCA5A5;                  /* red-300 */
+  --status-danger-border: rgba(239, 68, 68, 0.30);
 
   /* ── KPI ── */
   --kpi-bg: rgba(96, 165, 250, 0.12);

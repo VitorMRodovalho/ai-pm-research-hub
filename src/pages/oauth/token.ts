@@ -36,6 +36,60 @@ export const POST: APIRoute = async ({ request }) => {
     const { grant_type, code, code_verifier, client_id, redirect_uri } = params;
     await kvLog("token-params", { grant_type, client_id, code: code?.substring(0, 8), redirect_uri, verifierLen: code_verifier?.length });
 
+    const kv = (env as any).SESSION;
+    if (!kv) {
+      return new Response(JSON.stringify({ error: 'server_error', detail: 'KV binding unavailable' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL || '';
+    const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
+
+    // ── grant_type=refresh_token ──
+    if (grant_type === 'refresh_token') {
+      const refresh_token = params.refresh_token;
+      if (!refresh_token) {
+        return new Response(JSON.stringify({ error: 'invalid_request', error_description: 'refresh_token required' }), {
+          status: 400, headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      await kvLog("token-refresh", { refreshLen: refresh_token.length });
+
+      try {
+        // Exchange refresh_token for new session via Supabase Auth API
+        const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+          body: JSON.stringify({ refresh_token }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.access_token) {
+          await kvLog("token-refresh-fail", { status: res.status, error: data.error_description || data.error || 'unknown' });
+          return new Response(JSON.stringify({ error: 'invalid_grant', error_description: data.error_description || 'refresh failed' }), {
+            status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
+          });
+        }
+        await kvLog("token-refresh-ok", { newTokenLen: data.access_token.length });
+        return new Response(JSON.stringify({
+          access_token: data.access_token,
+          token_type: 'Bearer',
+          expires_in: data.expires_in || 3600,
+          refresh_token: data.refresh_token || refresh_token,
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' },
+        });
+      } catch (e: any) {
+        await kvLog("token-refresh-error", { error: e.message });
+        return new Response(JSON.stringify({ error: 'server_error', detail: e.message }), {
+          status: 500, headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // ── grant_type=authorization_code ──
     if (grant_type !== 'authorization_code') {
       return new Response(JSON.stringify({ error: 'unsupported_grant_type' }), {
         status: 400,
@@ -46,15 +100,6 @@ export const POST: APIRoute = async ({ request }) => {
     if (!code || !code_verifier) {
       return new Response(JSON.stringify({ error: 'invalid_request', error_description: 'code and code_verifier required' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Astro v6 + @astrojs/cloudflare v13: use import { env } from 'cloudflare:workers'
-    const kv = (env as any).SESSION;
-    if (!kv) {
-      return new Response(JSON.stringify({ error: 'server_error', detail: 'KV binding unavailable' }), {
-        status: 500,
         headers: { 'Content-Type': 'application/json' },
       });
     }
@@ -85,13 +130,17 @@ export const POST: APIRoute = async ({ request }) => {
     // Delete code (one-time use)
     await kv.delete(`mcp_code:${code}`);
 
-    // Return the Supabase access_token
-    await kvLog("token-success", { tokenLen: stored.access_token?.length });
-    return new Response(JSON.stringify({
+    // Return the Supabase access_token + refresh_token
+    await kvLog("token-success", { tokenLen: stored.access_token?.length, hasRefresh: !!stored.refresh_token });
+    const tokenResponse: Record<string, any> = {
       access_token: stored.access_token,
       token_type: 'Bearer',
       expires_in: 3600,
-    }), {
+    };
+    if (stored.refresh_token) {
+      tokenResponse.refresh_token = stored.refresh_token;
+    }
+    return new Response(JSON.stringify(tokenResponse), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',

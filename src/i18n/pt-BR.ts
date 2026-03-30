@@ -205,6 +205,7 @@ const ptBR: Record<string, string> = {
   'adoption.neverSeen': 'Nunca acessou',
   'adoption.adoptionPct': 'Adoção',
   'adoption.avgSessions': 'Sessões/membro',
+  'adoption.mcpHealth': 'Saúde MCP por Rota',
   'adoption.dailyActivity': 'Atividade Diária',
   'adoption.last30d': 'Últimos 30 dias',
   'adoption.byTribe': 'Por Tribo',

@@ -205,6 +205,7 @@ const enUS: Record<string, string> = {
   'adoption.neverSeen': 'Never seen',
   'adoption.adoptionPct': 'Adoption',
   'adoption.avgSessions': 'Sessions/member',
+  'adoption.mcpHealth': 'MCP Route Health',
   'adoption.dailyActivity': 'Daily Activity',
   'adoption.last30d': 'Last 30 days',
   'adoption.byTribe': 'By Tribe',

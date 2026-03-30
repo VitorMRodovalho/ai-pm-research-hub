@@ -409,15 +409,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     container.innerHTML = allTemplates.map((t: CampaignTemplate) => {
       const audDesc = t.target_audience.all ? 'Todos os membros ativos'
         : (t.target_audience.roles || []).join(', ') || 'Audiência personalizada';
-      const catBadge = { operational: 'bg-blue-900/30 text-blue-300', onboarding: 'bg-green-900/30 text-green-300',
-        announcement: 'bg-purple-900/30 text-purple-300', newsletter: 'bg-amber-900/30 text-amber-300' }[t.category] || 'bg-gray-700 text-gray-300';
+      const catStyle = { operational: 'status-info', onboarding: 'status-success',
+        announcement: 'status-accent', newsletter: 'status-warning' }[t.category] || 'status-info';
 
       return `<div class="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
         <div class="flex items-start justify-between">
           <div>
             <h3 class="font-semibold text-[var(--fg)]">${t.name}</h3>
             <p class="text-sm text-[var(--fg-muted)]">${audDesc}</p>
-            <span class="inline-block mt-1 px-2 py-0.5 rounded text-xs font-medium ${catBadge}">${t.category}</span>
+            <span class="inline-block mt-1 px-2 py-0.5 rounded text-xs font-medium" style="background:var(--${catStyle}-bg);color:var(--${catStyle}-text)">${t.category}</span>
           </div>
           <div class="flex gap-2">
             <button data-edit="${t.id}" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--surface-hover)] text-[var(--fg)] hover:bg-[var(--border)]">Editar</button>
@@ -607,13 +607,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const rates = data.rates || {};
     const funnelEl = document.getElementById('analytics-funnel')!;
     const funnelSteps = [
-      { label: 'Enviados', count: f.total || 0, rate: '', color: 'bg-blue-900/30 text-blue-300 border-blue-700/30' },
-      { label: 'Entregues', count: f.delivered || 0, rate: rates.delivery_rate ? `${rates.delivery_rate}%` : '', color: 'bg-green-900/30 text-green-300 border-green-700/30' },
-      { label: 'Abriram', count: f.opened || 0, rate: rates.open_rate ? `${rates.open_rate}%` : '', color: 'bg-amber-900/30 text-amber-300 border-amber-700/30' },
-      { label: 'Clicaram', count: f.clicked || 0, rate: rates.click_rate ? `${rates.click_rate}%` : '', color: 'bg-purple-900/30 text-purple-300 border-purple-700/30' },
+      { label: 'Enviados', count: f.total || 0, rate: '', color: 'status-info' },
+      { label: 'Entregues', count: f.delivered || 0, rate: rates.delivery_rate ? `${rates.delivery_rate}%` : '', color: 'status-success' },
+      { label: 'Abriram', count: f.opened || 0, rate: rates.open_rate ? `${rates.open_rate}%` : '', color: 'status-warning' },
+      { label: 'Clicaram', count: f.clicked || 0, rate: rates.click_rate ? `${rates.click_rate}%` : '', color: 'status-accent' },
     ];
     funnelEl.innerHTML = funnelSteps.map(s => `
-      <div class="rounded-xl border p-4 text-center ${s.color}">
+      <div class="rounded-xl border p-4 text-center" style="background:var(--${s.color}-bg);color:var(--${s.color}-text);border-color:var(--${s.color}-border)">
         <div class="text-2xl font-bold">${s.count}</div>
         <div class="text-xs font-semibold mt-1">${s.label}</div>
         ${s.rate ? `<div class="text-xs opacity-70 mt-0.5">${s.rate}</div>` : ''}

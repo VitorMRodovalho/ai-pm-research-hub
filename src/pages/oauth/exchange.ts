@@ -14,8 +14,8 @@ async function kvLog(endpoint: string, data: any) {
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json().catch(() => ({}));
-    const { access_token, oauth_data } = body as { access_token?: string; oauth_data?: string };
-    await kvLog("exchange", { hasToken: !!access_token, hasOauthData: !!oauth_data });
+    const { access_token, refresh_token, oauth_data } = body as { access_token?: string; refresh_token?: string; oauth_data?: string };
+    await kvLog("exchange", { hasToken: !!access_token, hasRefresh: !!refresh_token, hasOauthData: !!oauth_data });
 
     if (!access_token || !oauth_data) {
       return new Response(JSON.stringify({ error: 'missing access_token or oauth_data' }), {
@@ -44,6 +44,7 @@ export const POST: APIRoute = async ({ request }) => {
     if (kv) {
       await kv.put(`mcp_code:${code}`, JSON.stringify({
         access_token,
+        refresh_token: refresh_token || null,
         code_challenge: oauthParams.code_challenge,
         code_challenge_method: oauthParams.code_challenge_method,
         client_id: oauthParams.client_id,
