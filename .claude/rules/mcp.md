@@ -7,16 +7,16 @@ globs: supabase/functions/nucleo-mcp/**
 
 ## Current State
 - 26 tools (20 read + 6 write)
-- Transport: @modelcontextprotocol/sdk@1.27.1 + InMemoryTransport + manual Streamable HTTP SSE
+- Transport: @modelcontextprotocol/sdk@1.28.0 WebStandardStreamableHTTPServerTransport (native)
 - Tool params: Zod schemas (z.string(), z.number(), z.boolean()) — NOT plain JSON Schema objects
 - Auth: OAuth 2.1 via Workers (nucleoia.vitormr.dev) → Supabase JWT
 - All tools log usage to mcp_usage_log
-- Claude.ai connector: verified working (23 tools visible, 5 tested)
+- Claude.ai connector: verified working (26 tools visible)
 
-## SDK Compatibility (critical)
-- **SDK 1.27.1**: Works on Deno. Tool params must use Zod schemas — plain `{ param: { type: "string" } }` objects get misidentified as ToolAnnotations, leaving inputSchema empty.
-- **SDK 1.28.0**: Breaks on Deno — `mcp.tool()` API changed to require Zod natively, `WebStandardStreamableHTTPServerTransport` crashes at runtime. Do NOT upgrade until Deno compat is confirmed.
-- **Zod import**: `import { z } from "npm:zod@3";` — SDK 1.27.1 requires `zod ^3.25 || ^4.0`. The `npm:zod@3` specifier resolves to latest 3.x (currently 3.25.76) which satisfies this. Do NOT change to `npm:zod@4` without testing.
+## SDK Compatibility
+- **SDK 1.28.0**: Latest stable. Works on Deno with native `WebStandardStreamableHTTPServerTransport`. Tool params MUST use Zod schemas.
+- **Zod import**: `import { z } from "npm:zod@^3.25";` — SDK 1.28.0 requires `zod ^3.25 || ^4.0`.
+- **History**: SDK 1.27.1 worked but required manual SSE wrapping (85 lines). SDK 1.28.0 initially failed on Deno due to non-Zod schemas + old dep versions. After converting tools to Zod and upgrading all deps, 1.28.0 native transport works.
 
 ## Tool Pattern
 ```typescript
@@ -51,9 +51,9 @@ mcp.tool("tool_name", "Description.", {}, async () => { ... });
 - Exchange: /oauth/exchange (generates code in KV)
 - Token: /oauth/token (PKCE verify, returns JWT)
 
-## Streamable HTTP (manual implementation)
-- POST /mcp → JSON-RPC request → SSE response (when Accept includes text/event-stream)
-- POST notification (no id) → 202 Accepted
-- GET /mcp → 405 (stateless mode, no server-initiated messages)
-- DELETE /mcp → 405 (stateless mode, no session termination)
+## Streamable HTTP (native transport)
+- `WebStandardStreamableHTTPServerTransport` handles all protocol details
+- Stateless mode: `sessionIdGenerator: undefined`
 - Workers proxy streams SSE responses through without buffering
+- GET /mcp → 406 (native transport returns Not Acceptable when no session)
+- Transport handles: initialize, tools/list, tool/call, notifications, SSE streams

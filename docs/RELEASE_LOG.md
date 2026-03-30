@@ -1,5 +1,36 @@
 # Release Log
 
+## 2026-03-30 — Sprint 8b: MCP SDK 1.28.0 Native Transport + Historical Debt Audit
+
+### Scope
+Re-evaluate MCP SDK 1.28.0 after full dep upgrade. Audit historical workarounds.
+
+### Delivered
+
+- **1. MCP SDK 1.27.1 → 1.28.0 (native Streamable HTTP)**
+  - `WebStandardStreamableHTTPServerTransport` now works on Deno — original failure was caused by old deps + non-Zod schemas, not Deno incompatibility
+  - Removed 85 lines of manual SSE wrapping (InMemoryTransport, batch handling, timeout, SSE formatting)
+  - Replaced with 15-line native transport handler
+  - Supabase officially documents this pattern for Edge Functions
+  - Zod pinned to `^3.25` (SDK requires `^3.25 || ^4.0`)
+
+- **2. Historical Workaround Audit**
+  - MessageChannel polyfill (`patch-worker-polyfill.mjs`): React 19.2.4 + Astro 6.1.1 no longer produce MessageChannel refs in server chunks — polyfill is now a no-op (kept as safety net)
+  - CSRF middleware manual check: Still required — Astro's `checkOrigin` runs before middleware, blocks OAuth/MCP cross-origin POSTs
+  - Cross-tribe attendance bug: Already fixed in GC-113b (denominator fix)
+  - MCP SDK pin justification: REMOVED — 1.28.0 now works, no more pin needed
+
+### Validation
+- Health: v2.5.0, 26 tools, transport: native-streamable-http, sdk: 1.28.0
+- Initialize: 200 SSE, protocolVersion 2025-03-26
+- tools/list: 26 tools with correct inputSchema
+- tool/call: 200, Zod validation passes
+- Notification: 202
+- GET: 406 (native transport behavior, correct per MCP spec)
+- Proxy: 200 SSE through nucleoia.vitormr.dev
+
+---
+
 ## 2026-03-30 — Sprint 8: TypeScript 6 + ESLint 10 — Zero Legacy Deps
 
 ### Scope
