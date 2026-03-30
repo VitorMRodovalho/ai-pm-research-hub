@@ -11,7 +11,7 @@
 | 2 | 2 attendance corrections | — | ✅ Done | Guilherme + Gustavo confirmed present in DB |
 | 3 | Migration repair 26/Mar | 5 min | ✅ Done (29/Mar) | All migrations synced |
 | 4 | i18n server-side locale | — | ✅ Verified (29/Mar) | EN/ES resolve correctly server-side. Not a bug. |
-| 5 | MCP OAuth connector | — | In progress | v2.2.1, custom domain, debug KV logging deployed. Token exchange works manually. |
+| 5 | MCP connector Claude.ai | Sprint 5 | Paused | OAuth ✅, initialize ✅, tools/list ✅ (23 tools), protocolVersion 2025-11-25 ✅. Issue: Claude.ai shows "0 tools" — InMemoryTransport workaround doesn't implement full Streamable HTTP protocol. Fix: `WebStandardStreamableHTTPServerTransport` (exists in SDK but needs testing on Deno). SDK 1.28.0 Zod migration blocked by BOOT_ERROR (Node.js deps incompatible with Deno). Sprint 5: proper transport + runtime evaluation. |
 
 ---
 
