@@ -1,5 +1,56 @@
 # Release Log
 
+## 2026-03-29 — Sprint 5: MCP Claude.ai Connector Fix + Dependency Upgrade
+
+### Scope
+Fix Claude.ai showing "0 tools" despite OAuth working. Root cause: three transport/schema bugs. Also: safe npm dependency upgrades.
+
+### Delivered
+
+- **1. MCP Tool Schema Fix (root cause #1)**
+  - SDK 1.27.1 misidentified plain JSON Schema params as `ToolAnnotations`, leaving `inputSchema.properties` empty
+  - Converted all 13 parameterized tools to Zod schemas (`z.string()`, `z.number()`, `z.boolean()`)
+  - Added `import { z } from "npm:zod@3"` to Edge Function
+
+- **2. Streamable HTTP GET Handler (root cause #2)**
+  - `GET /mcp` was crashing with 500 (tried to JSON.parse a GET request body)
+  - Claude.ai sends GET for SSE stream after initialize — the 500 caused it to abort
+  - Now returns clean 405 (stateless mode, per MCP spec)
+
+- **3. Workers Proxy SSE Streaming (root cause #3)**
+  - Proxy was buffering SSE responses with `await res.text()`, breaking streaming
+  - SSE responses (`text/event-stream`) now stream through unbuffered
+  - Added `Access-Control-Expose-Headers: Mcp-Session-Id` for CORS
+
+- **4. Safe npm Dependency Upgrades**
+  - `@astrojs/cloudflare` 13.1.3 → 13.1.4
+  - `@astrojs/react` 5.0.1 → 5.0.2
+  - `@sentry/browser` 10.43.0 → 10.46.0
+  - `@tailwindcss/vite` + `tailwindcss` 4.2.1 → 4.2.2
+  - `@typescript-eslint/parser` 8.57.0 → 8.57.2
+  - `astro-eslint-parser` 1.3.0 → 1.4.0
+
+- **5. SDK Upgrade Investigation (documented, not applied)**
+  - SDK 1.28.0: `mcp.tool()` API changed to require Zod natively — breaks all 23 tools
+  - SDK 1.28.0: `WebStandardStreamableHTTPServerTransport` crashes on Deno runtime
+  - Decision: stay on 1.27.1 with manual Streamable HTTP SSE wrapping
+
+### Architecture Decision
+- MCP transport: SDK 1.27.1 McpServer + InMemoryTransport + manual SSE wrapping
+- Rationale: SDK 1.28.0's native WebStandard transport crashes on Deno; 1.27.1 with Zod schemas + manual SSE is stable
+- Protocol version: `2025-03-26` (Streamable HTTP) — negotiated correctly by SDK 1.27.1
+
+### Validation
+- `npx astro build` — success
+- `npm test` — 779 pass, 0 fail
+- Health: `curl .../health` → 200
+- Initialize: `curl -X POST .../mcp` → 200 SSE, protocolVersion 2025-03-26
+- tools/list: 23 tools with correct `inputSchema.properties`
+- GET /mcp: 405 (clean, not 500)
+- Claude.ai: 23 tools visible, 5 read tools tested successfully
+
+---
+
 ## 2026-03-12 — Sprint N7: data sanitation, branch protection, comms readiness, dark mode completion
 
 ### Scope

@@ -2,7 +2,7 @@
 
 ## What is MCP?
 
-MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact with external services. The Núcleo server exposes 15 tools that let you query and manage project data directly from your AI assistant using natural language.
+MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact with external services. The Núcleo server exposes 23 tools (17 read + 6 write) that let you query and manage project data directly from your AI assistant using natural language.
 
 ## Universal URL
 
@@ -79,9 +79,9 @@ Token expires in 1 hour. Refresh by repeating step 2-3.
 
 > Note: ChatGPT MCP support is in beta. If you see "Internal Server Error", this is a known ChatGPT-side issue. The server is compatible — it will work once their beta stabilizes.
 
-## Available Tools
+## Available Tools (23 total)
 
-### Read Tools (all members)
+### Read Tools (17 — all members)
 
 | Tool | Description |
 |------|-------------|
@@ -95,8 +95,15 @@ Token expires in 1 hour. Refresh by repeating step 2-3.
 | `get_my_notifications` | Your unread and recent notifications |
 | `search_board_cards` | Search cards across boards you have access to |
 | `get_hub_announcements` | Platform-wide announcements |
+| `get_my_attendance_history` | Your personal attendance history |
+| `list_tribe_webinars` | Webinars for your tribe or chapter |
+| `get_comms_pending_webinars` | Webinars needing communication action |
+| `get_my_certificates` | Your certifications, badges, and trails |
+| `search_hub_resources` | Search the resource library (247+ items) |
+| `get_adoption_metrics` | MCP adoption metrics (admin/GP only) |
+| `get_chapter_kpis` | KPIs for a chapter (liaisons and admins) |
 
-### Write Tools (tribe leaders, GP, deputy only)
+### Write Tools (6 — tribe leaders, GP, deputy only)
 
 | Tool | Description |
 |------|-------------|
@@ -105,6 +112,7 @@ Token expires in 1 hour. Refresh by repeating step 2-3.
 | `create_meeting_notes` | Create meeting minutes |
 | `register_attendance` | Register attendance for a tribe meeting |
 | `send_notification_to_tribe` | Send a notification to all tribe members |
+| `create_tribe_event` | Create a new tribe meeting or event |
 
 ## Security Model
 

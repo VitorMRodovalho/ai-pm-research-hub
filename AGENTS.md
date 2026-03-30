@@ -12,7 +12,7 @@ This file orients the AI assistant on the project so it can work effectively wit
 | Log a release         | docs/RELEASE_LOG.md |
 | Member fields         | `operational_role`, `designations` (`role`/`roles` dropped in Wave 8) |
 | History               | `member_cycle_history` |
-| Edge functions        | supabase/functions/ (17 deployed, 4 with --no-verify-jwt) |
+| Edge functions        | supabase/functions/ (19 deployed, 4 with --no-verify-jwt) |
 | DB schema / types     | `src/lib/database.gen.ts` (run `npm run db:types` to refresh) |
 | Data import scripts   | `scripts/` (trello, calendar, volunteer CSV, miro importers) |
 | Pre-push              | `npm test` + `npm run build` |
@@ -40,10 +40,10 @@ This file orients the AI assistant on the project so it can work effectively wit
 | Charts    | Chart.js v4 (native)           |
 | Hosting   | Cloudflare Workers SSR         |
 | Database  | Supabase (PostgreSQL, auth, RLS) |
-| Backend   | Supabase Edge Functions (17 deployed) |
+| Backend   | Supabase Edge Functions (19 deployed) |
 | Auth      | Google + LinkedIn (OIDC) + Microsoft (Azure) |
 | Env access | `import { env } from 'cloudflare:workers'` (NOT `locals.runtime.env`) |
-| MCP       | 15 tools, OAuth 2.1, URL `platform.ai-pm-research-hub.workers.dev/mcp` |
+| MCP       | 23 tools (17R + 6W), OAuth 2.1, Streamable HTTP SSE, `nucleoia.vitormr.dev/mcp` |
 | Observability | PostHog (custom events) + Sentry (global handlers) |
 | i18n      | PT-BR, EN, ES (keys in `src/i18n/`) |
 
