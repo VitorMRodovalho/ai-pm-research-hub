@@ -13,7 +13,7 @@
 | recharts | 2.15.4 | 3.8.1 | Baixo (1 componente) | **Upgrade agora** | Sprint 7 |
 | eslint | 9.39.4 | 10.1.0 | Medio (config ja flat) | **Upgrade proximo** | Sprint 7-8 |
 | typescript | 5.9.3 | 6.0.2 | Medio (tsconfig ajustes) | **Testar em branch** | Sprint 8 |
-| @tiptap/* | 2.27.2 | 3.21.0 | Alto (rewrite packages) | **Sprint dedicado** | Sprint 9+ |
+| @tiptap/* | 2.27.2 | 3.21.0 | Baixo (1 arquivo, sem BubbleMenu) | **Upgrade proximo** | Sprint 7 |
 
 ---
 
@@ -55,9 +55,10 @@ Esforco estimado: **30min** (instalar, build, verificar se algum icone sumiu)
 
 ### Impacto no Projeto
 - **1 arquivo**: `src/components/islands/CrossTribeIsland.tsx` (274 linhas, usa BarChart, LineChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell)
-- Tambem: `src/components/admin/CommsDashboard.tsx`
-- Uso standard (BarChart + Tooltip + Legend) — nenhum uso de CategoricalChartState ou activeIndex
-- **Risco: BAIXO-MEDIO** (testar visual dos charts)
+- Tambem: `CommsDashboard.tsx`, `TribeDashboardIsland.tsx`, `TribeGamificationTab.tsx`, `DiversityDashboard.tsx`
+- **5 arquivos total**, todos com uso standard (BarChart + Tooltip + Legend)
+- Nenhum uso de CategoricalChartState, activeIndex, ou blendStroke
+- **Risco: BAIXO** (testar visual dos charts)
 
 ### Acao
 ```bash
@@ -154,20 +155,19 @@ Esforco estimado: **2-4h** (pode ser trivial ou requerer ajustes de tipos)
 
 ### Impacto no Projeto
 - **1 arquivo**: `src/components/shared/RichTextEditor.tsx`
-- Usa: `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/extension-link`, `@tiptap/extension-image`, `@tiptap/extension-placeholder`, `@tiptap/pm`
+- Usa: `useEditor`, `EditorContent`, `StarterKit`, `Link`, `Image`, `Placeholder`
+- NAO usa BubbleMenu, FloatingMenu, ou tippyOptions — quebras principais nao se aplicam
+- **Risco principal:** StarterKit v3 inclui Link por default → conflita com nosso import separado de Link
 - Componente usado em meeting notes e blog editor
-- **Risco: ALTO** (mudancas de package structure + API)
+- **Risco: BAIXO** (1 arquivo, sem menus flutuantes)
 
 ### Acao
-1. Ler migration guide completo
-2. Sprint dedicado:
-   - Atualizar imports (packages podem ter mudado)
-   - Ajustar StarterKit config (history → undoRedo)
-   - Testar `setContent` e `insertContent` behaviors
-   - Verificar se BubbleMenu/FloatingMenu sao usados
-3. Testar meeting notes CRUD end-to-end
+1. Adicionar `link: false` ao StarterKit config (evitar conflito com import separado)
+2. `npm install @tiptap/react@3 @tiptap/starter-kit@3 @tiptap/extension-link@3 @tiptap/extension-image@3 @tiptap/extension-placeholder@3 @tiptap/pm@3`
+3. `npx astro build && npm test`
+4. Testar meeting notes CRUD manualmente
 
-Esforco estimado: **4-6h** (sprint dedicado recomendado)
+Esforco estimado: **1-2h**
 
 ### Referencia
 - [Tiptap v2 to v3 Upgrade Guide](https://tiptap.dev/docs/guides/upgrade-tiptap-v2)
@@ -177,9 +177,9 @@ Esforco estimado: **4-6h** (sprint dedicado recomendado)
 ## Sequencia Recomendada
 
 ```
-Sprint 7:  lucide-react v1 (30min) + recharts v3 (1h)     = ~2h
-Sprint 8:  eslint v10 (2h) + typescript v6 (3h)            = ~5h
-Sprint 9:  @tiptap/* v3 (5h, sprint dedicado)              = ~5h
+Sprint 7:  lucide-react v1 (30min) + recharts v3 (1h) + tiptap v3 (1.5h) = ~3h
+Sprint 8:  typescript v6 (3h) — aguardar compat Astro      = ~3h
+Sprint 9:  eslint v10 (2h) — aguardar compat plugins       = ~2h
 ```
 
 **Princípio:** menor risco primeiro, maior valor de reducao de debt.
