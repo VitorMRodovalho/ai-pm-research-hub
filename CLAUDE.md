@@ -3,7 +3,7 @@
 ## Platform
 - **URL:** https://nucleoia.vitormr.dev
 - **Supabase:** ldrfrvwhxsmgaabwmaik (sa-east-1)
-- **Version:** v2.3.1 | 23 MCP tools | 19 Edge Functions | 779 unit + 40 e2e tests
+- **Version:** v2.4.0 | 23 MCP tools | 19 Edge Functions | 779 unit + 40 e2e tests
 
 ## Build & Test
 ```bash
@@ -45,7 +45,7 @@ supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 ## Key Architecture Decisions (do NOT re-litigate)
 1. `checkOrigin: false` + manual CSRF in middleware (Astro's check blocks OAuth/MCP POSTs)
 2. Custom domain `nucleoia.vitormr.dev` (`.workers.dev` has Bot Fight Mode blocking datacenter IPs)
-3. `@modelcontextprotocol/sdk@1.12.1` for MCP transport (not mcp-lite)
+3. `@modelcontextprotocol/sdk@1.27.1` + Zod schemas for MCP (not 1.28.0 which breaks on Deno)
 4. Webinars table is source of truth (not events filtered by type)
 5. Board items read-all for Tier 1+ members (curators need cross-board access)
 6. LGPD: anon/ghost gets nothing from PII tables; public data via SECURITY DEFINER RPCs only
