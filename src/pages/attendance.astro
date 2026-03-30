@@ -115,6 +115,15 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
               <option value="facilitator">{t('attendance.role.facilitator', lang)}</option>
               <option value="communicator">{t('attendance.role.communicator', lang)}</option>
             </select>
+            <select id="ranking-designation-filter"
+              class="px-2 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[.75rem] text-[var(--text-primary)]">
+              <option value="">{t('attendance.filterAllDesignations', lang)}</option>
+              <option value="ambassador">{t('attendance.role.ambassador', lang)}</option>
+              <option value="founder">{t('attendance.role.founder', lang)}</option>
+              <option value="chapter_liaison">{t('attendance.role.chapterLiaison', lang)}</option>
+              <option value="curator">{t('attendance.role.curator', lang)}</option>
+              <option value="sponsor">{t('attendance.role.sponsor', lang)}</option>
+            </select>
           </div>
           <div class="p-5" id="ranking-list">
             <LoadingSkeleton variant="row" count={3} />
@@ -1575,15 +1584,26 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
       RANKING_DATA = data || [];
       renderRankingRows(RANKING_DATA);
 
-      // Bind role filter
+      // Bind role + designation filters
       const roleFilter = document.getElementById('ranking-role-filter') as HTMLSelectElement | null;
+      const desigFilter = document.getElementById('ranking-designation-filter') as HTMLSelectElement | null;
+
+      function applyRankingFilters() {
+        let filtered = RANKING_DATA;
+        const role = roleFilter?.value || '';
+        const desig = desigFilter?.value || '';
+        if (role) filtered = filtered.filter((m: any) => m.operational_role === role);
+        if (desig) filtered = filtered.filter((m: any) => (m.designations || []).includes(desig));
+        renderRankingRows(filtered);
+      }
+
       if (roleFilter && !roleFilter.dataset.bound) {
         roleFilter.dataset.bound = '1';
-        roleFilter.addEventListener('change', function() {
-          const role = roleFilter.value;
-          const filtered = role ? RANKING_DATA.filter((m: any) => m.operational_role === role) : RANKING_DATA;
-          renderRankingRows(filtered);
-        });
+        roleFilter.addEventListener('change', applyRankingFilters);
+      }
+      if (desigFilter && !desigFilter.dataset.bound) {
+        desigFilter.dataset.bound = '1';
+        desigFilter.addEventListener('change', applyRankingFilters);
       }
     } catch (e) {
       console.warn('Attendance: failed to load ranking:', e);

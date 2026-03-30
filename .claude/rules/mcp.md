@@ -16,7 +16,7 @@ globs: supabase/functions/nucleo-mcp/**
 ## SDK Compatibility (critical)
 - **SDK 1.27.1**: Works on Deno. Tool params must use Zod schemas — plain `{ param: { type: "string" } }` objects get misidentified as ToolAnnotations, leaving inputSchema empty.
 - **SDK 1.28.0**: Breaks on Deno — `mcp.tool()` API changed to require Zod natively, `WebStandardStreamableHTTPServerTransport` crashes at runtime. Do NOT upgrade until Deno compat is confirmed.
-- **Zod import**: `import { z } from "npm:zod@3";` — must match SDK's internal Zod version.
+- **Zod import**: `import { z } from "npm:zod@3";` — SDK 1.27.1 requires `zod ^3.25 || ^4.0`. The `npm:zod@3` specifier resolves to latest 3.x (currently 3.25.76) which satisfies this. Do NOT change to `npm:zod@4` without testing.
 
 ## Tool Pattern
 ```typescript
