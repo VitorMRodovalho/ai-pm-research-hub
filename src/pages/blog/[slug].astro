@@ -130,4 +130,26 @@ const { slug } = Astro.params;
     }
   }
   loadPost();
+
+  // PostHog: blog_post_read — intersection observer at 50% + 30s
+  (function() {
+    const postSlug = String(slug || '');
+    let scrolledPast = false, startTime = Date.now(), fired = false;
+    const sentinel = document.createElement('div');
+    sentinel.style.cssText = 'height:1px;width:1px;position:absolute;pointer-events:none;';
+    const observer = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) scrolledPast = true; }, { threshold: 0 });
+    const check = setInterval(() => {
+      if (fired) { clearInterval(check); return; }
+      const article = document.querySelector('.prose') || document.querySelector('#post-content');
+      if (article && !sentinel.parentElement) {
+        sentinel.style.top = (article.getBoundingClientRect().top + window.scrollY + article.clientHeight * 0.5) + 'px';
+        document.body.appendChild(sentinel);
+        observer.observe(sentinel);
+      }
+      if (scrolledPast && (Date.now() - startTime) / 1000 >= 30) {
+        try { if ((window as any).posthog) (window as any).posthog.capture('blog_post_read', { post_slug: postSlug, reading_time_seconds: Math.round((Date.now() - startTime) / 1000) }); } catch {}
+        fired = true; clearInterval(check); observer.disconnect();
+      }
+    }, 5000);
+  })();
 </script>

@@ -37,6 +37,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       const { data, error } = await sb.rpc('counter_sign_certificate', { p_certificate_id: certId });
       if (error) throw error;
       if (data?.error) { alert(data.error); return; }
+      try { if ((window as any).posthog) (window as any).posthog.capture('certificate_issued', { cert_id: certId }); } catch {}
       (window as any).toast?.(t('admin.certificates.success', lang), 'success');
       location.reload();
     } catch (e) {

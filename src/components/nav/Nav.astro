@@ -1048,6 +1048,8 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       _user = session.user;
       const { data } = await sb.rpc('get_member_by_auth');
       _member = data;
+      // PostHog identify — set person properties for segmentation
+      try { if (_user && _member && (window as any).posthog) (window as any).posthog.identify(_user.id, { name: _member.name, operational_role: _member.operational_role, tribe_id: _member.tribe_id, chapter: _member.chapter, designations: _member.designations, is_superadmin: _member.is_superadmin }); } catch {}
       renderAuth();
       window.dispatchEvent(new CustomEvent('nav:member', { detail: _member }));
       if (!_member || getMemberRole(_member) === 'guest') {

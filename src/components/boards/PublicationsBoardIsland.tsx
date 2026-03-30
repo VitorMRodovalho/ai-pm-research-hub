@@ -241,6 +241,7 @@ export default function PublicationsBoardIsland() {
       return;
     }
     setItems((prev) => prev.map((row) => (row.id === itemId ? { ...row, status: nextLane } : row)));
+    try { if ((window as any).posthog) (window as any).posthog.capture('board_card_moved', { card_id: itemId, from_status: current.status, to_status: nextLane }); } catch {}
     windowRef?.toast?.(t('comp.pubBoard.statusUpdated', 'Status atualizado'), 'success');
   }
 
