@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-03-29 — Sprint 4: PostHog Events, Designation Filter, Smoke Test, MCP v2.3.0
+
+### Sprint 4 Deliverables
+- **S3.3 PostHog Events:** 7 custom events (board_card_moved, webinar_viewed, blog_post_read, profile_updated, certificate_issued, governance_cr_submitted) + posthog.identify() with person properties
+- **S3.2 Designation Filter:** Shared RoleDesignationFilter component + integration on /admin/members
+- **GC-097 P2 Smoke Test:** 11 automated endpoint checks (`npm run smoke`) — site, OAuth, MCP, EF, public RPCs
+- **MCP v2.3.0:** SDK 1.27.1 (protocolVersion 2025-11-25), SSE response wrapping, InMemoryTransport, notification 202 handling
+- **Custom domain:** nucleoia.vitormr.dev consolidated (301 redirects from legacy hosts)
+- **Claude Code structure:** .claude/rules/, agents/, skills/, hooks/ with PostCompact context re-injection
+
+### Infrastructure
+- MCP transport: StreamableHTTPServerTransport → InMemoryTransport (Deno compatible) + SSE wrapping
+- OAuth debug logging via KV (temporary, for connector troubleshooting)
+- SDK 1.28.0 Zod migration attempted but blocked by BOOT_ERROR (Node.js deps on Deno) — deferred to Sprint 5
+
 ## 2026-03-28/29 — v2.2.1: Webinar Governance, LGPD, MCP 23 Tools, Analytics, Custom Domain
 
 ### GC-160: Webinar Governance
