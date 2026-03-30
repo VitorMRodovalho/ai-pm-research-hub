@@ -387,6 +387,7 @@ const PROFILE_I18N = {
     try {
       const { data: histData } = await sb.rpc('get_my_attendance_history', { p_limit: 20 });
       attendanceHistory = Array.isArray(histData) ? histData : [];
+      if (attendanceHistory.length > 0) { try { if ((window as any).posthog) (window as any).posthog.capture('attendance_history_viewed', { events: attendanceHistory.length, attended: attendanceHistory.filter((r: any) => r.present).length }); } catch(e) {} }
     } catch (_) { attendanceHistory = []; }
 
     // Load My Week data

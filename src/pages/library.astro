@@ -392,6 +392,7 @@ const WORKSPACE_I18N = {
               });
               if (Array.isArray(data)) {
                 searchRpcResults = data;
+                try { if ((window as any).posthog) (window as any).posthog.capture('library_search', { query: searchQuery, results: data.length }); } catch(e) {}
               } else {
                 searchRpcResults = null;
               }
