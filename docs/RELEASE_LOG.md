@@ -1,5 +1,37 @@
 # Release Log
 
+## 2026-03-30 — Sprint 8: TypeScript 6 + ESLint 10 — Zero Legacy Deps
+
+### Scope
+Upgrade the last 2 remaining major dependencies. Platform now runs on latest stable of everything.
+
+### Delivered
+
+- **1. TypeScript 5.9.3 → 6.0.2 (major)**
+  - Last JS-based release (TS 7 will be Go-native)
+  - ES module interop always enabled, strict mode unconditional
+  - `@typescript-eslint/parser` upgraded to 8.57.3-alpha.3 (adds TS6 support: `<6.1.0`)
+  - Zero build errors, 779 tests pass
+
+- **2. ESLint 9.39.4 → 10.1.0 (major)**
+  - Node.js >= 20.19 required (we run Node 24)
+  - eslintrc completely removed (we already use flat config)
+  - Config lookup per-file (from CWD before)
+  - `@eslint/js` upgraded to 10.0.1
+  - `eslint-plugin-react` 7.37.5 via --legacy-peer-deps (awaiting official ESLint 10 peerDep update)
+  - `npm run lint:i18n` works, 1 pre-existing `no-empty` (not from upgrade)
+
+### Platform Dependency State
+Zero packages outdated. All dependencies on latest stable (or latest alpha where stable blocks).
+
+### Validation
+- `npx astro build` — success
+- `npm test` — 779 pass, 0 fail
+- `npm run lint:i18n` — works (1 pre-existing warning)
+- `npm outdated` — clean
+
+---
+
 ## 2026-03-30 — Sprint 7: Major Dep Upgrades + 3 New MCP Tools
 
 ### Scope
