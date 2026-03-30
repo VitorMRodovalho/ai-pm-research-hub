@@ -18,11 +18,11 @@ Authentication: OAuth 2.1 — you'll be redirected to log in with the same accou
 
 | Client | Status | Notes |
 |--------|--------|-------|
-| Claude.ai | ✅ Stable | Web and desktop app |
+| Claude.ai | ✅ Verified (23 tools) | Web and desktop app. Streamable HTTP SSE. |
 | Claude Code | ✅ Stable | Terminal — see token workaround below |
-| Cursor | ✅ Stable | Settings → MCP → Add |
-| VS Code | ✅ Stable | MCP extension required |
-| ChatGPT | ⏳ Beta | Settings → Apps → Connectors → Advanced → New App |
+| Cursor | ✅ Server-compatible | Settings → MCP → Add. OAuth flow. |
+| VS Code | ✅ Server-compatible | MCP extension required. OAuth flow. |
+| ChatGPT | ⏳ Server-compatible (beta) | Settings → Apps → Connectors → Advanced → New App |
 
 ## Setup by Client
 
