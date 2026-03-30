@@ -20,7 +20,7 @@
 | # | Item | Est. | Status | Notes |
 |---|------|------|--------|-------|
 | 6 | S3.3 Custom PostHog events | — | ✅ Done (29/Mar) | 7 events deployed (mcp_tool_called skipped — server-side only). posthog.identify() in Nav. |
-| 7 | S3.2 Designation filter | — | ✅ Partial (29/Mar) | /admin/members done. /teams + /attendance deferred (need Astro inline or RPC changes). |
+| 7 | S3.2 Designation filter | — | ✅ Done (29/Mar) | /admin/members + /attendance ranking. /teams N/A (shows tribe cards, not members). |
 | 8 | GC-097 P2 smoke test | — | ✅ Done (29/Mar) | 11 checks, all pass. `npm run smoke` available. |
 | 9 | pg_cron verification | — | ✅ Done (29/Mar) | 7 jobs active: credly, attendance, detractor, reminders, backup, archive, email |
 | 10 | URL migration notice | Note | FYI | Débora + Marcos using legacy .pages.dev (redirect works) |
@@ -46,12 +46,12 @@
 | # | Item | Est. | Notes |
 |---|------|------|-------|
 | 18 | Pre-onboarding gamification spec | 2h Chat | Candidate journey feature |
-| 19 | Playwright e2e expansion | Cycle 4 | 8→30+ tests |
+| 19 | Playwright e2e expansion | — | ✅ Done (29/Mar) — 15→40 tests, 9 new spec files |
 | 20 | Sustainability frontend | Pending | P6 |
 | 21 | W107 Pilot #1 handler | Pending | — |
 | 22 | BoardEngine polish | Pending | Spec in BOARD_ENGINE_SPEC.md, @dnd-kit |
 | 23 | Admin modularization Phases 2-4 | Pending | Phase 1 done |
-| 24 | Advisor: 10 Security Definer Views | Pending | — |
+| 24 | Advisor: Security audit | — | ✅ Done (29/Mar) — 35 search_path fixed, 2 RLS tightened, 11 SD views intentional |
 | 25 | legacy_tribes table cleanup | Low | G13 |
 | 26 | Git history cleanup | Low | 29MB PPTX in git history (G16) |
 | 27 | Co-managers member picker | — | ✅ Done (29/Mar) — F2 spec |

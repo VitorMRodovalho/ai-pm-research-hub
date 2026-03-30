@@ -554,15 +554,17 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
   async function ensureContextSwitchData() {
     if (contextSwitchLoaded || !sb) return;
-    const [{ data: tribes }, { data: legacy }] = await Promise.all([
+    const [{ data: tribes }, { data: dimRows }] = await Promise.all([
       sb.from('tribes').select('id, name, is_active, workstream_type').order('id'),
-      sb.from('legacy_tribes').select('id, legacy_name').order('id'),
+      sb.from('cycle_tribe_dim').select('tribe_name, cycle_code').not('cycle_code', 'eq', 'cycle_3').order('dim_id'),
     ]);
 
     const visibleTribes = (tribes || []).filter((tribe: any) => canSeeInactiveTribes(currentMember) || tribe.is_active !== false);
     contextCatalog.active = visibleTribes.filter((tribe: any) => String(tribe.workstream_type || 'research') === 'research');
     contextCatalog.operational = visibleTribes.filter((tribe: any) => String(tribe.workstream_type || '') === 'operational');
-    contextCatalog.legacy = legacy || [];
+    // Build legacy list from cycle_tribe_dim (replaces legacy_tribes table)
+    const seen = new Set<string>();
+    contextCatalog.legacy = (dimRows || []).filter((r: any) => { if (seen.has(r.tribe_name)) return false; seen.add(r.tribe_name); return true; }).map((r: any) => ({ id: r.tribe_name, legacy_name: r.tribe_name }));
     contextSwitchLoaded = true;
     renderContextSwitchMenu();
   }
