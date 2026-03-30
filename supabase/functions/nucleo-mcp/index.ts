@@ -1,13 +1,15 @@
 // supabase/functions/nucleo-mcp/index.ts
-// supabase/functions/nucleo-mcp/index.ts
 // MCP server v2.4.0 — 23 tools (17R + 6W) + usage logging
-// Transport: @modelcontextprotocol/sdk@1.27.1 + Zod schemas + SSE wrapping
+// Transport: SDK 1.27.1 McpServer + InMemoryTransport + manual Streamable HTTP SSE wrapping
+// SDK 1.28.0 breaks mcp.tool() — requires Zod schemas instead of plain JSON Schema objects
+// WebStandardStreamableHTTPServerTransport also crashes on Deno runtime
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
 import { Hono } from "jsr:@hono/hono";
 import { McpServer } from "npm:@modelcontextprotocol/sdk@1.27.1/server/mcp.js";
 import { InMemoryTransport } from "npm:@modelcontextprotocol/sdk@1.27.1/inMemory.js";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { z } from "npm:zod@3";
 
 const app = new Hono().basePath("/nucleo-mcp");
 
@@ -67,7 +69,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL 2: get_my_board_status
-  mcp.tool("get_my_board_status", "Returns your tribe's board cards grouped by status.", { board_id: { type: "string", description: "Board UUID. If omitted, returns your tribe's default board." } }, async (params: { board_id?: string }) => {
+  mcp.tool("get_my_board_status", "Returns your tribe's board cards grouped by status.", { board_id: z.string().optional().describe("Board UUID. If omitted, returns your tribe's default board.") }, async (params: { board_id?: string }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_my_board_status", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -126,7 +128,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL 7: get_meeting_notes
-  mcp.tool("get_meeting_notes", "Returns recent meeting notes/minutes for your tribe.", { limit: { type: "number", description: "Number of recent notes. Default: 5" } }, async (params: { limit?: number }) => {
+  mcp.tool("get_meeting_notes", "Returns recent meeting notes/minutes for your tribe.", { limit: z.number().optional().describe("Number of recent notes. Default: 5") }, async (params: { limit?: number }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member?.tribe_id) { await logUsage(sb, member?.id, "get_meeting_notes", false, "No tribe", start); return err("No tribe assigned."); }
@@ -147,7 +149,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL 9: search_board_cards
-  mcp.tool("search_board_cards", "Full-text search across board cards in your tribe's board.", { query: { type: "string", description: "Search term" } }, async (params: { query: string }) => {
+  mcp.tool("search_board_cards", "Full-text search across board cards in your tribe's board.", { query: z.string().describe("Search term") }, async (params: { query: string }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member?.tribe_id) { await logUsage(sb, member?.id, "search_board_cards", false, "No tribe", start); return err("No tribe assigned."); }
@@ -170,7 +172,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   // ===== WRITE TOOLS (11-15, 18) =====
 
   // TOOL 11: create_board_card
-  mcp.tool("create_board_card", "Create a new card on your tribe's board.", { title: { type: "string", description: "Card title" }, description: { type: "string", description: "Card description" }, priority: { type: "string", description: "low|medium|high|urgent" }, due_date: { type: "string", description: "Due date YYYY-MM-DD" }, tags: { type: "string", description: "Comma-separated tags" } }, async (params: any) => {
+  mcp.tool("create_board_card", "Create a new card on your tribe's board.", { title: z.string().describe("Card title"), description: z.string().optional().describe("Card description"), priority: z.string().optional().describe("low|medium|high|urgent"), due_date: z.string().optional().describe("Due date YYYY-MM-DD"), tags: z.string().optional().describe("Comma-separated tags") }, async (params: any) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "create_board_card", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -186,7 +188,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL 12: update_card_status
-  mcp.tool("update_card_status", "Move a card to a different status column.", { card_id: { type: "string", description: "UUID of the card" }, status: { type: "string", description: "backlog|in_progress|review|done|archived" } }, async (params: { card_id: string; status: string }) => {
+  mcp.tool("update_card_status", "Move a card to a different status column.", { card_id: z.string().describe("UUID of the card"), status: z.string().describe("backlog|in_progress|review|done|archived") }, async (params: { card_id: string; status: string }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "update_card_status", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -197,7 +199,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL 13: create_meeting_notes
-  mcp.tool("create_meeting_notes", "Create meeting minutes for a tribe meeting.", { event_id: { type: "string", description: "UUID of the event" }, content: { type: "string", description: "Notes content" }, decisions: { type: "string", description: "Key decisions (comma-separated)" }, action_items: { type: "string", description: "Action items (comma-separated)" } }, async (params: any) => {
+  mcp.tool("create_meeting_notes", "Create meeting minutes for a tribe meeting.", { event_id: z.string().describe("UUID of the event"), content: z.string().describe("Notes content"), decisions: z.string().optional().describe("Key decisions (comma-separated)"), action_items: z.string().optional().describe("Action items (comma-separated)") }, async (params: any) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "create_meeting_notes", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -214,7 +216,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL 14: register_attendance
-  mcp.tool("register_attendance", "Register attendance for a member at an event.", { event_id: { type: "string", description: "UUID of the event" }, member_id: { type: "string", description: "UUID of the member" }, present: { type: "boolean", description: "Whether present" } }, async (params: { event_id: string; member_id: string; present: boolean }) => {
+  mcp.tool("register_attendance", "Register attendance for a member at an event.", { event_id: z.string().describe("UUID of the event"), member_id: z.string().describe("UUID of the member"), present: z.boolean().describe("Whether present") }, async (params: { event_id: string; member_id: string; present: boolean }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "register_attendance", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -227,7 +229,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL 15: send_notification_to_tribe
-  mcp.tool("send_notification_to_tribe", "Send a notification to all active members of your tribe.", { title: { type: "string", description: "Notification title" }, body: { type: "string", description: "Notification message" }, link: { type: "string", description: "URL link" } }, async (params: { title: string; body: string; link?: string }) => {
+  mcp.tool("send_notification_to_tribe", "Send a notification to all active members of your tribe.", { title: z.string().describe("Notification title"), body: z.string().describe("Notification message"), link: z.string().optional().describe("URL link") }, async (params: { title: string; body: string; link?: string }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "send_notification_to_tribe", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -247,7 +249,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   // ===== GC-161 TOOLS (16-19) =====
 
   // TOOL 16: get_my_attendance_history
-  mcp.tool("get_my_attendance_history", "Returns your personal attendance history — which meetings you attended or missed.", { limit: { type: "number", description: "Number of recent events. Default: 20" } }, async (params: { limit?: number }) => {
+  mcp.tool("get_my_attendance_history", "Returns your personal attendance history — which meetings you attended or missed.", { limit: z.number().optional().describe("Number of recent events. Default: 20") }, async (params: { limit?: number }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_my_attendance_history", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -260,7 +262,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL 17: list_tribe_webinars
-  mcp.tool("list_tribe_webinars", "Returns webinars for your tribe or chapter.", { status: { type: "string", description: "planned|confirmed|completed|cancelled" } }, async (params: { status?: string }) => {
+  mcp.tool("list_tribe_webinars", "Returns webinars for your tribe or chapter.", { status: z.string().optional().describe("planned|confirmed|completed|cancelled") }, async (params: { status?: string }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "list_tribe_webinars", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -274,7 +276,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL 18: create_tribe_event (WRITE)
-  mcp.tool("create_tribe_event", "Create a new tribe meeting or event. Leaders and managers only.", { title: { type: "string", description: "Event title" }, date: { type: "string", description: "YYYY-MM-DD" }, type: { type: "string", description: "tribo|webinar|comms|lideranca" }, duration_minutes: { type: "number", description: "Duration in minutes. Default: 90" } }, async (params: any) => {
+  mcp.tool("create_tribe_event", "Create a new tribe meeting or event. Leaders and managers only.", { title: z.string().describe("Event title"), date: z.string().describe("YYYY-MM-DD"), type: z.string().optional().describe("tribo|webinar|comms|lideranca"), duration_minutes: z.number().optional().describe("Duration in minutes. Default: 90") }, async (params: any) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "create_tribe_event", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -311,7 +313,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL 21: search_hub_resources
-  mcp.tool("search_hub_resources", "Search the resource library (247+ items) by keyword.", { query: { type: "string", description: "Search term" }, asset_type: { type: "string", description: "article|video|tool|template|course|book|podcast|other" }, limit: { type: "number", description: "Max results. Default: 15" } }, async (params: { query: string; asset_type?: string; limit?: number }) => {
+  mcp.tool("search_hub_resources", "Search the resource library (247+ items) by keyword.", { query: z.string().describe("Search term"), asset_type: z.string().optional().describe("article|video|tool|template|course|book|podcast|other"), limit: z.number().optional().describe("Max results. Default: 15") }, async (params: { query: string; asset_type?: string; limit?: number }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "search_hub_resources", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -334,7 +336,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL 23: get_chapter_kpis
-  mcp.tool("get_chapter_kpis", "Returns KPIs for a chapter. Liaisons and admins can query any chapter.", { chapter: { type: "string", description: "Chapter code: GO|CE|DF|MG|RS" } }, async (params: { chapter?: string }) => {
+  mcp.tool("get_chapter_kpis", "Returns KPIs for a chapter. Liaisons and admins can query any chapter.", { chapter: z.string().optional().describe("Chapter code: GO|CE|DF|MG|RS") }, async (params: { chapter?: string }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_chapter_kpis", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -349,68 +351,85 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 }
 
-// SSE response wrapper for Claude.ai compatibility
-function sseResponse(jsonRpc: any): Response {
-  const payload = JSON.stringify(jsonRpc);
-  const body = `event: message\ndata: ${payload}\n\n`;
-  return new Response(body, {
-    status: 200,
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      "Connection": "keep-alive",
-    },
-  });
-}
-
-// MCP endpoint — JSON-RPC over HTTP (stateless, per-request)
-// Uses InMemoryTransport because StreamableHTTPServerTransport requires Node.js HTTP (writeHead)
-// Supports SSE responses when Accept: text/event-stream (required by Claude.ai)
+// MCP endpoint — Streamable HTTP (manual SSE wrapping)
+// SDK 1.28.0 McpServer handles protocol 2025-03-26 negotiation.
+// InMemoryTransport processes JSON-RPC. We wrap responses in SSE format.
+// This avoids WebStandardStreamableHTTPServerTransport which crashes on Deno.
 app.all("/mcp", async (c) => {
-  try {
-    const accept = c.req.header("Accept") || "";
-    const wantsSSE = accept.includes("text/event-stream");
+  const method = c.req.method;
 
+  // Streamable HTTP: GET = SSE stream (server-initiated), DELETE = session close
+  // Not supported in stateless mode
+  if (method === "GET" || method === "DELETE") {
+    return new Response(null, { status: 405, headers: { "Content-Type": "text/plain" } });
+  }
+
+  if (method !== "POST") {
+    return new Response(null, { status: 405 });
+  }
+
+  try {
     const authHeader = c.req.header("Authorization");
     const token = authHeader?.replace("Bearer ", "");
+    const accept = c.req.header("Accept") || "";
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.3.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.4.0" });
     registerTools(mcp, sb);
 
-    // Create paired in-memory transports
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     await mcp.connect(serverTransport);
 
-    // Parse incoming JSON-RPC request
     const body = await c.req.json();
 
-    // JSON-RPC notifications (no "id") don't expect a response
-    const isNotification = body.id === undefined || body.id === null;
+    // Handle batch (array) or single JSON-RPC message
+    const messages = Array.isArray(body) ? body : [body];
+    const responses: any[] = [];
 
-    if (isNotification) {
-      await clientTransport.send(body);
-      await mcp.close();
-      // 202 Accepted for notifications (no response body per MCP spec)
-      return new Response(null, { status: 202 });
+    for (const msg of messages) {
+      const isNotification = msg.id === undefined || msg.id === null;
+
+      if (isNotification) {
+        await clientTransport.send(msg);
+        continue;
+      }
+
+      // Request — wait for response via onmessage callback
+      const responsePromise = new Promise<any>((resolve) => {
+        clientTransport.onmessage = (resp: any) => resolve(resp);
+        setTimeout(() => resolve({ jsonrpc: "2.0", id: msg.id, error: { code: -32000, message: "Timeout" } }), 30000);
+      });
+
+      await clientTransport.send(msg);
+      const response = await responsePromise;
+      responses.push(response);
     }
-
-    // Regular requests — wait for response
-    const responsePromise = new Promise<any>((resolve) => {
-      clientTransport.onmessage = (msg: any) => resolve(msg);
-      setTimeout(() => resolve({ jsonrpc: "2.0", id: body.id, error: { code: -32000, message: "Timeout" } }), 30000);
-    });
-
-    await clientTransport.send(body);
-    const response = await responsePromise;
 
     await mcp.close();
 
-    // SSE response if client requests it (Claude.ai sends Accept: text/event-stream)
-    if (wantsSSE) {
-      return sseResponse(response);
+    // All notifications → 202 Accepted (no response body per MCP spec)
+    if (responses.length === 0) {
+      return new Response(null, { status: 202 });
     }
-    return c.json(response);
+
+    // Streamable HTTP: return SSE when client accepts it (Claude.ai sends Accept: text/event-stream)
+    if (accept.includes("text/event-stream")) {
+      let sseBody = "";
+      for (const resp of responses) {
+        sseBody += `event: message\ndata: ${JSON.stringify(resp)}\n\n`;
+      }
+      return new Response(sseBody, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+        },
+      });
+    }
+
+    // Plain JSON fallback (for curl / non-SSE clients)
+    const result = responses.length === 1 ? responses[0] : responses;
+    return c.json(result);
   } catch (e: any) {
     console.error("[MCP] Handler error:", e.message, e.stack?.substring(0, 300));
     return c.json({ jsonrpc: "2.0", id: null, error: { code: -32603, message: e.message } }, 500);
@@ -418,6 +437,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.3.0", tools: 23 }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.4.0", tools: 23, transport: "streamable-http-manual", sdk: "1.27.1" }));
 
 Deno.serve(app.fetch);
