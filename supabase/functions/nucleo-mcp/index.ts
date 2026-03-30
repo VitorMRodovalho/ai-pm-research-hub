@@ -1,5 +1,5 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.5.0 — 26 tools (20R + 6W) + usage logging
+// MCP server v2.6.0 — 29 tools (23R + 6W) + usage logging
 // Transport: SDK 1.28.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
@@ -385,6 +385,44 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "get_portfolio_overview", true, undefined, start);
     return ok(data);
   });
+
+  // ===== SPRINT 9 TOOLS (27-29) — Tier 2 =====
+
+  // TOOL 27: get_operational_alerts
+  mcp.tool("get_operational_alerts", "Returns operational alerts — inactivity, overdue cards, taxonomy drift. Admin/GP only.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_operational_alerts", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!member.is_superadmin && !["manager", "deputy_manager"].includes(member.operational_role)) { await logUsage(sb, member.id, "get_operational_alerts", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    const { data, error } = await sb.rpc("detect_operational_alerts");
+    if (error) { await logUsage(sb, member.id, "get_operational_alerts", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_operational_alerts", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 28: get_cycle_report
+  mcp.tool("get_cycle_report", "Returns a full cycle report — members, tribes, attendance, deliverables, KPIs. Admin/GP only.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_cycle_report", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!member.is_superadmin && !["manager", "deputy_manager"].includes(member.operational_role)) { await logUsage(sb, member.id, "get_cycle_report", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    const { data, error } = await sb.rpc("exec_cycle_report");
+    if (error) { await logUsage(sb, member.id, "get_cycle_report", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_cycle_report", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 29: get_annual_kpis
+  mcp.tool("get_annual_kpis", "Returns annual KPIs — targets vs actuals across all areas. Admin/Sponsor only.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_annual_kpis", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!member.is_superadmin && !["manager", "deputy_manager", "sponsor"].includes(member.operational_role) && !(member.designations || []).includes("sponsor")) { await logUsage(sb, member.id, "get_annual_kpis", false, "Unauthorized", start); return err("Unauthorized: admin/sponsor only."); }
+    const { data, error } = await sb.rpc("get_annual_kpis");
+    if (error) { await logUsage(sb, member.id, "get_annual_kpis", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_annual_kpis", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -395,7 +433,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.5.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.6.0" });
     registerTools(mcp, sb);
 
     const transport = new WebStandardStreamableHTTPServerTransport({
@@ -414,6 +452,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.5.0", tools: 26, transport: "native-streamable-http", sdk: "1.28.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.6.0", tools: 29, transport: "native-streamable-http", sdk: "1.28.0" }));
 
 Deno.serve(app.fetch);

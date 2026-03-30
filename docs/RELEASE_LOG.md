@@ -1,5 +1,28 @@
 # Release Log
 
+## 2026-03-31 — Sprint 9: Tier 2 MCP Tools + Tooling Upgrades + Docs Sync
+
+### Scope
+Add 3 Tier-2 MCP tools, upgrade Supabase CLI and Wrangler, sync all docs.
+
+### Delivered
+- **MCP tools 26 → 29** (3 new Tier-2 read tools):
+  - `get_operational_alerts` — inactivity, overdue, taxonomy drift alerts (admin/GP)
+  - `get_cycle_report` — full cycle report via `exec_cycle_report` (admin/GP)
+  - `get_annual_kpis` — annual KPIs targets vs actuals (admin/sponsor)
+- **Supabase CLI** 2.75.0 → 2.84.2 (+9 versions)
+- **Wrangler** 4.77.0 → 4.78.0
+- **MessageChannel polyfill** confirmed no-op (React 19.2.4 + Astro 6.1.1 fix)
+- **Docs synced**: all 3 READMEs, CLAUDE.md, AGENTS.md, MCP rules, MCP guide
+- **Plugin tracking**: @typescript-eslint/parser stable still `<6.0.0`, eslint-plugin-react still `^9.7`
+
+### Validation
+- Health: v2.6.0, 29 tools, native-streamable-http, sdk 1.28.0
+- All 3 new tools: HTTP 200, Zod pass, "Not authenticated" (correct)
+- `npm test` — 779 pass, 0 fail
+
+---
+
 ## 2026-03-30 — Sprint 8b: MCP SDK 1.28.0 Native Transport + Historical Debt Audit
 
 ### Scope

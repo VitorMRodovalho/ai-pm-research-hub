@@ -71,6 +71,7 @@
     "eslint-plugin-astro": "^1.6.0",
     "eslint-plugin-react": "^7.37.5",
     "playwright": "^1.58.2",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "wrangler": "^4.78.0"
   }
 }

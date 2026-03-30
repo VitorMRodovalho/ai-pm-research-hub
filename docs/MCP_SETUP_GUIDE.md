@@ -2,7 +2,7 @@
 
 ## What is MCP?
 
-MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact with external services. The Núcleo server exposes 26 tools (20 read + 6 write) that let you query and manage project data directly from your AI assistant using natural language.
+MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact with external services. The Núcleo server exposes 29 tools (23 read + 6 write) that let you query and manage project data directly from your AI assistant using natural language.
 
 ## Universal URL
 
@@ -18,7 +18,7 @@ Authentication: OAuth 2.1 — you'll be redirected to log in with the same accou
 
 | Client | Status | Notes |
 |--------|--------|-------|
-| Claude.ai | ✅ Verified (23 tools) | Web and desktop app. Streamable HTTP SSE. |
+| Claude.ai | ✅ Verified (29 tools) | Web and desktop app. Streamable HTTP SSE. |
 | Claude Code | ✅ Stable | Terminal — see token workaround below |
 | Cursor | ✅ Server-compatible | Settings → MCP → Add. OAuth flow. |
 | VS Code | ✅ Server-compatible | MCP extension required. OAuth flow. |
@@ -79,9 +79,9 @@ Token expires in 1 hour. Refresh by repeating step 2-3.
 
 > Note: ChatGPT MCP support is in beta. If you see "Internal Server Error", this is a known ChatGPT-side issue. The server is compatible — it will work once their beta stabilizes.
 
-## Available Tools (26 total)
+## Available Tools (29 total)
 
-### Read Tools (20 — all members)
+### Read Tools (23 — all members)
 
 | Tool | Description |
 |------|-------------|
@@ -105,6 +105,9 @@ Token expires in 1 hour. Refresh by repeating step 2-3.
 | `get_tribe_dashboard` | Full tribe dashboard: members, cards, attendance, XP |
 | `get_attendance_ranking` | Attendance ranking — members sorted by rate |
 | `get_portfolio_overview` | Executive portfolio overview (admin/GP only) |
+| `get_operational_alerts` | Operational alerts — inactivity, overdue, drift (admin/GP) |
+| `get_cycle_report` | Full cycle report — members, tribes, KPIs (admin/GP) |
+| `get_annual_kpis` | Annual KPIs — targets vs actuals (admin/sponsor) |
 
 ### Write Tools (6 — tribe leaders, GP, deputy only)
 
