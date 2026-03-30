@@ -81,7 +81,7 @@ graph LR
     subgraph "Supabase"
         G --> H[Auth<br/>Google · LinkedIn · Microsoft]
         E --> I[PostgreSQL<br/>189+ RPC · RLS]
-        F --> J[Edge Functions<br/>17 deployed]
+        F --> J[Edge Functions<br/>19 deployed]
         I --> K[pg_cron<br/>4 jobs]
     end
 
