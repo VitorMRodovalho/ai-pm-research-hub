@@ -1,15 +1,13 @@
 // supabase/functions/nucleo-mcp/index.ts
 // MCP server v2.5.0 — 26 tools (20R + 6W) + usage logging
-// Transport: SDK 1.27.1 McpServer + InMemoryTransport + manual Streamable HTTP SSE wrapping
-// SDK 1.28.0 breaks mcp.tool() — requires Zod schemas instead of plain JSON Schema objects
-// WebStandardStreamableHTTPServerTransport also crashes on Deno runtime
+// Transport: SDK 1.28.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
 import { Hono } from "jsr:@hono/hono";
-import { McpServer } from "npm:@modelcontextprotocol/sdk@1.27.1/server/mcp.js";
-import { InMemoryTransport } from "npm:@modelcontextprotocol/sdk@1.27.1/inMemory.js";
+import { McpServer } from "npm:@modelcontextprotocol/sdk@1.28.0/server/mcp.js";
+import { WebStandardStreamableHTTPServerTransport } from "npm:@modelcontextprotocol/sdk@1.28.0/server/webStandardStreamableHttp.js";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { z } from "npm:zod@3";
+import { z } from "npm:zod@^3.25";
 
 const app = new Hono().basePath("/nucleo-mcp");
 
@@ -389,85 +387,26 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 }
 
-// MCP endpoint — Streamable HTTP (manual SSE wrapping)
-// SDK 1.28.0 McpServer handles protocol 2025-03-26 negotiation.
-// InMemoryTransport processes JSON-RPC. We wrap responses in SSE format.
-// This avoids WebStandardStreamableHTTPServerTransport which crashes on Deno.
+// MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
+// SDK 1.28.0 handles all protocol details: initialize, session, tools/list, tool/call, SSE
 app.all("/mcp", async (c) => {
-  const method = c.req.method;
-
-  // Streamable HTTP: GET = SSE stream (server-initiated), DELETE = session close
-  // Not supported in stateless mode
-  if (method === "GET" || method === "DELETE") {
-    return new Response(null, { status: 405, headers: { "Content-Type": "text/plain" } });
-  }
-
-  if (method !== "POST") {
-    return new Response(null, { status: 405 });
-  }
-
   try {
     const authHeader = c.req.header("Authorization");
     const token = authHeader?.replace("Bearer ", "");
-    const accept = c.req.header("Accept") || "";
 
     const sb = createAuthenticatedClient(token);
     const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.5.0" });
     registerTools(mcp, sb);
 
-    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
-    await mcp.connect(serverTransport);
+    const transport = new WebStandardStreamableHTTPServerTransport({
+      sessionIdGenerator: undefined, // stateless mode — no session persistence
+    });
 
-    const body = await c.req.json();
+    await mcp.connect(transport);
+    const response = await transport.handleRequest(c.req.raw);
+    transport.onclose = () => mcp.close();
 
-    // Handle batch (array) or single JSON-RPC message
-    const messages = Array.isArray(body) ? body : [body];
-    const responses: any[] = [];
-
-    for (const msg of messages) {
-      const isNotification = msg.id === undefined || msg.id === null;
-
-      if (isNotification) {
-        await clientTransport.send(msg);
-        continue;
-      }
-
-      // Request — wait for response via onmessage callback
-      const responsePromise = new Promise<any>((resolve) => {
-        clientTransport.onmessage = (resp: any) => resolve(resp);
-        setTimeout(() => resolve({ jsonrpc: "2.0", id: msg.id, error: { code: -32000, message: "Timeout" } }), 30000);
-      });
-
-      await clientTransport.send(msg);
-      const response = await responsePromise;
-      responses.push(response);
-    }
-
-    await mcp.close();
-
-    // All notifications → 202 Accepted (no response body per MCP spec)
-    if (responses.length === 0) {
-      return new Response(null, { status: 202 });
-    }
-
-    // Streamable HTTP: return SSE when client accepts it (Claude.ai sends Accept: text/event-stream)
-    if (accept.includes("text/event-stream")) {
-      let sseBody = "";
-      for (const resp of responses) {
-        sseBody += `event: message\ndata: ${JSON.stringify(resp)}\n\n`;
-      }
-      return new Response(sseBody, {
-        status: 200,
-        headers: {
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-        },
-      });
-    }
-
-    // Plain JSON fallback (for curl / non-SSE clients)
-    const result = responses.length === 1 ? responses[0] : responses;
-    return c.json(result);
+    return response;
   } catch (e: any) {
     console.error("[MCP] Handler error:", e.message, e.stack?.substring(0, 300));
     return c.json({ jsonrpc: "2.0", id: null, error: { code: -32603, message: e.message } }, 500);
@@ -475,6 +414,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.5.0", tools: 26, transport: "streamable-http-manual", sdk: "1.27.1" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.5.0", tools: 26, transport: "native-streamable-http", sdk: "1.28.0" }));
 
 Deno.serve(app.fetch);
