@@ -52,7 +52,7 @@
 | 22 | BoardEngine polish | Pending | Spec in BOARD_ENGINE_SPEC.md, @dnd-kit |
 | 23 | Admin modularization Phases 2-4 | Pending | Phase 1 done |
 | 24 | Advisor: Security audit | — | ✅ Done (29/Mar) — 35 search_path fixed, 2 RLS tightened, 11 SD views intentional |
-| 25 | legacy_tribes table cleanup | Low | G13 |
+| 25 | legacy_tribes table cleanup | — | ✅ Done (29/Mar) — table dropped, code ref replaced with cycle_tribe_dim |
 | 26 | Git history cleanup | Low | 29MB PPTX in git history (G16) |
 | 27 | Co-managers member picker | — | ✅ Done (29/Mar) — F2 spec |
 
@@ -76,6 +76,21 @@ RPCs with backend ready but no frontend surface. To be specced and implemented i
 
 ## Recently Completed (session 28-29/Mar)
 
+### Sprint 4 Parity (29/Mar — continued session)
+- F1: Homepage public stats section (3 locales, 6 metrics)
+- F2: Webinar co-manager selector in CRUD modal
+- F4: Library server-side RPC search (augments client-side, 300ms debounce)
+- F5: Personal attendance history on /profile (progress bar + table)
+- S3.2: Attendance ranking role filter
+- PostHog: 4 new events (homepage_stats_viewed, library_search, attendance_history_viewed, webinars_public_viewed)
+- Security: 35 functions search_path hardened, 2 RLS policies tightened
+- E2e: Playwright expanded 15→40 tests (9 new spec files)
+- Bug fix: webinar trigger fixed_tribe_id → tribe_id
+- Bug fix: /webinars anon GRANT + 3 webinars confirmed
+- Cleanup: legacy_tribes table dropped (G13), .gitignore, settings.json hook
+- Demo: script + checklist in docs/DEMO_SCRIPT_MARIO.md
+
+### Sprint 4 (28-29/Mar)
 - GC-160: Webinar Governance (full stack)
 - GC-161: MCP P1 (19 tools + usage logging)
 - GC-162: LGPD RLS Hardening (29 policies, ~20 tables)
