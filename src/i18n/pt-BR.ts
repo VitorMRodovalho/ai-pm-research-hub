@@ -3539,6 +3539,45 @@ const ptBR: Record<string, string> = {
   'publications.statusChanged': 'Status atualizado!',
   'publications.coauthorAdded': 'Co-autor adicionado!',
   'publications.coauthorRemoved': 'Co-autor removido!',
+
+  // ── Homepage Stats (F1) ──
+  'homepage.stats.title': 'A plataforma em números',
+  'homepage.stats.members': 'Pesquisadores ativos',
+  'homepage.stats.tribes': 'Tribos',
+  'homepage.stats.chapters': 'Capítulos',
+  'homepage.stats.events': 'Eventos realizados',
+  'homepage.stats.resources': 'Recursos na biblioteca',
+  'homepage.stats.retention': 'Taxa de retenção',
+
+  // ── Attendance History (F5) ──
+  'profile.history.title': 'Meu histórico de presença',
+  'profile.history.date': 'Data',
+  'profile.history.event': 'Evento',
+  'profile.history.type': 'Tipo',
+  'profile.history.status': 'Status',
+  'profile.history.present': 'Presente',
+  'profile.history.absent': 'Ausente',
+  'profile.history.excused': 'Justificado',
+  'profile.history.summary': 'Participou de {attended} de {total} eventos ({rate}%)',
+  'profile.history.empty': 'Nenhum evento encontrado.',
+  'profile.history.error': 'Erro ao carregar histórico.',
+  'profile.history.typeGeral': 'Geral',
+  'profile.history.typeTribo': 'Tribo',
+  'profile.history.typeLideranca': 'Liderança',
+  'profile.history.typeComms': 'Comms',
+  'profile.history.typeParceria': 'Parceria',
+  'profile.history.typeEntrevista': 'Entrevista',
+  'profile.history.type1on1': '1:1',
+  'profile.history.typeExterno': 'Externo',
+
+  // ── Library Search (F4) ──
+  'library.search.placeholder': 'Pesquisar recursos...',
+  'library.search.searching': 'Buscando...',
+  'library.search.results': 'resultados',
+
+  // ── Webinars Co-managers (F2) ──
+  'webinars.co_managers': 'Co-gestores',
+  'webinars.co_managers_selected': 'selecionados',
 };
 
 export default ptBR;

@@ -3533,6 +3533,45 @@ const enUS: Record<string, string> = {
   'publications.statusChanged': 'Status updated!',
   'publications.coauthorAdded': 'Co-author added!',
   'publications.coauthorRemoved': 'Co-author removed!',
+
+  // ── Homepage Stats (F1) ──
+  'homepage.stats.title': 'The platform in numbers',
+  'homepage.stats.members': 'Active researchers',
+  'homepage.stats.tribes': 'Tribes',
+  'homepage.stats.chapters': 'Chapters',
+  'homepage.stats.events': 'Events held',
+  'homepage.stats.resources': 'Library resources',
+  'homepage.stats.retention': 'Retention rate',
+
+  // ── Attendance History (F5) ──
+  'profile.history.title': 'My attendance history',
+  'profile.history.date': 'Date',
+  'profile.history.event': 'Event',
+  'profile.history.type': 'Type',
+  'profile.history.status': 'Status',
+  'profile.history.present': 'Present',
+  'profile.history.absent': 'Absent',
+  'profile.history.excused': 'Excused',
+  'profile.history.summary': 'Attended {attended} of {total} events ({rate}%)',
+  'profile.history.empty': 'No events found.',
+  'profile.history.error': 'Error loading history.',
+  'profile.history.typeGeral': 'General',
+  'profile.history.typeTribo': 'Tribe',
+  'profile.history.typeLideranca': 'Leadership',
+  'profile.history.typeComms': 'Comms',
+  'profile.history.typeParceria': 'Partnership',
+  'profile.history.typeEntrevista': 'Interview',
+  'profile.history.type1on1': '1:1',
+  'profile.history.typeExterno': 'External',
+
+  // ── Library Search (F4) ──
+  'library.search.placeholder': 'Search resources...',
+  'library.search.searching': 'Searching...',
+  'library.search.results': 'results',
+
+  // ── Webinars Co-managers (F2) ──
+  'webinars.co_managers': 'Co-managers',
+  'webinars.co_managers_selected': 'selected',
 };
 
 export default enUS;

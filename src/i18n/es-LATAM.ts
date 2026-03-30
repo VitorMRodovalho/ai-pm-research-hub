@@ -3533,6 +3533,45 @@ const esLATAM: Record<string, string> = {
   'publications.statusChanged': '¡Estado actualizado!',
   'publications.coauthorAdded': '¡Co-autor agregado!',
   'publications.coauthorRemoved': '¡Co-autor removido!',
+
+  // ── Homepage Stats (F1) ──
+  'homepage.stats.title': 'La plataforma en números',
+  'homepage.stats.members': 'Investigadores activos',
+  'homepage.stats.tribes': 'Líneas de investigación',
+  'homepage.stats.chapters': 'Capítulos',
+  'homepage.stats.events': 'Eventos realizados',
+  'homepage.stats.resources': 'Recursos en la biblioteca',
+  'homepage.stats.retention': 'Tasa de retención',
+
+  // ── Attendance History (F5) ──
+  'profile.history.title': 'Mi historial de asistencia',
+  'profile.history.date': 'Fecha',
+  'profile.history.event': 'Evento',
+  'profile.history.type': 'Tipo',
+  'profile.history.status': 'Estado',
+  'profile.history.present': 'Presente',
+  'profile.history.absent': 'Ausente',
+  'profile.history.excused': 'Justificado',
+  'profile.history.summary': 'Asistió a {attended} de {total} eventos ({rate}%)',
+  'profile.history.empty': 'No se encontraron eventos.',
+  'profile.history.error': 'Error al cargar historial.',
+  'profile.history.typeGeral': 'General',
+  'profile.history.typeTribo': 'Línea',
+  'profile.history.typeLideranca': 'Liderazgo',
+  'profile.history.typeComms': 'Comms',
+  'profile.history.typeParceria': 'Alianza',
+  'profile.history.typeEntrevista': 'Entrevista',
+  'profile.history.type1on1': '1:1',
+  'profile.history.typeExterno': 'Externo',
+
+  // ── Library Search (F4) ──
+  'library.search.placeholder': 'Buscar recursos...',
+  'library.search.searching': 'Buscando...',
+  'library.search.results': 'resultados',
+
+  // ── Webinars Co-managers (F2) ──
+  'webinars.co_managers': 'Co-gestores',
+  'webinars.co_managers_selected': 'seleccionados',
 };
 
 export default esLATAM;
