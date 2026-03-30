@@ -1,7 +1,7 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.3.0 — 23 tools (17R + 6W) + usage logging
-// Transport: @modelcontextprotocol/sdk (official) — InMemoryTransport + SSE wrapping
-// FIX v2.3.0: SSE response wrapping for Claude.ai compatibility (Accept: text/event-stream)
+// supabase/functions/nucleo-mcp/index.ts
+// MCP server v2.4.0 — 23 tools (17R + 6W) + usage logging
+// Transport: @modelcontextprotocol/sdk@1.27.1 + Zod schemas + SSE wrapping
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
 import { Hono } from "jsr:@hono/hono";
