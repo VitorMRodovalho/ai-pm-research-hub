@@ -53,3 +53,13 @@ scripts/bulk_knowledge_ingestion/upload_manifest_curated.json
 
 # Audit raw reports (inflated, see filtered summary)
 docs/audit/archive/
+
+# Wrangler local state
+.wrangler/
+
+# Non-project files (accidentally extracted/downloaded)
+ventoy-*/
+packages.microsoft.gpg
+DISCREPANCY_REPORT.md
+MIGRATION_PROPOSAL.md
+REPO_INVENTORY.md
