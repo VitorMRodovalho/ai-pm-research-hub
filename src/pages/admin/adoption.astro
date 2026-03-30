@@ -44,6 +44,33 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         <div id="adp-auth" class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5"></div>
       </div>
 
+      <!-- MCP Route Health (auto-discovery) -->
+      <div id="adp-mcp-health" class="hidden bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-[var(--border-default)] flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-bold text-navy">{t('adoption.mcpHealth', lang)}</h3>
+            <p class="text-[.68rem] text-[var(--text-muted)] mt-0.5">Status por rota — auto-descoberta via mcp_usage_log</p>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-[.75rem]">
+            <thead>
+              <tr class="bg-[var(--surface-section-cool)]">
+                <th class="text-left px-4 py-2 font-bold text-[var(--text-secondary)]">Rota</th>
+                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Calls</th>
+                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">OK</th>
+                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Fail</th>
+                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Erro%</th>
+                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Latência</th>
+                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Último</th>
+                <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Status</th>
+              </tr>
+            </thead>
+            <tbody id="adp-mcp-health-body"></tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- Daily Activity Chart -->
       <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
@@ -434,9 +461,32 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
     // Build MCP user set for member table column
     if (topTools.length > 0) {
-      // We'll populate mcpUserIds from mcp_usage_log in a separate query if needed
-      // For now, show the column header
       document.getElementById('adp-mcp-col')?.classList.remove('hidden');
+    }
+
+    // Route health table
+    const routes = mcp?.route_health || [];
+    if (routes.length > 0) {
+      document.getElementById('adp-mcp-health')?.classList.remove('hidden');
+      const body = document.getElementById('adp-mcp-health-body');
+      if (body) {
+        body.innerHTML = routes.map((r: any) => {
+          const errPct = r.error_rate || 0;
+          const statusDot = errPct === 0 ? 'bg-emerald-500' : errPct < 50 ? 'bg-amber-400' : 'bg-red-400';
+          const lat = r.avg_latency_ms != null ? `${r.avg_latency_ms}ms` : '—';
+          const lastCall = r.last_call ? relativeTime(r.last_call) : '—';
+          return `<tr class="border-t border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">
+            <td class="px-4 py-2 font-mono text-[.68rem] text-navy">${esc(r.tool_name)}</td>
+            <td class="px-3 py-2 text-center">${r.total_calls}</td>
+            <td class="px-3 py-2 text-center text-emerald-600 font-bold">${r.success_count}</td>
+            <td class="px-3 py-2 text-center ${r.fail_count > 0 ? 'text-red-500 font-bold' : 'text-[var(--text-muted)]'}">${r.fail_count}</td>
+            <td class="px-3 py-2 text-center ${errPct > 50 ? 'text-red-500' : errPct > 0 ? 'text-amber-600' : 'text-emerald-600'}">${errPct}%</td>
+            <td class="px-3 py-2 text-center text-[var(--text-secondary)]">${lat}</td>
+            <td class="px-3 py-2 text-center text-[var(--text-muted)]">${lastCall}</td>
+            <td class="px-3 py-2 text-center"><span class="inline-block w-2.5 h-2.5 rounded-full ${statusDot}" title="${r.last_error_message || 'OK'}"></span></td>
+          </tr>`;
+        }).join('');
+      }
     }
   }
 

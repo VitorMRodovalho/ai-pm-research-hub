@@ -1,4 +1,17 @@
 {
+  "deniedMcpServers": [
+    { "serverName": "claude_ai_PostHog" },
+    { "serverName": "ms365" },
+    { "serverName": "claude_ai_Canva" },
+    { "serverName": "claude_ai_Notion" },
+    { "serverName": "claude_ai_Figma" },
+    { "serverName": "claude_ai_Sentry" },
+    { "serverName": "claude_ai_Miro" },
+    { "serverName": "claude_ai_Scholar_Gateway" },
+    { "serverName": "claude_ai_Gmail" },
+    { "serverName": "claude_ai_Google_Calendar" },
+    { "serverName": "claude_ai_Microsoft_Learn" }
+  ],
   "permissions": {
     "allow": [
       "Bash(git *)",
@@ -44,8 +57,13 @@
   "hooks": {
     "PostCompact": [
       {
-        "type": "command",
-        "command": "bash .claude/hooks/post-compact.sh"
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/post-compact.sh"
+          }
+        ]
       }
     ]
   }

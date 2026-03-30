@@ -163,6 +163,7 @@ Deno.serve(async (req) => {
           html,
           text,
           headers: { 'List-Unsubscribe': `<${unsubUrl}>` },
+          tracking: { open: true, click: true },
         }
         console.log('[campaign] sending to:', finalTo[0], 'from:', from)
 
