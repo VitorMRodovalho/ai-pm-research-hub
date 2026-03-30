@@ -5,8 +5,8 @@
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
 import { Hono } from "jsr:@hono/hono";
-import { McpServer } from "npm:@modelcontextprotocol/sdk@1.12.1/server/mcp.js";
-import { InMemoryTransport } from "npm:@modelcontextprotocol/sdk@1.12.1/inMemory.js";
+import { McpServer } from "npm:@modelcontextprotocol/sdk@1.27.1/server/mcp.js";
+import { InMemoryTransport } from "npm:@modelcontextprotocol/sdk@1.27.1/inMemory.js";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const app = new Hono().basePath("/nucleo-mcp");
