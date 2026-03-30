@@ -120,7 +120,7 @@ graph LR
 
 ## MCP Server — AI Integration
 
-Any member can connect Claude, ChatGPT, Cursor, or VS Code to the platform via the Model Context Protocol. 26 tools (17 read + 6 write) authenticated via OAuth 2.1 with full Row Level Security enforcement.
+Any member can connect Claude, ChatGPT, Cursor, or VS Code to the platform via the Model Context Protocol. 26 tools (20 read + 6 write) authenticated via OAuth 2.1 with full Row Level Security enforcement.
 
 ```
 https://nucleoia.vitormr.dev/mcp
@@ -151,10 +151,10 @@ sequenceDiagram
 
 | Compatibility | Status |
 |--------------|--------|
-| Claude.ai | Stable |
-| ChatGPT | Stable |
+| Claude.ai | Verified (26 tools) |
 | Claude Code | Stable |
-| Cursor / VS Code | Stable |
+| ChatGPT | Server-compatible (beta) |
+| Cursor / VS Code | Server-compatible |
 
 **[MCP Setup Guide](docs/MCP_SETUP_GUIDE.md)**
 
