@@ -2,7 +2,7 @@
 
 ## What is MCP?
 
-MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact with external services. The Núcleo server exposes 23 tools (17 read + 6 write) that let you query and manage project data directly from your AI assistant using natural language.
+MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact with external services. The Núcleo server exposes 26 tools (20 read + 6 write) that let you query and manage project data directly from your AI assistant using natural language.
 
 ## Universal URL
 
@@ -79,9 +79,9 @@ Token expires in 1 hour. Refresh by repeating step 2-3.
 
 > Note: ChatGPT MCP support is in beta. If you see "Internal Server Error", this is a known ChatGPT-side issue. The server is compatible — it will work once their beta stabilizes.
 
-## Available Tools (23 total)
+## Available Tools (26 total)
 
-### Read Tools (17 — all members)
+### Read Tools (20 — all members)
 
 | Tool | Description |
 |------|-------------|
@@ -102,6 +102,9 @@ Token expires in 1 hour. Refresh by repeating step 2-3.
 | `search_hub_resources` | Search the resource library (247+ items) |
 | `get_adoption_metrics` | MCP adoption metrics (admin/GP only) |
 | `get_chapter_kpis` | KPIs for a chapter (liaisons and admins) |
+| `get_tribe_dashboard` | Full tribe dashboard: members, cards, attendance, XP |
+| `get_attendance_ranking` | Attendance ranking — members sorted by rate |
+| `get_portfolio_overview` | Executive portfolio overview (admin/GP only) |
 
 ### Write Tools (6 — tribe leaders, GP, deputy only)
 

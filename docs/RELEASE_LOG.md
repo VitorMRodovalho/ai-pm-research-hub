@@ -1,5 +1,42 @@
 # Release Log
 
+## 2026-03-30 — Sprint 7: Major Dep Upgrades + 3 New MCP Tools
+
+### Scope
+Upgrade 3 major dependencies (lucide-react, recharts, tiptap) and add 3 Tier-1 MCP tools.
+
+### Delivered
+
+- **1. lucide-react 0.577.0 → 1.7.0 (major)**
+  - Brand icons removed (not used in project)
+  - UMD build removed (already ESM)
+  - `aria-hidden` default on icons (accessibility improvement)
+  - 14 files import lucide-react — all icons present in v1, zero breakage
+
+- **2. recharts 2.15.4 → 3.8.1 (major)**
+  - Internal state management rewrite
+  - Dependencies internalized (recharts-scale, react-smooth)
+  - 5 files use recharts — all with standard patterns, zero breakage
+
+- **3. @tiptap/* 2.27.2 → 3.21.0 (major)**
+  - StarterKit now bundles Link by default — added `link: false` to avoid conflict
+  - 1 file affected: `RichTextEditor.tsx`
+  - No BubbleMenu/FloatingMenu used — most breaking changes don't apply
+
+- **4. MCP Tools 23 → 26 (3 new Tier-1 read tools)**
+  - `get_tribe_dashboard` — full tribe dashboard via `exec_tribe_dashboard` RPC
+  - `get_attendance_ranking` — attendance ranking via `get_attendance_panel` RPC
+  - `get_portfolio_overview` — executive portfolio via `get_portfolio_dashboard` RPC (admin only)
+
+### Validation
+- `npx astro build` — success
+- `npm test` — 779 pass, 0 fail
+- Health: v2.5.0, 26 tools
+- All 3 new tools: HTTP 200, Zod pass
+- Workers deployed, EF v31 deployed
+
+---
+
 ## 2026-03-29 — Sprint 5: MCP Claude.ai Connector Fix + Dependency Upgrade
 
 ### Scope

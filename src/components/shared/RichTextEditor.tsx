@@ -29,6 +29,7 @@ export default function RichTextEditor({
         codeBlock: toolbar === 'full' ? {} : false,
         horizontalRule: toolbar === 'full' ? {} : false,
         blockquote: toolbar === 'full' ? {} : false,
+        link: false, // v3 bundles Link by default — we use our own Link config below
       }),
       Link.configure({ openOnClick: false, HTMLAttributes: { class: 'text-teal underline' } }),
       ...(toolbar === 'full'
