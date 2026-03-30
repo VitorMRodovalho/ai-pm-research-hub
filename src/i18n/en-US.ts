@@ -1012,7 +1012,9 @@ const enUS: Record<string, string> = {
 
   // ── Attendance page (script / client-side) ──
   'attendance.dateLocale': 'en-US',
+  'attendance.filterAllRoles': 'All roles',
   'attendance.role.manager': 'Project Manager',
+  'attendance.role.deputy_manager': 'Deputy PM',
   'attendance.role.tribe_leader': 'Stream Leader',
   'attendance.role.researcher': 'Researcher',
   'attendance.role.facilitator': 'Facilitator',

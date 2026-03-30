@@ -1012,7 +1012,9 @@ const esLATAM: Record<string, string> = {
 
   // ── Attendance page (script / client-side) ──
   'attendance.dateLocale': 'es-419',
+  'attendance.filterAllRoles': 'Todos los roles',
   'attendance.role.manager': 'Gerente de Proyecto',
+  'attendance.role.deputy_manager': 'Deputy PM',
   'attendance.role.tribe_leader': 'Líder de Línea',
   'attendance.role.researcher': 'Investigador',
   'attendance.role.facilitator': 'Facilitador',
