@@ -1,5 +1,5 @@
 # BACKLOG — AI & PM Research Hub
-## Updated: 29 March 2026
+## Updated: 29 March 2026 (Sprint 4 parity specs executed)
 
 ---
 
@@ -54,7 +54,7 @@
 | 24 | Advisor: 10 Security Definer Views | Pending | — |
 | 25 | legacy_tribes table cleanup | Low | G13 |
 | 26 | Git history cleanup | Low | 29MB PPTX in git history (G16) |
-| 27 | Co-managers member picker | Low | Webinar modal G10 |
+| 27 | Co-managers member picker | — | ✅ Done (29/Mar) — F2 spec |
 
 ---
 
@@ -64,13 +64,13 @@ RPCs with backend ready but no frontend surface. To be specced and implemented i
 
 | # | RPC | Current State | Recommended Frontend | Sprint |
 |---|-----|---------------|---------------------|--------|
-| F1 | `get_public_platform_stats` | Orphan — created but unused | Homepage `/` stats section (active members, tribes, events, retention) | S4 |
-| F2 | Co-managers selector | Display-only in webinar cards | Member multi-select picker in `/admin/webinars` CRUD modal | S4 |
-| F3 | Board card webinar badge | `board_items.webinar_id` FK exists, no UI | Badge in CardDetail showing linked webinar status | S4 |
-| F4 | `search_hub_resources` | MCP only (T21) | Upgrade `/library` search from client-side filter to server-side RPC | S4 |
-| F5 | `get_my_attendance_history` | MCP only (T16) | Personal attendance tab in `/profile` or section in `/attendance` | S5 |
+| F1 | `get_public_platform_stats` | ✅ Done (29/Mar) | Homepage `/` stats section — all 3 locales | S4 |
+| F2 | Co-managers selector | ✅ Done (29/Mar) | Member multi-select in `/admin/webinars` CRUD modal | S4 |
+| F3 | Board card webinar badge | `board_items.webinar_id` FK exists, no UI | Badge in CardDetail showing linked webinar status | S5 |
+| F4 | `search_hub_resources` | ✅ Done (29/Mar) | `/library` search upgraded to server-side RPC (300ms debounce) | S4 |
+| F5 | `get_my_attendance_history` | ✅ Done (29/Mar) | Personal attendance history in `/profile` with progress bar + table | S4 |
 
-**Note:** These are not bugs — all backend functionality works correctly via MCP or internal RPCs. The gap is frontend surface for web users. Each should be specced by Chat Claude before implementation.
+**Note:** F3 deferred to Sprint 5 (low demo impact). F1/F2/F4/F5 implemented per SPRINT4_PARITY_SPECS.md.
 
 ---
 

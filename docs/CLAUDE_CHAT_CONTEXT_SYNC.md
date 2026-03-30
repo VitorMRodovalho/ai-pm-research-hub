@@ -3,7 +3,7 @@
 **Projeto:** Núcleo de Estudos e Pesquisa em IA & GP
 **Repo:** github.com/VitorMRodovalho/ai-pm-research-hub
 **Data:** 2026-03-29
-**Versão:** v2.3.0 (MCP) | Sprint 4 complete
+**Versão:** v2.3.1 (Sprint 4 parity) | Sprint 4 parity specs executed
 
 ---
 
@@ -99,7 +99,15 @@ Product Leader e Spec Writer do Núcleo IA & GP. Tu analisas, decides e produzes
 17. PMI-GO institutional page — conteúdo enviado para Ivan
 
 ### P3 — Sprint 3+ / Ciclo 4
-18-27: Pre-onboarding gamification, Playwright e2e, sustainability frontend, W107 pilot, BoardEngine polish, admin modularization, security definer views, legacy_tribes cleanup, git history cleanup, co-managers picker
+18-26: Pre-onboarding gamification, Playwright e2e, sustainability frontend, W107 pilot, BoardEngine polish, admin modularization, security definer views, legacy_tribes cleanup, git history cleanup
+27. ~~Co-managers picker~~ → ✅ Done (F2 spec)
+
+### Sprint 4 Parity Specs Executed (29/Mar)
+- F1: Homepage public stats section (all 3 locales) — `get_public_platform_stats` RPC
+- F5: Personal attendance history on `/profile` — `get_my_attendance_history` RPC
+- F4: Library server-side search — `search_hub_resources` RPC (augments client-side)
+- F2: Co-manager selector in webinar CRUD modal — `upsert_webinar` with `p_co_manager_ids`
+- F3: Deferred to Sprint 5 (board webinar badge — low demo impact)
 
 ---
 
