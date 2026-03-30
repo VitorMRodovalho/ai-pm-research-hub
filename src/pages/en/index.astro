@@ -14,6 +14,7 @@ import TeamSection from '../../components/sections/TeamSection.astro';
 import VisionSection from '../../components/sections/VisionSection.astro';
 import ResourcesSection from '../../components/sections/ResourcesSection.astro';
 import { t } from '../../i18n/utils';
+import PlatformStatsSection from '../../components/homepage/PlatformStatsSection.astro';
 
 const lang = 'en-US' as const;
 const homeSchedule = await getHomeSchedule();
@@ -22,6 +23,7 @@ const deadlineIso = homeSchedule?.selectionDeadlineAt ?? null;
 <BaseLayout title={t('meta.title', lang)} activePage="home" lang={lang}>
   <Toast />
   <HeroSection deadline={deadlineIso} schedule={homeSchedule} lang={lang} />
+  <PlatformStatsSection lang={lang} />
   <QuadrantsSection lang={lang} />
   <TribesSection deadline={deadlineIso} lang={lang} />
   <KpiSection lang={lang} />
