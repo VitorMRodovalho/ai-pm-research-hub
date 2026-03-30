@@ -3,7 +3,7 @@
 **Projeto:** Núcleo de Estudos e Pesquisa em IA & GP
 **Repo:** github.com/VitorMRodovalho/ai-pm-research-hub
 **Data:** 2026-03-29
-**Versão:** v2.2.1
+**Versão:** v2.3.0 (MCP) | Sprint 4 complete
 
 ---
 

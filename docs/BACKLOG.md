@@ -19,9 +19,9 @@
 
 | # | Item | Est. | Status | Notes |
 |---|------|------|--------|-------|
-| 6 | S3.3 Custom PostHog events | 3-4h | Ready | 8 instrumentations: board_card_created/moved, webinar_viewed, blog_post_read, profile_updated, mcp_tool_called, certificate_issued, governance_cr_submitted |
-| 7 | S3.2 Designation filter everywhere | 2-3h | Ready | Expand adoption filter to /admin/members, /admin/attendance, /teams |
-| 8 | Phase 2 smoke-test.sh (GC-097) | 2h | Ready | Scripted QA gate layer 2 |
+| 6 | S3.3 Custom PostHog events | — | ✅ Done (29/Mar) | 7 events deployed (mcp_tool_called skipped — server-side only). posthog.identify() in Nav. |
+| 7 | S3.2 Designation filter | — | ✅ Partial (29/Mar) | /admin/members done. /teams + /attendance deferred (need Astro inline or RPC changes). |
+| 8 | GC-097 P2 smoke test | — | ✅ Done (29/Mar) | 11 checks, all pass. `npm run smoke` available. |
 | 9 | pg_cron verification | — | ✅ Done (29/Mar) | 7 jobs active: credly, attendance, detractor, reminders, backup, archive, email |
 | 10 | URL migration notice | Note | FYI | Débora + Marcos using legacy .pages.dev (redirect works) |
 
