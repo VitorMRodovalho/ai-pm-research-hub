@@ -463,6 +463,8 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       if (error) {
         rollbackMove(itemId, previousLane);
         windowRef?.toast?.(error.message || t('comp.kanban.errorMove', 'Falha ao mover'), 'error');
+      } else {
+        trackEvent('board_card_moved', { card_id: itemId, from_status: previousLane, to_status: targetLane, tribe_id: tribeId });
       }
       return;
     }

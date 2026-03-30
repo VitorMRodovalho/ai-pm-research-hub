@@ -1144,6 +1144,7 @@ const PROFILE_I18N = {
     }
     if (data?.error) (window as any).toast?.(data.error, 'error');
     else {
+      try { if ((window as any).posthog) (window as any).posthog.capture('profile_updated', { fields_changed: Object.keys(fields) }); } catch {}
       (window as any).toast?.(PROFILE_I18N.dataSaved, 'success');
       const { data: updated } = await sb.rpc('get_member_by_auth');
       if (updated) { currentMember = updated; renderProfile(updated); }

@@ -73,6 +73,7 @@ export default function MemberListIsland() {
   const [tierFilter, setTierFilter] = useState('');
   const [tribeFilter, setTribeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('active');
+  const [designationFilter, setDesignationFilter] = useState('');
   const [editMember, setEditMember] = useState<MemberRow | null>(null);
   const [saving, setSaving] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -348,6 +349,11 @@ export default function MemberListIsland() {
           <option value="">{t('comp.memberList.allTribes', 'Todas as tribos')}</option>
           {tribes.map(([id, name]) => <option key={id} value={String(id)}>T{String(id).padStart(2, '0')} — {name}</option>)}
         </select>
+        <select value={designationFilter} onChange={e => setDesignationFilter(e.target.value)}
+          className="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)]">
+          <option value="">Todas designações</option>
+          {ALL_DESIGS.map(d => <option key={d} value={d}>{DESIG_LABELS[d] || d}</option>)}
+        </select>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
           className="px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)]">
           <option value="active">{t('comp.memberList.active', 'Ativos')}</option>
@@ -399,7 +405,7 @@ export default function MemberListIsland() {
               </tr>
             </thead>
             <tbody>
-              {members.map(m => (
+              {(designationFilter ? members.filter(m => (m.designations || []).includes(designationFilter)) : members).map(m => (
                 <tr key={m.id} className="border-t border-[var(--border-default)] hover:bg-[var(--surface-hover)] transition-colors">
                   <td className="px-3 py-2">
                     <input type="checkbox" checked={selectedIds.has(m.id)} onChange={() => toggleSelect(m.id)} className="accent-teal-500" />

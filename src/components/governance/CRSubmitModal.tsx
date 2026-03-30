@@ -43,6 +43,7 @@ export default function CRSubmitModal({ sections, t, getSb, onClose, onReload }:
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      try { if ((window as any).posthog) (window as any).posthog.capture('governance_cr_submitted', { cr_type: crType, impact_level: impactLevel }); } catch {}
       (window as any).toast?.(t('governance.cr_submitted_success', 'CR submetida com sucesso!'), 'success');
       onReload();
     } catch (e: any) {
