@@ -44,12 +44,8 @@
   "hooks": {
     "PostCompact": [
       {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .claude/hooks/post-compact.sh"
-          }
-        ]
+        "type": "command",
+        "command": "bash .claude/hooks/post-compact.sh"
       }
     ]
   }
