@@ -1,5 +1,5 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.4.0 — 23 tools (17R + 6W) + usage logging
+// MCP server v2.5.0 — 26 tools (20R + 6W) + usage logging
 // Transport: SDK 1.27.1 McpServer + InMemoryTransport + manual Streamable HTTP SSE wrapping
 // SDK 1.28.0 breaks mcp.tool() — requires Zod schemas instead of plain JSON Schema objects
 // WebStandardStreamableHTTPServerTransport also crashes on Deno runtime
@@ -349,6 +349,44 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "get_chapter_kpis", true, undefined, start);
     return ok({ chapter, kpis: data });
   });
+
+  // ===== SPRINT 7 TOOLS (24-26) =====
+
+  // TOOL 24: get_tribe_dashboard
+  mcp.tool("get_tribe_dashboard", "Returns a full tribe dashboard: members, cards, attendance, XP, meetings. Leaders and admins.", { tribe_id: z.number().optional().describe("Tribe ID (1-8). If omitted, uses your tribe.") }, async (params: { tribe_id?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_tribe_dashboard", false, "Not authenticated", start); return err("Not authenticated"); }
+    const tribeId = params.tribe_id || member.tribe_id;
+    if (!tribeId) { await logUsage(sb, member.id, "get_tribe_dashboard", false, "No tribe", start); return err("No tribe. Specify tribe_id (1-8)."); }
+    const { data, error } = await sb.rpc("exec_tribe_dashboard", { p_tribe_id: tribeId });
+    if (error) { await logUsage(sb, member.id, "get_tribe_dashboard", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_tribe_dashboard", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 25: get_attendance_ranking
+  mcp.tool("get_attendance_ranking", "Returns the attendance ranking — members sorted by attendance rate and total meetings.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_attendance_ranking", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_attendance_panel");
+    if (error) { await logUsage(sb, member.id, "get_attendance_ranking", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_attendance_ranking", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 26: get_portfolio_overview
+  mcp.tool("get_portfolio_overview", "Returns the executive portfolio overview — all boards, cards, statuses, and overdue items. Admin/GP only.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_portfolio_overview", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!member.is_superadmin && !["manager", "deputy_manager"].includes(member.operational_role)) { await logUsage(sb, member.id, "get_portfolio_overview", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    const { data, error } = await sb.rpc("get_portfolio_dashboard");
+    if (error) { await logUsage(sb, member.id, "get_portfolio_overview", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_portfolio_overview", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Streamable HTTP (manual SSE wrapping)
@@ -374,7 +412,7 @@ app.all("/mcp", async (c) => {
     const accept = c.req.header("Accept") || "";
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.4.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.5.0" });
     registerTools(mcp, sb);
 
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
@@ -437,6 +475,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.4.0", tools: 23, transport: "streamable-http-manual", sdk: "1.27.1" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.5.0", tools: 26, transport: "streamable-http-manual", sdk: "1.27.1" }));
 
 Deno.serve(app.fetch);
