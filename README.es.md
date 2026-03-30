@@ -11,7 +11,7 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
-[![MCP](https://img.shields.io/badge/MCP-15%20Tools-D97757?logo=claude&logoColor=white)](#servidor-mcp--integracion-con-ia)
+[![MCP](https://img.shields.io/badge/MCP-26%20Tools-D97757?logo=claude&logoColor=white)](#servidor-mcp--integracion-con-ia)
 [![PostHog](https://img.shields.io/badge/PostHog-Analytics-F9BD2B?logo=posthog&logoColor=white)](https://posthog.com)
 [![Sentry](https://img.shields.io/badge/Sentry-Monitoring-362D59?logo=sentry&logoColor=white)](https://sentry.io)
 [![Cost](https://img.shields.io/badge/Infra%20Cost-%240%2Fmo-brightgreen)]()
@@ -43,10 +43,10 @@ Fundado en 2024 como piloto en PMI Goias, el proyecto evoluciono hacia una alian
 | Capitulos PMI | 5 (GO · CE · DF · MG · RS) |
 | Entradas de gobernanza | 135+ |
 | Posts en el blog | 9 |
-| Herramientas MCP | 15 (10 lectura · 5 escritura) |
+| Herramientas MCP | 26 (20 lectura · 6 escritura) |
 | Edge Functions | 19 |
-| Claves i18n | 2.350+ (3 idiomas) |
-| Tests | 784+ |
+| Claves i18n | 3.500+ (3 idiomas) |
+| Tests | 779 |
 | Costo mensual | $0 |
 
 ---
@@ -81,7 +81,7 @@ graph LR
     subgraph "Supabase"
         G --> H[Auth<br/>Google · LinkedIn · Microsoft]
         E --> I[PostgreSQL<br/>189+ RPC · RLS]
-        F --> J[Edge Functions<br/>17 deployed]
+        F --> J[Edge Functions<br/>19 deployed]
         I --> K[pg_cron<br/>4 jobs]
     end
 
@@ -108,8 +108,8 @@ graph LR
 | **Hospedaje** | Cloudflare Workers | SSR en el edge, proxy OAuth, proxy MCP |
 | **Base de Datos** | Supabase PostgreSQL | 189+ funciones SECURITY DEFINER, RLS |
 | **Auth** | Google + LinkedIn + Microsoft | OAuth 2.1, PKCE, registro dinamico de clientes |
-| **MCP** | Servidor personalizado (15 herramientas) | Asistentes de IA consultan la plataforma via lenguaje natural |
-| **Logica Server** | Supabase Edge Functions (17) | Sync Credly, asistencia, MCP, campañas |
+| **MCP** | Servidor personalizado (26 herramientas) | Asistentes de IA consultan la plataforma via lenguaje natural |
+| **Logica Server** | Supabase Edge Functions (19) | Sync Credly, asistencia, MCP, campañas, PostHog proxy |
 | **Analytics** | PostHog | Analytics de producto, session replay |
 | **Errores** | Sentry | Monitoreo de errores en tiempo real |
 | **Cron** | pg_cron (4 jobs) | Sync Credly, asistencia, alertas detractores, recordatorios |
@@ -120,7 +120,7 @@ graph LR
 
 ## Servidor MCP — Integracion con IA
 
-Cualquier miembro puede conectar Claude, ChatGPT, Cursor o VS Code a la plataforma via Model Context Protocol. 15 herramientas autenticadas via OAuth 2.1 con Row Level Security.
+Cualquier miembro puede conectar Claude, ChatGPT, Cursor o VS Code a la plataforma via Model Context Protocol. 26 herramientas (20 lectura + 6 escritura) autenticadas via OAuth 2.1 con Row Level Security.
 
 ```
 https://nucleoia.vitormr.dev/mcp
@@ -151,10 +151,10 @@ sequenceDiagram
 
 | Compatibilidad | Estado |
 |----------------|--------|
-| Claude.ai | Estable |
-| ChatGPT | Estable |
+| Claude.ai | Verificado (26 herramientas) |
 | Claude Code | Estable |
-| Cursor / VS Code | Estable |
+| ChatGPT | Compatible (beta) |
+| Cursor / VS Code | Compatible |
 
 **[Guia de Configuracion MCP](docs/MCP_SETUP_GUIDE.md)**
 
@@ -227,7 +227,7 @@ npm test
 ├── supabase/
 │   ├── functions/      # 19 Edge Functions
 │   └── migrations/     # Migraciones de base de datos
-├── tests/              # 784+ aserciones de test
+├── tests/              # 779 tests pasando
 ├── docs/               # Gobernanza, guias, specs
 └── scripts/            # Scripts de auditoria y utilitarios
 ```
