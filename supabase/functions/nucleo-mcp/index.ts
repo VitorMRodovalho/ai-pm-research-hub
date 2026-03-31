@@ -99,7 +99,10 @@ function registerKnowledge(mcp: McpServer, sb: ReturnType<typeof createClient>) 
 - \`get_hub_announcements\` — Avisos ativos do Hub
 - \`search_hub_resources\` — Busca na biblioteca (247+ itens)
 - \`get_public_impact_data\` — Dados de impacto público, timeline, reconhecimentos
-- \`get_pilots_summary\` — Resumo dos pilotos de IA`);
+- \`get_pilots_summary\` — Resumo dos pilotos de IA
+- \`get_current_release\` — Versão atual da plataforma
+- \`get_my_credly_status\` — Seus badges Credly e certificação CPMAI
+- \`get_my_attendance_hours\` — Horas de presença no ciclo`);
 
       if (hasTribe) {
         sections.push(`### Consultas da sua tribo
@@ -167,7 +170,9 @@ Rotas como \`get_my_tribe_members\` retornarão "No tribe assigned" — isso é 
 - \`get_partner_pipeline\` — Pipeline de parcerias
 - \`get_campaign_analytics\` — Métricas de campanhas de email
 - \`get_comms_dashboard\` — Dashboard de comunicação
-- \`get_comms_metrics_by_channel\` — Métricas por canal social`);
+- \`get_comms_metrics_by_channel\` — Métricas por canal social
+- \`get_admin_dashboard\` — Dashboard admin: membros, tribos, atividade
+- \`get_board_activities\` — Atividades recentes dos boards (lifecycle events)`);
       }
 
       sections.push(`## Workflows recomendados
@@ -215,7 +220,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
     "nucleo://tools/reference",
     {
       title: "Referência completa de ferramentas",
-      description: "Lista todas as 45 ferramentas do Núcleo MCP com parâmetros e permissões.",
+      description: "Lista todas as 47 ferramentas do Núcleo MCP com parâmetros e permissões.",
       mimeType: "text/markdown",
     },
     async () => ({
@@ -223,7 +228,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
         uri: "nucleo://tools/reference",
         text: `# Núcleo IA MCP — Referência de Ferramentas (v2.8.0)
 
-## 45 ferramentas: 36 leitura + 6 escrita
+## 47 ferramentas: 41 leitura + 6 escrita
 
 ### Tier 1 — Todos os membros (17 leitura)
 | # | Ferramenta | Parâmetros | Descrição |

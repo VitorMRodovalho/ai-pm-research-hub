@@ -2,7 +2,7 @@
 
 ## What is MCP?
 
-MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact with external services. The Núcleo server exposes 42 tools (36 read + 6 write) that let you query and manage project data directly from your AI assistant using natural language. A dynamic knowledge layer adapts guidance to each member's role and permissions.
+MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact with external services. The Núcleo server exposes 47 tools (36 read + 6 write) that let you query and manage project data directly from your AI assistant using natural language. A dynamic knowledge layer adapts guidance to each member's role and permissions.
 
 ## Universal URL
 
@@ -18,7 +18,7 @@ Authentication: OAuth 2.1 — you'll be redirected to log in with the same accou
 
 | Client | Status | Notes |
 |--------|--------|-------|
-| Claude.ai | ✅ Verified (42 tools) | Web and desktop app. Streamable HTTP SSE. |
+| Claude.ai | ✅ Verified (47 tools) | Web and desktop app. Streamable HTTP SSE. |
 | Claude Code | ✅ Verified | Terminal — see token workaround below |
 | ChatGPT | ✅ Verified (beta) | Settings → Apps → Connectors → Advanced → New App |
 | Perplexity | ✅ Verified | MCP connector in settings. |
