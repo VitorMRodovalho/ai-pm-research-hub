@@ -17,8 +17,8 @@ description: >
 - **Database:** Supabase (PostgreSQL) — project ID: `ldrfrvwhxsmgaabwmaik`
 - **Auth:** Supabase Auth (Google + LinkedIn + Microsoft (Azure) + Magic Link)
 - **Hosting:** Cloudflare Workers
-- **Live URL:** https://platform.ai-pm-research-hub.workers.dev
-- **MCP Server:** 15 tools (10 read + 5 write) at `/mcp` — proxied to Supabase EF `nucleo-mcp`
+- **Live URL:** https://nucleoia.vitormr.dev
+- **MCP Server:** 42 tools (36 read + 6 write) + 1 dynamic prompt + 1 static resource at `/mcp` — proxied to Supabase EF `nucleo-mcp`, server-side auto-refresh (30-day KV TTL)
 - **OAuth 2.1 Server:** Custom implementation in Workers (DCR + PKCE + KV code storage)
 - **i18n:** 3 locales: PT-BR (default, no prefix), EN-US (`/en/`), ES-LATAM (`/es/`)
 - **Charts:** Chart.js (NOT recharts)
@@ -303,10 +303,13 @@ const isTier3Plus = ['manager','deputy_manager','tribe_leader','sponsor','chapte
 
 ## CRITICAL RULE 11: MCP Server + OAuth 2.1
 
-**MCP Server:** Supabase Edge Function `nucleo-mcp` (15 tools), proxied via Workers at `/mcp`.
+**MCP Server:** Supabase Edge Function `nucleo-mcp` (42 tools + 1 prompt + 1 resource), proxied via Workers at `/mcp`.
 - Source: `supabase/functions/nucleo-mcp/index.ts`
 - Deploy: `supabase functions deploy nucleo-mcp --no-verify-jwt`
 - Health: `curl https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-mcp/health`
+- Knowledge layer: dynamic prompt `nucleo-guide` (adapts to member role) + static resource `nucleo://tools/reference`
+- Auto-refresh: Worker proxy detects expired JWT, refreshes via KV-stored refresh_token (30-day TTL)
+- Verified on 6 hosts: Claude.ai, Claude Code, ChatGPT, Perplexity, Cursor, Manus AI
 
 **Write tools auth guard:** `canWrite()` checks `manager`, `deputy_manager`, `tribe_leader`, or `is_superadmin`.
 
@@ -321,7 +324,10 @@ const isTier3Plus = ['manager','deputy_manager','tribe_leader','sponsor','chapte
 **Why custom OAuth instead of Supabase OAuth provider:**
 Supabase Auth requires `apikey` header on all endpoints and doesn't support DCR (`/oauth/register` returns 404). Claude.ai needs DCR (RFC 7591) to register before starting OAuth flow.
 
-**KV storage:** `SESSION` namespace stores `mcp_code:{code}` entries (TTL: 120s) and `mcp_oauth:{state}` entries (TTL: 600s).
+**KV storage:** `SESSION` namespace stores:
+- `mcp_code:{code}` entries (TTL: 600s) — authorization codes
+- `mcp_oauth:{state}` entries (TTL: 600s) — OAuth state
+- `mcp_refresh:{user_id}` entries (TTL: 30 days) — refresh tokens for server-side auto-refresh
 
 ---
 
