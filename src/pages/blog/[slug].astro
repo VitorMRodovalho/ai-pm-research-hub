@@ -68,8 +68,8 @@ const { slug } = Astro.params;
     }
 
     document.getElementById('post-content')?.classList.remove('hidden');
-    document.getElementById('post-title').textContent = data.title?.[langKey] || data.title?.pt || '';
-    document.getElementById('post-body').innerHTML = data.body_html?.[langKey] || data.body_html?.pt || '';
+    document.getElementById('post-title').textContent = data.title?.[langKey] || data.title?.['pt-BR'] || data.title?.pt || '';
+    document.getElementById('post-body').innerHTML = data.body_html?.[langKey] || data.body_html?.['pt-BR'] || data.body_html?.pt || '';
     document.getElementById('post-category').textContent = data.category;
     document.getElementById('post-author').textContent = data.members?.name || '';
     document.getElementById('post-date').textContent = data.published_at
@@ -90,7 +90,7 @@ const { slug } = Astro.params;
     }
 
     // Update page title
-    document.title = (data.title?.[langKey] || data.title?.pt || 'Blog') + ' | Nucleo IA & GP';
+    document.title = (data.title?.[langKey] || data.title?.['pt-BR'] || data.title?.pt || 'Blog') + ' | Nucleo IA & GP';
 
     // Like button
     const likeBtn = document.getElementById('post-like-btn');
