@@ -1,5 +1,5 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.8.0 — 50 tools (43R + 7W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.8.0 — 52 tools (45R + 7W) + 1 prompt + 1 resource + usage logging
 // Transport: SDK 1.28.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
@@ -940,7 +940,41 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // TOOL 50: manage_partner — Write: create/update partner entities
+  // TOOL 50: get_governance_docs — All authenticated members
+  mcp.tool("get_governance_docs", "Returns governance documents: manual, agreements, volunteer terms.", { doc_type: z.string().optional().describe("Filter: manual|cooperation_agreement|volunteer_term_template") }, async (params: { doc_type?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_governance_docs", false, "Not authenticated", start); return err("Not authenticated"); }
+    let query = sb.from("governance_documents").select("id, doc_type, title, version, status, parties, valid_from, valid_until, pdf_url").eq("status", "active").order("created_at", { ascending: false });
+    if (params.doc_type) query = query.eq("doc_type", params.doc_type);
+    const { data, error } = await query;
+    if (error) { await logUsage(sb, member.id, "get_governance_docs", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_governance_docs", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 51: get_manual_section — All authenticated members
+  mcp.tool("get_manual_section", "Returns a specific section of the Governance Manual by number or keyword search.", { section: z.string().optional().describe("Section number (e.g. '3.1') or keyword to search in title"), lang: z.string().optional().describe("pt|en|es. Default: pt") }, async (params: { section?: string; lang?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_manual_section", false, "Not authenticated", start); return err("Not authenticated"); }
+    const langSuffix = params.lang === "en" ? "_en" : params.lang === "es" ? "_es" : "_pt";
+    let query = sb.from("manual_sections").select(`section_number, title${langSuffix}, content${langSuffix}, manual_version, page_start, page_end`).eq("is_current", true).order("sort_order");
+    if (params.section) {
+      // Try exact section number first, then keyword search
+      if (/^\d/.test(params.section)) {
+        query = query.eq("section_number", params.section);
+      } else {
+        query = query.ilike(`title${langSuffix}`, `%${params.section}%`);
+      }
+    }
+    const { data, error } = await query.limit(5);
+    if (error) { await logUsage(sb, member.id, "get_manual_section", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_manual_section", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 52: manage_partner — Write: create/update partner entities
   mcp.tool("manage_partner", "Create or update a partner entity in the pipeline. Sponsors/Admin only.", {
     action: z.string().describe("create|update"),
     id: z.string().optional().describe("UUID of partner (required for update)"),
@@ -1001,6 +1035,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.8.0", tools: 50, transport: "native-streamable-http", sdk: "1.28.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.8.0", tools: 52, transport: "native-streamable-http", sdk: "1.28.0" }));
 
 Deno.serve(app.fetch);
