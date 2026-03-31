@@ -106,11 +106,12 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   // TOOL 5: get_upcoming_events
   mcp.tool("get_upcoming_events", "Returns events scheduled in the next 7 days.", {}, async () => {
     const start = Date.now();
+    const member = await getMember(sb);
     const today = new Date().toISOString().split("T")[0];
     const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0];
     const { data, error } = await sb.from("events").select("id, title, date, type, tribe_id, duration_minutes, meeting_link").gte("date", today).lte("date", nextWeek).order("date");
-    if (error) { await logUsage(sb, null, "get_upcoming_events", false, error.message, start); return err(error.message); }
-    await logUsage(sb, null, "get_upcoming_events", true, undefined, start);
+    if (error) { await logUsage(sb, member?.id, "get_upcoming_events", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member?.id, "get_upcoming_events", true, undefined, start);
     return ok(data);
   });
 
@@ -160,10 +161,11 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   // TOOL 10: get_hub_announcements
   mcp.tool("get_hub_announcements", "Returns active announcements from the Hub.", {}, async () => {
     const start = Date.now();
+    const member = await getMember(sb);
     const now = new Date().toISOString();
     const { data, error } = await sb.from("announcements").select("id, title, message, type, link_url, link_text, starts_at").eq("is_active", true).lte("starts_at", now).order("created_at", { ascending: false }).limit(5);
-    if (error) { await logUsage(sb, null, "get_hub_announcements", false, error.message, start); return err(error.message); }
-    await logUsage(sb, null, "get_hub_announcements", true, undefined, start);
+    if (error) { await logUsage(sb, member?.id, "get_hub_announcements", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member?.id, "get_hub_announcements", true, undefined, start);
     return ok(data);
   });
 
