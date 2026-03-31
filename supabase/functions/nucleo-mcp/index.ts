@@ -1,5 +1,5 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.8.0 — 42 tools (36R + 6W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.8.0 — 45 tools (39R + 6W) + 1 prompt + 1 resource + usage logging
 // Transport: SDK 1.28.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
@@ -215,7 +215,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
     "nucleo://tools/reference",
     {
       title: "Referência completa de ferramentas",
-      description: "Lista todas as 42 ferramentas do Núcleo MCP com parâmetros e permissões.",
+      description: "Lista todas as 45 ferramentas do Núcleo MCP com parâmetros e permissões.",
       mimeType: "text/markdown",
     },
     async () => ({
@@ -223,7 +223,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
         uri: "nucleo://tools/reference",
         text: `# Núcleo IA MCP — Referência de Ferramentas (v2.8.0)
 
-## 42 ferramentas: 36 leitura + 6 escrita
+## 45 ferramentas: 36 leitura + 6 escrita
 
 ### Tier 1 — Todos os membros (17 leitura)
 | # | Ferramenta | Parâmetros | Descrição |
@@ -282,6 +282,9 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 | 40 | get_public_impact_data | — | Impacto público, timeline |
 | 41 | get_pilots_summary | — | Pilotos de IA |
 | 42 | get_near_events | window_hours? | Eventos próximos |
+| 43 | get_current_release | — | Versão atual da plataforma |
+| 44 | get_admin_dashboard | — | Dashboard admin (Admin/GP) |
+| 45 | get_my_attendance_hours | — | Horas de presença no ciclo |
 
 ## Notas
 - Rotas de escrita (Tier 2) requerem: manager, deputy_manager, tribe_leader ou superadmin
@@ -295,7 +298,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
   );
 }
 
-// --- Register 42 tools (36R + 6W) ---
+// --- Register 45 tools (39R + 6W) ---
 
 function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
 
@@ -828,6 +831,42 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "get_near_events", true, undefined, start);
     return ok(data);
   });
+
+  // ===== SPRINT 11 TOOLS (43-45) =====
+
+  // TOOL 43: get_current_release — All authenticated members
+  mcp.tool("get_current_release", "Returns the current platform release: version, title, date, type.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_current_release", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_current_release");
+    if (error) { await logUsage(sb, member.id, "get_current_release", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_current_release", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 44: get_admin_dashboard — Admin/GP only
+  mcp.tool("get_admin_dashboard", "Returns the admin dashboard: member counts, tribe stats, recent activity, system health.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_admin_dashboard", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!member.is_superadmin && !["manager", "deputy_manager"].includes(member.operational_role)) { await logUsage(sb, member.id, "get_admin_dashboard", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    const { data, error } = await sb.rpc("get_admin_dashboard");
+    if (error) { await logUsage(sb, member.id, "get_admin_dashboard", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_admin_dashboard", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 45: get_my_attendance_hours — All authenticated members
+  mcp.tool("get_my_attendance_hours", "Returns your attendance hours breakdown for the current cycle.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_my_attendance_hours", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_member_attendance_hours", { p_member_id: member.id });
+    if (error) { await logUsage(sb, member.id, "get_my_attendance_hours", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_my_attendance_hours", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -858,6 +897,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.8.0", tools: 42, transport: "native-streamable-http", sdk: "1.28.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.8.0", tools: 45, transport: "native-streamable-http", sdk: "1.28.0" }));
 
 Deno.serve(app.fetch);
