@@ -1,5 +1,5 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.8.0 — 49 tools (42R + 7W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.8.0 — 50 tools (43R + 7W) + 1 prompt + 1 resource + usage logging
 // Transport: SDK 1.28.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
@@ -172,7 +172,10 @@ Rotas como \`get_my_tribe_members\` retornarão "No tribe assigned" — isso é 
 - \`get_comms_dashboard\` — Dashboard de comunicação
 - \`get_comms_metrics_by_channel\` — Métricas por canal social
 - \`get_admin_dashboard\` — Dashboard admin: membros, tribos, atividade
-- \`get_board_activities\` — Atividades recentes dos boards (lifecycle events)`);
+- \`get_board_activities\` — Atividades recentes dos boards (lifecycle events)
+- \`search_members\` — Buscar membros por nome, tribo, tier ou status
+- \`list_boards\` — Lista todos os boards ativos com IDs
+- \`manage_partner\` — Criar ou atualizar parceiro no pipeline`);
       }
 
       sections.push(`## Workflows recomendados
@@ -228,7 +231,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
         uri: "nucleo://tools/reference",
         text: `# Núcleo IA MCP — Referência de Ferramentas (v2.8.0)
 
-## 47 ferramentas: 41 leitura + 6 escrita
+## 50 ferramentas: 43 leitura + 7 escrita
 
 ### Tier 1 — Todos os membros (17 leitura)
 | # | Ferramenta | Parâmetros | Descrição |
@@ -290,12 +293,19 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 | 43 | get_current_release | — | Versão atual da plataforma |
 | 44 | get_admin_dashboard | — | Dashboard admin (Admin/GP) |
 | 45 | get_my_attendance_hours | — | Horas de presença no ciclo |
+| 46 | get_my_credly_status | — | Badges Credly e CPMAI |
+| 47 | get_board_activities | board_id?, limit? | Atividades recentes dos boards |
+| 48 | search_members | query?, tribe_id?, tier?, status? | Buscar membros (Admin/GP) |
+| 49 | list_boards | — | Lista boards ativos com IDs |
+| 50 | manage_partner | action, id?, name?, status?, notes? | Criar/atualizar parceria (Admin) |
 
 ## Notas
-- Rotas de escrita (Tier 2) requerem: manager, deputy_manager, tribe_leader ou superadmin
+- Rotas de escrita (7 tools) requerem: manager, deputy_manager, tribe_leader ou superadmin
+- manage_partner: também acessível por sponsors e chapter_liaisons
 - Rotas Tier 3 requerem: manager, deputy_manager ou superadmin
 - get_annual_kpis e get_portfolio_health também acessíveis por sponsors
 - get_partner_pipeline acessível por sponsors e chapter_liaisons
+- create_board_card aceita board_id para usuários sem tribe_id (use list_boards)
 - Todas as chamadas são logadas em mcp_usage_log
 `,
       }],
@@ -902,7 +912,24 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // TOOL 48: list_boards — All authenticated members
+  // TOOL 48: search_members — Admin/GP
+  mcp.tool("search_members", "Search members by name, filter by tribe, tier, or status. Admin/GP only.", {
+    query: z.string().optional().describe("Search by name (partial match)"),
+    tribe_id: z.number().optional().describe("Filter by tribe (1-8)"),
+    tier: z.string().optional().describe("Filter by tier: tier1|tier2|tier3"),
+    status: z.string().optional().describe("active|inactive|all. Default: active")
+  }, async (params: { query?: string; tribe_id?: number; tier?: string; status?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "search_members", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!member.is_superadmin && !["manager", "deputy_manager"].includes(member.operational_role)) { await logUsage(sb, member.id, "search_members", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    const { data, error } = await sb.rpc("admin_list_members", { p_search: params.query || null, p_tribe_id: params.tribe_id || null, p_tier: params.tier || null, p_status: params.status || "active" });
+    if (error) { await logUsage(sb, member.id, "search_members", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "search_members", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 49: list_boards — All authenticated members
   mcp.tool("list_boards", "Returns all active boards with their IDs, names, scope, and tribe. Use this to find board_id for create_board_card.", {}, async () => {
     const start = Date.now();
     const member = await getMember(sb);
@@ -913,7 +940,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // TOOL 49: manage_partner — Write: create/update partner entities
+  // TOOL 50: manage_partner — Write: create/update partner entities
   mcp.tool("manage_partner", "Create or update a partner entity in the pipeline. Sponsors/Admin only.", {
     action: z.string().describe("create|update"),
     id: z.string().optional().describe("UUID of partner (required for update)"),
@@ -974,6 +1001,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.8.0", tools: 49, transport: "native-streamable-http", sdk: "1.28.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.8.0", tools: 50, transport: "native-streamable-http", sdk: "1.28.0" }));
 
 Deno.serve(app.fetch);
