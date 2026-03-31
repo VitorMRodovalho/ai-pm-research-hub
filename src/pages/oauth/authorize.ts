@@ -38,6 +38,11 @@ export const GET: APIRoute = async ({ request }) => {
   consentUrl.searchParams.set('mcp_state', state);
   consentUrl.searchParams.set('oauth_data', oauthData);
 
+  // Propagate language from Accept-Language header
+  const acceptLang = request.headers.get('accept-language') || '';
+  if (acceptLang.startsWith('es')) consentUrl.searchParams.set('lang', 'es');
+  else if (acceptLang.startsWith('en')) consentUrl.searchParams.set('lang', 'en');
+
   return new Response(null, {
     status: 302,
     headers: { 'Location': consentUrl.toString() },
