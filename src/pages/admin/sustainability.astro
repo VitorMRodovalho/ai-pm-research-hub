@@ -298,6 +298,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     <div id="sust-loading" class="text-center py-16 text-[var(--text-muted)]">{t('common.loading', lang)}</div>
   </div>
   <Toast />
+  <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>
 </AdminLayout>
 
 <script>
@@ -525,7 +526,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     if (!el) return;
     const items = d.infra_breakdown || [];
     if (!items.length) {
-      el.innerHTML = '<p class="text-[.75rem] text-[var(--text-muted)]">Nenhum item de infraestrutura registrado.</p>';
+      el.innerHTML = `<p class="text-[.75rem] text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || 'No items.'}</p>`;
       return;
     }
     el.innerHTML = items.map((item: any) => `
@@ -558,7 +559,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const tbody = document.getElementById('cost-table-body');
     if (!tbody) return;
     if (!costEntries.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-[var(--text-muted)] text-sm">Nenhum registro de custo.</td></tr>';
+      tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-[var(--text-muted)] text-sm">${document.getElementById('ai18n-nor')?.textContent || 'No records.'}</td></tr>`;
       const totalEl = document.getElementById('cost-total');
       if (totalEl) totalEl.textContent = 'R$ 0,00';
       return;
@@ -607,7 +608,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const tbody = document.getElementById('rev-table-body');
     if (!tbody) return;
     if (!revEntries.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-[var(--text-muted)] text-sm">Nenhum registro de receita.</td></tr>';
+      tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-[var(--text-muted)] text-sm">${document.getElementById('ai18n-nor')?.textContent || 'No records.'}</td></tr>`;
       const totalEl = document.getElementById('rev-total');
       if (totalEl) totalEl.textContent = 'R$ 0,00';
       return;

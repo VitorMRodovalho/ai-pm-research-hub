@@ -127,6 +127,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     <div id="settings-loading" class="text-center py-16 text-[var(--text-muted)]">{t('common.loading', lang)}</div>
   </div>
   <Toast />
+  <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>
+  <span id="ai18n-lod" class="hidden">{t('admin.loadError', lang)}</span>
+  <span id="ai18n-sav" class="hidden">{t('admin.saveError', lang)}</span>
 </AdminLayout>
 
 <script>
@@ -175,7 +178,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       await sb.rpc('set_site_config', { p_key: 'webhook_url', p_value: webhookUrl || null });
     } catch (e: any) {
       console.error('Save config:', e);
-      (window as any).toast?.('Erro ao salvar: ' + (e.message || 'desconhecido'), 'error');
+      (window as any).toast?.((document.getElementById('ai18n-sav')?.textContent || 'Error: ') + (e.message || 'unknown'), 'error');
     } finally {
       if (btn) btn.disabled = false;
     }
@@ -224,7 +227,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       if (error) throw error;
       const cycles = data || [];
       if (cycles.length === 0) {
-        container.innerHTML = '<p class="text-[.7rem] text-[var(--text-muted)]">Nenhum ciclo cadastrado.</p>';
+        container.innerHTML = `<p class="text-[.7rem] text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || 'No results.'}</p>`;
         return;
       }
       container.innerHTML = cycles.map((c: any) => `
@@ -264,7 +267,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
             if (error) throw error;
             (window as any).toast?.('Ciclo ativo atualizado', 'success');
             loadCycles();
-          } catch (e: any) { (window as any).toast?.('Erro: ' + (e.message || 'desconhecido'), 'error'); }
+          } catch (e: any) { (window as any).toast?.('Erro: ' + (e.message || 'unknown'), 'error'); }
         });
       });
       // Bind delete buttons
@@ -277,12 +280,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
             if (error) throw error;
             (window as any).toast?.('Ciclo excluído', 'success');
             loadCycles();
-          } catch (e: any) { (window as any).toast?.('Erro: ' + (e.message || 'desconhecido'), 'error'); }
+          } catch (e: any) { (window as any).toast?.('Erro: ' + (e.message || 'unknown'), 'error'); }
         });
       });
     } catch (e: any) {
       console.error('Load cycles:', e);
-      if (container) container.innerHTML = '<p class="text-[.7rem] text-red-600">Erro ao carregar ciclos.</p>';
+      if (container) container.innerHTML = `<p class="text-[.7rem] text-red-600">${document.getElementById('ai18n-lod')?.textContent || 'Error loading.'}</p>`;
     }
   }
 
@@ -340,7 +343,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       closeCycleModal();
       loadCycles();
     } catch (e: any) {
-      (window as any).toast?.('Erro: ' + (e.message || 'desconhecido'), 'error');
+      (window as any).toast?.('Erro: ' + (e.message || 'unknown'), 'error');
     } finally {
       if (btn) btn.disabled = false;
     }
@@ -368,7 +371,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       const { data, error } = await sb.from('platform_settings').select('*');
       if (error) throw error;
       const settings = (data || []).filter((s: any) => SETTING_LABELS[s.key]);
-      if (settings.length === 0) { container.innerHTML = '<p class="text-[.7rem] text-[var(--text-muted)]">Nenhuma configuração encontrada.</p>'; return; }
+      if (settings.length === 0) { container.innerHTML = `<p class="text-[.7rem] text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || 'No results.'}</p>`; return; }
       container.innerHTML = settings.map((s: any) => {
         const meta = SETTING_LABELS[s.key];
         const lastChanged = s.changed_at ? new Date(s.changed_at).toLocaleDateString('pt-BR') : '';
@@ -401,7 +404,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       });
     } catch (e: any) {
       console.error('Load platform settings:', e);
-      if (container) container.innerHTML = '<p class="text-[.7rem] text-red-600">Erro ao carregar.</p>';
+      if (container) container.innerHTML = `<p class="text-[.7rem] text-red-600">${document.getElementById('ai18n-lod')?.textContent || 'Error loading.'}</p>`;
     }
   }
 

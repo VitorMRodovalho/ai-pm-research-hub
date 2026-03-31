@@ -96,6 +96,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       </div>
     </div>
   </div>
+  <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>
 </AdminLayout>
 
 <script>
@@ -251,7 +252,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const { data } = await sb.from('blog_posts').select('*').order('created_at', { ascending: false });
     const container = document.getElementById('blog-list')!;
     if (!data || data.length === 0) {
-      container.innerHTML = '<p class="text-center text-[var(--fg-muted)] py-8">Nenhum post criado ainda.</p>';
+      container.innerHTML = `<p class="text-center text-[var(--fg-muted)] py-8">${document.getElementById('ai18n-nor')?.textContent || 'No posts.'}</p>`;
       return;
     }
 

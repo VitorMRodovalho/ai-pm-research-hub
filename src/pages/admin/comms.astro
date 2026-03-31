@@ -256,6 +256,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
     </div>
   </div>
+  <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>
+  <span id="ai18n-sav" class="hidden">{t('admin.saveError', lang)}</span>
 </AdminLayout>
 
 <script is:inline define:vars={{ commsI18n: JSON.stringify({
@@ -606,7 +608,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         || (r.sent_by_name || '').toLowerCase().includes(query);
     });
     if (!filtered.length) {
-      empty.textContent = 'Nenhum disparo encontrado para o contexto atual.';
+      empty.textContent = document.getElementById('ai18n-nor')?.textContent || 'No results.';
       empty.classList.remove('hidden');
       table.classList.add('hidden');
       return;
@@ -676,7 +678,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     try {
       const { data, error } = await sb.rpc('comms_channel_status');
       if (error || !data?.length) {
-        grid.innerHTML = '<p class="text-xs text-[var(--text-muted)] col-span-full">Nenhum canal configurado.</p>';
+        grid.innerHTML = `<p class="text-xs text-[var(--text-muted)] col-span-full">${document.getElementById('ai18n-nor')?.textContent || 'No channel.'}</p>`;
         return;
       }
 
@@ -774,7 +776,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     });
 
     if (error || !data?.success) {
-      (window as any).toast?.(data?.error || 'Erro ao salvar.', 'error');
+      (window as any).toast?.(data?.error || document.getElementById('ai18n-sav')?.textContent || 'Error saving.', 'error');
       return;
     }
 
@@ -906,7 +908,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     }, { onConflict: 'metric_date,channel,source' });
 
     if (error) {
-      (window as any).toast?.('Erro ao salvar: ' + (error.message || ''), 'error');
+      (window as any).toast?.((document.getElementById('ai18n-sav')?.textContent || 'Error: ') + (error.message || ''), 'error');
       return;
     }
 

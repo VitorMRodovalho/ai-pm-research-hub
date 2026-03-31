@@ -60,6 +60,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       </div>
     </div>
   </div>
+  <span id="ai18n-sav" class="hidden">{t('admin.saveError', lang)}</span>
 </AdminLayout>
 
 <script>
@@ -123,7 +124,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       const status = document.getElementById('save-status')!;
       if (error) {
         status.className = 'text-sm text-red-600';
-        status.textContent = 'Erro ao salvar: ' + error.message;
+        status.textContent = (document.getElementById('ai18n-sav')?.textContent || 'Error: ') + error.message;
       } else {
         status.className = 'text-sm text-emerald-600';
         status.textContent = 'Configuração salva com sucesso!';

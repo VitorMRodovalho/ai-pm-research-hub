@@ -60,6 +60,7 @@ const i18nBundle = buildPageI18n(['governance'], lang);
       <div id="boardgov-list" class="space-y-2"></div>
     </section>
   </div>
+  <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>
 </AdminLayout>
 
 <span id="i18n-oc-tier1" class="hidden">{t('orgChart.tier1', lang)}</span>
@@ -139,7 +140,7 @@ const i18nBundle = buildPageI18n(['governance'], lang);
     }
     panel?.classList.remove('hidden');
     const rows = await loadArchived();
-    if (list) list.innerHTML = rows.length ? rows.map((r: any) => rowHtml(r)).join('') : '<p class="text-sm text-[var(--text-secondary)]">Nenhum card arquivado.</p>';
+    if (list) list.innerHTML = rows.length ? rows.map((r: any) => rowHtml(r)).join('') : `<p class="text-sm text-[var(--text-secondary)]">${document.getElementById('ai18n-nor')?.textContent || 'No archived cards.'}</p>`;
   }
 
   document.addEventListener('click', async (event) => {
