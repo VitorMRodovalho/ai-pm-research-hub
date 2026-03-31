@@ -6,7 +6,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
-const langKey = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
+const langKey = lang; // DB keys: pt-BR, en-US, es-LATAM — match Lang type directly
 ---
 
 <BaseLayout activePage="blog" title={t('blog.title', lang)} lang={lang}>
@@ -41,9 +41,9 @@ const langKey = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
     container?.classList.remove('hidden');
 
     container.innerHTML = data.map(p => {
-      const title = p.title?.[langKey] || p.title?.['pt-BR'] || p.title?.pt || '';
-      const excerpt = p.excerpt?.[langKey] || p.excerpt?.['pt-BR'] || p.excerpt?.pt || '';
-      const date = p.published_at ? new Date(p.published_at).toLocaleDateString(langKey === 'pt' ? 'pt-BR' : langKey === 'es' ? 'es-ES' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+      const title = p.title?.[langKey] || p.title?.['pt-BR'] || '';
+      const excerpt = p.excerpt?.[langKey] || p.excerpt?.['pt-BR'] || '';
+      const date = p.published_at ? new Date(p.published_at).toLocaleDateString(langKey === 'pt-BR' ? 'pt-BR' : langKey === 'es-LATAM' ? 'es-ES' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
       const catStyle = { 'case-study': 'status-info', tutorial: 'status-success', announcement: 'status-accent', opinion: 'status-warning' }[p.category] || 'status-info';
 
       return `<a href="${langPrefix}/blog/${p.slug}" class="block bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 hover:border-teal-500/50 transition-colors no-underline">
