@@ -291,3 +291,62 @@ nav,
 .text-muted      { color: var(--text-muted); }
 .border-subtle   { border-color: var(--border-subtle); }
 .border-default  { border-color: var(--border-default); }
+
+/* ══════════════════════════════════════════════════════════════════
+   PROSE CONTENT (blog posts, rich text — global)
+   ══════════════════════════════════════════════════════════════════ */
+
+#post-body table,
+.prose-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0 1.5rem;
+  font-size: 0.85rem;
+}
+
+#post-body th,
+.prose-content th {
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: var(--surface-section-cool);
+  border-bottom: 2px solid var(--border-default);
+}
+
+#post-body td,
+.prose-content td {
+  padding: 0.5rem 0.75rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+#post-body tr:hover td,
+.prose-content tr:hover td {
+  background: var(--surface-hover);
+}
+
+#post-body code,
+.prose-content code {
+  font-size: 0.82em;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  background: var(--surface-section-cool);
+  color: var(--color-teal-deep);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+[data-theme="dark"] #post-body code,
+[data-theme="dark"] .prose-content code {
+  color: var(--color-teal);
+}
+
+#post-body blockquote,
+.prose-content blockquote {
+  border-left: 3px solid var(--color-teal);
+  padding: 0.5rem 1rem;
+  margin: 1rem 0;
+  color: var(--text-secondary);
+  background: var(--surface-hover);
+  border-radius: 0 8px 8px 0;
+}
