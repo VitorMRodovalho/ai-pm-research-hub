@@ -154,6 +154,9 @@ const PROFILE_I18N = {
   historyTypeEntrevista: t('profile.history.typeEntrevista', lang),
   historyType1on1: t('profile.history.type1on1', lang),
   historyTypeExterno: t('profile.history.typeExterno', lang),
+  noSignature: t('profile.noSignature', lang),
+  photoUploadError: t('profile.photoUploadError', lang),
+  exportError: t('profile.exportError', lang),
 };
 ---
 <BaseLayout title={t('profile.title', lang)} activePage="profile">
@@ -1017,7 +1020,7 @@ const PROFILE_I18N = {
       <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
         <h2 class="text-sm font-bold text-navy mb-3">✍️ ${PROFILE_I18N.signature || 'Assinatura Digital'}</h2>
         <p class="text-[.65rem] text-[var(--text-muted)] mb-3">${PROFILE_I18N.signatureHint || 'Usada em certificados e documentos gerados pela plataforma.'}</p>
-        <div id="sig-preview" class="mb-3">${m.signature_url ? `<img src="${m.signature_url}" class="max-w-[200px] max-h-[70px] border border-[var(--border-subtle)] rounded p-1" alt="">` : '<span class="text-[.7rem] text-[var(--text-muted)]">Nenhuma assinatura</span>'}</div>
+        <div id="sig-preview" class="mb-3">${m.signature_url ? `<img src="${m.signature_url}" class="max-w-[200px] max-h-[70px] border border-[var(--border-subtle)] rounded p-1" alt="">` : `<span class="text-[.7rem] text-[var(--text-muted)]">${PROFILE_I18N.noSignature || 'No signature'}</span>`}</div>
         <div class="flex gap-2 items-center">
           <label class="px-3 py-1.5 bg-navy text-white rounded-lg text-[.7rem] font-semibold cursor-pointer hover:opacity-90 transition-all">
             📎 ${PROFILE_I18N.signatureUpload || 'Carregar assinatura'}
@@ -1145,7 +1148,7 @@ const PROFILE_I18N = {
       if (avatarEl) avatarEl.innerHTML = `<img src="${photoUrl}" class="w-16 h-16 rounded-full object-cover" alt="">`;
       (window as any).toast?.('Foto atualizada!', 'success');
     } catch (err: any) {
-      (window as any).toast?.(err.message || 'Erro ao enviar foto', 'error');
+      (window as any).toast?.(err.message || PROFILE_I18N.photoUploadError || 'Error uploading photo', 'error');
     }
   });
 
@@ -1182,7 +1185,7 @@ const PROFILE_I18N = {
     if (!sb || !member) return;
     await sb.rpc('update_my_profile', { p_fields: { signature_url: '' } });
     const preview = document.getElementById('sig-preview');
-    if (preview) preview.innerHTML = '<span class="text-[.7rem] text-[var(--text-muted)]">Nenhuma assinatura</span>';
+    if (preview) preview.innerHTML = `<span class="text-[.7rem] text-[var(--text-muted)]">${PROFILE_I18N.noSignature || 'No signature'}</span>`;
     (window as any).toast?.('Assinatura removida', 'success');
   });
 
@@ -1331,7 +1334,7 @@ const PROFILE_I18N = {
       URL.revokeObjectURL(url);
       (window as any).toast?.('Dados exportados com sucesso', 'success');
     } catch (err: any) {
-      (window as any).toast?.(err.message || 'Erro ao exportar dados', 'error');
+      (window as any).toast?.(err.message || PROFILE_I18N.exportError || 'Error exporting data', 'error');
     }
   }
 

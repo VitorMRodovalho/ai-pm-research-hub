@@ -43,6 +43,7 @@ const ARTIFACTS_I18N = {
   modalEditTitle: t('artifacts.modal.editTitle', lang),
   msgTitleRequired: t('artifacts.msg.titleRequired', lang),
   msgErrorPrefix: t('artifacts.msg.errorPrefix', lang),
+  msgTagSaveError: t('artifacts.msg.tagSaveError', lang),
   msgUpdated: t('artifacts.msg.updated', lang),
   msgSubmitted: t('artifacts.msg.submitted', lang),
   msgReviewSaved: t('artifacts.msg.reviewSaved', lang),
@@ -829,7 +830,7 @@ const ARTIFACTS_I18N = {
         toast('Não foi possível atualizar as tags: identificador do artefato inválido.', 'error');
         return;
       }
-      toast(msg || 'Erro ao salvar tags', 'error');
+      toast(msg || I18N.msgTagSaveError || 'Error saving tags', 'error');
     }
   }
 
