@@ -1,51 +1,41 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getLangFromURL, type Lang } from '../i18n/utils';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
 import ImpactPageIsland from '../components/islands/ImpactPageIsland';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+
+const titles: Record<string, string> = {
+  'pt-BR': 'Sobre o Núcleo — IA & Gerenciamento de Projetos',
+  'en-US': 'About — AI & Project Management Research Hub',
+  'es-LATAM': 'Sobre el Núcleo — IA & Gestión de Proyectos',
+};
+const descriptions: Record<string, string> = {
+  'pt-BR': 'Iniciativa colaborativa entre 5 capítulos do PMI® no Brasil. 51+ pesquisadores, 8 tribos de pesquisa, plataforma digital própria.',
+  'en-US': 'Collaborative initiative across 5 PMI® chapters in Brazil. 51+ researchers, 8 research tribes, custom digital platform.',
+  'es-LATAM': 'Iniciativa colaborativa entre 5 capítulos del PMI® en Brasil. 51+ investigadores, 8 tribus de investigación, plataforma digital propia.',
+};
+const pageTitle = titles[lang] || titles['pt-BR'];
+const pageDesc = descriptions[lang] || descriptions['pt-BR'];
 ---
 
-<BaseLayout
-  title="Sobre o Núcleo — IA & Gerenciamento de Projetos"
-  description="Iniciativa colaborativa entre 5 capítulos do PMI® no Brasil. 44+ pesquisadores, 8 tribos de pesquisa, 10+ artigos publicados."
-  activePage="about"
->
+<BaseLayout title={pageTitle} description={pageDesc} activePage="about" lang={lang}>
+  <meta slot="head" property="og:title" content={pageTitle} />
+  <meta slot="head" property="og:description" content={pageDesc} />
+  <meta slot="head" property="og:type" content="website" />
+  <meta slot="head" property="og:url" content={`https://nucleoia.vitormr.dev${langPrefix}/about`} />
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "ResearchOrganization",
+    "name": "Núcleo de Estudos e Pesquisa em IA & Gerenciamento de Projetos",
+    "description": pageDesc,
+    "url": "https://nucleoia.vitormr.dev",
+    "parentOrganization": { "@type": "Organization", "name": "Project Management Institute" },
+    "numberOfEmployees": { "@type": "QuantitativeValue", "value": 51 }
+  })} />
+
   <div class="max-w-[1100px] mx-auto px-4 py-8">
     <ImpactPageIsland client:load lang={lang} />
   </div>
 </BaseLayout>
-
-<!-- SEO: Open Graph + Schema.org injected via inline script -->
-<script is:inline>
-  // Add OG meta tags dynamically (Astro BaseLayout doesn't have head slot)
-  const metas = [
-    { property: 'og:title', content: 'Núcleo de Estudos e Pesquisa em IA & Gerenciamento de Projetos' },
-    { property: 'og:description', content: 'Iniciativa colaborativa entre 5 capítulos do PMI® no Brasil. 44+ pesquisadores, 8 tribos de pesquisa, 10+ artigos publicados.' },
-    { property: 'og:type', content: 'website' },
-    { property: 'og:url', content: 'https://nucleoia.vitormr.dev/about' },
-  ];
-  metas.forEach(m => {
-    if (!document.querySelector(`meta[property="${m.property}"]`)) {
-      const el = document.createElement('meta');
-      el.setAttribute('property', m.property);
-      el.setAttribute('content', m.content);
-      document.head.appendChild(el);
-    }
-  });
-  // Schema.org
-  if (!document.querySelector('script[type="application/ld+json"]')) {
-    const s = document.createElement('script');
-    s.type = 'application/ld+json';
-    s.textContent = JSON.stringify({
-      "@context": "https://schema.org",
-      "@type": "ResearchOrganization",
-      "name": "Núcleo de Estudos e Pesquisa em IA & Gerenciamento de Projetos",
-      "description": "Iniciativa colaborativa entre capítulos do PMI® no Brasil",
-      "url": "https://nucleoia.vitormr.dev",
-      "parentOrganization": { "@type": "Organization", "name": "Project Management Institute" },
-      "numberOfEmployees": { "@type": "QuantitativeValue", "value": 44 }
-    });
-    document.head.appendChild(s);
-  }
-</script>

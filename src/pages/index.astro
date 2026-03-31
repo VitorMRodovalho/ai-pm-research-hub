@@ -15,11 +15,11 @@ import ChaptersSection from '../components/sections/ChaptersSection.astro';
 import TeamSection from '../components/sections/TeamSection.astro';
 import VisionSection from '../components/sections/VisionSection.astro';
 import ResourcesSection from '../components/sections/ResourcesSection.astro';
-import { t } from '../i18n/utils';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
 import PresentationLayer from '../components/ui/PresentationLayer.astro';
 import PlatformStatsSection from '../components/homepage/PlatformStatsSection.astro';
 
-const lang = 'pt-BR' as const;
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const homeSchedule = await getHomeSchedule();
 const deadlineIso = homeSchedule?.selectionDeadlineAt ?? null;
 ---

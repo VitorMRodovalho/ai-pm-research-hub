@@ -1,9 +1,9 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Toast from '../components/ui/Toast.astro';
-import { t, type Lang } from '../i18n/utils';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
 
-const lang: Lang = 'pt-BR';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const PRES_I18N = {
   pageTitle: t('pres.pageTitle', lang),
   filterAll: t('pres.filterAll', lang),
