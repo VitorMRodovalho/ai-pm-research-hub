@@ -42,7 +42,8 @@ const pageTitle = postTitle ? `${postTitle} | Núcleo IA & GP` : t('blog.title',
   <meta slot="head" property="og:description" content={postExcerpt} />
   <meta slot="head" property="og:type" content="article" />
   <meta slot="head" property="og:url" content={`https://nucleoia.vitormr.dev${langPrefix}/blog/${slug}`} />
-  {post?.cover_image_url && <meta slot="head" property="og:image" content={post.cover_image_url} />}
+  <meta slot="head" property="og:image" content={post?.cover_image_url || 'https://nucleoia.vitormr.dev/favicon.svg'} />
+  <meta slot="head" name="twitter:card" content="summary_large_image" />
   <meta slot="head" name="description" content={postExcerpt} />
 
   <div class="max-w-[800px] mx-auto px-4 py-12">

@@ -1,5 +1,33 @@
 # Release Log
 
+## 2026-03-31 — v2.8.0: MCP Expansion + Knowledge Layer + i18n Audit + Blog SSR
+
+### Scope
+Major MCP expansion (29→52 tools), server-side auto-refresh, knowledge layer, 6 AI hosts verified, comprehensive i18n audit, blog SSR for SEO.
+
+### Delivered (30 commits)
+- **MCP tools 29 → 52** (+23 tools): full persona coverage (sponsors, comms, GP, liaisons)
+- **Auto-refresh**: Server-side JWT renewal via KV-stored refresh_token (30-day TTL). Validated on Manus AI.
+- **Knowledge layer**: Dynamic prompt `nucleo-guide` (role-adaptive) + static resource `nucleo://tools/reference`
+- **6 AI hosts verified**: Claude.ai, Claude Code, ChatGPT, Perplexity, Cursor, Manus AI
+- **i18n audit**: 6 waves, 74 keys added (3428 total), 0 hardcoded PT-BR remaining
+- **Blog SSR**: Posts rendered server-side with OG meta tags for SEO/social sharing
+- **Data cleanup**: 155 resources reclassified, 83 junk archived, asset_type constraint expanded
+- **XP rank**: get_member_cycle_xp returns rank_position + total_ranked
+- **Governance**: get_governance_docs + get_manual_section (trilingual)
+- **Write tools**: create_board_card accepts board_id, manage_partner (new), first write validated in production
+- **Blog post**: full rewrite (3 langs, 52 tools, 6 hosts, auto-refresh, knowledge layer)
+- **Fixes**: get_public_impact_data nested aggregate, blog lang keys, admin blog editor, notifications actor_name, announcements ends_at
+
+### Validation
+- Health: v2.8.0, 52 tools, native-streamable-http, sdk 1.28.0
+- 779 unit tests pass, 0 fail
+- Auto-refresh validated >1h on Manus AI
+- First write tool (create_board_card) successful in production
+- Blog SSR verified via WebFetch (content visible to crawlers)
+
+---
+
 ## 2026-03-31 — Sprint 9: Tier 2 MCP Tools + Tooling Upgrades + Docs Sync
 
 ### Scope
