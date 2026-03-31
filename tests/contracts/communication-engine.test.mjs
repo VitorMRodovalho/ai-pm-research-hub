@@ -281,12 +281,13 @@ test('/blog/[slug] page exists', () => {
   assert.ok(existsSync(resolve(ROOT, 'src/pages/blog/[slug].astro')), 'blog slug page must exist');
 });
 
-test('/blog/[slug] shows individual post', () => {
+test('/blog/[slug] shows individual post (SSR)', () => {
   const content = readFile('src/pages/blog/[slug].astro');
   assert.ok(content.includes('slug'), 'Must use slug parameter');
   assert.ok(content.includes("'published'"), 'Must filter by published status');
-  assert.ok(content.includes('post-title'), 'Must have title element');
-  assert.ok(content.includes('post-body'), 'Must have body element');
+  assert.ok(content.includes('postTitle'), 'Must render title server-side');
+  assert.ok(content.includes('postBody') || content.includes('set:html'), 'Must render body server-side');
+  assert.ok(content.includes('og:title'), 'Must have OG meta tags for SEO');
 });
 
 // ═══════════════════════════════════════════════════

@@ -1,80 +1,97 @@
 ---
 /**
- * /blog/[slug] — Individual blog post page (published only)
+ * /blog/[slug] — Individual blog post page (SSR — content rendered server-side for SEO)
+ * Like/view count enhanced client-side via progressive enhancement.
  */
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import { createClient } from '@supabase/supabase-js';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
-const langKey = lang; // DB keys: pt-BR, en-US, es-LATAM — match Lang type directly
+const langKey = lang;
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+const locale = lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-ES' : 'pt-BR';
 const { slug } = Astro.params;
+
+// SSR: fetch blog post server-side (anon key — RLS allows public reads of published posts)
+const sb = createClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+);
+
+const { data: post } = await sb.from('blog_posts')
+  .select('*, members:author_member_id(name)')
+  .eq('slug', slug)
+  .eq('status', 'published')
+  .single();
+
+const postTitle = post?.title?.[langKey] || post?.title?.['pt-BR'] || '';
+const postBody = post?.body_html?.[langKey] || post?.body_html?.['pt-BR'] || '';
+const postExcerpt = post?.excerpt?.[langKey] || post?.excerpt?.['pt-BR'] || '';
+const postCategory = post?.category || '';
+const postAuthor = post?.members?.name || '';
+const postDate = post?.published_at
+  ? new Date(post.published_at).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' })
+  : '';
+const pageTitle = postTitle ? `${postTitle} | Núcleo IA & GP` : t('blog.title', lang);
 ---
 
-<BaseLayout activePage="blog" title={t('blog.title', lang)} lang={lang}>
-  <div class="max-w-[800px] mx-auto px-4 py-12">
-    <div id="post-loading" class="text-center py-16 text-gray-400">{t('campaigns.loading', lang)}</div>
-    <div id="post-not-found" class="hidden text-center py-16">
-      <p class="text-[var(--fg-muted)]">{t('blog.notFound', lang)}</p>
-      <a href={`${langPrefix}/blog`} class="text-teal-400 hover:underline mt-2 inline-block">{t('blog.backToList', lang)}</a>
-    </div>
+<BaseLayout activePage="blog" title={pageTitle} lang={lang}>
+  {/* OG meta tags for social sharing */}
+  <meta slot="head" property="og:title" content={postTitle} />
+  <meta slot="head" property="og:description" content={postExcerpt} />
+  <meta slot="head" property="og:type" content="article" />
+  <meta slot="head" property="og:url" content={`https://nucleoia.vitormr.dev${langPrefix}/blog/${slug}`} />
+  {post?.cover_image_url && <meta slot="head" property="og:image" content={post.cover_image_url} />}
+  <meta slot="head" name="description" content={postExcerpt} />
 
-    <article id="post-content" class="hidden">
-      <a href={`${langPrefix}/blog`} class="text-sm text-teal-400 hover:underline mb-6 inline-block">&larr; {t('blog.backToList', lang)}</a>
-      <h1 id="post-title" class="text-3xl font-bold text-[var(--fg)] mb-4"></h1>
-      <div class="flex items-center gap-4 text-sm text-[var(--fg-muted)] mb-8">
-        <span id="post-date"></span>
-        <span id="post-category" class="px-2 py-0.5 rounded bg-[var(--surface-hover)]"></span>
-        <span id="post-author" class="text-[var(--fg)]"></span>
-        <span id="post-views" class="text-[var(--fg-muted)]"></span>
-        <button id="post-like-btn" class="hidden flex items-center gap-1 text-sm cursor-pointer bg-transparent border-0 hover:scale-110 transition-transform">
-          <span id="post-like-icon">🤍</span>
-          <span id="post-like-count" class="text-[var(--fg-muted)]">0</span>
-        </button>
+  <div class="max-w-[800px] mx-auto px-4 py-12">
+    {!post ? (
+      <div class="text-center py-16">
+        <p class="text-[var(--fg-muted)]">{t('blog.notFound', lang)}</p>
+        <a href={`${langPrefix}/blog`} class="text-teal-400 hover:underline mt-2 inline-block">{t('blog.backToList', lang)}</a>
       </div>
-      <div id="post-body" class="prose prose-invert max-w-none
-        [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-[var(--text-primary)] [&_h1]:mt-8 [&_h1]:mb-4
-        [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-[var(--text-primary)] [&_h2]:mt-6 [&_h2]:mb-3
-        [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-[var(--text-primary)] [&_h3]:mt-4 [&_h3]:mb-2
-        [&_p]:text-[var(--text-secondary)] [&_p]:leading-relaxed [&_p]:mb-4
-        [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 [&_ul]:text-[var(--text-secondary)]
-        [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4 [&_ol]:text-[var(--text-secondary)]
-        [&_li]:mb-1 [&_li]:text-[var(--text-secondary)]
-        [&_a]:text-teal-400 [&_a]:hover:underline
-        [&_strong]:text-[var(--text-primary)] [&_strong]:font-semibold
-        [&_em]:italic
-        [&_hr]:border-[var(--border)] [&_hr]:my-8
-      "></div>
-    </article>
+    ) : (
+      <article>
+        <a href={`${langPrefix}/blog`} class="text-sm text-teal-400 hover:underline mb-6 inline-block">&larr; {t('blog.backToList', lang)}</a>
+        <h1 class="text-3xl font-bold text-[var(--fg)] mb-4">{postTitle}</h1>
+        <div class="flex items-center gap-4 text-sm text-[var(--fg-muted)] mb-8 flex-wrap">
+          <span>{postDate}</span>
+          <span class="px-2 py-0.5 rounded bg-[var(--surface-hover)]">{postCategory}</span>
+          <span class="text-[var(--fg)]">{postAuthor}</span>
+          <span id="post-views" class="text-[var(--fg-muted)]">{post.view_count ? `${post.view_count} views` : ''}</span>
+          <button id="post-like-btn" class="hidden flex items-center gap-1 text-sm cursor-pointer bg-transparent border-0 hover:scale-110 transition-transform">
+            <span id="post-like-icon">🤍</span>
+            <span id="post-like-count" class="text-[var(--fg-muted)]">{post.like_count || 0}</span>
+          </button>
+        </div>
+        <div class="prose prose-invert max-w-none
+          [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:text-[var(--text-primary)] [&_h1]:mt-8 [&_h1]:mb-4
+          [&_h2]:text-xl [&_h2]:font-bold [&_h2]:text-[var(--text-primary)] [&_h2]:mt-6 [&_h2]:mb-3
+          [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-[var(--text-primary)] [&_h3]:mt-4 [&_h3]:mb-2
+          [&_p]:text-[var(--text-secondary)] [&_p]:leading-relaxed [&_p]:mb-4
+          [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-4 [&_ul]:text-[var(--text-secondary)]
+          [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-4 [&_ol]:text-[var(--text-secondary)]
+          [&_li]:mb-1 [&_li]:text-[var(--text-secondary)]
+          [&_a]:text-teal-400 [&_a]:hover:underline
+          [&_strong]:text-[var(--text-primary)] [&_strong]:font-semibold
+          [&_em]:italic
+          [&_hr]:border-[var(--border)] [&_hr]:my-8
+          [&_table]:w-full [&_table]:border-collapse [&_table]:text-sm [&_table]:mb-4
+          [&_th]:text-left [&_th]:px-3 [&_th]:py-2 [&_th]:border-b [&_th]:border-[var(--border)] [&_th]:text-[var(--text-primary)] [&_th]:font-semibold
+          [&_td]:px-3 [&_td]:py-2 [&_td]:border-b [&_td]:border-[var(--border)] [&_td]:text-[var(--text-secondary)]
+          [&_code]:bg-[var(--surface-hover)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-[.85em] [&_code]:text-[var(--text-primary)]
+        " set:html={postBody} />
+      </article>
+    )}
   </div>
 </BaseLayout>
 
-<script define:vars={{ slug, langKey }}>
-  async function loadPost() {
+<script define:vars={{ slug, postId: post?.id || null }}>
+  // Progressive enhancement: view count, likes, PostHog tracking
+  (async function() {
     const sb = window.navGetSb?.();
-    if (!sb) { setTimeout(loadPost, 200); return; }
-
-    const { data } = await sb.from('blog_posts')
-      .select('*, members:author_member_id(name)')
-      .eq('slug', slug)
-      .eq('status', 'published')
-      .single();
-
-    document.getElementById('post-loading')?.classList.add('hidden');
-
-    if (!data) {
-      document.getElementById('post-not-found')?.classList.remove('hidden');
-      return;
-    }
-
-    document.getElementById('post-content')?.classList.remove('hidden');
-    document.getElementById('post-title').textContent = data.title?.[langKey] || data.title?.['pt-BR'] || '';
-    document.getElementById('post-body').innerHTML = data.body_html?.[langKey] || data.body_html?.['pt-BR'] || '';
-    document.getElementById('post-category').textContent = data.category;
-    document.getElementById('post-author').textContent = data.members?.name || '';
-    document.getElementById('post-date').textContent = data.published_at
-      ? new Date(data.published_at).toLocaleDateString(langKey === 'pt-BR' ? 'pt-BR' : langKey === 'es-LATAM' ? 'es-ES' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-      : '';
+    if (!sb || !postId) return;
 
     // View count (session dedup)
     const viewKey = `blog_viewed_${slug}`;
@@ -83,53 +100,40 @@ const { slug } = Astro.params;
       sessionStorage.setItem(viewKey, '1');
     }
 
-    // Show view count
-    if (data.view_count != null) {
-      const viewEl = document.getElementById('post-views');
-      if (viewEl) viewEl.textContent = `${data.view_count + 1} visualizações`;
-    }
-
-    // Update page title
-    document.title = (data.title?.[langKey] || data.title?.['pt-BR'] || 'Blog') + ' | Nucleo IA & GP';
-
     // Like button
     const likeBtn = document.getElementById('post-like-btn');
     const likeIcon = document.getElementById('post-like-icon');
     const likeCount = document.getElementById('post-like-count');
-    if (likeBtn && data.id) {
-      likeBtn.classList.remove('hidden');
-      let currentLiked = false;
-      let currentCount = data.like_count || 0;
+    if (!likeBtn) return;
+    likeBtn.classList.remove('hidden');
 
-      // Load like state
-      const { data: likeData } = await sb.rpc('get_blog_post_likes', { p_post_id: data.id });
-      if (likeData) {
-        currentLiked = likeData.liked || false;
-        currentCount = likeData.like_count || 0;
-      }
+    let currentLiked = false;
+    let currentCount = 0;
+
+    const { data: likeData } = await sb.rpc('get_blog_post_likes', { p_post_id: postId });
+    if (likeData) {
+      currentLiked = likeData.liked || false;
+      currentCount = likeData.like_count || 0;
+    }
+    if (likeIcon) likeIcon.textContent = currentLiked ? '❤️' : '🤍';
+    if (likeCount) likeCount.textContent = String(currentCount);
+
+    likeBtn.addEventListener('click', async () => {
+      const member = window.navGetMember?.();
+      if (!member) { document.dispatchEvent(new CustomEvent('open-auth')); return; }
+      currentLiked = !currentLiked;
+      currentCount += currentLiked ? 1 : -1;
       if (likeIcon) likeIcon.textContent = currentLiked ? '❤️' : '🤍';
       if (likeCount) likeCount.textContent = String(currentCount);
-
-      likeBtn.addEventListener('click', async () => {
-        const member = window.navGetMember?.();
-        if (!member) { document.dispatchEvent(new CustomEvent('open-auth')); return; }
-        // Optimistic update
-        currentLiked = !currentLiked;
-        currentCount += currentLiked ? 1 : -1;
+      const { data: toggleData } = await sb.rpc('toggle_blog_like', { p_post_id: postId });
+      if (toggleData) {
+        currentLiked = toggleData.liked;
+        currentCount = toggleData.like_count;
         if (likeIcon) likeIcon.textContent = currentLiked ? '❤️' : '🤍';
         if (likeCount) likeCount.textContent = String(currentCount);
-        // RPC
-        const { data: toggleData } = await sb.rpc('toggle_blog_like', { p_post_id: data.id });
-        if (toggleData) {
-          currentLiked = toggleData.liked;
-          currentCount = toggleData.like_count;
-          if (likeIcon) likeIcon.textContent = currentLiked ? '❤️' : '🤍';
-          if (likeCount) likeCount.textContent = String(currentCount);
-        }
-      });
-    }
-  }
-  loadPost();
+      }
+    });
+  })();
 
   // PostHog: blog_post_read — intersection observer at 50% + 30s
   (function() {
@@ -140,7 +144,7 @@ const { slug } = Astro.params;
     const observer = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) scrolledPast = true; }, { threshold: 0 });
     const check = setInterval(() => {
       if (fired) { clearInterval(check); return; }
-      const article = document.querySelector('.prose') || document.querySelector('#post-content');
+      const article = document.querySelector('.prose') || document.querySelector('article');
       if (article && !sentinel.parentElement) {
         sentinel.style.top = (article.getBoundingClientRect().top + window.scrollY + article.clientHeight * 0.5) + 'px';
         document.body.appendChild(sentinel);
