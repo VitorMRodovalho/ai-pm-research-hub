@@ -11,7 +11,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     <div id="sust-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
       <div class="text-3xl mb-3">&#x1F512;</div>
       <p class="font-semibold text-amber-800">{t('sustainability.denied', lang)}</p>
-      <a href="/admin" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">Voltar ao Admin</a>
+      <a href="/admin" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">{t('admin.backToAdmin', lang)}</a>
     </div>
 
     <div id="sust-panel" class="hidden space-y-6">
@@ -98,7 +98,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
           <h2 class="text-sm font-bold text-navy mb-3">{t('sustainability.projection', lang)}</h2>
           <div id="projections-section" class="space-y-3">
-            <p class="text-[.75rem] text-[var(--text-muted)]">Carregando...</p>
+            <p class="text-[.75rem] text-[var(--text-muted)]">{t('common.loading', lang)}</p>
           </div>
         </div>
 
@@ -106,7 +106,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5">
           <h2 class="text-sm font-bold text-navy mb-3">{t('sustainability.infraBreakdown', lang)}</h2>
           <div id="infra-breakdown" class="space-y-2">
-            <p class="text-[.75rem] text-[var(--text-muted)]">Carregando...</p>
+            <p class="text-[.75rem] text-[var(--text-muted)]">{t('common.loading', lang)}</p>
           </div>
         </div>
       </div>
@@ -199,7 +199,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       <div id="tab-targets" class="tab-content hidden space-y-4">
         <h2 class="text-lg font-bold text-navy">{t('sustainability.tabTargets', lang)} — Ciclo 3</h2>
         <div id="targets-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <p class="text-[.75rem] text-[var(--text-muted)]">Carregando...</p>
+          <p class="text-[.75rem] text-[var(--text-muted)]">{t('common.loading', lang)}</p>
         </div>
       </div>
     </div>
@@ -295,7 +295,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       </div>
     </div>
 
-    <div id="sust-loading" class="text-center py-16 text-[var(--text-muted)]">Carregando...</div>
+    <div id="sust-loading" class="text-center py-16 text-[var(--text-muted)]">{t('common.loading', lang)}</div>
   </div>
   <Toast />
 </AdminLayout>

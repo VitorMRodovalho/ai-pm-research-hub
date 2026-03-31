@@ -67,7 +67,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       <!-- TAB: Pipeline -->
       <div id="tab-pipeline" class="tab-content">
         <div id="pipeline-board" class="flex gap-3 overflow-x-auto pb-4" style="min-height:300px">
-          <p class="text-[.75rem] text-[var(--text-muted)]">Carregando...</p>
+          <p class="text-[.75rem] text-[var(--text-muted)]">{t('common.loading', lang)}</p>
         </div>
       </div>
 
@@ -150,7 +150,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
             <div>
               <label class="text-[.75rem] font-semibold text-[var(--text-secondary)]">Tribo</label>
               <select id="new-tribe" class="w-full mt-1 px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm bg-[var(--surface-card)] text-[var(--text-primary)]">
-                <option value="">Nenhuma</option>
+                <option value="">{t('admin.noSubmission', lang)}</option>
               </select>
             </div>
           </div>
@@ -174,7 +174,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
           <button id="btn-close-detail" class="text-[var(--text-muted)] hover:text-navy cursor-pointer text-xl font-bold">&#x2715;</button>
         </div>
         <div id="detail-content" class="space-y-4">
-          <p class="text-sm text-[var(--text-muted)]">Carregando...</p>
+          <p class="text-sm text-[var(--text-muted)]">{t('common.loading', lang)}</p>
         </div>
       </div>
     </div>
@@ -308,7 +308,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     tribeSelectors.forEach(id => {
       const el = document.getElementById(id) as HTMLSelectElement;
       if (!el) return;
-      const prefix = id === 'filter-tribe' ? '<option value="">Todas</option>' : '<option value="">Nenhuma</option>';
+      const prefix = id === 'filter-tribe' ? '<option value="">Todas</option>' : '<option value="">—</option>';
       const _sl = location.pathname.startsWith('/en') ? 'en' : location.pathname.startsWith('/es') ? 'es' : 'pt';
       el.innerHTML = prefix + tribes.map((t: any) => `<option value="${t.id}">${escH(t.name_i18n?.[_sl] || t.name)}</option>`).join('');
     });
@@ -439,7 +439,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const sb = (window as any).navGetSb?.();
     if (!sb) return;
     document.getElementById('modal-detail')?.classList.remove('hidden');
-    document.getElementById('detail-content')!.innerHTML = '<p class="text-sm text-[var(--text-muted)]">Carregando...</p>';
+    document.getElementById('detail-content')!.innerHTML = '<p class="text-sm text-[var(--text-muted)]">...</p>';
 
     const { data, error } = await sb.rpc('get_publication_submission_detail', { p_submission_id: id });
     if (error || !data) { document.getElementById('detail-content')!.innerHTML = '<p class="text-sm text-red-500">Erro ao carregar.</p>'; return; }

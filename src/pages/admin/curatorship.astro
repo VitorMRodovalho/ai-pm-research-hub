@@ -54,7 +54,7 @@ const CUR_I18N = {
     <div id="cur-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
       <div class="text-2xl mb-2">&#x1F512;</div>
       <p class="font-semibold text-amber-800">Acesso restrito a administradores e lideres</p>
-      <a href="/admin" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">Voltar ao Admin</a>
+      <a href="/admin" class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">{t('admin.backToAdmin', lang)}</a>
     </div>
     <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
     <CuratorshipBoardIsland client:load i18n={CUR_I18N} />

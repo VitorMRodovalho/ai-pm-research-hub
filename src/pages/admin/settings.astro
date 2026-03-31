@@ -11,7 +11,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     <div id="settings-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
       <div class="text-3xl mb-3">&#x1F512;</div>
       <p class="font-semibold text-amber-800">Acesso restrito a Superadmin</p>
-      <a href="/admin" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">Voltar ao Admin</a>
+      <a href="/admin" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">{t('admin.backToAdmin', lang)}</a>
     </div>
 
     <div id="settings-panel" class="hidden space-y-6">
@@ -54,7 +54,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
           <p class="text-[.68rem] text-[var(--text-muted)] mt-0.5">Limites configuráveis. Alterações requerem justificativa e são registadas no log de auditoria.</p>
         </div>
         <div id="platform-settings" class="p-5 space-y-3">
-          <p class="text-[.7rem] text-[var(--text-muted)]">Carregando...</p>
+          <p class="text-[.7rem] text-[var(--text-muted)]">{t('common.loading', lang)}</p>
         </div>
       </div>
 
@@ -70,7 +70,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
           </button>
         </div>
         <div id="cycle-list" class="p-5 space-y-3">
-          <p class="text-[.7rem] text-[var(--text-muted)]">Carregando ciclos...</p>
+          <p class="text-[.7rem] text-[var(--text-muted)]">{t('admin.loadingCycles', lang)}</p>
         </div>
       </div>
 
@@ -124,7 +124,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       </div>
     </div>
 
-    <div id="settings-loading" class="text-center py-16 text-[var(--text-muted)]">Carregando...</div>
+    <div id="settings-loading" class="text-center py-16 text-[var(--text-muted)]">{t('common.loading', lang)}</div>
   </div>
   <Toast />
 </AdminLayout>
