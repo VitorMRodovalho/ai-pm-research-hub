@@ -44,7 +44,7 @@ const langKey = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
       const title = p.title?.[langKey] || p.title?.['pt-BR'] || p.title?.pt || '';
       const excerpt = p.excerpt?.[langKey] || p.excerpt?.['pt-BR'] || p.excerpt?.pt || '';
       const date = p.published_at ? new Date(p.published_at).toLocaleDateString(langKey === 'pt' ? 'pt-BR' : langKey === 'es' ? 'es-ES' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
-      const catBadge = { 'case-study': 'bg-blue-900/30 text-blue-300', tutorial: 'bg-green-900/30 text-green-300', announcement: 'bg-purple-900/30 text-purple-300', opinion: 'bg-amber-900/30 text-amber-300' }[p.category] || 'bg-gray-700 text-gray-300';
+      const catStyle = { 'case-study': 'status-info', tutorial: 'status-success', announcement: 'status-accent', opinion: 'status-warning' }[p.category] || 'status-info';
 
       return `<a href="${langPrefix}/blog/${p.slug}" class="block bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 hover:border-teal-500/50 transition-colors no-underline">
         ${p.is_featured ? '<span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-teal-900/30 text-teal-300 mb-2">Featured</span>' : ''}
@@ -52,10 +52,10 @@ const langKey = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
         <p class="text-[var(--fg-muted)] text-sm mb-3">${excerpt}</p>
         <div class="flex items-center gap-3 text-xs text-[var(--fg-muted)]">
           <span>${date}</span>
-          <span class="px-2 py-0.5 rounded ${catBadge}">${p.category}</span>
+          <span class="px-2 py-0.5 rounded" style="background:var(--${catStyle}-bg);color:var(--${catStyle}-text)">${p.category}</span>
           ${p.view_count ? '<span>' + p.view_count + ' views</span>' : ''}
           <span class="blog-like-badge" data-post-id="${p.id}" data-like-count="${p.like_count || 0}">🤍 ${p.like_count || 0}</span>
-          ${(p.tags || []).map(t => '<span class="px-2 py-0.5 rounded bg-[var(--surface-hover)]">' + t + '</span>').join('')}
+          ${(p.tags || []).map(t => '<span class="px-2 py-0.5 rounded bg-[var(--surface-section-cool)] text-[var(--text-secondary)]">' + t + '</span>').join('')}
         </div>
       </a>`;
     }).join('');
