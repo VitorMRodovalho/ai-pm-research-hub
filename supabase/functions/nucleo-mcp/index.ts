@@ -1,5 +1,5 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.6.0 — 29 tools (23R + 6W) + usage logging
+// MCP server v2.8.0 — 42 tools (36R + 6W) + usage logging
 // Transport: SDK 1.28.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
@@ -425,6 +425,163 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "get_annual_kpis", true, undefined, start);
     return ok(data);
   });
+
+  // ===== P1 WAVE — 7 new tools (30-36) =====
+
+  // TOOL 30: get_event_detail — All authenticated members
+  mcp.tool("get_event_detail", "Returns full event detail: agenda, minutes, action items, attendance.", { event_id: z.string().describe("UUID of the event") }, async (params: { event_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_event_detail", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_event_detail", { p_event_id: params.event_id });
+    if (error) { await logUsage(sb, member.id, "get_event_detail", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_event_detail", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_event_detail", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 31: get_comms_dashboard — Comms team + Admin
+  mcp.tool("get_comms_dashboard", "Returns communications dashboard: publications by status/format, backlog, overdue items.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_comms_dashboard", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_comms_dashboard_metrics");
+    if (error) { await logUsage(sb, member.id, "get_comms_dashboard", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_comms_dashboard", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 32: get_campaign_analytics — Comms team + Admin
+  mcp.tool("get_campaign_analytics", "Returns email campaign analytics: opens, clicks, bounces. Admin/Comms only.", { send_id: z.string().optional().describe("UUID of specific campaign send. If omitted, returns all campaigns.") }, async (params: { send_id?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_campaign_analytics", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!member.is_superadmin && !["manager", "deputy_manager"].includes(member.operational_role) && !(member.designations || []).includes("comms_lead")) { await logUsage(sb, member.id, "get_campaign_analytics", false, "Unauthorized", start); return err("Unauthorized: admin/comms only."); }
+    const { data, error } = await sb.rpc("get_campaign_analytics", { p_send_id: params.send_id || null });
+    if (error) { await logUsage(sb, member.id, "get_campaign_analytics", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_campaign_analytics", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 33: get_partner_pipeline — Sponsors + Admin
+  mcp.tool("get_partner_pipeline", "Returns partner pipeline: entities by status, stale alerts, contact info. Sponsors/Admin only.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_partner_pipeline", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_partner_pipeline");
+    if (error) { await logUsage(sb, member.id, "get_partner_pipeline", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_partner_pipeline", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 34: get_public_impact_data — All authenticated members
+  mcp.tool("get_public_impact_data", "Returns public impact data: chapters, members, publications, partners, timeline, recognitions.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_public_impact_data", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_public_impact_data");
+    if (error) { await logUsage(sb, member.id, "get_public_impact_data", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_public_impact_data", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 35: get_curation_dashboard — GP/Admin
+  mcp.tool("get_curation_dashboard", "Returns curation workflow dashboard: pending items, SLA compliance, reviewer stats. Admin only.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_curation_dashboard", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!member.is_superadmin && !["manager", "deputy_manager"].includes(member.operational_role)) { await logUsage(sb, member.id, "get_curation_dashboard", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    const { data, error } = await sb.rpc("get_curation_dashboard");
+    if (error) { await logUsage(sb, member.id, "get_curation_dashboard", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_curation_dashboard", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 36: get_tribe_deliverables — Leaders + Admin
+  mcp.tool("get_tribe_deliverables", "Returns deliverables for a tribe: status, deadlines, cycle tracking.", { tribe_id: z.number().optional().describe("Tribe ID (1-8). If omitted, uses your tribe."), cycle_code: z.string().optional().describe("Cycle code. Default: current cycle.") }, async (params: { tribe_id?: number; cycle_code?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_tribe_deliverables", false, "Not authenticated", start); return err("Not authenticated"); }
+    const tribeId = params.tribe_id || member.tribe_id;
+    if (!tribeId) { await logUsage(sb, member.id, "get_tribe_deliverables", false, "No tribe", start); return err("No tribe. Specify tribe_id (1-8)."); }
+    const { data, error } = await sb.rpc("list_tribe_deliverables", { p_tribe_id: tribeId, p_cycle_code: params.cycle_code || null });
+    if (error) { await logUsage(sb, member.id, "get_tribe_deliverables", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_tribe_deliverables", true, undefined, start);
+    return ok(data);
+  });
+
+  // ===== P2 WAVE — 4 new tools (37-40) =====
+
+  // TOOL 37: get_pilots_summary — Sponsors + Admin
+  mcp.tool("get_pilots_summary", "Returns AI pilot projects summary: status, metrics, hypothesis, progress.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_pilots_summary", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_pilots_summary");
+    if (error) { await logUsage(sb, member.id, "get_pilots_summary", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_pilots_summary", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 38: get_comms_metrics_by_channel — Comms team + Admin
+  mcp.tool("get_comms_metrics_by_channel", "Returns latest communication metrics by channel (LinkedIn, Instagram, YouTube). Comms/Admin only.", { days: z.number().optional().describe("Lookback period in days. Default: 14") }, async (params: { days?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_comms_metrics_by_channel", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("comms_metrics_latest_by_channel", { p_days: params.days || 14 });
+    if (error) { await logUsage(sb, member.id, "get_comms_metrics_by_channel", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_comms_metrics_by_channel", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 39: get_anomaly_report — Admin only
+  mcp.tool("get_anomaly_report", "Returns data quality anomaly report: inconsistencies, duplicates, drift. Admin only.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_anomaly_report", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!member.is_superadmin && !["manager", "deputy_manager"].includes(member.operational_role)) { await logUsage(sb, member.id, "get_anomaly_report", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    const { data, error } = await sb.rpc("admin_get_anomaly_report");
+    if (error) { await logUsage(sb, member.id, "get_anomaly_report", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_anomaly_report", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 40: get_portfolio_health — Admin/Sponsor
+  mcp.tool("get_portfolio_health", "Returns quarterly portfolio health: KPIs with targets vs actuals, traffic-light status. Admin/Sponsor only.", { cycle_code: z.string().optional().describe("Cycle code. Default: cycle3-2026") }, async (params: { cycle_code?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_portfolio_health", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!member.is_superadmin && !["manager", "deputy_manager", "sponsor"].includes(member.operational_role) && !(member.designations || []).includes("sponsor")) { await logUsage(sb, member.id, "get_portfolio_health", false, "Unauthorized", start); return err("Unauthorized: admin/sponsor only."); }
+    const { data, error } = await sb.rpc("exec_portfolio_health", { p_cycle_code: params.cycle_code || "cycle3-2026" });
+    if (error) { await logUsage(sb, member.id, "get_portfolio_health", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_portfolio_health", true, undefined, start);
+    return ok(data);
+  });
+
+  // ===== P3 WAVE — 2 new tools (41-42) =====
+
+  // TOOL 41: get_volunteer_funnel — Admin/Selection committee
+  mcp.tool("get_volunteer_funnel", "Returns volunteer selection funnel: applicants by stage, conversion rates.", { cycle: z.number().optional().describe("Selection cycle number. Default: latest.") }, async (params: { cycle?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_volunteer_funnel", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!member.is_superadmin && !["manager", "deputy_manager"].includes(member.operational_role)) { await logUsage(sb, member.id, "get_volunteer_funnel", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    const { data, error } = await sb.rpc("volunteer_funnel_summary", { p_cycle: params.cycle || null });
+    if (error) { await logUsage(sb, member.id, "get_volunteer_funnel", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_volunteer_funnel", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 42: get_near_events — All authenticated members
+  mcp.tool("get_near_events", "Returns events happening soon (within a time window). More immediate than get_upcoming_events.", { window_hours: z.number().optional().describe("Hours before/after now to search. Default: 2") }, async (params: { window_hours?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_near_events", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_near_events", { p_member_id: member.id, p_window_hours: params.window_hours || 2 });
+    if (error) { await logUsage(sb, member.id, "get_near_events", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_near_events", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -435,7 +592,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.6.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.8.0" });
     registerTools(mcp, sb);
 
     const transport = new WebStandardStreamableHTTPServerTransport({
@@ -454,6 +611,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.6.0", tools: 29, transport: "native-streamable-http", sdk: "1.28.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.8.0", tools: 42, transport: "native-streamable-http", sdk: "1.28.0" }));
 
 Deno.serve(app.fetch);
