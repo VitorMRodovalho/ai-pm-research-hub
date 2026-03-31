@@ -1,6 +1,17 @@
 # Changelog
 
-## 2026-03-31 — v2.8.0 MCP Expansion: 42 Tools + Knowledge Layer
+## 2026-03-31 — v2.8.0 MCP Expansion + Knowledge Layer + i18n Audit
+
+### i18n Audit — 6 Waves (74 keys added, 3428 total per dict)
+- **Wave 1:** 404 + webinars public pages — fully trilingual
+- **Wave 2+3:** gamification, profile, publications, artifacts — script strings i18n'd
+- **Wave 4:** boards, notifications, teams, workspace — template + hidden span pattern
+- **Wave 5:** OAuth consent page — 22 i18n keys, fully trilingual (was 100% PT-BR)
+- **Wave 6:** 15 admin pages — 25 template + 28 script strings migrated
+- **Blog lang key fix:** pt/en/es → pt-BR/en-US/es-LATAM in blog list, blog post, admin blog editor
+- **Blog post rewrite:** MCP launch post completely revised (42 tools, 6 hosts, knowledge layer, auto-refresh) in 3 languages
+
+### MCP — 13 New Tools (29 → 42) + Knowledge Layer
 
 ### MCP — 13 New Tools (29 → 42)
 - **P1 — 7 tools:** `get_event_detail`, `get_comms_dashboard`, `get_campaign_analytics`, `get_partner_pipeline`, `get_public_impact_data`, `get_curation_dashboard`, `get_tribe_deliverables`
