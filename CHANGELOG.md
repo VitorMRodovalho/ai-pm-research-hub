@@ -1,6 +1,6 @@
 # Changelog
 
-## 2026-03-31 — v2.8.0 MCP Expansion: 42 Tools Covering All Personas
+## 2026-03-31 — v2.8.0 MCP Expansion: 42 Tools + Knowledge Layer
 
 ### MCP — 13 New Tools (29 → 42)
 - **P1 — 7 tools:** `get_event_detail`, `get_comms_dashboard`, `get_campaign_analytics`, `get_partner_pipeline`, `get_public_impact_data`, `get_curation_dashboard`, `get_tribe_deliverables`
@@ -8,6 +8,11 @@
 - **P3 — 2 tools:** `get_volunteer_funnel`, `get_near_events`
 - Full persona coverage: Sponsors, Comms team, GP/Management, Chapter liaisons, Members
 - Fixed SQL bug in `get_public_impact_data` (nested aggregate in chapters_summary)
+
+### MCP Knowledge Layer (new)
+- **Dynamic prompt `nucleo-guide`:** Adapts to authenticated member's role, tribe, designations. Shows only tools the user can access, with recommended workflows and error guidance.
+- **Static resource `nucleo://tools/reference`:** Complete 42-tool reference with parameters and permissions — always available for AI to consult.
+- Server now announces 3 capabilities: `prompts`, `resources`, `tools`
 
 ### Migration
 - `20260331010000_fix_public_impact_nested_aggregate.sql`

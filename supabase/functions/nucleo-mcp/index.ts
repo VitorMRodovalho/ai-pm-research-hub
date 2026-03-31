@@ -1,5 +1,5 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.8.0 — 42 tools (36R + 6W) + usage logging
+// MCP server v2.8.0 — 42 tools (36R + 6W) + 1 prompt + 1 resource + usage logging
 // Transport: SDK 1.28.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
@@ -49,7 +49,253 @@ async function logUsage(sb: ReturnType<typeof createClient>, memberId: string | 
   } catch (_) { /* never break tool execution */ }
 }
 
-// --- Register 23 tools (17R + 6W) ---
+// --- Knowledge Layer: Prompts + Resources ---
+
+function registerKnowledge(mcp: McpServer, sb: ReturnType<typeof createClient>) {
+
+  // Dynamic prompt — adapts to authenticated member's role and permissions
+  mcp.registerPrompt(
+    "nucleo-guide",
+    {
+      title: "Guia do Núcleo IA",
+      description: "Instruções personalizadas para o assistente baseadas no seu perfil, papel e permissões.",
+    },
+    async () => {
+      const member = await getMember(sb);
+      if (!member) {
+        return { messages: [{ role: "user" as const, content: { type: "text" as const, text: "Usuário não autenticado. Peça para reconectar o MCP." } }] };
+      }
+
+      const role = member.operational_role || "member";
+      const designations: string[] = member.designations || [];
+      const isAdmin = member.is_superadmin || ["manager", "deputy_manager"].includes(role);
+      const isLeader = WRITE_ROLES.includes(role) || member.is_superadmin;
+      const isSponsor = designations.includes("sponsor") || role === "sponsor";
+      const isComms = designations.includes("comms_lead");
+      const isLiaison = designations.includes("chapter_liaison");
+      const hasTribe = !!member.tribe_id;
+
+      // Build personalized tool guide
+      const sections: string[] = [];
+
+      sections.push(`## Seu perfil
+- **Nome:** ${member.name}
+- **Papel:** ${role}${member.is_superadmin ? " (superadmin)" : ""}
+- **Tribo:** ${hasTribe ? `Tribo ${member.tribe_id}` : "Sem tribo fixa (manager/founder)"}
+- **Designações:** ${designations.length > 0 ? designations.join(", ") : "nenhuma"}
+- **Capítulo:** ${member.chapter || "não definido"}`);
+
+      // Tier 1 — everyone
+      sections.push(`## Ferramentas disponíveis para você
+
+### Consultas pessoais (sempre disponíveis)
+- \`get_my_profile\` — Seu perfil completo
+- \`get_my_xp_and_ranking\` — Seu XP e posição no ranking
+- \`get_my_notifications\` — Notificações não lidas
+- \`get_my_attendance_history\` — Seu histórico de presença
+- \`get_my_certificates\` — Suas certificações e badges
+- \`get_upcoming_events\` — Eventos dos próximos 7 dias
+- \`get_near_events\` — Eventos nas próximas horas (janela configurável)
+- \`get_hub_announcements\` — Avisos ativos do Hub
+- \`search_hub_resources\` — Busca na biblioteca (247+ itens)
+- \`get_public_impact_data\` — Dados de impacto público, timeline, reconhecimentos
+- \`get_pilots_summary\` — Resumo dos pilotos de IA`);
+
+      if (hasTribe) {
+        sections.push(`### Consultas da sua tribo
+- \`get_my_tribe_members\` — Membros ativos da sua tribo
+- \`get_my_tribe_attendance\` — Grade de presença da tribo
+- \`get_my_board_status\` — Cards do board agrupados por status
+- \`get_meeting_notes\` — Últimas atas de reunião
+- \`search_board_cards\` — Busca full-text em cards
+- \`list_tribe_webinars\` — Webinars da tribo
+- \`get_event_detail\` — Detalhe de evento (agenda, ata, action items) — passe event_id`);
+      } else {
+        sections.push(`### Nota sobre rotas de tribo
+Seu perfil não tem \`tribe_id\` fixo. Para consultar dados de uma tribo específica, use ferramentas que aceitam \`tribe_id\` como parâmetro:
+- \`get_tribe_dashboard\` com \`tribe_id=1\` a \`8\`
+- \`get_tribe_deliverables\` com \`tribe_id=1\` a \`8\`
+Rotas como \`get_my_tribe_members\` retornarão "No tribe assigned" — isso é esperado.`);
+      }
+
+      if (isLeader) {
+        sections.push(`### Escrita (líder/gestor)
+- \`create_board_card\` — Criar card no board da tribo
+- \`update_card_status\` — Mover card entre colunas (backlog→in_progress→review→done)
+- \`create_meeting_notes\` — Criar ata de reunião (precisa event_id)
+- \`register_attendance\` — Registrar presença (precisa event_id + member_id)
+- \`send_notification_to_tribe\` — Notificar toda a tribo
+- \`create_tribe_event\` — Criar reunião ou evento`);
+      }
+
+      if (isLiaison) {
+        sections.push(`### Capítulo (ponto focal)
+- \`get_chapter_kpis\` — KPIs do seu capítulo (${member.chapter || "especifique: GO, CE, DF, MG, RS"})
+- Você pode consultar KPIs de outros capítulos também.`);
+      }
+
+      if (isComms) {
+        sections.push(`### Comunicação
+- \`get_comms_dashboard\` — Dashboard: publicações por status/formato, backlog, overdue
+- \`get_campaign_analytics\` — Métricas de email: opens, clicks, bounces
+- \`get_comms_metrics_by_channel\` — LinkedIn, Instagram, YouTube (últimos N dias)
+- \`get_comms_pending_webinars\` — Webinars pendentes de ação de comunicação`);
+      }
+
+      if (isSponsor) {
+        sections.push(`### Patrocinador/Sponsor
+- \`get_partner_pipeline\` — Pipeline de parcerias: status, contatos, alertas de estagnação
+- \`get_annual_kpis\` — KPIs anuais: metas vs realizado
+- \`get_portfolio_health\` — Saúde do portfólio: semáforo por KPI trimestral
+- \`get_public_impact_data\` — Dados de impacto para apresentações`);
+      }
+
+      if (isAdmin) {
+        sections.push(`### Gestão/GP (Admin)
+- \`get_tribe_dashboard\` — Dashboard completo de qualquer tribo (tribe_id 1-8)
+- \`get_tribe_deliverables\` — Entregas por tribo e ciclo
+- \`get_portfolio_overview\` — Visão executiva: todos os boards e cards
+- \`get_operational_alerts\` — Alertas: inatividade, cards atrasados, drift
+- \`get_cycle_report\` — Relatório completo do ciclo
+- \`get_annual_kpis\` — KPIs anuais
+- \`get_portfolio_health\` — Saúde trimestral do portfólio
+- \`get_adoption_metrics\` — Métricas de adoção do MCP: saúde por rota
+- \`get_curation_dashboard\` — Workflow de curadoria: pendentes, SLA
+- \`get_anomaly_report\` — Anomalias de dados
+- \`get_attendance_ranking\` — Ranking de presença
+- \`get_volunteer_funnel\` — Funil de seleção de voluntários
+- \`get_partner_pipeline\` — Pipeline de parcerias
+- \`get_campaign_analytics\` — Métricas de campanhas de email
+- \`get_comms_dashboard\` — Dashboard de comunicação
+- \`get_comms_metrics_by_channel\` — Métricas por canal social`);
+      }
+
+      sections.push(`## Workflows recomendados
+
+### "Como está minha tribo?"
+1. \`get_tribe_dashboard\`${hasTribe ? "" : " (passe tribe_id)"} → visão geral
+2. \`get_tribe_deliverables\` → entregas pendentes
+3. \`get_my_tribe_attendance\` → quem está participando
+
+### "Preciso preparar um relatório"
+1. \`get_cycle_report\` → dados do ciclo atual
+2. \`get_annual_kpis\` → metas vs realizado
+3. \`get_portfolio_health\` → semáforo trimestral
+
+### "O que tenho para hoje?"
+1. \`get_near_events\` → eventos nas próximas horas
+2. \`get_my_notifications\` → notificações pendentes
+3. \`get_hub_announcements\` → avisos ativos
+
+### "Como estão as comunicações?"
+1. \`get_comms_dashboard\` → backlog e status
+2. \`get_comms_pending_webinars\` → webinars sem comunicação
+3. \`get_comms_metrics_by_channel\` → métricas por rede social
+
+## Erros comuns e como lidar
+- **"No tribe assigned"** — Seu perfil não tem tribo fixa. Use rotas com parâmetro \`tribe_id\`.
+- **"Unauthorized"** — A ferramenta requer um papel que você não tem. Não insista.
+- **"Not authenticated"** — Token expirado. O auto-refresh deve resolver automaticamente, mas se persistir, peça para reconectar o MCP.
+
+## Sobre o Núcleo IA & GP
+O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do PMI Brasil (5 capítulos: GO, CE, DF, MG, RS) com 50+ colaboradores organizados em 8 tribos. A plataforma é nucleoia.vitormr.dev.`);
+
+      return {
+        messages: [{
+          role: "user" as const,
+          content: { type: "text" as const, text: sections.join("\n\n") }
+        }]
+      };
+    }
+  );
+
+  // Static resource — full tool reference (always available, not role-filtered)
+  mcp.registerResource(
+    "tool-reference",
+    "nucleo://tools/reference",
+    {
+      title: "Referência completa de ferramentas",
+      description: "Lista todas as 42 ferramentas do Núcleo MCP com parâmetros e permissões.",
+      mimeType: "text/markdown",
+    },
+    async () => ({
+      contents: [{
+        uri: "nucleo://tools/reference",
+        text: `# Núcleo IA MCP — Referência de Ferramentas (v2.8.0)
+
+## 42 ferramentas: 36 leitura + 6 escrita
+
+### Tier 1 — Todos os membros (17 leitura)
+| # | Ferramenta | Parâmetros | Descrição |
+|---|-----------|-----------|-----------|
+| 1 | get_my_profile | — | Perfil: nome, papel, tribo, XP, badges |
+| 2 | get_my_board_status | board_id? | Cards do board agrupados por status |
+| 3 | get_my_tribe_attendance | — | Grade de presença da tribo |
+| 4 | get_my_tribe_members | — | Membros ativos com papéis |
+| 5 | get_upcoming_events | — | Eventos dos próximos 7 dias |
+| 6 | get_my_xp_and_ranking | — | XP por categoria + posição |
+| 7 | get_meeting_notes | limit? | Últimas atas de reunião |
+| 8 | get_my_notifications | — | Notificações não lidas |
+| 9 | search_board_cards | query | Busca full-text em cards |
+| 10 | get_hub_announcements | — | Avisos ativos do Hub |
+| 11 | get_my_attendance_history | limit? | Histórico pessoal de presença |
+| 12 | list_tribe_webinars | status? | Webinars da tribo/capítulo |
+| 13 | get_comms_pending_webinars | — | Webinars pendentes de comunicação |
+| 14 | get_my_certificates | — | Certificações, badges, trilhas |
+| 15 | search_hub_resources | query, asset_type?, limit? | Biblioteca de recursos (247+) |
+| 16 | get_attendance_ranking | — | Ranking de presença |
+| 17 | get_chapter_kpis | chapter? | KPIs por capítulo |
+
+### Tier 2 — Líderes (6 escrita)
+| # | Ferramenta | Parâmetros | Descrição |
+|---|-----------|-----------|-----------|
+| 18 | create_board_card | title, description?, priority?, due_date?, tags? | Criar card |
+| 19 | update_card_status | card_id, status | Mover card |
+| 20 | create_meeting_notes | event_id, content, decisions?, action_items? | Criar ata |
+| 21 | register_attendance | event_id, member_id, present | Registrar presença |
+| 22 | send_notification_to_tribe | title, body, link? | Notificar tribo |
+| 23 | create_tribe_event | title, date, type?, duration_minutes? | Criar evento |
+
+### Tier 3 — GP/Admin (12 leitura)
+| # | Ferramenta | Parâmetros | Descrição |
+|---|-----------|-----------|-----------|
+| 24 | get_tribe_dashboard | tribe_id? | Dashboard completo da tribo |
+| 25 | get_portfolio_overview | — | Visão executiva: boards e cards |
+| 26 | get_operational_alerts | — | Alertas operacionais |
+| 27 | get_cycle_report | — | Relatório do ciclo |
+| 28 | get_annual_kpis | — | KPIs anuais (admin/sponsor) |
+| 29 | get_adoption_metrics | — | Métricas de adoção MCP |
+| 30 | get_curation_dashboard | — | Workflow de curadoria |
+| 31 | get_tribe_deliverables | tribe_id?, cycle_code? | Entregas por tribo |
+| 32 | get_anomaly_report | — | Anomalias de dados |
+| 33 | get_portfolio_health | cycle_code? | Saúde trimestral |
+| 34 | get_volunteer_funnel | cycle? | Funil de seleção |
+| 35 | get_campaign_analytics | send_id? | Métricas de campanhas |
+
+### Ferramentas Transversais (7 leitura)
+| # | Ferramenta | Parâmetros | Descrição |
+|---|-----------|-----------|-----------|
+| 36 | get_event_detail | event_id | Detalhe: agenda, ata, ações |
+| 37 | get_comms_dashboard | — | Dashboard de comunicação |
+| 38 | get_comms_metrics_by_channel | days? | Métricas por canal social |
+| 39 | get_partner_pipeline | — | Pipeline de parcerias (sponsor/admin) |
+| 40 | get_public_impact_data | — | Impacto público, timeline |
+| 41 | get_pilots_summary | — | Pilotos de IA |
+| 42 | get_near_events | window_hours? | Eventos próximos |
+
+## Notas
+- Rotas de escrita (Tier 2) requerem: manager, deputy_manager, tribe_leader ou superadmin
+- Rotas Tier 3 requerem: manager, deputy_manager ou superadmin
+- get_annual_kpis e get_portfolio_health também acessíveis por sponsors
+- get_partner_pipeline acessível por sponsors e chapter_liaisons
+- Todas as chamadas são logadas em mcp_usage_log
+`,
+      }],
+    })
+  );
+}
+
+// --- Register 42 tools (36R + 6W) ---
 
 function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
 
@@ -593,6 +839,7 @@ app.all("/mcp", async (c) => {
 
     const sb = createAuthenticatedClient(token);
     const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.8.0" });
+    registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
     const transport = new WebStandardStreamableHTTPServerTransport({

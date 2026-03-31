@@ -6,7 +6,7 @@ globs: supabase/functions/nucleo-mcp/**
 # MCP Server Rules (nucleo-mcp v2.8.0)
 
 ## Current State
-- 42 tools (36 read + 6 write)
+- 42 tools (36 read + 6 write) + 1 dynamic prompt + 1 static resource
 - Transport: @modelcontextprotocol/sdk@1.28.0 WebStandardStreamableHTTPServerTransport (native)
 - Tool params: Zod schemas (z.string(), z.number(), z.boolean()) — NOT plain JSON Schema objects
 - Auth: OAuth 2.1 via Workers (nucleoia.vitormr.dev) → Supabase JWT
