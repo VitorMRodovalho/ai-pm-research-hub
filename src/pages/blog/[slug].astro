@@ -6,7 +6,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
-const langKey = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
+const langKey = lang; // DB keys: pt-BR, en-US, es-LATAM — match Lang type directly
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const { slug } = Astro.params;
 ---
@@ -68,12 +68,12 @@ const { slug } = Astro.params;
     }
 
     document.getElementById('post-content')?.classList.remove('hidden');
-    document.getElementById('post-title').textContent = data.title?.[langKey] || data.title?.['pt-BR'] || data.title?.pt || '';
-    document.getElementById('post-body').innerHTML = data.body_html?.[langKey] || data.body_html?.['pt-BR'] || data.body_html?.pt || '';
+    document.getElementById('post-title').textContent = data.title?.[langKey] || data.title?.['pt-BR'] || '';
+    document.getElementById('post-body').innerHTML = data.body_html?.[langKey] || data.body_html?.['pt-BR'] || '';
     document.getElementById('post-category').textContent = data.category;
     document.getElementById('post-author').textContent = data.members?.name || '';
     document.getElementById('post-date').textContent = data.published_at
-      ? new Date(data.published_at).toLocaleDateString(langKey === 'pt' ? 'pt-BR' : langKey === 'es' ? 'es-ES' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+      ? new Date(data.published_at).toLocaleDateString(langKey === 'pt-BR' ? 'pt-BR' : langKey === 'es-LATAM' ? 'es-ES' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
       : '';
 
     // View count (session dedup)
@@ -90,7 +90,7 @@ const { slug } = Astro.params;
     }
 
     // Update page title
-    document.title = (data.title?.[langKey] || data.title?.['pt-BR'] || data.title?.pt || 'Blog') + ' | Nucleo IA & GP';
+    document.title = (data.title?.[langKey] || data.title?.['pt-BR'] || 'Blog') + ' | Nucleo IA & GP';
 
     // Like button
     const likeBtn = document.getElementById('post-like-btn');
