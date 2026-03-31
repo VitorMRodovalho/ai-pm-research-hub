@@ -52,8 +52,12 @@
 
     area.innerHTML = visible.map((a: any) => {
       const s = TYPE_STYLES[a.type] || TYPE_STYLES.info;
-      const link = a.link_url && a.link_text
-        ? `<a href="${escapeHtml(a.link_url)}" class="font-bold underline ml-1 hover:opacity-80">${escapeHtml(a.link_text)}</a>`
+      // Translate common link_text values
+      let linkLabel = a.link_text || '';
+      if (pathLang === 'en' && linkLabel === 'Entrar na Reunião Geral') linkLabel = 'Join General Meeting';
+      else if (pathLang === 'es' && linkLabel === 'Entrar na Reunião Geral') linkLabel = 'Unirse a la Reunión General';
+      const link = a.link_url && linkLabel
+        ? `<a href="${escapeHtml(a.link_url)}" class="font-bold underline ml-1 hover:opacity-80">${escapeHtml(linkLabel)}</a>`
         : '';
       const pulse = a.type === 'urgent' ? 'animate-pulse' : '';
       const msg = pathLang === 'en' ? (a.message_en || a.message) : pathLang === 'es' ? (a.message_es || a.message) : a.message;

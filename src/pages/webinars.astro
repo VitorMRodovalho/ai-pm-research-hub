@@ -1,17 +1,51 @@
 ---
+/**
+ * /webinars — Public webinar listing (SSR for SEO)
+ */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
+import { createClient } from '@supabase/supabase-js';
+
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const locale = lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-ES' : 'pt-BR';
-const i18nWebinars = {
-  join: t('webinars.join', lang),
-  linkSoon: t('webinars.linkSoon', lang),
-  watchReplay: t('webinars.watchReplay', lang),
-  participants: t('webinars.participants', lang),
-};
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+
+// SSR: fetch webinars server-side
+const sb = createClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+);
+
+const { data: rawWebinars } = await sb.rpc('list_webinars_v2', {});
+const webinars = Array.isArray(rawWebinars) ? rawWebinars : [];
+const now = Date.now();
+
+const upcoming = webinars.filter((w: any) =>
+  w.status === 'confirmed' && new Date(w.scheduled_at).getTime() > now
+);
+const replays = webinars.filter((w: any) =>
+  w.status === 'completed' && w.youtube_url
+);
+
+function fmtDate(iso: string): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return String(iso).slice(0, 10);
+  return d.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' });
+}
+function fmtTime(iso: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+}
 ---
 
 <BaseLayout title={`${t('webinars.title', lang)} — Núcleo IA & GP`} activePage="webinars" lang={lang}>
+  <meta slot="head" property="og:title" content={t('webinars.title', lang)} />
+  <meta slot="head" property="og:description" content={t('webinars.subtitle', lang)} />
+  <meta slot="head" property="og:url" content={`https://nucleoia.vitormr.dev${langPrefix}/webinars`} />
+
   <main class="max-w-[900px] mx-auto px-4 py-8">
     <div class="mb-6">
       <h1 class="text-2xl font-extrabold text-navy mb-2">{t('webinars.title', lang)}</h1>
@@ -20,147 +54,71 @@ const i18nWebinars = {
       </p>
     </div>
 
-    <div id="pub-loading" class="text-center py-12 text-[var(--text-muted)]">{t('common.loading', lang)}</div>
+    {!upcoming.length && !replays.length ? (
+      <div class="text-center py-12">
+        <div class="text-4xl mb-3">🎙️</div>
+        <p class="text-sm font-semibold text-[var(--text-secondary)]">{t('webinars.empty', lang)}</p>
+        <p class="text-[.78rem] text-[var(--text-muted)] mt-1">{t('webinars.emptyHint', lang)}</p>
+      </div>
+    ) : (
+      <>
+        {upcoming.length > 0 && (
+          <section class="mb-8">
+            <h2 class="text-lg font-bold text-navy mb-3">{t('webinars.upcoming', lang)}</h2>
+            <div class="space-y-3">
+              {upcoming.map((w: any) => (
+                <article class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
+                  <div class="flex items-start justify-between gap-4 flex-wrap">
+                    <div class="min-w-0 flex-1">
+                      <h3 class="text-base font-bold text-navy">{w.title}</h3>
+                      {w.description && <p class="text-sm text-[var(--text-secondary)] mt-1">{w.description}</p>}
+                      <div class="flex items-center gap-3 flex-wrap mt-3 text-[.78rem] text-[var(--text-secondary)]">
+                        <span class="font-semibold">{fmtDate(w.scheduled_at)}</span>
+                        <span>{fmtTime(w.scheduled_at)}</span>
+                        <span>&middot;</span>
+                        <span>{w.duration_min} min</span>
+                        {w.tribe_name && <><span>&middot;</span><span>{w.tribe_name}</span></>}
+                        {w.chapter_code !== 'ALL' && <><span>&middot;</span><span class="font-semibold">PMI-{w.chapter_code}</span></>}
+                      </div>
+                    </div>
+                    <div class="shrink-0">
+                      {w.meeting_link
+                        ? <a href={w.meeting_link} target="_blank" rel="noopener" class="px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold no-underline hover:opacity-90">{t('webinars.join', lang)}</a>
+                        : <span class="text-[.78rem] text-[var(--text-muted)]">{t('webinars.linkSoon', lang)}</span>
+                      }
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
 
-    <section id="webinars-upcoming-section" class="hidden mb-8">
-      <h2 class="text-lg font-bold text-navy mb-3">{t('webinars.upcoming', lang)}</h2>
-      <div id="webinars-upcoming-list" class="space-y-3"></div>
-    </section>
-
-    <section id="webinars-past-section" class="hidden">
-      <h2 class="text-lg font-bold text-navy mb-3">{t('webinars.replays', lang)}</h2>
-      <div id="webinars-past-list" class="space-y-3"></div>
-    </section>
-
-    <div id="webinars-empty" class="hidden text-center py-12">
-      <div class="text-4xl mb-3">🎙️</div>
-      <p class="text-sm font-semibold text-[var(--text-secondary)]">{t('webinars.empty', lang)}</p>
-      <p class="text-[.78rem] text-[var(--text-muted)] mt-1">{t('webinars.emptyHint', lang)}</p>
-    </div>
+        {replays.length > 0 && (
+          <section>
+            <h2 class="text-lg font-bold text-navy mb-3">{t('webinars.replays', lang)}</h2>
+            <div class="space-y-3">
+              {replays.map((w: any) => (
+                <article class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
+                  <div class="flex items-start justify-between gap-4 flex-wrap">
+                    <div class="min-w-0 flex-1">
+                      <h3 class="text-base font-bold text-navy">{w.title}</h3>
+                      <div class="flex items-center gap-3 flex-wrap mt-2 text-[.78rem] text-[var(--text-secondary)]">
+                        <span>{fmtDate(w.scheduled_at)}</span>
+                        {w.tribe_name && <><span>&middot;</span><span>{w.tribe_name}</span></>}
+                        {w.attendee_count > 0 && <><span>&middot;</span><span>{w.attendee_count} {t('webinars.participants', lang)}</span></>}
+                      </div>
+                    </div>
+                    <a href={w.youtube_url} target="_blank" rel="noopener" class="shrink-0 px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold no-underline hover:opacity-90">
+                      {t('webinars.watchReplay', lang)}
+                    </a>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+      </>
+    )}
   </main>
 </BaseLayout>
-
-<script define:vars={{ locale, i18nWebinars }}>
-  import { createClient } from '@supabase/supabase-js';
-
-  function esc(s) {
-    return String(s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  }
-  function fmtDate(iso) {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return String(iso).slice(0, 10);
-    return d.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' });
-  }
-  function fmtTime(iso) {
-    if (!iso) return '';
-    const d = new Date(iso);
-    if (isNaN(d.getTime())) return '';
-    return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
-  }
-
-  function upcomingCard(w) {
-    const meetBtn = w.meeting_link
-      ? `<a href="${esc(w.meeting_link)}" target="_blank" rel="noopener" class="px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold no-underline hover:opacity-90">${i18nWebinars.join}</a>`
-      : `<span class="text-[.78rem] text-[var(--text-muted)]">${i18nWebinars.linkSoon}</span>`;
-    return `
-      <article class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
-        <div class="flex items-start justify-between gap-4 flex-wrap">
-          <div class="min-w-0 flex-1">
-            <h3 class="text-base font-bold text-navy">${esc(w.title)}</h3>
-            ${w.description ? `<p class="text-sm text-[var(--text-secondary)] mt-1">${esc(w.description)}</p>` : ''}
-            <div class="flex items-center gap-3 flex-wrap mt-3 text-[.78rem] text-[var(--text-secondary)]">
-              <span class="font-semibold">${fmtDate(w.scheduled_at)}</span>
-              <span>${fmtTime(w.scheduled_at)}</span>
-              <span>&middot;</span>
-              <span>${w.duration_min} min</span>
-              ${w.tribe_name ? `<span>&middot;</span><span>${esc(w.tribe_name)}</span>` : ''}
-              ${w.chapter_code !== 'ALL' ? `<span>&middot;</span><span class="font-semibold">PMI-${w.chapter_code}</span>` : ''}
-            </div>
-          </div>
-          <div class="shrink-0">${meetBtn}</div>
-        </div>
-      </article>
-    `;
-  }
-
-  function replayCard(w) {
-    return `
-      <article class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
-        <div class="flex items-start justify-between gap-4 flex-wrap">
-          <div class="min-w-0 flex-1">
-            <h3 class="text-base font-bold text-navy">${esc(w.title)}</h3>
-            <div class="flex items-center gap-3 flex-wrap mt-2 text-[.78rem] text-[var(--text-secondary)]">
-              <span>${fmtDate(w.scheduled_at)}</span>
-              ${w.tribe_name ? `<span>&middot;</span><span>${esc(w.tribe_name)}</span>` : ''}
-              ${w.attendee_count > 0 ? `<span>&middot;</span><span>${w.attendee_count} ${i18nWebinars.participants}</span>` : ''}
-            </div>
-          </div>
-          <a href="${esc(w.youtube_url)}" target="_blank" rel="noopener" class="shrink-0 px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-semibold no-underline hover:opacity-90">
-            ${i18nWebinars.watchReplay}
-          </a>
-        </div>
-      </article>
-    `;
-  }
-
-  async function boot() {
-    const loading = document.getElementById('pub-loading');
-    const emptyEl = document.getElementById('webinars-empty');
-    const upSection = document.getElementById('webinars-upcoming-section');
-    const upList = document.getElementById('webinars-upcoming-list');
-    const pastSection = document.getElementById('webinars-past-section');
-    const pastList = document.getElementById('webinars-past-list');
-
-    try {
-      const navSb = window.navGetSb?.();
-      const sb = navSb || createClient(
-        'https://ldrfrvwhxsmgaabwmaik.supabase.co',
-        document.querySelector('meta[name="sb-anon"]')?.getAttribute('content') || ''
-      );
-
-      const { data, error } = await sb.rpc('list_webinars_v2', {});
-      if (error) throw error;
-
-      const webinars = Array.isArray(data) ? data : (data ? JSON.parse(data) : []);
-      const now = Date.now();
-
-      const upcoming = webinars.filter(w =>
-        w.status === 'confirmed' && new Date(w.scheduled_at).getTime() > now
-      );
-      const replays = webinars.filter(w =>
-        w.status === 'completed' && w.youtube_url
-      );
-
-      loading.classList.add('hidden');
-
-      if (!upcoming.length && !replays.length) {
-        emptyEl.classList.remove('hidden');
-        return;
-      }
-
-      if (upcoming.length) {
-        upSection.classList.remove('hidden');
-        upList.innerHTML = upcoming.map(upcomingCard).join('');
-      }
-      if (replays.length) {
-        pastSection.classList.remove('hidden');
-        pastList.innerHTML = replays.map(replayCard).join('');
-      }
-      try { if (window.posthog) window.posthog.capture('webinars_public_viewed', { upcoming: upcoming.length, replays: replays.length }); } catch(e) {}
-    } catch (err) {
-      console.warn('Public webinars:', err);
-      loading.classList.add('hidden');
-      emptyEl.classList.remove('hidden');
-    }
-  }
-
-  let booted = false;
-  function tryBoot() { if (booted) return; if (window.navGetSb?.()) { booted = true; boot(); } }
-  tryBoot();
-  if (!booted) {
-    window.addEventListener('nav:member', () => tryBoot(), { once: true });
-    const poll = setInterval(function() { if (window.navGetSb?.()) { clearInterval(poll); tryBoot(); } }, 300);
-    setTimeout(function() { clearInterval(poll); tryBoot(); }, 5000);
-  }
-</script>
