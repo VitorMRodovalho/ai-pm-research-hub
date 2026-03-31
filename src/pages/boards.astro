@@ -10,6 +10,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     <div id="boards-loading" class="text-center py-10 text-[var(--text-muted)]">{t('common.loading', lang)}</div>
     <div id="boards-list" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
   </main>
+  <span id="i18n-noBoards" class="hidden">{t('boards.empty', lang)}</span>
+  <span id="i18n-loadError" class="hidden">{t('boards.loadError', lang)}</span>
 </BaseLayout>
 
 <script>
@@ -31,7 +33,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       list.classList.remove('hidden');
 
       if (!boards.length) {
-        list.innerHTML = '<div class="col-span-full text-center py-10 text-[var(--text-muted)]">Nenhum quadro disponível.</div>';
+        list.innerHTML = `<div class="col-span-full text-center py-10 text-[var(--text-muted)]">${document.getElementById('i18n-noBoards')?.textContent || 'No boards available.'}</div>`;
         return;
       }
 
@@ -51,7 +53,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         </a>`;
       }).join('');
     } catch (e: any) {
-      loading.textContent = 'Erro ao carregar quadros.';
+      loading.textContent = document.getElementById('i18n-loadError')?.textContent || 'Error loading boards.';
       console.warn('Boards load error:', e);
     }
   }

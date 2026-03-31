@@ -204,7 +204,7 @@ const WK = {
           <span class="text-lg">📄</span> {WK.myPublications || 'Minhas Publicações'}
         </h2>
         <div id="wk-my-pubs-card" class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5">
-          <p class="text-xs text-[var(--text-secondary)]">Carregando...</p>
+          <p class="text-xs text-[var(--text-secondary)]">{t('common.loading', lang)}</p>
         </div>
       </section>
 
@@ -592,8 +592,8 @@ const WK = {
             const parts = Object.entries(counts).map(([k, v]) => `${v} ${STATUS_PT[k] || k}`);
             $myPubsCard.innerHTML = `
               <div class="flex items-center justify-between">
-                <p class="text-sm text-[var(--text-secondary)]">${mySubs.length > 0 ? parts.join(' &middot; ') : 'Nenhuma submissão ainda'}</p>
-                <a href="/publications" class="text-xs font-bold text-teal no-underline hover:underline">Ver todas &rarr;</a>
+                <p class="text-sm text-[var(--text-secondary)]">${mySubs.length > 0 ? parts.join(' &middot; ') : (document.getElementById('i18n-noSubmissions')?.textContent || 'No submissions yet')}</p>
+                <a href="/publications" class="text-xs font-bold text-teal no-underline hover:underline">${document.getElementById('i18n-viewAll')?.textContent || 'View all'} &rarr;</a>
               </div>
             `;
             $myPubsSection.classList.remove('hidden');
@@ -802,4 +802,6 @@ const WK = {
       await loadWorkspaceData();
     })();
   </script>
+  <span id="i18n-noSubmissions" class="hidden">{t('workspace.noSubmissions', lang)}</span>
+  <span id="i18n-viewAll" class="hidden">{t('workspace.viewAll', lang)}</span>
 </BaseLayout>
