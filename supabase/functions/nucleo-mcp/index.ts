@@ -1,5 +1,5 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.8.0 — 48 tools (41R + 7W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.8.0 — 49 tools (42R + 7W) + 1 prompt + 1 resource + usage logging
 // Transport: SDK 1.28.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
@@ -902,7 +902,18 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // TOOL 48: manage_partner — Write: create/update partner entities
+  // TOOL 48: list_boards — All authenticated members
+  mcp.tool("list_boards", "Returns all active boards with their IDs, names, scope, and tribe. Use this to find board_id for create_board_card.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_boards", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.from("project_boards").select("id, board_name, board_scope, tribe_id, domain_key").eq("is_active", true).order("tribe_id", { ascending: true, nullsFirst: false });
+    if (error) { await logUsage(sb, member.id, "list_boards", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_boards", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 49: manage_partner — Write: create/update partner entities
   mcp.tool("manage_partner", "Create or update a partner entity in the pipeline. Sponsors/Admin only.", {
     action: z.string().describe("create|update"),
     id: z.string().optional().describe("UUID of partner (required for update)"),
@@ -963,6 +974,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.8.0", tools: 48, transport: "native-streamable-http", sdk: "1.28.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.8.0", tools: 49, transport: "native-streamable-http", sdk: "1.28.0" }));
 
 Deno.serve(app.fetch);
