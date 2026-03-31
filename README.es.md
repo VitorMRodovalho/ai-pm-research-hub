@@ -152,9 +152,11 @@ sequenceDiagram
 | Compatibilidad | Estado |
 |----------------|--------|
 | Claude.ai | Verificado (29 herramientas) |
-| Claude Code | Estable |
-| ChatGPT | Compatible (beta) |
-| Cursor / VS Code | Compatible |
+| Claude Code | Verificado |
+| ChatGPT | Verificado (beta) |
+| Perplexity | Verificado |
+| Cursor / VS Code | Verificado |
+| Manus AI | Verificado (JSON import) |
 
 **[Guia de Configuracion MCP](docs/MCP_SETUP_GUIDE.md)**
 
