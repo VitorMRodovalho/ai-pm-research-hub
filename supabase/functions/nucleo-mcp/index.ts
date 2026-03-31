@@ -85,6 +85,17 @@ function registerKnowledge(mcp: McpServer, sb: ReturnType<typeof createClient>) 
 - **Designações:** ${designations.length > 0 ? designations.join(", ") : "nenhuma"}
 - **Capítulo:** ${member.chapter || "não definido"}`);
 
+      // Onboarding hint for new members
+      if (!isAdmin && !isLeader) {
+        sections.push(`## Bem-vindo ao Núcleo IA & GP
+Se é sua primeira vez usando o MCP, aqui estão 3 comandos para começar:
+1. **"Qual meu XP e posição no ranking?"** → usa \`get_my_xp_and_ranking\`
+2. **"Quais eventos tenho esta semana?"** → usa \`get_upcoming_events\`
+3. **"Buscar recursos sobre prompt engineering"** → usa \`search_hub_resources\`
+
+Você pode perguntar em linguagem natural — o assistente escolhe a ferramenta certa automaticamente.`);
+      }
+
       // Tier 1 — everyone
       sections.push(`## Ferramentas disponíveis para você
 
