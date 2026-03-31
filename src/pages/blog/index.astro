@@ -41,8 +41,8 @@ const langKey = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
     container?.classList.remove('hidden');
 
     container.innerHTML = data.map(p => {
-      const title = p.title?.[langKey] || p.title?.pt || '';
-      const excerpt = p.excerpt?.[langKey] || p.excerpt?.pt || '';
+      const title = p.title?.[langKey] || p.title?.['pt-BR'] || p.title?.pt || '';
+      const excerpt = p.excerpt?.[langKey] || p.excerpt?.['pt-BR'] || p.excerpt?.pt || '';
       const date = p.published_at ? new Date(p.published_at).toLocaleDateString(langKey === 'pt' ? 'pt-BR' : langKey === 'es' ? 'es-ES' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
       const catBadge = { 'case-study': 'bg-blue-900/30 text-blue-300', tutorial: 'bg-green-900/30 text-green-300', announcement: 'bg-purple-900/30 text-purple-300', opinion: 'bg-amber-900/30 text-amber-300' }[p.category] || 'bg-gray-700 text-gray-300';
 
