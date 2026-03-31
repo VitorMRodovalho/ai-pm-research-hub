@@ -42,6 +42,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     <div id="notif-loading" class="text-center py-16 text-[var(--text-muted)]">{t('common.loading', lang)}</div>
   </div>
   <Toast />
+  <span id="i18n-notifLoadError" class="hidden">{t('notifications.loadError', lang)}</span>
 </BaseLayout>
 
 <script>
@@ -114,7 +115,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       });
     } catch (e: any) {
       console.error('Notifications load:', e);
-      list.innerHTML = '<p class="text-sm text-red-600 text-center py-4">Erro ao carregar notificações</p>';
+      list.innerHTML = `<p class="text-sm text-red-600 text-center py-4">${document.getElementById('i18n-notifLoadError')?.textContent || 'Error loading notifications'}</p>`;
     }
   }
 
