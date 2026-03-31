@@ -56,6 +56,8 @@ const GAM_I18N = {
   mpPtsLabel: t('gamification.mp.ptsLabel', lang),
   certTitle: t('gamification.cert.title', lang),
   certEmpty: t('gamification.cert.empty', lang),
+  certNoCert: t('gamification.cert.noCert', lang),
+  noMemberFound: t('gamification.noMemberFound', lang),
   certIssue: t('gamification.cert.issue', lang),
   certSelect: t('gamification.cert.select', lang),
   certParticipant: t('gamification.cert.participant', lang),
@@ -485,7 +487,7 @@ const SCORING_I18N = {
               </div>
             </div>
             <div id="bulk-member-list" class="max-h-[280px] overflow-y-auto border border-[var(--border-default)] rounded-lg bg-[var(--surface-base)]">
-              <div class="p-3 text-center text-[var(--text-muted)] text-xs">Carregando...</div>
+              <div class="p-3 text-center text-[var(--text-muted)] text-xs">{t('common.loading', lang)}</div>
             </div>
           </div>
           <div id="bulk-preview" class="hidden mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-[12px] text-amber-800"></div>
@@ -1539,7 +1541,7 @@ const SCORING_I18N = {
     const certs = data.certificates || [];
     const tableEl = document.getElementById('manage-certs-table');
     if (!tableEl) return;
-    if (certs.length === 0) { tableEl.innerHTML = '<p class="text-center py-4 text-[var(--text-muted)]">Nenhum certificado.</p>'; return; }
+    if (certs.length === 0) { tableEl.innerHTML = `<p class="text-center py-4 text-[var(--text-muted)]">${I.certNoCert || 'No certificates.'}</p>`; return; }
     const STATUS_BADGE: Record<string, string> = { issued: 'bg-emerald-100 text-emerald-700', draft: 'bg-amber-100 text-amber-700', revoked: 'bg-red-100 text-red-700' };
     tableEl.innerHTML = `<div class="overflow-x-auto"><table class="w-full text-[11px]"><thead><tr class="bg-[var(--surface-section-cool)]">
       <th class="px-2 py-2 text-left">Participante</th><th class="px-2 py-2">Tipo</th><th class="px-2 py-2">Título</th><th class="px-2 py-2">Período</th><th class="px-2 py-2">Código</th><th class="px-2 py-2">Status</th><th class="px-2 py-2">Ações</th>
@@ -1600,7 +1602,7 @@ const SCORING_I18N = {
         <span class="text-[10px] text-[var(--text-muted)]">${m.operational_role || ''}</span>
         ${hasExisting ? `<span class="text-[9px] px-1 py-0.5 rounded bg-amber-100 text-amber-700">⚠️ ${I.certAlreadyIssued}</span>` : ''}
       </label>`;
-    }).join('') || '<div class="p-3 text-center text-xs text-[var(--text-muted)]">Nenhum membro encontrado</div>';
+    }).join('') || `<div class="p-3 text-center text-xs text-[var(--text-muted)]">${I.noMemberFound || 'No member found'}</div>`;
     updateBulkCounter();
   }
 

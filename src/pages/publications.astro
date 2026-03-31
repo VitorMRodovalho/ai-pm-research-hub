@@ -161,6 +161,7 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
 <span id="pub-i18n-bibtex" class="hidden">BibTeX</span>
 <span id="pub-i18n-read" class="hidden">{t('publications.readMore', lang)}</span>
 <span id="pub-i18n-featured" class="hidden">{t('publications.featured', lang)}</span>
+<span id="pub-i18n-createError" class="hidden">{t('publications.createError', lang)}</span>
 
 <script>
   import { hasPermission } from '../lib/permissions';
@@ -463,7 +464,7 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
     });
 
     if (error) {
-      (window as any).toast?.('Erro ao criar submissão', 'error');
+      (window as any).toast?.(document.getElementById('pub-i18n-createError')?.textContent || 'Error creating submission', 'error');
       return;
     }
     (window as any).toast?.('Submissão criada!', 'success');
