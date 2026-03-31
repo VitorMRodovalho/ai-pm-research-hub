@@ -427,7 +427,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     const now = new Date().toISOString();
-    const { data, error } = await sb.from("announcements").select("id, title, message, type, link_url, link_text, starts_at").eq("is_active", true).lte("starts_at", now).order("created_at", { ascending: false }).limit(5);
+    const { data, error } = await sb.from("announcements").select("id, title, message, message_en, message_es, type, link_url, link_text, starts_at, ends_at").eq("is_active", true).lte("starts_at", now).order("created_at", { ascending: false }).limit(5);
     if (error) { await logUsage(sb, member?.id, "get_hub_announcements", false, error.message, start); return err(error.message); }
     await logUsage(sb, member?.id, "get_hub_announcements", true, undefined, start);
     return ok(data);
