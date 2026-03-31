@@ -411,7 +411,7 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
       .sort((a, b) => a._action.priority - b._action.priority)
       .slice(0, 6);
     if (!items.length) {
-      el.innerHTML = `<div class="text-sm text-[var(--text-muted)] text-center py-4">Nenhum webinar cadastrado.</div>`;
+      el.innerHTML = `<div class="text-sm text-[var(--text-muted)] text-center py-4">${document.getElementById('i18n-noUpcoming')?.textContent || 'No webinar registered.'}</div>`;
       return;
     }
     el.innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-2 gap-3">${items.map((w: any) => `

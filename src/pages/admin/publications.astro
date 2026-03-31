@@ -179,7 +179,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       </div>
     </div>
 
-    <div id="pub-loading" class="text-center py-16 text-[var(--text-muted)]">Carregando...</div>
+    <div id="pub-loading" class="text-center py-16 text-[var(--text-muted)]">{t('common.loading', lang)}</div>
   </div>
   <Toast />
   <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>

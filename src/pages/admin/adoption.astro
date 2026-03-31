@@ -258,6 +258,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     <div id="adp-loading" class="text-center py-16 text-[var(--text-muted)]">{t('common.loading', lang)}</div>
   </div>
   <Toast />
+  <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>
+  <span id="ai18n-pres" class="hidden">{t('admin.presidentWarning', lang)}</span>
 </AdminLayout>
 
 <script>
@@ -371,7 +373,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       // Alert if sponsors have 0 auth
       if ((lc.sponsors_with_auth || 0) === 0) {
         stEl.innerHTML += `<div class="mt-2 p-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-[11px] text-red-700 dark:text-red-400">
-          ⚠️ Nenhum presidente logou na plataforma. O workflow de aprovação de CRs requer auth.
+          ${document.getElementById('ai18n-pres')?.textContent || 'No president has logged in. CR approval workflow requires auth.'}
         </div>`;
       }
     }
@@ -443,7 +445,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
           <div class="text-center"><div class="text-xl font-extrabold text-[var(--text-muted)]">—</div><div class="text-[.6rem] text-[var(--text-muted)]">Top Tool</div></div>
         </div>
         <div class="text-[.72rem] text-[var(--text-muted)] bg-[var(--surface-base)] rounded-lg p-3">
-          Nenhum lider conectou ainda. O MCP server esta ativo com 19 tools.
+          ${document.getElementById('ai18n-nor')?.textContent || 'No leader connected yet.'} MCP server: 47 tools.
         </div>`;
       return;
     }
@@ -686,7 +688,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const rageEl = document.getElementById('chart-rage')!;
     const rageTotal = rage?.series?.[0]?.count || 0;
     if (rageTotal === 0) {
-      rageEl.innerHTML = `<div class="text-center"><div class="text-4xl font-extrabold text-emerald-600">0</div><div class="text-sm text-emerald-600 mt-1">Nenhum clique de frustracao</div></div>`;
+      rageEl.innerHTML = `<div class="text-center"><div class="text-4xl font-extrabold text-emerald-600">0</div><div class="text-sm text-emerald-600 mt-1">${document.getElementById('ai18n-nor')?.textContent || 'No rage clicks'}</div></div>`;
     } else {
       const color = rageTotal > 50 ? 'text-red-600' : rageTotal > 10 ? 'text-amber-600' : 'text-[var(--text-primary)]';
       rageEl.innerHTML = `<div class="text-center"><div class="text-4xl font-extrabold ${color}">${rageTotal}</div><div class="text-sm ${color} mt-1">cliques de frustracao</div><div class="text-[.68rem] text-[var(--text-muted)] mt-2">nos ultimos ${analyticsPeriod} dias</div></div>`;
@@ -768,7 +770,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         const shortId = insight.short_id || '';
         const href = shortId ? `https://us.posthog.com/project/334261/insights/${shortId}` : '#';
         return `<article class="rounded-xl border border-[var(--border-default)] p-3"><div class="flex items-center justify-between gap-2"><span class="text-[.78rem] font-semibold text-navy truncate">${esc(name)}</span><a href="${esc(href)}" target="_blank" rel="noopener" class="text-[.68rem] text-teal no-underline hover:underline shrink-0">Abrir</a></div></article>`;
-      }).join('')}</div>` : '<div class="text-sm text-[var(--text-muted)] text-center py-4">Nenhum insight encontrado.</div>';
+      }).join('')}</div>` : `<div class="text-sm text-[var(--text-muted)] text-center py-4">${document.getElementById('ai18n-nor')?.textContent || 'No insights found.'}</div>`;
     }
 
     analyticsLoaded = true;
