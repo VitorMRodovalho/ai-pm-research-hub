@@ -1,5 +1,5 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.8.0 — 47 tools (41R + 6W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.8.0 — 48 tools (41R + 7W) + 1 prompt + 1 resource + usage logging
 // Transport: SDK 1.28.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
@@ -426,16 +426,21 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   // ===== WRITE TOOLS (11-15, 18) =====
 
   // TOOL 11: create_board_card
-  mcp.tool("create_board_card", "Create a new card on your tribe's board.", { title: z.string().describe("Card title"), description: z.string().optional().describe("Card description"), priority: z.string().optional().describe("low|medium|high|urgent"), due_date: z.string().optional().describe("Due date YYYY-MM-DD"), tags: z.string().optional().describe("Comma-separated tags") }, async (params: any) => {
+  mcp.tool("create_board_card", "Create a new card on a board. If board_id is omitted, uses your tribe's default board.", { title: z.string().describe("Card title"), description: z.string().optional().describe("Card description"), priority: z.string().optional().describe("low|medium|high|urgent"), due_date: z.string().optional().describe("Due date YYYY-MM-DD"), tags: z.string().optional().describe("Comma-separated tags"), board_id: z.string().optional().describe("UUID of the board. Required if you have no tribe_id.") }, async (params: any) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "create_board_card", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!canWrite(member)) { await logUsage(sb, member.id, "create_board_card", false, "Unauthorized", start); return err("Unauthorized"); }
-    const { data: board } = await sb.from("project_boards").select("id").eq("tribe_id", member.tribe_id).limit(1).single();
-    if (!board) { await logUsage(sb, member.id, "create_board_card", false, "No board", start); return err("No board found."); }
+    let boardId = params.board_id;
+    if (!boardId) {
+      if (!member.tribe_id) { await logUsage(sb, member.id, "create_board_card", false, "No board", start); return err("No tribe assigned. Pass board_id explicitly. Use get_portfolio_overview to find board IDs."); }
+      const { data: board } = await sb.from("project_boards").select("id").eq("tribe_id", member.tribe_id).limit(1).single();
+      if (!board) { await logUsage(sb, member.id, "create_board_card", false, "No board", start); return err("No board found for your tribe."); }
+      boardId = board.id;
+    }
     const tags = params.tags ? String(params.tags).split(",").map((t: string) => t.trim()) : [];
     if (params.priority && params.priority !== "medium") tags.push(`priority:${params.priority}`);
-    const { data: cardId, error } = await sb.rpc("create_board_item", { p_board_id: board.id, p_title: params.title, p_description: params.description || null, p_tags: tags, p_due_date: params.due_date || null });
+    const { data: cardId, error } = await sb.rpc("create_board_item", { p_board_id: boardId, p_title: params.title, p_description: params.description || null, p_tags: tags, p_due_date: params.due_date || null });
     if (error) { await logUsage(sb, member.id, "create_board_card", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "create_board_card", true, undefined, start);
     return ok({ action: "create_board_card", status: "created", id: cardId });
@@ -896,6 +901,38 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "get_board_activities", true, undefined, start);
     return ok(data);
   });
+
+  // TOOL 48: manage_partner — Write: create/update partner entities
+  mcp.tool("manage_partner", "Create or update a partner entity in the pipeline. Sponsors/Admin only.", {
+    action: z.string().describe("create|update"),
+    id: z.string().optional().describe("UUID of partner (required for update)"),
+    name: z.string().optional().describe("Partner name (required for create)"),
+    entity_type: z.string().optional().describe("pmi_chapter|academia|empresa|community|research|association|outro"),
+    status: z.string().optional().describe("prospect|contact|negotiation|active|inactive|churned"),
+    contact_name: z.string().optional().describe("Contact person name"),
+    contact_email: z.string().optional().describe("Contact email"),
+    notes: z.string().optional().describe("Free-text notes"),
+    chapter: z.string().optional().describe("Chapter code (e.g. US-WDC, GO, CE)")
+  }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "manage_partner", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("admin_manage_partner_entity", {
+      p_action: params.action,
+      p_id: params.id || null,
+      p_name: params.name || null,
+      p_entity_type: params.entity_type || null,
+      p_status: params.status || null,
+      p_contact_name: params.contact_name || null,
+      p_contact_email: params.contact_email || null,
+      p_notes: params.notes || null,
+      p_chapter: params.chapter || null,
+    });
+    if (error) { await logUsage(sb, member.id, "manage_partner", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "manage_partner", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "manage_partner", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -926,6 +963,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.8.0", tools: 47, transport: "native-streamable-http", sdk: "1.28.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.8.0", tools: 48, transport: "native-streamable-http", sdk: "1.28.0" }));
 
 Deno.serve(app.fetch);
