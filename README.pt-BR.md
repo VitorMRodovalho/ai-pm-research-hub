@@ -120,7 +120,7 @@ graph LR
 
 ## Servidor MCP — Integracao com IA
 
-Qualquer membro pode conectar Claude, ChatGPT, Perplexity, Cursor ou VS Code a plataforma via Model Context Protocol. 29 ferramentas (23 leitura + 6 escrita) autenticadas via OAuth 2.1 com Row Level Security.
+Qualquer membro pode conectar Claude, ChatGPT, Perplexity, Cursor ou VS Code a plataforma via Model Context Protocol. 29 ferramentas (23 leitura + 6 escrita) autenticadas via OAuth 2.1 com Row Level Security. Auto-refresh server-side mantem sessoes ativas por ate 30 dias sem reconexao manual.
 
 ```
 https://nucleoia.vitormr.dev/mcp

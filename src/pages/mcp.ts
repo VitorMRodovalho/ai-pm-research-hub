@@ -7,6 +7,7 @@ async function kvLog(endpoint: string, data: any) {
 
 const UPSTREAM = 'https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-mcp/mcp';
 const BASE = 'https://nucleoia.vitormr.dev';
+const SUPABASE_URL = 'https://ldrfrvwhxsmgaabwmaik.supabase.co';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -14,6 +15,39 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
   'Access-Control-Expose-Headers': 'Mcp-Session-Id',
 };
+
+// Decode JWT payload without verification (safe for reading sub/exp from our own tokens)
+function decodeJwtPayload(token: string): { sub?: string; exp?: number } | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    return JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+  } catch { return null; }
+}
+
+// Try to refresh an expired token using the stored refresh_token in KV
+async function tryAutoRefresh(sub: string, kv: any): Promise<string | null> {
+  const refreshToken = await kv.get(`mcp_refresh:${sub}`);
+  if (!refreshToken) return null;
+
+  const ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || '';
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY },
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (!data.access_token) return null;
+
+  // Update KV with new refresh_token
+  if (data.refresh_token) {
+    await kv.put(`mcp_refresh:${sub}`, data.refresh_token, { expirationTtl: 2592000 }); // 30 days
+  }
+
+  return data.access_token;
+}
 
 export const ALL: APIRoute = async ({ request }) => {
   const reqBody = request.method === 'POST' ? await request.clone().text() : null;
@@ -45,9 +79,32 @@ export const ALL: APIRoute = async ({ request }) => {
     });
   }
 
-  // Build upstream request
+  // ── Auto-refresh: check if JWT is expired and refresh transparently ──
+  let activeToken = authHeader.replace(/^Bearer\s+/i, '');
+  const kv = (env as any).SESSION;
+
+  if (kv) {
+    const payload = decodeJwtPayload(activeToken);
+    if (payload?.sub && payload?.exp) {
+      const now = Math.floor(Date.now() / 1000);
+      // Refresh if expired or will expire within 5 minutes
+      if (payload.exp - 300 < now) {
+        await kvLog("mcp-auto-refresh-attempt", { sub: payload.sub, exp: payload.exp, now });
+        const newToken = await tryAutoRefresh(payload.sub, kv);
+        if (newToken) {
+          activeToken = newToken;
+          await kvLog("mcp-auto-refresh-ok", { sub: payload.sub });
+        } else {
+          await kvLog("mcp-auto-refresh-fail", { sub: payload.sub });
+        }
+      }
+    }
+  }
+
+  // Build upstream request with (possibly refreshed) token
   const headers = new Headers();
-  for (const key of ['authorization', 'content-type', 'accept', 'mcp-session-id', 'last-event-id']) {
+  headers.set('authorization', `Bearer ${activeToken}`);
+  for (const key of ['content-type', 'accept', 'mcp-session-id', 'last-event-id']) {
     const val = request.headers.get(key);
     if (val) headers.set(key, val);
   }
@@ -56,9 +113,9 @@ export const ALL: APIRoute = async ({ request }) => {
     const upstream = new Request(UPSTREAM, {
       method: request.method,
       headers,
-      body: request.method !== 'GET' && request.method !== 'HEAD' ? request.body : null,
-      // @ts-ignore — duplex needed for streaming body in Workers
-      duplex: 'half',
+      body: request.method !== 'GET' && request.method !== 'HEAD'
+        ? (reqBody ?? null)
+        : null,
     });
 
     const res = await fetch(upstream);

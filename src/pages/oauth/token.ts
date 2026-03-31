@@ -72,11 +72,21 @@ export const POST: APIRoute = async ({ request }) => {
           });
         }
         await kvLog("token-refresh-ok", { newTokenLen: data.access_token.length });
+
+        // Update stored refresh_token for server-side auto-refresh
+        const newRefresh = data.refresh_token || refresh_token;
+        try {
+          const payload = JSON.parse(atob(data.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+          if (payload.sub) {
+            await kv.put(`mcp_refresh:${payload.sub}`, newRefresh, { expirationTtl: 2592000 }); // 30 days
+          }
+        } catch {}
+
         return new Response(JSON.stringify({
           access_token: data.access_token,
           token_type: 'Bearer',
           expires_in: data.expires_in || 3600,
-          refresh_token: data.refresh_token || refresh_token,
+          refresh_token: newRefresh,
         }), {
           status: 200,
           headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'Access-Control-Allow-Origin': '*' },
@@ -132,6 +142,18 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Return the Supabase access_token + refresh_token
     await kvLog("token-success", { tokenLen: stored.access_token?.length, hasRefresh: !!stored.refresh_token });
+
+    // Store refresh_token in KV keyed by user_id for server-side auto-refresh
+    if (stored.refresh_token) {
+      try {
+        const payload = JSON.parse(atob(stored.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        if (payload.sub) {
+          await kv.put(`mcp_refresh:${payload.sub}`, stored.refresh_token, { expirationTtl: 2592000 }); // 30 days
+          await kvLog("token-refresh-stored", { sub: payload.sub });
+        }
+      } catch {}
+    }
+
     const tokenResponse: Record<string, any> = {
       access_token: stored.access_token,
       token_type: 'Bearer',
