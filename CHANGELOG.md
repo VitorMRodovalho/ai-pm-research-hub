@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-03-31 — v2.7.1 MCP Auto-Refresh: Transparent Token Renewal
+
+### MCP
+- **Server-side auto-refresh:** Worker proxy now detects expired JWTs before forwarding to upstream, refreshes transparently using stored `refresh_token` from KV (30-day TTL). Users stay connected for up to 30 days without re-authentication.
+- Token endpoint (`/oauth/token`) now stores `mcp_refresh:{user_id}` in KV on both `authorization_code` and `refresh_token` grants.
+- MCP proxy decodes JWT payload, checks `exp` with 5-minute buffer, and auto-refreshes via Supabase Auth API when expired.
+- Eliminates dependency on MCP host implementing `grant_type=refresh_token` (most hosts don't yet).
+
+### Blog
+- Updated MCP Server Launch post (3 languages) with new "Continuous sessions: transparent auto-refresh" section explaining the best practice.
+
+### Documentation
+- CLAUDE.md version bump to v2.7.1
+- MCP rules updated with auto-refresh architecture details
+
 ## 2026-03-31 — v2.7.0 Sprint 10: OAuth Refresh, WCAG AA, MCP Health, Campaign Tracking
 
 ### MCP

@@ -120,7 +120,7 @@ graph LR
 
 ## MCP Server — AI Integration
 
-Any member can connect Claude, ChatGPT, Perplexity, Cursor, or VS Code to the platform via the Model Context Protocol. 29 tools (23 read + 6 write) authenticated via OAuth 2.1 with full Row Level Security enforcement.
+Any member can connect Claude, ChatGPT, Perplexity, Cursor, or VS Code to the platform via the Model Context Protocol. 29 tools (23 read + 6 write) authenticated via OAuth 2.1 with full Row Level Security enforcement. Server-side auto-refresh keeps sessions alive for up to 30 days without manual reconnection.
 
 ```
 https://nucleoia.vitormr.dev/mcp
@@ -142,9 +142,15 @@ sequenceDiagram
     S-->>W: JWT
     W-->>User: authorization code
     User->>W: POST /oauth/token (PKCE)
-    W-->>User: access_token
+    W-->>User: access_token + refresh_token
+    Note over W: Stores refresh_token in KV (30d TTL)
     User->>W: POST /mcp + Bearer token
-    W->>EF: Proxy with JWT
+    W->>W: Check JWT exp (5min buffer)
+    alt Token expired
+        W->>S: Refresh via stored token
+        S-->>W: New JWT
+    end
+    W->>EF: Proxy with valid JWT
     EF->>EF: RLS-enforced query
     EF-->>User: Tool result
 ```

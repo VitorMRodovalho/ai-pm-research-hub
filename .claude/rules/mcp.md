@@ -3,7 +3,7 @@ description: MCP server rules and tool patterns
 globs: supabase/functions/nucleo-mcp/**
 ---
 
-# MCP Server Rules (nucleo-mcp v2.6.0)
+# MCP Server Rules (nucleo-mcp v2.7.1)
 
 ## Current State
 - 29 tools (23 read + 6 write)
@@ -57,3 +57,13 @@ mcp.tool("tool_name", "Description.", {}, async () => { ... });
 - Workers proxy streams SSE responses through without buffering
 - GET /mcp → 406 (native transport returns Not Acceptable when no session)
 - Transport handles: initialize, tools/list, tool/call, notifications, SSE streams
+
+## Auto-Refresh (v2.7.1 — server-side token renewal)
+- Worker proxy (`src/pages/mcp.ts`) decodes JWT `exp` before forwarding upstream
+- If expired or expiring within 5 minutes, looks up `mcp_refresh:{sub}` from KV
+- Calls Supabase Auth API directly (`/auth/v1/token?grant_type=refresh_token`)
+- Forwards request with new access_token — transparent to MCP host
+- KV keys: `mcp_refresh:{user_id}` with 30-day TTL (set at token issuance + refresh)
+- Token endpoint (`/oauth/token`) stores refresh_token in KV on both `authorization_code` and `refresh_token` grants
+- Supabase JWT TTL is 3600s (1h, not configurable via dashboard) — auto-refresh compensates
+- Best practice: never depend on MCP hosts to implement refresh — do it server-side
