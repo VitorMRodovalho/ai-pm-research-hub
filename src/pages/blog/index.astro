@@ -1,79 +1,100 @@
 ---
 /**
- * /blog — Public blog listing (published posts only)
+ * /blog — Public blog listing (SSR — posts rendered server-side for SEO)
+ * Like badges enhanced client-side via progressive enhancement.
  */
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import { createClient } from '@supabase/supabase-js';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
-const langKey = lang; // DB keys: pt-BR, en-US, es-LATAM — match Lang type directly
+const langKey = lang;
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+const locale = lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-ES' : 'pt-BR';
+
+// SSR: fetch published posts server-side
+const sb = createClient(
+  import.meta.env.PUBLIC_SUPABASE_URL,
+  import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+);
+
+const { data: posts } = await sb.from('blog_posts')
+  .select('id, slug, title, excerpt, category, tags, published_at, is_featured, cover_image_url, view_count, like_count')
+  .eq('status', 'published')
+  .order('published_at', { ascending: false });
+
+const catStyles: Record<string, string> = {
+  'case-study': 'status-info',
+  tutorial: 'status-success',
+  announcement: 'status-accent',
+  opinion: 'status-warning',
+};
 ---
 
 <BaseLayout activePage="blog" title={t('blog.title', lang)} lang={lang}>
+  <meta slot="head" property="og:title" content={t('blog.title', lang)} />
+  <meta slot="head" property="og:description" content={t('blog.subtitle', lang)} />
+  <meta slot="head" property="og:type" content="website" />
+  <meta slot="head" property="og:url" content={`https://nucleoia.vitormr.dev${langPrefix}/blog`} />
+
   <div class="max-w-[900px] mx-auto px-4 py-12">
     <h1 class="text-3xl font-bold text-[var(--fg)] mb-2">{t('blog.title', lang)}</h1>
     <p class="text-[var(--fg-muted)] mb-8">{t('blog.subtitle', lang)}</p>
 
-    <div id="blog-loading" class="text-center py-16 text-gray-400">{t('campaigns.loading', lang)}</div>
-    <div id="blog-posts" class="hidden space-y-6"></div>
-    <div id="blog-empty" class="hidden text-center py-16 text-[var(--fg-muted)]">{t('blog.noPosts', lang)}</div>
+    {!posts || posts.length === 0 ? (
+      <div class="text-center py-16 text-[var(--fg-muted)]">{t('blog.noPosts', lang)}</div>
+    ) : (
+      <div class="space-y-6">
+        {posts.map((p: any) => {
+          const title = p.title?.[langKey] || p.title?.['pt-BR'] || '';
+          const excerpt = p.excerpt?.[langKey] || p.excerpt?.['pt-BR'] || '';
+          const date = p.published_at
+            ? new Date(p.published_at).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' })
+            : '';
+          const catStyle = catStyles[p.category] || 'status-info';
+          return (
+            <a href={`${langPrefix}/blog/${p.slug}`} class="block bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 hover:border-teal-500/50 transition-colors no-underline">
+              {p.is_featured && <span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-teal-900/30 text-teal-300 mb-2">Featured</span>}
+              <h2 class="text-xl font-bold text-[var(--fg)] mb-2">{title}</h2>
+              <p class="text-[var(--fg-muted)] text-sm mb-3">{excerpt}</p>
+              <div class="flex items-center gap-3 text-xs text-[var(--fg-muted)] flex-wrap">
+                <span>{date}</span>
+                <span class={`px-2 py-0.5 rounded`} style={`background:var(--${catStyle}-bg);color:var(--${catStyle}-text)`}>{p.category}</span>
+                {p.view_count > 0 && <span>{p.view_count} views</span>}
+                <span class="blog-like-badge" data-post-id={p.id} data-like-count={p.like_count || 0}>🤍 {p.like_count || 0}</span>
+                {(p.tags || []).map((tag: string) => (
+                  <span class="px-2 py-0.5 rounded bg-[var(--surface-section-cool)] text-[var(--text-secondary)]">{tag}</span>
+                ))}
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    )}
   </div>
 </BaseLayout>
 
-<script define:vars={{ langKey, langPrefix: lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es' }}>
-  async function loadBlog() {
-    const sb = window.navGetSb?.();
-    if (!sb) { setTimeout(loadBlog, 200); return; }
+<script>
+  // Progressive enhancement: load like status for logged-in user
+  (async function() {
+    const sb = (window as any).navGetSb?.();
+    const member = (window as any).navGetMember?.();
+    if (!sb || !member) return;
 
-    const { data, error } = await sb.from('blog_posts')
-      .select('id, slug, title, excerpt, category, tags, published_at, is_featured, cover_image_url, view_count, like_count')
-      .eq('status', 'published')
-      .order('published_at', { ascending: false });
+    const badges = document.querySelectorAll('.blog-like-badge');
+    if (!badges.length) return;
 
-    document.getElementById('blog-loading')?.classList.add('hidden');
+    const postIds = Array.from(badges).map(b => (b as HTMLElement).dataset.postId).filter(Boolean);
+    if (!postIds.length) return;
 
-    if (!data || data.length === 0) {
-      document.getElementById('blog-empty')?.classList.remove('hidden');
-      return;
+    const { data: likesData } = await sb.rpc('get_blog_likes_batch', { p_post_ids: postIds });
+    if (likesData && typeof likesData === 'object') {
+      Object.entries(likesData).forEach(([postId, info]: [string, any]) => {
+        const badge = document.querySelector(`[data-post-id="${postId}"]`);
+        if (badge && info?.liked) {
+          badge.textContent = '❤️ ' + (info.like_count || 0);
+        }
+      });
     }
-
-    const container = document.getElementById('blog-posts');
-    container?.classList.remove('hidden');
-
-    container.innerHTML = data.map(p => {
-      const title = p.title?.[langKey] || p.title?.['pt-BR'] || '';
-      const excerpt = p.excerpt?.[langKey] || p.excerpt?.['pt-BR'] || '';
-      const date = p.published_at ? new Date(p.published_at).toLocaleDateString(langKey === 'pt-BR' ? 'pt-BR' : langKey === 'es-LATAM' ? 'es-ES' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
-      const catStyle = { 'case-study': 'status-info', tutorial: 'status-success', announcement: 'status-accent', opinion: 'status-warning' }[p.category] || 'status-info';
-
-      return `<a href="${langPrefix}/blog/${p.slug}" class="block bg-[var(--surface)] border border-[var(--border)] rounded-xl p-6 hover:border-teal-500/50 transition-colors no-underline">
-        ${p.is_featured ? '<span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-teal-900/30 text-teal-300 mb-2">Featured</span>' : ''}
-        <h2 class="text-xl font-bold text-[var(--fg)] mb-2">${title}</h2>
-        <p class="text-[var(--fg-muted)] text-sm mb-3">${excerpt}</p>
-        <div class="flex items-center gap-3 text-xs text-[var(--fg-muted)]">
-          <span>${date}</span>
-          <span class="px-2 py-0.5 rounded" style="background:var(--${catStyle}-bg);color:var(--${catStyle}-text)">${p.category}</span>
-          ${p.view_count ? '<span>' + p.view_count + ' views</span>' : ''}
-          <span class="blog-like-badge" data-post-id="${p.id}" data-like-count="${p.like_count || 0}">🤍 ${p.like_count || 0}</span>
-          ${(p.tags || []).map(t => '<span class="px-2 py-0.5 rounded bg-[var(--surface-section-cool)] text-[var(--text-secondary)]">' + t + '</span>').join('')}
-        </div>
-      </a>`;
-    }).join('');
-
-    // Batch load like status for logged-in user
-    const member = window.navGetMember?.();
-    if (member) {
-      const postIds = data.map(p => p.id);
-      const { data: likesData } = await sb.rpc('get_blog_likes_batch', { p_post_ids: postIds });
-      if (likesData && typeof likesData === 'object') {
-        Object.entries(likesData).forEach(([postId, info]) => {
-          const badge = container.querySelector(`[data-post-id="${postId}"]`);
-          if (badge && info && info.liked) {
-            badge.textContent = '❤️ ' + (info.like_count || 0);
-          }
-        });
-      }
-    }
-  }
-  loadBlog();
+  })();
 </script>
