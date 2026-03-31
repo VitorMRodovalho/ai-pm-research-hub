@@ -108,6 +108,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     created_at: string; updated_at: string;
   };
 
+  const LANG_MAP: Record<string,string> = { pt: 'pt-BR', en: 'en-US', es: 'es-LATAM' };
   let currentLang = 'pt';
   let editingPost: BlogPost | null = null;
   let _editorContent = '';
@@ -208,9 +209,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         body_html: editingPost?.body_html || {},
         updated_at: new Date().toISOString(),
       };
-      record.title[currentLang] = (document.getElementById('post-title') as HTMLInputElement).value;
-      record.excerpt[currentLang] = (document.getElementById('post-excerpt') as HTMLTextAreaElement).value;
-      record.body_html[currentLang] = _editorContent;
+      const dbLang = LANG_MAP[currentLang] || currentLang;
+      record.title[dbLang] = (document.getElementById('post-title') as HTMLInputElement).value;
+      record.excerpt[dbLang] = (document.getElementById('post-excerpt') as HTMLTextAreaElement).value;
+      record.body_html[dbLang] = _editorContent;
 
       if (status === 'published' && !record.published_at) {
         record.published_at = new Date().toISOString();
@@ -231,16 +233,18 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
   function saveLangFields() {
     if (!editingPost) return;
-    editingPost.title[currentLang] = (document.getElementById('post-title') as HTMLInputElement).value;
-    editingPost.excerpt[currentLang] = (document.getElementById('post-excerpt') as HTMLTextAreaElement).value;
-    editingPost.body_html[currentLang] = _editorContent;
+    const dbLang = LANG_MAP[currentLang] || currentLang;
+    editingPost.title[dbLang] = (document.getElementById('post-title') as HTMLInputElement).value;
+    editingPost.excerpt[dbLang] = (document.getElementById('post-excerpt') as HTMLTextAreaElement).value;
+    editingPost.body_html[dbLang] = _editorContent;
   }
 
   function loadLangFields() {
     if (!editingPost) return;
-    (document.getElementById('post-title') as HTMLInputElement).value = editingPost.title[currentLang] || '';
-    (document.getElementById('post-excerpt') as HTMLTextAreaElement).value = editingPost.excerpt[currentLang] || '';
-    setEditorContent(editingPost.body_html[currentLang] || '');
+    const dbLang = LANG_MAP[currentLang] || currentLang;
+    (document.getElementById('post-title') as HTMLInputElement).value = editingPost.title[dbLang] || '';
+    (document.getElementById('post-excerpt') as HTMLTextAreaElement).value = editingPost.excerpt[dbLang] || '';
+    setEditorContent(editingPost.body_html[dbLang] || '');
   }
 
   async function loadPosts(sb: any) {
@@ -256,7 +260,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       return `<div class="bg-[var(--surface)] border border-[var(--border)] rounded-xl p-4">
         <div class="flex items-start justify-between">
           <div>
-            <h3 class="font-semibold text-[var(--fg)]">${p.title?.pt || p.title?.en || p.slug}</h3>
+            <h3 class="font-semibold text-[var(--fg)]">${p.title?.['pt-BR'] || p.title?.['en-US'] || p.slug}</h3>
             <p class="text-sm text-[var(--fg-muted)]">/blog/${p.slug} · ${p.category}</p>
             <div class="flex gap-2 mt-1">
               <span class="inline-block px-2 py-0.5 rounded text-xs font-medium ${statusColors[p.status] || ''}">${p.status}</span>
