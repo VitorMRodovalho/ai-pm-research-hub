@@ -11,7 +11,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     <div id="chr-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
       <div class="text-3xl mb-3">&#x1F512;</div>
       <p class="font-semibold text-amber-800">{t('chapterReport.denied', lang)}</p>
-      <a href="/admin" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">Voltar ao Admin</a>
+      <a href="/admin" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">{t('admin.backToAdmin', lang)}</a>
     </div>
 
     <div id="chr-panel" class="hidden space-y-6">
@@ -81,7 +81,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       </div>
     </div>
 
-    <div id="chr-loading" class="text-center py-16 text-[var(--text-muted)]">Carregando...</div>
+    <div id="chr-loading" class="text-center py-16 text-[var(--text-muted)]">{t('common.loading', lang)}</div>
   </div>
   <Toast />
 </AdminLayout>
