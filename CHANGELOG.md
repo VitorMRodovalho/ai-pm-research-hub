@@ -1,5 +1,44 @@
 # Changelog
 
+## 2026-03-31 — v2.7.0 Sprint 10: OAuth Refresh, WCAG AA, MCP Health, Campaign Tracking
+
+### MCP
+- OAuth refresh_token support: consent sends refresh_token, exchange stores it, token endpoint supports `grant_type=refresh_token`
+- Per-route health monitoring with auto-discovery via `mcp_usage_log` (no hardcode)
+- Fixed member_id logging in `get_upcoming_events` and `get_hub_announcements` (was null → broken top_tools.users metric)
+- Verified on 4 hosts: Claude.ai (9/10), ChatGPT (8/10), Perplexity (8/10), Claude Code — 30/30 route calls successful
+- OAuth discovery announces `refresh_token` as supported grant type
+
+### CSS & Accessibility
+- WCAG AA global contrast fix: --text-secondary, --text-muted, --text-on-dark-muted bumped for ≥4.5:1 ratio on dark bg
+- Semantic status card CSS vars (--status-info/success/warning/accent/danger) for light+dark modes
+- Global prose content styles: tables, code, blockquote in theme.css
+- Migrated funnel cards + category badges from Tailwind inline to CSS vars
+
+### Campaign & Email
+- Resend open/click tracking: `tracking: { open: true, click: true }` in send-campaign payload
+- Click Tracking + Open Tracking enabled on pmigo.org.br domain in Resend dashboard
+
+### Blog
+- Fixed langKey pt vs pt-BR mismatch in blog/[slug] and blog/index rendering
+- Normalized all 9 posts: pt→pt-BR, en→en-US, es→es-LATAM keys
+- Rewrote MCP Server Launch post: 29 routes, correct URL, Perplexity added
+- Fixed TypeScript `as any` leak in define:vars script
+- Fixed legacy URLs (pages.dev, workers.dev) across all posts
+
+### Infrastructure
+- 11 irrelevant MCP servers disabled in project .claude/settings.json (~375K tokens freed)
+- Migration: `20260330010000_mcp_adoption_stats_v2_route_health.sql`
+
+### Commits (8)
+- `e563ae1` feat: Sprint 10 — campaign tracking, CSS contrast, MCP health, OAuth refresh
+- `30e69d4` fix: remove TypeScript `as any` from define:vars in blog/[slug]
+- `874807a` fix: blog langKey fallback for pt-BR keys + MCP post rewrite
+- `4263423` fix: global prose table/code CSS + blog data normalization
+- `e23f30e` fix: global dark mode contrast — WCAG AA compliance
+- `caca787` docs: add Perplexity to MCP compatible hosts, fix tool count
+- `d3ae5b7` fix: log member_id in get_upcoming_events and get_hub_announcements
+
 ## 2026-03-29 — Sprint 4: PostHog Events, Designation Filter, Smoke Test, MCP v2.3.0
 
 ### Sprint 4 Deliverables
