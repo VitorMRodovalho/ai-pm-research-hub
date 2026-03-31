@@ -1819,6 +1819,27 @@ const enUS: Record<string, string> = {
   'common.untitled': 'Untitled',
   'common.confirmAction': 'Confirm action',
   'common.areYouSure': 'Are you sure?',
+  'common.backHome': '← Back to Home',
+  'common.reportIssue': 'Report issue',
+
+  // ── 404 Page ──
+  'page404.title': '404 — Page Not Found',
+  'page404.heading': 'Page not found',
+  'page404.description': 'Looks like the autonomous agent hasn\'t mapped this route yet. Check the URL or go back to the home page.',
+  'page404.viewTribes': 'View Tribes',
+  'page404.footer': 'AI & Project Management Research Hub',
+
+  // ── Public Webinars ──
+  'webinars.title': 'Webinars',
+  'webinars.subtitle': 'Open sessions from the AI & PM Research Hub in partnership with PMI chapters.',
+  'webinars.upcoming': 'Upcoming webinars',
+  'webinars.replays': 'Available replays',
+  'webinars.empty': 'No webinars scheduled at the moment.',
+  'webinars.emptyHint': 'New webinars will be announced soon.',
+  'webinars.join': 'Join',
+  'webinars.linkSoon': 'Link coming soon',
+  'webinars.watchReplay': 'Watch replay',
+  'webinars.participants': 'participants',
 
   // ── Data: KPI labels ──
   'data.kpi.chapters': 'PMI Chapters',

@@ -43,7 +43,7 @@ This file orients the AI assistant on the project so it can work effectively wit
 | Backend   | Supabase Edge Functions (19 deployed) |
 | Auth      | Google + LinkedIn (OIDC) + Microsoft (Azure) |
 | Env access | `import { env } from 'cloudflare:workers'` (NOT `locals.runtime.env`) |
-| MCP       | 29 tools (23R + 6W), OAuth 2.1, Streamable HTTP SSE, `nucleoia.vitormr.dev/mcp` |
+| MCP       | 42 tools (36R + 6W), OAuth 2.1, Streamable HTTP SSE, `nucleoia.vitormr.dev/mcp` |
 | Observability | PostHog (custom events) + Sentry (global handlers) |
 | i18n      | PT-BR, EN, ES (keys in `src/i18n/`) |
 

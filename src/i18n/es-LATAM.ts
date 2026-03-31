@@ -1819,6 +1819,27 @@ const esLATAM: Record<string, string> = {
   'common.untitled': 'Sin título',
   'common.confirmAction': 'Confirmar acción',
   'common.areYouSure': '¿Está seguro?',
+  'common.backHome': '← Volver al Inicio',
+  'common.reportIssue': 'Reportar problema',
+
+  // ── 404 Page ──
+  'page404.title': '404 — Página no encontrada',
+  'page404.heading': 'Página no encontrada',
+  'page404.description': 'Parece que el agente autónomo aún no ha mapeado esta ruta. Verifique la dirección o vuelva a la página de inicio.',
+  'page404.viewTribes': 'Ver Tribus',
+  'page404.footer': 'Núcleo de Estudios e Investigación en IA y GP',
+
+  // ── Public Webinars ──
+  'webinars.title': 'Webinars',
+  'webinars.subtitle': 'Sesiones abiertas del Núcleo de Estudios e Investigación en IA & GP en alianza con capítulos del PMI.',
+  'webinars.upcoming': 'Próximos webinars',
+  'webinars.replays': 'Replays disponibles',
+  'webinars.empty': 'Ningún webinar programado en este momento.',
+  'webinars.emptyHint': 'Pronto se anunciarán nuevos webinars.',
+  'webinars.join': 'Participar',
+  'webinars.linkSoon': 'Enlace pronto',
+  'webinars.watchReplay': 'Ver replay',
+  'webinars.participants': 'participantes',
 
   // ── Data: KPI labels ──
   'data.kpi.chapters': 'Capítulos PMI',

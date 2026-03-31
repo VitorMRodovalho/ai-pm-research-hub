@@ -1,10 +1,12 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 ---
-<BaseLayout title="404 — Página não encontrada | Núcleo IA & GP" activePage="">
+<BaseLayout title={t('page404.title', lang)} activePage="" lang={lang}>
   <div class="min-h-[70vh] flex items-center justify-center px-4">
     <div class="text-center max-w-[440px]">
-      <!-- Animated 404 -->
       <div class="relative mb-6">
         <div class="text-[8rem] font-black leading-none text-navy/5 select-none">404</div>
         <div class="absolute inset-0 flex items-center justify-center">
@@ -12,26 +14,25 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         </div>
       </div>
 
-      <h1 class="text-2xl font-extrabold text-navy mb-3">Página não encontrada</h1>
+      <h1 class="text-2xl font-extrabold text-navy mb-3">{t('page404.heading', lang)}</h1>
       <p class="text-[var(--text-secondary)] text-sm mb-8 leading-relaxed">
-        Parece que o agente autônomo ainda não mapeou esta rota. 
-        Verifique o endereço ou volte para a página inicial.
+        {t('page404.description', lang)}
       </p>
 
       <div class="flex flex-col sm:flex-row gap-3 justify-center">
-        <a href="/" class="px-6 py-3 bg-navy text-white rounded-xl font-semibold text-sm no-underline hover:opacity-90 transition-all">
-          ← Voltar ao Início
+        <a href={`${langPrefix}/`} class="px-6 py-3 bg-navy text-white rounded-xl font-semibold text-sm no-underline hover:opacity-90 transition-all">
+          {t('common.backHome', lang)}
         </a>
-        <a href="/#tribes" class="px-6 py-3 bg-[var(--surface-card)] border-2 border-navy text-navy rounded-xl font-semibold text-sm no-underline hover:bg-navy/5 transition-all">
-          🏷️ Ver Tribos
+        <a href={`${langPrefix}/#tribes`} class="px-6 py-3 bg-[var(--surface-card)] border-2 border-navy text-navy rounded-xl font-semibold text-sm no-underline hover:bg-navy/5 transition-all">
+          {t('page404.viewTribes', lang)}
         </a>
       </div>
 
       <div class="mt-10 text-[.7rem] text-[var(--text-muted)]">
-        Núcleo de Estudos e Pesquisa em IA e GP · 
-        <a href="https://github.com/VitorMRodovalho/ai-pm-research-hub/issues" 
+        {t('page404.footer', lang)} ·
+        <a href="https://github.com/VitorMRodovalho/ai-pm-research-hub/issues"
            target="_blank" rel="noopener" class="text-teal no-underline hover:underline">
-          Reportar problema
+          {t('common.reportIssue', lang)}
         </a>
       </div>
     </div>
