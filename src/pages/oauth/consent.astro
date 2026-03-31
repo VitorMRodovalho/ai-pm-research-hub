@@ -2,14 +2,16 @@
 // src/pages/oauth/consent.astro
 // OAuth consent page — user logs in via Supabase Auth then approves MCP access
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 ---
-<BaseLayout title="Autorizar Aplicativo" noIndex={true}>
+<BaseLayout title={t('oauth.title', lang)} noIndex={true}>
   <div id="consent-root" class="min-h-screen flex items-center justify-center p-4">
     <div class="max-w-md w-full bg-[var(--surface-card)] rounded-2xl p-8 border border-[var(--border-default)]">
       <!-- Loading state -->
       <div id="loading" class="text-center">
         <div class="animate-spin w-8 h-8 border-2 border-[var(--accent)] border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p class="text-[var(--text-secondary)] text-sm">Carregando...</p>
+        <p class="text-[var(--text-secondary)] text-sm">{t('common.loading', lang)}</p>
       </div>
 
       <!-- Login state -->
@@ -18,9 +20,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           <div class="w-16 h-16 bg-[var(--accent)]/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <span class="text-2xl">&#x1F916;</span>
           </div>
-          <h1 class="text-xl font-bold text-[var(--text-primary)] mb-2">Conectar IA ao Nucleo</h1>
+          <h1 class="text-xl font-bold text-[var(--text-primary)] mb-2">{t('oauth.connectTitle', lang)}</h1>
           <p class="text-sm text-[var(--text-secondary)]">
-            Faca login para autorizar o acesso
+            {t('oauth.loginPrompt', lang)}
           </p>
         </div>
 
@@ -46,48 +48,54 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           <div class="w-16 h-16 bg-[var(--accent)]/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <span class="text-2xl">&#x1F916;</span>
           </div>
-          <h1 class="text-xl font-bold text-[var(--text-primary)] mb-2">Autorizar acesso</h1>
+          <h1 class="text-xl font-bold text-[var(--text-primary)] mb-2">{t('oauth.authorizeTitle', lang)}</h1>
           <p class="text-sm text-[var(--text-secondary)]">
-            O assistente de IA quer acessar sua conta no Nucleo IA & GP
+            {t('oauth.authorizeDesc', lang)}
           </p>
         </div>
 
         <div class="bg-[var(--surface-base)] rounded-lg p-4 mb-6 text-sm">
-          <p class="font-medium text-[var(--text-primary)] mb-2">Este aplicativo podera:</p>
+          <p class="font-medium text-[var(--text-primary)] mb-2">{t('oauth.permissionsTitle', lang)}</p>
           <ul class="space-y-1.5 text-[var(--text-secondary)]">
-            <li>&#x2713; Ver seu perfil e dados da tribo</li>
-            <li>&#x2713; Consultar quadro de tarefas e entregas</li>
-            <li>&#x2713; Ver presenca e ranking de XP</li>
-            <li>&#x2713; Ler atas de reunioes e notificacoes</li>
-            <li>&#x2713; Criar cards, atas e registrar presenca (lideres)</li>
+            <li>&#x2713; {t('oauth.perm1', lang)}</li>
+            <li>&#x2713; {t('oauth.perm2', lang)}</li>
+            <li>&#x2713; {t('oauth.perm3', lang)}</li>
+            <li>&#x2713; {t('oauth.perm4', lang)}</li>
+            <li>&#x2713; {t('oauth.perm5', lang)}</li>
           </ul>
         </div>
 
         <div class="flex flex-wrap gap-3">
           <button id="deny-btn" class="flex-1 min-w-[120px] px-4 py-2.5 rounded-lg border border-[var(--border-default)] text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors">
-            Negar
+            {t('oauth.deny', lang)}
           </button>
           <button id="approve-btn" class="flex-1 min-w-[120px] px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700 transition-colors shadow-sm">
-            Autorizar
+            {t('oauth.authorize', lang)}
           </button>
         </div>
       </div>
 
       <!-- Error state -->
       <div id="error-state" class="hidden text-center">
-        <p class="text-red-500 mb-2">&#x26A0;&#xFE0F; Erro</p>
+        <p class="text-red-500 mb-2">&#x26A0;&#xFE0F; {t('oauth.error', lang)}</p>
         <p id="error-msg" class="text-sm text-[var(--text-secondary)]"></p>
-        <a href="/" class="text-sm text-[var(--accent)] mt-4 inline-block">Voltar ao inicio</a>
+        <a href="/" class="text-sm text-[var(--accent)] mt-4 inline-block">{t('common.backHome', lang)}</a>
       </div>
 
       <!-- Success state -->
       <div id="success-state" class="hidden text-center">
         <p class="text-green-500 text-4xl mb-4">&#x2713;</p>
-        <p class="text-[var(--text-primary)] font-medium">Autorizado com sucesso</p>
-        <p class="text-sm text-[var(--text-secondary)] mt-2">Redirecionando de volta ao seu aplicativo de IA...</p>
+        <p class="text-[var(--text-primary)] font-medium">{t('oauth.success', lang)}</p>
+        <p class="text-sm text-[var(--text-secondary)] mt-2">{t('oauth.redirecting', lang)}</p>
       </div>
     </div>
   </div>
+  <span id="i18n-missingState" class="hidden">{t('oauth.missingState', lang)}</span>
+  <span id="i18n-loginError" class="hidden">{t('oauth.loginError', lang)}</span>
+  <span id="i18n-codeError" class="hidden">{t('oauth.codeError', lang)}</span>
+  <span id="i18n-sessionExpired" class="hidden">{t('oauth.sessionExpired', lang)}</span>
+  <span id="i18n-accessDenied" class="hidden">{t('oauth.accessDenied', lang)}</span>
+  <span id="i18n-authorizing" class="hidden">{t('oauth.authorizing', lang)}</span>
 
   <script>
     // @ts-nocheck
@@ -139,7 +147,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     if (oauthData) sessionStorage.setItem('mcp_oauth_data', oauthData);
 
     if (!mcpState) {
-      showError('Parametro mcp_state ausente. Abra esta pagina pelo fluxo OAuth do seu assistente de IA.');
+      showError(document.getElementById('i18n-missingState')?.textContent || 'Missing mcp_state parameter. Open this page via your AI assistant\'s OAuth flow.');
     }
 
     // Social login handlers — open window synchronously in click handler to avoid popup blocker
@@ -162,7 +170,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
       if (error || !data?.url) {
         if (authWindow) authWindow.close();
-        showError(error?.message || 'Erro ao iniciar login.');
+        showError(error?.message || document.getElementById('i18n-loginError')?.textContent || 'Error starting login.');
         return;
       }
 
@@ -199,12 +207,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     document.getElementById('approve-btn')?.addEventListener('click', async () => {
       const btn = document.getElementById('approve-btn');
       btn.disabled = true;
-      btn.textContent = 'Autorizando...';
+      btn.textContent = document.getElementById('i18n-authorizing')?.textContent || 'Authorizing...';
 
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.access_token) {
-          showError('Sessao expirada. Faca login novamente.');
+          showError(document.getElementById('i18n-sessionExpired')?.textContent || 'Session expired. Please log in again.');
           return;
         }
 
@@ -225,7 +233,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             window.location.href = data.redirect_url;
           }, 500);
         } else {
-          showError(data.error || 'Erro ao gerar codigo de autorizacao.');
+          showError(data.error || document.getElementById('i18n-codeError')?.textContent || 'Error generating authorization code.');
         }
       } catch (e) {
         showError('Erro: ' + e.message);
@@ -234,7 +242,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
     // Deny handler
     document.getElementById('deny-btn')?.addEventListener('click', () => {
-      showError('Acesso negado. Pode fechar esta janela.');
+      showError(document.getElementById('i18n-accessDenied')?.textContent || 'Access denied. You can close this window.');
     });
 
     // Init — check if already logged in
