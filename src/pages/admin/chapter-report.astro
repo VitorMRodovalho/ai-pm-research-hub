@@ -84,6 +84,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     <div id="chr-loading" class="text-center py-16 text-[var(--text-muted)]">{t('common.loading', lang)}</div>
   </div>
   <Toast />
+  <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>
 </AdminLayout>
 
 <script>
@@ -167,7 +168,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     if (tribes) {
       const tribeList = d.members?.tribes || [];
       if (tribeList.length === 0) {
-        tribes.innerHTML = '<p class="text-[.7rem] text-[var(--text-muted)]">Nenhuma tribo</p>';
+        tribes.innerHTML = `<p class="text-[.7rem] text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || 'No tribe'}</p>`;
       } else {
         tribes.innerHTML = tribeList.map((t: string) =>
           `<span class="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-[.72rem] font-semibold">${escHtml(t)}</span>`

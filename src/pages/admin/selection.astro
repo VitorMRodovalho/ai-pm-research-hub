@@ -97,6 +97,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
     </div>
   </div>
+  <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>
 </AdminLayout>
 
 <script>
@@ -302,7 +303,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     if (countEl) countEl.textContent = `${filteredRows.length} resultado${filteredRows.length !== 1 ? 's' : ''}`;
 
     if (!filteredRows.length) {
-      tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-6 text-center text-[var(--text-muted)]">Nenhum candidato encontrado</td></tr>';
+      tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || 'No candidate found'}</td></tr>`;
       return;
     }
 

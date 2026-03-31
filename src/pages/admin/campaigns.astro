@@ -213,6 +213,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       </div>
     </div>
   </div>
+  <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>
+  <span id="ai18n-lod" class="hidden">{t('admin.loadError', lang)}</span>
+  <span id="ai18n-sav" class="hidden">{t('admin.saveError', lang)}</span>
 </AdminLayout>
 
 <script>
@@ -402,7 +405,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
     const container = document.getElementById('camp-templates')!;
     if (allTemplates.length === 0) {
-      container.innerHTML = '<p class="text-center text-[var(--fg-muted)] py-8">Nenhum template criado ainda.</p>';
+      container.innerHTML = `<p class="text-center text-[var(--fg-muted)] py-8">${document.getElementById('ai18n-nor')?.textContent || 'No template.'}</p>`;
       return;
     }
 
@@ -455,7 +458,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
           document.getElementById('preview-body')!.innerHTML = data.html;
           document.getElementById('preview-modal')?.classList.remove('hidden');
         } else {
-          (window as any).toast?.('Erro ao carregar preview', 'error');
+          (window as any).toast?.(document.getElementById('ai18n-lod')?.textContent || 'Error loading', 'error');
         }
       });
     });
@@ -504,7 +507,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
           });
 
           if (error) {
-            (window as any).toast?.(error.message || 'Erro ao enviar', 'error');
+            (window as any).toast?.(error.message || document.getElementById('ai18n-sav')?.textContent || 'Error sending', 'error');
             confirmBtn.textContent = 'Enviar Agora';
             (confirmBtn as HTMLButtonElement).disabled = false;
           } else if (data) {
@@ -546,7 +549,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const { data } = await sb.from('campaign_sends').select('*, campaign_templates(name)').order('created_at', { ascending: false });
     const container = document.getElementById('camp-history')!;
     if (!data || data.length === 0) {
-      container.innerHTML = '<p class="text-center text-[var(--fg-muted)] py-8">Nenhuma campanha enviada ainda.</p>';
+      container.innerHTML = `<p class="text-center text-[var(--fg-muted)] py-8">${document.getElementById('ai18n-nor')?.textContent || 'No campaigns.'}</p>`;
       return;
     }
 
@@ -591,7 +594,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
     const { data, error } = await sb.rpc('get_campaign_analytics', { p_send_id: sendId });
     if (error || !data) {
-      document.getElementById('analytics-loading')!.textContent = error?.message || 'Erro ao carregar analytics';
+      document.getElementById('analytics-loading')!.textContent = error?.message || document.getElementById('ai18n-lod')?.textContent || 'Error loading';
       return;
     }
 

@@ -182,6 +182,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     <div id="pub-loading" class="text-center py-16 text-[var(--text-muted)]">Carregando...</div>
   </div>
   <Toast />
+  <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>
+  <span id="ai18n-lod" class="hidden">{t('admin.loadError', lang)}</span>
 </AdminLayout>
 
 <script>
@@ -358,7 +360,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const tbody = document.getElementById('pub-table-body');
     if (!tbody) return;
     if (!submissions.length) {
-      tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-[var(--text-muted)] text-sm">Nenhuma submissão.</td></tr>';
+      tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-[var(--text-muted)] text-sm">${document.getElementById('ai18n-nor')?.textContent || 'No submissions.'}</td></tr>`;
       return;
     }
     tbody.innerHTML = submissions.map(s => {
@@ -442,7 +444,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     document.getElementById('detail-content')!.innerHTML = '<p class="text-sm text-[var(--text-muted)]">...</p>';
 
     const { data, error } = await sb.rpc('get_publication_submission_detail', { p_submission_id: id });
-    if (error || !data) { document.getElementById('detail-content')!.innerHTML = '<p class="text-sm text-red-500">Erro ao carregar.</p>'; return; }
+    if (error || !data) { document.getElementById('detail-content')!.innerHTML = `<p class="text-sm text-red-500">${document.getElementById('ai18n-lod')?.textContent || 'Error loading.'}</p>`; return; }
 
     const s = data.submission;
     const authors = data.authors || [];

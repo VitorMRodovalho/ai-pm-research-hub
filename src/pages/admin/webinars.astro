@@ -227,6 +227,8 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
     </div>
   </div>
   <span id="i18n-noUpcoming" class="hidden">{t('admin.noUpcomingWebinar', lang)}</span>
+  <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>
+  <span id="ai18n-sav" class="hidden">{t('admin.saveError', lang)}</span>
 </AdminLayout>
 
 <script>
@@ -433,7 +435,7 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
       el.innerHTML = `
         <div class="rounded-2xl border border-dashed border-[var(--border-default)] p-10 text-center">
           <div class="text-4xl mb-3">🎥</div>
-          <div class="text-sm font-semibold text-[var(--text-secondary)]">Nenhum webinar cadastrado ainda.</div>
+          <div class="text-sm font-semibold text-[var(--text-secondary)]">${document.getElementById('ai18n-nor')?.textContent || 'No webinar.'}</div>
           <p class="text-[.78rem] text-[var(--text-muted)] mt-1 mb-4">Clique em "+ Novo Webinar" para comecar.</p>
         </div>`;
       return;
@@ -475,7 +477,7 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
     const countEl = document.getElementById('modal-co-count');
     if (!container) return;
     if (allActiveMembers.length === 0) {
-      container.innerHTML = '<span class="text-[.72rem] text-[var(--text-muted)]">Nenhum membro encontrado.</span>';
+      container.innerHTML = `<span class="text-[.72rem] text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || 'No member found.'}</span>`;
       return;
     }
     const ROLE_SHORT: Record<string, string> = {
@@ -660,7 +662,7 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
       closeModal();
       await reload();
     } catch (err: any) {
-      alert('Erro ao salvar: ' + (err?.message || err));
+      alert((document.getElementById('ai18n-sav')?.textContent || 'Error: ') + (err?.message || err));
     }
   }
 
@@ -672,7 +674,7 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
       await reload();
       alert('Sessao de Attendance criada com sucesso!');
     } catch (err: any) {
-      alert('Erro ao criar sessao: ' + (err?.message || err));
+      alert((document.getElementById('ai18n-sav')?.textContent || 'Error: ') + (err?.message || err));
     }
   }
 

@@ -167,6 +167,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       </div>
     </div>
   </div>
+  <span id="ai18n-nop" class="hidden">{t('admin.noPartnership', lang)}</span>
+  <span id="ai18n-lie" class="hidden">{t('admin.loadInteractionsError', lang)}</span>
+  <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>
+  <span id="ai18n-sav" class="hidden">{t('admin.saveError', lang)}</span>
+  <span id="ai18n-lod" class="hidden">{t('common.loading', lang)}</span>
 </AdminLayout>
 
 <script>
@@ -211,7 +216,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     });
 
     if (filtered.length === 0) {
-      grid.innerHTML = '<p class="text-sm text-[var(--text-muted)] col-span-full">Nenhuma parceria encontrada.</p>';
+      grid.innerHTML = `<p class="text-sm text-[var(--text-muted)] col-span-full">${document.getElementById('ai18n-nop')?.textContent || 'No partnership found.'}</p>`;
       return;
     }
 
@@ -286,17 +291,17 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     if (!sb) return;
     const timeline = document.getElementById('interaction-timeline');
     if (!timeline) return;
-    timeline.innerHTML = '<p class="text-[10px] text-[var(--text-muted)]">Carregando...</p>';
+    timeline.innerHTML = `<p class="text-[10px] text-[var(--text-muted)]">${document.getElementById('ai18n-lod')?.textContent || '...'}</p>`;
 
     const { data, error } = await sb.rpc('get_partner_interactions', { p_partner_id: partnerId });
     if (error || !data) {
-      timeline.innerHTML = '<p class="text-[10px] text-red-500">Erro ao carregar interacoes.</p>';
+      timeline.innerHTML = `<p class="text-[10px] text-red-500">${document.getElementById('ai18n-lie')?.textContent || 'Error loading.'}</p>`;
       return;
     }
 
     const interactions = data.interactions || [];
     if (interactions.length === 0) {
-      timeline.innerHTML = '<p class="text-[10px] text-[var(--text-muted)]">Nenhuma interacao registada.</p>';
+      timeline.innerHTML = `<p class="text-[10px] text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || 'No results.'}</p>`;
       return;
     }
 
@@ -345,7 +350,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     });
 
     if (error || !data?.success) {
-      (window as any).toast?.(data?.error || 'Erro ao registar.', 'error');
+      (window as any).toast?.(data?.error || document.getElementById('ai18n-sav')?.textContent || 'Error.', 'error');
       return;
     }
 
@@ -401,7 +406,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     });
 
     if (error || !data?.success) {
-      (window as any).toast?.(data?.error || 'Erro ao salvar parceria.', 'error');
+      (window as any).toast?.(data?.error || document.getElementById('ai18n-sav')?.textContent || 'Error.', 'error');
       return;
     }
 
@@ -420,7 +425,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     });
 
     if (error || !data?.success) {
-      (window as any).toast?.('Erro ao excluir.', 'error');
+      (window as any).toast?.(document.getElementById('ai18n-sav')?.textContent || 'Error.', 'error');
       return;
     }
 
