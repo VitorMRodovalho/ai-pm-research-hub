@@ -2,7 +2,6 @@ import * as Sentry from '@sentry/browser';
 
 export function initSentry() {
   const dsn = (import.meta as any).env?.PUBLIC_SENTRY_DSN;
-  console.log('[Sentry] init called, DSN:', dsn ? dsn.slice(0, 20) + '...' : 'MISSING');
   if (!dsn) return;
 
   Sentry.init({

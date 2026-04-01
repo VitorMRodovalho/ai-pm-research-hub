@@ -98,11 +98,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         </div>
 
         <!-- Bulk actions bar -->
-        <div id="bulk-actions" class="hidden flex gap-3 items-center bg-[var(--surface-base)] rounded-xl px-4 py-3 mt-3">
-          <span id="bulk-count" class="text-sm font-bold text-navy">0 selecionados</span>
-          <button class="bulk-action-btn px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="approved">Aprovar</button>
-          <button class="bulk-action-btn px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="rejected">Rejeitar</button>
-          <button class="bulk-action-btn px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="waitlist">Lista Espera</button>
+        <div id="bulk-actions" class="hidden bg-[var(--surface-base)] rounded-xl px-4 py-3 mt-3 space-y-2">
+          <div class="flex gap-3 items-center flex-wrap">
+            <span id="bulk-count" class="text-sm font-bold text-navy">0 selecionados</span>
+            <button class="bulk-action-btn px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="approved">Aprovar</button>
+            <button class="bulk-action-btn px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="rejected">Rejeitar</button>
+            <button class="bulk-action-btn px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="waitlist">Lista Espera</button>
+          </div>
+          <input type="text" id="bulk-feedback" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="Feedback em lote (opcional — aplicado a todos selecionados)" />
         </div>
       </div>
 
@@ -227,6 +230,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   let allRows: any[] = [];
   let filteredRows: any[] = [];
   let currentCycleId: string | null = null;
+  let currentCycle: any = null;
   let allCycles: any[] = [];
   let csvParsedRows: any[] = [];
 
@@ -355,6 +359,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
       if (cycle) {
         currentCycleId = cycle.id;
+        currentCycle = cycle;
         const badge = document.getElementById('sel-cycle-badge');
         if (badge) {
           const cs = CYCLE_STATUS_COLORS[cycle.status] || CYCLE_STATUS_COLORS.draft;
@@ -465,9 +470,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       const rank = r.rank_chapter != null ? `#${r.rank_chapter}` : '—';
       const roleLabel = ROLE_LABELS[r.role_applied] || r.role_applied || '—';
       const statusLabel = STATUS_LABELS[r.status] || r.status?.replace(/_/g, ' ') || '—';
+      const noMembership = !r.membership_status || r.membership_status === 'No';
       return `<tr class="hover:bg-[var(--surface-hover)] cursor-pointer" data-action="view-applicant" data-id="${esc(r.id)}">
         <td class="px-2 py-2.5 w-8" onclick="event.stopPropagation()"><input type="checkbox" class="sel-row-check cursor-pointer" value="${esc(r.id)}" /></td>
-        <td class="px-4 py-2.5 font-semibold text-navy">${esc(r.applicant_name)}</td>
+        <td class="px-4 py-2.5 font-semibold text-navy">${esc(r.applicant_name)}${noMembership ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Sem membership PMI">!M</span>' : ''}${r.is_returning_member ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700" title="Retornante">R</span>' : ''}</td>
         <td class="px-4 py-2.5 text-[12px]">${esc(roleLabel)}</td>
         <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]">${esc(r.chapter || '—')}</td>
         <td class="px-4 py-2.5 text-[12px] font-mono font-semibold">${objScore}</td>
@@ -495,6 +501,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const sb2 = STATUS_BADGE[row.status] || STATUS_BADGE.submitted;
     const statusLabel = STATUS_LABELS[row.status] || row.status;
 
+    // S1: Membership badge
+    const membershipBadge = row.membership_status
+      ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${row.membership_status === 'Active' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}">${esc(row.membership_status)}</span>`
+      : '';
+    const returningBadge = row.is_returning_member
+      ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">Retornante</span>'
+      : '';
+
     body.innerHTML = `
       <!-- Modal tabs -->
       <div class="flex gap-1 border-b border-[var(--border-default)] mb-4">
@@ -507,13 +521,25 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       <div id="modal-tab-info">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="space-y-4">
+            <!-- Badges row -->
+            <div class="flex gap-1.5 flex-wrap items-center">
+              <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${sb2.bg} ${sb2.color}">${esc(statusLabel)}</span>
+              ${membershipBadge}
+              ${returningBadge}
+            </div>
             <div class="grid grid-cols-2 gap-3 text-[13px]">
               <div><span class="text-[var(--text-muted)] text-[11px]">Email</span><br><strong>${esc(row.email)}</strong></div>
               <div><span class="text-[var(--text-muted)] text-[11px]">Capítulo</span><br><strong>${esc(row.chapter || '—')}</strong></div>
               <div><span class="text-[var(--text-muted)] text-[11px]">Papel</span><br><strong>${esc(ROLE_LABELS[row.role_applied] || row.role_applied)}</strong></div>
-              <div><span class="text-[var(--text-muted)] text-[11px]">Status</span><br><span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${sb2.bg} ${sb2.color}">${esc(statusLabel)}</span></div>
+              <div><span class="text-[var(--text-muted)] text-[11px]">Data Aplicação</span><br><strong>${row.application_date || row.created_at ? new Date(row.application_date || row.created_at).toLocaleDateString('pt-BR') : '—'}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[11px]">Certificações</span><br><strong>${esc(row.certifications || '—')}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[11px]">Experiência</span><br><strong>${row.experience_years ? row.experience_years + ' anos' : '—'}</strong></div>
             </div>
+            ${row.linkedin_url ? `<div class="text-[13px]"><a href="${esc(row.linkedin_url)}" target="_blank" rel="noopener" class="text-navy font-semibold hover:underline">LinkedIn</a>${row.resume_url ? ` · <a href="${esc(row.resume_url)}" target="_blank" rel="noopener" class="text-navy font-semibold hover:underline">CV / Currículo</a>` : ''}</div>` : (row.resume_url ? `<div class="text-[13px]"><a href="${esc(row.resume_url)}" target="_blank" rel="noopener" class="text-navy font-semibold hover:underline">CV / Currículo</a></div>` : '')}
+            ${row.academic_background ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">Formação Acadêmica</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[120px] overflow-y-auto">${esc(row.academic_background)}</p></div>` : ''}
             ${row.motivation ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">Motivação</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[200px] overflow-y-auto">${esc(row.motivation)}</p></div>` : ''}
+            ${row.areas_of_interest ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">Áreas de Interesse</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3">${esc(row.areas_of_interest)}</p></div>` : ''}
+            ${row.non_pmi_experience ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">Experiência Extra-PMI</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[120px] overflow-y-auto">${esc(row.non_pmi_experience)}</p></div>` : ''}
             <div class="grid grid-cols-2 gap-3 text-[13px]">
               <div><span class="text-[var(--text-muted)] text-[11px]">Obj. Score</span><br><strong class="text-lg">${row.objective_score != null ? Number(row.objective_score).toFixed(1) : '—'}</strong></div>
               <div><span class="text-[var(--text-muted)] text-[11px]">Final Score</span><br><strong class="text-lg text-navy">${row.final_score != null ? Number(row.final_score).toFixed(1) : '—'}</strong></div>
@@ -542,6 +568,25 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
       <!-- TAB: Interview -->
       <div id="modal-tab-interview" class="hidden">
+        <!-- S2+S8: Interview questions guide -->
+        ${(currentCycle?.interview_questions || []).length ? `
+        <details class="mb-4 border border-[var(--border-default)] rounded-xl">
+          <summary class="px-4 py-2.5 text-[13px] font-bold text-navy cursor-pointer select-none">Roteiro de Perguntas (${(currentCycle?.interview_questions || []).length} pilares)</summary>
+          <div class="px-4 pb-4 space-y-3">
+            ${(currentCycle?.interview_questions || []).map((p: any) => `
+              <div class="bg-[var(--surface-base)] rounded-lg p-3">
+                <div class="flex items-center gap-2 mb-1.5">
+                  <h5 class="text-[12px] font-bold text-[var(--text-primary)]">${esc(p.label)}</h5>
+                  ${p.scored ? `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-navy/10 text-navy">Pontuado</span>` : `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500">Contextual</span>`}
+                </div>
+                <ol class="list-decimal list-inside space-y-1">
+                  ${(p.questions || []).map((q: string) => `<li class="text-[12px] text-[var(--text-secondary)] leading-relaxed">${esc(q)}</li>`).join('')}
+                </ol>
+              </div>
+            `).join('')}
+          </div>
+        </details>` : ''}
+        ${currentCycle?.interview_booking_url ? `<a href="${esc(currentCycle.interview_booking_url)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-navy hover:underline mb-3">Agendar via link externo &rarr;</a>` : ''}
         <div class="space-y-4">
           <h4 class="text-sm font-bold text-navy">Agendar Entrevista</h4>
           <div class="grid grid-cols-2 gap-3">
@@ -1090,21 +1135,25 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const checks = document.querySelectorAll<HTMLInputElement>('.sel-row-check:checked');
     const ids = Array.from(checks).map(c => c.value);
     if (!ids.length) return;
+    const bulkFeedback = (document.getElementById('bulk-feedback') as HTMLInputElement)?.value?.trim() || '';
     const labels: Record<string, string> = { approved: 'aprovar', rejected: 'rejeitar', waitlist: 'colocar em lista de espera' };
     if (!confirm(`Deseja ${labels[decision] || decision} ${ids.length} candidato(s)?`)) return;
     let ok = 0;
     let fail = 0;
     for (const id of ids) {
       try {
+        const updateData: any = { status: decision };
+        if (bulkFeedback) updateData.feedback = bulkFeedback;
         const { error } = await sb.rpc('admin_update_application', {
           p_application_id: id,
-          p_data: { status: decision },
+          p_data: updateData,
         });
         if (error) throw error;
         ok++;
       } catch { fail++; }
     }
     toast(`${ok} atualizado(s)${fail ? `, ${fail} erro(s)` : ''}`);
+    if (bulkFeedback) (document.getElementById('bulk-feedback') as HTMLInputElement).value = '';
     loadDashboard();
   }
 
@@ -1233,7 +1282,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
                 <input type="range" min="0" max="10" step="1" value="${draft?.scores?.[c.key] ?? 5}"
                   data-intv-key="${esc(c.key)}" ${isLocked ? 'disabled' : ''}
                   class="w-full accent-navy" />
-                <p class="text-[10px] text-[var(--text-muted)] mt-1">${esc(c.guide || '')}</p>
+                ${c.guide ? `<p class="text-[10px] text-[var(--text-muted)] mt-1">${esc(c.guide)}</p>` : ''}
+                <textarea data-intv-note-key="${esc(c.key)}" class="w-full mt-1.5 px-2 py-1.5 text-[11px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-10 resize-none" placeholder="Notas sobre ${esc(c.label)}..." ${isLocked ? 'disabled' : ''}>${esc(draft?.criterion_notes?.[c.key] || '')}</textarea>
               </div>
             `).join('');
 
@@ -1279,6 +1329,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         scoringDiv!.querySelectorAll<HTMLInputElement>('input[type="range"]').forEach(slider => {
           if (slider.dataset.intvKey) scores[slider.dataset.intvKey] = parseInt(slider.value, 10);
         });
+        const criterionNotes: Record<string, string> = {};
+        scoringDiv!.querySelectorAll<HTMLTextAreaElement>('textarea[data-intv-note-key]').forEach(ta => {
+          if (ta.dataset.intvNoteKey && ta.value.trim()) criterionNotes[ta.dataset.intvNoteKey] = ta.value.trim();
+        });
         const theme = (scoringDiv!.querySelector('#intv-theme') as HTMLInputElement)?.value || '';
         const notes = (scoringDiv!.querySelector('#intv-notes') as HTMLTextAreaElement)?.value || '';
         const btn2 = scoringDiv!.querySelector('#submit-interview-scores-btn') as HTMLButtonElement;
@@ -1289,6 +1343,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
             p_scores: scores,
             p_theme: theme,
             p_notes: notes,
+            p_criterion_notes: criterionNotes,
           });
           if (error) throw error;
           toast('Avaliacao da entrevista submetida');

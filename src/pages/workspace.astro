@@ -9,6 +9,7 @@ import AttendanceForm from '../components/workspace/AttendanceForm';
 import DropoutRiskBanner from '../components/workspace/DropoutRiskBanner';
 import MyTasksIsland from '../components/workspace/MyTasksIsland';
 import OnboardingChecklist from '../components/onboarding/OnboardingChecklist';
+import PreOnboardingChecklist from '../components/onboarding/PreOnboardingChecklist';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
@@ -95,6 +96,9 @@ const WK = {
       <LoadingSkeleton variant="profile" />
       <LoadingSkeleton variant="card" count={3} />
     </div>
+
+    <!-- Pre-Onboarding Checklist (approved candidates) -->
+    <PreOnboardingChecklist client:load lang={lang} />
 
     <!-- Onboarding Checklist -->
     <OnboardingChecklist client:load lang={lang} />
