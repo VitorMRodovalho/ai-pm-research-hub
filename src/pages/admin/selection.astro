@@ -1489,7 +1489,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       return;
     }
     list.innerHTML = data.map((o: any) => {
-      const mappingStr = o.essay_mapping ? Object.entries(o.essay_mapping).map(([k, v]) => `Q${k}→${v}`).join(', ') : '—';
+      const mappingStr = o.essay_mapping ? Object.entries(o.essay_mapping).map(([k, v]) => {
+        const field = typeof v === 'string' ? v : (v as any)?.field || '?';
+        return `Q${k}→${field}`;
+      }).join(', ') : '—';
       return `<div class="flex items-start gap-3 p-3 bg-[var(--surface-base)] rounded-xl border border-[var(--border-subtle)]">
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 mb-1">
@@ -1533,14 +1536,18 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     (document.getElementById('opp-end') as HTMLInputElement).value = opp?.end_date || '';
     (document.getElementById('opp-eligibility') as HTMLTextAreaElement).value = opp?.eligibility || '';
 
-    // Essay mapping
+    // Essay mapping — supports both old {"1":"field"} and new {"1":{"field":"x","question":"y"}} formats
     const mappingContainer = document.getElementById('essay-mapping-fields');
     if (mappingContainer) {
       mappingContainer.innerHTML = '';
       const mapping = opp?.essay_mapping || {};
       const entries = Object.entries(mapping);
       if (entries.length) {
-        entries.forEach(([idx, field]) => addEssayMappingRow(mappingContainer, idx, field as string));
+        entries.forEach(([idx, val]) => {
+          const field = typeof val === 'string' ? val : (val as any)?.field || '';
+          const question = typeof val === 'string' ? '' : (val as any)?.question || '';
+          addEssayMappingRow(mappingContainer, idx, field, question);
+        });
       } else {
         addEssayMappingRow(mappingContainer, '1', 'motivation_letter');
       }
@@ -1549,16 +1556,18 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     form.classList.remove('hidden');
   }
 
-  function addEssayMappingRow(container: HTMLElement, idx: string, field: string) {
+  function addEssayMappingRow(container: HTMLElement, idx: string, field: string, question: string = '') {
     const row = document.createElement('div');
-    row.className = 'flex gap-2 items-center';
+    row.className = 'space-y-1 p-2 bg-[var(--surface-card)] rounded-lg border border-[var(--border-subtle)]';
     row.innerHTML = `
-      <span class="text-[10px] font-bold text-[var(--text-muted)] w-8">Q${esc(idx)}</span>
-      <input type="text" class="essay-q-idx w-10 px-1.5 py-1 text-[11px] border border-[var(--border-default)] rounded bg-[var(--surface-input)] text-center" value="${esc(idx)}" />
-      <select class="essay-q-field flex-1 px-2 py-1 text-[11px] border border-[var(--border-default)] rounded bg-[var(--surface-input)]">
-        ${ESSAY_FIELD_OPTIONS.map(o => `<option value="${o.value}" ${o.value === field ? 'selected' : ''}>${o.label}</option>`).join('')}
-      </select>
-      <button class="remove-essay-row text-red-400 hover:text-red-600 bg-transparent border-0 cursor-pointer text-sm">×</button>
+      <div class="flex gap-2 items-center">
+        <input type="text" class="essay-q-idx w-10 px-1.5 py-1 text-[11px] border border-[var(--border-default)] rounded bg-[var(--surface-input)] text-center font-bold" value="${esc(idx)}" />
+        <select class="essay-q-field flex-1 px-2 py-1 text-[11px] border border-[var(--border-default)] rounded bg-[var(--surface-input)]">
+          ${ESSAY_FIELD_OPTIONS.map(o => `<option value="${o.value}" ${o.value === field ? 'selected' : ''}>${o.label}</option>`).join('')}
+        </select>
+        <button class="remove-essay-row text-red-400 hover:text-red-600 bg-transparent border-0 cursor-pointer text-sm">×</button>
+      </div>
+      <textarea class="essay-q-text w-full px-2 py-1 text-[10px] border border-[var(--border-default)] rounded bg-[var(--surface-input)] h-8 resize-none" placeholder="Texto da pergunta no VEP (ex: Você é filiado a um dos capítulos...)">${esc(question)}</textarea>
     `;
     row.querySelector('.remove-essay-row')?.addEventListener('click', () => row.remove());
     container.appendChild(row);
@@ -1581,12 +1590,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
     if (!data.opportunity_id || !data.title) { toast('ID e Título são obrigatórios', 'error'); return; }
 
-    // Collect essay mapping
-    const mapping: Record<string, string> = {};
+    // Collect essay mapping (new rich format)
+    const mapping: Record<string, any> = {};
     document.querySelectorAll('#essay-mapping-fields > div').forEach(row => {
       const idx = (row.querySelector('.essay-q-idx') as HTMLInputElement)?.value?.trim();
       const field = (row.querySelector('.essay-q-field') as HTMLSelectElement)?.value;
-      if (idx && field) mapping[idx] = field;
+      const question = (row.querySelector('.essay-q-text') as HTMLTextAreaElement)?.value?.trim();
+      if (idx && field) {
+        mapping[idx] = question ? { field, question } : field;
+      }
     });
     data.essay_mapping = mapping;
 
