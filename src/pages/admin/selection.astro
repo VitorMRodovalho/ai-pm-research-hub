@@ -332,8 +332,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
   /* ── load cycles ──────────────────────────────────── */
   async function loadCycles() {
-    const { data } = await sb.from('selection_cycles').select('id, cycle_code, title, status').order('created_at', { ascending: false });
-    allCycles = data || [];
+    const { data } = await sb.rpc('get_selection_cycles');
+    allCycles = Array.isArray(data) ? data : [];
     const picker = document.getElementById('sel-cycle-picker') as HTMLSelectElement;
     if (picker && allCycles.length) {
       picker.innerHTML = allCycles.map((c: any) =>
@@ -807,32 +807,66 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
   /* ── CSV import ───────────────────────────────────── */
   function parseCSV(text: string): any[] {
-    const lines = text.split('\n');
-    if (lines.length < 2) return [];
-    // Handle quoted fields with commas
-    function parseLine(line: string): string[] {
-      const fields: string[] = [];
-      let field = '';
-      let inQuotes = false;
-      for (let i = 0; i < line.length; i++) {
-        const ch = line[i];
-        if (ch === '"') { inQuotes = !inQuotes; }
-        else if (ch === ',' && !inQuotes) { fields.push(field.trim()); field = ''; }
-        else { field += ch; }
+    // RFC 4180 compliant parser — handles newlines inside quoted fields
+    const records: string[][] = [];
+    let field = '';
+    let inQuotes = false;
+    let currentRecord: string[] = [];
+
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      const next = text[i + 1];
+
+      if (inQuotes) {
+        if (ch === '"' && next === '"') {
+          field += '"'; i++; // escaped quote
+        } else if (ch === '"') {
+          inQuotes = false;
+        } else {
+          field += ch;
+        }
+      } else {
+        if (ch === '"') {
+          inQuotes = true;
+        } else if (ch === ',') {
+          currentRecord.push(field.trim());
+          field = '';
+        } else if (ch === '\r' && next === '\n') {
+          currentRecord.push(field.trim());
+          records.push(currentRecord);
+          currentRecord = [];
+          field = '';
+          i++; // skip \n
+        } else if (ch === '\n') {
+          currentRecord.push(field.trim());
+          records.push(currentRecord);
+          currentRecord = [];
+          field = '';
+        } else {
+          field += ch;
+        }
       }
-      fields.push(field.trim());
-      return fields;
     }
-    const headers = parseLine(lines[0]).map(h => h.trim().replace(/^\uFEFF/, ''));
+    // Last field/record
+    if (field || currentRecord.length > 0) {
+      currentRecord.push(field.trim());
+      records.push(currentRecord);
+    }
+
+    if (records.length < 2) return [];
+    const headers = records[0].map(h => h.replace(/^\uFEFF/, ''));
+    const hIdx = (name: string) => headers.findIndex(h => h.toLowerCase().includes(name.toLowerCase()));
+
     const rows: any[] = [];
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
-      const vals = parseLine(line);
+    for (let i = 1; i < records.length; i++) {
+      const vals = records[i];
       if (vals.length < 5) continue;
-      const hIdx = (name: string) => headers.findIndex(h => h.toLowerCase().includes(name.toLowerCase()));
+      // Skip if no application_id (garbage row)
+      const appId = vals[hIdx('Application ID')] || '';
+      if (!appId || !/^\d+$/.test(appId)) continue;
+
       rows.push({
-        application_id: vals[hIdx('Application ID')] || '',
+        application_id: appId,
         pmi_id: (vals[hIdx('PMI ID')] || '').replace(/"/g, ''),
         first_name: vals[hIdx('First Name')] || '',
         last_name: vals[hIdx('Last Name')] || '',
@@ -932,20 +966,19 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   /* ── committee ────────────────────────────────────── */
   async function loadCommittee() {
     if (!currentCycleId) return;
-    const { data } = await sb.from('selection_committee')
-      .select('id, role, can_interview, member_id, members!inner(name, operational_role)')
-      .eq('cycle_id', currentCycleId);
+    const { data } = await sb.rpc('get_selection_committee', { p_cycle_id: currentCycleId });
+    const members = Array.isArray(data) ? data : [];
     const el = document.getElementById('committee-list');
     if (!el) return;
-    if (!data?.length) {
-      el.innerHTML = '<p class="text-sm text-[var(--text-muted)] py-4">Nenhum membro no comitê. Adicione membros para iniciar a avaliação.</p>';
+    if (!members.length) {
+      el.innerHTML = '<p class="text-sm text-[var(--text-muted)] py-4">Nenhum membro no comitê. Use a busca acima para adicionar membros.</p>';
       return;
     }
-    el.innerHTML = data.map((c: any) => `
+    el.innerHTML = members.map((c: any) => `
       <div class="flex items-center justify-between bg-[var(--surface-base)] rounded-xl px-4 py-3">
         <div>
-          <span class="font-semibold text-sm text-[var(--text-primary)]">${esc(c.members?.name || '—')}</span>
-          <span class="text-[11px] text-[var(--text-muted)] ml-2">${esc(c.members?.operational_role || '')}</span>
+          <span class="font-semibold text-sm text-[var(--text-primary)]">${esc(c.member_name || '—')}</span>
+          <span class="text-[11px] text-[var(--text-muted)] ml-2">${esc(c.member_role || '')}</span>
         </div>
         <div class="flex items-center gap-3">
           <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${c.role === 'lead' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}">${c.role}</span>
@@ -988,10 +1021,18 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       }, 300);
     });
 
-    // Close on click outside
-    document.addEventListener('click', (e) => {
+    // Close on click outside (delayed to let action handler fire first)
+    document.addEventListener('mousedown', (e) => {
       if (!input.contains(e.target as Node) && !results.contains(e.target as Node)) {
-        results.classList.add('hidden');
+        setTimeout(() => results.classList.add('hidden'), 150);
+      }
+    });
+
+    // Direct click handler on results (more reliable than delegated)
+    results.addEventListener('click', (e) => {
+      const item = (e.target as HTMLElement).closest<HTMLElement>('[data-action="add-committee-member"]');
+      if (item?.dataset.memberId) {
+        addCommitteeMemberById(item.dataset.memberId, item.dataset.memberName || '');
       }
     });
   }
@@ -1132,7 +1173,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     container.appendChild(scoringDiv);
 
     try {
-      const { data: interviews } = await sb.from('selection_interviews').select('*').eq('application_id', row.id).order('created_at', { ascending: false }).limit(1);
+      const { data: interviewsRaw } = await sb.rpc('get_application_interviews', { p_application_id: row.id });
+      const interviews = Array.isArray(interviewsRaw) ? interviewsRaw : [];
 
       if (!interviews?.length) {
         scoringDiv.innerHTML = '<p class="text-sm text-[var(--text-muted)]">Nenhuma entrevista agendada.</p>';
