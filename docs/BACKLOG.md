@@ -50,7 +50,7 @@
 
 | # | Item | Est. | Notes |
 |---|------|------|-------|
-| 18 | Pre-onboarding gamification | Spec Ready | SPEC_PRE_ONBOARDING_GAMIFICATION.md — 6 steps, 450 XP, auto-detect. 8 candidates pending + CBGP incoming. 4 decisions pending. |
+| 18 | Pre-onboarding gamification | Sprint 1 Done | 3 RPCs deployed, João QA baseline (3/5 auto-completed). Sprint 2 (frontend dashboard) pending. |
 | 19 | Playwright e2e expansion | — | ✅ Done (29/Mar) — 15→40 tests, 9 new spec files |
 | 20 | Sustainability frontend | ✅ Done (audit 31/Mar) | 819-line page with dashboard, tabs, permissions. en/es redirects exist. |
 | 21 | W107 Pilot #1 handler | ✅ Done (audit 31/Mar) | 14/14 audit checks pass. Table, 3 RPCs, /admin/pilots.astro, pilot #1 seeded. |
@@ -113,3 +113,35 @@ RPCs with backend ready but no frontend surface. To be specced and implemented i
 - Gap fixes: G1 (checkOrigin), G2 (PPTX), G4 (public /webinars), G5 (6 webinars), G7 (certificates i18n)
 - Attendance bugs: toggle fix, event type icons, SSR guard
 - CI fixes: public /webinars test, AttendanceGridTab window guard
+
+---
+
+## Selection Pipeline V2 — Gaps Pendentes (01/Apr audit)
+
+Jornada parcialmente funcional. Import + pipeline view + eval form + interview scheduling deployados. Gaps abaixo precisam ser resolvidos antes do teste completo com João.
+
+### UX / Frontend Gaps
+
+| # | Gap | Impacto | Detalhe |
+|---|-----|---------|---------|
+| S1 | Modal Info incompleto | Alto | Falta: membership status, certifications, CV link, chapter affiliations, returning badge, application_date, VEP opportunity |
+| S2 | Perguntas da entrevista | Alto | 5 pilares x 3 perguntas (DOCX offline). Avaliador precisa ver durante entrevista. Configuravel por ciclo. |
+| S3 | Interview scoring notas por pilar | Medio | Frontend so tem 1 campo geral de notas. Ideal: anotacao por pilar/pergunta. |
+| S4 | Interview link/booking | Medio | Cycle config tem interview_booking_url mas nao integrado. Candidato nao recebe link. |
+| S5 | Evaluation results consolidated | Medio | Botao existe mas precisa teste real (2+ avaliadores). |
+| S6 | Bulk actions feedback field | Baixo | Bulk approve/reject sem feedback individual. |
+| S7 | Application date no frontend | Baixo | Importado mas nao visivel. |
+
+### Business Logic Gaps
+
+| # | Gap | Impacto | Detalhe |
+|---|-----|---------|---------|
+| S8 | Interview questions config | Alto | Tabela/campo para perguntas por ciclo. Hoje: DOCX offline. |
+| S9 | Dashboard RPC missing essays | Medio | get_selection_dashboard nao retorna essays completos. Modal Info depende disso. |
+| S10 | Pilar Background sem scoring | Baixo | 5 pilares entrevista mas 4 criterios no cycle config. Background e contextual. Validar. |
+
+### Dados
+
+| # | Gap | Impacto | Detalhe |
+|---|-----|---------|---------|
+| S11 | 5 candidatos sem membership | Medio | Andre, Blenda, Cristiano, Hector, Alexandre sem membership no CSV. Nao bloqueia avaliacao. |
