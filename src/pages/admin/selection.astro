@@ -111,6 +111,48 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
       <!-- TAB: IMPORT CSV -->
       <div id="tab-import" class="hidden space-y-4">
+        <!-- VEP Opportunities Config -->
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg font-bold text-navy">Vagas VEP Configuradas</h2>
+            <button id="add-opportunity-btn" class="px-3 py-1.5 bg-navy text-white rounded-lg text-[12px] font-bold cursor-pointer border-0 hover:opacity-90">+ Nova Vaga</button>
+          </div>
+          <div id="vep-opportunities-list" class="space-y-3">
+            <p class="text-sm text-[var(--text-muted)]">Carregando...</p>
+          </div>
+          <!-- Add/Edit form (hidden by default) -->
+          <div id="opportunity-form" class="hidden border border-[var(--border-default)] rounded-xl p-4 bg-[var(--surface-base)] space-y-3">
+            <h3 class="text-sm font-bold text-navy" id="opp-form-title">Nova Vaga VEP</h3>
+            <div class="grid grid-cols-2 gap-3">
+              <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Opportunity ID</label><input type="text" id="opp-id" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="64967" /></div>
+              <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Papel Default</label><select id="opp-role" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]"><option value="researcher">Pesquisador</option><option value="leader">Líder</option></select></div>
+            </div>
+            <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Título</label><input type="text" id="opp-title" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="Pesquisador e multiplicador..." /></div>
+            <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">URL do VEP</label><input type="text" id="opp-url" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="https://volunteer.pmi.org/..." /></div>
+            <div class="grid grid-cols-3 gap-3">
+              <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Capítulo</label><input type="text" id="opp-chapter" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="PMI-GO" /></div>
+              <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Vagas</label><input type="number" id="opp-positions" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" value="42" /></div>
+              <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Dedicação</label><input type="text" id="opp-time" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="21-30 hours/month" /></div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Início</label><input type="date" id="opp-start" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" /></div>
+              <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Fim</label><input type="date" id="opp-end" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" /></div>
+            </div>
+            <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Elegibilidade</label><textarea id="opp-eligibility" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-12" placeholder="Filiado ativo a um dos capítulos..."></textarea></div>
+            <div>
+              <label class="text-[10px] font-semibold text-[var(--text-secondary)]">Mapeamento de Perguntas (Essay Mapping)</label>
+              <p class="text-[10px] text-[var(--text-muted)] mb-1">Defina qual campo do sistema recebe cada pergunta do formulário VEP (1 = primeira pergunta, 2 = segunda, etc.)</p>
+              <div id="essay-mapping-fields" class="space-y-1.5"></div>
+              <button id="add-essay-mapping-btn" class="mt-1.5 px-2 py-1 text-[10px] text-navy font-semibold bg-transparent border border-navy rounded-lg cursor-pointer hover:bg-navy/5">+ Adicionar pergunta</button>
+            </div>
+            <div class="flex gap-2">
+              <button id="save-opportunity-btn" class="px-4 py-2 bg-navy text-white rounded-lg text-[12px] font-bold cursor-pointer border-0 hover:opacity-90">Salvar</button>
+              <button id="cancel-opportunity-btn" class="px-4 py-2 bg-[var(--surface-hover)] text-[var(--text-secondary)] rounded-lg text-[12px] font-semibold cursor-pointer border-0">Cancelar</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Import CSV Section -->
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-6 space-y-4">
           <h2 class="text-lg font-bold text-navy">Importar CSV do PMI VEP</h2>
           <p class="text-sm text-[var(--text-secondary)]">Faça upload do CSV exportado do PMI Volunteer Engagement Platform. O sistema detecta candidatos duplicados, membros retornantes e capítulos parceiros automaticamente.</p>
@@ -1425,6 +1467,145 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   /* ── event binding ────────────────────────────────── */
   let searchTimeout: any = null;
 
+  /* ── VEP opportunities config ────────────────────── */
+  const ESSAY_FIELD_OPTIONS = [
+    { value: 'motivation_letter', label: 'Motivação' },
+    { value: 'areas_of_interest', label: 'Áreas de Interesse / Perfil' },
+    { value: 'academic_background', label: 'Formação / PMBOK' },
+    { value: 'availability_declared', label: 'Disponibilidade' },
+    { value: 'proposed_theme', label: 'Tema Proposto' },
+    { value: 'leadership_experience', label: 'Experiência em Liderança' },
+    { value: 'non_pmi_experience', label: 'Experiência Extra-PMI' },
+  ];
+
+  let editingOppId: string | null = null;
+
+  async function loadOpportunities() {
+    const list = document.getElementById('vep-opportunities-list');
+    if (!list) return;
+    const { data, error } = await sb.from('vep_opportunities').select('*').order('created_at');
+    if (error || !data?.length) {
+      list.innerHTML = '<p class="text-sm text-[var(--text-muted)]">Nenhuma vaga configurada.</p>';
+      return;
+    }
+    list.innerHTML = data.map((o: any) => {
+      const mappingStr = o.essay_mapping ? Object.entries(o.essay_mapping).map(([k, v]) => `Q${k}→${v}`).join(', ') : '—';
+      return `<div class="flex items-start gap-3 p-3 bg-[var(--surface-base)] rounded-xl border border-[var(--border-subtle)]">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-[12px] font-bold text-navy">${esc(o.title || o.opportunity_id)}</span>
+            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full ${o.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}">${o.is_active ? 'Ativa' : 'Inativa'}</span>
+            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700">${esc(o.role_default)}</span>
+          </div>
+          <div class="text-[10px] text-[var(--text-muted)]">ID: ${esc(o.opportunity_id)} · ${esc(o.chapter_posted || '—')} · ${o.positions_available || '—'} vagas · ${esc(o.time_commitment || '—')}</div>
+          <div class="text-[10px] text-[var(--text-muted)] mt-0.5">Essay mapping: ${esc(mappingStr)}</div>
+          ${o.vep_url ? `<a href="${esc(o.vep_url)}" target="_blank" rel="noopener" class="text-[10px] text-navy hover:underline">Abrir no VEP</a>` : ''}
+        </div>
+        <button class="edit-opp-btn px-2 py-1 text-[10px] text-navy font-semibold bg-transparent border border-navy rounded-lg cursor-pointer hover:bg-navy/5" data-opp='${JSON.stringify(o).replace(/'/g, "&#39;")}'>Editar</button>
+      </div>`;
+    }).join('');
+
+    // Wire edit buttons
+    list.querySelectorAll<HTMLButtonElement>('.edit-opp-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const opp = JSON.parse(btn.dataset.opp || '{}');
+        openOpportunityForm(opp);
+      });
+    });
+  }
+
+  function openOpportunityForm(opp?: any) {
+    const form = document.getElementById('opportunity-form');
+    const title = document.getElementById('opp-form-title');
+    if (!form || !title) return;
+
+    editingOppId = opp?.id || null;
+    title.textContent = opp ? 'Editar Vaga VEP' : 'Nova Vaga VEP';
+
+    (document.getElementById('opp-id') as HTMLInputElement).value = opp?.opportunity_id || '';
+    (document.getElementById('opp-title') as HTMLInputElement).value = opp?.title || '';
+    (document.getElementById('opp-role') as HTMLSelectElement).value = opp?.role_default || 'researcher';
+    (document.getElementById('opp-url') as HTMLInputElement).value = opp?.vep_url || '';
+    (document.getElementById('opp-chapter') as HTMLInputElement).value = opp?.chapter_posted || '';
+    (document.getElementById('opp-positions') as HTMLInputElement).value = String(opp?.positions_available || 42);
+    (document.getElementById('opp-time') as HTMLInputElement).value = opp?.time_commitment || '';
+    (document.getElementById('opp-start') as HTMLInputElement).value = opp?.start_date || '';
+    (document.getElementById('opp-end') as HTMLInputElement).value = opp?.end_date || '';
+    (document.getElementById('opp-eligibility') as HTMLTextAreaElement).value = opp?.eligibility || '';
+
+    // Essay mapping
+    const mappingContainer = document.getElementById('essay-mapping-fields');
+    if (mappingContainer) {
+      mappingContainer.innerHTML = '';
+      const mapping = opp?.essay_mapping || {};
+      const entries = Object.entries(mapping);
+      if (entries.length) {
+        entries.forEach(([idx, field]) => addEssayMappingRow(mappingContainer, idx, field as string));
+      } else {
+        addEssayMappingRow(mappingContainer, '1', 'motivation_letter');
+      }
+    }
+
+    form.classList.remove('hidden');
+  }
+
+  function addEssayMappingRow(container: HTMLElement, idx: string, field: string) {
+    const row = document.createElement('div');
+    row.className = 'flex gap-2 items-center';
+    row.innerHTML = `
+      <span class="text-[10px] font-bold text-[var(--text-muted)] w-8">Q${esc(idx)}</span>
+      <input type="text" class="essay-q-idx w-10 px-1.5 py-1 text-[11px] border border-[var(--border-default)] rounded bg-[var(--surface-input)] text-center" value="${esc(idx)}" />
+      <select class="essay-q-field flex-1 px-2 py-1 text-[11px] border border-[var(--border-default)] rounded bg-[var(--surface-input)]">
+        ${ESSAY_FIELD_OPTIONS.map(o => `<option value="${o.value}" ${o.value === field ? 'selected' : ''}>${o.label}</option>`).join('')}
+      </select>
+      <button class="remove-essay-row text-red-400 hover:text-red-600 bg-transparent border-0 cursor-pointer text-sm">×</button>
+    `;
+    row.querySelector('.remove-essay-row')?.addEventListener('click', () => row.remove());
+    container.appendChild(row);
+  }
+
+  async function saveOpportunity() {
+    const data: any = {
+      opportunity_id: (document.getElementById('opp-id') as HTMLInputElement).value.trim(),
+      title: (document.getElementById('opp-title') as HTMLInputElement).value.trim(),
+      role_default: (document.getElementById('opp-role') as HTMLSelectElement).value,
+      vep_url: (document.getElementById('opp-url') as HTMLInputElement).value.trim() || null,
+      chapter_posted: (document.getElementById('opp-chapter') as HTMLInputElement).value.trim() || null,
+      positions_available: parseInt((document.getElementById('opp-positions') as HTMLInputElement).value) || null,
+      time_commitment: (document.getElementById('opp-time') as HTMLInputElement).value.trim() || null,
+      start_date: (document.getElementById('opp-start') as HTMLInputElement).value || null,
+      end_date: (document.getElementById('opp-end') as HTMLInputElement).value || null,
+      eligibility: (document.getElementById('opp-eligibility') as HTMLTextAreaElement).value.trim() || null,
+      is_active: true,
+    };
+
+    if (!data.opportunity_id || !data.title) { toast('ID e Título são obrigatórios', 'error'); return; }
+
+    // Collect essay mapping
+    const mapping: Record<string, string> = {};
+    document.querySelectorAll('#essay-mapping-fields > div').forEach(row => {
+      const idx = (row.querySelector('.essay-q-idx') as HTMLInputElement)?.value?.trim();
+      const field = (row.querySelector('.essay-q-field') as HTMLSelectElement)?.value;
+      if (idx && field) mapping[idx] = field;
+    });
+    data.essay_mapping = mapping;
+
+    try {
+      if (editingOppId) {
+        const { error } = await sb.from('vep_opportunities').update(data).eq('id', editingOppId);
+        if (error) throw error;
+        toast('Vaga atualizada');
+      } else {
+        const { error } = await sb.from('vep_opportunities').insert(data);
+        if (error) throw error;
+        toast('Vaga criada');
+      }
+      document.getElementById('opportunity-form')?.classList.add('hidden');
+      editingOppId = null;
+      loadOpportunities();
+    } catch (e: any) { toast(e.message || 'Erro ao salvar', 'error'); }
+  }
+
   function bindEvents() {
     // Tabs
     document.querySelectorAll('.sel-tab-btn').forEach(btn => {
@@ -1433,6 +1614,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         if (tab) {
           switchTab(tab);
           if (tab === 'committee') loadCommittee();
+          if (tab === 'import') loadOpportunities();
         }
       });
     });
@@ -1570,6 +1752,20 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
     // Committee search setup
     setupCommitteeSearch();
+
+    // VEP Opportunities
+    document.getElementById('add-opportunity-btn')?.addEventListener('click', () => openOpportunityForm());
+    document.getElementById('save-opportunity-btn')?.addEventListener('click', () => saveOpportunity());
+    document.getElementById('cancel-opportunity-btn')?.addEventListener('click', () => {
+      document.getElementById('opportunity-form')?.classList.add('hidden');
+      editingOppId = null;
+    });
+    document.getElementById('add-essay-mapping-btn')?.addEventListener('click', () => {
+      const container = document.getElementById('essay-mapping-fields');
+      if (!container) return;
+      const nextIdx = String(container.children.length + 1);
+      addEssayMappingRow(container, nextIdx, 'motivation_letter');
+    });
 
     // Modal close
     document.getElementById('modal-close')?.addEventListener('click', () => {
