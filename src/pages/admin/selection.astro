@@ -535,7 +535,20 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
               <div><span class="text-[var(--text-muted)] text-[11px]">Certificações</span><br><strong>${esc(row.certifications || '—')}</strong></div>
               <div><span class="text-[var(--text-muted)] text-[11px]">Experiência</span><br><strong>${row.experience_years ? row.experience_years + ' anos' : '—'}</strong></div>
             </div>
-            ${row.linkedin_url ? `<div class="text-[13px]"><a href="${esc(row.linkedin_url)}" target="_blank" rel="noopener" class="text-navy font-semibold hover:underline">LinkedIn</a>${row.resume_url ? ` · <a href="${esc(row.resume_url)}" target="_blank" rel="noopener" class="text-navy font-semibold hover:underline">CV / Currículo</a>` : ''}</div>` : (row.resume_url ? `<div class="text-[13px]"><a href="${esc(row.resume_url)}" target="_blank" rel="noopener" class="text-navy font-semibold hover:underline">CV / Currículo</a></div>` : '')}
+            <!-- Contact: Phone + WhatsApp + LinkedIn + CV + Credly -->
+            <div class="flex flex-wrap gap-2 items-center text-[13px]">
+              ${row.phone ? `<a href="https://wa.me/${row.phone.replace(/\\D/g, '')}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[11px] font-semibold no-underline hover:bg-emerald-100">WhatsApp ${esc(row.phone)}</a>` : ''}
+              ${row.linkedin_url ? `<a href="${esc(row.linkedin_url)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-[11px] font-semibold no-underline hover:bg-blue-100">LinkedIn</a>` : ''}
+              ${row.resume_url ? `<a href="${esc(row.resume_url)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 text-[11px] font-semibold no-underline hover:bg-purple-100">CV</a>` : ''}
+              ${row.member_credly_url ? `<a href="${esc(row.member_credly_url)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 text-[11px] font-semibold no-underline hover:bg-amber-100">Credly</a>` : ''}
+            </div>
+            <!-- Inline edit: add phone/linkedin if missing -->
+            ${!row.phone || !row.linkedin_url ? `
+            <div class="flex gap-2 items-end">
+              ${!row.phone ? `<div class="flex-1"><label class="text-[10px] text-[var(--text-muted)] font-semibold">Telefone</label><input type="text" id="edit-phone" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="+5551999999999" /></div>` : ''}
+              ${!row.linkedin_url ? `<div class="flex-1"><label class="text-[10px] text-[var(--text-muted)] font-semibold">LinkedIn URL</label><input type="text" id="edit-linkedin" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="https://linkedin.com/in/..." /></div>` : ''}
+              <button id="save-contact-btn" data-id="${esc(row.id)}" class="px-3 py-1.5 bg-navy text-white rounded-lg text-[11px] font-bold cursor-pointer border-0 hover:opacity-90">Salvar</button>
+            </div>` : ''}
             ${row.academic_background ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">Formação Acadêmica</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[120px] overflow-y-auto">${esc(row.academic_background)}</p></div>` : ''}
             ${row.motivation ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">Motivação</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[200px] overflow-y-auto">${esc(row.motivation)}</p></div>` : ''}
             ${row.areas_of_interest ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">Áreas de Interesse</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3">${esc(row.areas_of_interest)}</p></div>` : ''}
@@ -666,6 +679,24 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       }
     });
 
+    // Save contact handler (phone/linkedin inline edit)
+    body.querySelector('#save-contact-btn')?.addEventListener('click', async () => {
+      const phone = (body.querySelector('#edit-phone') as HTMLInputElement)?.value?.trim();
+      const linkedin = (body.querySelector('#edit-linkedin') as HTMLInputElement)?.value?.trim();
+      if (!phone && !linkedin) { toast('Preencha ao menos um campo', 'error'); return; }
+      try {
+        const { error } = await sb.rpc('update_application_contact', {
+          p_application_id: row.id,
+          p_phone: phone || null,
+          p_linkedin_url: linkedin || null,
+        });
+        if (error) throw error;
+        toast('Contato atualizado');
+        modal.classList.add('hidden');
+        loadDashboard();
+      } catch (e: any) { toast(e.message || 'Erro', 'error'); }
+    });
+
     modal.classList.remove('hidden');
   }
 
@@ -686,7 +717,29 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       const isLocked = data.is_locked;
       const app = data.application || {};
 
-      // Gap 8: Build essay display
+      // Candidate context panel — quick access while evaluating
+      const appRow = allRows.find(r => r.id === applicationId);
+      const contactLinks = [
+        appRow?.phone ? `<a href="https://wa.me/${appRow.phone.replace(/\\D/g, '')}" target="_blank" rel="noopener" class="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-semibold no-underline hover:bg-emerald-100">WhatsApp</a>` : '',
+        appRow?.linkedin_url ? `<a href="${esc(appRow.linkedin_url)}" target="_blank" rel="noopener" class="px-2 py-1 rounded-lg bg-blue-50 text-blue-700 text-[10px] font-semibold no-underline hover:bg-blue-100">LinkedIn</a>` : '',
+        app.resume_url ? `<a href="${esc(app.resume_url)}" target="_blank" rel="noopener" class="px-2 py-1 rounded-lg bg-purple-50 text-purple-700 text-[10px] font-semibold no-underline hover:bg-purple-100">CV</a>` : '',
+        appRow?.member_credly_url ? `<a href="${esc(appRow.member_credly_url)}" target="_blank" rel="noopener" class="px-2 py-1 rounded-lg bg-amber-50 text-amber-700 text-[10px] font-semibold no-underline hover:bg-amber-100">Credly</a>` : '',
+      ].filter(Boolean).join(' ');
+
+      const contextPanel = `
+        <div class="bg-[var(--surface-base)] rounded-xl p-3 mb-4 border border-[var(--border-default)]">
+          <div class="flex items-center gap-3 mb-2">
+            ${appRow?.member_photo_url ? `<img src="${esc(appRow.member_photo_url)}" class="w-10 h-10 rounded-full object-cover" alt="" />` : ''}
+            <div class="flex-1 min-w-0">
+              <div class="text-[12px] font-bold text-navy">${esc(app.applicant_name || appRow?.applicant_name || '—')}</div>
+              <div class="text-[10px] text-[var(--text-muted)]">${esc(app.chapter || '')} · ${esc(app.membership_status || 'Membership: —')}</div>
+            </div>
+          </div>
+          ${app.certifications ? `<div class="text-[10px] mb-1.5"><span class="font-bold text-[var(--text-secondary)]">Certificações:</span> ${esc(app.certifications)}</div>` : ''}
+          ${contactLinks ? `<div class="flex gap-1.5 flex-wrap">${contactLinks}</div>` : ''}
+        </div>`;
+
+      // Essay display
       const essayFields = [
         { key: 'motivation_letter', label: 'Motivacao' },
         { key: 'areas_of_interest', label: 'Perfil / Areas de Interesse' },
@@ -698,11 +751,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         .filter(f => app[f.key])
         .map(f => `<div class="mb-2"><h5 class="text-[11px] font-bold text-[var(--text-secondary)] mb-0.5">${esc(f.label)}</h5><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-2.5 whitespace-pre-wrap max-h-[150px] overflow-y-auto">${esc(app[f.key])}</p></div>`)
         .join('');
-      const resumeLink = app.resume_url ? `<div class="mb-2"><a href="${esc(app.resume_url)}" target="_blank" rel="noopener noreferrer" class="text-[12px] text-purple-600 hover:underline font-semibold">Ver CV / Curriculo</a></div>` : '';
-      const essaySection = (essayItems || resumeLink) ? `
+      const essaySection = essayItems ? `
         <details open class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl mb-4">
           <summary class="px-4 py-3 text-sm font-bold text-navy cursor-pointer">Respostas do Candidato</summary>
-          <div class="px-4 pb-3">${essayItems}${resumeLink}</div>
+          <div class="px-4 pb-3">${essayItems}</div>
         </details>` : '';
 
       // Gap 6: Check if leader role
@@ -710,6 +762,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
       container.innerHTML = `
         <div class="space-y-4">
+          ${contextPanel}
           ${essaySection}
           ${isLocked ? '<div class="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-800 font-semibold">Avaliacao ja submetida e bloqueada.</div>' : ''}
           <h4 class="text-sm font-bold text-navy">Avaliacao Objetiva (0-10)</h4>
