@@ -783,11 +783,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
       // Essay display
       const essayFields = [
-        { key: 'motivation_letter', label: 'Motivacao' },
-        { key: 'areas_of_interest', label: 'Perfil / Areas de Interesse' },
-        { key: 'academic_background', label: 'Familiaridade com PMBOK' },
+        { key: 'reason_for_applying', label: 'Reason for Applying (VEP)' },
+        { key: 'motivation_letter', label: 'Motivação / Capítulo' },
+        { key: 'areas_of_interest', label: 'Perfil / Áreas de Interesse' },
+        { key: 'academic_background', label: 'Formação / PMBOK' },
         { key: 'availability_declared', label: 'Disponibilidade' },
         { key: 'proposed_theme', label: 'Tema Proposto' },
+        { key: 'leadership_experience', label: 'Experiência em Liderança' },
+        { key: 'non_pmi_experience', label: 'Experiência Extra-PMI' },
       ];
       const essayItems = essayFields
         .filter(f => app[f.key])
