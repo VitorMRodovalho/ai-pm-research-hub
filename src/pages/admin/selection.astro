@@ -99,11 +99,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
           <div class="flex flex-wrap gap-4 items-end">
             <div>
-              <label class="block text-[12px] font-semibold text-[var(--text-secondary)] mb-1">Vaga (Opportunity ID)</label>
-              <select id="import-opportunity" class="px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]">
-                <option value="64967">64967 — Pesquisador e multiplicador</option>
-                <option value="64966">64966 — Líder de tribo e Pesquisador chefe</option>
-              </select>
+              <label class="block text-[12px] font-semibold text-[var(--text-secondary)] mb-1">Opportunity ID (do PMI VEP)</label>
+              <input type="text" id="import-opportunity" value="" placeholder="Ex: 64967"
+                class="px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] w-40" />
+            </div>
+            <div>
+              <label class="block text-[12px] font-semibold text-[var(--text-secondary)] mb-1">Título da vaga</label>
+              <input type="text" id="import-opportunity-title" value="" placeholder="Ex: Pesquisador e multiplicador"
+                class="px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] w-64" />
             </div>
             <div>
               <label class="block text-[12px] font-semibold text-[var(--text-secondary)] mb-1">Papel default</label>
@@ -113,6 +116,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
               </select>
             </div>
           </div>
+          <p class="text-[11px] text-[var(--text-muted)]">O Opportunity ID está na URL do VEP: volunteer.pmi.org/.../opportunity/<strong>64967</strong>. O papel default é aplicado a todos os candidatos do CSV, podendo ser alterado individualmente depois.</p>
 
           <!-- Drop zone -->
           <div id="csv-dropzone" class="border-2 border-dashed border-[var(--border-default)] rounded-xl p-8 text-center cursor-pointer hover:border-navy hover:bg-[var(--surface-hover)] transition-all">
@@ -155,9 +159,26 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-6 space-y-4">
           <div class="flex items-center justify-between">
             <h2 class="text-lg font-bold text-navy">Comitê de Seleção</h2>
-            <button id="committee-add-btn" class="px-4 py-2 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">+ Adicionar membro</button>
           </div>
           <p class="text-sm text-[var(--text-secondary)]">Membros do comitê avaliam candidatos em revisão cega. Mínimo de 2 avaliadores por candidato.</p>
+
+          <!-- Add member search -->
+          <div class="bg-[var(--surface-base)] rounded-xl p-4 space-y-3">
+            <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">Adicionar membro ao comitê</h4>
+            <div class="flex gap-3 items-end">
+              <div class="flex-1 relative">
+                <input type="text" id="committee-search" placeholder="Buscar por nome..."
+                  class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] focus:outline-none focus:ring-2 focus:ring-navy/40" />
+                <div id="committee-search-results" class="hidden absolute z-20 w-full mt-1 bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl shadow-xl max-h-[200px] overflow-y-auto"></div>
+              </div>
+              <select id="committee-role-select" class="px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]">
+                <option value="evaluator">Avaliador</option>
+                <option value="lead">Líder do Comitê</option>
+                <option value="observer">Observador</option>
+              </select>
+            </div>
+          </div>
+
           <div id="committee-list" class="space-y-2"></div>
         </div>
       </div>
@@ -743,7 +764,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
   async function executeImport() {
     if (!csvParsedRows.length || !currentCycleId) return;
-    const opportunityId = (document.getElementById('import-opportunity') as HTMLSelectElement)?.value || '64967';
+    const opportunityId = (document.getElementById('import-opportunity') as HTMLInputElement)?.value?.trim();
+    if (!opportunityId) { toast('Informe o Opportunity ID do PMI VEP', 'error'); return; }
     const role = (document.getElementById('import-role') as HTMLSelectElement)?.value || 'researcher';
     const btn = document.getElementById('csv-import-btn') as HTMLButtonElement;
     if (btn) { btn.disabled = true; btn.textContent = 'Importando...'; }
@@ -806,23 +828,63 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     `).join('');
   }
 
-  async function addCommitteeMember() {
-    if (!currentCycleId) return;
-    const name = prompt('Nome do membro a adicionar ao comitê:');
-    if (!name) return;
-    const { data: members } = await sb.from('members').select('id, name, operational_role')
-      .ilike('name', `%${name}%`).eq('is_active', true).limit(5);
-    if (!members?.length) { toast('Membro não encontrado', 'error'); return; }
-    const member = members.length === 1 ? members[0] :
-      members[parseInt(prompt(`Encontrados:\n${members.map((m: any, i: number) => `${i}: ${m.name} (${m.operational_role})`).join('\n')}\n\nDigite o número:`) || '0', 10)];
-    if (!member) return;
-    const role = prompt('Papel (evaluator / lead / observer):', 'evaluator') || 'evaluator';
-    const { data, error } = await sb.rpc('manage_selection_committee', {
-      p_cycle_id: currentCycleId, p_action: 'add', p_member_id: member.id, p_role: role,
+  let committeeSearchTimeout: any = null;
+
+  function setupCommitteeSearch() {
+    const input = document.getElementById('committee-search') as HTMLInputElement;
+    const results = document.getElementById('committee-search-results');
+    if (!input || !results) return;
+
+    input.addEventListener('input', () => {
+      clearTimeout(committeeSearchTimeout);
+      const query = input.value.trim();
+      if (query.length < 2) { results.classList.add('hidden'); return; }
+      committeeSearchTimeout = setTimeout(async () => {
+        const { data: members } = await sb.from('members')
+          .select('id, name, operational_role')
+          .ilike('name', `%${query}%`)
+          .eq('is_active', true)
+          .order('name')
+          .limit(8);
+        if (!members?.length) {
+          results.innerHTML = '<div class="px-4 py-3 text-[12px] text-[var(--text-muted)]">Nenhum membro encontrado</div>';
+        } else {
+          results.innerHTML = members.map((m: any) =>
+            `<div class="px-4 py-2.5 hover:bg-[var(--surface-hover)] cursor-pointer text-[13px] flex items-center justify-between" data-action="add-committee-member" data-member-id="${esc(m.id)}" data-member-name="${esc(m.name)}">
+              <span class="font-semibold text-[var(--text-primary)]">${esc(m.name)}</span>
+              <span class="text-[11px] text-[var(--text-muted)]">${esc(m.operational_role || '')}</span>
+            </div>`
+          ).join('');
+        }
+        results.classList.remove('hidden');
+      }, 300);
     });
-    if (error) { toast(error.message, 'error'); return; }
-    toast(`${member.name} adicionado ao comitê`);
-    loadCommittee();
+
+    // Close on click outside
+    document.addEventListener('click', (e) => {
+      if (!input.contains(e.target as Node) && !results.contains(e.target as Node)) {
+        results.classList.add('hidden');
+      }
+    });
+  }
+
+  async function addCommitteeMemberById(memberId: string, memberName: string) {
+    if (!currentCycleId) return;
+    const role = (document.getElementById('committee-role-select') as HTMLSelectElement)?.value || 'evaluator';
+    try {
+      const { data, error } = await sb.rpc('manage_selection_committee', {
+        p_cycle_id: currentCycleId, p_action: 'add', p_member_id: memberId, p_role: role,
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast(`${memberName} adicionado como ${role}`);
+      const input = document.getElementById('committee-search') as HTMLInputElement;
+      if (input) input.value = '';
+      document.getElementById('committee-search-results')?.classList.add('hidden');
+      loadCommittee();
+    } catch (e: any) {
+      toast(e.message || 'Erro ao adicionar', 'error');
+    }
   }
 
   async function removeCommitteeMember(memberId: string) {
@@ -917,10 +979,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       const action = target.dataset.action;
       if (action === 'view-applicant' && target.dataset.id) { openApplicantModal(target.dataset.id); }
       else if (action === 'remove-committee' && target.dataset.memberId) { removeCommitteeMember(target.dataset.memberId); }
+      else if (action === 'add-committee-member' && target.dataset.memberId) {
+        addCommitteeMemberById(target.dataset.memberId, target.dataset.memberName || '');
+      }
     });
 
-    // Committee add button
-    document.getElementById('committee-add-btn')?.addEventListener('click', addCommitteeMember);
+    // Committee search setup
+    setupCommitteeSearch();
 
     // Modal close
     document.getElementById('modal-close')?.addEventListener('click', () => {
