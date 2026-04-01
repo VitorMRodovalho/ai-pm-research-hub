@@ -50,12 +50,12 @@
 
 | # | Item | Est. | Notes |
 |---|------|------|-------|
-| 18 | Pre-onboarding gamification spec | 2h Chat | Candidate journey feature |
+| 18 | Pre-onboarding gamification | Spec Ready | SPEC_PRE_ONBOARDING_GAMIFICATION.md — 6 steps, 450 XP, auto-detect. 8 candidates pending + CBGP incoming. 4 decisions pending. |
 | 19 | Playwright e2e expansion | — | ✅ Done (29/Mar) — 15→40 tests, 9 new spec files |
-| 20 | Sustainability frontend | Pending | P6 |
-| 21 | W107 Pilot #1 handler | Pending | — |
-| 22 | BoardEngine polish | Pending | Spec in BOARD_ENGINE_SPEC.md, @dnd-kit |
-| 23 | Admin modularization Phases 2-4 | Pending | Phase 1 done |
+| 20 | Sustainability frontend | ✅ Done (audit 31/Mar) | 819-line page with dashboard, tabs, permissions. en/es redirects exist. |
+| 21 | W107 Pilot #1 handler | ✅ Done (audit 31/Mar) | 14/14 audit checks pass. Table, 3 RPCs, /admin/pilots.astro, pilot #1 seeded. |
+| 22 | BoardEngine polish | ✅ Done (audit 31/Mar) | Exceeds spec: 14 components + 4 hooks, 6 views (kanban/table/list/calendar/timeline/activities), DnD, curation mode, keyboard shortcuts. |
+| 23 | Admin modularization Phases 2-4 | ✅ Done (audit 31/Mar) | 33 admin pages, page-per-domain architecture. ADMIN_ARCHITECTURE.md documents full structure. |
 | 24 | Advisor: Security audit | — | ✅ Done (29/Mar) — 35 search_path fixed, 2 RLS tightened, 11 SD views intentional |
 | 25 | legacy_tribes table cleanup | — | ✅ Done (29/Mar) — table dropped, code ref replaced with cycle_tribe_dim |
 | 26 | Git history cleanup | Low | 29MB PPTX in git history (G16) |
@@ -71,7 +71,7 @@ RPCs with backend ready but no frontend surface. To be specced and implemented i
 |---|-----|---------------|---------------------|--------|
 | F1 | `get_public_platform_stats` | ✅ Done (29/Mar) | Homepage `/` stats section — all 3 locales | S4 |
 | F2 | Co-managers selector | ✅ Done (29/Mar) | Member multi-select in `/admin/webinars` CRUD modal | S4 |
-| F3 | Board card webinar badge | `board_items.webinar_id` FK exists, no UI | Badge in CardDetail showing linked webinar status | S5 |
+| F3 | Board card webinar badge | ✅ Won't Do (31/Mar) | Premissa incorreta (FK não existe em board_items). Relação board↔webinar é artificial — YAGNI. | — |
 | F4 | `search_hub_resources` | ✅ Done (29/Mar) | `/library` search upgraded to server-side RPC (300ms debounce) | S4 |
 | F5 | `get_my_attendance_history` | ✅ Done (29/Mar) | Personal attendance history in `/profile` with progress bar + table | S4 |
 
