@@ -896,12 +896,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const body = document.getElementById('csv-preview-body');
     if (!preview || !body || !summary) return;
 
-    const submitted = rows.filter(r => r.app_status === 'Submitted' || r.app_status === 'Active' || r.app_status === 'Complete');
+    const newCandidates = rows.filter(r => r.app_status === 'Submitted');
+    const alreadyActive = rows.filter(r => r.app_status === 'Active' || r.app_status === 'Complete');
     const declined = rows.filter(r => r.app_status === 'OfferNotExtended' || r.app_status === 'Declined' || r.app_status === 'Withdrawn');
 
     summary.innerHTML = [
       { label: 'Total no CSV', value: rows.length, color: 'text-navy' },
-      { label: 'Para importar', value: submitted.length, color: 'text-emerald-600' },
+      { label: 'Novos (importar)', value: newCandidates.length, color: 'text-emerald-600' },
+      { label: 'Já ativos (skip)', value: alreadyActive.length, color: 'text-gray-600' },
       { label: 'Serão ignorados', value: declined.length, color: 'text-red-600' },
     ].map(s => `<div class="bg-[var(--surface-base)] rounded-xl px-4 py-2 text-center">
       <div class="text-lg font-extrabold ${s.color}">${s.value}</div>
@@ -909,13 +911,16 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     </div>`).join('');
 
     body.innerHTML = rows.map(r => {
-      const isSkip = ['OfferNotExtended', 'Declined', 'Withdrawn'].includes(r.app_status);
+      const isDeclined = ['OfferNotExtended', 'Declined', 'Withdrawn'].includes(r.app_status);
+      const isActive = ['Active', 'Complete'].includes(r.app_status);
+      const isSkip = isDeclined || isActive;
+      const actionLabel = isDeclined ? 'Rejeitado VEP' : isActive ? 'Já ativo (skip)' : 'Importar';
       return `<tr class="${isSkip ? 'opacity-40' : ''}">
         <td class="px-3 py-2 text-[12px] font-semibold">${esc(r.first_name)} ${esc(r.last_name)}</td>
         <td class="px-3 py-2 text-[12px] text-[var(--text-secondary)]">${esc(r.email)}</td>
         <td class="px-3 py-2 text-[12px]">${esc(r.membership_status?.substring(0, 40) || '—')}</td>
         <td class="px-3 py-2 text-[12px]"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${isSkip ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}">${esc(r.app_status)}</span></td>
-        <td class="px-3 py-2 text-[12px]">${isSkip ? 'Skip' : 'Importar'}</td>
+        <td class="px-3 py-2 text-[12px]">${actionLabel}</td>
       </tr>`;
     }).join('');
 
@@ -945,10 +950,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         result.innerHTML = `
           <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-2">
             <h3 class="font-bold text-emerald-800">Import concluído</h3>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-[13px]">
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-[13px]">
               <div><div class="text-lg font-extrabold text-emerald-700">${data.imported}</div><div class="text-[.6rem] text-emerald-600">Importados</div></div>
               <div><div class="text-lg font-extrabold text-amber-600">${data.skipped_dedup}</div><div class="text-[.6rem] text-amber-500">Duplicados</div></div>
-              <div><div class="text-lg font-extrabold text-red-600">${data.skipped_declined}</div><div class="text-[.6rem] text-red-500">Ignorados</div></div>
+              <div><div class="text-lg font-extrabold text-gray-600">${data.skipped_active || 0}</div><div class="text-[.6rem] text-gray-500">Já Ativos</div></div>
+              <div><div class="text-lg font-extrabold text-red-600">${data.skipped_declined}</div><div class="text-[.6rem] text-red-500">Rejeitados VEP</div></div>
               <div><div class="text-lg font-extrabold text-blue-600">${data.returning_members}</div><div class="text-[.6rem] text-blue-500">Retornantes</div></div>
             </div>
           </div>`;
