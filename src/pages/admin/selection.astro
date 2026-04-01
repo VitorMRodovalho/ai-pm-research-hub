@@ -778,7 +778,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
               <input type="range" min="0" max="${cMax}" step="1" value="${defaultVal}"
                 data-eval-key="${esc(c.key)}" ${isLocked ? 'disabled' : ''}
                 class="w-full accent-navy" />
-              ${c.guide ? `<div class="mt-1.5 text-[10px] leading-relaxed text-[var(--text-muted)] bg-[var(--surface-card)] rounded-lg px-2.5 py-1.5 border border-[var(--border-subtle)]">${esc(c.guide).replace(/\\|/g, '<br/>')}</div>` : ''}
+              ${c.guide ? `<div class="mt-1.5 text-[10px] leading-relaxed text-[var(--text-muted)] bg-[var(--surface-card)] rounded-lg px-2.5 py-1.5 border border-[var(--border-subtle)]">${c.guide.split('|').map((s: string) => '<span class="block">' + esc(s.trim()) + '</span>').join('')}</div>` : ''}
             </div>`;
           }).join('')}
           <textarea id="eval-notes" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-16" placeholder="Notas privadas (so voce ve)..." ${isLocked ? 'disabled' : ''}>${esc(draft?.notes || '')}</textarea>
@@ -1341,7 +1341,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
                 <input type="range" min="0" max="${cMax}" step="1" value="${defaultVal}"
                   data-intv-key="${esc(c.key)}" ${isLocked ? 'disabled' : ''}
                   class="w-full accent-navy" />
-                ${c.guide ? `<div class="mt-1.5 text-[10px] leading-relaxed text-[var(--text-muted)] bg-[var(--surface-card)] rounded-lg px-2.5 py-1.5 border border-[var(--border-subtle)]">${esc(c.guide).replace(/\\|/g, '<br/>')}</div>` : ''}
+                ${c.guide ? `<div class="mt-1.5 text-[10px] leading-relaxed text-[var(--text-muted)] bg-[var(--surface-card)] rounded-lg px-2.5 py-1.5 border border-[var(--border-subtle)]">${c.guide.split('|').map((s: string) => '<span class="block">' + esc(s.trim()) + '</span>').join('')}</div>` : ''}
                 <textarea data-intv-note-key="${esc(c.key)}" class="w-full mt-1.5 px-2 py-1.5 text-[11px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-10 resize-none" placeholder="Notas sobre ${esc(c.label)}..." ${isLocked ? 'disabled' : ''}>${esc(draft?.criterion_notes?.[c.key] || '')}</textarea>
               </div>`;
             }).join('');
