@@ -6,12 +6,12 @@ globs: supabase/functions/nucleo-mcp/**
 # MCP Server Rules (nucleo-mcp v2.8.0)
 
 ## Current State
-- 42 tools (36 read + 6 write) + 1 dynamic prompt + 1 static resource
+- 52 tools (45 read + 7 write) + 1 dynamic prompt + 1 static resource
 - Transport: @modelcontextprotocol/sdk@1.28.0 WebStandardStreamableHTTPServerTransport (native)
 - Tool params: Zod schemas (z.string(), z.number(), z.boolean()) — NOT plain JSON Schema objects
 - Auth: OAuth 2.1 via Workers (nucleoia.vitormr.dev) → Supabase JWT
 - All tools log usage to mcp_usage_log
-- Claude.ai connector: verified working (26 tools visible)
+- Claude.ai connector: verified working (52 tools visible)
 
 ## SDK Compatibility
 - **SDK 1.28.0**: Latest stable. Works on Deno with native `WebStandardStreamableHTTPServerTransport`. Tool params MUST use Zod schemas.

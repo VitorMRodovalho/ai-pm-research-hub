@@ -234,7 +234,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
     "nucleo://tools/reference",
     {
       title: "Referência completa de ferramentas",
-      description: "Lista todas as 47 ferramentas do Núcleo MCP com parâmetros e permissões.",
+      description: "Lista todas as 52 ferramentas do Núcleo MCP com parâmetros e permissões.",
       mimeType: "text/markdown",
     },
     async () => ({
@@ -242,7 +242,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
         uri: "nucleo://tools/reference",
         text: `# Núcleo IA MCP — Referência de Ferramentas (v2.8.0)
 
-## 50 ferramentas: 43 leitura + 7 escrita
+## 52 ferramentas: 45 leitura + 7 escrita
 
 ### Tier 1 — Todos os membros (17 leitura)
 | # | Ferramenta | Parâmetros | Descrição |
