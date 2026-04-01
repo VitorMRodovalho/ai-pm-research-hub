@@ -1084,7 +1084,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   }
 
   async function executeImport() {
-    if (!csvParsedRows.length || !currentCycleId) return;
+    if (!csvParsedRows.length) { toast('Nenhum CSV carregado — faça upload primeiro', 'error'); return; }
+    if (!currentCycleId) { toast('Nenhum ciclo selecionado', 'error'); return; }
     const opportunityId = (document.getElementById('import-opportunity') as HTMLInputElement)?.value?.trim();
     if (!opportunityId) { toast('Informe o Opportunity ID do PMI VEP', 'error'); return; }
     const role = (document.getElementById('import-role') as HTMLSelectElement)?.value || 'researcher';
