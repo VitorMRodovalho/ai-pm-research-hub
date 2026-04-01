@@ -458,43 +458,105 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const statusLabel = STATUS_LABELS[row.status] || row.status;
 
     body.innerHTML = `
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Left: Candidate info -->
-        <div class="space-y-4">
-          <div class="grid grid-cols-2 gap-3 text-[13px]">
-            <div><span class="text-[var(--text-muted)] text-[11px]">Email</span><br><strong>${esc(row.email)}</strong></div>
-            <div><span class="text-[var(--text-muted)] text-[11px]">Capítulo</span><br><strong>${esc(row.chapter || '—')}</strong></div>
-            <div><span class="text-[var(--text-muted)] text-[11px]">Papel</span><br><strong>${esc(ROLE_LABELS[row.role_applied] || row.role_applied)}</strong></div>
-            <div><span class="text-[var(--text-muted)] text-[11px]">Status</span><br><span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${sb2.bg} ${sb2.color}">${esc(statusLabel)}</span></div>
+      <!-- Modal tabs -->
+      <div class="flex gap-1 border-b border-[var(--border-default)] mb-4">
+        <button data-modal-tab="info" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-navy text-navy bg-transparent cursor-pointer">Informações</button>
+        <button data-modal-tab="evaluate" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">Avaliar</button>
+        <button data-modal-tab="interview" class="modal-tab-btn px-3 py-1.5 text-[12px] font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer">Entrevista</button>
+      </div>
+
+      <!-- TAB: Info -->
+      <div id="modal-tab-info">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-3 text-[13px]">
+              <div><span class="text-[var(--text-muted)] text-[11px]">Email</span><br><strong>${esc(row.email)}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[11px]">Capítulo</span><br><strong>${esc(row.chapter || '—')}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[11px]">Papel</span><br><strong>${esc(ROLE_LABELS[row.role_applied] || row.role_applied)}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[11px]">Status</span><br><span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${sb2.bg} ${sb2.color}">${esc(statusLabel)}</span></div>
+            </div>
+            ${row.motivation ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">Motivação</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[200px] overflow-y-auto">${esc(row.motivation)}</p></div>` : ''}
+            <div class="grid grid-cols-2 gap-3 text-[13px]">
+              <div><span class="text-[var(--text-muted)] text-[11px]">Obj. Score</span><br><strong class="text-lg">${row.objective_score != null ? Number(row.objective_score).toFixed(1) : '—'}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[11px]">Final Score</span><br><strong class="text-lg text-navy">${row.final_score != null ? Number(row.final_score).toFixed(1) : '—'}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[11px]">Rank (Cap.)</span><br><strong>${row.rank_chapter != null ? '#' + row.rank_chapter : '—'}</strong></div>
+              <div><span class="text-[var(--text-muted)] text-[11px]">Rank (Geral)</span><br><strong>${row.rank_overall != null ? '#' + row.rank_overall : '—'}</strong></div>
+            </div>
+            ${row.tags?.length ? `<div class="flex gap-1 flex-wrap">${row.tags.map((t: string) => `<span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-semibold">${esc(t)}</span>`).join('')}</div>` : ''}
           </div>
-
-          ${row.motivation ? `
-          <div>
-            <h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">Motivação</h4>
-            <p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap">${esc(row.motivation)}</p>
-          </div>` : ''}
-
-          <div class="grid grid-cols-2 gap-3 text-[13px]">
-            <div><span class="text-[var(--text-muted)] text-[11px]">Obj. Score</span><br><strong class="text-lg">${row.objective_score != null ? Number(row.objective_score).toFixed(1) : '—'}</strong></div>
-            <div><span class="text-[var(--text-muted)] text-[11px]">Final Score</span><br><strong class="text-lg text-navy">${row.final_score != null ? Number(row.final_score).toFixed(1) : '—'}</strong></div>
-            <div><span class="text-[var(--text-muted)] text-[11px]">Rank (Capítulo)</span><br><strong>${row.rank_chapter != null ? '#' + row.rank_chapter : '—'}</strong></div>
-            <div><span class="text-[var(--text-muted)] text-[11px]">Rank (Geral)</span><br><strong>${row.rank_overall != null ? '#' + row.rank_overall : '—'}</strong></div>
+          <div class="space-y-4">
+            <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">Alterar Status</h4>
+            <select id="modal-status-select" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]">
+              ${Object.entries(STATUS_LABELS).map(([k, v]) => `<option value="${k}" ${k === row.status ? 'selected' : ''}>${v}</option>`).join('')}
+            </select>
+            <textarea id="modal-feedback" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-20" placeholder="Feedback / observações...">${esc(row.feedback || '')}</textarea>
+            <button id="modal-save-btn" data-id="${esc(row.id)}" class="w-full px-4 py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">Salvar alterações</button>
           </div>
-
-          ${row.tags?.length ? `<div class="flex gap-1 flex-wrap">${row.tags.map((t: string) => `<span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-semibold">${esc(t)}</span>`).join('')}</div>` : ''}
         </div>
+      </div>
 
-        <!-- Right: Actions -->
+      <!-- TAB: Evaluate (blind review) -->
+      <div id="modal-tab-evaluate" class="hidden">
+        <div id="eval-form-container" class="space-y-4">
+          <p class="text-sm text-[var(--text-muted)]">Carregando formulário de avaliação...</p>
+        </div>
+      </div>
+
+      <!-- TAB: Interview -->
+      <div id="modal-tab-interview" class="hidden">
         <div class="space-y-4">
-          <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">Alterar Status</h4>
-          <select id="modal-status-select" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]">
-            ${Object.entries(STATUS_LABELS).map(([k, v]) => `<option value="${k}" ${k === row.status ? 'selected' : ''}>${v}</option>`).join('')}
-          </select>
-          <textarea id="modal-feedback" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-20" placeholder="Feedback / observações...">${esc(row.feedback || '')}</textarea>
-          <button id="modal-save-btn" data-id="${esc(row.id)}" class="w-full px-4 py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">Salvar alterações</button>
+          <h4 class="text-sm font-bold text-navy">Agendar Entrevista</h4>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-semibold text-[var(--text-secondary)] mb-1">Data/Hora</label>
+              <input type="datetime-local" id="interview-datetime" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" />
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-[var(--text-secondary)] mb-1">Duração (min)</label>
+              <input type="number" id="interview-duration" value="30" min="15" max="120" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" />
+            </div>
+          </div>
+          <button id="schedule-interview-btn" data-app-id="${esc(row.id)}" class="px-5 py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">Agendar</button>
         </div>
       </div>
     `;
+
+    // Modal tab switching
+    body.querySelectorAll('.modal-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = (btn as HTMLElement).dataset.modalTab;
+        body.querySelectorAll('.modal-tab-btn').forEach(b => {
+          const isActive = (b as HTMLElement).dataset.modalTab === tab;
+          b.classList.toggle('border-navy', isActive);
+          b.classList.toggle('text-navy', isActive);
+          b.classList.toggle('border-transparent', !isActive);
+          b.classList.toggle('text-[var(--text-secondary)]', !isActive);
+        });
+        ['info', 'evaluate', 'interview'].forEach(t => {
+          body.querySelector(`#modal-tab-${t}`)?.classList.toggle('hidden', t !== tab);
+        });
+        if (tab === 'evaluate') loadEvaluationForm(row.id);
+      });
+    });
+
+    // Interview scheduling
+    body.querySelector('#schedule-interview-btn')?.addEventListener('click', async () => {
+      const dt = (body.querySelector('#interview-datetime') as HTMLInputElement)?.value;
+      const dur = parseInt((body.querySelector('#interview-duration') as HTMLInputElement)?.value || '30', 10);
+      if (!dt) { toast('Selecione data e hora', 'error'); return; }
+      try {
+        const { data, error } = await sb.rpc('schedule_interview', {
+          p_application_id: row.id,
+          p_interviewer_ids: [MEMBER.id],
+          p_scheduled_at: new Date(dt).toISOString(),
+          p_duration_minutes: dur,
+        });
+        if (error) throw error;
+        toast('Entrevista agendada');
+        modal.classList.add('hidden');
+        loadDashboard();
+      } catch (e: any) { toast(e.message || 'Erro ao agendar', 'error'); }
+    });
 
     // Save handler — uses admin_update_application RPC (validates auth, seeds onboarding on approve)
     body.querySelector('#modal-save-btn')?.addEventListener('click', async () => {
@@ -521,6 +583,80 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     });
 
     modal.classList.remove('hidden');
+  }
+
+  /* ── evaluation form ──────────────────────────────── */
+  async function loadEvaluationForm(applicationId: string) {
+    const container = document.getElementById('eval-form-container');
+    if (!container) return;
+    container.innerHTML = '<p class="text-sm text-[var(--text-muted)]">Carregando...</p>';
+    try {
+      const { data, error } = await sb.rpc('get_evaluation_form', {
+        p_application_id: applicationId, p_evaluation_type: 'objective',
+      });
+      if (error) throw error;
+      if (!data) throw new Error('Sem dados');
+
+      const criteria = data.criteria || [];
+      const draft = data.draft;
+      const isLocked = data.is_locked;
+
+      container.innerHTML = `
+        <div class="space-y-4">
+          ${isLocked ? '<div class="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-800 font-semibold">Avaliação já submetida e bloqueada.</div>' : ''}
+          <h4 class="text-sm font-bold text-navy">Avaliação Objetiva (0-10)</h4>
+          ${criteria.map((c: any) => `
+            <div class="bg-[var(--surface-base)] rounded-xl p-3">
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[12px] font-bold text-[var(--text-primary)]">${esc(c.label)} <span class="text-[var(--text-muted)] font-normal">(peso ${c.weight})</span></label>
+                <span class="eval-score-display text-sm font-bold text-navy" data-key="${esc(c.key)}">${draft?.scores?.[c.key] ?? '—'}</span>
+              </div>
+              <input type="range" min="0" max="10" step="1" value="${draft?.scores?.[c.key] ?? 5}"
+                data-eval-key="${esc(c.key)}" ${isLocked ? 'disabled' : ''}
+                class="w-full accent-navy" />
+              <p class="text-[10px] text-[var(--text-muted)] mt-1">${esc(c.guide || '')}</p>
+            </div>
+          `).join('')}
+          <textarea id="eval-notes" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-16" placeholder="Notas privadas (só você vê)..." ${isLocked ? 'disabled' : ''}>${esc(draft?.notes || '')}</textarea>
+          ${!isLocked ? `<button id="submit-evaluation-btn" data-app-id="${esc(applicationId)}" class="w-full px-4 py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">Submeter Avaliação (bloqueia edição)</button>` : ''}
+        </div>
+      `;
+
+      // Range slider live display
+      container.querySelectorAll<HTMLInputElement>('input[type="range"]').forEach(slider => {
+        const key = slider.dataset.evalKey;
+        slider.addEventListener('input', () => {
+          const display = container.querySelector(`.eval-score-display[data-key="${key}"]`);
+          if (display) display.textContent = slider.value;
+        });
+      });
+
+      // Submit evaluation
+      container.querySelector('#submit-evaluation-btn')?.addEventListener('click', async () => {
+        const scores: Record<string, number> = {};
+        container.querySelectorAll<HTMLInputElement>('input[type="range"]').forEach(slider => {
+          if (slider.dataset.evalKey) scores[slider.dataset.evalKey] = parseInt(slider.value, 10);
+        });
+        const notes = (container.querySelector('#eval-notes') as HTMLTextAreaElement)?.value || '';
+        const btn = container.querySelector('#submit-evaluation-btn') as HTMLButtonElement;
+        if (btn) { btn.disabled = true; btn.textContent = 'Submetendo...'; }
+        try {
+          const { data: result, error } = await sb.rpc('submit_evaluation', {
+            p_application_id: applicationId, p_evaluation_type: 'objective',
+            p_scores: scores, p_notes: notes,
+          });
+          if (error) throw error;
+          toast(result?.all_submitted ? `Avaliação submetida — PERT: ${result.pert_score}` : 'Avaliação submetida');
+          loadEvaluationForm(applicationId); // Reload to show locked state
+          loadDashboard();
+        } catch (e: any) {
+          toast(e.message || 'Erro ao submeter', 'error');
+          if (btn) { btn.disabled = false; btn.textContent = 'Submeter Avaliação'; }
+        }
+      });
+    } catch (e: any) {
+      container.innerHTML = `<p class="text-sm text-red-500">${esc(e.message || 'Erro ao carregar formulário')}</p>`;
+    }
   }
 
   /* ── CSV import ───────────────────────────────────── */
