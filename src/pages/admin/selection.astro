@@ -41,6 +41,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         <!-- Quick stats -->
         <div id="sel-quick-stats" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4"></div>
 
+        <!-- Action buttons -->
+        <div class="flex flex-wrap gap-3 mb-4">
+          <button id="recalc-rankings-btn" class="px-4 py-2 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">Recalcular Rankings</button>
+          <button id="start-screening-btn" class="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">Iniciar Triagem</button>
+        </div>
+
         <!-- Filters -->
         <div class="flex flex-wrap gap-3 items-center mb-4">
           <div class="flex rounded-lg overflow-hidden border border-[var(--border-default)]" id="sel-role-toggle">
@@ -75,6 +81,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
             <table class="w-full text-left text-[13px]">
               <thead>
                 <tr class="bg-[var(--surface-base)] border-b border-[var(--border-default)]">
+                  <th class="px-2 py-2.5 w-8"><input type="checkbox" id="sel-check-all" class="cursor-pointer" /></th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="applicant_name">Nome</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Papel</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Capítulo</th>
@@ -88,6 +95,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
               <tbody id="sel-tbody" class="divide-y divide-[var(--border-subtle)]"></tbody>
             </table>
           </div>
+        </div>
+
+        <!-- Bulk actions bar -->
+        <div id="bulk-actions" class="hidden flex gap-3 items-center bg-[var(--surface-base)] rounded-xl px-4 py-3 mt-3">
+          <span id="bulk-count" class="text-sm font-bold text-navy">0 selecionados</span>
+          <button class="bulk-action-btn px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="approved">Aprovar</button>
+          <button class="bulk-action-btn px-4 py-2 bg-red-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="rejected">Rejeitar</button>
+          <button class="bulk-action-btn px-4 py-2 bg-amber-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="waitlist">Lista Espera</button>
         </div>
       </div>
 
@@ -357,7 +372,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     } catch (e: any) {
       console.error('Selection load:', e);
       const tbody = document.getElementById('sel-tbody');
-      if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-6 text-center text-red-500">Erro: ${esc(e.message || 'desconhecido')}</td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-6 text-center text-red-500">Erro: ${esc(e.message || 'desconhecido')}</td></tr>`;
     }
   }
 
@@ -440,7 +455,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     if (!tbody) return;
     if (countEl) countEl.textContent = `${filteredRows.length} resultado${filteredRows.length !== 1 ? 's' : ''}`;
     if (!filteredRows.length) {
-      tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || 'Nenhum candidato'}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || 'Nenhum candidato'}</td></tr>`;
       return;
     }
     tbody.innerHTML = filteredRows.map(r => {
@@ -451,6 +466,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       const roleLabel = ROLE_LABELS[r.role_applied] || r.role_applied || '—';
       const statusLabel = STATUS_LABELS[r.status] || r.status?.replace(/_/g, ' ') || '—';
       return `<tr class="hover:bg-[var(--surface-hover)] cursor-pointer" data-action="view-applicant" data-id="${esc(r.id)}">
+        <td class="px-2 py-2.5 w-8" onclick="event.stopPropagation()"><input type="checkbox" class="sel-row-check cursor-pointer" value="${esc(r.id)}" /></td>
         <td class="px-4 py-2.5 font-semibold text-navy">${esc(r.applicant_name)}</td>
         <td class="px-4 py-2.5 text-[12px]">${esc(roleLabel)}</td>
         <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]">${esc(r.chapter || '—')}</td>
@@ -463,6 +479,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         </td>
       </tr>`;
     }).join('');
+    updateBulkBar();
   }
 
   /* ── applicant detail modal ───────────────────────── */
@@ -557,6 +574,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
           body.querySelector(`#modal-tab-${t}`)?.classList.toggle('hidden', t !== tab);
         });
         if (tab === 'evaluate') loadEvaluationForm(row.id);
+        if (tab === 'interview') loadInterviewForm(row);
       });
     });
 
@@ -621,11 +639,35 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       const criteria = data.criteria || [];
       const draft = data.draft;
       const isLocked = data.is_locked;
+      const app = data.application || {};
+
+      // Gap 8: Build essay display
+      const essayFields = [
+        { key: 'motivation_letter', label: 'Motivacao' },
+        { key: 'areas_of_interest', label: 'Perfil / Areas de Interesse' },
+        { key: 'academic_background', label: 'Familiaridade com PMBOK' },
+        { key: 'availability_declared', label: 'Disponibilidade' },
+        { key: 'proposed_theme', label: 'Tema Proposto' },
+      ];
+      const essayItems = essayFields
+        .filter(f => app[f.key])
+        .map(f => `<div class="mb-2"><h5 class="text-[11px] font-bold text-[var(--text-secondary)] mb-0.5">${esc(f.label)}</h5><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-2.5 whitespace-pre-wrap max-h-[150px] overflow-y-auto">${esc(app[f.key])}</p></div>`)
+        .join('');
+      const resumeLink = app.resume_url ? `<div class="mb-2"><a href="${esc(app.resume_url)}" target="_blank" rel="noopener noreferrer" class="text-[12px] text-purple-600 hover:underline font-semibold">Ver CV / Curriculo</a></div>` : '';
+      const essaySection = (essayItems || resumeLink) ? `
+        <details open class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl mb-4">
+          <summary class="px-4 py-3 text-sm font-bold text-navy cursor-pointer">Respostas do Candidato</summary>
+          <div class="px-4 pb-3">${essayItems}${resumeLink}</div>
+        </details>` : '';
+
+      // Gap 6: Check if leader role
+      const isLeader = app.role_applied === 'leader';
 
       container.innerHTML = `
         <div class="space-y-4">
-          ${isLocked ? '<div class="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-800 font-semibold">Avaliação já submetida e bloqueada.</div>' : ''}
-          <h4 class="text-sm font-bold text-navy">Avaliação Objetiva (0-10)</h4>
+          ${essaySection}
+          ${isLocked ? '<div class="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-800 font-semibold">Avaliacao ja submetida e bloqueada.</div>' : ''}
+          <h4 class="text-sm font-bold text-navy">Avaliacao Objetiva (0-10)</h4>
           ${criteria.map((c: any) => `
             <div class="bg-[var(--surface-base)] rounded-xl p-3">
               <div class="flex items-center justify-between mb-1">
@@ -638,8 +680,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
               <p class="text-[10px] text-[var(--text-muted)] mt-1">${esc(c.guide || '')}</p>
             </div>
           `).join('')}
-          <textarea id="eval-notes" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-16" placeholder="Notas privadas (só você vê)..." ${isLocked ? 'disabled' : ''}>${esc(draft?.notes || '')}</textarea>
-          ${!isLocked ? `<button id="submit-evaluation-btn" data-app-id="${esc(applicationId)}" class="w-full px-4 py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">Submeter Avaliação (bloqueia edição)</button>` : ''}
+          <textarea id="eval-notes" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-16" placeholder="Notas privadas (so voce ve)..." ${isLocked ? 'disabled' : ''}>${esc(draft?.notes || '')}</textarea>
+          ${!isLocked ? `<button id="submit-evaluation-btn" data-app-id="${esc(applicationId)}" class="w-full px-4 py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">Submeter Avaliacao (bloqueia edicao)</button>` : ''}
+          ${isLocked ? `<button id="view-results-btn" data-app-id="${esc(applicationId)}" class="w-full px-4 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90 mt-2">Ver Resultados Consolidados</button>` : ''}
+          <div id="leader-extra-container"></div>
         </div>
       `;
 
@@ -655,7 +699,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       // Submit evaluation
       container.querySelector('#submit-evaluation-btn')?.addEventListener('click', async () => {
         const scores: Record<string, number> = {};
-        container.querySelectorAll<HTMLInputElement>('input[type="range"]').forEach(slider => {
+        container.querySelectorAll<HTMLInputElement>('input[type="range"][data-eval-key]').forEach(slider => {
           if (slider.dataset.evalKey) scores[slider.dataset.evalKey] = parseInt(slider.value, 10);
         });
         const notes = (container.querySelector('#eval-notes') as HTMLTextAreaElement)?.value || '';
@@ -667,17 +711,98 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
             p_scores: scores, p_notes: notes,
           });
           if (error) throw error;
-          toast(result?.all_submitted ? `Avaliação submetida — PERT: ${result.pert_score}` : 'Avaliação submetida');
-          loadEvaluationForm(applicationId); // Reload to show locked state
+          toast(result?.all_submitted ? `Avaliacao submetida — PERT: ${result.pert_score}` : 'Avaliacao submetida');
+          loadEvaluationForm(applicationId);
           loadDashboard();
         } catch (e: any) {
           toast(e.message || 'Erro ao submeter', 'error');
-          if (btn) { btn.disabled = false; btn.textContent = 'Submeter Avaliação'; }
+          if (btn) { btn.disabled = false; btn.textContent = 'Submeter Avaliacao'; }
         }
       });
+
+      // Gap 1: View results button
+      container.querySelector('#view-results-btn')?.addEventListener('click', () => {
+        loadEvaluationResults(applicationId);
+      });
+
+      // Gap 6: Leader extra criteria
+      if (isLeader) {
+        loadLeaderExtraCriteria(applicationId);
+      }
     } catch (e: any) {
-      container.innerHTML = `<p class="text-sm text-red-500">${esc(e.message || 'Erro ao carregar formulário')}</p>`;
+      container.innerHTML = `<p class="text-sm text-red-500">${esc(e.message || 'Erro ao carregar formulario')}</p>`;
     }
+  }
+
+  /* ── leader extra criteria (Gap 6) ───────────────── */
+  async function loadLeaderExtraCriteria(applicationId: string) {
+    const leaderContainer = document.getElementById('leader-extra-container');
+    if (!leaderContainer) return;
+    try {
+      const { data, error } = await sb.rpc('get_evaluation_form', {
+        p_application_id: applicationId, p_evaluation_type: 'leader_extra',
+      });
+      if (error) throw error;
+      if (!data) return;
+
+      const criteria = data.criteria || [];
+      if (!criteria.length) return;
+      const draft = data.draft;
+      const isLocked = data.is_locked;
+
+      leaderContainer.innerHTML = `
+        <div class="space-y-4 mt-4 border-t border-[var(--border-default)] pt-4">
+          ${isLocked ? '<div class="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-800 font-semibold">Avaliacao de lideranca ja submetida.</div>' : ''}
+          <h4 class="text-sm font-bold text-purple-700">Criterios Extra de Lideranca (0-10)</h4>
+          ${criteria.map((c: any) => `
+            <div class="bg-[var(--surface-base)] rounded-xl p-3">
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[12px] font-bold text-[var(--text-primary)]">${esc(c.label)} <span class="text-[var(--text-muted)] font-normal">(peso ${c.weight})</span></label>
+                <span class="leader-score-display text-sm font-bold text-purple-700" data-key="${esc(c.key)}">${draft?.scores?.[c.key] ?? '—'}</span>
+              </div>
+              <input type="range" min="0" max="10" step="1" value="${draft?.scores?.[c.key] ?? 5}"
+                data-leader-key="${esc(c.key)}" ${isLocked ? 'disabled' : ''}
+                class="w-full accent-purple-600" />
+              <p class="text-[10px] text-[var(--text-muted)] mt-1">${esc(c.guide || '')}</p>
+            </div>
+          `).join('')}
+          <textarea id="leader-eval-notes" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-16" placeholder="Notas sobre lideranca..." ${isLocked ? 'disabled' : ''}>${esc(draft?.notes || '')}</textarea>
+          ${!isLocked ? `<button id="submit-leader-eval-btn" class="w-full px-4 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">Submeter Avaliacao de Lideranca</button>` : ''}
+        </div>
+      `;
+
+      // Slider live display
+      leaderContainer.querySelectorAll<HTMLInputElement>('input[type="range"]').forEach(slider => {
+        const key = slider.dataset.leaderKey;
+        slider.addEventListener('input', () => {
+          const display = leaderContainer.querySelector(`.leader-score-display[data-key="${key}"]`);
+          if (display) display.textContent = slider.value;
+        });
+      });
+
+      // Submit leader extra evaluation
+      leaderContainer.querySelector('#submit-leader-eval-btn')?.addEventListener('click', async () => {
+        const scores: Record<string, number> = {};
+        leaderContainer.querySelectorAll<HTMLInputElement>('input[type="range"]').forEach(slider => {
+          if (slider.dataset.leaderKey) scores[slider.dataset.leaderKey] = parseInt(slider.value, 10);
+        });
+        const notes = (leaderContainer.querySelector('#leader-eval-notes') as HTMLTextAreaElement)?.value || '';
+        const btn = leaderContainer.querySelector('#submit-leader-eval-btn') as HTMLButtonElement;
+        if (btn) { btn.disabled = true; btn.textContent = 'Submetendo...'; }
+        try {
+          const { data: result, error } = await sb.rpc('submit_evaluation', {
+            p_application_id: applicationId, p_evaluation_type: 'leader_extra',
+            p_scores: scores, p_notes: notes,
+          });
+          if (error) throw error;
+          toast('Avaliacao de lideranca submetida');
+          loadLeaderExtraCriteria(applicationId);
+        } catch (e: any) {
+          toast(e.message || 'Erro ao submeter', 'error');
+          if (btn) { btn.disabled = false; btn.textContent = 'Submeter Avaliacao de Lideranca'; }
+        }
+      });
+    } catch { /* leader_extra not configured, skip silently */ }
   }
 
   /* ── CSV import ───────────────────────────────────── */
@@ -719,7 +844,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         app_status: vals[hIdx('App Status')] || '',
         reason_for_applying: vals[hIdx('Reason for Applying')] || '',
         resume_url: vals[hIdx('Resume')] || '',
-        areas_of_interest: vals[hIdx('Areas of Interest')] || '',
+        areas_of_interest: vals[hIdx('Essay Question 2')] || vals[hIdx('Areas of Interest')] || '',
+        role_preference: vals[hIdx('Essay Question 2')] || '',
+        pmbok_familiarity: vals[hIdx('Essay Question 3')] || '',
+        proposed_theme: vals[hIdx('Essay Question 5')] || '',
         industry: vals[hIdx('Industry')] || '',
         availability: vals[hIdx('Essay Question 4')] || '',
       });
@@ -897,6 +1025,232 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     loadCommittee();
   }
 
+  /* ── bulk selection helpers ─────────────────────────── */
+  function updateBulkBar() {
+    const checks = document.querySelectorAll<HTMLInputElement>('.sel-row-check:checked');
+    const bar = document.getElementById('bulk-actions');
+    const countEl = document.getElementById('bulk-count');
+    if (bar) bar.classList.toggle('hidden', checks.length === 0);
+    if (countEl) countEl.textContent = `${checks.length} selecionado${checks.length !== 1 ? 's' : ''}`;
+  }
+
+  async function executeBulkDecision(decision: string) {
+    const checks = document.querySelectorAll<HTMLInputElement>('.sel-row-check:checked');
+    const ids = Array.from(checks).map(c => c.value);
+    if (!ids.length) return;
+    const labels: Record<string, string> = { approved: 'aprovar', rejected: 'rejeitar', waitlist: 'colocar em lista de espera' };
+    if (!confirm(`Deseja ${labels[decision] || decision} ${ids.length} candidato(s)?`)) return;
+    let ok = 0;
+    let fail = 0;
+    for (const id of ids) {
+      try {
+        const { error } = await sb.rpc('admin_update_application', {
+          p_application_id: id,
+          p_data: { status: decision },
+        });
+        if (error) throw error;
+        ok++;
+      } catch { fail++; }
+    }
+    toast(`${ok} atualizado(s)${fail ? `, ${fail} erro(s)` : ''}`);
+    loadDashboard();
+  }
+
+  /* ── evaluation results ──────────────────────────── */
+  async function loadEvaluationResults(applicationId: string) {
+    const container = document.getElementById('eval-form-container');
+    if (!container) return;
+    container.innerHTML = '<p class="text-sm text-[var(--text-muted)]">Carregando resultados...</p>';
+    try {
+      const { data, error } = await sb.rpc('get_evaluation_results', { p_application_id: applicationId });
+      if (error) throw error;
+      if (!data) throw new Error('Sem dados');
+
+      const evaluations = data.evaluations || [];
+      const consolidated = data.consolidated || {};
+      const criteriaKeys = evaluations.length ? Object.keys(evaluations[0].scores || {}) : [];
+      const evaluatorNames = evaluations.map((ev: any) => esc(ev.evaluator_name || 'Avaliador'));
+
+      let html = '<div class="space-y-4">';
+      html += '<h4 class="text-sm font-bold text-navy">Resultados Consolidados</h4>';
+
+      if (criteriaKeys.length && evaluations.length) {
+        html += '<div class="overflow-x-auto"><table class="w-full text-[12px] text-left"><thead><tr class="bg-[var(--surface-base)]">';
+        html += '<th class="px-3 py-2 font-bold text-[var(--text-secondary)]">Criterio</th>';
+        evaluatorNames.forEach((n: string) => { html += `<th class="px-3 py-2 font-bold text-[var(--text-secondary)]">${n}</th>`; });
+        html += '<th class="px-3 py-2 font-bold text-navy">PERT</th></tr></thead><tbody>';
+        for (const key of criteriaKeys) {
+          html += '<tr class="border-t border-[var(--border-subtle)]">';
+          html += `<td class="px-3 py-2 font-semibold">${esc(key)}</td>`;
+          const scores: number[] = [];
+          for (const ev of evaluations) {
+            const val = ev.scores?.[key];
+            scores.push(val != null ? Number(val) : 0);
+            const maxDiv = scores.length >= 2 ? Math.max(...scores) - Math.min(...scores) : 0;
+            const bgClass = maxDiv > 3 ? 'bg-amber-100' : '';
+            html += `<td class="px-3 py-2 ${bgClass}">${val != null ? val : '—'}</td>`;
+          }
+          // Check divergence across all evaluators for this criterion
+          const allVals = evaluations.map((ev: any) => ev.scores?.[key]).filter((v: any) => v != null).map(Number);
+          const divergence = allVals.length >= 2 ? Math.max(...allVals) - Math.min(...allVals) : 0;
+          const pertBg = divergence > 3 ? 'bg-amber-100' : '';
+          const pert = consolidated.criteria_pert?.[key];
+          html += `<td class="px-3 py-2 font-bold text-navy ${pertBg}">${pert != null ? Number(pert).toFixed(1) : '—'}</td>`;
+          html += '</tr>';
+        }
+        html += '</tbody></table></div>';
+      } else {
+        html += '<p class="text-sm text-[var(--text-muted)]">Nenhuma avaliacao encontrada.</p>';
+      }
+
+      // Consolidated scores
+      html += '<div class="grid grid-cols-3 gap-3 mt-3">';
+      html += `<div class="bg-[var(--surface-base)] rounded-xl p-3 text-center"><div class="text-lg font-extrabold text-navy">${consolidated.objective_score != null ? Number(consolidated.objective_score).toFixed(1) : '—'}</div><div class="text-[.6rem] text-[var(--text-secondary)] font-semibold">Obj. Score</div></div>`;
+      html += `<div class="bg-[var(--surface-base)] rounded-xl p-3 text-center"><div class="text-lg font-extrabold text-navy">${consolidated.interview_score != null ? Number(consolidated.interview_score).toFixed(1) : '—'}</div><div class="text-[.6rem] text-[var(--text-secondary)] font-semibold">Interview Score</div></div>`;
+      html += `<div class="bg-[var(--surface-base)] rounded-xl p-3 text-center"><div class="text-lg font-extrabold text-navy">${consolidated.final_score != null ? Number(consolidated.final_score).toFixed(1) : '—'}</div><div class="text-[.6rem] text-[var(--text-secondary)] font-semibold">Final Score</div></div>`;
+      html += '</div>';
+      html += '</div>';
+      container.innerHTML = html;
+    } catch (e: any) {
+      container.innerHTML = `<p class="text-sm text-red-500">${esc(e.message || 'Erro ao carregar resultados')}</p>`;
+    }
+  }
+
+  /* ── interview scoring form ──────────────────────── */
+  async function loadInterviewForm(row: any) {
+    const container = document.getElementById('modal-tab-interview');
+    if (!container) return;
+
+    // Keep existing scheduling section, append interview scoring below
+    let scoringDiv = container.querySelector('#interview-scoring-section');
+    if (scoringDiv) scoringDiv.remove();
+
+    scoringDiv = document.createElement('div');
+    scoringDiv.id = 'interview-scoring-section';
+    scoringDiv.className = 'space-y-4 mt-4 border-t border-[var(--border-default)] pt-4';
+    scoringDiv.innerHTML = '<p class="text-sm text-[var(--text-muted)]">Carregando entrevista...</p>';
+    container.appendChild(scoringDiv);
+
+    try {
+      const { data: interviews } = await sb.from('selection_interviews').select('*').eq('application_id', row.id).order('created_at', { ascending: false }).limit(1);
+
+      if (!interviews?.length) {
+        scoringDiv.innerHTML = '<p class="text-sm text-[var(--text-muted)]">Nenhuma entrevista agendada.</p>';
+        return;
+      }
+
+      const interview = interviews[0];
+      const statusLabel = STATUS_LABELS[`interview_${interview.status}`] || interview.status;
+      let html = `<div class="bg-[var(--surface-base)] rounded-xl p-3 mb-3">
+        <div class="flex items-center justify-between">
+          <span class="text-[12px] font-bold text-[var(--text-secondary)]">Entrevista: ${esc(statusLabel)}</span>
+          <span class="text-[11px] text-[var(--text-muted)]">${interview.scheduled_at ? new Date(interview.scheduled_at).toLocaleString('pt-BR') : '—'}</span>
+        </div>
+      </div>`;
+
+      // Gap 3: Interview status buttons
+      if (interview.status === 'scheduled') {
+        html += `<div class="flex gap-2 mb-3">
+          <button class="interview-status-btn px-3 py-1.5 bg-orange-500 text-white rounded-lg text-[12px] font-bold cursor-pointer border-0 hover:opacity-90" data-interview-id="${esc(interview.id)}" data-status="noshow">No-Show</button>
+          <button class="interview-status-btn px-3 py-1.5 bg-red-500 text-white rounded-lg text-[12px] font-bold cursor-pointer border-0 hover:opacity-90" data-interview-id="${esc(interview.id)}" data-status="cancelled">Cancelar</button>
+        </div>`;
+      }
+
+      // Gap 2: Interview scoring form
+      if (interview.status === 'scheduled' || interview.status === 'completed') {
+        try {
+          const { data: formData, error: formError } = await sb.rpc('get_evaluation_form', {
+            p_application_id: row.id, p_evaluation_type: 'interview',
+          });
+          if (!formError && formData) {
+            const criteria = formData.criteria || [];
+            const draft = formData.draft;
+            const isLocked = formData.is_locked;
+
+            html += `<h4 class="text-sm font-bold text-navy">Avaliacao da Entrevista (0-10)</h4>`;
+            if (isLocked) {
+              html += '<div class="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-800 font-semibold mb-3">Avaliacao da entrevista ja submetida.</div>';
+            }
+            html += criteria.map((c: any) => `
+              <div class="bg-[var(--surface-base)] rounded-xl p-3">
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-[12px] font-bold text-[var(--text-primary)]">${esc(c.label)} <span class="text-[var(--text-muted)] font-normal">(peso ${c.weight})</span></label>
+                  <span class="intv-score-display text-sm font-bold text-navy" data-key="${esc(c.key)}">${draft?.scores?.[c.key] ?? '—'}</span>
+                </div>
+                <input type="range" min="0" max="10" step="1" value="${draft?.scores?.[c.key] ?? 5}"
+                  data-intv-key="${esc(c.key)}" ${isLocked ? 'disabled' : ''}
+                  class="w-full accent-navy" />
+                <p class="text-[10px] text-[var(--text-muted)] mt-1">${esc(c.guide || '')}</p>
+              </div>
+            `).join('');
+
+            html += `<input type="text" id="intv-theme" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="Tema discutido..." value="${esc(draft?.theme || '')}" ${isLocked ? 'disabled' : ''} />`;
+            html += `<textarea id="intv-notes" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-16" placeholder="Notas da entrevista..." ${isLocked ? 'disabled' : ''}>${esc(draft?.notes || '')}</textarea>`;
+            if (!isLocked) {
+              html += `<button id="submit-interview-scores-btn" data-interview-id="${esc(interview.id)}" class="w-full px-4 py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">Submeter Avaliacao da Entrevista</button>`;
+            }
+          }
+        } catch { /* scoring form not available */ }
+      }
+
+      scoringDiv.innerHTML = html;
+
+      // Wire up slider live display
+      scoringDiv.querySelectorAll<HTMLInputElement>('input[type="range"]').forEach(slider => {
+        const key = slider.dataset.intvKey;
+        slider.addEventListener('input', () => {
+          const display = scoringDiv!.querySelector(`.intv-score-display[data-key="${key}"]`);
+          if (display) display.textContent = slider.value;
+        });
+      });
+
+      // Wire up interview status buttons (Gap 3)
+      scoringDiv.querySelectorAll<HTMLButtonElement>('.interview-status-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const intvId = btn.dataset.interviewId;
+          const status = btn.dataset.status;
+          if (!intvId || !status) return;
+          try {
+            const { error } = await sb.rpc('mark_interview_status', { p_interview_id: intvId, p_status: status });
+            if (error) throw error;
+            toast(status === 'noshow' ? 'Marcado como No-Show' : 'Entrevista cancelada');
+            loadInterviewForm(row);
+            loadDashboard();
+          } catch (e: any) { toast(e.message || 'Erro', 'error'); }
+        });
+      });
+
+      // Wire up interview scoring submit (Gap 2)
+      scoringDiv.querySelector('#submit-interview-scores-btn')?.addEventListener('click', async () => {
+        const scores: Record<string, number> = {};
+        scoringDiv!.querySelectorAll<HTMLInputElement>('input[type="range"]').forEach(slider => {
+          if (slider.dataset.intvKey) scores[slider.dataset.intvKey] = parseInt(slider.value, 10);
+        });
+        const theme = (scoringDiv!.querySelector('#intv-theme') as HTMLInputElement)?.value || '';
+        const notes = (scoringDiv!.querySelector('#intv-notes') as HTMLTextAreaElement)?.value || '';
+        const btn2 = scoringDiv!.querySelector('#submit-interview-scores-btn') as HTMLButtonElement;
+        if (btn2) { btn2.disabled = true; btn2.textContent = 'Submetendo...'; }
+        try {
+          const { error } = await sb.rpc('submit_interview_scores', {
+            p_interview_id: interview.id,
+            p_scores: scores,
+            p_theme: theme,
+            p_notes: notes,
+          });
+          if (error) throw error;
+          toast('Avaliacao da entrevista submetida');
+          loadInterviewForm(row);
+          loadDashboard();
+        } catch (e: any) {
+          toast(e.message || 'Erro ao submeter', 'error');
+          if (btn2) { btn2.disabled = false; btn2.textContent = 'Submeter Avaliacao da Entrevista'; }
+        }
+      });
+    } catch (e: any) {
+      scoringDiv.innerHTML = `<p class="text-sm text-red-500">${esc(e.message || 'Erro ao carregar entrevista')}</p>`;
+    }
+  }
+
   /* ── event binding ────────────────────────────────── */
   let searchTimeout: any = null;
 
@@ -982,6 +1336,65 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       else if (action === 'add-committee-member' && target.dataset.memberId) {
         addCommitteeMemberById(target.dataset.memberId, target.dataset.memberName || '');
       }
+    });
+
+    // Check-all checkbox (Gap 4)
+    document.getElementById('sel-check-all')?.addEventListener('change', (e) => {
+      const checked = (e.target as HTMLInputElement).checked;
+      document.querySelectorAll<HTMLInputElement>('.sel-row-check').forEach(cb => { cb.checked = checked; });
+      updateBulkBar();
+    });
+    document.addEventListener('change', (e) => {
+      if ((e.target as HTMLElement).classList.contains('sel-row-check')) updateBulkBar();
+    });
+
+    // Bulk action buttons (Gap 4)
+    document.querySelectorAll<HTMLButtonElement>('.bulk-action-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const decision = btn.dataset.decision;
+        if (decision) executeBulkDecision(decision);
+      });
+    });
+
+    // Recalculate rankings (Gap 5)
+    document.getElementById('recalc-rankings-btn')?.addEventListener('click', async () => {
+      if (!currentCycleId) { toast('Nenhum ciclo selecionado', 'error'); return; }
+      const btn = document.getElementById('recalc-rankings-btn') as HTMLButtonElement;
+      if (btn) { btn.disabled = true; btn.textContent = 'Calculando...'; }
+      try {
+        const { error } = await sb.rpc('calculate_rankings', { p_cycle_id: currentCycleId });
+        if (error) throw error;
+        toast('Rankings recalculados');
+        loadDashboard();
+      } catch (e: any) {
+        toast(e.message || 'Erro ao recalcular', 'error');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Recalcular Rankings'; }
+      }
+    });
+
+    // Start screening (Gap 10)
+    document.getElementById('start-screening-btn')?.addEventListener('click', async () => {
+      const submitted = allRows.filter(r => r.status === 'submitted');
+      if (!submitted.length) { toast('Nenhum candidato com status "submitted"', 'error'); return; }
+      if (!confirm(`Iniciar triagem para ${submitted.length} candidato(s)?`)) return;
+      const btn = document.getElementById('start-screening-btn') as HTMLButtonElement;
+      if (btn) { btn.disabled = true; btn.textContent = 'Processando...'; }
+      let ok = 0;
+      let fail = 0;
+      for (const r of submitted) {
+        try {
+          const { error } = await sb.rpc('admin_update_application', {
+            p_application_id: r.id,
+            p_data: { status: 'screening' },
+          });
+          if (error) throw error;
+          ok++;
+        } catch { fail++; }
+      }
+      toast(`${ok} candidato(s) movidos para triagem${fail ? `, ${fail} erro(s)` : ''}`);
+      if (btn) { btn.disabled = false; btn.textContent = 'Iniciar Triagem'; }
+      loadDashboard();
     });
 
     // Committee search setup
