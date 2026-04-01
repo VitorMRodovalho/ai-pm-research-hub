@@ -1482,4 +1482,43 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-136 — Selection Pipeline V2: Mid-Cycle Recruitment + VEP Import
+**Data:** 2026-03-31 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisao:** Implementar pipeline digital completo de selecao com suporte a recrutamento mid-cycle. Ciclo de pesquisa != ciclo de selecao — selecao ocorre em batches assincronos sem disrupcao do time ativo. Batch 2 (Mid-Cycle 2026) aberto para 8 novos candidatos da vaga PMI VEP 64967.
+
+**Justificativa:** 2 membros convertidos para observers (Marcel, Leandro) + 1 tribe leader inativando (Daniel). Necessidade de recrutar substituicoes sem afetar qualidade de entrega pactuada. CBGP em ~28 dias trara mais candidatos.
+
+**Impacto tecnico:**
+- Schema: `partner_chapters` (dinamico, 5 capitulos), `selection_membership_snapshots` (fatos temporais), `vep_opportunity_id` em selection_applications
+- RPCs: `import_vep_applications` (RFC 4180 parser, dedup por vep_application_id, skip Active/OfferNotExtended/observers/offboarded, snapshot membership dimensional), `admin_update_application`, `finalize_decisions` (bulk approve/reject + member creation + onboarding auto-trigger + diversity snapshot + notifications), `manage_selection_committee`, `get_selection_cycles`, `get_selection_committee`, `get_application_interviews`
+- Frontend: /admin/selection com tabs (Pipeline | Import CSV | Comite), evaluation modal com blind review + sliders 0-10, interview scheduling, bulk actions, cycle picker
+- Pre-onboarding gamification: 5 steps (450 XP), auto-detection via `check_pre_onboarding_auto_steps`, triggered on approval
+
+---
+
+### GC-137 — VEP Import Logic: Inactive/Observer Member Protection
+**Data:** 2026-04-01 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisao:** O import de CSV do PMI VEP deve detectar e pular membros inativos/offboarded/observers, nao apenas membros ativos. Caso Leandro Mota: offboarded em 18/Mar como observer, porem VEP status "Submitted" no CSV — import criava aplicacao duplicada.
+
+**Justificativa:** O VEP mantem o status "Submitted" para candidatos que nao tiveram offer extended ou que reaplied, independente do status interno na plataforma. A protecao deve ser bidirecional: checar tanto o VEP status quanto o status interno do membro.
+
+**Impacto tecnico:** `import_vep_applications` RPC atualizada: check `members` table por email com ANY status (active, inactive, offboarded). Membros inativos/offboarded geram log em `data_anomaly_log` (tipo `selection_import_skipped_inactive`) para auditoria. Leandro removido do Batch 2.
+
+**Change Request:** Manual de Governanca R2 Secao 3 — adicionar regra: "Candidatos que ja possuem registro de membro (ativo, inativo ou observer) na plataforma devem ser revisados manualmente pelo GP antes de reingressar no pipeline de selecao, mesmo que reaplicem via VEP."
+
+---
+
+### GC-138 — Attendance Default Tribe Filter for Non-GP Users
+**Data:** 2026-03-31 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisao:** A pagina /attendance agora faz default do filtro de tribo para a tribo do usuario logado quando o usuario nao e GP-level (manager/deputy_manager/superadmin). Resolvido report do Jefferson Pinto (tribe leader) que via eventos de todas as tribos.
+
+**Justificativa:** Tribe leaders acessam /attendance (rota admin global) em vez da aba Presenca na pagina da tribo. O layout e filtros padrao "Todas as Tribos" nao era adequado para users non-GP.
+
+**Impacto tecnico:** Apos popular o dropdown de tribos, verifica `isGPLevel()` e `MEMBER.tribe_id`. Se non-GP com tribo, pre-seleciona e re-renderiza.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*
