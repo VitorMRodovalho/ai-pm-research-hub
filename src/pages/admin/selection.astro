@@ -878,12 +878,16 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         app_status: vals[hIdx('App Status')] || '',
         reason_for_applying: vals[hIdx('Reason for Applying')] || '',
         resume_url: vals[hIdx('Resume')] || '',
-        areas_of_interest: vals[hIdx('Essay Question 2')] || vals[hIdx('Areas of Interest')] || '',
-        role_preference: vals[hIdx('Essay Question 2')] || '',
-        pmbok_familiarity: vals[hIdx('Essay Question 3')] || '',
-        proposed_theme: vals[hIdx('Essay Question 5')] || '',
         industry: vals[hIdx('Industry')] || '',
-        availability: vals[hIdx('Essay Question 4')] || '',
+        // Essay fields passed by index — RPC maps them via vep_opportunities.essay_mapping
+        essay_q1: vals[hIdx('Essay Question 1')] || '',
+        essay_q2: vals[hIdx('Essay Question 2')] || '',
+        essay_q3: vals[hIdx('Essay Question 3')] || '',
+        essay_q4: vals[hIdx('Essay Question 4')] || '',
+        essay_q5: vals[hIdx('Essay Question 5')] || '',
+        // Additional structured fields
+        areas_of_interest: vals[hIdx('Areas of Interest')] || '',
+        application_date: vals[hIdx('Application Submitted')] || '',
       });
     }
     return rows;
@@ -950,11 +954,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         result.innerHTML = `
           <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-2">
             <h3 class="font-bold text-emerald-800">Import concluído</h3>
-            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-[13px]">
+            <div class="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center text-[13px]">
               <div><div class="text-lg font-extrabold text-emerald-700">${data.imported}</div><div class="text-[.6rem] text-emerald-600">Importados</div></div>
               <div><div class="text-lg font-extrabold text-amber-600">${data.skipped_dedup}</div><div class="text-[.6rem] text-amber-500">Duplicados</div></div>
               <div><div class="text-lg font-extrabold text-gray-600">${data.skipped_active || 0}</div><div class="text-[.6rem] text-gray-500">Já Ativos</div></div>
               <div><div class="text-lg font-extrabold text-red-600">${data.skipped_declined}</div><div class="text-[.6rem] text-red-500">Rejeitados VEP</div></div>
+              <div><div class="text-lg font-extrabold text-orange-600">${data.flagged_review || 0}</div><div class="text-[.6rem] text-orange-500">Revisão GP</div></div>
               <div><div class="text-lg font-extrabold text-blue-600">${data.returning_members}</div><div class="text-[.6rem] text-blue-500">Retornantes</div></div>
             </div>
           </div>`;
