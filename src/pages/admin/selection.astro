@@ -1,6 +1,7 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import Toast from '../../components/ui/Toast.astro';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 ---
@@ -21,82 +22,163 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     <!-- Main panel -->
     <div id="sel-panel" class="hidden space-y-5">
 
-      <!-- A) HEADER + CYCLE STATUS -->
+      <!-- HEADER + CYCLE SELECTOR -->
       <div class="flex flex-wrap items-center gap-3">
         <h1 class="text-2xl font-extrabold text-navy">{t('selection.title', lang)}</h1>
         <span id="sel-cycle-badge" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase bg-gray-100 text-gray-600">—</span>
+        <select id="sel-cycle-picker" class="ml-auto px-3 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-card)] text-[var(--text-primary)] focus:outline-none"></select>
       </div>
 
-      <!-- Quick stats -->
-      <div id="sel-quick-stats" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+      <!-- TABS -->
+      <div class="flex gap-1 border-b border-[var(--border-default)]">
+        <button data-sel-tab="pipeline" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-navy text-navy bg-transparent cursor-pointer">Pipeline</button>
+        <button data-sel-tab="import" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">Import CSV</button>
+        <button data-sel-tab="committee" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">Comitê</button>
+      </div>
 
-      <!-- B) FILTERS -->
-      <div class="flex flex-wrap gap-3 items-center">
-        <!-- Role toggle -->
-        <div class="flex rounded-lg overflow-hidden border border-[var(--border-default)]" id="sel-role-toggle">
-          <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-navy text-white" data-role="all">Todos</button>
-          <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)]" data-role="researcher">Pesquisador</button>
-          <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)]" data-role="leader">Líder</button>
+      <!-- TAB: PIPELINE -->
+      <div id="tab-pipeline">
+        <!-- Quick stats -->
+        <div id="sel-quick-stats" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4"></div>
+
+        <!-- Filters -->
+        <div class="flex flex-wrap gap-3 items-center mb-4">
+          <div class="flex rounded-lg overflow-hidden border border-[var(--border-default)]" id="sel-role-toggle">
+            <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-navy text-white" data-role="all">Todos</button>
+            <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)]" data-role="researcher">Pesquisador</button>
+            <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)]" data-role="leader">Líder</button>
+          </div>
+          <select id="sel-chapter" class="px-3 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-card)] text-[var(--text-primary)] focus:outline-none">
+            <option value="all">Todos os Capítulos</option>
+          </select>
+          <select id="sel-status" class="px-3 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-card)] text-[var(--text-primary)] focus:outline-none">
+            <option value="all">Todos os Status</option>
+            <option value="submitted">Submitted</option><option value="screening">Screening</option>
+            <option value="objective_eval">Objective Eval</option><option value="objective_cutoff">Objective Cutoff</option>
+            <option value="interview_pending">Interview Pending</option><option value="interview_scheduled">Interview Scheduled</option>
+            <option value="interview_done">Interview Done</option><option value="interview_noshow">Interview No-Show</option>
+            <option value="final_eval">Final Eval</option><option value="approved">Approved</option>
+            <option value="rejected">Rejected</option><option value="waitlist">Waitlist</option>
+            <option value="converted">Converted</option><option value="withdrawn">Withdrawn</option><option value="cancelled">Cancelled</option>
+          </select>
+          <input type="text" id="sel-search" placeholder="Buscar nome ou e-mail..."
+            class="flex-1 min-w-[180px] px-3 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-card)] focus:outline-none" />
+          <span id="sel-count" class="text-[12px] text-[var(--text-muted)] font-semibold whitespace-nowrap"></span>
         </div>
 
-        <!-- Chapter dropdown -->
-        <select id="sel-chapter" class="px-3 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-card)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-purple/40">
-          <option value="all">Todos os Capítulos</option>
-        </select>
+        <!-- Pipeline kanban -->
+        <div id="sel-kanban" class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4"></div>
 
-        <!-- Status dropdown -->
-        <select id="sel-status" class="px-3 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-card)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-purple/40">
-          <option value="all">Todos os Status</option>
-          <option value="submitted">Submitted</option>
-          <option value="screening">Screening</option>
-          <option value="objective_eval">Objective Eval</option>
-          <option value="objective_cutoff">Objective Cutoff</option>
-          <option value="interview_pending">Interview Pending</option>
-          <option value="interview_scheduled">Interview Scheduled</option>
-          <option value="interview_done">Interview Done</option>
-          <option value="interview_noshow">Interview No-Show</option>
-          <option value="final_eval">Final Eval</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-          <option value="waitlist">Waitlist</option>
-          <option value="converted">Converted</option>
-          <option value="withdrawn">Withdrawn</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
-
-        <!-- Search -->
-        <input type="text" id="sel-search" placeholder="Buscar nome ou e-mail..."
-          class="flex-1 min-w-[180px] px-3 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-card)] focus:outline-none focus:ring-2 focus:ring-purple/40" />
-
-        <span id="sel-count" class="text-[12px] text-[var(--text-muted)] font-semibold whitespace-nowrap"></span>
+        <!-- Table -->
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-[13px]">
+              <thead>
+                <tr class="bg-[var(--surface-base)] border-b border-[var(--border-default)]">
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="applicant_name">Nome</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Papel</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Capítulo</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="objective_score">Obj. Score</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="final_score">Final Score</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="rank_chapter">Rank</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Status</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="sel-tbody" class="divide-y divide-[var(--border-subtle)]"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
-      <!-- C) PIPELINE KANBAN -->
-      <div id="sel-kanban" class="grid grid-cols-2 sm:grid-cols-5 gap-3"></div>
+      <!-- TAB: IMPORT CSV -->
+      <div id="tab-import" class="hidden space-y-4">
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-6 space-y-4">
+          <h2 class="text-lg font-bold text-navy">Importar CSV do PMI VEP</h2>
+          <p class="text-sm text-[var(--text-secondary)]">Faça upload do CSV exportado do PMI Volunteer Engagement Platform. O sistema detecta candidatos duplicados, membros retornantes e capítulos parceiros automaticamente.</p>
 
-      <!-- D) TABLE -->
-      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-[13px]">
-            <thead>
-              <tr class="bg-[var(--surface-base)] border-b border-[var(--border-default)]">
-                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="applicant_name">Nome</th>
-                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Papel</th>
-                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Capítulo</th>
-                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="objective_score_avg">Obj. Score</th>
-                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="final_score">Final Score</th>
-                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="rank_chapter">Rank (Cap.)</th>
-                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Status</th>
-                <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Ações</th>
-              </tr>
-            </thead>
-            <tbody id="sel-tbody" class="divide-y divide-[var(--border-subtle)]"></tbody>
-          </table>
+          <div class="flex flex-wrap gap-4 items-end">
+            <div>
+              <label class="block text-[12px] font-semibold text-[var(--text-secondary)] mb-1">Vaga (Opportunity ID)</label>
+              <select id="import-opportunity" class="px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]">
+                <option value="64967">64967 — Pesquisador e multiplicador</option>
+                <option value="64966">64966 — Líder de tribo e Pesquisador chefe</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[12px] font-semibold text-[var(--text-secondary)] mb-1">Papel default</label>
+              <select id="import-role" class="px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]">
+                <option value="researcher">Pesquisador</option>
+                <option value="leader">Líder</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Drop zone -->
+          <div id="csv-dropzone" class="border-2 border-dashed border-[var(--border-default)] rounded-xl p-8 text-center cursor-pointer hover:border-navy hover:bg-[var(--surface-hover)] transition-all">
+            <div class="text-3xl mb-2">&#x1F4C4;</div>
+            <p class="text-sm font-semibold text-[var(--text-secondary)]">Arraste o CSV aqui ou clique para selecionar</p>
+            <p class="text-[11px] text-[var(--text-muted)] mt-1">Formato: CSV exportado do PMI VEP (Opportunity Applications)</p>
+            <input type="file" id="csv-file-input" accept=".csv" class="hidden" />
+          </div>
+
+          <!-- Preview -->
+          <div id="csv-preview" class="hidden space-y-3">
+            <div id="csv-summary" class="flex flex-wrap gap-3"></div>
+            <div class="overflow-x-auto max-h-[300px] overflow-y-auto">
+              <table class="w-full text-left text-[12px]">
+                <thead class="sticky top-0 bg-[var(--surface-base)]">
+                  <tr>
+                    <th class="px-3 py-2 font-bold text-[var(--text-secondary)]">Nome</th>
+                    <th class="px-3 py-2 font-bold text-[var(--text-secondary)]">Email</th>
+                    <th class="px-3 py-2 font-bold text-[var(--text-secondary)]">Capítulo</th>
+                    <th class="px-3 py-2 font-bold text-[var(--text-secondary)]">VEP Status</th>
+                    <th class="px-3 py-2 font-bold text-[var(--text-secondary)]">Ação</th>
+                  </tr>
+                </thead>
+                <tbody id="csv-preview-body"></tbody>
+              </table>
+            </div>
+            <div class="flex gap-3">
+              <button id="csv-import-btn" class="px-5 py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">Importar candidatos</button>
+              <button id="csv-cancel-btn" class="px-5 py-2.5 bg-[var(--surface-hover)] text-[var(--text-secondary)] rounded-xl text-sm font-semibold cursor-pointer border-0">Cancelar</button>
+            </div>
+          </div>
+
+          <!-- Result -->
+          <div id="csv-result" class="hidden"></div>
+        </div>
+      </div>
+
+      <!-- TAB: COMMITTEE -->
+      <div id="tab-committee" class="hidden space-y-4">
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-6 space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg font-bold text-navy">Comitê de Seleção</h2>
+            <button id="committee-add-btn" class="px-4 py-2 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">+ Adicionar membro</button>
+          </div>
+          <p class="text-sm text-[var(--text-secondary)]">Membros do comitê avaliam candidatos em revisão cega. Mínimo de 2 avaliadores por candidato.</p>
+          <div id="committee-list" class="space-y-2"></div>
         </div>
       </div>
 
     </div>
   </div>
+
+  <!-- APPLICANT DETAIL MODAL -->
+  <div id="applicant-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-[var(--surface-card)] rounded-2xl shadow-2xl max-w-[800px] w-full max-h-[90vh] overflow-y-auto">
+      <div class="sticky top-0 bg-[var(--surface-card)] border-b border-[var(--border-default)] px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+        <h2 id="modal-name" class="text-lg font-extrabold text-navy">—</h2>
+        <button id="modal-close" class="text-2xl text-[var(--text-muted)] cursor-pointer bg-transparent border-0 hover:text-navy">&times;</button>
+      </div>
+      <div class="p-6 space-y-5" id="modal-body">
+        <!-- Populated dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <Toast />
   <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>
 </AdminLayout>
 
@@ -108,6 +190,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   let MEMBER: any = null;
   let allRows: any[] = [];
   let filteredRows: any[] = [];
+  let currentCycleId: string | null = null;
+  let allCycles: any[] = [];
+  let csvParsedRows: any[] = [];
 
   let filterRole = 'all';
   let filterChapter = 'all';
@@ -121,6 +206,16 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  function toast(msg: string, type: 'success' | 'error' = 'success') {
+    const el = document.getElementById('toast-container');
+    if (!el) return;
+    const div = document.createElement('div');
+    div.className = `px-4 py-3 rounded-xl text-sm font-semibold shadow-lg ${type === 'error' ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'}`;
+    div.textContent = msg;
+    el.appendChild(div);
+    setTimeout(() => div.remove(), 4000);
+  }
+
   function showDenied() {
     document.getElementById('sel-loading')?.classList.add('hidden');
     document.getElementById('sel-denied')?.classList.remove('hidden');
@@ -129,6 +224,20 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   function showPanel() {
     document.getElementById('sel-loading')?.classList.add('hidden');
     document.getElementById('sel-panel')?.classList.remove('hidden');
+  }
+
+  /* ── tabs ─────────────────────────────────────────── */
+  function switchTab(name: string) {
+    document.querySelectorAll('.sel-tab-btn').forEach(btn => {
+      const isActive = (btn as HTMLElement).dataset.selTab === name;
+      btn.classList.toggle('border-navy', isActive);
+      btn.classList.toggle('text-navy', isActive);
+      btn.classList.toggle('border-transparent', !isActive);
+      btn.classList.toggle('text-[var(--text-secondary)]', !isActive);
+    });
+    ['pipeline', 'import', 'committee'].forEach(t => {
+      document.getElementById(`tab-${t}`)?.classList.toggle('hidden', t !== name);
+    });
   }
 
   /* ── status helpers ───────────────────────────────── */
@@ -148,68 +257,86 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   }
 
   const STATUS_BADGE: Record<string, { color: string; bg: string }> = {
-    submitted:           { color: 'text-gray-700',    bg: 'bg-gray-100' },
-    screening:           { color: 'text-blue-700',    bg: 'bg-blue-50' },
-    objective_eval:      { color: 'text-blue-700',    bg: 'bg-blue-50' },
-    objective_cutoff:    { color: 'text-blue-700',    bg: 'bg-blue-50' },
-    interview_pending:   { color: 'text-yellow-700',  bg: 'bg-yellow-50' },
-    interview_scheduled: { color: 'text-yellow-700',  bg: 'bg-yellow-50' },
-    interview_done:      { color: 'text-yellow-700',  bg: 'bg-yellow-50' },
-    interview_noshow:    { color: 'text-orange-700',  bg: 'bg-orange-50' },
-    final_eval:          { color: 'text-indigo-700',  bg: 'bg-indigo-50' },
-    approved:            { color: 'text-emerald-700', bg: 'bg-emerald-50' },
-    converted:           { color: 'text-emerald-700', bg: 'bg-emerald-50' },
-    rejected:            { color: 'text-red-700',     bg: 'bg-red-50' },
-    cancelled:           { color: 'text-red-700',     bg: 'bg-red-50' },
-    withdrawn:           { color: 'text-red-600',     bg: 'bg-red-50' },
-    waitlist:            { color: 'text-amber-700',   bg: 'bg-amber-50' },
+    submitted: { color: 'text-gray-700', bg: 'bg-gray-100' },
+    screening: { color: 'text-blue-700', bg: 'bg-blue-50' },
+    objective_eval: { color: 'text-blue-700', bg: 'bg-blue-50' },
+    objective_cutoff: { color: 'text-blue-700', bg: 'bg-blue-50' },
+    interview_pending: { color: 'text-yellow-700', bg: 'bg-yellow-50' },
+    interview_scheduled: { color: 'text-yellow-700', bg: 'bg-yellow-50' },
+    interview_done: { color: 'text-yellow-700', bg: 'bg-yellow-50' },
+    interview_noshow: { color: 'text-orange-700', bg: 'bg-orange-50' },
+    final_eval: { color: 'text-indigo-700', bg: 'bg-indigo-50' },
+    approved: { color: 'text-emerald-700', bg: 'bg-emerald-50' },
+    converted: { color: 'text-emerald-700', bg: 'bg-emerald-50' },
+    rejected: { color: 'text-red-700', bg: 'bg-red-50' },
+    cancelled: { color: 'text-red-700', bg: 'bg-red-50' },
+    withdrawn: { color: 'text-red-600', bg: 'bg-red-50' },
+    waitlist: { color: 'text-amber-700', bg: 'bg-amber-50' },
   };
 
-  const ROLE_LABELS: Record<string, string> = {
-    researcher: 'Pesquisador',
-    leader: 'Líder',
-    both: 'Ambos',
-  };
+  const ROLE_LABELS: Record<string, string> = { researcher: 'Pesquisador', leader: 'Líder', both: 'Ambos' };
 
   const CYCLE_STATUS_COLORS: Record<string, { color: string; bg: string }> = {
-    draft:       { color: 'text-gray-600',    bg: 'bg-gray-100' },
-    open:        { color: 'text-emerald-700', bg: 'bg-emerald-50' },
-    evaluation:  { color: 'text-blue-700',    bg: 'bg-blue-50' },
-    interview:   { color: 'text-yellow-700',  bg: 'bg-yellow-50' },
-    decision:    { color: 'text-purple-700',  bg: 'bg-purple-50' },
-    closed:      { color: 'text-red-700',     bg: 'bg-red-50' },
+    draft: { color: 'text-gray-600', bg: 'bg-gray-100' },
+    open: { color: 'text-emerald-700', bg: 'bg-emerald-50' },
+    evaluation: { color: 'text-blue-700', bg: 'bg-blue-50' },
+    interview: { color: 'text-yellow-700', bg: 'bg-yellow-50' },
+    decision: { color: 'text-purple-700', bg: 'bg-purple-50' },
+    closed: { color: 'text-red-700', bg: 'bg-red-50' },
   };
+
+  const STATUS_LABELS: Record<string, string> = {
+    submitted: 'Submetido', screening: 'Triagem', objective_eval: 'Avaliação Objetiva',
+    objective_cutoff: 'Abaixo do Corte', interview_pending: 'Aguardando Entrevista',
+    interview_scheduled: 'Entrevista Agendada', interview_done: 'Entrevistado',
+    interview_noshow: 'No-Show', final_eval: 'Avaliação Final',
+    approved: 'Aprovado', rejected: 'Rejeitado', waitlist: 'Lista de Espera',
+    converted: 'Convertido', withdrawn: 'Desistiu', cancelled: 'Cancelado',
+  };
+
+  /* ── load cycles ──────────────────────────────────── */
+  async function loadCycles() {
+    const { data } = await sb.from('selection_cycles').select('id, cycle_code, title, status').order('created_at', { ascending: false });
+    allCycles = data || [];
+    const picker = document.getElementById('sel-cycle-picker') as HTMLSelectElement;
+    if (picker && allCycles.length) {
+      picker.innerHTML = allCycles.map((c: any) =>
+        `<option value="${c.id}">${esc(c.title)} (${c.status})</option>`
+      ).join('');
+      currentCycleId = allCycles[0].id;
+    }
+  }
 
   /* ── load data via RPC ────────────────────────────── */
   async function loadDashboard() {
     if (!sb) return;
     try {
       const { data: dashboard } = await sb.rpc('get_selection_dashboard');
-      if (dashboard?.error) { showDenied(); return; }
-      const cycle = dashboard.cycle;
-      const applications = dashboard.applications || [];
-      const stats = dashboard.stats;
+      if (dashboard?.error === 'Unauthorized') { showDenied(); return; }
+      if (dashboard?.error) { console.warn('Dashboard error:', dashboard.error); }
+      const cycle = dashboard?.cycle;
+      const applications = dashboard?.applications || [];
 
-      // Update cycle status badge
       if (cycle) {
+        currentCycleId = cycle.id;
         const badge = document.getElementById('sel-cycle-badge');
         if (badge) {
           const cs = CYCLE_STATUS_COLORS[cycle.status] || CYCLE_STATUS_COLORS.draft;
           badge.className = `text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase ${cs.bg} ${cs.color}`;
           badge.textContent = cycle.status.toUpperCase();
         }
+        // Sync cycle picker
+        const picker = document.getElementById('sel-cycle-picker') as HTMLSelectElement;
+        if (picker) picker.value = cycle.id;
       }
 
-      // Load applications
       allRows = applications;
       populateChapterDropdown();
       applyFilters();
     } catch (e: any) {
       console.error('Selection load:', e);
       const tbody = document.getElementById('sel-tbody');
-      if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-6 text-center text-red-500">Erro: ${esc(e.message || 'desconhecido')}</td></tr>`;
-      }
+      if (tbody) tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-6 text-center text-red-500">Erro: ${esc(e.message || 'desconhecido')}</td></tr>`;
     }
   }
 
@@ -237,8 +364,6 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       }
       return true;
     });
-
-    // sort
     filteredRows.sort((a, b) => {
       let va = a[sortCol], vb = b[sortCol];
       if (va == null && vb == null) return 0;
@@ -246,29 +371,25 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       if (vb == null) return -1;
       if (typeof va === 'string') va = va.toLowerCase();
       if (typeof vb === 'string') vb = vb.toLowerCase();
-      if (va < vb) return sortAsc ? -1 : 1;
-      if (va > vb) return sortAsc ? 1 : -1;
-      return 0;
+      return (va < vb ? -1 : va > vb ? 1 : 0) * (sortAsc ? 1 : -1);
     });
-
     renderQuickStats();
     renderKanban();
     renderTable();
   }
 
-  /* ── quick stats ──────────────────────────────────── */
   function renderQuickStats() {
     const el = document.getElementById('sel-quick-stats');
     if (!el) return;
     const total = filteredRows.length;
-    const approved = filteredRows.filter(r => r.status === 'approved' || r.status === 'converted').length;
-    const rejected = filteredRows.filter(r => r.status === 'rejected' || r.status === 'cancelled' || r.status === 'withdrawn').length;
+    const approved = filteredRows.filter(r => ['approved', 'converted'].includes(r.status)).length;
+    const rejected = filteredRows.filter(r => ['rejected', 'cancelled', 'withdrawn'].includes(r.status)).length;
     const pending = total - approved - rejected;
     const stats = [
-      { label: 'Total',     value: total,    color: 'text-navy' },
+      { label: 'Total', value: total, color: 'text-navy' },
       { label: 'Aprovados', value: approved, color: 'text-emerald-600' },
       { label: 'Rejeitados', value: rejected, color: 'text-red-600' },
-      { label: 'Pendentes', value: pending,  color: 'text-amber-600' },
+      { label: 'Pendentes', value: pending, color: 'text-amber-600' },
     ];
     el.innerHTML = stats.map(s =>
       `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-3 text-center">
@@ -278,14 +399,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     ).join('');
   }
 
-  /* ── kanban ───────────────────────────────────────── */
   function renderKanban() {
     const el = document.getElementById('sel-kanban');
     if (!el) return;
     const counts: Record<string, number> = {};
     for (const key of Object.keys(STATUS_GROUPS)) counts[key] = 0;
     filteredRows.forEach(r => { counts[statusGroup(r.status)]++; });
-
     el.innerHTML = Object.entries(STATUS_GROUPS).map(([key, g]) =>
       `<div class="border border-[var(--border-default)] rounded-xl p-3 text-center ${g.bg}">
         <div class="text-2xl font-extrabold ${g.color}">${counts[key]}</div>
@@ -294,27 +413,22 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     ).join('');
   }
 
-  /* ── table ────────────────────────────────────────── */
   function renderTable() {
     const tbody = document.getElementById('sel-tbody');
     const countEl = document.getElementById('sel-count');
     if (!tbody) return;
-
     if (countEl) countEl.textContent = `${filteredRows.length} resultado${filteredRows.length !== 1 ? 's' : ''}`;
-
     if (!filteredRows.length) {
-      tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || 'No candidate found'}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || 'Nenhum candidato'}</td></tr>`;
       return;
     }
-
     tbody.innerHTML = filteredRows.map(r => {
       const sb2 = STATUS_BADGE[r.status] || STATUS_BADGE.submitted;
-      const objScore = r.objective_score_avg != null ? Number(r.objective_score_avg).toFixed(1) : '—';
+      const objScore = r.objective_score != null ? Number(r.objective_score).toFixed(1) : '—';
       const finalScore = r.final_score != null ? Number(r.final_score).toFixed(1) : '—';
       const rank = r.rank_chapter != null ? `#${r.rank_chapter}` : '—';
       const roleLabel = ROLE_LABELS[r.role_applied] || r.role_applied || '—';
-      const statusLabel = (r.status || '').replace(/_/g, ' ');
-
+      const statusLabel = STATUS_LABELS[r.status] || r.status?.replace(/_/g, ' ') || '—';
       return `<tr class="hover:bg-[var(--surface-hover)] cursor-pointer" data-action="view-applicant" data-id="${esc(r.id)}">
         <td class="px-4 py-2.5 font-semibold text-navy">${esc(r.applicant_name)}</td>
         <td class="px-4 py-2.5 text-[12px]">${esc(roleLabel)}</td>
@@ -322,19 +436,272 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         <td class="px-4 py-2.5 text-[12px] font-mono font-semibold">${objScore}</td>
         <td class="px-4 py-2.5 text-[12px] font-mono font-bold text-navy">${finalScore}</td>
         <td class="px-4 py-2.5 text-[12px] font-semibold">${rank}</td>
-        <td class="px-4 py-2.5"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${sb2.bg} ${sb2.color}">${esc(statusLabel)}</span></td>
+        <td class="px-4 py-2.5"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${sb2.bg} ${sb2.color}">${esc(statusLabel)}</span></td>
         <td class="px-4 py-2.5">
-          ${r.linkedin_url ? `<a href="${esc(r.linkedin_url)}" target="_blank" rel="noopener" class="text-[11px] text-blue-600 hover:underline mr-2" title="LinkedIn">LinkedIn</a>` : ''}
           <button class="text-[11px] text-purple-600 hover:underline cursor-pointer bg-transparent border-0 p-0" data-action="view-applicant" data-id="${esc(r.id)}">Detalhes</button>
         </td>
       </tr>`;
     }).join('');
   }
 
-  /* ── event handling (delegated) ───────────────────── */
+  /* ── applicant detail modal ───────────────────────── */
+  function openApplicantModal(id: string) {
+    const row = allRows.find(r => r.id === id);
+    if (!row) return;
+    const modal = document.getElementById('applicant-modal');
+    const nameEl = document.getElementById('modal-name');
+    const body = document.getElementById('modal-body');
+    if (!modal || !body || !nameEl) return;
+
+    nameEl.textContent = row.applicant_name || '—';
+    const sb2 = STATUS_BADGE[row.status] || STATUS_BADGE.submitted;
+    const statusLabel = STATUS_LABELS[row.status] || row.status;
+
+    body.innerHTML = `
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Left: Candidate info -->
+        <div class="space-y-4">
+          <div class="grid grid-cols-2 gap-3 text-[13px]">
+            <div><span class="text-[var(--text-muted)] text-[11px]">Email</span><br><strong>${esc(row.email)}</strong></div>
+            <div><span class="text-[var(--text-muted)] text-[11px]">Capítulo</span><br><strong>${esc(row.chapter || '—')}</strong></div>
+            <div><span class="text-[var(--text-muted)] text-[11px]">Papel</span><br><strong>${esc(ROLE_LABELS[row.role_applied] || row.role_applied)}</strong></div>
+            <div><span class="text-[var(--text-muted)] text-[11px]">Status</span><br><span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${sb2.bg} ${sb2.color}">${esc(statusLabel)}</span></div>
+          </div>
+
+          ${row.motivation ? `
+          <div>
+            <h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">Motivação</h4>
+            <p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap">${esc(row.motivation)}</p>
+          </div>` : ''}
+
+          <div class="grid grid-cols-2 gap-3 text-[13px]">
+            <div><span class="text-[var(--text-muted)] text-[11px]">Obj. Score</span><br><strong class="text-lg">${row.objective_score != null ? Number(row.objective_score).toFixed(1) : '—'}</strong></div>
+            <div><span class="text-[var(--text-muted)] text-[11px]">Final Score</span><br><strong class="text-lg text-navy">${row.final_score != null ? Number(row.final_score).toFixed(1) : '—'}</strong></div>
+            <div><span class="text-[var(--text-muted)] text-[11px]">Rank (Capítulo)</span><br><strong>${row.rank_chapter != null ? '#' + row.rank_chapter : '—'}</strong></div>
+            <div><span class="text-[var(--text-muted)] text-[11px]">Rank (Geral)</span><br><strong>${row.rank_overall != null ? '#' + row.rank_overall : '—'}</strong></div>
+          </div>
+
+          ${row.tags?.length ? `<div class="flex gap-1 flex-wrap">${row.tags.map((t: string) => `<span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-semibold">${esc(t)}</span>`).join('')}</div>` : ''}
+        </div>
+
+        <!-- Right: Actions -->
+        <div class="space-y-4">
+          <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">Alterar Status</h4>
+          <select id="modal-status-select" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]">
+            ${Object.entries(STATUS_LABELS).map(([k, v]) => `<option value="${k}" ${k === row.status ? 'selected' : ''}>${v}</option>`).join('')}
+          </select>
+          <textarea id="modal-feedback" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-20" placeholder="Feedback / observações...">${esc(row.feedback || '')}</textarea>
+          <button id="modal-save-btn" data-id="${esc(row.id)}" class="w-full px-4 py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">Salvar alterações</button>
+        </div>
+      </div>
+    `;
+
+    // Save handler
+    body.querySelector('#modal-save-btn')?.addEventListener('click', async () => {
+      const newStatus = (body.querySelector('#modal-status-select') as HTMLSelectElement)?.value;
+      const feedback = (body.querySelector('#modal-feedback') as HTMLTextAreaElement)?.value;
+      try {
+        const { error } = await sb.from('selection_applications')
+          .update({ status: newStatus, feedback, updated_at: new Date().toISOString() })
+          .eq('id', row.id);
+        if (error) throw error;
+        toast('Candidato atualizado');
+        modal.classList.add('hidden');
+        loadDashboard();
+      } catch (e: any) {
+        toast(e.message || 'Erro ao salvar', 'error');
+      }
+    });
+
+    modal.classList.remove('hidden');
+  }
+
+  /* ── CSV import ───────────────────────────────────── */
+  function parseCSV(text: string): any[] {
+    const lines = text.split('\n');
+    if (lines.length < 2) return [];
+    // Handle quoted fields with commas
+    function parseLine(line: string): string[] {
+      const fields: string[] = [];
+      let field = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') { inQuotes = !inQuotes; }
+        else if (ch === ',' && !inQuotes) { fields.push(field.trim()); field = ''; }
+        else { field += ch; }
+      }
+      fields.push(field.trim());
+      return fields;
+    }
+    const headers = parseLine(lines[0]).map(h => h.trim().replace(/^\uFEFF/, ''));
+    const rows: any[] = [];
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      const vals = parseLine(line);
+      if (vals.length < 5) continue;
+      const hIdx = (name: string) => headers.findIndex(h => h.toLowerCase().includes(name.toLowerCase()));
+      rows.push({
+        application_id: vals[hIdx('Application ID')] || '',
+        pmi_id: (vals[hIdx('PMI ID')] || '').replace(/"/g, ''),
+        first_name: vals[hIdx('First Name')] || '',
+        last_name: vals[hIdx('Last Name')] || '',
+        email: vals[hIdx('Email')] || '',
+        membership_status: vals[hIdx('Membership')] || '',
+        certifications: vals[hIdx('Certification')] || '',
+        state: vals[hIdx('State')] || '',
+        country: vals[hIdx('Country')] || '',
+        app_status: vals[hIdx('App Status')] || '',
+        reason_for_applying: vals[hIdx('Reason for Applying')] || '',
+        resume_url: vals[hIdx('Resume')] || '',
+        areas_of_interest: vals[hIdx('Areas of Interest')] || '',
+        industry: vals[hIdx('Industry')] || '',
+        availability: vals[hIdx('Essay Question 4')] || '',
+      });
+    }
+    return rows;
+  }
+
+  function renderCSVPreview(rows: any[]) {
+    csvParsedRows = rows;
+    const preview = document.getElementById('csv-preview');
+    const summary = document.getElementById('csv-summary');
+    const body = document.getElementById('csv-preview-body');
+    if (!preview || !body || !summary) return;
+
+    const submitted = rows.filter(r => r.app_status === 'Submitted' || r.app_status === 'Active' || r.app_status === 'Complete');
+    const declined = rows.filter(r => r.app_status === 'OfferNotExtended' || r.app_status === 'Declined' || r.app_status === 'Withdrawn');
+
+    summary.innerHTML = [
+      { label: 'Total no CSV', value: rows.length, color: 'text-navy' },
+      { label: 'Para importar', value: submitted.length, color: 'text-emerald-600' },
+      { label: 'Serão ignorados', value: declined.length, color: 'text-red-600' },
+    ].map(s => `<div class="bg-[var(--surface-base)] rounded-xl px-4 py-2 text-center">
+      <div class="text-lg font-extrabold ${s.color}">${s.value}</div>
+      <div class="text-[.6rem] text-[var(--text-secondary)] font-semibold">${s.label}</div>
+    </div>`).join('');
+
+    body.innerHTML = rows.map(r => {
+      const isSkip = ['OfferNotExtended', 'Declined', 'Withdrawn'].includes(r.app_status);
+      return `<tr class="${isSkip ? 'opacity-40' : ''}">
+        <td class="px-3 py-2 text-[12px] font-semibold">${esc(r.first_name)} ${esc(r.last_name)}</td>
+        <td class="px-3 py-2 text-[12px] text-[var(--text-secondary)]">${esc(r.email)}</td>
+        <td class="px-3 py-2 text-[12px]">${esc(r.membership_status?.substring(0, 40) || '—')}</td>
+        <td class="px-3 py-2 text-[12px]"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${isSkip ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-700'}">${esc(r.app_status)}</span></td>
+        <td class="px-3 py-2 text-[12px]">${isSkip ? 'Skip' : 'Importar'}</td>
+      </tr>`;
+    }).join('');
+
+    document.getElementById('csv-dropzone')?.classList.add('hidden');
+    preview.classList.remove('hidden');
+    document.getElementById('csv-result')?.classList.add('hidden');
+  }
+
+  async function executeImport() {
+    if (!csvParsedRows.length || !currentCycleId) return;
+    const opportunityId = (document.getElementById('import-opportunity') as HTMLSelectElement)?.value || '64967';
+    const role = (document.getElementById('import-role') as HTMLSelectElement)?.value || 'researcher';
+    const btn = document.getElementById('csv-import-btn') as HTMLButtonElement;
+    if (btn) { btn.disabled = true; btn.textContent = 'Importando...'; }
+    try {
+      const { data, error } = await sb.rpc('import_vep_applications', {
+        p_cycle_id: currentCycleId,
+        p_opportunity_id: opportunityId,
+        p_rows: csvParsedRows,
+        p_role: role,
+      });
+      if (error) throw error;
+      const result = document.getElementById('csv-result');
+      if (result) {
+        result.classList.remove('hidden');
+        result.innerHTML = `
+          <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-2">
+            <h3 class="font-bold text-emerald-800">Import concluído</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-[13px]">
+              <div><div class="text-lg font-extrabold text-emerald-700">${data.imported}</div><div class="text-[.6rem] text-emerald-600">Importados</div></div>
+              <div><div class="text-lg font-extrabold text-amber-600">${data.skipped_dedup}</div><div class="text-[.6rem] text-amber-500">Duplicados</div></div>
+              <div><div class="text-lg font-extrabold text-red-600">${data.skipped_declined}</div><div class="text-[.6rem] text-red-500">Ignorados</div></div>
+              <div><div class="text-lg font-extrabold text-blue-600">${data.returning_members}</div><div class="text-[.6rem] text-blue-500">Retornantes</div></div>
+            </div>
+          </div>`;
+      }
+      document.getElementById('csv-preview')?.classList.add('hidden');
+      toast(`${data.imported} candidatos importados`);
+      loadDashboard();
+    } catch (e: any) {
+      toast(e.message || 'Erro no import', 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Importar candidatos'; }
+    }
+  }
+
+  /* ── committee ────────────────────────────────────── */
+  async function loadCommittee() {
+    if (!currentCycleId) return;
+    const { data } = await sb.from('selection_committee')
+      .select('id, role, can_interview, member_id, members!inner(name, operational_role)')
+      .eq('cycle_id', currentCycleId);
+    const el = document.getElementById('committee-list');
+    if (!el) return;
+    if (!data?.length) {
+      el.innerHTML = '<p class="text-sm text-[var(--text-muted)] py-4">Nenhum membro no comitê. Adicione membros para iniciar a avaliação.</p>';
+      return;
+    }
+    el.innerHTML = data.map((c: any) => `
+      <div class="flex items-center justify-between bg-[var(--surface-base)] rounded-xl px-4 py-3">
+        <div>
+          <span class="font-semibold text-sm text-[var(--text-primary)]">${esc(c.members?.name || '—')}</span>
+          <span class="text-[11px] text-[var(--text-muted)] ml-2">${esc(c.members?.operational_role || '')}</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${c.role === 'lead' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}">${c.role}</span>
+          ${c.can_interview ? '<span class="text-[10px] text-emerald-600">pode entrevistar</span>' : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  /* ── event binding ────────────────────────────────── */
   let searchTimeout: any = null;
 
   function bindEvents() {
+    // Tabs
+    document.querySelectorAll('.sel-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = (btn as HTMLElement).dataset.selTab;
+        if (tab) {
+          switchTab(tab);
+          if (tab === 'committee') loadCommittee();
+        }
+      });
+    });
+
+    // Cycle picker
+    document.getElementById('sel-cycle-picker')?.addEventListener('change', (e) => {
+      const newId = (e.target as HTMLSelectElement).value;
+      if (newId && newId !== currentCycleId) {
+        currentCycleId = newId;
+        // Reload with specific cycle — need to use cycle_code
+        const cycle = allCycles.find((c: any) => c.id === newId);
+        if (cycle) {
+          sb.rpc('get_selection_dashboard', { p_cycle_code: cycle.cycle_code }).then(({ data }: any) => {
+            if (data) {
+              allRows = data.applications || [];
+              const badge = document.getElementById('sel-cycle-badge');
+              if (badge && data.cycle) {
+                const cs = CYCLE_STATUS_COLORS[data.cycle.status] || CYCLE_STATUS_COLORS.draft;
+                badge.className = `text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase ${cs.bg} ${cs.color}`;
+                badge.textContent = data.cycle.status.toUpperCase();
+              }
+              populateChapterDropdown();
+              applyFilters();
+            }
+          });
+        }
+      }
+    });
+
     // Role toggle
     document.getElementById('sel-role-toggle')?.addEventListener('click', (e) => {
       const btn = (e.target as HTMLElement).closest<HTMLElement>('.sel-role-btn');
@@ -350,72 +717,81 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       applyFilters();
     });
 
-    // Chapter dropdown
-    document.getElementById('sel-chapter')?.addEventListener('change', (e) => {
-      filterChapter = (e.target as HTMLSelectElement).value;
-      applyFilters();
-    });
-
-    // Status dropdown
-    document.getElementById('sel-status')?.addEventListener('change', (e) => {
-      filterStatus = (e.target as HTMLSelectElement).value;
-      applyFilters();
-    });
+    // Dropdowns
+    document.getElementById('sel-chapter')?.addEventListener('change', (e) => { filterChapter = (e.target as HTMLSelectElement).value; applyFilters(); });
+    document.getElementById('sel-status')?.addEventListener('change', (e) => { filterStatus = (e.target as HTMLSelectElement).value; applyFilters(); });
 
     // Search
     document.getElementById('sel-search')?.addEventListener('input', (e) => {
       clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => {
-        filterSearch = ((e.target as HTMLInputElement).value || '').trim();
-        applyFilters();
-      }, 300);
+      searchTimeout = setTimeout(() => { filterSearch = ((e.target as HTMLInputElement).value || '').trim(); applyFilters(); }, 300);
     });
 
     // Column sorting
     document.querySelectorAll<HTMLElement>('[data-sort]').forEach(th => {
       th.addEventListener('click', () => {
         const col = th.dataset.sort!;
-        if (sortCol === col) {
-          sortAsc = !sortAsc;
-        } else {
-          sortCol = col;
-          sortAsc = col === 'applicant_name'; // name asc, scores desc
-        }
+        if (sortCol === col) { sortAsc = !sortAsc; } else { sortCol = col; sortAsc = col === 'applicant_name'; }
         applyFilters();
       });
     });
 
-    // Row click → detail
+    // Row click → detail modal
     document.addEventListener('click', (e: MouseEvent) => {
       if (!(e.target instanceof Element)) return;
       const target = (e.target as HTMLElement).closest<HTMLElement>('[data-action="view-applicant"]');
-      if (!target) return;
-      const id = target.dataset.id;
-      const row = allRows.find(r => r.id === id);
-      if (row) {
-        const info = [
-          `Nome: ${row.applicant_name}`,
-          `Email: ${row.email}`,
-          `Papel: ${ROLE_LABELS[row.role_applied] || row.role_applied}`,
-          `Capítulo: ${row.chapter || '—'}`,
-          `Status: ${row.status}`,
-          `Obj. Score: ${row.objective_score_avg ?? '—'}`,
-          `Final Score: ${row.final_score ?? '—'}`,
-          `Rank (Cap.): ${row.rank_chapter ?? '—'}`,
-          `Rank (Geral): ${row.rank_overall ?? '—'}`,
-          `Tags: ${(row.tags || []).join(', ') || '—'}`,
-          `Feedback: ${row.feedback || '—'}`,
-        ].join('\n');
-        alert(info);
-      }
+      if (target?.dataset.id) { openApplicantModal(target.dataset.id); return; }
     });
+
+    // Modal close
+    document.getElementById('modal-close')?.addEventListener('click', () => {
+      document.getElementById('applicant-modal')?.classList.add('hidden');
+    });
+    document.getElementById('applicant-modal')?.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) (e.target as HTMLElement).classList.add('hidden');
+    });
+
+    // CSV file input
+    const dropzone = document.getElementById('csv-dropzone');
+    const fileInput = document.getElementById('csv-file-input') as HTMLInputElement;
+    dropzone?.addEventListener('click', () => fileInput?.click());
+    dropzone?.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('border-navy', 'bg-blue-50/30'); });
+    dropzone?.addEventListener('dragleave', () => { dropzone.classList.remove('border-navy', 'bg-blue-50/30'); });
+    dropzone?.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('border-navy', 'bg-blue-50/30');
+      const file = e.dataTransfer?.files[0];
+      if (file) handleCSVFile(file);
+    });
+    fileInput?.addEventListener('change', () => {
+      const file = fileInput.files?.[0];
+      if (file) handleCSVFile(file);
+    });
+    document.getElementById('csv-import-btn')?.addEventListener('click', executeImport);
+    document.getElementById('csv-cancel-btn')?.addEventListener('click', () => {
+      document.getElementById('csv-preview')?.classList.add('hidden');
+      document.getElementById('csv-dropzone')?.classList.remove('hidden');
+      csvParsedRows = [];
+    });
+  }
+
+  function handleCSVFile(file: File) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      if (!text) return;
+      const rows = parseCSV(text);
+      if (rows.length === 0) { toast('CSV vazio ou formato inválido', 'error'); return; }
+      renderCSVPreview(rows);
+    };
+    reader.readAsText(file, 'UTF-8');
   }
 
   /* ── permission gate ──────────────────────────────── */
   function applyGate(m: any) {
     if (m && canAccessAdminRoute(m, 'admin_selection')) {
       showPanel();
-      loadDashboard();
+      loadCycles().then(() => loadDashboard());
     } else {
       showDenied();
     }
@@ -426,21 +802,17 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   async function boot() {
     sb = (window as any).navGetSb?.();
     const m = (window as any).navGetMember?.();
-
     if (!sb || !m) {
       bootRetries += 1;
       if (bootRetries >= 20) { showDenied(); return; }
       setTimeout(boot, 200);
       return;
     }
-
     MEMBER = m;
     bindEvents();
-
     window.addEventListener('nav:member', ((e: CustomEvent) => {
       if (e.detail) { MEMBER = e.detail; applyGate(MEMBER); }
     }) as EventListener);
-
     applyGate(MEMBER);
   }
 
