@@ -496,20 +496,27 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       </div>
     `;
 
-    // Save handler
+    // Save handler — uses admin_update_application RPC (validates auth, seeds onboarding on approve)
     body.querySelector('#modal-save-btn')?.addEventListener('click', async () => {
       const newStatus = (body.querySelector('#modal-status-select') as HTMLSelectElement)?.value;
       const feedback = (body.querySelector('#modal-feedback') as HTMLTextAreaElement)?.value;
+      const btn = body.querySelector('#modal-save-btn') as HTMLButtonElement;
+      if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
       try {
-        const { error } = await sb.from('selection_applications')
-          .update({ status: newStatus, feedback, updated_at: new Date().toISOString() })
-          .eq('id', row.id);
+        const { data, error } = await sb.rpc('admin_update_application', {
+          p_application_id: row.id,
+          p_data: { status: newStatus, feedback },
+        });
         if (error) throw error;
-        toast('Candidato atualizado');
+        if (data?.error) throw new Error(data.error);
+        const msg = newStatus === 'approved' ? 'Candidato aprovado — onboarding iniciado' : 'Candidato atualizado';
+        toast(msg);
         modal.classList.add('hidden');
         loadDashboard();
       } catch (e: any) {
         toast(e.message || 'Erro ao salvar', 'error');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Salvar alterações'; }
       }
     });
 
@@ -657,9 +664,39 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         <div class="flex items-center gap-3">
           <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${c.role === 'lead' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}">${c.role}</span>
           ${c.can_interview ? '<span class="text-[10px] text-emerald-600">pode entrevistar</span>' : ''}
+          <button class="text-[11px] text-red-500 hover:underline cursor-pointer bg-transparent border-0 p-0" data-action="remove-committee" data-member-id="${esc(c.member_id)}">remover</button>
         </div>
       </div>
     `).join('');
+  }
+
+  async function addCommitteeMember() {
+    if (!currentCycleId) return;
+    const name = prompt('Nome do membro a adicionar ao comitê:');
+    if (!name) return;
+    const { data: members } = await sb.from('members').select('id, name, operational_role')
+      .ilike('name', `%${name}%`).eq('is_active', true).limit(5);
+    if (!members?.length) { toast('Membro não encontrado', 'error'); return; }
+    const member = members.length === 1 ? members[0] :
+      members[parseInt(prompt(`Encontrados:\n${members.map((m: any, i: number) => `${i}: ${m.name} (${m.operational_role})`).join('\n')}\n\nDigite o número:`) || '0', 10)];
+    if (!member) return;
+    const role = prompt('Papel (evaluator / lead / observer):', 'evaluator') || 'evaluator';
+    const { data, error } = await sb.rpc('manage_selection_committee', {
+      p_cycle_id: currentCycleId, p_action: 'add', p_member_id: member.id, p_role: role,
+    });
+    if (error) { toast(error.message, 'error'); return; }
+    toast(`${member.name} adicionado ao comitê`);
+    loadCommittee();
+  }
+
+  async function removeCommitteeMember(memberId: string) {
+    if (!currentCycleId || !confirm('Remover este membro do comitê?')) return;
+    const { error } = await sb.rpc('manage_selection_committee', {
+      p_cycle_id: currentCycleId, p_action: 'remove', p_member_id: memberId,
+    });
+    if (error) { toast(error.message, 'error'); return; }
+    toast('Membro removido do comitê');
+    loadCommittee();
   }
 
   /* ── event binding ────────────────────────────────── */
@@ -736,12 +773,18 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       });
     });
 
-    // Row click → detail modal
+    // Delegated click actions
     document.addEventListener('click', (e: MouseEvent) => {
       if (!(e.target instanceof Element)) return;
-      const target = (e.target as HTMLElement).closest<HTMLElement>('[data-action="view-applicant"]');
-      if (target?.dataset.id) { openApplicantModal(target.dataset.id); return; }
+      const target = (e.target as HTMLElement).closest<HTMLElement>('[data-action]');
+      if (!target) return;
+      const action = target.dataset.action;
+      if (action === 'view-applicant' && target.dataset.id) { openApplicantModal(target.dataset.id); }
+      else if (action === 'remove-committee' && target.dataset.memberId) { removeCommitteeMember(target.dataset.memberId); }
     });
+
+    // Committee add button
+    document.getElementById('committee-add-btn')?.addEventListener('click', addCommitteeMember);
 
     // Modal close
     document.getElementById('modal-close')?.addEventListener('click', () => {
