@@ -885,7 +885,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
     // Tribe filter dropdown (type filter handled by delegated change handler above)
     document.getElementById('events-tribe-filter')?.addEventListener('change', () => renderEvents());
     // Type dropdown populated later in populateTypeDropdown() after CAN_MANAGE is set
-    // Populate tribe dropdown
+    // Populate tribe dropdown — pre-select member's tribe for non-GP users
     (async () => {
       try {
         const { data: tribes } = await sb.from('tribes').select('id, name').eq('is_active', true).order('id');
@@ -897,6 +897,12 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common'], lang
             opt.textContent = `T${t.id} — ${t.name}`;
             sel.appendChild(opt);
           });
+          // Non-GP members with a tribe: default filter to their own tribe
+          if (!isGPLevel() && MEMBER?.tribe_id) {
+            sel.value = String(MEMBER.tribe_id);
+            sel.classList.remove('hidden');
+            renderEvents();
+          }
         }
       } catch {}
     })();
