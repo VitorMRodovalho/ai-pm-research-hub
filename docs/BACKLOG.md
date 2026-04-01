@@ -1,5 +1,5 @@
 # BACKLOG — AI & PM Research Hub
-## Updated: 29 March 2026 (Sprint 4 parity specs executed)
+## Updated: 31 March 2026 (Sprint 10 — v2.8.0, 52 MCP tools)
 
 ---
 
@@ -11,7 +11,9 @@
 | 2 | 2 attendance corrections | — | ✅ Done | Guilherme + Gustavo confirmed present in DB |
 | 3 | Migration repair 26/Mar | 5 min | ✅ Done (29/Mar) | All migrations synced |
 | 4 | i18n server-side locale | — | ✅ Verified (29/Mar) | EN/ES resolve correctly server-side. Not a bug. |
-| 5 | MCP connector Claude.ai | Sprint 5 | Paused | OAuth ✅, initialize ✅, tools/list ✅ (23 tools), protocolVersion 2025-11-25 ✅. Issue: Claude.ai shows "0 tools" — InMemoryTransport workaround doesn't implement full Streamable HTTP protocol. Fix: `WebStandardStreamableHTTPServerTransport` (exists in SDK but needs testing on Deno). SDK 1.28.0 Zod migration blocked by BOOT_ERROR (Node.js deps incompatible with Deno). Sprint 5: proper transport + runtime evaluation. |
+| 5 | MCP connector Claude.ai | — | ✅ Done (31/Mar) | SDK 1.28.0 + Zod + native transport. 52 tools visible on Claude.ai. |
+| 28 | Campaign tracking test | 1h | Pending | Send test campaign, verify email.opened/clicked webhooks |
+| 29 | Claude Code MCP OAuth on Linux | — | Open | OAuth flow doesn't open browser. Headers workaround ignored by Claude Code. Tested via curl successfully. |
 
 ---
 
@@ -19,11 +21,14 @@
 
 | # | Item | Est. | Status | Notes |
 |---|------|------|--------|-------|
-| 6 | S3.3 Custom PostHog events | — | ✅ Done (29/Mar) | 7 events deployed (mcp_tool_called skipped — server-side only). posthog.identify() in Nav. |
-| 7 | S3.2 Designation filter | — | ✅ Done (29/Mar) | /admin/members + /attendance ranking. /teams N/A (shows tribe cards, not members). |
+| 6 | S3.3 Custom PostHog events | — | ✅ Done (29/Mar) | 7 events deployed. posthog.identify() in Nav. |
+| 7 | S3.2 Designation filter | — | ✅ Done (29/Mar) | /admin/members + /attendance ranking. |
 | 8 | GC-097 P2 smoke test | — | ✅ Done (29/Mar) | 11 checks, all pass. `npm run smoke` available. |
-| 9 | pg_cron verification | — | ✅ Done (29/Mar) | 7 jobs active: credly, attendance, detractor, reminders, backup, archive, email |
+| 9 | pg_cron verification | — | ✅ Done (29/Mar) | 7 jobs active |
 | 10 | URL migration notice | Note | FYI | Débora + Marcos using legacy .pages.dev (redirect works) |
+| 30 | P1.3 Write Tools tested | — | ✅ Done (31/Mar) | 4/4 pass via curl: create_tribe_event, create_meeting_notes, register_attendance, send_notification_to_tribe |
+| 31 | P2 tool count update | — | ✅ Done (31/Mar) | 42/47/50 → 52 across rules, SKILL.md, EF, adoption.astro |
+| 32 | MCP error_rate post auto-refresh | — | ✅ Done (31/Mar) | Anomaly report: 0 pending, 0 errors |
 
 ---
 
@@ -74,7 +79,14 @@ RPCs with backend ready but no frontend surface. To be specced and implemented i
 
 ---
 
-## Recently Completed (session 28-29/Mar)
+## Recently Completed (session 31/Mar)
+
+### Sprint 10 (31/Mar)
+- P1.3: Write tools tested (4/4 pass — create_tribe_event, create_meeting_notes, register_attendance, send_notification_to_tribe)
+- P2: MCP tool counts updated across 4 files (42/47/50 → 52)
+- P2: MCP error_rate post auto-refresh — anomaly report clean (0 pending, 0 errors)
+- i18n review: 4 commits (hardcoded lang fixes, global search EN, blog EN, webinars SSR)
+- P1+P2: OAuth lang propagation, OG image fallback, release log, hub cleanup, onboarding prompt, blog revision, governance tools
 
 ### Sprint 4 Parity (29/Mar — continued session)
 - F1: Homepage public stats section (3 locales, 6 metrics)
