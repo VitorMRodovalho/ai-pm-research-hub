@@ -1510,14 +1510,43 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
-### GC-138 — Attendance Default Tribe Filter for Non-GP Users
+### GC-138 — Regra de Reingresso Mid-Cycle para Voluntarios
+
+**Data:** 2026-04-01 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisao:** Definir regra formal para tratamento de candidatos que possuem historico como voluntarios:
+- Ex-voluntarios de **ciclos anteriores** que reaplicam via VEP → sao **returning members**, passam pelo pipeline completo normalmente. O pool de talentos nao pode ser bloqueado por burocracia.
+- Voluntarios inativados **dentro do ciclo corrente** (offboarded_at >= data de abertura do ciclo) → sinalizados para **revisao manual do GP** antes de reingressar. Previne anomalia de alguem sair e voltar sem avaliacao.
+- Voluntarios com VEP status "Active" (ja aceitaram oferta) → skipados no import, apenas snapshot de membership atualizado.
+
+**Justificativa:** Caso Leandro Mota: offboarded em 18/Mar (ciclo corrente abriu em Jan/2026) como observer por decisao pessoal. VEP manteve status "Submitted" no CSV. Import deveria bloquear (inativado no ciclo corrente) mas nao bloquear ex-voluntarios de ciclos anteriores que legitimamente retornam. Validado com PMI Global Consultant: "Nao perca talentos por burocracia — so bloqueie anomalias do ciclo corrente."
+
+**Impacto tecnico:** RPC `import_vep_applications` atualizada com check `offboarded_at >= cycle.open_date`. Membros do ciclo corrente inativados geram log `selection_import_flagged_current_cycle` em `data_anomaly_log` (severity=high). Resultado do import mostra "Revisao GP" como categoria separada.
+
+**Referencia:** Manual de Governanca R2, Secao 3 — proposta de adicao de paragrafo sobre reingresso.
+
+---
+
+### GC-139 — Configuracao de Vagas VEP (vep_opportunities)
+
+**Data:** 2026-04-01 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
+
+**Decisao:** Cada vaga publicada no PMI VEP deve ter configuracao registrada na plataforma antes do primeiro import de CSV. A configuracao inclui: titulo, capitulo que postou, papel default, e mapeamento de perguntas customizadas (essay_mapping).
+
+**Justificativa:** O CSV do VEP exporta respostas como "Essay Question 1" a "Essay Question 5" sem os titulos das perguntas. Cada vaga tem perguntas diferentes (vaga de pesquisador pede perfil/PMBOK; vaga de lider pede experiencia de lideranca/tema proposto). Sem o mapeamento, os campos do DB recebem dados incorretos. A plataforma sera expandida para multiplos capitulos e EUA — mapeamento dinamico e requisito de escalabilidade.
+
+**Impacto tecnico:** Tabela `vep_opportunities` criada com `essay_mapping jsonb` (ex: `{"1":"motivation_letter","2":"areas_of_interest"}`). 2 vagas seeded (64967 pesquisador, 64966 lider). RPC `import_vep_applications` le o mapeamento automaticamente pelo `opportunity_id`. Campo `application_date` adicionado a `selection_applications` para registrar data real de candidatura do CSV.
+
+---
+
+### GC-140 — Attendance Default Tribe Filter for Non-GP Users
 **Data:** 2026-03-31 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
 
-**Decisao:** A pagina /attendance agora faz default do filtro de tribo para a tribo do usuario logado quando o usuario nao e GP-level (manager/deputy_manager/superadmin). Resolvido report do Jefferson Pinto (tribe leader) que via eventos de todas as tribos.
+**Decisao:** A pagina /attendance faz default do filtro de tribo para a tribo do usuario logado quando o usuario nao e GP-level (manager/deputy_manager/superadmin).
 
-**Justificativa:** Tribe leaders acessam /attendance (rota admin global) em vez da aba Presenca na pagina da tribo. O layout e filtros padrao "Todas as Tribos" nao era adequado para users non-GP.
+**Justificativa:** Report do Jefferson Pinto (tribe leader, Talentos & Upskilling): via eventos de todas as tribos na pagina /attendance. Tribe leaders acessam a rota admin global em vez da aba Presenca tribe-scoped. Confirmado que o layout e filtros padrao "Todas as Tribos" nao era adequado para users non-GP.
 
-**Impacto tecnico:** Apos popular o dropdown de tribos, verifica `isGPLevel()` e `MEMBER.tribe_id`. Se non-GP com tribo, pre-seleciona e re-renderiza.
+**Impacto tecnico:** Apos popular o dropdown de tribos em /attendance, verifica `isGPLevel()` e `MEMBER.tribe_id`. Se non-GP com tribo, pre-seleciona a tribo e re-renderiza a lista de eventos.
 
 ---
 
