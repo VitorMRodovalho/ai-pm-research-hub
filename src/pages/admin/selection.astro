@@ -783,8 +783,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
       // Essay display
       const essayFields = [
-        { key: 'reason_for_applying', label: 'Reason for Applying (VEP)' },
-        { key: 'motivation_letter', label: 'Motivação / Capítulo' },
+        { key: 'motivation_letter', label: 'Motivação' },
+        { key: 'chapter_affiliation', label: 'Capítulo / Filiação PMI' },
         { key: 'areas_of_interest', label: 'Perfil / Áreas de Interesse' },
         { key: 'academic_background', label: 'Formação / PMBOK' },
         { key: 'availability_declared', label: 'Disponibilidade' },
@@ -1275,47 +1275,91 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
       const evaluations = data.evaluations || [];
       const consolidated = data.consolidated || {};
-      const criteriaKeys = evaluations.length ? Object.keys(evaluations[0].scores || {}) : [];
-      const evaluatorNames = evaluations.map((ev: any) => esc(ev.evaluator_name || 'Avaliador'));
+      const alerts = data.calibration_alerts || [];
+
+      // Group evaluations by type
+      const byType: Record<string, any[]> = {};
+      for (const ev of evaluations) {
+        const t = ev.evaluation_type || 'objective';
+        if (!byType[t]) byType[t] = [];
+        byType[t].push(ev);
+      }
+
+      const TYPE_LABELS: Record<string, string> = {
+        objective: 'Avaliação Quantitativa (Pesquisador)',
+        interview: 'Avaliação Qualitativa (Entrevista)',
+        leader_extra: 'Avaliação Quantitativa (Líder)',
+      };
 
       let html = '<div class="space-y-4">';
       html += '<h4 class="text-sm font-bold text-navy">Resultados Consolidados</h4>';
 
-      if (criteriaKeys.length && evaluations.length) {
+      // Render table per evaluation type
+      for (const [evalType, evals] of Object.entries(byType)) {
+        const criteriaKeys = Object.keys(evals[0]?.scores || {});
+        if (!criteriaKeys.length) continue;
+
+        const evaluatorNames = evals.map((ev: any) => esc(ev.evaluator_name || 'Avaliador'));
+        html += `<div class="border border-[var(--border-default)] rounded-xl overflow-hidden">`;
+        html += `<div class="bg-[var(--surface-base)] px-3 py-2 text-[12px] font-bold text-navy border-b border-[var(--border-subtle)]">${TYPE_LABELS[evalType] || evalType}</div>`;
         html += '<div class="overflow-x-auto"><table class="w-full text-[12px] text-left"><thead><tr class="bg-[var(--surface-base)]">';
-        html += '<th class="px-3 py-2 font-bold text-[var(--text-secondary)]">Criterio</th>';
+        html += '<th class="px-3 py-2 font-bold text-[var(--text-secondary)]">Critério</th>';
         evaluatorNames.forEach((n: string) => { html += `<th class="px-3 py-2 font-bold text-[var(--text-secondary)]">${n}</th>`; });
         html += '<th class="px-3 py-2 font-bold text-navy">PERT</th></tr></thead><tbody>';
+
         for (const key of criteriaKeys) {
           html += '<tr class="border-t border-[var(--border-subtle)]">';
           html += `<td class="px-3 py-2 font-semibold">${esc(key)}</td>`;
-          const scores: number[] = [];
-          for (const ev of evaluations) {
+          const allVals: number[] = [];
+          for (const ev of evals) {
             const val = ev.scores?.[key];
-            scores.push(val != null ? Number(val) : 0);
-            const maxDiv = scores.length >= 2 ? Math.max(...scores) - Math.min(...scores) : 0;
-            const bgClass = maxDiv > 3 ? 'bg-amber-100' : '';
-            html += `<td class="px-3 py-2 ${bgClass}">${val != null ? val : '—'}</td>`;
+            if (val != null) allVals.push(Number(val));
+            html += `<td class="px-3 py-2">${val != null ? val : '—'}</td>`;
           }
-          // Check divergence across all evaluators for this criterion
-          const allVals = evaluations.map((ev: any) => ev.scores?.[key]).filter((v: any) => v != null).map(Number);
           const divergence = allVals.length >= 2 ? Math.max(...allVals) - Math.min(...allVals) : 0;
           const pertBg = divergence > 3 ? 'bg-amber-100' : '';
-          const pert = consolidated.criteria_pert?.[key];
-          html += `<td class="px-3 py-2 font-bold text-navy ${pertBg}">${pert != null ? Number(pert).toFixed(1) : '—'}</td>`;
+          const pertVal = allVals.length >= 2
+            ? ((2 * Math.min(...allVals) + 4 * (allVals.reduce((a, b) => a + b, 0) / allVals.length) + 2 * Math.max(...allVals)) / 8).toFixed(1)
+            : (allVals.length === 1 ? allVals[0].toFixed(1) : '—');
+          html += `<td class="px-3 py-2 font-bold text-navy ${pertBg}">${pertVal}</td>`;
           html += '</tr>';
         }
-        html += '</tbody></table></div>';
-      } else {
-        html += '<p class="text-sm text-[var(--text-muted)]">Nenhuma avaliacao encontrada.</p>';
+
+        // Subtotal row
+        const subtotals = evals.map((ev: any) => ev.weighted_subtotal).filter((v: any) => v != null).map(Number);
+        const pertSubtotal = subtotals.length >= 2
+          ? ((2 * Math.min(...subtotals) + 4 * (subtotals.reduce((a, b) => a + b, 0) / subtotals.length) + 2 * Math.max(...subtotals)) / 8).toFixed(1)
+          : (subtotals.length === 1 ? subtotals[0].toFixed(1) : '—');
+        html += '<tr class="border-t-2 border-navy bg-[var(--surface-base)]">';
+        html += '<td class="px-3 py-2 font-bold text-navy">Subtotal Ponderado</td>';
+        for (const ev of evals) {
+          html += `<td class="px-3 py-2 font-bold">${ev.weighted_subtotal != null ? Number(ev.weighted_subtotal).toFixed(1) : '—'}</td>`;
+        }
+        html += `<td class="px-3 py-2 font-extrabold text-navy">${pertSubtotal}</td>`;
+        html += '</tr></tbody></table></div></div>';
       }
 
-      // Consolidated scores
+      // Calibration alerts
+      if (alerts.length) {
+        html += '<div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">';
+        html += '<h5 class="text-[12px] font-bold text-amber-800 mb-1">Alertas de Calibração (divergência > 3)</h5>';
+        html += alerts.map((a: any) => `<div class="text-[11px] text-amber-700">${esc(a.type)}: <strong>${esc(a.criterion)}</strong> — divergência ${a.divergence}</div>`).join('');
+        html += '</div>';
+      }
+
+      // Final scores
       html += '<div class="grid grid-cols-3 gap-3 mt-3">';
-      html += `<div class="bg-[var(--surface-base)] rounded-xl p-3 text-center"><div class="text-lg font-extrabold text-navy">${consolidated.objective_score != null ? Number(consolidated.objective_score).toFixed(1) : '—'}</div><div class="text-[.6rem] text-[var(--text-secondary)] font-semibold">Obj. Score</div></div>`;
-      html += `<div class="bg-[var(--surface-base)] rounded-xl p-3 text-center"><div class="text-lg font-extrabold text-navy">${consolidated.interview_score != null ? Number(consolidated.interview_score).toFixed(1) : '—'}</div><div class="text-[.6rem] text-[var(--text-secondary)] font-semibold">Interview Score</div></div>`;
-      html += `<div class="bg-[var(--surface-base)] rounded-xl p-3 text-center"><div class="text-lg font-extrabold text-navy">${consolidated.final_score != null ? Number(consolidated.final_score).toFixed(1) : '—'}</div><div class="text-[.6rem] text-[var(--text-secondary)] font-semibold">Final Score</div></div>`;
+      html += `<div class="bg-[var(--surface-base)] rounded-xl p-3 text-center"><div class="text-lg font-extrabold text-navy">${consolidated.objective_pert != null ? Number(consolidated.objective_pert).toFixed(1) : (consolidated.objective_score_avg != null ? Number(consolidated.objective_score_avg).toFixed(1) : '—')}</div><div class="text-[.6rem] text-[var(--text-secondary)] font-semibold">PERT Quantitativa</div></div>`;
+      html += `<div class="bg-[var(--surface-base)] rounded-xl p-3 text-center"><div class="text-lg font-extrabold text-navy">${consolidated.interview_pert != null ? Number(consolidated.interview_pert).toFixed(1) : (consolidated.interview_score != null ? Number(consolidated.interview_score).toFixed(1) : '—')}</div><div class="text-[.6rem] text-[var(--text-secondary)] font-semibold">PERT Qualitativa</div></div>`;
+      html += `<div class="bg-[var(--surface-base)] rounded-xl p-3 text-center"><div class="text-lg font-extrabold text-navy">${consolidated.final_score != null ? Number(consolidated.final_score).toFixed(1) : '—'}</div><div class="text-[.6rem] text-[var(--text-secondary)] font-semibold">Score Final</div></div>`;
       html += '</div>';
+
+      // Calculation explanation
+      html += '<div class="text-[10px] text-[var(--text-muted)] mt-2 bg-[var(--surface-base)] rounded-lg p-2.5">';
+      html += '<strong>Cálculo:</strong> PERT por fase = (2×Min + 4×Avg + 2×Max) / 8 dos subtotais ponderados de cada avaliador. ';
+      html += 'Score Final = PERT Quantitativa + PERT Qualitativa' + (byType.leader_extra ? ' + PERT Líder' : '') + '.';
+      html += '</div>';
+
       html += '</div>';
       container.innerHTML = html;
     } catch (e: any) {
