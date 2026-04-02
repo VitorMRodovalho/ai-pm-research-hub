@@ -55,7 +55,7 @@ export default function MemberPicker({ members, value, onChange, placeholder = '
               <Command.Input
                 value={search}
                 onValueChange={setSearch}
-                placeholder="Buscar membro..."
+                placeholder={i18n.searchMember || "Search member..."}
                 className="w-full rounded-md border border-[var(--border-default)] bg-[var(--surface-input)] px-2 py-1.5 text-[12px] text-[var(--text-primary)]
                   outline-none focus:border-blue-400 placeholder:text-[var(--text-muted)]"
                 autoFocus
@@ -92,7 +92,7 @@ export default function MemberPicker({ members, value, onChange, placeholder = '
                 </Command.Item>
               ))}
               {members.filter((m) => !search || m.name.toLowerCase().includes(search.toLowerCase())).length === 0 && (
-                <div className="px-2 py-3 text-center text-[11px] text-[var(--text-muted)]">Nenhum membro encontrado</div>
+                <div className="px-2 py-3 text-center text-[11px] text-[var(--text-muted)]">{i18n.noMemberFound || 'No member found'}</div>
               )}
             </Command.List>
           </Command>

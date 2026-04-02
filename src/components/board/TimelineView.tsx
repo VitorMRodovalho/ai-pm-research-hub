@@ -151,7 +151,7 @@ export default function TimelineView({ items, i18n, onOpenDetail }: Props) {
 
       {datedItems.length === 0 ? (
         <div className="text-center py-8 text-[var(--text-muted)] text-[13px]">
-          Nenhum card com datas para exibir na timeline
+          {i18n.noCardsTimeline || 'No cards with dates'}
         </div>
       ) : (
         <div ref={containerRef} className="overflow-x-auto">

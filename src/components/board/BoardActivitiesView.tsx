@@ -109,7 +109,7 @@ export default function BoardActivitiesView({ boardId, members, onOpenCard }: Pr
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
           className="text-[11px] rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5 outline-none">
           <option value="all">Todas</option>
-          <option value="pending">Pendentes</option>
+          <option value="pending">{i18n.pendingFilter || 'Pending'}</option>
           <option value="completed">Concluídas</option>
         </select>
         <select value={periodFilter} onChange={(e) => setPeriodFilter(e.target.value)}
@@ -123,9 +123,9 @@ export default function BoardActivitiesView({ boardId, members, onOpenCard }: Pr
 
       {/* Activities grouped by card */}
       {loading ? (
-        <p className="text-[12px] text-[var(--text-muted)]">Carregando atividades...</p>
+        <p className="text-[12px] text-[var(--text-muted)]">{i18n.loadingActivities || 'Loading activities...'}</p>
       ) : Object.keys(grouped).length === 0 ? (
-        <p className="text-[12px] text-[var(--text-muted)]">Nenhuma atividade encontrada.</p>
+        <p className="text-[12px] text-[var(--text-muted)]">{i18n.noActivities || 'No activities found.'}</p>
       ) : (
         <div className="space-y-3">
           {Object.values(grouped).map((group) => (

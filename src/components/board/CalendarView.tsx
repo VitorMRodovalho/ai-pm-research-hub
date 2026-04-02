@@ -127,7 +127,7 @@ export default function CalendarView({ items, i18n, onOpenDetail }: Props) {
       {items.filter(i => !i.forecast_date && !i.due_date).length > 0 && (
         <div className="mt-4 p-3 bg-[var(--surface-section-cool)] rounded-lg">
           <span className="text-[11px] font-bold text-[var(--text-secondary)] block mb-1">
-            Sem data ({items.filter(i => !i.forecast_date && !i.due_date).length})
+            {i18n.noDated || 'No date'} ({items.filter(i => !i.forecast_date && !i.due_date).length})
           </span>
           <div className="flex flex-wrap gap-1">
             {items.filter(i => !i.forecast_date && !i.due_date).slice(0, 10).map((item) => (

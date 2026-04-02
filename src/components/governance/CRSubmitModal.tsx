@@ -25,7 +25,7 @@ export default function CRSubmitModal({ sections, t, getSb, onClose, onReload }:
 
   const handleSubmit = async () => {
     if (!title.trim() || !description.trim()) {
-      (window as any).toast?.('Título e descrição são obrigatórios.', 'error');
+      (window as any).toast?.('Title and description are required.', 'error');
       return;
     }
     setSaving(true);

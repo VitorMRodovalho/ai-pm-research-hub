@@ -68,7 +68,7 @@ export default function BoardFilters({
         <option value="all">📅 Todas as datas</option>
         <option value="overdue">🔴 Vencidos</option>
         <option value="week">📆 Próximos 7 dias</option>
-        <option value="none">❌ Sem data</option>
+        <option value="none">{i18n.noDate || 'No date'}</option>
       </select>
 
       {/* Curation status filter */}
@@ -80,9 +80,9 @@ export default function BoardFilters({
             outline-none focus:border-blue-400 cursor-pointer"
         >
           <option value="">🔍 Curadoria: Todos</option>
-          <option value="draft">Pendente</option>
+          <option value="draft">{i18n.draftFilter || 'Pending'}</option>
           <option value="review">Em revisão</option>
-          <option value="approved">Aprovado</option>
+          <option value="approved">{i18n.approve || 'Approved'}</option>
           <option value="rejected">Descartado</option>
         </select>
       )}
