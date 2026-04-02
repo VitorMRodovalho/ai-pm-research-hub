@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { usePageI18n } from '../../i18n/usePageI18n';
 import { Search, Users, Clock, CheckCircle2, CalendarDays } from 'lucide-react';
 import { hasPermission } from '../../lib/permissions';
 
@@ -32,6 +33,7 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function AttendanceForm() {
+  const t = usePageI18n();
   const [member, setMember] = useState<MemberInfo | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -155,7 +157,7 @@ export default function AttendanceForm() {
         });
       }
 
-      (window as any).toast?.(`${data} presenças registradas com sucesso`, 'success');
+      (window as any).toast?.(t('comp.attendance.registered', '{count} attendances registered').replace('{count}', String(data)), 'success');
       // Refresh existing
       setExisting(prev => {
         const next = new Set(prev);
@@ -198,7 +200,7 @@ export default function AttendanceForm() {
           {/* Event selector */}
           <div className="pt-4">
             <label className="text-xs font-semibold text-[var(--text-secondary)] block mb-1.5">
-              <CalendarDays size={12} className="inline mr-1" />Selecionar Evento
+              <CalendarDays size={12} className="inline mr-1" />{t('comp.attendance.selectEvent', 'Select Event')}
             </label>
             <select
               className="w-full px-3 py-2 text-sm rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] outline-none"
@@ -242,7 +244,7 @@ export default function AttendanceForm() {
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
                   <input
                     type="text"
-                    placeholder="Buscar membro..."
+                    placeholder={t('comp.attendance.searchMember', 'Search member...')}
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                     className="w-full pl-8 pr-3 py-2 text-sm rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] outline-none"
@@ -252,7 +254,7 @@ export default function AttendanceForm() {
                   onClick={selectAll}
                   className="px-3 py-2 text-xs font-semibold rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-secondary)] cursor-pointer hover:bg-[var(--surface-hover)] transition-colors"
                 >
-                  Selecionar todos
+                  {t('comp.attendance.selectAll', 'Select all')}
                 </button>
               </div>
 
@@ -313,7 +315,7 @@ export default function AttendanceForm() {
           )}
 
           {loading && (
-            <div className="py-8 text-center text-sm text-[var(--text-secondary)]">Carregando membros...</div>
+            <div className="py-8 text-center text-sm text-[var(--text-secondary)]">{t('comp.attendance.loadingMembers', 'Loading members...')}</div>
           )}
         </div>
       )}
