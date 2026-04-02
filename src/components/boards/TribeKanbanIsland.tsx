@@ -54,19 +54,22 @@ type BoardItem = {
 
 type Lane = { key: string; label: string };
 
-const BOARD_LANES: Lane[] = [
-  { key: 'backlog', label: 'Backlog' },
-  { key: 'todo', label: 'A Fazer' },
-  { key: 'doing', label: 'Em Progresso' },
-  { key: 'done', label: 'Concluido' },
-];
+const BOARD_LANE_KEYS = ['backlog', 'todo', 'doing', 'done'] as const;
+const CURATION_LANE_KEYS = ['peer_review', 'leader_review', 'curation_pending', 'published'] as const;
 
-const CURATION_LANES: Lane[] = [
-  { key: 'peer_review', label: 'Revisao por par' },
-  { key: 'leader_review', label: 'Revisao do lider' },
-  { key: 'curation_pending', label: 'Aguard. curadoria' },
-  { key: 'published', label: 'Publicado' },
-];
+function buildLanes(keys: readonly string[], t: (k: string, fb?: string) => string): Lane[] {
+  const labels: Record<string, string> = {
+    backlog: t('comp.kanban.lane.backlog', 'Backlog'),
+    todo: t('comp.kanban.lane.todo', 'A Fazer'),
+    doing: t('comp.kanban.lane.doing', 'Em Progresso'),
+    done: t('comp.kanban.lane.done', 'Concluido'),
+    peer_review: t('comp.kanban.lane.peerReview', 'Revisao por par'),
+    leader_review: t('comp.kanban.lane.leaderReview', 'Revisao do lider'),
+    curation_pending: t('comp.kanban.lane.curationPending', 'Aguard. curadoria'),
+    published: t('comp.kanban.lane.published', 'Publicado'),
+  };
+  return keys.map(key => ({ key, label: labels[key] || key }));
+}
 
 function resolveItemLane(item: BoardItem): string {
   const cs = item.curation_status;
@@ -80,7 +83,7 @@ function resolveItemLane(item: BoardItem): string {
   return 'backlog';
 }
 
-const ALL_LANES: Lane[] = [...BOARD_LANES, ...CURATION_LANES];
+const ALL_LANE_KEYS = [...BOARD_LANE_KEYS, ...CURATION_LANE_KEYS];
 
 type TribeKanbanI18n = Record<string, any>;
 
@@ -311,6 +314,10 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
   const [modalItem, setModalItem] = useState<BoardItem | null>(null);
   const [tribeData, setTribeData] = useState<any>(null);
   const [currentMember, setCurrentMember] = useState<any>(null);
+  const BOARD_LANES = useMemo(() => buildLanes(BOARD_LANE_KEYS, t), [t]);
+  const CURATION_LANES = useMemo(() => buildLanes(CURATION_LANE_KEYS, t), [t]);
+  const ALL_LANES = useMemo(() => [...BOARD_LANES, ...CURATION_LANES], [BOARD_LANES, CURATION_LANES]);
+
   const ui = {
     deniedBoard: i18n?.deniedBoard || t('comp.kanban.deniedBoard', 'Acesso restrito para este quadro.'),
     checklist: i18n?.checklist || t('comp.kanban.checklist', 'Checklist'),
@@ -425,12 +432,12 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
     });
   }, []);
 
-  const BOARD_LANE_KEYS = new Set(BOARD_LANES.map((l) => l.key));
+  const boardLaneKeySet = new Set(BOARD_LANES.map((l) => l.key));
 
   function rollbackMove(itemId: string, previousLane: string) {
     setItems((prev) => prev.map((row) => {
       if (row.id !== itemId) return row;
-      if (BOARD_LANE_KEYS.has(previousLane)) return { ...row, status: previousLane };
+      if (boardLaneKeySet.has(previousLane)) return { ...row, status: previousLane };
       return { ...row, curation_status: previousLane };
     }));
   }
@@ -454,7 +461,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       return;
     }
 
-    if (BOARD_LANE_KEYS.has(previousLane) && BOARD_LANE_KEYS.has(targetLane)) {
+    if (boardLaneKeySet.has(previousLane) && boardLaneKeySet.has(targetLane)) {
       const { error } = await sb.rpc('move_board_item', {
         p_item_id: itemId,
         p_new_status: targetLane,
@@ -500,7 +507,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
     if (!canEdit) return;
     const curLane = resolveItemLane(item);
 
-    if (BOARD_LANE_KEYS.has(curLane)) {
+    if (boardLaneKeySet.has(curLane)) {
       const idx = BOARD_LANES.findIndex((l) => l.key === curLane);
       const nextIdx = idx + direction;
       if (nextIdx >= 0 && nextIdx < BOARD_LANES.length) {
@@ -588,7 +595,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
     if (!targetLane) return;
 
     const isSameLane = targetLane === curLane;
-    const bothBoard = BOARD_LANE_KEYS.has(curLane) && BOARD_LANE_KEYS.has(targetLane);
+    const bothBoard = boardLaneKeySet.has(curLane) && boardLaneKeySet.has(targetLane);
     const isCrossLaneCuration = (curLane === 'peer_review' && targetLane === 'leader_review') || (curLane === 'leader_review' && targetLane === 'curation_pending');
     const canCurationTransition = (curLane === 'peer_review' && targetLane === 'leader_review' && current.reviewer_id === currentMember?.id)
       || (curLane === 'leader_review' && targetLane === 'curation_pending' && (hasPermission(currentMember, 'admin.access') || (hasPermission(currentMember, 'board.edit_tribe_items') && Number(currentMember?.tribe_id) === Number(tribeData?.id))));
@@ -599,7 +606,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
 
     setItems((prev) => {
       const applyLane = (row: BoardItem): BoardItem => {
-        if (BOARD_LANE_KEYS.has(targetLane)) return { ...row, status: targetLane };
+        if (boardLaneKeySet.has(targetLane)) return { ...row, status: targetLane };
         return { ...row, curation_status: targetLane };
       };
       const next = isSameLane ? prev : prev.map((row) => (row.id === itemId ? applyLane(row) : row));
@@ -839,7 +846,7 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
                     value={resolveItemLane(modalItem)}
                     onChange={(e) => {
                       const lane = e.target.value;
-                      if (BOARD_LANE_KEYS.has(lane)) {
+                      if (boardLaneKeySet.has(lane)) {
                         setModalItem((prev) => (prev ? { ...prev, status: lane, curation_status: 'draft' } : prev));
                       } else {
                         setModalItem((prev) => (prev ? { ...prev, curation_status: lane } : prev));
