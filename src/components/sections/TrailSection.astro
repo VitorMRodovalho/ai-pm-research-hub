@@ -165,10 +165,17 @@ try {
       pct: Math.round((mp[m.id]?.completed || 0) / TOTAL * 100),
     })).sort((a: any, b: any) => b.pct - a.pct || b.inProgress - a.inProgress);
 
-    // KPI
-    const avg = ranked.length > 0
-      ? Math.round(ranked.reduce((s: number, r: any) => s + r.pct, 0) / ranked.length)
-      : 0;
+    // KPI — use server-side calc for consistency with KPIs page
+    let avg = 0;
+    try {
+      const { data: health } = await sb.rpc('exec_portfolio_health');
+      const trailKpi = (Array.isArray(health) ? health : []).find((h: any) => h.metric_key === 'certification_trail');
+      avg = trailKpi?.current || 0;
+    } catch {
+      avg = ranked.length > 0
+        ? Math.round(ranked.reduce((s: number, r: any) => s + r.pct, 0) / ranked.length)
+        : 0;
+    }
     const kpiColor = avg >= 70 ? '#70AD47' : avg >= 30 ? '#FF610F' : '#D5340B';
     const kpiEl = document.getElementById('trailKPI');
     if (kpiEl) {

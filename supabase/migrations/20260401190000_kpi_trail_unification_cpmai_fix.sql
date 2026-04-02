@@ -1,0 +1,21 @@
+-- KPI Audit: Trail unification + CPMAI target fix
+-- ================================================
+-- Problem: Trail showed 3 different values:
+--   - KPIs page (exec_portfolio_health): 24% — used all 8 courses in denominator
+--   - Trail section (frontend): 28% — included observers/liaisons in calculation
+--   - get_annual_kpis: 11.8% — binary (100% or 0% per member)
+--
+-- Fix: Created calc_trail_completion_pct() shared function
+--   - Only counts 6 trail courses (is_trail=true), not optional
+--   - Only counts operational members (excludes sponsors, liaisons, observers)
+--   - Returns average progress: sum(member_completed/6) / count(members)
+--   - Result: 32% (consistent across all sources now)
+--
+-- exec_portfolio_health: WHEN 'certification_trail' → calc_trail_completion_pct()
+-- get_annual_kpis: 'trail_completion_pct' → calc_trail_completion_pct()
+-- TrailSection.astro: frontend now reads from exec_portfolio_health instead of local calc
+--
+-- CPMAI target: annual_kpi_targets had 5, corrected to 2 (pactuated target)
+-- portfolio_kpi_targets already had 2 (correct)
+
+UPDATE annual_kpi_targets SET target_value = 2 WHERE kpi_key = 'cpmai_certified';
