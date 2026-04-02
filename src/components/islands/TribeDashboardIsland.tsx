@@ -58,7 +58,7 @@ export default function TribeDashboardIsland({ tribeId }: TribeDashboardProps) {
     load();
   }, [tribeId]);
 
-  if (loading) return <div className="text-center py-12 text-[var(--text-muted)]">Carregando dashboard da tribo...</div>;
+  if (loading) return <div className="text-center py-12 text-[var(--text-muted)]">{t('comp.tribe.loading', 'Loading tribe dashboard...')}</div>;
   if (error) return <div className="text-center py-12 text-red-500">{error}</div>;
   if (!data) return null;
 
@@ -110,7 +110,7 @@ export default function TribeDashboardIsland({ tribeId }: TribeDashboardProps) {
             </div>
           </div>
           <a href="/admin" className="text-xs text-[var(--text-secondary)] hover:text-navy no-underline">
-            ← Voltar
+            {t('comp.tribe.back', '← Back')}
           </a>
         </div>
       </div>
@@ -123,7 +123,7 @@ export default function TribeDashboardIsland({ tribeId }: TribeDashboardProps) {
       )}
       {!tribe.meeting_slots?.length && (
         <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3 text-sm text-red-700 dark:text-red-300">
-          🔴 Sem reunião agendada — configure os horários da tribo
+          {t('comp.tribe.noMeeting', '🔴 No meeting scheduled — configure tribe schedule')}
         </div>
       )}
 
@@ -191,7 +191,7 @@ function MembersTab({ members, sortBy, setSortBy }: { members: any; sortBy: stri
   return (
     <div className="p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-bold text-navy">Membros da Tribo</h3>
+        <h3 className="text-sm font-bold text-navy">{t('comp.tribe.members', 'Tribe Members')}</h3>
         <div className="flex gap-1">
           {(['xp', 'attendance', 'name'] as const).map(s => (
             <button key={s} onClick={() => setSortBy(s)}
@@ -274,7 +274,7 @@ function ProductionTab({ production, trends }: { production: any; trends: any })
       <div>
         <h3 className="text-sm font-bold text-navy mb-3">Pipeline de Produção</h3>
         {production.total_cards === 0 ? (
-          <p className="text-sm text-[var(--text-muted)]">Nenhum card na tribo</p>
+          <p className="text-sm text-[var(--text-muted)]">{t('comp.tribe.noCards', 'No cards in this tribe')}</p>
         ) : (
           <>
             <ResponsiveContainer width="100%" height={180}>
@@ -429,7 +429,7 @@ function GamificationTab({ gamification, members }: { gamification: any; members
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-sm text-[var(--text-muted)]">Sem dados</p>
+            <p className="text-sm text-[var(--text-muted)]">{t('comp.tribe.noData', 'No data')}</p>
           )}
         </div>
         <div className="flex flex-col justify-center gap-2">
