@@ -8,6 +8,7 @@
 | # | Item | Est. | Status | Notes |
 |---|------|------|--------|-------|
 | 1 | Attendance cross-tribe | 1-2h | Monitoring | Retry pattern deployed (30×300ms). Intermittent — cannot reproduce reliably. Monitor. |
+| 33 | TMO ghost events | — | ✅ Done (02/Abr) | 10 recurrence events for inactive TMO tribe deleted. Notifications sent to 7 leaders for 59 pending. |
 | 2 | 2 attendance corrections | — | ✅ Done | Guilherme + Gustavo confirmed present in DB |
 | 3 | Migration repair 26/Mar | 5 min | ✅ Done (29/Mar) | All migrations synced |
 | 4 | i18n server-side locale | — | ✅ Verified (29/Mar) | EN/ES resolve correctly server-side. Not a bug. |
