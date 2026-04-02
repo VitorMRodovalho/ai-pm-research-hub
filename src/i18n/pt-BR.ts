@@ -3840,6 +3840,59 @@ const ptBR: Record<string, string> = {
   'admin.report.accessDenied': 'Acesso restrito.',
   'admin.report.defaultTitle': 'Relatório Executivo — Ciclo 3 (2026/1)',
   'admin.report.savedOk': 'Configuração salva com sucesso!',
+
+  // ═══ i18n Audit — Phase 3: Admin + User-facing components ═══
+
+  // ── Member Detail (admin) ──
+  'comp.memberDetail.loading': 'Carregando detalhes do membro...',
+  'comp.memberDetail.notFound': 'Membro não encontrado.',
+  'comp.memberDetail.backToMembers': 'Voltar para Membros',
+  'comp.memberDetail.edit': 'Editar',
+  'comp.memberDetail.editTitle': 'Editar Membro',
+  'comp.memberDetail.cancel': 'Cancelar',
+  'comp.memberDetail.noCycles': 'Nenhum ciclo registrado.',
+  'comp.memberDetail.noGamification': 'Nenhum dado de gamificação disponível.',
+  'comp.memberDetail.noEvents': 'Nenhum evento registrado.',
+  'comp.memberDetail.noPublications': 'Nenhuma publicação registrada.',
+  'comp.memberDetail.noAudit': 'Nenhum registro de auditoria.',
+
+  // ── Member List (admin) ──
+  'comp.memberList.loading': 'Carregando...',
+  'comp.memberList.noMovements': 'Nenhuma movimentação registrada.',
+  'comp.memberList.noReassign': '— Nenhum —',
+  'comp.memberList.removeWarning': 'Removerá da homepage/tribos',
+  'comp.memberList.cancel': 'Cancelar',
+
+  // ── Tribe Dashboard ──
+  'comp.tribe.loading': 'Carregando dashboard da tribo...',
+  'comp.tribe.back': '← Voltar',
+  'comp.tribe.noMeeting': '🔴 Sem reunião agendada — configure os horários da tribo',
+  'comp.tribe.members': 'Membros da Tribo',
+  'comp.tribe.noCards': 'Nenhum card na tribo',
+  'comp.tribe.approved': 'Aprovados',
+  'comp.tribe.noData': 'Sem dados',
+
+  // ── Card Detail (board) ──
+  'comp.card.uploadError': 'Erro no upload: {msg}',
+  'comp.card.addDescription': 'Adicionar descrição...',
+  'comp.card.add': '+ Adicionar',
+  'comp.card.removeAttach': 'Remover anexo',
+  'comp.card.overdue': '{days}d atrasado',
+  'comp.card.dueToday': 'Vence hoje',
+  'comp.card.daysLeft': '{days}d restantes',
+  'comp.card.approved': 'Aprovado',
+  'comp.card.changeReason': 'Razão da alteração (obrigatório)',
+  'comp.card.confirm': 'Confirmar',
+  'comp.card.cancel': 'Cancelar',
+  'comp.card.select': 'Selecionar...',
+
+  // ── Attendance Dashboard/Form ──
+  'comp.attendance.noData': 'Sem dados de presença disponíveis ainda.',
+  'comp.attendance.registered': '{count} presenças registradas com sucesso',
+  'comp.attendance.selectEvent': 'Selecionar Evento',
+  'comp.attendance.searchMember': 'Buscar membro...',
+  'comp.attendance.selectAll': 'Selecionar todos',
+  'comp.attendance.loadingMembers': 'Carregando membros...',
 };
 
 export default ptBR;

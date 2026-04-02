@@ -3834,6 +3834,59 @@ const esLATAM: Record<string, string> = {
   'admin.report.accessDenied': 'Acceso restringido.',
   'admin.report.defaultTitle': 'Informe Ejecutivo — Ciclo 3 (2026/1)',
   'admin.report.savedOk': '¡Configuración guardada con éxito!',
+
+  // ═══ i18n Audit — Phase 3: Admin + User-facing components ═══
+
+  // ── Member Detail (admin) ──
+  'comp.memberDetail.loading': 'Cargando detalles del miembro...',
+  'comp.memberDetail.notFound': 'Miembro no encontrado.',
+  'comp.memberDetail.backToMembers': 'Volver a Miembros',
+  'comp.memberDetail.edit': 'Editar',
+  'comp.memberDetail.editTitle': 'Editar Miembro',
+  'comp.memberDetail.cancel': 'Cancelar',
+  'comp.memberDetail.noCycles': 'Ningún ciclo registrado.',
+  'comp.memberDetail.noGamification': 'Sin datos de gamificación disponibles.',
+  'comp.memberDetail.noEvents': 'Ningún evento registrado.',
+  'comp.memberDetail.noPublications': 'Ninguna publicación registrada.',
+  'comp.memberDetail.noAudit': 'Sin registros de auditoría.',
+
+  // ── Member List (admin) ──
+  'comp.memberList.loading': 'Cargando...',
+  'comp.memberList.noMovements': 'Ningún movimiento registrado.',
+  'comp.memberList.noReassign': '— Ninguno —',
+  'comp.memberList.removeWarning': 'Se removerá de homepage/tribus',
+  'comp.memberList.cancel': 'Cancelar',
+
+  // ── Tribe Dashboard ──
+  'comp.tribe.loading': 'Cargando dashboard de la tribu...',
+  'comp.tribe.back': '← Volver',
+  'comp.tribe.noMeeting': '🔴 Sin reunión programada — configure los horarios de la tribu',
+  'comp.tribe.members': 'Miembros de la Tribu',
+  'comp.tribe.noCards': 'Sin cards en esta tribu',
+  'comp.tribe.approved': 'Aprobados',
+  'comp.tribe.noData': 'Sin datos',
+
+  // ── Card Detail (board) ──
+  'comp.card.uploadError': 'Error de carga: {msg}',
+  'comp.card.addDescription': 'Agregar descripción...',
+  'comp.card.add': '+ Agregar',
+  'comp.card.removeAttach': 'Remover adjunto',
+  'comp.card.overdue': '{days}d atrasado',
+  'comp.card.dueToday': 'Vence hoy',
+  'comp.card.daysLeft': '{days}d restantes',
+  'comp.card.approved': 'Aprobado',
+  'comp.card.changeReason': 'Razón del cambio (obligatorio)',
+  'comp.card.confirm': 'Confirmar',
+  'comp.card.cancel': 'Cancelar',
+  'comp.card.select': 'Seleccionar...',
+
+  // ── Attendance Dashboard/Form ──
+  'comp.attendance.noData': 'Sin datos de asistencia disponibles aún.',
+  'comp.attendance.registered': '{count} asistencias registradas con éxito',
+  'comp.attendance.selectEvent': 'Seleccionar Evento',
+  'comp.attendance.searchMember': 'Buscar miembro...',
+  'comp.attendance.selectAll': 'Seleccionar todos',
+  'comp.attendance.loadingMembers': 'Cargando miembros...',
 };
 
 export default esLATAM;
