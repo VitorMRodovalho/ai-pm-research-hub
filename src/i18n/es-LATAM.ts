@@ -446,6 +446,10 @@ const esLATAM: Record<string, string> = {
   'agenda.item6.title': 'Preguntas y Cierre',
   'agenda.item6.desc': 'Enlaces, cursos PMI, foto oficial.',
 
+  // ── Chapters ──
+  'chapters.label': 'Integración Multi-Regional',
+  'chapters.title': 'Capítulos PMI Integrados',
+
   // ── Quadrants ──
   'quadrants.label': 'Estructura de Conocimiento',
   'quadrants.title': '4 Cuadrantes Estratégicos',

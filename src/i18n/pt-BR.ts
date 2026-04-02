@@ -446,6 +446,10 @@ const ptBR: Record<string, string> = {
   'agenda.item6.title': 'Q&A e Encerramento',
   'agenda.item6.desc': 'Links, cursos PMI, foto oficial.',
 
+  // ── Chapters ──
+  'chapters.label': 'Integração Multi-Regional',
+  'chapters.title': 'Capítulos PMI Integrados',
+
   // ── Quadrants ──
   'quadrants.label': 'Estrutura de Conhecimento',
   'quadrants.title': '4 Quadrantes Estratégicos',
