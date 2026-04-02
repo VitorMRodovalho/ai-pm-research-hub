@@ -25,9 +25,9 @@ test('/privacy page references LGPD via i18n keys', () => {
   assert.ok(content.includes('privacy.s7rights.title'), 'Page must use s7rights (LGPD rights section)');
 });
 
-test('/privacy page has nucleoia@pmigo.org.br contact', () => {
+test('/privacy page has dpo@pmigo.org.br contact', () => {
   const content = readFileSync(resolve(ROOT, 'src/pages/privacy.astro'), 'utf8');
-  assert.ok(content.includes('nucleoia@pmigo.org.br'), 'Must include contact email');
+  assert.ok(content.includes('dpo@pmigo.org.br'), 'Must include DPO contact email');
 });
 
 test('/privacy page has all 13 sections (GC-080 v2.0)', () => {

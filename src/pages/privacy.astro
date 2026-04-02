@@ -13,7 +13,7 @@ const S6_ROWS = [1,2,3,4,5,6,7,8,9] as const;
     <header class="text-center">
       <h1 class="text-2xl md:text-3xl font-extrabold text-navy">{t('privacy.title', lang)}</h1>
       <p class="text-sm text-[var(--text-muted)] mt-2">
-        {t('privacy.lastUpdated', lang)}: 2026-03-18 &middot; {t('privacy.version', lang)}
+        {t('privacy.lastUpdated', lang)}: 2026-04-02 &middot; {t('privacy.version', lang)}
       </p>
     </header>
 
@@ -23,8 +23,11 @@ const S6_ROWS = [1,2,3,4,5,6,7,8,9] as const;
       <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
         <li>{t('privacy.s1.org', lang)}</li>
         <li>{t('privacy.s1.chapters', lang)}</li>
-        <li>{t('privacy.s1.contact', lang)}: nucleoia@pmigo.org.br</li>
-        <li>{t('privacy.s1.dpo', lang)}: Vitor Maia Rodovalho</li>
+        <li>{t('privacy.s1.cnpj', lang)}</li>
+        <li>{t('privacy.s1.contact', lang)}: dpo@pmigo.org.br</li>
+        <li>{t('privacy.s1.dpo', lang)}: Ivan Lourenço Costa</li>
+        <li>{t('privacy.s1.dpoSubstitute', lang)}: Angeline Altair Silva Prado</li>
+        <li>{t('privacy.s1.responseTime', lang)}</li>
       </ul>
     </section>
 
@@ -138,6 +141,8 @@ const S6_ROWS = [1,2,3,4,5,6,7,8,9] as const;
         <li><strong>{t('privacy.s7rights.portability', lang)}:</strong> {t('privacy.s7rights.portabilityDesc', lang)}</li>
         <li><strong>{t('privacy.s7rights.revocation', lang)}:</strong> {t('privacy.s7rights.revocationDesc', lang)}</li>
         <li><strong>{t('privacy.s7rights.opposition', lang)}:</strong> {t('privacy.s7rights.oppositionDesc', lang)}</li>
+        <li><strong>{t('privacy.s7rights.anonymization', lang)}:</strong> {t('privacy.s7rights.anonymizationDesc', lang)}</li>
+        <li><strong>{t('privacy.s7rights.entityInfo', lang)}:</strong> {t('privacy.s7rights.entityInfoDesc', lang)}</li>
       </ul>
     </section>
 
@@ -164,6 +169,13 @@ const S6_ROWS = [1,2,3,4,5,6,7,8,9] as const;
         <li>{t('privacy.s9sec.encryption', lang)}</li>
         <li>{t('privacy.s9sec.noPasswords', lang)}</li>
         <li>{t('privacy.s9sec.exifStripping', lang)}</li>
+      </ul>
+      <h3 class="text-base font-semibold text-[var(--text-primary)] mt-4">9.1. {t('privacy.s9sec.incidents.title', lang)}</h3>
+      <p class="text-sm text-[var(--text-secondary)]">{t('privacy.s9sec.incidents.intro', lang)}</p>
+      <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
+        <li>{t('privacy.s9sec.incidents.notify', lang)}</li>
+        <li>{t('privacy.s9sec.incidents.describe', lang)}</li>
+        <li>{t('privacy.s9sec.incidents.thirdParty', lang)}</li>
       </ul>
     </section>
 
@@ -199,6 +211,7 @@ const S6_ROWS = [1,2,3,4,5,6,7,8,9] as const;
       <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
         <li>{t('privacy.s13.email', lang)}</li>
         <li>{t('privacy.s13.dpo', lang)}</li>
+        <li>{t('privacy.s13.dpoSubstitute', lang)}</li>
       </ul>
       <p class="text-sm text-[var(--text-secondary)] mt-3">{t('privacy.s13.anpd', lang)}</p>
       <p class="text-sm">

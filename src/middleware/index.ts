@@ -8,7 +8,7 @@ import { createClient } from "@supabase/supabase-js";
 const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL || "https://ldrfrvwhxsmgaabwmaik.supabase.co";
 const SUPABASE_ANON_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkcmZydndoeHNtZ2FhYndtYWlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MjU5NDQsImV4cCI6MjA4ODMwMTk0NH0.gzibKd7Jyck3Ya61vzrloX1YZt-0pNReTuefdi4mAmw";
 
-const ADMIN_ROLES = new Set(["manager", "deputy_manager", "stakeholder", "tribe_leader", "curator"]);
+const ADMIN_ROLES = new Set(["manager", "deputy_manager", "stakeholder", "tribe_leader", "curator", "sponsor", "chapter_liaison"]);
 
 // Strip locale prefix to get the canonical path
 function stripLocale(path: string): string {

@@ -2427,15 +2427,18 @@ const ptBR: Record<string, string> = {
   // ── Privacy Policy v2.0 (GC-080 LGPD Rewrite) ──
   'privacy.pageTitle': 'Política de Privacidade — Núcleo IA & GP',
   'privacy.title': 'Política de Privacidade e Proteção de Dados',
-  'privacy.version': 'v2.0',
+  'privacy.version': 'v2.1',
   'privacy.lastUpdated': 'Última atualização',
 
   // S1 — Controlador
   'privacy.s1.title': 'Identificação do Controlador',
   'privacy.s1.org': 'Núcleo de Estudos e Pesquisa em IA & Gerenciamento de Projetos',
   'privacy.s1.chapters': 'Iniciativa colaborativa dos capítulos PMI-GO, PMI-CE, PMI-DF, PMI-MG, PMI-RS',
+  'privacy.s1.cnpj': 'CNPJ: 06.065.645/0001-99 (PMI Goiás)',
   'privacy.s1.contact': 'Contato',
   'privacy.s1.dpo': 'Encarregado (DPO)',
+  'privacy.s1.dpoSubstitute': 'DPO Substituto(a)',
+  'privacy.s1.responseTime': 'Prazo de resposta a solicitações de titulares: até 15 dias úteis',
 
   // S2 — Dados coletados
   'privacy.s2.title': 'Dados Pessoais Coletados',
@@ -2561,13 +2564,17 @@ const ptBR: Record<string, string> = {
   'privacy.s7rights.correction': 'Correção',
   'privacy.s7rights.correctionDesc': 'Editável diretamente no perfil da plataforma',
   'privacy.s7rights.deletion': 'Eliminação',
-  'privacy.s7rights.deletionDesc': 'Solicitar via nucleoia@pmigo.org.br',
+  'privacy.s7rights.deletionDesc': 'Solicitar via dpo@pmigo.org.br',
   'privacy.s7rights.portability': 'Portabilidade',
   'privacy.s7rights.portabilityDesc': 'Export em formato JSON via perfil',
   'privacy.s7rights.revocation': 'Revogação de consentimento',
-  'privacy.s7rights.revocationDesc': 'Solicitar via nucleoia@pmigo.org.br',
+  'privacy.s7rights.revocationDesc': 'Solicitar via dpo@pmigo.org.br',
   'privacy.s7rights.opposition': 'Oposição ao tratamento',
-  'privacy.s7rights.oppositionDesc': 'Solicitar via nucleoia@pmigo.org.br',
+  'privacy.s7rights.oppositionDesc': 'Solicitar via dpo@pmigo.org.br',
+  'privacy.s7rights.anonymization': 'Anonimização, bloqueio ou eliminação',
+  'privacy.s7rights.anonymizationDesc': 'De dados desnecessários, excessivos ou tratados em desconformidade. Solicitar via dpo@pmigo.org.br',
+  'privacy.s7rights.entityInfo': 'Informação sobre compartilhamento',
+  'privacy.s7rights.entityInfoDesc': 'Direito de saber com quais entidades seus dados são compartilhados (vide seção 4)',
 
   // S8 — Decisões automatizadas
   'privacy.s8auto.title': 'Decisões Automatizadas (LGPD Art. 20)',
@@ -2586,6 +2593,11 @@ const ptBR: Record<string, string> = {
   'privacy.s9sec.encryption': 'Dados criptografados em repouso (Supabase)',
   'privacy.s9sec.noPasswords': 'Sem armazenamento de senhas (autenticação delegada)',
   'privacy.s9sec.exifStripping': 'EXIF stripping em uploads de imagem',
+  'privacy.s9sec.incidents.title': 'Incidentes de Segurança',
+  'privacy.s9sec.incidents.intro': 'Em caso de incidente de segurança que possa acarretar risco ou dano relevante aos titulares, a organização se compromete a:',
+  'privacy.s9sec.incidents.notify': 'Comunicar a ANPD e os titulares afetados em prazo razoável, conforme Art. 48 da LGPD',
+  'privacy.s9sec.incidents.describe': 'Descrever a natureza dos dados afetados, os riscos, as medidas adotadas e as recomendações aos titulares',
+  'privacy.s9sec.incidents.thirdParty': 'Fornecedores e terceiros que violarem as medidas de segurança estarão sujeitos a penalidades contratuais e sanções previstas na legislação aplicável',
 
   // S10 — Cookies, Analytics e Rastreamento
   'privacy.s10track.title': 'Cookies, Analytics e Rastreamento',
@@ -2607,8 +2619,9 @@ const ptBR: Record<string, string> = {
   // S13 — Contato e ANPD
   'privacy.s13.title': 'Contato e Autoridade Nacional',
   'privacy.s13.contact': 'Para exercer seus direitos ou esclarecer dúvidas sobre esta política:',
-  'privacy.s13.email': 'Email: nucleoia@pmigo.org.br',
-  'privacy.s13.dpo': 'Encarregado (DPO): Vitor Maia Rodovalho',
+  'privacy.s13.email': 'Email: dpo@pmigo.org.br',
+  'privacy.s13.dpo': 'Encarregado (DPO): Ivan Lourenço Costa',
+  'privacy.s13.dpoSubstitute': 'DPO Substituto(a): Angeline Altair Silva Prado',
   'privacy.s13.anpd': 'Caso não fique satisfeito com a resposta, você pode apresentar reclamação à Autoridade Nacional de Proteção de Dados (ANPD):',
   'privacy.s13.anpdUrl': 'https://www.gov.br/anpd/pt-br',
   'footer.privacy': 'Política de Privacidade',
