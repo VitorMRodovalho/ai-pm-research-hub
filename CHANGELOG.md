@@ -1,5 +1,51 @@
 # Changelog
 
+## 2026-04-02 — Sprint 11: Selection Pipeline + KPI Audit + Ciclo 3 Normalization
+
+### Selection Pipeline (S1-S11 — all resolved)
+- Evaluation rubrics with advisory panel (cert 0-2, others 0-10, anchored descriptors)
+- Interview questions per cycle (5 pillars × 2-3 questions from VEP DOCX)
+- Per-criterion notes (criterion_notes jsonb)
+- Observer role enforcement (see but can't score)
+- VEP opportunities config UI (create/edit + rich essay mapping)
+- Evaluator UX: phone/WhatsApp, inline contact edit, Credly link, context panel
+- Consolidated results grouped by phase with PERT formula
+- Bulk feedback, membership/returning badges, application date display
+- Pre-onboarding checklist component on workspace
+
+### Ciclo 3 Kickoff Normalization
+- 62 candidates imported: 93 objective + 29 interview + 24 leader_extra evaluations
+- Scale conversion: 0-5→0-10 (x2), cert 0-2, interview proportional
+- 7 leader-only retrospective researcher evaluations (PM validated)
+- 5 dual applicants linked via converted_from/converted_to (audit trail preserved)
+- 34 selection_interviews records with dates and interviewers
+- Rankings calculated per chapter + overall
+
+### KPI Audit
+- Trail unified: 3 values (24%/28%/11.8%) → 32% via calc_trail_completion_pct()
+- CPMAI target: 5→2 (corrected to pactuated target)
+- Attendance: 38.6%→53.3% (includes geral+tribo+1on1+lideranca)
+- Impact/Meeting hours: date range Jan 1 (was kickoff Mar 5)
+- Chapters count: hardcoded→dynamic
+- All homepage indicators audited
+
+### Data Integrity
+- Cycle 1 tags: 22/22 members
+- Manual Apêndice A: corrected to Docusign V2 (8 founders + designações)
+- Manual EN/ES: full translation (34 sections)
+- Anomaly detection: 7 proactive rules in admin_get_anomaly_report
+- CR audit: 34/46 marked implemented
+- Quadrants table with FK from tribes
+- Tribes quadrant fix: Agentes Autônomos Q1→Q2, TMO removed (paused)
+
+### Infrastructure
+- 5 MCP tools fixed (tribe_id optional fallback)
+- Sentry DSN console.log silenced
+- Essay mapping: rich format with question text (backward compatible)
+- chapter_affiliation column (Q1 was chapter filiation, not motivation)
+
+---
+
 ## 2026-03-31 — v2.8.0 MCP Expansion + Knowledge Layer + i18n Audit
 
 ### i18n Audit — 6 Waves (74 keys added, 3428 total per dict)

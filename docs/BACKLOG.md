@@ -1,5 +1,5 @@
 # BACKLOG — AI & PM Research Hub
-## Updated: 31 March 2026 (Sprint 10 — v2.8.0, 52 MCP tools)
+## Updated: 02 April 2026 (Sprint 11 — ~48 commits, KPI audit, selection normalized)
 
 ---
 
@@ -116,32 +116,49 @@ RPCs with backend ready but no frontend surface. To be specced and implemented i
 
 ---
 
-## Selection Pipeline V2 — Gaps Pendentes (01/Apr audit)
+## Selection Pipeline V2 — ✅ All 11 Gaps Resolved (01-02/Apr)
 
-Jornada parcialmente funcional. Import + pipeline view + eval form + interview scheduling deployados. Gaps abaixo precisam ser resolvidos antes do teste completo com João.
+All S1-S11 gaps resolved. Pipeline is production-ready for Batch 2 async evaluation.
 
-### UX / Frontend Gaps
+| # | Gap | Status |
+|---|-----|--------|
+| S1 | Modal Info | ✅ Done — membership, certs, CV, WhatsApp, Credly, chapter_affiliation |
+| S2 | Interview questions | ✅ Done — 5 pillars stored per cycle (interview_questions jsonb) |
+| S3 | Per-criterion notes | ✅ Done — criterion_notes jsonb in selection_evaluations |
+| S4 | Interview booking | ✅ Done — URL shown in modal |
+| S5 | Consolidated results | ✅ Done — grouped by phase (Quantitativa/Qualitativa/Líder) with PERT |
+| S6 | Bulk feedback | ✅ Done — field in bulk actions bar |
+| S7 | Application date | ✅ Done (via S1) |
+| S8 | Interview questions config | ✅ Done — per-cycle jsonb + rich essay mapping |
+| S9 | RPC missing fields | ✅ Done — all essay + contact fields returned |
+| S10 | Background contextual | ✅ Confirmed OK (no score, guide-only) |
+| S11 | Membership flagging | ✅ Done — !M and R badges in pipeline table |
 
-| # | Gap | Impacto | Detalhe |
-|---|-----|---------|---------|
-| S1 | Modal Info incompleto | Alto | Falta: membership status, certifications, CV link, chapter affiliations, returning badge, application_date, VEP opportunity |
-| S2 | Perguntas da entrevista | Alto | 5 pilares x 3 perguntas (DOCX offline). Avaliador precisa ver durante entrevista. Configuravel por ciclo. |
-| S3 | Interview scoring notas por pilar | Medio | Frontend so tem 1 campo geral de notas. Ideal: anotacao por pilar/pergunta. |
-| S4 | Interview link/booking | Medio | Cycle config tem interview_booking_url mas nao integrado. Candidato nao recebe link. |
-| S5 | Evaluation results consolidated | Medio | Botao existe mas precisa teste real (2+ avaliadores). |
-| S6 | Bulk actions feedback field | Baixo | Bulk approve/reject sem feedback individual. |
-| S7 | Application date no frontend | Baixo | Importado mas nao visivel. |
+### Additional Selection Deliverables (01-02/Apr)
+- Evaluation rubrics (advisory panel): cert 0-2, others 0-10 with anchored descriptors
+- Observer role enforcement (see but can't score)
+- VEP opportunities config UI (create/edit + rich essay mapping)
+- Evaluator UX: phone/WhatsApp, inline contact edit, Credly link, context panel
+- Ciclo 3 kickoff normalized: 62 candidates, 146 evaluations, rankings, 34 interviews
+- 7 leader-only retrospective researcher evaluations (PM validated)
+- 5 dual applicants linked via converted_from/converted_to
 
-### Business Logic Gaps
+### KPI Audit (01-02/Apr)
+- Trail: 3 values unified → 32% (calc_trail_completion_pct shared function)
+- CPMAI target: 5→2 (annual_kpi_targets corrected)
+- Impact/Meeting hours: date range fixed (Jan 1 not kickoff Mar 5)
+- Attendance: 38.6%→53.3% (includes geral+tribo+1on1+lideranca)
+- Chapters count: hardcoded "5" → dynamic
+- All homepage indicators audited — no other hardcoded values found
 
-| # | Gap | Impacto | Detalhe |
-|---|-----|---------|---------|
-| S8 | Interview questions config | Alto | Tabela/campo para perguntas por ciclo. Hoje: DOCX offline. |
-| S9 | Dashboard RPC missing essays | Medio | get_selection_dashboard nao retorna essays completos. Modal Info depende disso. |
-| S10 | Pilar Background sem scoring | Baixo | 5 pilares entrevista mas 4 criterios no cycle config. Background e contextual. Validar. |
-
-### Dados
-
-| # | Gap | Impacto | Detalhe |
-|---|-----|---------|---------|
-| S11 | 5 candidatos sem membership | Medio | Andre, Blenda, Cristiano, Hector, Alexandre sem membership no CSV. Nao bloqueia avaliacao. |
+### Other Fixes (01-02/Apr)
+- Sentry DSN console.log removed
+- P0: Cycle 1 tags 22/22 members
+- P0: Manual Apêndice A corrected to Docusign V2 (8 founders + designações)
+- P1: 5 MCP tools tribe_id fallback
+- P2: Manual EN/ES full translation (34 sections)
+- P3: Anomaly detection (7 proactive rules)
+- P3: CR audit — 34/46 marked implemented
+- P3: Quadrants table created with FK from tribes
+- Tribes quadrant fix: Agentes Autônomos Q1→Q2, TMO removed (paused)
+- Pre-onboarding dashboard deployed on workspace
