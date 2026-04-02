@@ -1,0 +1,12 @@
+-- Phase 3: Retrospective researcher evaluations for 7 leader-only candidates
+-- + Fix unconverted interview scores (1-3/1-4 scale → 0-10)
+-- ================================================================
+-- 7 leader-only candidates received consensus researcher evaluations
+-- based on VEP responses, LinkedIn profiles, and resumes.
+-- Scores validated by PM before import.
+--
+-- Interview score fix: leader interviews had original 1-3/1-4 values
+-- not converted to 0-10 scale. Fixed with proportional conversion:
+-- communication: round(v/4*10), others: round(v/3*10)
+-- Weighted subtotals recalculated with interview_criteria weights.
+-- Final scores recalculated: objective + interview PERT.
