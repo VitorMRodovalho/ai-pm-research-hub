@@ -1,0 +1,11 @@
+-- Anomaly detection + cycle tags + KPI date fix
+-- ================================================
+-- 1. admin_get_anomaly_report: 7 proactive detection rules
+--    - active_without_cycle, orphan_tribe_id, events_no_attendance,
+--      duplicate_emails, active_but_offboarded, stale_partner_followups, no_tribe_assigned
+--    - Excludes interview/1on1 from attendance check, only >3 days old
+-- 2. 9 active members added to cycle3-2026 (sponsors, liaisons, observer)
+-- 3. cycle4-2026 tags added for annual contract members
+-- 4. exec_portfolio_health: year_start = Jan 1 (not kickoff)
+-- 5. ChaptersSection: count dynamic from CHAPTERS array
+-- 6. Antonio Marcos Costa: cycle1-2025 + cycle2-2025 added (= Marcos Moura)
