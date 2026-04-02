@@ -446,6 +446,10 @@ const enUS: Record<string, string> = {
   'agenda.item6.title': 'Q&A & Closing',
   'agenda.item6.desc': 'Links, PMI courses, official photo.',
 
+  // ── Chapters ──
+  'chapters.label': 'Multi-Regional Integration',
+  'chapters.title': 'Integrated PMI Chapters',
+
   // ── Quadrants ──
   'quadrants.label': 'Knowledge Framework',
   'quadrants.title': '4 Strategic Quadrants',

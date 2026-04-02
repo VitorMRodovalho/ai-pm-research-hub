@@ -1,13 +1,18 @@
 ---
+import { CHAPTERS } from '../../data/chapters';
+import { t, type Lang } from '../../i18n/utils';
+
+interface Props { lang?: Lang; }
+const { lang = 'pt-BR' } = Astro.props;
 ---
 
 <section class="py-16 px-6 bg-[var(--surface-section-cool)]" id="capitulos">
   <div class="max-w-[900px] mx-auto text-center">
     <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-purple mb-2">
-      Integração Multi-Regional
+      {t('chapters.label', lang)}
     </div>
     <h2 class="text-[clamp(1.5rem,3.5vw,2.2rem)] font-extrabold text-[var(--text-primary)] leading-tight mb-8">
-      5 Capítulos PMI Integrados
+      {CHAPTERS.length} {t('chapters.title', lang)}
     </h2>
 
     <div class="flex flex-wrap justify-center gap-4 mb-8">
