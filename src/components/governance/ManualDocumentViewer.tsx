@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { usePageI18n } from '../../i18n/usePageI18n';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -55,6 +56,7 @@ const PENDING_SECTION_3 = {
 };
 
 export default function ManualDocumentViewer({ lang: langProp }: Props) {
+  const mt = usePageI18n();
   const lang = langProp || detectLang();
   const [r2Sections, setR2] = useState<Section[]>([]);
   const [r3Sections, setR3] = useState<Section[]>([]);
@@ -94,6 +96,11 @@ export default function ManualDocumentViewer({ lang: langProp }: Props) {
   // Merge R2 + R3 into unified list
   const merged = mergeSections(r2Sections, r3Sections);
 
+  // Translate badge labels
+  CHANGE_STYLES.new.badge = mt('manual.badgeNew', 'NEW');
+  CHANGE_STYLES.updated.badge = mt('manual.badgeUpdated', 'UPDATED');
+  CHANGE_STYLES.pending.badge = mt('manual.badgePending', 'PENDING');
+
   // R2-only view helpers
   const r2TopLevel = r2Sections.filter(s => !s.parent_section_id);
   const r2Children = (parentId: string) => r2Sections.filter(s => s.parent_section_id === parentId);
@@ -125,7 +132,7 @@ export default function ManualDocumentViewer({ lang: langProp }: Props) {
   };
 
   if (loading) return <div className="flex items-center justify-center py-20"><div className="animate-spin h-6 w-6 border-2 border-[var(--accent)] border-t-transparent rounded-full" /></div>;
-  if (!merged.length) return <p className="text-center py-12 text-[var(--text-muted)]">Nenhuma secção encontrada.</p>;
+  if (!merged.length) return <p className="text-center py-12 text-[var(--text-muted)]">{mt('manual.noSections', 'No sections found.')}</p>;
 
   const hasR3 = r3Sections.length > 0;
   const newCount = merged.filter(m => m.changeType === 'new' || m.children.some(c => c.changeType === 'new')).length;
@@ -157,8 +164,8 @@ export default function ManualDocumentViewer({ lang: langProp }: Props) {
       <article className="flex-1 min-w-0">
         {/* Header */}
         <div className="text-center mb-6 pb-5 border-b border-[var(--border-default)]">
-          <div className="text-[10px] font-bold uppercase tracking-[.2em] text-[var(--text-muted)] mb-1">Núcleo de Estudos e Pesquisa em IA & Gerenciamento de Projetos</div>
-          <h1 className="text-2xl font-extrabold text-[var(--text-primary)]">Manual de Governança e Operações</h1>
+          <div className="text-[10px] font-bold uppercase tracking-[.2em] text-[var(--text-muted)] mb-1">{mt('manual.institution', 'AI & PM Study and Research Hub')}</div>
+          <h1 className="text-2xl font-extrabold text-[var(--text-primary)]">{mt('manual.title', 'Governance and Operations Manual')}</h1>
 
           {/* Version toggle */}
           {hasR3 && (
@@ -167,13 +174,13 @@ export default function ManualDocumentViewer({ lang: langProp }: Props) {
                 className={`px-4 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 transition-all ${
                   viewMode === 'r2' ? 'border-navy bg-navy text-white' : 'border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]'
                 }`}>
-                R2 (Aprovado)
+                {mt('manual.r2Label', 'R2 (Approved)')}
               </button>
               <button onClick={() => setViewMode('preview')}
                 className={`px-4 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border-2 transition-all ${
                   viewMode === 'preview' ? 'border-amber-500 bg-amber-500 text-white' : 'border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]'
                 }`}>
-                Simulação R3
+                {mt('manual.r3Label', 'R3 Simulation')}
               </button>
             </div>
           )}
@@ -183,7 +190,7 @@ export default function ManualDocumentViewer({ lang: langProp }: Props) {
             {viewMode === 'r2' ? (
               <span>Versão R2 · DocuSign B2AFB185 · <strong className="text-emerald-600 dark:text-emerald-400">Aprovado 22/Set/2025</strong></span>
             ) : hasR3 ? (
-              <span className="text-amber-700 dark:text-amber-400 font-semibold">⚠ SIMULAÇÃO — Preview da próxima revisão. Este documento NÃO está aprovado.</span>
+              <span className="text-amber-700 dark:text-amber-400 font-semibold">{mt('manual.r3Warning', '⚠ SIMULATION — Preview of the next revision. This document is NOT approved.')}</span>
             ) : (
               <span>Versão R2 · DocuSign B2AFB185</span>
             )}
@@ -192,9 +199,9 @@ export default function ManualDocumentViewer({ lang: langProp }: Props) {
           {/* Preview stats + legend */}
           {viewMode === 'preview' && hasR3 && (
             <div className="flex flex-wrap justify-center gap-2 mt-3 text-[11px]">
-              <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-semibold">{newCount} novas secções</span>
-              <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 font-semibold">{updCount} atualizadas</span>
-              <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800/50 dark:text-gray-400 font-semibold">{merged.length - newCount - updCount} inalteradas</span>
+              <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-semibold">{newCount} {mt('manual.newSections', 'new sections')}</span>
+              <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 font-semibold">{updCount} {mt('manual.updatedSections', 'updated')}</span>
+              <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800/50 dark:text-gray-400 font-semibold">{merged.length - newCount - updCount} {mt('manual.unchangedSections', 'unchanged')}</span>
             </div>
           )}
 
@@ -202,7 +209,7 @@ export default function ManualDocumentViewer({ lang: langProp }: Props) {
           <div className="flex justify-center gap-2 mt-3 print:hidden">
             <button onClick={() => window.print()}
               className="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[11px] font-semibold text-[var(--text-secondary)] cursor-pointer hover:bg-[var(--surface-hover)]">
-              📄 {viewMode === 'r2' ? 'Exportar R2 PDF' : 'Exportar Simulação PDF'}
+              📄 {viewMode === 'r2' ? mt('manual.exportR2', 'Export R2 PDF') : mt('manual.exportSim', 'Export Simulation PDF')}
             </button>
           </div>
         </div>
@@ -311,9 +318,9 @@ function TOCList({ merged, activeSection, lang, onClick }: { merged: MergedSecti
 // ── Section rendering ──
 
 const CHANGE_STYLES: Record<string, { border: string; bg: string; badge: string; badgeCls: string }> = {
-  new: { border: 'border-l-4 border-blue-400', bg: 'bg-blue-50/50 dark:bg-blue-900/10', badge: 'NOVA', badgeCls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
-  updated: { border: 'border-l-4 border-amber-400', bg: 'bg-amber-50/50 dark:bg-amber-900/10', badge: 'ATUALIZADA', badgeCls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
-  pending: { border: 'border-l-4 border-yellow-400', bg: 'bg-yellow-50/50 dark:bg-yellow-900/10', badge: 'PENDENTE', badgeCls: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
+  new: { border: 'border-l-4 border-blue-400', bg: 'bg-blue-50/50 dark:bg-blue-900/10', badge: '', badgeCls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+  updated: { border: 'border-l-4 border-amber-400', bg: 'bg-amber-50/50 dark:bg-amber-900/10', badge: '', badgeCls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+  pending: { border: 'border-l-4 border-yellow-400', bg: 'bg-yellow-50/50 dark:bg-yellow-900/10', badge: '', badgeCls: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
   unchanged: { border: '', bg: '', badge: '', badgeCls: '' },
 };
 
