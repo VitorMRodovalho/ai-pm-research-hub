@@ -1,5 +1,6 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
+import DiversityDashboard from '../../components/selection/DiversityDashboard';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import Toast from '../../components/ui/Toast.astro';
 
@@ -34,6 +35,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         <button data-sel-tab="pipeline" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-navy text-navy bg-transparent cursor-pointer">Pipeline</button>
         <button data-sel-tab="import" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">Import CSV</button>
         <button data-sel-tab="committee" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">Comitê</button>
+        <button data-sel-tab="diversity" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">Diversidade</button>
       </div>
 
       <!-- TAB: PIPELINE -->
@@ -214,6 +216,19 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         </div>
       </div>
 
+      <!-- TAB: DIVERSITY (CR-040) -->
+      <div id="tab-diversity" class="hidden space-y-4">
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-lg font-bold text-navy">Métricas de Diversidade</h2>
+              <p class="text-xs text-[var(--text-muted)] mt-0.5">Distribuição por gênero, capítulo, setor, senioridade e região — dados anonimizados conforme LGPD Art. 11</p>
+            </div>
+          </div>
+          <DiversityDashboard client:visible />
+        </div>
+      </div>
+
       <!-- TAB: COMMITTEE -->
       <div id="tab-committee" class="hidden space-y-4">
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-6 space-y-4">
@@ -317,7 +332,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       btn.classList.toggle('border-transparent', !isActive);
       btn.classList.toggle('text-[var(--text-secondary)]', !isActive);
     });
-    ['pipeline', 'import', 'committee'].forEach(t => {
+    ['pipeline', 'import', 'committee', 'diversity'].forEach(t => {
       document.getElementById(`tab-${t}`)?.classList.toggle('hidden', t !== name);
     });
   }

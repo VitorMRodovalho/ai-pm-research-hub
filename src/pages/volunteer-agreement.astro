@@ -4,7 +4,7 @@ import { getLangFromURL, t, type Lang } from '../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 ---
 <BaseLayout title={t('volunteer.title', lang)} activePage="volunteer-agreement" lang={lang}>
-  <main class="max-w-[640px] mx-auto px-4 py-8" id="va-app">
+  <main class="max-w-[720px] mx-auto px-4 py-8" id="va-app">
     <div class="text-center py-12 text-[var(--text-muted)]" id="va-loading">...</div>
   </main>
 </BaseLayout>
@@ -25,20 +25,40 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     return new Date(d).toLocaleString(locale, { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
-  const TERMS = ['term1', 'term2', 'term3', 'term4', 'term5'] as const;
+  const CLAUSE_KEYS = [
+    'clause1', 'clause2', 'clause3', 'clause4', 'clause5', 'clause6',
+    'clause7', 'clause8', 'clause9', 'clause10', 'clause11', 'clause12',
+  ] as const;
 
-  function renderForm(member: any, lang: Lang): string {
+  const SUB_CLAUSES: Record<string, string[]> = {
+    clause1: ['clause1a', 'clause1b', 'clause1c'],
+    clause7: ['clause7a'],
+    clause9: ['clause9a', 'clause9b', 'clause9c', 'clause9d', 'clause9e', 'clause9f', 'clause9note'],
+  };
+
+  function renderForm(member: any, lang: Lang, template: any): string {
     const tribeName = member.tribe_name || '—';
     const roleName = member.operational_role || '—';
+    const cycle = new Date().getFullYear();
+    const subtitle = t('volunteer.subtitle', lang).replace('{cycle}', '3').replace('{year}', String(cycle));
+
     return `
-      <header class="mb-6">
+      <header class="mb-6 text-center">
+        <div class="text-[10px] font-bold uppercase tracking-[.15em] text-[var(--text-muted)] mb-1">PMI Goiás — Núcleo de Estudos e Pesquisa em IA & GP</div>
         <h1 class="text-xl font-bold text-[var(--text-primary)]">${t('volunteer.title', lang)}</h1>
-        <p class="text-[var(--text-secondary)] text-sm mt-1">${t('volunteer.subtitle', lang)}</p>
+        <p class="text-[var(--text-secondary)] text-sm mt-1">${subtitle}</p>
       </header>
 
-      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5 mb-6">
+      <!-- Header intro -->
+      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5 mb-4">
+        <p class="text-sm text-[var(--text-secondary)] leading-relaxed">${t('volunteer.headerIntro', lang)}</p>
+      </div>
+
+      <!-- Member data -->
+      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5 mb-4">
         <h3 class="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-3">${t('volunteer.memberData', lang)}</h3>
-        <div class="grid grid-cols-2 gap-2 text-sm">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+          ${member.pmi_id ? `<div><span class="text-[var(--text-muted)]">${t('volunteer.pmiId', lang)}:</span> <strong class="text-[var(--text-primary)]">${esc(member.pmi_id)}</strong></div>` : ''}
           <div><span class="text-[var(--text-muted)]">${t('volunteer.name', lang)}:</span> <strong class="text-[var(--text-primary)]">${esc(member.name)}</strong></div>
           <div><span class="text-[var(--text-muted)]">${t('volunteer.email', lang)}:</span> <span class="text-[var(--text-primary)]">${esc(member.email)}</span></div>
           <div><span class="text-[var(--text-muted)]">${t('volunteer.tribe', lang)}:</span> <span class="text-[var(--text-primary)]">${esc(tribeName)}</span></div>
@@ -46,14 +66,62 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         </div>
       </div>
 
-      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5 mb-6">
-        <h3 class="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-3">${t('volunteer.termsTitle', lang)}</h3>
-        <p class="text-sm text-[var(--text-primary)] mb-4 font-medium">${t('volunteer.preamble', lang).replace('{name}', esc(member.name))}</p>
-        <ol class="space-y-3 list-decimal list-inside">
-          ${TERMS.map((k, i) => `<li class="text-sm text-[var(--text-secondary)] leading-relaxed">${t('volunteer.' + k, lang)}${k === 'term5' ? ' <a href="/privacy" target="_blank" class="text-navy font-semibold no-underline hover:underline">[link]</a>' : ''}</li>`).join('')}
+      <!-- Preamble -->
+      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5 mb-4">
+        <p class="text-sm text-[var(--text-primary)] font-medium leading-relaxed">${t('volunteer.preamble', lang)}</p>
+      </div>
+
+      <!-- Terms (12 clauses) -->
+      <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5 mb-4">
+        <h3 class="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-4">${t('volunteer.termsTitle', lang)}</h3>
+        <ol class="space-y-4 list-none">
+          ${CLAUSE_KEYS.map((key, i) => {
+            const subs = SUB_CLAUSES[key];
+            const clauseText = template?.[key] || t('volunteer.' + key, lang);
+            let html = `
+              <li class="text-sm text-[var(--text-secondary)] leading-relaxed">
+                <div class="flex gap-2">
+                  <span class="text-[var(--text-muted)] font-bold shrink-0">${i + 1}.</span>
+                  <span>${esc(clauseText)}</span>
+                </div>`;
+            if (subs) {
+              html += `<ol class="mt-2 ml-6 space-y-2">`;
+              subs.forEach((subKey) => {
+                const subText = template?.[subKey] || t('volunteer.' + subKey, lang);
+                const isNote = subKey.endsWith('note');
+                const letter = isNote ? '' : subKey.slice(-1) + ')';
+                html += `
+                  <li class="text-[13px] text-[var(--text-secondary)] leading-relaxed ${isNote ? 'mt-3 italic border-l-2 border-[var(--border-subtle)] pl-3' : ''}">
+                    <div class="flex gap-2">
+                      ${letter ? `<span class="text-[var(--text-muted)] font-semibold shrink-0">${letter}</span>` : ''}
+                      <span>${esc(subText)}</span>
+                    </div>
+                  </li>`;
+              });
+              html += `</ol>`;
+            }
+            html += `</li>`;
+            return html;
+          }).join('')}
         </ol>
       </div>
 
+      <!-- Annex: Lei 9.608 -->
+      <details class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5 mb-4">
+        <summary class="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] cursor-pointer">${t('volunteer.annexTitle', lang)}</summary>
+        <div class="mt-3 space-y-3">
+          <p class="text-[13px] text-[var(--text-muted)] italic">${t('volunteer.annexIntro', lang)}</p>
+          <p class="text-sm text-[var(--text-secondary)] leading-relaxed font-medium">${t('volunteer.annexArt1', lang)}</p>
+          <p class="text-[13px] text-[var(--text-secondary)] leading-relaxed italic ml-4">${t('volunteer.annexArt1p', lang)}</p>
+          <p class="text-sm text-[var(--text-secondary)] leading-relaxed">${t('volunteer.annexArt2', lang)}</p>
+          <p class="text-sm text-[var(--text-secondary)] leading-relaxed">${t('volunteer.annexArt3', lang)}</p>
+          <p class="text-[13px] text-[var(--text-secondary)] leading-relaxed italic ml-4">${t('volunteer.annexArt3p', lang)}</p>
+          <p class="text-sm text-[var(--text-secondary)] leading-relaxed">${t('volunteer.annexArt4', lang)}</p>
+          <p class="text-sm text-[var(--text-secondary)] leading-relaxed">${t('volunteer.annexArt5', lang)}</p>
+        </div>
+      </details>
+
+      <!-- Sign section -->
       <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5">
         <label class="flex items-start gap-3 cursor-pointer mb-4">
           <input type="checkbox" id="va-agree" class="mt-1 w-4 h-4 accent-navy" />
@@ -127,9 +195,23 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       return;
     }
 
+    // Load template from governance_documents (admin-editable)
+    let template: any = null;
+    try {
+      const { data: docs } = await sb.from('governance_documents')
+        .select('content')
+        .eq('doc_type', 'volunteer_term_template')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (docs?.[0]?.content) {
+        try { template = JSON.parse(docs[0].content); } catch { template = null; }
+      }
+    } catch { /* fallback to i18n */ }
+
     // Load member tribe name for display
     const memberData = { ...member, tribe_name: member.tribe_name || (window as any).__memberTribeName || '—' };
-    app.innerHTML = renderForm(memberData, lang);
+    app.innerHTML = renderForm(memberData, lang, template);
 
     // Checkbox enables button
     const checkbox = document.getElementById('va-agree') as HTMLInputElement;
