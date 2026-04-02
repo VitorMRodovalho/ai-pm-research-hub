@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { usePageI18n } from '../../i18n/usePageI18n';
 
 interface BoardMember {
   id: string;
@@ -25,6 +26,7 @@ const ROLE_COLORS: Record<string, string> = {
 function getSb() { return (window as any).navGetSb?.(); }
 
 export default function BoardMembersPanel() {
+  const t = usePageI18n();
   const [boards, setBoards] = useState<Board[]>([]);
   const [selectedBoard, setSelectedBoard] = useState<string>('');
   const [members, setMembers] = useState<BoardMember[]>([]);
@@ -90,9 +92,9 @@ export default function BoardMembersPanel() {
       p_board_id: selectedBoard, p_member_id: addMemberId, p_board_role: addRole, p_action: 'add',
     });
     if (error || data?.error) {
-      (window as any).toast?.(error?.message || data?.error || 'Erro', 'error');
+      (window as any).toast?.(error?.message || data?.error || t('common.errorGeneric', 'Error'), 'error');
     } else {
-      (window as any).toast?.('Membro adicionado ao board', 'success');
+      (window as any).toast?.(t('boardMembers.added', 'Member added to board'), 'success');
       setAddMemberId('');
       await loadBoardMembers(selectedBoard);
     }
@@ -101,7 +103,7 @@ export default function BoardMembersPanel() {
 
   const handleRemove = async (memberId: string) => {
     if (!selectedBoard || saving) return;
-    if (!confirm('Remover membro deste board?')) return;
+    if (!confirm(t('boardMembers.confirmRemove', 'Remove member from this board?'))) return;
     setSaving(true);
     const sb = getSb();
     const { error } = await sb.rpc('admin_manage_board_member', {
@@ -110,7 +112,7 @@ export default function BoardMembersPanel() {
     if (error) {
       (window as any).toast?.(error.message, 'error');
     } else {
-      (window as any).toast?.('Membro removido', 'success');
+      (window as any).toast?.(t('boardMembers.removed', 'Member removed'), 'success');
       await loadBoardMembers(selectedBoard);
     }
     setSaving(false);
@@ -136,20 +138,20 @@ export default function BoardMembersPanel() {
 
   return (
     <section className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
-      <h2 className="text-lg font-extrabold text-navy mb-1">Permissões por Board</h2>
-      <p className="text-xs text-[var(--text-muted)] mb-4">Gerencie acesso de membros a boards específicos (CR-028)</p>
+      <h2 className="text-lg font-extrabold text-navy mb-1">{t('boardMembers.title', 'Board Permissions')}</h2>
+      <p className="text-xs text-[var(--text-muted)] mb-4">{t('boardMembers.subtitle', 'Manage member access to specific boards')}</p>
 
       {/* Board selector */}
       <select value={selectedBoard} onChange={e => setSelectedBoard(e.target.value)}
         className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-input)] text-sm text-[var(--text-primary)] mb-4 focus:outline-none focus:border-navy">
-        <option value="">Selecione um board...</option>
+        <option value="">{t('boardMembers.selectBoard', 'Select a board...')}</option>
         {globalBoards.length > 0 && (
-          <optgroup label="Boards Globais">
+          <optgroup label={t('boardMembers.globalBoards', 'Global Boards')}>
             {globalBoards.map(b => <option key={b.id} value={b.id}>{b.board_name}</option>)}
           </optgroup>
         )}
         {tribeBoards.length > 0 && (
-          <optgroup label="Boards de Tribo">
+          <optgroup label={t('boardMembers.tribeBoards', 'Tribe Boards')}>
             {tribeBoards.map(b => <option key={b.id} value={b.id}>{b.board_name}</option>)}
           </optgroup>
         )}
@@ -171,7 +173,7 @@ export default function BoardMembersPanel() {
           {loadingMembers ? (
             <div className="text-center py-4"><div className="animate-spin h-4 w-4 border-2 border-[var(--accent)] border-t-transparent rounded-full inline-block" /></div>
           ) : members.length === 0 ? (
-            <p className="text-sm text-[var(--text-muted)] py-3">Nenhum membro com permissão específica neste board. Acesso padrão por operational_role.</p>
+            <p className="text-sm text-[var(--text-muted)] py-3">{t('boardMembers.noSpecific', 'No members with specific permissions on this board.')}</p>
           ) : (
             <div className="space-y-2 mb-4">
               {members.map(m => (
@@ -190,7 +192,7 @@ export default function BoardMembersPanel() {
                   <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${ROLE_COLORS[m.board_role] || ROLE_COLORS.viewer}`}>
                     {m.board_role}
                   </span>
-                  <button onClick={() => handleRemove(m.id)} className="text-red-500 hover:text-red-700 text-xs cursor-pointer border-0 bg-transparent" title="Remover">
+                  <button onClick={() => handleRemove(m.id)} className="text-red-500 hover:text-red-700 text-xs cursor-pointer border-0 bg-transparent" title={t('common.remove', 'Remove')}>
                     ✕
                   </button>
                 </div>
@@ -201,15 +203,15 @@ export default function BoardMembersPanel() {
           {/* Add member */}
           <div className="flex gap-2 items-end flex-wrap">
             <div className="flex-1 min-w-[180px]">
-              <label className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1 block">Membro</label>
+              <label className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1 block">{t('boardMembers.member', 'Member')}</label>
               <select value={addMemberId} onChange={e => setAddMemberId(e.target.value)}
                 className="w-full px-2 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-input)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-navy">
-                <option value="">Selecionar...</option>
+                <option value="">{t('boardMembers.select', 'Select...')}</option>
                 {availableToAdd.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             </div>
             <div className="w-24">
-              <label className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1 block">Papel</label>
+              <label className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1 block">{t('boardMembers.role', 'Role')}</label>
               <select value={addRole} onChange={e => setAddRole(e.target.value)}
                 className="w-full px-2 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--surface-input)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-navy">
                 <option value="admin">admin</option>
@@ -219,7 +221,7 @@ export default function BoardMembersPanel() {
             </div>
             <button onClick={handleAdd} disabled={!addMemberId || saving}
               className="px-4 py-1.5 rounded-lg bg-navy text-white text-sm font-semibold border-0 cursor-pointer hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity">
-              {saving ? '...' : '+ Adicionar'}
+              {saving ? '...' : t('boardMembers.add', '+ Add')}
             </button>
           </div>
         </>

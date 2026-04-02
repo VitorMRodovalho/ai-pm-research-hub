@@ -3702,6 +3702,144 @@ const ptBR: Record<string, string> = {
   // ── Webinars Co-managers (F2) ──
   'webinars.co_managers': 'Co-gestores',
   'webinars.co_managers_selected': 'selecionados',
+
+  // ═══ i18n Audit — Sprint 12 Phase 1+2 ═══
+
+  // ── Diversity Dashboard (CR-040) ──
+  'diversity.totalApplicants': 'Total de Candidaturas',
+  'diversity.approved': 'Aprovados',
+  'diversity.approvalRate': 'Taxa de Aprovação',
+  'diversity.byGender': 'Distribuição por Gênero',
+  'diversity.byChapter': 'Distribuição por Capítulo',
+  'diversity.bySector': 'Distribuição por Setor',
+  'diversity.bySeniority': 'Distribuição por Senioridade',
+  'diversity.byRegion': 'Distribuição por Região',
+  'diversity.applicants': 'Candidaturas',
+  'diversity.loading': 'Carregando...',
+
+  // ── Curation Rubric Labels ──
+  'curation.rubric.clarity': 'Clareza',
+  'curation.rubric.clarityTip': 'Compreensível sem contexto adicional?',
+  'curation.rubric.originality': 'Originalidade',
+  'curation.rubric.originalityTip': 'Perspectiva ou abordagem nova?',
+  'curation.rubric.adherence': 'Aderência',
+  'curation.rubric.adherenceTip': 'Alinhado com o quadrante da tribo?',
+  'curation.rubric.relevance': 'Relevância',
+  'curation.rubric.relevanceTip': 'Contribui para o corpo de conhecimento?',
+  'curation.rubric.ethics': 'Ética',
+  'curation.rubric.ethicsTip': 'Respeita IA responsável e governança?',
+  'curation.noTitle': 'Sem título',
+  'curation.evaluate': 'Avaliar',
+  'curation.history': 'Histórico',
+  'curation.reviewTitle': 'Avaliação de curadoria',
+  'curation.approved': 'Aprovado e publicado!',
+  'curation.returned': 'Devolvido à tribo com feedback.',
+  'curation.rejected': 'Rejeitado pelo comitê.',
+  'curation.done': 'Concluído.',
+  'curation.submitError': 'Erro ao submeter',
+  'curation.histApproved': 'Aprovado',
+  'curation.histRejected': 'Rejeitado',
+  'curation.histReturned': 'Devolvido',
+  'curation.slaOverdue': 'd atrasado',
+  'curation.slaDays': 'd',
+  'curation.slaExpiredItems': 'item',
+  'curation.slaExpiredSuffix': 'com SLA vencido',
+
+  // ── Board Members Panel ──
+  'boardMembers.title': 'Permissões por Board',
+  'boardMembers.subtitle': 'Gerencie acesso de membros a boards específicos (CR-028)',
+  'boardMembers.selectBoard': 'Selecione um board...',
+  'boardMembers.globalBoards': 'Boards Globais',
+  'boardMembers.tribeBoards': 'Boards de Tribo',
+  'boardMembers.noSpecific': 'Nenhum membro com permissão específica neste board. Acesso padrão por operational_role.',
+  'boardMembers.member': 'Membro',
+  'boardMembers.role': 'Papel',
+  'boardMembers.add': '+ Adicionar',
+  'boardMembers.select': 'Selecionar...',
+  'boardMembers.added': 'Membro adicionado ao board',
+  'boardMembers.removed': 'Membro removido',
+  'boardMembers.confirmRemove': 'Remover membro deste board?',
+
+  // ── Manual Document Viewer ──
+  'manual.noSections': 'Nenhuma secção encontrada.',
+  'manual.toc': 'Índice',
+  'manual.institution': 'Núcleo de Estudos e Pesquisa em IA & Gerenciamento de Projetos',
+  'manual.title': 'Manual de Governança e Operações',
+  'manual.r2Approved': 'Versão R2 · DocuSign B2AFB185 · Aprovado 22/Set/2025',
+  'manual.r3Warning': '⚠ SIMULAÇÃO — Preview da próxima revisão. Este documento NÃO está aprovado.',
+  'manual.r2Label': 'R2 (Aprovado)',
+  'manual.r3Label': 'Simulação R3',
+  'manual.newSections': 'novas secções',
+  'manual.updatedSections': 'atualizadas',
+  'manual.unchangedSections': 'inalteradas',
+  'manual.exportR2': 'Exportar R2 PDF',
+  'manual.exportSim': 'Exportar Simulação PDF',
+  'manual.badgeNew': 'NOVA',
+  'manual.badgeUpdated': 'ATUALIZADA',
+  'manual.badgePending': 'PENDENTE',
+  'manual.pendingLabel': 'propostas pendentes de aprovação',
+
+  // ── Governance Approval ──
+  'governance.cr.cancelBtn': 'Cancelar',
+  'governance.cr.confirmBtn': 'Confirmar',
+  'governance.cr.commentPlaceholder': 'Comentário (opcional)',
+
+  // ── Common UI ──
+  'common.save': 'Salvar',
+  'common.cancel': 'Cancelar',
+  'common.add': 'Adicionar',
+  'common.remove': 'Remover',
+  'common.edit': 'Editar',
+  'common.confirm': 'Confirmar',
+  'common.delete': 'Excluir',
+  'common.search': 'Buscar',
+  'common.select': 'Selecionar',
+  'common.back': 'Voltar',
+  'common.noResults': 'Nenhum resultado encontrado.',
+  'common.accessDenied': 'Acesso restrito.',
+  'common.errorGeneric': 'Ocorreu um erro. Tente novamente.',
+  'common.required': 'obrigatório',
+  'common.saved': 'Salvo com sucesso!',
+  'common.tribe': 'Tribo',
+
+  // ── Admin Members ──
+  'admin.members.title': 'Membros',
+  'admin.members.offboard': 'Desligar membro',
+  'admin.members.offboardConfirm': 'Confirmar desligamento?',
+  'admin.members.activate': 'Ativar',
+  'admin.members.deactivate': 'Desativar',
+  'admin.members.searchPlaceholder': 'Buscar por nome...',
+
+  // ── Admin Selection ──
+  'admin.selection.diversityTab': 'Diversidade',
+  'admin.selection.diversityTitle': 'Métricas de Diversidade',
+  'admin.selection.diversitySubtitle': 'Distribuição por gênero, capítulo, setor, senioridade e região — dados anonimizados conforme LGPD Art. 11',
+  'admin.selection.recalcRankings': 'Recalcular Rankings',
+  'admin.selection.startScreening': 'Iniciar Triagem',
+  'admin.selection.slugRequired': 'Slug obrigatório',
+  'admin.selection.postSaved': 'Post salvo',
+
+  // ── Admin Comms ──
+  'admin.comms.active': 'Ativo',
+  'admin.comms.expired': 'Expirado',
+  'admin.comms.error': 'Erro',
+  'admin.comms.never': 'Nunca',
+  'admin.comms.daysRemaining': 'd restantes',
+  'admin.comms.channelUpdated': 'Canal atualizado!',
+  'admin.comms.fillDateChannel': 'Preencha data e canal.',
+  'admin.comms.metricRecorded': 'Métrica registrada!',
+  'admin.comms.reach': 'Alcance',
+  'admin.comms.audience': 'Audiência',
+
+  // ── Admin Campaigns ──
+  'admin.campaigns.nameRequired': 'Nome obrigatório',
+  'admin.campaigns.templateSaved': 'Template salvo',
+  'admin.campaigns.allActiveMembers': 'Todos os membros ativos',
+
+  // ── Admin Report ──
+  'admin.report.accessDenied': 'Acesso restrito.',
+  'admin.report.defaultTitle': 'Relatório Executivo — Ciclo 3 (2026/1)',
+  'admin.report.savedOk': 'Configuração salva com sucesso!',
 };
 
 export default ptBR;
