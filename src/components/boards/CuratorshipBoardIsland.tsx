@@ -87,13 +87,15 @@ function daysUntilDue(dueAt: string | null | undefined): number | null {
   return Math.ceil((new Date(dueAt).getTime() - Date.now()) / 86400000);
 }
 
-const CRITERIA = [
-  { key: 'clarity', label: 'Clareza', tip: 'Compreensível sem contexto adicional?' },
-  { key: 'originality', label: 'Originalidade', tip: 'Perspectiva ou abordagem nova?' },
-  { key: 'adherence', label: 'Aderência', tip: 'Alinhado com o quadrante da tribo?' },
-  { key: 'relevance', label: 'Relevância', tip: 'Contribui para o corpo de conhecimento?' },
-  { key: 'ethics', label: 'Ética', tip: 'Respeita IA responsável e governança?' },
-] as const;
+function getCriteria(t: (k: string, f?: string) => string) {
+  return [
+    { key: 'clarity', label: t('curation.rubric.clarity', 'Clarity'), tip: t('curation.rubric.clarityTip', 'Understandable without additional context?') },
+    { key: 'originality', label: t('curation.rubric.originality', 'Originality'), tip: t('curation.rubric.originalityTip', 'New perspective or approach?') },
+    { key: 'adherence', label: t('curation.rubric.adherence', 'Adherence'), tip: t('curation.rubric.adherenceTip', 'Aligned with the tribe quadrant?') },
+    { key: 'relevance', label: t('curation.rubric.relevance', 'Relevance'), tip: t('curation.rubric.relevanceTip', 'Contributes to the body of knowledge?') },
+    { key: 'ethics', label: t('curation.rubric.ethics', 'Ethics'), tip: t('curation.rubric.ethicsTip', 'Respects responsible AI and governance?') },
+  ] as const;
+}
 
 // ─── SLA Badge ──────────────────────────────────────────────────────────────
 
@@ -300,6 +302,8 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit, ui = {} }: {
   onSubmit: (decision: string, scores: Record<string, number>, feedback: string) => Promise<void>;
   ui?: Record<string, string>;
 }) {
+  const rt = usePageI18n();
+  const CRITERIA = getCriteria(rt);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [feedback, setFeedback] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -591,14 +595,14 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
       p_feedback_notes: feedback || null,
     });
 
-    if (err) { toast(err.message || 'Erro ao submeter', 'error'); return; }
+    if (err) { toast(err.message || pt('curation.submitError', 'Error submitting'), 'error'); return; }
 
     const labels: Record<string, string> = {
-      approved: ui.approved || 'Aprovado e publicado!',
-      returned_for_revision: 'Devolvido à tribo com feedback.',
-      rejected: ui.rejected || 'Rejeitado pelo comitê.',
+      approved: ui.approved || pt('curation.approved', 'Approved and published!'),
+      returned_for_revision: pt('curation.returned', 'Returned to tribe with feedback.'),
+      rejected: ui.rejected || pt('curation.rejected', 'Rejected by committee.'),
     };
-    toast(labels[decision] || 'Concluído.', decision === 'approved' ? 'success' : 'info');
+    toast(labels[decision] || pt('curation.done', 'Done.'), decision === 'approved' ? 'success' : 'info');
     setModalItem(null);
     setTribeItems((prev) => prev.filter((i) => i.id !== modalItem.id));
   }
