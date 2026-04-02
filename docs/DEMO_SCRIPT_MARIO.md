@@ -9,7 +9,7 @@
 
 ### 1. Homepage Pública (3 min) — Impacto imediato
 - **URL:** `nucleoia.vitormr.dev`
-- Mostrar seção **"A plataforma em números"** (F1): 51 pesquisadores, 7 tribos, 5 capítulos, 278 eventos, 330 recursos, 77% retenção
+- Mostrar seção **"A plataforma em números"** (F1): 51 pesquisadores, 7 tribos, 5 capítulos, 268 eventos, 330 recursos, 77% retenção
 - Scroll rápido: quadrantes de pesquisa, tribos com vídeos, trilha CPMAI, time
 - **Ponto-chave:** "Tudo operacional, zero overhead manual"
 
@@ -74,7 +74,7 @@
 | Pesquisadores ativos | 51 |
 | Tribos de pesquisa | 7 |
 | Capítulos PMI parceiros | 5 (CE, DF, GO, MG, RS) |
-| Eventos realizados | 278 |
+| Eventos realizados | 268 |
 | Recursos na biblioteca | 330 |
 | Retenção | 77% |
 | MCP Tools | 52 |

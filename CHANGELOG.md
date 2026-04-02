@@ -27,10 +27,20 @@
 - TMO ghost events: 10 recurrence events for inactive tribe deleted
 - Smoke test label corrected 23→52 tools
 
+### i18n Audit (Phases 1-3f)
+- 222 new keys added across 3 dictionaries (pt-BR, en-US, es-LATAM): 3463→3685
+- 27 components updated to use usePageI18n() or i18n props
+- BoardEngine auto-translate: 22 comp.board.* keys propagate to all sub-components
+- Hardcoded Portuguese strings: 87→32 (63% reduction)
+- Normalized all i18n hook variables to `const t` (was pt/mt/rt)
+- 9 parent .astro pages with expanded buildPageI18n bundles
+
 ### Operational
 - 7 tribe leaders notified about 59 pending attendance events
 - 5 sponsors notified about 11 pending CR votes
 - Demo script updated for Mario Trentim meeting (03/Apr)
+- 4 migrations synced (repair --status applied)
+- MCP EF redeployed: v2.9.0, 52 tools, SDK 1.28.0
 
 ---
 

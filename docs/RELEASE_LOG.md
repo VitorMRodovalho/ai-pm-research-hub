@@ -1,5 +1,33 @@
 # Release Log
 
+## 2026-04-02 — v2.9.0: Sprint 12 — 4 Waves, i18n Audit, Volunteer Term, Diversity
+
+### Scope
+Addressed all 11 pending CRs across 4 strategic waves, comprehensive i18n audit (63% reduction in hardcoded PT), volunteer term rewrite matching DocuSign template, diversity dashboard, campaign webhook fix.
+
+### Delivered (15 commits)
+- **11 CRs addressed** in 4 waves: Governance Engine, Member Lifecycle, Operational Clarity, Strategic Positioning
+- **Volunteer term rewrite**: 5 simplified → 12 full DocuSign clauses + LGPD + Lei 9.608 (3 languages)
+- **Admin-editable template**: governance_documents.content jsonb (23 keys), DB-first with i18n fallback
+- **BoardMembersPanel**: New admin component for per-board member permissions (CR-028)
+- **DiversityDashboard**: Mounted as 4th tab in /admin/selection (5 chart dimensions, LGPD-compliant)
+- **i18n audit**: 222 new keys (3463→3685), 27 components translated, BoardEngine auto-translate (22 keys → all sub-components)
+- **R3 Manual enriched**: §1 research-to-impact chain, §5 attendance rules, §7.2 MCP 15→52, Apêndice B
+- **P0 #28 fix**: process_email_webhook counter sync + backfill (50/50 delivered)
+- **TMO cleanup**: 10 ghost events deleted, 268 events total
+- **Notifications**: 7 tribe leaders (attendance) + 5 sponsors (CR votes)
+
+### Validation
+- Health: v2.9.0, 52 tools, native-streamable-http, sdk 1.28.0
+- 779 unit tests pass, 0 fail
+- Smoke: 11/11
+- All 16 demo pages: 200 OK
+- EN governance content verified (renders in English)
+- Hardcoded PT: 87 → 32 (63% reduction)
+- DB: 46 CRs, 33+12 manual sections, 6 gov docs, 449 board items, 955 attendance, 51 members
+
+---
+
 ## 2026-03-31 — v2.8.0: MCP Expansion + Knowledge Layer + i18n Audit + Blog SSR
 
 ### Scope

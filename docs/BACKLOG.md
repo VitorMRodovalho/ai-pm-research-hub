@@ -41,7 +41,7 @@
 | 12 | Brantlee Underhill outreach | Post-Mario | PMI Staff AI/Innovation. linkedin.com/in/brantleeunderhill/ |
 | 13 | nucleoia.pmigo.org.br CNAME | Waiting Ivan | HostGator DNS |
 | 14 | Relatório C2→C3 | Deferred | Waiting Ivan to define needs |
-| 15 | R3 Manual batch approve | Waiting Ivan | 29+ CRs pending approval |
+| 15 | R3 Manual batch approve | Waiting Ivan | 11 CRs pending approval (was 29+, 34 implemented). 5 sponsors notified 02/Abr. |
 | 16 | S2.3 Executive sponsor view | 5 sponsors no auth | Spec after auth onboarding |
 | 17 | PMI-GO institutional page | Waiting Ivan | WordPress content sent |
 
@@ -80,7 +80,22 @@ RPCs with backend ready but no frontend surface. To be specced and implemented i
 
 ---
 
-## Recently Completed (session 31/Mar)
+## Recently Completed (Sprint 12 — 02/Apr)
+
+### Sprint 12 (02/Apr) — v2.9.0: 15 commits, 4 waves
+- **Wave 1 (Governance)**: CR-024/028/039 proposed_changes populated, R3 Apêndice B, §7.2 MCP 15→52
+- **Wave 2 (Lifecycle)**: Volunteer term rewritten (12 DocuSign clauses, 3 langs), admin-editable template, RPC updated
+- **Wave 3 (Operational)**: R3 §5 attendance rules, BoardMembersPanel admin UI, CR-2026-001 confirmed implemented
+- **Wave 4 (Strategic)**: R3 §1 research-to-impact chain, DiversityDashboard mounted in admin/selection
+- **i18n Audit**: 222 new keys across 3 dictionaries, 27 components translated, 87→32 hardcoded PT strings (63% reduction)
+- **Bug fixes**: P0 #28 campaign webhook counters, TMO ghost events (10 deleted), smoke test label
+- **Operational**: 7 leader + 5 sponsor notifications sent, migrations synced, demo script updated
+- **Deploy**: Worker + EF v2.9.0, 11/11 smoke, 16/16 demo pages OK
+
+### Sprint 11 (01-02/Apr) — Selection pipeline + KPI audit
+- Selection S1-S11 all resolved, Ciclo 3 normalized (62 candidates, 146 evaluations)
+- KPI audit: trail 32%, CPMAI target 5→2, attendance 53.3%, chapters dynamic
+- Manual EN/ES translation (34 sections), CR audit 34/46
 
 ### Sprint 10 (31/Mar)
 - P1.3: Write tools tested (4/4 pass — create_tribe_event, create_meeting_notes, register_attendance, send_notification_to_tribe)
