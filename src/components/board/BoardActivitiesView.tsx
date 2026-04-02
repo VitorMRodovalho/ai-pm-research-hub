@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { usePageI18n } from '../../i18n/usePageI18n';
 import { getSb } from '../../hooks/useBoard';
 import type { BoardMember } from '../../types/board';
 
@@ -27,6 +28,12 @@ interface Props {
 }
 
 export default function BoardActivitiesView({ boardId, members, onOpenCard }: Props) {
+  const t = usePageI18n();
+  const i18n = {
+    pendingFilter: t('comp.board.pendingFilter'),
+    loadingActivities: t('comp.board.loadingActivities'),
+    noActivities: t('comp.board.noActivities'),
+  };
   const [activities, setActivities] = useState<Activity[]>([]);
   const [total, setTotal] = useState(0);
   const [completed, setCompleted] = useState(0);

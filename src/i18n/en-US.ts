@@ -2422,15 +2422,18 @@ const enUS: Record<string, string> = {
   // ── Privacy Policy v2.0 (GC-080 LGPD Rewrite) ──
   'privacy.pageTitle': 'Privacy Policy — AI & PM Research Hub',
   'privacy.title': 'Privacy Policy and Data Protection',
-  'privacy.version': 'v2.0',
+  'privacy.version': 'v2.1',
   'privacy.lastUpdated': 'Last updated',
 
   // S1 — Data Controller
   'privacy.s1.title': 'Data Controller Identification',
   'privacy.s1.org': 'AI & Project Management Study and Research Hub',
   'privacy.s1.chapters': 'Collaborative initiative of PMI-GO, PMI-CE, PMI-DF, PMI-MG, PMI-RS chapters',
+  'privacy.s1.cnpj': 'CNPJ: 06.065.645/0001-99 (PMI Goiás)',
   'privacy.s1.contact': 'Contact',
   'privacy.s1.dpo': 'Data Protection Officer (DPO)',
+  'privacy.s1.dpoSubstitute': 'Substitute DPO',
+  'privacy.s1.responseTime': 'Response time for data subject requests: up to 15 business days',
 
   // S2 — Data collected
   'privacy.s2.title': 'Personal Data Collected',
@@ -2556,13 +2559,17 @@ const enUS: Record<string, string> = {
   'privacy.s7rights.correction': 'Correction',
   'privacy.s7rights.correctionDesc': 'Editable directly in the platform profile',
   'privacy.s7rights.deletion': 'Deletion',
-  'privacy.s7rights.deletionDesc': 'Request via nucleoia@pmigo.org.br',
+  'privacy.s7rights.deletionDesc': 'Request via dpo@pmigo.org.br',
   'privacy.s7rights.portability': 'Portability',
   'privacy.s7rights.portabilityDesc': 'JSON format export via profile',
   'privacy.s7rights.revocation': 'Consent revocation',
-  'privacy.s7rights.revocationDesc': 'Request via nucleoia@pmigo.org.br',
+  'privacy.s7rights.revocationDesc': 'Request via dpo@pmigo.org.br',
   'privacy.s7rights.opposition': 'Opposition to processing',
-  'privacy.s7rights.oppositionDesc': 'Request via nucleoia@pmigo.org.br',
+  'privacy.s7rights.oppositionDesc': 'Request via dpo@pmigo.org.br',
+  'privacy.s7rights.anonymization': 'Anonymization, blocking or deletion',
+  'privacy.s7rights.anonymizationDesc': 'Of unnecessary, excessive or non-compliant data. Request via dpo@pmigo.org.br',
+  'privacy.s7rights.entityInfo': 'Sharing information',
+  'privacy.s7rights.entityInfoDesc': 'Right to know which entities your data is shared with (see section 4)',
 
   // S8 — Automated decisions
   'privacy.s8auto.title': 'Automated Decisions (LGPD Art. 20)',
@@ -2581,6 +2588,11 @@ const enUS: Record<string, string> = {
   'privacy.s9sec.encryption': 'Data encrypted at rest (Supabase)',
   'privacy.s9sec.noPasswords': 'No password storage (delegated authentication)',
   'privacy.s9sec.exifStripping': 'EXIF stripping on image uploads',
+  'privacy.s9sec.incidents.title': 'Security Incidents',
+  'privacy.s9sec.incidents.intro': 'In case of a security incident that may pose relevant risk or harm to data subjects, the organization commits to:',
+  'privacy.s9sec.incidents.notify': 'Notify the ANPD and affected data subjects within a reasonable timeframe, per LGPD Art. 48',
+  'privacy.s9sec.incidents.describe': 'Describe the nature of affected data, the risks, measures taken, and recommendations to data subjects',
+  'privacy.s9sec.incidents.thirdParty': 'Suppliers and third parties violating security measures are subject to contractual penalties and sanctions under applicable legislation',
 
   // S10 — Cookies, Analytics and Tracking
   'privacy.s10track.title': 'Cookies, Analytics and Tracking',
@@ -2602,8 +2614,9 @@ const enUS: Record<string, string> = {
   // S13 — Contact and ANPD
   'privacy.s13.title': 'Contact and National Authority',
   'privacy.s13.contact': 'To exercise your rights or clarify questions about this policy:',
-  'privacy.s13.email': 'Email: nucleoia@pmigo.org.br',
-  'privacy.s13.dpo': 'Data Protection Officer (DPO): Vitor Maia Rodovalho',
+  'privacy.s13.email': 'Email: dpo@pmigo.org.br',
+  'privacy.s13.dpo': 'Data Protection Officer (DPO): Ivan Lourenço Costa',
+  'privacy.s13.dpoSubstitute': 'Substitute DPO: Angeline Altair Silva Prado',
   'privacy.s13.anpd': 'If you are not satisfied with the response, you may file a complaint with the National Data Protection Authority (ANPD):',
   'privacy.s13.anpdUrl': 'https://www.gov.br/anpd/pt-br',
   'footer.privacy': 'Privacy Policy',
