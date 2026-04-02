@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { usePageI18n } from '../../i18n/usePageI18n';
 import { AlertTriangle, TrendingDown, TrendingUp, Filter } from 'lucide-react';
 import { hasPermission } from '../../lib/permissions';
 
@@ -39,6 +40,7 @@ function ProgressBar({ pct, color }: { pct: number; color: string }) {
 }
 
 export default function AttendanceDashboard() {
+  const t = usePageI18n();
   const [member, setMember] = useState<MemberInfo | null>(null);
   const [rows, setRows] = useState<AttRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,7 +105,7 @@ export default function AttendanceDashboard() {
     if (!myRow) {
       return (
         <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-6 text-center">
-          <p className="text-sm text-[var(--text-secondary)]">Sem dados de presença disponíveis ainda.</p>
+          <p className="text-sm text-[var(--text-secondary)]">{t('comp.attendance.noData', 'No attendance data available yet.')}</p>
         </div>
       );
     }
