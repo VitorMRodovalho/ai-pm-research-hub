@@ -1,0 +1,10 @@
+-- Rankings calculation + final_score fix for kickoff cycle
+-- ========================================================
+-- Fixed 19 candidates with stale final_score (pre-import values)
+-- Recalculated: final_score = objective_score_avg + interview_score
+-- Rankings calculated per chapter and overall, separated by role
+-- Excluded cancelled/withdrawn from rankings
+--
+-- Anomalies documented:
+-- - Letícia Vieira + Fabiano Bressiani (PMI-RS): scores from original import, no planilha data
+-- - Maurício Machado + Luciana Dutra: status needs PM validation
