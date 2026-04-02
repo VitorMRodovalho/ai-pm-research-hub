@@ -3834,6 +3834,59 @@ const enUS: Record<string, string> = {
   'admin.report.accessDenied': 'Access restricted.',
   'admin.report.defaultTitle': 'Executive Report — Cycle 3 (2026/1)',
   'admin.report.savedOk': 'Configuration saved successfully!',
+
+  // ═══ i18n Audit — Phase 3: Admin + User-facing components ═══
+
+  // ── Member Detail (admin) ──
+  'comp.memberDetail.loading': 'Loading member details...',
+  'comp.memberDetail.notFound': 'Member not found.',
+  'comp.memberDetail.backToMembers': 'Back to Members',
+  'comp.memberDetail.edit': 'Edit',
+  'comp.memberDetail.editTitle': 'Edit Member',
+  'comp.memberDetail.cancel': 'Cancel',
+  'comp.memberDetail.noCycles': 'No cycles registered.',
+  'comp.memberDetail.noGamification': 'No gamification data available.',
+  'comp.memberDetail.noEvents': 'No events registered.',
+  'comp.memberDetail.noPublications': 'No publications registered.',
+  'comp.memberDetail.noAudit': 'No audit records.',
+
+  // ── Member List (admin) ──
+  'comp.memberList.loading': 'Loading...',
+  'comp.memberList.noMovements': 'No movements registered.',
+  'comp.memberList.noReassign': '— None —',
+  'comp.memberList.removeWarning': 'Will be removed from homepage/tribes',
+  'comp.memberList.cancel': 'Cancel',
+
+  // ── Tribe Dashboard ──
+  'comp.tribe.loading': 'Loading tribe dashboard...',
+  'comp.tribe.back': '← Back',
+  'comp.tribe.noMeeting': '🔴 No meeting scheduled — configure tribe schedule',
+  'comp.tribe.members': 'Tribe Members',
+  'comp.tribe.noCards': 'No cards in this tribe',
+  'comp.tribe.approved': 'Approved',
+  'comp.tribe.noData': 'No data',
+
+  // ── Card Detail (board) ──
+  'comp.card.uploadError': 'Upload error: {msg}',
+  'comp.card.addDescription': 'Add description...',
+  'comp.card.add': '+ Add',
+  'comp.card.removeAttach': 'Remove attachment',
+  'comp.card.overdue': '{days}d overdue',
+  'comp.card.dueToday': 'Due today',
+  'comp.card.daysLeft': '{days}d remaining',
+  'comp.card.approved': 'Approved',
+  'comp.card.changeReason': 'Reason for change (required)',
+  'comp.card.confirm': 'Confirm',
+  'comp.card.cancel': 'Cancel',
+  'comp.card.select': 'Select...',
+
+  // ── Attendance Dashboard/Form ──
+  'comp.attendance.noData': 'No attendance data available yet.',
+  'comp.attendance.registered': '{count} attendances registered successfully',
+  'comp.attendance.selectEvent': 'Select Event',
+  'comp.attendance.searchMember': 'Search member...',
+  'comp.attendance.selectAll': 'Select all',
+  'comp.attendance.loadingMembers': 'Loading members...',
 };
 
 export default enUS;

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { usePageI18n } from '../../../i18n/usePageI18n';
 import { ArrowLeft, Edit2, Save, X, Loader2, Award, Calendar, BookOpen, Shield, Trophy, ChevronDown, ChevronRight } from 'lucide-react';
 
 /* ────── Constants ────── */
@@ -60,6 +61,7 @@ function fmtDate(dateStr: string): string {
 
 /* ────── Component ────── */
 export default function MemberDetailIsland({ memberId }: { memberId: string }) {
+  const t = usePageI18n();
   const [data, setData] = useState<MemberDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -157,7 +159,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
   if (loading) {
     return (
       <div className="max-w-[900px] mx-auto flex items-center justify-center py-24 text-[var(--text-muted)]">
-        <Loader2 size={24} className="animate-spin mr-2" /> Carregando detalhes do membro...
+        <Loader2 size={24} className="animate-spin mr-2" /> {t('comp.memberDetail.loading', 'Loading member details...')}
       </div>
     );
   }
@@ -165,7 +167,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
   if (!data) {
     return (
       <div className="max-w-[900px] mx-auto text-center py-24 text-[var(--text-muted)]">
-        Membro nao encontrado.
+        {t('comp.memberDetail.notFound', 'Member not found.')}
       </div>
     );
   }
@@ -185,14 +187,14 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
       {/* Section 1 — Header */}
       <div className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-5 mb-4 relative">
         <a href="/admin/members" className="inline-flex items-center gap-1.5 text-teal-500 text-sm font-semibold mb-4 no-underline hover:underline">
-          <ArrowLeft size={14} /> Voltar para Membros
+          <ArrowLeft size={14} /> {t('comp.memberDetail.backToMembers', 'Back to Members')}
         </a>
 
         <button
           onClick={openEdit}
           className="absolute top-5 right-5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[13px] font-semibold bg-teal-600 text-white border-0 hover:bg-teal-700 cursor-pointer"
         >
-          <Edit2 size={14} /> Editar
+          <Edit2 size={14} /> {t('comp.memberDetail.edit', 'Edit')}
         </button>
 
         <div className="flex items-start gap-4">
@@ -232,7 +234,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
       {/* Section 2 — Edit Form */}
       {editing && (
         <div className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-5 mb-4 space-y-4">
-          <h3 className="text-base font-bold text-[var(--text-primary)] m-0">Editar Membro</h3>
+          <h3 className="text-base font-bold text-[var(--text-primary)] m-0">{t('comp.memberDetail.editTitle', 'Edit Member')}</h3>
 
           {/* Operational Role */}
           <div className="p-3 rounded-xl bg-[var(--surface-base)] border border-[var(--border-default)]">
@@ -295,7 +297,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-2">
             <button onClick={cancelEdit} className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer inline-flex items-center gap-1.5">
-              <X size={14} /> Cancelar
+              <X size={14} /> {t('comp.memberDetail.cancel', 'Cancel')}
             </button>
             <button onClick={saveEdit} disabled={saving} className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-teal-600 text-white border-0 hover:bg-teal-700 cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5">
               {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
@@ -337,7 +339,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
             </thead>
             <tbody>
               {data.cycles.length === 0 && (
-                <tr><td colSpan={4} className="px-4 py-8 text-center text-[var(--text-muted)]">Nenhum ciclo registrado.</td></tr>
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-[var(--text-muted)]">{t('comp.memberDetail.noCycles', 'No cycles registered.')}</td></tr>
               )}
               {data.cycles.map((c, i) => (
                 <tr key={i} className="border-t border-[var(--border-default)]">
@@ -418,7 +420,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
             </>
           ) : (
             <div className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-8 text-center text-[var(--text-muted)]">
-              Nenhum dado de gamificacao disponivel.
+              {t('comp.memberDetail.noGamification', 'No gamification data available.')}
             </div>
           )}
         </div>
@@ -444,7 +446,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
               </thead>
               <tbody>
                 {data.attendance.recent.length === 0 && (
-                  <tr><td colSpan={3} className="px-4 py-8 text-center text-[var(--text-muted)]">Nenhum evento registrado.</td></tr>
+                  <tr><td colSpan={3} className="px-4 py-8 text-center text-[var(--text-muted)]">{t('comp.memberDetail.noEvents', 'No events registered.')}</td></tr>
                 )}
                 {data.attendance.recent.map((evt, i) => (
                   <tr key={i} className="border-t border-[var(--border-default)]">
@@ -477,7 +479,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
               </thead>
               <tbody>
                 {data.publications.length === 0 && (
-                  <tr><td colSpan={3} className="px-4 py-8 text-center text-[var(--text-muted)]">Nenhuma publicacao registrada.</td></tr>
+                  <tr><td colSpan={3} className="px-4 py-8 text-center text-[var(--text-muted)]">{t('comp.memberDetail.noPublications', 'No publications registered.')}</td></tr>
                 )}
                 {data.publications.map((pub, i) => (
                   <tr key={pub.id || i} className="border-t border-[var(--border-default)]">
@@ -506,7 +508,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
       {activeTab === 'audit' && (
         <div className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl overflow-hidden">
           {data.audit_log.length === 0 ? (
-            <div className="px-4 py-8 text-center text-[var(--text-muted)]">Nenhum registro de auditoria.</div>
+            <div className="px-4 py-8 text-center text-[var(--text-muted)]">{t('comp.memberDetail.noAudit', 'No audit records.')}</div>
           ) : (
             <div className="divide-y divide-[var(--border-default)]">
               {data.audit_log.map((entry, i) => {
