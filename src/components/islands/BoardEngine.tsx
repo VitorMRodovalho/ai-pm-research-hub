@@ -12,6 +12,7 @@ import type { DragStartEvent, DragEndEvent, DragOverEvent } from '@dnd-kit/core'
 
 import type { BoardEngineProps, BoardItem, BoardI18n } from '../../types/board';
 import { DEFAULT_I18N, getColumnMeta } from '../../types/board';
+import { usePageI18n } from '../../i18n/usePageI18n';
 import { useBoard, getSb } from '../../hooks/useBoard';
 import { useBoardMutations } from '../../hooks/useBoardMutations';
 import { useBoardFilters } from '../../hooks/useBoardFilters';
@@ -31,8 +32,43 @@ import CalendarView from '../board/CalendarView';
 import TimelineView from '../board/TimelineView';
 import BoardActivitiesView from '../board/BoardActivitiesView';
 
+// Build translated i18n by reading page bundle, falling back to DEFAULT_I18N
+function useTranslatedBoardI18n(overrides?: BoardI18n): BoardI18n {
+  const t = usePageI18n();
+  return {
+    ...DEFAULT_I18N,
+    // Override defaults with translated keys when available
+    newCard: t('comp.board.newCard', DEFAULT_I18N.newCard),
+    search: t('comp.board.search', DEFAULT_I18N.search),
+    filterAll: t('comp.board.filterAll', DEFAULT_I18N.filterAll),
+    empty: t('comp.board.empty', DEFAULT_I18N.empty),
+    loading: t('comp.board.loading', DEFAULT_I18N.loading),
+    error: t('comp.board.error', DEFAULT_I18N.error),
+    retry: t('comp.board.retry', DEFAULT_I18N.retry),
+    save: t('common.save', DEFAULT_I18N.save),
+    cancel: t('common.cancel', DEFAULT_I18N.cancel),
+    delete: t('common.delete', DEFAULT_I18N.delete),
+    approve: t('comp.board.approve', DEFAULT_I18N.approve),
+    description: t('comp.board.description', DEFAULT_I18N.description),
+    assignee: t('comp.board.assignee', DEFAULT_I18N.assignee),
+    reviewer: t('comp.board.reviewer', DEFAULT_I18N.reviewer),
+    tags: t('comp.board.tags', DEFAULT_I18N.tags),
+    dueDate: t('comp.board.dueDate', DEFAULT_I18N.dueDate),
+    checklist: t('comp.board.checklist', DEFAULT_I18N.checklist),
+    attachments: t('comp.board.attachments', DEFAULT_I18N.attachments),
+    timeline: t('comp.board.timeline', DEFAULT_I18N.timeline),
+    noAssignee: t('comp.board.noAssignee', DEFAULT_I18N.noAssignee),
+    overdue: t('comp.board.overdue', DEFAULT_I18N.overdue),
+    duplicate: t('comp.board.duplicate', DEFAULT_I18N.duplicate),
+    moveTo: t('comp.board.moveTo', DEFAULT_I18N.moveTo),
+    archive: t('comp.board.archive', DEFAULT_I18N.archive),
+    addItem: t('comp.board.addItem', DEFAULT_I18N.addItem),
+    ...overrides,
+  };
+}
+
 export default function BoardEngine(props: BoardEngineProps) {
-  const i18n: BoardI18n = { ...DEFAULT_I18N, ...props.i18n };
+  const i18n = useTranslatedBoardI18n(props.i18n);
   const mode = props.mode ?? 'default';
 
   // ── Data layer ──

@@ -1,16 +1,19 @@
 ---
 import AdminLayout from '../../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
+import { buildPageI18n } from '../../../i18n/pageI18n';
 import BoardEngine from '../../../components/islands/BoardEngine';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const boardId = Astro.params.id;
+const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
 ---
 
-<AdminLayout title="Board" breadcrumbs={[{label:'Conteúdo'},{label:'Board'}]}>
+<AdminLayout title="Board" breadcrumbs={[{label:t('common.back', lang)},{label:'Board'}]}>
+  <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
   <div class="max-w-[1400px] mx-auto px-4 py-8 space-y-4">
-    <div id="board-loading" class="text-[var(--text-muted)] text-sm">Carregando board...</div>
+    <div id="board-loading" class="text-[var(--text-muted)] text-sm">{t('comp.board.loading', lang)}</div>
     <div id="board-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
-      Acesso restrito.
+      {t('common.accessDenied', lang)}
     </div>
     <div id="board-panel" class="hidden">
       <BoardEngine client:load boardId={boardId} />
