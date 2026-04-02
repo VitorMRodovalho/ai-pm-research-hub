@@ -74,7 +74,7 @@ export default function CommsDashboard() {
 
   if (loading) {
     return (
-      <div className="text-[var(--text-muted)] text-sm py-8">Carregando métricas...</div>
+      <div className="text-[var(--text-muted)] text-sm py-8">{t('comp.comms.loading', 'Loading metrics...')}</div>
     );
   }
   if (error) {
@@ -128,7 +128,7 @@ export default function CommsDashboard() {
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-[var(--text-secondary)] text-sm py-6">Sem dados de status.</p>
+          <p className="text-[var(--text-secondary)] text-sm py-6">{t('comp.comms.noStatus', 'No status data.')}</p>
         )}
       </div>
 
@@ -158,7 +158,7 @@ export default function CommsDashboard() {
             </PieChart>
           </ResponsiveContainer>
         ) : (
-          <p className="text-[var(--text-secondary)] text-sm py-6">Sem dados de formato.</p>
+          <p className="text-[var(--text-secondary)] text-sm py-6">{t('comp.comms.noFormat', 'No format data.')}</p>
         )}
       </div>
     </div>

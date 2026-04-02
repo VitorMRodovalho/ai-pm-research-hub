@@ -58,7 +58,7 @@ function SortableCard({ item, i18n, onClick, onQuickMove, columns, mode, canMove
               item.curation_status === 'drafting' || item.curation_status === 'author_review' ? 'bg-blue-100 text-blue-700' :
               item.curation_status === 'research' || item.curation_status === 'ideation' ? 'bg-amber-100 text-amber-700' :
               'bg-[var(--surface-section-cool)] text-[var(--text-secondary)]'}`}>
-            {item.curation_status === 'approved' ? '\u2705 Aprovado' :
+            {item.curation_status === 'approved' ? i18n.approve || 'Approved' :
              item.curation_status === 'published' ? '\u{1F4E2} Publicado' :
              item.curation_status === 'review' ? '\u{1F50D} Em Revisão' :
              item.curation_status === 'peer_review' ? '\u{1F50D} Peer Review' :

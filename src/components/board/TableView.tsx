@@ -121,7 +121,7 @@ export default function TableView({ items, columns, i18n, onOpenDetail, onMove }
         </tbody>
       </table>
       {sorted.length === 0 && (
-        <div className="text-center py-8 text-[var(--text-muted)] text-[13px]">Nenhum card encontrado</div>
+        <div className="text-center py-8 text-[var(--text-muted)] text-[13px]">{i18n.empty || 'No cards found'}</div>
       )}
     </div>
   );

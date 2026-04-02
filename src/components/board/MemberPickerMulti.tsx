@@ -118,7 +118,7 @@ export default function MemberPickerMulti({ members, assignments, onAdd, onRemov
                 <Command.Input
                   value={search}
                   onValueChange={setSearch}
-                  placeholder="Buscar membro..."
+                  placeholder={i18n.searchMember || "Search member..."}
                   className="w-full rounded-md border border-[var(--border-default)] bg-[var(--surface-input)] px-2 py-1.5 text-[12px] text-[var(--text-primary)]
                     outline-none focus:border-blue-400 placeholder:text-[var(--text-muted)]"
                   autoFocus
@@ -191,7 +191,7 @@ export default function MemberPickerMulti({ members, assignments, onAdd, onRemov
                   .filter((m) => !search || m.name.toLowerCase().includes(search.toLowerCase()))
                   .filter((m) => selectedRole !== 'curation_reviewer' || m.designations?.includes('curator'))
                   .length === 0 && (
-                  <div className="px-2 py-3 text-center text-[11px] text-[var(--text-muted)]">Nenhum membro encontrado</div>
+                  <div className="px-2 py-3 text-center text-[11px] text-[var(--text-muted)]">{i18n.noMemberFound || 'No member found'}</div>
                 )}
               </div>
             </Command>

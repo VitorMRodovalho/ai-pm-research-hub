@@ -115,7 +115,7 @@ export default function CrossTribeIsland() {
     </th>
   );
 
-  if (loading) return <div className="text-center py-20 text-[var(--text-muted)]">Carregando comparativo...</div>;
+  if (loading) return <div className="text-center py-20 text-[var(--text-muted)]">{t('comp.crossTribe.loading', 'Loading comparison...')}</div>;
   if (error) return <div className="text-center py-20 text-red-500">{error}</div>;
 
   const rankingConfig: Record<RankingMetric, { label: string; key: keyof TribeMetrics; suffix: string }> = {
