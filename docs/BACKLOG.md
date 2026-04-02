@@ -1,5 +1,5 @@
 # BACKLOG — AI & PM Research Hub
-## Updated: 02 April 2026 (Sprint 11 — ~48 commits, KPI audit, selection normalized)
+## Updated: 02 April 2026 (Sprint 12 — 4 Ondas: 11 CRs addressed, volunteer term, diversity dashboard, board members UI)
 
 ---
 
