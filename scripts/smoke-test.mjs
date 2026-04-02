@@ -114,7 +114,7 @@ await test('MCP: POST without auth → 401 + WWW-Authenticate', async () => {
 // ═══ GROUP 5: Edge Function Health ═══
 console.log('\n── Edge Functions ──');
 
-await test('nucleo-mcp/health → ok + version + 23 tools', async () => {
+await test('nucleo-mcp/health → ok + version + 52 tools', async () => {
   const res = await fetch(`${SUPABASE_URL}/functions/v1/nucleo-mcp/health`, {
     headers: { 'Authorization': `Bearer ${ANON_KEY}` },
   });
@@ -122,7 +122,7 @@ await test('nucleo-mcp/health → ok + version + 23 tools', async () => {
   const json = await res.json();
   assert.equal(json.status, 'ok');
   assert.ok(json.version, 'Has version');
-  assert.ok(json.tools >= 23, `Expected ≥23 tools, got ${json.tools}`);
+  assert.ok(json.tools >= 50, `Expected ≥50 tools, got ${json.tools}`);
 });
 
 // ═══ GROUP 6: Public RPCs ═══
