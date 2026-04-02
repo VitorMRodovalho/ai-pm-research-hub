@@ -629,9 +629,9 @@ export default function MemberListIsland() {
             </div>
             <div className="p-5 max-h-[400px] overflow-y-auto">
               {historyLoading ? (
-                <p className="text-sm text-[var(--text-muted)]">Carregando...</p>
+                <p className="text-sm text-[var(--text-muted)]">{t('comp.memberList.loading', 'Loading...')}</p>
               ) : transitions.length === 0 ? (
-                <p className="text-sm text-[var(--text-muted)]">Nenhuma movimentação registrada.</p>
+                <p className="text-sm text-[var(--text-muted)]">{t('comp.memberList.noMovements', 'No movements registered.')}</p>
               ) : (
                 <div className="space-y-3">
                   {transitions.map((tr: any) => {
@@ -714,7 +714,7 @@ export default function MemberListIsland() {
                 <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase block mb-1">Reatribuir cards a (opcional)</label>
                 <select value={offboardReassign} onChange={e => setOffboardReassign(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-card)] text-[var(--text-primary)]">
-                  <option value="">— Nenhum —</option>
+                  <option value="">{t('comp.memberList.noReassign', '— None —')}</option>
                   {members.filter(m => m.is_active && m.id !== offboardMember.id).map(m => (
                     <option key={m.id} value={m.id}>{m.full_name} (T{m.tribe_id})</option>
                   ))}
@@ -723,13 +723,13 @@ export default function MemberListIsland() {
 
               <div className="text-[10px] text-[var(--text-muted)] space-y-0.5 bg-[var(--surface-section-cool)] rounded-lg p-3">
                 <div>Marcara is_active = false</div>
-                <div>Removera da homepage/tribos</div>
+                <div>{t('comp.memberList.removeWarning', 'Will be removed from homepage/tribes')}</div>
                 <div>Preservara contribuicoes</div>
                 <div>Registara no log de transicoes</div>
               </div>
             </div>
             <div className="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2">
-              <button onClick={() => setOffboardMember(null)} className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer">Cancelar</button>
+              <button onClick={() => setOffboardMember(null)} className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer">{t('comp.memberList.cancel', 'Cancel')}</button>
               <button onClick={handleOffboard} disabled={offboardSaving} className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-amber-600 text-white border-0 hover:bg-amber-700 cursor-pointer disabled:opacity-50">
                 {offboardSaving ? 'Processando...' : 'Confirmar'}
               </button>
