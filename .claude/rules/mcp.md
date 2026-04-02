@@ -3,7 +3,7 @@ description: MCP server rules and tool patterns
 globs: supabase/functions/nucleo-mcp/**
 ---
 
-# MCP Server Rules (nucleo-mcp v2.8.0)
+# MCP Server Rules (nucleo-mcp v2.9.0)
 
 ## Current State
 - 52 tools (45 read + 7 write) + 1 dynamic prompt + 1 static resource
