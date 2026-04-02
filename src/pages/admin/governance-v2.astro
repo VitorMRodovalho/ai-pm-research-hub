@@ -6,7 +6,7 @@ import BoardMembersPanel from '../../components/admin/BoardMembersPanel';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import { buildPageI18n } from '../../i18n/pageI18n';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
-const i18nBundle = buildPageI18n(['governance'], lang);
+const i18nBundle = buildPageI18n(['governance', 'boardMembers', 'common'], lang);
 ---
 
 <AdminLayout title={t('nav.adminBoardGovernance', lang)} breadcrumbs={[{label:'Operações'},{label:'Governança'}]}>

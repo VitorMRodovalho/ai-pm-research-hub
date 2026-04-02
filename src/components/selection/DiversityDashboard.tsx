@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { usePageI18n } from '../../i18n/usePageI18n';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, PieChart, Pie, Cell,
@@ -25,6 +26,7 @@ interface DiversityData {
 const COLORS = ['#00799E', '#FF610F', '#4F17A8', '#10B981', '#F59E0B', '#EF4444', '#6366F1', '#EC4899'];
 
 export default function DiversityDashboard() {
+  const t = usePageI18n();
   const [data, setData] = useState<DiversityData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +50,7 @@ export default function DiversityDashboard() {
     load();
   }, []);
 
-  if (loading) return <div className="text-center py-8 text-[var(--text-muted)]">Carregando...</div>;
+  if (loading) return <div className="text-center py-8 text-[var(--text-muted)]">{t('diversity.loading', 'Loading...')}</div>;
   if (error) return <div className="text-center py-8 text-red-500">{error}</div>;
   if (!data) return null;
 
@@ -62,17 +64,17 @@ export default function DiversityDashboard() {
     <div className="space-y-6">
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <SummaryCard label="Total de Candidaturas" value={data.applicants_total} color="bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300" />
-        <SummaryCard label="Aprovados" value={data.approved_total} color="bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-300" />
+        <SummaryCard label={t('diversity.totalApplicants', 'Total Applications')} value={data.applicants_total} color="bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300" />
+        <SummaryCard label={t('diversity.approved', 'Approved')} value={data.approved_total} color="bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-300" />
         <SummaryCard
-          label="Taxa de Aprovação"
+          label={t('diversity.approvalRate', 'Approval Rate')}
           value={data.applicants_total > 0 ? `${Math.round((data.approved_total / data.applicants_total) * 100)}%` : '0%'}
           color="bg-indigo-50 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300"
         />
       </div>
 
       {/* Gender distribution */}
-      <ChartCard title="Distribuição por Gênero">
+      <ChartCard title={t('diversity.byGender', 'Distribution by Gender')}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
@@ -90,15 +92,15 @@ export default function DiversityDashboard() {
               <YAxis dataKey="gender" type="category" width={100} tick={{ fontSize: 11 }} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="applicants" fill="#00799E" name="Candidaturas" />
-              <Bar dataKey="approved" fill="#10B981" name="Aprovados" />
+              <Bar dataKey="applicants" fill="#00799E" name={t('diversity.applicants', 'Applications')} />
+              <Bar dataKey="approved" fill="#10B981" name={t('diversity.approved', 'Approved')} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </ChartCard>
 
       {/* Chapter distribution */}
-      <ChartCard title="Distribuição por Capítulo">
+      <ChartCard title={t('diversity.byChapter', 'Distribution by Chapter')}>
         <ResponsiveContainer width="100%" height={Math.max(200, (data.by_chapter?.length || 1) * 40)}>
           <BarChart data={data.by_chapter} layout="vertical">
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
@@ -106,14 +108,14 @@ export default function DiversityDashboard() {
             <YAxis dataKey="chapter" type="category" width={120} tick={{ fontSize: 11 }} />
             <Tooltip />
             <Legend />
-            <Bar dataKey="applicants" fill="#00799E" name="Candidaturas" />
-            <Bar dataKey="approved" fill="#10B981" name="Aprovados" />
+            <Bar dataKey="applicants" fill="#00799E" name={t('diversity.applicants', 'Applications')} />
+            <Bar dataKey="approved" fill="#10B981" name={t('diversity.approved', 'Approved')} />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
 
       {/* Sector distribution */}
-      <ChartCard title="Distribuição por Setor">
+      <ChartCard title={t('diversity.bySector', 'Distribution by Sector')}>
         <ResponsiveContainer width="100%" height={Math.max(200, (data.by_sector?.length || 1) * 35)}>
           <BarChart data={data.by_sector} layout="vertical">
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
@@ -121,14 +123,14 @@ export default function DiversityDashboard() {
             <YAxis dataKey="sector" type="category" width={130} tick={{ fontSize: 10 }} />
             <Tooltip />
             <Legend />
-            <Bar dataKey="applicants" fill="#4F17A8" name="Candidaturas" />
-            <Bar dataKey="approved" fill="#F59E0B" name="Aprovados" />
+            <Bar dataKey="applicants" fill="#4F17A8" name={t('diversity.applicants', 'Applications')} />
+            <Bar dataKey="approved" fill="#F59E0B" name={t('diversity.approved', 'Approved')} />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
 
       {/* Seniority distribution */}
-      <ChartCard title="Distribuição por Senioridade">
+      <ChartCard title={t('diversity.bySeniority', 'Distribution by Seniority')}>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={data.by_seniority}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
@@ -136,14 +138,14 @@ export default function DiversityDashboard() {
             <YAxis />
             <Tooltip />
             <Legend />
-            <Bar dataKey="applicants" fill="#FF610F" name="Candidaturas" />
-            <Bar dataKey="approved" fill="#10B981" name="Aprovados" />
+            <Bar dataKey="applicants" fill="#FF610F" name={t('diversity.applicants', 'Applications')} />
+            <Bar dataKey="approved" fill="#10B981" name={t('diversity.approved', 'Approved')} />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
 
       {/* Region distribution */}
-      <ChartCard title="Distribuição por Região">
+      <ChartCard title={t('diversity.byRegion', 'Distribution by Region')}>
         <ResponsiveContainer width="100%" height={Math.max(200, (data.by_region?.length || 1) * 35)}>
           <BarChart data={data.by_region} layout="vertical">
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
@@ -151,8 +153,8 @@ export default function DiversityDashboard() {
             <YAxis dataKey="region" type="category" width={100} tick={{ fontSize: 10 }} />
             <Tooltip />
             <Legend />
-            <Bar dataKey="applicants" fill="#6366F1" name="Candidaturas" />
-            <Bar dataKey="approved" fill="#EC4899" name="Aprovados" />
+            <Bar dataKey="applicants" fill="#6366F1" name={t('diversity.applicants', 'Applications')} />
+            <Bar dataKey="approved" fill="#EC4899" name={t('diversity.approved', 'Approved')} />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>

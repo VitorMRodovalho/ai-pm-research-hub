@@ -3696,6 +3696,144 @@ const enUS: Record<string, string> = {
   // ── Webinars Co-managers (F2) ──
   'webinars.co_managers': 'Co-managers',
   'webinars.co_managers_selected': 'selected',
+
+  // ═══ i18n Audit — Sprint 12 Phase 1+2 ═══
+
+  // ── Diversity Dashboard (CR-040) ──
+  'diversity.totalApplicants': 'Total Applications',
+  'diversity.approved': 'Approved',
+  'diversity.approvalRate': 'Approval Rate',
+  'diversity.byGender': 'Distribution by Gender',
+  'diversity.byChapter': 'Distribution by Chapter',
+  'diversity.bySector': 'Distribution by Sector',
+  'diversity.bySeniority': 'Distribution by Seniority',
+  'diversity.byRegion': 'Distribution by Region',
+  'diversity.applicants': 'Applications',
+  'diversity.loading': 'Loading...',
+
+  // ── Curation Rubric Labels ──
+  'curation.rubric.clarity': 'Clarity',
+  'curation.rubric.clarityTip': 'Understandable without additional context?',
+  'curation.rubric.originality': 'Originality',
+  'curation.rubric.originalityTip': 'New perspective or approach?',
+  'curation.rubric.adherence': 'Adherence',
+  'curation.rubric.adherenceTip': 'Aligned with the tribe\'s quadrant?',
+  'curation.rubric.relevance': 'Relevance',
+  'curation.rubric.relevanceTip': 'Contributes to the body of knowledge?',
+  'curation.rubric.ethics': 'Ethics',
+  'curation.rubric.ethicsTip': 'Respects responsible AI and governance?',
+  'curation.noTitle': 'Untitled',
+  'curation.evaluate': 'Evaluate',
+  'curation.history': 'History',
+  'curation.reviewTitle': 'Curation Review',
+  'curation.approved': 'Approved and published!',
+  'curation.returned': 'Returned to tribe with feedback.',
+  'curation.rejected': 'Rejected by committee.',
+  'curation.done': 'Done.',
+  'curation.submitError': 'Error submitting',
+  'curation.histApproved': 'Approved',
+  'curation.histRejected': 'Rejected',
+  'curation.histReturned': 'Returned',
+  'curation.slaOverdue': 'd overdue',
+  'curation.slaDays': 'd',
+  'curation.slaExpiredItems': 'item',
+  'curation.slaExpiredSuffix': 'with expired SLA',
+
+  // ── Board Members Panel ──
+  'boardMembers.title': 'Board Permissions',
+  'boardMembers.subtitle': 'Manage member access to specific boards (CR-028)',
+  'boardMembers.selectBoard': 'Select a board...',
+  'boardMembers.globalBoards': 'Global Boards',
+  'boardMembers.tribeBoards': 'Tribe Boards',
+  'boardMembers.noSpecific': 'No members with specific permissions on this board. Default access by operational_role.',
+  'boardMembers.member': 'Member',
+  'boardMembers.role': 'Role',
+  'boardMembers.add': '+ Add',
+  'boardMembers.select': 'Select...',
+  'boardMembers.added': 'Member added to board',
+  'boardMembers.removed': 'Member removed',
+  'boardMembers.confirmRemove': 'Remove member from this board?',
+
+  // ── Manual Document Viewer ──
+  'manual.noSections': 'No sections found.',
+  'manual.toc': 'Table of Contents',
+  'manual.institution': 'AI & PM Study and Research Hub',
+  'manual.title': 'Governance and Operations Manual',
+  'manual.r2Approved': 'Version R2 · DocuSign B2AFB185 · Approved Sep 22, 2025',
+  'manual.r3Warning': '⚠ SIMULATION — Preview of the next revision. This document is NOT approved.',
+  'manual.r2Label': 'R2 (Approved)',
+  'manual.r3Label': 'R3 Simulation',
+  'manual.newSections': 'new sections',
+  'manual.updatedSections': 'updated',
+  'manual.unchangedSections': 'unchanged',
+  'manual.exportR2': 'Export R2 PDF',
+  'manual.exportSim': 'Export Simulation PDF',
+  'manual.badgeNew': 'NEW',
+  'manual.badgeUpdated': 'UPDATED',
+  'manual.badgePending': 'PENDING',
+  'manual.pendingLabel': 'proposals pending approval',
+
+  // ── Governance Approval ──
+  'governance.cr.cancelBtn': 'Cancel',
+  'governance.cr.confirmBtn': 'Confirm',
+  'governance.cr.commentPlaceholder': 'Comment (optional)',
+
+  // ── Common UI ──
+  'common.save': 'Save',
+  'common.cancel': 'Cancel',
+  'common.add': 'Add',
+  'common.remove': 'Remove',
+  'common.edit': 'Edit',
+  'common.confirm': 'Confirm',
+  'common.delete': 'Delete',
+  'common.search': 'Search',
+  'common.select': 'Select',
+  'common.back': 'Back',
+  'common.noResults': 'No results found.',
+  'common.accessDenied': 'Access restricted.',
+  'common.errorGeneric': 'An error occurred. Please try again.',
+  'common.required': 'required',
+  'common.saved': 'Saved successfully!',
+  'common.tribe': 'Tribe',
+
+  // ── Admin Members ──
+  'admin.members.title': 'Members',
+  'admin.members.offboard': 'Offboard member',
+  'admin.members.offboardConfirm': 'Confirm offboarding?',
+  'admin.members.activate': 'Activate',
+  'admin.members.deactivate': 'Deactivate',
+  'admin.members.searchPlaceholder': 'Search by name...',
+
+  // ── Admin Selection ──
+  'admin.selection.diversityTab': 'Diversity',
+  'admin.selection.diversityTitle': 'Diversity Metrics',
+  'admin.selection.diversitySubtitle': 'Distribution by gender, chapter, sector, seniority and region — anonymized data per LGPD Art. 11',
+  'admin.selection.recalcRankings': 'Recalculate Rankings',
+  'admin.selection.startScreening': 'Start Screening',
+  'admin.selection.slugRequired': 'Slug required',
+  'admin.selection.postSaved': 'Post saved',
+
+  // ── Admin Comms ──
+  'admin.comms.active': 'Active',
+  'admin.comms.expired': 'Expired',
+  'admin.comms.error': 'Error',
+  'admin.comms.never': 'Never',
+  'admin.comms.daysRemaining': 'd remaining',
+  'admin.comms.channelUpdated': 'Channel updated!',
+  'admin.comms.fillDateChannel': 'Fill in date and channel.',
+  'admin.comms.metricRecorded': 'Metric recorded!',
+  'admin.comms.reach': 'Reach',
+  'admin.comms.audience': 'Audience',
+
+  // ── Admin Campaigns ──
+  'admin.campaigns.nameRequired': 'Name required',
+  'admin.campaigns.templateSaved': 'Template saved',
+  'admin.campaigns.allActiveMembers': 'All active members',
+
+  // ── Admin Report ──
+  'admin.report.accessDenied': 'Access restricted.',
+  'admin.report.defaultTitle': 'Executive Report — Cycle 3 (2026/1)',
+  'admin.report.savedOk': 'Configuration saved successfully!',
 };
 
 export default enUS;
