@@ -267,19 +267,19 @@ export default function GovernanceApprovalTab({ t, getSb, member }: Props) {
                 : t('governance.cr.confirmReject', 'Confirmar rejeição?')}
             </p>
             <textarea value={comment} onChange={e => setComment(e.target.value)}
-              placeholder="Comentário (opcional)"
+              placeholder={t('governance.cr.commentPlaceholder', 'Comment (optional)')}
               className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-input)] text-sm text-[var(--text-primary)] resize-none h-20 focus:outline-none focus:border-navy mb-3" />
             <div className="flex gap-2 justify-end">
               <button onClick={() => { setConfirmAction(null); setComment(''); }}
                 className="px-4 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm font-semibold text-[var(--text-secondary)] cursor-pointer">
-                Cancelar
+                {t('governance.cr.cancelBtn', 'Cancel')}
               </button>
               <button onClick={() => handleApprove(confirmAction.crId, confirmAction.action)}
                 disabled={submitting}
                 className={`px-4 py-2 rounded-lg text-white text-sm font-semibold border-0 cursor-pointer ${
                   confirmAction.action === 'approved' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-red-600 hover:bg-red-700'
                 } ${submitting ? 'opacity-50' : ''}`}>
-                {submitting ? '...' : 'Confirmar'}
+                {submitting ? '...' : t('governance.cr.confirmBtn', 'Confirm')}
               </button>
             </div>
           </div>
