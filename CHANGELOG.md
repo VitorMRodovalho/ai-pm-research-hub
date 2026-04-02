@@ -1,5 +1,39 @@
 # Changelog
 
+## 2026-04-02 — v2.9.0 Sprint 12: 4 Waves — 11 CRs, Volunteer Term, Diversity, Campaign Fix
+
+### Wave 1 — Governance Engine (CR-035, CR-033, CR-021)
+- Populated proposed_changes for CR-024 (tribe inactivation), CR-028 (board_members), CR-039 (unified vacancy)
+- Created R3 Apêndice B (Cooperation Agreements + Official Documents)
+- Fixed R3 §7.2 MCP tool count 15→52
+
+### Wave 2 — Member Lifecycle (CR-034)
+- Volunteer agreement rewritten: 5 simplified terms → 12 full DocuSign clauses + LGPD + Lei 9.608
+- All 3 dictionaries updated (pt-BR, en-US, es-LATAM) — ~40 keys per language
+- Admin-editable template via governance_documents.content (23 jsonb keys)
+- sign_volunteer_agreement RPC: stores full 12-clause content_snapshot + legal_basis
+
+### Wave 3 — Operational Clarity (CR-032, CR-028, CR-2026-001)
+- R3 §5 enriched with attendance types table, dropout alerts, 70% target
+- BoardMembersPanel.tsx: admin UI for per-board member permissions
+- CR-2026-001 confirmed fully implemented (rubric, SLA badge, 16 curation RPCs)
+
+### Wave 4 — Strategic Positioning (CR-029, CR-040)
+- R3 §1 enriched with "Cadeia Pesquisa → Impacto" (4-stage chain)
+- DiversityDashboard mounted as 4th tab in /admin/selection (5 chart dimensions)
+
+### Bug Fixes
+- P0 #28: process_email_webhook didn't sync aggregate counters to campaign_sends (50/50 backfilled)
+- TMO ghost events: 10 recurrence events for inactive tribe deleted
+- Smoke test label corrected 23→52 tools
+
+### Operational
+- 7 tribe leaders notified about 59 pending attendance events
+- 5 sponsors notified about 11 pending CR votes
+- Demo script updated for Mario Trentim meeting (03/Apr)
+
+---
+
 ## 2026-04-02 — Sprint 11: Selection Pipeline + KPI Audit + Ciclo 3 Normalization
 
 ### Selection Pipeline (S1-S11 — all resolved)
