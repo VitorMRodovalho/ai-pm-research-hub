@@ -63,19 +63,7 @@ export const TRIBES: Tribe[] = [
     videoUrl: 'https://www.youtube.com/watch?v=HwgjMalJXQE',
     videoDuration: '8min',
   },
-  {
-    id: 3,
-    nameKey: 'data.tribe3.name',
-    leader: 'Marcel Fleming',
-    leaderLinkedIn: 'https://www.linkedin.com/in/marcelfleming/',
-    quadrant: 'q3',
-    quadrantLabelKey: 'data.tribe3.quadrantLabel',
-    descriptionKey: 'data.tribe3.desc',
-    deliverableKeys: ['data.tribe3.d1', 'data.tribe3.d2', 'data.tribe3.d3'],
-    meetingScheduleKey: 'data.tribe3.meetings',
-    videoUrl: 'https://www.youtube.com/watch?v=vxQ4WLTyKpY',
-    videoDuration: '4min',
-  },
+  // Tribe 3 (TMO & PMO do Futuro) — paused by Marcel Fleming this cycle (is_active=false in DB)
   {
     id: 4,
     nameKey: 'data.tribe4.name',
