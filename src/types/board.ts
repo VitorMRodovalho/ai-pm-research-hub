@@ -318,6 +318,7 @@ export interface BoardI18n {
   boardRulesChecklistDesc?: string;
   boardRulesDatesTitle?: string;
   boardRulesDatesDesc?: string;
+  changeReason?: string;
 }
 
 export const DEFAULT_I18N: BoardI18n = {

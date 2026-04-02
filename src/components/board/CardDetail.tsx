@@ -163,7 +163,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
       (window as any).toast?.('Arquivo anexado', 'success');
     } catch (err: any) {
       console.error('Upload error:', err);
-      (window as any).toast?.(`Erro no upload: ${err.message || 'desconhecido'}`, 'error');
+      (window as any).toast?.(`${i18n.error || 'Error'}: ${err.message || ''}`, 'error');
     } finally {
       setUploading(false);
     }
@@ -480,7 +480,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                   rows={4}
                   className="w-full rounded-xl border border-[var(--border-default)] px-3 py-2 text-[12px] text-[var(--text-primary)]
                     outline-none focus:border-blue-400 transition-all resize-y"
-                  placeholder="Adicionar descrição..." />
+                  placeholder={i18n.description || 'Add description...'} />
               ) : (
                 <p className="text-[13px] text-[var(--text-secondary)] whitespace-pre-wrap">{description || 'Sem descrição'}</p>
               )}
@@ -554,7 +554,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                       outline-none focus:border-blue-400" />
                   <button onClick={addCheckItem}
                     className="px-3 py-1.5 bg-[var(--surface-section-cool)] text-[var(--text-secondary)] rounded-lg text-[11px] font-semibold
-                      cursor-pointer hover:bg-[var(--surface-hover)] border-0">+ Adicionar</button>
+                      cursor-pointer hover:bg-[var(--surface-hover)] border-0">{i18n.addItem || '+ Add'}</button>
                 </div>
               )}
             </div>
@@ -582,7 +582,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                           <button type="button" onClick={() => handleRemoveAttachment(idx)}
                             className="opacity-0 group-hover:opacity-100 text-[10px] text-red-500 hover:text-red-700
                               border-0 bg-transparent cursor-pointer transition-opacity p-1"
-                            title="Remover anexo">✕</button>
+                            title={i18n.delete || 'Remove'}>✕</button>
                         )}
                       </div>
                     );
@@ -650,7 +650,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                       const now = new Date();
                       const daysLeft = Math.ceil((due.getTime() - now.getTime()) / 86400000);
                       const color = daysLeft < 0 ? 'bg-red-100 text-red-700' : daysLeft <= 2 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
-                      const label = daysLeft < 0 ? `${Math.abs(daysLeft)}d atrasado` : daysLeft === 0 ? 'Vence hoje' : `${daysLeft}d restantes`;
+                      const label = daysLeft < 0 ? `${Math.abs(daysLeft)}d ${i18n.overdue || 'overdue'}` : daysLeft === 0 ? (i18n.dueDate || 'Due today') : `${daysLeft}d`;
                       return <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${color}`}>SLA: {label}</span>;
                     })()}
                   </div>
@@ -755,7 +755,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                       <label className="text-[10px] font-semibold text-[var(--text-secondary)] mb-1 block">Decisão</label>
                       <select value={reviewVerdict} onChange={(e) => setReviewVerdict(e.target.value)}
                         className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1.5 text-[12px] bg-[var(--surface-card)] outline-none">
-                        <option value="approved">Aprovado</option>
+                        <option value="approved">{i18n.approve || 'Approved'}</option>
                         <option value="returned_for_revision">Devolver para revisão</option>
                         <option value="rejected">Rejeitar</option>
                       </select>
@@ -967,7 +967,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                         className="w-full rounded-lg border border-amber-300 px-2 py-1 text-[11px] bg-white outline-none focus:border-amber-500" />
                       <textarea value={baselineReason}
                         onChange={(e) => setBaselineReason(e.target.value)}
-                        placeholder="Razão da alteração (obrigatório)"
+                        placeholder={i18n.changeReason || 'Reason for change (required)'}
                         rows={2}
                         className="w-full rounded-lg border border-amber-300 px-2 py-1 text-[10px] bg-white outline-none focus:border-amber-500 resize-none" />
                       <div className="flex gap-1.5">
@@ -979,11 +979,11 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                           setDirty(false);
                         }}
                           className="px-2 py-1 rounded bg-amber-600 text-white text-[10px] font-bold cursor-pointer border-0 hover:bg-amber-700">
-                          Confirmar
+                          {i18n.save || 'Confirm'}
                         </button>
                         <button onClick={() => setShowBaselineModal(false)}
                           className="px-2 py-1 rounded border border-amber-300 text-amber-700 text-[10px] font-semibold cursor-pointer bg-transparent hover:bg-amber-100">
-                          Cancelar
+                          {i18n.cancel || 'Cancel'}
                         </button>
                       </div>
                     </div>
@@ -1093,7 +1093,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                       <select value={mirrorTargetBoard}
                         onChange={(e) => setMirrorTargetBoard(e.target.value)}
                         className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1 text-[11px] bg-[var(--surface-card)] outline-none">
-                        <option value="">Selecionar...</option>
+                        <option value="">{i18n.noAssignee ? 'Select...' : 'Select...'}</option>
                         {mirrorBoards.map((b: any) => (
                           <option key={b.board_id} value={b.board_id}>{b.board_name} ({b.item_count})</option>
                         ))}
@@ -1144,7 +1144,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                     <div className="flex gap-1">
                       <button onClick={onDelete}
                         className="flex-1 px-2 py-1.5 rounded-lg bg-red-600 text-white text-[11px] font-bold
-                          cursor-pointer border-0 hover:bg-red-700">Confirmar</button>
+                          cursor-pointer border-0 hover:bg-red-700">{i18n.save || 'Confirm'}</button>
                       <button onClick={() => setConfirmDelete(false)}
                         className="flex-1 px-2 py-1.5 rounded-lg bg-[var(--surface-section-cool)] text-[var(--text-secondary)] text-[11px] font-semibold
                           cursor-pointer border border-[var(--border-default)]">{i18n.cancel}</button>
