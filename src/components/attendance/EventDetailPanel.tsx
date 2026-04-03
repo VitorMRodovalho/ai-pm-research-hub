@@ -52,12 +52,22 @@ interface AttendanceInfo {
   members: AttendanceMember[];
 }
 
+interface ShowcaseInfo {
+  id: string;
+  member_id: string;
+  member_name: string;
+  showcase_type: string;
+  title: string | null;
+  duration_min: number | null;
+}
+
 interface EventDetail {
   event: EventInfo;
   agenda: AgendaInfo | null;
   minutes: MinutesInfo | null;
   action_items: ActionItem[];
   attendance: AttendanceInfo;
+  showcases: ShowcaseInfo[];
 }
 
 interface Props {
@@ -587,6 +597,223 @@ export default function EventDetailPanel({ eventId, canEdit, tribeId }: Props) {
           ))}
         </div>
       </Section>
+
+      {/* ── Section 4: Showcases ── */}
+      <ShowcaseSection
+        showcases={detail.showcases || []}
+        presentMembers={attendance.members.filter((m) => m.present)}
+        canEdit={canEdit}
+        eventId={eventId}
+        onUpdate={loadDetail}
+        t={t}
+      />
     </div>
+  );
+}
+
+/* ── Showcase Section ── */
+
+const SHOWCASE_TYPES = [
+  { value: 'case_study', xp: 25 },
+  { value: 'tool_review', xp: 20 },
+  { value: 'prompt_week', xp: 20 },
+  { value: 'quick_insight', xp: 15 },
+  { value: 'awareness', xp: 15 },
+] as const;
+
+const SHOWCASE_EMOJI: Record<string, string> = {
+  case_study: '🎓', tool_review: '🔧', prompt_week: '💡',
+  quick_insight: '⚡', awareness: '🌍',
+};
+
+function ShowcaseSection({
+  showcases, presentMembers, canEdit, eventId, onUpdate, t,
+}: {
+  showcases: ShowcaseInfo[];
+  presentMembers: AttendanceMember[];
+  canEdit: boolean;
+  eventId: string;
+  onUpdate: () => void;
+  t: (key: string, fb?: string) => string;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [removing, setRemoving] = useState<string | null>(null);
+  const [memberId, setMemberId] = useState('');
+  const [sType, setSType] = useState<string>('tool_review');
+  const [sTitle, setSTitle] = useState('');
+  const [sDuration, setSDuration] = useState('');
+
+  const handleAdd = async () => {
+    if (!memberId) return;
+    const sb = getSb();
+    if (!sb) return;
+    setSaving(true);
+    try {
+      const { data, error } = await sb.rpc('register_event_showcase', {
+        p_event_id: eventId, p_member_id: memberId, p_showcase_type: sType,
+        p_title: sTitle || null, p_duration_min: sDuration ? parseInt(sDuration) : null,
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      (window as any).toast?.(t('eventDetail.showcaseRegistered', 'Showcase registered!'), 'success');
+      setAdding(false); setMemberId(''); setSTitle(''); setSDuration('');
+      onUpdate();
+    } catch (e: any) {
+      (window as any).toast?.(e?.message || 'Error', 'error');
+    } finally { setSaving(false); }
+  };
+
+  const handleRemove = async (showcaseId: string) => {
+    const sb = getSb();
+    if (!sb) return;
+    setRemoving(showcaseId);
+    try {
+      const { data, error } = await sb.rpc('remove_event_showcase', { p_showcase_id: showcaseId });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      (window as any).toast?.(t('eventDetail.showcaseRemoved', 'Showcase removed'), 'success');
+      onUpdate();
+    } catch (e: any) {
+      (window as any).toast?.(e?.message || 'Error', 'error');
+    } finally { setRemoving(null); }
+  };
+
+  // Members who already have 2 showcases
+  const memberShowcaseCounts: Record<string, number> = {};
+  for (const s of showcases) {
+    memberShowcaseCounts[s.member_id] = (memberShowcaseCounts[s.member_id] || 0) + 1;
+  }
+  const availableMembers = presentMembers.filter((m) => (memberShowcaseCounts[m.id] || 0) < 2);
+
+  return (
+    <Section icon="🎤" title={t('eventDetail.showcases', 'Showcases')}>
+      {showcases.length > 0 ? (
+        <div className="space-y-2 mb-3">
+          {showcases.map((s) => (
+            <div key={s.id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface-base)] text-sm">
+              <span className="text-base">{SHOWCASE_EMOJI[s.showcase_type] || '🎤'}</span>
+              <div className="flex-1 min-w-0">
+                <span className="font-semibold text-[var(--text-primary)]">{s.member_name}</span>
+                <span className="text-[var(--text-muted)] ml-1.5 text-xs">
+                  {t(`showcase.type.${s.showcase_type}`, s.showcase_type)}
+                </span>
+                {s.title && (
+                  <span className="text-[var(--text-secondary)] ml-1 text-xs">— {s.title}</span>
+                )}
+                {s.duration_min && (
+                  <span className="text-[var(--text-muted)] ml-1 text-[11px]">({s.duration_min}min)</span>
+                )}
+              </div>
+              <span className="text-xs font-bold text-red-600">
+                +{SHOWCASE_TYPES.find((st) => st.value === s.showcase_type)?.xp || 15} XP
+              </span>
+              {canEdit && (
+                <button
+                  onClick={() => handleRemove(s.id)}
+                  disabled={removing === s.id}
+                  className="text-[var(--text-muted)] hover:text-red-500 text-xs cursor-pointer bg-transparent border-0 p-0.5"
+                  title="Remove"
+                >
+                  {removing === s.id ? '...' : '✕'}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-[var(--text-muted)] italic mb-3">
+          {t('eventDetail.noShowcases', 'No showcases registered.')}
+        </p>
+      )}
+
+      {canEdit && !adding && (
+        <button
+          onClick={() => setAdding(true)}
+          className="px-4 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold border-0 cursor-pointer hover:bg-red-700 transition-colors"
+        >
+          🎤 {t('eventDetail.addShowcase', 'Add Showcase')}
+        </button>
+      )}
+
+      {canEdit && adding && (
+        <div className="mt-2 p-3 rounded-lg bg-[var(--surface-base)] border border-[var(--border-subtle)] space-y-2">
+          <div className="flex gap-2 flex-wrap items-end">
+            <div className="flex-1 min-w-[150px]">
+              <label className="text-[11px] font-semibold text-[var(--text-muted)] mb-0.5 block">
+                {t('eventDetail.showcaseMember', 'Member')}
+              </label>
+              <select
+                value={memberId}
+                onChange={(e) => setMemberId(e.target.value)}
+                className="w-full bg-[var(--surface-card)] border border-[var(--border-default)] rounded-lg px-2 py-1.5 text-sm"
+              >
+                <option value="">—</option>
+                {availableMembers.map((m) => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="min-w-[140px]">
+              <label className="text-[11px] font-semibold text-[var(--text-muted)] mb-0.5 block">
+                {t('eventDetail.showcaseType', 'Type')}
+              </label>
+              <select
+                value={sType}
+                onChange={(e) => setSType(e.target.value)}
+                className="w-full bg-[var(--surface-card)] border border-[var(--border-default)] rounded-lg px-2 py-1.5 text-sm"
+              >
+                {SHOWCASE_TYPES.map((st) => (
+                  <option key={st.value} value={st.value}>
+                    {SHOWCASE_EMOJI[st.value]} {t(`showcase.type.${st.value}`, st.value)} ({st.xp} XP)
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="flex gap-2 flex-wrap items-end">
+            <div className="flex-1 min-w-[150px]">
+              <label className="text-[11px] font-semibold text-[var(--text-muted)] mb-0.5 block">
+                {t('eventDetail.showcaseTitle', 'Title (optional)')}
+              </label>
+              <input
+                type="text"
+                value={sTitle}
+                onChange={(e) => setSTitle(e.target.value)}
+                className="w-full bg-[var(--surface-card)] border border-[var(--border-default)] rounded-lg px-2 py-1.5 text-sm"
+                placeholder="Ex: PM Strategic Analyzer"
+              />
+            </div>
+            <div className="w-20">
+              <label className="text-[11px] font-semibold text-[var(--text-muted)] mb-0.5 block">
+                {t('eventDetail.showcaseDuration', 'Duration')}
+              </label>
+              <input
+                type="number"
+                value={sDuration}
+                onChange={(e) => setSDuration(e.target.value)}
+                className="w-full bg-[var(--surface-card)] border border-[var(--border-default)] rounded-lg px-2 py-1.5 text-sm"
+                placeholder="min"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleAdd}
+              disabled={saving || !memberId}
+              className="px-4 py-1.5 rounded-lg bg-red-600 text-white text-xs font-semibold border-0 cursor-pointer hover:bg-red-700 transition-colors disabled:opacity-50"
+            >
+              {saving ? '...' : t('eventDetail.save', 'Save')}
+            </button>
+            <button
+              onClick={() => setAdding(false)}
+              className="px-3 py-1.5 rounded-lg bg-transparent border border-[var(--border-default)] text-[var(--text-muted)] text-xs cursor-pointer hover:bg-[var(--surface-base)]"
+            >
+              {t('eventDetail.cancel', 'Cancel')}
+            </button>
+          </div>
+        </div>
+      )}
+    </Section>
   );
 }

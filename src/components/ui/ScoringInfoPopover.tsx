@@ -20,6 +20,8 @@ interface Props {
     knowledgeAiPmSub: string;
     course: string;
     badge: string;
+    showcase: string;
+    showcaseSub: string;
     attendance: string;
     goal: string;
   };
@@ -73,6 +75,10 @@ export default function ScoringInfoPopover({ i18n }: Props) {
         <div className={ROW}>
           <div><span className={LABEL}>🏅 {i18n.badge}</span></div>
           <span className={XP}>10 XP</span>
+        </div>
+        <div className={ROW}>
+          <div><span className={LABEL}>🎤 {i18n.showcase}</span><div className={SUB}>{i18n.showcaseSub}</div></div>
+          <span className={XP}>15–25 XP</span>
         </div>
         <div className={`${ROW} border-b-0`}>
           <div><span className={LABEL}>✅ {i18n.attendance}</span></div>

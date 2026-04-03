@@ -2039,6 +2039,8 @@ const enUS: Record<string, string> = {
   'gamification.scoring.knowledgeAiPmSub': 'AI/PM courses outside the trail',
   'gamification.scoring.course': 'Complementary course',
   'gamification.scoring.badge': 'Badge / Community',
+  'gamification.scoring.showcase': 'Showcase / Protagonist',
+  'gamification.scoring.showcaseSub': 'Presentation at general meeting',
   'gamification.scoring.attendance': 'Meeting attendance',
   'gamification.scoring.goal': '2026 Goal: 70% of team with trail complete (6/6)',
   // ── Board rules popover ──
@@ -3352,6 +3354,8 @@ const enUS: Record<string, string> = {
   'attendance.grid.leader': 'Leader',
   'attendance.grid.avg': 'Avg',
   'attendance.grid.crossFunctional': 'Cross-functional',
+  'attendance.grid.showAllEvents': 'Show all events',
+  'attendance.grid.events': 'events',
 
   // ── attendance event types ──
   'attendance.type.geral': 'General',
@@ -3403,6 +3407,21 @@ const enUS: Record<string, string> = {
   'eventDetail.attendance': 'Attendance',
   'eventDetail.present': 'present',
   'eventDetail.excused': 'excused',
+  'eventDetail.showcases': 'Showcases',
+  'eventDetail.addShowcase': 'Add Showcase',
+  'eventDetail.showcaseType': 'Type',
+  'eventDetail.showcaseTitle': 'Title (optional)',
+  'eventDetail.showcaseDuration': 'Duration (min)',
+  'eventDetail.showcaseRegistered': 'Showcase registered!',
+  'eventDetail.showcaseRemoved': 'Showcase removed',
+  'eventDetail.showcaseMax': 'Max 2 showcases per member per meeting',
+  'eventDetail.showcaseMustBePresent': 'Member must be present at the event',
+  'eventDetail.showcaseMember': 'Member',
+  'showcase.type.case_study': 'Case Study',
+  'showcase.type.tool_review': 'Tool Review',
+  'showcase.type.prompt_week': 'Prompt of the Week',
+  'showcase.type.quick_insight': 'Quick Insight',
+  'showcase.type.awareness': 'Awareness',
 
   // ── meetings (meeting journey) ──
   'meetings.agenda.title': 'Agenda',

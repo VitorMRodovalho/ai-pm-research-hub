@@ -2044,6 +2044,8 @@ const ptBR: Record<string, string> = {
   'gamification.scoring.knowledgeAiPmSub': 'Cursos AI/PM fora da trilha',
   'gamification.scoring.course': 'Curso complementar',
   'gamification.scoring.badge': 'Badge / Comunidade',
+  'gamification.scoring.showcase': 'Showcase / Protagonismo',
+  'gamification.scoring.showcaseSub': 'Apresentação em reunião geral',
   'gamification.scoring.attendance': 'Presença em reunião',
   'gamification.scoring.goal': 'Meta 2026: 70% do time com trilha completa (6/6)',
   // ── Board rules popover ──
@@ -3358,6 +3360,8 @@ const ptBR: Record<string, string> = {
   'attendance.grid.leader': 'Líder',
   'attendance.grid.avg': 'Média',
   'attendance.grid.crossFunctional': 'Funções Transversais',
+  'attendance.grid.showAllEvents': 'Mostrar todos os eventos',
+  'attendance.grid.events': 'eventos',
 
   // ── attendance event types ──
   'attendance.type.geral': 'Geral',
@@ -3409,6 +3413,21 @@ const ptBR: Record<string, string> = {
   'eventDetail.attendance': 'Presença',
   'eventDetail.present': 'presentes',
   'eventDetail.excused': 'justificado',
+  'eventDetail.showcases': 'Showcases',
+  'eventDetail.addShowcase': 'Adicionar Showcase',
+  'eventDetail.showcaseType': 'Tipo',
+  'eventDetail.showcaseTitle': 'Título (opcional)',
+  'eventDetail.showcaseDuration': 'Duração (min)',
+  'eventDetail.showcaseRegistered': 'Showcase registrado!',
+  'eventDetail.showcaseRemoved': 'Showcase removido',
+  'eventDetail.showcaseMax': 'Máximo 2 showcases por membro por reunião',
+  'eventDetail.showcaseMustBePresent': 'Membro deve estar presente no evento',
+  'eventDetail.showcaseMember': 'Membro',
+  'showcase.type.case_study': 'Case de Sucesso',
+  'showcase.type.tool_review': 'Review de Ferramenta',
+  'showcase.type.prompt_week': 'Prompt da Semana',
+  'showcase.type.quick_insight': 'Insight Rápido',
+  'showcase.type.awareness': 'Sensibilização',
 
   // ── meetings (meeting journey) ──
   'meetings.agenda.title': 'Pauta',

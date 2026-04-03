@@ -611,8 +611,34 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     });
   }
 
+  /** Smart classification: event is "past" if any of:
+   *  1. date < today
+   *  2. date = today AND time_start + duration has passed
+   *  3. has recording (youtube_url or recording_url)
+   *  4. has attendees (someone checked in) AND date = today AND evening */
+  function isEventPast(ev: any): boolean {
+    const now = new Date();
+    const endOfDay = new Date(ev.date + 'T23:59:59');
+    if (endOfDay < now) return true; // yesterday or before
+    // Same day — check time_start + duration
+    if (ev.time_start) {
+      const [h, m] = ev.time_start.split(':').map(Number);
+      const eventEnd = new Date(ev.date + 'T00:00:00');
+      eventEnd.setHours(h, m + (ev.duration_minutes || 60), 0);
+      if (eventEnd < now) return true;
+    }
+    // Has recording = definitely happened
+    if (ev.youtube_url || ev.recording_url) return true;
+    // Has attendees + it's evening = likely done
+    if ((ev.attendee_count || 0) > 0 && ev.time_start) {
+      const [h] = ev.time_start.split(':').map(Number);
+      if (now.getHours() >= h + 1) return true; // 1h after start
+    }
+    return false;
+  }
+
   function renderEventCard(ev: any): string {
-    const isPast = new Date(ev.date + 'T23:59:59') < new Date();
+    const isPast = isEventPast(ev);
     const attIcon = ev.i_attended === true ? '✅' : ev.i_attended === false ? '❌' : '—';
     const linkHtml = ev.meeting_link && !isPast
       ? ` · <a href="${ev.meeting_link}" target="_blank" rel="noopener" class="text-navy font-semibold no-underline text-[11px]">🔗 Entrar</a>`
@@ -679,13 +705,12 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       return;
     }
 
-    // Group by type → past/future
-    const now = new Date();
+    // Group by type → past/future (smart classification)
     const groups: Record<string, { past: any[]; future: any[] }> = {};
     filtered.forEach((ev: any) => {
       const t = ev.type || 'other';
       if (!groups[t]) groups[t] = { past: [], future: [] };
-      if (new Date(ev.date + 'T23:59:59') < now) groups[t].past.push(ev);
+      if (isEventPast(ev)) groups[t].past.push(ev);
       else groups[t].future.push(ev);
     });
     Object.values(groups).forEach(g => {
@@ -827,6 +852,15 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
           break;
         case 'roster-bulk-confirm':
           bulkConfirmPresence();
+          break;
+        case 'toggle-showcase-form':
+          document.getElementById('roster-showcase-form')?.classList.toggle('hidden');
+          break;
+        case 'save-showcase':
+          saveShowcase();
+          break;
+        case 'remove-showcase':
+          if (target.dataset.showcaseId) removeShowcase(target.dataset.showcaseId);
           break;
       }
       // Show-more buttons (delegated from template literals)
@@ -1487,6 +1521,110 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
           }
         </td>
       </tr>`).join('');
+    // Load showcases after roster renders
+    await loadShowcases(eventId);
+  }
+
+  /* ── Showcase logic in roster modal ── */
+  const SHOWCASE_EMOJI: Record<string, string> = {
+    case_study: '🎓', tool_review: '🔧', prompt_week: '💡', quick_insight: '⚡', awareness: '🌍',
+  };
+  const SHOWCASE_LABELS: Record<string, string> = {
+    case_study: 'Case de Sucesso', tool_review: 'Review de Ferramenta', prompt_week: 'Prompt da Semana',
+    quick_insight: 'Insight Rápido', awareness: 'Sensibilização',
+  };
+  const SHOWCASE_XP: Record<string, number> = {
+    case_study: 25, tool_review: 20, prompt_week: 20, quick_insight: 15, awareness: 15,
+  };
+
+  async function loadShowcases(eventId: string) {
+    const listEl = document.getElementById('roster-showcase-list');
+    const addBtn = document.getElementById('roster-add-showcase-btn');
+    const memberSelect = document.getElementById('showcase-member-select') as HTMLSelectElement;
+    if (!listEl) return;
+
+    // Load showcases from event_showcases table
+    const { data: showcases, error } = await sb.from('event_showcases')
+      .select('id, member_id, showcase_type, title, duration_min, members!event_showcases_member_id_fkey(name)')
+      .eq('event_id', eventId)
+      .order('created_at');
+
+    if (error) { console.error('loadShowcases:', error); return; }
+
+    // Show add button for managers
+    if (CAN_MANAGE) addBtn?.classList.remove('hidden');
+    else addBtn?.classList.add('hidden');
+
+    // Render showcase list
+    if (!showcases?.length) {
+      listEl.innerHTML = '<p class="text-[11px] text-[var(--text-muted)] italic">Nenhum showcase registrado.</p>';
+    } else {
+      listEl.innerHTML = (showcases as any[]).map((s: any) => {
+        const emoji = SHOWCASE_EMOJI[s.showcase_type] || '🎤';
+        const label = SHOWCASE_LABELS[s.showcase_type] || s.showcase_type;
+        const xp = SHOWCASE_XP[s.showcase_type] || 15;
+        const memberName = s.members?.name || '?';
+        return `<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--surface-base)] text-[12px]">
+          <span>${emoji}</span>
+          <span class="font-semibold text-[var(--text-primary)]">${memberName}</span>
+          <span class="text-[var(--text-muted)] text-[11px]">${label}</span>
+          ${s.title ? `<span class="text-[var(--text-secondary)] text-[11px]">— ${s.title}</span>` : ''}
+          ${s.duration_min ? `<span class="text-[var(--text-muted)] text-[10px]">(${s.duration_min}min)</span>` : ''}
+          <span class="ml-auto text-[11px] font-bold text-red-600">+${xp} XP</span>
+          ${CAN_MANAGE ? `<button type="button" class="text-[var(--text-muted)] hover:text-red-500 text-[11px] cursor-pointer bg-transparent border-0 p-0" data-action="remove-showcase" data-showcase-id="${s.id}">✕</button>` : ''}
+        </div>`;
+      }).join('');
+    }
+
+    // Populate member dropdown with present members (max 2 filter)
+    if (memberSelect) {
+      const showcaseCounts: Record<string, number> = {};
+      (showcases || []).forEach((s: any) => { showcaseCounts[s.member_id] = (showcaseCounts[s.member_id] || 0) + 1; });
+      const presentToggles = document.querySelectorAll('#roster-body .toggle-btn.on') as NodeListOf<HTMLElement>;
+      memberSelect.innerHTML = '<option value="">—</option>';
+      presentToggles.forEach((btn) => {
+        const memberId = btn.dataset.memberId || '';
+        if ((showcaseCounts[memberId] || 0) < 2) {
+          const row = btn.closest('tr');
+          const name = row?.querySelector('span')?.textContent || '?';
+          memberSelect.innerHTML += `<option value="${memberId}">${name}</option>`;
+        }
+      });
+    }
+  }
+
+  async function saveShowcase() {
+    const memberSelect = document.getElementById('showcase-member-select') as HTMLSelectElement;
+    const typeSelect = document.getElementById('showcase-type-select') as HTMLSelectElement;
+    const titleInput = document.getElementById('showcase-title-input') as HTMLInputElement;
+    const durationInput = document.getElementById('showcase-duration-input') as HTMLInputElement;
+    const memberId = memberSelect?.value;
+    if (!memberId || !CURRENT_EVENT_ID) return;
+
+    try {
+      const { data, error } = await sb.rpc('register_event_showcase', {
+        p_event_id: CURRENT_EVENT_ID, p_member_id: memberId,
+        p_showcase_type: typeSelect?.value || 'tool_review',
+        p_title: titleInput?.value?.trim() || null,
+        p_duration_min: durationInput?.value ? parseInt(durationInput.value) : null,
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast('🎤 Showcase registrado! +' + (SHOWCASE_XP[typeSelect?.value] || 15) + ' XP', 'success');
+      titleInput.value = ''; durationInput.value = '';
+      document.getElementById('roster-showcase-form')?.classList.add('hidden');
+      await loadShowcases(CURRENT_EVENT_ID);
+    } catch (e: any) { toast(e?.message || 'Erro', 'error'); }
+  }
+
+  async function removeShowcase(showcaseId: string) {
+    try {
+      const { data, error } = await sb.rpc('remove_event_showcase', { p_showcase_id: showcaseId });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast('Showcase removido', 'success');
+      if (CURRENT_EVENT_ID) await loadShowcases(CURRENT_EVENT_ID);
+    } catch (e: any) { toast(e?.message || 'Erro', 'error'); }
   }
 
   async function togglePresence(eventId: string, memberId: string, btn: HTMLElement) {
