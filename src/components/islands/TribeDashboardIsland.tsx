@@ -391,7 +391,12 @@ function GamificationTab({ gamification, members }: { gamification: any; members
               <span className="text-lg font-extrabold text-navy w-6 text-center">
                 {c.rank === 1 ? '🥇' : c.rank === 2 ? '🥈' : c.rank === 3 ? '🥉' : `#${c.rank}`}
               </span>
-              <span className="flex-1 font-semibold text-sm text-[var(--text-primary)]">{c.name}</span>
+              <span className="flex-1 font-semibold text-sm text-[var(--text-primary)]">
+                {c.name}
+                {(c.showcase_count || 0) > 0 && (
+                  <span className="ml-1.5 text-[11px] text-red-600 font-normal">🎤 {c.showcase_count}</span>
+                )}
+              </span>
               <span className="font-bold text-amber-600 text-sm">{c.xp} XP</span>
             </div>
           ))}

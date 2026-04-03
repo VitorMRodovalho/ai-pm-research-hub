@@ -33,6 +33,54 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
         <tbody id="roster-body"></tbody>
       </table>
     </div>
+    <!-- Showcases section -->
+    <div class="px-5 py-3 border-t border-[var(--border-default)] flex-shrink-0" id="roster-showcase-section">
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="text-[12px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">🎤 Showcases</h4>
+        <button type="button" id="roster-add-showcase-btn" class="hidden px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-red-600 text-white border-0 cursor-pointer hover:bg-red-700 transition-colors" data-action="toggle-showcase-form">
+          + {t('eventDetail.addShowcase', lang)}
+        </button>
+      </div>
+      <div id="roster-showcase-list" class="space-y-1.5 mb-2"></div>
+      <div id="roster-showcase-form" class="hidden p-3 rounded-lg bg-[var(--surface-base)] border border-[var(--border-subtle)] space-y-2">
+        <div class="flex gap-2 flex-wrap items-end">
+          <div class="flex-1 min-w-[140px]">
+            <label class="text-[10px] font-semibold text-[var(--text-muted)] mb-0.5 block">{t('eventDetail.showcaseMember', lang)}</label>
+            <select id="showcase-member-select" class="w-full bg-[var(--surface-card)] border border-[var(--border-default)] rounded-lg px-2 py-1.5 text-[12px]">
+              <option value="">—</option>
+            </select>
+          </div>
+          <div class="min-w-[130px]">
+            <label class="text-[10px] font-semibold text-[var(--text-muted)] mb-0.5 block">{t('eventDetail.showcaseType', lang)}</label>
+            <select id="showcase-type-select" class="w-full bg-[var(--surface-card)] border border-[var(--border-default)] rounded-lg px-2 py-1.5 text-[12px]">
+              <option value="case_study">🎓 {t('showcase.type.case_study', lang)} (25 XP)</option>
+              <option value="tool_review" selected>🔧 {t('showcase.type.tool_review', lang)} (20 XP)</option>
+              <option value="prompt_week">💡 {t('showcase.type.prompt_week', lang)} (20 XP)</option>
+              <option value="quick_insight">⚡ {t('showcase.type.quick_insight', lang)} (15 XP)</option>
+              <option value="awareness">🌍 {t('showcase.type.awareness', lang)} (15 XP)</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex gap-2 items-end">
+          <div class="flex-1">
+            <label class="text-[10px] font-semibold text-[var(--text-muted)] mb-0.5 block">{t('eventDetail.showcaseTitle', lang)}</label>
+            <input type="text" id="showcase-title-input" placeholder="Ex: PM Strategic Analyzer" class="w-full bg-[var(--surface-card)] border border-[var(--border-default)] rounded-lg px-2 py-1.5 text-[12px]">
+          </div>
+          <div class="w-16">
+            <label class="text-[10px] font-semibold text-[var(--text-muted)] mb-0.5 block">Min</label>
+            <input type="number" id="showcase-duration-input" placeholder="min" class="w-full bg-[var(--surface-card)] border border-[var(--border-default)] rounded-lg px-2 py-1.5 text-[12px]">
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button type="button" class="px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-red-600 text-white border-0 cursor-pointer hover:bg-red-700 disabled:opacity-50" data-action="save-showcase">
+            {t('eventDetail.save', lang)}
+          </button>
+          <button type="button" class="px-3 py-1.5 rounded-lg text-[11px] border border-[var(--border-default)] text-[var(--text-muted)] bg-transparent cursor-pointer" data-action="toggle-showcase-form">
+            {t('eventDetail.cancel', lang)}
+          </button>
+        </div>
+      </div>
+    </div>
     <!-- Footer -->
     <div class="px-5 py-3 border-t border-[var(--border-default)] flex items-center justify-between flex-shrink-0">
       <div class="flex items-center gap-2">

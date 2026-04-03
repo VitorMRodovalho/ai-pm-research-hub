@@ -268,6 +268,7 @@ export default function AttendanceGridTab() {
   const [isMobile, setIsMobile] = useState(false);
   const [expandedTribes, setExpandedTribes] = useState<Set<string>>(new Set());
   const [toggling, setToggling] = useState<string | null>(null);
+  const [showAllEvents, setShowAllEvents] = useState(false);
   const [memberReady, setMemberReady] = useState(!!getMember());
 
   /* Wait for member to be available (nav loads async) */
@@ -851,6 +852,19 @@ export default function AttendanceGridTab() {
           />
         </div>
 
+        {/* Smart filter toggle — GP only */}
+        {canManageAttendance() && (
+          <label className="inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)] cursor-pointer select-none whitespace-nowrap">
+            <input
+              type="checkbox"
+              checked={showAllEvents}
+              onChange={(e) => setShowAllEvents(e.target.checked)}
+              className="rounded border-[var(--border-default)] accent-[var(--color-teal)]"
+            />
+            {t('attendance.grid.showAllEvents', 'Show all events')}
+          </label>
+        )}
+
         {/* CSV Export */}
         <button
           onClick={exportCsv}
@@ -880,20 +894,40 @@ export default function AttendanceGridTab() {
       {/* Grid / Mobile */}
       {isMobile ? (
         <MobileCardList rows={table.getRowModel().rows} events={filteredEvents} t={t} />
+      ) : !showAllEvents ? (
+        /* Smart mode: each tribe section has its own table with only relevant event columns */
+        <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-xl overflow-hidden">
+          {groupedByTribe.length > 0 ? (
+            groupedByTribe.map(({ tribe, rows: tribeRows }) => (
+              <SmartTribeSection
+                key={tribe.tribe_id}
+                tribe={tribe}
+                rows={tribeRows}
+                allEvents={filteredEvents}
+                isExpanded={expandedTribes.has(tribe.tribe_id)}
+                onToggle={() => toggleTribe(tribe.tribe_id)}
+                t={t}
+              />
+            ))
+          ) : (
+            <p className="px-4 py-12 text-center text-[var(--text-muted)] text-sm">
+              {t('attendance.grid.noResults', 'No members found.')}
+            </p>
+          )}
+        </div>
       ) : (
+        /* Full mode: original single table with all event columns */
         <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-xl overflow-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
-              {/* FIX 1: Week group header row */}
+              {/* Week group header row */}
               {weekGroups.length > 0 && (
                 <tr className="border-b border-[var(--border-subtle)]">
-                  {/* Spacer for the 4 fixed columns */}
                   <th
                     colSpan={3}
                     className="px-2 py-1 text-left text-xs font-bold text-[var(--text-muted)] bg-[var(--surface-base)]"
                     style={{ ...STICKY_LEFT_BASE, left: 0 }}
                   />
-                  {/* Week group headers */}
                   {weekGroups.map(({ week, evts }) => (
                     <th
                       key={`wk-${week}`}
@@ -903,7 +937,6 @@ export default function AttendanceGridTab() {
                       {t('attendance.grid.week', 'Sem')} {week}
                     </th>
                   ))}
-                  {/* Spacer for rate column */}
                   <th
                     className="px-2 py-1 bg-[var(--surface-base)]"
                     style={STICKY_RIGHT}
@@ -911,7 +944,7 @@ export default function AttendanceGridTab() {
                 </tr>
               )}
 
-              {/* FIX 4: Date sub-group header row */}
+              {/* Date sub-group header row */}
               {weekGroups.length > 0 && (
                 <tr className="border-b border-[var(--border-subtle)]">
                   <th
@@ -970,7 +1003,6 @@ export default function AttendanceGridTab() {
               ))}
             </thead>
             <tbody>
-              {/* FIX 5: Row grouping by tribe with collapsible headers */}
               {groupedByTribe.length > 0 ? (
                 groupedByTribe.map(({ tribe, rows: tribeRows }) => {
                   const isExpanded = expandedTribes.has(tribe.tribe_id);
@@ -1087,6 +1119,240 @@ function TribeGroup({
           </tr>
         ))}
     </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Smart Tribe Section (filtered columns per tribe)                   */
+/* ------------------------------------------------------------------ */
+
+function SmartTribeSection({
+  tribe,
+  rows,
+  allEvents,
+  isExpanded,
+  onToggle,
+  t,
+}: {
+  tribe: GridTribe;
+  rows: any[];
+  allEvents: GridEvent[];
+  isExpanded: boolean;
+  onToggle: () => void;
+  t: (key: string, fb?: string) => string;
+}) {
+  const relevantEvents = useMemo(
+    () => allEvents.filter((evt) => rows.some((row) => row.original.attendance[evt.id] !== 'na')),
+    [allEvents, rows],
+  );
+
+  const sectionWeekGroups = useMemo(() => {
+    const weekMap = new Map<number, GridEvent[]>();
+    relevantEvents.forEach((e) => {
+      if (!weekMap.has(e.week_number)) weekMap.set(e.week_number, []);
+      weekMap.get(e.week_number)!.push(e);
+    });
+    return Array.from(weekMap.entries())
+      .sort(([a], [b]) => a - b)
+      .map(([week, evts]) => {
+        const dateMap = new Map<string, GridEvent[]>();
+        evts.forEach((e) => {
+          if (!dateMap.has(e.date)) dateMap.set(e.date, []);
+          dateMap.get(e.date)!.push(e);
+        });
+        return {
+          week,
+          evts,
+          dateGroups: Array.from(dateMap.entries()).sort(([a], [b]) => a.localeCompare(b)),
+        };
+      });
+  }, [relevantEvents]);
+
+  const manage = canManageAttendance();
+  const chevronClass = isExpanded ? 'transform rotate-90 transition-transform' : 'transition-transform';
+
+  return (
+    <div className="border-b border-[var(--border-subtle)] last:border-b-0">
+      {/* Tribe header */}
+      <div
+        className="px-3 py-2 text-sm font-bold text-[var(--text-primary)] bg-[var(--surface-base)] cursor-pointer hover:bg-[var(--border-subtle)] transition-colors"
+        onClick={onToggle}
+      >
+        <span className="inline-flex items-center gap-2">
+          <ChevronRight size={14} className={chevronClass} />
+          <span>{tribe.tribe_name}</span>
+          {tribe.leader_name && (
+            <span className="text-[var(--text-muted)] font-normal text-xs">
+              ({t('attendance.grid.leader', 'Líder')}: {tribe.leader_name})
+            </span>
+          )}
+          <span className="text-xs font-semibold text-[var(--color-teal)]">
+            — {t('attendance.grid.avg', 'Média')}: {Math.round(tribe.avg_rate)}%
+          </span>
+          <span className="text-xs text-[var(--text-muted)] font-normal">
+            ({rows.length} {t('attendance.grid.members', 'members')})
+          </span>
+          <span className="text-xs text-[var(--text-muted)] font-normal">
+            · {relevantEvents.length} {t('attendance.grid.events', 'events')}
+          </span>
+        </span>
+      </div>
+
+      {isExpanded && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              {/* Week headers */}
+              {sectionWeekGroups.length > 0 && (
+                <tr className="border-b border-[var(--border-subtle)]">
+                  <th
+                    colSpan={3}
+                    className="px-2 py-1 text-left text-xs font-bold text-[var(--text-muted)] bg-[var(--surface-base)]"
+                    style={{ ...STICKY_LEFT_BASE, left: 0 }}
+                  />
+                  {sectionWeekGroups.map(({ week, evts }) => (
+                    <th
+                      key={`wk-${week}`}
+                      colSpan={evts.length}
+                      className="px-2 py-1 text-center text-xs font-bold text-[var(--color-teal)] bg-[var(--surface-base)] border-l border-[var(--border-subtle)]"
+                    >
+                      {t('attendance.grid.week', 'Sem')} {week}
+                    </th>
+                  ))}
+                  <th className="px-2 py-1 bg-[var(--surface-base)]" style={STICKY_RIGHT} />
+                </tr>
+              )}
+
+              {/* Date headers */}
+              {sectionWeekGroups.length > 0 && (
+                <tr className="border-b border-[var(--border-subtle)]">
+                  <th
+                    colSpan={3}
+                    className="px-2 py-0.5 bg-[var(--surface-base)]"
+                    style={{ ...STICKY_LEFT_BASE, left: 0 }}
+                  />
+                  {sectionWeekGroups.flatMap(({ dateGroups }) =>
+                    dateGroups.map(([date, dateEvts]) => (
+                      <th
+                        key={`dt-${date}`}
+                        colSpan={dateEvts.length}
+                        className="px-1 py-0.5 text-center text-[10px] font-semibold text-[var(--text-muted)] bg-[var(--surface-base)] border-l border-[var(--border-subtle)] whitespace-nowrap"
+                      >
+                        {fmtDate(date)}
+                      </th>
+                    )),
+                  )}
+                  <th className="px-2 py-0.5 bg-[var(--surface-base)]" style={STICKY_RIGHT} />
+                </tr>
+              )}
+
+              {/* Column headers */}
+              <tr className="border-b border-[var(--border-subtle)]">
+                <th
+                  className="px-2 py-2 text-left text-xs font-bold text-[var(--text-muted)] bg-[var(--surface-base)] whitespace-nowrap"
+                  style={{ ...STICKY_LEFT_BASE, left: 0, width: 36 }}
+                />
+                <th
+                  className="px-2 py-2 text-left text-xs font-bold text-[var(--text-muted)] bg-[var(--surface-base)] whitespace-nowrap"
+                  style={{ ...STICKY_LEFT_BASE, left: 36, width: 160 }}
+                >
+                  {t('attendance.grid.name', 'Name')}
+                </th>
+                <th
+                  className="px-2 py-2 text-left text-xs font-bold text-[var(--text-muted)] bg-[var(--surface-base)] whitespace-nowrap"
+                  style={{ ...STICKY_LEFT_BASE, left: 196, width: 100 }}
+                >
+                  {t('attendance.grid.chapter', 'Chapter')}
+                </th>
+                {relevantEvents.map((ev) => {
+                  const abbr = TYPE_ABBR[ev.type] || ev.type.charAt(0).toUpperCase();
+                  const fullTypeName = TYPE_FULL[abbr] || ev.type;
+                  return (
+                    <th
+                      key={ev.id}
+                      className="px-2 py-2 text-center text-xs font-bold text-[var(--text-muted)] bg-[var(--surface-base)] whitespace-nowrap"
+                      style={{ width: 52 }}
+                    >
+                      <span title={`${fullTypeName} — ${ev.title}`} className="cursor-help font-extrabold">
+                        {abbr}
+                      </span>
+                    </th>
+                  );
+                })}
+                <th
+                  className="px-2 py-2 text-left text-xs font-bold text-[var(--text-muted)] bg-[var(--surface-base)] whitespace-nowrap"
+                  style={{ ...STICKY_RIGHT, width: 80 }}
+                >
+                  {t('attendance.grid.rate', 'Rate %')}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row: any) => {
+                const r: FlatRow = row.original;
+                const rateColor = r.rate < 50 ? 'text-red-600' : r.rate < 75 ? 'text-amber-600' : 'text-green-600';
+                return (
+                  <tr
+                    key={row.id}
+                    className={`border-b border-[var(--border-subtle)] hover:bg-[var(--surface-base)] transition-colors ${rowTint(r.rate)}`}
+                  >
+                    <td
+                      className="px-2 py-1.5 whitespace-nowrap text-[var(--text-primary)]"
+                      style={{ ...STICKY_LEFT_TD_BASE, left: 0 }}
+                    >
+                      {r.detractorStatus === 'detractor' ? (
+                        <span title={t('attendance.grid.detractor', 'Detractor')}>🔴</span>
+                      ) : r.detractorStatus === 'at_risk' ? (
+                        <span title={t('attendance.grid.atRisk', 'At risk')}>🟡</span>
+                      ) : null}
+                    </td>
+                    <td
+                      className="px-2 py-1.5 whitespace-nowrap text-[var(--text-primary)]"
+                      style={{ ...STICKY_LEFT_TD_BASE, left: 36 }}
+                    >
+                      {r.name}
+                    </td>
+                    <td
+                      className="px-2 py-1.5 whitespace-nowrap text-[var(--text-primary)]"
+                      style={{ ...STICKY_LEFT_TD_BASE, left: 196 }}
+                    >
+                      {r.chapter}
+                    </td>
+                    {relevantEvents.map((ev) => {
+                      const st = statusCell(r.attendance[ev.id]);
+                      return (
+                        <td key={ev.id} className="px-2 py-1.5 whitespace-nowrap text-[var(--text-primary)]">
+                          <span
+                            className={`inline-flex items-center justify-center w-full h-full text-xs ${st.bg} rounded px-1 ${manage ? 'cursor-pointer hover:ring-2 hover:ring-navy/30' : ''}`}
+                            {...(manage
+                              ? {
+                                  'data-toggle-event': ev.id,
+                                  'data-toggle-member': r.memberId,
+                                  'data-toggle-current': r.attendance[ev.id] || 'none',
+                                  role: 'button',
+                                  tabIndex: 0,
+                                }
+                              : {})}
+                          >
+                            {st.label}
+                          </span>
+                        </td>
+                      );
+                    })}
+                    <td
+                      className="px-2 py-1.5 whitespace-nowrap text-[var(--text-primary)]"
+                      style={STICKY_RIGHT_TD}
+                    >
+                      <span className={`font-bold ${rateColor}`}>{Math.round(r.rate)}%</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   );
 }
 

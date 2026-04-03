@@ -2039,6 +2039,8 @@ const esLATAM: Record<string, string> = {
   'gamification.scoring.knowledgeAiPmSub': 'Cursos AI/PM fuera de la ruta',
   'gamification.scoring.course': 'Curso complementario',
   'gamification.scoring.badge': 'Badge / Comunidad',
+  'gamification.scoring.showcase': 'Showcase / Protagonismo',
+  'gamification.scoring.showcaseSub': 'Presentación en reunión general',
   'gamification.scoring.attendance': 'Asistencia a reunión',
   'gamification.scoring.goal': 'Meta 2026: 70% del equipo con ruta completa (6/6)',
   // ── Board rules popover ──
@@ -3352,6 +3354,8 @@ const esLATAM: Record<string, string> = {
   'attendance.grid.leader': 'Líder',
   'attendance.grid.avg': 'Promedio',
   'attendance.grid.crossFunctional': 'Funciones Transversales',
+  'attendance.grid.showAllEvents': 'Mostrar todos los eventos',
+  'attendance.grid.events': 'eventos',
 
   // ── attendance event types ──
   'attendance.type.geral': 'General',
@@ -3403,8 +3407,23 @@ const esLATAM: Record<string, string> = {
   'eventDetail.attendance': 'Asistencia',
   'eventDetail.present': 'presentes',
   'eventDetail.excused': 'justificado',
+  'eventDetail.showcases': 'Showcases',
+  'eventDetail.addShowcase': 'Agregar Showcase',
+  'eventDetail.showcaseType': 'Tipo',
+  'eventDetail.showcaseTitle': 'Título (opcional)',
+  'eventDetail.showcaseDuration': 'Duración (min)',
+  'eventDetail.showcaseRegistered': '¡Showcase registrado!',
+  'eventDetail.showcaseRemoved': 'Showcase eliminado',
+  'eventDetail.showcaseMax': 'Máximo 2 showcases por miembro por reunión',
+  'eventDetail.showcaseMustBePresent': 'El miembro debe estar presente en el evento',
+  'eventDetail.showcaseMember': 'Miembro',
+  'showcase.type.case_study': 'Caso de Éxito',
+  'showcase.type.tool_review': 'Revisión de Herramienta',
+  'showcase.type.prompt_week': 'Prompt de la Semana',
+  'showcase.type.quick_insight': 'Insight Rápido',
+  'showcase.type.awareness': 'Sensibilización',
 
-  // ── meetings (meeting journey) ──
+  // ── meetings (meeting journey) ─��
   'meetings.agenda.title': 'Agenda',
   'meetings.agenda.add': 'Agregar Agenda',
   'meetings.agenda.edit': 'Editar Agenda',

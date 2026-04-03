@@ -138,6 +138,7 @@ Rotas como \`get_my_tribe_members\` retornarão "No tribe assigned" — isso é 
 - \`update_card_status\` — Mover card entre colunas (backlog→in_progress→review→done)
 - \`create_meeting_notes\` — Criar ata de reunião (precisa event_id)
 - \`register_attendance\` — Registrar presença (precisa event_id + member_id)
+- \`register_showcase\` — Registrar protagonismo em reunião geral (event_id + member_id + tipo: case_study/tool_review/prompt_week/quick_insight/awareness). Premia 15-25 XP.
 - \`send_notification_to_tribe\` — Notificar toda a tribo
 - \`create_tribe_event\` — Criar reunião ou evento`);
       }
@@ -272,6 +273,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 | 19 | update_card_status | card_id, status | Mover card |
 | 20 | create_meeting_notes | event_id, content, decisions?, action_items? | Criar ata |
 | 21 | register_attendance | event_id, member_id, present | Registrar presença |
+| 21b | register_showcase | event_id, member_id, showcase_type, title?, notes?, duration_min? | Registrar protagonismo (15-25 XP) |
 | 22 | send_notification_to_tribe | title, body, link? | Notificar tribo |
 | 23 | create_tribe_event | title, date, type?, duration_minutes? | Criar evento |
 
@@ -519,6 +521,19 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (error) { await logUsage(sb, member.id, "register_attendance", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "register_attendance", true, undefined, start);
     return ok({ action: "register_attendance", status: "registered", records_affected: count });
+  });
+
+  // TOOL 14b: register_showcase
+  mcp.tool("register_showcase", "Register a showcase/protagonist presentation for a member at a general meeting. Awards 15-25 XP depending on type.", { event_id: z.string().describe("UUID of the event"), member_id: z.string().describe("UUID of the presenting member"), showcase_type: z.enum(["case_study", "tool_review", "prompt_week", "quick_insight", "awareness"]).describe("Type: case_study (25XP), tool_review (20XP), prompt_week (20XP), quick_insight (15XP), awareness (15XP)"), title: z.string().optional().describe("Title of the presentation"), notes: z.string().optional().describe("Brief description"), duration_min: z.number().optional().describe("Duration in minutes") }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "register_showcase", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!canWrite(member)) { await logUsage(sb, member.id, "register_showcase", false, "Unauthorized", start); return err("Unauthorized"); }
+    const { data, error } = await sb.rpc("register_event_showcase", { p_event_id: params.event_id, p_member_id: params.member_id, p_showcase_type: params.showcase_type, p_title: params.title || null, p_notes: params.notes || null, p_duration_min: params.duration_min || null });
+    if (error) { await logUsage(sb, member.id, "register_showcase", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "register_showcase", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "register_showcase", true, undefined, start);
+    return ok({ action: "register_showcase", ...data });
   });
 
   // TOOL 15: send_notification_to_tribe

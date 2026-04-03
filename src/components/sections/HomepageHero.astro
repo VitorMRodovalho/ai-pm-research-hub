@@ -184,11 +184,11 @@ import { CHAPTER_CODES } from '../../data/chapters';
       const linkEl = document.getElementById('hero-general-link') as HTMLAnchorElement;
 
       sb.from('events')
-        .select('id, title, date, meeting_link, recording_url, duration_minutes')
+        .select('id, title, date, meeting_link, recording_url, youtube_url, duration_minutes')
         .eq('type', 'geral')
-        .gte('date', new Date(Date.now() - 86400000).toISOString().slice(0,10))
+        .gte('date', new Date(Date.now() - 14 * 86400000).toISOString().slice(0,10))
         .order('date', { ascending: true })
-        .limit(3)
+        .limit(10)
         .then(({ data: evts }: any) => {
           // Time-aware filter: skip today's event if meeting has likely ended
           var now = new Date();
@@ -213,6 +213,18 @@ import { CHAPTER_CODES } from '../../data/chapters';
             if (ev.meeting_link && linkEl) {
               linkEl.href = ev.meeting_link;
               linkEl.classList.remove('hidden');
+            }
+            // Show last recording if next meeting is not today
+            if (!isToday) {
+              const lastWithRecording = (evts || []).reverse().find(function(e: any) {
+                return e.date < todayStr && (e.youtube_url || e.recording_url);
+              });
+              if (lastWithRecording) {
+                const recUrl = lastWithRecording.youtube_url || lastWithRecording.recording_url;
+                const recDate = new Date(lastWithRecording.date + 'T12:00:00');
+                const recLabel = recDate.toLocaleDateString(_locale, { day: '2-digit', month: 'short' });
+                if (timeEl) timeEl.innerHTML = `19:30 BRT · <a href="${recUrl}" target="_blank" rel="noopener" class="text-red-400 hover:text-red-300 no-underline font-semibold">🎥 ${recLabel}</a>`;
+              }
             }
           } else if (dateEl) {
             dateEl.textContent = _locale === 'en-US' ? 'No upcoming meetings' : _locale === 'es' ? 'Sin reuniones próximas' : 'Sem reuniões próximas';
