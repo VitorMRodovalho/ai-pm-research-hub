@@ -127,16 +127,16 @@ interface FlatRow {
 /* ------------------------------------------------------------------ */
 
 const TYPE_ABBR: Record<string, string> = {
-  geral: '\uD83C\uDFE0 G',
-  tribo: '\uD83D\uDD37 T',
-  lideranca: '\uD83D\uDC65 L',
-  kickoff: '\uD83D\uDE80 K',
-  comms: '\uD83D\uDCE2 C',
-  webinar: '\uD83C\uDF99\uFE0F W',
-  evento_externo: '\uD83C\uDF0D E',
-  '1on1': '\uD83D\uDD12 1',
-  parceria: '\uD83E\uDD1D P',
-  entrevista: '\uD83D\uDCCC I',
+  geral: '🌐 G',
+  tribo: '🔬 T',
+  lideranca: '👥 L',
+  kickoff: '🚀 K',
+  comms: '📢 C',
+  webinar: '🎙️ W',
+  evento_externo: '🌍 E',
+  '1on1': '🔒 1',
+  parceria: '🤝 P',
+  entrevista: '📌 I',
 };
 
 const TYPE_FULL: Record<string, string> = {
@@ -534,18 +534,11 @@ export default function AttendanceGridTab() {
         meta: { sticky: 'left', leftOffset: 36 },
       },
       {
-        accessorKey: 'tribeName',
-        header: t('attendance.grid.tribe', 'Tribe'),
-        size: 120,
-        enableSorting: true,
-        meta: { sticky: 'left', leftOffset: 196 },
-      },
-      {
         accessorKey: 'chapter',
         header: t('attendance.grid.chapter', 'Chapter'),
         size: 100,
         enableSorting: true,
-        meta: { sticky: 'left', leftOffset: 316 },
+        meta: { sticky: 'left', leftOffset: 196 },
       },
     ];
 
@@ -873,15 +866,15 @@ export default function AttendanceGridTab() {
         <span className="font-semibold text-[var(--text-primary)]">
           {t('attendance.grid.legend', 'Legenda')}:
         </span>
-        <span><strong>G</strong> = Geral</span>
+        <span>🌐 <strong>G</strong> = Geral</span>
         <span className="text-[var(--border-default)]">|</span>
-        <span><strong>T</strong> = Tribo</span>
+        <span>🔬 <strong>T</strong> = Tribo</span>
         <span className="text-[var(--border-default)]">|</span>
-        <span><strong>K</strong> = Kickoff</span>
+        <span>🚀 <strong>K</strong> = Kickoff</span>
         <span className="text-[var(--border-default)]">|</span>
-        <span><strong>L</strong> = Liderança</span>
+        <span>👥 <strong>L</strong> = Liderança</span>
         <span className="text-[var(--border-default)]">|</span>
-        <span><strong>C</strong> = Comms</span>
+        <span>📢 <strong>C</strong> = Comms</span>
       </div>
 
       {/* Grid / Mobile */}
@@ -896,7 +889,7 @@ export default function AttendanceGridTab() {
                 <tr className="border-b border-[var(--border-subtle)]">
                   {/* Spacer for the 4 fixed columns */}
                   <th
-                    colSpan={4}
+                    colSpan={3}
                     className="px-2 py-1 text-left text-xs font-bold text-[var(--text-muted)] bg-[var(--surface-base)]"
                     style={{ ...STICKY_LEFT_BASE, left: 0 }}
                   />
@@ -922,7 +915,7 @@ export default function AttendanceGridTab() {
               {weekGroups.length > 0 && (
                 <tr className="border-b border-[var(--border-subtle)]">
                   <th
-                    colSpan={4}
+                    colSpan={3}
                     className="px-2 py-0.5 bg-[var(--surface-base)]"
                     style={{ ...STICKY_LEFT_BASE, left: 0 }}
                   />
