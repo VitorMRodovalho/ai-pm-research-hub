@@ -11,7 +11,7 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
-[![MCP](https://img.shields.io/badge/MCP-29%20Tools-D97757?logo=claude&logoColor=white)](#servidor-mcp--integracao-com-ia)
+[![MCP](https://img.shields.io/badge/MCP-53%20Tools-D97757?logo=claude&logoColor=white)](#servidor-mcp--integracao-com-ia)
 [![PostHog](https://img.shields.io/badge/PostHog-Analytics-F9BD2B?logo=posthog&logoColor=white)](https://posthog.com)
 [![Sentry](https://img.shields.io/badge/Sentry-Monitoring-362D59?logo=sentry&logoColor=white)](https://sentry.io)
 [![Cost](https://img.shields.io/badge/Infra%20Cost-%240%2Fmo-brightgreen)]()
@@ -43,9 +43,9 @@ Fundado em 2024 como piloto no PMI Goias, o projeto evoluiu para uma alianca est
 | Capitulos PMI | 5 (GO · CE · DF · MG · RS) |
 | Entradas de governanca | 135+ |
 | Posts no blog | 9 |
-| Ferramentas MCP | 29 (23 leitura · 6 escrita) |
-| Edge Functions | 19 |
-| Chaves i18n | 3.500+ (3 idiomas) |
+| Ferramentas MCP | 53 (45 leitura · 8 escrita) |
+| Edge Functions | 20 |
+| Chaves i18n | 3.735+ (3 idiomas) |
 | Testes | 779 |
 | Custo mensal | $0 |
 

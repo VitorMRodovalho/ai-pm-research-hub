@@ -96,7 +96,7 @@ O Núcleo se posiciona na interseção de **3 das 4 vertentes** do congresso:
 **Curto (2min):**
 > Problema → Solução → Números → Diferencial → Call to action
 > - GP voluntário sem dados = decisão no escuro
-> - Plataforma SaaS open-source com MCP Server (52 tools)
+> - Plataforma SaaS open-source com MCP Server (53 tools)
 > - 5 capítulos, 60+ membros, 8 tribos de pesquisa, KPIs em real-time
 > - Primeiro núcleo PMI com integração nativa de IA (Claude, ChatGPT, Perplexity)
 > - "Quer participar? Estamos abrindo vagas para pesquisadores"
@@ -135,7 +135,7 @@ O Núcleo se posiciona na interseção de **3 das 4 vertentes** do congresso:
 7. É open-source? → Sim, código aberto no GitHub
 8. Que tecnologias usa? → Astro, Supabase, Cloudflare Workers, MCP Protocol
 9. O que é MCP? → Model Context Protocol — permite que IAs (Claude, ChatGPT) acessem dados da plataforma
-10. Quantas ferramentas de IA? → 52 tools integradas via MCP Server
+10. Quantas ferramentas de IA? → 53 tools integradas via MCP Server
 
 **Sobre IA:**
 11. Como IA é usada na prática? → Consulta de KPIs, gestão de boards, análise de dados via chat
