@@ -74,7 +74,7 @@ export default function CommsDashboard() {
 
   if (loading) {
     return (
-      <div className="text-[var(--text-muted)] text-sm py-8">{t('comp.comms.loading', 'Loading metrics...')}</div>
+      <div className="text-[var(--text-muted)] text-sm py-8">Loading metrics...</div>
     );
   }
   if (error) {

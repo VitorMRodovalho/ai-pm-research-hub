@@ -895,7 +895,7 @@ test('route smoke script validates anonymous deny markers on protected routes', 
   assert.equal(smoke.includes("assertContains('/admin/portfolio', 'id=\"portfolio-denied\"')"), true);
   assert.equal(smoke.includes("assertContains('/admin/governance-v2', 'id=\"boardgov-denied\"')"), true);
   assert.equal(smoke.includes("assertContains('/admin/comms-ops', 'id=\"commsops-denied\"')"), true);
-  assert.equal(smoke.includes("assertContains('/webinars', 'id=\"pub-loading\"')"), true); // public page (GC-160)
+  assert.equal(smoke.includes("assertContains('/webinars', 'Webinars')"), true); // public SSR page (GC-160)
   assert.equal(smoke.includes("assertContains('/tribe/1', 'id=\"tribe-denied\"')"), true);
 });
 

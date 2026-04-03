@@ -55,7 +55,7 @@ function fmtTime(iso: string): string {
     </div>
 
     {!upcoming.length && !replays.length ? (
-      <div class="text-center py-12">
+      <div id="webinars-empty" class="text-center py-12">
         <div class="text-4xl mb-3">🎙️</div>
         <p class="text-sm font-semibold text-[var(--text-secondary)]">{t('webinars.empty', lang)}</p>
         <p class="text-[.78rem] text-[var(--text-muted)] mt-1">{t('webinars.emptyHint', lang)}</p>
@@ -63,7 +63,7 @@ function fmtTime(iso: string): string {
     ) : (
       <>
         {upcoming.length > 0 && (
-          <section class="mb-8">
+          <section id="webinars-upcoming-section" class="mb-8">
             <h2 class="text-lg font-bold text-navy mb-3">{t('webinars.upcoming', lang)}</h2>
             <div class="space-y-3">
               {upcoming.map((w: any) => (
@@ -95,7 +95,7 @@ function fmtTime(iso: string): string {
         )}
 
         {replays.length > 0 && (
-          <section>
+          <section id="webinars-past-section">
             <h2 class="text-lg font-bold text-navy mb-3">{t('webinars.replays', lang)}</h2>
             <div class="space-y-3">
               {replays.map((w: any) => (

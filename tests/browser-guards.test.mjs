@@ -176,8 +176,7 @@ async function run() {
 
     // /webinars is now public (GC-160) — verify it loads without denied gate
     await page.goto(`${base}/webinars`, { waitUntil: 'networkidle' });
-    const webinarsLoading = page.locator('#pub-loading');
-    // Public page shows loading or content — never shows denied
+    // Public page shows content sections — never shows denied
     assert.equal(await page.locator('#webinars-denied').count(), 0);
 
     await page.goto(`${base}/admin/curatorship`, { waitUntil: 'networkidle' });
