@@ -35,6 +35,17 @@ function getSb() {
   return (window as any).navGetSb?.();
 }
 
+async function waitForSb(maxRetries = 15): Promise<any> {
+  let sb = getSb();
+  let retries = 0;
+  while (!sb && retries < maxRetries) {
+    await new Promise((r) => setTimeout(r, 250));
+    sb = getSb();
+    retries++;
+  }
+  return sb;
+}
+
 function getMember() {
   if (typeof window === 'undefined') return null;
   return (window as any).navGetMember?.();
@@ -329,7 +340,7 @@ export default function AttendanceGridTab() {
   useEffect(() => {
     (async () => {
       try {
-        const sb = getSb();
+        const sb = await waitForSb();
         if (!sb) {
           setError(t('attendance.grid.errorNoSb', 'Could not connect to database'));
           setLoading(false);
