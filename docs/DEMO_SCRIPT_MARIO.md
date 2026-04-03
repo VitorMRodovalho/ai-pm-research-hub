@@ -60,7 +60,7 @@
 - **Ponto-chave:** "Nenhuma CoP do PMI opera governança digital a este nível"
 
 ### 8. MCP + i18n + Diversidade (2 min) — Diferenciação técnica
-- Mencionar **52 MCP tools** (Claude pode consultar a plataforma)
+- Mencionar **53 MCP tools** (Claude pode consultar a plataforma)
 - Trocar para `/en/` — tudo em inglês
 - **Novo:** Tab Diversidade no seletivo — 5 dimensões (gênero, capítulo, setor, senioridade, região)
 - Smoke test: 11/11 (mostrar terminal se der tempo)
