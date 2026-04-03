@@ -51,86 +51,71 @@ function buildQuery(queryType: AllowedQuery, days: number): object {
   switch (queryType) {
     case "dau_wau":
       return {
-        kind: "InsightVizNode",
-        source: {
-          kind: "TrendsQuery",
-          dateRange: { date_from: `-${days}d` },
-          interval: "day",
-          series: [
-            { kind: "EventsNode", event: "$pageview", math: "dau", custom_name: "DAU" },
-            { kind: "EventsNode", event: "$pageview", math: "weekly_active", custom_name: "WAU" },
-          ],
-          trendsFilter: { display: "ActionsLineGraph" },
-        },
+        kind: "TrendsQuery",
+        dateRange: { date_from: `-${days}d` },
+        interval: "day",
+        series: [
+          { kind: "EventsNode", event: "$pageview", math: "dau", custom_name: "DAU" },
+          { kind: "EventsNode", event: "$pageview", math: "weekly_active", custom_name: "WAU" },
+        ],
+        trendsFilter: { display: "ActionsLineGraph" },
       };
 
     case "top_pages":
       return {
-        kind: "InsightVizNode",
-        source: {
-          kind: "TrendsQuery",
-          dateRange: { date_from: `-${days}d` },
-          interval: "month",
-          series: [
-            { kind: "EventsNode", event: "$pageview", math: "total", custom_name: "Views" },
-          ],
-          breakdownFilter: {
-            breakdowns: [{ property: "$pathname", type: "event" }],
-            breakdown_limit: 15,
-          },
-          trendsFilter: { display: "ActionsBarValue" },
+        kind: "TrendsQuery",
+        dateRange: { date_from: `-${days}d` },
+        interval: "month",
+        series: [
+          { kind: "EventsNode", event: "$pageview", math: "total", custom_name: "Views" },
+        ],
+        breakdownFilter: {
+          breakdowns: [{ property: "$pathname", type: "event" }],
+          breakdown_limit: 15,
         },
+        trendsFilter: { display: "ActionsBarValue" },
       };
 
     case "traffic_sources":
       return {
-        kind: "InsightVizNode",
-        source: {
-          kind: "TrendsQuery",
-          dateRange: { date_from: `-${days}d` },
-          interval: "month",
-          series: [
-            { kind: "EventsNode", event: "$pageview", math: "dau", custom_name: "Users" },
-          ],
-          breakdownFilter: {
-            breakdowns: [{ property: "$referring_domain", type: "event" }],
-            breakdown_limit: 10,
-          },
-          trendsFilter: { display: "ActionsPie" },
+        kind: "TrendsQuery",
+        dateRange: { date_from: `-${days}d` },
+        interval: "month",
+        series: [
+          { kind: "EventsNode", event: "$pageview", math: "dau", custom_name: "Users" },
+        ],
+        breakdownFilter: {
+          breakdowns: [{ property: "$referring_domain", type: "event" }],
+          breakdown_limit: 10,
         },
+        trendsFilter: { display: "ActionsPie" },
       };
 
     case "rage_clicks":
       return {
-        kind: "InsightVizNode",
-        source: {
-          kind: "TrendsQuery",
-          dateRange: { date_from: `-${days}d` },
-          interval: "day",
-          series: [
-            { kind: "EventsNode", event: "$rageclick", math: "total", custom_name: "Rage Clicks" },
-          ],
-          trendsFilter: { display: "ActionsLineGraph" },
-        },
+        kind: "TrendsQuery",
+        dateRange: { date_from: `-${days}d` },
+        interval: "day",
+        series: [
+          { kind: "EventsNode", event: "$rageclick", math: "total", custom_name: "Rage Clicks" },
+        ],
+        trendsFilter: { display: "ActionsLineGraph" },
       };
 
     case "retention_weekly":
       return {
-        kind: "InsightVizNode",
-        source: {
-          kind: "RetentionQuery",
-          dateRange: { date_from: `-${days}d` },
-          retentionFilter: {
-            period: "Week",
-            totalIntervals: Math.min(Math.ceil(days / 7), 8),
-            targetEntity: { id: "$pageview", name: "$pageview", type: "events" },
-            returningEntity: { id: "$pageview", name: "$pageview", type: "events" },
-            retentionType: "retention_first_time",
-            retentionReference: "total",
-            cumulative: false,
-          },
-          filterTestAccounts: false,
+        kind: "RetentionQuery",
+        dateRange: { date_from: `-${days}d` },
+        retentionFilter: {
+          period: "Week",
+          totalIntervals: Math.min(Math.ceil(days / 7), 8),
+          targetEntity: { id: "$pageview", name: "$pageview", type: "events" },
+          returningEntity: { id: "$pageview", name: "$pageview", type: "events" },
+          retentionType: "retention_first_time",
+          retentionReference: "total",
+          cumulative: false,
         },
+        filterTestAccounts: false,
       };
   }
 }
@@ -217,7 +202,7 @@ Deno.serve(async (req: Request) => {
         const errText = await phResponse.text();
         console.error(`PostHog Query API error: ${phResponse.status} ${errText}`);
         return new Response(
-          JSON.stringify({ error: "PostHog query error", status: phResponse.status }),
+          JSON.stringify({ error: "PostHog query error", status: phResponse.status, detail: errText.slice(0, 500), query_kind: (query as any).kind }),
           { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }

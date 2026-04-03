@@ -462,7 +462,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       ${errRate > 0 ? `<div class="text-[.68rem] text-amber-600 mt-1">Taxa de erro: ${errRate}%</div>` : ''}`;
 
     // Build MCP user set for member table column
-    if (topTools.length > 0) {
+    const userIds = mcp?.unique_user_ids || [];
+    if (userIds.length > 0) {
+      for (const uid of userIds) mcpUserIds.add(uid);
+      document.getElementById('adp-mcp-col')?.classList.remove('hidden');
+    } else if (topTools.length > 0) {
       document.getElementById('adp-mcp-col')?.classList.remove('hidden');
     }
 
@@ -495,16 +499,25 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   function renderAuthCard(auth: any) {
     const el = document.getElementById('adp-auth');
     if (!el) return;
-    const providers = auth?.providers || [];
+    let providers = auth?.providers || [];
     const ghosts = auth?.ghost_count || 0;
     const secondary = auth?.members_with_secondary_auth || 0;
-    const totalAuth = auth?.total_auth_users || 0;
+    const totalLogins = auth?.total_logins || 0;
+
+    // Ensure all configured providers appear (even with 0 logins)
+    const CONFIGURED_PROVIDERS = ['google', 'azure', 'linkedin_oidc', 'email'];
+    const existingProviders = new Set(providers.map((p: any) => p.provider));
+    for (const cp of CONFIGURED_PROVIDERS) {
+      if (!existingProviders.has(cp)) {
+        providers.push({ provider: cp, total: 0, pct: 0 });
+      }
+    }
 
     const maxProv = Math.max(1, ...providers.map((p: any) => p.total));
     const provBars = providers.map((p: any) => {
-      const pct = Math.round((p.total / totalAuth) * 100);
+      const pct = p.pct ?? (totalLogins > 0 ? Math.round((p.total / totalLogins) * 100) : 0);
       const barW = Math.round((p.total / maxProv) * 100);
-      const provName = (p.provider || 'unknown').replace('google', 'Google').replace('linkedin_oidc', 'LinkedIn').replace('azure', 'Azure').replace('email', 'Magic Link');
+      const provName = (p.provider || 'unknown').replace('google', 'Google').replace('linkedin_oidc', 'LinkedIn').replace('azure', 'Microsoft').replace('email', 'Magic Link');
       return `<div class="flex items-center gap-2 text-[.72rem]">
         <span class="w-20 font-semibold text-[var(--text-primary)]">${esc(provName)}</span>
         <span class="text-[var(--text-muted)] w-8 text-right">${p.total}</span>
@@ -517,6 +530,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
     el.innerHTML = `
       <h3 class="text-sm font-bold text-navy mb-3">Provedores de Auth</h3>
+      <p class="text-[.68rem] text-[var(--text-muted)] mb-2">${totalLogins} sessões de login</p>
       <div class="space-y-1.5 mb-3">${provBars}</div>
       <div class="flex gap-4 text-[.68rem] text-[var(--text-muted)]">
         ${ghosts > 0 ? `<span>👻 ${ghosts} visitante${ghosts > 1 ? 's' : ''} externo${ghosts > 1 ? 's' : ''}</span>` : ''}
@@ -558,7 +572,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       return 0;
     });
 
-    const mcpCol = hasMcpData ? `<td class="px-3 py-2 text-center">${mcpUserIds.has('placeholder') ? '🤖' : '—'}</td>` : '';
+    const mcpCol = ''; // MCP column is rendered per-member below
 
     body.innerHTML = filtered.map((m: any) => {
       const desigBadges = (m.designations || []).map((d: string) =>
