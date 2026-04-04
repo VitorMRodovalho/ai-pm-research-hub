@@ -486,6 +486,9 @@ const esLATAM: Record<string, string> = {
   // ── Chapters ──
   'chapters.label': 'Integración Multi-Regional',
   'chapters.title': 'Capítulos PMI Integrados',
+  'chapters.founder': 'Capítulo Fundador',
+  'chapters.goal': 'Meta 2026: integrar 8 capítulos',
+  'chapters.cta': '¿Quieres traer tu capítulo? Habla con el GP →',
 
   // ── Quadrants ──
   'quadrants.label': 'Estructura de Conocimiento',

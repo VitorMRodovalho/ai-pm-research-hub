@@ -486,6 +486,9 @@ const ptBR: Record<string, string> = {
   // ── Chapters ──
   'chapters.label': 'Integração Multi-Regional',
   'chapters.title': 'Capítulos PMI Integrados',
+  'chapters.founder': 'Capítulo Fundador',
+  'chapters.goal': 'Meta 2026: integrar 8 capítulos',
+  'chapters.cta': 'Quer trazer seu capítulo? Fale com o GP →',
 
   // ── Quadrants ──
   'quadrants.label': 'Estrutura de Conhecimento',

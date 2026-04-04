@@ -486,6 +486,9 @@ const enUS: Record<string, string> = {
   // ── Chapters ──
   'chapters.label': 'Multi-Regional Integration',
   'chapters.title': 'Integrated PMI Chapters',
+  'chapters.founder': 'Founding Chapter',
+  'chapters.goal': '2026 Goal: integrate 8 chapters',
+  'chapters.cta': 'Want to bring your chapter? Talk to the PM →',
 
   // ── Quadrants ──
   'quadrants.label': 'Knowledge Framework',
