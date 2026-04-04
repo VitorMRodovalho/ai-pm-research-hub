@@ -1046,7 +1046,12 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     syncAuthCookie(session);
     if (session) {
       _user = session.user;
-      const { data } = await sb.rpc('get_member_by_auth');
+      let { data } = await sb.rpc('get_member_by_auth');
+      // Ghost auto-resolution: if no member found, try linking by email
+      if (!data) {
+        const autoLink = await sb.rpc('try_auto_link_ghost');
+        if (autoLink.data) data = autoLink.data;
+      }
       _member = data;
       // PostHog identify — set person properties for segmentation
       try { if (_user && _member && (window as any).posthog) (window as any).posthog.identify(_user.id, { name: _member.name, operational_role: _member.operational_role, tribe_id: _member.tribe_id, chapter: _member.chapter, designations: _member.designations, is_superadmin: _member.is_superadmin }); } catch {}
@@ -1061,7 +1066,11 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
         _user = session?.user ?? null;
         if (_user && !_member) {
-          const { data } = await sb.rpc('get_member_by_auth');
+          let { data } = await sb.rpc('get_member_by_auth');
+          if (!data) {
+            const autoLink = await sb.rpc('try_auto_link_ghost');
+            if (autoLink.data) data = autoLink.data;
+          }
           _member = data;
           renderAuth();
           window.dispatchEvent(new CustomEvent('nav:member', { detail: _member }));
