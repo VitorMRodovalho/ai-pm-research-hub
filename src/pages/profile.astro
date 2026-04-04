@@ -893,15 +893,6 @@ const PROFILE_I18N = {
       <!-- Dashboard: Current Cycle -->
       ${dashboardHtml(m)}
 
-      <!-- Journey Summary -->
-      ${journeySummaryHtml()}
-
-      <!-- Timeline: Cycle History -->
-      ${timelineHtml()}
-
-      <!-- Attendance History (F5) -->
-      ${attendanceHistoryHtml()}
-
       <!-- Card: Emails -->
       <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
         <h2 class="text-sm font-bold text-navy mb-4">${PROFILE_I18N.emailsTitle}</h2>
@@ -1035,15 +1026,14 @@ const PROFILE_I18N = {
         </div>
       </div>
 
-      <!-- Card: LGPD Data Export -->
-      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
-        <h2 class="text-sm font-bold text-navy mb-2">${PROFILE_I18N.lgpdTitle || 'Meus Dados (LGPD)'}</h2>
-        <p class="text-[.75rem] text-[var(--text-muted)] mb-4">${PROFILE_I18N.lgpdDesc || 'Você pode exportar todos os seus dados pessoais armazenados na plataforma.'}</p>
-        <button data-action="export-my-data"
-          class="px-4 py-2 bg-teal text-white rounded-xl font-semibold text-[.8rem] hover:opacity-90 transition-all cursor-pointer border-0">
-          ${PROFILE_I18N.lgpdExportBtn || '📥 Exportar meus dados'}
-        </button>
-      </div>
+      <!-- Attendance History -->
+      ${attendanceHistoryHtml()}
+
+      <!-- Journey Summary -->
+      ${journeySummaryHtml()}
+
+      <!-- Timeline: Cycle History -->
+      ${timelineHtml()}
 
       <!-- Card: Linked Login Providers -->
       <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
@@ -1132,6 +1122,16 @@ const PROFILE_I18N = {
             </button>
           </div>
         </div>
+      </div>
+
+      <!-- Card: LGPD Data Export -->
+      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
+        <h2 class="text-sm font-bold text-navy mb-2">${PROFILE_I18N.lgpdTitle || 'Meus Dados (LGPD)'}</h2>
+        <p class="text-[.75rem] text-[var(--text-muted)] mb-4">${PROFILE_I18N.lgpdDesc || 'Você pode exportar todos os seus dados pessoais armazenados na plataforma.'}</p>
+        <button data-action="export-my-data"
+          class="px-4 py-2 bg-teal text-white rounded-xl font-semibold text-[.8rem] hover:opacity-90 transition-all cursor-pointer border-0">
+          ${PROFILE_I18N.lgpdExportBtn || '📥 Exportar meus dados'}
+        </button>
       </div>
     `;
     // Load notification preferences + linked providers after render
