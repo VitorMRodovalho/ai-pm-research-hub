@@ -150,16 +150,26 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       showError(document.getElementById('i18n-missingState')?.textContent || 'Missing mcp_state parameter. Open this page via your AI assistant\'s OAuth flow.');
     }
 
-    // Social login handlers — open window synchronously in click handler to avoid popup blocker
+    // Social login handlers
+    // Google blocks OAuth in nested popups/webviews (disallowed_useragent).
+    // Detect if we're already in a popup/embedded context and use same-window redirect instead.
+    const isEmbedded = window.opener || window !== window.top || navigator.userAgent.includes('Claude');
+
     async function loginWith(provider) {
       if (!mcpState) return;
 
-      // 1. Open blank window SYNCHRONOUSLY inside click handler (preserves user gesture)
-      const authWindow = window.open('about:blank', '_blank', 'width=500,height=650,popup=yes');
-
       const redirectTo = window.location.origin + '/oauth/consent?mcp_state=' + encodeURIComponent(mcpState) + '&oauth_data=' + encodeURIComponent(oauthData);
 
-      // 2. Get OAuth URL from Supabase (async — ok because window already exists)
+      // For Google in embedded contexts (or if popup fails), use same-window redirect
+      // This avoids Google's disallowed_useragent block on nested popups
+      const useRedirect = isEmbedded || provider === 'google';
+
+      let authWindow = null;
+      if (!useRedirect) {
+        // Open blank window SYNCHRONOUSLY inside click handler (preserves user gesture)
+        authWindow = window.open('about:blank', '_blank', 'width=500,height=650,popup=yes');
+      }
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
@@ -174,16 +184,16 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         return;
       }
 
-      // 3. Navigate the already-open window to the OAuth URL
-      if (authWindow) {
-        authWindow.location.href = data.url;
-      } else {
-        // Fallback: direct redirect if popup was still blocked
+      // Same-window redirect (works for Google + embedded contexts)
+      if (!authWindow) {
         window.location.href = data.url;
         return;
       }
 
-      // 4. Poll for session completion
+      // Popup flow (Microsoft/LinkedIn in non-embedded contexts)
+      authWindow.location.href = data.url;
+
+      // Poll for session completion
       const pollInterval = setInterval(async () => {
         try {
           const { data: { session } } = await supabase.auth.getSession();
@@ -195,7 +205,6 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         } catch {}
       }, 1000);
 
-      // Stop polling after 5 minutes
       setTimeout(() => clearInterval(pollInterval), 300000);
     }
 

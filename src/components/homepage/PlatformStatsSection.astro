@@ -12,27 +12,27 @@ const { lang = 'pt-BR' } = Astro.props;
     </h2>
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 text-center">
       <div class="stat-card">
-        <span id="stat-members" class="text-3xl font-extrabold text-navy">&mdash;</span>
+        <span id="pstat-members" class="text-3xl font-extrabold text-navy">&mdash;</span>
         <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.members', lang)}</span>
       </div>
       <div class="stat-card">
-        <span id="stat-tribes" class="text-3xl font-extrabold text-navy">&mdash;</span>
+        <span id="pstat-tribes" class="text-3xl font-extrabold text-navy">&mdash;</span>
         <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.tribes', lang)}</span>
       </div>
       <div class="stat-card">
-        <span id="stat-chapters" class="text-3xl font-extrabold text-navy">&mdash;</span>
+        <span id="pstat-chapters" class="text-3xl font-extrabold text-navy">&mdash;</span>
         <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.chapters', lang)}</span>
       </div>
       <div class="stat-card">
-        <span id="stat-events" class="text-3xl font-extrabold text-navy">&mdash;</span>
+        <span id="pstat-events" class="text-3xl font-extrabold text-navy">&mdash;</span>
         <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.events', lang)}</span>
       </div>
       <div class="stat-card">
-        <span id="stat-resources" class="text-3xl font-extrabold text-navy">&mdash;</span>
+        <span id="pstat-resources" class="text-3xl font-extrabold text-navy">&mdash;</span>
         <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.resources', lang)}</span>
       </div>
       <div class="stat-card">
-        <span id="stat-retention" class="text-3xl font-extrabold text-navy">&mdash;</span>
+        <span id="pstat-retention" class="text-3xl font-extrabold text-navy">&mdash;</span>
         <span class="text-sm text-[var(--text-secondary)] mt-1">{t('homepage.stats.retention', lang)}</span>
       </div>
     </div>
@@ -59,27 +59,27 @@ const { lang = 'pt-BR' } = Astro.props;
 
   fetch(url + '/rest/v1/rpc/get_public_platform_stats', {
     method: 'POST',
-    headers: { 'apikey': key, 'Content-Type': 'application/json' },
+    headers: { 'apikey': key, 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
     body: '{}',
   })
   .then(function(r) { return r.json(); })
   .then(function(data) {
     if (!data || data.error) return;
     var el: HTMLElement | null;
-    el = document.getElementById('stat-members');
+    el = document.getElementById('pstat-members');
     if (el) el.textContent = String(data.active_members || 0);
-    el = document.getElementById('stat-tribes');
+    el = document.getElementById('pstat-tribes');
     if (el) el.textContent = String(data.total_tribes || 0);
-    el = document.getElementById('stat-chapters');
+    el = document.getElementById('pstat-chapters');
     if (el) el.textContent = String(data.total_chapters || 0);
-    el = document.getElementById('stat-events');
+    el = document.getElementById('pstat-events');
     if (el) el.textContent = String(data.total_events || 0);
-    el = document.getElementById('stat-resources');
+    el = document.getElementById('pstat-resources');
     if (el) el.textContent = String(data.total_resources || 0);
-    el = document.getElementById('stat-retention');
+    el = document.getElementById('pstat-retention');
     if (el) el.textContent = (data.retention_rate || 0).toFixed(0) + '%';
   })
-  .catch(function() { /* silently degrade — dashes remain */ });
+  .catch(function(err) { console.warn('platform-stats fetch failed', err); });
   try { if ((window as any).posthog) (window as any).posthog.capture('homepage_stats_viewed'); } catch(e) {}
 })();
 </script>

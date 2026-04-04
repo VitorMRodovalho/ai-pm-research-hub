@@ -1,55 +1,69 @@
 ---
+import { t, type Lang } from '../../i18n/utils';
+
+interface Props { lang?: Lang; }
+const { lang = 'pt-BR' } = Astro.props;
 ---
 
 <section class="py-16 px-6 bg-[var(--surface-section-warm)]" id="agenda">
   <div class="max-w-[900px] mx-auto">
     <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-orange mb-2">
-      Agenda
+      {t('schedule.label', lang)}
     </div>
     <h2 class="text-[clamp(1.5rem,3.5vw,2.2rem)] font-extrabold text-[var(--text-primary)] leading-tight mb-8">
-      Agenda da Semana
+      {t('schedule.title', lang)}
     </h2>
 
     <!-- Next General Meeting -->
     <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5 mb-6">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <div class="text-[.7rem] font-bold uppercase tracking-wider text-teal mb-1">Reunião Geral</div>
+          <div class="text-[.7rem] font-bold uppercase tracking-wider text-teal mb-1">{t('schedule.generalMeeting', lang)}</div>
           <div class="text-lg font-bold text-[var(--text-primary)]" id="schedule-general-date">
-            Toda quinta-feira · 19:30 BRT
+            {t('schedule.generalSchedule', lang)}
           </div>
         </div>
         <a id="schedule-general-link" href="#" target="_blank" rel="noopener"
           class="hidden px-5 py-2.5 bg-teal text-white rounded-xl text-[.85rem] font-bold no-underline hover:opacity-90 transition-all flex-shrink-0">
-          Entrar no Meet →
+          {t('hero.joinMeet', lang)} →
         </a>
         <span id="schedule-general-login-hint" class="text-xs text-[var(--text-muted)] italic">
-          Faça login para ver o link da reunião
+          {t('schedule.loginHint', lang)}
         </span>
       </div>
     </div>
 
     <!-- Tribe Meetings by Day -->
     <h3 class="text-sm font-bold text-[var(--text-secondary)] mb-3 uppercase tracking-wider">
-      Reuniões de Tribo
+      {t('schedule.tribeMeetings', lang)}
     </h3>
     <div id="schedule-tribe-grid" class="space-y-2">
-      <div class="text-sm text-[var(--text-muted)] py-4 text-center">Carregando agenda...</div>
+      <div class="text-sm text-[var(--text-muted)] py-4 text-center">{t('common.loading', lang)}</div>
     </div>
   </div>
 </section>
 
+<span id="schedule-i18n-yourTribe" class="hidden">{t('schedule.yourTribe', lang)}</span>
+<span id="schedule-i18n-noMeetings" class="hidden">{t('schedule.noMeetings', lang)}</span>
+
 <script>
   (() => {
-    const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-    const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0]; // Mon-Sun
+    const _locale = location.pathname.startsWith('/en') ? 'en' : location.pathname.startsWith('/es') ? 'es' : 'pt';
+    const DAY_NAMES_MAP: Record<string, string[]> = {
+      pt: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
+      en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+      es: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+    };
+    const DAY_NAMES = DAY_NAMES_MAP[_locale] || DAY_NAMES_MAP.pt;
+    const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
+    const i18nYourTribe = document.getElementById('schedule-i18n-yourTribe')?.textContent || 'sua tribo';
+    const i18nNoMeetings = document.getElementById('schedule-i18n-noMeetings')?.textContent || 'Nenhuma reunião agendada.';
 
     async function loadSchedule() {
       const sb = (window as any).navGetSb?.();
       if (!sb) { setTimeout(loadSchedule, 300); return; }
 
       try {
-        // Load tribe meeting slots with tribe info
         const { data: slots } = await sb
           .from('tribe_meeting_slots')
           .select('tribe_id, day_of_week, time_start, time_end')
@@ -66,14 +80,12 @@
         const tribeMap = new Map<number, any>();
         tribes.forEach((t: any) => tribeMap.set(t.id, t));
 
-        // Group by day
         const byDay = new Map<number, any[]>();
         for (const slot of slots) {
           const tribe = tribeMap.get(slot.tribe_id);
           if (!tribe) continue;
           if (!byDay.has(slot.day_of_week)) byDay.set(slot.day_of_week, []);
-          const _sl = location.pathname.startsWith('/en') ? 'en' : location.pathname.startsWith('/es') ? 'es' : 'pt';
-          byDay.get(slot.day_of_week)!.push({ ...slot, tribe_name: tribe.name_i18n?.[_sl] || tribe.name, meeting_link: tribe.meeting_link });
+          byDay.get(slot.day_of_week)!.push({ ...slot, tribe_name: tribe.name_i18n?.[_locale] || tribe.name, meeting_link: tribe.meeting_link });
         }
 
         const member = (window as any).navGetMember?.();
@@ -95,7 +107,7 @@
           for (const entry of entries) {
             const isMine = myTribeId === entry.tribe_id;
             const highlight = isMine ? 'font-bold text-teal' : 'text-[var(--text-primary)]';
-            const badge = isMine ? ' <span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-teal/10 text-teal">sua tribo</span>' : '';
+            const badge = isMine ? ` <span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded-full bg-teal/10 text-teal">${i18nYourTribe}</span>` : '';
 
             if (isAuth && entry.meeting_link) {
               html += `<a href="${escHtml(entry.meeting_link)}" target="_blank" rel="noopener"
@@ -112,9 +124,8 @@
           html += '</div></div>';
         }
 
-        grid.innerHTML = html || '<div class="text-sm text-[var(--text-muted)] text-center py-4">Nenhuma reunião agendada.</div>';
+        grid.innerHTML = html || `<div class="text-sm text-[var(--text-muted)] text-center py-4">${i18nNoMeetings}</div>`;
 
-        // General meeting link (show when authenticated)
         if (isAuth) {
           const { data: configData } = await sb
             .from('site_config').select('value').eq('key', 'general_meeting_link').single();
@@ -132,8 +143,6 @@
     }
 
     loadSchedule();
-
-    // Re-run when member logs in
     window.addEventListener('nav:member', () => loadSchedule());
 
     function escHtml(s: string): string {

@@ -403,7 +403,7 @@ const enUS: Record<string, string> = {
   'nav.menu': 'Menu',
 
   // ── Hero ──
-  'hero.badge': 'OFFICIAL KICK-OFF — CURRENT CYCLE',
+  'hero.badge': 'CYCLE 3 · 2026',
   'hero.title.line1': 'Study and Research Hub in',
   'hero.title.accent': 'Artificial Intelligence',
   'hero.title.line3': 'and Project Management',
@@ -426,6 +426,43 @@ const enUS: Record<string, string> = {
   'hero.nextGeneralMeeting': 'Next general meeting:',
   'hero.meetingSchedule': 'Recurring cycle schedule',
   'hero.joinMeet': 'Join Meet',
+  'hero.stat.members': 'researchers',
+  'hero.stat.tribes': 'tribes',
+  'hero.stat.chapters': 'PMI chapters',
+  'hero.stat.hours': 'impact hours',
+  'hero.cta.learn': 'Learn More ↓',
+  'hero.cta.login': 'Sign In / Register',
+  'hero.member.greeting': 'Hello,',
+  'hero.member.nextMeeting': '📅 Next Meeting',
+  'hero.member.yourTribe': '🔬 Your Tribe',
+  'hero.member.attendance': '📊 Your Attendance',
+  'hero.member.quickActions': '⚡ Quick Actions',
+  'hero.member.createEvent': '📅 Create Event',
+  'hero.member.registerAttendance': '✅ Register Attendance',
+  'hero.member.viewRanking': '🏆 View Ranking',
+  'hero.member.today': 'Today',
+  'hero.member.noMeetings': 'No upcoming meetings',
+  'hero.member.noTribe': 'No tribe assigned',
+  'hero.member.goWorkspace': 'Go to Workspace →',
+  'hero.member.noData': 'No data yet',
+  'hero.member.generalLabel': 'General',
+  'hero.member.tribeLabel': 'Tribe',
+  'hero.member.combinedLabel': 'Combined',
+  'hero.member.dropoutRisk': 'member(s) at dropout risk',
+
+  // ── Nucleo Section ──
+  'nucleo.title': 'What is the AI & PM Research Hub?',
+  'nucleo.desc': 'A collaborative research group across PMI chapters in Brazil, focused on the intersection of Artificial Intelligence and Project Management. Volunteer researchers produce papers, prototypes, and webinars on how AI is transforming the profession.',
+
+  // ── Weekly Schedule ──
+  'schedule.label': 'Schedule',
+  'schedule.title': 'Weekly Schedule',
+  'schedule.generalMeeting': 'General Meeting',
+  'schedule.generalSchedule': 'Every Thursday · 7:30 PM BRT',
+  'schedule.loginHint': 'Log in to see the meeting link',
+  'schedule.tribeMeetings': 'Tribe Meetings',
+  'schedule.yourTribe': 'your tribe',
+  'schedule.noMeetings': 'No meetings scheduled.',
 
   // ── Agenda ──
   'agenda.unit': 'min',
@@ -904,6 +941,15 @@ const enUS: Record<string, string> = {
   'resources.portal.title': 'volunteer.pmi.org',
   'resources.portal.text': 'Accept your position.',
   'resources.portal.linkText': 'Portal →',
+  'resources.generalMeetings.title': 'General Meetings — Cycle 3',
+  'resources.generalMeetings.text': 'Recordings of the current cycle general meetings.',
+  'resources.generalMeetings.linkText': 'Watch →',
+  'resources.volunteerResearcher.title': 'Role: Researcher Level 4',
+  'resources.volunteerResearcher.text': 'AI knowledge researcher and multiplier.',
+  'resources.volunteerResearcher.linkText': 'Apply →',
+  'resources.volunteerLeader.title': 'Role: Tribe Leader',
+  'resources.volunteerLeader.text': 'Lead researcher and topic facilitator.',
+  'resources.volunteerLeader.linkText': 'Apply →',
 
   // ── Footer ──
   'footer.line1': 'AI & PM Study and Research Hub · Núcleo de Estudos e Pesquisa em IA e GP',
