@@ -19,7 +19,7 @@
 
     const now = new Date().toISOString();
     const { data } = await sb.from('announcements')
-      .select('id, title, message, message_en, message_es, type, link_url, link_text, starts_at')
+      .select('id, title, title_en, title_es, message, message_en, message_es, type, link_url, link_text, starts_at')
       .eq('is_active', true)
       .or(`ends_at.is.null,ends_at.gt.${now}`)
       .lte('starts_at', now)
@@ -61,11 +61,12 @@
         : '';
       const pulse = a.type === 'urgent' ? 'animate-pulse' : '';
       const msg = pathLang === 'en' ? (a.message_en || a.message) : pathLang === 'es' ? (a.message_es || a.message) : a.message;
+      const localTitle = pathLang === 'en' ? (a.title_en || a.title) : pathLang === 'es' ? (a.title_es || a.title) : a.title;
       return `
       <div class="ann-banner ${s.bg} ${s.text} border-b ${s.border} px-4 py-2.5 text-[.78rem] flex items-center gap-2 ${pulse}" data-ann-id="${escapeHtml(String(a.id))}">
         <span class="flex-shrink-0">${s.icon}</span>
         <div class="flex-1 min-w-0">
-          <strong>${escapeHtml(a.title)}</strong>
+          <strong>${escapeHtml(localTitle)}</strong>
           ${msg ? `<span class="ml-1 opacity-80">${escapeHtml(msg)}</span>` : ''}
           ${link}
         </div>
