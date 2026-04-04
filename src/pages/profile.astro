@@ -312,14 +312,11 @@ const PROFILE_I18N = {
 
     // Load stats for current cycle
     try {
-      // Attendance count
-      const { count: attendCount } = await sb.from('attendance')
-        .select('*', { count: 'exact', head: true })
-        .eq('member_id', currentMember.id);
-
-      // Total events
-      const { count: eventCount } = await sb.from('events')
-        .select('*', { count: 'exact', head: true });
+      // Attendance: use the filtered history RPC for accurate counts
+      const { data: attHistory } = await sb.rpc('get_my_attendance_history', { p_limit: 200 });
+      const attRows = Array.isArray(attHistory) ? attHistory : [];
+      const attendCount = attRows.filter((r: any) => r.present).length;
+      const eventCount = attRows.length;
 
       // Course progress
       const { data: courses } = await sb.from('course_progress')
