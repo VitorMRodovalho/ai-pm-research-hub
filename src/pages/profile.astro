@@ -536,12 +536,12 @@ const PROFILE_I18N = {
   }
 
   // ── XP Level ──
-  function getLevel(totalHours: number): { name: string; emoji: string; next: string; hoursToNext: number } {
-    if (totalHours >= 401) return { name: PROFILE_I18N.levelLegend, emoji: '🏆', next: '', hoursToNext: 0 };
-    if (totalHours >= 201) return { name: PROFILE_I18N.levelMaster, emoji: '💎', next: PROFILE_I18N.levelLegend, hoursToNext: 401 - totalHours };
-    if (totalHours >= 91) return { name: PROFILE_I18N.levelExpert, emoji: '🔥', next: PROFILE_I18N.levelMaster, hoursToNext: 201 - totalHours };
-    if (totalHours >= 31) return { name: PROFILE_I18N.levelPractitioner, emoji: '⚡', next: PROFILE_I18N.levelExpert, hoursToNext: 91 - totalHours };
-    return { name: PROFILE_I18N.levelExplorer, emoji: '🌱', next: PROFILE_I18N.levelPractitioner, hoursToNext: 31 - totalHours };
+  function getLevel(xp: number): { name: string; emoji: string; next: string; ptsToNext: number } {
+    if (xp >= 401) return { name: PROFILE_I18N.levelLegend, emoji: '🏆', next: '', ptsToNext: 0 };
+    if (xp >= 201) return { name: PROFILE_I18N.levelMaster, emoji: '💎', next: PROFILE_I18N.levelLegend, ptsToNext: 401 - xp };
+    if (xp >= 91) return { name: PROFILE_I18N.levelExpert, emoji: '🔥', next: PROFILE_I18N.levelMaster, ptsToNext: 201 - xp };
+    if (xp >= 31) return { name: PROFILE_I18N.levelPractitioner, emoji: '⚡', next: PROFILE_I18N.levelExpert, ptsToNext: 91 - xp };
+    return { name: PROFILE_I18N.levelExplorer, emoji: '🌱', next: PROFILE_I18N.levelPractitioner, ptsToNext: 31 - xp };
   }
 
   // ── Timeline ──
@@ -643,7 +643,10 @@ const PROFILE_I18N = {
     // Card 1: Next Meeting
     let meetingContent = '';
     if (!weekData?.tribeId) {
-      meetingContent = `<div class="text-[.75rem] text-amber-600">${PROFILE_I18N.weekChooseTribe}</div>`;
+      const isGpOrAdmin = _m?.operational_role === 'manager' || _m?.operational_role === 'deputy_manager' || _m?.is_superadmin;
+      meetingContent = isGpOrAdmin
+        ? `<div class="text-[.75rem] text-[var(--text-muted)]">${PROFILE_I18N.weekGpGlobal || 'GP — visão global de todas as tribos'}</div>`
+        : `<div class="text-[.75rem] text-amber-600">${PROFILE_I18N.weekChooseTribe}</div>`;
     } else if (!weekData.meetingSlots.length) {
       meetingContent = `<div class="text-[.75rem] text-[var(--text-muted)]">${PROFILE_I18N.weekNoMeeting}</div>`;
     } else {
@@ -703,7 +706,9 @@ const PROFILE_I18N = {
             ${weekData?.tribeId
               ? `<div class="text-lg font-black text-navy">${pendingCount}</div>
                  <div class="text-[.68rem] text-[var(--text-muted)]">${PROFILE_I18N.weekPending}</div>`
-              : `<div class="text-[.75rem] text-amber-600">${PROFILE_I18N.weekChooseTribe}</div>`}
+              : (_m?.operational_role === 'manager' || _m?.operational_role === 'deputy_manager' || _m?.is_superadmin)
+                ? `<div class="text-[.75rem] text-[var(--text-muted)]">${PROFILE_I18N.weekGpGlobal || 'Ver entregas no Admin'}</div>`
+                : `<div class="text-[.75rem] text-amber-600">${PROFILE_I18N.weekChooseTribe}</div>`}
           </a>
 
           <a href="/gamification" class="bg-emerald-50/60 rounded-xl p-3 no-underline block hover:ring-1 hover:ring-emerald-200 transition-all">
@@ -790,10 +795,10 @@ const PROFILE_I18N = {
       try { dateStr = new Date(r.event_date + 'T00:00:00').toLocaleDateString(locale); } catch (_) { dateStr = r.event_date; }
       var typeLabel = HISTORY_TYPE_LABELS[r.event_type] || r.event_type || '';
       var statusDot = r.present
-        ? '<span class="inline-block w-2.5 h-2.5 rounded-full bg-green-500" title="' + (PROFILE_I18N.historyPresent || '') + '"></span>'
+        ? '<span class="text-green-600 font-semibold text-[.75rem]" title="' + (PROFILE_I18N.historyPresent || 'Presente') + '">✅</span>'
         : r.excused
-          ? '<span class="inline-block w-2.5 h-2.5 rounded-full bg-yellow-500" title="' + (PROFILE_I18N.historyExcused || '') + '"></span>'
-          : '<span class="inline-block w-2.5 h-2.5 rounded-full bg-red-400" title="' + (PROFILE_I18N.historyAbsent || '') + '"></span>';
+          ? '<span class="text-amber-500 font-semibold text-[.75rem]" title="' + (PROFILE_I18N.historyExcused || 'Justificado') + '">🟡</span>'
+          : '<span class="text-red-400 font-semibold text-[.75rem]" title="' + (PROFILE_I18N.historyAbsent || 'Ausente') + '">❌</span>';
 
       return '<tr class="border-t border-[var(--border-default)] hover:bg-[var(--surface-hover)]">'
         + '<td class="px-3 py-2 whitespace-nowrap text-[.78rem]">' + dateStr + '</td>'
@@ -838,9 +843,9 @@ const PROFILE_I18N = {
     const barColor = completenessColor(comp.pct);
     const secondaryEmails: string[] = m.secondary_emails || [];
 
-    // XP level based on real attendance hours
-    const totalHours = attendanceHoursData?.total_hours ? Math.round(Number(attendanceHoursData.total_hours)) : 0;
-    const level = getLevel(totalHours);
+    // XP level based on lifetime gamification points
+    const lifetimeXp = cycleXpData?.lifetime_points ?? cycleStats.points ?? 0;
+    const level = getLevel(lifetimeXp);
     const streak = attendanceHoursData?.current_streak || 0;
 
     el.innerHTML = `
