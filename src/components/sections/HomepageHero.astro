@@ -1,5 +1,9 @@
 ---
 import { CHAPTER_CODES } from '../../data/chapters';
+import { t, type Lang } from '../../i18n/utils';
+
+interface Props { lang?: Lang; }
+const { lang = 'pt-BR' } = Astro.props;
 ---
 
 <section class="hero relative min-h-screen flex items-center justify-center overflow-hidden pt-14" id="hero">
@@ -9,55 +13,55 @@ import { CHAPTER_CODES } from '../../data/chapters';
   <!-- ═══ VISITOR HERO ═══ -->
   <div id="hero-visitor" class="relative z-10 text-center max-w-[900px] px-6 py-8">
     <div class="inline-block bg-orange/15 text-orange text-[.78rem] font-semibold px-5 py-1.5 rounded-full border border-orange/30 mb-6 tracking-wider uppercase">
-      Ciclo 3 · 2026
+      {t('hero.badge', lang)}
     </div>
 
     <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-extrabold text-white leading-[1.15] mb-2">
-      Núcleo de Estudos e Pesquisa em<br>
+      {t('hero.title.line1', lang)}<br>
       <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#05BFE0] to-[#B465FF]">
-        Inteligência Artificial
+        {t('hero.title.accent', lang)}
       </span><br>
-      & Gestão de Projetos
+      {t('hero.title.line3', lang)}
     </h1>
 
     <h2 class="text-[clamp(.9rem,2.5vw,1.3rem)] text-white/60 font-normal mb-8">
-      IA aplicada à Gestão de Projetos — pesquisa colaborativa entre capítulos PMI do Brasil
+      {t('hero.subtitle', lang)}
     </h2>
 
     <!-- Stats counters -->
     <div class="flex flex-wrap justify-center gap-6 sm:gap-10 mb-8">
       <div class="text-center">
         <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-members">--</div>
-        <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">pesquisadores</div>
+        <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.members', lang)}</div>
       </div>
       <div class="text-center">
         <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-tribes">--</div>
-        <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">tribos</div>
+        <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.tribes', lang)}</div>
       </div>
       <div class="text-center">
         <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-chapters">--</div>
-        <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">capítulos PMI</div>
+        <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.chapters', lang)}</div>
       </div>
       <div class="text-center">
         <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-hours">--</div>
-        <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">horas de impacto</div>
+        <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.hours', lang)}</div>
       </div>
     </div>
 
     <!-- CTAs -->
     <div class="flex flex-wrap justify-center gap-3 mb-6">
       <a href="#nucleo" class="px-6 py-3 bg-white/10 border border-white/20 text-white rounded-xl text-[.9rem] font-semibold no-underline hover:bg-white/15 transition-all">
-        Conhecer o Núcleo ↓
+        {t('hero.cta.learn', lang)}
       </a>
       <button id="hero-auth-btn" class="px-6 py-3 bg-[#05BFE0] text-navy rounded-xl text-[.9rem] font-bold border-0 cursor-pointer hover:opacity-90 transition-all">
-        Entrar / Criar conta
+        {t('hero.cta.login', lang)}
       </button>
     </div>
 
     <!-- Cycle status -->
     <div class="inline-flex items-center gap-2 text-[.82rem] text-white/60">
       <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-      Ciclo 3 em andamento
+      {t('hero.cycleActive', lang)}
     </div>
 
     <div class="flex flex-wrap justify-center gap-2 mt-5">
@@ -72,44 +76,44 @@ import { CHAPTER_CODES } from '../../data/chapters';
   <!-- ═══ MEMBER HERO ═══ -->
   <div id="hero-member" class="hidden relative z-10 w-full max-w-[900px] px-6 py-8">
     <h2 class="text-[clamp(1.5rem,4vw,2.5rem)] font-extrabold text-white mb-6 text-center">
-      Olá, <span id="hero-name" class="text-[#05BFE0]">...</span> 👋
+      {t('hero.member.greeting', lang)} <span id="hero-name" class="text-[#05BFE0]">...</span>
     </h2>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-[700px] mx-auto">
       <!-- Next General Meeting -->
       <div class="bg-white/8 border border-white/10 rounded-2xl p-5">
-        <div class="text-[.75rem] font-bold text-white/50 uppercase tracking-wider mb-2">📅 Próxima Geral</div>
+        <div class="text-[.75rem] font-bold text-white/50 uppercase tracking-wider mb-2">{t('hero.member.nextMeeting', lang)}</div>
         <div id="hero-general-date" class="text-lg font-bold text-[#05BFE0]">...</div>
         <div id="hero-general-time" class="text-sm text-white/60 mt-0.5">19:30 BRT</div>
         <a id="hero-general-link" href="#" target="_blank" rel="noopener"
           class="hidden mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-[#05BFE0] text-navy rounded-lg text-[.8rem] font-bold no-underline hover:opacity-90 transition-all">
-          Entrar no Meet →
+          {t('hero.joinMeet', lang)} →
         </a>
       </div>
 
       <!-- Tribe Info -->
       <div class="bg-white/8 border border-white/10 rounded-2xl p-5">
-        <div class="text-[.75rem] font-bold text-white/50 uppercase tracking-wider mb-2">🔬 Sua Tribo</div>
+        <div class="text-[.75rem] font-bold text-white/50 uppercase tracking-wider mb-2">{t('hero.member.yourTribe', lang)}</div>
         <div id="hero-tribe-info">
-          <div class="text-sm text-white/40">Carregando...</div>
+          <div class="text-sm text-white/40">{t('common.loading', lang)}</div>
         </div>
       </div>
 
       <!-- Attendance Mini -->
       <div class="bg-white/8 border border-white/10 rounded-2xl p-5">
-        <div class="text-[.75rem] font-bold text-white/50 uppercase tracking-wider mb-2">📊 Sua Assiduidade</div>
+        <div class="text-[.75rem] font-bold text-white/50 uppercase tracking-wider mb-2">{t('hero.member.attendance', lang)}</div>
         <div id="hero-att-info">
-          <div class="text-sm text-white/40">Carregando...</div>
+          <div class="text-sm text-white/40">{t('common.loading', lang)}</div>
         </div>
       </div>
 
       <!-- Quick Actions -->
       <div class="bg-white/8 border border-white/10 rounded-2xl p-5">
-        <div class="text-[.75rem] font-bold text-white/50 uppercase tracking-wider mb-2">⚡ Quick Actions</div>
+        <div class="text-[.75rem] font-bold text-white/50 uppercase tracking-wider mb-2">{t('hero.member.quickActions', lang)}</div>
         <div class="space-y-2">
-          <a href="/attendance" class="block px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-semibold hover:bg-white/20 no-underline transition-colors">📅 Criar Evento</a>
-          <a href="/attendance" class="block px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-semibold hover:bg-white/20 no-underline transition-colors">✅ Registrar Presença</a>
-          <a href="/gamification" class="block px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-semibold hover:bg-white/20 no-underline transition-colors">🏆 Ver Ranking</a>
+          <a href="/attendance" class="block px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-semibold hover:bg-white/20 no-underline transition-colors">{t('hero.member.createEvent', lang)}</a>
+          <a href="/attendance" class="block px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-semibold hover:bg-white/20 no-underline transition-colors">{t('hero.member.registerAttendance', lang)}</a>
+          <a href="/gamification" class="block px-3 py-2 rounded-lg bg-white/10 text-white text-xs font-semibold hover:bg-white/20 no-underline transition-colors">{t('hero.member.viewRanking', lang)}</a>
         </div>
       </div>
     </div>
@@ -123,21 +127,44 @@ import { CHAPTER_CODES } from '../../data/chapters';
     <div class="text-center mt-5">
       <div class="inline-flex items-center gap-2 text-[.82rem] text-white/60">
         <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-        Ciclo 3 em andamento
+        {t('hero.cycleActive', lang)}
       </div>
     </div>
   </div>
 
   <div class="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/30 text-[.75rem] animate-bounce">
-    ↓ Scroll
+    {t('hero.scroll', lang)}
   </div>
 </section>
+
+<!-- i18n data for client-side JS -->
+<span id="hero-i18n-today" class="hidden">{t('hero.member.today', lang)}</span>
+<span id="hero-i18n-noMeetings" class="hidden">{t('hero.member.noMeetings', lang)}</span>
+<span id="hero-i18n-joinMeet" class="hidden">{t('hero.joinMeet', lang)}</span>
+<span id="hero-i18n-noTribe" class="hidden">{t('hero.member.noTribe', lang)}</span>
+<span id="hero-i18n-goWorkspace" class="hidden">{t('hero.member.goWorkspace', lang)}</span>
+<span id="hero-i18n-noData" class="hidden">{t('hero.member.noData', lang)}</span>
+<span id="hero-i18n-general" class="hidden">{t('hero.member.generalLabel', lang)}</span>
+<span id="hero-i18n-tribe" class="hidden">{t('hero.member.tribeLabel', lang)}</span>
+<span id="hero-i18n-combined" class="hidden">{t('hero.member.combinedLabel', lang)}</span>
+<span id="hero-i18n-dropout" class="hidden">{t('hero.member.dropoutRisk', lang)}</span>
+<span id="hero-i18n-locale" class="hidden">{t('hero.dateLocale', lang)}</span>
 
 <script>
   import { hasPermission } from '../../lib/permissions';
   (async () => {
-    const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-    const DAY_NAMES_FULL = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    // Read i18n from hidden spans
+    const _locale = document.getElementById('hero-i18n-locale')?.textContent || 'pt-BR';
+    const i18nToday = document.getElementById('hero-i18n-today')?.textContent || 'Hoje';
+    const i18nNoMeetings = document.getElementById('hero-i18n-noMeetings')?.textContent || 'Sem reuniões próximas';
+    const i18nJoinMeet = document.getElementById('hero-i18n-joinMeet')?.textContent || 'Entrar no Meet';
+    const i18nNoTribe = document.getElementById('hero-i18n-noTribe')?.textContent || 'Sem tribo atribuída';
+    const i18nGoWorkspace = document.getElementById('hero-i18n-goWorkspace')?.textContent || 'Acesse o Workspace →';
+    const i18nNoData = document.getElementById('hero-i18n-noData')?.textContent || 'Sem dados ainda';
+    const i18nGeneral = document.getElementById('hero-i18n-general')?.textContent || 'Geral';
+    const i18nTribe = document.getElementById('hero-i18n-tribe')?.textContent || 'Tribo';
+    const i18nCombined = document.getElementById('hero-i18n-combined')?.textContent || 'Combinado';
+    const i18nDropout = document.getElementById('hero-i18n-dropout')?.textContent || 'membro(s) em risco de dropout';
 
     // Wait for supabase
     function waitSb(): Promise<any> {
@@ -178,7 +205,6 @@ import { CHAPTER_CODES } from '../../data/chapters';
       if (nameEl) nameEl.textContent = (member.name || '').split(' ')[0] || member.name || 'Membro';
 
       // Next general meeting — from real events in DB
-      const _locale = location.pathname.startsWith('/en') ? 'en-US' : location.pathname.startsWith('/es') ? 'es' : 'pt-BR';
       const dateEl = document.getElementById('hero-general-date');
       const timeEl = document.getElementById('hero-general-time');
       const linkEl = document.getElementById('hero-general-link') as HTMLAnchorElement;
@@ -190,31 +216,28 @@ import { CHAPTER_CODES } from '../../data/chapters';
         .order('date', { ascending: true })
         .limit(10)
         .then(({ data: evts }: any) => {
-          // Time-aware filter: skip today's event if meeting has likely ended
           var now = new Date();
           var todayStr = now.toISOString().slice(0,10);
           var ev = (evts || []).find(function(e: any) {
-            if (e.date > todayStr) return true; // future day — always upcoming
+            if (e.date > todayStr) return true;
             if (e.date === todayStr) {
-              // Event is today — check if it has ended (assume 19:30 BRT start)
               var endMinutes = 19 * 60 + 30 + (e.duration_minutes || 60);
               var nowMinutes = now.getHours() * 60 + now.getMinutes();
               return nowMinutes < endMinutes;
             }
-            return false; // past day
+            return false;
           });
           if (ev && dateEl) {
             const evDate = new Date(ev.date + 'T19:30:00');
             const isToday = ev.date === new Date().toISOString().slice(0,10);
             dateEl.textContent = isToday
-              ? (_locale === 'en-US' ? 'Today' : _locale === 'es' ? 'Hoy' : 'Hoje') + ' 🔴'
+              ? `${i18nToday} 🔴`
               : evDate.toLocaleDateString(_locale, { weekday: 'long', day: '2-digit', month: 'short' });
             if (timeEl) timeEl.textContent = '19:30 BRT';
             if (ev.meeting_link && linkEl) {
               linkEl.href = ev.meeting_link;
               linkEl.classList.remove('hidden');
             }
-            // Show last recording if next meeting is not today
             if (!isToday) {
               const lastWithRecording = (evts || []).reverse().find(function(e: any) {
                 return e.date < todayStr && (e.youtube_url || e.recording_url);
@@ -227,7 +250,7 @@ import { CHAPTER_CODES } from '../../data/chapters';
               }
             }
           } else if (dateEl) {
-            dateEl.textContent = _locale === 'en-US' ? 'No upcoming meetings' : _locale === 'es' ? 'Sin reuniones próximas' : 'Sem reuniões próximas';
+            dateEl.textContent = i18nNoMeetings;
             if (timeEl) timeEl.textContent = '';
           }
         });
@@ -244,38 +267,39 @@ import { CHAPTER_CODES } from '../../data/chapters';
           const infoEl = document.getElementById('hero-tribe-info');
           if (!infoEl) return;
 
-          const _sl = location.pathname.startsWith('/en') ? 'en' : location.pathname.startsWith('/es') ? 'es' : 'pt';
+          const _sl = _locale.startsWith('en') ? 'en' : _locale.startsWith('es') ? 'es' : 'pt';
           const _tribeName = tribe?.name_i18n?.[_sl] || tribe?.name || '...';
           let html = `<div class="text-lg font-bold text-[#05BFE0]">T${member.tribe_id}: ${escHtml(_tribeName)}</div>`;
           if (slots.length) {
+            const dayNames = _locale.startsWith('en') ? ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'] : _locale.startsWith('es') ? ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'] : ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
             const slotLabels = slots.map((s: any) => {
               const start = (s.time_start || '').substring(0,5).replace(/:00$/, 'h').replace(/:(\d\d)$/, 'h$1');
               const end = (s.time_end || '').substring(0,5).replace(/:00$/, 'h').replace(/:(\d\d)$/, 'h$1');
-              return `${DAY_NAMES[s.day_of_week]} · ${start}–${end}`;
+              return `${dayNames[s.day_of_week]} · ${start}–${end}`;
             }).join(' · ');
             html += `<div class="text-sm text-white/60 mt-1">${slotLabels}</div>`;
           }
           if (tribe?.meeting_link) {
             html += `<a href="${escHtml(tribe.meeting_link)}" target="_blank" rel="noopener"
               class="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-[#05BFE0] text-navy rounded-lg text-[.8rem] font-bold no-underline hover:opacity-90 transition-all">
-              Entrar no Meet →</a>`;
+              ${i18nJoinMeet} →</a>`;
           }
           infoEl.innerHTML = html;
         });
       } else {
         const infoEl = document.getElementById('hero-tribe-info');
         if (infoEl) {
-          infoEl.innerHTML = `<div class="text-sm text-white/50">Sem tribo atribuída</div>
-            <a href="/workspace" class="mt-2 text-[.8rem] text-[#05BFE0] font-semibold no-underline hover:underline">Acesse o Workspace →</a>`;
+          infoEl.innerHTML = `<div class="text-sm text-white/50">${i18nNoTribe}</div>
+            <a href="/workspace" class="mt-2 text-[.8rem] text-[#05BFE0] font-semibold no-underline hover:underline">${i18nGoWorkspace}</a>`;
         }
       }
 
-      // Attendance — uses get_attendance_panel (W140 corrected calc)
+      // Attendance
       sb.rpc('get_attendance_panel').then(({ data }: any) => {
         const attEl = document.getElementById('hero-att-info');
-        if (!attEl || !data) { if (attEl) attEl.innerHTML = '<div class="text-sm text-white/50">Sem dados ainda</div>'; return; }
+        if (!attEl || !data) { if (attEl) attEl.innerHTML = `<div class="text-sm text-white/50">${i18nNoData}</div>`; return; }
         const myRow = data.find((r: any) => r.member_id === member.id);
-        if (!myRow) { attEl.innerHTML = '<div class="text-sm text-white/50">Sem dados ainda</div>'; return; }
+        if (!myRow) { attEl.innerHTML = `<div class="text-sm text-white/50">${i18nNoData}</div>`; return; }
         const gPct = myRow.general_pct || 0;
         const tPct = myRow.tribe_pct || 0;
         const tribeEvents = myRow.tribe_events_count ?? myRow.tribe_total ?? 0;
@@ -283,8 +307,8 @@ import { CHAPTER_CODES } from '../../data/chapters';
         const combined = myRow.combined_pct || 0;
         const color = combined >= 75 ? '#10B981' : combined >= 50 ? '#F59E0B' : '#EF4444';
         attEl.innerHTML = `
-          <div class="text-sm text-white/60">Geral: <b class="text-white">${gPct}%</b> · Tribo: <b class="text-white">${tribeDisplay}</b></div>
-          <div class="text-xl font-extrabold mt-1" style="color:${color}">Combinado: ${combined}%</div>`;
+          <div class="text-sm text-white/60">${i18nGeneral}: <b class="text-white">${gPct}%</b> · ${i18nTribe}: <b class="text-white">${tribeDisplay}</b></div>
+          <div class="text-xl font-extrabold mt-1" style="color:${color}">${i18nCombined}: ${combined}%</div>`;
       }).catch(() => {});
 
       // Dropout risk (GP only)
@@ -296,7 +320,7 @@ import { CHAPTER_CODES } from '../../data/chapters';
             if (alertEl) {
               alertEl.classList.remove('hidden');
               const span = alertEl.querySelector('span');
-              if (span) span.textContent = `⚠️ ${data.length} membro${data.length > 1 ? 's' : ''} em risco de dropout`;
+              if (span) span.textContent = `⚠️ ${data.length} ${i18nDropout}`;
             }
           }
         }).catch(() => {});
@@ -323,11 +347,10 @@ import { CHAPTER_CODES } from '../../data/chapters';
       const start = performance.now();
       function step(now: number) {
         const progress = Math.min((now - start) / duration, 1);
-        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        const eased = 1 - Math.pow(1 - progress, 3);
         el!.textContent = Math.round(target * eased) + suffix;
         if (progress < 1) requestAnimationFrame(step);
       }
-      // Use IntersectionObserver for scroll-triggered animation
       const observer = new IntersectionObserver(entries => {
         if (entries[0].isIntersecting) {
           observer.disconnect();

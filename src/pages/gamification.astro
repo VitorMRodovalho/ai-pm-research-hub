@@ -838,7 +838,7 @@ const SCORING_I18N = {
           level_name: r.level_name,
         }));
         credlyByMember = {};
-        trailProgressByMember = {};
+        trailProgressByMember = new Map();
         lifetimePointsByMember = {};
         renderLeaderboard();
         return;

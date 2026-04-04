@@ -133,37 +133,17 @@ try {
     const sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(bootTrail, 200); return; }
 
-    const [coursesRes, membersRes] = await Promise.all([
-      sb.from('courses').select('id, code, is_trail'),
-      sb.from('public_members').select('id, name, photo_url').eq('current_cycle_active', true).order('name'),
-    ]);
+    // Use SECURITY DEFINER RPC — works for both anon and authenticated
+    const { data: rows, error } = await sb.rpc('get_public_trail_ranking');
+    if (error || !rows) return;
 
-    const courses = coursesRes.data;
-    const members = membersRes.data;
-    if (!courses || !members) return;
-
-    // Only count trail courses (is_trail=true)
-    const trailCourseIds = new Set(courses.filter((c: any) => c.is_trail).map((c: any) => c.id));
-
-    const { data: progress } = await sb.from('course_progress').select('member_id, course_id, status')
-      .in('course_id', [...trailCourseIds]);
-    if (!progress) return;
-
-    // Per-member stats (trail courses only)
-    const mp: Record<string, { completed: number; in_progress: number }> = {};
-    progress.forEach((p: any) => {
-      if (!mp[p.member_id]) mp[p.member_id] = { completed: 0, in_progress: 0 };
-      if (p.status === 'completed') mp[p.member_id].completed++;
-      else if (p.status === 'in_progress') mp[p.member_id].in_progress++;
-    });
-
-    const ranked = members.map((m: any) => ({
-      name: m.name,
-      photo: m.photo_url,
-      completed: mp[m.id]?.completed || 0,
-      inProgress: mp[m.id]?.in_progress || 0,
-      pct: Math.round((mp[m.id]?.completed || 0) / TOTAL * 100),
-    })).sort((a: any, b: any) => b.pct - a.pct || b.inProgress - a.inProgress);
+    const ranked = (rows as any[]).map((r: any) => ({
+      name: r.member_name,
+      photo: r.photo_url,
+      completed: r.completed || 0,
+      inProgress: r.in_progress || 0,
+      pct: r.pct || 0,
+    }));
 
     // KPI — use server-side calc for consistency with KPIs page
     let avg = 0;

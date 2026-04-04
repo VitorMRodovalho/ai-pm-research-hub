@@ -1,33 +1,35 @@
 ---
+import { t, type Lang } from '../../i18n/utils';
+
+interface Props { lang?: Lang; }
+const { lang = 'pt-BR' } = Astro.props;
 ---
 
 <section class="py-16 px-6 bg-[var(--surface-section-cool)]" id="nucleo">
   <div class="max-w-[900px] mx-auto text-center">
     <h2 class="text-[clamp(1.5rem,3.5vw,2.2rem)] font-extrabold text-[var(--text-primary)] leading-tight mb-4">
-      O que é o Núcleo IA & GP?
+      {t('nucleo.title', lang)}
     </h2>
     <p class="text-[1rem] text-[var(--text-secondary)] leading-relaxed max-w-[700px] mx-auto mb-10">
-      Grupo colaborativo de pesquisa entre capítulos PMI do Brasil, focado na interseção entre
-      Inteligência Artificial e Gestão de Projetos. Pesquisadores voluntários produzem artigos,
-      protótipos e webinars sobre como a IA está transformando a profissão.
+      {t('nucleo.desc', lang)}
     </p>
 
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 max-w-[700px] mx-auto">
       <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5">
         <div class="text-3xl font-extrabold text-navy" id="nucleo-members">--</div>
-        <div class="text-[.72rem] text-[var(--text-muted)] font-semibold uppercase tracking-wider mt-1">pesquisadores</div>
+        <div class="text-[.72rem] text-[var(--text-muted)] font-semibold uppercase tracking-wider mt-1">{t('hero.stat.members', lang)}</div>
       </div>
       <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5">
         <div class="text-3xl font-extrabold text-navy" id="nucleo-tribes">--</div>
-        <div class="text-[.72rem] text-[var(--text-muted)] font-semibold uppercase tracking-wider mt-1">tribos</div>
+        <div class="text-[.72rem] text-[var(--text-muted)] font-semibold uppercase tracking-wider mt-1">{t('hero.stat.tribes', lang)}</div>
       </div>
       <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5">
         <div class="text-3xl font-extrabold text-navy" id="nucleo-chapters">--</div>
-        <div class="text-[.72rem] text-[var(--text-muted)] font-semibold uppercase tracking-wider mt-1">capítulos PMI</div>
+        <div class="text-[.72rem] text-[var(--text-muted)] font-semibold uppercase tracking-wider mt-1">{t('hero.stat.chapters', lang)}</div>
       </div>
       <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-5">
         <div class="text-3xl font-extrabold text-navy" id="nucleo-hours">--</div>
-        <div class="text-[.72rem] text-[var(--text-muted)] font-semibold uppercase tracking-wider mt-1">horas de impacto</div>
+        <div class="text-[.72rem] text-[var(--text-muted)] font-semibold uppercase tracking-wider mt-1">{t('hero.stat.hours', lang)}</div>
       </div>
     </div>
   </div>
