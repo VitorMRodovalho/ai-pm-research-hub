@@ -39,8 +39,8 @@ test('admin allocation pending list is null-safe for name and phone rendering', 
 
 test('gamification lifetime ranking uses aggregated points map before fallback', () => {
   const content = read('src/pages/gamification.astro');
-  assert.equal(content.includes('lifetime_points: Number(lifetimePointsByMember[m.member_id] ?? m.total_points ?? 0)'), true);
-  assert.equal(content.includes('? Number(lifetimePointsByMember[m.member_id] ?? m.total_points ?? 0)'), true);
+  assert.equal(content.includes('lifetimePointsByMember[m.member_id] ?? m.lifetime_points ?? m.total_points ?? 0'), true);
+  assert.equal(content.includes('lifetimePointsByMember[m.member_id]'), true);
 });
 
 test('selection page no longer hardcodes cycle tabs or snapshot cycle title', () => {

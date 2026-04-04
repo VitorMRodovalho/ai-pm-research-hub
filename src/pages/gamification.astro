@@ -743,7 +743,7 @@ const SCORING_I18N = {
       .map((m: any) => ({
         ...m,
         cycle_points: Number(m.cycle_points || 0),
-        lifetime_points: Number(lifetimePointsByMember[m.member_id] ?? m.total_points ?? 0),
+        lifetime_points: Number(lifetimePointsByMember[m.member_id] ?? m.lifetime_points ?? m.total_points ?? 0),
       }))
       .sort((a: any, b: any) => {
         const left = leaderboardMode === 'lifetime' ? a.lifetime_points : a.cycle_points;
@@ -824,9 +824,10 @@ const SCORING_I18N = {
     try {
       // Anon/Ghost: use public leaderboard RPC (no PII, LGPD-safe)
       if (!MEMBER) {
+        // Public view: top 10 with XP > 0 only (protects low-engagement members)
         const { data: pubData, error: pubError } = await sb.rpc('get_public_leaderboard', { p_limit: 50 });
         if (pubError) throw pubError;
-        const rows = Array.isArray(pubData) ? pubData : [];
+        const rows = (Array.isArray(pubData) ? pubData : []).filter((r: any) => r.xp_total > 0).slice(0, 10);
         if (!rows.length) { setPanelMessage('leaderboard-list', I.lbEmpty, 'empty'); return; }
         leaderboardData = rows.map((r: any, i: number) => ({
           member_id: null,

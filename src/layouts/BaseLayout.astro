@@ -5,7 +5,7 @@ import AnnouncementBanner from '../components/ui/AnnouncementBanner.astro';
 import AuthModal from '../components/ui/AuthModal.astro';
 import TierViewerBar from '../components/admin/TierViewerBar';
 import HelpFloatingButton from '../components/help/HelpFloatingButton';
-import { t, getRoleLabelsMap, type Lang } from '../i18n/utils';
+import { t, getRoleLabelsMap, localePath, type Lang } from '../i18n/utils';
 
 interface Props {
   title?: string;
@@ -265,8 +265,8 @@ const SIM_I18N = {
     <p class="mt-1">
       <a href="https://github.com/VitorMRodovalho/ai-pm-research-hub" class="text-[#05BFE0] no-underline hover:underline">GitHub</a>
       · {t('footer.gp', lang)}
-      · <a href="/privacy" class="text-[#05BFE0] no-underline hover:underline">{t('footer.privacy', lang)}</a>
-      · <a href="/changelog" class="text-[#05BFE0] no-underline hover:underline">{t('nav.changelog', lang)}</a>
+      · <a href={localePath('/privacy', lang)} class="text-[#05BFE0] no-underline hover:underline">{t('footer.privacy', lang)}</a>
+      · <a href={localePath('/changelog', lang)} class="text-[#05BFE0] no-underline hover:underline">{t('nav.changelog', lang)}</a>
       · <span id="footer-version" class="text-white/25 text-[.65rem]">development</span>
     </p>
   </footer>
@@ -295,7 +295,7 @@ const SIM_I18N = {
   <div id="consent-banner"
     class="fixed bottom-0 left-0 right-0 z-[600] bg-[var(--surface-elevated)] border-t border-[var(--border-default)] shadow-lg px-4 py-3 flex items-center justify-center gap-3 text-sm hidden">
     <span class="text-[var(--text-secondary)]">{t('consent.message', lang)}</span>
-    <a href="/privacy" class="text-teal hover:underline text-xs font-semibold">{t('consent.privacyLink', lang)}</a>
+    <a href={localePath('/privacy', lang)} class="text-teal hover:underline text-xs font-semibold">{t('consent.privacyLink', lang)}</a>
     <button id="consent-accept" class="px-3 py-1.5 rounded-lg bg-teal text-white text-xs font-semibold hover:opacity-90">
       {t('consent.accept', lang)}
     </button>
