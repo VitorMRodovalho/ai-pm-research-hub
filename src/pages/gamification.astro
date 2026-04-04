@@ -184,7 +184,7 @@ const SCORING_I18N = {
   goal: t('gamification.scoring.goal', lang),
 };
 ---
-<BaseLayout title={t('gamification.titleFull', lang)} activePage="gamification">
+<BaseLayout title={t('gamification.titleFull', lang)} activePage="gamification" lang={lang}>
   <Toast />
   <div class="max-w-[1100px] mx-auto px-4 py-8">
     <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
@@ -275,8 +275,8 @@ const SCORING_I18N = {
     <div class="flex gap-2 mb-6 flex-wrap">
       <button class="gam-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-navy bg-navy text-white"
               data-tab="leaderboard" data-action="switch-tab">{t('gamification.tab.individual', lang)}</button>
-      <button class="gam-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]"
-              data-tab="tribes" data-action="switch-tab">{t('gamification.tab.tribes', lang)}</button>
+      <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]"
+              id="tab-tribes" data-tab="tribes" data-action="switch-tab">{t('gamification.tab.tribes', lang)}</button>
       <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]"
               id="tab-achievements" data-tab="achievements" data-action="switch-tab">{t('gamification.tab.achievements', lang)}</button>
       <button class="gam-tab hidden px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]"
@@ -1433,6 +1433,7 @@ const SCORING_I18N = {
   function setupUI() {
     const canSync = hasPermission(MEMBER, 'gamification.sync');
     document.getElementById('trail-clarity-card')?.classList.remove('hidden');
+    document.getElementById('tab-tribes')?.classList.remove('hidden');
     document.getElementById('tab-achievements')?.classList.remove('hidden');
     document.getElementById('tab-mypoints')?.classList.remove('hidden');
     document.getElementById('tab-mycerts')?.classList.remove('hidden');

@@ -5,7 +5,7 @@ import { t, getLangFromURL, type Lang } from '../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 ---
 
-<BaseLayout title={t('nav.exploreTribes', lang)} activePage="projects">
+<BaseLayout title={t('nav.exploreTribes', lang)} activePage="projects" lang={lang}>
   <div class="max-w-[1100px] mx-auto px-4 py-8">
     <header class="mb-6">
       <h1 class="text-2xl font-extrabold text-[var(--text-primary)]">Projetos e Frentes</h1>

@@ -7,7 +7,7 @@ import { t, getLangFromURL, type Lang } from '../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 ---
 
-<BaseLayout title={t('stakeholder.title', lang) || 'Chapter Dashboard'} activePage="stakeholder">
+<BaseLayout title={t('stakeholder.title', lang) || 'Chapter Dashboard'} activePage="stakeholder" lang={lang}>
   <Toast />
   <div id="stakeholder-denied" class="hidden max-w-lg mx-auto px-4 py-20 text-center">
     <div class="text-4xl mb-4">🔒</div>
