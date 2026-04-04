@@ -1445,6 +1445,8 @@ const PROFILE_I18N = {
     const list = document.getElementById('linked-providers-list');
     if (!list) return;
     try {
+      const sb = (window as any).navGetSb?.();
+      if (!sb) return;
       const { data: { user } } = await sb.auth.getUser();
       if (!user) return;
       const identities = user.identities || [];
@@ -1473,6 +1475,8 @@ const PROFILE_I18N = {
 
   async function linkProvider(provider: string) {
     try {
+      const sb = (window as any).navGetSb?.();
+      if (!sb) { alert('Erro: cliente não inicializado'); return; }
       const { data, error } = await sb.auth.linkIdentity({
         provider,
         options: { redirectTo: window.location.origin + '/profile' }
