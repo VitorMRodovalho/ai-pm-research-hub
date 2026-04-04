@@ -6,7 +6,7 @@ import Toast from '../components/ui/Toast.astro';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 ---
 
-<BaseLayout title={t('notifications.title', lang)} activePage="notifications">
+<BaseLayout title={t('notifications.title', lang)} activePage="notifications" lang={lang}>
   <div class="max-w-[700px] mx-auto px-4 py-8">
     <div id="notif-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
       <div class="text-3xl mb-3">&#x1F514;</div>

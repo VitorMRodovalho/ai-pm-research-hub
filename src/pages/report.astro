@@ -7,7 +7,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const i18nBundle = buildPageI18n(['comp.report', 'comp.tribe', 'comp.common'], lang);
 ---
 
-<BaseLayout title={t('report.title', lang)} activePage="report">
+<BaseLayout title={t('report.title', lang)} activePage="report" lang={lang}>
   <div class="max-w-[1200px] mx-auto px-4 py-8">
     <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
     <ReportPage client:load />

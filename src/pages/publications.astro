@@ -8,7 +8,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
 ---
 
-<BaseLayout title={t('publications.publicTitle', lang)} activePage="publications">
+<BaseLayout title={t('publications.publicTitle', lang)} activePage="publications" lang={lang}>
   <!-- ── Public Publications Section (no login required) ── -->
   <div class="max-w-[1200px] mx-auto px-4 pt-8 pb-6">
     <div class="mb-2 text-[.73rem] font-bold tracking-[.15em] uppercase text-indigo-600">
