@@ -29,6 +29,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       <!-- Tabs -->
       <div class="flex gap-1 border-b border-[var(--border-default)]">
         <button id="tab-members" class="px-4 py-2 text-sm font-semibold border-b-2 border-navy text-navy cursor-pointer bg-transparent" data-tab-switch="members">Membros</button>
+        <button id="tab-visitors" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-[var(--text-muted)] cursor-pointer bg-transparent hover:text-navy" data-tab-switch="visitors">👻 Visitantes</button>
         <button id="tab-analytics" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-[var(--text-muted)] cursor-pointer bg-transparent hover:text-navy" data-tab-switch="analytics">Analytics</button>
       </div>
 
@@ -192,6 +193,45 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       </div>
 
       </div><!-- /panel-members -->
+
+      <!-- Visitors Tab Content -->
+      <div id="panel-visitors" class="hidden space-y-6">
+        <div>
+          <h2 class="text-lg font-extrabold text-navy">👻 Visitantes Externos</h2>
+          <p class="text-[.72rem] text-[var(--text-muted)] mt-1">Usuários que fizeram login mas não possuem registro de membro. Possíveis candidatos ou logins duplicados.</p>
+        </div>
+
+        <!-- Ghost KPIs -->
+        <div id="visitors-kpis" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+
+        <!-- Ghost List -->
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+          <div class="px-5 py-3.5 border-b border-[var(--border-default)]">
+            <h3 class="text-sm font-bold text-navy">Lista de Visitantes Logados</h3>
+            <p class="text-[.65rem] text-[var(--text-muted)] mt-0.5">LGPD: dados de auth.users — consentidos via login OAuth</p>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-[.75rem]">
+              <thead>
+                <tr class="bg-[var(--surface-section-cool)]">
+                  <th class="text-left px-4 py-2 font-bold text-[var(--text-secondary)]">Email</th>
+                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Provider</th>
+                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Primeiro Acesso</th>
+                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Último Login</th>
+                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Match</th>
+                  <th class="text-center px-3 py-2 font-bold text-[var(--text-secondary)]">Ação</th>
+                </tr>
+              </thead>
+              <tbody id="visitors-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Info box -->
+        <div class="bg-blue-50 border border-blue-200 rounded-xl px-5 py-3 text-[.75rem] text-blue-800">
+          <strong>ℹ️ Sobre visitantes não-logados:</strong> dados agregados de visitantes anônimos estão na aba Analytics (via PostHog). Apenas pageviews e país são rastreados, sem identificação pessoal (LGPD-safe).
+        </div>
+      </div><!-- /panel-visitors -->
 
       <!-- Analytics Tab Content -->
       <div id="panel-analytics" class="hidden space-y-6">
@@ -619,6 +659,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   // ── Analytics Tab — Phase 2 Native Charts ──
   const PROXY_BASE = 'https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/posthog-proxy';
   let analyticsLoaded = false;
+  let visitorsLoaded = false;
   let analyticsPeriod = 30;
   let chartInstances: any[] = [];
 
@@ -790,18 +831,85 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     analyticsLoaded = true;
   }
 
+  // ── VISITORS TAB ──
+  async function loadVisitors() {
+    try {
+      const { data, error } = await sb.rpc('get_ghost_visitors');
+      if (error) throw error;
+      const ghosts = data || [];
+
+      // KPIs
+      const now = new Date();
+      const d30 = new Date(now.getTime() - 30 * 86400000);
+      const recentCount = ghosts.filter((g: any) => g.last_sign_in_at && new Date(g.last_sign_in_at) > d30).length;
+      const matchCount = ghosts.filter((g: any) => g.possible_member_name).length;
+      const providers: Record<string, number> = {};
+      ghosts.forEach((g: any) => { providers[g.provider || 'unknown'] = (providers[g.provider || 'unknown'] || 0) + 1; });
+      const topProvider = Object.entries(providers).sort((a, b) => b[1] - a[1])[0];
+
+      const kpiEl = document.getElementById('visitors-kpis');
+      if (kpiEl) {
+        kpiEl.innerHTML = [
+          kpiCard('👻 Total Ghosts', String(ghosts.length), '', ''),
+          kpiCard('🕐 Últimos 30d', String(recentCount), '', ''),
+          kpiCard('🔗 Match c/ Membro', String(matchCount), 'login duplicado?', 'text-amber-600'),
+          kpiCard('🔑 Top Provider', topProvider ? `${topProvider[0]} (${topProvider[1]})` : '—', '', ''),
+        ].join('');
+      }
+
+      // Table
+      const body = document.getElementById('visitors-body');
+      if (!body) return;
+
+      if (!ghosts.length) {
+        body.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-[var(--text-muted)]">Nenhum visitante externo encontrado</td></tr>';
+        visitorsLoaded = true;
+        return;
+      }
+
+      const providerIcons: Record<string, string> = { google: '🔵', linkedin_oidc: '🔷', azure: '🟦', email: '📧' };
+      body.innerHTML = ghosts.map((g: any) => {
+        const createdAt = g.created_at ? new Date(g.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';
+        const lastLogin = g.last_sign_in_at ? new Date(g.last_sign_in_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';
+        const provIcon = providerIcons[g.provider] || '🔑';
+        const match = g.possible_member_name
+          ? `<span class="text-amber-600 font-semibold" title="Membro existente com mesmo email">⚠️ ${esc(g.possible_member_name)}</span>`
+          : '<span class="text-[var(--text-muted)]">—</span>';
+        const action = g.possible_member_name
+          ? `<span class="text-[.65rem] text-amber-600">Vincular auth</span>`
+          : `<span class="text-[.65rem] text-teal">Candidato</span>`;
+
+        return `<tr class="border-b border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">
+          <td class="px-4 py-2.5 font-medium">${esc(g.email)}</td>
+          <td class="px-3 py-2.5 text-center">${provIcon} ${esc(g.provider || '?')}</td>
+          <td class="px-3 py-2.5 text-center">${createdAt}</td>
+          <td class="px-3 py-2.5 text-center">${lastLogin}</td>
+          <td class="px-3 py-2.5 text-center">${match}</td>
+          <td class="px-3 py-2.5 text-center">${action}</td>
+        </tr>`;
+      }).join('');
+    } catch (e: any) {
+      console.error('loadVisitors failed', e);
+      const body = document.getElementById('visitors-body');
+      if (body) body.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-red-500">Erro: ${esc(e?.message || 'unknown')}</td></tr>`;
+    }
+    visitorsLoaded = true;
+  }
+
   function switchTab(tab: string) {
-    document.getElementById('panel-members')?.classList.toggle('hidden', tab !== 'members');
-    document.getElementById('panel-analytics')?.classList.toggle('hidden', tab !== 'analytics');
-    document.getElementById('tab-members')?.classList.toggle('border-navy', tab === 'members');
-    document.getElementById('tab-members')?.classList.toggle('text-navy', tab === 'members');
-    document.getElementById('tab-members')?.classList.toggle('border-transparent', tab !== 'members');
-    document.getElementById('tab-members')?.classList.toggle('text-[var(--text-muted)]', tab !== 'members');
-    document.getElementById('tab-analytics')?.classList.toggle('border-navy', tab === 'analytics');
-    document.getElementById('tab-analytics')?.classList.toggle('text-navy', tab === 'analytics');
-    document.getElementById('tab-analytics')?.classList.toggle('border-transparent', tab !== 'analytics');
-    document.getElementById('tab-analytics')?.classList.toggle('text-[var(--text-muted)]', tab !== 'analytics');
+    const tabs = ['members', 'visitors', 'analytics'];
+    for (const t of tabs) {
+      document.getElementById(`panel-${t}`)?.classList.toggle('hidden', tab !== t);
+      const btn = document.getElementById(`tab-${t}`);
+      if (btn) {
+        btn.classList.toggle('border-navy', tab === t);
+        btn.classList.toggle('text-navy', tab === t);
+        btn.classList.toggle('border-transparent', tab !== t);
+        btn.classList.toggle('text-[var(--text-muted)]', tab !== t);
+      }
+    }
     if (tab === 'analytics' && !analyticsLoaded) loadAnalytics();
+    if (tab === 'visitors' && !visitorsLoaded) loadVisitors();
   }
 
   function bindFilters() {
