@@ -1,5 +1,5 @@
 # BACKLOG — AI & PM Research Hub
-## Updated: 02 April 2026 (Sprint 12 — 4 Ondas: 11 CRs addressed, volunteer term, diversity dashboard, board members UI)
+## Updated: 05 April 2026 (Post-upgrade: all deps latest, Zod 4, SDK 1.29.0)
 
 ---
 
@@ -7,13 +7,7 @@
 
 | # | Item | Est. | Status | Notes |
 |---|------|------|--------|-------|
-| 1 | Attendance cross-tribe | 1-2h | Monitoring | Retry pattern deployed (30×300ms). Intermittent — cannot reproduce reliably. Monitor. |
-| 33 | TMO ghost events | — | ✅ Done (02/Abr) | 10 recurrence events for inactive TMO tribe deleted. Notifications sent to 7 leaders for 59 pending. |
-| 2 | 2 attendance corrections | — | ✅ Done | Guilherme + Gustavo confirmed present in DB |
-| 3 | Migration repair 26/Mar | 5 min | ✅ Done (29/Mar) | All migrations synced |
-| 4 | i18n server-side locale | — | ✅ Verified (29/Mar) | EN/ES resolve correctly server-side. Not a bug. |
-| 5 | MCP connector Claude.ai | — | ✅ Done (31/Mar) | SDK 1.28.0 + Zod + native transport. 56 tools visible on Claude.ai. |
-| 28 | Campaign tracking test | 1h | ✅ Done (02/Abr) | Bug: process_email_webhook didn't sync aggregate counters to campaign_sends. Fixed + backfilled (50/50 delivered). |
+| 1 | Attendance cross-tribe | 1-2h | Monitoring | Retry pattern deployed (30×300ms). Intermittent — cannot reproduce reliably. |
 | 29 | Claude Code MCP OAuth on Linux | — | Open | OAuth flow doesn't open browser. Headers workaround ignored by Claude Code. Tested via curl successfully. |
 
 ---
@@ -22,14 +16,7 @@
 
 | # | Item | Est. | Status | Notes |
 |---|------|------|--------|-------|
-| 6 | S3.3 Custom PostHog events | — | ✅ Done (29/Mar) | 7 events deployed. posthog.identify() in Nav. |
-| 7 | S3.2 Designation filter | — | ✅ Done (29/Mar) | /admin/members + /attendance ranking. |
-| 8 | GC-097 P2 smoke test | — | ✅ Done (29/Mar) | 11 checks, all pass. `npm run smoke` available. |
-| 9 | pg_cron verification | — | ✅ Done (29/Mar) | 7 jobs active |
 | 10 | URL migration notice | Note | FYI | Débora + Marcos using legacy .pages.dev (redirect works) |
-| 30 | P1.3 Write Tools tested | — | ✅ Done (31/Mar) | 4/4 pass via curl: create_tribe_event, create_meeting_notes, register_attendance, send_notification_to_tribe |
-| 31 | P2 tool count update | — | ✅ Done (31/Mar) | 42/47/50 → 52 across rules, SKILL.md, EF, adoption.astro |
-| 32 | MCP error_rate post auto-refresh | — | ✅ Done (31/Mar) | Anomaly report: 0 pending, 0 errors |
 
 ---
 
