@@ -1,5 +1,5 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.8.0 — 52 tools (45R + 7W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.9.0 — 54 tools (46R + 8W) + 1 prompt + 1 resource + usage logging
 // Transport: SDK 1.28.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
@@ -184,6 +184,7 @@ Rotas como \`get_my_tribe_members\` retornarão "No tribe assigned" — isso é 
 - \`get_comms_dashboard\` — Dashboard de comunicação
 - \`get_comms_metrics_by_channel\` — Métricas por canal social
 - \`get_admin_dashboard\` — Dashboard admin: membros, tribos, atividade
+- \`get_ghost_visitors\` — Visitantes fantasma: usuários autenticados sem vínculo com membro
 - \`get_board_activities\` — Atividades recentes dos boards (lifecycle events)
 - \`search_members\` — Buscar membros por nome, tribo, tier ou status
 - \`list_boards\` — Lista todos os boards ativos com IDs
@@ -235,15 +236,15 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
     "nucleo://tools/reference",
     {
       title: "Referência completa de ferramentas",
-      description: "Lista todas as 52 ferramentas do Núcleo MCP com parâmetros e permissões.",
+      description: "Lista todas as 54 ferramentas do Núcleo MCP com parâmetros e permissões.",
       mimeType: "text/markdown",
     },
     async () => ({
       contents: [{
         uri: "nucleo://tools/reference",
-        text: `# Núcleo IA MCP — Referência de Ferramentas (v2.8.0)
+        text: `# Núcleo IA MCP — Referência de Ferramentas (v2.9.0)
 
-## 52 ferramentas: 45 leitura + 7 escrita
+## 54 ferramentas: 46 leitura + 8 escrita
 
 ### Tier 1 — Todos os membros (17 leitura)
 | # | Ferramenta | Parâmetros | Descrição |
@@ -266,7 +267,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 | 16 | get_attendance_ranking | — | Ranking de presença |
 | 17 | get_chapter_kpis | chapter? | KPIs por capítulo |
 
-### Tier 2 — Líderes (6 escrita)
+### Tier 2 — Líderes (8 escrita)
 | # | Ferramenta | Parâmetros | Descrição |
 |---|-----------|-----------|-----------|
 | 18 | create_board_card | title, description?, priority?, due_date?, tags? | Criar card |
@@ -305,6 +306,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 | 42 | get_near_events | window_hours? | Eventos próximos |
 | 43 | get_current_release | — | Versão atual da plataforma |
 | 44 | get_admin_dashboard | — | Dashboard admin (Admin/GP) |
+| 44b | get_ghost_visitors | — | Visitantes fantasma sem vínculo (Admin/GP) |
 | 45 | get_my_attendance_hours | — | Horas de presença no ciclo |
 | 46 | get_my_credly_status | — | Badges Credly e CPMAI |
 | 47 | get_board_activities | board_id?, limit? | Atividades recentes dos boards |
@@ -313,7 +315,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 | 50 | manage_partner | action, id?, name?, status?, notes? | Criar/atualizar parceria (Admin) |
 
 ## Notas
-- Rotas de escrita (7 tools) requerem: manager, deputy_manager, tribe_leader ou superadmin
+- Rotas de escrita (8 tools) requerem: manager, deputy_manager, tribe_leader ou superadmin
 - manage_partner: também acessível por sponsors e chapter_liaisons
 - Rotas Tier 3 requerem: manager, deputy_manager ou superadmin
 - get_annual_kpis e get_portfolio_health também acessíveis por sponsors
@@ -326,7 +328,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
   );
 }
 
-// --- Register 45 tools (39R + 6W) ---
+// --- Register 54 tools (46R + 8W) ---
 
 function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
 
@@ -487,6 +489,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "update_card_status", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!canWrite(member)) { await logUsage(sb, member.id, "update_card_status", false, "Unauthorized", start); return err("Unauthorized"); }
     const { error } = await sb.rpc("move_board_item", { p_item_id: params.card_id, p_new_status: params.status });
     if (error) { await logUsage(sb, member.id, "update_card_status", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "update_card_status", true, undefined, start);
@@ -557,11 +560,11 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   // ===== GC-161 TOOLS (16-19) =====
 
   // TOOL 16: get_my_attendance_history
-  mcp.tool("get_my_attendance_history", "Returns your personal attendance history — which meetings you attended or missed.", { limit: z.number().optional().describe("Number of recent events. Default: 20") }, async (params: { limit?: number }) => {
+  mcp.tool("get_my_attendance_history", "Returns your personal attendance history — which meetings you attended or missed.", { limit: z.number().optional().describe("Number of recent events. Default: 30") }, async (params: { limit?: number }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_my_attendance_history", false, "Not authenticated", start); return err("Not authenticated"); }
-    const { data, error } = await sb.rpc("get_my_attendance_history", { p_limit: params.limit || 20 });
+    const { data, error } = await sb.rpc("get_my_attendance_history", { p_limit: params.limit || 30 });
     if (error) { await logUsage(sb, member.id, "get_my_attendance_history", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_my_attendance_history", true, undefined, start);
     const attended = (data || []).filter((r: any) => r.present).length;
@@ -1028,6 +1031,8 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "manage_partner", false, "Not authenticated", start); return err("Not authenticated"); }
+    const canManagePartner = canWrite(member) || (member.designations || []).includes("sponsor") || (member.designations || []).includes("chapter_liaison");
+    if (!canManagePartner) { await logUsage(sb, member.id, "manage_partner", false, "Unauthorized", start); return err("Unauthorized — requires admin, sponsor, or chapter liaison role."); }
     const { data, error } = await sb.rpc("admin_manage_partner_entity", {
       p_action: params.action,
       p_id: params.id || null,
@@ -1043,6 +1048,19 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (data?.error) { await logUsage(sb, member.id, "manage_partner", false, data.error, start); return err(data.error); }
     await logUsage(sb, member.id, "manage_partner", true, undefined, start);
     return ok(data);
+  });
+
+  // TOOL 53: get_ghost_visitors — Admin only: audit ghost logins (authenticated users without member record)
+  mcp.tool("get_ghost_visitors", "Returns ghost visitors: authenticated users with no linked member record. Includes fuzzy member name match. Admin/GP only.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_ghost_visitors", false, "Not authenticated", start); return err("Not authenticated"); }
+    const isAdmin = member.is_superadmin || ["manager", "deputy_manager"].includes(member.operational_role);
+    if (!isAdmin) { await logUsage(sb, member.id, "get_ghost_visitors", false, "Unauthorized", start); return err("Unauthorized — admin only."); }
+    const { data, error } = await sb.rpc("get_ghost_visitors");
+    if (error) { await logUsage(sb, member.id, "get_ghost_visitors", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_ghost_visitors", true, undefined, start);
+    return ok({ ghost_count: (data || []).length, ghosts: data });
   });
 }
 

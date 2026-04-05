@@ -210,8 +210,8 @@ export default function ReportPage() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
             <StatCard label={t('comp.report.totalAttendance', 'Presença Total')} value={overview.total_attendance} />
-            <StatCard label="Horas de Impacto" value={`${overview.total_impact_hours}h`} accent="text-teal-600" />
-            <StatCard label="Boards Ativos" value={overview.boards_active} />
+            <StatCard label={t('comp.report.impactHours', 'Horas de Impacto')} value={`${overview.total_impact_hours}h`} accent="text-teal-600" />
+            <StatCard label={t('comp.report.activeBoards', 'Boards Ativos')} value={overview.boards_active} />
           </div>
         </section>
       )}
@@ -333,7 +333,7 @@ export default function ReportPage() {
       {/* ── EVENTS ── */}
       {sec.events && (
         <section className="report-section">
-          <h2 className="text-lg font-extrabold text-navy mb-3 border-b border-[var(--border-default)] pb-1">Eventos & Presença</h2>
+          <h2 className="text-lg font-extrabold text-navy mb-3 border-b border-[var(--border-default)] pb-1">{t('comp.report.eventsAttendance', 'Eventos & Presença')}</h2>
           <EventsChart data={events_timeline || []} />
         </section>
       )}

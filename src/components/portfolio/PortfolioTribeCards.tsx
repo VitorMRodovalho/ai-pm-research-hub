@@ -1,4 +1,5 @@
 import type { TribeSummary } from '../../hooks/usePortfolio';
+import { usePageI18n } from '../../i18n/usePageI18n';
 
 interface Props {
   tribes: TribeSummary[];
@@ -19,6 +20,7 @@ const HEALTH_DOT: Record<string, string> = {
 };
 
 export default function PortfolioTribeCards({ tribes }: Props) {
+  const t = usePageI18n();
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
       {tribes.map(tribe => {
@@ -102,7 +104,7 @@ export default function PortfolioTribeCards({ tribes }: Props) {
       })}
 
       {tribes.length === 0 && (
-        <div className="col-span-full text-center py-8 text-[var(--text-muted)] text-sm">Nenhuma tribo encontrada.</div>
+        <div className="col-span-full text-center py-8 text-[var(--text-muted)] text-sm">{t('comp.portfolio.noTribes', 'Nenhuma tribo encontrada.')}</div>
       )}
     </div>
   );

@@ -18,7 +18,7 @@ description: >
 - **Auth:** Supabase Auth (Google + LinkedIn + Microsoft (Azure) + Magic Link)
 - **Hosting:** Cloudflare Workers
 - **Live URL:** https://nucleoia.vitormr.dev
-- **MCP Server:** 53 tools (45 read + 8 write) + 1 dynamic prompt + 1 static resource at `/mcp` — proxied to Supabase EF `nucleo-mcp`, server-side auto-refresh (30-day KV TTL)
+- **MCP Server:** 54 tools (46 read + 8 write) + 1 dynamic prompt + 1 static resource at `/mcp` — proxied to Supabase EF `nucleo-mcp`, server-side auto-refresh (30-day KV TTL)
 - **OAuth 2.1 Server:** Custom implementation in Workers (DCR + PKCE + KV code storage)
 - **i18n:** 3 locales: PT-BR (default, no prefix), EN-US (`/en/`), ES-LATAM (`/es/`)
 - **Charts:** Chart.js (NOT recharts)
@@ -303,7 +303,7 @@ const isTier3Plus = ['manager','deputy_manager','tribe_leader','sponsor','chapte
 
 ## CRITICAL RULE 11: MCP Server + OAuth 2.1
 
-**MCP Server:** Supabase Edge Function `nucleo-mcp` (53 tools + 1 prompt + 1 resource), proxied via Workers at `/mcp`.
+**MCP Server:** Supabase Edge Function `nucleo-mcp` (54 tools + 1 prompt + 1 resource), proxied via Workers at `/mcp`.
 - Source: `supabase/functions/nucleo-mcp/index.ts`
 - Deploy: `supabase functions deploy nucleo-mcp --no-verify-jwt`
 - Health: `curl https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-mcp/health`

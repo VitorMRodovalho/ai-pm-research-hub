@@ -25,7 +25,7 @@
 ### Bug Fixes
 - P0 #28: process_email_webhook didn't sync aggregate counters to campaign_sends (50/50 backfilled)
 - TMO ghost events: 10 recurrence events for inactive tribe deleted
-- Smoke test label corrected 23→52 tools
+- Smoke test label corrected 23→54 tools
 
 ### i18n Audit (Phases 1-3f)
 - 222 new keys added across 3 dictionaries (pt-BR, en-US, es-LATAM): 3463→3685
@@ -40,7 +40,7 @@
 - 5 sponsors notified about 11 pending CR votes
 - Demo script updated for Mario Trentim meeting (03/Apr)
 - 4 migrations synced (repair --status applied)
-- MCP EF redeployed: v2.9.0, 52 tools, SDK 1.28.0
+- MCP EF redeployed: v2.9.0, 54 tools, SDK 1.28.0
 
 ---
 

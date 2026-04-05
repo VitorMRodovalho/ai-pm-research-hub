@@ -190,7 +190,7 @@ export default function AttendanceForm() {
       >
         <div className="flex items-center gap-2">
           <Users size={18} className="text-[var(--color-teal)]" />
-          <span className="text-sm font-bold text-[var(--text-primary)]">Registrar Presença</span>
+          <span className="text-sm font-bold text-[var(--text-primary)]">{t('comp.attendance.registerTitle', 'Registrar Presença')}</span>
         </div>
         <span className="text-xs text-[var(--text-secondary)]">{collapsed ? '▼' : '▲'}</span>
       </button>
@@ -308,7 +308,7 @@ export default function AttendanceForm() {
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold rounded-xl bg-[var(--color-teal)] text-white border-0 cursor-pointer hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <CheckCircle2 size={16} />
-                  {submitting ? 'Registrando...' : `Registrar Presença (${checked.size})`}
+                  {submitting ? t('comp.attendance.registering', 'Registrando...') : `${t('comp.attendance.registerTitle', 'Registrar Presença')} (${checked.size})`}
                 </button>
               </div>
             </>

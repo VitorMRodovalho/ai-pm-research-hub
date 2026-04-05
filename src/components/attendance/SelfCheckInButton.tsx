@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePageI18n } from '../../i18n/usePageI18n';
 
 interface SelfCheckInButtonProps {
   eventId: string;
@@ -7,6 +8,7 @@ interface SelfCheckInButtonProps {
 }
 
 export function SelfCheckInButton({ eventId, eventTitle, onCheckIn }: SelfCheckInButtonProps) {
+  const t = usePageI18n();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMsg, setErrorMsg] = useState('');
@@ -20,12 +22,12 @@ export function SelfCheckInButton({ eventId, eventTitle, onCheckIn }: SelfCheckI
       setResult('success');
     } else {
       setResult('error');
-      setErrorMsg(res.message || 'Erro ao registrar presença');
+      setErrorMsg(res.message || t('comp.attendance.errorRegister', 'Erro ao registrar presença'));
     }
   };
 
   if (result === 'success') {
-    return <span className="text-green-500 text-sm font-semibold">✅ Presença registrada</span>;
+    return <span className="text-green-500 text-sm font-semibold">{t('comp.attendance.selfCheckedIn', '✅ Presença registrada')}</span>;
   }
 
   return (

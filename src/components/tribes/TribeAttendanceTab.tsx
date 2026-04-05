@@ -144,7 +144,7 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
       await sb.rpc('mark_member_present', { p_event_id: eventId, p_member_id: memberId, p_present: newPresent });
       await refreshGrid();
       // Show toast with undo
-      const msg = `${memberName}: ${newPresent ? '✅ Presente' : '❌ Ausente'}`;
+      const msg = `${memberName}: ${newPresent ? t('attendance.grid.toastPresent', '✅ Presente') : t('attendance.grid.toastAbsent', '❌ Ausente')}`;
       setUndoToast({
         msg,
         undo: async () => {
@@ -168,7 +168,7 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
     try {
       const { data: res } = await sb.rpc('register_own_presence', { p_event_id: eventId });
       if (res?.success) {
-        (window as any).toast?.('✅ Presença registrada!', 'success');
+        (window as any).toast?.(t('comp.attendance.selfCheckedIn', '✅ Presença registrada!'), 'success');
         await refreshGrid();
       } else {
         (window as any).toast?.(res?.message || res?.error || 'Erro', 'error');
