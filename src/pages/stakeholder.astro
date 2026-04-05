@@ -17,6 +17,24 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     <p class="text-sm text-[var(--text-muted)]">{t('common.loading', lang) || 'Loading...'}</p>
   </div>
   <div id="stakeholder-app" class="hidden max-w-[1100px] mx-auto px-4 py-8">
+    <!-- Welcome banner for chapter_board first visit -->
+    <div id="chapter-board-welcome" class="hidden mb-6 rounded-2xl border border-[var(--color-teal)]/30 bg-[var(--color-teal)]/5 p-5">
+      <div class="flex items-start gap-3">
+        <span class="text-2xl">🏛️</span>
+        <div class="flex-1">
+          <h2 class="text-base font-bold text-[var(--text-primary)] mb-1">{t('stakeholder.welcome.title', lang) || 'Bem-vindo à plataforma do Núcleo IA & GP'}</h2>
+          <p class="text-sm text-[var(--text-secondary)] mb-2">{t('stakeholder.welcome.desc', lang) || 'Como membro da diretoria do capítulo, você tem acesso a dados de impacto e acompanhamento do projeto. Este dashboard mostra KPIs, membros e produção do seu capítulo.'}</p>
+          <ul class="text-xs text-[var(--text-muted)] space-y-1 mb-3">
+            <li>📊 {t('stakeholder.welcome.kpis', lang) || 'KPIs agregados do seu capítulo'}</li>
+            <li>👥 {t('stakeholder.welcome.members', lang) || 'Membros ativos e contribuições'}</li>
+            <li>🤖 {t('stakeholder.welcome.mcp', lang) || 'Integração com IA — pergunte ao Claude ou ChatGPT sobre seu capítulo'}</li>
+            <li>📋 {t('stakeholder.welcome.needs', lang) || 'Reporte necessidades do capítulo via MCP: submit_chapter_need'}</li>
+          </ul>
+          <a href="/privacy" class="text-xs text-[var(--color-teal)] hover:underline">{t('stakeholder.welcome.privacy', lang) || 'Política de Privacidade'}</a>
+        </div>
+        <button id="dismiss-welcome" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-lg cursor-pointer bg-transparent border-0 p-1" title="Fechar">✕</button>
+      </div>
+    </div>
     <ChapterDashboard client:load lang={lang} stakeholderMode={true} />
   </div>
 </BaseLayout>
@@ -42,10 +60,23 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         return;
       }
       document.getElementById('stakeholder-app')?.classList.remove('hidden');
+
+      // Show welcome banner for chapter_board on first visit
+      const isBoard = (m.designations || []).includes('chapter_board');
+      const dismissed = localStorage.getItem('chapter_board_welcome_dismissed');
+      if (isBoard && !dismissed) {
+        document.getElementById('chapter-board-welcome')?.classList.remove('hidden');
+      }
     };
 
     window.addEventListener('nav:member', ((e: CustomEvent) => { if (e.detail) check(); }) as EventListener);
     check();
   }
   boot();
+
+  // Dismiss welcome banner
+  document.getElementById('dismiss-welcome')?.addEventListener('click', () => {
+    document.getElementById('chapter-board-welcome')?.classList.add('hidden');
+    localStorage.setItem('chapter_board_welcome_dismissed', '1');
+  });
 </script>
