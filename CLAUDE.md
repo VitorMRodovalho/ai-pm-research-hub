@@ -45,7 +45,7 @@ supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 ## Key Architecture Decisions (do NOT re-litigate)
 1. `checkOrigin: false` + manual CSRF in middleware (Astro's check blocks OAuth/MCP POSTs)
 2. Custom domain `nucleoia.vitormr.dev` (`.workers.dev` has Bot Fight Mode blocking datacenter IPs)
-3. `@modelcontextprotocol/sdk@1.28.0` + WebStandardStreamableHTTPServerTransport + Zod schemas for MCP
+3. `@modelcontextprotocol/sdk@1.29.0` + WebStandardStreamableHTTPServerTransport + Zod 4 schemas for MCP
 4. Webinars table is source of truth (not events filtered by type)
 5. Board items read-all for Tier 1+ members (curators need cross-board access)
 6. LGPD: anon/ghost gets nothing from PII tables; public data via SECURITY DEFINER RPCs only
