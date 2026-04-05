@@ -1138,7 +1138,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                     <button onClick={() => setConfirmDelete(true)}
                       className="w-full px-3 py-1.5 rounded-lg bg-red-50 text-red-600 text-[11px] font-semibold
                         border border-red-200 hover:bg-red-100 cursor-pointer text-left">
-                      🗑️ Excluir
+                      🗑️ {i18n.delete || 'Excluir'}
                     </button>
                   ) : (
                     <div className="flex gap-1">

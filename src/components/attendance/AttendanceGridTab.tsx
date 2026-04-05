@@ -139,13 +139,15 @@ const TYPE_ABBR: Record<string, string> = {
   entrevista: '📌 I',
 };
 
-const TYPE_FULL: Record<string, string> = {
-  G: 'Geral',
-  T: 'Tribo',
-  L: 'Liderança',
-  K: 'Kickoff',
-  C: 'Comms',
-};
+function getTypeFull(t: (k: string, fb?: string) => string): Record<string, string> {
+  return {
+    G: t('attendance.grid.legendGeral', 'Geral'),
+    T: t('attendance.grid.legendTribo', 'Tribo'),
+    L: t('attendance.grid.legendLideranca', 'Liderança'),
+    K: t('attendance.grid.legendKickoff', 'Kickoff'),
+    C: t('attendance.grid.legendComms', 'Comms'),
+  };
+}
 
 function getLocale(): string {
   const lang = document.documentElement.lang || 'pt-BR';
@@ -305,7 +307,7 @@ export default function AttendanceGridTab() {
         }
         return updated;
       });
-      (window as any).toast?.(newPresent ? '✅ Presente' : '❌ Ausente', 'success');
+      (window as any).toast?.(newPresent ? t('attendance.grid.toastPresent', '✅ Presente') : t('attendance.grid.toastAbsent', '❌ Ausente'), 'success');
     } catch (e: any) {
       console.error('Toggle failed:', e);
       (window as any).toast?.('Erro ao registrar presença', 'error');
@@ -544,11 +546,12 @@ export default function AttendanceGridTab() {
     ];
 
     /* FIX 1+3+4: event columns grouped by week > date > type abbreviation */
+    const typeFull = getTypeFull(t);
     for (const { dateGroups } of weekGroups) {
       for (const [, dateEvts] of dateGroups) {
         for (const ev of dateEvts) {
           const abbr = TYPE_ABBR[ev.type] || ev.type.charAt(0).toUpperCase();
-          const fullTypeName = TYPE_FULL[abbr] || ev.type;
+          const fullTypeName = typeFull[abbr] || ev.type;
           cols.push({
             id: `ev_${ev.id}`,
             header: () => (
@@ -880,15 +883,15 @@ export default function AttendanceGridTab() {
         <span className="font-semibold text-[var(--text-primary)]">
           {t('attendance.grid.legend', 'Legenda')}:
         </span>
-        <span>🌐 <strong>G</strong> = Geral</span>
+        <span>🌐 <strong>G</strong> = {t('attendance.grid.legendGeral', 'Geral')}</span>
         <span className="text-[var(--border-default)]">|</span>
-        <span>🔬 <strong>T</strong> = Tribo</span>
+        <span>🔬 <strong>T</strong> = {t('attendance.grid.legendTribo', 'Tribo')}</span>
         <span className="text-[var(--border-default)]">|</span>
-        <span>🚀 <strong>K</strong> = Kickoff</span>
+        <span>🚀 <strong>K</strong> = {t('attendance.grid.legendKickoff', 'Kickoff')}</span>
         <span className="text-[var(--border-default)]">|</span>
-        <span>👥 <strong>L</strong> = Liderança</span>
+        <span>👥 <strong>L</strong> = {t('attendance.grid.legendLideranca', 'Liderança')}</span>
         <span className="text-[var(--border-default)]">|</span>
-        <span>📢 <strong>C</strong> = Comms</span>
+        <span>📢 <strong>C</strong> = {t('attendance.grid.legendComms', 'Comms')}</span>
       </div>
 
       {/* Grid / Mobile */}
@@ -1266,7 +1269,7 @@ function SmartTribeSection({
                 </th>
                 {relevantEvents.map((ev) => {
                   const abbr = TYPE_ABBR[ev.type] || ev.type.charAt(0).toUpperCase();
-                  const fullTypeName = TYPE_FULL[abbr] || ev.type;
+                  const fullTypeName = getTypeFull(t)[abbr] || ev.type;
                   return (
                     <th
                       key={ev.id}

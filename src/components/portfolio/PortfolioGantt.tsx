@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef } from 'react';
 import type { Artifact } from '../../hooks/usePortfolio';
+import { usePageI18n } from '../../i18n/usePageI18n';
 
 interface Props {
   artifacts: Artifact[];
@@ -44,6 +45,7 @@ function addMonths(d: Date, n: number) {
 }
 
 export default function PortfolioGantt({ artifacts }: Props) {
+  const t = usePageI18n();
   const [zoom, setZoom] = useState<Zoom>('month');
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
   const [tooltip, setTooltip] = useState<{ x: number; y: number; a: Artifact } | null>(null);
@@ -419,7 +421,7 @@ export default function PortfolioGantt({ artifacts }: Props) {
       </div>
 
       {artifacts.length === 0 && (
-        <div className="text-center py-8 text-[var(--text-muted)] text-sm">Nenhum artefato com baseline para exibir no Gantt.</div>
+        <div className="text-center py-8 text-[var(--text-muted)] text-sm">{t('comp.portfolio.noGanttItems', 'Nenhum artefato com baseline para exibir no Gantt.')}</div>
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import type { Artifact } from '../../hooks/usePortfolio';
+import { usePageI18n } from '../../i18n/usePageI18n';
 
 interface Props {
   artifacts: Artifact[];
@@ -31,6 +32,7 @@ function fmtDate(d: string | null) {
 }
 
 export default function PortfolioTable({ artifacts }: Props) {
+  const t = usePageI18n();
   const [sortKey, setSortKey] = useState<SortKey>('tribe_id');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
 
@@ -121,7 +123,7 @@ export default function PortfolioTable({ artifacts }: Props) {
         </tbody>
       </table>
       {sorted.length === 0 && (
-        <div className="text-center py-8 text-[var(--text-muted)] text-sm">Nenhum artefato encontrado com os filtros aplicados.</div>
+        <div className="text-center py-8 text-[var(--text-muted)] text-sm">{t('comp.portfolio.noArtifacts', 'Nenhum artefato encontrado com os filtros aplicados.')}</div>
       )}
     </div>
   );
