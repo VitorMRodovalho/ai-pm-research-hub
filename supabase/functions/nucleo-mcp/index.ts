@@ -1,5 +1,5 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.9.0 — 54 tools (46R + 8W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.9.0 — 56 tools (47R + 9W) + 1 prompt + 1 resource + usage logging
 // Transport: SDK 1.28.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
@@ -183,7 +183,10 @@ Você é membro da diretoria do ${member.chapter || "capítulo"}. Seu acesso é 
 - \`get_governance_docs\` — Documentos de governança
 - \`get_manual_section\` — Seções do Manual de Governança
 
-**Nota:** Como membro de diretoria, você não tem acesso a dados individuais de presença (detractors/at-risk), ferramentas de escrita, ou gestão de membros. Para necessidades específicas, entre em contato com o sponsor do seu capítulo.`);
+- \`get_chapter_needs\` — Ver necessidades reportadas pelo seu capítulo
+- \`submit_chapter_need\` — Reportar uma necessidade ou solicitação para o projeto
+
+**Nota:** Como membro de diretoria, você não tem acesso a dados individuais de presença (detractors/at-risk) ou gestão de membros. Use \`submit_chapter_need\` para reportar necessidades ao projeto.`);
       }
 
       if (isAdmin) {
@@ -257,7 +260,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
     "nucleo://tools/reference",
     {
       title: "Referência completa de ferramentas",
-      description: "Lista todas as 54 ferramentas do Núcleo MCP com parâmetros e permissões.",
+      description: "Lista todas as 56 ferramentas do Núcleo MCP com parâmetros e permissões.",
       mimeType: "text/markdown",
     },
     async () => ({
@@ -265,7 +268,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
         uri: "nucleo://tools/reference",
         text: `# Núcleo IA MCP — Referência de Ferramentas (v2.9.0)
 
-## 54 ferramentas: 46 leitura + 8 escrita
+## 56 ferramentas: 46 leitura + 8 escrita
 
 ### Tier 1 — Todos os membros (17 leitura)
 | # | Ferramenta | Parâmetros | Descrição |
@@ -334,10 +337,13 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 | 48 | search_members | query?, tribe_id?, tier?, status? | Buscar membros (Admin/GP) |
 | 49 | list_boards | — | Lista boards ativos com IDs |
 | 50 | manage_partner | action, id?, name?, status?, notes? | Criar/atualizar parceria (Admin) |
+| 51 | get_chapter_needs | chapter? | Necessidades reportadas pelo capítulo |
+| 52 | submit_chapter_need | category, title, description? | Reportar necessidade (chapter_board/sponsor/liaison) |
 
 ## Notas
-- Rotas de escrita (8 tools) requerem: manager, deputy_manager, tribe_leader ou superadmin
+- Rotas de escrita (9 tools) requerem: manager, deputy_manager, tribe_leader ou superadmin
 - manage_partner: também acessível por sponsors e chapter_liaisons
+- submit_chapter_need: acessível por chapter_board, sponsors e chapter_liaisons
 - Rotas Tier 3 requerem: manager, deputy_manager ou superadmin
 - get_annual_kpis e get_portfolio_health também acessíveis por sponsors
 - get_partner_pipeline acessível por sponsors e chapter_liaisons
@@ -349,7 +355,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
   );
 }
 
-// --- Register 54 tools (46R + 8W) ---
+// --- Register 56 tools (47R + 9W) ---
 
 function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
 
@@ -1084,6 +1090,35 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (error) { await logUsage(sb, member.id, "get_ghost_visitors", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_ghost_visitors", true, undefined, start);
     return ok({ ghost_count: (data || []).length, ghosts: data });
+  });
+
+  // TOOL 54: get_chapter_needs — Chapter board, sponsors, liaisons, admin
+  mcp.tool("get_chapter_needs", "Returns chapter needs/requests submitted by chapter board members. Shows needs for your chapter (or all for admin).", { chapter: z.string().optional().describe("Chapter code: GO|CE|DF|MG|RS. If omitted, uses your chapter.") }, async (params: { chapter?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_chapter_needs", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_chapter_needs", { p_chapter: params.chapter ? `PMI-${params.chapter.toUpperCase()}` : null });
+    if (error) { await logUsage(sb, member.id, "get_chapter_needs", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_chapter_needs", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 55: submit_chapter_need — Chapter board, sponsors, liaisons (write)
+  mcp.tool("submit_chapter_need", "Submit a need or request for your chapter. Board members, sponsors, and liaisons only.", {
+    category: z.enum(["research", "tools", "events", "training", "communication", "other"]).describe("Category: research|tools|events|training|communication|other"),
+    title: z.string().describe("Short title of the need"),
+    description: z.string().optional().describe("Detailed description"),
+  }, async (params: { category: string; title: string; description?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "submit_chapter_need", false, "Not authenticated", start); return err("Not authenticated"); }
+    const canSubmit = (member.designations || []).some((d: string) => ["chapter_board", "sponsor", "chapter_liaison"].includes(d));
+    if (!canSubmit && !member.is_superadmin) { await logUsage(sb, member.id, "submit_chapter_need", false, "Unauthorized", start); return err("Requires chapter_board, sponsor, or chapter_liaison designation."); }
+    const { data, error } = await sb.rpc("submit_chapter_need", { p_category: params.category, p_title: params.title, p_description: params.description || null });
+    if (error) { await logUsage(sb, member.id, "submit_chapter_need", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "submit_chapter_need", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "submit_chapter_need", true, undefined, start);
+    return ok(data);
   });
 }
 
