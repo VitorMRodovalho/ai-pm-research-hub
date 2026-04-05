@@ -1,13 +1,13 @@
 // supabase/functions/nucleo-mcp/index.ts
 // MCP server v2.9.0 — 56 tools (47R + 9W) + 1 prompt + 1 resource + usage logging
-// Transport: SDK 1.28.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
+// Transport: SDK 1.29.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
-import { Hono } from "jsr:@hono/hono";
-import { McpServer } from "npm:@modelcontextprotocol/sdk@1.28.0/server/mcp.js";
-import { WebStandardStreamableHTTPServerTransport } from "npm:@modelcontextprotocol/sdk@1.28.0/server/webStandardStreamableHttp.js";
+import { Hono } from "jsr:@hono/hono@4.12.9";
+import { McpServer } from "npm:@modelcontextprotocol/sdk@1.29.0/server/mcp.js";
+import { WebStandardStreamableHTTPServerTransport } from "npm:@modelcontextprotocol/sdk@1.29.0/server/webStandardStreamableHttp.js";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { z } from "npm:zod@^3.25";
+import { z } from "npm:zod@^4.0";
 
 const app = new Hono().basePath("/nucleo-mcp");
 
@@ -1123,7 +1123,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
-// SDK 1.28.0 handles all protocol details: initialize, session, tools/list, tool/call, SSE
+// SDK 1.29.0 handles all protocol details: initialize, session, tools/list, tool/call, SSE
 app.all("/mcp", async (c) => {
   try {
     const authHeader = c.req.header("Authorization");
@@ -1150,6 +1150,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.9.0", tools: 52, transport: "native-streamable-http", sdk: "1.28.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.9.0", tools: 56, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
