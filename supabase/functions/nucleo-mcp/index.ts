@@ -42,6 +42,11 @@ function canWrite(member: { operational_role: string; is_superadmin?: boolean })
   return member.is_superadmin || WRITE_ROLES.includes(member.operational_role);
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUUID(v: string | undefined): boolean { return !!v && UUID_RE.test(v); }
+
+const NO_TRIBE_HINT = "No tribe assigned. Pass tribe_id parameter (1-8) to specify which tribe. Use list_boards or get_portfolio_overview for board IDs.";
+
 async function logUsage(sb: ReturnType<typeof createClient>, memberId: string | null, toolName: string, success: boolean, errorMsg?: string, startTime?: number) {
   try {
     const execMs = startTime ? Date.now() - startTime : null;
@@ -351,13 +356,14 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_my_board_status", false, "Not authenticated", start); return err("Not authenticated"); }
     let boardId = params.board_id;
+    if (boardId && !isUUID(boardId)) { await logUsage(sb, member.id, "get_my_board_status", false, "Invalid board_id", start); return err("board_id must be a UUID (e.g. '550e8400-e29b-...'). Did you mean tribe_id? Use list_boards to find board UUIDs."); }
     if (!boardId) {
       const tribeId = params.tribe_id || member.tribe_id;
-      if (!tribeId) { await logUsage(sb, member.id, "get_my_board_status", false, "No tribe", start); return err("No tribe assigned. Specify tribe_id (1-8) or board_id."); }
+      if (!tribeId) { await logUsage(sb, member.id, "get_my_board_status", false, "No tribe", start); return err(NO_TRIBE_HINT); }
       const { data: b } = await sb.from("project_boards").select("id").eq("tribe_id", tribeId).limit(1).single();
       boardId = b?.id;
     }
-    if (!boardId) { await logUsage(sb, member.id, "get_my_board_status", false, "No board", start); return err("No board found. Specify board_id or tribe_id."); }
+    if (!boardId) { await logUsage(sb, member.id, "get_my_board_status", false, "No board", start); return err("No board found for this tribe. Use list_boards to see available boards."); }
     const { data: items, error } = await sb.from("board_items").select("id, title, status, tags, due_date").eq("board_id", boardId).neq("status", "archived").order("position", { ascending: true });
     if (error) { await logUsage(sb, member.id, "get_my_board_status", false, error.message, start); return err(error.message); }
     const grouped = { backlog: items.filter((i: any) => i.status === "backlog"), in_progress: items.filter((i: any) => i.status === "in_progress"), review: items.filter((i: any) => i.status === "review"), done: items.filter((i: any) => i.status === "done") };
@@ -371,7 +377,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_my_tribe_attendance", false, "Not authenticated", start); return err("Not authenticated"); }
     const tribeId = params.tribe_id || member.tribe_id;
-    if (!tribeId) { await logUsage(sb, member.id, "get_my_tribe_attendance", false, "No tribe", start); return err("No tribe assigned. Specify tribe_id (1-8)."); }
+    if (!tribeId) { await logUsage(sb, member.id, "get_my_tribe_attendance", false, "No tribe", start); return err(NO_TRIBE_HINT); }
     const { data, error } = await sb.rpc("get_tribe_attendance_grid", { p_tribe_id: tribeId });
     if (error) { await logUsage(sb, member.id, "get_my_tribe_attendance", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_my_tribe_attendance", true, undefined, start);
@@ -384,7 +390,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_my_tribe_members", false, "Not authenticated", start); return err("Not authenticated"); }
     const tribeId = params.tribe_id || member.tribe_id;
-    if (!tribeId) { await logUsage(sb, member.id, "get_my_tribe_members", false, "No tribe", start); return err("No tribe assigned. Specify tribe_id (1-8)."); }
+    if (!tribeId) { await logUsage(sb, member.id, "get_my_tribe_members", false, "No tribe", start); return err(NO_TRIBE_HINT); }
     const { data, error } = await sb.from("public_members").select("name, operational_role, designations, chapter, current_cycle_active").eq("tribe_id", tribeId).eq("current_cycle_active", true).order("name");
     if (error) { await logUsage(sb, member.id, "get_my_tribe_members", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_my_tribe_members", true, undefined, start);
@@ -420,7 +426,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_meeting_notes", false, "Not authenticated", start); return err("Not authenticated"); }
     const tribeId = params.tribe_id || member.tribe_id;
-    if (!tribeId) { await logUsage(sb, member.id, "get_meeting_notes", false, "No tribe", start); return err("No tribe assigned. Specify tribe_id (1-8)."); }
+    if (!tribeId) { await logUsage(sb, member.id, "get_meeting_notes", false, "No tribe", start); return err(NO_TRIBE_HINT); }
     const { data, error } = await sb.rpc("list_meeting_artifacts", { p_tribe_id: tribeId, p_limit: params.limit || 5 });
     if (error) { await logUsage(sb, member.id, "get_meeting_notes", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_meeting_notes", true, undefined, start);
@@ -443,7 +449,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "search_board_cards", false, "Not authenticated", start); return err("Not authenticated"); }
     const tribeId = params.tribe_id || member.tribe_id;
-    if (!tribeId) { await logUsage(sb, member.id, "search_board_cards", false, "No tribe", start); return err("No tribe assigned. Specify tribe_id (1-8)."); }
+    if (!tribeId) { await logUsage(sb, member.id, "search_board_cards", false, "No tribe", start); return err(NO_TRIBE_HINT); }
     const { data, error } = await sb.rpc("search_board_items", { p_query: params.query, p_tribe_id: tribeId });
     if (error) { await logUsage(sb, member.id, "search_board_cards", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "search_board_cards", true, undefined, start);
@@ -470,8 +476,9 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (!member) { await logUsage(sb, null, "create_board_card", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!canWrite(member)) { await logUsage(sb, member.id, "create_board_card", false, "Unauthorized", start); return err("Unauthorized"); }
     let boardId = params.board_id;
+    if (boardId && !isUUID(boardId)) { await logUsage(sb, member.id, "create_board_card", false, "Invalid board_id", start); return err("board_id must be a UUID. Use list_boards to find board UUIDs."); }
     if (!boardId) {
-      if (!member.tribe_id) { await logUsage(sb, member.id, "create_board_card", false, "No board", start); return err("No tribe assigned. Pass board_id explicitly. Use get_portfolio_overview to find board IDs."); }
+      if (!member.tribe_id) { await logUsage(sb, member.id, "create_board_card", false, "No board", start); return err("No tribe assigned. Pass board_id explicitly. Use list_boards to find board UUIDs."); }
       const { data: board } = await sb.from("project_boards").select("id").eq("tribe_id", member.tribe_id).limit(1).single();
       if (!board) { await logUsage(sb, member.id, "create_board_card", false, "No board", start); return err("No board found for your tribe."); }
       boardId = board.id;
@@ -669,7 +676,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_tribe_dashboard", false, "Not authenticated", start); return err("Not authenticated"); }
     const tribeId = params.tribe_id || member.tribe_id;
-    if (!tribeId) { await logUsage(sb, member.id, "get_tribe_dashboard", false, "No tribe", start); return err("No tribe. Specify tribe_id (1-8)."); }
+    if (!tribeId) { await logUsage(sb, member.id, "get_tribe_dashboard", false, "No tribe", start); return err(NO_TRIBE_HINT); }
     const { data, error } = await sb.rpc("exec_tribe_dashboard", { p_tribe_id: tribeId });
     if (error) { await logUsage(sb, member.id, "get_tribe_dashboard", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_tribe_dashboard", true, undefined, start);
@@ -814,7 +821,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_tribe_deliverables", false, "Not authenticated", start); return err("Not authenticated"); }
     const tribeId = params.tribe_id || member.tribe_id;
-    if (!tribeId) { await logUsage(sb, member.id, "get_tribe_deliverables", false, "No tribe", start); return err("No tribe. Specify tribe_id (1-8)."); }
+    if (!tribeId) { await logUsage(sb, member.id, "get_tribe_deliverables", false, "No tribe", start); return err(NO_TRIBE_HINT); }
     const { data, error } = await sb.rpc("list_tribe_deliverables", { p_tribe_id: tribeId, p_cycle_code: params.cycle_code || null });
     if (error) { await logUsage(sb, member.id, "get_tribe_deliverables", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_tribe_deliverables", true, undefined, start);
