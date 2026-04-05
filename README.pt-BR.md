@@ -43,7 +43,7 @@ Fundado em 2024 como piloto no PMI Goias, o projeto evoluiu para uma alianca est
 | Capitulos PMI | 5 (GO · CE · DF · MG · RS) |
 | Entradas de governanca | 135+ |
 | Posts no blog | 9 |
-| Ferramentas MCP | 54 (46 leitura · 8 escrita) |
+| Ferramentas MCP | 56 (47 leitura · 9 escrita) |
 | Edge Functions | 20 |
 | Chaves i18n | 3.735+ (3 idiomas) |
 | Testes | 779 |
@@ -108,7 +108,7 @@ graph LR
 | **Hospedagem** | Cloudflare Workers | SSR na edge, proxy OAuth, proxy MCP |
 | **Banco de Dados** | Supabase PostgreSQL | 189+ funcoes SECURITY DEFINER, RLS |
 | **Auth** | Google + LinkedIn + Microsoft | OAuth 2.1, PKCE, registro dinamico de clientes |
-| **MCP** | Servidor customizado (54 ferramentas) | Assistentes de IA consultam a plataforma via linguagem natural |
+| **MCP** | Servidor customizado (56 ferramentas) | Assistentes de IA consultam a plataforma via linguagem natural |
 | **Logica Server** | Supabase Edge Functions (19) | Sync Credly, presenca, MCP, campanhas, PostHog proxy |
 | **Analytics** | PostHog | Analytics de produto, session replay |
 | **Erros** | Sentry | Monitoramento de erros em tempo real |
@@ -120,7 +120,7 @@ graph LR
 
 ## Servidor MCP — Integracao com IA
 
-Qualquer membro pode conectar Claude, ChatGPT, Perplexity, Cursor ou VS Code a plataforma via Model Context Protocol. 54 ferramentas (46 leitura + 8 escrita) autenticadas via OAuth 2.1 com Row Level Security. Auto-refresh server-side mantem sessoes ativas por ate 30 dias sem reconexao manual. Camada de conhecimento dinamica adapta orientacoes ao papel e permissoes de cada membro.
+Qualquer membro pode conectar Claude, ChatGPT, Perplexity, Cursor ou VS Code a plataforma via Model Context Protocol. 56 ferramentas (47 leitura + 9 escrita) autenticadas via OAuth 2.1 com Row Level Security. Auto-refresh server-side mantem sessoes ativas por ate 30 dias sem reconexao manual. Camada de conhecimento dinamica adapta orientacoes ao papel e permissoes de cada membro.
 
 ```
 https://nucleoia.vitormr.dev/mcp
@@ -151,7 +151,7 @@ sequenceDiagram
 
 | Compatibilidade | Status |
 |----------------|--------|
-| Claude.ai | Verificado (54 ferramentas) |
+| Claude.ai | Verificado (56 ferramentas) |
 | Claude Code | Verificado |
 | ChatGPT | Verificado (beta) |
 | Perplexity | Verificado |

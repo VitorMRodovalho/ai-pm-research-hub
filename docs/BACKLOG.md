@@ -12,7 +12,7 @@
 | 2 | 2 attendance corrections | — | ✅ Done | Guilherme + Gustavo confirmed present in DB |
 | 3 | Migration repair 26/Mar | 5 min | ✅ Done (29/Mar) | All migrations synced |
 | 4 | i18n server-side locale | — | ✅ Verified (29/Mar) | EN/ES resolve correctly server-side. Not a bug. |
-| 5 | MCP connector Claude.ai | — | ✅ Done (31/Mar) | SDK 1.28.0 + Zod + native transport. 54 tools visible on Claude.ai. |
+| 5 | MCP connector Claude.ai | — | ✅ Done (31/Mar) | SDK 1.28.0 + Zod + native transport. 56 tools visible on Claude.ai. |
 | 28 | Campaign tracking test | 1h | ✅ Done (02/Abr) | Bug: process_email_webhook didn't sync aggregate counters to campaign_sends. Fixed + backfilled (50/50 delivered). |
 | 29 | Claude Code MCP OAuth on Linux | — | Open | OAuth flow doesn't open browser. Headers workaround ignored by Claude Code. Tested via curl successfully. |
 

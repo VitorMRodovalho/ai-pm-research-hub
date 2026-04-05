@@ -60,7 +60,7 @@
 - **Ponto-chave:** "Nenhuma CoP do PMI opera governança digital a este nível"
 
 ### 8. MCP + i18n + Diversidade (2 min) — Diferenciação técnica
-- Mencionar **54 MCP tools** (Claude pode consultar a plataforma)
+- Mencionar **56 MCP tools** (Claude pode consultar a plataforma)
 - Trocar para `/en/` — tudo em inglês
 - **Novo:** Tab Diversidade no seletivo — 5 dimensões (gênero, capítulo, setor, senioridade, região)
 - Smoke test: 11/11 (mostrar terminal se der tempo)
@@ -93,7 +93,7 @@
 → 3-eixos: operational_role (hierarquia) + designations (acumuláveis) + is_superadmin (técnico). Manual R3 no DocuSign.
 
 **"Como funciona a IA na plataforma?"**
-→ MCP Server com 54 ferramentas. Claude Chat consulta dados em tempo real. 6 hosts verificados (Claude.ai, Claude Code, ChatGPT, Perplexity, Cursor, Manus AI). PostHog analytics com dashboards nativos.
+→ MCP Server com 56 ferramentas. Claude Chat consulta dados em tempo real. 6 hosts verificados (Claude.ai, Claude Code, ChatGPT, Perplexity, Cursor, Manus AI). PostHog analytics com dashboards nativos.
 
 **"Qual o custo?"**
 → Supabase free tier + Cloudflare Workers free tier + domínio custom. Zero custo operacional.
