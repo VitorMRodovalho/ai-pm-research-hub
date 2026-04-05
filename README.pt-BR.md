@@ -11,7 +11,7 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
-[![MCP](https://img.shields.io/badge/MCP-53%20Tools-D97757?logo=claude&logoColor=white)](#servidor-mcp--integracao-com-ia)
+[![MCP](https://img.shields.io/badge/MCP-56%20Tools-D97757?logo=claude&logoColor=white)](#servidor-mcp--integracao-com-ia)
 [![PostHog](https://img.shields.io/badge/PostHog-Analytics-F9BD2B?logo=posthog&logoColor=white)](https://posthog.com)
 [![Sentry](https://img.shields.io/badge/Sentry-Monitoring-362D59?logo=sentry&logoColor=white)](https://sentry.io)
 [![Cost](https://img.shields.io/badge/Infra%20Cost-%240%2Fmo-brightgreen)]()
@@ -109,7 +109,7 @@ graph LR
 | **Banco de Dados** | Supabase PostgreSQL | 189+ funcoes SECURITY DEFINER, RLS |
 | **Auth** | Google + LinkedIn + Microsoft | OAuth 2.1, PKCE, registro dinamico de clientes |
 | **MCP** | Servidor customizado (56 ferramentas) | Assistentes de IA consultam a plataforma via linguagem natural |
-| **Logica Server** | Supabase Edge Functions (19) | Sync Credly, presenca, MCP, campanhas, PostHog proxy |
+| **Logica Server** | Supabase Edge Functions (20) | Sync Credly, presenca, MCP, campanhas, PostHog proxy |
 | **Analytics** | PostHog | Analytics de produto, session replay |
 | **Erros** | Sentry | Monitoramento de erros em tempo real |
 | **Cron** | pg_cron (4 jobs) | Sync Credly, presenca, alertas detratores, lembretes |
@@ -227,7 +227,7 @@ npm test
 │   ├── lib/            # Cliente Supabase, auth, utilitarios
 │   └── middleware/      # CSP, auth, i18n
 ├── supabase/
-│   ├── functions/      # 19 Edge Functions
+│   ├── functions/      # 20 Edge Functions
 │   └── migrations/     # Migracoes do banco de dados
 ├── tests/              # 779 testes passando
 ├── docs/               # Governanca, guias, specs
