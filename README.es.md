@@ -43,7 +43,7 @@ Fundado en 2024 como piloto en PMI Goias, el proyecto evoluciono hacia una alian
 | Capitulos PMI | 5 (GO · CE · DF · MG · RS) |
 | Entradas de gobernanza | 135+ |
 | Posts en el blog | 9 |
-| Herramientas MCP | 54 (46 lectura · 8 escritura) |
+| Herramientas MCP | 56 (47 lectura · 9 escritura) |
 | Edge Functions | 20 |
 | Claves i18n | 3.735+ (3 idiomas) |
 | Tests | 779 |
@@ -108,7 +108,7 @@ graph LR
 | **Hospedaje** | Cloudflare Workers | SSR en el edge, proxy OAuth, proxy MCP |
 | **Base de Datos** | Supabase PostgreSQL | 189+ funciones SECURITY DEFINER, RLS |
 | **Auth** | Google + LinkedIn + Microsoft | OAuth 2.1, PKCE, registro dinamico de clientes |
-| **MCP** | Servidor personalizado (54 herramientas) | Asistentes de IA consultan la plataforma via lenguaje natural |
+| **MCP** | Servidor personalizado (56 herramientas) | Asistentes de IA consultan la plataforma via lenguaje natural |
 | **Logica Server** | Supabase Edge Functions (19) | Sync Credly, asistencia, MCP, campañas, PostHog proxy |
 | **Analytics** | PostHog | Analytics de producto, session replay |
 | **Errores** | Sentry | Monitoreo de errores en tiempo real |
@@ -120,7 +120,7 @@ graph LR
 
 ## Servidor MCP — Integracion con IA
 
-Cualquier miembro puede conectar Claude, ChatGPT, Perplexity, Cursor o VS Code a la plataforma via Model Context Protocol. 54 herramientas (46 lectura + 8 escritura) autenticadas via OAuth 2.1 con Row Level Security. Auto-refresh server-side mantiene sesiones activas por hasta 30 dias sin reconexion manual. Capa de conocimiento dinamica adapta orientaciones al rol y permisos de cada miembro.
+Cualquier miembro puede conectar Claude, ChatGPT, Perplexity, Cursor o VS Code a la plataforma via Model Context Protocol. 56 herramientas (47 lectura + 9 escritura) autenticadas via OAuth 2.1 con Row Level Security. Auto-refresh server-side mantiene sesiones activas por hasta 30 dias sin reconexion manual. Capa de conocimiento dinamica adapta orientaciones al rol y permisos de cada miembro.
 
 ```
 https://nucleoia.vitormr.dev/mcp
@@ -151,7 +151,7 @@ sequenceDiagram
 
 | Compatibilidad | Estado |
 |----------------|--------|
-| Claude.ai | Verificado (54 herramientas) |
+| Claude.ai | Verificado (56 herramientas) |
 | Claude Code | Verificado |
 | ChatGPT | Verificado (beta) |
 | Perplexity | Verificado |

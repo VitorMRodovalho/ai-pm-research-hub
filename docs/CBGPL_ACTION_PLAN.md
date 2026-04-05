@@ -91,12 +91,12 @@ O Núcleo se posiciona na interseção de **3 das 4 vertentes** do congresso:
 ### Pitch — 3 Níveis
 
 **Elevator (30s):**
-> "Somos o Núcleo de IA e GP do PMI — 5 capítulos, 60+ voluntários pesquisando como IA transforma gestão de projetos. Construímos uma plataforma open-source com 54 ferramentas de IA integradas. O que o Ricardo Vargas fala como visão, nós já implementamos."
+> "Somos o Núcleo de IA e GP do PMI — 5 capítulos, 60+ voluntários pesquisando como IA transforma gestão de projetos. Construímos uma plataforma open-source com 56 ferramentas de IA integradas. O que o Ricardo Vargas fala como visão, nós já implementamos."
 
 **Curto (2min):**
 > Problema → Solução → Números → Diferencial → Call to action
 > - GP voluntário sem dados = decisão no escuro
-> - Plataforma SaaS open-source com MCP Server (54 tools)
+> - Plataforma SaaS open-source com MCP Server (56 tools)
 > - 5 capítulos, 60+ membros, 8 tribos de pesquisa, KPIs em real-time
 > - Primeiro núcleo PMI com integração nativa de IA (Claude, ChatGPT, Perplexity)
 > - "Quer participar? Estamos abrindo vagas para pesquisadores"
@@ -135,7 +135,7 @@ O Núcleo se posiciona na interseção de **3 das 4 vertentes** do congresso:
 7. É open-source? → Sim, código aberto no GitHub
 8. Que tecnologias usa? → Astro, Supabase, Cloudflare Workers, MCP Protocol
 9. O que é MCP? → Model Context Protocol — permite que IAs (Claude, ChatGPT) acessem dados da plataforma
-10. Quantas ferramentas de IA? → 54 tools integradas via MCP Server
+10. Quantas ferramentas de IA? → 56 tools integradas via MCP Server
 
 **Sobre IA:**
 11. Como IA é usada na prática? → Consulta de KPIs, gestão de boards, análise de dados via chat
