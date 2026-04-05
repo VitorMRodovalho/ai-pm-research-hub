@@ -41,6 +41,7 @@ sem subir de tier.
 | `sponsor`        | Eleva tier para `observer` (rank 2)            |
 | `curator`        | Eleva tier para `observer` (rank 2)            |
 | `chapter_liaison`| Eleva tier para `observer` (rank 2)            |
+| `chapter_board`  | Eleva tier para `observer` (rank 2); read-only dashboards, KPIs agregados. Requer email institucional (`@pmiXX.org.br`). Sem detractor status no attendance grid. |
 | `ambassador`     | Sem elevação de tier; listado no Staff          |
 | `founder`        | Sem elevação de tier; listado no Staff          |
 
@@ -63,10 +64,10 @@ Legenda: **V** = Visualiza | **A** = Ação (criar/editar/enviar) | **—** = Se
 | Minha Tribo `/tribe/[id]`  |    —    |   V    |    V     |  V/A   |  V/A  |    V/A     | Membros ativos+ podem explorar tribos ativas em modo leitura; tribos inativas ficam reservadas ao Superadmin; ações locais seguem restritas à liderança/gestão |
 | Profile                    |    —    |  V/A   |   V/A    |  V/A   |  V/A  |    V/A     |                                  |
 | Admin Panel `/admin`       |    —    |   —    |    V     |   V    |  V/A  |    V/A     |                                  |
-| Admin Analytics            |    —    |   —    |    V     |   —    |   V   |     V      | `sponsor`, `curator`, `chapter_liaison`: V read-only only |
+| Admin Analytics            |    —    |   —    |    V     |   —    |   V   |     V      | `sponsor`, `curator`, `chapter_liaison`, `chapter_board`: V read-only |
 | Admin Comms Dashboard      |    —    |   —    |    —     |   —    |   V   |     V      | `comms_leader`, `comms_member`: V |
 | Admin Comms Ops `/admin/comms-ops` (W85 Cockpit) | — | — | — | — | V | V | `comms_leader`, `comms_member`: V — Dashboard com Recharts (boards communication, status, formato) |
-| Admin Portfolio `/admin/portfolio` | — | — | V | — | V | V | `sponsor`, `chapter_liaison`, `curator`, `co_gp`: V |
+| Admin Portfolio `/admin/portfolio` | — | — | V | — | V | V | `sponsor`, `chapter_liaison`, `curator`, `co_gp`, `chapter_board`: V |
 | Admin Board Governance `/admin/governance-v2` | — | — | — | — | V/A | V/A | `curator`, `co_gp`: V/A |
 | Help `/help`               |    —    |   V    |    V     |   V    |   V   |     V      | LGPD topics hidden for non-admin |
 | Webinars `/webinars`       |    —    |   —    |    —     |  V/A   |  V/A  |    V/A     | Também acessível por `comms_leader`, `comms_member`, `curator`, `co_gp`, `facilitator`, `guest` |

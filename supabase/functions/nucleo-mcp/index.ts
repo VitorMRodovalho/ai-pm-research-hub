@@ -78,6 +78,7 @@ function registerKnowledge(mcp: McpServer, sb: ReturnType<typeof createClient>) 
       const isSponsor = designations.includes("sponsor") || role === "sponsor";
       const isComms = designations.includes("comms_lead");
       const isLiaison = designations.includes("chapter_liaison");
+      const isChapterBoard = designations.includes("chapter_board");
       const hasTribe = !!member.tribe_id;
 
       // Build personalized tool guide
@@ -168,6 +169,21 @@ Rotas como \`get_my_tribe_members\` retornarão "No tribe assigned" — isso é 
 - \`get_annual_kpis\` — KPIs anuais: metas vs realizado
 - \`get_portfolio_health\` — Saúde do portfólio: semáforo por KPI trimestral
 - \`get_public_impact_data\` — Dados de impacto para apresentações`);
+      }
+
+      if (isChapterBoard) {
+        sections.push(`### Diretoria do Capítulo
+Você é membro da diretoria do ${member.chapter || "capítulo"}. Seu acesso é read-only, focado em dados de impacto e acompanhamento.
+- \`get_public_impact_data\` — Dados de impacto público: capítulos, membros, publicações, timeline
+- \`get_chapter_kpis\` — KPIs do seu capítulo (${member.chapter || "especifique: GO, CE, DF, MG, RS"})
+- \`get_attendance_ranking\` — Ranking geral de presença (agregado)
+- \`get_pilots_summary\` — Resumo dos pilotos de IA
+- \`get_current_release\` — Versão atual da plataforma
+- \`search_hub_resources\` — Busca na biblioteca de recursos (247+ itens)
+- \`get_governance_docs\` — Documentos de governança
+- \`get_manual_section\` — Seções do Manual de Governança
+
+**Nota:** Como membro de diretoria, você não tem acesso a dados individuais de presença (detractors/at-risk), ferramentas de escrita, ou gestão de membros. Para necessidades específicas, entre em contato com o sponsor do seu capítulo.`);
       }
 
       if (isAdmin) {
