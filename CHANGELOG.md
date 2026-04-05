@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-04-05 — chore: Full dependency upgrade + Zod 4 migration
+
+### Dependencies (16 packages → all latest)
+- **HIGH:** astro 6.1.1→6.1.3, @astrojs/cloudflare 13.1.4→13.1.7 (CSS leak + HMR crash fixes)
+- **MEDIUM:** tiptap 3.21→3.22.2, sentry 10.46→10.47, supabase-js 2.100→2.101, wrangler 4.78→4.80, playwright 1.58→1.59
+- **LOW:** eslint 10.1→10.2, @typescript-eslint 8.57α→8.58, dotenv 17.3→17.4
+- **Already latest:** react 19.2.4, tailwindcss 4.2.2, typescript 6.0.2
+
+### Edge Function (nucleo-mcp)
+- MCP SDK 1.28.0→1.29.0
+- Zod 3.25→4.0 (0 breaking changes — all 73 usages are basic patterns)
+- Hono pinned to 4.12.9 (was unpinned)
+- Health endpoint corrected: tools 52→56, sdk 1.28→1.29
+
+### Fixes
+- Duplicate i18n key `comp.tribe.noData` removed from es-LATAM.ts
+
+---
+
 ## 2026-04-02 — v2.9.0 Sprint 12: 4 Waves — 11 CRs, Volunteer Term, Diversity, Campaign Fix
 
 ### Wave 1 — Governance Engine (CR-035, CR-033, CR-021)
