@@ -2550,6 +2550,9 @@ const ptBR: Record<string, string> = {
   'privacy.s3.row10.purpose': 'Verificação de certificações PMI',
   'privacy.s3.row10.data': 'Badges Credly (API pública)',
   'privacy.s3.row10.basis': 'Legítimo interesse (Art. 7, IX)',
+  'privacy.s3.row11.purpose': 'Acompanhamento por diretorias de capítulos parceiros',
+  'privacy.s3.row11.data': 'KPIs agregados, publicações, horas de impacto, top 3 por XP (dados já públicos). Sem dados individuais de presença ou informações pessoais.',
+  'privacy.s3.row11.basis': 'Legítimo interesse (Art. 7, IX) — capítulos co-patrocinadores acompanham resultados do projeto. Acesso restrito a email institucional (@pmiXX.org.br).',
 
   // S4 — Compartilhamento
   'privacy.s4.title': 'Compartilhamento de Dados',

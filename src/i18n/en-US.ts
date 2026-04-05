@@ -2545,6 +2545,9 @@ const enUS: Record<string, string> = {
   'privacy.s3.row10.purpose': 'PMI certification verification',
   'privacy.s3.row10.data': 'Credly badges (public API)',
   'privacy.s3.row10.basis': 'Legitimate interest (Art. 7, IX)',
+  'privacy.s3.row11.purpose': 'Monitoring by partner chapter boards',
+  'privacy.s3.row11.data': 'Aggregate KPIs, publications, impact hours, top 3 by XP (already public data). No individual attendance or personal information.',
+  'privacy.s3.row11.basis': 'Legitimate interest (Art. 7, IX) — co-sponsoring chapters monitor project outcomes. Access restricted to institutional email (@pmiXX.org.br).',
 
   // S4 — Data sharing
   'privacy.s4.title': 'Data Sharing',

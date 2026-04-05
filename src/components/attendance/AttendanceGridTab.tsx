@@ -60,6 +60,11 @@ function canManageAttendance(): boolean {
   return false;
 }
 
+function isChapterBoard(): boolean {
+  const m = getMember();
+  return !!m && (m.designations || []).includes('chapter_board');
+}
+
 interface GridEvent {
   id: string;
   date: string;
@@ -184,6 +189,7 @@ function statusCell(v: string | undefined) {
 }
 
 function rowTint(rate: number) {
+  if (isChapterBoard()) return '';
   if (rate < 50) return 'bg-red-50/60 dark:bg-red-950/20';
   if (rate < 75) return 'bg-amber-50/60 dark:bg-amber-950/20';
   return '';
@@ -523,6 +529,7 @@ export default function AttendanceGridTab() {
         enableSorting: false,
         meta: { sticky: 'left', leftOffset: 0 },
         cell: ({ row }) => {
+          if (isChapterBoard()) return null;
           const d = row.original.detractorStatus;
           if (d === 'detractor') return <span title={t('attendance.grid.detractor', 'Detractor')}>🔴</span>;
           if (d === 'at_risk') return <span title={t('attendance.grid.atRisk', 'At risk')}>🟡</span>;
@@ -777,18 +784,22 @@ export default function AttendanceGridTab() {
           value={Math.round(filteredKPIs.totalHours)}
           suffix="h"
         />
-        <KpiCard
-          icon={ShieldAlert}
-          label={t('attendance.grid.detractors', 'Detractors')}
-          value={filteredKPIs.detractors}
-          accent="text-red-500"
-        />
-        <KpiCard
-          icon={AlertTriangle}
-          label={t('attendance.grid.atRisk', 'At Risk')}
-          value={filteredKPIs.atRisk}
-          accent="text-amber-500"
-        />
+        {!isChapterBoard() && (
+          <KpiCard
+            icon={ShieldAlert}
+            label={t('attendance.grid.detractors', 'Detractors')}
+            value={filteredKPIs.detractors}
+            accent="text-red-500"
+          />
+        )}
+        {!isChapterBoard() && (
+          <KpiCard
+            icon={AlertTriangle}
+            label={t('attendance.grid.atRisk', 'At Risk')}
+            value={filteredKPIs.atRisk}
+            accent="text-amber-500"
+          />
+        )}
         <KpiCard
           icon={Trophy}
           label={t('attendance.grid.bestTribe', 'Best Tribe')}
@@ -828,17 +839,19 @@ export default function AttendanceGridTab() {
           <option value="comms">{t('attendance.grid.typeComms', 'Comms')}</option>
         </select>
 
-        {/* FIX 7: Detractor Status Filter */}
-        <select
-          value={detractorFilter}
-          onChange={(e) => setDetractorFilter(e.target.value as DetractorFilter)}
-          className="bg-[var(--surface-base)] border border-[var(--border-default)] rounded-lg px-3 py-1.5 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-teal)]"
-        >
-          <option value="all">{t('attendance.grid.filterAll', 'Todos')}</option>
-          <option value="detractor">{t('attendance.grid.filterDetractors', 'Detratores')}</option>
-          <option value="at_risk">{t('attendance.grid.filterAtRisk', 'Em Risco')}</option>
-          <option value="regular">{t('attendance.grid.filterRegular', 'Regulares')}</option>
-        </select>
+        {/* FIX 7: Detractor Status Filter — hidden for chapter_board */}
+        {!isChapterBoard() && (
+          <select
+            value={detractorFilter}
+            onChange={(e) => setDetractorFilter(e.target.value as DetractorFilter)}
+            className="bg-[var(--surface-base)] border border-[var(--border-default)] rounded-lg px-3 py-1.5 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-teal)]"
+          >
+            <option value="all">{t('attendance.grid.filterAll', 'Todos')}</option>
+            <option value="detractor">{t('attendance.grid.filterDetractors', 'Detratores')}</option>
+            <option value="at_risk">{t('attendance.grid.filterAtRisk', 'Em Risco')}</option>
+            <option value="regular">{t('attendance.grid.filterRegular', 'Regulares')}</option>
+          </select>
+        )}
 
         {/* Search */}
         <div className="relative flex-1 min-w-[180px]">
