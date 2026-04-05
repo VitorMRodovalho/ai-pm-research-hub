@@ -32,7 +32,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
       const allowed = m.is_superadmin === true
         || ['manager', 'deputy_manager'].includes(m.operational_role || '')
-        || (m.designations || []).some((d: string) => ['sponsor', 'chapter_liaison'].includes(d));
+        || (m.designations || []).some((d: string) => ['sponsor', 'chapter_liaison', 'chapter_board'].includes(d));
 
       const loading = document.getElementById('stakeholder-loading');
       if (loading) loading.classList.add('hidden');
