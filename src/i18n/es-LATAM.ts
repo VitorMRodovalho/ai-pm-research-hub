@@ -3915,7 +3915,6 @@ const esLATAM: Record<string, string> = {
   'comp.tribe.members': 'Miembros de la Tribu',
   'comp.tribe.noCards': 'Sin cards en esta tribu',
   'comp.tribe.approved': 'Aprobados',
-  'comp.tribe.noData': 'Sin datos',
 
   // ── Card Detail (board) ──
   'comp.card.uploadError': 'Error de carga: {msg}',

@@ -7,20 +7,20 @@ globs: supabase/functions/nucleo-mcp/**
 
 ## Current State
 - 56 tools (47 read + 9 write) + 1 dynamic prompt + 1 static resource
-- Transport: @modelcontextprotocol/sdk@1.28.0 WebStandardStreamableHTTPServerTransport (native)
+- Transport: @modelcontextprotocol/sdk@1.29.0 WebStandardStreamableHTTPServerTransport (native)
 - Tool params: Zod schemas (z.string(), z.number(), z.boolean()) — NOT plain JSON Schema objects
 - Auth: OAuth 2.1 via Workers (nucleoia.vitormr.dev) → Supabase JWT
 - All tools log usage to mcp_usage_log
 - Claude.ai connector: verified working (56 tools visible)
 
 ## SDK Compatibility
-- **SDK 1.28.0**: Latest stable. Works on Deno with native `WebStandardStreamableHTTPServerTransport`. Tool params MUST use Zod schemas.
-- **Zod import**: `import { z } from "npm:zod@^3.25";` — SDK 1.28.0 requires `zod ^3.25 || ^4.0`.
-- **History**: SDK 1.27.1 worked but required manual SSE wrapping (85 lines). SDK 1.28.0 initially failed on Deno due to non-Zod schemas + old dep versions. After converting tools to Zod and upgrading all deps, 1.28.0 native transport works.
+- **SDK 1.29.0**: Latest stable. Works on Deno with native `WebStandardStreamableHTTPServerTransport`. Tool params MUST use Zod schemas.
+- **Zod import**: `import { z } from "npm:zod@^4.0";` — SDK 1.29.0 supports `zod ^3.25 || ^4.0`. We use Zod 4.
+- **History**: SDK 1.27.1 worked but required manual SSE wrapping (85 lines). SDK 1.29.0 initially failed on Deno due to non-Zod schemas + old dep versions. After converting tools to Zod and upgrading all deps, 1.28.0 native transport works.
 
 ## Tool Pattern
 ```typescript
-import { z } from "npm:zod@3";
+import { z } from "npm:zod@^4.0";
 
 // Tools with parameters — MUST use Zod schemas
 mcp.tool("tool_name", "Description.", {
