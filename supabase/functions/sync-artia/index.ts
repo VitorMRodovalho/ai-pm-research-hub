@@ -37,9 +37,14 @@ async function getArtiaToken(): Promise<string> {
   return data.data.authenticationByClient.token
 }
 
+// Artia custom status IDs (PMI-GO standard)
+const ARTIA_STATUS = { A_INICIAR: 317052, ANDAMENTO: 328049, ENCERRADO: 317054 }
+const ARTIA_KPI_FOLDER = 6399649
+
 async function updateArtiaActivity(token: string, activityId: number, pct: number, desc: string, title: string): Promise<boolean> {
   const safeDesc = desc.replace(/"/g, '\\"').replace(/\n/g, ' ')
   const safeTitle = title.replace(/"/g, '\\"')
+  // Update % and title
   const res = await fetch(ARTIA_GQL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -48,7 +53,20 @@ async function updateArtiaActivity(token: string, activityId: number, pct: numbe
     }),
   })
   const data = await res.json()
-  return !!data?.data?.updateActivity?.id
+  const updated = !!data?.data?.updateActivity?.id
+  if (!updated) return false
+
+  // Sync status: 0% → A Iniciar, 1-99% → Andamento, 100% → Encerrado
+  const targetStatus = pct >= 100 ? ARTIA_STATUS.ENCERRADO : pct > 0 ? ARTIA_STATUS.ANDAMENTO : ARTIA_STATUS.A_INICIAR
+  const isClosed = pct >= 100
+  await fetch(ARTIA_GQL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify({
+      query: `mutation { changeCustomStatusActivity(id: "${activityId}", accountId: ${ARTIA_ACCOUNT_ID}, folderId: ${ARTIA_KPI_FOLDER}, customStatusId: ${targetStatus}, status: ${isClosed}) { id status } }`,
+    }),
+  })
+  return true
 }
 
 Deno.serve(async (req) => {
