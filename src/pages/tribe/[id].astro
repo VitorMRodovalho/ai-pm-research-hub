@@ -755,8 +755,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     el.innerHTML = `
       <div class="space-y-6">
         <div>
-          <h2 class="text-xl font-semibold text-navy mb-4">{TRIBE_I18N.highlights}</h2>
-          <p class="text-[13px] text-[var(--text-secondary)] mb-4">{TRIBE_I18N.highlightsDesc}</p>
+          <h2 class="text-xl font-semibold text-navy mb-4">${escapeHtml(I18N.highlights || 'Destaques do Núcleo')}</h2>
+          <p class="text-[13px] text-[var(--text-secondary)] mb-4">${escapeHtml(I18N.highlightsDesc || 'Artefatos oficiais, webinars e publicações aprovadas pela curadoria.')}</p>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] overflow-hidden">
               <div class="px-5 py-3.5 border-b border-[var(--border-subtle)] flex items-center gap-2">
@@ -775,22 +775,22 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
           </div>
         </div>
         <div>
-          <h2 class="text-xl font-semibold text-navy mb-4">{TRIBE_I18N.sharedRefs}</h2>
+          <h2 class="text-xl font-semibold text-navy mb-4">${escapeHtml(I18N.sharedRefs || 'Referências Compartilhadas')}</h2>
           <p class="text-[13px] text-[var(--text-secondary)] mb-4">Materiais de estudo, rascunhos públicos e recursos curados pela comunidade.</p>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <a href="/publications" class="group flex flex-col items-center gap-2 p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] hover:border-navy/30 hover:shadow-md transition-all no-underline">
               <span class="text-2xl">📚</span>
-              <span class="text-sm font-bold text-navy group-hover:underline">{TRIBE_I18N.showcase}</span>
+              <span class="text-sm font-bold text-navy group-hover:underline">${escapeHtml(I18N.showcase || 'Vitrine de Publicações')}</span>
               <span class="text-[11px] text-[var(--text-muted)]">Todos os artefatos publicados</span>
             </a>
             <a href="/webinars" class="group flex flex-col items-center gap-2 p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] hover:border-navy/30 hover:shadow-md transition-all no-underline">
               <span class="text-2xl">🎓</span>
-              <span class="text-sm font-bold text-navy group-hover:underline">{TRIBE_I18N.webinarsEvents}</span>
+              <span class="text-sm font-bold text-navy group-hover:underline">${escapeHtml(I18N.webinarsEvents || 'Webinars & Eventos')}</span>
               <span class="text-[11px] text-[var(--text-muted)]">Agenda e gravações</span>
             </a>
             <a href="/admin/knowledge" class="group flex flex-col items-center gap-2 p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] hover:border-navy/30 hover:shadow-md transition-all no-underline">
               <span class="text-2xl">🔗</span>
-              <span class="text-sm font-bold text-navy group-hover:underline">{TRIBE_I18N.knowledgeBase}</span>
+              <span class="text-sm font-bold text-navy group-hover:underline">${escapeHtml(I18N.knowledgeBase || 'Base de Conhecimento')}</span>
               <span class="text-[11px] text-[var(--text-muted)]">Artigos, cursos e referências</span>
             </a>
           </div>
