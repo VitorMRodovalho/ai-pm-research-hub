@@ -2,8 +2,8 @@
 
 const esLATAM: Record<string, string> = {
   // ── Meta ──
-  'meta.title': 'Ciclo 03 — Kick-off | Núcleo IA & GP',
-  'meta.description': 'Núcleo de Estudios e Investigación en IA y Gestión de Proyectos — Iniciativa conjunta de los capítulos PMI brasileños',
+  'meta.title': 'Núcleo IA & GP — Investigación Aplicada en IA y Gestión de Proyectos',
+  'meta.description': 'Núcleo de Estudios e Investigación en IA y Gestión de Proyectos — 50+ investigadores, 5 capítulos PMI, 7 tribus temáticas. Plataforma open-source trilingüe.',
 
   // ── Nav ──
   'nav.brand': 'Núcleo IA & GP — Ciclo 03',

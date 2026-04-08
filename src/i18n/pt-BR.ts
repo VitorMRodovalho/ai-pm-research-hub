@@ -2,8 +2,8 @@
 
 const ptBR: Record<string, string> = {
   // ── Meta ──
-  'meta.title': 'Ciclo 03 — Kick-off | Núcleo IA & GP',
-  'meta.description': 'Núcleo de Estudos e Pesquisa em IA e GP — Iniciativa conjunta dos capítulos PMI brasileiros',
+  'meta.title': 'Núcleo IA & GP — Pesquisa Aplicada em IA e Gestão de Projetos',
+  'meta.description': 'Núcleo de Estudos e Pesquisa em IA e Gestão de Projetos — 50+ pesquisadores, 5 capítulos PMI, 7 tribos temáticas. Plataforma open-source trilingue.',
 
   // ── Nav ──
   'nav.brand': 'Núcleo IA & GP — Ciclo 03',
