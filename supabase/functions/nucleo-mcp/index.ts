@@ -42,6 +42,12 @@ function canWrite(member: { operational_role: string; is_superadmin?: boolean })
   return member.is_superadmin || WRITE_ROLES.includes(member.operational_role);
 }
 
+const BOARD_ROLES = [...WRITE_ROLES, "researcher", "facilitator", "communicator"];
+function canWriteBoard(member: { operational_role: string; is_superadmin?: boolean; tribe_id?: number | null }, boardTribeId?: number | null) {
+  if (member.is_superadmin || WRITE_ROLES.includes(member.operational_role)) return true;
+  return BOARD_ROLES.includes(member.operational_role) && !!member.tribe_id && member.tribe_id === boardTribeId;
+}
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isUUID(v: string | undefined): boolean { return !!v && UUID_RE.test(v); }
 
@@ -342,6 +348,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 
 ## Notas
 - Rotas de escrita (9 tools) requerem: manager, deputy_manager, tribe_leader ou superadmin
+- create_board_card e update_card_status: também acessíveis por researcher/facilitator/communicator na própria tribo
 - manage_partner: também acessível por sponsors e chapter_liaisons
 - submit_chapter_need: acessível por chapter_board, sponsors e chapter_liaisons
 - Rotas Tier 3 requerem: manager, deputy_manager ou superadmin
@@ -496,7 +503,6 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "create_board_card", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!canWrite(member)) { await logUsage(sb, member.id, "create_board_card", false, "Unauthorized", start); return err("Unauthorized"); }
     let boardId = params.board_id;
     if (boardId && !isUUID(boardId)) { await logUsage(sb, member.id, "create_board_card", false, "Invalid board_id", start); return err("board_id must be a UUID. Use list_boards to find board UUIDs."); }
     if (!boardId) {
@@ -505,6 +511,9 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
       if (!board) { await logUsage(sb, member.id, "create_board_card", false, "No board", start); return err("No board found for your tribe."); }
       boardId = board.id;
     }
+    // Resolve board's tribe_id for permission check
+    const { data: boardData } = await sb.from("project_boards").select("tribe_id").eq("id", boardId).limit(1).single();
+    if (!canWriteBoard(member, boardData?.tribe_id)) { await logUsage(sb, member.id, "create_board_card", false, "Unauthorized", start); return err("Unauthorized — researchers can only create cards on their own tribe's board."); }
     const tags = params.tags ? String(params.tags).split(",").map((t: string) => t.trim()) : [];
     if (params.priority && params.priority !== "medium") tags.push(`priority:${params.priority}`);
     const { data: cardId, error } = await sb.rpc("create_board_item", { p_board_id: boardId, p_title: params.title, p_description: params.description || null, p_tags: tags, p_due_date: params.due_date || null });
@@ -518,7 +527,10 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "update_card_status", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!canWrite(member)) { await logUsage(sb, member.id, "update_card_status", false, "Unauthorized", start); return err("Unauthorized"); }
+    // Resolve card's board tribe_id for permission check
+    const { data: cardBoard } = await sb.from("board_items").select("board_id, project_boards!inner(tribe_id)").eq("id", params.card_id).limit(1).single();
+    const cardTribeId = (cardBoard as any)?.project_boards?.tribe_id;
+    if (!canWriteBoard(member, cardTribeId)) { await logUsage(sb, member.id, "update_card_status", false, "Unauthorized", start); return err("Unauthorized — researchers can only move cards on their own tribe's board."); }
     const { error } = await sb.rpc("move_board_item", { p_item_id: params.card_id, p_new_status: params.status });
     if (error) { await logUsage(sb, member.id, "update_card_status", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "update_card_status", true, undefined, start);
