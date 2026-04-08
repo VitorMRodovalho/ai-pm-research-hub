@@ -6,17 +6,17 @@ const ARTIA_GQL = 'https://api.artia.com/graphql'
 const ARTIA_ACCOUNT_ID = 6345833
 const ARTIA_PROJECT_ID = 6391775
 
-// Artia activity IDs for each KPI (folder 04 - Monitoramento)
-const KPI_ACTIVITY_MAP: Record<string, number> = {
-  chapters_participating: 32528756,
-  entities_partners: 32528757,
-  trail_completion: 32528758,
-  cpmai_certified: 32528759,
-  articles_published: 32528760,
-  webinars_realized: 32528762,
-  pilots_ia_copilot: 32528763,
-  hours_meetings: 32528764,
-  hours_impact: 32528765,
+// Artia activity IDs and PT titles for each KPI (folder 04 - Monitoramento)
+const KPI_ACTIVITY_MAP: Record<string, { id: number; label: string }> = {
+  chapters_participating: { id: 32528756, label: 'KPI: 8 Capítulos Participantes' },
+  entities_partners: { id: 32528757, label: 'KPI: 3 Entidades Parceiras' },
+  trail_completion: { id: 32528758, label: 'KPI: 70% Trilha IA Completa' },
+  cpmai_certified: { id: 32528759, label: 'KPI: 2+ CPMAI Certificados no Ano' },
+  articles_published: { id: 32528760, label: 'KPI: 10+ Artigos Publicados' },
+  webinars_realized: { id: 32528762, label: 'KPI: 6+ Webinares ou Talks' },
+  pilots_ia_copilot: { id: 32528763, label: 'KPI: 3+ Pilotos IA Copiloto' },
+  hours_meetings: { id: 32528764, label: 'KPI: 90+ Horas de Encontros' },
+  hours_impact: { id: 32528765, label: 'KPI: 1800+ Horas de Impacto' },
 }
 
 interface ArtiaToken { token: string }
@@ -155,11 +155,11 @@ Deno.serve(async (req) => {
 
     if (artiaToken) {
       for (const [key, val] of Object.entries(results)) {
-        const actId = KPI_ACTIVITY_MAP[key]
-        if (!actId) continue
-        const label = key.replace(/_/g, ' ')
+        const mapping = KPI_ACTIVITY_MAP[key]
+        if (!mapping) continue
         const desc = `Sincronizado automaticamente em ${now}. Valor: ${val.current}. Meta progress: ${val.pct}%.`
-        const ok = await updateArtiaActivity(artiaToken, actId, val.pct, desc, `KPI: ${label} (atual: ${val.current})`)
+        const title = `${mapping.label} (atual: ${val.current})`
+        const ok = await updateArtiaActivity(artiaToken, mapping.id, val.pct, desc, title)
         results[key].synced = ok
       }
     }
