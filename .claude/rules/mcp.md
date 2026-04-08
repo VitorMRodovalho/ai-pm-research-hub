@@ -41,8 +41,9 @@ mcp.tool("tool_name", "Description.", {}, async () => { ... });
 ```
 
 ## Write Permission
-- `canWrite(member)` gates write tools: manager, deputy_manager, tribe_leader, is_superadmin
-- NEVER skip the canWrite check for write tools
+- `canWrite(member)` gates most write tools: manager, deputy_manager, tribe_leader, is_superadmin
+- `canWriteBoard(member, boardTribeId)` gates `create_board_card` and `update_card_status`: also allows researcher/facilitator/communicator on their own tribe's board
+- NEVER skip the canWrite/canWriteBoard check for write tools
 
 ## OAuth Flow (all in Workers, NOT in EF)
 - Discovery: /.well-known/oauth-{authorization-server,protected-resource}

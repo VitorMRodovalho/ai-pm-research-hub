@@ -3,7 +3,7 @@
 ## Platform
 - **URL:** https://nucleoia.vitormr.dev
 - **Supabase:** ldrfrvwhxsmgaabwmaik (sa-east-1)
-- **Version:** v2.9.0 | 56 MCP tools | 20 Edge Functions | 779 unit + 40 e2e tests
+- **Version:** v2.9.0 | 56 MCP tools | 21 Edge Functions | 779 unit + 40 e2e tests
 
 ## Build & Test
 ```bash

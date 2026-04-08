@@ -1,6 +1,6 @@
 # Admin Panel Architecture
 
-> Last updated: 27 March 2026 | v2.0.0+
+> Last updated: 08 April 2026 | v2.9.0+
 
 ---
 

@@ -50,7 +50,7 @@
 
 **Resultados ate aqui:**
 - 3 ciclos completados, 4o em andamento
-- Plataforma v2.9: trilingue (PT/EN/ES), 20 edge functions, gamificacao completa
+- Plataforma v2.9: trilingue (PT/EN/ES), 21 edge functions, gamificacao completa, sync Artia PMO
 - Indicacao ao Premio Carlos Novello 2025 (Voluntario do Ano LATAM)
 - Interesse internacional: Christine do PMI-WDC explorando replicacao do modelo
 
