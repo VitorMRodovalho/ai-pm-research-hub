@@ -2,8 +2,8 @@
 
 const enUS: Record<string, string> = {
   // ── Meta ──
-  'meta.title': 'Cycle 03 — Kick-off | AI & PM Research Hub',
-  'meta.description': 'AI & PM Study and Research Hub — A Joint Initiative of the PMI Brazilian Chapters',
+  'meta.title': 'AI & PM Research Hub — Applied Research in AI and Project Management',
+  'meta.description': 'AI & PM Study and Research Hub — 50+ researchers, 5 PMI chapters, 7 thematic tribes. Open-source trilingual platform.',
 
   // ── Nav ──
   'nav.brand': 'AI & PM Research Hub — Cycle 03',

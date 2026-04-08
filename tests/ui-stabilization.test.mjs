@@ -820,7 +820,7 @@ test('kanban dark release gate script and command are wired', () => {
   const gate = read('scripts/qa_kanban_dark_release_gate.sh');
   const baseline = read('scripts/audit_dark_mode_visual_baseline.sh');
   const contrast = read('scripts/audit_dark_mode_contrast_snapshots.sh');
-  const qaDoc = read('docs/QA_RELEASE_VALIDATION.md');
+  const qaDoc = read('docs/archive/specs-completed/QA_RELEASE_VALIDATION.md');
   assert.equal(pkg.includes('"qa:kanban"'), true);
   assert.equal(pkg.includes('"audit:dark:baseline"'), true);
   assert.equal(pkg.includes('"audit:dark:contrast"'), true);

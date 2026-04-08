@@ -51,6 +51,15 @@ const SIM_I18N = {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{title}</title>
   <meta name="description" content={description} />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={Astro.url.href} />
+  <meta property="og:site_name" content="Núcleo IA & GP" />
+  <meta property="og:locale" content={lang === 'en-US' ? 'en_US' : lang === 'es-LATAM' ? 'es_419' : 'pt_BR'} />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
   <slot name="head" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
