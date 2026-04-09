@@ -277,6 +277,7 @@ export default function AttendanceGridTab() {
   const [expandedTribes, setExpandedTribes] = useState<Set<string>>(new Set());
   const [toggling, setToggling] = useState<string | null>(null);
   const [showAllEvents, setShowAllEvents] = useState(false);
+  const [excuseReasons, setExcuseReasons] = useState<Record<string, string>>({});
   const [memberReady, setMemberReady] = useState(!!getMember());
 
   /* Wait for member to be available (nav loads async) */
@@ -408,6 +409,21 @@ export default function AttendanceGridTab() {
         }
 
         setData(parsed);
+
+        /* Load excuse reasons for tooltip */
+        try {
+          const { data: excuses } = await sb.from('attendance')
+            .select('event_id, member_id, excuse_reason')
+            .eq('excused', true)
+            .not('excuse_reason', 'is', null);
+          if (excuses) {
+            const map: Record<string, string> = {};
+            for (const ex of excuses) {
+              map[`${ex.event_id}:${ex.member_id}`] = ex.excuse_reason;
+            }
+            setExcuseReasons(map);
+          }
+        } catch { /* best effort */ }
 
         /* Initialize expanded tribes — all expanded by default (include cross-functional) */
         if (parsed && parsed.tribes) {
@@ -929,7 +945,7 @@ export default function AttendanceGridTab() {
 
       {/* Grid / Mobile */}
       {isMobile ? (
-        <MobileCardList rows={table.getRowModel().rows} events={filteredEvents} t={t} />
+        <MobileCardList rows={table.getRowModel().rows} events={filteredEvents} t={t} excuseReasons={excuseReasons} />
       ) : !showAllEvents ? (
         /* Smart mode: each tribe section has its own table with only relevant event columns */
         <div className="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-xl overflow-hidden">
@@ -943,6 +959,7 @@ export default function AttendanceGridTab() {
                 isExpanded={expandedTribes.has(tribe.tribe_id)}
                 onToggle={() => toggleTribe(tribe.tribe_id)}
                 t={t}
+                excuseReasons={excuseReasons}
               />
             ))
           ) : (
@@ -1169,6 +1186,7 @@ function SmartTribeSection({
   isExpanded,
   onToggle,
   t,
+  excuseReasons,
 }: {
   tribe: GridTribe;
   rows: any[];
@@ -1176,6 +1194,7 @@ function SmartTribeSection({
   isExpanded: boolean;
   onToggle: () => void;
   t: (key: string, fb?: string) => string;
+  excuseReasons: Record<string, string>;
 }) {
   const relevantEvents = useMemo(
     () => allEvents.filter((evt) => rows.some((row) => row.original.attendance[evt.id] !== 'na')),
@@ -1356,10 +1375,12 @@ function SmartTribeSection({
                     </td>
                     {relevantEvents.map((ev) => {
                       const st = statusCell(r.attendance[ev.id]);
+                      const reason = r.attendance[ev.id] === 'excused' ? excuseReasons[`${ev.id}:${r.memberId}`] : undefined;
                       return (
                         <td key={ev.id} className="px-2 py-1.5 whitespace-nowrap text-[var(--text-primary)]">
                           <span
                             className={`inline-flex items-center justify-center w-full h-full text-xs ${st.bg} rounded px-1 ${manage ? 'cursor-pointer hover:ring-2 hover:ring-navy/30' : ''}`}
+                            title={reason || undefined}
                             {...(manage
                               ? {
                                   'data-toggle-event': ev.id,
@@ -1400,10 +1421,12 @@ function MobileCardList({
   rows,
   events,
   t,
+  excuseReasons,
 }: {
   rows: any[];
   events: GridEvent[];
   t: (key: string, fb?: string) => string;
+  excuseReasons: Record<string, string>;
 }) {
   if (rows.length === 0) {
     return (
@@ -1467,10 +1490,11 @@ function MobileCardList({
                   <tr>
                     {myEvents.map((ev) => {
                       const st = statusCell(r.attendance[ev.id]);
+                      const reason = r.attendance[ev.id] === 'excused' ? excuseReasons[`${ev.id}:${r.memberId}`] : undefined;
                       return (
                         <td key={ev.id} className="px-0.5 text-center">
                           <span
-                            title={`${fmtDate(ev.date)} ${ev.title}`}
+                            title={reason ? `⚠️ ${reason}` : `${fmtDate(ev.date)} ${ev.title}`}
                             className={`inline-flex items-center justify-center w-7 h-6 text-[10px] rounded ${st.bg}`}
                           >
                             {st.label}

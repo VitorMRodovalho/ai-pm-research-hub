@@ -70,6 +70,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
                  class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
         </div>
         <div class="flex flex-col gap-1.5">
+          <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.timeStart', lang) || 'Horário'}</label>
+          <input type="time" id="edit-ev-time-start"
+                 class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
+        </div>
+        <div class="flex flex-col gap-1.5">
           <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.durationMin', lang)}</label>
           <input type="number" id="edit-ev-duration" min="15" max="480"
                  class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
@@ -112,6 +117,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
             <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.youtubeLink', lang)}</label>
             <input type="url" id="edit-ev-youtube" placeholder="https://youtu.be/..."
                    class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
+          </div>
+          <div class="flex flex-col gap-1.5 sm:col-span-2">
+            <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.notes', lang) || 'Notas'}</label>
+            <textarea id="edit-ev-notes" rows="2" placeholder="Observações sobre este evento..."
+                   class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy resize-y"></textarea>
           </div>
           <div class="flex flex-col gap-1.5 sm:col-span-2">
             <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.externalAttendees', lang)}</label>

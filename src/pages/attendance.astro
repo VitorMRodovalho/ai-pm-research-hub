@@ -817,7 +817,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const el = document.getElementById('events-list')!;
     el.innerHTML = loadingRows(3);
     try {
-      const { data } = await sb.rpc('get_events_with_attendance', { p_limit: 200, p_offset: 0 });
+      const { data } = await sb.rpc('get_events_with_attendance', { p_limit: 500, p_offset: 0 });
       ALL_EVENTS = data || [];
       renderEvents();
     } catch (e) {
@@ -1503,7 +1503,9 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       }
     };
     (document.getElementById('edit-ev-date') as HTMLInputElement).value = ev.date || '';
+    (document.getElementById('edit-ev-time-start') as HTMLInputElement).value = ev.time_start || '';
     (document.getElementById('edit-ev-duration') as HTMLInputElement).value = ev.duration_minutes || 90;
+    (document.getElementById('edit-ev-notes') as HTMLTextAreaElement).value = ev.notes || '';
     (document.getElementById('edit-ev-link') as HTMLInputElement).value = ev.meeting_link || '';
     (document.getElementById('edit-ev-youtube') as HTMLInputElement).value = ev.youtube_url || '';
     (document.getElementById('edit-ev-recorded') as HTMLInputElement).checked = ev.is_recorded || false;
@@ -1551,7 +1553,11 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       if (error) throw error;
       if (data?.success) {
         // Save event type, nature, visibility, tribe_id via direct table update (update_event RPC doesn't accept these)
+        const timeStart = (document.getElementById('edit-ev-time-start') as HTMLInputElement).value || null;
+        const notes = (document.getElementById('edit-ev-notes') as HTMLTextAreaElement).value.trim() || null;
         const updateFields: Record<string, any> = { type: editType, nature, visibility };
+        if (timeStart) updateFields.time_start = timeStart;
+        if (notes !== undefined) updateFields.notes = notes;
         if (recordingUrl !== undefined) updateFields.recording_url = recordingUrl;
         if (externalAttendees !== undefined) updateFields.external_attendees = externalAttendees;
         if (tribeId !== null) updateFields.tribe_id = tribeId;
