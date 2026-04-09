@@ -277,6 +277,7 @@ export default function AttendanceGridTab() {
   const [expandedTribes, setExpandedTribes] = useState<Set<string>>(new Set());
   const [toggling, setToggling] = useState<string | null>(null);
   const [showAllEvents, setShowAllEvents] = useState(false);
+  const [showBulkExcused, setShowBulkExcused] = useState(false);
   const [excuseReasons, setExcuseReasons] = useState<Record<string, string>>({});
   const [memberReady, setMemberReady] = useState(!!getMember());
 
@@ -925,7 +926,23 @@ export default function AttendanceGridTab() {
           <Download size={14} />
           {t('attendance.grid.export', 'Export CSV')}
         </button>
+
+        {/* Bulk Excused */}
+        {manage && (
+          <button
+            onClick={() => setShowBulkExcused(prev => !prev)}
+            className="inline-flex items-center gap-1.5 bg-amber-500 text-white text-sm font-semibold px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
+          >
+            <AlertTriangle size={14} />
+            {t('attendance.grid.bulkExcused', 'Marcar Off')}
+          </button>
+        )}
       </div>
+
+      {/* Bulk Excused Form */}
+      {showBulkExcused && manage && (
+        <BulkExcusedForm members={flatRows} t={t} onDone={() => { setShowBulkExcused(false); window.location.reload(); }} />
+      )}
 
       {/* FIX 3: Legend bar */}
       <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-muted)] bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-lg px-3 py-2">
@@ -1511,6 +1528,65 @@ function MobileCardList({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Bulk Excused Form                                                  */
+/* ------------------------------------------------------------------ */
+
+function BulkExcusedForm({ members, t, onDone }: { members: FlatRow[]; t: (k: string, fb?: string) => string; onDone: () => void }) {
+  const [memberId, setMemberId] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [reason, setReason] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const uniqueMembers = useMemo(() => {
+    const seen = new Set<string>();
+    return members.filter(m => { if (seen.has(m.memberId)) return false; seen.add(m.memberId); return true; }).sort((a, b) => a.name.localeCompare(b.name));
+  }, [members]);
+
+  const handleSubmit = async () => {
+    if (!memberId || !dateFrom || !dateTo) return;
+    const sb = getSb();
+    if (!sb) return;
+    setLoading(true);
+    try {
+      const { data, error } = await sb.rpc('bulk_mark_excused', {
+        p_member_id: memberId, p_date_from: dateFrom, p_date_to: dateTo, p_reason: reason || null,
+      });
+      if (error) throw error;
+      (window as any).toast?.(`${data?.events_marked || 0} eventos marcados como falta justificada`, 'success');
+      onDone();
+    } catch (e: any) {
+      (window as any).toast?.(e?.message || 'Erro', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+      <h4 className="text-sm font-bold text-amber-800">{t('attendance.grid.bulkExcusedTitle', 'Marcar Falta Justificada em Lote')}</h4>
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <select value={memberId} onChange={e => setMemberId(e.target.value)}
+          className="text-sm rounded-lg border border-amber-300 px-3 py-2 bg-white">
+          <option value="">{t('attendance.grid.selectMember', 'Selecione membro...')}</option>
+          {uniqueMembers.map(m => <option key={m.memberId} value={m.memberId}>{m.name}</option>)}
+        </select>
+        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+          className="text-sm rounded-lg border border-amber-300 px-3 py-2" placeholder="De" />
+        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+          className="text-sm rounded-lg border border-amber-300 px-3 py-2" placeholder="Até" />
+        <input type="text" value={reason} onChange={e => setReason(e.target.value)}
+          className="text-sm rounded-lg border border-amber-300 px-3 py-2" placeholder={t('attendance.grid.excuseReason', 'Motivo (opcional)')} />
+      </div>
+      <button onClick={handleSubmit} disabled={loading || !memberId || !dateFrom || !dateTo}
+        className="bg-amber-600 text-white text-sm font-semibold px-4 py-2 rounded-lg border-0 cursor-pointer hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed">
+        {loading ? '...' : t('attendance.grid.bulkExcusedSubmit', 'Marcar como Falta Justificada')}
+      </button>
     </div>
   );
 }
