@@ -51,8 +51,12 @@ export default function SyncHealthWidget({ lang: propLang }: Props) {
     const m = (window as any).navGetMember?.();
     if (!m || !(m.is_superadmin || ['manager', 'deputy_manager'].includes(m.operational_role))) return;
     setAuthorized(true);
-    const { data: d } = await sb.rpc('get_cron_status');
-    if (d && !d.error) setData(d);
+    try {
+      const { data: d, error: rpcErr } = await sb.rpc('get_cron_status');
+      if (rpcErr) { console.error('[SyncHealth] RPC error:', rpcErr.message); return; }
+      if (d && typeof d === 'object' && !d.error) setData(d);
+      else console.warn('[SyncHealth] RPC returned:', d);
+    } catch (e: any) { console.error('[SyncHealth] Error:', e?.message); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
