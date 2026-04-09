@@ -289,17 +289,32 @@ export default function AttendanceGridTab() {
   }, [memberReady]);
 
   /* Toggle attendance cell — click handler for managers */
+  /* Toggle cycles: absent → present → excused → absent */
   const handleToggle = useCallback(async (eventId: string, memberId: string, current: string) => {
     const sb = getSb();
     if (!sb || toggling) return;
     const cellKey = `${eventId}:${memberId}`;
     setToggling(cellKey);
     try {
-      const newPresent = current !== 'present';
-      const { error: rpcErr } = await sb.rpc('mark_member_present', {
-        p_event_id: eventId, p_member_id: memberId, p_present: newPresent,
-      });
-      if (rpcErr) throw rpcErr;
+      // Cycle: absent/none → present, present → excused, excused → absent
+      const nextState = current === 'present' ? 'excused' : current === 'excused' ? 'absent' : 'present';
+
+      if (nextState === 'excused') {
+        const { error: rpcErr } = await sb.rpc('mark_member_excused', {
+          p_event_id: eventId, p_member_id: memberId, p_excused: true,
+        });
+        if (rpcErr) throw rpcErr;
+      } else {
+        const { error: rpcErr } = await sb.rpc('mark_member_present', {
+          p_event_id: eventId, p_member_id: memberId, p_present: nextState === 'present',
+        });
+        if (rpcErr) throw rpcErr;
+        // If going from excused to absent, also clear excused flag
+        if (current === 'excused') {
+          await sb.rpc('mark_member_excused', { p_event_id: eventId, p_member_id: memberId, p_excused: false });
+        }
+      }
+
       // Optimistic update in local data
       setData(prev => {
         if (!prev) return prev;
@@ -307,13 +322,18 @@ export default function AttendanceGridTab() {
         for (const tribe of updated.tribes) {
           for (const m of tribe.members) {
             if (m.member_id === memberId) {
-              m.attendance[eventId] = newPresent ? 'present' : 'absent';
+              m.attendance[eventId] = nextState as any;
             }
           }
         }
         return updated;
       });
-      (window as any).toast?.(newPresent ? t('attendance.grid.toastPresent', '✅ Presente') : t('attendance.grid.toastAbsent', '❌ Ausente'), 'success');
+      const toastMap: Record<string, string> = {
+        present: t('attendance.grid.toastPresent', '✅ Presente'),
+        excused: t('attendance.grid.toastExcused', '⚠️ Falta justificada'),
+        absent: t('attendance.grid.toastAbsent', '❌ Ausente'),
+      };
+      (window as any).toast?.(toastMap[nextState], 'success');
     } catch (e: any) {
       console.error('Toggle failed:', e);
       (window as any).toast?.('Erro ao registrar presença', 'error');
@@ -1424,20 +1444,40 @@ function MobileCardList({
               <span className={`text-lg font-extrabold ${rateColor}`}>{Math.round(r.rate)}%</span>
             </div>
 
-            {/* Compact attendance strip */}
-            <div className="flex flex-wrap gap-1">
-              {events.map((ev) => {
-                const st = statusCell(r.attendance[ev.id]);
-                return (
-                  <span
-                    key={ev.id}
-                    title={`${fmtDate(ev.date)} ${ev.title}`}
-                    className={`inline-flex items-center justify-center w-6 h-6 text-[10px] rounded ${st.bg}`}
-                  >
-                    {st.label}
-                  </span>
-                );
-              })}
+            {/* Scrollable attendance strip with date headers */}
+            <div className="overflow-x-auto -mx-1 px-1 pb-1">
+              <table className="border-collapse" style={{ minWidth: `${events.length * 2.25}rem` }}>
+                <thead>
+                  <tr>
+                    {events.map((ev) => (
+                      <th
+                        key={`h-${ev.id}`}
+                        className="text-[7px] leading-tight text-center text-[var(--text-muted)] font-medium px-0.5 pb-0.5 whitespace-nowrap"
+                        title={ev.title}
+                      >
+                        {fmtDate(ev.date)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    {events.map((ev) => {
+                      const st = statusCell(r.attendance[ev.id]);
+                      return (
+                        <td key={ev.id} className="px-0.5 text-center">
+                          <span
+                            title={`${fmtDate(ev.date)} ${ev.title}`}
+                            className={`inline-flex items-center justify-center w-7 h-6 text-[10px] rounded ${st.bg}`}
+                          >
+                            {st.label}
+                          </span>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         );

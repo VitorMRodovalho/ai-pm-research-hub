@@ -1132,6 +1132,42 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "submit_chapter_need", true, undefined, start);
     return ok(data);
   });
+
+  // TOOL 57: drop_event_instance — Cancel a specific event occurrence
+  mcp.tool("drop_event_instance", "Cancel/delete a specific event instance (e.g. a tribe meeting that didn't happen). Requires tribe leader of that tribe, or admin/manager. Rejects if attendance exists.", { event_id: z.string().describe("UUID of the event to delete") }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "drop_event_instance", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!canWrite(member)) { await logUsage(sb, member.id, "drop_event_instance", false, "Unauthorized", start); return err("Unauthorized"); }
+    const { data, error } = await sb.rpc("drop_event_instance", { p_event_id: params.event_id });
+    if (error) { await logUsage(sb, member.id, "drop_event_instance", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "drop_event_instance", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 58: update_event_instance — Edit a specific event occurrence
+  mcp.tool("update_event_instance", "Edit a specific event instance (date, time, duration, link, notes). Requires tribe leader or admin/manager.", { event_id: z.string().describe("UUID of the event to update"), new_date: z.string().optional().describe("New date YYYY-MM-DD"), new_time_start: z.string().optional().describe("New start time HH:MM"), new_duration_minutes: z.number().optional().describe("New duration in minutes"), meeting_link: z.string().optional().describe("New meeting link URL"), notes: z.string().optional().describe("Notes about the change"), agenda_text: z.string().optional().describe("Updated agenda text") }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "update_event_instance", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!canWrite(member)) { await logUsage(sb, member.id, "update_event_instance", false, "Unauthorized", start); return err("Unauthorized"); }
+    const { data, error } = await sb.rpc("update_event_instance", { p_event_id: params.event_id, p_new_date: params.new_date || null, p_new_time_start: params.new_time_start || null, p_new_duration_minutes: params.new_duration_minutes || null, p_meeting_link: params.meeting_link || null, p_notes: params.notes || null, p_agenda_text: params.agenda_text || null });
+    if (error) { await logUsage(sb, member.id, "update_event_instance", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "update_event_instance", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 59: mark_member_excused — Mark a member as excused (justified absence) for an event
+  mcp.tool("mark_member_excused", "Mark a member as excused (falta justificada) for an event. Tribe leaders can mark their own tribe members. Admins can mark anyone.", { event_id: z.string().describe("UUID of the event"), member_id: z.string().describe("UUID of the member"), excused: z.boolean().optional().describe("true to mark excused, false to remove. Default: true"), reason: z.string().optional().describe("Reason for the excused absence") }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "mark_member_excused", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!canWrite(member)) { await logUsage(sb, member.id, "mark_member_excused", false, "Unauthorized", start); return err("Unauthorized"); }
+    const { data, error } = await sb.rpc("mark_member_excused", { p_event_id: params.event_id, p_member_id: params.member_id, p_excused: params.excused !== false, p_reason: params.reason || null });
+    if (error) { await logUsage(sb, member.id, "mark_member_excused", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "mark_member_excused", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -1142,7 +1178,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.9.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.9.2" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -1162,6 +1198,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.9.0", tools: 56, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.9.2", tools: 59, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);

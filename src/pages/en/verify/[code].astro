@@ -1,4 +1,4 @@
 ---
-import VerifyPage from '../../verify/[code].astro';
+const { code } = Astro.params;
+return Astro.redirect(`/verify/${code}?lang=en-US`);
 ---
-<VerifyPage />

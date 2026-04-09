@@ -1,7 +1,7 @@
-# Plano de Ação Consolidado: CBGPL 2026 + Artia API
+# Plano de Ação Consolidado: CBGPL 2026
 
 ## Context
-Ivan validou a plataforma em 02/Apr. O **21º CBGPL** (Congresso Brasileiro de Gestão, Projetos e Liderança) acontece em **26 dias** em Gramado/RS. PMI-GO é **co-realizador** do evento — Ivan tem acesso institucional. Ricardo Vargas fará keynote sobre "Copiloto IA para Projetos" — tema DIRETAMENTE alinhado ao Núcleo. É a oportunidade perfeita para posicionar o Núcleo como implementação prática do que Vargas fala em teoria.
+O **21º CBGPL** (Congresso Brasileiro de Gestão, Projetos e Liderança) acontece em **26 dias** em Gramado/RS. Ricardo Vargas fará keynote sobre "Copiloto IA para Projetos" — tema DIRETAMENTE alinhado ao Núcleo. É a oportunidade perfeita para posicionar o Núcleo como implementação prática do que Vargas fala em teoria.
 
 ---
 
@@ -84,26 +84,26 @@ O Núcleo se posiciona na interseção de **3 das 4 vertentes** do congresso:
 |---------|-------|-----------------|
 | **Ivan** | Sponsor institucional | Abertura, legitimação, networking C-level, negociação de espaço |
 | **Vitor** | Tech Lead / Demo | Apresentação técnica, demo ao vivo, Q&A técnico |
-| **Líder de Tribo** (a definir) | Pesquisador | Falar sobre metodologia, experiência prática, resultados |
-| **Éder** (se disponível) | Operacional | Coordenação, materiais, logística |
-| **Rep. PMI-RS** (a definir) | Embaixador multi-capítulo | Mostrar que é inter-capitular (evento é em RS!) |
+| **Líder de Tribo - Débora** | Pesquisador | Falar sobre metodologia, experiência prática, resultados |
+| (se disponível) | Operacional | Coordenação, materiais, logística |
+| **Rep. PMI-RS** (Márcio como presidente?) | Sponsor multi-capítulo | Mostrar que é inter-capitular (evento é em RS!) |
 
 ### Pitch — 3 Níveis
 
 **Elevator (30s):**
-> "Somos o Núcleo de IA e GP do PMI — 5 capítulos, 60+ voluntários pesquisando como IA transforma gestão de projetos. Construímos uma plataforma open-source com 56 ferramentas de IA integradas. O que o Ricardo Vargas fala como visão, nós já implementamos."
+> "Somos o Núcleo de IA e GP do PMI — 5 capítulos, 50+ voluntários pesquisando como IA transforma gestão de projetos. Construímos uma plataforma open-source com ferramentas de IA integradas. O que o Ricardo Vargas fala como visão, nós já implementamos."
 
 **Curto (2min):**
 > Problema → Solução → Números → Diferencial → Call to action
 > - GP voluntário sem dados = decisão no escuro
 > - Plataforma SaaS open-source com MCP Server (56 tools)
-> - 5 capítulos, 60+ membros, 8 tribos de pesquisa, KPIs em real-time
-> - Primeiro núcleo PMI com integração nativa de IA (Claude, ChatGPT, Perplexity)
+> - 5 capítulos, 50+ membros, 7 tribos de pesquisa, KPIs em real-time
+> - Primeiro núcleo PMI com integração nativa de IA (Claude Chat/Code, ChatGPT, Perplexity, Cursor, Manus)
 > - "Quer participar? Estamos abrindo vagas para pesquisadores"
 
 **Case Arena (20min):**
 1. Contexto: pesquisa colaborativa em GP + IA (3min)
-2. Problema: como gerenciar 60 voluntários em 5 capítulos sem infraestrutura (2min)
+2. Problema: como gerenciar 50 voluntários em 5 capítulos sem infraestrutura (2min)
 3. Solução: plataforma Núcleo IA — demo ao vivo (8min)
 4. Resultados: KPIs, adoção, impacto (3min)
 5. Chamada: vagas para pesquisadores + QR code (2min)
@@ -119,7 +119,7 @@ O Núcleo se posiciona na interseção de **3 das 4 vertentes** do congresso:
 | FAQ interno (20 perguntas) | Vitor | 15/Apr | A fazer |
 | Vídeo fallback (3min, demo gravada) | Vitor | 22/Apr | A fazer |
 | Blog post "Núcleo IA no CBGPL" | Vitor | 15/Apr | A fazer |
-| Anúncio vagas pesquisadores | Ivan + Vitor | 22/Apr | A fazer |
+| Anúncio vagas pesquisadores | Ivan + Marcio + Ricardo | 22/Apr | A fazer |
 
 ### FAQ — 20 Perguntas Prováveis (draft)
 
@@ -146,7 +146,7 @@ O Núcleo se posiciona na interseção de **3 das 4 vertentes** do congresso:
 **Sobre participação:**
 15. Como posso participar? → Processo seletivo, vagas abrindo agora
 16. Precisa ser filiado PMI? → Sim, voluntário ativo em um dos capítulos
-17. Qual o compromisso? → ~4h/semana, reuniões semanais da tribo
+17. Qual o compromisso? → ~4h a ~6h/semana, reuniões semanais gerais e da tribo + horas de estudo
 18. Tem certificado? → Sim, PDUs e certificado de participação
 19. Meu capítulo pode aderir? → Sim, modelo escalável para novos capítulos
 20. Onde vejo mais? → nucleoia.vitormr.dev ou fale com qualquer membro do comitê
@@ -160,8 +160,8 @@ O Núcleo se posiciona na interseção de **3 das 4 vertentes** do congresso:
 | Audiência não conhece GP voluntário | Média | Médio | Contextualizar: 500k+ voluntários PMI global |
 | Vargas "rouba" atenção do tema IA | Baixa | Baixo | Pitch focado em "implementação prática" |
 | Poucos do Núcleo disponíveis | Média | Alto | Mínimo 2 pessoas (Vitor + 1) |
-| Sem slot na programação | Média | Alto | Ivan negocia como co-realizador |
-| Custo de viagem Goiânia→Gramado | — | Médio | Verificar budget com Ivan |
+| Sem slot na programação | Média | Alto | Ivan e Márcio negociam como co-realizadores |
+
 
 ### Cronograma — 4 Semanas
 
@@ -222,57 +222,21 @@ O Núcleo se posiciona na interseção de **3 das 4 vertentes** do congresso:
 
 ---
 
-## DNS PMI-GO
-
-### Recomendação
-1. **Agora:** Opção D — Ivan publica página estática no pmigo.org.br com link
-2. **Pós-congresso:** Opção A — `nucleo.pmigo.org.br` CNAME → nucleoia.vitormr.dev
-
-### Se Opção A:
-- Adicionar custom domain no Cloudflare Workers
-- Atualizar middleware CSRF para aceitar novo domínio
-- SSL via Cloudflare (automático)
-
----
-
-## Backlog Técnico
-
-### i18n (32 strings) — Semana 3
-- Grep PT-BR hardcoded → criar keys → 3 dicionários → Edit componentes
-- Componentes: PartnerPipeline, CpmaiLanding, EventMinutes + ~17 menores
-
-### Seleção Batch 2 — Semana 2-3
-- Verificar status avaliações (`get_selection_dashboard`)
-- Follow-up Fabricio + Sarah
-- Preparar anúncio vinculado ao congresso
-
-### Termos Voluntariado (49 pendentes) — Semana 2
-- Mass-notify via `send-campaign`
-- Prazo: 15/Apr (antes do congresso)
-
----
-
----
-
-## Curadoria dos Docs Christine (Lessons Learned + Manual R3)
+## Curadoria dos Docs (Lessons Learned + Manual R3)
 
 ### Dados verificados e úteis para o congresso
-- **Evolução 4 fases** com métricas: Pilot(8) → C1(22, 2 chapters) → C2(24, 5 chapters) → C3(50, 8 tribes)
+- **Evolução 4 fases** com métricas: Pilot(8) → C1(22, 2 chapters) → C2(24, 5 chapters) → C3(50, 7 tribes)
 - **119 candidaturas** no C3 (57 únicos → 75 matched) — demonstra demanda
 - **4 artigos publicados** no ProjectManagement.com (audiência >1M), 31 no pipeline
 - **4 cooperation agreements** assinados (Docusign, Dec 2025) + 3 em negociação
-- **"Carlos Novello" LATAM Award finalist** — Vitor, Voluntário do Ano 2025
+- **"Carlos Novello" LATAM Award finalist** — Vitor, nomeado e finalista para Voluntário do Ano 2025
 - **4 quadrantes de pesquisa** (R3): Augmented Practitioner, AI Project Management, Organizational Leadership, Future & Responsibility
 - **7-stage article production pipeline** com curation committee = peer review
 - **Zero infrastructure cost** — all free tiers
 - **KPI table (Q1 calibrated):** 51/60 members, 5/8 chapters, 76% retention, 328/1800h impact, 51/50 events
 
 ### Calibrações necessárias (curadoria crítica)
-1. **Versão:** Docs dizem v2.8.0 → já é v2.9.0. Usar dados da plataforma como fonte de verdade
-2. **Publicações C3 = 0 publicadas:** Na apresentação, framing = "quality bar da curadoria" não falha
-3. **Retenção 76%:** Normal para early-cycle. Contextualizar como aprendizado
-4. **Docs foram escritos para PMI-WDC:** Tom e framing precisam adaptação para audiência brasileira
-5. **§4.3 Event Representation:** Representar o Núcleo em eventos requer (i) aprovação formal, (ii) briefing de mensagens, (iii) relatório pós-evento → **seguir este processo para o CBGPL**
+1. **§4.3 Event Representation:** Representar o Núcleo em eventos requer (i) aprovação formal, (ii) briefing de mensagens, (iii) relatório pós-evento → **seguir este processo para o CBGPL**
 
 ### Material direto para o Case Arena (20min)
 O deck pode seguir a estrutura do Lessons Learned adaptada:
@@ -292,6 +256,5 @@ O deck pode seguir a estrutura do Lessons Learned adaptada:
 - Conexão internacional fortalece narrativa do congresso: "modelo replicável globalmente"
 
 ## Próximos Passos Imediatos
-1. ~~Explorar Artia API~~ → BLOQUEADO (401, aguardar Rodrigo)
-2. Congresso: Ivan validar formato de participação + seguir §4.3 para aprovação formal
-3. Deck: usar estrutura curada acima, dados da plataforma em real-time
+1. Congresso: Ivan validar formato de participação + seguir §4.3 para aprovação formal
+2. Deck: usar estrutura curada acima, dados da plataforma em real-time

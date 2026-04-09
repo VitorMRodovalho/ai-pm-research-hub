@@ -1,4 +1,4 @@
 ---
-import TribePage from '../../tribe/[id].astro';
+const { id } = Astro.params;
+return Astro.redirect(`/tribe/${id}?lang=en-US`);
 ---
-<TribePage />

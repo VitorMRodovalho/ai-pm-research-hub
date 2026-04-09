@@ -145,7 +145,12 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
                         🎓 {l.viewTrail}
                       </a>
                     )}
-                    {['volunteer_term', 'vep_acceptance'].includes(s.step_id) && (
+                    {s.step_id === 'volunteer_term' && (
+                      <a href="/volunteer-agreement" className="px-2.5 py-1 rounded-lg bg-navy text-white text-[10px] font-semibold no-underline hover:opacity-90">
+                        📄 {l.accept}
+                      </a>
+                    )}
+                    {s.step_id === 'vep_acceptance' && (
                       <button onClick={() => completeStep(s.step_id)}
                         className="px-2.5 py-1 rounded-lg border border-[var(--border-default)] text-[var(--text-secondary)] text-[10px] font-semibold cursor-pointer bg-transparent hover:bg-[var(--surface-hover)]">
                         ✓ {l.markDone}

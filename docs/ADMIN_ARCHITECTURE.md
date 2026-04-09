@@ -90,7 +90,7 @@ src/lib/admin/
 
 ---
 
-## Component Map (17 components)
+## Component Map (21 components)
 
 | Component | Location | Used by | Purpose |
 |-----------|----------|---------|---------|
@@ -110,6 +110,10 @@ src/lib/admin/
 | `KnowledgeIsland.tsx` | `components/admin/` | `/admin/knowledge` | Knowledge assets CRUD |
 | `TagManagementIsland.tsx` | `components/admin/` | `/admin/tags` | Tag CRUD with tiers |
 | `TierViewerBar.tsx` | `components/admin/` | `AdminLayout` | Permission simulation bar |
+| `VolunteerAgreementPanel.tsx` | `components/admin/` | `/admin/certificates` | Volunteer agreement sign/counter-sign workflow |
+| `VolunteerComplianceWidget.tsx` | `components/admin/` | `AdminSidebar` | Compliance status widget |
+| `SyncHealthWidget.tsx` | `components/admin/` | `/admin` | Cron job sync monitoring |
+| `BoardMembersPanel.tsx` | `components/admin/` | `/admin/chapter` | Chapter board members management |
 
 ---
 
@@ -134,15 +138,23 @@ src/lib/admin/
 - `get_audit_log()` — member activity history
 
 ### Governance
-- `get_governance_dashboard()` — stats + pending CRs
+- `get_manual_sections(p_version)` — manual sections (SECURITY DEFINER, anon-safe — powers public governance page)
+- `get_change_requests()` — CR list (auth-gated)
+- `get_governance_documents()` — governance documents (auth-gated)
 - `approve_change_request()` — sponsor approval with SHA-256
 - `get_cr_approval_status()` — sponsor voting panel
 - `get_governance_preview()` — manual R3 preview
 - `generate_manual_version()` — create new manual version
+- **Public access:** `/governance` is now visitor-accessible (manual tab only). Tabs for approvals, CRs, and documents are hidden for unauthenticated visitors.
 
-### Certificates
-- `get_pending_countersign()` — certificates awaiting GP signature
-- `counter_sign_certificate()` — GP counter-signs
+### Certificates & Volunteer Agreements
+- `get_pending_countersign()` — certificates awaiting chapter board counter-signature
+- `counter_sign_certificate()` — chapter board counter-signs (scoped by `contracting_chapter`)
+- `get_volunteer_agreement_stats()` — compliance metrics per chapter
+- Volunteer Agreement Panel: `/admin/certificates` (VolunteerAgreementPanel.tsx)
+- Compliance Widget: sidebar widget showing sign/counter-sign status (VolunteerComplianceWidget.tsx)
+- Template preview: formal volunteer term template visible to admin
+- Verification: `/verify/[code]` — public page shows signer + counter-signer info
 
 ### Publications
 - `get_publication_submissions()` — pipeline list

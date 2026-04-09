@@ -1705,6 +1705,8 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
         // Reload with specific cycle — need to use cycle_code
         const cycle = allCycles.find((c: any) => c.id === newId);
         if (cycle) {
+          // Notify React islands (DiversityDashboard) about cycle change
+          window.dispatchEvent(new CustomEvent('selection:cycle-changed', { detail: { cycleId: newId } }));
           sb.rpc('get_selection_dashboard', { p_cycle_code: cycle.cycle_code }).then(({ data }: any) => {
             if (data) {
               allRows = data.applications || [];

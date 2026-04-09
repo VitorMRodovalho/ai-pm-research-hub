@@ -6,7 +6,7 @@ import {
   Mail, Leaf, Rocket, Settings, Shield, Handshake, HelpCircle,
   ChevronLeft, ChevronRight, X,
   MonitorPlay, ClipboardList,
-  Library, SearchCheck, Tag,
+  Library, SearchCheck, Tag, FileCheck,
 } from 'lucide-react';
 import { hasPermission as checkPermission } from '../../lib/permissions';
 
@@ -17,7 +17,7 @@ const ICONS: Record<string, React.FC<{ size?: number }>> = {
   BarChart3, Briefcase, FileText, Building, FileBarChart, GitCompare,
   Mail, Leaf, Rocket, Settings, Shield, Handshake, HelpCircle,
   MonitorPlay, ClipboardList,
-  Library, SearchCheck, Tag,
+  Library, SearchCheck, Tag, FileCheck,
 };
 
 /* ────────────────────────── Sidebar data ────────────────────── */
@@ -51,6 +51,7 @@ const SECTIONS: SidebarSection[] = [
       { href: '/admin/tribes', label: { 'pt-BR': 'Tribos', 'en-US': 'Tribes', 'es-LATAM': 'Tribus' }, icon: 'Users', permission: 'admin.access' },
       { href: '/admin/selection', label: { 'pt-BR': 'Processo Seletivo', 'en-US': 'Selection Process', 'es-LATAM': 'Proceso Selectivo' }, icon: 'UserPlus', permission: 'admin.members.manage' },
       { href: '/admin/adoption', label: { 'pt-BR': 'Adoção', 'en-US': 'Adoption', 'es-LATAM': 'Adopción' }, icon: 'Activity', permission: 'admin.analytics' },
+      { href: '/admin/certificates', label: { 'pt-BR': 'Certificados & Termos', 'en-US': 'Certificates & Agreements', 'es-LATAM': 'Certificados y Acuerdos' }, icon: 'FileCheck', permission: 'admin.access' },
     ],
   },
   {
