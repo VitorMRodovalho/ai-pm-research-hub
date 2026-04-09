@@ -1444,12 +1444,15 @@ function MobileCardList({
               <span className={`text-lg font-extrabold ${rateColor}`}>{Math.round(r.rate)}%</span>
             </div>
 
-            {/* Scrollable attendance strip with date headers */}
+            {/* Scrollable attendance strip with date headers — only show eligible events */}
+            {(() => {
+              const myEvents = events.filter((ev) => r.attendance[ev.id] !== 'na');
+              return (
             <div className="overflow-x-auto -mx-1 px-1 pb-1">
-              <table className="border-collapse" style={{ minWidth: `${events.length * 2.25}rem` }}>
+              <table className="border-collapse" style={{ minWidth: `${myEvents.length * 2.25}rem` }}>
                 <thead>
                   <tr>
-                    {events.map((ev) => (
+                    {myEvents.map((ev) => (
                       <th
                         key={`h-${ev.id}`}
                         className="text-[7px] leading-tight text-center text-[var(--text-muted)] font-medium px-0.5 pb-0.5 whitespace-nowrap"
@@ -1462,7 +1465,7 @@ function MobileCardList({
                 </thead>
                 <tbody>
                   <tr>
-                    {events.map((ev) => {
+                    {myEvents.map((ev) => {
                       const st = statusCell(r.attendance[ev.id]);
                       return (
                         <td key={ev.id} className="px-0.5 text-center">
@@ -1479,6 +1482,8 @@ function MobileCardList({
                 </tbody>
               </table>
             </div>
+              );
+            })()}
           </div>
         );
       })}
