@@ -6,6 +6,7 @@ import AdminDashboardIsland from '../../components/admin/dashboard/AdminDashboar
 import PlatformHealthWidget from '../../components/admin/PlatformHealthWidget';
 import SyncHealthWidget from '../../components/admin/SyncHealthWidget';
 import VolunteerComplianceWidget from '../../components/admin/VolunteerComplianceWidget';
+import CrossTribeWidget from '../../components/admin/CrossTribeWidget';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const i18nBundle = buildPageI18n(['comp.adminDash', 'comp.common'], lang);
 ---
@@ -14,7 +15,10 @@ const i18nBundle = buildPageI18n(['comp.adminDash', 'comp.common'], lang);
   <div class="max-w-[1100px] mx-auto px-4 pb-12">
     <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
     <AdminDashboardIsland client:load />
-    <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="mt-6">
+      <CrossTribeWidget client:load lang={lang} />
+    </div>
+    <div class="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
       <PlatformHealthWidget client:load lang={lang} />
       <SyncHealthWidget client:load lang={lang} />
       <VolunteerComplianceWidget client:load lang={lang} />
