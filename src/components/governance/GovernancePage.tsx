@@ -68,19 +68,27 @@ export default function GovernancePage() {
     async function boot() {
       const sb = getSb();
       const m = (window as any).navGetMember?.();
-      if ((!sb || !m) && retries < 30) { retries++; setTimeout(boot, 300); return; }
+      // Wait for sb (always available), but only wait for member up to 10 retries
+      // After that, proceed as visitor (manual-only view)
+      if (!sb && retries < 30) { retries++; setTimeout(boot, 300); return; }
+      if (!m && retries < 10) { retries++; setTimeout(boot, 300); return; }
       if (m && !cancelled) setMember(m);
       if (!sb) { if (!cancelled) setLoading(false); return; }
       try {
-        const [secRes, crRes, docRes] = await Promise.all([
-          sb.rpc('get_manual_sections', { p_version: 'R2' }),
-          sb.rpc('get_change_requests', { p_status: null, p_cr_type: null }),
-          sb.rpc('get_governance_documents'),
-        ]);
-        if (!cancelled) {
-          setSections(Array.isArray(secRes.data) ? secRes.data : []);
-          setCrs(Array.isArray(crRes.data) ? crRes.data : []);
-          setDocs(Array.isArray(docRes.data) ? docRes.data : []);
+        // Always load manual sections (anon-safe RPC)
+        const secRes = await sb.rpc('get_manual_sections', { p_version: 'R2' });
+        if (!cancelled) setSections(Array.isArray(secRes.data) ? secRes.data : []);
+
+        // Only load auth-gated data if member is present
+        if (m) {
+          const [crRes, docRes] = await Promise.all([
+            sb.rpc('get_change_requests', { p_status: null, p_cr_type: null }),
+            sb.rpc('get_governance_documents'),
+          ]);
+          if (!cancelled) {
+            setCrs(Array.isArray(crRes.data) ? crRes.data : []);
+            setDocs(Array.isArray(docRes.data) ? docRes.data : []);
+          }
         }
       } catch (e) { console.warn('Governance load error:', e); }
       finally { if (!cancelled) setLoading(false); }
@@ -133,12 +141,17 @@ export default function GovernancePage() {
     );
   }
 
-  const views: { key: View; icon: string; labelKey: string; fallback: string }[] = [
+  const isVisitor = !member;
+  const allViews: { key: View; icon: string; labelKey: string; fallback: string; authOnly?: boolean }[] = [
     { key: 'document', icon: '📖', labelKey: 'governance.manual_tab', fallback: 'Manual' },
-    { key: 'approvals', icon: '🗳️', labelKey: 'governance.approvals_tab', fallback: 'Aprovações' },
-    { key: 'changes', icon: '📋', labelKey: 'governance.cr_tab', fallback: 'Solicitações de Mudança' },
-    { key: 'documents', icon: '📄', labelKey: 'governance.documents_tab', fallback: 'Documentos' },
+    { key: 'approvals', icon: '🗳️', labelKey: 'governance.approvals_tab', fallback: 'Aprovações', authOnly: true },
+    { key: 'changes', icon: '📋', labelKey: 'governance.cr_tab', fallback: 'Solicitações de Mudança', authOnly: true },
+    { key: 'documents', icon: '📄', labelKey: 'governance.documents_tab', fallback: 'Documentos', authOnly: true },
   ];
+  const views = isVisitor ? allViews.filter(v => !v.authOnly) : allViews;
+
+  // Force document view for visitors trying to access auth-only tabs
+  const activeView = isVisitor && view !== 'document' ? 'document' : view;
 
   return (
     <div className="space-y-6">
@@ -157,34 +170,36 @@ export default function GovernancePage() {
         )}
       </div>
 
-      {/* View selector */}
-      <div className="flex gap-2 flex-wrap">
-        {views.map(v => (
-          <button
-            key={v.key}
-            onClick={() => setView(v.key)}
-            className={`px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 transition-all ${
-              view === v.key
-                ? 'border-navy bg-navy text-white'
-                : 'border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]'
-            }`}
-          >
-            {v.icon} {t(v.labelKey, v.fallback)}
-          </button>
-        ))}
-      </div>
+      {/* View selector — only show tabs if authenticated (visitors see manual directly) */}
+      {!isVisitor && (
+        <div className="flex gap-2 flex-wrap">
+          {views.map(v => (
+            <button
+              key={v.key}
+              onClick={() => setView(v.key)}
+              className={`px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 transition-all ${
+                activeView === v.key
+                  ? 'border-navy bg-navy text-white'
+                  : 'border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]'
+              }`}
+            >
+              {v.icon} {t(v.labelKey, v.fallback)}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Views */}
-      {view === 'document' && (
+      {activeView === 'document' && (
         <ManualDocumentViewer lang={lang} />
       )}
-      {view === 'approvals' && (
+      {activeView === 'approvals' && (
         <GovernanceApprovalTab t={t} getSb={getSb} member={member} />
       )}
-      {view === 'changes' && (
+      {activeView === 'changes' && (
         <CRList crs={crs} sections={sections} member={member} canSubmit={canSubmit} canReview={canReview} t={t} getSb={getSb} onReload={reload} />
       )}
-      {view === 'documents' && (
+      {activeView === 'documents' && (
         <DocumentsList docs={docs} t={t} />
       )}
     </div>

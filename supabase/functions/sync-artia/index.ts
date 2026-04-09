@@ -40,6 +40,7 @@ async function getArtiaToken(): Promise<string> {
 // Artia custom status IDs (PMI-GO standard)
 const ARTIA_STATUS = { A_INICIAR: 317052, ANDAMENTO: 328049, ENCERRADO: 317054 }
 const ARTIA_KPI_FOLDER = 6399649
+const ARTIA_RESPONSIBLE_ID = 298786 // "GP Projeto Núcleo IA"
 
 async function updateArtiaActivity(token: string, activityId: number, pct: number, desc: string, title: string): Promise<boolean> {
   const safeDesc = desc.replace(/"/g, '\\"').replace(/\n/g, ' ')
@@ -49,7 +50,7 @@ async function updateArtiaActivity(token: string, activityId: number, pct: numbe
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
     body: JSON.stringify({
-      query: `mutation { updateActivity(id: "${activityId}", accountId: ${ARTIA_ACCOUNT_ID}, title: "${safeTitle}", completedPercent: ${pct}, description: "${safeDesc}") { id completedPercent } }`,
+      query: `mutation { updateActivity(id: "${activityId}", accountId: ${ARTIA_ACCOUNT_ID}, title: "${safeTitle}", completedPercent: ${pct}, description: "${safeDesc}", responsibleId: ${ARTIA_RESPONSIBLE_ID}) { id completedPercent } }`,
     }),
   })
   const data = await res.json()

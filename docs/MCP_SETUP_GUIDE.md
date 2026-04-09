@@ -2,7 +2,7 @@
 
 ## What is MCP?
 
-MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact with external services. The Núcleo server exposes 56 tools (47 read + 9 write) that let you query and manage project data directly from your AI assistant using natural language. A dynamic knowledge layer adapts guidance to each member's role and permissions.
+MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact with external services. The Núcleo server exposes 59 tools (47 read + 12 write) that let you query and manage project data directly from your AI assistant using natural language. A dynamic knowledge layer adapts guidance to each member's role and permissions.
 
 ## Universal URL
 
@@ -18,7 +18,7 @@ Authentication: OAuth 2.1 — you'll be redirected to log in with the same accou
 
 | Client | Status | Notes |
 |--------|--------|-------|
-| Claude.ai | ✅ Verified (56 tools) | Web and desktop app. Streamable HTTP SSE. |
+| Claude.ai | ✅ Verified (59 tools) | Web and desktop app. Streamable HTTP SSE. |
 | Claude Code | ✅ Verified | Terminal — see token workaround below |
 | ChatGPT | ✅ Verified (beta) | Settings → Apps → Connectors → Advanced → New App |
 | Perplexity | ✅ Verified | MCP connector in settings. |
@@ -110,7 +110,7 @@ Token expires in 1 hour. Refresh by repeating step 2-3.
 | `get_cycle_report` | Full cycle report — members, tribes, KPIs (admin/GP) |
 | `get_annual_kpis` | Annual KPIs — targets vs actuals (admin/sponsor) |
 
-### Write Tools (6 — tribe leaders, GP, deputy only)
+### Write Tools (12 — tribe leaders, GP, deputy only)
 
 | Tool | Description |
 |------|-------------|
@@ -120,6 +120,12 @@ Token expires in 1 hour. Refresh by repeating step 2-3.
 | `register_attendance` | Register attendance for a tribe meeting |
 | `send_notification_to_tribe` | Send a notification to all tribe members |
 | `create_tribe_event` | Create a new tribe meeting or event |
+| `register_showcase` | Register a showcase presentation |
+| `submit_chapter_need` | Submit a chapter need request |
+| `drop_event_instance` | Cancel a specific event occurrence |
+| `update_event_instance` | Edit a specific event (date, time, notes) |
+| `mark_member_excused` | Mark a member as excused (justified absence) |
+| `manage_partner` | Manage partnership records |
 
 ## Security Model
 

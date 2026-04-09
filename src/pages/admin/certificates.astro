@@ -1,5 +1,6 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
+import VolunteerAgreementPanel from '../../components/admin/VolunteerAgreementPanel';
 import { getLangFromURL, t, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 ---
@@ -7,6 +8,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 <AdminLayout title={t('admin.certificates.title', lang)} breadcrumbs={[{label:'Pessoas'},{label:'Certificados'}]}>
   <main class="space-y-6">
     <h1 class="text-xl font-bold text-[var(--text-primary)]">{t('admin.certificates.title', lang)}</h1>
+
+    <!-- Volunteer Agreement Panel -->
+    <VolunteerAgreementPanel client:load lang={lang} />
 
     <div id="admin-certs-pending" class="space-y-3"></div>
     <div id="admin-certs-all" class="space-y-3"></div>
@@ -77,7 +81,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
                   <div class="flex-1 min-w-0">
                     <div class="text-sm font-medium text-[var(--text-primary)]">${esc(c.member_name)}</div>
                     <div class="text-xs text-[var(--text-muted)]">${esc(c.title)} \u00B7 ${fmtDate(c.issued_at, lang)} \u00B7 ${esc(c.verification_code)}</div>
-                    ${c.tribe_name ? `<div class="text-[10px] text-[var(--text-muted)]">${esc(c.tribe_name)} \u00B7 ${esc(c.member_role)}</div>` : ''}
+                    <div class="text-[10px] text-[var(--text-muted)]">${c.member_chapter ? esc(c.member_chapter) + ' \u00B7 ' : ''}${c.tribe_name ? esc(c.tribe_name) + ' \u00B7 ' : ''}${esc(c.member_role)}</div>
                   </div>
                   <button class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[12px] font-semibold border-0 cursor-pointer hover:bg-emerald-700"
                     data-countersign="${c.id}">

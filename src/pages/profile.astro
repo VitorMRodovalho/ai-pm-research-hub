@@ -164,6 +164,19 @@ const PROFILE_I18N = {
   <ConfirmModal />
   <div class="max-w-2xl mx-auto px-4 py-10">
     <h1 class="text-2xl font-extrabold text-navy mb-6">{t('profile.heading', lang)}</h1>
+
+    <!-- Volunteer Agreement Banner -->
+    <div id="va-banner" class="hidden mb-5 rounded-xl border-2 border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 p-4 flex items-start gap-3">
+      <span class="text-xl flex-shrink-0">📋</span>
+      <div class="flex-1">
+        <div class="font-bold text-sm text-amber-800 dark:text-amber-300">{t('profile.volunteerBanner.title', lang)}</div>
+        <p class="text-xs text-amber-700 dark:text-amber-400 mt-0.5">{t('profile.volunteerBanner.description', lang)}</p>
+      </div>
+      <a href="/volunteer-agreement" class="flex-shrink-0 px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-semibold no-underline hover:bg-amber-600 transition-colors">
+        {t('profile.volunteerBanner.action', lang)}
+      </a>
+    </div>
+
     <div id="profile-content" class="space-y-5">
       <div class="text-center text-[var(--text-muted)] py-8">{t('profile.loading', lang)}</div>
     </div>
@@ -435,6 +448,19 @@ const PROFILE_I18N = {
       console.warn('Profile: failed to load My Week data:', e);
       weekData = null;
     }
+
+    // Check volunteer agreement status
+    try {
+      const { data: certs } = await sb.rpc('get_my_certificates');
+      const thisYear = new Date().getFullYear();
+      const hasVA = (certs || []).some((c: any) =>
+        c.type === 'volunteer_agreement' && new Date(c.issued_at).getFullYear() === thisYear
+      );
+      if (!hasVA && currentMember?.operational_role && !['sponsor', 'chapter_liaison', 'observer', 'candidate', 'visitor'].includes(currentMember.operational_role)) {
+        const banner = document.getElementById('va-banner');
+        if (banner) banner.classList.remove('hidden');
+      }
+    } catch (_) { /* silent */ }
   }
 
   function formatDatePt(value: string | null | undefined): string {

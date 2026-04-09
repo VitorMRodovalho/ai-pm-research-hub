@@ -1,4 +1,5 @@
 ---
-import BlogPost from '../../blog/[slug].astro';
+const lang = 'en-US' as const;
+const { slug } = Astro.params;
 ---
-<BlogPost />
+<meta http-equiv="refresh" content={`0;url=/blog/${slug}?lang=en-US`}>

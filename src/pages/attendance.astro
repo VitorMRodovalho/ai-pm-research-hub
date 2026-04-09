@@ -204,6 +204,10 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   feedbackEvents: t('attendance.feedback.events', lang),
   windowClosed: t('attendance.windowClosed', lang),
   adminOverride: t('attendance.adminOverride', lang),
+  deleteEvent: t('attendance.deleteEvent', lang),
+  deleteConfirm: t('attendance.deleteConfirm', lang),
+  deleteWarning: t('attendance.deleteWarning', lang),
+  deleteSuccess: t('attendance.msg.deleteSuccess', lang),
 }) }}>
   window.__ATTENDANCE_I18N = JSON.parse(__ATTENDANCE_I18N);
 </script>
@@ -417,6 +421,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const query = ATTENDANCE_ROUTE.query.toLowerCase();
     const typeF = getTypeFilter();
     const tribeF = getTribeFilter();
+    // debug: console.log('[FILTER] type:', typeF, 'tribe:', tribeF, 'query:', query, 'tagFilter:', ACTIVE_TAG_FILTER);
     const gp = isGPLevel();
     return ALL_EVENTS.filter((ev: any) => {
       // Participant override: user always sees events they participated in
@@ -429,19 +434,19 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       if (ev.visibility === 'leadership' && !CAN_MANAGE && MEMBER?.operational_role !== 'tribe_leader' && !isParticipant) return false;
       // Type filter
       if (typeF !== 'todos' && ev.type !== typeF) return false;
-      // Tribe filter
-      if (tribeF && ev.tribe_id !== tribeF) return false;
+      // Tribe filter (use == for type coercion: tribe_id may be string or number)
+      if (tribeF && ev.tribe_id != tribeF) return false;
       // Tag filter
       if (ACTIVE_TAG_FILTER) {
         const evTags = EVENT_TAG_MAP[ev.id] || [];
         if (!evTags.includes(ACTIVE_TAG_FILTER)) return false;
       }
       // Search
-      const matchesQuery = !query
-        || (ev.title || '').toLowerCase().includes(query)
-        || (ev.meeting_link || '').toLowerCase().includes(query);
-      const matchesFocus = !ATTENDANCE_ROUTE.eventId || ev.id === ATTENDANCE_ROUTE.eventId;
-      return matchesQuery || matchesFocus;
+      // Search filter
+      if (query && !(ev.title || '').toLowerCase().includes(query) && !(ev.meeting_link || '').toLowerCase().includes(query)) return false;
+      // Focus filter (deep-link to specific event)
+      if (ATTENDANCE_ROUTE.eventId && ev.id !== ATTENDANCE_ROUTE.eventId) return false;
+      return true;
     });
   }
 
@@ -611,6 +616,34 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     });
   }
 
+  async function populateTribeDropdown() {
+    try {
+      // Build tribe list from loaded events (covers all cycles, not just active tribes)
+      const { data: allTribes } = await sb.from('tribes').select('id, name, is_active').order('id');
+      const tribesInEvents = new Set(ALL_EVENTS.filter((ev: any) => ev.tribe_id).map((ev: any) => ev.tribe_id));
+      const sel = document.getElementById('events-tribe-filter') as HTMLSelectElement;
+      if (!sel || !allTribes) return;
+      // Clear existing options beyond default
+      while (sel.options.length > 1) sel.remove(1);
+      allTribes
+        .filter((t: any) => tribesInEvents.has(t.id))
+        .forEach((t: any) => {
+          const opt = document.createElement('option');
+          opt.value = String(t.id);
+          opt.textContent = `T${t.id} — ${t.name}${!t.is_active ? ' (inativa)' : ''}`;
+          sel.appendChild(opt);
+        });
+      // Non-GP members with a tribe: default filter to their own tribe
+      if (!isGPLevel() && MEMBER?.tribe_id) {
+        sel.value = String(MEMBER.tribe_id);
+        sel.classList.remove('hidden');
+        renderEvents();
+      }
+    } catch (e: any) {
+      console.error('[TRIBE POPULATE] Error:', e?.message);
+    }
+  }
+
   /** Smart classification: event is "past" if any of:
    *  1. date < today
    *  2. date = today AND time_start + duration has passed
@@ -649,7 +682,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const hasMinutes = !!(ev.minutes_text || ev.minutes_url);
     const hasAgenda = !!(ev.agenda_text || ev.agenda_url);
     const badges = [
-      hasMinutes ? '<span class="text-[10px]" title="Ata">📝</span>' : '',
+      hasMinutes ? `<span class="text-[10px] cursor-pointer hover:bg-blue-100 rounded px-0.5" title="Ver Ata" data-action="toggle-minutes" data-event-id="${ev.id}">📝</span>` : '',
       hasAgenda ? '<span class="text-[10px]" title="Pauta">📋</span>' : '',
     ].filter(Boolean).join('');
     const canRoster = CAN_MANAGE;
@@ -657,10 +690,15 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
 
     ((window as any).__attendanceEventsById = (window as any).__attendanceEventsById || {})[ev.id] = ev;
 
-    return `<div class="py-2 border-b border-[var(--border-subtle)] last:border-b-0 flex items-center gap-2">
+    const minutesHtml = ev.minutes_text
+      ? `<div id="minutes-${ev.id}" class="hidden mt-2 mx-6 mb-2 p-3 bg-[var(--surface-section-cool)] rounded-lg text-[12px] text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed border-l-3 border-[var(--color-teal)]">${escapeAttr(ev.minutes_text).replace(/\n/g, '<br>').replace(/## /g, '<strong>').replace(/<br><strong>/g, '<br><br><strong>')}</div>`
+      : '';
+
+    return `<div>
+      <div class="py-2 border-b border-[var(--border-subtle)] last:border-b-0 flex items-center gap-2">
       <span class="text-xs">${attIcon}</span>
       <div class="flex-1 min-w-0">
-        <div class="text-[13px] font-medium text-[var(--text-primary)] truncate">${ev.title}</div>
+        <div class="text-[13px] font-medium text-[var(--text-primary)] truncate${hasMinutes ? ' cursor-pointer hover:text-navy' : ''}" ${hasMinutes ? `data-action="toggle-minutes" data-event-id="${ev.id}"` : ''}>${ev.title}</div>
         <div class="text-[11px] text-[var(--text-muted)]">${fmtDate(ev.date)} · ${ev.duration_minutes || 60}min${isPast ? ` · ${ev.attendee_count || 0} presentes` : ''}${linkHtml}${recHtml} ${badges}</div>
       </div>
       <div class="flex gap-1 items-center flex-shrink-0">
@@ -672,8 +710,9 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
           )) : ''}
         ${canRoster ? `<button class="px-1.5 py-1 text-xs bg-[var(--surface-base)] border border-[var(--border-default)] rounded cursor-pointer" data-action="open-roster" data-event-id="${ev.id}" data-event-title="${ev.title || ''}">📋</button>` : ''}
         ${canEdit ? `<button class="px-1.5 py-1 text-xs bg-[var(--surface-base)] border border-[var(--border-default)] rounded cursor-pointer" data-action="edit-event" data-event-id="${ev.id}">✏️</button>` : ''}
+        ${canRoster && isPast && (ev.attendee_count || 0) === 0 ? `<button class="px-1.5 py-1 text-xs bg-red-50 border border-red-200 rounded cursor-pointer text-red-600 hover:bg-red-100" data-action="delete-event" data-event-id="${ev.id}" data-event-title="${ev.title || ''}" title="${I18N.deleteEvent || 'Cancelar esta reunião'}">🗑️</button>` : ''}
       </div>
-    </div>`;
+    </div>${minutesHtml}</div>`;
   }
 
   const SECTION_ORDER = [
@@ -793,6 +832,65 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
 
     document.addEventListener('click', (e: MouseEvent) => {
       if (!(e.target instanceof Element)) return;
+
+      // Show-more buttons (delegated from template literals)
+      const showMoreBtn = (e.target as HTMLElement).closest('.js-show-more') as HTMLElement | null;
+      if (showMoreBtn) {
+        const tgt = document.getElementById(showMoreBtn.dataset.target || '');
+        if (tgt) tgt.classList.remove('hidden');
+        showMoreBtn.remove();
+        return;
+      }
+      // Tag filter pill buttons — sync with type dropdown for compound filtering
+      const tagFilterBtn = (e.target as HTMLElement).closest('.tag-filter-btn') as HTMLElement | null;
+      if (tagFilterBtn && tagFilterBtn.dataset.tagFilter !== undefined) {
+        const tagName = tagFilterBtn.dataset.tagFilter || '';
+        VISIBLE_COUNT = PAGE_SIZE;
+
+        // Map tag names to event types for type-based pills
+        const TAG_TO_TYPE: Record<string, string> = {
+          general_meeting: 'geral', tribe_meeting: 'tribo', kickoff: 'kickoff',
+          leadership_meeting: 'lideranca', interview: 'entrevista',
+          external_event: 'evento_externo', webinar: 'webinar',
+        };
+        const typeSelect = document.getElementById('events-type-filter') as HTMLSelectElement | null;
+        const tribeSel = document.getElementById('events-tribe-filter');
+        const mappedType = TAG_TO_TYPE[tagName];
+
+        if (!tagName) {
+          // "Todos" pill — reset both filters
+          ACTIVE_TAG_FILTER = '';
+          if (typeSelect) { typeSelect.value = 'todos'; ATTENDANCE_ROUTE.type = 'todos'; }
+          if (tribeSel) tribeSel.classList.add('hidden');
+        } else if (mappedType) {
+          // Type-mapped pill (Geral, Tribo, etc.) — set type dropdown, clear tag filter
+          ACTIVE_TAG_FILTER = '';
+          if (typeSelect) { typeSelect.value = mappedType; ATTENDANCE_ROUTE.type = mappedType; }
+          // Show tribe sub-filter for type-based pills (Tribo mapped or Todos)
+          if (tribeSel) tribeSel.classList.toggle('hidden', mappedType !== 'tribo');
+        } else {
+          // Non-type pill (Ciclo 2, Ciclo 3, etc.) — use as tag filter, reset type to todos, show tribe dropdown
+          ACTIVE_TAG_FILTER = tagName;
+          if (typeSelect) { typeSelect.value = 'todos'; ATTENDANCE_ROUTE.type = 'todos'; }
+          if (tribeSel) tribeSel.classList.remove('hidden');
+        }
+
+        // Update pill styling via inline styles (classList with var() classes breaks in browsers)
+        document.querySelectorAll('.tag-filter-btn').forEach(btn => {
+          const el = btn as HTMLElement;
+          el.dataset.active = 'false';
+          el.style.background = 'var(--surface-card)';
+          el.style.color = 'var(--text-secondary)';
+          el.style.borderColor = 'var(--border-default)';
+        });
+        tagFilterBtn.dataset.active = 'true';
+        tagFilterBtn.style.background = 'var(--color-navy)';
+        tagFilterBtn.style.color = '#fff';
+        tagFilterBtn.style.borderColor = 'var(--color-navy)';
+        renderEvents();
+        return;
+      }
+
       const target = (e.target as HTMLElement).closest('[data-action]') as HTMLElement | null;
       if (!target) return;
 
@@ -844,6 +942,17 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
           if (ev) openEditEvent(ev);
           break;
         }
+        case 'delete-event': {
+          const evId = target.dataset.eventId || '';
+          const evTitle = target.dataset.eventTitle || '';
+          deleteEventInstance(evId, evTitle);
+          break;
+        }
+        case 'toggle-minutes': {
+          const minutesEl = document.getElementById(`minutes-${target.dataset.eventId}`);
+          if (minutesEl) minutesEl.classList.toggle('hidden');
+          break;
+        }
         case 'toggle-presence':
           togglePresence(target.dataset.eventId || '', target.dataset.memberId || '', target);
           break;
@@ -863,27 +972,6 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
           if (target.dataset.showcaseId) removeShowcase(target.dataset.showcaseId);
           break;
       }
-      // Show-more buttons (delegated from template literals)
-      const showMoreBtn = (e.target as HTMLElement).closest('.js-show-more') as HTMLElement | null;
-      if (showMoreBtn) {
-        const tgt = document.getElementById(showMoreBtn.dataset.target || '');
-        if (tgt) tgt.classList.remove('hidden');
-        showMoreBtn.remove();
-        return;
-      }
-      // W140: tag filter buttons (not data-action based, use data-tag-filter)
-      const tagFilterBtn = (e.target as HTMLElement).closest('.tag-filter-btn') as HTMLElement | null;
-      if (tagFilterBtn && tagFilterBtn.dataset.tagFilter !== undefined) {
-        ACTIVE_TAG_FILTER = tagFilterBtn.dataset.tagFilter || '';
-        VISIBLE_COUNT = PAGE_SIZE;
-        document.querySelectorAll('.tag-filter-btn').forEach(btn => {
-          btn.classList.remove('bg-navy', 'text-white', 'border-navy');
-          btn.classList.add('bg-[var(--surface-card)]', 'text-[var(--text-secondary)]', 'border-[var(--border-default)]');
-        });
-        tagFilterBtn.classList.remove('bg-[var(--surface-card)]', 'text-[var(--text-secondary)]', 'border-[var(--border-default)]');
-        tagFilterBtn.classList.add('bg-navy', 'text-white', 'border-navy');
-        renderEvents();
-      }
     });
 
     document.addEventListener('change', (e: Event) => {
@@ -901,11 +989,37 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       if (target instanceof HTMLSelectElement) {
         if (target.id === 'ev-type') updateAudienceFromType('ev-audience', 'ev-type');
         if (target.id === 'rec-type') updateAudienceFromType('rec-audience', 'rec-type');
+        if (target.id === 'events-tribe-filter') {
+          VISIBLE_COUNT = PAGE_SIZE;
+          renderEvents();
+        }
         if (target.id === 'events-type-filter') {
           ATTENDANCE_ROUTE.type = target.value;
+          ACTIVE_TAG_FILTER = '';
           VISIBLE_COUNT = PAGE_SIZE;
           const tribeSel = document.getElementById('events-tribe-filter');
           if (tribeSel) tribeSel.classList.toggle('hidden', target.value !== 'todos' && target.value !== 'tribo');
+          // Sync pill styling: highlight matching pill or reset to "Todos"
+          const TYPE_TO_TAG: Record<string, string> = {
+            geral: 'general_meeting', tribo: 'tribe_meeting', kickoff: 'kickoff',
+            lideranca: 'leadership_meeting', entrevista: 'interview',
+            evento_externo: 'external_event', webinar: 'webinar',
+          };
+          const activeTag = TYPE_TO_TAG[target.value] || '';
+          document.querySelectorAll('.tag-filter-btn').forEach(btn => {
+            const el = btn as HTMLElement;
+            const isMatch = (activeTag && el.dataset.tagFilter === activeTag) || (!activeTag && el.dataset.tagFilter === '');
+            el.dataset.active = String(isMatch);
+            if (isMatch) {
+              el.style.background = 'var(--color-navy)';
+              el.style.color = '#fff';
+              el.style.borderColor = 'var(--color-navy)';
+            } else {
+              el.style.background = 'var(--surface-card)';
+              el.style.color = 'var(--text-secondary)';
+              el.style.borderColor = 'var(--border-default)';
+            }
+          });
           renderEvents();
         }
       }
@@ -919,27 +1033,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     // Tribe filter dropdown (type filter handled by delegated change handler above)
     document.getElementById('events-tribe-filter')?.addEventListener('change', () => renderEvents());
     // Type dropdown populated later in populateTypeDropdown() after CAN_MANAGE is set
-    // Populate tribe dropdown — pre-select member's tribe for non-GP users
-    (async () => {
-      try {
-        const { data: tribes } = await sb.from('tribes').select('id, name').eq('is_active', true).order('id');
-        const sel = document.getElementById('events-tribe-filter') as HTMLSelectElement;
-        if (sel && tribes) {
-          tribes.forEach((t: any) => {
-            const opt = document.createElement('option');
-            opt.value = String(t.id);
-            opt.textContent = `T${t.id} — ${t.name}`;
-            sel.appendChild(opt);
-          });
-          // Non-GP members with a tribe: default filter to their own tribe
-          if (!isGPLevel() && MEMBER?.tribe_id) {
-            sel.value = String(MEMBER.tribe_id);
-            sel.classList.remove('hidden');
-            renderEvents();
-          }
-        }
-      } catch {}
-    })();
+    // Tribe dropdown is now populated in onMemberReady() via populateTribeDropdown()
 
     document.addEventListener('input', (e: Event) => {
       const target = e.target as HTMLElement | null;
@@ -1034,6 +1128,27 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     }
   }
 
+  // ── DELETE EVENT INSTANCE ──
+  async function deleteEventInstance(eventId: string, eventTitle: string) {
+    if (!CAN_MANAGE) return;
+    const confirmed = confirm(
+      `${I18N.deleteConfirm || 'Tem certeza que deseja cancelar esta reunião?'}\n\n${eventTitle}\n\n${I18N.deleteWarning || 'Esta ação não pode ser desfeita.'}`
+    );
+    if (!confirmed) return;
+    try {
+      const { data, error } = await sb.rpc('drop_event_instance', { p_event_id: eventId });
+      if (error) throw error;
+      if (data?.success) {
+        toast(I18N.deleteSuccess || 'Evento cancelado com sucesso.', 'success');
+        loadEvents(); loadKPIs();
+      } else {
+        toast(data?.error || 'Erro ao deletar evento.', 'error');
+      }
+    } catch (e: any) {
+      toast(e?.message || 'Erro ao deletar evento.', 'error');
+    }
+  }
+
   // ── W140: TAG SYSTEM ──
   const LEGACY_TYPE_MAP: Record<string, string> = {
     general_meeting: 'general_meeting',
@@ -1076,13 +1191,13 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   function populateTagFilterBar() {
     const bar = document.getElementById('attendance-tag-filter');
     if (!bar) return;
-    const systemTags = ALL_TAGS.filter(t => t.tier === 'system');
+    const systemTags = ALL_TAGS.filter(t => t.tier === 'system' && !t.name.startsWith('tribe_'));
     if (!systemTags.length) return;
     bar.classList.remove('hidden');
     bar.innerHTML = `
-      <button type="button" class="tag-filter-btn px-2.5 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border border-navy bg-navy text-white" data-tag-filter="">Todos</button>
+      <button type="button" class="tag-filter-btn px-2.5 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border" data-tag-filter="" data-active="true" style="background:var(--color-navy);color:#fff;border-color:var(--color-navy)">Todos</button>
       ${systemTags.map(tag => `
-        <button type="button" class="tag-filter-btn px-2.5 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)]" data-tag-filter="${escapeAttr(tag.name)}" style="border-color:${tag.color}40">
+        <button type="button" class="tag-filter-btn px-2.5 py-1.5 rounded-full text-[12px] font-semibold cursor-pointer border" data-tag-filter="${escapeAttr(tag.name)}" data-active="false" style="background:var(--surface-card);color:var(--text-secondary);border-color:${tag.color}40">
           <span class="inline-block w-2 h-2 rounded-full mr-1" style="background:${tag.color}"></span>${tag.label_pt || tag.name}
         </button>
       `).join('')}
@@ -1793,6 +1908,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     await Promise.all([loadTags(), loadKPIs()]);
     await loadEvents();
     populateTypeDropdown();
+    populateTribeDropdown();
     // Load event-tag mappings in background for tag filter bar
     loadEventTagMap().then(() => {
       if (ACTIVE_TAG_FILTER) renderEvents();

@@ -11,14 +11,14 @@
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare&logoColor=white)](https://workers.cloudflare.com)
-[![MCP](https://img.shields.io/badge/MCP-56%20Tools-D97757?logo=claude&logoColor=white)](#mcp-server--ai-integration)
+[![MCP](https://img.shields.io/badge/MCP-59%20Tools-D97757?logo=claude&logoColor=white)](#mcp-server--ai-integration)
 [![PostHog](https://img.shields.io/badge/PostHog-Analytics-F9BD2B?logo=posthog&logoColor=white)](https://posthog.com)
 [![Sentry](https://img.shields.io/badge/Sentry-Monitoring-362D59?logo=sentry&logoColor=white)](https://sentry.io)
 [![Cost](https://img.shields.io/badge/Infra%20Cost-%240%2Fmo-brightgreen)]()
 
 [🇧🇷 Português](README.pt-BR.md) · [🇪🇸 Español](README.es.md)
 
-[**Live Platform**](https://nucleoia.vitormr.dev) · [**MCP Server**](https://nucleoia.vitormr.dev/mcp) · [**Blog**](https://nucleoia.vitormr.dev/blog) · [**Governance**](docs/GOVERNANCE_CHANGELOG.md)
+[**Live Platform**](https://nucleoia.vitormr.dev) · [**MCP Server**](https://nucleoia.vitormr.dev/mcp) · [**Blog**](https://nucleoia.vitormr.dev/blog) · [**Governance**](https://nucleoia.vitormr.dev/governance) · [**Site Map & Access Tiers**](docs/SITE_MAP.md)
 
 </div>
 
@@ -28,7 +28,7 @@
 
 The **AI & PM Research Hub** (*Núcleo de Estudos e Pesquisa em Inteligência Artificial e Gerenciamento de Projetos*) is a multi-chapter research initiative under the PMI® Brazilian ecosystem, advancing the intersection of Artificial Intelligence and Project Management.
 
-Founded in 2024 as a pilot within PMI Goiás, the initiative has grown into a structured alliance of five PMI chapters — **PMI-GO, PMI-CE, PMI-DF, PMI-MG, and PMI-RS** — with 50 active researchers organized across 7 research streams and 4 strategic knowledge quadrants.
+Founded in 2024 as a pilot within PMI Goiás, the initiative has grown into a structured alliance of five PMI chapters — **PMI-GO, PMI-CE, PMI-DF, PMI-MG, and PMI-RS** — with 52 active researchers organized across 7 research streams and 4 strategic knowledge quadrants.
 
 > **Project Manager:** Vitor Maia Rodovalho
 
@@ -38,14 +38,15 @@ Founded in 2024 as a pilot within PMI Goiás, the initiative has grown into a st
 
 | Indicator | Value |
 |-----------|-------|
-| Active researchers (Cycle 3) | 50 |
+| Active researchers (Cycle 3) | 52 |
 | Research streams (Tribos) | 7 |
 | PMI chapters | 5 (GO · CE · DF · MG · RS) |
-| Governance entries | 135+ |
+| Events held | 209 |
+| Governance entries | 160+ |
 | Blog posts | 9 |
 | MCP tools | 56 (47 read · 9 write) |
-| Edge Functions | 20 |
-| i18n keys | 3,735+ (3 locales) |
+| Edge Functions | 21 |
+| i18n keys | 3,900+ (3 locales) |
 | Tests | 779 passing |
 | Monthly cost | $0 |
 
@@ -106,10 +107,10 @@ graph LR
 |-------|-----------|---------|
 | **Frontend** | Astro 6 + React 19 + Tailwind 4 | SSR with island architecture, trilingual |
 | **Hosting** | Cloudflare Workers | Edge SSR, OAuth proxy, MCP proxy |
-| **Database** | Supabase PostgreSQL | 189+ SECURITY DEFINER functions, RLS |
+| **Database** | Supabase PostgreSQL | 200+ SECURITY DEFINER functions, RLS |
 | **Auth** | Google + LinkedIn + Microsoft | OAuth 2.1, PKCE, dynamic client registration |
-| **MCP** | Custom server (56 tools) | AI assistants query platform via natural language |
-| **Server Logic** | Supabase Edge Functions (20) | Credly sync, attendance, MCP, campaigns, PostHog proxy |
+| **MCP** | Custom server (59 tools) | AI assistants query platform via natural language |
+| **Server Logic** | Supabase Edge Functions (21) | Credly sync, attendance, MCP, campaigns, Artia sync, PostHog proxy |
 | **Analytics** | PostHog | Product analytics, session replay |
 | **Errors** | Sentry | Real-time error monitoring |
 | **Cron** | pg_cron (4 jobs) | Credly sync, attendance, detractor alerts, reminders |
@@ -120,7 +121,7 @@ graph LR
 
 ## MCP Server — AI Integration
 
-Any member can connect Claude, ChatGPT, Perplexity, Cursor, or VS Code to the platform via the Model Context Protocol. 56 tools (47 read + 9 write) authenticated via OAuth 2.1 with full Row Level Security enforcement. Server-side auto-refresh keeps sessions alive for up to 30 days without manual reconnection. Dynamic knowledge layer adapts guidance to each member's role and permissions.
+Any member can connect Claude, ChatGPT, Perplexity, Cursor, or VS Code to the platform via the Model Context Protocol. 59 tools (47 read + 12 write) authenticated via OAuth 2.1 with full Row Level Security enforcement. Server-side auto-refresh keeps sessions alive for up to 30 days without manual reconnection. Dynamic knowledge layer adapts guidance to each member's role and permissions.
 
 ```
 https://nucleoia.vitormr.dev/mcp
@@ -157,7 +158,7 @@ sequenceDiagram
 
 | Compatibility | Status |
 |--------------|--------|
-| Claude.ai | Verified (56 tools) |
+| Claude.ai | Verified (59 tools) |
 | Claude Code | Verified |
 | ChatGPT | Verified (beta) |
 | Perplexity | Verified |
@@ -255,6 +256,8 @@ npm test
 | [`docs/MCP_SETUP_GUIDE.md`](docs/MCP_SETUP_GUIDE.md) | MCP server setup |
 | [`docs/BOARD_ENGINE_SPEC.md`](docs/BOARD_ENGINE_SPEC.md) | BoardEngine architecture |
 | [`docs/DISASTER_RECOVERY.md`](docs/DISASTER_RECOVERY.md) | Backup & recovery |
+| [`docs/SITE_MAP.md`](docs/SITE_MAP.md) | Complete site map with access tiers (trilingual) |
+| [`docs/ADMIN_ARCHITECTURE.md`](docs/ADMIN_ARCHITECTURE.md) | Admin panel architecture (21 components) |
 
 ---
 

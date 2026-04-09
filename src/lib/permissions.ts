@@ -26,7 +26,8 @@ export type Designation =
   | 'comms_member'
   | 'ambassador'
   | 'founder'
-  | 'alumni';
+  | 'alumni'
+  | 'chapter_board';
 
 export type Permission =
   // ── Admin panel ──
@@ -205,6 +206,10 @@ export const DESIGNATION_PERMISSIONS: Record<Designation, Permission[]> = {
   ],
   founder: [],
   alumni: [],
+  chapter_board: [
+    'admin.access', 'admin.analytics', 'admin.analytics.chapter',
+    'data.view_analytics',
+  ],
 };
 
 // ==========================================
@@ -233,6 +238,7 @@ export const DESIGNATION_LABELS: Record<Designation, { pt: string; en: string; e
   ambassador:     { pt: 'Embaixador',           en: 'Ambassador',       es: 'Embajador' },
   founder:        { pt: 'Fundador',             en: 'Founder',          es: 'Fundador' },
   alumni:         { pt: 'Alumni',               en: 'Alumni',           es: 'Alumni' },
+  chapter_board:  { pt: 'Diretoria do Capítulo', en: 'Chapter Board',   es: 'Directiva del Capítulo' },
 };
 
 // Tier color categories for simulation banner
