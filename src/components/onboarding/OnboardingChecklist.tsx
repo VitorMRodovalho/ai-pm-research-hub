@@ -43,7 +43,7 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
   const [total, setTotal] = useState(0);
   const [completed, setCompleted] = useState(0);
   const [allComplete, setAllComplete] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true); // auto-expand for new members
   const [loading, setLoading] = useState(true);
   const [dismissed, setDismissed] = useState(false);
 
@@ -148,6 +148,11 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
                     {s.step_id === 'volunteer_term' && (
                       <a href="/volunteer-agreement" className="px-2.5 py-1 rounded-lg bg-navy text-white text-[10px] font-semibold no-underline hover:opacity-90">
                         📄 {l.accept}
+                      </a>
+                    )}
+                    {s.step_id === 'first_meeting' && (
+                      <a href="/attendance" className="px-2.5 py-1 rounded-lg bg-green-100 text-green-700 text-[10px] font-semibold no-underline hover:bg-green-200">
+                        📅 Ver reunioes
                       </a>
                     )}
                     {s.step_id === 'vep_acceptance' && (
