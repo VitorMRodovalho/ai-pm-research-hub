@@ -1,0 +1,7 @@
+-- Fix: today's events show 'scheduled' (—) instead of 'absent' (❌)
+-- until check-in happens. Only becomes 'absent' the day AFTER the event.
+-- Key change in cell_status CTE:
+--   BEFORE: ge.date > CURRENT_DATE THEN 'scheduled'
+--   AFTER:  ge.date >= CURRENT_DATE AND a.id IS NULL THEN 'scheduled'
+-- Full function already applied to DB via execute_sql on 09/Apr/2026.
+-- See get_attendance_grid in pg_proc for current source.
