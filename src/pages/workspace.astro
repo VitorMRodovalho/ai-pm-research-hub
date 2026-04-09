@@ -8,6 +8,7 @@ import AttendanceDashboard from '../components/workspace/AttendanceDashboard';
 import AttendanceForm from '../components/workspace/AttendanceForm';
 import DropoutRiskBanner from '../components/workspace/DropoutRiskBanner';
 import MyTasksIsland from '../components/workspace/MyTasksIsland';
+import MyCardsWidget from '../components/workspace/MyCardsWidget';
 import OnboardingChecklist from '../components/onboarding/OnboardingChecklist';
 import PreOnboardingChecklist from '../components/onboarding/PreOnboardingChecklist';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
@@ -196,7 +197,8 @@ const WK = {
 
       <!-- ═══ My Tasks (cross-board) ═══ -->
       <section id="wk-my-tasks">
-        <h2 class="text-base font-bold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+        <MyCardsWidget client:load lang={lang} />
+        <h2 class="text-base font-bold text-[var(--text-primary)] mb-3 mt-5 flex items-center gap-2">
           <span class="text-lg">☑️</span> {t('boards.my_tasks', lang) || 'Minhas atividades'}
         </h2>
         <MyTasksIsland client:load lang={lang} />
