@@ -143,16 +143,22 @@ Deno.serve(async (req) => {
     // 9. Impact hours
     const { data: impactData } = await sb.rpc('get_public_platform_stats')
     // Calculate from attendance
-    const { data: attData } = await sb.from('events')
-      .select('duration_minutes, attendance(id)')
-      .lte('date', now)
-      .gte('date', '2026-01-01')
-    let impactHours = 0
-    for (const e of attData || []) {
-      const attCount = Array.isArray(e.attendance) ? e.attendance.length : 0
-      impactHours += ((e.duration_minutes || 0) / 60) * attCount
+    // Impact hours: only count actual present (not excused)
+    const { data: impactRaw } = await sb.rpc('get_impact_hours_excluding_excused')
+    let impactHours = impactRaw ?? 0
+    if (!impactRaw) {
+      // Fallback: direct query excluding excused
+      const { data: attData } = await sb.from('events')
+        .select('duration_minutes, attendance(id, excused)')
+        .lte('date', now)
+        .gte('date', '2026-01-01')
+      impactHours = 0
+      for (const e of attData || []) {
+        const attCount = Array.isArray(e.attendance) ? e.attendance.filter((a: any) => !a.excused).length : 0
+        impactHours += ((e.duration_minutes || 0) / 60) * attCount
+      }
+      impactHours = Math.round(impactHours * 10) / 10
     }
-    impactHours = Math.round(impactHours * 10) / 10
     results.hours_impact = { current: impactHours, pct: Math.round((impactHours / 1800) * 100), synced: false }
 
     // ── Update annual_kpi_targets (current_value for non-auto KPIs) ──
