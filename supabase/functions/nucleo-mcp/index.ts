@@ -1180,6 +1180,51 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "bulk_mark_excused", true, undefined, start);
     return ok(data);
   });
+
+  // TOOL 61: get_my_board_status — Returns cards assigned to the caller across all boards
+  mcp.tool("get_my_board_status", "Returns all board cards assigned to you (in_progress, review, backlog). Shows title, status, tribe, role, due date.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_my_board_status", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_my_cards");
+    if (error) { await logUsage(sb, member.id, "get_my_board_status", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_my_board_status", true, undefined, start);
+    return ok({ total: Array.isArray(data) ? data.length : 0, cards: data });
+  });
+
+  // TOOL 62: get_tribe_dashboard — Returns stats for a specific tribe
+  mcp.tool("get_tribe_dashboard", "Returns tribe stats: member count, attendance rate, impact hours, cards by status, and per-member attendance ranking.", { tribe_id: z.number().describe("Tribe ID (1-8)") }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_tribe_dashboard", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_tribe_stats", { p_tribe_id: params.tribe_id });
+    if (error) { await logUsage(sb, member.id, "get_tribe_dashboard", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_tribe_dashboard", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 63: get_portfolio_overview — Returns cross-tribe comparison for GP/admin
+  mcp.tool("get_portfolio_overview", "Returns comparison of all tribes: attendance rate, cards done/progress, impact hours, events, last meeting. Admin/GP only.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_portfolio_overview", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_cross_tribe_comparison");
+    if (error) { await logUsage(sb, member.id, "get_portfolio_overview", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_portfolio_overview", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_portfolio_overview", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 64: get_research_pipeline — Returns global research pipeline (in_progress + review cards)
+  mcp.tool("get_research_pipeline", "Returns all research cards in progress or review across all tribes, with authors and status. Admin/GP only.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_research_pipeline", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_global_research_pipeline");
+    if (error) { await logUsage(sb, member.id, "get_research_pipeline", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_research_pipeline", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -1190,7 +1235,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.9.3" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.9.4" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -1210,6 +1255,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.9.3", tools: 60, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.9.4", tools: 64, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
