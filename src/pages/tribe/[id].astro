@@ -569,6 +569,58 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     renderContextSwitchMenu();
   }
 
+  // ── Tribe Stats KPI cards ──
+  async function loadTribeStats() {
+    const el = document.getElementById('panel-general');
+    if (!el || !sb) return;
+    try {
+      const { data } = await sb.rpc('get_tribe_stats', { p_tribe_id: TRIBE_ID });
+      if (!data) return;
+      const rateColor = (data.attendance_rate || 0) >= 75 ? '#10B981' : (data.attendance_rate || 0) >= 50 ? '#D97706' : '#BE2027';
+      const statsHtml = `<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+          <div class="text-2xl font-extrabold text-navy">${data.member_count}</div>
+          <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Membros</div>
+        </div>
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+          <div class="text-2xl font-extrabold" style="color:${rateColor}">${data.attendance_rate ?? 0}%</div>
+          <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Presenca</div>
+        </div>
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+          <div class="text-2xl font-extrabold text-[var(--color-teal)]">${data.impact_hours ?? 0}h</div>
+          <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Horas</div>
+        </div>
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+          <div class="text-lg font-extrabold text-[var(--text-primary)]">
+            <span class="text-green-600">${data.cards_done}</span>
+            <span class="text-[var(--text-muted)]">/</span>
+            <span class="text-blue-600">${data.cards_in_progress}</span>
+            <span class="text-[var(--text-muted)]">/</span>
+            <span class="text-gray-400">${data.cards_backlog}</span>
+          </div>
+          <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Cards (feito/prog/backlog)</div>
+        </div>
+      </div>
+      ${Array.isArray(data.top_contributors) && data.top_contributors.length > 0 ? `
+      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 mb-6">
+        <h4 class="text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Presenca por Membro</h4>
+        <div class="space-y-1.5">
+          ${data.top_contributors.map((c: any) => {
+            const barColor = (c.rate || 0) >= 75 ? '#10B981' : (c.rate || 0) >= 50 ? '#D97706' : '#BE2027';
+            return `<div class="flex items-center gap-2">
+              <span class="text-[11px] font-medium text-[var(--text-primary)] w-[140px] truncate">${c.name?.split(' ').slice(0, 2).join(' ')}</span>
+              <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div class="h-full rounded-full" style="width:${c.rate}%;background:${barColor}"></div>
+              </div>
+              <span class="text-[10px] font-bold w-[35px] text-right" style="color:${barColor}">${c.rate}%</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>` : ''}`;
+      el.insertAdjacentHTML('afterbegin', statsHtml);
+    } catch {}
+  }
+
   // ── Geral tab: Events Timeline ──
   async function loadEventsTimeline() {
     const el = document.getElementById('panel-general');
@@ -1656,9 +1708,10 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
       renderMembers(allMembers);
 
-      // Geral: Radar Global first (uses innerHTML), then Events Timeline (prepends)
+      // Geral: Radar Global first (uses innerHTML), then Events Timeline (prepends), then Stats (prepends)
       await loadRadarGlobal();
       loadEventsTimeline();
+      loadTribeStats();
 
       // Minutes editor: delegate clicks on edit buttons
       document.getElementById('panel-general')?.addEventListener('click', (evt) => {
