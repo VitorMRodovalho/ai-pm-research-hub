@@ -843,7 +843,18 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
 
             {/* Assignees (multi-role) */}
             <div>
-              <label className="text-[10px] font-semibold text-[var(--text-secondary)] mb-1 block uppercase tracking-wide">{i18n.assignees || 'Participantes'}</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[10px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">{i18n.assignees || 'Participantes'}</label>
+                {permissions.member?.id && !itemAssignments.some(a => a.member_id === permissions.member?.id) && mode !== 'readonly' && (
+                  <button
+                    type="button"
+                    className="text-[10px] font-semibold text-navy bg-blue-50 hover:bg-blue-100 border-0 rounded-full px-2.5 py-0.5 cursor-pointer transition-colors"
+                    onClick={() => handleAddAssignment(permissions.member!.id, 'author')}
+                  >
+                    ✋ {i18n.claimCard || 'Pegar para mim'}
+                  </button>
+                )}
+              </div>
               <MemberPickerMulti
                 members={members}
                 assignments={itemAssignments}
