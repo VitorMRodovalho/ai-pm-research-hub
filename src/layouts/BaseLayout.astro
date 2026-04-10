@@ -5,6 +5,7 @@ import AnnouncementBanner from '../components/ui/AnnouncementBanner.astro';
 import AuthModal from '../components/ui/AuthModal.astro';
 import TierViewerBar from '../components/admin/TierViewerBar';
 import HelpFloatingButton from '../components/help/HelpFloatingButton';
+import PrivacyGateModal from '../components/privacy/PrivacyGateModal';
 import { t, getRoleLabelsMap, localePath, type Lang } from '../i18n/utils';
 
 interface Props {
@@ -265,6 +266,9 @@ const SIM_I18N = {
 
   <!-- Help Floating Button (authenticated users only, rendered client-side) -->
   <HelpFloatingButton client:load locale={lang} />
+
+  <!-- LGPD Privacy Gate (consent acceptance + annual revalidation) -->
+  <PrivacyGateModal client:load lang={lang} />
 
   <!-- Site Footer with Privacy Link -->
   <footer class="bg-[#200F3B] text-white/40 py-8 px-6 text-center text-[.78rem]">
