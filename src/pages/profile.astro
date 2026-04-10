@@ -1014,7 +1014,20 @@ const PROFILE_I18N = {
             ` : ''}
           </div>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+        <div class="mt-4">
+          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">
+            Endereço
+            <span class="ml-1 text-[.6rem] font-normal normal-case text-[var(--text-muted)]">(usado apenas no Termo de Voluntariado · LGPD)</span>
+          </label>
+          <input type="text" id="self-address" value="${m.address || ''}" placeholder="Rua, número, complemento, bairro"
+            class="w-full px-3 py-2 border-[1.5px] border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:border-teal">
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+          <div>
+            <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Cidade</label>
+            <input type="text" id="self-city" value="${m.city || ''}" placeholder="Ex: Goiânia"
+              class="w-full px-3 py-2 border-[1.5px] border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:border-teal">
+          </div>
           <div>
             <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">Estado</label>
             <input type="text" id="self-state" value="${m.state || ''}" placeholder="Ex: GO, SP, CE"
@@ -1025,6 +1038,14 @@ const PROFILE_I18N = {
             <input type="text" id="self-country" value="${m.country || ''}" placeholder="Ex: Brasil"
               class="w-full px-3 py-2 border-[1.5px] border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:border-teal">
           </div>
+        </div>
+        <div class="mt-4">
+          <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">
+            Data de Aniversário
+            <span class="ml-1 text-[.6rem] font-normal normal-case text-[var(--text-muted)]">(dd/mm — sem ano, LGPD)</span>
+          </label>
+          <input type="text" id="self-birth-day-month" value="${m.birth_date ? (String(m.birth_date).slice(8,10) + '/' + String(m.birth_date).slice(5,7)) : ''}" placeholder="dd/mm (ex: 24/07)" pattern="[0-9]{2}/[0-9]{2}" maxlength="5"
+            class="w-full sm:w-48 px-3 py-2 border-[1.5px] border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:border-teal">
         </div>
         <div class="mt-5 flex justify-end">
           <button data-action="save-self"
@@ -1284,6 +1305,17 @@ const PROFILE_I18N = {
     if (stateVal !== (currentMember.state || null)) fields.state = stateVal;
     const countryVal = (document.getElementById('self-country') as HTMLInputElement)?.value.trim() || null;
     if (countryVal !== (currentMember.country || null)) fields.country = countryVal;
+    // Address, city, birth_date (Termo de Voluntariado — LGPD)
+    const addressVal = (document.getElementById('self-address') as HTMLInputElement)?.value.trim() || null;
+    if (addressVal !== (currentMember.address || null)) fields.address = addressVal;
+    const cityVal = (document.getElementById('self-city') as HTMLInputElement)?.value.trim() || null;
+    if (cityVal !== (currentMember.city || null)) fields.city = cityVal;
+    // Birth date: user enters dd/mm, we store as 1970-mm-dd (no year for privacy)
+    const bdRaw = (document.getElementById('self-birth-day-month') as HTMLInputElement)?.value.trim() || '';
+    const bdMatch = bdRaw.match(/^(\d{1,2})\/(\d{1,2})$/);
+    const bdVal = bdMatch ? `1970-${bdMatch[2].padStart(2,'0')}-${bdMatch[1].padStart(2,'0')}` : null;
+    const curBd = currentMember.birth_date ? String(currentMember.birth_date).slice(0, 10) : null;
+    if (bdVal !== curBd) fields.birth_date = bdVal;
 
     let data: any;
     if (Object.keys(fields).length > 0) {

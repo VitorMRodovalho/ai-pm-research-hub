@@ -240,7 +240,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
     </div>`;
 
   const annexBlock = `
-    <div style="padding:32px 40px;background:#fff;box-sizing:border-box;page-break-before:always;font-family:Georgia,serif;color:#333;min-height:842px;width:595px">
+    <div class="cert-page" style="padding:32px 40px;background:#fff;box-sizing:border-box;page-break-before:always;font-family:Georgia,serif;color:#333;min-height:842px;width:595px">
       <div style="margin-bottom:20px">
         <img src="/assets/logos/pmigo.png" alt="PMI Goiás" style="height:44px;width:auto;display:block" crossorigin="anonymous" />
       </div>
@@ -259,7 +259,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
       </div>
     </div>`;
 
-  return `<div style="width:595px;min-height:842px;padding:32px 40px;background:#fff;box-sizing:border-box;page-break-after:always;font-family:Georgia,serif;color:#333">
+  return `<div class="cert-page" style="width:595px;min-height:842px;padding:32px 40px;background:#fff;box-sizing:border-box;page-break-after:always;font-family:Georgia,serif;color:#333">
     ${headerBlock}
 
     <p style="font-size:11px;line-height:1.6;text-align:justify;margin-bottom:10px">
@@ -317,7 +317,7 @@ export function buildCertificateHTML(certData: CertificateData): string {
     ? `<img src="${certData.signature_url}" style="max-width:180px;max-height:60px;margin-bottom:4px" crossorigin="anonymous">`
     : '';
 
-  return `<div style="width:595px;min-height:842px;padding:48px 40px;border:3px double #1a365d;position:relative;background:#fff;box-sizing:border-box;page-break-after:always">
+  return `<div class="cert-page" style="width:595px;min-height:842px;padding:48px 40px;border:3px double #1a365d;position:relative;background:#fff;box-sizing:border-box;page-break-after:always">
     <div style="position:absolute;top:14px;left:14px;right:14px;bottom:14px;border:1px solid #cbd5e0;pointer-events:none"></div>
     <div style="text-align:center;margin-bottom:20px"><div style="font-size:13px;color:#666;letter-spacing:2px;text-transform:uppercase">Núcleo de Estudos e Pesquisa em IA & GP</div><div style="font-size:9px;color:#999;margin-top:3px">The AI & PM Study and Research Hub</div></div>
     <div style="text-align:center;font-size:11px;color:#bbb;margin-bottom:20px">─── ✦ ───</div>
@@ -413,7 +413,20 @@ export async function downloadCertificatePDF(certData: CertificateData, sb?: any
   if (!w) return;
 
   const html = buildCertificateHTML(certData);
-  w.document.write(`<html><head><title>${certData.verification_code || 'Certificate'} — ${certData.member_name}</title><style>@page{size:A4 portrait;margin:0}body{margin:0;display:flex;flex-direction:column;align-items:center;min-height:100vh;background:#fff;font-family:Georgia,serif}</style></head><body>${html}</body></html>`);
+  // Use @page with proper margins to prevent text cut-off on auto-print
+  // 15mm top/bottom, 12mm sides — matches the reference PDF layout
+  w.document.write(`<html><head><title>${certData.verification_code || 'Certificate'} — ${certData.member_name}</title><style>
+    @page{size:A4 portrait;margin:15mm 12mm 18mm 12mm}
+    @media print{
+      body{margin:0 !important;background:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .cert-page{box-shadow:none !important;margin:0 !important;width:auto !important;min-height:auto !important;padding:0 !important}
+    }
+    @media screen{
+      body{margin:0;display:flex;flex-direction:column;align-items:center;background:#e5e7eb;padding:20px 0;font-family:Georgia,serif}
+      .cert-page{box-shadow:0 4px 16px rgba(0,0,0,0.15);margin-bottom:20px}
+    }
+    body{font-family:Georgia,serif}
+  </style></head><body>${html}</body></html>`);
   w.document.close();
   setTimeout(() => w.print(), 500);
 }
@@ -435,7 +448,18 @@ export async function downloadBulkCertificatesPDF(certDataList: CertificateData[
   if (!w) return;
 
   const allHtml = hydrated.map(buildCertificateHTML).join('');
-  w.document.write(`<html><head><title>Certificados em lote (${hydrated.length})</title><style>@page{size:A4 portrait;margin:0}body{margin:0;background:#fff;font-family:Georgia,serif}@media print{body{background:#fff}}</style></head><body>${allHtml}</body></html>`);
+  w.document.write(`<html><head><title>Certificados em lote (${hydrated.length})</title><style>
+    @page{size:A4 portrait;margin:15mm 12mm 18mm 12mm}
+    @media print{
+      body{margin:0 !important;background:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .cert-page{box-shadow:none !important;margin:0 !important;width:auto !important;min-height:auto !important;padding:0 !important}
+    }
+    @media screen{
+      body{margin:0;background:#e5e7eb;padding:20px 0;display:flex;flex-direction:column;align-items:center;font-family:Georgia,serif}
+      .cert-page{box-shadow:0 4px 16px rgba(0,0,0,0.15);margin-bottom:20px}
+    }
+    body{font-family:Georgia,serif}
+  </style></head><body>${allHtml}</body></html>`);
   w.document.close();
   setTimeout(() => w.print(), 800);
 }
