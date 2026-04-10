@@ -90,17 +90,90 @@ const TEMPLATES: Record<string, Record<string, string>> = {
 };
 
 /**
- * Format phone number Brazilian-style: +55 11 98765-4321 or (11) 98765-4321
+ * Format phone number respecting country prefixes.
+ * - BR cell: +55 (11) 98765-4321 (13 digits with 55 prefix)
+ * - BR landline: +55 (11) 3456-7890 (12 digits)
+ * - US: +1 (267) 874-8329 (11 digits starting with 1)
+ * - Already formatted (contains parenthesis or hyphen): return as-is
  */
 function formatPhone(phone: string | undefined): string {
   if (!phone) return '—';
+  // If already has formatting (parens or hyphens), return as-is
+  if (/[()\-]/.test(phone)) return phone;
   const clean = phone.replace(/\D/g, '');
-  if (clean.length === 11) return `(${clean.slice(0,2)}) ${clean.slice(2,7)}-${clean.slice(7)}`;
-  if (clean.length === 10) return `(${clean.slice(0,2)}) ${clean.slice(2,6)}-${clean.slice(6)}`;
-  if (clean.length === 13 && clean.startsWith('55')) return `+55 (${clean.slice(2,4)}) ${clean.slice(4,9)}-${clean.slice(9)}`;
-  if (clean.length === 12 && clean.startsWith('55')) return `+55 (${clean.slice(2,4)}) ${clean.slice(4,8)}-${clean.slice(8)}`;
-  if (clean.length === 11 && clean.startsWith('1')) return `+1 (${clean.slice(1,4)}) ${clean.slice(4,7)}-${clean.slice(7)}`;
+  // US/CA: 1 + area(3) + exchange(3) + number(4) = 11 digits starting with 1
+  if (clean.length === 11 && clean.startsWith('1')) {
+    return `+1 (${clean.slice(1, 4)}) ${clean.slice(4, 7)}-${clean.slice(7)}`;
+  }
+  // BR cell with country code: +55 + DDD(2) + 9 + 4-4 = 13 digits starting with 55
+  if (clean.length === 13 && clean.startsWith('55')) {
+    return `+55 (${clean.slice(2, 4)}) ${clean.slice(4, 9)}-${clean.slice(9)}`;
+  }
+  // BR landline with country code: +55 + DDD(2) + 4-4 = 12 digits starting with 55
+  if (clean.length === 12 && clean.startsWith('55')) {
+    return `+55 (${clean.slice(2, 4)}) ${clean.slice(4, 8)}-${clean.slice(8)}`;
+  }
+  // BR cell without country code: DDD(2) + 9 + 4-4 = 11 digits
+  if (clean.length === 11) {
+    return `(${clean.slice(0, 2)}) ${clean.slice(2, 7)}-${clean.slice(7)}`;
+  }
+  // BR landline without country code: DDD(2) + 4-4 = 10 digits
+  if (clean.length === 10) {
+    return `(${clean.slice(0, 2)}) ${clean.slice(2, 6)}-${clean.slice(6)}`;
+  }
   return phone;
+}
+
+/**
+ * Translate operational_role to Portuguese display name
+ */
+function translateRole(role: string | undefined): string {
+  if (!role) return '';
+  const map: Record<string, string> = {
+    manager: 'Gerente de Projeto',
+    deputy_manager: 'Gerente Adjunto',
+    tribe_leader: 'Líder de Tribo',
+    researcher: 'Pesquisador(a)',
+    sponsor: 'Patrocinador',
+    chapter_liaison: 'Ponto Focal de Capítulo',
+    observer: 'Observador(a)',
+    alumni: 'Alumni',
+  };
+  return map[role] || role.replace(/_/g, ' ');
+}
+
+/**
+ * Expand US state codes and country abbreviations to full names
+ */
+function expandState(state: string | undefined): string {
+  if (!state) return '';
+  const map: Record<string, string> = {
+    // BR — keep as-is (usually already "Goiás", "MG", "SP")
+    GO: 'Goiás',
+    // US
+    VA: 'Virgínia',
+    NC: 'Carolina do Norte',
+    CA: 'Califórnia',
+    FL: 'Flórida',
+    NY: 'Nova York',
+    TX: 'Texas',
+    MA: 'Massachusetts',
+    WA: 'Washington',
+    OR: 'Oregon',
+  };
+  return map[state] || state;
+}
+function expandCountry(country: string | undefined): string {
+  if (!country) return '';
+  const map: Record<string, string> = {
+    'United States': 'Estados Unidos',
+    'USA': 'Estados Unidos',
+    'US': 'Estados Unidos',
+    'Brasil': 'Brasil',
+    'Brazil': 'Brasil',
+    'BR': 'Brasil',
+  };
+  return map[country] || country;
 }
 
 /**
@@ -154,7 +227,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
   };
   const MAIN = ['clause1','clause2','clause3','clause4','clause5','clause6','clause7','clause8','clause9','clause10','clause11','clause12'];
 
-  const locationLine = [certData.member_city, certData.member_state, certData.member_country].filter(Boolean).join('/') || '—';
+  const locationLine = [certData.member_city, expandState(certData.member_state), expandCountry(certData.member_country)].filter(Boolean).join('/') || '—';
   const addressLine = certData.member_address || '—';
   const phoneLine = formatPhone(certData.member_phone);
   const birthLine = formatBirthDate(certData.member_birth_date);
@@ -162,7 +235,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
   // Header with PMI-GO logo (same reference as the example PDF)
   const headerBlock = `
     <div style="margin-bottom:20px">
-      <img src="/assets/logos/pmigo.png" alt="PMI Goiás" style="height:52px;width:auto;display:block" crossorigin="anonymous" />
+      <img src="https://nucleoia.vitormr.dev/assets/logos/pmigo.png" alt="PMI Goiás" style="height:52px;width:auto;display:block" crossorigin="anonymous" />
     </div>
     <h1 style="text-align:center;font-size:18px;font-weight:bold;color:#000;margin:20px 0 28px;letter-spacing:0.5px;line-height:1.3">
       TERMO DE COMPROMISSO DE<br/>VOLUNTÁRIO COM O PMI GOIÁS
@@ -182,9 +255,13 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
     const text = c[key] || '';
     const subs = SUB_KEYS[key];
     const subsHtml = subs ? `<ol style="margin-top:6px;margin-left:28px;list-style:none;padding:0">${subs.map(subKey => {
-      const subText = c[subKey] || '';
+      let subText = c[subKey] || '';
       const letter = subKey.slice(-1);
       const isNote = subKey.endsWith('note');
+      // Some templates already include "Parágrafo único:" in the text — avoid duplicating
+      if (isNote) {
+        subText = subText.replace(/^Parágrafo\s+único:?\s*/i, '');
+      }
       return `<li style="font-size:10.5px;margin-top:6px;${isNote ? 'font-style:italic;color:#555' : ''}">
         ${!isNote ? `<b style="color:#333">${letter}.</b> ` : '<b>Parágrafo único:</b> '}${subText}
       </li>`;
@@ -242,7 +319,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
   const annexBlock = `
     <div class="cert-page" style="padding:32px 40px;background:#fff;box-sizing:border-box;page-break-before:always;font-family:Georgia,serif;color:#333;min-height:842px;width:595px">
       <div style="margin-bottom:20px">
-        <img src="/assets/logos/pmigo.png" alt="PMI Goiás" style="height:44px;width:auto;display:block" crossorigin="anonymous" />
+        <img src="https://nucleoia.vitormr.dev/assets/logos/pmigo.png" alt="PMI Goiás" style="height:44px;width:auto;display:block" crossorigin="anonymous" />
       </div>
       <h2 style="font-weight:bold;color:#000;font-size:16px;margin:24px 0 14px">ANEXO - LEI DO SERVIÇO VOLUNTÁRIO</h2>
       <p style="font-size:11px;color:#333;margin-bottom:4px"><b>Lei nº 9.608, de 18 de fevereiro de 1998</b></p>
@@ -269,7 +346,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
     ${memberDataBlock}
 
     <p style="font-size:11px;line-height:1.6;text-align:justify;margin-bottom:10px">
-      Doravante denominado <b>VOLUNTÁRIO</b>, com o objetivo de colaborar como voluntário ao PMI Goiás, nos projetos e processos do Capítulo${certData.function_role ? `, atuando como <b>${certData.function_role.replace(/_/g,' ')}</b>` : ''}.
+      Doravante denominado <b>VOLUNTÁRIO</b>, com o objetivo de colaborar como voluntário ao PMI Goiás, nos projetos e processos do Capítulo${certData.function_role ? `, atuando como <b>${translateRole(certData.function_role)}</b>` : ''}.
     </p>
 
     <p style="font-size:11px;line-height:1.6;text-align:justify;margin-bottom:14px">
@@ -415,16 +492,24 @@ function buildPrintDocument(title: string, innerHtml: string): string {
       @media print{
         html,body{margin:0 !important;padding:0 !important;background:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
         .cert-page{box-shadow:none !important;margin:0 !important;width:auto !important;min-height:auto !important;padding:0 !important;max-width:none !important}
-        /* Hide browser-generated headers/footers where supported */
+        .screen-only{display:none !important}
         @page{margin-header:0;margin-footer:0}
       }
       @media screen{
         body{margin:0;display:flex;flex-direction:column;align-items:center;background:#e5e7eb;padding:20px 0;font-family:Georgia,serif}
         .cert-page{box-shadow:0 4px 16px rgba(0,0,0,0.15);margin-bottom:20px}
+        .screen-only{display:block;max-width:595px;width:100%;margin:0 auto 16px;padding:12px 16px;background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;color:#78350f;font-family:-apple-system,system-ui,sans-serif;font-size:12px;line-height:1.5;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+        .screen-only strong{color:#451a03}
+        .screen-only kbd{background:#fff;border:1px solid #ccc;border-radius:3px;padding:1px 5px;font-family:monospace;font-size:11px}
       }
-      body{font-family:Georgia,serif}
     </style>
-  </head><body>${innerHtml}</body></html>`;
+  </head><body>
+    <div class="screen-only">
+      <strong>💡 Dica para gerar PDF limpo</strong><br>
+      No diálogo de impressão, clique em <strong>"Mais configurações"</strong> e <strong>DESMARQUE</strong> a opção <strong>"Cabeçalhos e rodapés"</strong> antes de salvar como PDF — isso remove a URL <kbd>blob:…</kbd> e a data automática que o navegador adiciona.
+    </div>
+    ${innerHtml}
+  </body></html>`;
 }
 
 /**
@@ -446,12 +531,13 @@ export async function downloadCertificatePDF(certData: CertificateData, sb?: any
   const w = window.open(url, '_blank');
   if (!w) { URL.revokeObjectURL(url); return; }
 
-  // Wait for content to load, then print
+  // Wait for content to load, then auto-open print dialog after 1.5s
+  // (gives user time to see the instruction banner about "headers and footers")
   w.addEventListener('load', () => {
-    setTimeout(() => w.print(), 300);
+    setTimeout(() => w.print(), 1500);
   }, { once: true });
-  // Cleanup after user closes the print dialog
-  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  // Cleanup blob after user closes the print dialog
+  setTimeout(() => URL.revokeObjectURL(url), 120000);
 }
 
 /**
