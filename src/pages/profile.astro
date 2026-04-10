@@ -1079,6 +1079,30 @@ const PROFILE_I18N = {
           <input type="text" id="self-birth-day-month" value="${m.birth_date ? (String(m.birth_date).slice(8,10) + '/' + String(m.birth_date).slice(5,7)) : ''}" placeholder="dd/mm (ex: 24/07)" pattern="[0-9]{2}/[0-9]{2}" maxlength="5"
             class="w-full sm:w-48 px-3 py-2 border-[1.5px] border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:border-teal">
         </div>
+
+        <!-- Privacy preferences (LGPD) -->
+        <div class="mt-5 p-4 rounded-xl border border-blue-200 bg-blue-50/50 dark:bg-blue-900/10 dark:border-blue-800">
+          <div class="text-[.7rem] font-bold text-blue-900 dark:text-blue-200 uppercase tracking-wide mb-2">🔒 Preferências de Privacidade (LGPD)</div>
+          <div class="space-y-2">
+            <label class="flex items-start gap-2 cursor-pointer">
+              <input type="checkbox" id="self-share-whatsapp" class="mt-0.5" ${m.share_whatsapp ? 'checked' : ''}>
+              <span class="text-[.78rem] text-[var(--text-primary)]">Compartilhar meu telefone/WhatsApp com outros membros do Núcleo</span>
+            </label>
+            <label class="flex items-start gap-2 cursor-pointer">
+              <input type="checkbox" id="self-share-address" class="mt-0.5" ${m.share_address ? 'checked' : ''}>
+              <span class="text-[.78rem] text-[var(--text-primary)]">Compartilhar meu endereço/cidade com outros membros <span class="text-[.65rem] text-[var(--text-muted)]">(não recomendado — padrão: privado)</span></span>
+            </label>
+            <label class="flex items-start gap-2 cursor-pointer">
+              <input type="checkbox" id="self-share-birth-date" class="mt-0.5" ${m.share_birth_date ? 'checked' : ''}>
+              <span class="text-[.78rem] text-[var(--text-primary)]">Compartilhar minha data de aniversário (dd/mm) para felicitações institucionais</span>
+            </label>
+          </div>
+          <p class="text-[.65rem] text-[var(--text-muted)] mt-3">
+            Endereço e telefone são sempre usados no Termo de Voluntariado. Essas opções controlam apenas se outros membros podem ver no seu perfil público.
+            <a href="/privacy" class="text-teal hover:underline no-underline">Ler Política de Privacidade</a>
+          </p>
+        </div>
+
         <div class="mt-5 flex justify-end">
           <button data-action="save-self"
             class="px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all cursor-pointer border-0">
@@ -1348,6 +1372,13 @@ const PROFILE_I18N = {
     const bdVal = bdMatch ? `1970-${bdMatch[2].padStart(2,'0')}-${bdMatch[1].padStart(2,'0')}` : null;
     const curBd = currentMember.birth_date ? String(currentMember.birth_date).slice(0, 10) : null;
     if (bdVal !== curBd) fields.birth_date = bdVal;
+    // Privacy flags (LGPD)
+    const shareWhatsApp = (document.getElementById('self-share-whatsapp') as HTMLInputElement)?.checked ?? false;
+    if (shareWhatsApp !== (currentMember.share_whatsapp ?? false)) fields.share_whatsapp = shareWhatsApp;
+    const shareAddress = (document.getElementById('self-share-address') as HTMLInputElement)?.checked ?? false;
+    if (shareAddress !== (currentMember.share_address ?? false)) fields.share_address = shareAddress;
+    const shareBirthDate = (document.getElementById('self-share-birth-date') as HTMLInputElement)?.checked ?? false;
+    if (shareBirthDate !== (currentMember.share_birth_date ?? false)) fields.share_birth_date = shareBirthDate;
 
     let data: any;
     if (Object.keys(fields).length > 0) {
