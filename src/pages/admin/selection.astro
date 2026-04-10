@@ -88,11 +88,11 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
                 <tr class="bg-[var(--surface-base)] border-b border-[var(--border-default)]">
                   <th class="px-2 py-2.5 w-8"><input type="checkbox" id="sel-check-all" class="cursor-pointer" /></th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="applicant_name">Nome</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Papel</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Track</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Capítulo</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="objective_score">Obj. Score</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="final_score">Final Score</th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="rank_chapter">Rank</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="research_score">Pesquisa</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="leader_score">Líder</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="rank">Rank</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Status</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Onboarding</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Ações</th>
@@ -473,7 +473,26 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
   function applyFilters() {
     const search = filterSearch.toLowerCase();
     filteredRows = allRows.filter(r => {
-      if (filterRole !== 'all' && r.role_applied !== filterRole) return false;
+      // Track-aware filter: when viewing "leader" track, hide the researcher-track paired row
+      // (triaged candidates have 2 rows — we want only the leader one visible in leader view)
+      if (filterRole === 'leader') {
+        if (r.role_applied !== 'leader') return false;
+      } else if (filterRole === 'researcher') {
+        // Show researcher rows BUT exclude those promoted (linked to approved leader)
+        if (r.role_applied !== 'researcher') return false;
+        if (r.promotion_path === 'triaged_to_leader' && r.linked_application_id) {
+          // Hide the researcher pair when the leader pair exists and is approved
+          const leaderPair = allRows.find((x: any) => x.id === r.linked_application_id);
+          if (leaderPair && ['approved','converted'].includes(leaderPair.status)) return false;
+        }
+      }
+      // "Todos": hide duplicates — keep only the primary row per email (prefer leader if exists)
+      if (filterRole === 'all') {
+        if (r.promotion_path === 'triaged_to_leader' && r.role_applied === 'researcher' && r.linked_application_id) {
+          const leaderPair = allRows.find((x: any) => x.id === r.linked_application_id);
+          if (leaderPair) return false; // hide researcher row, show only leader
+        }
+      }
       if (filterChapter !== 'all' && r.chapter !== filterChapter) return false;
       if (filterStatus !== 'all' && r.status !== filterStatus) return false;
       if (search) {
@@ -541,22 +560,56 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
       tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || 'Nenhum candidato'}</td></tr>`;
       return;
     }
-    tbody.innerHTML = filteredRows.map(r => {
+    // Sort by active track's rank: leader track → rank_leader, researcher → rank_researcher
+    const useLeaderRank = filterRole === 'leader';
+    const useResearcherRank = filterRole === 'researcher';
+    const displayRows = [...filteredRows].sort((a: any, b: any) => {
+      const ra = useLeaderRank ? a.rank_leader : useResearcherRank ? a.rank_researcher : (a.rank_leader || a.rank_researcher);
+      const rb = useLeaderRank ? b.rank_leader : useResearcherRank ? b.rank_researcher : (b.rank_leader || b.rank_researcher);
+      if (ra == null && rb == null) return 0;
+      if (ra == null) return 1;
+      if (rb == null) return -1;
+      return ra - rb;
+    });
+
+    tbody.innerHTML = displayRows.map(r => {
       const sb2 = STATUS_BADGE[r.status] || STATUS_BADGE.submitted;
-      const objScore = r.objective_score != null ? Number(r.objective_score).toFixed(1) : '—';
-      const finalScore = r.final_score != null ? Number(r.final_score).toFixed(1) : '—';
-      const rank = r.rank_chapter != null ? `#${r.rank_chapter}` : '—';
-      const roleLabel = ROLE_LABELS[r.role_applied] || r.role_applied || '—';
+      const researchScore = r.research_score != null ? Number(r.research_score).toFixed(1) : '—';
+      const leaderScore = r.leader_score != null ? Number(r.leader_score).toFixed(1) : '—';
+      // Track-aware rank
+      let rankDisplay: string;
+      if (useLeaderRank) {
+        rankDisplay = r.rank_leader != null ? `#${r.rank_leader}` : '—';
+      } else if (useResearcherRank) {
+        rankDisplay = r.rank_researcher != null ? `#${r.rank_researcher}` : '—';
+      } else {
+        // "Todos": show both if applicable
+        const parts: string[] = [];
+        if (r.rank_researcher != null) parts.push(`P#${r.rank_researcher}`);
+        if (r.rank_leader != null) parts.push(`L#${r.rank_leader}`);
+        rankDisplay = parts.length ? parts.join(' · ') : '—';
+      }
+      // Track badge
+      let trackBadge = '';
+      if (r.role_applied === 'leader') {
+        trackBadge = r.promotion_path === 'triaged_to_leader'
+          ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700" title="Triado: aplicou como pesquisador, foi promovido para líder">👑⇡ Triado</span>'
+          : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">👑 Líder</span>';
+      } else {
+        trackBadge = r.promotion_path === 'triaged_to_leader'
+          ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500" title="Pesquisador original — foi promovido; esta linha é histórica">🎓 (promovido)</span>'
+          : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">🎓 Pesquisador</span>';
+      }
       const statusLabel = STATUS_LABELS[r.status] || r.status?.replace(/_/g, ' ') || '—';
       const noMembership = !r.membership_status || r.membership_status === 'No';
       return `<tr class="hover:bg-[var(--surface-hover)] cursor-pointer" data-action="view-applicant" data-id="${esc(r.id)}">
         <td class="px-2 py-2.5 w-8" onclick="event.stopPropagation()"><input type="checkbox" class="sel-row-check cursor-pointer" value="${esc(r.id)}" /></td>
         <td class="px-4 py-2.5 font-semibold text-navy">${esc(r.applicant_name)}${noMembership ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Sem membership PMI">!M</span>' : ''}${r.is_returning_member ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700" title="Retornante">R</span>' : ''}</td>
-        <td class="px-4 py-2.5 text-[12px]">${esc(roleLabel)}</td>
+        <td class="px-4 py-2.5 text-[12px]">${trackBadge}</td>
         <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]">${esc(r.chapter || '—')}</td>
-        <td class="px-4 py-2.5 text-[12px] font-mono font-semibold">${objScore}</td>
-        <td class="px-4 py-2.5 text-[12px] font-mono font-bold text-navy">${finalScore}</td>
-        <td class="px-4 py-2.5 text-[12px] font-semibold">${rank}</td>
+        <td class="px-4 py-2.5 text-[12px] font-mono ${r.research_score != null ? 'font-semibold text-navy' : 'text-[var(--text-muted)]'}">${researchScore}</td>
+        <td class="px-4 py-2.5 text-[12px] font-mono ${r.leader_score != null ? 'font-bold text-navy' : 'text-[var(--text-muted)]'}">${leaderScore}</td>
+        <td class="px-4 py-2.5 text-[12px] font-bold">${rankDisplay}</td>
         <td class="px-4 py-2.5"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${sb2.bg} ${sb2.color}">${esc(statusLabel)}</span></td>
         <td class="px-4 py-2.5 text-[12px]" id="onb-${esc(r.id)}">${r.onboarding_pct != null && r.onboarding_pct >= 0 ? `<span class="font-semibold ${r.onboarding_pct === 100 ? 'text-emerald-600' : r.onboarding_pct >= 50 ? 'text-amber-600' : 'text-[var(--text-muted)]'}">${r.onboarding_pct}%</span>` : '<span class="text-[var(--text-muted)]">—</span>'}</td>
         <td class="px-4 py-2.5">
