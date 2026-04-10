@@ -135,6 +135,13 @@ function simplifyResults(queryType: AllowedQuery, raw: any): object {
   }
 
   const results = raw.result || raw.results || [];
+  // Normalize breakdown_value: can be string (old API), array (new multi-breakdown), or undefined
+  const normalizeBreakdown = (s: any): string | undefined => {
+    const bv = s.breakdown_value ?? s.breakdowns;
+    if (bv === undefined || bv === null) return undefined;
+    if (Array.isArray(bv)) return String(bv[0] ?? '');
+    return String(bv);
+  };
   return {
     query_type: queryType,
     series: Array.isArray(results) ? results.map((s: any) => ({
@@ -143,7 +150,7 @@ function simplifyResults(queryType: AllowedQuery, raw: any): object {
       data: s.data || [],
       labels: s.labels || s.days || [],
       count: s.count || 0,
-      breakdown_value: s.breakdown_value,
+      breakdown_value: normalizeBreakdown(s),
     })) : [],
   };
 }
