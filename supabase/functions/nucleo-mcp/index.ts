@@ -1,5 +1,5 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.9.4 — 64 tools (51R + 13W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.9.4 — 68 tools (54R + 14W) + 1 prompt + 1 resource + usage logging
 // Transport: SDK 1.29.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
@@ -266,15 +266,15 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
     "nucleo://tools/reference",
     {
       title: "Referência completa de ferramentas",
-      description: "Lista todas as 64 ferramentas do Núcleo MCP com parâmetros e permissões.",
+      description: "Lista todas as 68 ferramentas do Núcleo MCP com parâmetros e permissões.",
       mimeType: "text/markdown",
     },
     async () => ({
       contents: [{
         uri: "nucleo://tools/reference",
-        text: `# Núcleo IA MCP — Referência de Ferramentas (v2.9.4)
+        text: `# Núcleo IA MCP — Referência de Ferramentas (v2.9.5)
 
-## 64 ferramentas: 51 leitura + 13 escrita
+## 68 ferramentas: 54 leitura + 14 escrita
 
 ### Tier 1 — Todos os membros (17 leitura)
 | # | Ferramenta | Parâmetros | Descrição |
@@ -362,7 +362,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
   );
 }
 
-// --- Register 64 tools (51R + 13W) ---
+// --- Register 68 tools (54R + 14W) ---
 
 function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
 
@@ -1225,6 +1225,67 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "get_research_pipeline", true, undefined, start);
     return ok(data);
   });
+
+  // TOOL 65: get_my_selection_result — Candidate self-view (own scores + status, rank only after final)
+  mcp.tool("get_my_selection_result", "Returns your own selection application status and scores. Rank is only shown after the final decision (approved/rejected/cutoff) to avoid anxiety during the process. Works for any member who applied through the selection pipeline.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_my_selection_result", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_my_selection_result");
+    if (error) { await logUsage(sb, member.id, "get_my_selection_result", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_my_selection_result", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 66: get_selection_rankings — Admin view of dual rankings (CR-047)
+  mcp.tool("get_selection_rankings", "Returns selection rankings split by track (researcher or leader) per CR-047 dual-ranking system. Formula: research_score = obj + int; leader_score = research*0.7 + leader_extra*0.3. Standard Competition Ranking (ISO 80000-2). Admin/GP/curator only.", {
+    cycle_code: z.string().optional().describe("Cycle code (e.g. cycle3-2026-b2). If omitted, uses most recent cycle."),
+    track: z.enum(['researcher','leader','both']).optional().describe("Which ranking track to return. Default: both")
+  }, async (params: { cycle_code?: string; track?: 'researcher' | 'leader' | 'both' }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_selection_rankings", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_selection_rankings", {
+      p_cycle_code: params.cycle_code || null,
+      p_track: params.track || 'both'
+    });
+    if (error) { await logUsage(sb, member.id, "get_selection_rankings", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_selection_rankings", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 67: get_application_score_breakdown — Detailed breakdown of a single application (admin)
+  mcp.tool("get_application_score_breakdown", "Returns detailed score breakdown for a single application, including individual evaluator scores (objective, interview, leader_extra) and PERT consolidation. Admin/GP/curator only.", {
+    application_id: z.string().describe("Selection application UUID")
+  }, async (params: { application_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_application_score_breakdown", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.application_id)) { return err("application_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_application_score_breakdown", { p_application_id: params.application_id });
+    if (error) { await logUsage(sb, member.id, "get_application_score_breakdown", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_application_score_breakdown", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 68 (WRITE): promote_to_leader_track — admin action to triage researcher → leader
+  mcp.tool("promote_to_leader_track", "Promotes a researcher-track application to the leader track (CR-047 triaged_to_leader flow). Creates a new leader application cloned from the researcher one and links them bidirectionally. Admin/GP only.", {
+    application_id: z.string().describe("Researcher application UUID to promote"),
+    create_leader_app: z.boolean().optional().describe("If true (default), creates a new leader application cloned from the researcher. If false, only marks the researcher as triaged without creating the leader pair.")
+  }, async (params: { application_id: string; create_leader_app?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "promote_to_leader_track", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!canWrite(member)) { await logUsage(sb, member.id, "promote_to_leader_track", false, "canWrite denied", start); return err("Unauthorized: only manager/deputy/superadmin"); }
+    if (!isUUID(params.application_id)) { return err("application_id must be a UUID"); }
+    const { data, error } = await sb.rpc("promote_to_leader_track", {
+      p_application_id: params.application_id,
+      p_create_leader_app: params.create_leader_app ?? true
+    });
+    if (error) { await logUsage(sb, member.id, "promote_to_leader_track", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "promote_to_leader_track", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -1235,7 +1296,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.9.4" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.9.5" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -1255,6 +1316,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.9.4", tools: 64, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.9.5", tools: 68, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
