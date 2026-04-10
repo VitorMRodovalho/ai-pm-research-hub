@@ -13,7 +13,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     <VolunteerAgreementPanel client:load lang={lang} />
 
     <div id="admin-certs-pending" class="space-y-3"></div>
-    <div id="admin-certs-all" class="space-y-3"></div>
+    <div id="admin-certs-signed" class="space-y-3"></div>
     <div id="admin-certs-loading" class="text-center py-8 text-[var(--text-muted)] text-sm">...</div>
   </main>
 </AdminLayout>
@@ -25,6 +25,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 <script>
   import { t } from '../../i18n/utils';
   import type { Lang } from '../../i18n/utils';
+  import { downloadCertificatePDF, downloadBulkCertificatesPDF, type CertificateData } from '../../lib/certificates/pdf';
 
   function esc(s: any): string { return String(s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   function fmtDate(d: string, lang: Lang): string {
@@ -33,6 +34,21 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     const dt = new Date(clean + 'T12:00:00');
     if (isNaN(dt.getTime())) return String(d);
     return dt.toLocaleDateString(lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-ES' : 'pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  function certToData(c: any): CertificateData {
+    return {
+      member_name: c.member_name || '',
+      type: c.type || 'volunteer_agreement',
+      title: c.title || '',
+      period_start: c.period_start || '',
+      period_end: c.period_end || '',
+      function_role: c.function_role || c.member_role || '',
+      language: c.language || 'pt-BR',
+      verification_code: c.verification_code || '',
+      description: c.description || '',
+      issued_by: c.issued_by || '',
+    };
   }
 
   async function counterSign(sb: any, certId: string, lang: Lang) {
@@ -53,9 +69,9 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   (async () => {
     const lang = ((window as any).__adminCertsLang || 'pt-BR') as Lang;
     const pendingEl = document.getElementById('admin-certs-pending');
-    const allEl = document.getElementById('admin-certs-all');
+    const signedEl = document.getElementById('admin-certs-signed');
     const loadingEl = document.getElementById('admin-certs-loading');
-    if (!pendingEl || !allEl) return;
+    if (!pendingEl || !signedEl) return;
 
     let sb: any = null;
     const wait = () => new Promise<void>(r => {
@@ -66,6 +82,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     if (!sb) { if (loadingEl) loadingEl.textContent = 'No data'; return; }
 
     try {
+      // Pending counter-signature
       const { data: pending } = await sb.rpc('get_pending_countersign');
       if (loadingEl) loadingEl.classList.add('hidden');
 
@@ -83,6 +100,10 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
                     <div class="text-xs text-[var(--text-muted)]">${esc(c.title)} \u00B7 ${fmtDate(c.issued_at, lang)} \u00B7 ${esc(c.verification_code)}</div>
                     <div class="text-[10px] text-[var(--text-muted)]">${c.member_chapter ? esc(c.member_chapter) + ' \u00B7 ' : ''}${c.tribe_name ? esc(c.tribe_name) + ' \u00B7 ' : ''}${esc(c.member_role)}</div>
                   </div>
+                  <button class="px-3 py-1.5 rounded-lg border border-navy text-navy text-[12px] font-semibold bg-transparent cursor-pointer hover:bg-navy/5"
+                    data-pdf="${esc(c.id)}">
+                    📄 PDF
+                  </button>
                   <button class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[12px] font-semibold border-0 cursor-pointer hover:bg-emerald-700"
                     data-countersign="${c.id}">
                     \u270D\uFE0F ${t('admin.certificates.counterSign', lang)}
@@ -93,18 +114,123 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
           </div>`;
       }
 
-      // All certificates (use get_my_certificates won't work for admin - use pending list for now)
-      // For MVP, pending section is the primary admin view
+      // All signed (via get_all_certificates — includes volunteer_agreements via include flag)
+      const { data: allData } = await sb.rpc('get_all_certificates', {
+        p_status_filter: 'issued',
+        p_search: null,
+        p_include_volunteer_agreements: true,
+      });
+      const allCerts = allData?.certificates || [];
+      (window as any).__adminSignedCerts = allCerts;
+
+      if (allCerts.length > 0) {
+        const countTerms = allCerts.filter((c: any) => c.type === 'volunteer_agreement').length;
+        const countCerts = allCerts.length - countTerms;
+        signedEl.innerHTML = `
+          <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] overflow-hidden">
+            <div class="px-5 py-3 border-b border-[var(--border-default)] flex items-center justify-between flex-wrap gap-2">
+              <h3 class="text-sm font-bold text-[var(--text-primary)]">
+                Assinados (${allCerts.length})
+                <span class="text-[10px] font-normal text-[var(--text-muted)] ml-2">${countTerms} termos · ${countCerts} certificados</span>
+              </h3>
+              <div class="flex gap-2">
+                <button id="bulk-download-terms" class="px-3 py-1.5 rounded-lg bg-navy text-white text-[11px] font-semibold border-0 cursor-pointer hover:opacity-90">
+                  📦 Download em lote (termos)
+                </button>
+                <button id="bulk-download-all" class="px-3 py-1.5 rounded-lg border border-navy text-navy text-[11px] font-semibold bg-transparent cursor-pointer hover:bg-navy/5">
+                  📦 Download em lote (tudo)
+                </button>
+              </div>
+            </div>
+            <div class="divide-y divide-[var(--border-subtle)]">
+              ${allCerts.map((c: any) => {
+                const typeBadge = c.type === 'volunteer_agreement'
+                  ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">TERMO</span>'
+                  : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">CERT</span>';
+                const signedBadge = c.counter_signed_at
+                  ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">✓ assinado</span>'
+                  : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">⏳ pendente</span>';
+                return `
+                  <div class="px-5 py-3 flex items-center gap-3 flex-wrap">
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-sm font-medium text-[var(--text-primary)]">${esc(c.member_name)}</span>
+                        ${typeBadge}
+                        ${signedBadge}
+                      </div>
+                      <div class="text-xs text-[var(--text-muted)] truncate">${esc(c.title || '')} · ${esc(c.period_start || '')} → ${esc(c.period_end || '')}</div>
+                      <div class="text-[10px] text-[var(--text-muted)] font-mono">${esc(c.verification_code || '')} · ${c.member_chapter ? esc(c.member_chapter) + ' · ' : ''}${fmtDate(c.issued_at, lang)}</div>
+                    </div>
+                    <button class="px-3 py-1.5 rounded-lg border border-navy text-navy text-[11px] font-semibold bg-transparent cursor-pointer hover:bg-navy/5"
+                      data-pdf-cert-id="${esc(c.id)}">
+                      📄 PDF
+                    </button>
+                    <a href="/verify/${esc(c.verification_code)}" target="_blank" rel="noopener" class="text-[11px] text-purple-600 no-underline hover:underline">🔗 verificar</a>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>`;
+      } else {
+        signedEl.innerHTML = '<div class="text-center py-8 text-[var(--text-muted)] text-sm">Nenhum certificado assinado ainda.</div>';
+      }
 
     } catch (e) {
       console.error('Admin certs load failed:', e);
       if (loadingEl) loadingEl.textContent = 'Error loading certificates';
     }
 
-    // Delegation for counter-sign buttons
-    document.addEventListener('click', (e: MouseEvent) => {
-      const btn = (e.target as HTMLElement)?.closest('[data-countersign]') as HTMLElement;
-      if (btn) counterSign(sb, btn.dataset.countersign!, lang);
+    // Delegation for buttons
+    document.addEventListener('click', async (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target) return;
+
+      const csBtn = target.closest('[data-countersign]') as HTMLElement;
+      if (csBtn) { counterSign(sb, csBtn.dataset.countersign!, lang); return; }
+
+      const pdfBtn = target.closest('[data-pdf-cert-id]') as HTMLElement;
+      if (pdfBtn) {
+        const certId = pdfBtn.dataset.pdfCertId;
+        const allCerts = (window as any).__adminSignedCerts || [];
+        const cert = allCerts.find((c: any) => c.id === certId);
+        if (cert) await downloadCertificatePDF(certToData(cert), sb);
+        return;
+      }
+
+      const pdfPendingBtn = target.closest('[data-pdf]') as HTMLElement;
+      if (pdfPendingBtn) {
+        // Pending list uses minimal data — fetch full cert
+        const certId = pdfPendingBtn.dataset.pdf;
+        try {
+          const { data } = await sb.from('certificates').select('*, m:members!member_id(name)').eq('id', certId).single();
+          if (data) {
+            await downloadCertificatePDF(certToData({
+              member_name: data.m?.name || '',
+              type: data.type, title: data.title,
+              period_start: data.period_start, period_end: data.period_end,
+              function_role: data.function_role, language: data.language,
+              verification_code: data.verification_code, description: data.description,
+              issued_by: data.issued_by,
+            }), sb);
+          }
+        } catch (err) { console.error('PDF pending fetch failed:', err); }
+        return;
+      }
+
+      if (target.id === 'bulk-download-terms') {
+        const allCerts = (window as any).__adminSignedCerts || [];
+        const terms = allCerts.filter((c: any) => c.type === 'volunteer_agreement');
+        if (terms.length === 0) { (window as any).toast?.('Sem termos assinados', 'info'); return; }
+        downloadBulkCertificatesPDF(terms.map(certToData));
+        return;
+      }
+
+      if (target.id === 'bulk-download-all') {
+        const allCerts = (window as any).__adminSignedCerts || [];
+        if (allCerts.length === 0) return;
+        downloadBulkCertificatesPDF(allCerts.map(certToData));
+        return;
+      }
     });
   })();
 </script>
