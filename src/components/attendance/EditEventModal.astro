@@ -15,6 +15,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
     </div>
     <form id="edit-event-form" class="p-5 overflow-y-auto flex-1">
       <input type="hidden" id="edit-ev-id">
+      <input type="hidden" id="edit-ev-recurrence-group">
+      <div id="edit-ev-recurrence-banner" class="hidden mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-[.78rem] text-blue-900 flex items-center gap-2">
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+        <span id="edit-ev-recurrence-label"></span>
+      </div>
       <div id="edit-ev-context" class="hidden mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[.78rem] text-amber-900"></div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
         <div class="flex flex-col gap-1.5 sm:col-span-2">

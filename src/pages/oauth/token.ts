@@ -66,8 +66,11 @@ export const POST: APIRoute = async ({ request }) => {
         });
         const data = await res.json();
         if (!res.ok || !data.access_token) {
-          await kvLog("token-refresh-fail", { status: res.status, error: data.error_description || data.error || 'unknown' });
-          return new Response(JSON.stringify({ error: 'invalid_grant', error_description: data.error_description || 'refresh failed' }), {
+          await kvLog("token-refresh-fail", { status: res.status, error: data.error_description || data.error || 'unknown', refreshLen: refresh_token.length });
+          // Clean stale KV entry so next auto-refresh fails fast and forces re-auth.
+          // We can't know which sub this token belongs to, so we scan on best-effort basis.
+          // Instead, we signal invalid_grant + revoked so the client initiates a new OAuth flow.
+          return new Response(JSON.stringify({ error: 'invalid_grant', error_description: data.error_description || 'refresh_token revoked or expired — reconnect required' }), {
             status: 400, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
           });
         }

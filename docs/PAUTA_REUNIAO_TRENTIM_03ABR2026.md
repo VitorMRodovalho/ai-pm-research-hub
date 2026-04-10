@@ -46,7 +46,7 @@
 - Ciclos semestrais com entregas (artigos, webinars, estudos de caso)
 - Gamificacao: XP, rankings, badges, trilha rumo ao CPMAI e PMIxAI
 - Plataforma propria (open-source) que amarra processos, elimina friccao de ferramentas dispersas
-- 56 ferramentas MCP para integracao com IAs (Claude, ChatGPT) — lideres inserem dados via suas ferramentas preferidas
+- 64 ferramentas MCP para integracao com IAs (Claude, ChatGPT) — lideres inserem dados via suas ferramentas preferidas
 
 **Resultados ate aqui:**
 - 3 ciclos completados, 4o em andamento

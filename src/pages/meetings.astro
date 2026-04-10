@@ -1,0 +1,28 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getLangFromURL, type Lang } from '../i18n/utils';
+import MeetingsPage from '../components/meetings/MeetingsPage';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+
+const titles: Record<string, string> = {
+  'pt-BR': 'Atas de Reunião — Núcleo IA & GP',
+  'en-US': 'Meeting Minutes — AI & PM Research Hub',
+  'es-LATAM': 'Actas de Reunión — Núcleo IA & GP',
+};
+const descriptions: Record<string, string> = {
+  'pt-BR': 'Arquivo pesquisável de todas as atas de reunião do Núcleo. Busca full-text, filtros por tribo e tipo, visão cross-tribo.',
+  'en-US': 'Searchable archive of all Hub meeting minutes. Full-text search, filters by tribe and type, cross-tribe view.',
+  'es-LATAM': 'Archivo buscable de todas las actas de reunión del Núcleo. Búsqueda full-text, filtros por tribu y tipo, vista cross-tribu.',
+};
+const pageTitle = titles[lang] || titles['pt-BR'];
+const pageDesc = descriptions[lang] || descriptions['pt-BR'];
+---
+
+<BaseLayout title={pageTitle} description={pageDesc} activePage="meetings" lang={lang}>
+  <meta slot="head" property="og:title" content={pageTitle} />
+  <meta slot="head" property="og:description" content={pageDesc} />
+  <meta slot="head" property="og:url" content={`https://nucleoia.vitormr.dev${langPrefix}/meetings`} />
+  <MeetingsPage client:load lang={lang} />
+</BaseLayout>

@@ -9,6 +9,16 @@ interface Step {
   phase: string;
 }
 
+interface LeaderboardEntry {
+  name: string;
+  photo_url: string | null;
+  completed: number;
+  total: number;
+  xp_earned: number;
+  xp_total: number;
+  pct: number;
+}
+
 interface PreOnboardingData {
   member_id: string;
   steps: Step[];
@@ -35,9 +45,9 @@ const STEP_META: Record<string, { icon: string; pt: string; en: string; es: stri
 };
 
 const L: Record<string, Record<string, string>> = {
-  'pt-BR':   { title: 'Preparação Pré-Onboarding', subtitle: 'Complete sua preparação para começar com tudo!', xp: 'XP', of: 'de', steps: 'etapas', completed: 'concluídas', profile: 'Ir ao Perfil', blog: 'Ir ao Blog', pmi: 'PMI Learning', noData: 'Nenhuma etapa de pré-onboarding encontrada.', autoDetect: 'Auto-detectado' },
-  'en-US':   { title: 'Pre-Onboarding Prep', subtitle: 'Complete your prep to hit the ground running!', xp: 'XP', of: 'of', steps: 'steps', completed: 'completed', profile: 'Go to Profile', blog: 'Go to Blog', pmi: 'PMI Learning', noData: 'No pre-onboarding steps found.', autoDetect: 'Auto-detected' },
-  'es-LATAM': { title: 'Preparación Pre-Integración', subtitle: '¡Complete su preparación para empezar con todo!', xp: 'XP', of: 'de', steps: 'pasos', completed: 'completados', profile: 'Ir al Perfil', blog: 'Ir al Blog', pmi: 'PMI Learning', noData: 'No se encontraron pasos de pre-integración.', autoDetect: 'Auto-detectado' },
+  'pt-BR':   { title: 'Preparação Pré-Onboarding', subtitle: 'Complete sua preparação para começar com tudo!', xp: 'XP', of: 'de', steps: 'etapas', completed: 'concluídas', profile: 'Ir ao Perfil', blog: 'Ir ao Blog', pmi: 'PMI Learning', noData: 'Nenhuma etapa de pré-onboarding encontrada.', autoDetect: 'Auto-detectado', ranking: 'Ranking Pré-Onboarding' },
+  'en-US':   { title: 'Pre-Onboarding Prep', subtitle: 'Complete your prep to hit the ground running!', xp: 'XP', of: 'of', steps: 'steps', completed: 'completed', profile: 'Go to Profile', blog: 'Go to Blog', pmi: 'PMI Learning', noData: 'No pre-onboarding steps found.', autoDetect: 'Auto-detected', ranking: 'Pre-Onboarding Ranking' },
+  'es-LATAM': { title: 'Preparación Pre-Integración', subtitle: '¡Complete su preparación para empezar con todo!', xp: 'XP', of: 'de', steps: 'pasos', completed: 'completados', profile: 'Ir al Perfil', blog: 'Ir al Blog', pmi: 'PMI Learning', noData: 'No se encontraron pasos de pre-integración.', autoDetect: 'Auto-detectado', ranking: 'Ranking Pre-Integración' },
 };
 
 function label(key: string, lang: string): string {
@@ -63,6 +73,7 @@ function icon(key: string): string {
 export default function PreOnboardingChecklist({ lang = 'pt-BR' }: Props) {
   const l = L[lang] || L['pt-BR'];
   const [data, setData] = useState<PreOnboardingData | null>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
@@ -71,9 +82,15 @@ export default function PreOnboardingChecklist({ lang = 'pt-BR' }: Props) {
     const sb = getSb();
     if (!sb) return;
     try {
-      const { data: result } = await sb.rpc('get_candidate_onboarding_progress');
-      if (result && !result.error) {
-        setData(result);
+      const [progRes, lbRes] = await Promise.all([
+        sb.rpc('get_candidate_onboarding_progress'),
+        sb.rpc('get_pre_onboarding_leaderboard'),
+      ]);
+      if (progRes.data && !progRes.data.error) {
+        setData(progRes.data);
+      }
+      if (lbRes.data?.leaderboard) {
+        setLeaderboard(lbRes.data.leaderboard);
       }
     } catch { /* not a candidate */ }
     setLoading(false);
@@ -156,6 +173,34 @@ export default function PreOnboardingChecklist({ lang = 'pt-BR' }: Props) {
           );
         })}
       </div>
+
+      {/* Leaderboard */}
+      {leaderboard.length > 1 && (
+        <div className="mt-4 border border-[var(--border-subtle)] rounded-xl p-3.5 bg-[var(--surface-base)]">
+          <h3 className="text-[12px] font-bold text-navy mb-2 flex items-center gap-1.5">
+            <span>🏆</span> {l.ranking}
+          </h3>
+          <div className="space-y-1.5">
+            {leaderboard.slice(0, 5).map((entry, i) => (
+              <div key={entry.name} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-[var(--surface-hover)]">
+                <span className={`text-[11px] font-extrabold w-5 text-center ${i === 0 ? 'text-amber-500' : i === 1 ? 'text-gray-400' : i === 2 ? 'text-amber-700' : 'text-[var(--text-muted)]'}`}>
+                  {i + 1}
+                </span>
+                {entry.photo_url ? (
+                  <img src={entry.photo_url} alt="" className="w-5 h-5 rounded-full object-cover" />
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-navy/10 flex items-center justify-center text-[9px] font-bold text-navy">
+                    {entry.name.charAt(0)}
+                  </div>
+                )}
+                <span className="text-[11px] font-semibold text-[var(--text-primary)] flex-1 truncate">{entry.name}</span>
+                <span className="text-[10px] font-bold text-teal">{entry.xp_earned} {l.xp}</span>
+                <span className="text-[9px] text-[var(--text-muted)]">{entry.pct}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {allDone && (
         <div className="mt-4 text-center text-sm font-bold text-emerald-700">

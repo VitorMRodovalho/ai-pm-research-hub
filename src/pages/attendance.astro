@@ -208,6 +208,11 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   deleteConfirm: t('attendance.deleteConfirm', lang),
   deleteWarning: t('attendance.deleteWarning', lang),
   deleteSuccess: t('attendance.msg.deleteSuccess', lang),
+  recurrenceTitle: t('attendance.recurrence.title', lang),
+  recurrenceThisOnly: t('attendance.recurrence.thisOnly', lang),
+  recurrenceThisFuture: t('attendance.recurrence.thisFuture', lang),
+  recurrencePrompt: t('attendance.recurrence.prompt', lang),
+  recurrenceFutureUpdated: t('attendance.recurrence.futureUpdated', lang),
 }) }}>
   window.__ATTENDANCE_I18N = JSON.parse(__ATTENDANCE_I18N);
 </script>
@@ -274,6 +279,11 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     rosterVisible: 'visíveis',
     rankingNoData: 'Sem dados de ranking ainda',
     rankingNoDataHint: 'Quando os eventos tiverem presença registrada, o ranking aparecerá aqui.',
+    recurrenceTitle: 'Evento recorrente',
+    recurrenceThisOnly: 'Somente este evento',
+    recurrenceThisFuture: 'Este e futuros',
+    recurrencePrompt: 'Este evento faz parte de uma série recorrente. Aplicar alterações em:',
+    recurrenceFutureUpdated: 'eventos atualizados na série.',
   };
 
   let sb: any = null;
@@ -1522,8 +1532,46 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     } catch (_) {
       setTagPickerFromIds('edit-ev-tag-picker', 'edit-ev-tags-container', 'edit-ev-selected-tags', []);
     }
+    // Recurrence group awareness
+    (document.getElementById('edit-ev-recurrence-group') as HTMLInputElement).value = ev.recurrence_group || '';
+    const recBanner = document.getElementById('edit-ev-recurrence-banner')!;
+    const recLabel = document.getElementById('edit-ev-recurrence-label')!;
+    if (ev.recurrence_group) {
+      recBanner.classList.remove('hidden');
+      recLabel.textContent = I18N.recurrenceTitle;
+    } else {
+      recBanner.classList.add('hidden');
+    }
     applyEditContext(ev);
     openModal('modal-edit-event');
+  }
+
+  // Helper: show recurrence scope dialog (returns 'this' | 'future' | null for cancel)
+  function askRecurrenceScope(): Promise<'this' | 'future' | null> {
+    return new Promise((resolve) => {
+      const overlay = document.createElement('div');
+      overlay.className = 'fixed inset-0 bg-black/50 z-[200] flex items-center justify-center p-4';
+      overlay.innerHTML = `
+        <div class="bg-[var(--surface-card)] rounded-2xl w-full max-w-[380px] p-5 shadow-xl">
+          <h4 class="text-base font-bold text-navy mb-2">${I18N.recurrenceTitle}</h4>
+          <p class="text-[.82rem] text-[var(--text-secondary)] mb-4">${I18N.recurrencePrompt}</p>
+          <div class="flex flex-col gap-2">
+            <button data-scope="this" class="px-4 py-2.5 rounded-lg text-[13px] font-semibold border-[1.5px] border-navy text-navy bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer">${I18N.recurrenceThisOnly}</button>
+            <button data-scope="future" class="px-4 py-2.5 rounded-lg text-[13px] font-semibold bg-navy text-white border-0 hover:bg-navy/90 cursor-pointer">${I18N.recurrenceThisFuture}</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      overlay.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest('[data-scope]') as HTMLElement | null;
+        if (btn) {
+          overlay.remove();
+          resolve(btn.dataset.scope as 'this' | 'future');
+        } else if (e.target === overlay) {
+          overlay.remove();
+          resolve(null);
+        }
+      });
+    });
   }
 
   async function saveEventEdit() {
@@ -1542,19 +1590,38 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const externalAttendees = (document.getElementById('edit-ev-external-attendees') as HTMLInputElement).value.trim() || null;
     const tribeId = editType === 'tribo' ? (document.getElementById('edit-ev-tribe-select') as HTMLSelectElement).value || null : null;
     const tagIds = getSelectedTagIds('edit-ev-selected-tags');
+    const recurrenceGroup = (document.getElementById('edit-ev-recurrence-group') as HTMLInputElement).value;
+    const timeStart = (document.getElementById('edit-ev-time-start') as HTMLInputElement).value || null;
+    const notes = (document.getElementById('edit-ev-notes') as HTMLTextAreaElement).value.trim() || null;
+
+    // If recurring event, ask scope
+    let scope: 'this' | 'future' = 'this';
+    if (recurrenceGroup) {
+      const choice = await askRecurrenceScope();
+      if (!choice) return; // cancelled
+      scope = choice;
+    }
 
     try {
-      const { data, error } = await sb.rpc('update_event', {
-        p_event_id: id, p_title: title, p_date: date,
-        p_duration_minutes: duration, p_meeting_link: link,
-        p_youtube_url: youtube, p_is_recorded: recorded,
-        p_audience_level: audience
-      });
-      if (error) throw error;
-      if (data?.success) {
-        // Save event type, nature, visibility, tribe_id via direct table update (update_event RPC doesn't accept these)
-        const timeStart = (document.getElementById('edit-ev-time-start') as HTMLInputElement).value || null;
-        const notes = (document.getElementById('edit-ev-notes') as HTMLTextAreaElement).value.trim() || null;
+      if (scope === 'future' && recurrenceGroup) {
+        // Update future events in recurrence group (shared fields only)
+        const { data: futureData, error: futureError } = await sb.rpc('update_future_events_in_group', {
+          p_event_id: id,
+          p_new_time_start: timeStart,
+          p_duration_minutes: duration,
+          p_meeting_link: link,
+          p_notes: notes,
+          p_visibility: visibility,
+        });
+        if (futureError) throw futureError;
+        // Also update this specific event's individual fields (title, date, type, etc.)
+        const { data, error } = await sb.rpc('update_event', {
+          p_event_id: id, p_title: title, p_date: date,
+          p_duration_minutes: duration, p_meeting_link: link,
+          p_youtube_url: youtube, p_is_recorded: recorded,
+          p_audience_level: audience
+        });
+        if (error) throw error;
         const updateFields: Record<string, any> = { type: editType, nature, visibility };
         if (timeStart) updateFields.time_start = timeStart;
         if (notes !== undefined) updateFields.notes = notes;
@@ -1562,12 +1629,34 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         if (externalAttendees !== undefined) updateFields.external_attendees = externalAttendees;
         if (tribeId !== null) updateFields.tribe_id = tribeId;
         await sb.from('events').update(updateFields).eq('id', id);
-        // W140: update tags and audience rules
         await assignEventTagsAndAudience(id, tagIds, audience);
         closeModal('modal-edit-event');
-        toast(I18N.msgEventUpdated, 'success');
+        const count = futureData?.updated_count || 0;
+        toast(`${count} ${I18N.recurrenceFutureUpdated}`, 'success');
         loadEvents(); loadKPIs();
-      } else toast(data?.error || I18N.msgEventSaveError, 'error');
+      } else {
+        // Update this event only (original behavior)
+        const { data, error } = await sb.rpc('update_event', {
+          p_event_id: id, p_title: title, p_date: date,
+          p_duration_minutes: duration, p_meeting_link: link,
+          p_youtube_url: youtube, p_is_recorded: recorded,
+          p_audience_level: audience
+        });
+        if (error) throw error;
+        if (data?.success) {
+          const updateFields: Record<string, any> = { type: editType, nature, visibility };
+          if (timeStart) updateFields.time_start = timeStart;
+          if (notes !== undefined) updateFields.notes = notes;
+          if (recordingUrl !== undefined) updateFields.recording_url = recordingUrl;
+          if (externalAttendees !== undefined) updateFields.external_attendees = externalAttendees;
+          if (tribeId !== null) updateFields.tribe_id = tribeId;
+          await sb.from('events').update(updateFields).eq('id', id);
+          await assignEventTagsAndAudience(id, tagIds, audience);
+          closeModal('modal-edit-event');
+          toast(I18N.msgEventUpdated, 'success');
+          loadEvents(); loadKPIs();
+        } else toast(data?.error || I18N.msgEventSaveError, 'error');
+      }
     } catch (e: any) {
       toast(e?.message || I18N.msgEventSaveError, 'error');
       console.error('update_event failed:', e);

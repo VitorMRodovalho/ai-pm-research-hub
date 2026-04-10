@@ -1,5 +1,5 @@
 # BACKLOG — AI & PM Research Hub
-## Updated: 09 April 2026 (v2.9.3 — 60 MCP tools, 21 EFs, 779 tests)
+## Updated: 09 April 2026 (v2.9.4 — 64 MCP tools, 21 EFs, 779 tests)
 
 ---
 
@@ -18,7 +18,7 @@
 | # | Item | Est. | Notes |
 |---|------|------|-------|
 | 4 | Congresso CBGPL (D-19) | 2h | Deck Canva, one-pager, FAQ. Semana 2 do plano. |
-| 5 | Recurrence edit "this + future" | 2h | recurrence_group backfilled (22 groups). Frontend UX needed. |
+| 5 | ~~Recurrence edit "this + future"~~ | ✅ | Done 10/Abr. Dialog "somente este" vs "este e futuros". |
 | 6 | Excused bulk UI | 1h | RPC `bulk_mark_excused` + MCP tool 60 ready. Frontend button needed. |
 | 7 | Git history cleanup | Low | 29MB PPTX blob in history |
 
@@ -43,7 +43,7 @@
 | # | Item | Notes |
 |---|------|-------|
 | 15 | Nature filter in attendance grid | get_attendance_grid too complex for quick add. get_events_with_attendance already returns nature. |
-| 16 | Gamification dashboard Sprint 2 | Pre-onboarding frontend. RPCs ready. |
+| 16 | ~~Gamification dashboard Sprint 2~~ | ✅ Done 10/Abr. Leaderboard + admin onboarding % column. |
 | 17 | Executive sponsor view | 5 sponsors no auth |
 | 18 | Conforto approach via Alexandre | Jefferson aligned. Roteiro needed. |
 
