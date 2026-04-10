@@ -1181,37 +1181,37 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // TOOL 61: get_my_board_status — Returns cards assigned to the caller across all boards
-  mcp.tool("get_my_board_status", "Returns all board cards assigned to you (in_progress, review, backlog). Shows title, status, tribe, role, due date.", {}, async () => {
+  // TOOL 61: get_my_assigned_cards — Returns cards assigned to the caller across all boards
+  mcp.tool("get_my_assigned_cards", "Returns all board cards assigned to you (in_progress, review, backlog). Shows title, status, tribe, role, due date.", {}, async () => {
     const start = Date.now();
     const member = await getMember(sb);
-    if (!member) { await logUsage(sb, null, "get_my_board_status", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!member) { await logUsage(sb, null, "get_my_assigned_cards", false, "Not authenticated", start); return err("Not authenticated"); }
     const { data, error } = await sb.rpc("get_my_cards");
-    if (error) { await logUsage(sb, member.id, "get_my_board_status", false, error.message, start); return err(error.message); }
-    await logUsage(sb, member.id, "get_my_board_status", true, undefined, start);
+    if (error) { await logUsage(sb, member.id, "get_my_assigned_cards", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_my_assigned_cards", true, undefined, start);
     return ok({ total: Array.isArray(data) ? data.length : 0, cards: data });
   });
 
-  // TOOL 62: get_tribe_dashboard — Returns stats for a specific tribe
-  mcp.tool("get_tribe_dashboard", "Returns tribe stats: member count, attendance rate, impact hours, cards by status, and per-member attendance ranking.", { tribe_id: z.number().describe("Tribe ID (1-8)") }, async (params: any) => {
+  // TOOL 62: get_tribe_stats_ranked — Returns stats for a specific tribe with per-member ranking
+  mcp.tool("get_tribe_stats_ranked", "Returns tribe stats: member count, attendance rate, impact hours, cards by status, and per-member attendance ranking.", { tribe_id: z.number().describe("Tribe ID (1-8)") }, async (params: any) => {
     const start = Date.now();
     const member = await getMember(sb);
-    if (!member) { await logUsage(sb, null, "get_tribe_dashboard", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!member) { await logUsage(sb, null, "get_tribe_stats_ranked", false, "Not authenticated", start); return err("Not authenticated"); }
     const { data, error } = await sb.rpc("get_tribe_stats", { p_tribe_id: params.tribe_id });
-    if (error) { await logUsage(sb, member.id, "get_tribe_dashboard", false, error.message, start); return err(error.message); }
-    await logUsage(sb, member.id, "get_tribe_dashboard", true, undefined, start);
+    if (error) { await logUsage(sb, member.id, "get_tribe_stats_ranked", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_tribe_stats_ranked", true, undefined, start);
     return ok(data);
   });
 
-  // TOOL 63: get_portfolio_overview — Returns cross-tribe comparison for GP/admin
-  mcp.tool("get_portfolio_overview", "Returns comparison of all tribes: attendance rate, cards done/progress, impact hours, events, last meeting. Admin/GP only.", {}, async () => {
+  // TOOL 63: get_tribes_comparison — Returns cross-tribe comparison for GP/admin
+  mcp.tool("get_tribes_comparison", "Returns comparison of all tribes: attendance rate, cards done/progress, impact hours, events, last meeting. Admin/GP only.", {}, async () => {
     const start = Date.now();
     const member = await getMember(sb);
-    if (!member) { await logUsage(sb, null, "get_portfolio_overview", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!member) { await logUsage(sb, null, "get_tribes_comparison", false, "Not authenticated", start); return err("Not authenticated"); }
     const { data, error } = await sb.rpc("get_cross_tribe_comparison");
-    if (error) { await logUsage(sb, member.id, "get_portfolio_overview", false, error.message, start); return err(error.message); }
-    if (data?.error) { await logUsage(sb, member.id, "get_portfolio_overview", false, data.error, start); return err(data.error); }
-    await logUsage(sb, member.id, "get_portfolio_overview", true, undefined, start);
+    if (error) { await logUsage(sb, member.id, "get_tribes_comparison", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_tribes_comparison", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_tribes_comparison", true, undefined, start);
     return ok(data);
   });
 
