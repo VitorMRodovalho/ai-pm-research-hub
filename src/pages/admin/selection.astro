@@ -94,6 +94,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="final_score">Final Score</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="rank_chapter">Rank</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Status</th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Onboarding</th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)]">Ações</th>
                 </tr>
               </thead>
@@ -432,12 +433,29 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
       }
 
       allRows = applications;
+      // Fetch onboarding % for approved/converted candidates
+      const approvedIds = applications
+        .filter((r: any) => ['approved', 'converted'].includes(r.status))
+        .map((r: any) => r.id);
+      if (approvedIds.length > 0 && sb) {
+        try {
+          const pctPromises = approvedIds.map((appId: string) =>
+            sb.rpc('get_application_onboarding_pct', { p_application_id: appId })
+              .then((res: any) => ({ id: appId, pct: res.data }))
+          );
+          const pctResults = await Promise.all(pctPromises);
+          for (const { id: appId, pct } of pctResults) {
+            const row = allRows.find((r: any) => r.id === appId);
+            if (row) row.onboarding_pct = pct;
+          }
+        } catch { /* optional enhancement */ }
+      }
       populateChapterDropdown();
       applyFilters();
     } catch (e: any) {
       console.error('Selection load:', e);
       const tbody = document.getElementById('sel-tbody');
-      if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-6 text-center text-red-500">Erro: ${esc(e.message || 'desconhecido')}</td></tr>`;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-6 text-center text-red-500">Erro: ${esc(e.message || 'desconhecido')}</td></tr>`;
     }
   }
 
@@ -520,7 +538,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     if (!tbody) return;
     if (countEl) countEl.textContent = `${filteredRows.length} resultado${filteredRows.length !== 1 ? 's' : ''}`;
     if (!filteredRows.length) {
-      tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || 'Nenhum candidato'}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-6 text-center text-[var(--text-muted)]">${document.getElementById('ai18n-nor')?.textContent || 'Nenhum candidato'}</td></tr>`;
       return;
     }
     tbody.innerHTML = filteredRows.map(r => {
@@ -540,6 +558,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
         <td class="px-4 py-2.5 text-[12px] font-mono font-bold text-navy">${finalScore}</td>
         <td class="px-4 py-2.5 text-[12px] font-semibold">${rank}</td>
         <td class="px-4 py-2.5"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${sb2.bg} ${sb2.color}">${esc(statusLabel)}</span></td>
+        <td class="px-4 py-2.5 text-[12px]" id="onb-${esc(r.id)}">${r.onboarding_pct != null && r.onboarding_pct >= 0 ? `<span class="font-semibold ${r.onboarding_pct === 100 ? 'text-emerald-600' : r.onboarding_pct >= 50 ? 'text-amber-600' : 'text-[var(--text-muted)]'}">${r.onboarding_pct}%</span>` : '<span class="text-[var(--text-muted)]">—</span>'}</td>
         <td class="px-4 py-2.5">
           <button class="text-[11px] text-purple-600 hover:underline cursor-pointer bg-transparent border-0 p-0" data-action="view-applicant" data-id="${esc(r.id)}">Detalhes</button>
         </td>

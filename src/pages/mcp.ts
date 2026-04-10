@@ -25,7 +25,9 @@ function decodeJwtPayload(token: string): { sub?: string; exp?: number } | null 
   } catch { return null; }
 }
 
-// Try to refresh an expired token using the stored refresh_token in KV
+// Try to refresh an expired token using the stored refresh_token in KV.
+// On failure (stale/revoked token), DELETE the KV entry to prevent the stale
+// token from being retried. Next /mcp call will return 401 and force re-auth.
 async function tryAutoRefresh(sub: string, kv: any): Promise<string | null> {
   const refreshToken = await kv.get(`mcp_refresh:${sub}`);
   if (!refreshToken) return null;
@@ -37,9 +39,16 @@ async function tryAutoRefresh(sub: string, kv: any): Promise<string | null> {
     body: JSON.stringify({ refresh_token: refreshToken }),
   });
 
-  if (!res.ok) return null;
+  if (!res.ok) {
+    // Refresh failed — purge stale KV entry to prevent retry loop
+    await kv.delete(`mcp_refresh:${sub}`);
+    return null;
+  }
   const data = await res.json();
-  if (!data.access_token) return null;
+  if (!data.access_token) {
+    await kv.delete(`mcp_refresh:${sub}`);
+    return null;
+  }
 
   // Update KV with new refresh_token
   if (data.refresh_token) {

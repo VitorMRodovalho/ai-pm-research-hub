@@ -14,7 +14,7 @@
 - [ ] Tab 2: /governance (nao logado — manual publico)
 - [ ] Tab 3: Pre-logado como GP (Vitor)
 - [ ] Tab 4: Admin dashboard
-- [ ] Tab 5: Claude.ai com MCP conectado (56 tools)
+- [ ] Tab 5: Claude.ai com MCP conectado (64 tools)
 - [ ] Wi-Fi testado + hotspot backup
 - [ ] Screenshot fallback de cada tela (caso offline)
 
@@ -85,9 +85,9 @@
 
 ### ACT 4: IA Copiloto ao Vivo (5 min) — "A conexao com o tema do Vargas"
 
-#### 4.1 MCP — 56 Ferramentas (3 min)
+#### 4.1 MCP — 64 Ferramentas (3 min)
 - Tab 5: Claude.ai com MCP conectado
-- Mostrar tools list: 56 ferramentas (47 leitura + 9 escrita)
+- Mostrar tools list: 64 ferramentas (51 leitura + 13 escrita)
 - **Query ao vivo:** "Qual o status do portfolio do Nucleo?"
   - Claude consulta `get_portfolio_overview` → retorna KPIs, tribos, saude
 - **Segunda query:** "Liste os proximos eventos da minha tribo"
@@ -95,7 +95,7 @@
 - > "A IA nao e um chatbot generico — ela OPERA na plataforma com OAuth 2.1, permissoes por papel, e audit log"
 
 #### 4.2 Escala e Reproducibilidade (2 min)
-- > "Esta plataforma roda em 21 Edge Functions, 56 ferramentas MCP, 779 testes automatizados"
+- > "Esta plataforma roda em 21 Edge Functions, 64 ferramentas MCP, 779 testes automatizados"
 - > "Custo de infraestrutura: R$ 0/mes (free tier Cloudflare + Supabase)"
 - > "Qualquer capitulo PMI pode replicar: codigo aberto, documentacao completa"
 - > "O que o Ricardo Vargas descreve como futuro — nos ja estamos operando"

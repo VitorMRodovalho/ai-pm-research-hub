@@ -1,5 +1,5 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.9.0 — 56 tools (47R + 9W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.9.4 — 64 tools (51R + 13W) + 1 prompt + 1 resource + usage logging
 // Transport: SDK 1.29.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
@@ -266,15 +266,15 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
     "nucleo://tools/reference",
     {
       title: "Referência completa de ferramentas",
-      description: "Lista todas as 56 ferramentas do Núcleo MCP com parâmetros e permissões.",
+      description: "Lista todas as 64 ferramentas do Núcleo MCP com parâmetros e permissões.",
       mimeType: "text/markdown",
     },
     async () => ({
       contents: [{
         uri: "nucleo://tools/reference",
-        text: `# Núcleo IA MCP — Referência de Ferramentas (v2.9.0)
+        text: `# Núcleo IA MCP — Referência de Ferramentas (v2.9.4)
 
-## 56 ferramentas: 46 leitura + 8 escrita
+## 64 ferramentas: 51 leitura + 13 escrita
 
 ### Tier 1 — Todos os membros (17 leitura)
 | # | Ferramenta | Parâmetros | Descrição |
@@ -362,7 +362,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
   );
 }
 
-// --- Register 56 tools (47R + 9W) ---
+// --- Register 64 tools (51R + 13W) ---
 
 function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
 

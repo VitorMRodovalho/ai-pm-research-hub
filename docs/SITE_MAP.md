@@ -159,13 +159,13 @@ Requires `admin` tier or specific designations. Full governance and management t
 | **Artia** | REST API | Sincronizacao de portfolio PMI-GO | PMI-GO portfolio sync |
 | **Resend** | REST API | Email campaigns e notificacoes | Email campaigns and notifications |
 | **Credly** | REST API | Sincronizacao de badges e certificacoes | Badge and certification sync |
-| **MCP (56 tools)** | Streamable HTTP | 47 leitura + 9 escrita, OAuth 2.1 | 47 read + 9 write, OAuth 2.1 |
+| **MCP (64 tools)** | Streamable HTTP | 51 leitura + 13 escrita, OAuth 2.1 | 51 read + 13 write, OAuth 2.1 |
 
 ### Verified MCP Hosts / Hosts MCP Verificados
 
 | Host | Status |
 |------|--------|
-| Claude.ai | Verified (56 tools) |
+| Claude.ai | Verified (64 tools) |
 | Claude Code | Verified |
 | ChatGPT | Verified (beta) |
 | Perplexity | Verified |

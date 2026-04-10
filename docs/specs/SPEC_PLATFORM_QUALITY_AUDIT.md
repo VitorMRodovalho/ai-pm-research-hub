@@ -122,7 +122,7 @@ The Nucleo IA & GP platform will be demonstrated at the CBGPL Congress. Every vi
 2. **Governance**: Manual viewer → Change requests → Approval workflow
 3. **Member login**: Profile → Gamification → Tribe dashboard → Boards (kanban)
 4. **Admin**: Dashboard (KPIs + widgets) → Selection pipeline → Diversity charts → Certificates → Sustainability
-5. **MCP**: Show Claude.ai connected with 56 tools → run a query live
+5. **MCP**: Show Claude.ai connected with 64 tools → run a query live
 
 #### Avoid during demo:
 - Pages with known UX gaps (if any remain)
