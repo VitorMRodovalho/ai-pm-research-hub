@@ -798,9 +798,20 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       let html = '<table class="w-full text-[.68rem] border-collapse"><thead><tr><th class="text-left px-2 py-1 text-[var(--text-muted)]">Cohort</th><th class="text-center px-2 py-1 text-[var(--text-muted)]">Tamanho</th>';
       for (let w = 0; w < maxWeeks; w++) html += `<th class="text-center px-2 py-1 text-[var(--text-muted)]">S${w}</th>`;
       html += '</tr></thead><tbody>';
-      cohorts.forEach((c: any) => {
+      // Filter out empty cohorts (no date AND size 0) to avoid "Invalid Date" noise
+      const validCohorts = cohorts.filter((c: any) => (c.cohort_size || 0) > 0);
+      validCohorts.forEach((c: any) => {
         const size = c.cohort_size || 0;
-        html += `<tr><td class="px-2 py-1 font-semibold text-navy">${c.date ? new Date(c.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : c.label}</td><td class="text-center px-2 py-1 font-bold">${size}</td>`;
+        // Robust date parsing: handle YYYY-MM-DD, ISO datetime, or fallback to label
+        let cohortLabel = c.label || '—';
+        if (c.date) {
+          const cleanDate = String(c.date).slice(0, 10); // YYYY-MM-DD
+          const dt = new Date(cleanDate + 'T12:00:00');
+          if (!isNaN(dt.getTime())) {
+            cohortLabel = dt.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+          }
+        }
+        html += `<tr><td class="px-2 py-1 font-semibold text-navy">${cohortLabel}</td><td class="text-center px-2 py-1 font-bold">${size}</td>`;
         (c.values || []).forEach((v: any, i: number) => {
           const pct = size > 0 ? Math.round((v.count / size) * 100) : 0;
           const intensity = Math.round(pct * 2.55);
@@ -810,7 +821,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         html += '</tr>';
       });
       html += '</tbody></table>';
-      retEl.innerHTML = html;
+      retEl.innerHTML = validCohorts.length > 0 ? html : '<div class="text-sm text-[var(--text-muted)] text-center py-6">Dados insuficientes para retenção (nenhum cohort com usuários ativos)</div>';
     } else {
       retEl.innerHTML = '<div class="text-sm text-[var(--text-muted)] text-center py-6">Dados insuficientes para retencao (min. 2 semanas)</div>';
     }

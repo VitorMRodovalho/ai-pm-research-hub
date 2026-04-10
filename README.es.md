@@ -43,7 +43,7 @@ Fundado en 2024 como piloto en PMI Goias, el proyecto evoluciono hacia una alian
 | Capitulos PMI | 5 (GO · CE · DF · MG · RS) |
 | Entradas de gobernanza | 135+ |
 | Posts en el blog | 9 |
-| Herramientas MCP | 56 (47 lectura · 9 escritura) |
+| Herramientas MCP | 64 (51 lectura · 13 escritura) |
 | Edge Functions | 20 |
 | Claves i18n | 3.735+ (3 idiomas) |
 | Tests | 779 |
