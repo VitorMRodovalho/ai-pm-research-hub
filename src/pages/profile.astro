@@ -166,15 +166,21 @@ const PROFILE_I18N = {
     <h1 class="text-2xl font-extrabold text-navy mb-6">{t('profile.heading', lang)}</h1>
 
     <!-- Volunteer Agreement Banner -->
-    <div id="va-banner" class="hidden mb-5 rounded-xl border-2 border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 p-4 flex items-start gap-3">
-      <span class="text-xl flex-shrink-0">📋</span>
-      <div class="flex-1">
-        <div class="font-bold text-sm text-amber-800 dark:text-amber-300">{t('profile.volunteerBanner.title', lang)}</div>
-        <p class="text-xs text-amber-700 dark:text-amber-400 mt-0.5">{t('profile.volunteerBanner.description', lang)}</p>
+    <div id="va-banner" class="hidden mb-5 rounded-xl border-2 border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 p-4">
+      <div class="flex items-start gap-3">
+        <span class="text-xl flex-shrink-0">📋</span>
+        <div class="flex-1">
+          <div class="font-bold text-sm text-amber-800 dark:text-amber-300">{t('profile.volunteerBanner.title', lang)}</div>
+          <p class="text-xs text-amber-700 dark:text-amber-400 mt-0.5" id="va-banner-desc">{t('profile.volunteerBanner.description', lang)}</p>
+          <div id="va-missing-fields" class="hidden mt-2 text-[11px] text-amber-800 dark:text-amber-300">
+            <span class="font-semibold">Campos obrigatórios pendentes: </span>
+            <span id="va-missing-list"></span>
+          </div>
+        </div>
+        <a id="va-action-btn" href="/volunteer-agreement" class="flex-shrink-0 px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-semibold no-underline hover:bg-amber-600 transition-colors">
+          {t('profile.volunteerBanner.action', lang)}
+        </a>
       </div>
-      <a href="/volunteer-agreement" class="flex-shrink-0 px-3 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-semibold no-underline hover:bg-amber-600 transition-colors">
-        {t('profile.volunteerBanner.action', lang)}
-      </a>
     </div>
 
     <div id="profile-content" class="space-y-5">
@@ -449,16 +455,42 @@ const PROFILE_I18N = {
       weekData = null;
     }
 
-    // Check volunteer agreement status
+    // Check TCV readiness: signed? if not, what's missing?
     try {
-      const { data: certs } = await sb.rpc('get_my_certificates');
-      const thisYear = new Date().getFullYear();
-      const hasVA = (certs || []).some((c: any) =>
-        c.type === 'volunteer_agreement' && new Date(c.issued_at).getFullYear() === thisYear
-      );
-      if (!hasVA && currentMember?.operational_role && !['sponsor', 'chapter_liaison', 'observer', 'candidate', 'visitor'].includes(currentMember.operational_role)) {
+      const { data: readiness } = await sb.rpc('check_my_tcv_readiness');
+      if (readiness && readiness.applicable && !readiness.signed) {
         const banner = document.getElementById('va-banner');
         if (banner) banner.classList.remove('hidden');
+        const missing = (readiness.missing_fields || []) as string[];
+        if (missing.length > 0) {
+          // Block action button + show missing fields list
+          const fieldLabels: Record<string, string> = {
+            pmi_id: 'PMI ID',
+            phone: 'Telefone',
+            address: 'Endereço',
+            city: 'Cidade',
+            state: 'Estado',
+            country: 'País',
+            birth_date: 'Data de Aniversário',
+          };
+          const missingList = document.getElementById('va-missing-fields');
+          const missingSpan = document.getElementById('va-missing-list');
+          if (missingList && missingSpan) {
+            missingSpan.textContent = missing.map((k: string) => fieldLabels[k] || k).join(', ');
+            missingList.classList.remove('hidden');
+          }
+          // Convert action button to "scroll to fields"
+          const btn = document.getElementById('va-action-btn') as HTMLAnchorElement | null;
+          if (btn) {
+            btn.textContent = '✏️ Preencher';
+            btn.href = '#personal-data';
+            btn.onclick = (e: MouseEvent) => {
+              e.preventDefault();
+              document.getElementById('self-address')?.focus();
+              document.getElementById('self-address')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            };
+          }
+        }
       }
     } catch (_) { /* silent */ }
   }
@@ -1014,7 +1046,7 @@ const PROFILE_I18N = {
             ` : ''}
           </div>
         </div>
-        <div class="mt-4">
+        <div class="mt-4" id="personal-data">
           <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">
             Endereço
             <span class="ml-1 text-[.6rem] font-normal normal-case text-[var(--text-muted)]">(usado apenas no Termo de Voluntariado · LGPD)</span>

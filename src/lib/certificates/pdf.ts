@@ -403,32 +403,55 @@ export async function hydrateCertData(certData: CertificateData, sb: any): Promi
 }
 
 /**
+ * Build the full HTML document wrapped with print CSS.
+ * Uses a Blob URL so the browser shows the document title instead of "about:blank" in the print footer.
+ */
+function buildPrintDocument(title: string, innerHtml: string): string {
+  return `<!DOCTYPE html><html lang="pt-BR"><head>
+    <meta charset="UTF-8">
+    <title>${title}</title>
+    <style>
+      @page{size:A4 portrait;margin:15mm 12mm 18mm 12mm}
+      @media print{
+        html,body{margin:0 !important;padding:0 !important;background:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+        .cert-page{box-shadow:none !important;margin:0 !important;width:auto !important;min-height:auto !important;padding:0 !important;max-width:none !important}
+        /* Hide browser-generated headers/footers where supported */
+        @page{margin-header:0;margin-footer:0}
+      }
+      @media screen{
+        body{margin:0;display:flex;flex-direction:column;align-items:center;background:#e5e7eb;padding:20px 0;font-family:Georgia,serif}
+        .cert-page{box-shadow:0 4px 16px rgba(0,0,0,0.15);margin-bottom:20px}
+      }
+      body{font-family:Georgia,serif}
+    </style>
+  </head><body>${innerHtml}</body></html>`;
+}
+
+/**
  * Open a new window with a single certificate PDF (ready to print).
  * Automatically hydrates template data for volunteer_agreements.
+ * Uses Blob URL (instead of document.write) so the print header shows the document title
+ * instead of "about:blank".
  */
 export async function downloadCertificatePDF(certData: CertificateData, sb?: any): Promise<void> {
   if (sb) await hydrateCertData(certData, sb);
 
-  const w = window.open('', '_blank');
-  if (!w) return;
-
   const html = buildCertificateHTML(certData);
-  // Use @page with proper margins to prevent text cut-off on auto-print
-  // 15mm top/bottom, 12mm sides — matches the reference PDF layout
-  w.document.write(`<html><head><title>${certData.verification_code || 'Certificate'} — ${certData.member_name}</title><style>
-    @page{size:A4 portrait;margin:15mm 12mm 18mm 12mm}
-    @media print{
-      body{margin:0 !important;background:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-      .cert-page{box-shadow:none !important;margin:0 !important;width:auto !important;min-height:auto !important;padding:0 !important}
-    }
-    @media screen{
-      body{margin:0;display:flex;flex-direction:column;align-items:center;background:#e5e7eb;padding:20px 0;font-family:Georgia,serif}
-      .cert-page{box-shadow:0 4px 16px rgba(0,0,0,0.15);margin-bottom:20px}
-    }
-    body{font-family:Georgia,serif}
-  </style></head><body>${html}</body></html>`);
-  w.document.close();
-  setTimeout(() => w.print(), 500);
+  const title = `${certData.verification_code || 'Certificate'} — ${certData.member_name}`;
+  const fullDoc = buildPrintDocument(title, html);
+
+  // Use Blob URL instead of about:blank for a cleaner print header
+  const blob = new Blob([fullDoc], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const w = window.open(url, '_blank');
+  if (!w) { URL.revokeObjectURL(url); return; }
+
+  // Wait for content to load, then print
+  w.addEventListener('load', () => {
+    setTimeout(() => w.print(), 300);
+  }, { once: true });
+  // Cleanup after user closes the print dialog
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
 /**
@@ -444,22 +467,17 @@ export async function downloadBulkCertificatesPDF(certDataList: CertificateData[
     ? await Promise.all(certDataList.map(c => hydrateCertData({ ...c }, sb)))
     : certDataList;
 
-  const w = window.open('', '_blank');
-  if (!w) return;
-
   const allHtml = hydrated.map(buildCertificateHTML).join('');
-  w.document.write(`<html><head><title>Certificados em lote (${hydrated.length})</title><style>
-    @page{size:A4 portrait;margin:15mm 12mm 18mm 12mm}
-    @media print{
-      body{margin:0 !important;background:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-      .cert-page{box-shadow:none !important;margin:0 !important;width:auto !important;min-height:auto !important;padding:0 !important}
-    }
-    @media screen{
-      body{margin:0;background:#e5e7eb;padding:20px 0;display:flex;flex-direction:column;align-items:center;font-family:Georgia,serif}
-      .cert-page{box-shadow:0 4px 16px rgba(0,0,0,0.15);margin-bottom:20px}
-    }
-    body{font-family:Georgia,serif}
-  </style></head><body>${allHtml}</body></html>`);
-  w.document.close();
-  setTimeout(() => w.print(), 800);
+  const title = `Certificados em lote (${hydrated.length})`;
+  const fullDoc = buildPrintDocument(title, allHtml);
+
+  const blob = new Blob([fullDoc], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const w = window.open(url, '_blank');
+  if (!w) { URL.revokeObjectURL(url); return; }
+
+  w.addEventListener('load', () => {
+    setTimeout(() => w.print(), 500);
+  }, { once: true });
+  setTimeout(() => URL.revokeObjectURL(url), 120000);
 }
