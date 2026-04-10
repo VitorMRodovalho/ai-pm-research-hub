@@ -1112,6 +1112,38 @@ const PROFILE_I18N = {
         <p class="text-[.65rem] text-[var(--text-muted)] mt-2">🔒 Email, capítulo, papel e tribo são geridos pelo GP.</p>
       </div>
 
+      <!-- Card: LGPD Rights -->
+      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
+        <h2 class="text-sm font-bold text-navy mb-1">🔒 Seus Direitos LGPD</h2>
+        <p class="text-[.7rem] text-[var(--text-muted)] mb-4">Exerça seus direitos garantidos pela Lei Geral de Proteção de Dados (Lei 13.709/2018).</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button data-action="export-my-data"
+            class="flex items-center gap-2 px-4 py-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] text-left cursor-pointer hover:border-navy transition-colors">
+            <span class="text-xl">📥</span>
+            <div class="flex-1 min-w-0">
+              <div class="text-[.78rem] font-bold text-navy">Exportar meus dados</div>
+              <div class="text-[.65rem] text-[var(--text-muted)]">Baixar JSON com todos os seus dados pessoais e contribuições (portabilidade)</div>
+            </div>
+          </button>
+          <a href="/privacy"
+            class="flex items-center gap-2 px-4 py-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] text-left no-underline hover:border-navy transition-colors">
+            <span class="text-xl">📄</span>
+            <div class="flex-1 min-w-0">
+              <div class="text-[.78rem] font-bold text-navy">Política de Privacidade</div>
+              <div class="text-[.65rem] text-[var(--text-muted)]">Ler política completa, dados coletados e finalidades</div>
+            </div>
+          </a>
+          <button data-action="delete-my-data"
+            class="flex items-center gap-2 px-4 py-3 rounded-xl border border-red-200 bg-red-50/50 dark:bg-red-900/10 dark:border-red-800 text-left cursor-pointer hover:border-red-500 transition-colors sm:col-span-2">
+            <span class="text-xl">🗑️</span>
+            <div class="flex-1 min-w-0">
+              <div class="text-[.78rem] font-bold text-red-700 dark:text-red-400">Apagar meus dados pessoais</div>
+              <div class="text-[.65rem] text-red-600 dark:text-red-400">Limpa endereço, telefone, aniversário. Preserva nome, email e histórico de contribuições (Direito ao Esquecimento — irreversível)</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
       <!-- Card: Digital Signature -->
       <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
         <h2 class="text-sm font-bold text-navy mb-3">✍️ ${PROFILE_I18N.signature || 'Assinatura Digital'}</h2>
@@ -1224,15 +1256,6 @@ const PROFILE_I18N = {
         </div>
       </div>
 
-      <!-- Card: LGPD Data Export -->
-      <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-6">
-        <h2 class="text-sm font-bold text-navy mb-2">${PROFILE_I18N.lgpdTitle || 'Meus Dados (LGPD)'}</h2>
-        <p class="text-[.75rem] text-[var(--text-muted)] mb-4">${PROFILE_I18N.lgpdDesc || 'Você pode exportar todos os seus dados pessoais armazenados na plataforma.'}</p>
-        <button data-action="export-my-data"
-          class="px-4 py-2 bg-teal text-white rounded-xl font-semibold text-[.8rem] hover:opacity-90 transition-all cursor-pointer border-0">
-          ${PROFILE_I18N.lgpdExportBtn || '📥 Exportar meus dados'}
-        </button>
-      </div>
     `;
     // Load notification preferences + linked providers after render
     loadNotifPrefs();
@@ -1465,6 +1488,33 @@ const PROFILE_I18N = {
     }
   }
 
+  async function deleteMyPersonalData() {
+    const confirmText = prompt(
+      'ATENÇÃO: Esta ação é IRREVERSÍVEL.\n\n' +
+      'Serão apagados:\n' +
+      '• Endereço\n• Cidade\n• Telefone\n• Data de Aniversário\n\n' +
+      'Serão preservados:\n' +
+      '• Nome, email, PMI ID\n• Histórico de contribuições, XP, certificados\n\n' +
+      'Para confirmar, digite abaixo exatamente:\nDELETAR MEUS DADOS PESSOAIS'
+    );
+    if (!confirmText) return;
+    const sb = (window as any).navGetSb?.();
+    if (!sb) { (window as any).toast?.('Supabase indisponível', 'error'); return; }
+    try {
+      const { data, error } = await sb.rpc('delete_my_personal_data', { p_confirm_text: confirmText });
+      if (error) throw error;
+      if (data?.error === 'confirmation_required') {
+        (window as any).toast?.('Confirmação inválida. Digite o texto exato.', 'error');
+        return;
+      }
+      if (data?.error) throw new Error(data.error);
+      (window as any).toast?.('Dados pessoais apagados. A página será recarregada.', 'success');
+      setTimeout(() => location.reload(), 1500);
+    } catch (err: any) {
+      (window as any).toast?.(err.message || 'Erro ao apagar dados', 'error');
+    }
+  }
+
   async function exportMyData() {
     const sb = (window as any).navGetSb?.();
     if (!sb) { (window as any).toast?.('Supabase indisponível', 'error'); return; }
@@ -1531,6 +1581,9 @@ const PROFILE_I18N = {
           break;
         case 'export-my-data':
           exportMyData();
+          break;
+        case 'delete-my-data':
+          deleteMyPersonalData();
           break;
         case 'link-provider': {
           const provider = (target as HTMLElement).dataset.provider;
