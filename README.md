@@ -44,7 +44,7 @@ Founded in 2024 as a pilot within PMI Goiás, the initiative has grown into a st
 | Events held | 209 |
 | Governance entries | 160+ |
 | Blog posts | 9 |
-| MCP tools | 56 (47 read · 9 write) |
+| MCP tools | 64 (51 read · 13 write) |
 | Edge Functions | 21 |
 | i18n keys | 3,900+ (3 locales) |
 | Tests | 779 passing |
