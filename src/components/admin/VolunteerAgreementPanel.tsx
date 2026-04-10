@@ -15,6 +15,12 @@ interface MemberRow {
   cycle_code: string | null;
   cycle_start: string | null;
   cycle_end: string | null;
+  // 2-wave signature journey
+  counter_signed: boolean;
+  counter_signed_at: string | null;
+  // Contract period (from signed cert, source of truth)
+  contract_start: string | null;
+  contract_end: string | null;
 }
 
 interface TemplateData {
@@ -158,7 +164,10 @@ function useLang(p?: string): string {
 
 function fmtDate(d: string | null): string {
   if (!d) return '—';
-  const dt = new Date(d);
+  // Fix timezone shift: date-only strings (YYYY-MM-DD) parse as UTC midnight
+  // → BRT (-03) shifts to previous day. Force noon local time instead.
+  const clean = String(d).slice(0, 10);
+  const dt = clean.length === 10 ? new Date(clean + 'T12:00:00') : new Date(d);
   if (isNaN(dt.getTime())) return String(d);
   return dt.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
 }
@@ -521,8 +530,8 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
                 <th className="text-left px-3 py-2 font-semibold">{t.chapter}</th>
                 <th className="text-left px-3 py-2 font-semibold">{t.role}</th>
                 <th className="text-left px-3 py-2 font-semibold">{t.cycle}</th>
-                <th className="text-left px-3 py-2 font-semibold">{t.since}</th>
-                <th className="text-center px-3 py-2 font-semibold">{t.status}</th>
+                <th className="text-left px-3 py-2 font-semibold">Período do Contrato</th>
+                <th className="text-center px-3 py-2 font-semibold" title="Voluntário assinou / Diretor contra-assinou">✍️ Voluntário / 👔 Diretor</th>
                 <th className="text-left px-3 py-2 font-semibold">{t.signedAt}</th>
               </tr>
             </thead>
@@ -536,17 +545,40 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
                   <td className="px-3 py-2 text-[var(--text-secondary)]">{m.role}</td>
                   <td className="px-3 py-2 text-[var(--text-muted)] font-mono text-[9px]">{m.cycle_code?.replace('_', ' ') || '—'}</td>
                   <td className="px-3 py-2 text-[var(--text-muted)] text-[10px]">
-                    {m.cycle_start ? fmtDate(m.cycle_start) : '—'}
-                    {m.cycle_end && <span className="text-[var(--text-muted)]"> → {fmtDate(m.cycle_end)}</span>}
+                    {/* Use contract period from the signed cert (source of truth). Fallback to cycle_history. */}
+                    {m.contract_start ? (
+                      <>
+                        {fmtDate(m.contract_start)}
+                        {m.contract_end && <span className="text-[var(--text-muted)]"> → {fmtDate(m.contract_end)}</span>}
+                      </>
+                    ) : m.cycle_start ? (
+                      <>
+                        {fmtDate(m.cycle_start)}
+                        {m.cycle_end && <span className="text-[var(--text-muted)]"> → {fmtDate(m.cycle_end)}</span>}
+                      </>
+                    ) : '—'}
                   </td>
-                  <td className="px-3 py-2 text-center">
-                    {m.signed ? (
-                      <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">✅</span>
-                    ) : (
-                      <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">⏳</span>
+                  <td className="px-3 py-2 text-center whitespace-nowrap">
+                    {/* 2-wave signature badges */}
+                    {!m.signed && (
+                      <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold bg-red-100 text-red-700" title="Voluntário não assinou">❌ Não assinado</span>
+                    )}
+                    {m.signed && !m.counter_signed && (
+                      <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700" title="Voluntário assinou. Aguardando diretor.">
+                        ✍️ Aguarda diretor
+                      </span>
+                    )}
+                    {m.signed && m.counter_signed && (
+                      <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-700" title="Voluntário + Diretor assinaram">
+                        ✓✓ Completo
+                      </span>
                     )}
                   </td>
-                  <td className="px-3 py-2 text-[var(--text-muted)]">{fmtDate(m.signed_at)}</td>
+                  <td className="px-3 py-2 text-[var(--text-muted)] text-[10px]">
+                    {m.signed_at && <div>✍️ {fmtDate(m.signed_at)}</div>}
+                    {m.counter_signed_at && <div className="text-emerald-600">👔 {fmtDate(m.counter_signed_at)}</div>}
+                    {!m.signed_at && '—'}
+                  </td>
                 </tr>
               ))}
               {filtered.length === 0 && (

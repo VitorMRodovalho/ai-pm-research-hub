@@ -15,6 +15,17 @@ export interface CertificateData {
   description?: string;
   issued_by?: string;
   signature_url?: string;
+  // Volunteer agreement specific
+  member_email?: string;
+  member_pmi_id?: string;
+  member_chapter?: string;
+  member_city?: string;
+  member_state?: string;
+  member_contact?: string;
+  signed_at?: string;
+  counter_signed_at?: string;
+  counter_signed_by_name?: string;
+  template_content?: any; // full template from governance_documents
 }
 
 const TEMPLATES: Record<string, Record<string, string>> = {
@@ -75,10 +86,126 @@ const TEMPLATES: Record<string, Record<string, string>> = {
 };
 
 /**
+ * Render the FULL legal volunteer agreement (multi-page A4).
+ * Uses the actual template stored in governance_documents.
+ * Matches the preview shown in VolunteerAgreementPanel "Ver Template" modal.
+ */
+export function buildVolunteerAgreementHTML(certData: CertificateData): string {
+  const c = certData.template_content || {};
+  const SUB_KEYS: Record<string, string[]> = {
+    clause1: ['clause1a', 'clause1b', 'clause1c'],
+    clause7: ['clause7a'],
+    clause9: ['clause9a', 'clause9b', 'clause9c', 'clause9d', 'clause9e', 'clause9f', 'clause9note'],
+  };
+  const MAIN = ['clause1','clause2','clause3','clause4','clause5','clause6','clause7','clause8','clause9','clause10','clause11','clause12'];
+
+  const memberDataBlock = `
+    <div style="background:#f5f5f5;border:1px dashed #ccc;border-radius:6px;padding:12px 14px;margin:14px 0;font-size:11px;line-height:1.8">
+      <div style="font-weight:bold;color:#666;margin-bottom:6px">Dados do VOLUNTÁRIO:</div>
+      <div><b>PMI ID:</b> ${certData.member_pmi_id || '—'} &nbsp;|&nbsp; <b>Nome:</b> ${certData.member_name || '—'}</div>
+      <div><b>E-mail:</b> ${certData.member_email || '—'}</div>
+      <div><b>Capítulo:</b> ${certData.member_chapter || '—'} &nbsp;|&nbsp; <b>Contato:</b> ${certData.member_contact || '—'}</div>
+    </div>`;
+
+  const clausesHtml = MAIN.map((key, i) => {
+    const text = c[key] || '';
+    const subs = SUB_KEYS[key];
+    const subsHtml = subs ? `<ol style="margin-top:6px;margin-left:22px;list-style:none;padding:0">${subs.map(subKey => {
+      const subText = c[subKey] || '';
+      const letter = subKey.slice(-1);
+      const isNote = subKey.endsWith('note');
+      return `<li style="font-size:10.5px;margin-top:5px;${isNote ? 'font-style:italic;border-left:2px solid #ccc;padding-left:8px;color:#555' : ''}">
+        ${!isNote ? `<b style="color:#666">${letter}.</b> ` : ''}${subText}
+      </li>`;
+    }).join('')}</ol>` : '';
+    return `<li style="margin-bottom:10px;font-size:11px;line-height:1.5;text-align:justify">
+      <b style="color:#555">${i + 1}.</b> ${text}${subsHtml}
+    </li>`;
+  }).join('');
+
+  const signatureBlock = `
+    <div style="margin-top:32px;padding-top:14px;border-top:1px solid #ccc">
+      <p style="font-size:10px;font-style:italic;color:#666;margin-bottom:20px">Goiânia/GO, ${certData.signed_at ? new Date(certData.signed_at).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR')}</p>
+      <div style="display:flex;justify-content:space-between;gap:40px;text-align:center;font-size:10px">
+        <div style="flex:1;padding-top:30px;border-top:1px solid #333">
+          <div style="font-weight:bold">${certData.member_name}</div>
+          <div style="color:#666">VOLUNTÁRIO</div>
+          ${certData.signed_at ? `<div style="color:#888;font-size:8px;margin-top:3px">Assinatura digital ${new Date(certData.signed_at).toLocaleDateString('pt-BR')}</div>` : ''}
+        </div>
+        <div style="flex:1;padding-top:30px;border-top:1px solid #333">
+          ${certData.counter_signed_by_name ? `<div style="font-weight:bold">${certData.counter_signed_by_name}</div>` : '<div style="color:#999">____________________</div>'}
+          <div style="color:#666">Diretor do PMI Goiás</div>
+          ${certData.counter_signed_at ? `<div style="color:#888;font-size:8px;margin-top:3px">Contra-assinado ${new Date(certData.counter_signed_at).toLocaleDateString('pt-BR')}</div>` : '<div style="color:#c92a2a;font-size:8px;margin-top:3px">Pendente contra-assinatura</div>'}
+        </div>
+      </div>
+    </div>`;
+
+  const annexBlock = `
+    <div style="margin-top:30px;padding-top:14px;border-top:2px solid #1a365d;page-break-before:always">
+      <h3 style="font-weight:bold;color:#1a365d;font-size:13px;margin-bottom:10px">ANEXO — LEI DO SERVIÇO VOLUNTÁRIO</h3>
+      <p style="font-size:10px;color:#666;margin-bottom:4px"><b>Lei nº 9.608, de 18 de fevereiro de 1998</b></p>
+      <p style="font-size:10px;color:#666;margin-bottom:12px;font-style:italic">Dispõe sobre o serviço voluntário e dá outras providências.</p>
+      <div style="font-size:10px;line-height:1.5;text-align:justify">
+        <p style="margin-bottom:8px"><b>Art. 1º</b> Considera-se serviço voluntário, para fins desta Lei, a atividade não remunerada, prestada por pessoa física a entidade pública de qualquer natureza, ou a Instituição privada de fins não lucrativos, que tenha objetivos cívicos, culturais, educacionais, científicos, recreativos ou de assistência social, inclusive mutualidade.</p>
+        <p style="margin-left:14px;font-style:italic;margin-bottom:8px">Parágrafo único. O serviço voluntário não gera vínculo empregatício, nem obrigação de natureza trabalhista, previdenciária ou afim.</p>
+        <p style="margin-bottom:8px"><b>Art. 2º</b> O serviço voluntário será exercido mediante a celebração de Termo de Adesão entre a entidade, pública ou privada, e o prestador do serviço voluntário, dele devendo constar o objeto e as condições de seu exercício.</p>
+        <p style="margin-bottom:8px"><b>Art. 3º</b> O prestador de serviço voluntário poderá ser ressarcido pelas despesas que comprovadamente realizar no desempenho das atividades voluntárias.</p>
+        <p style="margin-left:14px;font-style:italic;margin-bottom:8px">Parágrafo único. As despesas a serem ressarcidas deverão estar expressamente autorizadas pela entidade a que for prestado o serviço voluntário.</p>
+        <p style="margin-bottom:8px"><b>Art. 4º</b> Esta Lei entra em vigor na data de sua publicação.</p>
+        <p style="margin-bottom:8px"><b>Art. 5º</b> Revogam-se as disposições em contrário.</p>
+      </div>
+    </div>`;
+
+  return `<div style="width:595px;min-height:842px;padding:32px 40px;background:#fff;box-sizing:border-box;page-break-after:always;font-family:Georgia,serif;color:#333">
+    <!-- Header -->
+    <div style="text-align:center;margin-bottom:14px">
+      <div style="font-size:12px;color:#666;letter-spacing:1.5px;text-transform:uppercase">Núcleo de Estudos e Pesquisa em IA & GP</div>
+      <div style="font-size:8px;color:#999;margin-top:2px">The AI & PM Study and Research Hub</div>
+    </div>
+    <h1 style="text-align:center;font-size:16px;font-weight:bold;color:#1a365d;margin:14px 0;text-transform:uppercase;letter-spacing:1px">
+      Termo de Compromisso de Voluntário com o PMI Goiás
+    </h1>
+
+    <!-- Preamble -->
+    <p style="font-size:11px;line-height:1.5;text-align:justify;margin-bottom:10px">
+      <b>Termo de Compromisso de Voluntário com o PMI Goiás</b> que fazem entre si a <b>Seção Goiânia, Goiás — Brasil do Project Management Institute (PMI Goiás)</b>, inscrito no CNPJ/MF sob o nº 06.065.645/0001-99 e:
+    </p>
+
+    ${memberDataBlock}
+
+    <p style="font-size:11px;line-height:1.5;text-align:justify;margin-bottom:10px">
+      Doravante denominado <b>VOLUNTÁRIO</b>, com o objetivo de colaborar como voluntário ao PMI Goiás, nos projetos e processos do Capítulo.
+    </p>
+
+    <p style="font-size:11px;line-height:1.5;text-align:justify;margin-bottom:10px">
+      <b>Período de atuação:</b> ${certData.period_start || '—'} a ${certData.period_end || '—'}
+    </p>
+
+    <h3 style="font-weight:bold;color:#1a365d;font-size:12px;margin:14px 0 8px">Termos da Adesão do Programa de Voluntariado:</h3>
+
+    <ol style="list-style:none;padding:0;margin:0">${clausesHtml}</ol>
+
+    ${signatureBlock}
+
+    <!-- Footer -->
+    <div style="text-align:center;margin-top:20px;font-size:9px;color:#999">
+      <div>Código: ${certData.verification_code || '—'} · Template: ${certData.type === 'volunteer_agreement' ? 'R3-C3' : ''}</div>
+      <div style="margin-top:2px">Iniciativa colaborativa entre PMI-GO, PMI-CE, PMI-DF, PMI-MG e PMI-RS</div>
+    </div>
+  </div>
+  ${annexBlock}`;
+}
+
+/**
  * Generate HTML for a single certificate (one A4 page).
  * Returns HTML string that can be inserted into a new window.
+ * Delegates to buildVolunteerAgreementHTML for type=volunteer_agreement.
  */
 export function buildCertificateHTML(certData: CertificateData): string {
+  // Delegate to full legal template for volunteer_agreements
+  if (certData.type === 'volunteer_agreement') {
+    return buildVolunteerAgreementHTML(certData);
+  }
   const lang = certData.language || 'pt-BR';
   const tpl = TEMPLATES[lang] || TEMPLATES['pt-BR'];
   const type = certData.type || 'participation';
@@ -114,10 +241,12 @@ export function buildCertificateHTML(certData: CertificateData): string {
 }
 
 /**
- * Open a new window with a single certificate PDF (ready to print).
+ * Hydrate a CertificateData with data needed to render PDF.
+ * For volunteer_agreement: fetches template_content from governance_documents
+ * and member/counter_signer details from certificates + members tables.
  */
-export async function downloadCertificatePDF(certData: CertificateData, sb?: any): Promise<void> {
-  // Fetch issuer signature if available
+export async function hydrateCertData(certData: CertificateData, sb: any): Promise<CertificateData> {
+  // Issuer signature
   if (certData.issued_by && !certData.signature_url && sb) {
     try {
       const { data: issuer } = await sb.from('public_members').select('signature_url').eq('id', certData.issued_by).single();
@@ -125,26 +254,88 @@ export async function downloadCertificatePDF(certData: CertificateData, sb?: any
     } catch {}
   }
 
+  // For volunteer_agreement: load full legal template + extra fields
+  if (certData.type === 'volunteer_agreement' && sb) {
+    try {
+      // Fetch full certificate row with content_snapshot
+      if (certData.verification_code) {
+        const { data: fullCert } = await sb
+          .from('certificates')
+          .select('content_snapshot, signature_hash, issued_at, counter_signed_at, counter_signed_by, member_id')
+          .eq('verification_code', certData.verification_code)
+          .maybeSingle();
+        if (fullCert) {
+          const snap = fullCert.content_snapshot || {};
+          certData.member_email = certData.member_email || snap.member_email;
+          certData.member_pmi_id = certData.member_pmi_id || snap.member_pmi_id;
+          certData.member_chapter = certData.member_chapter || snap.member_chapter;
+          certData.signed_at = certData.signed_at || snap.signed_at || fullCert.issued_at;
+          certData.counter_signed_at = certData.counter_signed_at || fullCert.counter_signed_at;
+
+          // Resolve counter_signer name
+          if (fullCert.counter_signed_by) {
+            try {
+              const { data: cs } = await sb.from('public_members').select('name').eq('id', fullCert.counter_signed_by).single();
+              if (cs?.name) certData.counter_signed_by_name = cs.name;
+            } catch {}
+          }
+        }
+      }
+
+      // Fetch active template
+      const { data: tpl } = await sb
+        .from('governance_documents')
+        .select('content, version, title')
+        .eq('doc_type', 'volunteer_term_template')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (tpl) {
+        certData.template_content = typeof tpl.content === 'string' ? JSON.parse(tpl.content) : tpl.content;
+      }
+    } catch (e) {
+      console.warn('[pdf] failed to hydrate volunteer_agreement data:', e);
+    }
+  }
+
+  return certData;
+}
+
+/**
+ * Open a new window with a single certificate PDF (ready to print).
+ * Automatically hydrates template data for volunteer_agreements.
+ */
+export async function downloadCertificatePDF(certData: CertificateData, sb?: any): Promise<void> {
+  if (sb) await hydrateCertData(certData, sb);
+
   const w = window.open('', '_blank');
   if (!w) return;
 
   const html = buildCertificateHTML(certData);
-  w.document.write(`<html><head><title>${certData.verification_code || 'Certificate'} — ${certData.member_name}</title><style>@page{size:A4 portrait;margin:0}body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#fff;font-family:Georgia,serif}</style></head><body>${html}</body></html>`);
+  w.document.write(`<html><head><title>${certData.verification_code || 'Certificate'} — ${certData.member_name}</title><style>@page{size:A4 portrait;margin:0}body{margin:0;display:flex;flex-direction:column;align-items:center;min-height:100vh;background:#fff;font-family:Georgia,serif}</style></head><body>${html}</body></html>`);
   w.document.close();
   setTimeout(() => w.print(), 500);
 }
 
 /**
  * Open a new window with MULTIPLE certificates (one per page, ready to print).
+ * Hydrates each cert (loads template for volunteer_agreements).
  * Used by bulk download in admin/certificates.
  */
-export function downloadBulkCertificatesPDF(certDataList: CertificateData[]): void {
+export async function downloadBulkCertificatesPDF(certDataList: CertificateData[], sb?: any): Promise<void> {
   if (!certDataList.length) return;
+
+  // Hydrate all in parallel (loads template once per volunteer_agreement)
+  const hydrated = sb
+    ? await Promise.all(certDataList.map(c => hydrateCertData({ ...c }, sb)))
+    : certDataList;
+
   const w = window.open('', '_blank');
   if (!w) return;
 
-  const allHtml = certDataList.map(buildCertificateHTML).join('');
-  w.document.write(`<html><head><title>Certificados em lote (${certDataList.length})</title><style>@page{size:A4 portrait;margin:0}body{margin:0;background:#fff;font-family:Georgia,serif}@media print{body{background:#fff}}</style></head><body>${allHtml}</body></html>`);
+  const allHtml = hydrated.map(buildCertificateHTML).join('');
+  w.document.write(`<html><head><title>Certificados em lote (${hydrated.length})</title><style>@page{size:A4 portrait;margin:0}body{margin:0;background:#fff;font-family:Georgia,serif}@media print{body{background:#fff}}</style></head><body>${allHtml}</body></html>`);
   w.document.close();
   setTimeout(() => w.print(), 800);
 }

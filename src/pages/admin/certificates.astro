@@ -147,9 +147,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
                 const typeBadge = c.type === 'volunteer_agreement'
                   ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">TERMO</span>'
                   : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">CERT</span>';
+                // 2-wave signature status: volunteer signed (always, since it's in "Assinados" section)
+                // + check if director counter-signed
                 const signedBadge = c.counter_signed_at
-                  ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">✓ assinado</span>'
-                  : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">⏳ pendente</span>';
+                  ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700" title="Voluntário + Diretor assinaram">✓✓ Completo</span>'
+                  : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700" title="Voluntário assinou. Aguardando contra-assinatura do diretor.">✍️ Aguarda diretor</span>';
                 return `
                   <div class="px-5 py-3 flex items-center gap-3 flex-wrap">
                     <div class="flex-1 min-w-0">
@@ -221,14 +223,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         const allCerts = (window as any).__adminSignedCerts || [];
         const terms = allCerts.filter((c: any) => c.type === 'volunteer_agreement');
         if (terms.length === 0) { (window as any).toast?.('Sem termos assinados', 'info'); return; }
-        downloadBulkCertificatesPDF(terms.map(certToData));
+        await downloadBulkCertificatesPDF(terms.map(certToData), sb);
         return;
       }
 
       if (target.id === 'bulk-download-all') {
         const allCerts = (window as any).__adminSignedCerts || [];
         if (allCerts.length === 0) return;
-        downloadBulkCertificatesPDF(allCerts.map(certToData));
+        await downloadBulkCertificatesPDF(allCerts.map(certToData), sb);
         return;
       }
     });
