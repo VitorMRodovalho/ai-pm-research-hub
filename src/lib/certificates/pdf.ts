@@ -19,8 +19,12 @@ export interface CertificateData {
   member_email?: string;
   member_pmi_id?: string;
   member_chapter?: string;
+  member_phone?: string;
+  member_address?: string;
   member_city?: string;
   member_state?: string;
+  member_country?: string;
+  member_birth_date?: string;
   member_contact?: string;
   signed_at?: string;
   counter_signed_at?: string;
@@ -86,9 +90,60 @@ const TEMPLATES: Record<string, Record<string, string>> = {
 };
 
 /**
+ * Format phone number Brazilian-style: +55 11 98765-4321 or (11) 98765-4321
+ */
+function formatPhone(phone: string | undefined): string {
+  if (!phone) return '—';
+  const clean = phone.replace(/\D/g, '');
+  if (clean.length === 11) return `(${clean.slice(0,2)}) ${clean.slice(2,7)}-${clean.slice(7)}`;
+  if (clean.length === 10) return `(${clean.slice(0,2)}) ${clean.slice(2,6)}-${clean.slice(6)}`;
+  if (clean.length === 13 && clean.startsWith('55')) return `+55 (${clean.slice(2,4)}) ${clean.slice(4,9)}-${clean.slice(9)}`;
+  if (clean.length === 12 && clean.startsWith('55')) return `+55 (${clean.slice(2,4)}) ${clean.slice(4,8)}-${clean.slice(8)}`;
+  if (clean.length === 11 && clean.startsWith('1')) return `+1 (${clean.slice(1,4)}) ${clean.slice(4,7)}-${clean.slice(7)}`;
+  return phone;
+}
+
+/**
+ * Format birth date as dd/mm (no year — privacy-respecting)
+ */
+function formatBirthDate(date: string | undefined): string {
+  if (!date) return '—';
+  const clean = String(date).slice(0, 10);
+  const parts = clean.split('-');
+  if (parts.length === 3) return `${parts[2]}/${parts[1]}`;
+  return '—';
+}
+
+/**
+ * Format a date in the "long" Portuguese style: "09 de abril de 2026"
+ */
+function formatLongDate(date: string | undefined): string {
+  if (!date) return '—';
+  const clean = String(date).slice(0, 10);
+  const dt = clean.length === 10 ? new Date(clean + 'T12:00:00') : new Date(date);
+  if (isNaN(dt.getTime())) return String(date);
+  const months = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  return `${dt.getDate().toString().padStart(2,'0')} de ${months[dt.getMonth()]} de ${dt.getFullYear()}`;
+}
+
+/**
+ * Format period in Brazilian format: "20/01/2026 a 19/12/2026"
+ */
+function formatPeriod(start: string | undefined, end: string | undefined): string {
+  if (!start || !end) return '—';
+  const fmt = (d: string) => {
+    const clean = d.slice(0, 10);
+    const parts = clean.split('-');
+    return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : clean;
+  };
+  return `${fmt(start)} a ${fmt(end)}`;
+}
+
+/**
  * Render the FULL legal volunteer agreement (multi-page A4).
  * Uses the actual template stored in governance_documents.
- * Matches the preview shown in VolunteerAgreementPanel "Ver Template" modal.
+ * Matches the reference PDF format from PMI-GO (with logo, complete member data,
+ * digital signature stamp, and FHC note in annex).
  */
 export function buildVolunteerAgreementHTML(certData: CertificateData): string {
   const c = certData.template_content || {};
@@ -99,97 +154,136 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
   };
   const MAIN = ['clause1','clause2','clause3','clause4','clause5','clause6','clause7','clause8','clause9','clause10','clause11','clause12'];
 
+  const locationLine = [certData.member_city, certData.member_state, certData.member_country].filter(Boolean).join('/') || '—';
+  const addressLine = certData.member_address || '—';
+  const phoneLine = formatPhone(certData.member_phone);
+  const birthLine = formatBirthDate(certData.member_birth_date);
+
+  // Header with PMI-GO logo (same reference as the example PDF)
+  const headerBlock = `
+    <div style="margin-bottom:20px">
+      <img src="/assets/logos/pmigo.png" alt="PMI Goiás" style="height:52px;width:auto;display:block" crossorigin="anonymous" />
+    </div>
+    <h1 style="text-align:center;font-size:18px;font-weight:bold;color:#000;margin:20px 0 28px;letter-spacing:0.5px;line-height:1.3">
+      TERMO DE COMPROMISSO DE<br/>VOLUNTÁRIO COM O PMI GOIÁS
+    </h1>`;
+
   const memberDataBlock = `
-    <div style="background:#f5f5f5;border:1px dashed #ccc;border-radius:6px;padding:12px 14px;margin:14px 0;font-size:11px;line-height:1.8">
-      <div style="font-weight:bold;color:#666;margin-bottom:6px">Dados do VOLUNTÁRIO:</div>
-      <div><b>PMI ID:</b> ${certData.member_pmi_id || '—'} &nbsp;|&nbsp; <b>Nome:</b> ${certData.member_name || '—'}</div>
+    <div style="font-size:11px;line-height:1.8;margin:8px 0 14px 20px">
+      <div><b>PMI ID:</b> ${certData.member_pmi_id || '—'}</div>
+      <div><b>Nome:</b> ${certData.member_name || '—'}</div>
+      <div><b>Endereço:</b> ${addressLine}</div>
+      <div><b>Cidade/Estado:</b> ${locationLine}</div>
+      <div><b>Contato:</b> ${phoneLine}. <b>Data de Aniversário</b> <span style="font-size:9px">(dd/mm)</span>: ${birthLine}</div>
       <div><b>E-mail:</b> ${certData.member_email || '—'}</div>
-      <div><b>Capítulo:</b> ${certData.member_chapter || '—'} &nbsp;|&nbsp; <b>Contato:</b> ${certData.member_contact || '—'}</div>
     </div>`;
 
   const clausesHtml = MAIN.map((key, i) => {
     const text = c[key] || '';
     const subs = SUB_KEYS[key];
-    const subsHtml = subs ? `<ol style="margin-top:6px;margin-left:22px;list-style:none;padding:0">${subs.map(subKey => {
+    const subsHtml = subs ? `<ol style="margin-top:6px;margin-left:28px;list-style:none;padding:0">${subs.map(subKey => {
       const subText = c[subKey] || '';
       const letter = subKey.slice(-1);
       const isNote = subKey.endsWith('note');
-      return `<li style="font-size:10.5px;margin-top:5px;${isNote ? 'font-style:italic;border-left:2px solid #ccc;padding-left:8px;color:#555' : ''}">
-        ${!isNote ? `<b style="color:#666">${letter}.</b> ` : ''}${subText}
+      return `<li style="font-size:10.5px;margin-top:6px;${isNote ? 'font-style:italic;color:#555' : ''}">
+        ${!isNote ? `<b style="color:#333">${letter}.</b> ` : '<b>Parágrafo único:</b> '}${subText}
       </li>`;
     }).join('')}</ol>` : '';
-    return `<li style="margin-bottom:10px;font-size:11px;line-height:1.5;text-align:justify">
-      <b style="color:#555">${i + 1}.</b> ${text}${subsHtml}
+    return `<li style="margin-bottom:12px;font-size:11px;line-height:1.5;text-align:justify">
+      <b style="color:#333">${i + 1}.</b> ${text}${subsHtml}
     </li>`;
   }).join('');
 
+  const signedDate = certData.signed_at ? formatLongDate(certData.signed_at) : formatLongDate(new Date().toISOString());
+  const counterSignedDate = certData.counter_signed_at ? formatLongDate(certData.counter_signed_at) : null;
+
+  // Digital signature stamp (equivalent to gov.br style in the reference)
+  const digitalSignatureStamp = `
+    <div style="display:inline-block;background:#f5f5f5;border:1px solid #ccc;padding:10px 14px;font-size:9px;color:#444;margin:12px 0;font-family:Arial,sans-serif">
+      <div style="font-weight:bold;color:#1a365d;margin-bottom:2px">🔏 Documento assinado digitalmente</div>
+      <div><b>${(certData.member_name || '').toUpperCase()}</b></div>
+      <div>Data: ${certData.signed_at ? new Date(certData.signed_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'medium' }) : '—'}</div>
+      <div>Código: ${certData.verification_code || '—'}</div>
+      <div style="color:#1a5490">Verifique em nucleoia.vitormr.dev/verify/${certData.verification_code || ''}</div>
+      <div style="font-size:7px;color:#888;margin-top:3px">Fundamento: Lei nº 14.063/2020 Art. 4º §I (assinatura eletrônica simples)</div>
+    </div>`;
+
+  const counterSignatureStamp = certData.counter_signed_at ? `
+    <div style="display:inline-block;background:#e6f4ea;border:1px solid #34a853;padding:10px 14px;font-size:9px;color:#1e4620;margin:12px 0;font-family:Arial,sans-serif">
+      <div style="font-weight:bold;color:#1a5490;margin-bottom:2px">✓ Contra-assinatura institucional</div>
+      <div><b>${(certData.counter_signed_by_name || '').toUpperCase()}</b></div>
+      <div>Data: ${new Date(certData.counter_signed_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'medium' })}</div>
+      <div>Diretor do PMI Goiás</div>
+    </div>` : `
+    <div style="display:inline-block;background:#fff3cd;border:1px dashed #dca400;padding:10px 14px;font-size:9px;color:#6b4f00;margin:12px 0;font-family:Arial,sans-serif">
+      <div style="font-weight:bold;margin-bottom:2px">⏳ Pendente contra-assinatura</div>
+      <div>Aguardando assinatura do Diretor do PMI Goiás</div>
+    </div>`;
+
   const signatureBlock = `
-    <div style="margin-top:32px;padding-top:14px;border-top:1px solid #ccc">
-      <p style="font-size:10px;font-style:italic;color:#666;margin-bottom:20px">Goiânia/GO, ${certData.signed_at ? new Date(certData.signed_at).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR')}</p>
-      <div style="display:flex;justify-content:space-between;gap:40px;text-align:center;font-size:10px">
-        <div style="flex:1;padding-top:30px;border-top:1px solid #333">
-          <div style="font-weight:bold">${certData.member_name}</div>
-          <div style="color:#666">VOLUNTÁRIO</div>
-          ${certData.signed_at ? `<div style="color:#888;font-size:8px;margin-top:3px">Assinatura digital ${new Date(certData.signed_at).toLocaleDateString('pt-BR')}</div>` : ''}
-        </div>
-        <div style="flex:1;padding-top:30px;border-top:1px solid #333">
-          ${certData.counter_signed_by_name ? `<div style="font-weight:bold">${certData.counter_signed_by_name}</div>` : '<div style="color:#999">____________________</div>'}
-          <div style="color:#666">Diretor do PMI Goiás</div>
-          ${certData.counter_signed_at ? `<div style="color:#888;font-size:8px;margin-top:3px">Contra-assinado ${new Date(certData.counter_signed_at).toLocaleDateString('pt-BR')}</div>` : '<div style="color:#c92a2a;font-size:8px;margin-top:3px">Pendente contra-assinatura</div>'}
-        </div>
+    <div style="margin-top:28px">
+      <p style="font-size:11px;margin-bottom:16px">Goiânia/GO, ${signedDate}.</p>
+
+      ${digitalSignatureStamp}
+
+      <div style="margin-top:6px;padding-top:4px">
+        <div style="font-size:11px;color:#333">Assinatura do Voluntário</div>
+      </div>
+
+      <div style="margin-top:32px">
+        ${counterSignatureStamp}
+      </div>
+
+      <div style="margin-top:6px;padding-top:4px">
+        <div style="font-size:11px;color:#333">Assinatura do Diretor do PMI Goiás</div>
       </div>
     </div>`;
 
   const annexBlock = `
-    <div style="margin-top:30px;padding-top:14px;border-top:2px solid #1a365d;page-break-before:always">
-      <h3 style="font-weight:bold;color:#1a365d;font-size:13px;margin-bottom:10px">ANEXO — LEI DO SERVIÇO VOLUNTÁRIO</h3>
-      <p style="font-size:10px;color:#666;margin-bottom:4px"><b>Lei nº 9.608, de 18 de fevereiro de 1998</b></p>
-      <p style="font-size:10px;color:#666;margin-bottom:12px;font-style:italic">Dispõe sobre o serviço voluntário e dá outras providências.</p>
-      <div style="font-size:10px;line-height:1.5;text-align:justify">
-        <p style="margin-bottom:8px"><b>Art. 1º</b> Considera-se serviço voluntário, para fins desta Lei, a atividade não remunerada, prestada por pessoa física a entidade pública de qualquer natureza, ou a Instituição privada de fins não lucrativos, que tenha objetivos cívicos, culturais, educacionais, científicos, recreativos ou de assistência social, inclusive mutualidade.</p>
-        <p style="margin-left:14px;font-style:italic;margin-bottom:8px">Parágrafo único. O serviço voluntário não gera vínculo empregatício, nem obrigação de natureza trabalhista, previdenciária ou afim.</p>
-        <p style="margin-bottom:8px"><b>Art. 2º</b> O serviço voluntário será exercido mediante a celebração de Termo de Adesão entre a entidade, pública ou privada, e o prestador do serviço voluntário, dele devendo constar o objeto e as condições de seu exercício.</p>
-        <p style="margin-bottom:8px"><b>Art. 3º</b> O prestador de serviço voluntário poderá ser ressarcido pelas despesas que comprovadamente realizar no desempenho das atividades voluntárias.</p>
-        <p style="margin-left:14px;font-style:italic;margin-bottom:8px">Parágrafo único. As despesas a serem ressarcidas deverão estar expressamente autorizadas pela entidade a que for prestado o serviço voluntário.</p>
-        <p style="margin-bottom:8px"><b>Art. 4º</b> Esta Lei entra em vigor na data de sua publicação.</p>
-        <p style="margin-bottom:8px"><b>Art. 5º</b> Revogam-se as disposições em contrário.</p>
+    <div style="padding:32px 40px;background:#fff;box-sizing:border-box;page-break-before:always;font-family:Georgia,serif;color:#333;min-height:842px;width:595px">
+      <div style="margin-bottom:20px">
+        <img src="/assets/logos/pmigo.png" alt="PMI Goiás" style="height:44px;width:auto;display:block" crossorigin="anonymous" />
+      </div>
+      <h2 style="font-weight:bold;color:#000;font-size:16px;margin:24px 0 14px">ANEXO - LEI DO SERVIÇO VOLUNTÁRIO</h2>
+      <p style="font-size:11px;color:#333;margin-bottom:4px"><b>Lei nº 9.608, de 18 de fevereiro de 1998</b></p>
+      <p style="font-size:11px;color:#666;margin-bottom:20px">Dispõe sobre o serviço voluntário e dá outras providências.</p>
+      <div style="font-size:11px;line-height:1.6;text-align:justify">
+        <p style="margin-bottom:12px;margin-left:20px"><b>Art. 1º</b> Considera-se serviço voluntário, para fins desta Lei, a atividade não remunerada, prestada por pessoa física a entidade pública de qualquer natureza, ou a Instituição privada de fins não lucrativos, que tenha objetivos cívicos, culturais, educacionais, científicos, recreativos ou de assistência social, inclusive mutualidade.</p>
+        <p style="margin-left:28px;font-style:italic;margin-bottom:12px">Parágrafo único. O serviço voluntário não gera vínculo empregatício, nem obrigação de natureza trabalhista, previdenciária ou afim.</p>
+        <p style="margin-bottom:12px;margin-left:20px"><b>Art. 2º</b> O serviço voluntário será exercido mediante a celebração de Termo de Adesão entre a entidade, pública ou privada, e o prestador do serviço voluntário, dele devendo constar o objeto e as condições de seu exercício.</p>
+        <p style="margin-bottom:12px;margin-left:20px"><b>Art. 3º</b> O prestador de serviço voluntário poderá ser ressarcido pelas despesas que comprovadamente realizar no desempenho das atividades voluntárias.</p>
+        <p style="margin-left:28px;font-style:italic;margin-bottom:12px">Parágrafo único. As despesas a serem ressarcidas deverão estar expressamente autorizadas pela entidade a que for prestado o serviço voluntário.</p>
+        <p style="margin-bottom:12px;margin-left:20px"><b>Art. 4º</b> Esta Lei entra em vigor na data de sua publicação.</p>
+        <p style="margin-bottom:12px;margin-left:20px"><b>Art. 5º</b> Revogam-se as disposições em contrário.</p>
+        <p style="margin-top:24px;font-size:10px;font-style:italic;color:#666;text-align:center;font-weight:bold">(Lei assinada pelo Presidente da República Fernando Henrique Cardoso, em Brasília, no dia 18 de fevereiro de 1998)</p>
       </div>
     </div>`;
 
   return `<div style="width:595px;min-height:842px;padding:32px 40px;background:#fff;box-sizing:border-box;page-break-after:always;font-family:Georgia,serif;color:#333">
-    <!-- Header -->
-    <div style="text-align:center;margin-bottom:14px">
-      <div style="font-size:12px;color:#666;letter-spacing:1.5px;text-transform:uppercase">Núcleo de Estudos e Pesquisa em IA & GP</div>
-      <div style="font-size:8px;color:#999;margin-top:2px">The AI & PM Study and Research Hub</div>
-    </div>
-    <h1 style="text-align:center;font-size:16px;font-weight:bold;color:#1a365d;margin:14px 0;text-transform:uppercase;letter-spacing:1px">
-      Termo de Compromisso de Voluntário com o PMI Goiás
-    </h1>
+    ${headerBlock}
 
-    <!-- Preamble -->
-    <p style="font-size:11px;line-height:1.5;text-align:justify;margin-bottom:10px">
-      <b>Termo de Compromisso de Voluntário com o PMI Goiás</b> que fazem entre si a <b>Seção Goiânia, Goiás — Brasil do Project Management Institute (PMI Goiás)</b>, inscrito no CNPJ/MF sob o nº 06.065.645/0001-99 e:
+    <p style="font-size:11px;line-height:1.6;text-align:justify;margin-bottom:10px">
+      <b>Termo de Compromisso de Voluntário com o PMI Goiás</b> que fazem entre si a <b>Seção Goiânia, Goiás – Brasil do Project Management Institute (PMI Goiás)</b>, inscrito no CNPJ/MF sob o nº 06.065.645/0001-99 e:
     </p>
 
     ${memberDataBlock}
 
-    <p style="font-size:11px;line-height:1.5;text-align:justify;margin-bottom:10px">
-      Doravante denominado <b>VOLUNTÁRIO</b>, com o objetivo de colaborar como voluntário ao PMI Goiás, nos projetos e processos do Capítulo.
+    <p style="font-size:11px;line-height:1.6;text-align:justify;margin-bottom:10px">
+      Doravante denominado <b>VOLUNTÁRIO</b>, com o objetivo de colaborar como voluntário ao PMI Goiás, nos projetos e processos do Capítulo${certData.function_role ? `, atuando como <b>${certData.function_role.replace(/_/g,' ')}</b>` : ''}.
     </p>
 
-    <p style="font-size:11px;line-height:1.5;text-align:justify;margin-bottom:10px">
-      <b>Período de atuação:</b> ${certData.period_start || '—'} a ${certData.period_end || '—'}
+    <p style="font-size:11px;line-height:1.6;text-align:justify;margin-bottom:14px">
+      <b>Período de atuação:</b> ${formatPeriod(certData.period_start, certData.period_end)}
     </p>
 
-    <h3 style="font-weight:bold;color:#1a365d;font-size:12px;margin:14px 0 8px">Termos da Adesão do Programa de Voluntariado:</h3>
+    <h3 style="font-weight:bold;color:#000;font-size:13px;margin:18px 0 10px">Termos da Adesão do Programa de Voluntariado:</h3>
 
     <ol style="list-style:none;padding:0;margin:0">${clausesHtml}</ol>
 
     ${signatureBlock}
 
-    <!-- Footer -->
-    <div style="text-align:center;margin-top:20px;font-size:9px;color:#999">
-      <div>Código: ${certData.verification_code || '—'} · Template: ${certData.type === 'volunteer_agreement' ? 'R3-C3' : ''}</div>
+    <div style="text-align:center;margin-top:28px;font-size:9px;color:#999">
+      <div>Código: ${certData.verification_code || '—'} · Template: R3-C3</div>
       <div style="margin-top:2px">Iniciativa colaborativa entre PMI-GO, PMI-CE, PMI-DF, PMI-MG e PMI-RS</div>
     </div>
   </div>
@@ -269,6 +363,12 @@ export async function hydrateCertData(certData: CertificateData, sb: any): Promi
           certData.member_email = certData.member_email || snap.member_email;
           certData.member_pmi_id = certData.member_pmi_id || snap.member_pmi_id;
           certData.member_chapter = certData.member_chapter || snap.member_chapter;
+          certData.member_phone = certData.member_phone || snap.member_phone;
+          certData.member_address = certData.member_address || snap.member_address;
+          certData.member_city = certData.member_city || snap.member_city;
+          certData.member_state = certData.member_state || snap.member_state;
+          certData.member_country = certData.member_country || snap.member_country;
+          certData.member_birth_date = certData.member_birth_date || snap.member_birth_date;
           certData.signed_at = certData.signed_at || snap.signed_at || fullCert.issued_at;
           certData.counter_signed_at = certData.counter_signed_at || fullCert.counter_signed_at;
 
