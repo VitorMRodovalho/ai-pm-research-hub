@@ -1,0 +1,172 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getLangFromURL, type Lang } from '../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+---
+<BaseLayout title="Política de Privacidade — Núcleo IA & GP" description="Política de Privacidade do Núcleo de Estudos e Pesquisa em IA & Gerenciamento de Projetos. Conformidade LGPD Lei 13.709/2018." activePage="privacy" lang={lang}>
+  <main class="max-w-[800px] mx-auto px-4 py-8 text-[var(--text-primary)]">
+    <nav class="mb-6 text-xs text-[var(--text-muted)]">
+      <a href={`${langPrefix}/`} class="hover:underline text-navy no-underline">Início</a>
+      <span class="mx-2">›</span>
+      <span>Política de Privacidade</span>
+    </nav>
+
+    <h1 class="text-3xl font-extrabold text-navy mb-2">Política de Privacidade</h1>
+    <p class="text-sm text-[var(--text-muted)] mb-1">Núcleo de Estudos e Pesquisa em Inteligência Artificial e Gerenciamento de Projetos</p>
+    <p class="text-xs text-[var(--text-muted)] mb-8">Versão 1.0 · Última atualização: 10 de abril de 2026 · Base legal: Lei nº 13.709/2018 (LGPD)</p>
+
+    <section class="mb-6 p-4 rounded-xl border-2 border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-800">
+      <h2 class="text-sm font-bold text-blue-900 dark:text-blue-200 mb-2">📋 Resumo executivo</h2>
+      <p class="text-sm text-blue-900 dark:text-blue-200 leading-relaxed">
+        O Núcleo coleta o mínimo necessário de dados pessoais para operar o programa de voluntariado do PMI. Usamos apenas para:
+        (1) emissão do Termo de Voluntariado, (2) comunicação institucional, (3) reconhecimento de contribuições. Nunca vendemos, compartilhamos com terceiros sem consentimento, nem usamos para marketing externo. Você tem direito a acessar, corrigir e excluir seus dados a qualquer momento.
+      </p>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="text-xl font-bold text-navy mb-3">1. Quem somos</h2>
+      <p class="text-sm leading-relaxed mb-3">
+        O <strong>Núcleo de Estudos e Pesquisa em IA & GP</strong> é uma iniciativa colaborativa entre cinco capítulos brasileiros do Project Management Institute (PMI): PMI-GO, PMI-CE, PMI-DF, PMI-MG e PMI-RS. Operamos sob a responsabilidade institucional do <strong>PMI Goiás</strong> (Seção Goiânia, Goiás — Brasil do Project Management Institute), inscrito no CNPJ sob o nº <strong>06.065.645/0001-99</strong>.
+      </p>
+      <p class="text-sm leading-relaxed">
+        <strong>Controlador dos dados:</strong> PMI Goiás · <strong>Encarregado (DPO):</strong> Gestor do Projeto designado em cada ciclo · <strong>Contato LGPD:</strong> <a href="mailto:nucleoia@pmigo.org.br" class="text-teal hover:underline no-underline">nucleoia@pmigo.org.br</a>
+      </p>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="text-xl font-bold text-navy mb-3">2. Quais dados coletamos e por quê</h2>
+      <p class="text-sm leading-relaxed mb-4">
+        Seguimos o princípio de <strong>minimização de dados</strong> (LGPD Art. 6º, III): coletamos apenas o estritamente necessário. Nunca coletamos CPF, RG, renda, estado civil, religião, filiação política/sindical ou qualquer outro dado sensível.
+      </p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-xs border border-[var(--border-default)] rounded-lg overflow-hidden">
+          <thead class="bg-[var(--surface-section-cool)]">
+            <tr>
+              <th class="text-left px-3 py-2 font-bold">Dado</th>
+              <th class="text-left px-3 py-2 font-bold">Finalidade</th>
+              <th class="text-left px-3 py-2 font-bold">Base legal</th>
+              <th class="text-left px-3 py-2 font-bold">Retenção</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[var(--border-subtle)]">
+            <tr><td class="px-3 py-2"><b>Nome completo</b></td><td class="px-3 py-2">Identificação em certificados e Termo de Voluntariado</td><td class="px-3 py-2">Consentimento + Legítimo interesse</td><td class="px-3 py-2">Permanente (registro histórico)</td></tr>
+            <tr><td class="px-3 py-2"><b>E-mail</b></td><td class="px-3 py-2">Login + comunicação oficial</td><td class="px-3 py-2">Consentimento</td><td class="px-3 py-2">Enquanto ativo + 5 anos</td></tr>
+            <tr><td class="px-3 py-2"><b>PMI ID</b></td><td class="px-3 py-2">Verificação de membership PMI</td><td class="px-3 py-2">Legítimo interesse</td><td class="px-3 py-2">Permanente</td></tr>
+            <tr><td class="px-3 py-2"><b>Telefone</b></td><td class="px-3 py-2">TCV + comunicação urgente</td><td class="px-3 py-2">Consentimento</td><td class="px-3 py-2">Enquanto ativo + 2 anos</td></tr>
+            <tr><td class="px-3 py-2"><b>Endereço / Cidade / Estado</b></td><td class="px-3 py-2">Termo de Voluntariado (exigência legal — Lei 9.608/98)</td><td class="px-3 py-2">Consentimento</td><td class="px-3 py-2">Enquanto ativo + 5 anos</td></tr>
+            <tr><td class="px-3 py-2"><b>Data de aniversário (dd/mm)</b></td><td class="px-3 py-2">Felicitações institucionais (sem ano — privacidade)</td><td class="px-3 py-2">Consentimento</td><td class="px-3 py-2">Enquanto ativo</td></tr>
+            <tr><td class="px-3 py-2"><b>LinkedIn / Credly</b></td><td class="px-3 py-2">Reconhecimento profissional e validação de badges</td><td class="px-3 py-2">Consentimento</td><td class="px-3 py-2">Enquanto ativo</td></tr>
+            <tr><td class="px-3 py-2"><b>Foto de perfil</b></td><td class="px-3 py-2">Humanização da plataforma (opcional)</td><td class="px-3 py-2">Consentimento</td><td class="px-3 py-2">Enquanto ativo</td></tr>
+            <tr><td class="px-3 py-2"><b>Histórico de presença, XP, certificados</b></td><td class="px-3 py-2">Gamificação e reconhecimento de contribuições</td><td class="px-3 py-2">Legítimo interesse</td><td class="px-3 py-2">Permanente (anonimizado após 5 anos de inatividade)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="text-xl font-bold text-navy mb-3">3. Como usamos seus dados</h2>
+      <ul class="text-sm space-y-2 list-disc list-inside">
+        <li><strong>Termo de Compromisso de Voluntário (TCV)</strong>: dados pessoais são inseridos no documento legal conforme exigência da Lei 9.608/98 (Lei do Serviço Voluntário).</li>
+        <li><strong>Comunicação institucional</strong>: notificações sobre reuniões, certificados, eventos e publicações do Núcleo. Você pode desativar a qualquer momento.</li>
+        <li><strong>Reconhecimento</strong>: emissão de certificados de contribuição, badges Credly, registro de atividades no GitHub/LinkedIn.</li>
+        <li><strong>Gamificação</strong>: XP, rankings, trilhas de aprendizado — baseados nas suas contribuições voluntárias.</li>
+        <li><strong>Análise operacional</strong>: métricas agregadas e anonimizadas sobre adoção e engajamento (PostHog).</li>
+      </ul>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="text-xl font-bold text-navy mb-3">4. O que NÃO fazemos</h2>
+      <ul class="text-sm space-y-2">
+        <li>❌ <strong>Não vendemos</strong> seus dados a terceiros.</li>
+        <li>❌ <strong>Não compartilhamos</strong> com empresas ou parceiros sem seu consentimento explícito.</li>
+        <li>❌ <strong>Não usamos</strong> para marketing externo, propaganda ou cold-outreach comercial.</li>
+        <li>❌ <strong>Não rastreamos</strong> sua navegação fora da plataforma.</li>
+        <li>❌ <strong>Não coletamos</strong> dados sensíveis (saúde, religião, orientação política, biometria, localização em tempo real).</li>
+        <li>❌ <strong>Não transferimos</strong> seus dados para fora do Brasil, exceto quando necessário para o funcionamento técnico (Supabase/Cloudflare, com garantias contratuais de proteção).</li>
+      </ul>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="text-xl font-bold text-navy mb-3">5. Seus direitos (LGPD Art. 18)</h2>
+      <p class="text-sm leading-relaxed mb-3">Como titular dos dados, você tem o direito a:</p>
+      <ul class="text-sm space-y-2 list-disc list-inside">
+        <li><strong>Acesso</strong>: ver todos os seus dados armazenados. Acesse <a href={`${langPrefix}/profile`} class="text-teal hover:underline no-underline">Meu Perfil</a>.</li>
+        <li><strong>Correção</strong>: atualizar dados incorretos ou desatualizados a qualquer momento via <a href={`${langPrefix}/profile`} class="text-teal hover:underline no-underline">Meu Perfil</a>.</li>
+        <li><strong>Exclusão (direito ao esquecimento)</strong>: solicitar a exclusão dos seus dados pessoais. Isso pode ser feito via RPC <code class="text-xs bg-[var(--surface-section-cool)] px-1 rounded">delete_my_personal_data</code> ou enviando e-mail para <a href="mailto:nucleoia@pmigo.org.br" class="text-teal hover:underline no-underline">nucleoia@pmigo.org.br</a>.</li>
+        <li><strong>Portabilidade</strong>: receber uma cópia dos seus dados em formato estruturado (JSON/CSV). Solicite ao DPO.</li>
+        <li><strong>Anonimização</strong>: após 5 anos de inatividade, seus dados pessoais são anonimizados mantendo apenas o histórico agregado de contribuições.</li>
+        <li><strong>Revogação de consentimento</strong>: desativar o consentimento em qualquer momento. Isso implica no encerramento da sua participação no Núcleo.</li>
+        <li><strong>Informação sobre uso</strong>: saber com quem seus dados foram compartilhados (sempre será nenhum terceiro, a menos que você autorize).</li>
+      </ul>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="text-xl font-bold text-navy mb-3">6. Segurança</h2>
+      <p class="text-sm leading-relaxed mb-3">
+        Implementamos medidas técnicas e organizacionais para proteger seus dados:
+      </p>
+      <ul class="text-sm space-y-2 list-disc list-inside">
+        <li><strong>Row Level Security (RLS)</strong>: cada membro só pode acessar seus próprios dados pessoais. Administradores têm acesso apenas ao necessário para operar o programa.</li>
+        <li><strong>Criptografia em trânsito</strong>: todas as comunicações usam HTTPS/TLS 1.3.</li>
+        <li><strong>Criptografia em repouso</strong>: banco de dados Supabase com encrypted-at-rest por padrão.</li>
+        <li><strong>OAuth 2.1 + PKCE</strong>: autenticação robusta via Google, LinkedIn ou Microsoft.</li>
+        <li><strong>Audit log imutável</strong>: toda alteração de dados pessoais é registrada em <code class="text-xs bg-[var(--surface-section-cool)] px-1 rounded">admin_audit_log</code>.</li>
+        <li><strong>Princípio do menor privilégio</strong>: cada papel tem acesso apenas ao estritamente necessário.</li>
+      </ul>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="text-xl font-bold text-navy mb-3">7. Cookies e analytics</h2>
+      <p class="text-sm leading-relaxed mb-3">
+        Usamos cookies técnicos essenciais (sessão OAuth, idioma, tema). Para analytics usamos <strong>PostHog</strong> com anonimização: coletamos apenas eventos agregados de navegação, nunca dados pessoais identificáveis. Sem cookies de marketing ou rastreamento cross-site.
+      </p>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="text-xl font-bold text-navy mb-3">8. Menores de idade</h2>
+      <p class="text-sm leading-relaxed">
+        O Núcleo é destinado a profissionais maiores de 18 anos. Não coletamos intencionalmente dados de menores. Se descobrirmos que coletamos dados de um menor sem consentimento dos responsáveis, excluiremos imediatamente.
+      </p>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="text-xl font-bold text-navy mb-3">9. Alterações nesta política</h2>
+      <p class="text-sm leading-relaxed">
+        Mudanças materiais nesta política passarão por <strong>Change Request (CR)</strong> formal no manual de governança, com aprovação dos 5 presidentes dos capítulos PMI. Mudanças serão comunicadas com no mínimo 30 dias de antecedência via e-mail e notificação na plataforma.
+      </p>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="text-xl font-bold text-navy mb-3">10. Contato</h2>
+      <div class="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)]">
+        <p class="text-sm leading-relaxed mb-2">
+          <strong>Para questões sobre privacidade, exerça seus direitos LGPD ou reporte incidentes:</strong>
+        </p>
+        <ul class="text-sm space-y-1">
+          <li>📧 <a href="mailto:nucleoia@pmigo.org.br" class="text-teal hover:underline no-underline">nucleoia@pmigo.org.br</a></li>
+          <li>📍 PMI Goiás · Seção Goiânia, Goiás — Brasil</li>
+          <li>🌐 <a href="https://nucleoia.vitormr.dev" class="text-teal hover:underline no-underline">nucleoia.vitormr.dev</a></li>
+          <li>📋 CNPJ: 06.065.645/0001-99</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="text-xl font-bold text-navy mb-3">11. Base legal</h2>
+      <p class="text-sm leading-relaxed">Esta política está em conformidade com:</p>
+      <ul class="text-sm space-y-1 list-disc list-inside mt-2">
+        <li><strong>Lei nº 13.709/2018 (LGPD)</strong> — Lei Geral de Proteção de Dados Pessoais</li>
+        <li><strong>Lei nº 9.608/1998</strong> — Lei do Serviço Voluntário</li>
+        <li><strong>Lei nº 14.063/2020 Art. 4º §I</strong> — Assinatura eletrônica simples</li>
+        <li><strong>PMI Code of Ethics</strong> — Stewardship principle</li>
+        <li><strong>CR-042 + CR-047</strong> — Governança do processo seletivo do Núcleo</li>
+      </ul>
+    </section>
+
+    <footer class="mt-12 pt-6 border-t border-[var(--border-default)] text-xs text-[var(--text-muted)] text-center">
+      <p>Última revisão: 10 de abril de 2026 · Versão 1.0</p>
+      <p class="mt-1">Este documento é atualizado via <a href={`${langPrefix}/governance`} class="text-teal hover:underline no-underline">Change Requests formais</a>.</p>
+    </footer>
+  </main>
+</BaseLayout>
