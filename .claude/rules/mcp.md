@@ -13,6 +13,20 @@ globs: supabase/functions/nucleo-mcp/**
 - All tools log usage to mcp_usage_log
 - Claude.ai connector: verified working (64 tools visible)
 
+## Pre-Deploy Check (MANDATORY)
+Before deploying nucleo-mcp EF, check for duplicate tool names:
+```bash
+grep 'mcp.tool(' supabase/functions/nucleo-mcp/index.ts | awk -F'"' '{print $2}' | sort | uniq -d
+```
+Must return empty. Duplicate names cause SDK boot crash → HTTP 500 on ALL requests including `initialize`. Smoke test with curl after deploy:
+```bash
+curl -sS -X POST "https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-mcp/mcp" \
+  -H "Content-Type: application/json" -H "Authorization: Bearer test" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"test","version":"1"}}}' \
+  -w "\nHTTP:%{http_code}\n"
+```
+Expected: HTTP 200 + serverInfo. If 500 with "already registered": rename the duplicate tool.
+
 ## SDK Compatibility
 - **SDK 1.29.0**: Latest stable. Works on Deno with native `WebStandardStreamableHTTPServerTransport`. Tool params MUST use Zod schemas.
 - **Zod import**: `import { z } from "npm:zod@^4.0";` — SDK 1.29.0 supports `zod ^3.25 || ^4.0`. We use Zod 4.
