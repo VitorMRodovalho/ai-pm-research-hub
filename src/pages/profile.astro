@@ -1047,6 +1047,18 @@ const PROFILE_I18N = {
           </div>
         </div>
         <div class="mt-4" id="personal-data">
+          <!-- CEP auto-complete (Brasil only, via ViaCEP) -->
+          <div id="self-cep-wrapper" class="mb-4 ${(m.country || '').toLowerCase().includes('brasil') || (m.country || '').toLowerCase().includes('brazil') ? '' : 'hidden'}">
+            <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">
+              CEP
+              <span class="ml-1 text-[.6rem] font-normal normal-case text-[var(--text-muted)]">(opcional — preenche endereço automaticamente)</span>
+            </label>
+            <div class="flex items-center gap-2">
+              <input type="text" id="self-cep" placeholder="00000-000" maxlength="9" inputmode="numeric"
+                class="w-40 px-3 py-2 border-[1.5px] border-[var(--border-default)] rounded-xl text-sm focus:outline-none focus:border-teal">
+              <span id="self-cep-status" class="text-[.7rem] text-[var(--text-muted)]"></span>
+            </div>
+          </div>
           <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">
             Endereço
             <span class="ml-1 text-[.6rem] font-normal normal-case text-[var(--text-muted)]">(usado apenas no Termo de Voluntariado · LGPD)</span>
@@ -1612,6 +1624,55 @@ const PROFILE_I18N = {
       if (target instanceof HTMLInputElement && target.id === 'self-credly') {
         if (credlyNormalizeTimer) clearTimeout(credlyNormalizeTimer);
         credlyNormalizeTimer = setTimeout(() => normalizeCredlyFieldValue(target), 300);
+      }
+      // Toggle CEP wrapper visibility based on country (Brasil only)
+      if (target instanceof HTMLInputElement && target.id === 'self-country') {
+        const wrapper = document.getElementById('self-cep-wrapper');
+        if (wrapper) {
+          const v = target.value.trim().toLowerCase();
+          const isBrasil = v.includes('brasil') || v.includes('brazil') || v === 'br';
+          wrapper.classList.toggle('hidden', !isBrasil);
+        }
+      }
+      // Format CEP as user types: 00000-000
+      if (target instanceof HTMLInputElement && target.id === 'self-cep') {
+        const digits = target.value.replace(/\D/g, '').slice(0, 8);
+        target.value = digits.length > 5 ? `${digits.slice(0, 5)}-${digits.slice(5)}` : digits;
+      }
+    });
+
+    // CEP auto-complete via ViaCEP (Brasil only)
+    document.addEventListener('focusout', async (e: FocusEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!(target instanceof HTMLInputElement) || target.id !== 'self-cep') return;
+      const cep = target.value.replace(/\D/g, '');
+      const statusEl = document.getElementById('self-cep-status');
+      if (cep.length !== 8) {
+        if (statusEl) statusEl.textContent = '';
+        return;
+      }
+      if (statusEl) { statusEl.textContent = '⏳ Buscando...'; statusEl.className = 'text-[.7rem] text-[var(--text-muted)]'; }
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+        const data = await res.json();
+        if (data.erro) {
+          if (statusEl) { statusEl.textContent = '❌ CEP não encontrado'; statusEl.className = 'text-[.7rem] text-red-600'; }
+          return;
+        }
+        const addressEl = document.getElementById('self-address') as HTMLInputElement | null;
+        const cityEl = document.getElementById('self-city') as HTMLInputElement | null;
+        const stateEl = document.getElementById('self-state') as HTMLInputElement | null;
+        const countryEl = document.getElementById('self-country') as HTMLInputElement | null;
+        if (addressEl && !addressEl.value.trim()) {
+          const parts = [data.logradouro, data.bairro].filter(Boolean);
+          addressEl.value = parts.join(', ');
+        }
+        if (cityEl && !cityEl.value.trim()) cityEl.value = data.localidade || '';
+        if (stateEl && !stateEl.value.trim()) stateEl.value = data.uf || '';
+        if (countryEl && !countryEl.value.trim()) countryEl.value = 'Brasil';
+        if (statusEl) { statusEl.textContent = '✓ Endereço preenchido'; statusEl.className = 'text-[.7rem] text-green-600'; }
+      } catch (_) {
+        if (statusEl) { statusEl.textContent = '❌ Erro ao consultar CEP'; statusEl.className = 'text-[.7rem] text-red-600'; }
       }
     });
   }
