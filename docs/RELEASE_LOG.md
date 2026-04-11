@@ -1,5 +1,72 @@
 # Release Log
 
+## 2026-04-10 — v2.9.5: LGPD Compliance Complete + Selection Dual Ranking + 68 MCP Tools
+
+### Scope
+Fecha o ciclo LGPD Art. 18 end-to-end (P1+P2+P3), entrega CR-047 Dual Ranking para seleção com self-eval block, TCV legal v1 com 2-wave signature, coleta ampliada de dados pessoais via /profile, e resolve 5 GitHub issues (certificates, MCP offline, self-eval, meeting alerts, meetings search).
+
+### Delivered (17+ commits)
+
+#### LGPD — Art. 18 cycle complete (P1 + P2 + P3)
+- **P1 consent + revalidation:** `PrivacyGateModal` em `BaseLayout` — bloqueia uso até aceitação da política corrente, modal anual de revalidação dos dados, `check_my_privacy_status` + `accept_privacy_consent` + `mark_my_data_reviewed`
+- **P1 share flags:** `share_whatsapp`, `share_address`, `share_birth_date` (default privado)
+- **P2 portabilidade:** `export_my_data` — JSON completo (13 seções: personal, membership, privacy, cycle history, role changes, attendance, certificates, selection, board cards, xp events, onboarding, audit, rights notice)
+- **P2 audit trail:** `pii_access_log` table + `log_pii_access` helper + `get_my_pii_access_log` (member transparency) + `get_pii_access_log_admin` (admin)
+- **P2 instrumentação:** `admin_list_members_with_pii` loga todo acesso administrativo
+- **P3 anonimização automática:** `anonymize_inactive_members(dry_run, years, limit)` + `list_anonymization_candidates` + pg_cron `lgpd-anonymize-inactive-monthly` (day 1 03:30 UTC, 5 anos retenção)
+- **P3 fix admin_anonymize_member:** função quebrada por colunas legadas (`full_name`, `avatar_url`, `bio`) — reescrita para `name`, `photo_url` + PII completo
+- **CR-048** (Governança de Coleta de Dados, Manual §7) — submitted, aguarda 5 chapter presidents
+- **CR-049** (Política de Privacidade v1.0) — submitted, aguarda 5 chapter presidents
+
+#### CR-047 Selection Dual Ranking
+- Two tracks (researcher + leader) com fórmulas ponderadas (`research_score = obj + int`; `leader_score = research * 0.7 + leader_extra * 0.3`)
+- Trigger `_block_self_evaluation` (Issue #66)
+- Promotion path badges (👑 Líder, 👑⇡ Triado, 🎓 Pesquisador, 🎓 promovido)
+- Rankings snapshot table para auditoria
+- 4 novas MCP tools: `get_my_selection_result`, `get_selection_rankings`, `get_application_score_breakdown`, `promote_to_leader_track`
+
+#### TCV (Termo de Voluntariado) end-to-end
+- Template legal PDF com 12 cláusulas + anexo (governance_documents)
+- Profile completeness gate (7 campos obrigatórios) antes de assinar
+- 2-wave signature: voluntário assina → diretor counter-signs (badges ❌/✍️/✓✓)
+- Datas derivadas de VEP (quando existe aplicação) ou `member_cycle_history` (legacy)
+- Bulk download para admin/certificates
+
+#### Personal data collection (/profile)
+- Novos campos: `address`, `city`, `birth_date` (dd/mm sem ano)
+- Privacy flags por campo com UI dedicada
+- **CEP auto-complete via ViaCEP** — Brasil-only, não sobrescreve, formato live `00000-000`
+- LGPD Rights card (export, privacy flags, delete)
+- TCV banner com lista de campos faltantes
+
+#### GitHub Issues resolvidas
+- **#64** certificates designations + offboard + volunteer_agreement filter
+- **#66** selection self-eval block (trigger)
+- **#67** meeting notes alert (ALERT 6 em `detect_operational_alerts`)
+- **#68** meetings full-text search + `list_meetings_with_notes` + /meetings page
+- **MCP offline** hotfix: duplicate tool names crash + stale refresh token in KV auto-deleted
+
+#### Meetings page (nova)
+- Full-text search via `tsvector` index
+- Compliance widget
+- Detail modal com ata + attachments
+
+#### MCP v2.9.5
+- 68 tools (54R + 14W), SDK 1.29.0
+- Pre-deploy check de duplicate tool names adicionado a `.claude/rules/mcp.md`
+- Worker proxy auto-deletes stale KV refresh token em falha
+
+### Validation
+- `npx astro build` ✅ 0 errors
+- `npm test` ✅ 779 pass
+- Dry-run anonimização: 0 candidatos (projeto < 2y, ativa naturalmente)
+- CR-047 validado com dados reais (Marcos, Hayala duplicate bug corrigido com DISTINCT ON)
+
+### Known Deferred
+- **PDF server-side Puppeteer:** requer Cloudflare Browser Rendering paid (~$5/mo) ou API externa. Fluxo client-side atual (blob URL + instruction banner) funciona.
+
+---
+
 ## 2026-04-02 — v2.9.0: Sprint 12 — 4 Waves, i18n Audit, Volunteer Term, Diversity
 
 ### Scope

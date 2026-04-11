@@ -109,7 +109,7 @@ graph LR
 | **Hosting** | Cloudflare Workers | Edge SSR, OAuth proxy, MCP proxy |
 | **Database** | Supabase PostgreSQL | 200+ SECURITY DEFINER functions, RLS |
 | **Auth** | Google + LinkedIn + Microsoft | OAuth 2.1, PKCE, dynamic client registration |
-| **MCP** | Custom server (64 tools) | AI assistants query platform via natural language |
+| **MCP** | Custom server (68 tools) | AI assistants query platform via natural language |
 | **Server Logic** | Supabase Edge Functions (21) | Credly sync, attendance, MCP, campaigns, Artia sync, PostHog proxy |
 | **Analytics** | PostHog | Product analytics, session replay |
 | **Errors** | Sentry | Real-time error monitoring |
@@ -121,7 +121,7 @@ graph LR
 
 ## MCP Server — AI Integration
 
-Any member can connect Claude, ChatGPT, Perplexity, Cursor, or VS Code to the platform via the Model Context Protocol. 64 tools (51 read + 13 write) authenticated via OAuth 2.1 with full Row Level Security enforcement. Server-side auto-refresh keeps sessions alive for up to 30 days without manual reconnection. Dynamic knowledge layer adapts guidance to each member's role and permissions.
+Any member can connect Claude, ChatGPT, Perplexity, Cursor, or VS Code to the platform via the Model Context Protocol. 68 tools (54 read + 14 write) authenticated via OAuth 2.1 with full Row Level Security enforcement. Server-side auto-refresh keeps sessions alive for up to 30 days without manual reconnection. Dynamic knowledge layer adapts guidance to each member's role and permissions.
 
 ```
 https://nucleoia.vitormr.dev/mcp
@@ -158,7 +158,7 @@ sequenceDiagram
 
 | Compatibility | Status |
 |--------------|--------|
-| Claude.ai | Verified (64 tools) |
+| Claude.ai | Verified (68 tools) |
 | Claude Code | Verified |
 | ChatGPT | Verified (beta) |
 | Perplexity | Verified |
