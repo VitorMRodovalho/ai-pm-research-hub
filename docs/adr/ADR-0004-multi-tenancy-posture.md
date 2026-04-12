@@ -55,10 +55,10 @@ Adiar a decisão é o único erro irrecuperável da refatoração V4: as outras 
 
 ## Critérios de aceite
 
-- [ ] Tabela `organizations` criada com linha inicial para "Núcleo IA & GP"
-- [ ] `chapters` virou entidade com FK para `organizations`
-- [ ] Todas tabelas de domínio com `organization_id NOT NULL` + backfill
-- [ ] Helper `auth_org()` disponível em RLS policies
-- [ ] RPCs novas recebem `p_org_id` (ou usam `auth_org()`)
-- [ ] Testes fixture-based com 2 orgs de exemplo
-- [ ] MCP OAuth carrega `org_id` no JWT
+- [x] Tabela `organizations` criada com linha inicial para "Núcleo IA & GP"
+- [x] `chapters` virou entidade com FK para `organizations`
+- [x] Todas tabelas de domínio com `organization_id NOT NULL` + backfill
+- [x] Helper `auth_org()` disponível em RLS policies
+- [ ] RPCs novas recebem `p_org_id` (ou usam `auth_org()`) — prospectivo, nenhuma RPC nova na Fase 1
+- [x] Testes fixture-based com 2 orgs de exemplo — `multi-org-isolation.test.mjs` (51 assertions) + prova live one-shot
+- [ ] MCP OAuth carrega `org_id` no JWT — dívida documentada, postergado pelo PM 2026-04-11
