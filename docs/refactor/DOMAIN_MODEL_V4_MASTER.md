@@ -59,8 +59,10 @@ Objetivo: preparar infraestrutura de proteção antes de mover o modelo.
 - [x] Branch `refactor/domain-v4` criada (a partir de `869ad1f`)
 - [x] Tag `pre-v4-baseline` apontando para `869ad1f` (baseline pré-refactor)
 - [x] Inventário de impacto inicial populado (ver seção Baseline abaixo)
-- [ ] Commit dos ADRs + docs + issue-06 fix na branch `refactor/domain-v4` (aguardando aprovação PM)
-- [ ] Primeira invocação do `/guardian` com report inicial registrado
+- [x] Commit dos ADRs + docs + issue-06 fix na branch `refactor/domain-v4` (3 commits: `5e56d8e`, `98fc696`, `afa4873`)
+- [x] Primeira invocação do `/guardian` com report registrado — Fase 0 close-out 2026-04-11 @ `afa4873`
+
+**Fase 0 fechada em 2026-04-11.** Todos os invariantes verdes. Nenhum drift. Zero regressão. Próximo passo: abrir sessão nova para Fase 1 (Multi-Tenancy Infrastructure / ADR-0004).
 
 ### Fase 1 — Multi-Tenancy Infrastructure (ADR-0004)
 Objetivo: introduzir `organizations` como entidade first-class sem quebrar nada.
