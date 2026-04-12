@@ -76,9 +76,16 @@ Objetivo: introduzir `organizations` como entidade first-class sem quebrar nada.
 - [x] **Migration 2a/N:** `organization_id` em 4 tabelas core críticas (`members`, `tribes`, `events`, `webinars`) — `20260411210000_v4_phase1_org_id_core.sql`. Backfill 100% (71+8+267+6 rows → Núcleo IA UUID). Smoke pós-2a: ✅ tests 779/0, build 0 erros, MCP HTTP 200
 - [x] **Migration 2b/N:** `organization_id` em 35 tabelas de domínio restantes — `20260411220000_v4_phase1_org_id_rest.sql`. Escopo expandido (Opção A aprovada pelo PM) via descoberta do guardian. Smoke pós-2b: ✅ tests 779/0, build 0 erros, MCP HTTP 200
 - [x] **Inventário pós-Migration 2:** 40 tabelas com `organization_id` (1 chapters + 4 core + 35 rest). Todas apontam para Núcleo IA via FK ON DELETE RESTRICT
-- [ ] Deploy em shadow: coluna existe mas RLS ainda não filtra por ela
-- [ ] Quiet window de 48h
-- [ ] Ativar RLS filtering por `organization_id = auth_org()` em modo dual (permite default org)
+- [x] **Fixtures multi-org:** `tests/contracts/multi-org-isolation.test.mjs` — 51 assertions validando Migration 3 (precondição do critério 6 do ADR-0004)
+- [x] **Migration 3/N:** `20260411230000_v4_phase1_rls_org_scope.sql` — RESTRICTIVE policy `organization_id = auth_org() OR IS NULL` em 40 tabelas, dual mode. Estratégia RESTRICTIVE em vez de dropar PERMISSIVE preserva acesso público legítimo (courses, help_journeys, portfolio_kpi_targets) enquanto enforça isolamento cross-cutting
+- [x] **Prova de isolamento live (2026-04-11):** DO block executado via Supabase MCP com SET LOCAL ROLE authenticated. Resultado: `service_role_sees=1, auth_sees=0, insert_blocked=t` → RESTRICTIVE policy bloqueia SELECT de org estrangeira **e** WITH CHECK bloqueia INSERT em org estrangeira. Transação rolled back (cleanup automático). Evidência one-shot do princípio de isolamento — guardada no commit de sessão 3
+- [x] Smoke pós-Migration 3: ✅ tests 830/0 (base 779 + 51 novos fixtures), build 0 erros, MCP HTTP 200 + serverInfo v2.9.5
+- [ ] Quiet window de 48h (contado a partir do commit da Migration 3)
+- [ ] Smoke manual das features estáveis listadas abaixo (primeiro ciclo com RLS V4 ativo)
+
+**Known gap registrado (aprovado pelo PM 2026-04-11):** JWT `org_id` claim no `/oauth/token` do Worker — **POSTERGADO**. Em single-org mode, `auth_org()` retorna UUID fixo do Núcleo IA, então a restrição funciona sem depender do JWT. Reconcilia quando houver 2ª organização real (ex: PMI-WDC como chapter separada, ou merge com outro núcleo). Critério 7 do ADR-0004 fica como dívida documentada, não bloqueia fechamento da Fase 1.
+
+**Estratégia RESTRICTIVE vs dropar PERMISSIVE (decisão arquitetural da sessão 3):** Em vez de dropar+recriar as 14 policies com `USING (true)` (que o guardian inicialmente sugeriu), Migration 3 usa RESTRICTIVE FOR ALL — o idioma correto do Postgres para security cross-cutting. RESTRICTIVE é AND'd com todas as PERMISSIVE existentes, então policies de acesso público (marketing pages, anon read de courses/help_journeys) continuam funcionando sem regressão, enquanto o filtro de org enforça isolamento em múltiplos tenants. Ganho: migration mais curta (1 DO block), zero risco de regressão em páginas públicas, ponto único de reconciliação no cutover multi-org real (remover `OR IS NULL`).
 
 **Descoberta registrada na sessão de início da Fase 1:** o DB continha 10 tabelas não-rastreadas em nenhuma migration file (zombie infrastructure de um starter multi-tenant Supabase abandonado). Diagnóstico via `supabase_migrations.schema_migrations` + grep em `src/` e `supabase/functions/`. Todas tinham 0 rows e 0 refs. Dropadas com CASCADE na Migration 1 após autorização explícita do PM (Vitor) por violarem rule #3 do refactor (decisões fora de ADR = escalar). Nenhum impacto em features estáveis.
 
