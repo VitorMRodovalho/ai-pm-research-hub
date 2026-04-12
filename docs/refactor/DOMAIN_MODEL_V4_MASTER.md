@@ -1,0 +1,246 @@
+# Domain Model V4 — Master Tracking Document
+
+- **Início:** 2026-04-11
+- **Status:** **ACCEPTED — em execução (Fase 0 in_progress)**
+- **Owner:** Vitor (PM) / Claude (execução)
+- **Timeline:** 6 semanas (D3 aprovado 2026-04-11) — target de conclusão ~2026-05-23
+- **Escopo:** Refatoração arquitetural do modelo de domínio da plataforma Núcleo IA para habilitar crescimento nacional, multi-org, governança máxima e LGPD by design.
+
+## Por que existe este doc
+
+Este é o **único ponto de verdade** sobre o refactor V4. Toda sessão de trabalho no refactor começa por aqui, termina atualizando aqui. Nunca confiar em memória conversacional para status — sempre atualizar este arquivo.
+
+Objetivos do doc:
+1. Preservar contexto, decisões, bloqueios entre sessões (humanas e de agentes).
+2. Permitir auditoria retroativa: o que foi decidido, por quê, quando.
+3. Servir de contrato: features estáveis não podem ser quebradas durante o refactor.
+4. Fornecer critérios explícitos de "feito" por fase.
+
+## Princípios invioláveis do refactor
+
+1. **Governança máxima não é opcional.** Toda mudança tem que preservar ou melhorar auditabilidade LGPD.
+2. **Nenhuma feature estável regressa.** `npm test` + `npx astro build` + smoke de MCP tools + smoke de RPCs críticas têm que passar em 100% do caminho.
+3. **Migrações reversíveis sempre que possível.** Toda fase tem plano de rollback documentado.
+4. **Shadow mode antes de cutover.** Novas estruturas rodam em paralelo com as antigas antes de virar default.
+5. **Não quebrar MCP em produção.** Claude.ai / ChatGPT / Cursor dependem do nucleo-mcp. Downtime custa trust do usuário externo.
+6. **Commits atômicos por sub-fase.** Cada commit é deployável independentemente.
+7. **Documentar decisões em tempo real.** Se uma decisão sair dos ADRs durante execução, criar ADR novo antes de commit.
+
+## Decisões arquiteturais (ADRs)
+
+| ADR | Decisão | Status |
+|-----|---------|--------|
+| [ADR-0004](../adr/ADR-0004-multi-tenancy-posture.md) | Organizations as first-class | **Accepted 2026-04-11** |
+| [ADR-0005](../adr/ADR-0005-initiative-as-domain-primitive.md) | Initiative como primitivo | **Accepted 2026-04-11** |
+| [ADR-0006](../adr/ADR-0006-person-engagement-identity-model.md) | Person + Engagement | **Accepted 2026-04-11** |
+| [ADR-0007](../adr/ADR-0007-authority-as-engagement-grant.md) | Authority derivada | **Accepted 2026-04-11** |
+| [ADR-0008](../adr/ADR-0008-per-kind-engagement-lifecycle.md) | Lifecycle por kind | **Accepted 2026-04-11** |
+| [ADR-0009](../adr/ADR-0009-config-driven-initiative-kinds.md) | Config-driven kinds | **Accepted 2026-04-11** |
+
+**Status global:** ADRs aprovados pelo PM em 2026-04-11. Fase 0 em execução.
+
+## Plano em fases
+
+Cada fase é **deployável, testável, reversível**. Entre fases existe **quiet window** de pelo menos 48h para observar regressões.
+
+### Fase 0 — Pré-Flight (antes de qualquer migration V4) — **IN PROGRESS**
+Objetivo: preparar infraestrutura de proteção antes de mover o modelo.
+
+- [x] Baseline de testes: `npm test` — 778 pass / 1 fail / 5 skipped (fail é pré-existente, ver seção Baseline)
+- [x] Baseline de build: `npx astro build` ✅ 26.11s, 0 erros
+- [ ] Baseline de MCP: snapshot da lista de 68 tools + smoke call em 10 tools críticas
+- [ ] Baseline de RPCs: lista de RPCs chamadas pelo frontend (grep + MCP)
+- [x] Agente `refactor-guardian` operacional (`.claude/agents/refactor-guardian.md`)
+- [x] Skill `/guardian` user-invocable (`.claude/skills/guardian/SKILL.md`)
+- [x] Regra `.claude/rules/refactor-in-progress.md` ativa
+- [x] Aviso de refactor no `CLAUDE.md` para futuras sessões
+- [x] Memory pointer `project_domain_model_v4_refactor.md` criado
+- [x] **Issue-06 resolvida** — i18n collision do CPMAI homepage (mural de celebração de certificados). Keys `cpmai_showcase.title` + `cpmai_showcase.subtitle` adicionadas em pt-BR/en-US/es-LATAM, `CpmaiSection.astro` atualizado para usar `cpmai_showcase.*`
+- [x] Branch `refactor/domain-v4` criada (a partir de `869ad1f`)
+- [x] Tag `pre-v4-baseline` apontando para `869ad1f` (baseline pré-refactor)
+- [x] Inventário de impacto inicial populado (ver seção Baseline abaixo)
+- [ ] Commit dos ADRs + docs + issue-06 fix na branch `refactor/domain-v4` (aguardando aprovação PM)
+- [ ] Primeira invocação do `/guardian` com report inicial registrado
+
+### Fase 1 — Multi-Tenancy Infrastructure (ADR-0004)
+Objetivo: introduzir `organizations` como entidade first-class sem quebrar nada.
+
+- [ ] Migration: `organizations` + `chapters` (FK para org)
+- [ ] Seed: linha "Núcleo IA & GP" em organizations, 5 chapters federados
+- [ ] Migration: `organization_id uuid NOT NULL DEFAULT '<nucleo-uuid>'` em toda tabela de domínio
+- [ ] Helper SQL: `auth_org()` retorna org do caller
+- [ ] Testes: npm test passa 100% (single-org ainda, mas coluna existe)
+- [ ] Deploy em shadow: coluna existe mas RLS ainda não filtra por ela
+- [ ] Quiet window de 48h
+- [ ] Ativar RLS filtering por `organization_id = auth_org()` em modo dual (permite default org)
+
+### Fase 2 — Initiative Primitive (ADR-0005)
+Objetivo: criar `initiatives` sem quebrar `tribes`.
+
+- [ ] Migration: `initiatives` + `initiative_kinds` com seed
+- [ ] Seed: 8 tribos atuais migradas para `initiatives WHERE kind='research_tribe'` (mantém `tribes.id` como PK compat)
+- [ ] View `tribes` apontando para `initiatives WHERE kind='research_tribe'`
+- [ ] Retrofit: `board_items`, `meeting_notes`, `events`, `deliverables` ganham `initiative_id` (além de `tribe_id`)
+- [ ] Dual-write trigger: insert em tabelas com tribe_id popula initiative_id automaticamente
+- [ ] RPCs ganham variante `_by_initiative` mantendo as `_by_tribe` existentes
+- [ ] Testes: npm test passa 100%
+- [ ] Quiet window de 48h
+
+### Fase 3 — Person + Engagement (ADR-0006)
+Objetivo: modelar identidade universal sem quebrar `members`.
+
+- [ ] Migration: `persons`, `engagements`, `engagement_kinds` com seed de ~10 kinds
+- [ ] Backfill: cada member ativo vira 1 person + N engagements (1 para tribo + 1 para cada designation relevante)
+- [ ] View de compat `members_compat` ou `members` virar view apontando para persons+engagements
+- [ ] Ghost resolution flow atualizado para popular `persons.auth_id`
+- [ ] `sign_volunteer_agreement()` reescrito para popular `engagements.agreement_certificate_id`
+- [ ] Testes: npm test passa 100% + smoke MCP
+- [ ] Quiet window de 72h (fase crítica)
+
+### Fase 4 — Authority Derivation (ADR-0007)
+Objetivo: migrar gates de autoridade para função derivada de engagements.
+
+- [ ] Função SQL `can(person_id, action, resource_type, resource_id)` implementada
+- [ ] View `auth_engagements` agregando engagements ativos + validade termo
+- [ ] Trigger: `operational_role` vira cache denormalizado, atualizado por trigger
+- [ ] `canWrite`/`canWriteBoard` no MCP migram para chamar `can()` via RPC
+- [ ] RLS policies migram para subquery em `auth_engagements` (em lotes, por domínio)
+- [ ] Trigger diário de expiração em shadow mode (log only, não ativa suspensão)
+- [ ] Ferramenta de diagnóstico "why denied?" disponível em `/admin/authority`
+- [ ] Testes: smoke de todos os gates críticos + npm test
+- [ ] Quiet window de 1 semana (fase de risco máximo)
+- [ ] Ativar trigger de expiração após validação
+
+### Fase 5 — Lifecycle Configuration (ADR-0008)
+Objetivo: mover lifecycle de código para config por engagement_kind.
+
+- [ ] Seed enriquecido de `engagement_kinds` com base legal + retenção + templates
+- [ ] Revisão jurídica (Claudio Torres ou consultor) de base legal + retenção
+- [ ] Anonymize cron parametrizado por kind
+- [ ] Notificações de expiração parametrizadas
+- [ ] Testes cobrindo: ativação, renovação, expiração, offboard, anonymize por kind
+- [ ] Quiet window de 72h
+
+### Fase 6 — Config-Driven Initiative Kinds (ADR-0009)
+Objetivo: habilitar criação de kinds novos via UI.
+
+- [ ] Admin UI `/admin/initiative-kinds` com CRUD
+- [ ] CPMAI migrado de `cpmai_courses` para `initiatives + metadata`
+- [ ] Engine genérica de board/atas/attendance/deliverables
+- [ ] Teste E2E: criar kind novo "book_club", criar initiative, adicionar engagement, board funciona sem deploy
+- [ ] Deprecação formal das tabelas `cpmai_*` legadas (mantidas como views)
+
+### Fase 7 — Cleanup & Consolidation
+Objetivo: remover código legado e consolidar V4.
+
+- [ ] Remover views de compat depois de 2 semanas estáveis
+- [ ] Deprecar RPCs `_by_tribe` em favor de `_by_initiative` (com warning)
+- [ ] Atualizar toda documentação (CLAUDE.md, skills, rules)
+- [ ] Release V3 → V4 no RELEASE_LOG
+- [ ] ADRs 0004-0009 marcados como Accepted + data
+- [ ] ADR-0002 marcado como Superseded parcialmente por ADR-0007
+
+## Baseline pre-v4 (capturado 2026-04-11)
+
+**Git tag:** `pre-v4-baseline` → commit `869ad1f` (docs: sync to v2.9.5 — 68 tools + LGPD complete)
+**Branch de trabalho:** `refactor/domain-v4` (criada a partir de `pre-v4-baseline`)
+
+### Build & Test Baseline
+- **npx astro build:** ✅ **PASSA** em 26.11s. Warnings pré-existentes (CSS `text-[var(--text-primary/secondary/muted)]` delimiter, chunk >500kB) sem relação com refactor.
+- **npm test:** ✅ **779 pass / 0 fail / 5 skipped / 784 total** (após fix LGPD descrito abaixo)
+
+**Fix LGPD aplicado na Fase 0 (bug pré-existente corrigido):**
+O teste `security-lgpd.test.mjs:138` esperava campos `full_name`/`avatar_url` mas a RPC `admin_anonymize_member` foi corrigida na migration `20260410160000_lgpd_p3_anonymization_cron.sql` para usar os nomes reais do schema (`name`/`photo_url`). O teste ficou stale. Correção: atualizar o teste para espelhar o schema real. A RPC estava correta — scruba 6 campos PII adequadamente. **Autorizado por D2 como correção LGPD (sempre permitida).**
+
+### Inventário de impacto (populado 2026-04-11 via grep)
+
+Escala do refactor — contagens brutas de ocorrências para dimensionamento:
+
+| Conceito legado | Ocorrências | Arquivos atingidos |
+|-----------------|-------------|--------------------|
+| `operational_role` | **660+** | 200+ arquivos (`src/`, `supabase/migrations/`, `tests/`, `docs/`) |
+| `tribe_id` | **1200+** | 200+ arquivos |
+| `FROM members` (case-insensitive) | **473** | 127 arquivos (principalmente `supabase/migrations/` e RPCs) |
+
+**Interpretação:**
+- `tribe_id` tem a maior superfície porque permeia board, attendance, portfolio, meetings, events. ADR-0005 (Initiative) é a fase mais cara em retrofit mecânico.
+- `operational_role` tem forte presença em tests (`tests/permissions.test.mjs:12`, `tests/contracts/*`) e migrations de RLS. ADR-0007 (Authority) vai tocar toda essa superfície — é o cutover mais delicado (D4: cutover único).
+- `FROM members` está concentrado em migrations históricas — boa parte é read-only de histórico. Fase 3 (Person+Engagement) com view de compat deve absorver a maioria sem reescrita.
+
+**Hotspots críticos identificados para a Fase 1+ (atenção redobrada):**
+- `supabase/functions/nucleo-mcp/index.ts` — 61 ocorrências de `tribe_id`, 22 de `operational_role`. É o ponto de entrada de todos os MCP hosts externos (Claude.ai, ChatGPT, Cursor). **Qualquer quebra aqui é visível imediatamente** — smoke obrigatório após cada mudança.
+- `supabase/migrations/20260314170000_global_publications_and_operational_board_scope.sql` — 32 ocorrências de `tribe_id` + 13 de `operational_role`. Migration grande e crítica.
+- `supabase/migrations/20260316120000_cleanup_lineage_and_cycle_tribe_dimension.sql` — 14 de `tribe_id` + 5 de `operational_role`. Já tocou dimension de tribo uma vez — referência para como refatorar.
+- `src/pages/tribe/[id].astro` — 29 ocorrências de `tribe_id`. Página hot do frontend.
+- `src/lib/permissions.ts` — 8 `tribe_id` + 3 `operational_role`. **Fonte central de gate no frontend** — Fase 4 vai reescrever.
+- `tests/permissions.test.mjs` — 12 ocorrências de `operational_role`. Contratos de teste que precisam migrar para `can()`.
+
+**Arquivos zombie detectados:**
+- `public/legacy-assets/roadmap-planning/*.md` — docs antigos referenciando `operational_role`/`tribe_id` historicamente. Não alteram comportamento, ignorar no refactor.
+- `docs/archive/*` — idem, são histórico preservado.
+
+### Itens delta-detectáveis (o que o guardian vai conferir nas próximas sessões)
+
+- [ ] Lista completa de RPCs chamadas pelo frontend (inventory via Grep em `sb.rpc(`)
+- [ ] Lista completa dos 68 MCP tools e quais tocam conceitos legados
+- [ ] Lista de componentes frontend que dependem de gates (`useBoardPermissions`, `permissions.ts`, `tribePermissions.ts`)
+- [ ] Lista de skills em `skills/nucleo-ia/SKILL.md` que mencionam conceitos legados (4 ocorrências detectadas)
+
+## Features estáveis que não podem regredir
+
+Lista de smoke tests obrigatórios em cada cutover de fase. Atualizar conforme fases consumirem.
+
+- [ ] Login via Google OAuth funciona
+- [ ] `/admin/analytics` carrega sem erro
+- [ ] Board de qualquer tribo lista cards
+- [ ] Criar ata de reunião (MCP `create_meeting_notes`) funciona
+- [ ] Registrar presença (MCP `register_attendance`) funciona
+- [ ] Gerar certificado (MCP `get_my_certificates`) funciona
+- [ ] Assinar termo de voluntariado funciona
+- [ ] Export LGPD (Art. 18 V) funciona
+- [ ] Anonymize cron roda sem erro
+- [ ] MCP tools (68) todas respondem a call
+- [ ] Claude.ai connector continua respondendo
+- [ ] Homepage carrega em 3 idiomas
+- [ ] Páginas públicas (impact, manual, cpmai landing) carregam
+
+## Riscos ativos e mitigações
+
+| Risco | Probabilidade | Mitigação |
+|-------|---------------|-----------|
+| Regressão no MCP quebra Claude.ai connector | Média | Smoke de 10 tools críticas após cada fase + rollback rápido |
+| Performance do `can()` degrada requests | Média | Materializar `auth_engagements`, cache de sessão em Worker |
+| Backfill de members → persons corrompe dados | Baixa-Média | Dry-run primeiro, backup antes, reversible migration |
+| Gate de termo vencido corta acesso indevidamente | Alta | Shadow mode do trigger por 2 semanas antes de ativar |
+| LGPD audit entre fases (Claudio Torres) encontra gap | Média | Revisão ADR-0008 antes da Fase 5 |
+| Congresso CBGPL entra em conflito com cronograma | Alta | Herlon parallel track não depende do refactor |
+
+## Decisões do PM (aprovadas 2026-04-11)
+
+- [x] **D1 — Aprovar ADRs:** ✅ Todos os 6 ADRs (0004-0009) marcados como `Accepted`.
+- [x] **D2 — Freeze parcial de features:** ✅ Durante o refactor, apenas issues/features **já em construção** antes de 2026-04-11 são aceitas. Features novas só após conclusão da Fase 7. Correções de bugs críticos e LGPD permanecem permitidas.
+- [x] **D3 — Timeline:** ✅ **6 semanas** (target ~2026-05-23). Plano em fases precisa caber nesse orçamento — se alguma fase estourar, reconciliar via trade-off com PM antes de expandir prazo.
+- [x] **D4 — Cutover Claude.ai connector:** ✅ **Fase 4 em cutover único** — authority derivation entra em produção num único deploy coordenado, não em migração gradual. Janela de risco concentrada mas controlável. Requer smoke test dos 68 MCP tools antes + rollback plan pronto + comunicação prévia aos MCP hosts.
+- [x] **D5 — Herlon entry:** ✅ Herlon NÃO entra operacionalmente agora. Plataforma entra pronta para recebê-lo (Fase 3 ou Fase 4 do refactor). Enquanto isso:
+   - Login vínculo: **já resolvido** (ghost linked em 2026-04-11)
+   - VEP opportunity: PM criará a vaga formal **em paralelo** — carregada na plataforma, sem ativação de role
+   - Termo de voluntariado: assinado quando plataforma estiver pronta
+   - `is_superadmin` temporário: **descartado** — não precisa mais desta concessão, Herlon espera o modelo V4
+
+## Features em construção autorizadas a continuar
+
+Features iniciadas antes de 2026-04-11 que permanecem autorizadas durante o refactor (D2):
+
+- **Issue-06 CPMAI i18n collision** — mural de celebração de certificados (Marcos Klemz certificado no ciclo conta para meta anual) — **RESOLVIDO na Fase 0** (ver registro abaixo)
+- **Congresso CBGPL** — operação já em curso, não pode parar
+- **Correções LGPD** — sempre permitidas (governança máxima não entra em freeze)
+- **VEP opportunity do Herlon** — criação formal em paralelo (PM)
+- (acrescentar conforme identificadas durante Fase 0)
+
+## Referências
+
+- Comitê arquitetural: ver histórico da sessão 2026-04-11
+- ADR index: `docs/adr/README.md`
+- Guardrails de sessão: `.claude/rules/refactor-in-progress.md`
+- Agente de auditoria: `.claude/agents/refactor-guardian.md`
+- Parallel track Herlon: `docs/refactor/HERLON_VEP_PARALLEL_TRACK.md`
