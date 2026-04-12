@@ -1,5 +1,14 @@
 # Claude Code — Project Rules
 
+## ⚠️ REFACTOR ATIVO — Domain Model V4 (desde 2026-04-11)
+**Antes de tocar em:** migrations de domínio, `members`, `operational_role`, `tribes`, `cpmai_*`, gates de auth, `sign_volunteer_agreement`, RLS policies — **LEIA**:
+1. `docs/refactor/DOMAIN_MODEL_V4_MASTER.md` (master tracking)
+2. `.claude/rules/refactor-in-progress.md` (regras mandatórias)
+3. ADRs relevantes em `docs/adr/ADR-0004` a `ADR-0009`
+4. Invoque o agente `.claude/agents/refactor-guardian.md` no início e fim da sessão
+
+**NÃO** fazer quick-fixes. **NÃO** criar casos especiais novos. **NÃO** adicionar valores a `operational_role`. Se a decisão não está num ADR existente, criar ADR novo antes de commit.
+
 ## Platform
 - **URL:** https://nucleoia.vitormr.dev
 - **Supabase:** ldrfrvwhxsmgaabwmaik (sa-east-1)

@@ -11,8 +11,21 @@ Este diretório separa decisões técnicas duráveis das notas de governança ge
 ## ADRs ativos
 
 - `ADR-0001-source-of-truth-and-cycle-history.md` — Hub como fonte única de verdade + separação snapshot/histórico.
-- `ADR-0002-role-model-v3-operational-role-and-designations.md` — Modelo v3 com `operational_role` e `designations`.
+- `ADR-0002-role-model-v3-operational-role-and-designations.md` — Modelo v3 (parcialmente substituído por ADR-0007).
 - `ADR-0003-admin-analytics-internal-readonly-surface.md` — `/admin/analytics` como leitura interna sem abrir trilhas de escrita.
+
+## Domain Model V4 — Refatoração Arquitetural (Proposed, 2026-04-11)
+
+Pacote coeso que refaz o modelo de domínio para habilitar: plataforma nacional, multi-org, governança máxima, LGPD by design, e extensibilidade via configuração. Deve ser lido em ordem.
+
+- `ADR-0004-multi-tenancy-posture.md` — Organizations como entidade first-class.
+- `ADR-0005-initiative-as-domain-primitive.md` — Initiative substitui Tribe como contêiner raiz.
+- `ADR-0006-person-engagement-identity-model.md` — Person + Engagement substituem members catch-all.
+- `ADR-0007-authority-as-engagement-grant.md` — Autoridade derivada de engagements ativos (substitui parcialmente ADR-0002).
+- `ADR-0008-per-kind-engagement-lifecycle.md` — Lifecycle e base legal LGPD como config por kind.
+- `ADR-0009-config-driven-initiative-kinds.md` — Extensibilidade por configuração, não por código.
+
+**Plano de execução:** ver `docs/refactor/DOMAIN_MODEL_V4_MASTER.md`.
 
 ## Processo mínimo
 
