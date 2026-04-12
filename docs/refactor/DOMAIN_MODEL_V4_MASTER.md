@@ -73,13 +73,16 @@ Objetivo: introduzir `organizations` como entidade first-class sem quebrar nada.
 - [x] **Drift cleanup:** dropadas 10 tabelas zumbi (`organizations`/`memberships`/`projects`/`programs`/`project_shares`/`program_shares`/`audit_log`/`value_milestones`/`forensic_timelines`/`forensic_access_log`) — 0 rows, 0 refs em código, resíduo do starter multi-tenant do Supabase. Autorizado PM 2026-04-11.
 - [x] Build + tests pós-Migration 1: `npx astro build` ✅ 27.46s, `npm test` ✅ 779/0
 - [x] MCP smoke pós-Migration 1: `initialize` → HTTP 200 + serverInfo v2.9.5
-- [ ] **Migration 2/N:** `organization_id uuid NOT NULL DEFAULT '<nucleo-uuid>'` em toda tabela de domínio (próximo commit)
-- [ ] Testes: npm test passa 100% (single-org ainda, mas coluna existe)
+- [x] **Migration 2a/N:** `organization_id` em 4 tabelas core críticas (`members`, `tribes`, `events`, `webinars`) — `20260411210000_v4_phase1_org_id_core.sql`. Backfill 100% (71+8+267+6 rows → Núcleo IA UUID). Smoke pós-2a: ✅ tests 779/0, build 0 erros, MCP HTTP 200
+- [x] **Migration 2b/N:** `organization_id` em 35 tabelas de domínio restantes — `20260411220000_v4_phase1_org_id_rest.sql`. Escopo expandido (Opção A aprovada pelo PM) via descoberta do guardian. Smoke pós-2b: ✅ tests 779/0, build 0 erros, MCP HTTP 200
+- [x] **Inventário pós-Migration 2:** 40 tabelas com `organization_id` (1 chapters + 4 core + 35 rest). Todas apontam para Núcleo IA via FK ON DELETE RESTRICT
 - [ ] Deploy em shadow: coluna existe mas RLS ainda não filtra por ela
 - [ ] Quiet window de 48h
 - [ ] Ativar RLS filtering por `organization_id = auth_org()` em modo dual (permite default org)
 
 **Descoberta registrada na sessão de início da Fase 1:** o DB continha 10 tabelas não-rastreadas em nenhuma migration file (zombie infrastructure de um starter multi-tenant Supabase abandonado). Diagnóstico via `supabase_migrations.schema_migrations` + grep em `src/` e `supabase/functions/`. Todas tinham 0 rows e 0 refs. Dropadas com CASCADE na Migration 1 após autorização explícita do PM (Vitor) por violarem rule #3 do refactor (decisões fora de ADR = escalar). Nenhum impacto em features estáveis.
+
+**Descoberta registrada na sessão 2 da Fase 1 (Migration 2):** plano original de Migration 2b listava 19 tabelas de domínio. Guardian audit de pre-flight revelou ~16 tabelas adicionais de domínio via inventário de `ALTER TABLE` em migrations (attendance, gamification_points, announcements, courses, partner_entities, change_requests, board_lifecycle_events, board_sla_config, event_showcases, project_memberships, curation_review_log, member_activity_sessions, help_journeys, visitor_leads, comms_channel_config, blog_posts). PM aprovou **Opção A** (escopo expandido): cobrir todas as tabelas de domínio em Migration 2b para evitar dívida residual e Migration 3 corretiva. `comms_token_alerts` listada pelo guardian mas não existe no schema — removida do escopo. Total final: 35 tabelas em 2b + 4 em 2a = 39 tabelas de domínio com `organization_id`. Excluídas corretamente: `site_config`, `releases`, `admin_audit_log`, `data_anomaly_log`, `notifications`, `notification_preferences`, `mcp_usage_log`, `email_webhook_events`, `campaign_*`, `legacy_*`, `trello_import_log` (infra técnica / escopo global, não domínio).
 
 ### Fase 2 — Initiative Primitive (ADR-0005)
 Objetivo: criar `initiatives` sem quebrar `tribes`.
