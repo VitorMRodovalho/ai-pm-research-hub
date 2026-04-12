@@ -598,12 +598,15 @@ const enUS: Record<string, string> = {
   'trail.coreUnavailable': 'Core courses unavailable at the moment.',
   'trail.extraUnavailable': 'Complementary courses unavailable at the moment.',
 
-  // ── CPMAI Showcase (S9) ──
+  // ── CPMAI Showcase (S9) — Celebration wall for certified members in the cycle ──
+  // Do NOT confuse with cpmai.title/subtitle (preparatory course page, GC-120)
   'cpmai.label': 'PMI-CPMAI Certification',
   'cpmai.badge': 'Verified via Credly',
   'cpmai.noCerts': 'Coming soon — the first certifications of the current cycle will be displayed here.',
   'cpmai.viewBadge': 'View badge →',
   'cpmai.certifiedIn': 'Certified in',
+  'cpmai_showcase.title': 'PMI-CPMAI Certification Wall',
+  'cpmai_showcase.subtitle': 'Celebrating our PMI-CPMAI™ certified researchers during the cycle. Each badge earned contributes to the Núcleo\'s annual certification goal.',
   'profile.cpmaiCertifiedIn': 'Certified in',
 
   // ── Projects (IA Pilots) ──
