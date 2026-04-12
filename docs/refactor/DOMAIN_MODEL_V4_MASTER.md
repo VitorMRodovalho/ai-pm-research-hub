@@ -43,13 +43,13 @@ Objetivos do doc:
 
 Cada fase é **deployável, testável, reversível**. Entre fases existe **quiet window** de pelo menos 48h para observar regressões.
 
-### Fase 0 — Pré-Flight (antes de qualquer migration V4) — **IN PROGRESS**
+### Fase 0 — Pré-Flight (antes de qualquer migration V4) — **FECHADA 2026-04-11**
 Objetivo: preparar infraestrutura de proteção antes de mover o modelo.
 
-- [x] Baseline de testes: `npm test` — 778 pass / 1 fail / 5 skipped (fail é pré-existente, ver seção Baseline)
+- [x] Baseline de testes: `npm test` — 779 pass / 0 fail / 5 skipped
 - [x] Baseline de build: `npx astro build` ✅ 26.11s, 0 erros
-- [ ] Baseline de MCP: snapshot da lista de 68 tools + smoke call em 10 tools críticas
-- [ ] Baseline de RPCs: lista de RPCs chamadas pelo frontend (grep + MCP)
+- [x] Baseline de MCP: `initialize` retorna HTTP 200 + `serverInfo v2.9.5` via curl direto ao EF. Connector via Claude.ai testado em sessão de Fase 1 (JWT host-side renovado). Smoke endpoint verificado pré e pós-Migration 1.
+- [ ] Baseline de RPCs: lista de RPCs chamadas pelo frontend (grep + MCP) — postergado, não bloqueante
 - [x] Agente `refactor-guardian` operacional (`.claude/agents/refactor-guardian.md`)
 - [x] Skill `/guardian` user-invocable (`.claude/skills/guardian/SKILL.md`)
 - [x] Regra `.claude/rules/refactor-in-progress.md` ativa
@@ -64,17 +64,22 @@ Objetivo: preparar infraestrutura de proteção antes de mover o modelo.
 
 **Fase 0 fechada em 2026-04-11.** Todos os invariantes verdes. Nenhum drift. Zero regressão. Próximo passo: abrir sessão nova para Fase 1 (Multi-Tenancy Infrastructure / ADR-0004).
 
-### Fase 1 — Multi-Tenancy Infrastructure (ADR-0004)
+### Fase 1 — Multi-Tenancy Infrastructure (ADR-0004) — **IN PROGRESS (desde 2026-04-11)**
 Objetivo: introduzir `organizations` como entidade first-class sem quebrar nada.
 
-- [ ] Migration: `organizations` + `chapters` (FK para org)
-- [ ] Seed: linha "Núcleo IA & GP" em organizations, 5 chapters federados
-- [ ] Migration: `organization_id uuid NOT NULL DEFAULT '<nucleo-uuid>'` em toda tabela de domínio
-- [ ] Helper SQL: `auth_org()` retorna org do caller
+- [x] **Migration 1/N:** `organizations` + `chapters` (FK para org) — `20260411200000_v4_phase1_organizations_chapters.sql`
+- [x] **Seed:** "Núcleo IA & Gerenciamento de Projetos" (UUID fixo `2b4f58ab-7c45-4170-8718-b77ee69ff906`) + 5 chapters federados (GO/CE/DF/MG/RS)
+- [x] **Helper SQL:** `auth_org()` single-org mode retornando UUID fixo do Núcleo IA
+- [x] **Drift cleanup:** dropadas 10 tabelas zumbi (`organizations`/`memberships`/`projects`/`programs`/`project_shares`/`program_shares`/`audit_log`/`value_milestones`/`forensic_timelines`/`forensic_access_log`) — 0 rows, 0 refs em código, resíduo do starter multi-tenant do Supabase. Autorizado PM 2026-04-11.
+- [x] Build + tests pós-Migration 1: `npx astro build` ✅ 27.46s, `npm test` ✅ 779/0
+- [x] MCP smoke pós-Migration 1: `initialize` → HTTP 200 + serverInfo v2.9.5
+- [ ] **Migration 2/N:** `organization_id uuid NOT NULL DEFAULT '<nucleo-uuid>'` em toda tabela de domínio (próximo commit)
 - [ ] Testes: npm test passa 100% (single-org ainda, mas coluna existe)
 - [ ] Deploy em shadow: coluna existe mas RLS ainda não filtra por ela
 - [ ] Quiet window de 48h
 - [ ] Ativar RLS filtering por `organization_id = auth_org()` em modo dual (permite default org)
+
+**Descoberta registrada na sessão de início da Fase 1:** o DB continha 10 tabelas não-rastreadas em nenhuma migration file (zombie infrastructure de um starter multi-tenant Supabase abandonado). Diagnóstico via `supabase_migrations.schema_migrations` + grep em `src/` e `supabase/functions/`. Todas tinham 0 rows e 0 refs. Dropadas com CASCADE na Migration 1 após autorização explícita do PM (Vitor) por violarem rule #3 do refactor (decisões fora de ADR = escalar). Nenhum impacto em features estáveis.
 
 ### Fase 2 — Initiative Primitive (ADR-0005)
 Objetivo: criar `initiatives` sem quebrar `tribes`.
