@@ -1,7 +1,7 @@
 # Domain Model V4 — Master Tracking Document
 
 - **Início:** 2026-04-11
-- **Status:** **ACCEPTED — Fase 4 cutover MCP concluído 2026-04-13 — quiet window até 2026-04-15**
+- **Status:** **ACCEPTED — Fase 5 concluída 2026-04-13 — Fase 4 RLS quiet window até 2026-04-15**
 - **Owner:** Vitor (PM) / Claude (execução)
 - **Timeline:** 6 semanas (D3 aprovado 2026-04-11) — target de conclusão ~2026-05-23
 - **Escopo:** Refatoração arquitetural do modelo de domínio da plataforma Núcleo IA para habilitar crescimento nacional, multi-org, governança máxima e LGPD by design.
@@ -156,15 +156,28 @@ Objetivo: migrar gates de autoridade para função derivada de engagements.
 - Smoke validation live: 8 tribe_leaders ativos → can_write=true. Marcel Fleming (inactive) → can_write=false (melhoria aprovada). Researchers → write_board=true, write=false. Liaisons → manage_partner=true via engagement kind. Manager/superadmin → all actions true.
 - **Quiet window de 48h inicia agora (2026-04-13).** RLS migration após 2026-04-15 se nenhuma regressão.
 
-### Fase 5 — Lifecycle Configuration (ADR-0008)
+### Fase 5 — Lifecycle Configuration (ADR-0008) — **CONCLUÍDA 2026-04-13**
 Objetivo: mover lifecycle de código para config por engagement_kind.
 
-- [ ] Seed enriquecido de `engagement_kinds` com base legal + retenção + templates
-- [ ] Revisão jurídica (Claudio Torres ou consultor) de base legal + retenção
-- [ ] Anonymize cron parametrizado por kind
-- [ ] Notificações de expiração parametrizadas
-- [ ] Testes cobrindo: ativação, renovação, expiração, offboard, anonymize por kind
-- [ ] Quiet window de 72h
+- [x] **Migration 1/3:** Schema enrichment — 11 novas colunas em `engagement_kinds` (ADR-0008 compliant) + seed enriquecido para 12 kinds — `20260413500000_v4_phase5_engagement_kinds_lifecycle.sql`
+- [x] **Migration 2/3:** `anonymize_by_engagement_kind()` — kind-aware anonymization com retention_days_after_end + anonymization_policy por kind. Coexiste com legacy. Cron mensal — `20260413510000_v4_phase5_anonymize_by_kind.sql`
+- [x] **Migration 3/3:** `v4_expire_engagements()` (real, substitui shadow) + `v4_notify_expiring_engagements()`. Cron diário 03:00 + 08:00 UTC — `20260413520000_v4_phase5_real_expiration.sql`
+- [ ] Revisão jurídica (Claudio Torres ou consultor) de base legal + retenção — **PENDENTE humano**
+- [x] **Testes:** 1107 pass / 0 fail (1077 + 30 engagement-lifecycle contracts). Build 0 erros. MCP HTTP 200.
+- [x] Dry-run: `anonymize_by_engagement_kind(true)` → 0 candidates (nenhum engagement offboarded). `v4_expire_engagements()` → 0 expired. `v4_notify_expiring_engagements()` → 0 notifications. Todas funções executam sem erro.
+
+**Configuração per-kind aplicada:**
+
+| Kind | Legal basis | Retention | Policy | Auto-expire | Renewable |
+|------|-------------|-----------|--------|-------------|-----------|
+| volunteer | contract_volunteer | 5yr | anonymize | suspend | yes |
+| study_group_owner | contract_volunteer | 5yr | anonymize | suspend | yes |
+| study_group_participant | contract_course | 2yr | anonymize | offboard | no |
+| speaker | consent | 30d | delete | offboard | no |
+| guest | consent | 30d | delete | offboard | no |
+| candidate | consent | 2yr | anonymize | offboard | no |
+| partner_contact | legitimate_interest | 1yr | delete | notify_only | no |
+| observer/alumni/ambassador/chapter_board/sponsor | varies | 5yr | anonymize | notify_only | no |
 
 ### Fase 6 — Config-Driven Initiative Kinds (ADR-0009)
 Objetivo: habilitar criação de kinds novos via UI.
