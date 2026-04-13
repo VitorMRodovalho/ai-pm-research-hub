@@ -84,7 +84,7 @@ BEGIN
 
   -- Resolve member recipients
   FOR v_member IN
-    SELECT m.id, COALESCE(m.preferred_language, 'pt') AS lang
+    SELECT m.id, 'pt' AS lang
     FROM public.members m
     LEFT JOIN public.tribes t ON t.id = m.tribe_id
     WHERE m.email IS NOT NULL
