@@ -171,7 +171,7 @@ Objetivo: mover lifecycle de código para config por engagement_kind.
 - [x] **Migration 1/3:** Schema enrichment — 11 novas colunas em `engagement_kinds` (ADR-0008 compliant) + seed enriquecido para 12 kinds — `20260413500000_v4_phase5_engagement_kinds_lifecycle.sql`
 - [x] **Migration 2/3:** `anonymize_by_engagement_kind()` — kind-aware anonymization com retention_days_after_end + anonymization_policy por kind. Coexiste com legacy. Cron mensal — `20260413510000_v4_phase5_anonymize_by_kind.sql`
 - [x] **Migration 3/3:** `v4_expire_engagements()` (real, substitui shadow) + `v4_notify_expiring_engagements()`. Cron diário 03:00 + 08:00 UTC — `20260413520000_v4_phase5_real_expiration.sql`
-- [ ] Revisão jurídica (Claudio Torres ou consultor) de base legal + retenção — **PENDENTE humano**
+- [ ] Revisão jurídica (DPO PMI-GO (Ivan Lourenço Costa)) de base legal + retenção — **PENDENTE humano**
 - [x] **Testes:** 1107 pass / 0 fail (1077 + 30 engagement-lifecycle contracts). Build 0 erros. MCP HTTP 200.
 - [x] Dry-run: `anonymize_by_engagement_kind(true)` → 0 candidates (nenhum engagement offboarded). `v4_expire_engagements()` → 0 expired. `v4_notify_expiring_engagements()` → 0 notifications. Todas funções executam sem erro.
 
@@ -309,7 +309,7 @@ Lista de smoke tests obrigatórios em cada cutover de fase. Atualizar conforme f
 | Performance do `can()` degrada requests | Média | Materializar `auth_engagements`, cache de sessão em Worker |
 | Backfill de members → persons corrompe dados | Baixa-Média | Dry-run primeiro, backup antes, reversible migration |
 | Gate de termo vencido corta acesso indevidamente | Alta | Shadow mode do trigger por 2 semanas antes de ativar |
-| LGPD audit entre fases (Claudio Torres) encontra gap | Média | Revisão ADR-0008 antes da Fase 5 |
+| LGPD audit entre fases (DPO PMI-GO) encontra gap | Média | Revisão ADR-0008 antes da Fase 5 |
 | Congresso CBGPL entra em conflito com cronograma | Alta | Herlon parallel track não depende do refactor |
 
 ## Decisões do PM (aprovadas 2026-04-11)

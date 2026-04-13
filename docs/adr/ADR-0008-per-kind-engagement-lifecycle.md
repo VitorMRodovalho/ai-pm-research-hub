@@ -95,7 +95,7 @@ LGPD Art. 7 + Art. 15 exigem base legal e prazo de retenção **explícitos por 
 ## Critérios de aceite
 
 - [x] Tabela `engagement_kinds` com 12 kinds + 11 lifecycle columns (ADR-0008) — `20260413500000`
-- [ ] Jurídico (Claudio Torres ou assessoria) revisou base legal + retenção de cada kind — **PENDENTE humano**
+- [ ] Jurídico (DPO PMI-GO (Ivan Lourenço Costa)) revisou base legal + retenção de cada kind — **PENDENTE humano**
 - [ ] `sign_volunteer_agreement()` reescrito para ler template + duração do kind — **POSTERGADO Fase 7**
 - [x] Anonymize cron parametrizado por kind — `anonymize_by_engagement_kind()` em `20260413510000`, cron mensal
 - [x] Notificação de expiração parametrizada — `v4_notify_expiring_engagements()` em `20260413520000`, cron diário 08:00 UTC

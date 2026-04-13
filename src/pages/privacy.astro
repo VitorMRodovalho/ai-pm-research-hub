@@ -5,7 +5,7 @@ import { t, getLangFromURL, type Lang } from '../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
 const S3_ROWS = [1,2,3,4,5,6,7,8,9,10,11] as const;
-const S6_ROWS = [1,2,3,4,5,6,7,8,9] as const;
+const S6_ROWS = [1,2,3,4,5,6,7,8,9,10,11,12] as const;
 ---
 
 <BaseLayout title={t('privacy.pageTitle', lang)} activePage="privacy" lang={lang}>

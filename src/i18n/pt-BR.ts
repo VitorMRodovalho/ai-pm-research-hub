@@ -2644,6 +2644,15 @@ const ptBR: Record<string, string> = {
   'privacy.s6ret.row9.data': 'Cache de badges Credly',
   'privacy.s6ret.row9.retention': 'Enquanto membro ativo',
   'privacy.s6ret.row9.after': 'Exclusão com conta',
+  'privacy.s6ret.row10.data': 'Convidados e palestrantes',
+  'privacy.s6ret.row10.retention': '30 dias após o evento',
+  'privacy.s6ret.row10.after': 'Exclusão',
+  'privacy.s6ret.row11.data': 'Contatos de parceiros',
+  'privacy.s6ret.row11.retention': '1 ano após fim do vínculo',
+  'privacy.s6ret.row11.after': 'Exclusão',
+  'privacy.s6ret.row12.data': 'Voluntários e líderes de grupo de estudos',
+  'privacy.s6ret.row12.retention': '5 anos após desligamento',
+  'privacy.s6ret.row12.after': 'Anonimização',
 
   // S7 — Direitos LGPD
   'privacy.s7rights.title': 'Seus Direitos (LGPD Art. 18)',
