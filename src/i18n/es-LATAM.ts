@@ -1967,6 +1967,26 @@ const esLATAM: Record<string, string> = {
   'admin.loadCommsOps': 'Cargando operaciones de comunicación...',
   'admin.presidentWarning': 'Ningún presidente ha iniciado sesión. El workflow de aprobación de CRs requiere auth.',
 
+  // ── Admin: Initiative Kinds (V4 Phase 6) ──
+  'admin.initiativeKinds': 'Tipos de Iniciativa',
+  'admin.initiativeKindsDesc': 'Configure los tipos de iniciativa disponibles. Nuevos tipos funcionan sin deploy.',
+  'admin.newKind': 'Nuevo Tipo',
+  'admin.accessRestricted': 'Acceso restringido a administradores.',
+  'admin.displayName': 'Nombre de visualización',
+  'admin.description': 'Descripción',
+  'admin.icon': 'Ícono (Lucide)',
+  'admin.durationDays': 'Duración predeterminada (días)',
+  'admin.maxConcurrent': 'Máx. simultáneas por org',
+  'admin.features': 'Funcionalidades habilitadas',
+  'admin.meetingNotes': 'Actas',
+  'admin.deliverables': 'Entregables',
+  'admin.attendance': 'Asistencia',
+  'admin.certificate': 'Certificado',
+  'admin.customFieldsSchema': 'Campos personalizados (JSON Schema)',
+  'admin.customFieldsHint': 'Formato: {"properties": {"campo": {"type": "string"}}, "required": ["campo"]}',
+  'admin.slugHint': 'Identificador único snake_case (no se puede cambiar después)',
+  'admin.save': 'Guardar',
+
   // ── Data: KPI labels ──
   'data.kpi.chapters': 'Capítulos PMI',
   'data.kpi.partners': 'Entidades Asociadas',

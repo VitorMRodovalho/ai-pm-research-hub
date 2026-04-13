@@ -65,4 +65,4 @@ Cada "coisa nova" hoje exige migration + código + RPCs dedicadas. Isto é incom
 - [x] FKs em board_items, meeting_notes, events, deliverables migradas para `initiative_id` — `20260413220000` (13 tabelas), dual-write triggers `20260413230000`
 - [x] Todas RPCs tribe-* têm versão initiative-* — 9 RPCs `_by_initiative` em `20260413240000`; `_by_tribe` como alias deprecado
 - [ ] Frontend de board, atas, events lê `initiative_id` sem mudança visível — **PENDENTE Fase 7** (frontend ainda usa tribe_id via dual-write)
-- [ ] CPMAI migrado para `initiative_kind='study_group'` + engagements — **POSTERGADO Fase 6**
+- [x] CPMAI migrado para `initiative_kind='study_group'` + engagements — Migration `20260413630000` (Phase 6): 1 initiative criada, 7 tabelas cpmai_* deprecated (`20260413640000`)
