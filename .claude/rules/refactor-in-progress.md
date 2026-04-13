@@ -1,11 +1,11 @@
 # Refactor In Progress — Domain Model V4
 
-**STATUS:** Active (desde 2026-04-11)
+**STATUS:** Complete (2026-04-11 → 2026-04-13)
 **Master doc:** `docs/refactor/DOMAIN_MODEL_V4_MASTER.md`
 
 ## Quando este arquivo se aplica
 
-Sempre que houver refactor arquitetural ativo na plataforma. Ao terminar, este arquivo deve ser removido ou marcado como `STATUS: Complete`.
+Este refactor foi concluído em 2026-04-13. As regras abaixo são preservadas como referência histórica. O master doc contém o registro completo de todas as fases, decisões e evidências.
 
 ## Regras mandatórias durante o refactor V4
 
