@@ -1,6 +1,15 @@
 // src/lib/permissions.ts
 // W144: Central permission map — single source of truth for all access control
 // Every component should use hasPermission() instead of checking roles directly
+//
+// V4 NOTE (ADR-0007): This file reads `operational_role` and `tribe_id` from
+// the `members` table. In V4, these are **cache fields** maintained by the
+// `sync_operational_role_cache` trigger (migration 20260413430000), which
+// derives them from the canonical `engagements` table. The logic here is
+// therefore V4-cache-correct: it reads denormalized values that are kept in
+// sync automatically. The authoritative source of truth is `can()` / `can_by_member()`
+// RPCs (used by MCP and RLS), not this file. This file provides frontend-only
+// UI gating and is safe to use as long as the sync trigger is active.
 
 // ==========================================
 // TYPES

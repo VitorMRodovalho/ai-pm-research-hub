@@ -12,7 +12,7 @@
 ## Platform
 - **URL:** https://nucleoia.vitormr.dev
 - **Supabase:** ldrfrvwhxsmgaabwmaik (sa-east-1)
-- **Version:** v2.9.5 | 68 MCP tools (54R+14W) | 21 Edge Functions | 1184 unit + 40 e2e tests
+- **Version:** v2.9.6 | 70 MCP tools (56R+14W) | 21 Edge Functions | 1184 unit + 40 e2e tests
 - **LGPD:** Art. 18 cycle complete (consent gate + export + delete + anonymize cron 5y)
 
 ## Build & Test

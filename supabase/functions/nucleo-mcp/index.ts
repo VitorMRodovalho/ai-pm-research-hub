@@ -1,5 +1,5 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.9.6 — 68 tools (54R + 14W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.9.6 — 70 tools (56R + 14W) + 1 prompt + 1 resource + usage logging
 // V4 Cutover: canWrite/canWriteBoard → canV4 (ADR-0007, engagement-derived authority)
 // Transport: SDK 1.29.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
@@ -54,6 +54,12 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 function isUUID(v: string | undefined): boolean { return !!v && UUID_RE.test(v); }
 
 const NO_TRIBE_HINT = "No tribe assigned. Pass tribe_id parameter (1-8) to specify which tribe. Use list_boards or get_portfolio_overview for board IDs.";
+
+// V4: resolve legacy tribe_id → initiative UUID for _by_initiative RPCs
+async function resolveInitiativeId(sb: ReturnType<typeof createClient>, tribeId: number): Promise<string | null> {
+  const { data } = await sb.from("initiatives").select("id").eq("legacy_tribe_id", tribeId).single();
+  return data?.id || null;
+}
 
 async function logUsage(sb: ReturnType<typeof createClient>, memberId: string | null, toolName: string, success: boolean, errorMsg?: string, startTime?: number) {
   try {
@@ -409,7 +415,9 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (!member) { await logUsage(sb, null, "get_my_tribe_attendance", false, "Not authenticated", start); return err("Not authenticated"); }
     const tribeId = params.tribe_id || member.tribe_id;
     if (!tribeId) { await logUsage(sb, member.id, "get_my_tribe_attendance", false, "No tribe", start); return err(NO_TRIBE_HINT); }
-    const { data, error } = await sb.rpc("get_tribe_attendance_grid", { p_tribe_id: tribeId });
+    const initiativeId = await resolveInitiativeId(sb, tribeId);
+    if (!initiativeId) { await logUsage(sb, member.id, "get_my_tribe_attendance", false, "Initiative not found", start); return err("Initiative not found for tribe " + tribeId); }
+    const { data, error } = await sb.rpc("get_initiative_attendance_grid", { p_initiative_id: initiativeId });
     if (error) { await logUsage(sb, member.id, "get_my_tribe_attendance", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_my_tribe_attendance", true, undefined, start);
     return ok(data);
@@ -458,7 +466,9 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (!member) { await logUsage(sb, null, "get_meeting_notes", false, "Not authenticated", start); return err("Not authenticated"); }
     const tribeId = params.tribe_id || member.tribe_id;
     if (!tribeId) { await logUsage(sb, member.id, "get_meeting_notes", false, "No tribe", start); return err(NO_TRIBE_HINT); }
-    const { data, error } = await sb.rpc("list_meeting_artifacts", { p_tribe_id: tribeId, p_limit: params.limit || 5 });
+    const initiativeId = await resolveInitiativeId(sb, tribeId);
+    if (!initiativeId) { await logUsage(sb, member.id, "get_meeting_notes", false, "Initiative not found", start); return err("Initiative not found for tribe " + tribeId); }
+    const { data, error } = await sb.rpc("list_initiative_meeting_artifacts", { p_initiative_id: initiativeId, p_limit: params.limit || 5 });
     if (error) { await logUsage(sb, member.id, "get_meeting_notes", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_meeting_notes", true, undefined, start);
     return ok(data);
@@ -481,7 +491,9 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (!member) { await logUsage(sb, null, "search_board_cards", false, "Not authenticated", start); return err("Not authenticated"); }
     const tribeId = params.tribe_id || member.tribe_id;
     if (!tribeId) { await logUsage(sb, member.id, "search_board_cards", false, "No tribe", start); return err(NO_TRIBE_HINT); }
-    const { data, error } = await sb.rpc("search_board_items", { p_query: params.query, p_tribe_id: tribeId });
+    const initiativeId = await resolveInitiativeId(sb, tribeId);
+    if (!initiativeId) { await logUsage(sb, member.id, "search_board_cards", false, "Initiative not found", start); return err("Initiative not found for tribe " + tribeId); }
+    const { data, error } = await sb.rpc("search_initiative_board_items", { p_query: params.query, p_initiative_id: initiativeId });
     if (error) { await logUsage(sb, member.id, "search_board_cards", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "search_board_cards", true, undefined, start);
     return ok(data);
@@ -713,7 +725,9 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (!member) { await logUsage(sb, null, "get_tribe_dashboard", false, "Not authenticated", start); return err("Not authenticated"); }
     const tribeId = params.tribe_id || member.tribe_id;
     if (!tribeId) { await logUsage(sb, member.id, "get_tribe_dashboard", false, "No tribe", start); return err(NO_TRIBE_HINT); }
-    const { data, error } = await sb.rpc("exec_tribe_dashboard", { p_tribe_id: tribeId });
+    const initiativeId = await resolveInitiativeId(sb, tribeId);
+    if (!initiativeId) { await logUsage(sb, member.id, "get_tribe_dashboard", false, "Initiative not found", start); return err("Initiative not found for tribe " + tribeId); }
+    const { data, error } = await sb.rpc("exec_initiative_dashboard", { p_initiative_id: initiativeId });
     if (error) { await logUsage(sb, member.id, "get_tribe_dashboard", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_tribe_dashboard", true, undefined, start);
     return ok(data);
@@ -858,7 +872,9 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (!member) { await logUsage(sb, null, "get_tribe_deliverables", false, "Not authenticated", start); return err("Not authenticated"); }
     const tribeId = params.tribe_id || member.tribe_id;
     if (!tribeId) { await logUsage(sb, member.id, "get_tribe_deliverables", false, "No tribe", start); return err(NO_TRIBE_HINT); }
-    const { data, error } = await sb.rpc("list_tribe_deliverables", { p_tribe_id: tribeId, p_cycle_code: params.cycle_code || null });
+    const initiativeId = await resolveInitiativeId(sb, tribeId);
+    if (!initiativeId) { await logUsage(sb, member.id, "get_tribe_deliverables", false, "Initiative not found", start); return err("Initiative not found for tribe " + tribeId); }
+    const { data, error } = await sb.rpc("list_initiative_deliverables", { p_initiative_id: initiativeId, p_cycle_code: params.cycle_code || null });
     if (error) { await logUsage(sb, member.id, "get_tribe_deliverables", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_tribe_deliverables", true, undefined, start);
     return ok(data);
@@ -1197,7 +1213,9 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_tribe_stats_ranked", false, "Not authenticated", start); return err("Not authenticated"); }
-    const { data, error } = await sb.rpc("get_tribe_stats", { p_tribe_id: params.tribe_id });
+    const initiativeId = await resolveInitiativeId(sb, params.tribe_id);
+    if (!initiativeId) { await logUsage(sb, member.id, "get_tribe_stats_ranked", false, "Initiative not found", start); return err("Initiative not found for tribe " + params.tribe_id); }
+    const { data, error } = await sb.rpc("get_initiative_stats", { p_initiative_id: initiativeId });
     if (error) { await logUsage(sb, member.id, "get_tribe_stats_ranked", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_tribe_stats_ranked", true, undefined, start);
     return ok(data);
@@ -1286,6 +1304,42 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "promote_to_leader_track", true, undefined, start);
     return ok(data);
   });
+
+  // ===== V4 PERSON + ENGAGEMENT TOOLS (69-70) =====
+
+  // TOOL 69: get_person — V4 person profile (ADR-0006)
+  mcp.tool("get_person", "Returns the V4 person profile: name, location, credly badges, consent status. PII (email, phone) only visible for own record or with view_pii permission.", { person_id: z.string().optional().describe("Person UUID. If omitted, returns your own profile.") }, async (params: { person_id?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_person", false, "Not authenticated", start); return err("Not authenticated"); }
+    const rpcParams: any = {};
+    if (params.person_id) {
+      if (!isUUID(params.person_id)) { return err("person_id must be a UUID"); }
+      rpcParams.p_person_id = params.person_id;
+    }
+    const { data, error } = await sb.rpc("get_person", rpcParams);
+    if (error) { await logUsage(sb, member.id, "get_person", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_person", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_person", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 70: get_active_engagements — V4 engagement list (ADR-0006)
+  mcp.tool("get_active_engagements", "Returns active engagements for a person: kind, role, initiative, dates, authority status. Own engagements always visible. Others require manage_member.", { person_id: z.string().optional().describe("Person UUID. If omitted, returns your own engagements.") }, async (params: { person_id?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_active_engagements", false, "Not authenticated", start); return err("Not authenticated"); }
+    const rpcParams: any = {};
+    if (params.person_id) {
+      if (!isUUID(params.person_id)) { return err("person_id must be a UUID"); }
+      rpcParams.p_person_id = params.person_id;
+    }
+    const { data, error } = await sb.rpc("get_active_engagements", rpcParams);
+    if (error) { await logUsage(sb, member.id, "get_active_engagements", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_active_engagements", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_active_engagements", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -1316,6 +1370,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.9.5", tools: 68, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.9.6", tools: 70, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
