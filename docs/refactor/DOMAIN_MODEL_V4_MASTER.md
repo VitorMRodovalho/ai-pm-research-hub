@@ -117,7 +117,7 @@ Objetivo: modelar identidade universal sem quebrar `members`.
 - [x] **Migration 3/3:** `engagements` table + backfill 71 primários + 25 de designations = 96 engagements — `20260413320000_v4_phase3_engagements_table.sql`
 - [x] **View de compat `members` → POSTERGADO para Fase 7.** Mesma razão que tribes: 130+ FKs de ~80 tabelas impedem conversão para view. Shadow mode: persons+engagements rodam em paralelo.
 - [ ] Ghost resolution flow atualizado para popular `persons.auth_id` — **DÍVIDA**: reconcilia quando novo login OAuth chegar. persons.auth_id já backfilled de members.auth_id.
-- [ ] `sign_volunteer_agreement()` reescrito para popular `engagements.agreement_certificate_id` — **POSTERGADO para Fase 4** (authority derivation toca este fluxo)
+- [x] `sign_volunteer_agreement()` reescrito para popular `engagements.agreement_certificate_id` — **CONCLUÍDO Fase 7 (2026-04-13)** migration `20260415020000`
 - [x] **Testes:** 1024 pass / 0 fail (970 + 54 person-engagement contracts). Build 0 erros. MCP HTTP 200.
 - [x] Quiet window: **dispensada** — Fase 3 é puramente aditiva (tabelas novas, bridge columns). Nenhuma tabela existente alterada exceto members.person_id adicionado.
 
@@ -211,8 +211,8 @@ Objetivo: remover código legado, consolidar V4, atualizar documentação.
 - [x] Atualizar CLAUDE.md: 779→1184 tests, 64→68 tools (54R+14W), v2.9.5, decisão V4 authority
 - [x] Atualizar `.claude/rules/mcp.md`: v2.9.4→v2.9.5, 64→68 tools
 - [x] Master doc Fase 7 reestruturado por timeline
-- [ ] ADR-0007: marcar critério LGPD como "postergado Fase 7" (não Fase 5)
-- [ ] Rascunhar entrada RELEASE_LOG para V4
+- [x] ADR-0007: critério LGPD corrigido de "Fase 5" para "Fase 7" — commit `15a6c31`
+- [x] Rascunhar entrada RELEASE_LOG para V4 — draft v3.0.0 em `docs/RELEASE_LOG.md`, commit `15a6c31`
 - [ ] ADRs 0004-0009 confirmar data formal de Accepted
 
 **7b — Operacional (após quiet window 2026-04-15):**
