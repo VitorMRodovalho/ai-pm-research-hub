@@ -1,9 +1,9 @@
 # Release Log
 
-## [DRAFT] 2026-04-XX — v3.0.0: Domain Model V4 — Multi-Org, Initiative-Driven, Engagement-Based Authority
+## 2026-04-13 — v3.0.0: Domain Model V4 — Multi-Org, Initiative-Driven, Engagement-Based Authority
 
 ### Scope
-Refatoração arquitetural completa do modelo de domínio. 6 ADRs (0004-0009), 7 fases, 22+ migrations. Habilita crescimento multi-org, multi-capítulo, com autoridade derivada de engagements e lifecycle config-driven por kind.
+Refatoração arquitetural completa do modelo de domínio. 6 ADRs (0004-0009), 7 fases (0-7d), 30 migrations. Habilita crescimento multi-org, multi-capítulo, com autoridade derivada de engagements e lifecycle config-driven por kind.
 
 ### Delivered
 
@@ -44,18 +44,27 @@ Refatoração arquitetural completa do modelo de domínio. 6 ADRs (0004-0009), 7
 - CPMAI migrado: cpmai_courses → initiatives(study_group), 7 tabelas cpmai_* deprecadas
 - Admin UI: `/admin/initiative-kinds` — CRUD de kinds via PostgREST
 
+#### Fase 7 — Cleanup & Consolidation
+- **7a (Docs):** CLAUDE.md, rules, ADRs, RELEASE_LOG atualizados
+- **7b (Operacional):** RPCs `_by_tribe` deprecated, MCP gates → canV4(), `sign_volunteer_agreement` → engagements, `requires_agreement` re-ativado (40/40 certificados backfilled), frontend tribe_id → initiative_id (types, hooks, components, pages), LGPD export por engagement kind, MCP `get_person()`/`get_active_engagements()` tools (70 total)
+- **7c (Cleanup):** 7 tabelas cpmai_* dropadas, ghost resolution flow (persons.auth_id synced em login), expiration trigger confirmado ativo, views de compat fechado como N/A (bridge architecture é permanente)
+- **7d (Release):** RELEASE_LOG finalizado, refactor rules fechadas
+
 ### Validation
 - `npm test` ✅ 1184 pass / 0 fail
 - `npx astro build` ✅ 0 errors
-- MCP smoke ✅ HTTP 200 + serverInfo v2.9.5
+- MCP smoke ✅ HTTP 200 + serverInfo v2.9.6 (70 tools)
+- Shadow validation: 70/71 members `mirrors_ok=true` (1 divergência aprovada — melhoria de segurança)
+- LGPD: Art. 18 cycle complete (consent gate + export + delete + anonymize cron 5y)
 
-### Known Deferred (Fase 7 Cleanup)
-- RPCs `_by_tribe` deprecation → `_by_initiative`
-- Frontend tribe_id → initiative_id
-- `sign_volunteer_agreement()` rewrite for engagements
-- requires_agreement enforcement após backfill de certificados
-- Trigger de expiração real (após 2 semanas shadow)
-- Drop cpmai_* tables (após 2 semanas estáveis)
+### Architecture (permanent)
+- `tribes` e `members` permanecem como tabelas (não views) — 147+ FKs impedem conversão
+- Bridge architecture: dual-write triggers + `initiative_id`/`person_id` columns + `sync_operational_role_cache`
+- `can()` / `can_by_member()` são source of truth para autoridade (não `operational_role`)
+- `operational_role` é cache mantido por trigger, lido pelo frontend para UI gating
+
+### Pending (non-blocking, human-dependent)
+- Revisão jurídica: Claudio Torres ou assessor — validar base legal + retenção por engagement_kind
 
 ---
 

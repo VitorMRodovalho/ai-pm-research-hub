@@ -1,18 +1,16 @@
 # Claude Code — Project Rules
 
-## ⚠️ REFACTOR ATIVO — Domain Model V4 (desde 2026-04-11)
-**Antes de tocar em:** migrations de domínio, `members`, `operational_role`, `tribes`, `cpmai_*`, gates de auth, `sign_volunteer_agreement`, RLS policies — **LEIA**:
-1. `docs/refactor/DOMAIN_MODEL_V4_MASTER.md` (master tracking)
-2. `.claude/rules/refactor-in-progress.md` (regras mandatórias)
-3. ADRs relevantes em `docs/adr/ADR-0004` a `ADR-0009`
-4. Invoque o agente `.claude/agents/refactor-guardian.md` no início e fim da sessão
-
-**NÃO** fazer quick-fixes. **NÃO** criar casos especiais novos. **NÃO** adicionar valores a `operational_role`. Se a decisão não está num ADR existente, criar ADR novo antes de commit.
+## Domain Model V4 (concluído 2026-04-13)
+Refactor arquitetural completo: 6 ADRs (0004-0009), 30 migrations, 7 fases. Ver `docs/refactor/DOMAIN_MODEL_V4_MASTER.md` para decisões e histórico. Decisões-chave:
+- `can()` / `can_by_member()` é a source of truth para autoridade (ADR-0007)
+- `initiatives` é o primitivo de domínio; `tribes` é bridge via dual-write (ADR-0005)
+- `persons` + `engagements` modelam identidade; `members` é bridge (ADR-0006)
+- Novos tipos de iniciativa = config no admin, não código (ADR-0009)
 
 ## Platform
 - **URL:** https://nucleoia.vitormr.dev
 - **Supabase:** ldrfrvwhxsmgaabwmaik (sa-east-1)
-- **Version:** v2.9.6 | 70 MCP tools (56R+14W) | 21 Edge Functions | 1184 unit + 40 e2e tests
+- **Version:** v3.0.0 (Domain Model V4) | 70 MCP tools (56R+14W) | 21 Edge Functions | 1184 unit + 40 e2e tests
 - **LGPD:** Art. 18 cycle complete (consent gate + export + delete + anonymize cron 5y)
 
 ## Build & Test

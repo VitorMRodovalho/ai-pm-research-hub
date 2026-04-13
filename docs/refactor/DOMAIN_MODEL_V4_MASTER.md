@@ -1,7 +1,7 @@
 # Domain Model V4 — Master Tracking Document
 
 - **Início:** 2026-04-11
-- **Status:** **ACCEPTED — Fases 0-7c concluídas 2026-04-13 — Fase 7d (Release final) pendente**
+- **Status:** **COMPLETE — Todas as fases (0-7d) concluídas 2026-04-13. Refactor V4 fechado.**
 - **Owner:** Vitor (PM) / Claude (execução)
 - **Timeline:** 6 semanas (D3 aprovado 2026-04-11) — target de conclusão ~2026-05-23
 - **Escopo:** Refatoração arquitetural do modelo de domínio da plataforma Núcleo IA para habilitar crescimento nacional, multi-org, governança máxima e LGPD by design.
@@ -116,7 +116,7 @@ Objetivo: modelar identidade universal sem quebrar `members`.
 - [x] **Migration 2/3:** `persons` table + backfill 71 members → 71 persons + `person_id` bridge em members — `20260413310000_v4_phase3_persons_table.sql`
 - [x] **Migration 3/3:** `engagements` table + backfill 71 primários + 25 de designations = 96 engagements — `20260413320000_v4_phase3_engagements_table.sql`
 - [x] **View de compat `members` → POSTERGADO para Fase 7.** Mesma razão que tribes: 130+ FKs de ~80 tabelas impedem conversão para view. Shadow mode: persons+engagements rodam em paralelo.
-- [ ] Ghost resolution flow atualizado para popular `persons.auth_id` — **DÍVIDA**: reconcilia quando novo login OAuth chegar. persons.auth_id já backfilled de members.auth_id.
+- [x] Ghost resolution flow atualizado para popular `persons.auth_id` — **CONCLUÍDO 2026-04-13** (migration `20260415090000`). `try_auto_link_ghost()` propaga auth_id para persons. 52/52 synced.
 - [x] `sign_volunteer_agreement()` reescrito para popular `engagements.agreement_certificate_id` — **CONCLUÍDO Fase 7 (2026-04-13)** migration `20260415020000`
 - [x] **Testes:** 1024 pass / 0 fail (970 + 54 person-engagement contracts). Build 0 erros. MCP HTTP 200.
 - [x] Quiet window: **dispensada** — Fase 3 é puramente aditiva (tabelas novas, bridge columns). Nenhuma tabela existente alterada exceto members.person_id adicionado.
@@ -233,9 +233,9 @@ Objetivo: remover código legado, consolidar V4, atualizar documentação.
 - [x] Views de compat (tribes→view, members→view) — **FECHADO como N/A 2026-04-13.** Conversão tabela→view é inviável: `tribes` tem 17 FKs, `members` tem 130+ FKs de ~80 tabelas — Postgres não permite views como FK targets. A arquitetura de bridge (dual-write triggers + `initiative_id`/`person_id` columns + `sync_operational_role_cache` trigger) é a solução permanente e funcional. Sem risco, sem regressão.
 
 **7d — Release final:**
-- [ ] Release V3 → V4 no RELEASE_LOG
-- [ ] `.claude/rules/refactor-in-progress.md` → STATUS: Complete
-- [ ] Remover aviso de refactor ativo do CLAUDE.md
+- [x] Release V3 → V4 no RELEASE_LOG — **CONCLUÍDO 2026-04-13.** v3.0.0 com detalhamento completo de 7 fases, validation, architecture notes.
+- [x] `.claude/rules/refactor-in-progress.md` → STATUS: Complete — **CONCLUÍDO 2026-04-13.**
+- [x] Remover aviso de refactor ativo do CLAUDE.md — **CONCLUÍDO 2026-04-13.** Substituído por seção resumo do V4.
 
 ## Baseline pre-v4 (capturado 2026-04-11)
 
