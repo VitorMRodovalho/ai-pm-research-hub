@@ -6,7 +6,9 @@ import {
 import { usePageI18n } from '../../i18n/usePageI18n';
 
 interface TribeDashboardProps {
-  tribeId: string;
+  /** @deprecated Use initiativeId instead */
+  tribeId?: string;
+  initiativeId?: string;
 }
 
 type TabKey = 'members' | 'production' | 'engagement' | 'gamification';
@@ -30,7 +32,7 @@ const ROLE_LABELS: Record<string, string> = {
   guest: 'Convidado', manager: 'Gerente', deputy_manager: 'Vice-Gerente',
 };
 
-export default function TribeDashboardIsland({ tribeId }: TribeDashboardProps) {
+export default function TribeDashboardIsland({ tribeId, initiativeId }: TribeDashboardProps) {
   const t = usePageI18n();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -44,9 +46,16 @@ export default function TribeDashboardIsland({ tribeId }: TribeDashboardProps) {
       if (!sb) { setTimeout(load, 300); return; }
 
       try {
-        const { data: result, error: err } = await sb.rpc('exec_tribe_dashboard', {
-          p_tribe_id: parseInt(tribeId),
-        });
+        // V4: prefer initiative_id; resolve from tribeId if not provided
+        let resolvedInitiativeId = initiativeId;
+        if (!resolvedInitiativeId && tribeId) {
+          const { data: iid } = await sb.rpc('resolve_initiative_id', { p_tribe_id: parseInt(tribeId) });
+          if (iid) resolvedInitiativeId = iid;
+        }
+
+        const { data: result, error: err } = resolvedInitiativeId
+          ? await sb.rpc('exec_initiative_dashboard', { p_initiative_id: resolvedInitiativeId })
+          : await sb.rpc('exec_tribe_dashboard', { p_tribe_id: parseInt(tribeId || '0') });
         if (err) throw err;
         setData(result);
       } catch (e: any) {
@@ -56,7 +65,7 @@ export default function TribeDashboardIsland({ tribeId }: TribeDashboardProps) {
       }
     };
     load();
-  }, [tribeId]);
+  }, [tribeId, initiativeId]);
 
   if (loading) return <div className="text-center py-12 text-[var(--text-muted)]">{t('comp.tribe.loading', 'Loading tribe dashboard...')}</div>;
   if (error) return <div className="text-center py-12 text-red-500">{error}</div>;

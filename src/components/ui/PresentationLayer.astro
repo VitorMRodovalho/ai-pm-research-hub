@@ -13,10 +13,11 @@ import { t, type Lang } from '../../i18n/utils';
 interface Props {
   context: 'home' | 'tribe';
   tribeId?: number;
+  initiativeId?: string;
   lang?: Lang;
 }
 
-const { context = 'home', tribeId, lang = 'pt-BR' } = Astro.props;
+const { context = 'home', tribeId, initiativeId, lang = 'pt-BR' } = Astro.props;
 
 const PRES_I18N = {
   toggleOn: t('pres.toggleOn', lang),
@@ -87,8 +88,8 @@ const PRES_I18N = {
   </div>
 </div>
 
-<script is:inline define:vars={{ PRES_I18N, context, tribeId }}>
-  window.__PRES_CTX = { context: context || 'home', tribeId: tribeId || null, i18n: PRES_I18N || {} };
+<script is:inline define:vars={{ PRES_I18N, context, tribeId, initiativeId }}>
+  window.__PRES_CTX = { context: context || 'home', tribeId: tribeId || null, initiativeId: initiativeId || null, i18n: PRES_I18N || {} };
 </script>
 <script>
   import { hasPermission } from '../../lib/permissions';

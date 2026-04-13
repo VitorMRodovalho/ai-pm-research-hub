@@ -928,7 +928,7 @@ export default function AttendanceGridTab() {
         </button>
 
         {/* Bulk Excused */}
-        {manage && (
+        {canManageAttendance() && (
           <button
             onClick={() => setShowBulkExcused(prev => !prev)}
             className="inline-flex items-center gap-1.5 bg-amber-500 text-white text-sm font-semibold px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
@@ -940,7 +940,7 @@ export default function AttendanceGridTab() {
       </div>
 
       {/* Bulk Excused Form */}
-      {showBulkExcused && manage && (
+      {showBulkExcused && canManageAttendance() && (
         <BulkExcusedForm members={flatRows} t={t} onDone={() => { setShowBulkExcused(false); window.location.reload(); }} />
       )}
 

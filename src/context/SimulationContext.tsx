@@ -10,8 +10,9 @@ interface SimulationContextType {
   simulatedTier: OperationalTier | null;
   simulatedDesignations: Designation[];
   simulatedTribeId: number | null;
+  simulatedInitiativeId: string | null;
   effectivePermissions: Permission[];
-  startSimulation: (tier: OperationalTier, designations?: Designation[], tribeId?: number | null) => void;
+  startSimulation: (tier: OperationalTier, designations?: Designation[], tribeId?: number | null, initiativeId?: string | null) => void;
   stopSimulation: () => void;
   label: string;
   color: string;
@@ -22,6 +23,7 @@ const SimulationContext = createContext<SimulationContextType>({
   simulatedTier: null,
   simulatedDesignations: [],
   simulatedTribeId: null,
+  simulatedInitiativeId: null,
   effectivePermissions: [],
   startSimulation: () => {},
   stopSimulation: () => {},
@@ -43,7 +45,8 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
     tier: OperationalTier | null;
     designations: Designation[];
     tribeId: number | null;
-  }>({ active: false, tier: null, designations: [], tribeId: null });
+    initiativeId: string | null;
+  }>({ active: false, tier: null, designations: [], tribeId: null, initiativeId: null });
 
   // Restore from cookies on mount
   useEffect(() => {
@@ -53,25 +56,30 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       const tribe = getCookie('sim_tribe');
       const designations = desig ? JSON.parse(desig) as Designation[] : [];
       const tribeId = tribe ? parseInt(tribe) : null;
-      setSimulation({ active: true, tier, designations, tribe_id: tribeId });
-      setState({ active: true, tier, designations, tribeId });
+      const initiative = getCookie('sim_initiative');
+      const initiativeId = initiative || null;
+      setSimulation({ active: true, tier, designations, tribe_id: tribeId, initiative_id: initiativeId });
+      setState({ active: true, tier, designations, tribeId, initiativeId });
     }
   }, []);
 
   const startSimulation = useCallback((
     tier: OperationalTier,
     designations: Designation[] = [],
-    tribeId: number | null = null
+    tribeId: number | null = null,
+    initiativeId: string | null = null
   ) => {
-    const simState = { active: true, tier, designations, tribe_id: tribeId };
+    const simState = { active: true, tier, designations, tribe_id: tribeId, initiative_id: initiativeId };
     setSimulation(simState);
-    setState({ active: true, tier, designations, tribeId });
+    setState({ active: true, tier, designations, tribeId, initiativeId });
 
     // Persist to cookies for Astro SSR pages
     setCookie('sim_tier', tier);
     setCookie('sim_designations', JSON.stringify(designations));
     if (tribeId) setCookie('sim_tribe', String(tribeId));
     else clearCookie('sim_tribe');
+    if (initiativeId) setCookie('sim_initiative', initiativeId);
+    else clearCookie('sim_initiative');
 
     // Notify other components
     window.dispatchEvent(new CustomEvent('simulation:changed', { detail: simState }));
@@ -79,11 +87,12 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
 
   const stopSimulation = useCallback(() => {
     clearSimulation();
-    setState({ active: false, tier: null, designations: [], tribeId: null });
+    setState({ active: false, tier: null, designations: [], tribeId: null, initiativeId: null });
 
     clearCookie('sim_tier');
     clearCookie('sim_designations');
     clearCookie('sim_tribe');
+    clearCookie('sim_initiative');
 
     window.dispatchEvent(new CustomEvent('simulation:changed', { detail: { active: false } }));
   }, []);
@@ -104,6 +113,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
         designations: state.designations,
         is_superadmin: false,
         tribe_id: state.tribeId,
+        initiative_id: state.initiativeId,
       })
     : [];
 
@@ -113,6 +123,7 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       simulatedTier: state.tier,
       simulatedDesignations: state.designations,
       simulatedTribeId: state.tribeId,
+      simulatedInitiativeId: state.initiativeId,
       effectivePermissions,
       startSimulation, stopSimulation,
       label, color,

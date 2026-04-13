@@ -1,0 +1,318 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import Toast from '../../components/ui/Toast.astro';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+---
+
+<AdminLayout title={t('admin.initiativeKinds', lang)} breadcrumbs={[{label:'Operações'},{label: t('admin.initiativeKinds', lang)}]}>
+  <div class="max-w-[900px] mx-auto px-4 pb-12">
+    <div id="ik-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
+      <div class="text-3xl mb-3">&#x1F512;</div>
+      <p class="font-semibold text-amber-800">{t('admin.accessRestricted', lang)}</p>
+      <a href="/admin" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">{t('admin.backToAdmin', lang)}</a>
+    </div>
+
+    <div id="ik-panel" class="hidden">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-xl font-extrabold text-navy">{t('admin.initiativeKinds', lang)}</h1>
+          <p class="text-sm text-[var(--text-secondary)] mt-1">{t('admin.initiativeKindsDesc', lang)}</p>
+        </div>
+        <button id="ik-add-btn" class="px-4 py-2 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
+          + {t('admin.newKind', lang)}
+        </button>
+      </div>
+
+      <div id="ik-list" class="space-y-3">
+        <p class="text-[.7rem] text-[var(--text-muted)]">{t('admin.loading', lang)}</p>
+      </div>
+    </div>
+
+    <div id="ik-loading" class="text-center py-16 text-[var(--text-muted)]">{t('admin.loading', lang)}</div>
+
+    <!-- Modal -->
+    <div id="ik-modal-overlay" class="hidden fixed inset-0 z-50 bg-black/40 flex items-center justify-center overflow-auto">
+      <div class="bg-[var(--surface-card)] rounded-2xl shadow-xl w-full max-w-lg mx-4 my-8 border border-[var(--border-default)]">
+        <div class="px-5 py-4 border-b border-[var(--border-default)] flex items-center justify-between">
+          <h3 id="ik-modal-title" class="text-sm font-bold text-navy">{t('admin.newKind', lang)}</h3>
+          <button id="ik-modal-close" class="text-[var(--text-muted)] hover:text-[var(--text-primary)] text-lg cursor-pointer bg-transparent border-0">&times;</button>
+        </div>
+        <div class="p-5 space-y-3 max-h-[70vh] overflow-y-auto">
+          <div>
+            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Slug</label>
+            <input type="text" id="ik-slug" placeholder="book_club" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem] font-mono">
+            <p class="text-[.6rem] text-[var(--text-muted)] mt-0.5">{t('admin.slugHint', lang)}</p>
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.displayName', lang)}</label>
+            <input type="text" id="ik-display-name" placeholder="Clube do Livro" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.description', lang)}</label>
+            <textarea id="ik-description" rows="2" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem] resize-y"></textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.icon', lang)}</label>
+              <input type="text" id="ik-icon" placeholder="book-open" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
+            </div>
+            <div>
+              <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.durationDays', lang)}</label>
+              <input type="number" id="ik-duration" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
+            </div>
+          </div>
+          <div>
+            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.maxConcurrent', lang)}</label>
+            <input type="number" id="ik-max-concurrent" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
+          </div>
+
+          <div class="border-t border-[var(--border-default)] pt-3 mt-3">
+            <p class="text-[.68rem] font-semibold text-[var(--text-secondary)] mb-2">{t('admin.features', lang)}</p>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="flex items-center gap-2 text-[.75rem]">
+                <input type="checkbox" id="ik-has-board"> Board
+              </label>
+              <label class="flex items-center gap-2 text-[.75rem]">
+                <input type="checkbox" id="ik-has-meeting-notes"> {t('admin.meetingNotes', lang)}
+              </label>
+              <label class="flex items-center gap-2 text-[.75rem]">
+                <input type="checkbox" id="ik-has-deliverables"> {t('admin.deliverables', lang)}
+              </label>
+              <label class="flex items-center gap-2 text-[.75rem]">
+                <input type="checkbox" id="ik-has-attendance"> {t('admin.attendance', lang)}
+              </label>
+              <label class="flex items-center gap-2 text-[.75rem]">
+                <input type="checkbox" id="ik-has-certificate"> {t('admin.certificate', lang)}
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.customFieldsSchema', lang)}</label>
+            <textarea id="ik-custom-fields" rows="4" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.72rem] font-mono resize-y" placeholder='{"properties": {}, "required": []}'></textarea>
+            <p class="text-[.6rem] text-[var(--text-muted)] mt-0.5">{t('admin.customFieldsHint', lang)}</p>
+          </div>
+
+          <button id="ik-modal-save" class="w-full px-4 py-2.5 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all mt-2">
+            {t('admin.save', lang)}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <Toast />
+</AdminLayout>
+
+<script>
+  import { hasPermission } from '../../lib/permissions';
+
+  let sb: any = null;
+  let MEMBER: any = null;
+  let editingSlug: string | null = null;
+
+  const FEATURE_FLAGS = ['has_board', 'has_meeting_notes', 'has_deliverables', 'has_attendance', 'has_certificate'] as const;
+  const FLAG_ICONS: Record<string, string> = {
+    has_board: 'B', has_meeting_notes: 'A', has_deliverables: 'D', has_attendance: 'P', has_certificate: 'C'
+  };
+  const FLAG_LABELS: Record<string, string> = {
+    has_board: 'Board', has_meeting_notes: 'Atas', has_deliverables: 'Entregas', has_attendance: 'Presença', has_certificate: 'Certificado'
+  };
+
+  function escapeHtml(s: string): string {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function showDenied() {
+    document.getElementById('ik-loading')?.classList.add('hidden');
+    document.getElementById('ik-panel')?.classList.add('hidden');
+    document.getElementById('ik-denied')?.classList.remove('hidden');
+  }
+
+  function showPanel() {
+    document.getElementById('ik-loading')?.classList.add('hidden');
+    document.getElementById('ik-denied')?.classList.add('hidden');
+    document.getElementById('ik-panel')?.classList.remove('hidden');
+    loadKinds();
+  }
+
+  async function loadKinds() {
+    if (!sb) return;
+    const container = document.getElementById('ik-list');
+    if (!container) return;
+    try {
+      const { data, error } = await sb.from('initiative_kinds').select('*').order('slug');
+      if (error) throw error;
+      const kinds = data || [];
+      if (kinds.length === 0) {
+        container.innerHTML = '<p class="text-[.7rem] text-[var(--text-muted)]">Nenhum tipo cadastrado.</p>';
+        return;
+      }
+      container.innerHTML = kinds.map((k: any) => {
+        const flags = FEATURE_FLAGS.filter(f => k[f]).map(f =>
+          `<span class="inline-flex items-center justify-center w-6 h-6 rounded bg-emerald-50 text-emerald-700 text-[.6rem] font-bold" title="${FLAG_LABELS[f]}">${FLAG_ICONS[f]}</span>`
+        ).join('');
+        const inactiveFlags = FEATURE_FLAGS.filter(f => !k[f]).map(f =>
+          `<span class="inline-flex items-center justify-center w-6 h-6 rounded bg-gray-50 text-gray-300 text-[.6rem] font-bold" title="${FLAG_LABELS[f]} (off)">${FLAG_ICONS[f]}</span>`
+        ).join('');
+        return `
+          <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 hover:border-[var(--border-focus)] transition-all">
+            <div class="flex items-start gap-3">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="text-[.85rem] font-bold text-[var(--text-primary)]">${escapeHtml(k.display_name)}</span>
+                  <span class="text-[.65rem] px-1.5 py-0.5 rounded bg-[var(--surface-section-cool)] text-[var(--text-muted)] font-mono">${escapeHtml(k.slug)}</span>
+                </div>
+                <p class="text-[.7rem] text-[var(--text-secondary)] mt-1 line-clamp-2">${escapeHtml(k.description || '')}</p>
+                <div class="flex items-center gap-1 mt-2">${flags}${inactiveFlags}</div>
+                <div class="flex items-center gap-3 mt-2 text-[.6rem] text-[var(--text-muted)]">
+                  ${k.default_duration_days ? `<span>${k.default_duration_days}d</span>` : ''}
+                  ${k.max_concurrent_per_org ? `<span>max: ${k.max_concurrent_per_org}</span>` : ''}
+                  ${(k.allowed_engagement_kinds || []).length > 0 ? `<span>${(k.allowed_engagement_kinds || []).join(', ')}</span>` : ''}
+                </div>
+              </div>
+              <button data-ik-edit="${escapeHtml(k.slug)}" class="shrink-0 px-3 py-1.5 text-[.7rem] font-semibold rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 cursor-pointer transition-colors">Editar</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      container.querySelectorAll('[data-ik-edit]').forEach((btn: Element) => {
+        btn.addEventListener('click', () => {
+          const slug = (btn as HTMLElement).dataset.ikEdit!;
+          const kind = kinds.find((k: any) => k.slug === slug);
+          if (kind) openModal(kind);
+        });
+      });
+    } catch (e: any) {
+      console.error('Load kinds:', e);
+      if (container) container.innerHTML = '<p class="text-[.7rem] text-red-600">Erro ao carregar.</p>';
+    }
+  }
+
+  function openModal(kind?: any) {
+    editingSlug = kind?.slug || null;
+    const title = document.getElementById('ik-modal-title');
+    if (title) title.textContent = kind ? 'Editar Tipo' : 'Novo Tipo';
+
+    const slugInput = document.getElementById('ik-slug') as HTMLInputElement;
+    slugInput.value = kind?.slug || '';
+    slugInput.disabled = !!kind;
+
+    (document.getElementById('ik-display-name') as HTMLInputElement).value = kind?.display_name || '';
+    (document.getElementById('ik-description') as HTMLTextAreaElement).value = kind?.description || '';
+    (document.getElementById('ik-icon') as HTMLInputElement).value = kind?.icon || '';
+    (document.getElementById('ik-duration') as HTMLInputElement).value = kind?.default_duration_days ?? '';
+    (document.getElementById('ik-max-concurrent') as HTMLInputElement).value = kind?.max_concurrent_per_org ?? '';
+
+    for (const f of FEATURE_FLAGS) {
+      (document.getElementById(`ik-${f.replace(/_/g, '-')}`) as HTMLInputElement).checked = kind?.[f] ?? false;
+    }
+
+    const cfs = kind?.custom_fields_schema;
+    (document.getElementById('ik-custom-fields') as HTMLTextAreaElement).value =
+      cfs && Object.keys(cfs).length > 0 ? JSON.stringify(cfs, null, 2) : '';
+
+    document.getElementById('ik-modal-overlay')?.classList.remove('hidden');
+  }
+
+  function closeModal() {
+    document.getElementById('ik-modal-overlay')?.classList.add('hidden');
+    editingSlug = null;
+  }
+
+  async function saveKind() {
+    if (!sb) return;
+    const slug = (document.getElementById('ik-slug') as HTMLInputElement).value.trim();
+    const displayName = (document.getElementById('ik-display-name') as HTMLInputElement).value.trim();
+    if (!slug || !displayName) {
+      (window as any).toast?.('Slug e nome são obrigatórios', 'error');
+      return;
+    }
+
+    // Validate slug format
+    if (!editingSlug && !/^[a-z][a-z0-9_]*$/.test(slug)) {
+      (window as any).toast?.('Slug deve ser snake_case (ex: book_club)', 'error');
+      return;
+    }
+
+    const customFieldsRaw = (document.getElementById('ik-custom-fields') as HTMLTextAreaElement).value.trim();
+    let customFields: any = {};
+    if (customFieldsRaw) {
+      try { customFields = JSON.parse(customFieldsRaw); }
+      catch { (window as any).toast?.('JSON inválido em campos customizados', 'error'); return; }
+    }
+
+    const record: any = {
+      slug,
+      display_name: displayName,
+      description: (document.getElementById('ik-description') as HTMLTextAreaElement).value.trim() || null,
+      icon: (document.getElementById('ik-icon') as HTMLInputElement).value.trim() || null,
+      default_duration_days: parseInt((document.getElementById('ik-duration') as HTMLInputElement).value) || null,
+      max_concurrent_per_org: parseInt((document.getElementById('ik-max-concurrent') as HTMLInputElement).value) || null,
+      custom_fields_schema: customFields,
+    };
+
+    for (const f of FEATURE_FLAGS) {
+      record[f] = (document.getElementById(`ik-${f.replace(/_/g, '-')}`) as HTMLInputElement).checked;
+    }
+
+    const btn = document.getElementById('ik-modal-save') as HTMLButtonElement;
+    if (btn) btn.disabled = true;
+    try {
+      if (editingSlug) {
+        const { error } = await sb.from('initiative_kinds').update(record).eq('slug', editingSlug);
+        if (error) throw error;
+        (window as any).toast?.('Tipo atualizado', 'success');
+      } else {
+        const { error } = await sb.from('initiative_kinds').insert(record);
+        if (error) throw error;
+        (window as any).toast?.('Tipo criado', 'success');
+      }
+      closeModal();
+      loadKinds();
+    } catch (e: any) {
+      (window as any).toast?.('Erro: ' + (e.message || 'unknown'), 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail) { MEMBER = e.detail; applyGate(MEMBER); }
+    }) as EventListener);
+
+    const m = (window as any).navGetMember?.();
+    if (m) { MEMBER = m; applyGate(MEMBER); return; }
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        const { data } = await sb.rpc('get_member_by_auth');
+        MEMBER = data;
+        applyGate(MEMBER);
+        return;
+      }
+    } catch (e) { console.warn('IK boot:', e); }
+    showDenied();
+  }
+
+  function applyGate(m: any) {
+    if (hasPermission(m, 'admin.full')) showPanel();
+    else showDenied();
+  }
+
+  document.getElementById('ik-add-btn')?.addEventListener('click', () => openModal());
+  document.getElementById('ik-modal-close')?.addEventListener('click', closeModal);
+  document.getElementById('ik-modal-save')?.addEventListener('click', saveKind);
+  document.getElementById('ik-modal-overlay')?.addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) closeModal();
+  });
+
+  boot();
+</script>

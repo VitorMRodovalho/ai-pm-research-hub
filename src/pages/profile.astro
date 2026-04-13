@@ -247,7 +247,7 @@ const PROFILE_I18N = {
   let cycleMeta: Record<string, { label: string; abbr: string; color: string }> = {};
   let weekData: {
     meetingSlots: any[]; tribeMeetingLink: string | null;
-    pendingDeliverables: number; weeklyPoints: number; tribeId: number | null;
+    pendingDeliverables: number; weeklyPoints: number; tribeId: number | null; initiativeId: string | null;
   } | null = null;
   let credlyNormalizeTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -416,14 +416,18 @@ const PROFILE_I18N = {
       let pendingDeliverables = 0;
       let weeklyPoints = 0;
       const tribeId: number | null = currentMember.tribe_id || null;
+      const initiativeId: string | null = currentMember.initiative_id || null;
 
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       const activeCycleCode = getActiveCycleCode();
 
       if (tribeId) {
+        // V4: prefer initiative_id for deliverables when available
         const deliverablesPromise = activeCycleCode
-          ? sb.rpc('list_tribe_deliverables', { p_tribe_id: tribeId, p_cycle_code: activeCycleCode })
+          ? (initiativeId
+            ? sb.rpc('list_initiative_deliverables', { p_initiative_id: initiativeId, p_cycle_code: activeCycleCode })
+            : sb.rpc('list_tribe_deliverables', { p_tribe_id: tribeId, p_cycle_code: activeCycleCode }))
           : Promise.resolve({ data: [] });
         const [slotsRes, tribeRes, delivRes, weekPtsRes] = await Promise.all([
           sb.from('tribe_meeting_slots')
@@ -449,7 +453,7 @@ const PROFILE_I18N = {
         weeklyPoints = (weekPts || []).reduce((s: number, p: any) => s + (p.points || 0), 0);
       }
 
-      weekData = { meetingSlots, tribeMeetingLink, pendingDeliverables, weeklyPoints, tribeId };
+      weekData = { meetingSlots, tribeMeetingLink, pendingDeliverables, weeklyPoints, tribeId, initiativeId };
     } catch (e) {
       console.warn('Profile: failed to load My Week data:', e);
       weekData = null;

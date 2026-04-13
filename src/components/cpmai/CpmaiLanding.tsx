@@ -39,10 +39,12 @@ export default function CpmaiLanding() {
     setEnrolling(true);
     try {
       const sb = getSb();
-      const { data: res } = await sb.rpc('enroll_in_cpmai_course', {
-        p_course_id: data.course.id, p_motivation: motivation || null, p_ai_experience: aiExp,
+      const { data: res, error } = await sb.rpc('join_initiative', {
+        p_initiative_id: data.course.id,
+        p_motivation: motivation || null,
+        p_metadata: { ai_experience: aiExp },
       });
-      if (res?.error) throw new Error(res.error);
+      if (error) throw new Error(error.message);
       (window as any).toast?.('Inscrito com sucesso!', 'success');
       setShowForm(false);
       const { data: d } = await sb.rpc('get_cpmai_course_dashboard');
@@ -56,7 +58,7 @@ export default function CpmaiLanding() {
   const course = data?.course;
   const domains = data?.domains || [];
   const enrolled = !!data?.my_enrollment;
-  const canEnroll = course?.status === 'enrollment_open' || course?.status === 'in_progress';
+  const canEnroll = course?.status === 'active' || course?.status === 'enrollment_open' || course?.status === 'in_progress';
   const progress = data?.my_progress || [];
   const mockScores = data?.my_mock_scores || [];
 

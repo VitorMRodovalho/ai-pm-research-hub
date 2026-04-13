@@ -87,12 +87,19 @@ export default function BoardEngine(props: BoardEngineProps) {
     const sb = getSb();
     if (!sb) return;
     (async () => {
-      const { data } = board.tribe_id
-        ? await sb.from('members').select('id, name').eq('tribe_id', board.tribe_id).eq('is_active', true)
-        : await sb.from('active_members').select('id, name');
+      let query;
+      if (board.initiative_id) {
+        // V4: use initiative_id to find tribe members
+        query = sb.from('members').select('id, name').eq('initiative_id', board.initiative_id).eq('is_active', true);
+      } else if (board.tribe_id) {
+        query = sb.from('members').select('id, name').eq('tribe_id', board.tribe_id).eq('is_active', true);
+      } else {
+        query = sb.from('active_members').select('id, name');
+      }
+      const { data } = await query;
       if (Array.isArray(data)) setBoardMembers(data);
     })();
-  }, [board?.id, board?.tribe_id]);
+  }, [board?.id, board?.tribe_id, board?.initiative_id]);
 
   const filterHook = useBoardFilters(items, boardMembers);
 

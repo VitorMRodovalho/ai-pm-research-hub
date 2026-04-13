@@ -1,8 +1,10 @@
 // Isolated tribe permissions helper — avoids bundler issues when
 // permissions.ts is imported from both Astro inline scripts and React islands
 
-export function getTribePermissions(member: any, viewingTribeId: number) {
-  const isOwnTribe = member?.tribe_id === viewingTribeId;
+export function getTribePermissions(member: any, viewingTribeId: number, viewingInitiativeId?: string | null) {
+  const isOwnTribe = viewingInitiativeId
+    ? member?.initiative_id === viewingInitiativeId
+    : member?.tribe_id === viewingTribeId;
   const isSuperadmin = !!member?.is_superadmin;
   const desigs: string[] = member?.designations || [];
   const role = member?.operational_role || '';
@@ -20,7 +22,7 @@ export function getTribePermissions(member: any, viewingTribeId: number) {
 
   return {
     canSeeAllTribes: true,
-    hasHomeTribe: member?.tribe_id != null,
+    hasHomeTribe: member?.initiative_id != null || member?.tribe_id != null,
     isViewingOwnTribe: isOwnTribe,
     showCrossTribeBanner: !isOwnTribe && !isAdmin && member?.tribe_id != null,
     showCuratorBanner: isCurator && !isOwnTribe,

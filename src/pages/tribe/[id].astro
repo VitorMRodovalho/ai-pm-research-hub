@@ -305,9 +305,19 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
   const I18N = (typeof window !== 'undefined' && (window as any).__TRIBE_I18N) || {};
   const TRIBE_ID: number = (typeof window !== 'undefined' && (window as any).__TRIBE_ID) || 0;
+  // V4: initiative_id resolved on load (set by resolveInitiativeId below)
+  let INITIATIVE_ID: string | null = null;
 
   // Supabase client helper — used throughout the tribe dashboard
   function getSb() { return (window as any).navGetSb?.(); }
+
+  // V4: resolve tribe integer → initiative UUID once on load
+  async function resolveInitiativeId() {
+    const sb = getSb();
+    if (!sb || !TRIBE_ID) return;
+    const { data } = await sb.rpc('resolve_initiative_id', { p_tribe_id: TRIBE_ID });
+    if (data) INITIATIVE_ID = data;
+  }
 
   const OPROLE_LABELS: Record<string, string> = I18N.oproleLabels || {};
   const OPROLE_COLORS: Record<string, string> = {
@@ -574,7 +584,9 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     const el = document.getElementById('panel-general');
     if (!el || !sb) return;
     try {
-      const { data } = await sb.rpc('get_tribe_stats', { p_tribe_id: TRIBE_ID });
+      const { data } = INITIATIVE_ID
+        ? await sb.rpc('get_initiative_stats', { p_initiative_id: INITIATIVE_ID })
+        : await sb.rpc('get_tribe_stats', { p_tribe_id: TRIBE_ID });
       if (!data) return;
       const rateColor = (data.attendance_rate || 0) >= 75 ? '#10B981' : (data.attendance_rate || 0) >= 50 ? '#D97706' : '#BE2027';
       const statsHtml = `<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
@@ -626,9 +638,9 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     const el = document.getElementById('panel-general');
     if (!el || !sb) return;
     try {
-      const { data, error } = await sb.rpc('get_tribe_events_timeline', {
-        p_tribe_id: TRIBE_ID, p_upcoming_limit: 3, p_past_limit: 5,
-      });
+      const { data, error } = INITIATIVE_ID
+        ? await sb.rpc('get_initiative_events_timeline', { p_initiative_id: INITIATIVE_ID, p_upcoming_limit: 3, p_past_limit: 5 })
+        : await sb.rpc('get_tribe_events_timeline', { p_tribe_id: TRIBE_ID, p_upcoming_limit: 3, p_past_limit: 5 });
       if (error || !data) return;
 
       const today = new Date().toISOString().slice(0, 10);
@@ -1264,7 +1276,9 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       renderDeliverables([]);
       return;
     }
-    const { data } = await sb.rpc('list_tribe_deliverables', { p_tribe_id: TRIBE_ID, p_cycle_code: activeCycleCode });
+    const { data } = INITIATIVE_ID
+      ? await sb.rpc('list_initiative_deliverables', { p_initiative_id: INITIATIVE_ID, p_cycle_code: activeCycleCode })
+      : await sb.rpc('list_tribe_deliverables', { p_tribe_id: TRIBE_ID, p_cycle_code: activeCycleCode });
     renderDeliverables(Array.isArray(data) ? data : []);
   }
 
@@ -1547,7 +1561,9 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
               || (hasPermission(currentMember, 'board.edit_tribe_items')
                   && currentMember.tribe_id === TRIBE_ID))) {
         try {
-          const { data: cd } = await sb.rpc('get_tribe_member_contacts', { p_tribe_id: TRIBE_ID });
+          const { data: cd } = INITIATIVE_ID
+              ? await sb.rpc('get_initiative_member_contacts', { p_initiative_id: INITIATIVE_ID })
+              : await sb.rpc('get_tribe_member_contacts', { p_tribe_id: TRIBE_ID });
           const parsed = typeof cd === 'string' ? JSON.parse(cd) : cd;
           if (parsed && typeof parsed === 'object') {
             contactData = parsed;
@@ -1588,6 +1604,9 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         return;
       }
 
+      // V4: resolve initiative_id early (non-blocking, used by _by_initiative RPCs below)
+      await resolveInitiativeId();
+
       revealTribeShell();
       const urlTab = new URLSearchParams(window.location.search).get('tab');
       const validTabs = ['general', 'board', 'members', 'gamification', 'attendance'];
@@ -1601,16 +1620,26 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       const [tribeRes, slotsRes, membersRes, selectionsRes, delivRes, resourcesRes, artifactsRes] = await Promise.all([
         sb.from('tribes').select('*').eq('id', TRIBE_ID).single(),
         sb.from('tribe_meeting_slots').select('day_of_week, time_start, time_end').eq('tribe_id', TRIBE_ID).eq('is_active', true).order('day_of_week'),
-        sb.from('public_members')
-          .select('id, name, photo_url, chapter, operational_role, designations, tribe_id, share_whatsapp, current_cycle_active, is_active')
-          .eq('tribe_id', TRIBE_ID)
-          .eq('current_cycle_active', true)
-          .eq('is_active', true),
+        INITIATIVE_ID
+          ? sb.from('public_members')
+              .select('id, name, photo_url, chapter, operational_role, designations, tribe_id, initiative_id, share_whatsapp, current_cycle_active, is_active')
+              .eq('initiative_id', INITIATIVE_ID)
+              .eq('current_cycle_active', true)
+              .eq('is_active', true)
+          : sb.from('public_members')
+              .select('id, name, photo_url, chapter, operational_role, designations, tribe_id, initiative_id, share_whatsapp, current_cycle_active, is_active')
+              .eq('tribe_id', TRIBE_ID)
+              .eq('current_cycle_active', true)
+              .eq('is_active', true),
         sb.from('tribe_selections').select('member_id').eq('tribe_id', TRIBE_ID),
         activeCycleCode
-          ? sb.rpc('list_tribe_deliverables', { p_tribe_id: TRIBE_ID, p_cycle_code: activeCycleCode })
+          ? (INITIATIVE_ID
+              ? sb.rpc('list_initiative_deliverables', { p_initiative_id: INITIATIVE_ID, p_cycle_code: activeCycleCode })
+              : sb.rpc('list_tribe_deliverables', { p_tribe_id: TRIBE_ID, p_cycle_code: activeCycleCode }))
           : Promise.resolve({ data: [] }),
-        sb.from('hub_resources').select('*').eq('tribe_id', TRIBE_ID).eq('is_active', true).order('created_at', { ascending: false }),
+        INITIATIVE_ID
+          ? sb.from('hub_resources').select('*').eq('initiative_id', INITIATIVE_ID).eq('is_active', true).order('created_at', { ascending: false })
+          : sb.from('hub_resources').select('*').eq('tribe_id', TRIBE_ID).eq('is_active', true).order('created_at', { ascending: false }),
         sb.from('artifacts').select('id, title').eq('status', 'published').order('title'),
       ]);
 
@@ -1700,7 +1729,9 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       // Load contact data for leaders/admins (LGPD-gated RPC)
       if (currentMember && (isHighManagement(currentMember) || (hasPermission(currentMember, 'board.edit_tribe_items') && currentMember.tribe_id === TRIBE_ID))) {
         try {
-          const { data: cd } = await sb.rpc('get_tribe_member_contacts', { p_tribe_id: TRIBE_ID });
+          const { data: cd } = INITIATIVE_ID
+              ? await sb.rpc('get_initiative_member_contacts', { p_initiative_id: INITIATIVE_ID })
+              : await sb.rpc('get_tribe_member_contacts', { p_tribe_id: TRIBE_ID });
           const parsed = typeof cd === 'string' ? JSON.parse(cd) : cd;
           if (parsed && typeof parsed === 'object') { contactData = parsed; }
         } catch (_) { /* non-critical */ }

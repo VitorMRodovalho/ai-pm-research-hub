@@ -3,10 +3,12 @@ import type { AttendanceGridData, CellStatus, CheckInResult, ToggleResult } from
 
 interface UseAttendanceOptions {
   supabase: any;
+  /** @deprecated Use initiativeId instead */
   tribeId?: number;
+  initiativeId?: string;
 }
 
-export function useAttendance({ supabase, tribeId }: UseAttendanceOptions) {
+export function useAttendance({ supabase, tribeId, initiativeId }: UseAttendanceOptions) {
   const [grid, setGrid] = useState<AttendanceGridData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,10 +20,20 @@ export function useAttendance({ supabase, tribeId }: UseAttendanceOptions) {
     setError(null);
     try {
       const params: any = {};
-      if (tribeId) params.p_tribe_id = tribeId;
-      if (filterType) params.p_event_type = filterType;
-
-      const rpcName = tribeId ? 'get_tribe_attendance_grid' : 'get_attendance_grid';
+      // Prefer initiative_id; fall back to tribe_id
+      let rpcName: string;
+      if (initiativeId) {
+        params.p_initiative_id = initiativeId;
+        if (filterType) params.p_event_type = filterType;
+        rpcName = 'get_initiative_attendance_grid';
+      } else if (tribeId) {
+        params.p_tribe_id = tribeId;
+        if (filterType) params.p_event_type = filterType;
+        rpcName = 'get_tribe_attendance_grid';
+      } else {
+        if (filterType) params.p_event_type = filterType;
+        rpcName = 'get_attendance_grid';
+      }
       const { data, error: rpcError } = await supabase.rpc(rpcName, params);
 
       if (rpcError) throw rpcError;
@@ -34,7 +46,7 @@ export function useAttendance({ supabase, tribeId }: UseAttendanceOptions) {
     } finally {
       setLoading(false);
     }
-  }, [supabase, tribeId]);
+  }, [supabase, tribeId, initiativeId]);
 
   const toggleMember = useCallback(async (
     eventId: string,

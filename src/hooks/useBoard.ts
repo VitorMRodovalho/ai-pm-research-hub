@@ -56,6 +56,7 @@ export function useBoard(props: BoardEngineProps): UseBoardResult {
         const { data, error: err } = await sb.rpc('get_board_by_domain', {
           p_domain_key: props.domainKey,
           p_tribe_id: props.tribeId ?? null,
+          p_initiative_id: props.initiativeId ?? null,
         });
         if (err) throw err;
         result = data;
@@ -92,7 +93,7 @@ export function useBoard(props: BoardEngineProps): UseBoardResult {
     } finally {
       setLoading(false);
     }
-  }, [props.boardId, props.domainKey, props.tribeId]);
+  }, [props.boardId, props.domainKey, props.tribeId, props.initiativeId]);
 
   useEffect(() => {
     fetch();

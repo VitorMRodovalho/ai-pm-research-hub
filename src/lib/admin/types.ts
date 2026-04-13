@@ -9,6 +9,7 @@ export interface Member {
   is_superadmin: boolean;
   is_active: boolean;
   tribe_id: number | null;
+  initiative_id: string | null;
   selected_tribe_id: number | null;
   fixed_tribe_id: number | null;
   chapter: string;

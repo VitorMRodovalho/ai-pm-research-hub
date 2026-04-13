@@ -1972,6 +1972,26 @@ const ptBR: Record<string, string> = {
   'admin.loadCommsOps': 'Carregando operações de comunicação...',
   'admin.presidentWarning': 'Nenhum presidente logou na plataforma. O workflow de aprovação de CRs requer auth.',
 
+  // ── Admin: Initiative Kinds (V4 Phase 6) ──
+  'admin.initiativeKinds': 'Tipos de Iniciativa',
+  'admin.initiativeKindsDesc': 'Configure os tipos de iniciativa disponíveis. Novos tipos funcionam sem deploy.',
+  'admin.newKind': 'Novo Tipo',
+  'admin.accessRestricted': 'Acesso restrito a administradores.',
+  'admin.displayName': 'Nome de exibição',
+  'admin.description': 'Descrição',
+  'admin.icon': 'Ícone (Lucide)',
+  'admin.durationDays': 'Duração padrão (dias)',
+  'admin.maxConcurrent': 'Máx. simultâneas por org',
+  'admin.features': 'Funcionalidades habilitadas',
+  'admin.meetingNotes': 'Atas',
+  'admin.deliverables': 'Entregas',
+  'admin.attendance': 'Presença',
+  'admin.certificate': 'Certificado',
+  'admin.customFieldsSchema': 'Campos customizados (JSON Schema)',
+  'admin.customFieldsHint': 'Formato: {"properties": {"campo": {"type": "string"}}, "required": ["campo"]}',
+  'admin.slugHint': 'Identificador único snake_case (não pode ser alterado depois)',
+  'admin.save': 'Salvar',
+
   // ── Data: KPI labels ──
   'data.kpi.chapters': 'Capítulos PMI',
   'data.kpi.partners': 'Entidades Parceiras',

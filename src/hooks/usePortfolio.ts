@@ -11,6 +11,7 @@ export interface Artifact {
   variance_days: number | null;
   health: 'completed' | 'on_track' | 'at_risk' | 'delayed' | 'no_baseline';
   tribe_id: number;
+  initiative_id: string | null;
   tribe_name: string;
   leader_name: string;
   legacy_tags: string[];
@@ -23,6 +24,7 @@ export interface Artifact {
 
 export interface TribeSummary {
   tribe_id: number;
+  initiative_id: string | null;
   tribe_name: string;
   leader: string;
   total: number;
@@ -73,6 +75,7 @@ export interface PortfolioData {
 
 export interface PortfolioFilters {
   tribe: number | null;
+  initiative: string | null;
   type: string | null;
   status: string | null;
   health: string | null;
@@ -82,7 +85,7 @@ export interface PortfolioFilters {
 }
 
 const EMPTY_FILTERS: PortfolioFilters = {
-  tribe: null, type: null, status: null, health: null,
+  tribe: null, initiative: null, type: null, status: null, health: null,
   search: '', quarter: null, month: null,
 };
 
@@ -121,6 +124,7 @@ export function usePortfolio(cycle = 3) {
   const filtered = useMemo(() => {
     if (!data?.artifacts) return [];
     return data.artifacts.filter((a: Artifact) => {
+      if (filters.initiative && a.initiative_id !== filters.initiative) return false;
       if (filters.tribe && a.tribe_id !== filters.tribe) return false;
       if (filters.type && !a.unified_tags?.some(t => t.name === filters.type)) return false;
       if (filters.status && a.status !== filters.status) return false;

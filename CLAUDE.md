@@ -1,15 +1,22 @@
 # Claude Code — Project Rules
 
+## Domain Model V4 (concluído 2026-04-13)
+Refactor arquitetural completo: 6 ADRs (0004-0009), 30 migrations, 7 fases. Ver `docs/refactor/DOMAIN_MODEL_V4_MASTER.md` para decisões e histórico. Decisões-chave:
+- `can()` / `can_by_member()` é a source of truth para autoridade (ADR-0007)
+- `initiatives` é o primitivo de domínio; `tribes` é bridge via dual-write (ADR-0005)
+- `persons` + `engagements` modelam identidade; `members` é bridge (ADR-0006)
+- Novos tipos de iniciativa = config no admin, não código (ADR-0009)
+
 ## Platform
 - **URL:** https://nucleoia.vitormr.dev
 - **Supabase:** ldrfrvwhxsmgaabwmaik (sa-east-1)
-- **Version:** v2.9.5 | 68 MCP tools | 21 Edge Functions | 779 unit + 40 e2e tests
+- **Version:** v3.0.0 (Domain Model V4) | 70 MCP tools (56R+14W) | 21 Edge Functions | 1184 unit + 40 e2e tests
 - **LGPD:** Art. 18 cycle complete (consent gate + export + delete + anonymize cron 5y)
 
 ## Build & Test
 ```bash
 npx astro build          # MUST pass before commit
-npm test                 # 779 pass, 0 fail
+npm test                 # 1184 pass, 0 fail
 npx wrangler deploy      # Deploy Worker
 supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 ```
@@ -50,6 +57,7 @@ supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 4. Webinars table is source of truth (not events filtered by type)
 5. Board items read-all for Tier 1+ members (curators need cross-board access)
 6. LGPD: anon/ghost gets nothing from PII tables; public data via SECURITY DEFINER RPCs only
+7. V4 Authority: `can()` is the canonical gate (ADR-0007). RLS uses `rls_can(action)` helpers. `operational_role` is a cache maintained by `sync_operational_role_cache` trigger.
 
 ## Detailed Rules
 - Database: `.claude/rules/database.md`
