@@ -40,7 +40,7 @@ CREATE POLICY "engagement_kinds_org_scope"
 
 -- Seed: 12 kinds covering all current and near-future member profiles
 INSERT INTO public.engagement_kinds (slug, display_name, description, legal_basis, requires_agreement, is_initiative_scoped, default_duration_days) VALUES
-  ('volunteer',              'Voluntário Ativo',        'Membro voluntário em tribo de pesquisa ou iniciativa. Requer VEP + termo.',  'contract_volunteer', true,  true,  180),
+  ('volunteer',              'Voluntário Ativo',        'Membro voluntário em tribo de pesquisa ou iniciativa. Requer VEP + termo.',  'contract_volunteer', false, true,  180),
   ('observer',               'Observador',              'Acompanha atividades sem compromisso formal.',                                'consent',            false, true,  NULL),
   ('alumni',                 'Alumni',                  'Ex-membro ativo. Mantém histórico e certificados.',                           'legitimate_interest', false, false, NULL),
   ('ambassador',             'Embaixador',              'Reconhecimento honorário / mérito. Sem termo obrigatório.',                   'consent',            false, false, NULL),
@@ -49,7 +49,7 @@ INSERT INTO public.engagement_kinds (slug, display_name, description, legal_basi
   ('guest',                  'Convidado',               'Acesso temporário limitado.',                                                 'consent',            false, true,  30),
   ('candidate',              'Candidato',               'Em processo seletivo. Dados retidos até decisão + prazo recursal.',            'consent',            false, false, 90),
   ('study_group_participant','Participante Grupo Estudos','Inscrito em grupo de estudos (ex: CPMAI).',                                  'consent',            false, true,  120),
-  ('study_group_owner',      'GP Grupo de Estudos',     'Gerente de projeto de grupo de estudos.',                                     'contract_volunteer', true,  true,  180),
+  ('study_group_owner',      'GP Grupo de Estudos',     'Gerente de projeto de grupo de estudos.',                                     'contract_volunteer', false, true,  180),
   ('speaker',                'Palestrante',             'Palestrante externo de webinar ou evento.',                                   'consent',            false, true,  1),
   ('partner_contact',        'Contato Parceiro',        'Ponto focal de organização parceira.',                                        'legitimate_interest', false, false, NULL);
 
