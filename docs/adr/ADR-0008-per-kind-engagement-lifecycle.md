@@ -94,10 +94,10 @@ LGPD Art. 7 + Art. 15 exigem base legal e prazo de retenção **explícitos por 
 
 ## Critérios de aceite
 
-- [ ] Tabela `engagement_kinds` com seed inicial de ~10 kinds cobrindo todos os perfis da tabela do Contexto
-- [ ] Jurídico (Claudio Torres ou assessoria) revisou base legal + retenção de cada kind
-- [ ] `sign_volunteer_agreement()` reescrito para ler template + duração do kind
-- [ ] Anonymize cron parametrizado por kind (2 anos, 5 anos, 30 dias, on-request)
-- [ ] Notificação de expiração parametrizada
-- [ ] Admin UI lista todos os kinds com suas configurações
-- [ ] Testes cobrindo: voluntário ativa/renova, inscrito conclui e é deletado em 2a, palestrante expira em 30d
+- [x] Tabela `engagement_kinds` com 12 kinds + 11 lifecycle columns (ADR-0008) — `20260413500000`
+- [ ] Jurídico (Claudio Torres ou assessoria) revisou base legal + retenção de cada kind — **PENDENTE humano**
+- [ ] `sign_volunteer_agreement()` reescrito para ler template + duração do kind — **POSTERGADO Fase 7**
+- [x] Anonymize cron parametrizado por kind — `anonymize_by_engagement_kind()` em `20260413510000`, cron mensal
+- [x] Notificação de expiração parametrizada — `v4_notify_expiring_engagements()` em `20260413520000`, cron diário 08:00 UTC
+- [ ] Admin UI lista todos os kinds com suas configurações — **POSTERGADO Fase 6**
+- [x] Testes: 30 contracts em `engagement-lifecycle.test.mjs` cobrindo schema, per-kind config, anonymize, expiration, MCP cutover
