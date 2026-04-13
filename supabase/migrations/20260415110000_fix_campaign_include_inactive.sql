@@ -86,7 +86,6 @@ BEGIN
   FOR v_member IN
     SELECT m.id, 'pt' AS lang
     FROM public.members m
-    LEFT JOIN public.tribes t ON t.id = m.tribe_id
     WHERE m.email IS NOT NULL
       AND (
         (m.is_active = true AND m.current_cycle_active = true)
@@ -97,7 +96,7 @@ BEGIN
         OR v_include_inactive
         OR (array_length(v_roles, 1) > 0 AND m.operational_role = ANY(v_roles))
         OR (array_length(v_desigs, 1) > 0 AND m.designations && v_desigs)
-        OR (array_length(v_chapters, 1) > 0 AND t.chapter = ANY(v_chapters))
+        OR (array_length(v_chapters, 1) > 0 AND m.chapter = ANY(v_chapters))
       )
       AND NOT EXISTS (
         SELECT 1 FROM public.campaign_recipients cr2
