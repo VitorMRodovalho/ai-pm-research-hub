@@ -88,5 +88,5 @@ Plataforma de governança máxima exige: **toda permissão rastreável até um a
 - [x] Todas RLS policies migraram para subquery em `auth_engagements` — **CONCLUÍDO 2026-04-13.** 36 direct-query policies em 24 tabelas reescritas via `rls_can()`/`rls_is_superadmin()`/`rls_can_for_tribe()`. Migrations `20260415000000` + `20260415010000`.
 - [x] Trigger diário de expiração em shadow mode ativo desde 2026-04-13 — `20260413440000` (cron 03:00 UTC)
 - [x] Ferramenta de diagnóstico `why_denied()` implementada no banco — `20260413420000`; admin UI na Fase 5
-- [ ] Relatório LGPD "quem acessa PII de <kind> agora" gerável em 1 query — **postergado Fase 5**
+- [ ] Relatório LGPD "quem acessa PII de <kind> agora" gerável em 1 query — **postergado Fase 7** (Fase 5 fechou sem endereçar; query trivial: `SELECT FROM auth_engagements WHERE action = 'view_pii'`)
 - [x] Testes de regressão cobrindo authority contracts — 53 assertions em `authority-derivation.test.mjs`

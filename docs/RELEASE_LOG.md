@@ -1,5 +1,64 @@
 # Release Log
 
+## [DRAFT] 2026-04-XX — v3.0.0: Domain Model V4 — Multi-Org, Initiative-Driven, Engagement-Based Authority
+
+### Scope
+Refatoração arquitetural completa do modelo de domínio. 6 ADRs (0004-0009), 7 fases, 22+ migrations. Habilita crescimento multi-org, multi-capítulo, com autoridade derivada de engagements e lifecycle config-driven por kind.
+
+### Delivered
+
+#### Fase 1 — Multi-Tenancy (ADR-0004)
+- `organizations` + `chapters` como entidades first-class
+- `organization_id` em 40 tabelas de domínio com backfill 100%
+- RESTRICTIVE RLS policies para isolamento cross-org
+- `auth_org()` helper para single-org mode
+
+#### Fase 2 — Initiative Primitive (ADR-0005)
+- `initiative_kinds` config table (research_tribe, study_group, congress, workshop, book_club)
+- `initiatives` table com bridge `legacy_tribe_id` para 8 tribos existentes
+- `initiative_id` em 13 tabelas + dual-write triggers (tribe_id↔initiative_id)
+- 9 RPCs `_by_initiative` como wrappers sobre RPCs `_by_tribe`
+
+#### Fase 3 — Person + Engagement (ADR-0006)
+- `engagement_kinds` (12 kinds com base legal + retenção LGPD)
+- `persons` table — identidade universal desacoplada de auth
+- `engagements` table — 96 engagements backfilled (71 primários + 25 designations)
+- Bridge `person_id` em members
+
+#### Fase 4 — Authority Derivation (ADR-0007)
+- `engagement_kind_permissions` — maps (kind, role) → 7 actions
+- `auth_engagements` view — is_authoritative derivation (temporal + agreement)
+- `can()` + `can_by_member()` + `why_denied()` — canonical authority gate
+- MCP cutover: 14 call sites migrados de canWrite/canWriteBoard → canV4()
+- RLS migration: 36 direct-query policies reescritas via `rls_can()` helpers
+- `sync_operational_role_cache` trigger — operational_role como cache
+
+#### Fase 5 — Lifecycle Configuration (ADR-0008)
+- Per-kind retention, anonymization policy, auto-expire behavior
+- `anonymize_by_engagement_kind()` — kind-aware anonymization mensal
+- `v4_expire_engagements()` + `v4_notify_expiring_engagements()` — cron diário
+
+#### Fase 6 — Config-Driven Initiative Kinds (ADR-0009)
+- Kind-aware engine: `create_initiative()`, `update_initiative()`, `join_initiative()`
+- Custom fields validation via JSON Schema per kind
+- CPMAI migrado: cpmai_courses → initiatives(study_group), 7 tabelas cpmai_* deprecadas
+- Admin UI: `/admin/initiative-kinds` — CRUD de kinds via PostgREST
+
+### Validation
+- `npm test` ✅ 1184 pass / 0 fail
+- `npx astro build` ✅ 0 errors
+- MCP smoke ✅ HTTP 200 + serverInfo v2.9.5
+
+### Known Deferred (Fase 7 Cleanup)
+- RPCs `_by_tribe` deprecation → `_by_initiative`
+- Frontend tribe_id → initiative_id
+- `sign_volunteer_agreement()` rewrite for engagements
+- requires_agreement enforcement após backfill de certificados
+- Trigger de expiração real (após 2 semanas shadow)
+- Drop cpmai_* tables (após 2 semanas estáveis)
+
+---
+
 ## 2026-04-10 — v2.9.5: LGPD Compliance Complete + Selection Dual Ranking + 68 MCP Tools
 
 ### Scope
