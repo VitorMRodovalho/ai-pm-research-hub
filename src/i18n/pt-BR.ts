@@ -2844,6 +2844,7 @@ const ptBR: Record<string, string> = {
   'blog.noPosts': 'Nenhum artigo publicado ainda.',
   'blog.notFound': 'Artigo não encontrado.',
   'blog.backToList': 'Voltar ao Blog',
+  'blog.updatedOn': 'Atualizado em',
   'blog.views': '{count} visualizações',
   'blog.view': '1 visualização',
   'blog.like': 'Curtir',

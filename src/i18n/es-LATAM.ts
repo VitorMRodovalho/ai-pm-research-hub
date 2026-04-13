@@ -2839,6 +2839,7 @@ const esLATAM: Record<string, string> = {
   'blog.noPosts': 'Ningún artículo publicado aún.',
   'blog.notFound': 'Artículo no encontrado.',
   'blog.backToList': 'Volver al Blog',
+  'blog.updatedOn': 'Actualizado el',
   'blog.views': '{count} visualizaciones',
   'blog.view': '1 visualización',
   'blog.like': 'Me gusta',
