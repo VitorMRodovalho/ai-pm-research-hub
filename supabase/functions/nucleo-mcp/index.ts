@@ -1,5 +1,6 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.9.4 — 68 tools (54R + 14W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.9.6 — 70 tools (56R + 14W) + 1 prompt + 1 resource + usage logging
+// V4 Cutover: canWrite/canWriteBoard → canV4 (ADR-0007, engagement-derived authority)
 // Transport: SDK 1.29.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
@@ -36,22 +37,29 @@ async function getMember(sb: ReturnType<typeof createClient>) {
   return null;
 }
 
-const WRITE_ROLES = ["manager", "deputy_manager", "tribe_leader"];
-
-function canWrite(member: { operational_role: string; is_superadmin?: boolean }) {
-  return member.is_superadmin || WRITE_ROLES.includes(member.operational_role);
-}
-
-const BOARD_ROLES = [...WRITE_ROLES, "researcher", "facilitator", "communicator"];
-function canWriteBoard(member: { operational_role: string; is_superadmin?: boolean; tribe_id?: number | null }, boardTribeId?: number | null) {
-  if (member.is_superadmin || WRITE_ROLES.includes(member.operational_role)) return true;
-  return BOARD_ROLES.includes(member.operational_role) && !!member.tribe_id && member.tribe_id === boardTribeId;
+// V4: Authority gate via engagement-derived can() (ADR-0007)
+// Replaces legacy canWrite/canWriteBoard with DB-driven permissions
+async function canV4(sb: ReturnType<typeof createClient>, memberId: string, action: string, resourceType?: string, resourceId?: string): Promise<boolean> {
+  const { data, error } = await sb.rpc("can_by_member", {
+    p_member_id: memberId,
+    p_action: action,
+    p_resource_type: resourceType || null,
+    p_resource_id: resourceId || null,
+  });
+  if (error) return false; // fail-closed
+  return data === true;
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isUUID(v: string | undefined): boolean { return !!v && UUID_RE.test(v); }
 
 const NO_TRIBE_HINT = "No tribe assigned. Pass tribe_id parameter (1-8) to specify which tribe. Use list_boards or get_portfolio_overview for board IDs.";
+
+// V4: resolve legacy tribe_id → initiative UUID for _by_initiative RPCs
+async function resolveInitiativeId(sb: ReturnType<typeof createClient>, tribeId: number): Promise<string | null> {
+  const { data } = await sb.from("initiatives").select("id").eq("legacy_tribe_id", tribeId).single();
+  return data?.id || null;
+}
 
 async function logUsage(sb: ReturnType<typeof createClient>, memberId: string | null, toolName: string, success: boolean, errorMsg?: string, startTime?: number) {
   try {
@@ -79,12 +87,12 @@ function registerKnowledge(mcp: McpServer, sb: ReturnType<typeof createClient>) 
 
       const role = member.operational_role || "member";
       const designations: string[] = member.designations || [];
-      const isAdmin = member.is_superadmin || ["manager", "deputy_manager"].includes(role);
-      const isLeader = WRITE_ROLES.includes(role) || member.is_superadmin;
-      const isSponsor = designations.includes("sponsor") || role === "sponsor";
-      const isComms = designations.includes("comms_lead");
-      const isLiaison = designations.includes("chapter_liaison");
-      const isChapterBoard = designations.includes("chapter_board");
+      const isAdmin = await canV4(sb, member.id, 'manage_member');
+      const isLeader = await canV4(sb, member.id, 'write');
+      const isSponsor = await canV4(sb, member.id, 'manage_partner');
+      const isComms = isLeader; // comms_leader has 'write' — covered by isLeader
+      const isLiaison = isSponsor; // liaison has 'manage_partner' — covered by isSponsor
+      const isChapterBoard = isSponsor; // chapter_board/board_member has 'view_pii' — covered by manage_partner for prompt purposes
       const hasTribe = !!member.tribe_id;
 
       // Build personalized tool guide
@@ -94,6 +102,7 @@ function registerKnowledge(mcp: McpServer, sb: ReturnType<typeof createClient>) 
 - **Nome:** ${member.name}
 - **Papel:** ${role}${member.is_superadmin ? " (superadmin)" : ""}
 - **Tribo:** ${hasTribe ? `Tribo ${member.tribe_id}` : "Sem tribo fixa (manager/founder)"}
+- **Initiative:** ${member.initiative_id || "não vinculado"}
 - **Designações:** ${designations.length > 0 ? designations.join(", ") : "nenhuma"}
 - **Capítulo:** ${member.chapter || "não definido"}`);
 
@@ -137,11 +146,12 @@ Você pode perguntar em linguagem natural — o assistente escolhe a ferramenta 
 - \`list_tribe_webinars\` — Webinars da tribo
 - \`get_event_detail\` — Detalhe de evento (agenda, ata, action items) — passe event_id`);
       } else {
-        sections.push(`### Nota sobre rotas de tribo
-Seu perfil não tem \`tribe_id\` fixo. Para consultar dados de uma tribo específica, use ferramentas que aceitam \`tribe_id\` como parâmetro:
+        sections.push(`### Nota sobre rotas de tribo/iniciativa
+Seu perfil não tem tribo fixa. Para consultar dados de uma iniciativa específica, use ferramentas que aceitam \`tribe_id\` (inteiro 1-8, legado) ou \`initiative_id\` (UUID, V4) como parâmetro:
 - \`get_tribe_dashboard\` com \`tribe_id=1\` a \`8\`
 - \`get_tribe_deliverables\` com \`tribe_id=1\` a \`8\`
-Rotas como \`get_my_tribe_members\` retornarão "No tribe assigned" — isso é esperado.`);
+Rotas como \`get_my_tribe_members\` retornarão "No tribe assigned" — isso é esperado.
+**V4:** Internamente, as RPCs \`_by_initiative\` usam initiative UUIDs. O campo \`initiative_id\` está disponível em todos os registros via dual-write.`);
       }
 
       if (isLeader) {
@@ -197,7 +207,7 @@ Você é membro da diretoria do ${member.chapter || "capítulo"}. Seu acesso é 
 
       if (isAdmin) {
         sections.push(`### Gestão/GP (Admin)
-- \`get_tribe_dashboard\` — Dashboard completo de qualquer tribo (tribe_id 1-8)
+- \`get_tribe_dashboard\` — Dashboard completo de qualquer tribo (tribe_id 1-8 ou initiative_id UUID)
 - \`get_tribe_deliverables\` — Entregas por tribo e ciclo
 - \`get_portfolio_overview\` — Visão executiva: todos os boards e cards
 - \`get_operational_alerts\` — Alertas: inatividade, cards atrasados, drift
@@ -311,14 +321,14 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 ### Tier 3 — GP/Admin (12 leitura)
 | # | Ferramenta | Parâmetros | Descrição |
 |---|-----------|-----------|-----------|
-| 24 | get_tribe_dashboard | tribe_id? | Dashboard completo da tribo |
+| 24 | get_tribe_dashboard | tribe_id? (ou initiative_id) | Dashboard completo da tribo/iniciativa |
 | 25 | get_portfolio_overview | — | Visão executiva: boards e cards |
 | 26 | get_operational_alerts | — | Alertas operacionais |
 | 27 | get_cycle_report | — | Relatório do ciclo |
 | 28 | get_annual_kpis | — | KPIs anuais (admin/sponsor) |
 | 29 | get_adoption_metrics | — | Métricas de adoção MCP |
 | 30 | get_curation_dashboard | — | Workflow de curadoria |
-| 31 | get_tribe_deliverables | tribe_id?, cycle_code? | Entregas por tribo |
+| 31 | get_tribe_deliverables | tribe_id?, cycle_code? | Entregas por tribo/iniciativa |
 | 32 | get_anomaly_report | — | Anomalias de dados |
 | 33 | get_portfolio_health | cycle_code? | Saúde trimestral |
 | 34 | get_volunteer_funnel | cycle? | Funil de seleção |
@@ -355,6 +365,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 - get_annual_kpis e get_portfolio_health também acessíveis por sponsors
 - get_partner_pipeline acessível por sponsors e chapter_liaisons
 - create_board_card aceita board_id para usuários sem tribe_id (use list_boards)
+- **V4:** \`initiative_id\` (UUID) é o identificador canônico. \`tribe_id\` (1-8) é mantido por dual-write. Ambos funcionam.
 - Todas as chamadas são logadas em mcp_usage_log
 `,
       }],
@@ -407,7 +418,9 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (!member) { await logUsage(sb, null, "get_my_tribe_attendance", false, "Not authenticated", start); return err("Not authenticated"); }
     const tribeId = params.tribe_id || member.tribe_id;
     if (!tribeId) { await logUsage(sb, member.id, "get_my_tribe_attendance", false, "No tribe", start); return err(NO_TRIBE_HINT); }
-    const { data, error } = await sb.rpc("get_tribe_attendance_grid", { p_tribe_id: tribeId });
+    const initiativeId = await resolveInitiativeId(sb, tribeId);
+    if (!initiativeId) { await logUsage(sb, member.id, "get_my_tribe_attendance", false, "Initiative not found", start); return err("Initiative not found for tribe " + tribeId); }
+    const { data, error } = await sb.rpc("get_initiative_attendance_grid", { p_initiative_id: initiativeId });
     if (error) { await logUsage(sb, member.id, "get_my_tribe_attendance", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_my_tribe_attendance", true, undefined, start);
     return ok(data);
@@ -456,7 +469,9 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (!member) { await logUsage(sb, null, "get_meeting_notes", false, "Not authenticated", start); return err("Not authenticated"); }
     const tribeId = params.tribe_id || member.tribe_id;
     if (!tribeId) { await logUsage(sb, member.id, "get_meeting_notes", false, "No tribe", start); return err(NO_TRIBE_HINT); }
-    const { data, error } = await sb.rpc("list_meeting_artifacts", { p_tribe_id: tribeId, p_limit: params.limit || 5 });
+    const initiativeId = await resolveInitiativeId(sb, tribeId);
+    if (!initiativeId) { await logUsage(sb, member.id, "get_meeting_notes", false, "Initiative not found", start); return err("Initiative not found for tribe " + tribeId); }
+    const { data, error } = await sb.rpc("list_initiative_meeting_artifacts", { p_initiative_id: initiativeId, p_limit: params.limit || 5 });
     if (error) { await logUsage(sb, member.id, "get_meeting_notes", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_meeting_notes", true, undefined, start);
     return ok(data);
@@ -479,7 +494,9 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (!member) { await logUsage(sb, null, "search_board_cards", false, "Not authenticated", start); return err("Not authenticated"); }
     const tribeId = params.tribe_id || member.tribe_id;
     if (!tribeId) { await logUsage(sb, member.id, "search_board_cards", false, "No tribe", start); return err(NO_TRIBE_HINT); }
-    const { data, error } = await sb.rpc("search_board_items", { p_query: params.query, p_tribe_id: tribeId });
+    const initiativeId = await resolveInitiativeId(sb, tribeId);
+    if (!initiativeId) { await logUsage(sb, member.id, "search_board_cards", false, "Initiative not found", start); return err("Initiative not found for tribe " + tribeId); }
+    const { data, error } = await sb.rpc("search_initiative_board_items", { p_query: params.query, p_initiative_id: initiativeId });
     if (error) { await logUsage(sb, member.id, "search_board_cards", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "search_board_cards", true, undefined, start);
     return ok(data);
@@ -513,7 +530,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     }
     // Resolve board's tribe_id for permission check
     const { data: boardData } = await sb.from("project_boards").select("tribe_id").eq("id", boardId).limit(1).single();
-    if (!canWriteBoard(member, boardData?.tribe_id)) { await logUsage(sb, member.id, "create_board_card", false, "Unauthorized", start); return err("Unauthorized — researchers can only create cards on their own tribe's board."); }
+    if (!(await canV4(sb, member.id, 'write_board'))) { await logUsage(sb, member.id, "create_board_card", false, "Unauthorized", start); return err("Unauthorized — researchers can only create cards on their own tribe's board."); }
     const tags = params.tags ? String(params.tags).split(",").map((t: string) => t.trim()) : [];
     if (params.priority && params.priority !== "medium") tags.push(`priority:${params.priority}`);
     const { data: cardId, error } = await sb.rpc("create_board_item", { p_board_id: boardId, p_title: params.title, p_description: params.description || null, p_tags: tags, p_due_date: params.due_date || null });
@@ -530,7 +547,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     // Resolve card's board tribe_id for permission check
     const { data: cardBoard } = await sb.from("board_items").select("board_id, project_boards!inner(tribe_id)").eq("id", params.card_id).limit(1).single();
     const cardTribeId = (cardBoard as any)?.project_boards?.tribe_id;
-    if (!canWriteBoard(member, cardTribeId)) { await logUsage(sb, member.id, "update_card_status", false, "Unauthorized", start); return err("Unauthorized — researchers can only move cards on their own tribe's board."); }
+    if (!(await canV4(sb, member.id, 'write_board'))) { await logUsage(sb, member.id, "update_card_status", false, "Unauthorized", start); return err("Unauthorized — researchers can only move cards on their own tribe's board."); }
     const { error } = await sb.rpc("move_board_item", { p_item_id: params.card_id, p_new_status: params.status });
     if (error) { await logUsage(sb, member.id, "update_card_status", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "update_card_status", true, undefined, start);
@@ -542,7 +559,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "create_meeting_notes", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!canWrite(member)) { await logUsage(sb, member.id, "create_meeting_notes", false, "Unauthorized", start); return err("Unauthorized"); }
+    if (!(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "create_meeting_notes", false, "Unauthorized", start); return err("Unauthorized"); }
     const { data: event } = await sb.from("events").select("title, date, tribe_id").eq("id", params.event_id).single();
     if (!event) { await logUsage(sb, member.id, "create_meeting_notes", false, "Event not found", start); return err("Event not found."); }
     const tribeId = member.is_superadmin ? (event.tribe_id || member.tribe_id) : member.tribe_id;
@@ -559,7 +576,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "register_attendance", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!canWrite(member)) { await logUsage(sb, member.id, "register_attendance", false, "Unauthorized", start); return err("Unauthorized"); }
+    if (!(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "register_attendance", false, "Unauthorized", start); return err("Unauthorized"); }
     if (!params.present) { await logUsage(sb, member.id, "register_attendance", true, undefined, start); return ok({ action: "register_attendance", status: "skipped", note: "Absent — no record created." }); }
     const { data: count, error } = await sb.rpc("register_attendance_batch", { p_event_id: params.event_id, p_member_ids: [params.member_id], p_registered_by: member.id });
     if (error) { await logUsage(sb, member.id, "register_attendance", false, error.message, start); return err(error.message); }
@@ -572,7 +589,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "register_showcase", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!canWrite(member)) { await logUsage(sb, member.id, "register_showcase", false, "Unauthorized", start); return err("Unauthorized"); }
+    if (!(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "register_showcase", false, "Unauthorized", start); return err("Unauthorized"); }
     const { data, error } = await sb.rpc("register_event_showcase", { p_event_id: params.event_id, p_member_id: params.member_id, p_showcase_type: params.showcase_type, p_title: params.title || null, p_notes: params.notes || null, p_duration_min: params.duration_min || null });
     if (error) { await logUsage(sb, member.id, "register_showcase", false, error.message, start); return err(error.message); }
     if (data?.error) { await logUsage(sb, member.id, "register_showcase", false, data.error, start); return err(data.error); }
@@ -585,7 +602,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "send_notification_to_tribe", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!canWrite(member)) { await logUsage(sb, member.id, "send_notification_to_tribe", false, "Unauthorized", start); return err("Unauthorized"); }
+    if (!(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "send_notification_to_tribe", false, "Unauthorized", start); return err("Unauthorized"); }
     if (!member.tribe_id && !member.is_superadmin) { await logUsage(sb, member.id, "send_notification_to_tribe", false, "No tribe", start); return err("No tribe assigned."); }
     const query = sb.from("members").select("id").eq("is_active", true).eq("current_cycle_active", true).neq("id", member.id);
     if (!member.is_superadmin) query.eq("tribe_id", member.tribe_id);
@@ -632,7 +649,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "create_tribe_event", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!canWrite(member)) { await logUsage(sb, member.id, "create_tribe_event", false, "Unauthorized", start); return err("Unauthorized"); }
+    if (!(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "create_tribe_event", false, "Unauthorized", start); return err("Unauthorized"); }
     const { data, error } = await sb.rpc("create_event", { p_type: params.type || "tribo", p_title: params.title, p_date: params.date, p_duration_minutes: params.duration_minutes || 90, p_tribe_id: member.tribe_id });
     if (error) { await logUsage(sb, member.id, "create_tribe_event", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "create_tribe_event", true, undefined, start);
@@ -680,7 +697,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_adoption_metrics", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!member.is_superadmin && !["manager", "deputy_manager"].includes(member.operational_role)) { await logUsage(sb, member.id, "get_adoption_metrics", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "get_adoption_metrics", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
     const { data, error } = await sb.rpc("get_mcp_adoption_stats");
     if (error) { await logUsage(sb, member.id, "get_adoption_metrics", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_adoption_metrics", true, undefined, start);
@@ -694,7 +711,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (!member) { await logUsage(sb, null, "get_chapter_kpis", false, "Not authenticated", start); return err("Not authenticated"); }
     let chapter = params.chapter || member.chapter;
     if (!chapter) { await logUsage(sb, member.id, "get_chapter_kpis", false, "No chapter", start); return err("No chapter assigned. Specify: GO, CE, DF, MG, RS."); }
-    const isPrivileged = member.is_superadmin || ["manager", "deputy_manager"].includes(member.operational_role) || (member.designations || []).includes("chapter_liaison");
+    const isPrivileged = (await canV4(sb, member.id, 'manage_member')) || (await canV4(sb, member.id, 'manage_partner'));
     if (!isPrivileged && chapter !== member.chapter) { await logUsage(sb, member.id, "get_chapter_kpis", false, "Cross-chapter denied", start); return err("You can only view your own chapter."); }
     const { data, error } = await sb.rpc("get_chapter_dashboard", { p_chapter: chapter });
     if (error) { await logUsage(sb, member.id, "get_chapter_kpis", false, error.message, start); return err(error.message); }
@@ -711,7 +728,9 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (!member) { await logUsage(sb, null, "get_tribe_dashboard", false, "Not authenticated", start); return err("Not authenticated"); }
     const tribeId = params.tribe_id || member.tribe_id;
     if (!tribeId) { await logUsage(sb, member.id, "get_tribe_dashboard", false, "No tribe", start); return err(NO_TRIBE_HINT); }
-    const { data, error } = await sb.rpc("exec_tribe_dashboard", { p_tribe_id: tribeId });
+    const initiativeId = await resolveInitiativeId(sb, tribeId);
+    if (!initiativeId) { await logUsage(sb, member.id, "get_tribe_dashboard", false, "Initiative not found", start); return err("Initiative not found for tribe " + tribeId); }
+    const { data, error } = await sb.rpc("exec_initiative_dashboard", { p_initiative_id: initiativeId });
     if (error) { await logUsage(sb, member.id, "get_tribe_dashboard", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_tribe_dashboard", true, undefined, start);
     return ok(data);
@@ -733,7 +752,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_portfolio_overview", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!member.is_superadmin && !["manager", "deputy_manager"].includes(member.operational_role)) { await logUsage(sb, member.id, "get_portfolio_overview", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "get_portfolio_overview", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
     const { data, error } = await sb.rpc("get_portfolio_dashboard");
     if (error) { await logUsage(sb, member.id, "get_portfolio_overview", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_portfolio_overview", true, undefined, start);
@@ -747,7 +766,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_operational_alerts", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!member.is_superadmin && !["manager", "deputy_manager"].includes(member.operational_role)) { await logUsage(sb, member.id, "get_operational_alerts", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "get_operational_alerts", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
     const { data, error } = await sb.rpc("detect_operational_alerts");
     if (error) { await logUsage(sb, member.id, "get_operational_alerts", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_operational_alerts", true, undefined, start);
@@ -759,7 +778,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_cycle_report", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!member.is_superadmin && !["manager", "deputy_manager"].includes(member.operational_role)) { await logUsage(sb, member.id, "get_cycle_report", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "get_cycle_report", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
     const { data, error } = await sb.rpc("exec_cycle_report");
     if (error) { await logUsage(sb, member.id, "get_cycle_report", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_cycle_report", true, undefined, start);
@@ -771,7 +790,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_annual_kpis", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!member.is_superadmin && !["manager", "deputy_manager", "sponsor"].includes(member.operational_role) && !(member.designations || []).includes("sponsor")) { await logUsage(sb, member.id, "get_annual_kpis", false, "Unauthorized", start); return err("Unauthorized: admin/sponsor only."); }
+    if (!(await canV4(sb, member.id, 'manage_member')) && !(await canV4(sb, member.id, 'manage_partner'))) { await logUsage(sb, member.id, "get_annual_kpis", false, "Unauthorized", start); return err("Unauthorized: admin/sponsor only."); }
     const { data, error } = await sb.rpc("get_annual_kpis");
     if (error) { await logUsage(sb, member.id, "get_annual_kpis", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_annual_kpis", true, undefined, start);
@@ -808,7 +827,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_campaign_analytics", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!member.is_superadmin && !["manager", "deputy_manager"].includes(member.operational_role) && !(member.designations || []).includes("comms_lead")) { await logUsage(sb, member.id, "get_campaign_analytics", false, "Unauthorized", start); return err("Unauthorized: admin/comms only."); }
+    if (!(await canV4(sb, member.id, 'manage_member')) && !(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "get_campaign_analytics", false, "Unauthorized", start); return err("Unauthorized: admin/comms only."); }
     const { data, error } = await sb.rpc("get_campaign_analytics", { p_send_id: params.send_id || null });
     if (error) { await logUsage(sb, member.id, "get_campaign_analytics", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_campaign_analytics", true, undefined, start);
@@ -842,7 +861,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_curation_dashboard", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!member.is_superadmin && !["manager", "deputy_manager"].includes(member.operational_role)) { await logUsage(sb, member.id, "get_curation_dashboard", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "get_curation_dashboard", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
     const { data, error } = await sb.rpc("get_curation_dashboard");
     if (error) { await logUsage(sb, member.id, "get_curation_dashboard", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_curation_dashboard", true, undefined, start);
@@ -856,7 +875,9 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (!member) { await logUsage(sb, null, "get_tribe_deliverables", false, "Not authenticated", start); return err("Not authenticated"); }
     const tribeId = params.tribe_id || member.tribe_id;
     if (!tribeId) { await logUsage(sb, member.id, "get_tribe_deliverables", false, "No tribe", start); return err(NO_TRIBE_HINT); }
-    const { data, error } = await sb.rpc("list_tribe_deliverables", { p_tribe_id: tribeId, p_cycle_code: params.cycle_code || null });
+    const initiativeId = await resolveInitiativeId(sb, tribeId);
+    if (!initiativeId) { await logUsage(sb, member.id, "get_tribe_deliverables", false, "Initiative not found", start); return err("Initiative not found for tribe " + tribeId); }
+    const { data, error } = await sb.rpc("list_initiative_deliverables", { p_initiative_id: initiativeId, p_cycle_code: params.cycle_code || null });
     if (error) { await logUsage(sb, member.id, "get_tribe_deliverables", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_tribe_deliverables", true, undefined, start);
     return ok(data);
@@ -891,7 +912,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_anomaly_report", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!member.is_superadmin && !["manager", "deputy_manager"].includes(member.operational_role)) { await logUsage(sb, member.id, "get_anomaly_report", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "get_anomaly_report", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
     const { data, error } = await sb.rpc("admin_get_anomaly_report");
     if (error) { await logUsage(sb, member.id, "get_anomaly_report", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_anomaly_report", true, undefined, start);
@@ -903,7 +924,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_portfolio_health", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!member.is_superadmin && !["manager", "deputy_manager", "sponsor"].includes(member.operational_role) && !(member.designations || []).includes("sponsor")) { await logUsage(sb, member.id, "get_portfolio_health", false, "Unauthorized", start); return err("Unauthorized: admin/sponsor only."); }
+    if (!(await canV4(sb, member.id, 'manage_member')) && !(await canV4(sb, member.id, 'manage_partner'))) { await logUsage(sb, member.id, "get_portfolio_health", false, "Unauthorized", start); return err("Unauthorized: admin/sponsor only."); }
     const { data, error } = await sb.rpc("exec_portfolio_health", { p_cycle_code: params.cycle_code || "cycle3-2026" });
     if (error) { await logUsage(sb, member.id, "get_portfolio_health", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_portfolio_health", true, undefined, start);
@@ -917,7 +938,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_volunteer_funnel", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!member.is_superadmin && !["manager", "deputy_manager"].includes(member.operational_role)) { await logUsage(sb, member.id, "get_volunteer_funnel", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "get_volunteer_funnel", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
     const { data, error } = await sb.rpc("volunteer_funnel_summary", { p_cycle: params.cycle || null });
     if (error) { await logUsage(sb, member.id, "get_volunteer_funnel", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_volunteer_funnel", true, undefined, start);
@@ -953,7 +974,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_admin_dashboard", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!member.is_superadmin && !["manager", "deputy_manager"].includes(member.operational_role)) { await logUsage(sb, member.id, "get_admin_dashboard", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "get_admin_dashboard", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
     const { data, error } = await sb.rpc("get_admin_dashboard");
     if (error) { await logUsage(sb, member.id, "get_admin_dashboard", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_admin_dashboard", true, undefined, start);
@@ -1005,7 +1026,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "search_members", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!member.is_superadmin && !["manager", "deputy_manager"].includes(member.operational_role)) { await logUsage(sb, member.id, "search_members", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "search_members", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
     const { data, error } = await sb.rpc("admin_list_members", { p_search: params.query || null, p_tribe_id: params.tribe_id || null, p_tier: params.tier || null, p_status: params.status || "active" });
     if (error) { await logUsage(sb, member.id, "search_members", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "search_members", true, undefined, start);
@@ -1072,8 +1093,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "manage_partner", false, "Not authenticated", start); return err("Not authenticated"); }
-    const canManagePartner = canWrite(member) || (member.designations || []).includes("sponsor") || (member.designations || []).includes("chapter_liaison");
-    if (!canManagePartner) { await logUsage(sb, member.id, "manage_partner", false, "Unauthorized", start); return err("Unauthorized — requires admin, sponsor, or chapter liaison role."); }
+    if (!(await canV4(sb, member.id, 'manage_partner'))) { await logUsage(sb, member.id, "manage_partner", false, "Unauthorized", start); return err("Unauthorized — requires admin, sponsor, or chapter liaison role."); }
     const { data, error } = await sb.rpc("admin_manage_partner_entity", {
       p_action: params.action,
       p_id: params.id || null,
@@ -1096,8 +1116,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_ghost_visitors", false, "Not authenticated", start); return err("Not authenticated"); }
-    const isAdmin = member.is_superadmin || ["manager", "deputy_manager"].includes(member.operational_role);
-    if (!isAdmin) { await logUsage(sb, member.id, "get_ghost_visitors", false, "Unauthorized", start); return err("Unauthorized — admin only."); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "get_ghost_visitors", false, "Unauthorized", start); return err("Unauthorized — admin only."); }
     const { data, error } = await sb.rpc("get_ghost_visitors");
     if (error) { await logUsage(sb, member.id, "get_ghost_visitors", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_ghost_visitors", true, undefined, start);
@@ -1138,7 +1157,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "drop_event_instance", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!canWrite(member)) { await logUsage(sb, member.id, "drop_event_instance", false, "Unauthorized", start); return err("Unauthorized"); }
+    if (!(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "drop_event_instance", false, "Unauthorized", start); return err("Unauthorized"); }
     const { data, error } = await sb.rpc("drop_event_instance", { p_event_id: params.event_id });
     if (error) { await logUsage(sb, member.id, "drop_event_instance", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "drop_event_instance", true, undefined, start);
@@ -1150,7 +1169,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "update_event_instance", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!canWrite(member)) { await logUsage(sb, member.id, "update_event_instance", false, "Unauthorized", start); return err("Unauthorized"); }
+    if (!(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "update_event_instance", false, "Unauthorized", start); return err("Unauthorized"); }
     const { data, error } = await sb.rpc("update_event_instance", { p_event_id: params.event_id, p_new_date: params.new_date || null, p_new_time_start: params.new_time_start || null, p_new_duration_minutes: params.new_duration_minutes || null, p_meeting_link: params.meeting_link || null, p_notes: params.notes || null, p_agenda_text: params.agenda_text || null });
     if (error) { await logUsage(sb, member.id, "update_event_instance", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "update_event_instance", true, undefined, start);
@@ -1162,7 +1181,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "mark_member_excused", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!canWrite(member)) { await logUsage(sb, member.id, "mark_member_excused", false, "Unauthorized", start); return err("Unauthorized"); }
+    if (!(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "mark_member_excused", false, "Unauthorized", start); return err("Unauthorized"); }
     const { data, error } = await sb.rpc("mark_member_excused", { p_event_id: params.event_id, p_member_id: params.member_id, p_excused: params.excused !== false, p_reason: params.reason || null });
     if (error) { await logUsage(sb, member.id, "mark_member_excused", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "mark_member_excused", true, undefined, start);
@@ -1174,7 +1193,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "bulk_mark_excused", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!canWrite(member)) { await logUsage(sb, member.id, "bulk_mark_excused", false, "Unauthorized", start); return err("Unauthorized"); }
+    if (!(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "bulk_mark_excused", false, "Unauthorized", start); return err("Unauthorized"); }
     const { data, error } = await sb.rpc("bulk_mark_excused", { p_member_id: params.member_id, p_date_from: params.date_from, p_date_to: params.date_to, p_reason: params.reason || null });
     if (error) { await logUsage(sb, member.id, "bulk_mark_excused", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "bulk_mark_excused", true, undefined, start);
@@ -1197,7 +1216,9 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_tribe_stats_ranked", false, "Not authenticated", start); return err("Not authenticated"); }
-    const { data, error } = await sb.rpc("get_tribe_stats", { p_tribe_id: params.tribe_id });
+    const initiativeId = await resolveInitiativeId(sb, params.tribe_id);
+    if (!initiativeId) { await logUsage(sb, member.id, "get_tribe_stats_ranked", false, "Initiative not found", start); return err("Initiative not found for tribe " + params.tribe_id); }
+    const { data, error } = await sb.rpc("get_initiative_stats", { p_initiative_id: initiativeId });
     if (error) { await logUsage(sb, member.id, "get_tribe_stats_ranked", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_tribe_stats_ranked", true, undefined, start);
     return ok(data);
@@ -1276,7 +1297,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "promote_to_leader_track", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!canWrite(member)) { await logUsage(sb, member.id, "promote_to_leader_track", false, "canWrite denied", start); return err("Unauthorized: only manager/deputy/superadmin"); }
+    if (!(await canV4(sb, member.id, 'promote'))) { await logUsage(sb, member.id, "promote_to_leader_track", false, "canV4 denied", start); return err("Unauthorized: only manager/deputy/superadmin"); }
     if (!isUUID(params.application_id)) { return err("application_id must be a UUID"); }
     const { data, error } = await sb.rpc("promote_to_leader_track", {
       p_application_id: params.application_id,
@@ -1284,6 +1305,42 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     });
     if (error) { await logUsage(sb, member.id, "promote_to_leader_track", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "promote_to_leader_track", true, undefined, start);
+    return ok(data);
+  });
+
+  // ===== V4 PERSON + ENGAGEMENT TOOLS (69-70) =====
+
+  // TOOL 69: get_person — V4 person profile (ADR-0006)
+  mcp.tool("get_person", "Returns the V4 person profile: name, location, credly badges, consent status. PII (email, phone) only visible for own record or with view_pii permission.", { person_id: z.string().optional().describe("Person UUID. If omitted, returns your own profile.") }, async (params: { person_id?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_person", false, "Not authenticated", start); return err("Not authenticated"); }
+    const rpcParams: any = {};
+    if (params.person_id) {
+      if (!isUUID(params.person_id)) { return err("person_id must be a UUID"); }
+      rpcParams.p_person_id = params.person_id;
+    }
+    const { data, error } = await sb.rpc("get_person", rpcParams);
+    if (error) { await logUsage(sb, member.id, "get_person", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_person", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_person", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 70: get_active_engagements — V4 engagement list (ADR-0006)
+  mcp.tool("get_active_engagements", "Returns active engagements for a person: kind, role, initiative, dates, authority status. Own engagements always visible. Others require manage_member.", { person_id: z.string().optional().describe("Person UUID. If omitted, returns your own engagements.") }, async (params: { person_id?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_active_engagements", false, "Not authenticated", start); return err("Not authenticated"); }
+    const rpcParams: any = {};
+    if (params.person_id) {
+      if (!isUUID(params.person_id)) { return err("person_id must be a UUID"); }
+      rpcParams.p_person_id = params.person_id;
+    }
+    const { data, error } = await sb.rpc("get_active_engagements", rpcParams);
+    if (error) { await logUsage(sb, member.id, "get_active_engagements", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "get_active_engagements", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "get_active_engagements", true, undefined, start);
     return ok(data);
   });
 }
@@ -1296,7 +1353,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.9.5" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.9.6" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -1316,6 +1373,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.9.5", tools: 68, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.9.6", tools: 70, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);

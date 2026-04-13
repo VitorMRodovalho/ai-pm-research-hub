@@ -1,5 +1,73 @@
 # Release Log
 
+## 2026-04-13 — v3.0.0: Domain Model V4 — Multi-Org, Initiative-Driven, Engagement-Based Authority
+
+### Scope
+Refatoração arquitetural completa do modelo de domínio. 6 ADRs (0004-0009), 7 fases (0-7d), 30 migrations. Habilita crescimento multi-org, multi-capítulo, com autoridade derivada de engagements e lifecycle config-driven por kind.
+
+### Delivered
+
+#### Fase 1 — Multi-Tenancy (ADR-0004)
+- `organizations` + `chapters` como entidades first-class
+- `organization_id` em 40 tabelas de domínio com backfill 100%
+- RESTRICTIVE RLS policies para isolamento cross-org
+- `auth_org()` helper para single-org mode
+
+#### Fase 2 — Initiative Primitive (ADR-0005)
+- `initiative_kinds` config table (research_tribe, study_group, congress, workshop, book_club)
+- `initiatives` table com bridge `legacy_tribe_id` para 8 tribos existentes
+- `initiative_id` em 13 tabelas + dual-write triggers (tribe_id↔initiative_id)
+- 9 RPCs `_by_initiative` como wrappers sobre RPCs `_by_tribe`
+
+#### Fase 3 — Person + Engagement (ADR-0006)
+- `engagement_kinds` (12 kinds com base legal + retenção LGPD)
+- `persons` table — identidade universal desacoplada de auth
+- `engagements` table — 96 engagements backfilled (71 primários + 25 designations)
+- Bridge `person_id` em members
+
+#### Fase 4 — Authority Derivation (ADR-0007)
+- `engagement_kind_permissions` — maps (kind, role) → 7 actions
+- `auth_engagements` view — is_authoritative derivation (temporal + agreement)
+- `can()` + `can_by_member()` + `why_denied()` — canonical authority gate
+- MCP cutover: 14 call sites migrados de canWrite/canWriteBoard → canV4()
+- RLS migration: 36 direct-query policies reescritas via `rls_can()` helpers
+- `sync_operational_role_cache` trigger — operational_role como cache
+
+#### Fase 5 — Lifecycle Configuration (ADR-0008)
+- Per-kind retention, anonymization policy, auto-expire behavior
+- `anonymize_by_engagement_kind()` — kind-aware anonymization mensal
+- `v4_expire_engagements()` + `v4_notify_expiring_engagements()` — cron diário
+
+#### Fase 6 — Config-Driven Initiative Kinds (ADR-0009)
+- Kind-aware engine: `create_initiative()`, `update_initiative()`, `join_initiative()`
+- Custom fields validation via JSON Schema per kind
+- CPMAI migrado: cpmai_courses → initiatives(study_group), 7 tabelas cpmai_* deprecadas
+- Admin UI: `/admin/initiative-kinds` — CRUD de kinds via PostgREST
+
+#### Fase 7 — Cleanup & Consolidation
+- **7a (Docs):** CLAUDE.md, rules, ADRs, RELEASE_LOG atualizados
+- **7b (Operacional):** RPCs `_by_tribe` deprecated, MCP gates → canV4(), `sign_volunteer_agreement` → engagements, `requires_agreement` re-ativado (40/40 certificados backfilled), frontend tribe_id → initiative_id (types, hooks, components, pages), LGPD export por engagement kind, MCP `get_person()`/`get_active_engagements()` tools (70 total)
+- **7c (Cleanup):** 7 tabelas cpmai_* dropadas, ghost resolution flow (persons.auth_id synced em login), expiration trigger confirmado ativo, views de compat fechado como N/A (bridge architecture é permanente)
+- **7d (Release):** RELEASE_LOG finalizado, refactor rules fechadas
+
+### Validation
+- `npm test` ✅ 1184 pass / 0 fail
+- `npx astro build` ✅ 0 errors
+- MCP smoke ✅ HTTP 200 + serverInfo v2.9.6 (70 tools)
+- Shadow validation: 70/71 members `mirrors_ok=true` (1 divergência aprovada — melhoria de segurança)
+- LGPD: Art. 18 cycle complete (consent gate + export + delete + anonymize cron 5y)
+
+### Architecture (permanent)
+- `tribes` e `members` permanecem como tabelas (não views) — 147+ FKs impedem conversão
+- Bridge architecture: dual-write triggers + `initiative_id`/`person_id` columns + `sync_operational_role_cache`
+- `can()` / `can_by_member()` são source of truth para autoridade (não `operational_role`)
+- `operational_role` é cache mantido por trigger, lido pelo frontend para UI gating
+
+### Pending (non-blocking, human-dependent)
+- Revisão jurídica: Claudio Torres ou assessor — validar base legal + retenção por engagement_kind
+
+---
+
 ## 2026-04-10 — v2.9.5: LGPD Compliance Complete + Selection Dual Ranking + 68 MCP Tools
 
 ### Scope

@@ -1967,6 +1967,26 @@ const enUS: Record<string, string> = {
   'admin.loadCommsOps': 'Loading communication operations...',
   'admin.presidentWarning': 'No president has logged into the platform. The CR approval workflow requires auth.',
 
+  // ── Admin: Initiative Kinds (V4 Phase 6) ──
+  'admin.initiativeKinds': 'Initiative Kinds',
+  'admin.initiativeKindsDesc': 'Configure available initiative types. New kinds work without deploy.',
+  'admin.newKind': 'New Kind',
+  'admin.accessRestricted': 'Access restricted to administrators.',
+  'admin.displayName': 'Display name',
+  'admin.description': 'Description',
+  'admin.icon': 'Icon (Lucide)',
+  'admin.durationDays': 'Default duration (days)',
+  'admin.maxConcurrent': 'Max concurrent per org',
+  'admin.features': 'Enabled features',
+  'admin.meetingNotes': 'Meeting Notes',
+  'admin.deliverables': 'Deliverables',
+  'admin.attendance': 'Attendance',
+  'admin.certificate': 'Certificate',
+  'admin.customFieldsSchema': 'Custom fields (JSON Schema)',
+  'admin.customFieldsHint': 'Format: {"properties": {"field": {"type": "string"}}, "required": ["field"]}',
+  'admin.slugHint': 'Unique snake_case identifier (cannot be changed later)',
+  'admin.save': 'Save',
+
   // ── Data: KPI labels ──
   'data.kpi.chapters': 'PMI Chapters',
   'data.kpi.partners': 'Partner Entities',

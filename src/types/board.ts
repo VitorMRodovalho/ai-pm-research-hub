@@ -9,6 +9,7 @@ export interface Board {
   id: string;
   board_name: string;
   tribe_id: number | null;
+  initiative_id: string | null;
   source: 'trello' | 'notion' | 'manual';
   columns: string[];
   is_active: boolean;
@@ -24,6 +25,7 @@ export interface BoardItem {
   board_id?: string;
   board_name?: string;
   tribe_id?: number | null;
+  initiative_id?: string | null;
   domain_key?: string | null;
   title: string;
   description: string | null;
@@ -149,6 +151,7 @@ export interface BoardSummary {
   id: string;
   board_name: string;
   tribe_id: number | null;
+  initiative_id: string | null;
   domain_key: string | null;
   board_scope: string;
   source: string;
@@ -246,7 +249,9 @@ export function getColumnMeta(colId: string, lang?: string): ColumnMeta {
 export interface BoardEngineProps {
   boardId?: string;
   domainKey?: string;
+  /** @deprecated Use initiativeId instead */
   tribeId?: number;
+  initiativeId?: string;
   scope?: 'global' | 'tribe';
   mode?: 'default' | 'curation' | 'readonly';
   i18n?: BoardI18n;

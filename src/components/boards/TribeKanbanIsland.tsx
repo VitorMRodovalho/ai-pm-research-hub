@@ -301,7 +301,7 @@ function SortableCard({
   );
 }
 
-export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; i18n: TribeKanbanI18n }) {
+export default function TribeKanbanIsland({ tribeId, initiativeId, i18n }: { tribeId?: number; initiativeId?: string; i18n: TribeKanbanI18n }) {
   const t = usePageI18n();
   const windowRef = globalThis as any;
   const [loading, setLoading] = useState(true);
@@ -376,13 +376,13 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
       return;
     }
 
-    const { data: tribeData } = await sb
-      .from('tribes')
-      .select('id,name,name_i18n,workstream_type')
-      .eq('id', tribeId)
-      .maybeSingle();
+    const { data: tribeData } = initiativeId
+      ? await sb.from('tribes').select('id,name,name_i18n,workstream_type').eq('initiative_id', initiativeId).maybeSingle()
+      : await sb.from('tribes').select('id,name,name_i18n,workstream_type').eq('id', tribeId).maybeSingle();
 
-    const { data: boards } = await sb.rpc('list_project_boards', { p_tribe_id: tribeId });
+    const { data: boards } = initiativeId
+      ? await sb.rpc('list_initiative_boards', { p_initiative_id: initiativeId })
+      : await sb.rpc('list_project_boards', { p_tribe_id: tribeId });
     if (!Array.isArray(boards) || boards.length === 0) {
       setDenied(true);
       setLoading(false);
@@ -394,7 +394,9 @@ export default function TribeKanbanIsland({ tribeId, i18n }: { tribeId: number; 
 
     const [{ data: boardItems, error: boardErr }, { data: tribeMembers }] = await Promise.all([
       sb.rpc('list_board_items', { p_board_id: activeBoard.id, p_status: null }),
-      sb.from('public_members').select('id,name,photo_url').eq('tribe_id', tribeId).eq('current_cycle_active', true).eq('is_active', true),
+      initiativeId
+        ? sb.from('public_members').select('id,name,photo_url').eq('initiative_id', initiativeId).eq('current_cycle_active', true).eq('is_active', true)
+        : sb.from('public_members').select('id,name,photo_url').eq('tribe_id', tribeId).eq('current_cycle_active', true).eq('is_active', true),
     ]);
     console.log('[Kanban] Board items:', Array.isArray(boardItems) ? boardItems.length : 'NOT_ARRAY', 'Error:', boardErr);
 

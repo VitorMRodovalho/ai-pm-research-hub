@@ -3,15 +3,15 @@ description: MCP server rules and tool patterns
 globs: supabase/functions/nucleo-mcp/**
 ---
 
-# MCP Server Rules (nucleo-mcp v2.9.4)
+# MCP Server Rules (nucleo-mcp v2.9.6)
 
 ## Current State
-- 64 tools (51 read + 13 write) + 1 dynamic prompt + 1 static resource
+- 70 tools (56 read + 14 write) + 1 dynamic prompt + 1 static resource
 - Transport: @modelcontextprotocol/sdk@1.29.0 WebStandardStreamableHTTPServerTransport (native)
 - Tool params: Zod schemas (z.string(), z.number(), z.boolean()) — NOT plain JSON Schema objects
 - Auth: OAuth 2.1 via Workers (nucleoia.vitormr.dev) → Supabase JWT
 - All tools log usage to mcp_usage_log
-- Claude.ai connector: verified working (64 tools visible)
+- Claude.ai connector: verified working (68 tools visible)
 
 ## Pre-Deploy Check (MANDATORY)
 Before deploying nucleo-mcp EF, check for duplicate tool names:
@@ -54,10 +54,13 @@ mcp.tool("tool_name", "Description.", {
 mcp.tool("tool_name", "Description.", {}, async () => { ... });
 ```
 
-## Write Permission
-- `canWrite(member)` gates most write tools: manager, deputy_manager, tribe_leader, is_superadmin
-- `canWriteBoard(member, boardTribeId)` gates `create_board_card` and `update_card_status`: also allows researcher/facilitator/communicator on their own tribe's board
-- NEVER skip the canWrite/canWriteBoard check for write tools
+## Write Permission (V4 — ADR-0007)
+- `canV4(sb, member.id, action)` gates all write tools via RPC `can_by_member()` → `can()` (engagement-derived authority)
+- Actions: `write`, `write_board`, `manage_partner`, `promote`, `manage_member`, `manage_event`, `view_pii`
+- Permissions seeded in `engagement_kind_permissions` table (kind × role × action)
+- Fail-closed: if RPC errors, access is denied
+- NEVER skip the canV4 check for write tools
+- Legacy `canWrite`/`canWriteBoard`/`WRITE_ROLES`/`BOARD_ROLES` removed in cutover 2026-04-13
 
 ## OAuth Flow (all in Workers, NOT in EF)
 - Discovery: /.well-known/oauth-{authorization-server,protected-resource}

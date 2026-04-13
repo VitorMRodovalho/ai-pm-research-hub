@@ -138,7 +138,9 @@ test('admin_anonymize_member requires superadmin', () => {
 test('admin_anonymize_member scrubs PII fields', () => {
   const body = findFunctionBody('admin_anonymize_member');
   assert.ok(body);
-  const piiFields = ['full_name', 'email', 'phone', 'linkedin_url', 'avatar_url', 'auth_id'];
+  // Schema reality: members uses `name` (not full_name) and `photo_url` (not avatar_url).
+  // The RPC was corrected in migration 20260410160000 to match real column names.
+  const piiFields = ['name', 'email', 'phone', 'linkedin_url', 'photo_url', 'auth_id'];
   for (const field of piiFields) {
     assert.ok(body.includes(field), `Must scrub ${field}`);
   }
