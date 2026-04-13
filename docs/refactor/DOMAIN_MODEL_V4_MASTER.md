@@ -1,7 +1,7 @@
 # Domain Model V4 — Master Tracking Document
 
 - **Início:** 2026-04-11
-- **Status:** **ACCEPTED — Fases 0-6 concluídas 2026-04-13 — Fase 4 RLS close-out 2026-04-13 — Fase 7 (Cleanup) em execução**
+- **Status:** **ACCEPTED — Fases 0-7b concluídas 2026-04-13 — Fase 7c aguarda shadow window (2026-04-27+)**
 - **Owner:** Vitor (PM) / Claude (execução)
 - **Timeline:** 6 semanas (D3 aprovado 2026-04-11) — target de conclusão ~2026-05-23
 - **Escopo:** Refatoração arquitetural do modelo de domínio da plataforma Núcleo IA para habilitar crescimento nacional, multi-org, governança máxima e LGPD by design.
@@ -222,7 +222,7 @@ Objetivo: remover código legado, consolidar V4, atualizar documentação.
 - [x] `sign_volunteer_agreement()`: reescrita para popular `engagements.agreement_certificate_id` — **CONCLUÍDO 2026-04-13** (migration `20260415020000`). Após criar certificado, atualiza engagement ativo do voluntário. Response inclui `engagement_linked: true/false`.
 - [x] Reativar `requires_agreement=true` em volunteer/study_group_owner — **CONCLUÍDO 2026-04-13** (migration `20260415040000`). Backfill: 26 DocuSign imports + 8 admin attestations + 6 platform = 40/40 voluntários com certificado. Coluna `certificates.source` adicionada (`platform`/`docusign_import`/`admin_attestation`).
 - [x] ADR-0002 marcado como Superseded parcialmente por ADR-0007 — **CONCLUÍDO 2026-04-13**
-- [ ] Frontend `tribe_id` → `initiative_id` (dual-write garante compat durante transição)
+- [x] Frontend `tribe_id` → `initiative_id` — **CONCLUÍDO 2026-04-13** (migration `20260415070000`). Bridge RPCs criadas (`get_board_by_domain` com `p_initiative_id`, `get_initiative_member_contacts`, `broadcast_count_today_v4`). Types, hooks (4), permissions, SimulationContext, 6 components, tribe page migrados. `_by_initiative` RPCs usadas quando `initiative_id` disponível, fallback automático via `resolve_initiative_id()`. MCP prompt guide atualizado. Build 0 erros, 1184 tests pass.
 - [x] Export LGPD por engagement kind — **CONCLUÍDO 2026-04-13** (migration `20260415060000`). `export_my_data()` agora inclui `person`, `engagements`, `certificates`.
 - [x] MCP: `get_person()` + `get_active_engagements()` tools — **CONCLUÍDO 2026-04-13** (migration `20260415050000`). Tools 69-70. PII gated por `view_pii`. Own record sempre visível. 70 tools total (56R+14W).
 

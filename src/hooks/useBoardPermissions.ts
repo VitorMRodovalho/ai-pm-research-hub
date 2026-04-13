@@ -13,6 +13,7 @@ interface MemberContext {
   designations: string[];
   is_superadmin: boolean;
   tribe_id: number | null;
+  initiative_id: string | null;
 }
 
 interface Permissions {
@@ -50,6 +51,7 @@ export function useMemberContext() {
       designations: raw.designations || [],
       is_superadmin: raw.is_superadmin || false,
       tribe_id: raw.tribe_id || null,
+      initiative_id: raw.initiative_id || null,
     });
     setIsLoading(false);
   }
@@ -112,6 +114,7 @@ export function useBoardPermissions(board: Board | null): Permissions {
   const sim = getSimulation();
   const effectiveRole = sim.active && sim.tier ? sim.tier : member.operational_role;
   const effectiveDesig = sim.active ? sim.designations : member.designations;
+  const effectiveInitiativeId = sim.active && sim.initiative_id ? sim.initiative_id : member.initiative_id;
   const effectiveTribeId = sim.active && sim.tribe_id !== null ? sim.tribe_id : member.tribe_id;
   const effectiveSuperadmin = sim.active ? false : member.is_superadmin;
 
@@ -119,7 +122,10 @@ export function useBoardPermissions(board: Board | null): Permissions {
   const isSuperadmin = effectiveSuperadmin;
   const isManager = tier <= 2.5;
   const isLeader = tier <= 3;
-  const isOwnTribe = board.board_scope === 'tribe' && board.tribe_id === effectiveTribeId;
+  const isOwnTribe = board.board_scope === 'tribe' && (
+    (board.initiative_id && effectiveInitiativeId ? board.initiative_id === effectiveInitiativeId : false)
+    || board.tribe_id === effectiveTribeId
+  );
   const isGlobal = board.board_scope === 'global';
   const isComms = effectiveDesig.some((d: string) => ['comms_leader', 'comms_member'].includes(d));
   const isCurator = effectiveDesig.includes('curator') || effectiveDesig.includes('co_gp');

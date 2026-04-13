@@ -39,7 +39,9 @@ interface AttendanceGrid {
 }
 
 interface Props {
-  tribeId: number;
+  /** @deprecated Use initiativeId instead */
+  tribeId?: number;
+  initiativeId?: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -96,7 +98,7 @@ function rateBg(rate: number): string {
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export default function TribeAttendanceTab({ tribeId }: Props) {
+export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
   const t = usePageI18n();
 
   const [data, setData] = useState<AttendanceGrid | null>(null);
@@ -116,7 +118,7 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
   try {
     const member = getMember();
     if (member) {
-      const perms = getTribePermissions(member, tribeId);
+      const perms = getTribePermissions(member, tribeId || 0, initiativeId);
       canToggleAttendance = perms.canToggleAttendance;
       canSelfCheckIn = !!(perms.canSelfCheckIn && perms.selfCheckInHasWindow);
       currentMemberId = member.id || '';
@@ -130,9 +132,11 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
     const sb = getSb();
     if (!sb) return;
     const eventType = filter === 'all' ? null : filter;
-    const { data: result } = await sb.rpc('get_tribe_attendance_grid', { p_tribe_id: tribeId, p_event_type: eventType });
+    const { data: result } = initiativeId
+      ? await sb.rpc('get_initiative_attendance_grid', { p_initiative_id: initiativeId, p_event_type: eventType })
+      : await sb.rpc('get_tribe_attendance_grid', { p_tribe_id: tribeId, p_event_type: eventType });
     if (result) setData(result as AttendanceGrid);
-  }, [getSb, tribeId, filter]);
+  }, [getSb, tribeId, initiativeId, filter]);
 
   const handleToggle = useCallback(async (eventId: string, memberId: string, currentStatus: CellStatus) => {
     if (currentStatus === 'na') return;
@@ -159,7 +163,7 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
     } catch (e: any) {
       (window as any).toast?.(e.message || 'Erro', 'error');
     }
-  }, [getSb, tribeId, filter, data, refreshGrid]);
+  }, [getSb, tribeId, initiativeId, filter, data, refreshGrid]);
 
   // Self check-in handler
   const handleSelfCheckIn = useCallback(async (eventId: string) => {
@@ -201,10 +205,9 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
         }
 
         const eventType = filter === 'all' ? null : filter;
-        const { data: result, error: rpcErr } = await sb.rpc(
-          'get_tribe_attendance_grid',
-          { p_tribe_id: tribeId, p_event_type: eventType },
-        );
+        const { data: result, error: rpcErr } = initiativeId
+          ? await sb.rpc('get_initiative_attendance_grid', { p_initiative_id: initiativeId, p_event_type: eventType })
+          : await sb.rpc('get_tribe_attendance_grid', { p_tribe_id: tribeId, p_event_type: eventType });
 
         if (rpcErr) throw rpcErr;
         if (!cancelled) setData(result as AttendanceGrid);
@@ -217,7 +220,7 @@ export default function TribeAttendanceTab({ tribeId }: Props) {
     load();
 
     return () => { cancelled = true; };
-  }, [tribeId, filter, getSb]);
+  }, [tribeId, initiativeId, filter, getSb]);
 
   /* ---- sort ---- */
   const toggleSort = (key: SortKey) => {
