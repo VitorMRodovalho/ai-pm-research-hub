@@ -93,8 +93,8 @@ Herlon é o exemplo canônico: ele é um `ambassador` (engagement de mérito, se
 - [x] `persons` + `engagements` + `engagement_kinds` tabelas criadas — `20260413300000`, `20260413310000`, `20260413320000`
 - [x] Backfill: 71 persons + 96 engagements criados de members ativos — `20260413310000`, `20260413320000`
 - [ ] View `members_compat` mantém todo código legado funcionando — **POSTERGADO Fase 7** (130+ FKs impedem conversão)
-- [ ] `sign_volunteer_agreement()` reescrito para popular `engagements.agreement_certificate_id` — **POSTERGADO Fase 5**
+- [ ] `sign_volunteer_agreement()` reescrito para popular `engagements.agreement_certificate_id` — **POSTERGADO Fase 7**
 - [x] Ghost resolution atualiza `persons.auth_id` — backfill de members.auth_id em `20260413310000`; fluxo novos logins pendente (dívida no master doc)
 - [ ] Herlon tem 2 engagements distintos (ambassador + study_group_owner) — **PENDENTE** aguarda VEP formal
-- [ ] Export LGPD gera JSON por engagement com base legal — **POSTERGADO Fase 5**
+- [ ] Export LGPD gera JSON por engagement com base legal — **POSTERGADO Fase 7**
 - [ ] MCP tools migram para `getPerson() + getActiveEngagements()` — **POSTERGADO Fase 7**

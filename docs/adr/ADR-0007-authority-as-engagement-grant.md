@@ -84,8 +84,8 @@ Plataforma de governança máxima exige: **toda permissão rastreável até um a
 - [x] Função `can(person_id, action, resource_type, resource_id)` implementada e testada — `20260413420000`, 53 contract tests
 - [x] View `auth_engagements` agrega engagements ativos + validade de termo — `20260413410000`
 - [x] `operational_role` virou campo cache atualizado via trigger — `20260413430000` (trg_sync_role_cache)
-- [ ] `canWrite`/`canWriteBoard` no MCP chamam `can()` — **CUTOVER pendente 2026-04-15**
-- [ ] Todas RLS policies migraram para subquery em engagements (ou view) — **CUTOVER pendente 2026-04-15**
+- [x] `canWrite`/`canWriteBoard` no MCP chamam `can()` via `canV4()` → `can_by_member` RPC — **CUTOVER EXECUTADO 2026-04-13** (commit `cf76302`, 14 call sites, deploy confirmado)
+- [ ] Todas RLS policies migraram para subquery em `auth_engagements` — **PENDENTE pós quiet window 2026-04-15**
 - [x] Trigger diário de expiração em shadow mode ativo desde 2026-04-13 — `20260413440000` (cron 03:00 UTC)
 - [x] Ferramenta de diagnóstico `why_denied()` implementada no banco — `20260413420000`; admin UI na Fase 5
 - [ ] Relatório LGPD "quem acessa PII de <kind> agora" gerável em 1 query — **postergado Fase 5**

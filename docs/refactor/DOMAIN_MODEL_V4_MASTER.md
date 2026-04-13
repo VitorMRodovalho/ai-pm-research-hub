@@ -205,7 +205,7 @@ Objetivo: remover código legado e consolidar V4.
 
 ### Build & Test Baseline
 - **npx astro build:** ✅ **PASSA** em 26.11s. Warnings pré-existentes (CSS `text-[var(--text-primary/secondary/muted)]` delimiter, chunk >500kB) sem relação com refactor.
-- **npm test:** ✅ **1077 pass / 0 fail / 5 skipped / 1082 total** (779 + 51 multi-org + 140 initiative + 54 person-engagement + 53 authority — confirmado pós-Fase 4 shadow em 2026-04-13)
+- **npm test:** ✅ **1107 pass / 0 fail / 5 skipped / 1112 total** (779 + 51 multi-org + 140 initiative + 54 person-engagement + 53 authority + 30 lifecycle — confirmado pós-Fase 5 em 2026-04-13)
 
 **Fix LGPD aplicado na Fase 0 (bug pré-existente corrigido):**
 O teste `security-lgpd.test.mjs:138` esperava campos `full_name`/`avatar_url` mas a RPC `admin_anonymize_member` foi corrigida na migration `20260410160000_lgpd_p3_anonymization_cron.sql` para usar os nomes reais do schema (`name`/`photo_url`). O teste ficou stale. Correção: atualizar o teste para espelhar o schema real. A RPC estava correta — scruba 6 campos PII adequadamente. **Autorizado por D2 como correção LGPD (sempre permitida).**
