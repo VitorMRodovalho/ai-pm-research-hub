@@ -2839,6 +2839,7 @@ const enUS: Record<string, string> = {
   'blog.noPosts': 'No articles published yet.',
   'blog.notFound': 'Article not found.',
   'blog.backToList': 'Back to Blog',
+  'blog.updatedOn': 'Updated on',
   'blog.views': '{count} views',
   'blog.view': '1 view',
   'blog.like': 'Like',
