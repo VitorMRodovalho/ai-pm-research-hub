@@ -2507,7 +2507,7 @@ const enUS: Record<string, string> = {
   // ── Privacy Policy v2.0 (GC-080 LGPD Rewrite) ──
   'privacy.pageTitle': 'Privacy Policy — AI & PM Research Hub',
   'privacy.title': 'Privacy Policy and Data Protection',
-  'privacy.version': 'v2.1',
+  'privacy.version': 'v2.2',
   'privacy.lastUpdated': 'Last updated',
 
   // S1 — Data Controller
