@@ -11,7 +11,7 @@ globs: supabase/functions/nucleo-mcp/**
 - Tool params: Zod schemas (z.string(), z.number(), z.boolean()) — NOT plain JSON Schema objects
 - Auth: OAuth 2.1 via Workers (nucleoia.vitormr.dev) → Supabase JWT
 - All tools log usage to mcp_usage_log
-- Claude.ai connector: verified working (68 tools visible)
+- Claude.ai connector: verified working (70 tools visible)
 
 ## Pre-Deploy Check (MANDATORY)
 Before deploying nucleo-mcp EF, check for duplicate tool names:
