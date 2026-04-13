@@ -64,7 +64,7 @@ Refatoração arquitetural completa do modelo de domínio. 6 ADRs (0004-0009), 7
 - `operational_role` é cache mantido por trigger, lido pelo frontend para UI gating
 
 ### Pending (non-blocking, human-dependent)
-- Revisão jurídica: Claudio Torres ou assessor — validar base legal + retenção por engagement_kind
+- Revisão jurídica: DPO PMI-GO (Ivan Lourenço Costa) — validar base legal + retenção por engagement_kind
 
 ---
 

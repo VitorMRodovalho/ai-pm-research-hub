@@ -2639,6 +2639,15 @@ const enUS: Record<string, string> = {
   'privacy.s6ret.row9.data': 'Credly badge cache',
   'privacy.s6ret.row9.retention': 'While member is active',
   'privacy.s6ret.row9.after': 'Deleted with account',
+  'privacy.s6ret.row10.data': 'Guests and speakers',
+  'privacy.s6ret.row10.retention': '30 days after the event',
+  'privacy.s6ret.row10.after': 'Deletion',
+  'privacy.s6ret.row11.data': 'Partner contacts',
+  'privacy.s6ret.row11.retention': '1 year after end of relationship',
+  'privacy.s6ret.row11.after': 'Deletion',
+  'privacy.s6ret.row12.data': 'Volunteers and study group leaders',
+  'privacy.s6ret.row12.retention': '5 years after offboarding',
+  'privacy.s6ret.row12.after': 'Anonymization',
 
   // S7 — Data subject rights
   'privacy.s7rights.title': 'Your Rights (LGPD Art. 18)',
