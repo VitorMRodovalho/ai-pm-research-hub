@@ -1,6 +1,6 @@
 # ADR-0002: Role Model V3 (operational_role + designations)
 
-- Status: Accepted
+- Status: Superseded (partially by [ADR-0007](ADR-0007-authority-as-engagement-grant.md))
 - Data: 2026-03-11
 
 ## Contexto

@@ -213,18 +213,18 @@ Objetivo: remover código legado, consolidar V4, atualizar documentação.
 - [x] Master doc Fase 7 reestruturado por timeline
 - [x] ADR-0007: critério LGPD corrigido de "Fase 5" para "Fase 7" — commit `15a6c31`
 - [x] Rascunhar entrada RELEASE_LOG para V4 — draft v3.0.0 em `docs/RELEASE_LOG.md`, commit `15a6c31`
-- [ ] ADRs 0004-0009 confirmar data formal de Accepted
+- [x] ADRs 0004-0009 confirmar data formal de Accepted — todos já tinham `Data: 2026-04-11` + `Aprovado por: Vitor (PM)`
 
-**7b — Operacional (após quiet window 2026-04-15):**
-- [ ] Deprecar RPCs `_by_tribe` em favor de `_by_initiative` (com warning log)
+**7b — Operacional (quiet window antecipada, aprovado PM 2026-04-13):**
+- [x] Deprecar RPCs `_by_tribe` em favor de `_by_initiative` — **CONCLUÍDO 2026-04-13** (migration `20260415030000`). 9 RPCs marcadas DEPRECATED via COMMENT. `resolve_initiative_id(integer)` helper criado. 6 MCP tools migrados de `_by_tribe` → `_by_initiative` RPCs via `resolveInitiativeId()`.
 - [x] MCP: migrar 14 gates de analytics de `operational_role` direto para `canV4()` — **CONCLUÍDO 2026-04-13** (commit `db458d1`, deploy 3.012MB, HTTP 200). 10 admin→manage_member, 2 admin/sponsor→manage_member||manage_partner, 1 admin/comms→manage_member||write, 1 admin/liaison→manage_member||manage_partner. Restam 3 refs data-only (get_my_profile, get_my_tribe_members, prompt context).
-- [ ] `permissions.ts`: reescrever ou documentar formalmente como V4-cache-correct via trigger
+- [x] `permissions.ts`: documentado como V4-cache-correct — **CONCLUÍDO 2026-04-13**. Header comment explica que `operational_role` e `tribe_id` são cache mantido pelo `sync_operational_role_cache` trigger. Fonte de verdade: `can()` / `can_by_member()`.
 - [x] `sign_volunteer_agreement()`: reescrita para popular `engagements.agreement_certificate_id` — **CONCLUÍDO 2026-04-13** (migration `20260415020000`). Após criar certificado, atualiza engagement ativo do voluntário. Response inclui `engagement_linked: true/false`.
-- [ ] Reativar `requires_agreement=true` em volunteer/study_group_owner após backfill de certificados
-- [ ] ADR-0002 marcado como Superseded parcialmente por ADR-0007
+- [x] Reativar `requires_agreement=true` em volunteer/study_group_owner — **CONCLUÍDO 2026-04-13** (migration `20260415040000`). Backfill: 26 DocuSign imports + 8 admin attestations + 6 platform = 40/40 voluntários com certificado. Coluna `certificates.source` adicionada (`platform`/`docusign_import`/`admin_attestation`).
+- [x] ADR-0002 marcado como Superseded parcialmente por ADR-0007 — **CONCLUÍDO 2026-04-13**
 - [ ] Frontend `tribe_id` → `initiative_id` (dual-write garante compat durante transição)
-- [ ] Export LGPD por engagement kind
-- [ ] MCP: `getPerson()` + `getActiveEngagements()` tools
+- [x] Export LGPD por engagement kind — **CONCLUÍDO 2026-04-13** (migration `20260415060000`). `export_my_data()` agora inclui `person`, `engagements`, `certificates`.
+- [x] MCP: `get_person()` + `get_active_engagements()` tools — **CONCLUÍDO 2026-04-13** (migration `20260415050000`). Tools 69-70. PII gated por `view_pii`. Own record sempre visível. 70 tools total (56R+14W).
 
 **7c — Após 2 semanas de shadow (2026-04-27+):**
 - [ ] Ativar trigger de expiração real (`v4_expire_engagements` substituindo shadow)
