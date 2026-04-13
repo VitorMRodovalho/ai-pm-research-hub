@@ -2512,7 +2512,7 @@ const ptBR: Record<string, string> = {
   // ── Privacy Policy v2.0 (GC-080 LGPD Rewrite) ──
   'privacy.pageTitle': 'Política de Privacidade — Núcleo IA & GP',
   'privacy.title': 'Política de Privacidade e Proteção de Dados',
-  'privacy.version': 'v2.1',
+  'privacy.version': 'v2.2',
   'privacy.lastUpdated': 'Última atualização',
 
   // S1 — Controlador
