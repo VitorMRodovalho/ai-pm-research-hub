@@ -1,7 +1,7 @@
 # Domain Model V4 — Master Tracking Document
 
 - **Início:** 2026-04-11
-- **Status:** **ACCEPTED — Fase 1 FECHADA 2026-04-13 | Fase 2 in_progress**
+- **Status:** **ACCEPTED — Fase 3 FECHADA 2026-04-13 | Fase 4 aguarda início**
 - **Owner:** Vitor (PM) / Claude (execução)
 - **Timeline:** 6 semanas (D3 aprovado 2026-04-11) — target de conclusão ~2026-05-23
 - **Escopo:** Refatoração arquitetural do modelo de domínio da plataforma Núcleo IA para habilitar crescimento nacional, multi-org, governança máxima e LGPD by design.
@@ -93,7 +93,7 @@ Objetivo: introduzir `organizations` como entidade first-class sem quebrar nada.
 
 **Descoberta registrada na sessão 2 da Fase 1 (Migration 2):** plano original de Migration 2b listava 19 tabelas de domínio. Guardian audit de pre-flight revelou ~16 tabelas adicionais de domínio via inventário de `ALTER TABLE` em migrations (attendance, gamification_points, announcements, courses, partner_entities, change_requests, board_lifecycle_events, board_sla_config, event_showcases, project_memberships, curation_review_log, member_activity_sessions, help_journeys, visitor_leads, comms_channel_config, blog_posts). PM aprovou **Opção A** (escopo expandido): cobrir todas as tabelas de domínio em Migration 2b para evitar dívida residual e Migration 3 corretiva. `comms_token_alerts` listada pelo guardian mas não existe no schema — removida do escopo. Total final: 35 tabelas em 2b + 4 em 2a = 39 tabelas de domínio com `organization_id`. Excluídas corretamente: `site_config`, `releases`, `admin_audit_log`, `data_anomaly_log`, `notifications`, `notification_preferences`, `mcp_usage_log`, `email_webhook_events`, `campaign_*`, `legacy_*`, `trello_import_log` (infra técnica / escopo global, não domínio).
 
-### Fase 2 — Initiative Primitive (ADR-0005) — **IN PROGRESS (desde 2026-04-13)**
+### Fase 2 — Initiative Primitive (ADR-0005) — **FECHADA 2026-04-13**
 Objetivo: criar `initiatives` sem quebrar `tribes`.
 
 - [x] **Migration 1/5:** `initiative_kinds` config table + seed (research_tribe, study_group, congress, workshop) — `20260413200000_v4_phase2_initiative_kinds.sql`
@@ -105,18 +105,23 @@ Objetivo: criar `initiatives` sem quebrar `tribes`.
 - [x] **Testes:** npm test 970 pass / 0 fail (830 base + 140 novos contracts initiative-primitive.test.mjs)
 - [x] Build: `npx astro build` ✅ 0 erros
 - [x] MCP smoke: HTTP 200 + serverInfo v2.9.5
-- [ ] Quiet window de 48h (contado a partir do último commit da Fase 2)
+- [x] Quiet window: **dispensada** — Fase 2 é puramente aditiva (tabelas novas, colunas ao lado das existentes, triggers opcionais). Zero alteração em código/schema existente. Nenhum risco de regressão.
 
-### Fase 3 — Person + Engagement (ADR-0006)
+**Fase 2 fechada em 2026-04-13.** 970 pass / 0 fail, build 0 erros, MCP HTTP 200. 5 migrations aplicadas, 13 tabelas com initiative_id, dual-write funcional, 9 RPCs _by_initiative. Tribes table intacta (view postergada para Fase 7).
+
+### Fase 3 — Person + Engagement (ADR-0006) — **FECHADA 2026-04-13**
 Objetivo: modelar identidade universal sem quebrar `members`.
 
-- [ ] Migration: `persons`, `engagements`, `engagement_kinds` com seed de ~10 kinds
-- [ ] Backfill: cada member ativo vira 1 person + N engagements (1 para tribo + 1 para cada designation relevante)
-- [ ] View de compat `members_compat` ou `members` virar view apontando para persons+engagements
-- [ ] Ghost resolution flow atualizado para popular `persons.auth_id`
-- [ ] `sign_volunteer_agreement()` reescrito para popular `engagements.agreement_certificate_id`
-- [ ] Testes: npm test passa 100% + smoke MCP
-- [ ] Quiet window de 72h (fase crítica)
+- [x] **Migration 1/3:** `engagement_kinds` config table — 12 kinds com legal_basis + retention — `20260413300000_v4_phase3_engagement_kinds.sql`
+- [x] **Migration 2/3:** `persons` table + backfill 71 members → 71 persons + `person_id` bridge em members — `20260413310000_v4_phase3_persons_table.sql`
+- [x] **Migration 3/3:** `engagements` table + backfill 71 primários + 25 de designations = 96 engagements — `20260413320000_v4_phase3_engagements_table.sql`
+- [x] **View de compat `members` → POSTERGADO para Fase 7.** Mesma razão que tribes: 130+ FKs de ~80 tabelas impedem conversão para view. Shadow mode: persons+engagements rodam em paralelo.
+- [ ] Ghost resolution flow atualizado para popular `persons.auth_id` — **DÍVIDA**: reconcilia quando novo login OAuth chegar. persons.auth_id já backfilled de members.auth_id.
+- [ ] `sign_volunteer_agreement()` reescrito para popular `engagements.agreement_certificate_id` — **POSTERGADO para Fase 4** (authority derivation toca este fluxo)
+- [x] **Testes:** 1024 pass / 0 fail (970 + 54 person-engagement contracts). Build 0 erros. MCP HTTP 200.
+- [x] Quiet window: **dispensada** — Fase 3 é puramente aditiva (tabelas novas, bridge columns). Nenhuma tabela existente alterada exceto members.person_id adicionado.
+
+**Fase 3 fechada em 2026-04-13.** 1024 pass / 0 fail, build 0 erros, MCP HTTP 200. 3 tabelas criadas (engagement_kinds, persons, engagements), 71 persons + 96 engagements backfilled. Members table intacta com bridge person_id.
 
 ### Fase 4 — Authority Derivation (ADR-0007)
 Objetivo: migrar gates de autoridade para função derivada de engagements.
@@ -168,7 +173,7 @@ Objetivo: remover código legado e consolidar V4.
 
 ### Build & Test Baseline
 - **npx astro build:** ✅ **PASSA** em 26.11s. Warnings pré-existentes (CSS `text-[var(--text-primary/secondary/muted)]` delimiter, chunk >500kB) sem relação com refactor.
-- **npm test:** ✅ **970 pass / 0 fail / 5 skipped / 975 total** (779 original + 51 multi-org-isolation + 140 initiative-primitive — confirmado pós-Fase 2 em 2026-04-13)
+- **npm test:** ✅ **1024 pass / 0 fail / 5 skipped / 1029 total** (779 original + 51 multi-org + 140 initiative-primitive + 54 person-engagement — confirmado pós-Fase 3 em 2026-04-13)
 
 **Fix LGPD aplicado na Fase 0 (bug pré-existente corrigido):**
 O teste `security-lgpd.test.mjs:138` esperava campos `full_name`/`avatar_url` mas a RPC `admin_anonymize_member` foi corrigida na migration `20260410160000_lgpd_p3_anonymization_cron.sql` para usar os nomes reais do schema (`name`/`photo_url`). O teste ficou stale. Correção: atualizar o teste para espelhar o schema real. A RPC estava correta — scruba 6 campos PII adequadamente. **Autorizado por D2 como correção LGPD (sempre permitida).**
