@@ -90,11 +90,11 @@ Herlon é o exemplo canônico: ele é um `ambassador` (engagement de mérito, se
 
 ## Critérios de aceite
 
-- [ ] `persons` + `engagements` + `engagement_kinds` tabelas criadas
-- [ ] Backfill: toda linha de `members` ativa gera 1 `person` + 1 `engagement` equivalente
-- [ ] View `members_compat` mantém todo código legado funcionando
-- [ ] `sign_volunteer_agreement()` reescrito para popular `engagements.agreement_certificate_id`
-- [ ] Ghost resolution (como fizemos hoje para Herlon) atualiza `persons.auth_id`
-- [ ] Herlon tem 2 engagements distintos (ambassador + study_group_owner)
-- [ ] Export LGPD (Art. 18 V) gera JSON por engagement, com base legal explícita
-- [ ] MCP tools que hoje usam `getMember()` migram para `getPerson() + getActiveEngagements()`
+- [x] `persons` + `engagements` + `engagement_kinds` tabelas criadas — `20260413300000`, `20260413310000`, `20260413320000`
+- [x] Backfill: 71 persons + 96 engagements criados de members ativos — `20260413310000`, `20260413320000`
+- [ ] View `members_compat` mantém todo código legado funcionando — **POSTERGADO Fase 7** (130+ FKs impedem conversão)
+- [ ] `sign_volunteer_agreement()` reescrito para popular `engagements.agreement_certificate_id` — **POSTERGADO Fase 5**
+- [x] Ghost resolution atualiza `persons.auth_id` — backfill de members.auth_id em `20260413310000`; fluxo novos logins pendente (dívida no master doc)
+- [ ] Herlon tem 2 engagements distintos (ambassador + study_group_owner) — **PENDENTE** aguarda VEP formal
+- [ ] Export LGPD gera JSON por engagement com base legal — **POSTERGADO Fase 5**
+- [ ] MCP tools migram para `getPerson() + getActiveEngagements()` — **POSTERGADO Fase 7**
