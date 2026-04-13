@@ -1,7 +1,7 @@
 # Domain Model V4 — Master Tracking Document
 
 - **Início:** 2026-04-11
-- **Status:** **ACCEPTED — Fase 3 FECHADA 2026-04-13 | Fase 4 aguarda início**
+- **Status:** **ACCEPTED — Fase 4 in_progress desde 2026-04-13 (shadow mode)**
 - **Owner:** Vitor (PM) / Claude (execução)
 - **Timeline:** 6 semanas (D3 aprovado 2026-04-11) — target de conclusão ~2026-05-23
 - **Escopo:** Refatoração arquitetural do modelo de domínio da plataforma Núcleo IA para habilitar crescimento nacional, multi-org, governança máxima e LGPD by design.
@@ -123,19 +123,22 @@ Objetivo: modelar identidade universal sem quebrar `members`.
 
 **Fase 3 fechada em 2026-04-13.** 1024 pass / 0 fail, build 0 erros, MCP HTTP 200. 3 tabelas criadas (engagement_kinds, persons, engagements), 71 persons + 96 engagements backfilled. Members table intacta com bridge person_id.
 
-### Fase 4 — Authority Derivation (ADR-0007)
+### Fase 4 — Authority Derivation (ADR-0007) — **IN PROGRESS (desde 2026-04-13, shadow mode)**
 Objetivo: migrar gates de autoridade para função derivada de engagements.
 
-- [ ] Função SQL `can(person_id, action, resource_type, resource_id)` implementada
-- [ ] View `auth_engagements` agregando engagements ativos + validade termo
-- [ ] Trigger: `operational_role` vira cache denormalizado, atualizado por trigger
-- [ ] `canWrite`/`canWriteBoard` no MCP migram para chamar `can()` via RPC
-- [ ] RLS policies migram para subquery em `auth_engagements` (em lotes, por domínio)
-- [ ] Trigger diário de expiração em shadow mode (log only, não ativa suspensão)
-- [ ] Ferramenta de diagnóstico "why denied?" disponível em `/admin/authority`
-- [ ] Testes: smoke de todos os gates críticos + npm test
-- [ ] Quiet window de 1 semana (fase de risco máximo)
-- [ ] Ativar trigger de expiração após validação
+- [x] **Migration 1/5:** `engagement_kind_permissions` — maps (kind, role) → actions. 7 actions, all volunteer roles + sponsor/chapter_board/study_group seeded — `20260413400000_v4_phase4_engagement_permissions.sql`
+- [x] **Migration 2/5:** `auth_engagements` view — active engagements with is_authoritative derivation (temporal + agreement checks) — `20260413410000_v4_phase4_auth_engagements_view.sql`
+- [x] **Migration 3/5:** `can()` + `can_by_member()` + `why_denied()` — authority gate in shadow mode — `20260413420000_v4_phase4_can_function.sql`. **Shadow validation: 8/8 writers match canWrite, 20/20 board writers match canWriteBoard. Zero mismatches.**
+- [x] **Migration 4/5:** `sync_operational_role_cache` trigger — recalculates members.operational_role from engagements — `20260413430000_v4_phase4_role_cache_sync.sql`
+- [x] **Migration 5/5:** `v4_expire_engagements_shadow` — daily pg_cron job, logs expired engagements without changing status — `20260413440000_v4_phase4_expiration_shadow.sql`
+- [ ] `canWrite`/`canWriteBoard` no MCP migram para chamar `can()` via RPC — **CUTOVER pendente** (requer shadow validation de 48h+ primeiro)
+- [ ] RLS policies migram para subquery em `auth_engagements` — **CUTOVER pendente** (mesma janela que MCP)
+- [x] Ferramenta de diagnóstico `why_denied(person_id, action)` — implementada e testada
+- [x] **Testes:** 1077 pass / 0 fail (1024 + 53 authority-derivation contracts). Build 0 erros. MCP HTTP 200.
+- [ ] Quiet window + cutover — shadow mode ativo, cutover (canWrite→can no MCP + RLS) após validação
+- [ ] Ativar trigger de expiração real após 2 semanas de shadow
+
+**Decisão Fase 4:** `requires_agreement` relaxado para false em volunteer/study_group_owner durante shadow mode. Agreement enforcement pertence à Fase 5 (Lifecycle Configuration). can() deve espelhar canWrite no shadow — enforcement de termos é concern separado.
 
 ### Fase 5 — Lifecycle Configuration (ADR-0008)
 Objetivo: mover lifecycle de código para config por engagement_kind.
@@ -173,7 +176,7 @@ Objetivo: remover código legado e consolidar V4.
 
 ### Build & Test Baseline
 - **npx astro build:** ✅ **PASSA** em 26.11s. Warnings pré-existentes (CSS `text-[var(--text-primary/secondary/muted)]` delimiter, chunk >500kB) sem relação com refactor.
-- **npm test:** ✅ **1024 pass / 0 fail / 5 skipped / 1029 total** (779 original + 51 multi-org + 140 initiative-primitive + 54 person-engagement — confirmado pós-Fase 3 em 2026-04-13)
+- **npm test:** ✅ **1077 pass / 0 fail / 5 skipped / 1082 total** (779 + 51 multi-org + 140 initiative + 54 person-engagement + 53 authority — confirmado pós-Fase 4 shadow em 2026-04-13)
 
 **Fix LGPD aplicado na Fase 0 (bug pré-existente corrigido):**
 O teste `security-lgpd.test.mjs:138` esperava campos `full_name`/`avatar_url` mas a RPC `admin_anonymize_member` foi corrigida na migration `20260410160000_lgpd_p3_anonymization_cron.sql` para usar os nomes reais do schema (`name`/`photo_url`). O teste ficou stale. Correção: atualizar o teste para espelhar o schema real. A RPC estava correta — scruba 6 campos PII adequadamente. **Autorizado por D2 como correção LGPD (sempre permitida).**
