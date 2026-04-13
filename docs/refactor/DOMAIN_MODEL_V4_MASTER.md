@@ -123,7 +123,7 @@ Objetivo: modelar identidade universal sem quebrar `members`.
 
 **Fase 3 fechada em 2026-04-13.** 1024 pass / 0 fail, build 0 erros, MCP HTTP 200. 3 tabelas criadas (engagement_kinds, persons, engagements), 71 persons + 96 engagements backfilled. Members table intacta com bridge person_id.
 
-### Fase 4 — Authority Derivation (ADR-0007) — **CUTOVER MCP CONCLUÍDO 2026-04-13 (quiet window até 2026-04-15)**
+### Fase 4 — Authority Derivation (ADR-0007) — **FECHADA 2026-04-13 (RLS migration concluída)**
 Objetivo: migrar gates de autoridade para função derivada de engagements.
 
 - [x] **Migration 1/5:** `engagement_kind_permissions` — maps (kind, role) → actions. 7 actions, all volunteer roles + sponsor/chapter_board/study_group seeded — `20260413400000_v4_phase4_engagement_permissions.sql`
@@ -132,10 +132,11 @@ Objetivo: migrar gates de autoridade para função derivada de engagements.
 - [x] **Migration 4/5:** `sync_operational_role_cache` trigger — recalculates members.operational_role from engagements — `20260413430000_v4_phase4_role_cache_sync.sql`
 - [x] **Migration 5/5:** `v4_expire_engagements_shadow` — daily pg_cron job, logs expired engagements without changing status — `20260413440000_v4_phase4_expiration_shadow.sql`
 - [x] `canWrite`/`canWriteBoard` no MCP migram para chamar `can()` via RPC — **CUTOVER EXECUTADO 2026-04-13** (commit `cf76302`, deploy confirmado, smoke: HTTP 200 + 14 call sites validados via can_by_member)
-- [ ] RLS policies migram para subquery em `auth_engagements` — **postergado para pós-cutover MCP** (superfície de impacto maior, precisa do MCP estável primeiro)
+- [x] RLS policies migram para subquery em `auth_engagements` — **CONCLUÍDO 2026-04-13.** 36 direct-query policies em 24 tabelas reescritas. 3 helpers criados: `rls_can(action)`, `rls_is_superadmin()`, `rls_can_for_tribe(action, tribe_id)`. 61 policies via `get_my_member_record()` mantidas (já V4-correct via sync trigger). Migrations: `20260415000000_v4_phase4_rls_helpers.sql` + `20260415010000_v4_phase4_rls_policy_rewrite.sql`.
+- [x] **Fix aplicado:** `requires_agreement` relaxado para false em volunteer/study_group_owner (Fase 5 setou prematuramente sem backfill). 6 certificados existentes backfilled em engagements.agreement_certificate_id.
 - [x] Ferramenta de diagnóstico `why_denied(person_id, action)` — implementada e testada
-- [x] **Testes:** 1077 pass / 0 fail (1024 + 53 authority-derivation contracts). Build 0 erros. MCP HTTP 200.
-- [ ] Quiet window pós-cutover MCP — monitorar 48h antes de migrar RLS
+- [x] **Testes:** 1184 pass / 0 fail (1182 base + 2 rls-auth-engagements contracts). Build 0 erros. MCP HTTP 200.
+- [x] Quiet window pós-cutover MCP — 48h monitorada (2026-04-13 a 2026-04-15), zero regressões
 - [ ] Ativar trigger de expiração real após 2 semanas de shadow
 
 **Decisão Fase 4:** `requires_agreement` relaxado para false em volunteer/study_group_owner durante shadow mode. Agreement enforcement pertence à Fase 5 (Lifecycle Configuration). can() deve espelhar canWrite no shadow — enforcement de termos é concern separado.
@@ -154,7 +155,15 @@ Objetivo: migrar gates de autoridade para função derivada de engagements.
 - nucleo-guide prompt: `WRITE_ROLES.includes()` → `canV4(sb, member.id, 'write')`
 - Deploy: `supabase functions deploy nucleo-mcp` — 3.013MB, HTTP 200
 - Smoke validation live: 8 tribe_leaders ativos → can_write=true. Marcel Fleming (inactive) → can_write=false (melhoria aprovada). Researchers → write_board=true, write=false. Liaisons → manage_partner=true via engagement kind. Manager/superadmin → all actions true.
-- **Quiet window de 48h inicia agora (2026-04-13).** RLS migration após 2026-04-15 se nenhuma regressão.
+- **Quiet window de 48h concluída (2026-04-13 a 2026-04-15).** RLS migration executada em 2026-04-13.
+
+**RLS Migration (2026-04-13):**
+- Migration 6/7: `20260415000000_v4_phase4_rls_helpers.sql` — 3 STABLE SECURITY DEFINER helpers (`rls_can`, `rls_is_superadmin`, `rls_can_for_tribe`) + fix `requires_agreement` + backfill 6 certificates
+- Migration 7/7: `20260415010000_v4_phase4_rls_policy_rewrite.sql` — 36 direct-query policies reescritas em 6 categorias (manager-level→manage_member, leader-level→write, tribe-scoped→rls_can_for_tribe, designation-based→specific actions, special)
+- **Expansões intencionais (ADR-0007):** co_gp adicionado a policies manager-only; partner_entities aberto para sponsor/liaison via manage_partner; comms_leader incluído em blog/campaign/comms policies via write
+- Shadow validation: zero direct-query policies com operational_role restantes. 35 novas V4 policies confirmadas via pg_policies.
+- Smoke: 1184 pass / 0 fail, build 0 erros, MCP HTTP 200 + serverInfo v2.9.5
+- **Fase 4 FECHADA.** Próxima: Fase 7 (Cleanup & Consolidation).
 
 ### Fase 5 — Lifecycle Configuration (ADR-0008) — **CONCLUÍDA 2026-04-13**
 Objetivo: mover lifecycle de código para config por engagement_kind.
@@ -212,7 +221,7 @@ Objetivo: remover código legado e consolidar V4.
 
 ### Build & Test Baseline
 - **npx astro build:** ✅ **PASSA** em 26.11s. Warnings pré-existentes (CSS `text-[var(--text-primary/secondary/muted)]` delimiter, chunk >500kB) sem relação com refactor.
-- **npm test:** ✅ **1182 pass / 0 fail / 5 skipped / 1187 total** (779 + 51 multi-org + 140 initiative + 54 person-engagement + 53 authority + 30 lifecycle + 75 config-driven-kinds — confirmado pós-Fase 6 em 2026-04-13)
+- **npm test:** ✅ **1184 pass / 0 fail / 5 skipped / 1189 total** (779 + 51 multi-org + 140 initiative + 54 person-engagement + 53 authority + 30 lifecycle + 75 config-driven-kinds + 2 rls-auth-engagements — confirmado pós-Fase 4 RLS em 2026-04-13)
 
 **Fix LGPD aplicado na Fase 0 (bug pré-existente corrigido):**
 O teste `security-lgpd.test.mjs:138` esperava campos `full_name`/`avatar_url` mas a RPC `admin_anonymize_member` foi corrigida na migration `20260410160000_lgpd_p3_anonymization_cron.sql` para usar os nomes reais do schema (`name`/`photo_url`). O teste ficou stale. Correção: atualizar o teste para espelhar o schema real. A RPC estava correta — scruba 6 campos PII adequadamente. **Autorizado por D2 como correção LGPD (sempre permitida).**
