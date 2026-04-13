@@ -1,7 +1,7 @@
 # Domain Model V4 — Master Tracking Document
 
 - **Início:** 2026-04-11
-- **Status:** **ACCEPTED — Fase 4 in_progress desde 2026-04-13 (shadow mode)**
+- **Status:** **ACCEPTED — Fase 4 shadow mode (Dia 2 de 2) — cutover agendado 2026-04-15**
 - **Owner:** Vitor (PM) / Claude (execução)
 - **Timeline:** 6 semanas (D3 aprovado 2026-04-11) — target de conclusão ~2026-05-23
 - **Escopo:** Refatoração arquitetural do modelo de domínio da plataforma Núcleo IA para habilitar crescimento nacional, multi-org, governança máxima e LGPD by design.
@@ -131,14 +131,22 @@ Objetivo: migrar gates de autoridade para função derivada de engagements.
 - [x] **Migration 3/5:** `can()` + `can_by_member()` + `why_denied()` — authority gate in shadow mode — `20260413420000_v4_phase4_can_function.sql`. **Shadow validation: 8/8 writers match canWrite, 20/20 board writers match canWriteBoard. Zero mismatches.**
 - [x] **Migration 4/5:** `sync_operational_role_cache` trigger — recalculates members.operational_role from engagements — `20260413430000_v4_phase4_role_cache_sync.sql`
 - [x] **Migration 5/5:** `v4_expire_engagements_shadow` — daily pg_cron job, logs expired engagements without changing status — `20260413440000_v4_phase4_expiration_shadow.sql`
-- [ ] `canWrite`/`canWriteBoard` no MCP migram para chamar `can()` via RPC — **CUTOVER pendente** (requer shadow validation de 48h+ primeiro)
-- [ ] RLS policies migram para subquery em `auth_engagements` — **CUTOVER pendente** (mesma janela que MCP)
+- [ ] `canWrite`/`canWriteBoard` no MCP migram para chamar `can()` via RPC — **CUTOVER agendado 2026-04-15** (plano: `docs/refactor/CUTOVER_FASE4_PLAN.md`)
+- [ ] RLS policies migram para subquery em `auth_engagements` — **postergado para pós-cutover MCP** (superfície de impacto maior, precisa do MCP estável primeiro)
 - [x] Ferramenta de diagnóstico `why_denied(person_id, action)` — implementada e testada
 - [x] **Testes:** 1077 pass / 0 fail (1024 + 53 authority-derivation contracts). Build 0 erros. MCP HTTP 200.
 - [ ] Quiet window + cutover — shadow mode ativo, cutover (canWrite→can no MCP + RLS) após validação
 - [ ] Ativar trigger de expiração real após 2 semanas de shadow
 
 **Decisão Fase 4:** `requires_agreement` relaxado para false em volunteer/study_group_owner durante shadow mode. Agreement enforcement pertence à Fase 5 (Lifecycle Configuration). can() deve espelhar canWrite no shadow — enforcement de termos é concern separado.
+
+**Shadow Validation — Dia 2 (2026-04-14):**
+- Guardian smoke check: 1077 pass / 0 fail, build 0 erros, todos invariantes verdes
+- Shadow validation re-executada: **70/71 members mirrors_ok = true**
+- **1 divergência esperada e aprovada:** Marcel Fleming (`tribe_leader`, `current_cycle_active=false`) — canWrite legado retorna true (só checa role), can() V4 retorna false (engagement expired por ciclo inativo). Marcel solicitou desligamento no início do ciclo. **can() está mais correto.** O legado canWrite era permissivo demais (bug de design — não checava atividade). PM aprovou: esta melhoria de segurança é desejada no cutover.
+- Divergências análogas em não-writers (Leandro Mota, Maurício Abe Machado: researchers com current_cycle_active=false) — sem impacto em gates de escrita, mirrors_ok=true porque ambos retornam false nos dois sistemas.
+- Cron de expiração shadow: ativo (03:00 UTC diário), sem logs = nenhum engagement com end_date expirado (todos têm end_date=null). Esperado.
+- **Veredicto: PRONTO para cutover em 2026-04-15.**
 
 ### Fase 5 — Lifecycle Configuration (ADR-0008)
 Objetivo: mover lifecycle de código para config por engagement_kind.

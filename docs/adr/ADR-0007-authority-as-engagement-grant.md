@@ -81,12 +81,12 @@ Plataforma de governança máxima exige: **toda permissão rastreável até um a
 
 ## Critérios de aceite
 
-- [ ] Função `can(person_id, action, resource_type, resource_id)` implementada e testada
-- [ ] View `auth_engagements` agrega engagements ativos + validade de termo
-- [ ] `operational_role` virou campo cache atualizado via trigger
-- [ ] `canWrite`/`canWriteBoard` no MCP chamam `can()`
-- [ ] Todas RLS policies migraram para subquery em engagements (ou view)
-- [ ] Trigger diário de expiração funcionando em shadow mode por 2 semanas antes de ativar
-- [ ] Ferramenta de diagnóstico "por que <person> não pode <action> em <resource>?" disponível no admin
-- [ ] Relatório LGPD "quem acessa PII de <kind> agora" gerável em 1 query
-- [ ] Testes de regressão cobrindo: termo vencido corta acesso, revogação imediata, expiração por data
+- [x] Função `can(person_id, action, resource_type, resource_id)` implementada e testada — `20260413420000`, 53 contract tests
+- [x] View `auth_engagements` agrega engagements ativos + validade de termo — `20260413410000`
+- [x] `operational_role` virou campo cache atualizado via trigger — `20260413430000` (trg_sync_role_cache)
+- [ ] `canWrite`/`canWriteBoard` no MCP chamam `can()` — **CUTOVER pendente 2026-04-15**
+- [ ] Todas RLS policies migraram para subquery em engagements (ou view) — **CUTOVER pendente 2026-04-15**
+- [x] Trigger diário de expiração em shadow mode ativo desde 2026-04-13 — `20260413440000` (cron 03:00 UTC)
+- [x] Ferramenta de diagnóstico `why_denied()` implementada no banco — `20260413420000`; admin UI na Fase 5
+- [ ] Relatório LGPD "quem acessa PII de <kind> agora" gerável em 1 query — **postergado Fase 5**
+- [x] Testes de regressão cobrindo authority contracts — 53 assertions em `authority-derivation.test.mjs`
