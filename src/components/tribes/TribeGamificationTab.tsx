@@ -6,7 +6,9 @@ import {
 import { usePageI18n } from '../../i18n/usePageI18n';
 
 interface TribeGamificationTabProps {
-  tribeId: number;
+  /** @deprecated Use initiativeId instead */
+  tribeId?: number;
+  initiativeId?: string;
 }
 
 interface Summary {
@@ -54,7 +56,7 @@ type SortKey = 'total_points' | 'cycle_points' | 'attendance_points' | 'cert_poi
 
 const CHART_COLORS = ['#00799E', '#FF610F', '#4F17A8', '#10B981', '#F59E0B', '#EF4444'];
 
-export default function TribeGamificationTab({ tribeId }: TribeGamificationTabProps) {
+export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGamificationTabProps) {
   const t = usePageI18n();
   const [data, setData] = useState<GamificationData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,9 +70,9 @@ export default function TribeGamificationTab({ tribeId }: TribeGamificationTabPr
       if (!sb) { setTimeout(load, 300); return; }
 
       try {
-        const { data: result, error: err } = await sb.rpc('get_tribe_gamification', {
-          p_tribe_id: tribeId,
-        });
+        const { data: result, error: err } = initiativeId
+          ? await sb.rpc('get_initiative_gamification', { p_initiative_id: initiativeId })
+          : await sb.rpc('get_tribe_gamification', { p_tribe_id: tribeId });
         if (err) throw err;
         setData(result as GamificationData);
       } catch (e: any) {
@@ -80,7 +82,7 @@ export default function TribeGamificationTab({ tribeId }: TribeGamificationTabPr
       }
     };
     load();
-  }, [tribeId]);
+  }, [tribeId, initiativeId]);
 
   const sortedMembers = useMemo(() => {
     if (!data?.members) return [];

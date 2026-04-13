@@ -274,6 +274,7 @@ export interface MemberForPermission {
   operational_role: string;
   designations?: string[];
   tribe_id?: number | null;
+  initiative_id?: string | null;
 }
 
 interface SimulationState {
@@ -281,10 +282,11 @@ interface SimulationState {
   tier: OperationalTier | null;
   designations: Designation[];
   tribe_id: number | null;
+  initiative_id: string | null;
 }
 
 let _simulation: SimulationState = {
-  active: false, tier: null, designations: [], tribe_id: null,
+  active: false, tier: null, designations: [], tribe_id: null, initiative_id: null,
 };
 
 export function setSimulation(state: SimulationState) {
@@ -296,7 +298,7 @@ export function getSimulation(): SimulationState {
 }
 
 export function clearSimulation() {
-  _simulation = { active: false, tier: null, designations: [], tribe_id: null };
+  _simulation = { active: false, tier: null, designations: [], tribe_id: null, initiative_id: null };
 }
 
 export function hasPermission(
@@ -329,6 +331,14 @@ export function getEffectiveTribeId(member: MemberForPermission): number | null 
     return _simulation.tribe_id;
   }
   return member.tribe_id ?? null;
+}
+
+// Convenience: get effective initiative_id (real or simulated)
+export function getEffectiveInitiativeId(member: MemberForPermission): string | null {
+  if (_simulation.active && _simulation.initiative_id) {
+    return _simulation.initiative_id;
+  }
+  return member.initiative_id ?? null;
 }
 
 // TRIBE DASHBOARD PERMISSIONS: moved to src/lib/tribePermissions.ts

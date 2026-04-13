@@ -6,6 +6,7 @@ export interface AttendanceEvent {
   title: string;
   type: string;
   tribe_id: number | null;
+  initiative_id: string | null;
   tribe_name: string | null;
   duration_minutes: number;
   week_number: number;

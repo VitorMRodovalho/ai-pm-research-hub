@@ -102,6 +102,7 @@ function registerKnowledge(mcp: McpServer, sb: ReturnType<typeof createClient>) 
 - **Nome:** ${member.name}
 - **Papel:** ${role}${member.is_superadmin ? " (superadmin)" : ""}
 - **Tribo:** ${hasTribe ? `Tribo ${member.tribe_id}` : "Sem tribo fixa (manager/founder)"}
+- **Initiative:** ${member.initiative_id || "não vinculado"}
 - **Designações:** ${designations.length > 0 ? designations.join(", ") : "nenhuma"}
 - **Capítulo:** ${member.chapter || "não definido"}`);
 
@@ -145,11 +146,12 @@ Você pode perguntar em linguagem natural — o assistente escolhe a ferramenta 
 - \`list_tribe_webinars\` — Webinars da tribo
 - \`get_event_detail\` — Detalhe de evento (agenda, ata, action items) — passe event_id`);
       } else {
-        sections.push(`### Nota sobre rotas de tribo
-Seu perfil não tem \`tribe_id\` fixo. Para consultar dados de uma tribo específica, use ferramentas que aceitam \`tribe_id\` como parâmetro:
+        sections.push(`### Nota sobre rotas de tribo/iniciativa
+Seu perfil não tem tribo fixa. Para consultar dados de uma iniciativa específica, use ferramentas que aceitam \`tribe_id\` (inteiro 1-8, legado) ou \`initiative_id\` (UUID, V4) como parâmetro:
 - \`get_tribe_dashboard\` com \`tribe_id=1\` a \`8\`
 - \`get_tribe_deliverables\` com \`tribe_id=1\` a \`8\`
-Rotas como \`get_my_tribe_members\` retornarão "No tribe assigned" — isso é esperado.`);
+Rotas como \`get_my_tribe_members\` retornarão "No tribe assigned" — isso é esperado.
+**V4:** Internamente, as RPCs \`_by_initiative\` usam initiative UUIDs. O campo \`initiative_id\` está disponível em todos os registros via dual-write.`);
       }
 
       if (isLeader) {
@@ -205,7 +207,7 @@ Você é membro da diretoria do ${member.chapter || "capítulo"}. Seu acesso é 
 
       if (isAdmin) {
         sections.push(`### Gestão/GP (Admin)
-- \`get_tribe_dashboard\` — Dashboard completo de qualquer tribo (tribe_id 1-8)
+- \`get_tribe_dashboard\` — Dashboard completo de qualquer tribo (tribe_id 1-8 ou initiative_id UUID)
 - \`get_tribe_deliverables\` — Entregas por tribo e ciclo
 - \`get_portfolio_overview\` — Visão executiva: todos os boards e cards
 - \`get_operational_alerts\` — Alertas: inatividade, cards atrasados, drift
@@ -319,14 +321,14 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 ### Tier 3 — GP/Admin (12 leitura)
 | # | Ferramenta | Parâmetros | Descrição |
 |---|-----------|-----------|-----------|
-| 24 | get_tribe_dashboard | tribe_id? | Dashboard completo da tribo |
+| 24 | get_tribe_dashboard | tribe_id? (ou initiative_id) | Dashboard completo da tribo/iniciativa |
 | 25 | get_portfolio_overview | — | Visão executiva: boards e cards |
 | 26 | get_operational_alerts | — | Alertas operacionais |
 | 27 | get_cycle_report | — | Relatório do ciclo |
 | 28 | get_annual_kpis | — | KPIs anuais (admin/sponsor) |
 | 29 | get_adoption_metrics | — | Métricas de adoção MCP |
 | 30 | get_curation_dashboard | — | Workflow de curadoria |
-| 31 | get_tribe_deliverables | tribe_id?, cycle_code? | Entregas por tribo |
+| 31 | get_tribe_deliverables | tribe_id?, cycle_code? | Entregas por tribo/iniciativa |
 | 32 | get_anomaly_report | — | Anomalias de dados |
 | 33 | get_portfolio_health | cycle_code? | Saúde trimestral |
 | 34 | get_volunteer_funnel | cycle? | Funil de seleção |
@@ -363,6 +365,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 - get_annual_kpis e get_portfolio_health também acessíveis por sponsors
 - get_partner_pipeline acessível por sponsors e chapter_liaisons
 - create_board_card aceita board_id para usuários sem tribe_id (use list_boards)
+- **V4:** \`initiative_id\` (UUID) é o identificador canônico. \`tribe_id\` (1-8) é mantido por dual-write. Ambos funcionam.
 - Todas as chamadas são logadas em mcp_usage_log
 `,
       }],

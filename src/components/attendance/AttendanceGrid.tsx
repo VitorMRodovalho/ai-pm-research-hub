@@ -15,7 +15,9 @@ interface MemberContext {
 interface AttendanceGridProps {
   supabase: any;
   currentMember: MemberContext;
-  tribeId: number;
+  /** @deprecated Use initiativeId instead */
+  tribeId?: number;
+  initiativeId?: string;
   t: (key: string, fallback?: string) => string;
 }
 
@@ -55,10 +57,10 @@ function isWithinCheckInWindow(eventDate: string): boolean {
   return now >= twoHoursBefore && now <= fortyEightAfter;
 }
 
-export function AttendanceGrid({ supabase, currentMember, tribeId, t }: AttendanceGridProps) {
+export function AttendanceGrid({ supabase, currentMember, tribeId, initiativeId, t }: AttendanceGridProps) {
   const perms = getTribePermissions(currentMember, tribeId);
   const { grid, loading, error, fetchGrid, toggleMember, selfCheckIn, getEffectiveStatus } =
-    useAttendance({ supabase, tribeId });
+    useAttendance({ supabase, tribeId, initiativeId });
 
   const [filter, setFilter] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<'rate' | 'name'>('rate');
