@@ -1,7 +1,7 @@
 # Domain Model V4 — Master Tracking Document
 
 - **Início:** 2026-04-11
-- **Status:** **ACCEPTED — Fases 0-7b concluídas 2026-04-13 — Fase 7c aguarda shadow window (2026-04-27+)**
+- **Status:** **ACCEPTED — Fases 0-7c concluídas 2026-04-13 — Fase 7d (Release final) pendente**
 - **Owner:** Vitor (PM) / Claude (execução)
 - **Timeline:** 6 semanas (D3 aprovado 2026-04-11) — target de conclusão ~2026-05-23
 - **Escopo:** Refatoração arquitetural do modelo de domínio da plataforma Núcleo IA para habilitar crescimento nacional, multi-org, governança máxima e LGPD by design.
@@ -137,7 +137,7 @@ Objetivo: migrar gates de autoridade para função derivada de engagements.
 - [x] Ferramenta de diagnóstico `why_denied(person_id, action)` — implementada e testada
 - [x] **Testes:** 1184 pass / 0 fail (1182 base + 2 rls-auth-engagements contracts). Build 0 erros. MCP HTTP 200.
 - [x] Quiet window pós-cutover MCP — 48h monitorada (2026-04-13 a 2026-04-15), zero regressões
-- [ ] Ativar trigger de expiração real após 2 semanas de shadow
+- [x] Ativar trigger de expiração real — **JÁ ATIVO desde Fase 5** (migration `20260413520000`). Substituiu shadow automaticamente. Zero end_dates = no-op.
 
 **Decisão Fase 4:** `requires_agreement` relaxado para false em volunteer/study_group_owner durante shadow mode. Agreement enforcement pertence à Fase 5 (Lifecycle Configuration). can() deve espelhar canWrite no shadow — enforcement de termos é concern separado.
 
@@ -226,11 +226,11 @@ Objetivo: remover código legado, consolidar V4, atualizar documentação.
 - [x] Export LGPD por engagement kind — **CONCLUÍDO 2026-04-13** (migration `20260415060000`). `export_my_data()` agora inclui `person`, `engagements`, `certificates`.
 - [x] MCP: `get_person()` + `get_active_engagements()` tools — **CONCLUÍDO 2026-04-13** (migration `20260415050000`). Tools 69-70. PII gated por `view_pii`. Own record sempre visível. 70 tools total (56R+14W).
 
-**7c — Após 2 semanas de shadow (2026-04-27+):**
-- [ ] Ativar trigger de expiração real (`v4_expire_engagements` substituindo shadow)
-- [ ] Drop tabelas cpmai_* (7 tabelas deprecadas na Fase 6)
-- [ ] Ghost resolution flow: atualizar para popular `persons.auth_id` em novos logins OAuth
-- [ ] Remover views de compat (tribes→view, members→view) — após estabilidade confirmada
+**7c — Cleanup final (antecipada para 2026-04-13, aprovado PM):**
+- [x] Ativar trigger de expiração real — **JÁ ATIVO desde Fase 5** (migration `20260413520000`). Cron `v4_engagement_expiration` roda `v4_expire_engagements()` diário às 03:00 UTC. Zero engagements com `end_date` = no-op confirmado. Shadow foi substituído na própria Fase 5.
+- [x] Drop tabelas cpmai_* — **CONCLUÍDO 2026-04-13** (migration `20260415080000`). 7 tabelas dropadas (1 course + 5 domains, rest vazio). Backup JSON capturado. `get_cpmai_course_dashboard()` mantida (reescrita na Fase 6).
+- [x] Ghost resolution flow — **CONCLUÍDO 2026-04-13** (migration `20260415090000`). `try_auto_link_ghost()` agora propaga `auth_id` para `persons`. 71 persons: 52/52 synced, 0 missing.
+- [x] Views de compat (tribes→view, members→view) — **FECHADO como N/A 2026-04-13.** Conversão tabela→view é inviável: `tribes` tem 17 FKs, `members` tem 130+ FKs de ~80 tabelas — Postgres não permite views como FK targets. A arquitetura de bridge (dual-write triggers + `initiative_id`/`person_id` columns + `sync_operational_role_cache` trigger) é a solução permanente e funcional. Sem risco, sem regressão.
 
 **7d — Release final:**
 - [ ] Release V3 → V4 no RELEASE_LOG
