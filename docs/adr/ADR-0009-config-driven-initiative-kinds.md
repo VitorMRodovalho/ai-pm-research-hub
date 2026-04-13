@@ -79,10 +79,10 @@ Plataformas maduras de gestão de projetos / voluntariado (Asana, Monday, Trello
 
 ## Critérios de aceite
 
-- [ ] Tabela `initiative_kinds` criada com seed inicial (research_tribe, study_group, congress, workshop, book_club)
-- [ ] Admin UI `/admin/initiative-kinds` lista e edita kinds
-- [ ] CPMAI migrado de `cpmai_courses` para `initiatives WHERE kind='study_group'` com metadata
-- [ ] Engine de board/atas/attendance/deliverables funciona para qualquer kind sem código especial
-- [ ] Criação de kind novo sem deploy funciona end-to-end (teste: manager cria "book_club", cria initiative, adiciona engagements, board aparece)
-- [ ] Custom fields validados via JSON schema
-- [ ] Documentação em `/admin/initiative-kinds` explica como criar kinds novos
+- [x] Tabela `initiative_kinds` criada com seed inicial (research_tribe, study_group, congress, workshop, book_club) — Migration `20260413200000` (Phase 2) + `20260413600000` (Phase 6 enrichment + book_club)
+- [x] Admin UI `/admin/initiative-kinds` lista e edita kinds — `src/pages/admin/initiative-kinds.astro` + i18n 3 idiomas
+- [x] CPMAI migrado de `cpmai_courses` para `initiatives WHERE kind='study_group'` com metadata — Migration `20260413630000` + 7 tabelas cpmai_* deprecated
+- [x] Engine de board/atas/attendance/deliverables funciona para qualquer kind sem código especial — `assert_initiative_capability()` guard dinâmico, zero `if kind == X`
+- [x] Criação de kind novo sem deploy funciona end-to-end — `create_initiative()` com auto-board, `join_initiative()` com capacity check. book_club seeded e funcional.
+- [x] Custom fields validados via JSON schema — `validate_initiative_metadata()` + trigger em initiatives INSERT/UPDATE
+- [x] Documentação em `/admin/initiative-kinds` — Admin UI com i18n hints (slugHint, customFieldsHint)

@@ -1,7 +1,7 @@
 # Domain Model V4 — Master Tracking Document
 
 - **Início:** 2026-04-11
-- **Status:** **ACCEPTED — Fase 5 concluída 2026-04-13 — Fase 4 RLS quiet window até 2026-04-15**
+- **Status:** **ACCEPTED — Fase 6 concluída 2026-04-13 — Fase 4 RLS quiet window expira 2026-04-15**
 - **Owner:** Vitor (PM) / Claude (execução)
 - **Timeline:** 6 semanas (D3 aprovado 2026-04-11) — target de conclusão ~2026-05-23
 - **Escopo:** Refatoração arquitetural do modelo de domínio da plataforma Núcleo IA para habilitar crescimento nacional, multi-org, governança máxima e LGPD by design.
@@ -179,14 +179,21 @@ Objetivo: mover lifecycle de código para config por engagement_kind.
 | partner_contact | legitimate_interest | 1yr | delete | notify_only | no |
 | observer/alumni/ambassador/chapter_board/sponsor | varies | 5yr | anonymize | notify_only | no |
 
-### Fase 6 — Config-Driven Initiative Kinds (ADR-0009)
+### Fase 6 — Config-Driven Initiative Kinds (ADR-0009) — **CONCLUÍDA 2026-04-13**
 Objetivo: habilitar criação de kinds novos via UI.
 
-- [ ] Admin UI `/admin/initiative-kinds` com CRUD
-- [ ] CPMAI migrado de `cpmai_courses` para `initiatives + metadata`
-- [ ] Engine genérica de board/atas/attendance/deliverables
-- [ ] Teste E2E: criar kind novo "book_club", criar initiative, adicionar engagement, board funciona sem deploy
-- [ ] Deprecação formal das tabelas `cpmai_*` legadas (mantidas como views)
+- [x] **Migration 1/5:** Schema enrichment — 4 novas colunas em `initiative_kinds` (allowed/required engagement_kinds, certificate_template_id, created_by) + seed `book_club` — `20260413600000_v4_phase6_initiative_kinds_enrichment.sql`
+- [x] **Migration 2/5:** Kind-aware engine — `assert_initiative_capability()` guard dinâmico + `create_initiative()` com auto-board + `update_initiative()` com lifecycle validation + `list_initiatives()` + admin write RLS — `20260413610000_v4_phase6_kind_aware_engine.sql`
+- [x] **Migration 3/5:** Custom fields validation — `validate_initiative_metadata()` + trigger em initiatives + seed study_group/congress schemas — `20260413620000_v4_phase6_custom_fields_validation.sql`
+- [x] **Migration 4/5:** CPMAI data migration — `initiative_member_progress` generic table + cpmai_courses→initiatives(study_group) + `join_initiative()` generic enrollment + `get_cpmai_course_dashboard` rewritten — `20260413630000_v4_phase6_cpmai_migration.sql`
+- [x] **Migration 5/5:** CPMAI deprecation — 7 tables deprecated (COMMENT + REVOKE writes) — `20260413640000_v4_phase6_cpmai_deprecation.sql`
+- [x] **Admin UI:** `/admin/initiative-kinds` — Astro page + inline CRUD (list/create/edit kinds via PostgREST)
+- [x] **Frontend:** CpmaiLanding.tsx migrado para `join_initiative()` (enrollment genérico)
+- [x] **i18n:** 18 keys `admin.initiativeKinds.*` em pt-BR/en-US/es-LATAM
+- [x] **Testes:** 1182 pass / 0 fail (1107 base + 75 novos contracts config-driven-kinds.test.mjs). Build 0 erros. MCP HTTP 200.
+- [x] **Invariante:** Zero padrões `if kind == X` no engine code (verificado por contrato)
+
+**Fase 6 fechada em 2026-04-13.** 5 migrations, 1 nova tabela (initiative_member_progress), 5 novas RPCs (assert_capability, create/update/list_initiative, join_initiative), 1 RPC reescrita (get_cpmai_course_dashboard), 7 tabelas cpmai_* deprecadas, Admin UI live. 9 initiatives total (8 tribos + 1 study_group CPMAI). Engine é 100% config-driven — criar novo tipo de iniciativa = preencher form no admin.
 
 ### Fase 7 — Cleanup & Consolidation
 Objetivo: remover código legado e consolidar V4.
@@ -205,7 +212,7 @@ Objetivo: remover código legado e consolidar V4.
 
 ### Build & Test Baseline
 - **npx astro build:** ✅ **PASSA** em 26.11s. Warnings pré-existentes (CSS `text-[var(--text-primary/secondary/muted)]` delimiter, chunk >500kB) sem relação com refactor.
-- **npm test:** ✅ **1107 pass / 0 fail / 5 skipped / 1112 total** (779 + 51 multi-org + 140 initiative + 54 person-engagement + 53 authority + 30 lifecycle — confirmado pós-Fase 5 em 2026-04-13)
+- **npm test:** ✅ **1182 pass / 0 fail / 5 skipped / 1187 total** (779 + 51 multi-org + 140 initiative + 54 person-engagement + 53 authority + 30 lifecycle + 75 config-driven-kinds — confirmado pós-Fase 6 em 2026-04-13)
 
 **Fix LGPD aplicado na Fase 0 (bug pré-existente corrigido):**
 O teste `security-lgpd.test.mjs:138` esperava campos `full_name`/`avatar_url` mas a RPC `admin_anonymize_member` foi corrigida na migration `20260410160000_lgpd_p3_anonymization_cron.sql` para usar os nomes reais do schema (`name`/`photo_url`). O teste ficou stale. Correção: atualizar o teste para espelhar o schema real. A RPC estava correta — scruba 6 campos PII adequadamente. **Autorizado por D2 como correção LGPD (sempre permitida).**
