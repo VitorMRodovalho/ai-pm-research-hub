@@ -1,7 +1,7 @@
 # Domain Model V4 — Master Tracking Document
 
 - **Início:** 2026-04-11
-- **Status:** **ACCEPTED — Fase 6 concluída 2026-04-13 — Fase 4 RLS quiet window expira 2026-04-15**
+- **Status:** **ACCEPTED — Fases 0-6 concluídas 2026-04-13 — Fase 4 RLS close-out 2026-04-13 — Fase 7 (Cleanup) em execução**
 - **Owner:** Vitor (PM) / Claude (execução)
 - **Timeline:** 6 semanas (D3 aprovado 2026-04-11) — target de conclusão ~2026-05-23
 - **Escopo:** Refatoração arquitetural do modelo de domínio da plataforma Núcleo IA para habilitar crescimento nacional, multi-org, governança máxima e LGPD by design.
@@ -204,15 +204,38 @@ Objetivo: habilitar criação de kinds novos via UI.
 
 **Fase 6 fechada em 2026-04-13.** 5 migrations, 1 nova tabela (initiative_member_progress), 5 novas RPCs (assert_capability, create/update/list_initiative, join_initiative), 1 RPC reescrita (get_cpmai_course_dashboard), 7 tabelas cpmai_* deprecadas, Admin UI live. 9 initiatives total (8 tribos + 1 study_group CPMAI). Engine é 100% config-driven — criar novo tipo de iniciativa = preencher form no admin.
 
-### Fase 7 — Cleanup & Consolidation
-Objetivo: remover código legado e consolidar V4.
+### Fase 7 — Cleanup & Consolidation — **EM EXECUÇÃO desde 2026-04-13**
+Objetivo: remover código legado, consolidar V4, atualizar documentação.
 
-- [ ] Remover views de compat depois de 2 semanas estáveis
-- [ ] Deprecar RPCs `_by_tribe` em favor de `_by_initiative` (com warning)
-- [ ] Atualizar toda documentação (CLAUDE.md, skills, rules)
-- [ ] Release V3 → V4 no RELEASE_LOG
-- [ ] ADRs 0004-0009 marcados como Accepted + data
+**7a — Documentação (pode executar agora):**
+- [x] Atualizar CLAUDE.md: 779→1184 tests, 64→68 tools (54R+14W), v2.9.5, decisão V4 authority
+- [x] Atualizar `.claude/rules/mcp.md`: v2.9.4→v2.9.5, 64→68 tools
+- [x] Master doc Fase 7 reestruturado por timeline
+- [ ] ADR-0007: marcar critério LGPD como "postergado Fase 7" (não Fase 5)
+- [ ] Rascunhar entrada RELEASE_LOG para V4
+- [ ] ADRs 0004-0009 confirmar data formal de Accepted
+
+**7b — Operacional (após quiet window 2026-04-15):**
+- [ ] Deprecar RPCs `_by_tribe` em favor de `_by_initiative` (com warning log)
+- [ ] MCP: migrar 17 gates de analytics de `operational_role` direto para `canV4('manage_member')`
+- [ ] `permissions.ts`: reescrever ou documentar formalmente como V4-cache-correct via trigger
+- [ ] `sign_volunteer_agreement()`: reescrever para popular `engagements.agreement_certificate_id`
+- [ ] Reativar `requires_agreement=true` em volunteer/study_group_owner após backfill de certificados
 - [ ] ADR-0002 marcado como Superseded parcialmente por ADR-0007
+- [ ] Frontend `tribe_id` → `initiative_id` (dual-write garante compat durante transição)
+- [ ] Export LGPD por engagement kind
+- [ ] MCP: `getPerson()` + `getActiveEngagements()` tools
+
+**7c — Após 2 semanas de shadow (2026-04-27+):**
+- [ ] Ativar trigger de expiração real (`v4_expire_engagements` substituindo shadow)
+- [ ] Drop tabelas cpmai_* (7 tabelas deprecadas na Fase 6)
+- [ ] Ghost resolution flow: atualizar para popular `persons.auth_id` em novos logins OAuth
+- [ ] Remover views de compat (tribes→view, members→view) — após estabilidade confirmada
+
+**7d — Release final:**
+- [ ] Release V3 → V4 no RELEASE_LOG
+- [ ] `.claude/rules/refactor-in-progress.md` → STATUS: Complete
+- [ ] Remover aviso de refactor ativo do CLAUDE.md
 
 ## Baseline pre-v4 (capturado 2026-04-11)
 
