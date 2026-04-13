@@ -1350,7 +1350,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.9.5" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.9.6" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
