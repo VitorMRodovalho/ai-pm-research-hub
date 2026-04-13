@@ -1,7 +1,7 @@
 # Domain Model V4 — Master Tracking Document
 
 - **Início:** 2026-04-11
-- **Status:** **ACCEPTED — Fase 4 shadow mode (Dia 2 de 2) — cutover agendado 2026-04-15**
+- **Status:** **ACCEPTED — Fase 4 cutover MCP concluído 2026-04-13 — quiet window até 2026-04-15**
 - **Owner:** Vitor (PM) / Claude (execução)
 - **Timeline:** 6 semanas (D3 aprovado 2026-04-11) — target de conclusão ~2026-05-23
 - **Escopo:** Refatoração arquitetural do modelo de domínio da plataforma Núcleo IA para habilitar crescimento nacional, multi-org, governança máxima e LGPD by design.
@@ -123,7 +123,7 @@ Objetivo: modelar identidade universal sem quebrar `members`.
 
 **Fase 3 fechada em 2026-04-13.** 1024 pass / 0 fail, build 0 erros, MCP HTTP 200. 3 tabelas criadas (engagement_kinds, persons, engagements), 71 persons + 96 engagements backfilled. Members table intacta com bridge person_id.
 
-### Fase 4 — Authority Derivation (ADR-0007) — **IN PROGRESS (desde 2026-04-13, shadow mode)**
+### Fase 4 — Authority Derivation (ADR-0007) — **CUTOVER MCP CONCLUÍDO 2026-04-13 (quiet window até 2026-04-15)**
 Objetivo: migrar gates de autoridade para função derivada de engagements.
 
 - [x] **Migration 1/5:** `engagement_kind_permissions` — maps (kind, role) → actions. 7 actions, all volunteer roles + sponsor/chapter_board/study_group seeded — `20260413400000_v4_phase4_engagement_permissions.sql`
@@ -131,11 +131,11 @@ Objetivo: migrar gates de autoridade para função derivada de engagements.
 - [x] **Migration 3/5:** `can()` + `can_by_member()` + `why_denied()` — authority gate in shadow mode — `20260413420000_v4_phase4_can_function.sql`. **Shadow validation: 8/8 writers match canWrite, 20/20 board writers match canWriteBoard. Zero mismatches.**
 - [x] **Migration 4/5:** `sync_operational_role_cache` trigger — recalculates members.operational_role from engagements — `20260413430000_v4_phase4_role_cache_sync.sql`
 - [x] **Migration 5/5:** `v4_expire_engagements_shadow` — daily pg_cron job, logs expired engagements without changing status — `20260413440000_v4_phase4_expiration_shadow.sql`
-- [ ] `canWrite`/`canWriteBoard` no MCP migram para chamar `can()` via RPC — **CUTOVER agendado 2026-04-15** (plano: `docs/refactor/CUTOVER_FASE4_PLAN.md`)
+- [x] `canWrite`/`canWriteBoard` no MCP migram para chamar `can()` via RPC — **CUTOVER EXECUTADO 2026-04-13** (commit `cf76302`, deploy confirmado, smoke: HTTP 200 + 14 call sites validados via can_by_member)
 - [ ] RLS policies migram para subquery em `auth_engagements` — **postergado para pós-cutover MCP** (superfície de impacto maior, precisa do MCP estável primeiro)
 - [x] Ferramenta de diagnóstico `why_denied(person_id, action)` — implementada e testada
 - [x] **Testes:** 1077 pass / 0 fail (1024 + 53 authority-derivation contracts). Build 0 erros. MCP HTTP 200.
-- [ ] Quiet window + cutover — shadow mode ativo, cutover (canWrite→can no MCP + RLS) após validação
+- [ ] Quiet window pós-cutover MCP — monitorar 48h antes de migrar RLS
 - [ ] Ativar trigger de expiração real após 2 semanas de shadow
 
 **Decisão Fase 4:** `requires_agreement` relaxado para false em volunteer/study_group_owner durante shadow mode. Agreement enforcement pertence à Fase 5 (Lifecycle Configuration). can() deve espelhar canWrite no shadow — enforcement de termos é concern separado.
@@ -147,6 +147,14 @@ Objetivo: migrar gates de autoridade para função derivada de engagements.
 - Divergências análogas em não-writers (Leandro Mota, Maurício Abe Machado: researchers com current_cycle_active=false) — sem impacto em gates de escrita, mirrors_ok=true porque ambos retornam false nos dois sistemas.
 - Cron de expiração shadow: ativo (03:00 UTC diário), sem logs = nenhum engagement com end_date expirado (todos têm end_date=null). Esperado.
 - **Veredicto: PRONTO para cutover em 2026-04-15.**
+
+**Cutover MCP executado (2026-04-13):**
+- Commit `cf76302`: canWrite/canWriteBoard removidos, canV4() adicionado (chama can_by_member RPC)
+- 14 call sites migrados: 10× `write`, 2× `write_board`, 1× `manage_partner`, 1× `promote`
+- nucleo-guide prompt: `WRITE_ROLES.includes()` → `canV4(sb, member.id, 'write')`
+- Deploy: `supabase functions deploy nucleo-mcp` — 3.013MB, HTTP 200
+- Smoke validation live: 8 tribe_leaders ativos → can_write=true. Marcel Fleming (inactive) → can_write=false (melhoria aprovada). Researchers → write_board=true, write=false. Liaisons → manage_partner=true via engagement kind. Manager/superadmin → all actions true.
+- **Quiet window de 48h inicia agora (2026-04-13).** RLS migration após 2026-04-15 se nenhuma regressão.
 
 ### Fase 5 — Lifecycle Configuration (ADR-0008)
 Objetivo: mover lifecycle de código para config por engagement_kind.
