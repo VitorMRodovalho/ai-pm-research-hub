@@ -25,18 +25,19 @@ CREATE OR REPLACE FUNCTION public.can(
     WHERE ae.person_id = p_person_id
       AND ae.is_authoritative = true
       AND (
-        -- Organization-scoped: always grants
-        ekp.scope = 'organization'
-        OR ekp.scope = 'global'
-        -- Initiative-scoped: must match the resource's initiative
+        -- Organization/global scope: always grants
+        ekp.scope IN ('organization', 'global')
+        -- Initiative-scoped: must match the resource
         OR (
           ekp.scope = 'initiative'
           AND ae.initiative_id IS NOT NULL
           AND (
-            -- Direct initiative match
+            -- Match by initiative UUID
             ae.initiative_id = p_resource_id
-            -- Or match via legacy_tribe_id for board operations
-            OR ae.legacy_tribe_id IS NOT NULL
+            -- Match when no specific resource requested (general capability check)
+            OR (p_resource_id IS NULL AND ae.legacy_tribe_id IS NOT NULL)
+            -- Match by legacy tribe_id integer via resource_type hint
+            OR (p_resource_type = 'tribe' AND ae.legacy_tribe_id = (p_resource_id::text)::integer)
           )
         )
       )

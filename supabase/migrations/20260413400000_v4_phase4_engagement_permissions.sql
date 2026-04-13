@@ -16,6 +16,8 @@ CREATE TABLE public.engagement_kind_permissions (
   scope             text NOT NULL DEFAULT 'initiative'
                     CHECK (scope IN ('global', 'organization', 'initiative')),
   description       text,
+  organization_id   uuid NOT NULL DEFAULT '2b4f58ab-7c45-4170-8718-b77ee69ff906'::uuid
+                    REFERENCES public.organizations(id) ON DELETE RESTRICT,
   created_at        timestamptz NOT NULL DEFAULT now(),
   UNIQUE (kind, role, action)
 );
@@ -30,6 +32,11 @@ ALTER TABLE public.engagement_kind_permissions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "ekp_select_authenticated"
   ON public.engagement_kind_permissions FOR SELECT TO authenticated
   USING (true);
+
+CREATE POLICY "ekp_org_scope"
+  ON public.engagement_kind_permissions AS RESTRICTIVE FOR ALL TO authenticated
+  USING (organization_id = public.auth_org() OR organization_id IS NULL)
+  WITH CHECK (organization_id = public.auth_org());
 
 -- Seed: map current canWrite/canWriteBoard logic to permission rows
 -- Actions:
