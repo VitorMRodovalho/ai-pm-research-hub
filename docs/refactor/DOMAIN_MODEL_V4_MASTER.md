@@ -217,9 +217,9 @@ Objetivo: remover código legado, consolidar V4, atualizar documentação.
 
 **7b — Operacional (após quiet window 2026-04-15):**
 - [ ] Deprecar RPCs `_by_tribe` em favor de `_by_initiative` (com warning log)
-- [ ] MCP: migrar 17 gates de analytics de `operational_role` direto para `canV4('manage_member')`
+- [x] MCP: migrar 14 gates de analytics de `operational_role` direto para `canV4()` — **CONCLUÍDO 2026-04-13** (commit `db458d1`, deploy 3.012MB, HTTP 200). 10 admin→manage_member, 2 admin/sponsor→manage_member||manage_partner, 1 admin/comms→manage_member||write, 1 admin/liaison→manage_member||manage_partner. Restam 3 refs data-only (get_my_profile, get_my_tribe_members, prompt context).
 - [ ] `permissions.ts`: reescrever ou documentar formalmente como V4-cache-correct via trigger
-- [ ] `sign_volunteer_agreement()`: reescrever para popular `engagements.agreement_certificate_id`
+- [x] `sign_volunteer_agreement()`: reescrita para popular `engagements.agreement_certificate_id` — **CONCLUÍDO 2026-04-13** (migration `20260415020000`). Após criar certificado, atualiza engagement ativo do voluntário. Response inclui `engagement_linked: true/false`.
 - [ ] Reativar `requires_agreement=true` em volunteer/study_group_owner após backfill de certificados
 - [ ] ADR-0002 marcado como Superseded parcialmente por ADR-0007
 - [ ] Frontend `tribe_id` → `initiative_id` (dual-write garante compat durante transição)
