@@ -60,9 +60,9 @@ Cada "coisa nova" hoje exige migration + código + RPCs dedicadas. Isto é incom
 
 ## Critérios de aceite
 
-- [ ] `initiatives` + `initiative_kinds` tabelas criadas com seed inicial (8 tribos + CPMAI + congresso)
-- [ ] View materializada `tribes` apontando para `initiatives WHERE kind='research_tribe'`
-- [ ] FKs em board_items, meeting_notes, events, deliverables migradas para `initiative_id` (com alias `tribe_id` durante transição)
-- [ ] Todas RPCs tribe-* têm versão initiative-* (tribe-* torna-se alias deprecado)
-- [ ] Frontend de board, atas, events lê `initiative_id` sem mudança visível
-- [ ] CPMAI migrado para `initiative_kind='study_group'` + engagements (ver ADR-0006)
+- [x] `initiatives` + `initiative_kinds` tabelas criadas com seed inicial (8 tribos) — `20260413200000`, `20260413210000`. CPMAI + congresso pendentes (Fase 6).
+- [ ] View materializada `tribes` apontando para `initiatives WHERE kind='research_tribe'` — **POSTERGADO Fase 7** (17 FKs impedem conversão agora)
+- [x] FKs em board_items, meeting_notes, events, deliverables migradas para `initiative_id` — `20260413220000` (13 tabelas), dual-write triggers `20260413230000`
+- [x] Todas RPCs tribe-* têm versão initiative-* — 9 RPCs `_by_initiative` em `20260413240000`; `_by_tribe` como alias deprecado
+- [ ] Frontend de board, atas, events lê `initiative_id` sem mudança visível — **PENDENTE Fase 7** (frontend ainda usa tribe_id via dual-write)
+- [ ] CPMAI migrado para `initiative_kind='study_group'` + engagements — **POSTERGADO Fase 6**

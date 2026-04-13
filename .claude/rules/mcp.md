@@ -54,10 +54,13 @@ mcp.tool("tool_name", "Description.", {
 mcp.tool("tool_name", "Description.", {}, async () => { ... });
 ```
 
-## Write Permission
-- `canWrite(member)` gates most write tools: manager, deputy_manager, tribe_leader, is_superadmin
-- `canWriteBoard(member, boardTribeId)` gates `create_board_card` and `update_card_status`: also allows researcher/facilitator/communicator on their own tribe's board
-- NEVER skip the canWrite/canWriteBoard check for write tools
+## Write Permission (V4 — ADR-0007)
+- `canV4(sb, member.id, action)` gates all write tools via RPC `can_by_member()` → `can()` (engagement-derived authority)
+- Actions: `write`, `write_board`, `manage_partner`, `promote`, `manage_member`, `manage_event`, `view_pii`
+- Permissions seeded in `engagement_kind_permissions` table (kind × role × action)
+- Fail-closed: if RPC errors, access is denied
+- NEVER skip the canV4 check for write tools
+- Legacy `canWrite`/`canWriteBoard`/`WRITE_ROLES`/`BOARD_ROLES` removed in cutover 2026-04-13
 
 ## OAuth Flow (all in Workers, NOT in EF)
 - Discovery: /.well-known/oauth-{authorization-server,protected-resource}
