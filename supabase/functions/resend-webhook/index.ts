@@ -46,10 +46,13 @@ Deno.serve(async (req) => {
     })
     if (logErr) console.error('[resend-webhook] log insert error:', logErr.message)
 
-    // 2. Build update fields for bounce type
+    // 2. Build update fields
     const updateFields: Record<string, string> = {}
     if (eventType === 'email.bounced') {
       updateFields.bounce_type = data?.bounce?.type || 'unknown'
+    }
+    if (eventType === 'email.opened') {
+      if (data?.user_agent) updateFields.user_agent = String(data.user_agent)
     }
 
     // 3. Process via RPC (idempotent updates)
