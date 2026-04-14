@@ -10,7 +10,8 @@ Refactor arquitetural completo: 6 ADRs (0004-0009), 30 migrations, 7 fases. Ver 
 ## Platform
 - **URL:** https://nucleoia.vitormr.dev
 - **Supabase:** ldrfrvwhxsmgaabwmaik (sa-east-1)
-- **Version:** v3.0.0 (Domain Model V4) | 70 MCP tools (56R+14W) | 21 Edge Functions | 1184 unit + 40 e2e tests
+- **Version:** v3.1.0 (Wiki Phase 1) | 73 MCP tools (59R+14W) | 21 Edge Functions | 1184 unit + 40 e2e tests
+- **Wiki:** GitHub org `nucleo-ia-gp` — repos `wiki` (private, Obsidian vault) + `frameworks` (public, CC-BY-SA/MIT). Synced to `wiki_pages` table via FTS.
 - **LGPD:** Art. 18 cycle complete (consent gate + export + delete + anonymize cron 5y)
 
 ## Build & Test

@@ -97,7 +97,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   function escHtml(s: string) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
   const ROLE_LABELS: Record<string, string> = {
-    researcher: 'Pesquisador', tribe_leader: 'Líder de Tribo', manager: 'Gerente',
+    researcher: 'Pesquisador', tribe_leader: 'Líder de Tribo', comms_leader: 'Líder de Comunicação', manager: 'Gerente',
     deputy_manager: 'Vice-Gerente', communicator: 'Comunicador', facilitator: 'Facilitador',
     guest: 'Convidado', none: 'Sem papel',
   };

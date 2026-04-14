@@ -82,7 +82,7 @@ export function getRoleLabel(role: string, lang: Lang = DEFAULT_LANG): string {
  */
 export function getRoleLabelsMap(lang: Lang = DEFAULT_LANG): Record<string, string> {
   const roles = [
-    'manager', 'tribe_leader', 'researcher', 'ambassador',
+    'manager', 'tribe_leader', 'comms_leader', 'researcher', 'ambassador',
     'curator', 'sponsor', 'founder', 'facilitator', 'communicator', 'guest'
   ];
   const map: Record<string, string> = {};

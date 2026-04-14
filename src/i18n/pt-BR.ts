@@ -980,6 +980,7 @@ const ptBR: Record<string, string> = {
   // ── Role labels ──
   'role.manager': 'Gerente',
   'role.tribe_leader': 'Líder de Tribo',
+  'role.comms_leader': 'Líder de Comunicação',
   'role.researcher': 'Pesquisador',
   'role.ambassador': 'Embaixador',
   'role.curator': 'Curador',
@@ -1108,6 +1109,7 @@ const ptBR: Record<string, string> = {
   'attendance.role.manager': 'Gerente de Projeto',
   'attendance.role.deputy_manager': 'Deputy PM',
   'attendance.role.tribe_leader': 'Líder de Tribo',
+  'attendance.role.comms_leader': 'Líder de Comunicação',
   'attendance.role.researcher': 'Pesquisador',
   'attendance.role.facilitator': 'Facilitador',
   'attendance.role.communicator': 'Multiplicador',
@@ -1483,6 +1485,7 @@ const ptBR: Record<string, string> = {
   'admin.modal.oprole.manager': '⚙️ Gerente de Projeto (Nível 2)',
   'admin.modal.oprole.deputy_manager': '⚙️ Deputy PM (Nível 2.5)',
   'admin.modal.oprole.tribe_leader': '🏷️ Líder de Tribo (Nível 3)',
+  'admin.modal.oprole.comms_leader': '📢 Líder de Comunicação (Nível 3)',
   'admin.modal.oprole.researcher': '🔬 Pesquisador (Nível 4)',
   'admin.modal.oprole.facilitator': '🤝 Facilitador (Nível 4)',
   'admin.modal.oprole.communicator': '📢 Multiplicador (Nível 4)',

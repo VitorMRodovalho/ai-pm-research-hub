@@ -111,6 +111,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
               <option value="manager">{t('attendance.role.manager', lang)}</option>
               <option value="deputy_manager">{t('attendance.role.deputy_manager', lang) || 'Deputy'}</option>
               <option value="tribe_leader">{t('attendance.role.tribe_leader', lang)}</option>
+              <option value="comms_leader">{t('attendance.role.comms_leader', lang) || 'Líder de Comunicação'}</option>
               <option value="researcher">{t('attendance.role.researcher', lang)}</option>
               <option value="facilitator">{t('attendance.role.facilitator', lang)}</option>
               <option value="communicator">{t('attendance.role.communicator', lang)}</option>
@@ -315,6 +316,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   const ROLE_MAP: Record<string, { label: string; color: string; bg: string }> = {
     manager:      { label: I18N.roleManager,      color: '#003865', bg: '#EFF6FF' },
     tribe_leader: { label: I18N.roleTribeLeader,   color: '#065F46', bg: '#F0FDF4' },
+    comms_leader: { label: I18N.roleCommsLeader || 'Líder de Comunicação', color: '#0E7490', bg: '#ECFEFF' },
     researcher:   { label: I18N.roleResearcher,    color: '#1E293B', bg: '#F1F5F9' },
     facilitator:  { label: I18N.roleFacilitator,   color: '#92400E', bg: '#FFF7ED' },
     communicator: { label: I18N.roleCommunicator,  color: '#6B21A8', bg: '#FAF5FF' },

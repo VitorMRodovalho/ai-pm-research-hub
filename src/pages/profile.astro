@@ -213,11 +213,11 @@ const PROFILE_I18N = {
 
   const PROFILE_I18N = (typeof window !== 'undefined' && (window as any).__PROFILE_I18N) || {};
   const OPROLE_LABELS: Record<string, string> = {
-    manager: PROFILE_I18N.oproleManager, deputy_manager: PROFILE_I18N.oproleDeputyManager, tribe_leader: PROFILE_I18N.oproleTribeLeader, researcher: PROFILE_I18N.oproleResearcher,
+    manager: PROFILE_I18N.oproleManager, deputy_manager: PROFILE_I18N.oproleDeputyManager, tribe_leader: PROFILE_I18N.oproleTribeLeader, comms_leader: PROFILE_I18N.oproleCommsLeader || 'Líder de Comunicação', researcher: PROFILE_I18N.oproleResearcher,
     facilitator: PROFILE_I18N.oproleFacilitator, communicator: PROFILE_I18N.oproleCommunicator, none: PROFILE_I18N.oproleNone, guest: PROFILE_I18N.oproleGuest
   };
   const OPROLE_COLORS: Record<string, string> = {
-    manager: '#FF610F', deputy_manager: '#FF610F', tribe_leader: '#4F17A8', researcher: '#EC4899',
+    manager: '#FF610F', deputy_manager: '#FF610F', tribe_leader: '#4F17A8', comms_leader: '#06B6D4', researcher: '#EC4899',
     facilitator: '#06B6D4', communicator: '#8B5CF6', none: '#94A3B8', guest: '#94A3B8'
   };
   const DESIG_LABELS: Record<string, string> = {
@@ -529,7 +529,7 @@ const PROFILE_I18N = {
   // ── Completeness calculation ──
   function getCompleteness(m: any): { pct: number; missing: string[] } {
     const opRole = m.operational_role || 'guest';
-    const isOperational = ['manager', 'deputy_manager', 'tribe_leader', 'researcher', 'facilitator', 'communicator'].includes(opRole);
+    const isOperational = ['manager', 'deputy_manager', 'tribe_leader', 'comms_leader', 'researcher', 'facilitator', 'communicator'].includes(opRole);
     const missing: string[] = [];
     let earned = 0;
     let total = 0;
@@ -785,7 +785,7 @@ const PROFILE_I18N = {
   // ── Dashboard cards ──
   function dashboardHtml(m: any): string {
     const opRole = m.operational_role || 'guest';
-    const isOperational = ['manager', 'deputy_manager', 'tribe_leader', 'researcher', 'facilitator', 'communicator'].includes(opRole);
+    const isOperational = ['manager', 'deputy_manager', 'tribe_leader', 'comms_leader', 'researcher', 'facilitator', 'communicator'].includes(opRole);
     if (!cycleStats) return '';
 
     const pctAttend = cycleStats.totalEvents > 0
