@@ -1347,7 +1347,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   // ===== WIKI & KNOWLEDGE TOOLS (71-73) =====
 
   // TOOL 71: search_wiki — full-text search across wiki pages
-  mcp.tool("search_wiki", "Search the Núcleo wiki knowledge base. Returns ranked results with highlighted snippets. Covers governance, research, tribes, partnerships, and onboarding content.", { query: z.string().describe("Search query (supports Portuguese natural language)"), limit: z.number().optional().describe("Max results. Default: 10"), domain: z.string().optional().describe("Filter by domain: research, governance, tribes, partnerships, platform, onboarding"), tag: z.string().optional().describe("Filter by tag (exact match)") }, async (params: { query: string; limit?: number; domain?: string; tag?: string }) => {
+  mcp.tool("search_wiki", "Search the Núcleo wiki knowledge base. Returns ranked results with highlighted snippets. Covers governance documents, architectural decisions (ADRs), research, and narrative knowledge.", { query: z.string().describe("Search query (supports Portuguese natural language)"), limit: z.number().optional().describe("Max results. Default: 10"), domain: z.string().optional().describe("Filter by domain: research, governance, tribes, partnerships, platform, onboarding"), tag: z.string().optional().describe("Filter by tag (exact match)") }, async (params: { query: string; limit?: number; domain?: string; tag?: string }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "search_wiki", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -1358,7 +1358,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL 72: get_wiki_page — retrieve full wiki page by path
-  mcp.tool("get_wiki_page", "Returns the full content of a wiki page by its path (e.g. 'governance/adr/ADR-0007.md'). Includes metadata: authors, license, IP track, tags.", { path: z.string().describe("Wiki page path, e.g. 'governance/manual.md' or 'tribes/tribo-2.md'") }, async (params: { path: string }) => {
+  mcp.tool("get_wiki_page", "Returns the full content of a wiki page by its path (e.g. 'governance/adr/ADR-0007.md'). Includes metadata: authors, license, IP track, tags.", { path: z.string().describe("Wiki page path, e.g. 'governance/manual.md' or 'governance/adr/ADR-0007.md'") }, async (params: { path: string }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_wiki_page", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -1378,6 +1378,21 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (error) { await logUsage(sb, member.id, "get_decision_log", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_decision_log", true, undefined, start);
     return ok(data);
+  });
+
+  // TOOL 74: get_wiki_health — wiki lifecycle health report (staleness, PII, completeness)
+  mcp.tool("get_wiki_health", "Returns wiki health report: stale pages (>90 days without update), PII warnings (emails, phones, CPFs in content), and incomplete metadata. Use to audit wiki quality.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_wiki_health", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("wiki_health_report");
+    if (error) { await logUsage(sb, member.id, "get_wiki_health", false, error.message, start); return err(error.message); }
+    const issues = Array.isArray(data) ? data : [];
+    const summary = issues.length === 0
+      ? "Wiki is healthy: no stale pages, no PII detected, all metadata complete."
+      : `Found ${issues.length} issue(s): ${issues.filter((i: Record<string, string>) => i.check_type === 'pii_warning').length} PII warning(s), ${issues.filter((i: Record<string, string>) => i.check_type === 'stale').length} stale page(s), ${issues.filter((i: Record<string, string>) => i.check_type === 'incomplete').length} incomplete page(s).`;
+    await logUsage(sb, member.id, "get_wiki_health", true, undefined, start);
+    return ok({ summary, issues });
   });
 }
 
