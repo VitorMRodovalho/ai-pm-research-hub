@@ -13,7 +13,7 @@ export function getTribePermissions(member: any, viewingTribeId: number, viewing
     || desigs.includes('co_gp');
   const isAdmin = isSuperadmin || isGP;
   const isStakeholder = role === 'sponsor' || role === 'chapter_liaison';
-  const isLeader = role === 'tribe_leader';
+  const isLeader = role === 'tribe_leader' || role === 'comms_leader';
   const isLeaderOwnTribe = isLeader && isOwnTribe;
   const isResearcher = role === 'researcher';
   const isObserver = role === 'observer';

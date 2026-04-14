@@ -976,6 +976,7 @@ const esLATAM: Record<string, string> = {
   // ── Role labels ──
   'role.manager': 'Gerente',
   'role.tribe_leader': 'Líder de Línea',
+  'role.comms_leader': 'Líder de Comunicación',
   'role.researcher': 'Investigador',
   'role.ambassador': 'Embajador',
   'role.curator': 'Curador',
@@ -1103,6 +1104,7 @@ const esLATAM: Record<string, string> = {
   'attendance.role.manager': 'Gerente de Proyecto',
   'attendance.role.deputy_manager': 'Deputy PM',
   'attendance.role.tribe_leader': 'Líder de Línea',
+  'attendance.role.comms_leader': 'Líder de Comunicación',
   'attendance.role.researcher': 'Investigador',
   'attendance.role.facilitator': 'Facilitador',
   'attendance.role.communicator': 'Multiplicador',
@@ -1478,6 +1480,7 @@ const esLATAM: Record<string, string> = {
   'admin.modal.oprole.manager': '⚙️ Gerente de Proyecto (Nivel 2)',
   'admin.modal.oprole.deputy_manager': '⚙️ Deputy PM (Nivel 2.5)',
   'admin.modal.oprole.tribe_leader': '🏷️ Líder de Tribu (Nivel 3)',
+  'admin.modal.oprole.comms_leader': '📢 Líder de Comunicación (Nivel 3)',
   'admin.modal.oprole.researcher': '🔬 Investigador (Nivel 4)',
   'admin.modal.oprole.facilitator': '🤝 Facilitador (Nivel 4)',
   'admin.modal.oprole.communicator': '📢 Multiplicador (Nivel 4)',

@@ -279,14 +279,14 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
     // Role label map (i18n)
     const roleLabels: Record<string, Record<string, string>> = {
-      'pt-BR': { researcher: 'Pesquisador', tribe_leader: 'Líder de Tribo', sponsor: 'Patrocinador', chapter_liaison: 'Ponto Focal', manager: 'Gerente', deputy_manager: 'Deputy', observer: 'Observador', communicator: 'Comunicação', none: 'Sem papel' },
-      'en-US': { researcher: 'Researcher', tribe_leader: 'Tribe Leader', sponsor: 'Sponsor', chapter_liaison: 'Chapter Liaison', manager: 'Manager', deputy_manager: 'Deputy Manager', observer: 'Observer', communicator: 'Communications', none: 'No role' },
-      'es': { researcher: 'Investigador', tribe_leader: 'Líder de Línea', sponsor: 'Patrocinador', chapter_liaison: 'Enlace', manager: 'Gerente', deputy_manager: 'Subgerente', observer: 'Observador', communicator: 'Comunicación', none: 'Sin rol' },
+      'pt-BR': { researcher: 'Pesquisador', tribe_leader: 'Líder de Tribo', comms_leader: 'Líder de Comunicação', sponsor: 'Patrocinador', chapter_liaison: 'Ponto Focal', manager: 'Gerente', deputy_manager: 'Deputy', observer: 'Observador', communicator: 'Comunicação', none: 'Sem papel' },
+      'en-US': { researcher: 'Researcher', tribe_leader: 'Tribe Leader', comms_leader: 'Comms Leader', sponsor: 'Sponsor', chapter_liaison: 'Chapter Liaison', manager: 'Manager', deputy_manager: 'Deputy Manager', observer: 'Observer', communicator: 'Communications', none: 'No role' },
+      'es': { researcher: 'Investigador', tribe_leader: 'Líder de Línea', comms_leader: 'Líder de Comunicación', sponsor: 'Patrocinador', chapter_liaison: 'Enlace', manager: 'Gerente', deputy_manager: 'Subgerente', observer: 'Observador', communicator: 'Comunicación', none: 'Sin rol' },
     };
     const rl = roleLabels[lang] || roleLabels['pt-BR'];
 
     const chapterPalette: Record<string, string> = { 'PMI-GO': '#0F6E56', 'PMI-CE': '#534AB7', 'PMI-DF': '#D85A30', 'PMI-MG': '#185FA5', 'PMI-RS': '#639922' };
-    const rolePalette: Record<string, string> = { researcher: '#378ADD', tribe_leader: '#1D9E75', sponsor: '#BA7517', chapter_liaison: '#7F77DD', manager: '#D85A30', deputy_manager: '#D4537E', observer: '#888780', communicator: '#639922', none: '#B4B2A9' };
+    const rolePalette: Record<string, string> = { researcher: '#378ADD', tribe_leader: '#1D9E75', comms_leader: '#0E7490', sponsor: '#BA7517', chapter_liaison: '#7F77DD', manager: '#D85A30', deputy_manager: '#D4537E', observer: '#888780', communicator: '#639922', none: '#B4B2A9' };
 
     // Dark mode support
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';

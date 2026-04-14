@@ -3,15 +3,15 @@ description: MCP server rules and tool patterns
 globs: supabase/functions/nucleo-mcp/**
 ---
 
-# MCP Server Rules (nucleo-mcp v2.9.6)
+# MCP Server Rules (nucleo-mcp v2.10.0)
 
 ## Current State
-- 70 tools (56 read + 14 write) + 1 dynamic prompt + 1 static resource
+- 73 tools (59 read + 14 write) + 1 dynamic prompt + 1 static resource
 - Transport: @modelcontextprotocol/sdk@1.29.0 WebStandardStreamableHTTPServerTransport (native)
 - Tool params: Zod schemas (z.string(), z.number(), z.boolean()) — NOT plain JSON Schema objects
 - Auth: OAuth 2.1 via Workers (nucleoia.vitormr.dev) → Supabase JWT
 - All tools log usage to mcp_usage_log
-- Claude.ai connector: verified working (70 tools visible)
+- Claude.ai connector: verified working (73 tools visible)
 
 ## Pre-Deploy Check (MANDATORY)
 Before deploying nucleo-mcp EF, check for duplicate tool names:

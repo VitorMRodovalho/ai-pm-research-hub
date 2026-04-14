@@ -1,5 +1,5 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.9.6 — 70 tools (56R + 14W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.10.0 — 73 tools (59R + 14W) + 1 prompt + 1 resource + usage logging
 // V4 Cutover: canWrite/canWriteBoard → canV4 (ADR-0007, engagement-derived authority)
 // Transport: SDK 1.29.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
@@ -1343,6 +1343,42 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "get_active_engagements", true, undefined, start);
     return ok(data);
   });
+
+  // ===== WIKI & KNOWLEDGE TOOLS (71-73) =====
+
+  // TOOL 71: search_wiki — full-text search across wiki pages
+  mcp.tool("search_wiki", "Search the Núcleo wiki knowledge base. Returns ranked results with highlighted snippets. Covers governance, research, tribes, partnerships, and onboarding content.", { query: z.string().describe("Search query (supports Portuguese natural language)"), limit: z.number().optional().describe("Max results. Default: 10") }, async (params: { query: string; limit?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "search_wiki", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("search_wiki_pages", { p_query: params.query, p_limit: params.limit || 10 });
+    if (error) { await logUsage(sb, member.id, "search_wiki", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "search_wiki", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 72: get_wiki_page — retrieve full wiki page by path
+  mcp.tool("get_wiki_page", "Returns the full content of a wiki page by its path (e.g. 'governance/adr/ADR-0007.md'). Includes metadata: authors, license, IP track, tags.", { path: z.string().describe("Wiki page path, e.g. 'governance/manual.md' or 'tribes/tribo-2.md'") }, async (params: { path: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_wiki_page", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_wiki_page", { p_path: params.path });
+    if (error) { await logUsage(sb, member.id, "get_wiki_page", false, error.message, start); return err(error.message); }
+    if (!data || (Array.isArray(data) && data.length === 0)) { await logUsage(sb, member.id, "get_wiki_page", false, "Page not found", start); return err(`Page not found: ${params.path}. Use search_wiki to find available pages.`); }
+    await logUsage(sb, member.id, "get_wiki_page", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 73: get_decision_log — list architectural decision records (ADRs)
+  mcp.tool("get_decision_log", "Returns the list of Architectural Decision Records (ADRs). Optionally filter by keyword. ADRs document key architectural choices for the platform.", { filter: z.string().optional().describe("Optional keyword filter (e.g. 'authority', 'engagement', 'initiative')") }, async (params: { filter?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_decision_log", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_decision_log", { p_filter: params.filter || null });
+    if (error) { await logUsage(sb, member.id, "get_decision_log", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_decision_log", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -1353,7 +1389,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.9.6" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.10.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -1373,6 +1409,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.9.6", tools: 70, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.10.0", tools: 73, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);

@@ -157,6 +157,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
               <option disabled>── Papel ──</option>
               <option value="role:researcher">Pesquisador</option>
               <option value="role:tribe_leader">Líder de Tribo</option>
+              <option value="role:comms_leader">Líder de Comunicação</option>
               <option value="role:sponsor">Sponsor</option>
               <option value="role:chapter_liaison">Chapter Liaison</option>
               <option value="role:manager">Gerente</option>
@@ -315,7 +316,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   function esc(s: string) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
   const ROLE_LABELS: Record<string, string> = {
-    researcher: 'Pesquisador', tribe_leader: 'Líder de Tribo', manager: 'Gerente',
+    researcher: 'Pesquisador', tribe_leader: 'Líder de Tribo', comms_leader: 'Líder de Comunicação', manager: 'Gerente',
     deputy_manager: 'Vice-Gerente', communicator: 'Comunicador', facilitator: 'Facilitador',
     guest: 'Convidado', sponsor: 'Sponsor', chapter_liaison: 'Chapter Liaison',
   };

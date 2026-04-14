@@ -21,7 +21,7 @@ const i18nBundle = buildPageI18n(['comp.knowledge', 'comp.common'], lang);
     const check = () => {
       const member = window.navGetMember?.();
       if (!member) { setTimeout(check, 300); return; }
-      const isAdmin = member.is_superadmin || ['manager', 'deputy_manager', 'tribe_leader', 'sponsor', 'chapter_liaison'].includes(member.operational_role) || (member.designations || []).some(function(d) { return d === 'deputy_manager' || d === 'curator'; });
+      const isAdmin = member.is_superadmin || ['manager', 'deputy_manager', 'tribe_leader', 'comms_leader', 'sponsor', 'chapter_liaison'].includes(member.operational_role) || (member.designations || []).some(function(d) { return d === 'deputy_manager' || d === 'curator'; });
       if (!isAdmin) {
         document.querySelector('.max-w-\\[1100px\\]').innerHTML = '<div class="text-center py-20 text-[var(--text-muted)]">Acesso restrito a administradores.</div>';
       }

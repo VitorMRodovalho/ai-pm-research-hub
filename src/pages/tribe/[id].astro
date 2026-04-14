@@ -321,7 +321,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
   const OPROLE_LABELS: Record<string, string> = I18N.oproleLabels || {};
   const OPROLE_COLORS: Record<string, string> = {
-    manager: '#FF610F', deputy_manager: '#FF610F', tribe_leader: '#4F17A8', researcher: '#EC4899',
+    manager: '#FF610F', deputy_manager: '#FF610F', tribe_leader: '#4F17A8', comms_leader: '#06B6D4', researcher: '#EC4899',
     facilitator: '#06B6D4', communicator: '#8B5CF6', none: '#94A3B8', guest: '#94A3B8'
   };
   const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
@@ -654,7 +654,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         if (currentMember.is_superadmin) return true;
         if (['manager'].includes(currentMember.operational_role)) return true;
         if ((currentMember.designations || []).includes('deputy_manager')) return true;
-        if (currentMember.operational_role === 'tribe_leader' && currentMember.tribe_id === evtTribeId) return true;
+        if ((currentMember.operational_role === 'tribe_leader' || currentMember.operational_role === 'comms_leader') && currentMember.tribe_id === evtTribeId) return true;
         return false;
       };
 
@@ -1571,6 +1571,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
             members.sort((a: any, b: any) => {
               if (a.operational_role === 'tribe_leader') return -1;
               if (b.operational_role === 'tribe_leader') return 1;
+              if (a.operational_role === 'comms_leader') return -1;
+              if (b.operational_role === 'comms_leader') return 1;
               return (a.name || '').localeCompare(b.name || '');
             });
             renderMembers(members);
@@ -1720,6 +1722,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       allMembers.sort((a: any, b: any) => {
         if (a.operational_role === 'tribe_leader') return -1;
         if (b.operational_role === 'tribe_leader') return 1;
+        if (a.operational_role === 'comms_leader') return -1;
+        if (b.operational_role === 'comms_leader') return 1;
         return (a.name || '').localeCompare(b.name || '');
       });
 
