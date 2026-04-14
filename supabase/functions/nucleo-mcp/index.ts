@@ -1347,11 +1347,11 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   // ===== WIKI & KNOWLEDGE TOOLS (71-73) =====
 
   // TOOL 71: search_wiki — full-text search across wiki pages
-  mcp.tool("search_wiki", "Search the Núcleo wiki knowledge base. Returns ranked results with highlighted snippets. Covers governance, research, tribes, partnerships, and onboarding content.", { query: z.string().describe("Search query (supports Portuguese natural language)"), limit: z.number().optional().describe("Max results. Default: 10") }, async (params: { query: string; limit?: number }) => {
+  mcp.tool("search_wiki", "Search the Núcleo wiki knowledge base. Returns ranked results with highlighted snippets. Covers governance, research, tribes, partnerships, and onboarding content.", { query: z.string().describe("Search query (supports Portuguese natural language)"), limit: z.number().optional().describe("Max results. Default: 10"), domain: z.string().optional().describe("Filter by domain: research, governance, tribes, partnerships, platform, onboarding"), tag: z.string().optional().describe("Filter by tag (exact match)") }, async (params: { query: string; limit?: number; domain?: string; tag?: string }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "search_wiki", false, "Not authenticated", start); return err("Not authenticated"); }
-    const { data, error } = await sb.rpc("search_wiki_pages", { p_query: params.query, p_limit: params.limit || 10 });
+    const { data, error } = await sb.rpc("search_wiki_pages", { p_query: params.query, p_limit: params.limit || 10, p_domain: params.domain || null, p_tag: params.tag || null });
     if (error) { await logUsage(sb, member.id, "search_wiki", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "search_wiki", true, undefined, start);
     return ok(data);
