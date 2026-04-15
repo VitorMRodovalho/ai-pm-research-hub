@@ -832,7 +832,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
               <label className="text-[10px] font-semibold text-[var(--text-secondary)] mb-1 block uppercase tracking-wide">Status</label>
               <select value={item.status}
                 onChange={(e) => onMove(e.target.value)}
-                disabled={mode === 'readonly' || !permissions.canEditAny}
+                disabled={mode === 'readonly' || !permissions.canMove}
                 className="w-full rounded-lg border border-[var(--border-default)] px-2 py-1.5 text-[12px] bg-[var(--surface-card)]
                   outline-none focus:border-blue-400 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed">
                 {board.columns.map((col: string) => (
