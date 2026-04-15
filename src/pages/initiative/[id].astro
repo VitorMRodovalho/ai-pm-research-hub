@@ -227,6 +227,7 @@ const INIT_I18N = {
             <div class="text-xs text-[var(--text-secondary)] mt-1 flex flex-wrap gap-x-3">
               <span>👤 ${escapeHtml(leaderName)}</span>
               <span>👥 ${initData.member_count} ${(I18N.stats?.members || 'members').toLowerCase()}</span>
+              ${init.metadata?.whatsapp_url ? `<a href="${escapeHtml(init.metadata.whatsapp_url)}" target="_blank" rel="noopener" class="text-emerald-600 no-underline hover:underline font-semibold">💬 WhatsApp</a>` : ''}
             </div>
             ${init.description ? `<p class="text-xs text-[var(--text-muted)] mt-1.5 line-clamp-2">${escapeHtml(init.description)}</p>` : ''}
           </div>
@@ -346,11 +347,14 @@ const INIT_I18N = {
             <div class="space-y-2">${past.map((e: any) => {
               const d = new Date(e.date + 'T12:00:00').toLocaleDateString(locale, { day: '2-digit', month: 'short' });
               const hasMinutes = e.minutes_text || e.has_minutes;
+              const minutesBtn = canManage
+                ? `<button data-action="open-minutes-editor" data-event-id="${e.id}" data-event-title="${escapeHtml(e.title)}" data-mode="minutes" data-content="${escapeHtml(e.minutes_text || '')}" class="text-[.65rem] font-semibold text-navy hover:underline cursor-pointer border-0 bg-transparent px-0">${hasMinutes ? '✏️ Editar ata' : '📝 Adicionar ata'}</button>`
+                : (hasMinutes ? `<button data-action="open-minutes-editor" data-event-id="${e.id}" data-event-title="${escapeHtml(e.title)}" data-mode="minutes" data-content="${escapeHtml(e.minutes_text || '')}" class="text-[.65rem] font-semibold text-teal-600 hover:underline cursor-pointer border-0 bg-transparent px-0">📝 Ver ata</button>` : '');
               return `<div class="flex items-center gap-3 py-1.5 border-b border-[var(--border-subtle)] last:border-0">
                 <span class="text-xs font-semibold text-[var(--text-muted)] w-[50px]">${d}</span>
-                <span class="text-sm text-[var(--text-primary)]">${escapeHtml(e.title)}</span>
-                ${hasMinutes ? '<span class="text-xs text-teal-600">📝</span>' : ''}
-                ${e.recording_url ? `<a href="${escapeHtml(e.recording_url)}" target="_blank" rel="noopener" class="text-xs text-purple-600 no-underline hover:underline">▶️</a>` : ''}
+                <span class="text-sm text-[var(--text-primary)] flex-1">${escapeHtml(e.title)}</span>
+                ${minutesBtn}
+                ${e.recording_url || e.youtube_url ? `<a href="${escapeHtml(e.youtube_url || e.recording_url)}" target="_blank" rel="noopener" class="text-xs text-purple-600 no-underline hover:underline">▶️</a>` : ''}
               </div>`;
             }).join('')}</div>
           </div>`;
@@ -783,6 +787,25 @@ const INIT_I18N = {
         if (result?.error) { alert(result.error); return; }
         await loadMembersTab();
       }
+
+      // Minutes editor: open-minutes-editor buttons
+      if (action === 'open-minutes-editor') {
+        const btn = (target.closest('[data-action="open-minutes-editor"]') || target) as HTMLElement;
+        window.dispatchEvent(new CustomEvent('open-event-editor', {
+          detail: {
+            eventId: btn.dataset.eventId,
+            eventTitle: btn.dataset.eventTitle,
+            mode: btn.dataset.mode || 'minutes',
+            initialContent: btn.dataset.content || '',
+            initialUrl: '',
+          },
+        }));
+      }
+    });
+
+    // Refresh timeline after minutes save
+    window.addEventListener('event-editor-saved', () => {
+      loadGeneralTab();
     });
   }
 
