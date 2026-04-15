@@ -3237,6 +3237,7 @@ const enUS: Record<string, string> = {
   'tribe.eligible': 'eligible',
   'tribe.attendees': 'attendees',
   'tribe.viewAllEvents': 'View all events',
+  'tribe.viewAllMinutes': 'View Minutes',
   'tribe.eligibleMembers': 'eligible members',
   'tribe.readOnly': 'Read-only',
 

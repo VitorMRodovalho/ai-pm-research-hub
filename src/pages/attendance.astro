@@ -13,6 +13,7 @@ import AttendanceGridTab from '../components/attendance/AttendanceGridTab';
 import EventMinutesIsland from '../components/events/EventMinutesIsland';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp.attendance', 'common'], lang);
 ---
 
@@ -70,6 +71,9 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
                 id="tab-recurring" data-action="open-recurring">
           {t('attendance.recurring', lang)}
         </button>
+        <a href={`${langPrefix}/meetings`} class="ml-auto px-4 py-2 rounded-full text-[13px] font-semibold no-underline border-2 border-teal-500/30 bg-teal-50 dark:bg-teal-950/20 text-teal-700 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900/30 transition-all">
+          📝 {t('nav.meetings', lang)}
+        </a>
       </div>
 
       <!-- Events tab -->

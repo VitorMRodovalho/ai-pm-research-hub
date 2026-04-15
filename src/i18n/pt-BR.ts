@@ -3243,6 +3243,7 @@ const ptBR: Record<string, string> = {
   'tribe.eligible': 'elegíveis',
   'tribe.attendees': 'presentes',
   'tribe.viewAllEvents': 'Ver todos os eventos',
+  'tribe.viewAllMinutes': 'Ver Atas',
   'tribe.eligibleMembers': 'membros elegíveis',
   'tribe.readOnly': 'Somente leitura',
 

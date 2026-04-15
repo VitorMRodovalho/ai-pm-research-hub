@@ -35,20 +35,11 @@
     const visible = data.filter((a: any) => !dismissed.includes(a.id));
     if (!visible.length) return;
 
-    // Detect locale (path → query param → localStorage)
+    // Detect locale from document lang attribute (set by Astro SSR — authoritative source)
+    const docLang = document.documentElement.lang || 'pt-BR';
     let pathLang = 'pt';
-    if (location.pathname.startsWith('/en')) pathLang = 'en';
-    else if (location.pathname.startsWith('/es')) pathLang = 'es';
-    else {
-      const urlLang = new URLSearchParams(location.search).get('lang');
-      if (urlLang === 'en-US') pathLang = 'en';
-      else if (urlLang === 'es-LATAM') pathLang = 'es';
-      else {
-        const stored = localStorage.getItem('preferred_locale');
-        if (stored === 'en-US') pathLang = 'en';
-        else if (stored === 'es-LATAM') pathLang = 'es';
-      }
-    }
+    if (docLang === 'en' || docLang.startsWith('en')) pathLang = 'en';
+    else if (docLang === 'es' || docLang.startsWith('es')) pathLang = 'es';
 
     area.innerHTML = visible.map((a: any) => {
       const s = TYPE_STYLES[a.type] || TYPE_STYLES.info;
