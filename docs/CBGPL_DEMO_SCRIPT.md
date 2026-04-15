@@ -14,7 +14,7 @@
 - [ ] Tab 2: /governance (nao logado — manual publico)
 - [ ] Tab 3: Pre-logado como GP (Vitor)
 - [ ] Tab 4: Admin dashboard
-- [ ] Tab 5: Claude.ai com MCP conectado (64 tools)
+- [ ] Tab 5: Claude.ai com MCP conectado (74 tools)
 - [ ] Wi-Fi testado + hotspot backup
 - [ ] Screenshot fallback de cada tela (caso offline)
 
