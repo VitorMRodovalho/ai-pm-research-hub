@@ -63,14 +63,14 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'workspace', labelKey: 'nav.workspace', href: '/workspace', minTier: 'member', requiresAuth: true, section: 'both', group: 'member', navSlot: 'primary', drawerSection: 'meu-espaco' },
 
   // ─── Tool pages (public) ───
-  { key: 'library',      labelKey: 'nav.library',      href: '/library',      minTier: 'visitor', requiresAuth: false, section: 'main', group: 'tools', navSlot: 'primary' },
+  { key: 'library',      labelKey: 'nav.library',      href: '/library',      minTier: 'visitor', requiresAuth: false, section: 'both', group: 'tools', navSlot: 'none', drawerSection: 'explorar' },
   { key: 'onboarding',   labelKey: 'nav.onboarding',   href: '/onboarding',   minTier: 'member',  requiresAuth: true,  section: 'main', group: 'profile', navSlot: 'none' },
   { key: 'artifacts',    labelKey: 'nav.artifacts',     href: '/artifacts',    minTier: 'visitor', requiresAuth: false, section: 'main', group: 'tools', navSlot: 'none' },
-  { key: 'gamification', labelKey: 'nav.gamification',  href: '/gamification', minTier: 'visitor', requiresAuth: false, section: 'main', group: 'tools', navSlot: 'primary' },
+  { key: 'gamification', labelKey: 'nav.gamification',  href: '/gamification', minTier: 'visitor', requiresAuth: false, section: 'both', group: 'tools', navSlot: 'none', drawerSection: 'explorar' },
   { key: 'presentations', labelKey: 'nav.presentations', href: '/presentations', minTier: 'member', requiresAuth: true, section: 'main', group: 'tools', navSlot: 'none' },
 
   // ─── Authenticated pages ───
-  { key: 'attendance', labelKey: 'nav.attendance',  href: '/attendance', minTier: 'member', requiresAuth: true, section: 'both', group: 'member', badge: 'crimson', drawerSection: 'meu-espaco', navSlot: 'none' },
+  { key: 'attendance', labelKey: 'nav.attendance',  href: '/attendance', minTier: 'member', requiresAuth: true, section: 'both', group: 'member', badge: 'crimson', drawerSection: 'meu-espaco', navSlot: 'primary' },
   { key: 'meetings',   labelKey: 'nav.meetings',   href: '/meetings',   minTier: 'member', requiresAuth: true, section: 'both', group: 'member', drawerSection: 'minha-tribo', navSlot: 'none' },
   { key: 'my-initiatives', labelKey: 'nav.myInitiatives', href: '/initiatives', minTier: 'member', requiresAuth: true, section: 'both', group: 'member', drawerSection: 'meu-espaco', navSlot: 'none' },
   { key: 'my-tribe',   labelKey: 'nav.myTribe',    href: '/tribe/',     minTier: 'member', requiresAuth: true, section: 'both', group: 'member', badge: 'teal', drawerSection: 'minha-tribo', navSlot: 'primary', dynamic: true, resolver: 'resolveMyTribeHref' },
@@ -94,7 +94,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'admin-cycle-report', labelKey: 'nav.adminCycleReport', href: '/report', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['sponsor', 'chapter_liaison'] },
   { key: 'admin-exec-report', labelKey: 'nav.adminReport', href: '/admin/report', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison'] },
   { key: 'boards', labelKey: 'nav.boards', href: '/boards', minTier: 'member', requiresAuth: true, section: 'both', group: 'member', drawerSection: 'meu-espaco', navSlot: 'primary' },
-  { key: 'governance', labelKey: 'nav.governance', href: '/governance', minTier: 'visitor', requiresAuth: false, section: 'both', group: 'tools', drawerSection: 'admin', navSlot: 'primary' },
+  { key: 'governance', labelKey: 'nav.governance', href: '/governance', minTier: 'visitor', requiresAuth: false, section: 'both', group: 'tools', drawerSection: 'explorar', navSlot: 'none' },
   { key: 'admin-governance-v2', labelKey: 'nav.adminBoardGovernance', href: '/admin/governance-v2', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['curator', 'co_gp'] },
   { key: 'admin-curatorship', labelKey: 'nav.adminCuratorship', href: '/admin/curatorship', minTier: 'observer', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none' },
   { key: 'admin-partnerships', labelKey: 'nav.adminPartnerships', href: '/admin/partnerships', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison'] },
@@ -108,6 +108,11 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'admin-settings',  labelKey: 'nav.adminSettings',  href: '/admin/settings', minTier: 'superadmin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin' },
   { key: 'notifications',   labelKey: 'nav.notifications', href: '/notifications',  minTier: 'member',   requiresAuth: true, section: 'main', group: 'member', navSlot: 'none' },
   { key: 'help',            labelKey: 'nav.adminHelp',     href: '/help',           minTier: 'visitor',  requiresAuth: false, section: 'both', group: 'member', navSlot: 'none', drawerSection: 'meu-espaco' },
+
+  // ─── Drawer-only secondary links (R4) ───
+  { key: 'certificates',        labelKey: 'nav.certificates',  href: '/certificates',        minTier: 'member',  requiresAuth: true,  section: 'drawer', group: 'profile', drawerSection: 'meu-espaco' },
+  { key: 'volunteer-agreement', labelKey: 'nav.volunteer',     href: '/volunteer-agreement', minTier: 'member',  requiresAuth: true,  section: 'drawer', group: 'profile', drawerSection: 'meu-espaco' },
+  { key: 'changelog',           labelKey: 'nav.changelog',     href: '/changelog',           minTier: 'visitor', requiresAuth: false, section: 'drawer', group: 'tools',   drawerSection: 'explorar' },
 ];
 
 export function getItemAccessibility(

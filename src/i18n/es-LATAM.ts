@@ -3275,6 +3275,7 @@ const esLATAM: Record<string, string> = {
   'initiative.stats.progress': 'en prog.',
   'initiative.stats.backlog': 'backlog',
   'initiative.kindBadge.committee': 'Comité',
+  'initiative.kindBadge.workgroup': 'Equipo',
   'initiative.kindBadge.study_group': 'Grupo de Estudio',
   'initiative.kindBadge.book_club': 'Club de Lectura',
   'initiative.kindBadge.congress': 'Congreso',

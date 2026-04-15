@@ -3280,6 +3280,7 @@ const ptBR: Record<string, string> = {
   'initiative.stats.progress': 'em prog.',
   'initiative.stats.backlog': 'backlog',
   'initiative.kindBadge.committee': 'Comitê',
+  'initiative.kindBadge.workgroup': 'Equipe',
   'initiative.kindBadge.study_group': 'Grupo de Estudos',
   'initiative.kindBadge.book_club': 'Clube do Livro',
   'initiative.kindBadge.congress': 'Congresso',

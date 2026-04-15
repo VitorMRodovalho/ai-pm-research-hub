@@ -44,6 +44,7 @@ const INIT_I18N = {
   noUpcoming: t('initiative.noUpcoming', lang),
   kindBadges: {
     committee: t('initiative.kindBadge.committee', lang),
+    workgroup: t('initiative.kindBadge.workgroup', lang),
     study_group: t('initiative.kindBadge.study_group', lang),
     book_club: t('initiative.kindBadge.book_club', lang),
     congress: t('initiative.kindBadge.congress', lang),
@@ -119,11 +120,11 @@ const INIT_I18N = {
   }
 
   const KIND_ICONS: Record<string, string> = {
-    committee: '👥', study_group: '📖', book_club: '📚',
+    committee: '👥', workgroup: '💼', study_group: '📖', book_club: '📚',
     congress: '🎤', workshop: '🔧', research_tribe: '🔬',
   };
   const KIND_COLORS: Record<string, string> = {
-    committee: '#06B6D4', study_group: '#8B5CF6', book_club: '#10B981',
+    committee: '#06B6D4', workgroup: '#0891B2', study_group: '#8B5CF6', book_club: '#10B981',
     congress: '#F59E0B', workshop: '#EF4444', research_tribe: '#4F17A8',
   };
   const ROLE_LABELS: Record<string, string> = {
@@ -420,7 +421,7 @@ const INIT_I18N = {
             : `<div class="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm" style="background:${roleColor}">${initials}</div>`}
           <div class="flex-1 min-w-0">
             <div class="text-sm font-semibold text-[var(--text-primary)] truncate">${escapeHtml(name)}</div>
-            <div class="text-xs text-[var(--text-muted)]">${escapeHtml(eng.kind.replace(/_/g, ' '))} ${startDate ? `· ${I18N.since || 'since'} ${startDate}` : ''}</div>
+            <div class="text-xs text-[var(--text-muted)]">${escapeHtml(eng.kind_display || eng.kind.replace(/_/g, ' '))} ${startDate ? `· ${I18N.since || 'since'} ${startDate}` : ''}</div>
           </div>
           <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full text-white cursor-help" style="background:${roleColor}" title="${ROLE_PERMISSIONS[eng.role] || ''}">${escapeHtml(roleLabel)}</span>
           ${actionBtns}
@@ -723,7 +724,7 @@ const INIT_I18N = {
         const { data: pRow } = await sb.from('persons').select('id').eq('legacy_member_id', selected.id).maybeSingle();
         if (!pRow?.id) { alert('Pessoa nao encontrada no modelo V4. Contacte o admin.'); return; }
 
-        const kindChoice = kindConfig?.allowed_engagement_kinds?.[0] || 'committee_member';
+        const kindChoice = kindConfig?.allowed_engagement_kinds?.[0] || 'volunteer';
         const { data: result, error: engErr } = await sb.rpc('manage_initiative_engagement', {
           p_initiative_id: INITIATIVE_ID,
           p_person_id: pRow.id,

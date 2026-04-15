@@ -14,15 +14,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
 <script>
   const KIND_ICONS: Record<string, string> = {
-    committee: '👥', study_group: '📖', book_club: '📚',
+    committee: '👥', workgroup: '💼', study_group: '📖', book_club: '📚',
     congress: '🎤', workshop: '🔧', research_tribe: '🔬',
   };
   const KIND_COLORS: Record<string, string> = {
-    committee: '#06B6D4', study_group: '#8B5CF6', book_club: '#10B981',
+    committee: '#06B6D4', workgroup: '#0891B2', study_group: '#8B5CF6', book_club: '#10B981',
     congress: '#F59E0B', workshop: '#EF4444', research_tribe: '#4F17A8',
   };
   const KIND_ORDER: Record<string, number> = {
-    research_tribe: 0, committee: 1, study_group: 2, congress: 3, book_club: 4, workshop: 5,
+    research_tribe: 0, workgroup: 1, committee: 2, study_group: 3, congress: 4, book_club: 5, workshop: 6,
   };
 
   function escapeHtml(s: string): string {

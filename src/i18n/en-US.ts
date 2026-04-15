@@ -3274,6 +3274,7 @@ const enUS: Record<string, string> = {
   'initiative.stats.progress': 'in prog.',
   'initiative.stats.backlog': 'backlog',
   'initiative.kindBadge.committee': 'Committee',
+  'initiative.kindBadge.workgroup': 'Workgroup',
   'initiative.kindBadge.study_group': 'Study Group',
   'initiative.kindBadge.book_club': 'Book Club',
   'initiative.kindBadge.congress': 'Congress',
