@@ -1,0 +1,148 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+---
+<BaseLayout title={t('nav.myInitiatives', lang)} activePage="my-initiatives" lang={lang}>
+  <div class="max-w-[1000px] mx-auto px-4 py-8">
+    <div id="init-catalog-loading" class="text-center py-10 text-[var(--text-muted)]">{t('initiative.loading', lang)}</div>
+    <div id="init-catalog" class="hidden"></div>
+  </div>
+</BaseLayout>
+
+<script>
+  const KIND_ICONS: Record<string, string> = {
+    committee: '👥', study_group: '📖', book_club: '📚',
+    congress: '🎤', workshop: '🔧', research_tribe: '🔬',
+  };
+  const KIND_COLORS: Record<string, string> = {
+    committee: '#06B6D4', study_group: '#8B5CF6', book_club: '#10B981',
+    congress: '#F59E0B', workshop: '#EF4444', research_tribe: '#4F17A8',
+  };
+  const KIND_ORDER: Record<string, number> = {
+    research_tribe: 0, committee: 1, study_group: 2, congress: 3, book_club: 4, workshop: 5,
+  };
+
+  function escapeHtml(s: string): string {
+    return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function getSb() { return (window as any).navGetSb?.(); }
+
+  async function boot() {
+    const sb = getSb();
+    const member = (window as any).navGetMember?.();
+    if (!sb || !member) {
+      window.addEventListener('nav:member', boot, { once: true });
+      return;
+    }
+
+    const loading = document.getElementById('init-catalog-loading');
+    const catalog = document.getElementById('init-catalog');
+    if (!loading || !catalog) return;
+
+    // Fetch all initiatives
+    const { data, error } = await sb.rpc('list_initiatives', { p_kind: null, p_status: null });
+    if (error || !data) {
+      loading.textContent = 'Erro ao carregar iniciativas.';
+      return;
+    }
+
+    // Fetch user's engagements to mark "mine"
+    let myInitiativeIds = new Set<string>();
+    if (member?.auth_id) {
+      const { data: personData } = await sb.from('persons').select('id').eq('auth_id', member.auth_id).single();
+      if (personData?.id) {
+        const { data: engData } = await sb
+          .from('engagements')
+          .select('initiative_id')
+          .eq('person_id', personData.id)
+          .eq('status', 'active');
+        if (engData) {
+          myInitiativeIds = new Set(engData.map((e: any) => e.initiative_id));
+        }
+      }
+    }
+
+    const initiatives = Array.isArray(data) ? data : [];
+
+    // Filter: only active/draft (not archived/concluded unless admin)
+    const isAdmin = member?.is_superadmin || ['manager', 'deputy_manager'].includes(member?.operational_role || '');
+    const visible = initiatives.filter((i: any) =>
+      isAdmin || ['active', 'draft'].includes(i.status)
+    );
+
+    // Group by kind
+    const groups: Record<string, any[]> = {};
+    for (const i of visible) {
+      const k = i.kind || 'other';
+      (groups[k] = groups[k] || []).push(i);
+    }
+
+    // Sort groups by KIND_ORDER
+    const sortedKinds = Object.keys(groups).sort((a, b) => (KIND_ORDER[a] ?? 99) - (KIND_ORDER[b] ?? 99));
+
+    // Count how many are "mine"
+    const myCount = visible.filter((i: any) => myInitiativeIds.has(i.id)).length;
+
+    let html = `<div class="mb-6">
+      <h1 class="text-xl font-extrabold text-navy">Iniciativas</h1>
+      <p class="text-sm text-[var(--text-secondary)] mt-1">${visible.length} iniciativa(s) ativa(s)${myCount > 0 ? ` · ${myCount} com sua participacao` : ''}</p>
+    </div>`;
+
+    for (const kind of sortedKinds) {
+      const items = groups[kind];
+      const icon = KIND_ICONS[kind] || '📋';
+      const color = KIND_COLORS[kind] || '#666';
+      const kindName = items[0]?.kind_display_name || kind.replace(/_/g, ' ');
+
+      html += `<div class="mb-6">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-lg">${icon}</span>
+          <h2 class="text-sm font-bold uppercase tracking-wide" style="color:${color}">${escapeHtml(kindName)}</h2>
+          <span class="text-xs text-[var(--text-muted)]">(${items.length})</span>
+        </div>
+        <div class="grid gap-3 sm:grid-cols-2">
+          ${items.map((i: any) => {
+            const isMine = myInitiativeIds.has(i.id);
+            const memberCount = i.member_count || 0;
+            const statusBadge = i.status !== 'active'
+              ? `<span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 text-gray-600 font-semibold ml-1">${i.status}</span>`
+              : '';
+            return `<a href="/initiative/${i.id}" class="block no-underline bg-[var(--surface-card)] border ${isMine ? 'border-teal-300 ring-1 ring-teal-200' : 'border-[var(--border-default)]'} rounded-xl p-4 hover:shadow-md transition-all group">
+              <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-base flex-shrink-0" style="background:${color}">${icon}</div>
+                <div class="flex-1 min-w-0">
+                  <div class="text-sm font-bold text-[var(--text-primary)] group-hover:text-navy truncate">
+                    ${escapeHtml(i.title)}${statusBadge}
+                  </div>
+                  <div class="text-xs text-[var(--text-muted)] mt-0.5">
+                    👥 ${memberCount} membro(s)${isMine ? ' · <span class="text-teal-600 font-semibold">Voce participa</span>' : ''}
+                  </div>
+                  ${i.description ? `<p class="text-xs text-[var(--text-secondary)] mt-1 line-clamp-2">${escapeHtml(i.description)}</p>` : ''}
+                </div>
+              </div>
+            </a>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }
+
+    if (visible.length === 0) {
+      html += '<p class="text-sm text-[var(--text-muted)] text-center py-8">Nenhuma iniciativa encontrada.</p>';
+    }
+
+    loading.classList.add('hidden');
+    catalog.innerHTML = html;
+    catalog.classList.remove('hidden');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+</script>

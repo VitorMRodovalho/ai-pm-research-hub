@@ -306,6 +306,7 @@ const ptBR: Record<string, string> = {
   'nav.governance': '⚖️ Governança',
   'nav.boards': '📋 Quadros',
   'nav.meetings': '📝 Atas',
+  'nav.myInitiatives': '🚀 Iniciativas',
   'boards.title': 'Quadros',
   'boards.subtitle': 'Boards de projecto, produção e operações.',
   'boards.empty': 'Nenhum quadro disponível.',
