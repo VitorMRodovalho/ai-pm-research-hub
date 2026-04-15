@@ -21,6 +21,7 @@ const sb = createClient(
 const { data: posts } = await sb.from('blog_posts')
   .select('id, slug, title, excerpt, category, tags, published_at, is_featured, cover_image_url, view_count, like_count')
   .eq('status', 'published')
+  .neq('category', 'announcement')
   .order('published_at', { ascending: false });
 
 const catStyles: Record<string, string> = {
