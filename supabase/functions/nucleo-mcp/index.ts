@@ -1433,7 +1433,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
 
   // TOOL 75: list_initiatives — list all initiatives (Tier 1 read)
   mcp.tool("list_initiatives", "Lists all initiatives in the platform, optionally filtered by kind and status. Returns id, title, kind, status, description, member_count.", {
-    kind: z.string().optional().describe("Filter by initiative kind (e.g. 'committee', 'study_group', 'research_tribe')"),
+    kind: z.string().optional().describe("Filter by initiative kind (e.g. 'workgroup', 'committee', 'study_group', 'research_tribe')"),
     status: z.string().optional().describe("Filter by status (draft, active, concluded, archived). Default: all.")
   }, async (params: { kind?: string; status?: string }) => {
     const start = Date.now();
@@ -1449,7 +1449,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   mcp.tool("manage_initiative_engagement", "Add, remove, or update role of a member in an initiative. Requires manage_member permission for the initiative.", {
     initiative_id: z.string().describe("Initiative UUID"),
     person_id: z.string().describe("Person UUID to add/remove/update"),
-    kind: z.string().describe("Engagement kind (e.g. 'committee_member', 'committee_coordinator', 'volunteer')"),
+    kind: z.string().describe("Engagement kind (e.g. 'workgroup_member', 'workgroup_coordinator', 'committee_member', 'volunteer')"),
     role: z.string().optional().describe("Role within engagement (e.g. 'leader', 'participant', 'coordinator'). Default: participant"),
     action: z.string().describe("Action: 'add', 'remove', or 'update_role'")
   }, async (params: { initiative_id: string; person_id: string; kind: string; role?: string; action: string }) => {
