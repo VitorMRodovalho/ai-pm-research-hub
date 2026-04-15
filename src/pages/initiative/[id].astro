@@ -2,7 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Toast from '../../components/ui/Toast.astro';
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton.astro';
-import BoardEngine from '../../components/islands/BoardEngine';
+import InitiativeBoardWrapper from '../../components/initiatives/InitiativeBoardWrapper';
 import EventMinutesIsland from '../../components/events/EventMinutesIsland';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import { buildPageI18n } from '../../i18n/pageI18n';
@@ -87,7 +87,9 @@ const INIT_I18N = {
 
       <!-- Tab panels -->
       <div id="panel-general"><LoadingSkeleton variant="card" count={2} /></div>
-      <div id="panel-board" class="hidden"></div>
+      <div id="panel-board" class="hidden">
+        <InitiativeBoardWrapper client:load initiativeId={id || ''} />
+      </div>
       <div id="panel-members" class="hidden"><LoadingSkeleton variant="card" count={4} /></div>
       <div id="panel-deliverables" class="hidden"><LoadingSkeleton variant="card" count={2} /></div>
       <div id="panel-attendance" class="hidden"></div>
@@ -132,6 +134,7 @@ const INIT_I18N = {
   let initData: any = null;
   let kindConfig: any = null;
   let currentMember: any = null;
+  let canManage = false;
   let activeTab = 'general';
 
   // ── Tab switching ──
@@ -227,6 +230,10 @@ const INIT_I18N = {
             ${init.description ? `<p class="text-xs text-[var(--text-muted)] mt-1.5 line-clamp-2">${escapeHtml(init.description)}</p>` : ''}
           </div>
         </div>
+        ${canManage ? `<div class="flex items-center gap-2 px-5 pb-3 pt-0">
+          ${init.status === 'draft' ? `<button data-action="activate-initiative" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold border-0 cursor-pointer hover:bg-emerald-700 transition-all">Ativar Iniciativa</button>` : ''}
+          <button data-action="add-member-prompt" class="px-3 py-1.5 rounded-lg bg-navy text-white text-xs font-semibold border-0 cursor-pointer hover:opacity-90 transition-all">${I18N.addMember || 'Adicionar Membro'}</button>
+        </div>` : ''}
       </div>`;
   }
 
@@ -380,70 +387,7 @@ const INIT_I18N = {
     </div>`;
   }
 
-  // ── Board tab (via RPC — client queries blocked by RLS) ──
-  async function renderBoardPanel() {
-    const el = document.getElementById('panel-board');
-    const sb = getSb();
-    if (!el || !sb || !initData?.board_id) return;
-
-    const { data, error } = await sb.rpc('get_initiative_board_summary', { p_initiative_id: INITIATIVE_ID });
-
-    if (error || !data || data.error || data.total === 0) {
-      el.innerHTML = `<div class="mb-3">
-        <a href="/admin/board/${initData.board_id}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold no-underline hover:opacity-90 transition-all">
-          ${I18N.viewBoard || 'Open Board'} →
-        </a>
-      </div>
-      <p class="text-sm text-[var(--text-muted)] mt-2">Board vazio.</p>`;
-      return;
-    }
-
-    const byStatus = data.by_status || {};
-    const recent = Array.isArray(data.recent) ? data.recent : [];
-    const STATUS_ORDER = ['in_progress', 'todo', 'review', 'backlog', 'done'];
-    const STATUS_COLORS: Record<string, string> = {
-      backlog: '#94A3B8', todo: '#6B7280', in_progress: '#3B82F6', review: '#8B5CF6', done: '#10B981',
-    };
-    const STATUS_LABELS: Record<string, string> = {
-      backlog: 'Backlog', todo: 'A Fazer', in_progress: 'Em Progresso', review: 'Revisao', done: 'Concluido',
-    };
-
-    // Summary bar
-    const total = data.total || 0;
-    const barHtml = STATUS_ORDER.filter(s => byStatus[s]).map(s => {
-      const pct = ((byStatus[s] / total) * 100).toFixed(0);
-      return `<div style="width:${pct}%;background:${STATUS_COLORS[s]}" class="h-3 first:rounded-l-full last:rounded-r-full" title="${STATUS_LABELS[s] || s}: ${byStatus[s]}"></div>`;
-    }).join('');
-
-    // Status chips
-    const chipsHtml = STATUS_ORDER.filter(s => byStatus[s]).map(s =>
-      `<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full text-white" style="background:${STATUS_COLORS[s]}">${byStatus[s]} ${STATUS_LABELS[s] || s}</span>`
-    ).join(' ');
-
-    // Recent cards
-    const recentHtml = recent.map((c: any) => {
-      const color = STATUS_COLORS[c.status] || '#94A3B8';
-      return `<div class="flex items-center gap-2 py-1.5 border-b border-[var(--border-subtle)] last:border-0">
-        <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${color}"></span>
-        <span class="text-sm text-[var(--text-primary)] truncate flex-1">${escapeHtml(c.title)}</span>
-        ${c.due_date ? `<span class="text-[10px] text-[var(--text-muted)]">📅 ${c.due_date.substring(0, 10)}</span>` : ''}
-      </div>`;
-    }).join('');
-
-    el.innerHTML = `
-      <div class="flex items-center gap-3 mb-4">
-        <a href="/admin/board/${initData.board_id}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold no-underline hover:opacity-90 transition-all">
-          ${I18N.viewBoard || 'Open Board'} →
-        </a>
-        <span class="text-sm text-[var(--text-muted)]">${total} cards</span>
-      </div>
-      <div class="flex w-full rounded-full overflow-hidden mb-3">${barHtml}</div>
-      <div class="flex flex-wrap gap-2 mb-4">${chipsHtml}</div>
-      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl px-4 py-2">
-        <h4 class="text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Recentes</h4>
-        ${recentHtml}
-      </div>`;
-  }
+  // Board tab is mounted as an Astro island (InitiativeBoardWrapper) — no JS needed here
 
   // ── Boot ──
   async function boot() {
@@ -473,6 +417,11 @@ const INIT_I18N = {
     initData = data;
     kindConfig = data.kind_config;
 
+    // Determine management permission
+    canManage = currentMember.is_superadmin
+      || ['manager', 'deputy_manager'].includes(currentMember.operational_role || '')
+      || (data.user_engagement && data.user_engagement.role === 'leader');
+
     // Reveal shell
     document.getElementById('init-loading')?.classList.add('hidden');
     document.getElementById('init-shell')?.classList.remove('hidden');
@@ -491,7 +440,53 @@ const INIT_I18N = {
       if (!btn?.dataset.tab) return;
       const tab = btn.dataset.tab;
       if (tab === 'members') await loadMembersTab();
-      if (tab === 'board') await renderBoardPanel();
+    });
+
+    // Action handlers (delegated)
+    document.addEventListener('click', async (e) => {
+      const target = e.target as HTMLElement;
+      const action = target.dataset.action || target.closest('[data-action]')?.getAttribute('data-action');
+      if (!action) return;
+
+      if (action === 'activate-initiative') {
+        if (!confirm('Ativar esta iniciativa? O status mudara de "draft" para "active".')) return;
+        const { error: updErr } = await sb.from('initiatives').update({ status: 'active' }).eq('id', INITIATIVE_ID);
+        if (updErr) { alert('Erro: ' + updErr.message); return; }
+        window.location.reload();
+      }
+
+      if (action === 'add-member-prompt') {
+        const nameQuery = prompt('Digite o nome do membro para buscar:');
+        if (!nameQuery?.trim()) return;
+        const { data: persons } = await sb.rpc('search_members', { p_query: nameQuery.trim() });
+        if (!persons?.length) { alert('Nenhum membro encontrado com "' + nameQuery + '"'); return; }
+
+        // Show simple selection
+        const list = Array.isArray(persons) ? persons.slice(0, 10) : [];
+        const options = list.map((p: any, i: number) => `${i + 1}. ${p.name} (${p.operational_role || 'member'})`).join('\n');
+        const choice = prompt('Selecione o numero:\n' + options);
+        const idx = parseInt(choice || '0', 10) - 1;
+        if (idx < 0 || idx >= list.length) return;
+
+        const selected = list[idx];
+        // Resolve person_id from member
+        const { data: personData } = await sb.from('persons').select('id').eq('legacy_member_id', selected.id).single();
+        if (!personData?.id) { alert('Pessoa nao encontrada no modelo V4. Contacte o admin.'); return; }
+
+        const kindChoice = kindConfig?.allowed_engagement_kinds?.[0] || 'committee_member';
+        const { data: result, error: engErr } = await sb.rpc('manage_initiative_engagement', {
+          p_initiative_id: INITIATIVE_ID,
+          p_person_id: personData.id,
+          p_kind: kindChoice,
+          p_role: 'participant',
+          p_action: 'add',
+        });
+        if (engErr) { alert('Erro: ' + engErr.message); return; }
+        if (result?.error) { alert(result.error); return; }
+        alert('Membro adicionado com sucesso!');
+        await loadMembersTab();
+        switchTab('members');
+      }
     });
   }
 
