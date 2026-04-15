@@ -364,6 +364,12 @@ const INIT_I18N = {
     leader: '#FF610F', coordinator: '#4F17A8', participant: '#06B6D4', observer: '#94A3B8',
   };
   const AVAILABLE_ROLES = ['leader', 'coordinator', 'participant', 'observer'];
+  const ROLE_PERMISSIONS: Record<string, string> = {
+    leader: 'Gestao completa: criar eventos, gerenciar membros, usar quadro, ver contatos',
+    coordinator: 'Supervisao: criar/editar conteudo, usar quadro, ver contatos',
+    participant: 'Colaborador: usar quadro, ver materiais',
+    observer: 'Somente leitura: acompanha atividades sem acoes',
+  };
 
   async function loadMembersTab() {
     const el = document.getElementById('panel-members');
@@ -379,7 +385,21 @@ const INIT_I18N = {
       return;
     }
 
-    el.innerHTML = `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl divide-y divide-[var(--border-subtle)]">
+    // Permissions legend
+    const legendHtml = `<div class="bg-[var(--surface-section-cool)] border border-[var(--border-default)] rounded-xl p-3 mb-3">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-xs font-bold text-[var(--text-secondary)] uppercase">Papeis e Permissoes</span>
+        <span class="text-[10px] text-[var(--text-muted)]">(governanca visivel)</span>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+        ${AVAILABLE_ROLES.map(r => `<div class="flex items-start gap-2">
+          <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full text-white shrink-0 mt-0.5" style="background:${ROLE_COLORS[r]}">${ROLE_LABELS[r] || r}</span>
+          <span class="text-[11px] text-[var(--text-muted)]">${ROLE_PERMISSIONS[r]}</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+
+    el.innerHTML = legendHtml + `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl divide-y divide-[var(--border-subtle)]">
       ${data.map((eng: any) => {
         const name = eng.name || '?';
         const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
@@ -402,7 +422,7 @@ const INIT_I18N = {
             <div class="text-sm font-semibold text-[var(--text-primary)] truncate">${escapeHtml(name)}</div>
             <div class="text-xs text-[var(--text-muted)]">${escapeHtml(eng.kind.replace(/_/g, ' '))} ${startDate ? `· ${I18N.since || 'since'} ${startDate}` : ''}</div>
           </div>
-          <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full text-white" style="background:${roleColor}">${escapeHtml(roleLabel)}</span>
+          <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full text-white cursor-help" style="background:${roleColor}" title="${ROLE_PERMISSIONS[eng.role] || ''}">${escapeHtml(roleLabel)}</span>
           ${actionBtns}
         </div>`;
       }).join('')}
