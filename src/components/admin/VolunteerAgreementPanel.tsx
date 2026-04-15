@@ -318,6 +318,7 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
                   const c = typeof template.content === 'string' ? JSON.parse(template.content) : template.content;
                   const SUB_KEYS: Record<string, string[]> = {
                     clause1: ['clause1a', 'clause1b', 'clause1c'],
+                    clause2: ['clause2_1', 'clause2_2', 'clause2_3', 'clause2_4', 'clause2_5'],
                     clause7: ['clause7a'],
                     clause9: ['clause9a', 'clause9b', 'clause9c', 'clause9d', 'clause9e', 'clause9f'],
                   };
@@ -365,10 +366,11 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
                                     const subText = c[subKey] || '';
                                     const letter = subKey.slice(-1);
                                     const isNote = subKey.endsWith('note');
+                                    const isNumbered = /_\d+$/.test(subKey);
                                     return (
                                       <li key={subKey} className={`text-[12px] ${isNote ? 'italic border-l-2 border-gray-300 pl-3 mt-3' : ''}`}>
                                         <div className="flex gap-2">
-                                          {!isNote && <span className="font-semibold text-[var(--text-muted)] shrink-0">{letter}.</span>}
+                                          {!isNote && !isNumbered && <span className="font-semibold text-[var(--text-muted)] shrink-0">{letter}.</span>}
                                           <span>{subText}</span>
                                         </div>
                                       </li>
