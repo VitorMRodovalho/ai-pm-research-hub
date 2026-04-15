@@ -305,6 +305,7 @@ const esLATAM: Record<string, string> = {
   'nav.adminCycleReport': '📄 Informe del Ciclo',
   'nav.governance': '⚖️ Gobernanza',
   'nav.boards': '📋 Tableros',
+  'nav.meetings': '📝 Actas',
   'boards.title': 'Tableros',
   'boards.subtitle': 'Tableros de proyecto, producción y operaciones.',
   'boards.empty': 'Ningún tablero disponible.',
