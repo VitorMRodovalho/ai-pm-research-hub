@@ -306,6 +306,7 @@ const esLATAM: Record<string, string> = {
   'nav.governance': '⚖️ Gobernanza',
   'nav.boards': '📋 Tableros',
   'nav.meetings': '📝 Actas',
+  'nav.myInitiatives': '🚀 Iniciativas',
   'boards.title': 'Tableros',
   'boards.subtitle': 'Tableros de proyecto, producción y operaciones.',
   'boards.empty': 'Ningún tablero disponible.',

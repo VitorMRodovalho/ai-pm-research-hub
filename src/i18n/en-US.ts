@@ -306,6 +306,7 @@ const enUS: Record<string, string> = {
   'nav.governance': '⚖️ Governance',
   'nav.boards': '📋 Boards',
   'nav.meetings': '📝 Minutes',
+  'nav.myInitiatives': '🚀 Initiatives',
   'boards.title': 'Boards',
   'boards.subtitle': 'Project, production and operations boards.',
   'boards.empty': 'No boards available.',
