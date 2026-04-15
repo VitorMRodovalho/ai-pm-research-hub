@@ -827,12 +827,19 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     DRAWER_SECTIONS.forEach(section => {
       const sectionItems = drawerItems.filter((i: any) => i.drawerSection === section.key);
       if (!sectionItems.length) return;
-      html += `<hr class="border-[var(--border-subtle)] my-2">
-        <div class="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1 px-2">${section.icon} ${section.label}</div>`;
+      const isCollapsible = section.key === 'admin' || section.key === 'producao';
+      html += `<hr class="border-[var(--border-subtle)] my-2">`;
+      if (isCollapsible) {
+        html += `<button data-action="toggle-drawer-section" data-section="${section.key}" class="flex items-center gap-1 w-full text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1 px-2 cursor-pointer border-0 bg-transparent hover:text-[var(--text-secondary)] transition-all">${section.icon} ${section.label} <span class="ml-auto text-[8px] drawer-section-chevron-${section.key}">&#x25BC;</span></button>`;
+        html += `<div id="drawer-section-${section.key}" class="">`;
+      } else {
+        html += `<div class="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1 px-2">${section.icon} ${section.label}</div>`;
+      }
       sectionItems.forEach((item: any) => {
         const style = section.key === 'admin' ? 'text-purple hover:bg-purple/5' : 'text-[var(--text-primary)] hover:bg-[var(--surface-hover)]';
         html += drawerLink(item, style);
       });
+      if (isCollapsible) html += '</div>';
     });
 
     html += `<hr class="border-[var(--border-subtle)] my-2">
@@ -910,6 +917,17 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
           dtl!.innerHTML = renderDrawerTribeDropdown(tribes);
         });
       }
+    }
+    if (action === 'toggle-drawer-section') {
+      e.preventDefault();
+      var sectionKey = target.dataset.section || (target.closest('[data-section]') as HTMLElement)?.dataset.section;
+      if (!sectionKey) return;
+      var sectionEl = document.getElementById('drawer-section-' + sectionKey);
+      var sChev = target.querySelector('.drawer-section-chevron-' + sectionKey) || target.parentElement?.querySelector('.drawer-section-chevron-' + sectionKey);
+      if (!sectionEl) return;
+      var isSectionOpen = !sectionEl.classList.contains('hidden');
+      sectionEl.classList.toggle('hidden');
+      if (sChev) sChev.innerHTML = isSectionOpen ? '&#x25B6;' : '&#x25BC;';
     }
     if (action === 'toggle-tribe-dropdown-mobile') {
       e.preventDefault();

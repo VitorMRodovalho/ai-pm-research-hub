@@ -338,40 +338,30 @@ const INIT_I18N = {
     } catch { /* events not critical */ }
   }
 
-  // ── Members tab ──
+  // ── Members tab (via RPC — client queries blocked by RLS) ──
   async function loadMembersTab() {
     const el = document.getElementById('panel-members');
     const sb = getSb();
     if (!el || !sb) return;
 
-    const { data, error } = await sb
-      .from('engagements')
-      .select('id, kind, role, status, start_date, person_id, persons!inner(id, name, photo_url, legacy_member_id)')
-      .eq('initiative_id', INITIATIVE_ID)
-      .eq('status', 'active')
-      .order('role');
+    const { data, error } = await sb.rpc('get_initiative_members', { p_initiative_id: INITIATIVE_ID });
 
-    if (error || !data?.length) {
+    if (error || !Array.isArray(data) || !data.length) {
       el.innerHTML = `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-6 text-center text-sm text-[var(--text-muted)]">
         ${I18N.emptyNoMembers || 'No active members.'}
       </div>`;
       return;
     }
 
-    // Sort: leaders first, then coordinators, then participants, then observers
-    const roleOrder: Record<string, number> = { leader: 0, coordinator: 1, participant: 2, observer: 3 };
-    const sorted = data.sort((a: any, b: any) => (roleOrder[a.role] ?? 9) - (roleOrder[b.role] ?? 9));
-
     const ROLE_COLORS: Record<string, string> = {
       leader: '#FF610F', coordinator: '#4F17A8', participant: '#06B6D4', observer: '#94A3B8',
     };
 
     el.innerHTML = `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl divide-y divide-[var(--border-subtle)]">
-      ${sorted.map((eng: any) => {
-        const person = eng.persons;
-        const name = person?.name || '?';
+      ${data.map((eng: any) => {
+        const name = eng.name || '?';
         const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
-        const photoUrl = person?.photo_url;
+        const photoUrl = eng.photo_url;
         const roleColor = ROLE_COLORS[eng.role] || '#94A3B8';
         const roleLabel = ROLE_LABELS[eng.role] || eng.role;
         const startDate = eng.start_date ? new Date(eng.start_date + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }) : '';
@@ -390,74 +380,69 @@ const INIT_I18N = {
     </div>`;
   }
 
-  // ── Board tab: mount BoardEngine dynamically ──
-  function renderBoardPanel() {
+  // ── Board tab (via RPC — client queries blocked by RLS) ──
+  async function renderBoardPanel() {
     const el = document.getElementById('panel-board');
-    if (!el || !initData?.board_id) return;
-
-    // BoardEngine is an Astro island — we can't mount it dynamically from client JS.
-    // Instead, render a direct link + iframe-style embed using the board page.
-    // Actually, let's just show a link to the existing board page for now,
-    // and render the board items inline.
-    el.innerHTML = `<div class="mb-3">
-      <a href="/admin/board/${initData.board_id}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold no-underline hover:opacity-90 transition-all">
-        ${I18N.viewBoard || 'Open Board'} →
-      </a>
-    </div>
-    <div id="board-engine-mount"></div>`;
-
-    // Load board items inline
-    loadBoardInline();
-  }
-
-  async function loadBoardInline() {
     const sb = getSb();
-    const mount = document.getElementById('board-engine-mount');
-    if (!sb || !mount || !initData?.board_id) return;
+    if (!el || !sb || !initData?.board_id) return;
 
-    const { data: items, error } = await sb
-      .from('board_items')
-      .select('id, title, status, priority, due_date, assignee_id')
-      .eq('board_id', initData.board_id)
-      .neq('status', 'archived')
-      .order('created_at', { ascending: false })
-      .limit(50);
+    const { data, error } = await sb.rpc('get_initiative_board_summary', { p_initiative_id: INITIATIVE_ID });
 
-    if (error || !items?.length) {
-      mount.innerHTML = '<p class="text-sm text-[var(--text-muted)] mt-2">Board vazio.</p>';
+    if (error || !data || data.error || data.total === 0) {
+      el.innerHTML = `<div class="mb-3">
+        <a href="/admin/board/${initData.board_id}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold no-underline hover:opacity-90 transition-all">
+          ${I18N.viewBoard || 'Open Board'} →
+        </a>
+      </div>
+      <p class="text-sm text-[var(--text-muted)] mt-2">Board vazio.</p>`;
       return;
     }
 
-    const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-      backlog: { bg: 'bg-gray-100', text: 'text-gray-600' },
-      todo: { bg: 'bg-gray-100', text: 'text-gray-600' },
-      in_progress: { bg: 'bg-blue-50', text: 'text-blue-700' },
-      review: { bg: 'bg-purple-50', text: 'text-purple-700' },
-      done: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
+    const byStatus = data.by_status || {};
+    const recent = Array.isArray(data.recent) ? data.recent : [];
+    const STATUS_ORDER = ['in_progress', 'todo', 'review', 'backlog', 'done'];
+    const STATUS_COLORS: Record<string, string> = {
+      backlog: '#94A3B8', todo: '#6B7280', in_progress: '#3B82F6', review: '#8B5CF6', done: '#10B981',
+    };
+    const STATUS_LABELS: Record<string, string> = {
+      backlog: 'Backlog', todo: 'A Fazer', in_progress: 'Em Progresso', review: 'Revisao', done: 'Concluido',
     };
 
-    // Group by status
-    const groups: Record<string, any[]> = {};
-    for (const it of items) {
-      const s = it.status || 'backlog';
-      (groups[s] = groups[s] || []).push(it);
-    }
+    // Summary bar
+    const total = data.total || 0;
+    const barHtml = STATUS_ORDER.filter(s => byStatus[s]).map(s => {
+      const pct = ((byStatus[s] / total) * 100).toFixed(0);
+      return `<div style="width:${pct}%;background:${STATUS_COLORS[s]}" class="h-3 first:rounded-l-full last:rounded-r-full" title="${STATUS_LABELS[s] || s}: ${byStatus[s]}"></div>`;
+    }).join('');
 
-    mount.innerHTML = Object.entries(groups).map(([status, cards]) => {
-      const colors = STATUS_COLORS[status] || STATUS_COLORS.backlog;
-      return `<div class="mb-4">
-        <div class="flex items-center gap-2 mb-2">
-          <span class="text-xs font-bold uppercase ${colors.text}">${status.replace(/_/g, ' ')}</span>
-          <span class="text-xs text-[var(--text-muted)]">(${cards.length})</span>
-        </div>
-        <div class="grid gap-2">${cards.map(c => `
-          <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-lg px-3 py-2">
-            <span class="text-sm text-[var(--text-primary)]">${escapeHtml(c.title)}</span>
-            ${c.due_date ? `<span class="text-[10px] text-[var(--text-muted)] ml-2">📅 ${c.due_date.substring(0, 10)}</span>` : ''}
-          </div>`).join('')}
-        </div>
+    // Status chips
+    const chipsHtml = STATUS_ORDER.filter(s => byStatus[s]).map(s =>
+      `<span class="text-[11px] font-semibold px-2 py-0.5 rounded-full text-white" style="background:${STATUS_COLORS[s]}">${byStatus[s]} ${STATUS_LABELS[s] || s}</span>`
+    ).join(' ');
+
+    // Recent cards
+    const recentHtml = recent.map((c: any) => {
+      const color = STATUS_COLORS[c.status] || '#94A3B8';
+      return `<div class="flex items-center gap-2 py-1.5 border-b border-[var(--border-subtle)] last:border-0">
+        <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:${color}"></span>
+        <span class="text-sm text-[var(--text-primary)] truncate flex-1">${escapeHtml(c.title)}</span>
+        ${c.due_date ? `<span class="text-[10px] text-[var(--text-muted)]">📅 ${c.due_date.substring(0, 10)}</span>` : ''}
       </div>`;
     }).join('');
+
+    el.innerHTML = `
+      <div class="flex items-center gap-3 mb-4">
+        <a href="/admin/board/${initData.board_id}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold no-underline hover:opacity-90 transition-all">
+          ${I18N.viewBoard || 'Open Board'} →
+        </a>
+        <span class="text-sm text-[var(--text-muted)]">${total} cards</span>
+      </div>
+      <div class="flex w-full rounded-full overflow-hidden mb-3">${barHtml}</div>
+      <div class="flex flex-wrap gap-2 mb-4">${chipsHtml}</div>
+      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl px-4 py-2">
+        <h4 class="text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Recentes</h4>
+        ${recentHtml}
+      </div>`;
   }
 
   // ── Boot ──
@@ -506,7 +491,7 @@ const INIT_I18N = {
       if (!btn?.dataset.tab) return;
       const tab = btn.dataset.tab;
       if (tab === 'members') await loadMembersTab();
-      if (tab === 'board') renderBoardPanel();
+      if (tab === 'board') await renderBoardPanel();
     });
   }
 
