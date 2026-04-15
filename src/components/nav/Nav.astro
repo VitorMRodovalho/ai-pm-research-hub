@@ -831,8 +831,11 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       const isCollapsible = section.key === 'admin' || section.key === 'producao';
       html += `<hr class="border-[var(--border-subtle)] my-2">`;
       if (isCollapsible) {
-        html += `<button data-action="toggle-drawer-section" data-section="${section.key}" class="flex items-center gap-1 w-full text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1 px-2 cursor-pointer border-0 bg-transparent hover:text-[var(--text-secondary)] transition-all">${section.icon} ${section.label} <span class="ml-auto text-[8px] drawer-section-chevron-${section.key}">&#x25BC;</span></button>`;
-        html += `<div id="drawer-section-${section.key}" class="">`;
+        const savedState = localStorage.getItem('drawer-section-' + section.key);
+        const startCollapsed = savedState === null ? true : savedState === 'collapsed';
+        const chevron = startCollapsed ? '&#x25B6;' : '&#x25BC;';
+        html += `<button data-action="toggle-drawer-section" data-section="${section.key}" class="flex items-center gap-1 w-full text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1 px-2 cursor-pointer border-0 bg-transparent hover:text-[var(--text-secondary)] transition-all">${section.icon} ${section.label} <span class="ml-auto text-[8px] drawer-section-chevron-${section.key}">${chevron}</span></button>`;
+        html += `<div id="drawer-section-${section.key}" class="${startCollapsed ? 'hidden' : ''}">`;
       } else {
         html += `<div class="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1 px-2">${section.icon} ${section.label}</div>`;
       }
@@ -843,35 +846,22 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       if (isCollapsible) html += '</div>';
     });
 
+    // Secondary links (less frequent)
     html += `<hr class="border-[var(--border-subtle)] my-2">
+      <div class="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)] mb-1 px-2">Links</div>
+      <a href="${base}/certificates" class="flex items-center gap-2 w-full px-2 py-1 rounded-lg text-[.72rem] font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] no-underline transition-all">🏅 ${i18n.certificates || 'Certificados'}</a>
+      <a href="${base}/publications/submissions" class="flex items-center gap-2 w-full px-2 py-1 rounded-lg text-[.72rem] font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] no-underline transition-all">📄 ${i18n.publications || 'Publicacoes'}</a>
+      <a href="${base}/volunteer-agreement" class="flex items-center gap-2 w-full px-2 py-1 rounded-lg text-[.72rem] font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] no-underline transition-all">📝 ${i18n.volunteer || 'Termo'}</a>
+      <a href="${base}/changelog" class="flex items-center gap-2 w-full px-2 py-1 rounded-lg text-[.72rem] font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] no-underline transition-all">💡 ${i18n.changelog || 'Novidades'}</a>
+      <a href="${base}/privacy" class="flex items-center gap-2 w-full px-2 py-1 rounded-lg text-[.72rem] font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] no-underline transition-all">🔒 ${i18n.privacy || 'Privacidade'}</a>
+      <a href="${base}/help" class="flex items-center gap-2 w-full px-2 py-1 rounded-lg text-[.72rem] font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] no-underline transition-all">❓ ${i18n.help || 'Ajuda'}</a>`;
+
+    // Sticky bottom: theme + logout (always visible)
+    html += `</div><div class="sticky bottom-0 bg-[var(--surface-elevated)] pt-2 pb-1 border-t border-[var(--border-subtle)] mt-2">
       <button id="pd-theme-toggle" data-action="toggle-theme"
         class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)] cursor-pointer border-0 bg-transparent transition-all">${getTheme() === 'dark' ? '☀️ Modo claro' : '🌙 Modo escuro'}</button>
-      <a href="${base}/privacy" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)] no-underline transition-all">
-        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-        <span>${i18n.privacy || 'Política de Privacidade'}</span>
-      </a>
-      <a href="${base}/help" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)] no-underline transition-all">
-        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        <span>${i18n.help || 'Ajuda'}</span>
-      </a>
-      <a href="${base}/certificates" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)] no-underline transition-all">
-        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
-        <span>${i18n.certificates || 'Meus Certificados'}</span>
-      </a>
-      <a href="${base}/publications/submissions" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)] no-underline transition-all">
-        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        <span>${i18n.publications || 'Publicações'}</span>
-      </a>
-      <a href="${base}/volunteer-agreement" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)] no-underline transition-all">
-        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-        <span>${i18n.volunteer || 'Termo de Voluntariado'}</span>
-      </a>
-      <a href="${base}/changelog" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-hover)] no-underline transition-all">
-        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
-        <span>${i18n.changelog || 'Novidades'}</span>
-      </a>
-      <hr class="border-[var(--border-subtle)] my-2">
-      <button data-action="logout" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-crimson hover:bg-red-50 cursor-pointer border-0 bg-transparent transition-all">${i18n.logout || '↩ Sign Out'}</button>`;
+      <button data-action="logout" class="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg text-[.78rem] font-semibold text-crimson hover:bg-red-50 cursor-pointer border-0 bg-transparent transition-all">${i18n.logout || '↩ Sair'}</button>
+    </div>`;
 
     el.innerHTML = html;
   }
@@ -929,6 +919,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       var isSectionOpen = !sectionEl.classList.contains('hidden');
       sectionEl.classList.toggle('hidden');
       if (sChev) sChev.innerHTML = isSectionOpen ? '&#x25B6;' : '&#x25BC;';
+      localStorage.setItem('drawer-section-' + sectionKey, isSectionOpen ? 'collapsed' : 'expanded');
     }
     if (action === 'toggle-tribe-dropdown-mobile') {
       e.preventDefault();
