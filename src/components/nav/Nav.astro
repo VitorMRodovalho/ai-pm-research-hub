@@ -92,6 +92,7 @@ const jsI18n = JSON.stringify({
   meetings: t('nav.meetings', lang),
   myTribe: t('nav.myTribe', lang),
   exploreTribes: t('nav.exploreTribes', lang),
+  myInitiatives: t('nav.myInitiatives', lang),
   tribePrefix: t('workspace.tribePrefix', lang),
   logout: t('nav.logout', lang),
   privacy: t('nav.privacy', lang),
@@ -429,7 +430,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       html += '<div class="px-3 pt-1 pb-1 text-[.6rem] font-bold uppercase tracking-wider text-[var(--text-muted)]">Ciclos Anteriores</div>';
       html += legacy.map((t: any) => tribeRow(t, true)).join('');
     }
-    html += '<hr class="border-[var(--border-subtle)] my-1"><a href="' + base + '/#tribes" class="flex items-center gap-2 px-3 py-1.5 text-[.7rem] text-[var(--text-muted)] font-medium hover:bg-[var(--surface-hover)] no-underline transition-all"><span class="w-5 h-5 flex items-center justify-center text-[.7rem]">&#x1F30D;</span>' + (i18n.exploreTribes || 'Ver todas') + '</a>';
+    html += '<hr class="border-[var(--border-subtle)] my-1"><a href="' + base + '/initiatives" class="flex items-center gap-2 px-3 py-1.5 text-[.7rem] text-[var(--text-muted)] font-medium hover:bg-[var(--surface-hover)] no-underline transition-all"><span class="w-5 h-5 flex items-center justify-center text-[.7rem]">&#x1F680;</span>' + (i18n.myInitiatives || 'Todas Iniciativas') + '</a>';
     return html || '<div class="px-3 py-2 text-[var(--text-muted)] text-xs">Nenhuma tribo disponível.</div>';
   }
 
