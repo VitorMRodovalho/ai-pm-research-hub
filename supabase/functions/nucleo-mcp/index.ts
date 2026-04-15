@@ -1,5 +1,5 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.10.1 — 74 tools (60R + 14W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.11.0 — 76 tools (61R + 15W) + 1 prompt + 1 resource + usage logging
 // V4 Cutover: canWrite/canWriteBoard → canV4 (ADR-0007, engagement-derived authority)
 // Transport: SDK 1.29.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
@@ -276,15 +276,15 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
     "nucleo://tools/reference",
     {
       title: "Referência completa de ferramentas",
-      description: "Lista todas as 74 ferramentas do Núcleo MCP com parâmetros e permissões.",
+      description: "Lista todas as 76 ferramentas do Núcleo MCP com parâmetros e permissões.",
       mimeType: "text/markdown",
     },
     async () => ({
       contents: [{
         uri: "nucleo://tools/reference",
-        text: `# Núcleo IA MCP — Referência de Ferramentas (v2.10.1)
+        text: `# Núcleo IA MCP — Referência de Ferramentas (v2.11.0)
 
-## 74 ferramentas: 60 leitura + 14 escrita
+## 76 ferramentas: 61 leitura + 15 escrita
 
 ### Tier 1 — Todos os membros (27 leitura)
 | # | Ferramenta | Parâmetros | Descrição |
@@ -375,6 +375,8 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 | 72 | get_selection_rankings | cycle_code?, track? | manage_member | Rankings de seleção (CR-047) |
 | 73 | get_application_score_breakdown | application_id | manage_member | Breakdown de scores individuais |
 | 74 | get_wiki_health | — | — | Relatório de saúde da wiki |
+| 75 | list_initiatives | kind?, status? | — | Lista iniciativas (filtro por tipo/status) |
+| 76 | manage_initiative_engagement | initiative_id, person_id, kind, role?, action | manage_member | Add/remove/update membro em iniciativa |
 
 ## Notas
 - Escrita usa \`canV4(action)\` — permissão derivada de engagements (ADR-0007)
@@ -1428,6 +1430,45 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "get_wiki_health", true, undefined, start);
     return ok({ summary, issues });
   });
+
+  // TOOL 75: list_initiatives — list all initiatives (Tier 1 read)
+  mcp.tool("list_initiatives", "Lists all initiatives in the platform, optionally filtered by kind and status. Returns id, title, kind, status, description, member_count.", {
+    kind: z.string().optional().describe("Filter by initiative kind (e.g. 'committee', 'study_group', 'research_tribe')"),
+    status: z.string().optional().describe("Filter by status (draft, active, concluded, archived). Default: all.")
+  }, async (params: { kind?: string; status?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_initiatives", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("list_initiatives", { p_kind: params.kind || null, p_status: params.status || null });
+    if (error) { await logUsage(sb, member.id, "list_initiatives", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_initiatives", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL 76: manage_initiative_engagement — add/remove/update members (write, canV4 manage_member)
+  mcp.tool("manage_initiative_engagement", "Add, remove, or update role of a member in an initiative. Requires manage_member permission for the initiative.", {
+    initiative_id: z.string().describe("Initiative UUID"),
+    person_id: z.string().describe("Person UUID to add/remove/update"),
+    kind: z.string().describe("Engagement kind (e.g. 'committee_member', 'committee_coordinator', 'volunteer')"),
+    role: z.string().optional().describe("Role within engagement (e.g. 'leader', 'participant', 'coordinator'). Default: participant"),
+    action: z.string().describe("Action: 'add', 'remove', or 'update_role'")
+  }, async (params: { initiative_id: string; person_id: string; kind: string; role?: string; action: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "manage_initiative_engagement", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "manage_initiative_engagement", false, "Unauthorized", start); return err("Unauthorized: requires manage_member permission."); }
+    const { data, error } = await sb.rpc("manage_initiative_engagement", {
+      p_initiative_id: params.initiative_id,
+      p_person_id: params.person_id,
+      p_kind: params.kind,
+      p_role: params.role || 'participant',
+      p_action: params.action
+    });
+    if (error) { await logUsage(sb, member.id, "manage_initiative_engagement", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "manage_initiative_engagement", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "manage_initiative_engagement", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -1438,7 +1479,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.10.1" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.11.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -1458,6 +1499,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.10.1", tools: 74, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.11.0", tools: 76, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
