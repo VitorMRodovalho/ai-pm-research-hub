@@ -346,6 +346,11 @@ const INIT_I18N = {
   }
 
   // ── Members tab (via RPC — client queries blocked by RLS) ──
+  const ROLE_COLORS: Record<string, string> = {
+    leader: '#FF610F', coordinator: '#4F17A8', participant: '#06B6D4', observer: '#94A3B8',
+  };
+  const AVAILABLE_ROLES = ['leader', 'coordinator', 'participant', 'observer'];
+
   async function loadMembersTab() {
     const el = document.getElementById('panel-members');
     const sb = getSb();
@@ -360,10 +365,6 @@ const INIT_I18N = {
       return;
     }
 
-    const ROLE_COLORS: Record<string, string> = {
-      leader: '#FF610F', coordinator: '#4F17A8', participant: '#06B6D4', observer: '#94A3B8',
-    };
-
     el.innerHTML = `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl divide-y divide-[var(--border-subtle)]">
       ${data.map((eng: any) => {
         const name = eng.name || '?';
@@ -372,6 +373,12 @@ const INIT_I18N = {
         const roleColor = ROLE_COLORS[eng.role] || '#94A3B8';
         const roleLabel = ROLE_LABELS[eng.role] || eng.role;
         const startDate = eng.start_date ? new Date(eng.start_date + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }) : '';
+
+        const actionBtns = canManage ? `
+          <button data-action="change-role" data-person-id="${eng.person_id}" data-current-role="${eng.role}" data-kind="${eng.kind}"
+            class="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-hover)] text-[var(--text-secondary)] border-0 cursor-pointer hover:bg-[var(--surface-section-cool)] transition-all" title="Alterar papel">✏️</button>
+          <button data-action="remove-member" data-person-id="${eng.person_id}" data-name="${escapeHtml(name)}"
+            class="text-[10px] px-1.5 py-0.5 rounded bg-red-50 text-red-600 border-0 cursor-pointer hover:bg-red-100 transition-all" title="Remover">✕</button>` : '';
 
         return `<div class="flex items-center gap-3 px-4 py-3">
           ${photoUrl
@@ -382,6 +389,7 @@ const INIT_I18N = {
             <div class="text-xs text-[var(--text-muted)]">${escapeHtml(eng.kind.replace(/_/g, ' '))} ${startDate ? `· ${I18N.since || 'since'} ${startDate}` : ''}</div>
           </div>
           <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full text-white" style="background:${roleColor}">${escapeHtml(roleLabel)}</span>
+          ${actionBtns}
         </div>`;
       }).join('')}
     </div>`;
@@ -476,7 +484,14 @@ const INIT_I18N = {
         if (idx < 0 || idx >= list.length) return;
 
         const selected = list[idx];
-        // Resolve person_id from member_id (persons has SELECT policy for authenticated)
+
+        // Select role
+        const roleOptions = AVAILABLE_ROLES.map((r, i) => `${i + 1}. ${ROLE_LABELS[r] || r}`).join('\n');
+        const roleChoice = prompt('Selecione o papel:\n' + roleOptions + '\n(default: 3 = Participante)');
+        const roleIdx = parseInt(roleChoice || '3', 10) - 1;
+        const selectedRole = AVAILABLE_ROLES[roleIdx >= 0 && roleIdx < AVAILABLE_ROLES.length ? roleIdx : 2];
+
+        // Resolve person_id from member_id
         const { data: pRow } = await sb.from('persons').select('id').eq('legacy_member_id', selected.id).maybeSingle();
         if (!pRow?.id) { alert('Pessoa nao encontrada no modelo V4. Contacte o admin.'); return; }
 
@@ -485,14 +500,59 @@ const INIT_I18N = {
           p_initiative_id: INITIATIVE_ID,
           p_person_id: pRow.id,
           p_kind: kindChoice,
-          p_role: 'participant',
+          p_role: selectedRole,
           p_action: 'add',
         });
         if (engErr) { alert('Erro: ' + engErr.message); return; }
         if (result?.error) { alert(result.error); return; }
-        alert('Membro adicionado com sucesso!');
+        alert(`${selected.name} adicionado(a) como ${ROLE_LABELS[selectedRole] || selectedRole}!`);
         await loadMembersTab();
         switchTab('members');
+      }
+
+      if (action === 'change-role') {
+        const btn = (target.closest('[data-person-id]') || target) as HTMLElement;
+        const personId = btn.dataset.personId;
+        const currentRole = btn.dataset.currentRole || '';
+        const engKind = btn.dataset.kind || '';
+        if (!personId) return;
+
+        const roleOptions = AVAILABLE_ROLES.map((r, i) => `${i + 1}. ${ROLE_LABELS[r] || r}${r === currentRole ? ' (atual)' : ''}`).join('\n');
+        const roleChoice = prompt('Alterar papel para:\n' + roleOptions);
+        const roleIdx = parseInt(roleChoice || '0', 10) - 1;
+        if (roleIdx < 0 || roleIdx >= AVAILABLE_ROLES.length) return;
+        const newRole = AVAILABLE_ROLES[roleIdx];
+        if (newRole === currentRole) return;
+
+        const { data: result, error: roleErr } = await sb.rpc('manage_initiative_engagement', {
+          p_initiative_id: INITIATIVE_ID,
+          p_person_id: personId,
+          p_kind: engKind,
+          p_role: newRole,
+          p_action: 'update_role',
+        });
+        if (roleErr) { alert('Erro: ' + roleErr.message); return; }
+        if (result?.error) { alert(result.error); return; }
+        await loadMembersTab();
+      }
+
+      if (action === 'remove-member') {
+        const btn = (target.closest('[data-person-id]') || target) as HTMLElement;
+        const personId = btn.dataset.personId;
+        const memberName = btn.dataset.name || '';
+        if (!personId) return;
+        if (!confirm(`Remover ${memberName} desta iniciativa?`)) return;
+
+        const { data: result, error: rmErr } = await sb.rpc('manage_initiative_engagement', {
+          p_initiative_id: INITIATIVE_ID,
+          p_person_id: personId,
+          p_kind: '',
+          p_role: '',
+          p_action: 'remove',
+        });
+        if (rmErr) { alert('Erro: ' + rmErr.message); return; }
+        if (result?.error) { alert(result.error); return; }
+        await loadMembersTab();
       }
     });
   }
