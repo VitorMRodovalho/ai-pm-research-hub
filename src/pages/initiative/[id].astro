@@ -450,33 +450,40 @@ const INIT_I18N = {
 
       if (action === 'activate-initiative') {
         if (!confirm('Ativar esta iniciativa? O status mudara de "draft" para "active".')) return;
-        const { error: updErr } = await sb.from('initiatives').update({ status: 'active' }).eq('id', INITIATIVE_ID);
-        if (updErr) { alert('Erro: ' + updErr.message); return; }
+        const { data: actResult, error: actErr } = await sb.rpc('activate_initiative', { p_initiative_id: INITIATIVE_ID });
+        if (actErr) { alert('Erro: ' + actErr.message); return; }
+        if (actResult?.error) { alert(actResult.error); return; }
         window.location.reload();
       }
 
       if (action === 'add-member-prompt') {
         const nameQuery = prompt('Digite o nome do membro para buscar:');
         if (!nameQuery?.trim()) return;
-        const { data: persons } = await sb.rpc('search_members', { p_query: nameQuery.trim() });
-        if (!persons?.length) { alert('Nenhum membro encontrado com "' + nameQuery + '"'); return; }
+        // Search via public_members view (accessible to authenticated users)
+        const { data: members, error: searchErr } = await sb
+          .from('public_members')
+          .select('id, name, operational_role, photo_url')
+          .ilike('name', `%${nameQuery.trim()}%`)
+          .eq('is_active', true)
+          .limit(10);
+        if (searchErr || !members?.length) { alert('Nenhum membro encontrado com "' + nameQuery + '"'); return; }
 
         // Show simple selection
-        const list = Array.isArray(persons) ? persons.slice(0, 10) : [];
+        const list = members;
         const options = list.map((p: any, i: number) => `${i + 1}. ${p.name} (${p.operational_role || 'member'})`).join('\n');
         const choice = prompt('Selecione o numero:\n' + options);
         const idx = parseInt(choice || '0', 10) - 1;
         if (idx < 0 || idx >= list.length) return;
 
         const selected = list[idx];
-        // Resolve person_id from member
-        const { data: personData } = await sb.from('persons').select('id').eq('legacy_member_id', selected.id).single();
-        if (!personData?.id) { alert('Pessoa nao encontrada no modelo V4. Contacte o admin.'); return; }
+        // Resolve person_id from member_id (persons has SELECT policy for authenticated)
+        const { data: pRow } = await sb.from('persons').select('id').eq('legacy_member_id', selected.id).maybeSingle();
+        if (!pRow?.id) { alert('Pessoa nao encontrada no modelo V4. Contacte o admin.'); return; }
 
         const kindChoice = kindConfig?.allowed_engagement_kinds?.[0] || 'committee_member';
         const { data: result, error: engErr } = await sb.rpc('manage_initiative_engagement', {
           p_initiative_id: INITIATIVE_ID,
-          p_person_id: personData.id,
+          p_person_id: pRow.id,
           p_kind: kindChoice,
           p_role: 'participant',
           p_action: 'add',
