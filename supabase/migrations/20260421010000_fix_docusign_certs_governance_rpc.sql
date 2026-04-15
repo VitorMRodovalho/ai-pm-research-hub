@@ -55,6 +55,15 @@ WHERE c.member_id = m.id
   AND c.content_snapshot IS NULL
   AND (c.verification_code LIKE 'DSGN-%' OR c.verification_code LIKE 'ATST-%');
 
+-- 3. Set counter-sign for DocuSign certs (already signed by both parties via DocuSign)
+UPDATE certificates
+SET
+  counter_signed_at = issued_at,
+  counter_signed_by = '880f736c-3e76-4df4-9375-33575c190305'  -- Vitor (manager who counter-signs)
+WHERE type = 'volunteer_agreement'
+  AND verification_code LIKE 'DSGN-%'
+  AND counter_signed_at IS NULL;
+
 -- ============================================================
 -- WS2: Update get_governance_documents RPC
 -- Show draft docs to GP (manager/deputy_manager/superadmin)
