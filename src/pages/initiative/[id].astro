@@ -431,6 +431,59 @@ const INIT_I18N = {
 
   // Board tab is mounted as an Astro island (InitiativeBoardWrapper) — no JS needed here
 
+  // ── Gamification tab ──
+  let gamificationLoaded = false;
+  async function loadGamificationTab() {
+    if (gamificationLoaded) return;
+    const el = document.getElementById('panel-gamification');
+    const sb = getSb();
+    if (!el || !sb) return;
+
+    const { data, error } = await sb.rpc('get_initiative_gamification', { p_initiative_id: INITIATIVE_ID });
+    gamificationLoaded = true;
+
+    if (error || !data || (!data.leaderboard?.length && !data.total_xp)) {
+      el.innerHTML = `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-6 text-center text-sm text-[var(--text-muted)]">
+        Gamificacao ainda sem dados. XP e badges serao computados conforme membros participam de eventos e entregas.
+      </div>`;
+      return;
+    }
+
+    const board = Array.isArray(data.leaderboard) ? data.leaderboard : [];
+    const summaryHtml = `<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+        <div class="text-2xl font-extrabold text-navy">${data.total_xp || 0}</div>
+        <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">XP Total</div>
+      </div>
+      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+        <div class="text-2xl font-extrabold text-purple">${data.avg_xp || 0}</div>
+        <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">XP Medio</div>
+      </div>
+      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+        <div class="text-2xl font-extrabold text-[var(--color-teal)]">${data.cert_count || 0}</div>
+        <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Certificacoes</div>
+      </div>
+      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+        <div class="text-2xl font-extrabold text-amber-600">${board.length}</div>
+        <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">No Ranking</div>
+      </div>
+    </div>`;
+
+    const rankHtml = board.length ? `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4">
+      <h4 class="text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Ranking XP</h4>
+      <div class="space-y-1.5">${board.map((m: any, i: number) => {
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
+        return `<div class="flex items-center gap-2">
+          <span class="text-sm w-6 text-center">${medal}</span>
+          <span class="text-[11px] font-medium text-[var(--text-primary)] flex-1 truncate">${escapeHtml(m.name?.split(' ').slice(0, 2).join(' ') || '?')}</span>
+          <span class="text-xs font-bold text-navy">${m.xp || 0} XP</span>
+        </div>`;
+      }).join('')}</div>
+    </div>` : '';
+
+    el.innerHTML = summaryHtml + rankHtml;
+  }
+
   // ── Deliverables tab ──
   let deliverablesLoaded = false;
   async function loadDeliverablesTab() {
@@ -597,6 +650,7 @@ const INIT_I18N = {
       if (tab === 'members') await loadMembersTab();
       if (tab === 'deliverables') await loadDeliverablesTab();
       if (tab === 'attendance') await loadAttendanceTab();
+      if (tab === 'gamification') await loadGamificationTab();
     });
 
     // Action handlers (delegated)
