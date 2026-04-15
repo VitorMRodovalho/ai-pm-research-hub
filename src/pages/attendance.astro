@@ -10,6 +10,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 import { buildPageI18n } from '../i18n/pageI18n';
 import AttendanceGridTab from '../components/attendance/AttendanceGridTab';
+import EventMinutesIsland from '../components/events/EventMinutesIsland';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp.attendance', 'common'], lang);
@@ -136,6 +137,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       <div id="tab-grid" class="hidden">
         <AttendanceGridTab client:load />
       </div>
+      <EventMinutesIsland client:load />
     </main>
   </div>
 
@@ -228,6 +230,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   import { ROLE_LABELS, ROLE_COLORS } from '../lib/supabase';
   import { getMemberRole } from '../lib/routing';
   import { buildWebinarCommsHref, getAttendanceEditAssistantCopy, getAttendanceHandoffCopy } from '../lib/webinars/context-aids';
+  import { marked } from 'marked';
 
   const I18N = (window as any).__ATTENDANCE_I18N || {
     loading: 'Carregando...',
@@ -702,9 +705,14 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
 
     ((window as any).__attendanceEventsById = (window as any).__attendanceEventsById || {})[ev.id] = ev;
 
-    const minutesHtml = ev.minutes_text
-      ? `<div id="minutes-${ev.id}" class="hidden mt-2 mx-6 mb-2 p-3 bg-[var(--surface-section-cool)] rounded-lg text-[12px] text-[var(--text-primary)] whitespace-pre-wrap leading-relaxed border-l-3 border-[var(--color-teal)]">${escapeAttr(ev.minutes_text).replace(/\n/g, '<br>').replace(/## /g, '<strong>').replace(/<br><strong>/g, '<br><br><strong>')}</div>`
+    const minutesRendered = ev.minutes_text ? marked.parse(ev.minutes_text) : '';
+    const canEditThisMinutes = CAN_MANAGE || (MEMBER?.operational_role === 'researcher' && MEMBER?.tribe_id === ev.tribe_id);
+    const editMinutesBtn = canEditThisMinutes
+      ? `<button class="text-[10px] font-semibold text-navy hover:underline cursor-pointer border-0 bg-transparent px-0 mt-1" data-action="open-minutes-editor" data-event-id="${ev.id}" data-event-title="${escapeAttr(ev.title)}" data-content="${escapeAttr(ev.minutes_text || '')}">${ev.minutes_text ? '✏️ Editar ata' : '📝 Adicionar ata'}</button>`
       : '';
+    const minutesHtml = ev.minutes_text
+      ? `<div id="minutes-${ev.id}" class="hidden mt-2 mx-6 mb-2 p-4 bg-[var(--surface-section-cool)] rounded-lg text-sm text-[var(--text-primary)] prose prose-sm max-w-none border-l-3 border-[var(--color-teal)]">${minutesRendered}${editMinutesBtn ? `<div class="mt-2 border-t border-[var(--border-subtle)] pt-2">${editMinutesBtn}</div>` : ''}</div>`
+      : (canEditThisMinutes ? `<div id="minutes-${ev.id}" class="hidden mt-2 mx-6 mb-2 p-3 bg-amber-50 rounded-lg text-[11px] text-amber-700">${editMinutesBtn}</div>` : '');
 
     return `<div>
       <div class="py-2 border-b border-[var(--border-subtle)] last:border-b-0 flex items-center gap-2">
@@ -963,6 +971,18 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         case 'toggle-minutes': {
           const minutesEl = document.getElementById(`minutes-${target.dataset.eventId}`);
           if (minutesEl) minutesEl.classList.toggle('hidden');
+          break;
+        }
+        case 'open-minutes-editor': {
+          window.dispatchEvent(new CustomEvent('open-event-editor', {
+            detail: {
+              eventId: target.dataset.eventId,
+              eventTitle: target.dataset.eventTitle,
+              mode: 'minutes',
+              initialContent: target.dataset.content || '',
+              initialUrl: '',
+            }
+          }));
           break;
         }
         case 'toggle-presence':
@@ -2006,6 +2026,9 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     await loadEvents();
     populateTypeDropdown();
     populateTribeDropdown();
+
+    // Refresh events when minutes editor saves
+    window.addEventListener('event-editor-saved', () => { loadEvents(); });
     // Load event-tag mappings in background for tag filter bar
     loadEventTagMap().then(() => {
       if (ACTIVE_TAG_FILTER) renderEvents();

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { marked } from 'marked';
 
 interface Meeting {
   id: string;
@@ -331,6 +332,36 @@ export default function MeetingsPage({ lang = 'pt-BR' }: Props) {
                 <div className="text-xs text-amber-700 bg-amber-50 p-3 rounded-lg">{l.noMinutes}</div>
               )}
             </div>
+            {/* Print button */}
+            {selectedMeeting.event.minutes_text && (
+              <div className="px-5 py-3 border-t border-[var(--border-default)] flex justify-end">
+                <button
+                  onClick={() => {
+                    const m = selectedMeeting;
+                    const date = new Date(m.event.date).toLocaleDateString('pt-BR', { dateStyle: 'long' });
+                    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ata — ${m.event.title}</title>
+                      <style>body{font-family:Georgia,serif;max-width:800px;margin:40px auto;padding:0 20px;color:#333;line-height:1.6}
+                      h1{font-size:18px;color:#1a365d;border-bottom:2px solid #1a365d;padding-bottom:8px}
+                      h2{font-size:15px;color:#1a365d;margin-top:20px}h3{font-size:13px;color:#444;margin-top:16px}
+                      ul,ol{padding-left:20px}li{margin:4px 0}
+                      .meta{font-size:12px;color:#666;margin-bottom:20px}
+                      .footer{margin-top:40px;padding-top:12px;border-top:1px solid #ccc;font-size:10px;color:#888}
+                      @media print{body{margin:20px}}</style></head><body>
+                      <h1>${m.event.title}</h1>
+                      <div class="meta">${date}${m.event.tribe_name ? ` · ${m.event.tribe_name}` : ''} · ${m.attendee_count || 0} presentes</div>
+                      ${m.event.agenda_text ? `<h2>Agenda</h2>${marked.parse(m.event.agenda_text)}` : ''}
+                      <h2>Ata</h2>${marked.parse(m.event.minutes_text)}
+                      <div class="footer">Núcleo de IA & GP — nucleoia.vitormr.dev · Documento gerado em ${new Date().toLocaleString('pt-BR')}</div>
+                      </body></html>`;
+                    const w = window.open('', '_blank');
+                    if (w) { w.document.write(html); w.document.close(); setTimeout(() => w.print(), 300); }
+                  }}
+                  className="px-4 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-secondary)] text-xs font-semibold cursor-pointer hover:bg-[var(--surface-hover)] transition-colors"
+                >
+                  🖨️ Imprimir ata
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

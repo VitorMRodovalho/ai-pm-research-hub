@@ -649,13 +649,14 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       const locale = I18N.dateLocale || 'pt-BR';
       const perms = currentMember ? getTribePermissions(currentMember, TRIBE_ID) : null;
 
-      // Minutes edit permission: superadmin, GP, deputy, or tribe leader for own tribe
+      // Minutes edit permission: superadmin, GP, deputy, tribe leader, or researcher for own tribe
       const canEditMinutes = (evtTribeId: number | null) => {
         if (!currentMember) return false;
         if (currentMember.is_superadmin) return true;
         if (['manager'].includes(currentMember.operational_role)) return true;
         if ((currentMember.designations || []).includes('deputy_manager')) return true;
         if ((currentMember.operational_role === 'tribe_leader' || currentMember.operational_role === 'comms_leader') && currentMember.tribe_id === evtTribeId) return true;
+        if (currentMember.operational_role === 'researcher' && currentMember.tribe_id === evtTribeId) return true;
         return false;
       };
 

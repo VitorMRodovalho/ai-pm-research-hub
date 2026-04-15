@@ -462,19 +462,32 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // TOOL 7: get_meeting_notes
-  mcp.tool("get_meeting_notes", "Returns recent meeting notes/minutes for your tribe.", { tribe_id: z.number().optional().describe("Tribe ID (1-8). If omitted, uses your assigned tribe."), limit: z.number().optional().describe("Number of recent notes. Default: 5") }, async (params: { tribe_id?: number; limit?: number }) => {
+  // TOOL 7: get_meeting_notes (unified — reads from events.minutes_text)
+  mcp.tool("get_meeting_notes", "Returns recent meeting notes/minutes for your tribe. Full Markdown content from events.", { tribe_id: z.number().optional().describe("Tribe ID (1-8). If omitted, uses your assigned tribe."), limit: z.number().optional().describe("Number of recent notes. Default: 5") }, async (params: { tribe_id?: number; limit?: number }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_meeting_notes", false, "Not authenticated", start); return err("Not authenticated"); }
     const tribeId = params.tribe_id || member.tribe_id;
     if (!tribeId) { await logUsage(sb, member.id, "get_meeting_notes", false, "No tribe", start); return err(NO_TRIBE_HINT); }
-    const initiativeId = await resolveInitiativeId(sb, tribeId);
-    if (!initiativeId) { await logUsage(sb, member.id, "get_meeting_notes", false, "Initiative not found", start); return err("Initiative not found for tribe " + tribeId); }
-    const { data, error } = await sb.rpc("list_initiative_meeting_artifacts", { p_initiative_id: initiativeId, p_limit: params.limit || 5 });
+    const { data, error } = await sb.from("events")
+      .select("id, title, date, type, tribe_id, minutes_text, minutes_posted_at, minutes_posted_by, minutes_edited_at, agenda_text, youtube_url, duration_minutes")
+      .eq("tribe_id", tribeId)
+      .not("minutes_text", "is", null)
+      .order("date", { ascending: false })
+      .limit(params.limit || 5);
     if (error) { await logUsage(sb, member.id, "get_meeting_notes", false, error.message, start); return err(error.message); }
+    // Enrich with posted_by name and attendee count
+    const enriched = await Promise.all((data || []).map(async (ev: any) => {
+      let posted_by_name = null;
+      if (ev.minutes_posted_by) {
+        const { data: m } = await sb.from("members").select("name").eq("id", ev.minutes_posted_by).maybeSingle();
+        posted_by_name = m?.name || null;
+      }
+      const { count } = await sb.from("attendance").select("id", { count: "exact", head: true }).eq("event_id", ev.id);
+      return { ...ev, minutes_posted_by_name: posted_by_name, attendee_count: count || 0 };
+    }));
     await logUsage(sb, member.id, "get_meeting_notes", true, undefined, start);
-    return ok(data);
+    return ok(enriched);
   });
 
   // TOOL 8: get_my_notifications
@@ -554,21 +567,24 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok({ action: "update_card_status", status: "updated", card_id: params.card_id, new_status: params.status });
   });
 
-  // TOOL 13: create_meeting_notes
-  mcp.tool("create_meeting_notes", "Create meeting minutes for a tribe meeting.", { event_id: z.string().describe("UUID of the event"), content: z.string().describe("Notes content"), decisions: z.string().optional().describe("Key decisions (comma-separated)"), action_items: z.string().optional().describe("Action items (comma-separated)") }, async (params: any) => {
+  // TOOL 13: create_meeting_notes (unified — writes to events.minutes_text via upsert_event_minutes RPC)
+  mcp.tool("create_meeting_notes", "Create or update meeting minutes for a tribe meeting. Writes to events.minutes_text with audit trail.", { event_id: z.string().describe("UUID of the event"), content: z.string().describe("Notes content (Markdown)"), decisions: z.string().optional().describe("Key decisions (comma-separated) — appended to content"), action_items: z.string().optional().describe("Action items (comma-separated) — appended to content") }, async (params: any) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "create_meeting_notes", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "create_meeting_notes", false, "Unauthorized", start); return err("Unauthorized"); }
-    const { data: event } = await sb.from("events").select("title, date, tribe_id").eq("id", params.event_id).single();
-    if (!event) { await logUsage(sb, member.id, "create_meeting_notes", false, "Event not found", start); return err("Event not found."); }
-    const tribeId = member.is_superadmin ? (event.tribe_id || member.tribe_id) : member.tribe_id;
-    const decisions = params.decisions ? String(params.decisions).split(",").map((s: string) => s.trim()) : [];
-    const actionItems = params.action_items ? String(params.action_items).split(",").map((s: string) => s.trim()) : [];
-    const { data, error } = await sb.from("meeting_artifacts").insert({ event_id: params.event_id, title: `Ata — ${event.title}`, meeting_date: event.date, tribe_id: tribeId, created_by: member.id, agenda_items: actionItems, deliberations: decisions, page_data_snapshot: { notes: params.content }, is_published: true, cycle_code: "cycle_3" }).select("id").single();
+    // Build full content with optional decisions and action items
+    let fullContent = params.content;
+    const decisions = params.decisions ? String(params.decisions).split(",").map((s: string) => s.trim()).filter(Boolean) : [];
+    const actionItems = params.action_items ? String(params.action_items).split(",").map((s: string) => s.trim()).filter(Boolean) : [];
+    if (decisions.length > 0) fullContent += "\n\n### Decisões\n" + decisions.map((d: string) => `- ${d}`).join("\n");
+    if (actionItems.length > 0) fullContent += "\n\n### Ações\n" + actionItems.map((a: string) => `- [ ] ${a}`).join("\n");
+    // Use the unified upsert_event_minutes RPC (has audit log + edit history + researcher timeframe)
+    const { data, error } = await sb.rpc("upsert_event_minutes", { p_event_id: params.event_id, p_text: fullContent });
     if (error) { await logUsage(sb, member.id, "create_meeting_notes", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "create_meeting_notes", false, data.error, start); return err(data.error); }
     await logUsage(sb, member.id, "create_meeting_notes", true, undefined, start);
-    return ok({ action: "create_meeting_notes", status: "created", id: data.id });
+    return ok({ action: "create_meeting_notes", status: "saved", event_id: params.event_id });
   });
 
   // TOOL 14: register_attendance
