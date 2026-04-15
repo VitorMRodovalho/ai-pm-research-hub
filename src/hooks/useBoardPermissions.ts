@@ -131,14 +131,16 @@ export function useBoardPermissions(board: Board | null): Permissions {
   const isCurator = effectiveDesig.includes('curator') || effectiveDesig.includes('co_gp');
 
   const canManageBoard = isSuperadmin || isManager || (isLeader && isOwnTribe);
+  // Comms team has full editorial control over global boards (communication hub)
+  const isCommsOnGlobal = isComms && isGlobal;
 
   return {
     canView: isSuperadmin || isManager || isGlobal || isOwnTribe,
-    canCreate: canManageBoard || (isComms && isGlobal) || (isOwnTribe && tier <= 4),
+    canCreate: canManageBoard || isCommsOnGlobal || (isOwnTribe && tier <= 4),
     canEditOwn: tier <= 4,
-    canEditAny: canManageBoard,
-    canMove: canManageBoard || (isComms && isGlobal) || (isOwnTribe && tier <= 4),
-    canAssign: canManageBoard || (isComms && isGlobal),
+    canEditAny: canManageBoard || isCommsOnGlobal,
+    canMove: canManageBoard || isCommsOnGlobal || (isOwnTribe && tier <= 4),
+    canAssign: canManageBoard || isCommsOnGlobal,
     canCurate: canManageBoard || isCurator,
     canDelete: canManageBoard,
     canManageBoard,
