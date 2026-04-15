@@ -32,6 +32,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
   const SUB_CLAUSES: Record<string, string[]> = {
     clause1: ['clause1a', 'clause1b', 'clause1c'],
+    clause2: ['clause2_1', 'clause2_2', 'clause2_3', 'clause2_4', 'clause2_5'],
     clause7: ['clause7a'],
     clause9: ['clause9a', 'clause9b', 'clause9c', 'clause9d', 'clause9e', 'clause9f', 'clause9note'],
   };
@@ -89,7 +90,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
               subs.forEach((subKey) => {
                 const subText = template?.[subKey] || t('volunteer.' + subKey, lang);
                 const isNote = subKey.endsWith('note');
-                const letter = isNote ? '' : subKey.slice(-1) + ')';
+                const isNumbered = /_\d+$/.test(subKey);
+                const letter = isNote || isNumbered ? '' : subKey.slice(-1) + ')';
                 html += `
                   <li class="text-[13px] text-[var(--text-secondary)] leading-relaxed ${isNote ? 'mt-3 italic border-l-2 border-[var(--border-subtle)] pl-3' : ''}">
                     <div class="flex gap-2">

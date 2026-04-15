@@ -30,6 +30,8 @@ export interface CertificateData {
   counter_signed_at?: string;
   counter_signed_by_name?: string;
   template_content?: any; // full template from governance_documents
+  chapter_cnpj?: string;
+  chapter_name?: string;
 }
 
 const TEMPLATES: Record<string, Record<string, string>> = {
@@ -222,6 +224,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
   const c = certData.template_content || {};
   const SUB_KEYS: Record<string, string[]> = {
     clause1: ['clause1a', 'clause1b', 'clause1c'],
+    clause2: ['clause2_1', 'clause2_2', 'clause2_3', 'clause2_4', 'clause2_5'],
     clause7: ['clause7a'],
     clause9: ['clause9a', 'clause9b', 'clause9c', 'clause9d', 'clause9e', 'clause9f', 'clause9note'],
   };
@@ -258,12 +261,14 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
       let subText = c[subKey] || '';
       const letter = subKey.slice(-1);
       const isNote = subKey.endsWith('note');
+      const isNumbered = /_\d+$/.test(subKey);
       // Some templates already include "Parágrafo único:" in the text — avoid duplicating
       if (isNote) {
         subText = subText.replace(/^Parágrafo\s+único:?\s*/i, '');
       }
+      const prefix = isNote ? '<b>Parágrafo único:</b> ' : isNumbered ? '' : `<b style="color:#333">${letter}.</b> `;
       return `<li style="font-size:10.5px;margin-top:6px;${isNote ? 'font-style:italic;color:#555' : ''}">
-        ${!isNote ? `<b style="color:#333">${letter}.</b> ` : '<b>Parágrafo único:</b> '}${subText}
+        ${prefix}${subText}
       </li>`;
     }).join('')}</ol>` : '';
     return `<li style="margin-bottom:12px;font-size:11px;line-height:1.5;text-align:justify">
@@ -340,7 +345,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
     ${headerBlock}
 
     <p style="font-size:11px;line-height:1.6;text-align:justify;margin-bottom:10px">
-      <b>Termo de Compromisso de Voluntário com o PMI Goiás</b> que fazem entre si a <b>Seção Goiânia, Goiás – Brasil do Project Management Institute (PMI Goiás)</b>, inscrito no CNPJ/MF sob o nº 06.065.645/0001-99 e:
+      <b>Termo de Compromisso de Voluntário com o ${certData.chapter_name || 'PMI Goiás'}</b> que fazem entre si a <b>${certData.chapter_name || 'Seção Goiânia, Goiás – Brasil do Project Management Institute (PMI Goiás)'}</b>, inscrito no CNPJ/MF sob o nº ${certData.chapter_cnpj || '06.065.645/0001-99'} e:
     </p>
 
     ${memberDataBlock}
@@ -446,6 +451,8 @@ export async function hydrateCertData(certData: CertificateData, sb: any): Promi
           certData.member_state = certData.member_state || snap.member_state;
           certData.member_country = certData.member_country || snap.member_country;
           certData.member_birth_date = certData.member_birth_date || snap.member_birth_date;
+          certData.chapter_cnpj = certData.chapter_cnpj || snap.chapter_cnpj;
+          certData.chapter_name = certData.chapter_name || snap.chapter_name;
           certData.signed_at = certData.signed_at || snap.signed_at || fullCert.issued_at;
           certData.counter_signed_at = certData.counter_signed_at || fullCert.counter_signed_at;
 
