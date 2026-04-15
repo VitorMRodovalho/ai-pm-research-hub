@@ -1,5 +1,5 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.10.0 — 73 tools (59R + 14W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.10.1 — 74 tools (60R + 14W) + 1 prompt + 1 resource + usage logging
 // V4 Cutover: canWrite/canWriteBoard → canV4 (ADR-0007, engagement-derived authority)
 // Transport: SDK 1.29.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
@@ -276,28 +276,28 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
     "nucleo://tools/reference",
     {
       title: "Referência completa de ferramentas",
-      description: "Lista todas as 68 ferramentas do Núcleo MCP com parâmetros e permissões.",
+      description: "Lista todas as 74 ferramentas do Núcleo MCP com parâmetros e permissões.",
       mimeType: "text/markdown",
     },
     async () => ({
       contents: [{
         uri: "nucleo://tools/reference",
-        text: `# Núcleo IA MCP — Referência de Ferramentas (v2.9.5)
+        text: `# Núcleo IA MCP — Referência de Ferramentas (v2.10.1)
 
-## 68 ferramentas: 54 leitura + 14 escrita
+## 74 ferramentas: 60 leitura + 14 escrita
 
-### Tier 1 — Todos os membros (17 leitura)
+### Tier 1 — Todos os membros (27 leitura)
 | # | Ferramenta | Parâmetros | Descrição |
 |---|-----------|-----------|-----------|
 | 1 | get_my_profile | — | Perfil: nome, papel, tribo, XP, badges |
-| 2 | get_my_board_status | board_id? | Cards do board agrupados por status |
-| 3 | get_my_tribe_attendance | — | Grade de presença da tribo |
-| 4 | get_my_tribe_members | — | Membros ativos com papéis |
+| 2 | get_my_board_status | board_id?, tribe_id? | Cards do board agrupados por status |
+| 3 | get_my_tribe_attendance | tribe_id? | Grade de presença da tribo |
+| 4 | get_my_tribe_members | tribe_id? | Membros ativos com papéis |
 | 5 | get_upcoming_events | — | Eventos dos próximos 7 dias |
 | 6 | get_my_xp_and_ranking | — | XP por categoria + posição |
-| 7 | get_meeting_notes | limit? | Últimas atas de reunião |
+| 7 | get_meeting_notes | tribe_id?, limit? | Últimas atas de reunião |
 | 8 | get_my_notifications | — | Notificações não lidas |
-| 9 | search_board_cards | query | Busca full-text em cards |
+| 9 | search_board_cards | query, tribe_id? | Busca full-text em cards |
 | 10 | get_hub_announcements | — | Avisos ativos do Hub |
 | 11 | get_my_attendance_history | limit? | Histórico pessoal de presença |
 | 12 | list_tribe_webinars | status? | Webinars da tribo/capítulo |
@@ -305,68 +305,84 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 | 14 | get_my_certificates | — | Certificações, badges, trilhas |
 | 15 | search_hub_resources | query, asset_type?, limit? | Biblioteca de recursos (247+) |
 | 16 | get_attendance_ranking | — | Ranking de presença |
-| 17 | get_chapter_kpis | chapter? | KPIs por capítulo |
+| 17 | get_event_detail | event_id | Detalhe: agenda, ata, ações |
+| 18 | get_public_impact_data | — | Impacto público, timeline, reconhecimentos |
+| 19 | get_pilots_summary | — | Pilotos de IA: status e métricas |
+| 20 | get_near_events | window_hours? | Eventos nas próximas horas |
+| 21 | get_current_release | — | Versão atual da plataforma |
+| 22 | get_my_attendance_hours | — | Horas de presença no ciclo |
+| 23 | get_my_credly_status | — | Badges Credly e CPMAI |
+| 24 | get_my_assigned_cards | — | Cards atribuídos a você (cross-board) |
+| 25 | get_my_selection_result | — | Status e scores da sua candidatura |
+| 26 | get_person | person_id? | Perfil V4 (PII só p/ próprio ou view_pii) |
+| 27 | get_active_engagements | person_id? | Engagements ativos (ADR-0006) |
 
-### Tier 2 — Líderes (8 escrita)
+### Tier 1 — Todos os membros (mais 10 leitura contextuais)
 | # | Ferramenta | Parâmetros | Descrição |
 |---|-----------|-----------|-----------|
-| 18 | create_board_card | title, description?, priority?, due_date?, tags? | Criar card |
-| 19 | update_card_status | card_id, status | Mover card |
-| 20 | create_meeting_notes | event_id, content, decisions?, action_items? | Criar ata |
-| 21 | register_attendance | event_id, member_id, present | Registrar presença |
-| 21b | register_showcase | event_id, member_id, showcase_type, title?, notes?, duration_min? | Registrar protagonismo (15-25 XP) |
-| 22 | send_notification_to_tribe | title, body, link? | Notificar tribo |
-| 23 | create_tribe_event | title, date, type?, duration_minutes? | Criar evento |
+| 28 | get_board_activities | board_id?, limit? | Atividades recentes dos boards |
+| 29 | list_boards | — | Lista boards ativos com IDs |
+| 30 | get_governance_docs | doc_type? | Documentos de governança |
+| 31 | get_manual_section | section?, lang? | Seções do Manual de Governança |
+| 32 | get_comms_dashboard | — | Dashboard de comunicação |
+| 33 | get_comms_metrics_by_channel | days? | Métricas por canal social |
+| 34 | get_tribe_stats_ranked | tribe_id | Stats da tribo com ranking per-member |
+| 35 | search_wiki | query, limit?, domain?, tag? | Busca full-text na wiki |
+| 36 | get_wiki_page | path | Página completa da wiki |
+| 37 | get_decision_log | filter? | ADRs (decisões arquiteturais) |
 
-### Tier 3 — GP/Admin (12 leitura)
-| # | Ferramenta | Parâmetros | Descrição |
-|---|-----------|-----------|-----------|
-| 24 | get_tribe_dashboard | tribe_id? (ou initiative_id) | Dashboard completo da tribo/iniciativa |
-| 25 | get_portfolio_overview | — | Visão executiva: boards e cards |
-| 26 | get_operational_alerts | — | Alertas operacionais |
-| 27 | get_cycle_report | — | Relatório do ciclo |
-| 28 | get_annual_kpis | — | KPIs anuais (admin/sponsor) |
-| 29 | get_adoption_metrics | — | Métricas de adoção MCP |
-| 30 | get_curation_dashboard | — | Workflow de curadoria |
-| 31 | get_tribe_deliverables | tribe_id?, cycle_code? | Entregas por tribo/iniciativa |
-| 32 | get_anomaly_report | — | Anomalias de dados |
-| 33 | get_portfolio_health | cycle_code? | Saúde trimestral |
-| 34 | get_volunteer_funnel | cycle? | Funil de seleção |
-| 35 | get_campaign_analytics | send_id? | Métricas de campanhas |
+### Tier 2 — Líderes (14 escrita)
+| # | Ferramenta | Parâmetros | Permissão | Descrição |
+|---|-----------|-----------|-----------|-----------|
+| 38 | create_board_card | title, description?, priority?, due_date?, tags?, board_id? | write_board | Criar card |
+| 39 | update_card_status | card_id, status | write_board | Mover card entre colunas |
+| 40 | create_meeting_notes | event_id, content, decisions?, action_items? | write | Criar/editar ata |
+| 41 | register_attendance | event_id, member_id, present | write | Registrar presença |
+| 42 | register_showcase | event_id, member_id, showcase_type, title?, notes?, duration_min? | write | Protagonismo (15-25 XP) |
+| 43 | send_notification_to_tribe | title, body, link? | write | Notificar toda a tribo |
+| 44 | create_tribe_event | title, date, type?, duration_minutes? | write | Criar reunião ou evento |
+| 45 | drop_event_instance | event_id | write | Cancelar evento (rejeita se tem presença) |
+| 46 | update_event_instance | event_id, new_date?, new_time_start?, new_duration_minutes?, meeting_link?, notes?, agenda_text? | write | Editar evento |
+| 47 | mark_member_excused | event_id, member_id, excused?, reason? | write | Marcar falta justificada |
+| 48 | bulk_mark_excused | member_id, date_from, date_to, reason? | write | Justificar período inteiro |
+| 49 | manage_partner | action, id?, name?, entity_type?, status?, contact_name?, contact_email?, notes?, chapter? | manage_partner | Criar/atualizar parceria |
+| 50 | submit_chapter_need | category, title, description? | manage_partner | Reportar necessidade do capítulo |
+| 51 | promote_to_leader_track | application_id, create_leader_app? | promote | Promover candidato p/ track líder |
 
-### Ferramentas Transversais (7 leitura)
-| # | Ferramenta | Parâmetros | Descrição |
-|---|-----------|-----------|-----------|
-| 36 | get_event_detail | event_id | Detalhe: agenda, ata, ações |
-| 37 | get_comms_dashboard | — | Dashboard de comunicação |
-| 38 | get_comms_metrics_by_channel | days? | Métricas por canal social |
-| 39 | get_partner_pipeline | — | Pipeline de parcerias (sponsor/admin) |
-| 40 | get_public_impact_data | — | Impacto público, timeline |
-| 41 | get_pilots_summary | — | Pilotos de IA |
-| 42 | get_near_events | window_hours? | Eventos próximos |
-| 43 | get_current_release | — | Versão atual da plataforma |
-| 44 | get_admin_dashboard | — | Dashboard admin (Admin/GP) |
-| 44b | get_ghost_visitors | — | Visitantes fantasma sem vínculo (Admin/GP) |
-| 45 | get_my_attendance_hours | — | Horas de presença no ciclo |
-| 46 | get_my_credly_status | — | Badges Credly e CPMAI |
-| 47 | get_board_activities | board_id?, limit? | Atividades recentes dos boards |
-| 48 | search_members | query?, tribe_id?, tier?, status? | Buscar membros (Admin/GP) |
-| 49 | list_boards | — | Lista boards ativos com IDs |
-| 50 | manage_partner | action, id?, name?, status?, notes? | Criar/atualizar parceria (Admin) |
-| 51 | get_chapter_needs | chapter? | Necessidades reportadas pelo capítulo |
-| 52 | submit_chapter_need | category, title, description? | Reportar necessidade (chapter_board/sponsor/liaison) |
+### Tier 3 — GP/Admin (23 leitura)
+| # | Ferramenta | Parâmetros | Permissão | Descrição |
+|---|-----------|-----------|-----------|-----------|
+| 52 | get_tribe_dashboard | tribe_id? | — | Dashboard completo da tribo |
+| 53 | get_tribe_deliverables | tribe_id?, cycle_code? | — | Entregas por tribo e ciclo |
+| 54 | get_portfolio_overview | — | manage_member | Visão executiva: boards e cards |
+| 55 | get_operational_alerts | — | manage_member | Alertas: inatividade, atrasos |
+| 56 | get_cycle_report | — | manage_member | Relatório do ciclo |
+| 57 | get_annual_kpis | — | manage_member \\| manage_partner | KPIs anuais |
+| 58 | get_portfolio_health | cycle_code? | manage_member \\| manage_partner | Saúde trimestral |
+| 59 | get_adoption_metrics | — | manage_member | Métricas de adoção MCP |
+| 60 | get_curation_dashboard | — | manage_member | Curadoria: pendentes, SLA |
+| 61 | get_anomaly_report | — | manage_member | Anomalias de dados |
+| 62 | get_volunteer_funnel | cycle? | manage_member | Funil de seleção |
+| 63 | get_campaign_analytics | send_id? | manage_member \\| write | Métricas de email |
+| 64 | get_partner_pipeline | — | manage_partner | Pipeline de parcerias |
+| 65 | get_admin_dashboard | — | manage_member | Dashboard admin geral |
+| 66 | get_ghost_visitors | — | manage_member | Visitantes fantasma |
+| 67 | search_members | query?, tribe_id?, tier?, status? | manage_member | Buscar membros |
+| 68 | get_chapter_kpis | chapter? | manage_member \\| manage_partner (cross-chapter) | KPIs por capítulo |
+| 69 | get_chapter_needs | chapter? | — | Necessidades do capítulo |
+| 70 | get_tribes_comparison | — | — | Comparação cross-tribe |
+| 71 | get_research_pipeline | — | — | Pipeline de pesquisa global |
+| 72 | get_selection_rankings | cycle_code?, track? | manage_member | Rankings de seleção (CR-047) |
+| 73 | get_application_score_breakdown | application_id | manage_member | Breakdown de scores individuais |
+| 74 | get_wiki_health | — | — | Relatório de saúde da wiki |
 
 ## Notas
-- Rotas de escrita (9 tools) requerem: manager, deputy_manager, tribe_leader ou superadmin
-- create_board_card e update_card_status: também acessíveis por researcher/facilitator/communicator na própria tribo
-- manage_partner: também acessível por sponsors e chapter_liaisons
-- submit_chapter_need: acessível por chapter_board, sponsors e chapter_liaisons
-- Rotas Tier 3 requerem: manager, deputy_manager ou superadmin
-- get_annual_kpis e get_portfolio_health também acessíveis por sponsors
-- get_partner_pipeline acessível por sponsors e chapter_liaisons
-- create_board_card aceita board_id para usuários sem tribe_id (use list_boards)
-- **V4:** \`initiative_id\` (UUID) é o identificador canônico. \`tribe_id\` (1-8) é mantido por dual-write. Ambos funcionam.
-- Todas as chamadas são logadas em mcp_usage_log
+- Escrita usa \`canV4(action)\` — permissão derivada de engagements (ADR-0007)
+- create_board_card/update_card_status: \`write_board\` inclui researcher/facilitator/communicator na própria tribo
+- manage_partner: sponsors e chapter_liaisons
+- submit_chapter_need: chapter_board, sponsors, chapter_liaisons via \`manage_partner\`
+- \`initiative_id\` (UUID) é o identificador canônico V4. \`tribe_id\` (1-8) mantido por dual-write.
+- Todas as chamadas logadas em mcp_usage_log
 `,
       }],
     })
@@ -855,6 +871,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_partner_pipeline", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'manage_partner'))) { await logUsage(sb, member.id, "get_partner_pipeline", false, "Unauthorized", start); return err("Unauthorized: sponsors/admin only."); }
     const { data, error } = await sb.rpc("get_partner_pipeline");
     if (error) { await logUsage(sb, member.id, "get_partner_pipeline", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_partner_pipeline", true, undefined, start);
@@ -1159,8 +1176,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "submit_chapter_need", false, "Not authenticated", start); return err("Not authenticated"); }
-    const canSubmit = (member.designations || []).some((d: string) => ["chapter_board", "sponsor", "chapter_liaison"].includes(d));
-    if (!canSubmit && !member.is_superadmin) { await logUsage(sb, member.id, "submit_chapter_need", false, "Unauthorized", start); return err("Requires chapter_board, sponsor, or chapter_liaison designation."); }
+    if (!(await canV4(sb, member.id, 'manage_partner'))) { await logUsage(sb, member.id, "submit_chapter_need", false, "Unauthorized", start); return err("Unauthorized: requires chapter board, sponsor, or liaison role."); }
     const { data, error } = await sb.rpc("submit_chapter_need", { p_category: params.category, p_title: params.title, p_description: params.description || null });
     if (error) { await logUsage(sb, member.id, "submit_chapter_need", false, error.message, start); return err(error.message); }
     if (data?.error) { await logUsage(sb, member.id, "submit_chapter_need", false, data.error, start); return err(data.error); }
@@ -1282,6 +1298,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_selection_rankings", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "get_selection_rankings", false, "Unauthorized", start); return err("Unauthorized: admin/GP only."); }
     const { data, error } = await sb.rpc("get_selection_rankings", {
       p_cycle_code: params.cycle_code || null,
       p_track: params.track || 'both'
@@ -1298,6 +1315,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_application_score_breakdown", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "get_application_score_breakdown", false, "Unauthorized", start); return err("Unauthorized: admin/GP only."); }
     if (!isUUID(params.application_id)) { return err("application_id must be a UUID"); }
     const { data, error } = await sb.rpc("get_application_score_breakdown", { p_application_id: params.application_id });
     if (error) { await logUsage(sb, member.id, "get_application_score_breakdown", false, error.message, start); return err(error.message); }
@@ -1420,7 +1438,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.10.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.10.1" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -1440,6 +1458,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.10.0", tools: 73, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.10.1", tools: 74, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);

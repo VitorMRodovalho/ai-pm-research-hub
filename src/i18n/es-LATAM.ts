@@ -3238,6 +3238,7 @@ const esLATAM: Record<string, string> = {
   'tribe.eligible': 'elegibles',
   'tribe.attendees': 'asistentes',
   'tribe.viewAllEvents': 'Ver todos los eventos',
+  'tribe.viewAllMinutes': 'Ver Actas',
   'tribe.eligibleMembers': 'miembros elegibles',
   'tribe.readOnly': 'Solo lectura',
 

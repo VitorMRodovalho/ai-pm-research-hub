@@ -97,6 +97,7 @@ const TRIBE_I18N = {
   noRecording: t('tribe.noRecording', lang),
   createEvent: t('tribe.createEvent', lang),
   viewAllEvents: t('tribe.viewAllEvents', lang),
+  viewAllMinutes: t('tribe.viewAllMinutes', lang),
   eligibleMembers: t('tribe.eligibleMembers', lang),
   joinMeet: t('tribe.joinMeet', lang),
   noUpcoming: t('tribe.noUpcoming', lang),
@@ -758,7 +759,10 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
               <span class="text-lg">📼</span>
               <h3 class="text-sm font-bold text-navy">${I18N.pastMeetings || 'Reuniões Anteriores'}</h3>
             </div>
-            <a href="/attendance" class="text-xs font-semibold text-navy no-underline hover:underline">${I18N.viewAllEvents || 'Ver todos'} →</a>
+            <div class="flex items-center gap-3">
+              <a href="/meetings" class="text-xs font-semibold text-teal-600 no-underline hover:underline">📝 ${I18N.viewAllMinutes || 'Ver Atas'}</a>
+              <a href="/attendance" class="text-xs font-semibold text-navy no-underline hover:underline">${I18N.viewAllEvents || 'Ver todos'} →</a>
+            </div>
           </div>
           <div class="px-5 py-2">${pastHtml}</div>
         </div>` : ''}

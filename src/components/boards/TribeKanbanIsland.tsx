@@ -398,12 +398,12 @@ export default function TribeKanbanIsland({ tribeId, initiativeId, i18n }: { tri
         ? sb.from('public_members').select('id,name,photo_url').eq('initiative_id', initiativeId).eq('current_cycle_active', true).eq('is_active', true)
         : sb.from('public_members').select('id,name,photo_url').eq('tribe_id', tribeId).eq('current_cycle_active', true).eq('is_active', true),
     ]);
-    console.log('[Kanban] Board items:', Array.isArray(boardItems) ? boardItems.length : 'NOT_ARRAY', 'Error:', boardErr);
+    if (boardErr) console.warn('[Kanban] Board items error:', boardErr);
 
     let legacyRaw: BoardItem[] = [];
     try {
       const { data: legacyData, error: legacyErr } = await sb.rpc('list_legacy_board_items_for_tribe', { p_current_tribe_id: tribeId });
-      console.log('[Kanban] Legacy items:', Array.isArray(legacyData) ? legacyData.length : 'NOT_ARRAY', 'Error:', legacyErr);
+      if (legacyErr) console.warn('[Kanban] Legacy items error:', legacyErr);
       if (!legacyErr && Array.isArray(legacyData)) {
         legacyRaw = legacyData
           .filter((item: any) => item.status !== 'archived')
@@ -421,7 +421,7 @@ export default function TribeKanbanIsland({ tribeId, initiativeId, i18n }: { tri
     ];
     const laneDistrib: Record<string, number> = {};
     for (const it of combined) { const l = resolveItemLane(it); laneDistrib[l] = (laneDistrib[l] || 0) + 1; }
-    console.log('[Kanban] Combined items:', combined.length, '(board:', raw.length, '+ legacy:', legacyRaw.length, ') Lanes:', JSON.stringify(laneDistrib));
+    if (import.meta.env.DEV) console.log('[Kanban] Combined items:', combined.length, '(board:', raw.length, '+ legacy:', legacyRaw.length, ') Lanes:', JSON.stringify(laneDistrib));
     setItems(combined);
     setLoading(false);
   }

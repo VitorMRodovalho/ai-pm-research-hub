@@ -3,7 +3,7 @@ import '../styles/global.css';
 import Nav from '../components/nav/Nav.astro';
 import AnnouncementBanner from '../components/ui/AnnouncementBanner.astro';
 import AuthModal from '../components/ui/AuthModal.astro';
-import TierViewerBar from '../components/admin/TierViewerBar';
+// TierViewerBar disabled — feature incomplete, never worked reliably
 import HelpFloatingButton from '../components/help/HelpFloatingButton';
 import PrivacyGateModal from '../components/privacy/PrivacyGateModal';
 import { t, getRoleLabelsMap, localePath, type Lang } from '../i18n/utils';
@@ -31,18 +31,7 @@ const roleLabels = JSON.stringify(getRoleLabelsMap(lang));
 import { buildPageI18n } from '../i18n/pageI18n';
 const globalI18nBundle = buildPageI18n(['comp.globalSearch', 'comp.common'], lang);
 
-const SIM_I18N = {
-  title: t('simulation.title', lang),
-  banner: t('simulation.banner', lang),
-  viewingAs: t('simulation.viewing_as', lang),
-  writesWarning: t('simulation.writes_warning', lang),
-  exit: t('simulation.exit', lang),
-  selectTier: t('simulation.select_tier', lang),
-  designationsLabel: t('simulation.designations', lang),
-  tribeScope: t('simulation.tribe_scope', lang),
-  noTribe: t('simulation.no_tribe', lang),
-  start: t('simulation.start', lang),
-};
+// SIM_I18N removed — tier simulator disabled
 ---
 
 <!doctype html>
@@ -196,10 +185,10 @@ const SIM_I18N = {
   <Nav activePage={activePage} lang={lang} />
   <AnnouncementBanner />
   <AuthModal lang={lang} />
-  <!-- Tier Viewer: only visible for superadmins (checked client-side) -->
-  <div id="tier-viewer-mount" class="hidden">
+  <!-- Tier Viewer: disabled — never worked reliably (feature incomplete) -->
+  <!-- <div id="tier-viewer-mount" class="hidden">
     <TierViewerBar client:load i18n={SIM_I18N} />
-  </div>
+  </div> -->
   <slot />
   <!-- Profile drawer (populated by nav client script) -->
   <div id="pd-overlay" class="hidden fixed inset-0 z-[500]"></div>
