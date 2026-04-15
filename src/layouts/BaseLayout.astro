@@ -194,7 +194,7 @@ const globalI18nBundle = buildPageI18n(['comp.globalSearch', 'comp.common'], lan
   <div id="pd-overlay" class="hidden fixed inset-0 z-[500]"></div>
   <div id="pd-drawer"
     class="fixed top-[60px] right-4 z-[501] bg-[var(--surface-elevated)] rounded-2xl shadow-2xl border border-[var(--border-subtle)]
-           p-4 min-w-[230px] opacity-0 pointer-events-none scale-95 transition-all duration-200
+           p-4 min-w-[230px] max-h-[calc(100vh-80px)] overflow-y-auto opacity-0 pointer-events-none scale-95 transition-all duration-200
            data-[open=true]:opacity-100 data-[open=true]:pointer-events-auto data-[open=true]:scale-100">
     <div id="pd-inner"></div>
   </div>
