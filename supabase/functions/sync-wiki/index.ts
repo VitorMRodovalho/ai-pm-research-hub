@@ -54,6 +54,8 @@ function parseFrontmatter(content: string): { meta: Partial<WikiMeta>; body: str
       // Handle YAML arrays like [a, b, c]
       if (val.startsWith('[') && val.endsWith(']')) {
         meta[m[1]] = val.slice(1, -1).split(',').map(s => s.trim().replace(/^["']|["']$/g, ''))
+      } else if (val === 'null' || val === '~') {
+        // YAML null values — skip (don't store the string "null")
       } else {
         meta[m[1]] = val.replace(/^["']|["']$/g, '')
       }
@@ -184,7 +186,7 @@ Deno.serve(async (req) => {
         tags: meta.tags || [],
         authors: meta.authors || [],
         license: meta.license || null,
-        ip_track: meta.ip_track || null,
+        ip_track: meta.ip_track ? String(meta.ip_track).toUpperCase() : null,
         source_repo: repoFullName,
         source_sha: headSha,
         synced_at: new Date().toISOString(),
