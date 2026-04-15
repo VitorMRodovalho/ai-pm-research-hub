@@ -302,6 +302,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   import { buildTribeLabel } from '../../lib/tribes/catalog';
   import { hasPermission } from '../../lib/permissions';
   import { getTribePermissions } from '../../lib/tribePermissions';
+  import { marked } from 'marked';
 
   const I18N = (typeof window !== 'undefined' && (window as any).__TRIBE_I18N) || {};
   const TRIBE_ID: number = (typeof window !== 'undefined' && (window as any).__TRIBE_ID) || 0;
@@ -708,9 +709,10 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
           if (e.has_recording) badges.push('<span class="px-1.5 py-0.5 rounded text-[.6rem] font-semibold bg-blue-100 text-blue-700">🎥</span>');
           if (e.agenda_text) badges.push('<span class="px-1.5 py-0.5 rounded text-[.6rem] font-semibold bg-yellow-100 text-yellow-700">📋 Pauta</span>');
           const badgesHtml = badges.length ? `<div class="flex gap-1 mt-1">${badges.join('')}</div>` : '';
-          // Expandable minutes (render HTML from TipTap with prose class)
+          // Expandable minutes (parse Markdown → HTML, then render with prose class)
+          const minutesRendered = e.minutes_text ? marked.parse(e.minutes_text) : '';
           const minutesHtml = e.minutes_text
-            ? `<details class="mt-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-section-cool)] overflow-hidden"><summary class="px-3 py-2 text-[.65rem] font-bold uppercase tracking-wider text-[var(--text-muted)] cursor-pointer hover:bg-[var(--surface-hover)]">${I18N.viewMinutes || 'Ver ata'}</summary><div class="px-3 pb-2 text-sm text-[var(--text-secondary)] prose prose-sm max-w-none">${e.minutes_text}</div></details>`
+            ? `<details class="mt-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-section-cool)] overflow-hidden"><summary class="px-3 py-2 text-[.65rem] font-bold uppercase tracking-wider text-[var(--text-muted)] cursor-pointer hover:bg-[var(--surface-hover)]">${I18N.viewMinutes || 'Ver ata'}</summary><div class="px-3 pb-2 text-sm text-[var(--text-secondary)] prose prose-sm max-w-none">${minutesRendered}</div></details>`
             : '';
           // Edit buttons (permission-gated)
           const showEditBtn = canEditMinutes(e.tribe_id);
