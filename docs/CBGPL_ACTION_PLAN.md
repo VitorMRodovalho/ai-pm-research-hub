@@ -96,7 +96,7 @@ O Núcleo se posiciona na interseção de **3 das 4 vertentes** do congresso:
 **Curto (2min):**
 > Problema → Solução → Números → Diferencial → Call to action
 > - GP voluntário sem dados = decisão no escuro
-> - Plataforma SaaS open-source com MCP Server (64 tools)
+> - Plataforma SaaS open-source com MCP Server (74 tools)
 > - 5 capítulos, 50+ membros, 7 tribos de pesquisa, KPIs em real-time
 > - Primeiro núcleo PMI com integração nativa de IA (Claude Chat/Code, ChatGPT, Perplexity, Cursor, Manus)
 > - "Quer participar? Estamos abrindo vagas para pesquisadores"
@@ -125,7 +125,7 @@ O Núcleo se posiciona na interseção de **3 das 4 vertentes** do congresso:
 
 **Sobre o Núcleo:**
 1. O que é o Núcleo IA & GP? → Iniciativa de pesquisa colaborativa de 5 capítulos PMI
-2. Quantos membros? → 60+ voluntários ativos em 8 tribos de pesquisa
+2. Quantos membros? → 52 voluntários ativos em 7 tribos de pesquisa
 3. Quais capítulos participam? → GO, CE, DF, MG, RS
 4. Desde quando existe? → Ciclo 1 em 2025, atualmente no Ciclo 3
 5. É voluntário? → Sim, todos os membros são voluntários PMI
@@ -135,7 +135,7 @@ O Núcleo se posiciona na interseção de **3 das 4 vertentes** do congresso:
 7. É open-source? → Sim, código aberto no GitHub
 8. Que tecnologias usa? → Astro, Supabase, Cloudflare Workers, MCP Protocol
 9. O que é MCP? → Model Context Protocol — permite que IAs (Claude, ChatGPT) acessem dados da plataforma
-10. Quantas ferramentas de IA? → 64 tools integradas via MCP Server
+10. Quantas ferramentas de IA? → 74 tools integradas via MCP Server
 
 **Sobre IA:**
 11. Como IA é usada na prática? → Consulta de KPIs, gestão de boards, análise de dados via chat
