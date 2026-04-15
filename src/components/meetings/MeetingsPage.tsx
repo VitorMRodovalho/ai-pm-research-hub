@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Meeting {
   id: string;
@@ -307,13 +309,23 @@ export default function MeetingsPage({ lang = 'pt-BR' }: Props) {
               {selectedMeeting.event.agenda_text && (
                 <div>
                   <h3 className="text-sm font-bold text-navy mb-1">Agenda</h3>
-                  <pre className="text-xs whitespace-pre-wrap text-[var(--text-primary)] bg-[var(--surface-base)] p-3 rounded-lg">{selectedMeeting.event.agenda_text}</pre>
+                  <div className="prose prose-sm max-w-none text-[var(--text-primary)] bg-[var(--surface-base)] p-4 rounded-lg
+                    prose-headings:text-navy prose-headings:font-bold prose-headings:mt-3 prose-headings:mb-1
+                    prose-p:my-1 prose-li:my-0.5 prose-ul:my-1 prose-ol:my-1
+                    prose-strong:text-[var(--text-primary)]">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedMeeting.event.agenda_text}</ReactMarkdown>
+                  </div>
                 </div>
               )}
               {selectedMeeting.event.minutes_text ? (
                 <div>
                   <h3 className="text-sm font-bold text-navy mb-1">Ata</h3>
-                  <pre className="text-xs whitespace-pre-wrap text-[var(--text-primary)] bg-[var(--surface-base)] p-3 rounded-lg">{selectedMeeting.event.minutes_text}</pre>
+                  <div className="prose prose-sm max-w-none text-[var(--text-primary)] bg-[var(--surface-base)] p-4 rounded-lg
+                    prose-headings:text-navy prose-headings:font-bold prose-headings:mt-3 prose-headings:mb-1
+                    prose-p:my-1 prose-li:my-0.5 prose-ul:my-1 prose-ol:my-1
+                    prose-strong:text-[var(--text-primary)]">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedMeeting.event.minutes_text}</ReactMarkdown>
+                  </div>
                 </div>
               ) : (
                 <div className="text-xs text-amber-700 bg-amber-50 p-3 rounded-lg">{l.noMinutes}</div>
