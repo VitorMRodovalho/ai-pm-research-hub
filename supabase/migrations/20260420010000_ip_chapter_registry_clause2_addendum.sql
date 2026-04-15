@@ -48,10 +48,10 @@ CREATE POLICY "chapter_registry_write_superadmin"
 -- Seed 5 chapters
 INSERT INTO chapter_registry (chapter_code, legal_name, cnpj, state, is_contracting_chapter) VALUES
   ('GO', 'Seção Goiânia, Goiás — Brasil do Project Management Institute (PMI Goiás)', '06.065.645/0001-99', 'Goiás', true),
-  ('CE', 'Seção Fortaleza, Ceará — Brasil do Project Management Institute (PMI Ceará)', NULL, 'Ceará', false),
-  ('DF', 'Seção Brasília, Distrito Federal — Brasil do Project Management Institute (PMI-DF)', NULL, 'Distrito Federal', false),
-  ('MG', 'Seção Belo Horizonte, Minas Gerais — Brasil do Project Management Institute (PMI-MG)', NULL, 'Minas Gerais', false),
-  ('RS', 'Seção Porto Alegre, Rio Grande do Sul — Brasil do Project Management Institute (PMI-RS)', NULL, 'Rio Grande do Sul', false)
+  ('CE', 'PMI Fortaleza Ceará Brazil Chapter', '06.138.890/0001-89', 'Ceará', false),
+  ('DF', 'Seção Distrito Federal — Brasil do Project Management Institute', '04.271.340/0001-08', 'Distrito Federal', false),
+  ('MG', 'Project Management Institute Brazil Minas Gerais Chapter', '04.372.685/0001-58', 'Minas Gerais', false),
+  ('RS', 'Seção Rio Grande do Sul — Brasil do Project Management Institute', '04.595.012/0001-67', 'Rio Grande do Sul', false)
 ON CONFLICT (chapter_code) DO NOTHING;
 
 
