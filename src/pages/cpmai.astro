@@ -9,6 +9,30 @@ const i18nBundle = buildPageI18n(['cpmai'], lang);
 <BaseLayout title={t('cpmai.title', lang)} activePage="cpmai" lang={lang}>
   <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
   <main class="max-w-6xl mx-auto px-4 py-8">
+    <div id="cpmai-initiative-link" class="hidden mb-4 rounded-xl bg-teal-50 border border-teal-200 px-4 py-3 text-sm text-teal-800">
+      <a href="/initiative/2f5846f3-5b6b-4ce1-9bc6-e07bdb22cd19" class="font-semibold text-teal-700 no-underline hover:underline">
+        🚀 Area do Participante — acessar dashboard, eventos e materiais →
+      </a>
+    </div>
     <CpmaiLanding client:load />
   </main>
+  <script is:inline>
+    // Show initiative link only for authenticated members
+    function showCpmaiLink() {
+      var m = window.navGetMember && window.navGetMember();
+      if (m && m.id) {
+        var el = document.getElementById('cpmai-initiative-link');
+        if (el) el.classList.remove('hidden');
+      }
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        window.addEventListener('nav:member', showCpmaiLink, { once: true });
+        showCpmaiLink();
+      });
+    } else {
+      window.addEventListener('nav:member', showCpmaiLink, { once: true });
+      showCpmaiLink();
+    }
+  </script>
 </BaseLayout>

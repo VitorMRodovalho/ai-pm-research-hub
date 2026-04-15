@@ -296,6 +296,20 @@ const INIT_I18N = {
       }
     } catch { /* stats not critical */ }
 
+    // "Criar Evento" button
+    if (canManage) {
+      el.insertAdjacentHTML('beforeend', `<div class="mb-4">
+        <button data-action="create-event-prompt" class="px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold border-0 cursor-pointer hover:opacity-90 transition-all">+ Criar Evento</button>
+      </div>`);
+    }
+
+    // Cross-link for study_group → /cpmai
+    if (initData.initiative.kind === 'study_group') {
+      el.insertAdjacentHTML('beforeend', `<a href="/cpmai" class="block mb-4 no-underline bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 text-sm text-purple-800 hover:bg-purple-100 transition-all">
+        📖 Ver pagina publica do curso preparatorio → /cpmai
+      </a>`);
+    }
+
     // Events timeline
     try {
       const { data } = await sb.rpc('get_initiative_events_timeline', {
@@ -455,6 +469,31 @@ const INIT_I18N = {
       const target = e.target as HTMLElement;
       const action = target.dataset.action || target.closest('[data-action]')?.getAttribute('data-action');
       if (!action) return;
+
+      if (action === 'create-event-prompt') {
+        const title = prompt('Titulo do evento:');
+        if (!title?.trim()) return;
+        const dateStr = prompt('Data (YYYY-MM-DD):', new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10));
+        if (!dateStr?.match(/^\d{4}-\d{2}-\d{2}$/)) { alert('Formato invalido. Use YYYY-MM-DD.'); return; }
+        const timeStr = prompt('Horario de inicio (HH:MM):', '19:00');
+        if (!timeStr?.match(/^\d{2}:\d{2}$/)) { alert('Formato invalido. Use HH:MM.'); return; }
+        const durStr = prompt('Duracao em minutos:', '60');
+        const duration = parseInt(durStr || '60', 10);
+        const meetLink = prompt('Link da reuniao (opcional):', '') || null;
+
+        const { data: evtResult, error: evtErr } = await sb.rpc('create_initiative_event', {
+          p_initiative_id: INITIATIVE_ID,
+          p_title: title.trim(),
+          p_date: dateStr,
+          p_time_start: timeStr + ':00',
+          p_duration_minutes: duration,
+          p_meeting_link: meetLink,
+        });
+        if (evtErr) { alert('Erro: ' + evtErr.message); return; }
+        if (evtResult?.error) { alert(evtResult.error); return; }
+        alert('Evento criado com sucesso!');
+        window.location.reload();
+      }
 
       if (action === 'activate-initiative') {
         if (!confirm('Ativar esta iniciativa? O status mudara de "draft" para "active".')) return;
