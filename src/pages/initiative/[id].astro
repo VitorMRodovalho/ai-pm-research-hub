@@ -1,0 +1,518 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Toast from '../../components/ui/Toast.astro';
+import LoadingSkeleton from '../../components/ui/LoadingSkeleton.astro';
+import BoardEngine from '../../components/islands/BoardEngine';
+import EventMinutesIsland from '../../components/events/EventMinutesIsland';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import { buildPageI18n } from '../../i18n/pageI18n';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const i18nBundle = buildPageI18n(['initiative', 'comp.board', 'comp.card', 'comp.common', 'common'], lang);
+const { id } = Astro.params;
+
+const INIT_I18N = {
+  loading: t('initiative.loading', lang),
+  notFound: t('initiative.notFound', lang),
+  accessRestricted: t('initiative.accessRestricted', lang),
+  generalTab: t('initiative.generalTab', lang),
+  boardTab: t('initiative.boardTab', lang),
+  membersTab: t('initiative.membersTab', lang),
+  deliverablesTab: t('initiative.deliverablesTab', lang),
+  attendanceTab: t('initiative.attendanceTab', lang),
+  gamificationTab: t('initiative.gamificationTab', lang),
+  addMember: t('initiative.addMember', lang),
+  removeMember: t('initiative.removeMember', lang),
+  roleLabel: t('initiative.roleLabel', lang),
+  memberCount: t('initiative.memberCount', lang),
+  leader: t('initiative.leader', lang),
+  coordinator: t('initiative.coordinator', lang),
+  participant: t('initiative.participant', lang),
+  observer: t('initiative.observer', lang),
+  since: t('initiative.since', lang),
+  emptyDraft: t('initiative.emptyDraft', lang),
+  emptyNoEvents: t('initiative.emptyNoEvents', lang),
+  emptyNoMembers: t('initiative.emptyNoMembers', lang),
+  archivedBanner: t('initiative.archivedBanner', lang),
+  concludedBanner: t('initiative.concludedBanner', lang),
+  setupCta: t('initiative.setupCta', lang),
+  description: t('initiative.description', lang),
+  noBoard: t('initiative.noBoard', lang),
+  viewBoard: t('initiative.viewBoard', lang),
+  upcomingEvents: t('initiative.upcomingEvents', lang),
+  pastMeetings: t('initiative.pastMeetings', lang),
+  noUpcoming: t('initiative.noUpcoming', lang),
+  kindBadges: {
+    committee: t('initiative.kindBadge.committee', lang),
+    study_group: t('initiative.kindBadge.study_group', lang),
+    book_club: t('initiative.kindBadge.book_club', lang),
+    congress: t('initiative.kindBadge.congress', lang),
+    workshop: t('initiative.kindBadge.workshop', lang),
+    research_tribe: t('initiative.kindBadge.research_tribe', lang),
+  },
+  stats: {
+    members: t('initiative.stats.members', lang),
+    cards: t('initiative.stats.cards', lang),
+    done: t('initiative.stats.done', lang),
+    progress: t('initiative.stats.progress', lang),
+    backlog: t('initiative.stats.backlog', lang),
+  },
+};
+---
+<BaseLayout title="Iniciativa" activePage="initiatives" lang={lang}>
+  <Toast />
+  <div class="max-w-[1400px] mx-auto px-4 py-8">
+    <div id="init-loading" class="text-center py-10 text-[var(--text-muted)]">{INIT_I18N.loading}</div>
+    <div id="init-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
+      <div class="text-2xl mb-2">🔒</div>
+      <p class="font-semibold text-amber-800">{INIT_I18N.accessRestricted}</p>
+    </div>
+    <div id="init-not-found" class="hidden bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+      <div class="text-2xl mb-2">🔍</div>
+      <p class="font-semibold text-red-800">{INIT_I18N.notFound}</p>
+    </div>
+    <div id="init-shell" class="hidden">
+      <!-- Header -->
+      <div id="init-header" class="mb-6">
+        <LoadingSkeleton variant="profile" />
+      </div>
+
+      <!-- Status banners -->
+      <div id="init-status-banner" class="hidden mb-4 rounded-2xl px-4 py-3 text-sm"></div>
+
+      <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
+
+      <!-- Tabs (config-driven, rendered by JS) -->
+      <div class="flex gap-2 mb-5 flex-wrap" id="init-tabs"></div>
+
+      <!-- Tab panels -->
+      <div id="panel-general"><LoadingSkeleton variant="card" count={2} /></div>
+      <div id="panel-board" class="hidden"></div>
+      <div id="panel-members" class="hidden"><LoadingSkeleton variant="card" count={4} /></div>
+      <div id="panel-deliverables" class="hidden"><LoadingSkeleton variant="card" count={2} /></div>
+      <div id="panel-attendance" class="hidden"></div>
+      <div id="panel-gamification" class="hidden"></div>
+
+      <EventMinutesIsland client:load />
+    </div>
+  </div>
+</BaseLayout>
+
+<script is:inline define:vars={{ INIT_I18N, initiativeId: id }}>
+  window.__INIT_I18N = typeof INIT_I18N !== 'undefined' ? INIT_I18N : {};
+  window.__INITIATIVE_ID = typeof initiativeId !== 'undefined' ? initiativeId : '';
+</script>
+
+<script>
+  import { marked } from 'marked';
+
+  const I18N = (typeof window !== 'undefined' && (window as any).__INIT_I18N) || {};
+  const INITIATIVE_ID: string = (typeof window !== 'undefined' && (window as any).__INITIATIVE_ID) || '';
+
+  function getSb() { return (window as any).navGetSb?.(); }
+
+  function escapeHtml(s: string): string {
+    return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  const KIND_ICONS: Record<string, string> = {
+    committee: '👥', study_group: '📖', book_club: '📚',
+    congress: '🎤', workshop: '🔧', research_tribe: '🔬',
+  };
+  const KIND_COLORS: Record<string, string> = {
+    committee: '#06B6D4', study_group: '#8B5CF6', book_club: '#10B981',
+    congress: '#F59E0B', workshop: '#EF4444', research_tribe: '#4F17A8',
+  };
+  const ROLE_LABELS: Record<string, string> = {
+    leader: I18N.leader || 'Leader', coordinator: I18N.coordinator || 'Coordinator',
+    participant: I18N.participant || 'Participant', observer: I18N.observer || 'Observer',
+  };
+
+  let initData: any = null;
+  let kindConfig: any = null;
+  let currentMember: any = null;
+  let activeTab = 'general';
+
+  // ── Tab switching ──
+  function switchTab(tabName: string) {
+    activeTab = tabName;
+    const panels = ['general', 'board', 'members', 'deliverables', 'attendance', 'gamification'];
+    panels.forEach(p => {
+      const el = document.getElementById(`panel-${p}`);
+      if (el) el.classList.toggle('hidden', p !== tabName);
+    });
+    document.querySelectorAll('.init-tab').forEach(btn => {
+      const isActive = (btn as HTMLElement).dataset.tab === tabName;
+      btn.classList.toggle('bg-navy', isActive);
+      btn.classList.toggle('text-white', isActive);
+      btn.classList.toggle('border-navy', isActive);
+      btn.classList.toggle('bg-[var(--surface-card)]', !isActive);
+      btn.classList.toggle('text-[var(--text-secondary)]', !isActive);
+      btn.classList.toggle('border-[var(--border-default)]', !isActive);
+    });
+  }
+
+  // ── Build tabs from kind_config ──
+  function renderTabs() {
+    const container = document.getElementById('init-tabs');
+    if (!container || !kindConfig) return;
+
+    const tabs: { key: string; label: string }[] = [
+      { key: 'general', label: I18N.generalTab || 'General' },
+    ];
+    if (kindConfig.has_board && initData?.board_id) {
+      tabs.push({ key: 'board', label: I18N.boardTab || 'Board' });
+    }
+    tabs.push({ key: 'members', label: I18N.membersTab || 'Members' });
+    if (kindConfig.has_deliverables) {
+      tabs.push({ key: 'deliverables', label: I18N.deliverablesTab || 'Deliverables' });
+    }
+    if (kindConfig.has_attendance) {
+      tabs.push({ key: 'attendance', label: I18N.attendanceTab || 'Attendance' });
+    }
+    if (kindConfig.has_certificate) {
+      tabs.push({ key: 'gamification', label: '🏆 ' + (I18N.gamificationTab || 'Gamification') });
+    }
+
+    container.innerHTML = tabs.map((tab, i) => {
+      const isFirst = i === 0;
+      return `<button class="init-tab px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 transition-all ${
+        isFirst
+          ? 'bg-navy text-white border-navy'
+          : 'bg-[var(--surface-card)] text-[var(--text-secondary)] border-[var(--border-default)]'
+      }" data-tab="${tab.key}">${tab.label}</button>`;
+    }).join('');
+
+    container.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest('.init-tab') as HTMLElement | null;
+      if (btn?.dataset.tab) switchTab(btn.dataset.tab);
+    });
+  }
+
+  // ── Header ──
+  function renderHeader() {
+    const el = document.getElementById('init-header');
+    if (!el || !initData) return;
+
+    const init = initData.initiative;
+    const leader = initData.leader;
+    const kind = init.kind;
+    const color = KIND_COLORS[kind] || '#4F17A8';
+    const icon = KIND_ICONS[kind] || '📋';
+    const badgeLabel = (I18N.kindBadges || {})[kind] || kindConfig?.display_name || kind;
+
+    const leaderName = leader?.name || '—';
+    const leaderInitials = leader?.name
+      ? leader.name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase()
+      : '?';
+    const leaderPhotoHtml = leader?.photo_url
+      ? `<img src="${escapeHtml(leader.photo_url)}" class="w-[42px] h-[42px] rounded-xl object-cover" alt="${escapeHtml(leaderName)}">`
+      : `<div class="w-[42px] h-[42px] rounded-xl flex items-center justify-center text-white font-extrabold text-base" style="background:${color}">${leaderInitials}</div>`;
+
+    el.innerHTML = `
+      <div class="bg-[var(--surface-card)] rounded-2xl overflow-hidden border border-[var(--border-subtle)] hover:shadow-md transition-all duration-300">
+        <div class="flex items-center gap-4 px-5 py-4">
+          <div class="flex-shrink-0">${leaderPhotoHtml}</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <h1 class="text-[.95rem] font-bold text-[var(--text-primary)] truncate">${escapeHtml(init.title)}</h1>
+              <span class="text-xs px-2 py-0.5 rounded-full font-semibold text-white" style="background:${color}">${icon} ${escapeHtml(badgeLabel)}</span>
+              ${init.status !== 'active' ? `<span class="text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-600 font-semibold">${escapeHtml(init.status)}</span>` : ''}
+            </div>
+            <div class="text-xs text-[var(--text-secondary)] mt-1 flex flex-wrap gap-x-3">
+              <span>👤 ${escapeHtml(leaderName)}</span>
+              <span>👥 ${initData.member_count} ${(I18N.stats?.members || 'members').toLowerCase()}</span>
+            </div>
+            ${init.description ? `<p class="text-xs text-[var(--text-muted)] mt-1.5 line-clamp-2">${escapeHtml(init.description)}</p>` : ''}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // ── Status banners ──
+  function renderStatusBanner() {
+    const banner = document.getElementById('init-status-banner');
+    if (!banner || !initData) return;
+    const status = initData.initiative.status;
+    if (status === 'archived') {
+      banner.className = 'mb-4 rounded-2xl px-4 py-3 text-sm bg-gray-100 border border-gray-300 text-gray-700';
+      banner.textContent = I18N.archivedBanner || 'Archived (read-only).';
+      banner.classList.remove('hidden');
+    } else if (status === 'concluded') {
+      banner.className = 'mb-4 rounded-2xl px-4 py-3 text-sm bg-blue-50 border border-blue-200 text-blue-700';
+      banner.textContent = I18N.concludedBanner || 'Concluded (read-only).';
+      banner.classList.remove('hidden');
+    } else if (status === 'draft' && initData.member_count === 0) {
+      banner.className = 'mb-4 rounded-2xl px-4 py-3 text-sm bg-amber-50 border border-amber-200 text-amber-800';
+      banner.textContent = I18N.emptyDraft || 'Draft — add members to get started.';
+      banner.classList.remove('hidden');
+    }
+  }
+
+  // ── General tab: Stats + Events ──
+  async function loadGeneralTab() {
+    const el = document.getElementById('panel-general');
+    const sb = getSb();
+    if (!el || !sb) return;
+
+    // Stats
+    try {
+      const { data } = await sb.rpc('get_initiative_stats', { p_initiative_id: INITIATIVE_ID });
+      if (data) {
+        const rateColor = (data.attendance_rate || 0) >= 75 ? '#10B981' : (data.attendance_rate || 0) >= 50 ? '#D97706' : '#BE2027';
+        const statsHtml = `<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+            <div class="text-2xl font-extrabold text-navy">${data.member_count || 0}</div>
+            <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">${I18N.stats?.members || 'Members'}</div>
+          </div>
+          ${kindConfig?.has_attendance ? `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+            <div class="text-2xl font-extrabold" style="color:${rateColor}">${data.attendance_rate ?? 0}%</div>
+            <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Presença</div>
+          </div>` : ''}
+          <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+            <div class="text-lg font-extrabold text-[var(--text-primary)]">
+              <span class="text-green-600">${data.cards_done || 0}</span>
+              <span class="text-[var(--text-muted)]">/</span>
+              <span class="text-blue-600">${data.cards_in_progress || 0}</span>
+              <span class="text-[var(--text-muted)]">/</span>
+              <span class="text-gray-400">${data.cards_backlog || 0}</span>
+            </div>
+            <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">${I18N.stats?.cards || 'Cards'} (${I18N.stats?.done || 'done'}/${I18N.stats?.progress || 'prog'}/${I18N.stats?.backlog || 'bklog'})</div>
+          </div>
+          ${data.impact_hours ? `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+            <div class="text-2xl font-extrabold text-[var(--color-teal)]">${data.impact_hours}h</div>
+            <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Horas</div>
+          </div>` : ''}
+        </div>`;
+        el.innerHTML = statsHtml;
+      }
+    } catch { /* stats not critical */ }
+
+    // Events timeline
+    try {
+      const { data } = await sb.rpc('get_initiative_events_timeline', {
+        p_initiative_id: INITIATIVE_ID, p_upcoming_limit: 3, p_past_limit: 5,
+      });
+      if (data) {
+        const locale = 'pt-BR';
+        const upcoming = Array.isArray(data.upcoming) ? data.upcoming : [];
+        const past = Array.isArray(data.past) ? data.past : [];
+
+        let eventsHtml = '';
+        if (upcoming.length > 0) {
+          eventsHtml += `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 mb-4">
+            <h3 class="text-sm font-bold text-navy mb-2">📅 ${I18N.upcomingEvents || 'Upcoming'}</h3>
+            <div class="space-y-2">${upcoming.map((e: any) => {
+              const d = new Date(e.date + 'T12:00:00').toLocaleDateString(locale, { weekday: 'short', day: '2-digit', month: 'short' });
+              return `<div class="flex items-center gap-3 py-1.5 border-b border-[var(--border-subtle)] last:border-0">
+                <span class="text-xs font-semibold text-[var(--text-secondary)] w-[80px]">${d}</span>
+                <span class="text-sm text-[var(--text-primary)]">${escapeHtml(e.title)}</span>
+                ${e.meeting_link ? `<a href="${escapeHtml(e.meeting_link)}" target="_blank" rel="noopener" class="ml-auto text-xs text-teal-600 font-semibold no-underline hover:underline">Entrar →</a>` : ''}
+              </div>`;
+            }).join('')}</div>
+          </div>`;
+        } else {
+          eventsHtml += `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 mb-4 text-center text-sm text-[var(--text-muted)]">
+            ${I18N.noUpcoming || 'No upcoming events.'}
+          </div>`;
+        }
+
+        if (past.length > 0) {
+          eventsHtml += `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4">
+            <h3 class="text-sm font-bold text-navy mb-2">📼 ${I18N.pastMeetings || 'Past Meetings'}</h3>
+            <div class="space-y-2">${past.map((e: any) => {
+              const d = new Date(e.date + 'T12:00:00').toLocaleDateString(locale, { day: '2-digit', month: 'short' });
+              const hasMinutes = e.minutes_text || e.has_minutes;
+              return `<div class="flex items-center gap-3 py-1.5 border-b border-[var(--border-subtle)] last:border-0">
+                <span class="text-xs font-semibold text-[var(--text-muted)] w-[50px]">${d}</span>
+                <span class="text-sm text-[var(--text-primary)]">${escapeHtml(e.title)}</span>
+                ${hasMinutes ? '<span class="text-xs text-teal-600">📝</span>' : ''}
+                ${e.recording_url ? `<a href="${escapeHtml(e.recording_url)}" target="_blank" rel="noopener" class="text-xs text-purple-600 no-underline hover:underline">▶️</a>` : ''}
+              </div>`;
+            }).join('')}</div>
+          </div>`;
+        }
+        el.insertAdjacentHTML('beforeend', eventsHtml);
+      }
+    } catch { /* events not critical */ }
+  }
+
+  // ── Members tab ──
+  async function loadMembersTab() {
+    const el = document.getElementById('panel-members');
+    const sb = getSb();
+    if (!el || !sb) return;
+
+    const { data, error } = await sb
+      .from('engagements')
+      .select('id, kind, role, status, start_date, person_id, persons!inner(id, name, photo_url, legacy_member_id)')
+      .eq('initiative_id', INITIATIVE_ID)
+      .eq('status', 'active')
+      .order('role');
+
+    if (error || !data?.length) {
+      el.innerHTML = `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-6 text-center text-sm text-[var(--text-muted)]">
+        ${I18N.emptyNoMembers || 'No active members.'}
+      </div>`;
+      return;
+    }
+
+    // Sort: leaders first, then coordinators, then participants, then observers
+    const roleOrder: Record<string, number> = { leader: 0, coordinator: 1, participant: 2, observer: 3 };
+    const sorted = data.sort((a: any, b: any) => (roleOrder[a.role] ?? 9) - (roleOrder[b.role] ?? 9));
+
+    const ROLE_COLORS: Record<string, string> = {
+      leader: '#FF610F', coordinator: '#4F17A8', participant: '#06B6D4', observer: '#94A3B8',
+    };
+
+    el.innerHTML = `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl divide-y divide-[var(--border-subtle)]">
+      ${sorted.map((eng: any) => {
+        const person = eng.persons;
+        const name = person?.name || '?';
+        const initials = name.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
+        const photoUrl = person?.photo_url;
+        const roleColor = ROLE_COLORS[eng.role] || '#94A3B8';
+        const roleLabel = ROLE_LABELS[eng.role] || eng.role;
+        const startDate = eng.start_date ? new Date(eng.start_date + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }) : '';
+
+        return `<div class="flex items-center gap-3 px-4 py-3">
+          ${photoUrl
+            ? `<img src="${escapeHtml(photoUrl)}" class="w-9 h-9 rounded-xl object-cover" alt="">`
+            : `<div class="w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm" style="background:${roleColor}">${initials}</div>`}
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-semibold text-[var(--text-primary)] truncate">${escapeHtml(name)}</div>
+            <div class="text-xs text-[var(--text-muted)]">${escapeHtml(eng.kind.replace(/_/g, ' '))} ${startDate ? `· ${I18N.since || 'since'} ${startDate}` : ''}</div>
+          </div>
+          <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full text-white" style="background:${roleColor}">${escapeHtml(roleLabel)}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  // ── Board tab: mount BoardEngine dynamically ──
+  function renderBoardPanel() {
+    const el = document.getElementById('panel-board');
+    if (!el || !initData?.board_id) return;
+
+    // BoardEngine is an Astro island — we can't mount it dynamically from client JS.
+    // Instead, render a direct link + iframe-style embed using the board page.
+    // Actually, let's just show a link to the existing board page for now,
+    // and render the board items inline.
+    el.innerHTML = `<div class="mb-3">
+      <a href="/admin/board/${initData.board_id}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold no-underline hover:opacity-90 transition-all">
+        ${I18N.viewBoard || 'Open Board'} →
+      </a>
+    </div>
+    <div id="board-engine-mount"></div>`;
+
+    // Load board items inline
+    loadBoardInline();
+  }
+
+  async function loadBoardInline() {
+    const sb = getSb();
+    const mount = document.getElementById('board-engine-mount');
+    if (!sb || !mount || !initData?.board_id) return;
+
+    const { data: items, error } = await sb
+      .from('board_items')
+      .select('id, title, status, priority, due_date, assignee_id')
+      .eq('board_id', initData.board_id)
+      .neq('status', 'archived')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error || !items?.length) {
+      mount.innerHTML = '<p class="text-sm text-[var(--text-muted)] mt-2">Board vazio.</p>';
+      return;
+    }
+
+    const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
+      backlog: { bg: 'bg-gray-100', text: 'text-gray-600' },
+      todo: { bg: 'bg-gray-100', text: 'text-gray-600' },
+      in_progress: { bg: 'bg-blue-50', text: 'text-blue-700' },
+      review: { bg: 'bg-purple-50', text: 'text-purple-700' },
+      done: { bg: 'bg-emerald-50', text: 'text-emerald-700' },
+    };
+
+    // Group by status
+    const groups: Record<string, any[]> = {};
+    for (const it of items) {
+      const s = it.status || 'backlog';
+      (groups[s] = groups[s] || []).push(it);
+    }
+
+    mount.innerHTML = Object.entries(groups).map(([status, cards]) => {
+      const colors = STATUS_COLORS[status] || STATUS_COLORS.backlog;
+      return `<div class="mb-4">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-xs font-bold uppercase ${colors.text}">${status.replace(/_/g, ' ')}</span>
+          <span class="text-xs text-[var(--text-muted)]">(${cards.length})</span>
+        </div>
+        <div class="grid gap-2">${cards.map(c => `
+          <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-lg px-3 py-2">
+            <span class="text-sm text-[var(--text-primary)]">${escapeHtml(c.title)}</span>
+            ${c.due_date ? `<span class="text-[10px] text-[var(--text-muted)] ml-2">📅 ${c.due_date.substring(0, 10)}</span>` : ''}
+          </div>`).join('')}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Boot ──
+  async function boot() {
+    const sb = getSb();
+    currentMember = (window as any).navGetMember?.();
+
+    if (!sb || !currentMember) {
+      window.addEventListener('nav:member', boot, { once: true });
+      return;
+    }
+
+    if (!currentMember?.id) {
+      // Not authenticated — show login wall
+      document.getElementById('init-loading')?.classList.add('hidden');
+      document.getElementById('init-denied')?.classList.remove('hidden');
+      return;
+    }
+
+    // Fetch initiative detail
+    const { data, error } = await sb.rpc('get_initiative_detail', { p_initiative_id: INITIATIVE_ID });
+    if (error || !data || data.error) {
+      document.getElementById('init-loading')?.classList.add('hidden');
+      document.getElementById('init-not-found')?.classList.remove('hidden');
+      return;
+    }
+
+    initData = data;
+    kindConfig = data.kind_config;
+
+    // Reveal shell
+    document.getElementById('init-loading')?.classList.add('hidden');
+    document.getElementById('init-shell')?.classList.remove('hidden');
+
+    // Render UI
+    renderHeader();
+    renderStatusBanner();
+    renderTabs();
+
+    // Load initial tab data
+    await loadGeneralTab();
+
+    // Lazy-load other tabs on switch
+    document.getElementById('init-tabs')?.addEventListener('click', async (e) => {
+      const btn = (e.target as HTMLElement).closest('.init-tab') as HTMLElement | null;
+      if (!btn?.dataset.tab) return;
+      const tab = btn.dataset.tab;
+      if (tab === 'members') await loadMembersTab();
+      if (tab === 'board') renderBoardPanel();
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+</script>
