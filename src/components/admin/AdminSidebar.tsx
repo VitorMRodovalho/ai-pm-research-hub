@@ -62,6 +62,7 @@ const SECTIONS: SidebarSection[] = [
       { href: '/admin/publications', label: { 'pt-BR': 'Publicações', 'en-US': 'Publications', 'es-LATAM': 'Publicaciones' }, icon: 'BookOpen', permission: 'admin.publications' },
       { href: '/admin/curatorship', label: { 'pt-BR': 'Curadoria', 'en-US': 'Curatorship', 'es-LATAM': 'Curaduría' }, icon: 'CheckCircle', permission: 'admin.curation' },
       { href: '/admin/comms-ops', label: { 'pt-BR': 'Comunicação', 'en-US': 'Communications', 'es-LATAM': 'Comunicación' }, icon: 'Megaphone', permission: 'admin.campaigns' },
+      { href: '/admin/comms', label: { 'pt-BR': 'Mídia Social', 'en-US': 'Social Media', 'es-LATAM': 'Redes Sociales' }, icon: 'BarChart3', permission: 'admin.campaigns' },
       { href: '/admin/webinars', label: { 'pt-BR': 'Webinars', 'en-US': 'Webinars', 'es-LATAM': 'Webinars' }, icon: 'MonitorPlay', permission: 'admin.access' },
       { href: '/admin/knowledge', label: { 'pt-BR': 'Biblioteca de Recursos', 'en-US': 'Resource Library', 'es-LATAM': 'Biblioteca de Recursos' }, icon: 'Library', permission: 'admin.access' },
     ],
