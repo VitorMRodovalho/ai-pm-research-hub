@@ -14,141 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      activities: {
-        Row: {
-          act_end_date: string | null
-          act_start_date: string | null
-          clndr_id: string | null
-          created_at: string | null
-          early_end_date: string | null
-          early_start_date: string | null
-          extra_data: Json | null
-          free_float_hr_cnt: number | null
-          id: string
-          late_end_date: string | null
-          late_start_date: string | null
-          phys_complete_pct: number | null
-          project_id: string | null
-          remain_drtn_hr_cnt: number | null
-          status_code: string | null
-          target_drtn_hr_cnt: number | null
-          target_end_date: string | null
-          target_start_date: string | null
-          task_code: string | null
-          task_id: string
-          task_name: string | null
-          task_type: string | null
-          total_float_hr_cnt: number | null
-          wbs_id: string | null
-        }
-        Insert: {
-          act_end_date?: string | null
-          act_start_date?: string | null
-          clndr_id?: string | null
-          created_at?: string | null
-          early_end_date?: string | null
-          early_start_date?: string | null
-          extra_data?: Json | null
-          free_float_hr_cnt?: number | null
-          id?: string
-          late_end_date?: string | null
-          late_start_date?: string | null
-          phys_complete_pct?: number | null
-          project_id?: string | null
-          remain_drtn_hr_cnt?: number | null
-          status_code?: string | null
-          target_drtn_hr_cnt?: number | null
-          target_end_date?: string | null
-          target_start_date?: string | null
-          task_code?: string | null
-          task_id: string
-          task_name?: string | null
-          task_type?: string | null
-          total_float_hr_cnt?: number | null
-          wbs_id?: string | null
-        }
-        Update: {
-          act_end_date?: string | null
-          act_start_date?: string | null
-          clndr_id?: string | null
-          created_at?: string | null
-          early_end_date?: string | null
-          early_start_date?: string | null
-          extra_data?: Json | null
-          free_float_hr_cnt?: number | null
-          id?: string
-          late_end_date?: string | null
-          late_start_date?: string | null
-          phys_complete_pct?: number | null
-          project_id?: string | null
-          remain_drtn_hr_cnt?: number | null
-          status_code?: string | null
-          target_drtn_hr_cnt?: number | null
-          target_end_date?: string | null
-          target_start_date?: string | null
-          task_code?: string | null
-          task_id?: string
-          task_name?: string | null
-          task_type?: string | null
-          total_float_hr_cnt?: number | null
-          wbs_id?: string | null
-        }
-        Relationships: []
-      }
-      activity_code_types: {
-        Row: {
-          actv_code_type: string | null
-          actv_code_type_id: string
-          created_at: string | null
-          id: string
-          project_id: string | null
-        }
-        Insert: {
-          actv_code_type?: string | null
-          actv_code_type_id: string
-          created_at?: string | null
-          id?: string
-          project_id?: string | null
-        }
-        Update: {
-          actv_code_type?: string | null
-          actv_code_type_id?: string
-          created_at?: string | null
-          id?: string
-          project_id?: string | null
-        }
-        Relationships: []
-      }
-      activity_codes: {
-        Row: {
-          actv_code_id: string
-          actv_code_name: string | null
-          actv_code_type_id: string | null
-          created_at: string | null
-          id: string
-          project_id: string | null
-          short_name: string | null
-        }
-        Insert: {
-          actv_code_id: string
-          actv_code_name?: string | null
-          actv_code_type_id?: string | null
-          created_at?: string | null
-          id?: string
-          project_id?: string | null
-          short_name?: string | null
-        }
-        Update: {
-          actv_code_id?: string
-          actv_code_name?: string | null
-          actv_code_type_id?: string | null
-          created_at?: string | null
-          id?: string
-          project_id?: string | null
-          short_name?: string | null
-        }
-        Relationships: []
-      }
       admin_audit_log: {
         Row: {
           action: string
@@ -266,62 +131,6 @@ export type Database = {
           url?: string
         }
         Relationships: []
-      }
-      alerts: {
-        Row: {
-          affected_activities: string[] | null
-          alert_score: number | null
-          confidence: number | null
-          created_at: string | null
-          description: string | null
-          dismissed: boolean | null
-          id: string
-          project_id: string | null
-          projected_impact_days: number | null
-          rule_id: string
-          severity: string
-          title: string
-          upload_id: string | null
-        }
-        Insert: {
-          affected_activities?: string[] | null
-          alert_score?: number | null
-          confidence?: number | null
-          created_at?: string | null
-          description?: string | null
-          dismissed?: boolean | null
-          id?: string
-          project_id?: string | null
-          projected_impact_days?: number | null
-          rule_id: string
-          severity: string
-          title: string
-          upload_id?: string | null
-        }
-        Update: {
-          affected_activities?: string[] | null
-          alert_score?: number | null
-          confidence?: number | null
-          created_at?: string | null
-          description?: string | null
-          dismissed?: boolean | null
-          id?: string
-          project_id?: string | null
-          projected_impact_days?: number | null
-          rule_id?: string
-          severity?: string
-          title?: string
-          upload_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "alerts_upload_id_fkey"
-            columns: ["upload_id"]
-            isOneToOne: false
-            referencedRelation: "schedule_uploads"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       analysis_results: {
         Row: {
@@ -2165,42 +1974,6 @@ export type Database = {
           },
         ]
       }
-      calendars: {
-        Row: {
-          clndr_id: string
-          clndr_name: string | null
-          clndr_type: string | null
-          created_at: string | null
-          day_hr_cnt: number | null
-          default_flag: string | null
-          id: string
-          project_id: string | null
-          week_hr_cnt: number | null
-        }
-        Insert: {
-          clndr_id: string
-          clndr_name?: string | null
-          clndr_type?: string | null
-          created_at?: string | null
-          day_hr_cnt?: number | null
-          default_flag?: string | null
-          id?: string
-          project_id?: string | null
-          week_hr_cnt?: number | null
-        }
-        Update: {
-          clndr_id?: string
-          clndr_name?: string | null
-          clndr_type?: string | null
-          created_at?: string | null
-          day_hr_cnt?: number | null
-          default_flag?: string | null
-          id?: string
-          project_id?: string | null
-          week_hr_cnt?: number | null
-        }
-        Relationships: []
-      }
       campaign_recipients: {
         Row: {
           bounce_type: string | null
@@ -3361,36 +3134,6 @@ export type Database = {
           results?: Json | null
           update_project_id?: string | null
           user_id?: string | null
-        }
-        Relationships: []
-      }
-      cost_accounts: {
-        Row: {
-          acct_id: string
-          acct_name: string | null
-          created_at: string | null
-          extra_data: Json | null
-          id: string
-          parent_acct_id: string | null
-          project_id: string | null
-        }
-        Insert: {
-          acct_id: string
-          acct_name?: string | null
-          created_at?: string | null
-          extra_data?: Json | null
-          id?: string
-          parent_acct_id?: string | null
-          project_id?: string | null
-        }
-        Update: {
-          acct_id?: string
-          acct_name?: string | null
-          created_at?: string | null
-          extra_data?: Json | null
-          id?: string
-          parent_acct_id?: string | null
-          project_id?: string | null
         }
         Relationships: []
       }
@@ -4885,51 +4628,6 @@ export type Database = {
         }
         Relationships: []
       }
-      float_snapshots: {
-        Row: {
-          activity_id: string | null
-          captured_at: string | null
-          free_float: number | null
-          id: string
-          is_critical: boolean | null
-          total_float: number | null
-          upload_id: string | null
-        }
-        Insert: {
-          activity_id?: string | null
-          captured_at?: string | null
-          free_float?: number | null
-          id?: string
-          is_critical?: boolean | null
-          total_float?: number | null
-          upload_id?: string | null
-        }
-        Update: {
-          activity_id?: string | null
-          captured_at?: string | null
-          free_float?: number | null
-          id?: string
-          is_critical?: boolean | null
-          total_float?: number | null
-          upload_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "float_snapshots_activity_id_fkey"
-            columns: ["activity_id"]
-            isOneToOne: false
-            referencedRelation: "activities"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "float_snapshots_upload_id_fkey"
-            columns: ["upload_id"]
-            isOneToOne: false
-            referencedRelation: "schedule_uploads"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       gamification_points: {
         Row: {
           category: string
@@ -5083,53 +4781,6 @@ export type Database = {
             columns: ["partner_entity_id"]
             isOneToOne: false
             referencedRelation: "partner_entities"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      health_scores: {
-        Row: {
-          created_at: string | null
-          dcma_score: number | null
-          float_health: number | null
-          id: string
-          logic_integrity: number | null
-          overall_score: number
-          project_id: string | null
-          rating: string | null
-          trend_direction: number | null
-          upload_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          dcma_score?: number | null
-          float_health?: number | null
-          id?: string
-          logic_integrity?: number | null
-          overall_score: number
-          project_id?: string | null
-          rating?: string | null
-          trend_direction?: number | null
-          upload_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          dcma_score?: number | null
-          float_health?: number | null
-          id?: string
-          logic_integrity?: number | null
-          overall_score?: number
-          project_id?: string | null
-          rating?: string | null
-          trend_direction?: number | null
-          upload_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "health_scores_upload_id_fkey"
-            columns: ["upload_id"]
-            isOneToOne: false
-            referencedRelation: "schedule_uploads"
             referencedColumns: ["id"]
           },
         ]
@@ -8725,39 +8376,6 @@ export type Database = {
           },
         ]
       }
-      predecessors: {
-        Row: {
-          created_at: string | null
-          id: string
-          lag_hr_cnt: number | null
-          pred_task_id: string
-          pred_type: string | null
-          project_id: string | null
-          task_id: string
-          task_pred_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          lag_hr_cnt?: number | null
-          pred_task_id: string
-          pred_type?: string | null
-          project_id?: string | null
-          task_id: string
-          task_pred_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          lag_hr_cnt?: number | null
-          pred_task_id?: string
-          pred_type?: string | null
-          project_id?: string | null
-          task_id?: string
-          task_pred_id?: string | null
-        }
-        Relationships: []
-      }
       project_boards: {
         Row: {
           board_name: string
@@ -9712,108 +9330,6 @@ export type Database = {
           },
         ]
       }
-      reports: {
-        Row: {
-          created_at: string | null
-          file_path: string | null
-          file_size: number | null
-          id: string
-          project_id: string | null
-          report_type: string
-          title: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          file_path?: string | null
-          file_size?: number | null
-          id?: string
-          project_id?: string | null
-          report_type: string
-          title?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          file_path?: string | null
-          file_size?: number | null
-          id?: string
-          project_id?: string | null
-          report_type?: string
-          title?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      resource_assignments: {
-        Row: {
-          act_reg_cost: number | null
-          act_reg_qty: number | null
-          created_at: string | null
-          id: string
-          project_id: string | null
-          remain_cost: number | null
-          remain_qty: number | null
-          rsrc_id: string | null
-          target_cost: number | null
-          target_qty: number | null
-          task_id: string
-        }
-        Insert: {
-          act_reg_cost?: number | null
-          act_reg_qty?: number | null
-          created_at?: string | null
-          id?: string
-          project_id?: string | null
-          remain_cost?: number | null
-          remain_qty?: number | null
-          rsrc_id?: string | null
-          target_cost?: number | null
-          target_qty?: number | null
-          task_id: string
-        }
-        Update: {
-          act_reg_cost?: number | null
-          act_reg_qty?: number | null
-          created_at?: string | null
-          id?: string
-          project_id?: string | null
-          remain_cost?: number | null
-          remain_qty?: number | null
-          rsrc_id?: string | null
-          target_cost?: number | null
-          target_qty?: number | null
-          task_id?: string
-        }
-        Relationships: []
-      }
-      resources: {
-        Row: {
-          created_at: string | null
-          id: string
-          project_id: string | null
-          rsrc_id: string
-          rsrc_name: string | null
-          rsrc_type: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          project_id?: string | null
-          rsrc_id: string
-          rsrc_name?: string | null
-          rsrc_type?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          project_id?: string | null
-          rsrc_id?: string
-          rsrc_name?: string | null
-          rsrc_type?: string | null
-        }
-        Relationships: []
-      }
       revenue_categories: {
         Row: {
           created_at: string | null
@@ -9953,48 +9469,6 @@ export type Database = {
           project_name?: string | null
           simulation_data?: Json | null
           simulation_id?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      schedule_uploads: {
-        Row: {
-          created_at: string | null
-          deleted_at: string | null
-          file_size_bytes: number | null
-          id: string
-          original_filename: string
-          parser_version: string | null
-          program_id: string | null
-          revision_number: number | null
-          status: string | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          deleted_at?: string | null
-          file_size_bytes?: number | null
-          id?: string
-          original_filename: string
-          parser_version?: string | null
-          program_id?: string | null
-          revision_number?: number | null
-          status?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          deleted_at?: string | null
-          file_size_bytes?: number | null
-          id?: string
-          original_filename?: string
-          parser_version?: string | null
-          program_id?: string | null
-          revision_number?: number | null
-          status?: string | null
-          updated_at?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -11739,66 +11213,6 @@ export type Database = {
           },
         ]
       }
-      udf_types: {
-        Row: {
-          created_at: string | null
-          id: string
-          project_id: string | null
-          table_name: string | null
-          udf_type_id: string
-          udf_type_label: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          project_id?: string | null
-          table_name?: string | null
-          udf_type_id: string
-          udf_type_label?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          project_id?: string | null
-          table_name?: string | null
-          udf_type_id?: string
-          udf_type_label?: string | null
-        }
-        Relationships: []
-      }
-      udf_values: {
-        Row: {
-          created_at: string | null
-          fk_id: string | null
-          id: string
-          project_id: string | null
-          udf_date: string | null
-          udf_number: number | null
-          udf_text: string | null
-          udf_type_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          fk_id?: string | null
-          id?: string
-          project_id?: string | null
-          udf_date?: string | null
-          udf_number?: number | null
-          udf_text?: string | null
-          udf_type_id: string
-        }
-        Update: {
-          created_at?: string | null
-          fk_id?: string | null
-          id?: string
-          project_id?: string | null
-          udf_date?: string | null
-          udf_number?: number | null
-          udf_text?: string | null
-          udf_type_id?: string
-        }
-        Relationships: []
-      }
       user_profiles: {
         Row: {
           avatar_url: string | null
@@ -12123,42 +11537,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      wbs_elements: {
-        Row: {
-          created_at: string | null
-          id: string
-          parent_wbs_id: string | null
-          proj_node_flag: string | null
-          project_id: string | null
-          seq_num: number | null
-          wbs_id: string
-          wbs_name: string | null
-          wbs_short_name: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          parent_wbs_id?: string | null
-          proj_node_flag?: string | null
-          project_id?: string | null
-          seq_num?: number | null
-          wbs_id: string
-          wbs_name?: string | null
-          wbs_short_name?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          parent_wbs_id?: string | null
-          proj_node_flag?: string | null
-          project_id?: string | null
-          seq_num?: number | null
-          wbs_id?: string
-          wbs_name?: string | null
-          wbs_short_name?: string | null
-        }
-        Relationships: []
       }
       webinar_lifecycle_events: {
         Row: {
