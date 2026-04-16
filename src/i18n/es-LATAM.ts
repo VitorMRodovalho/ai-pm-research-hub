@@ -989,7 +989,6 @@ const esLATAM: Record<string, string> = {
   'role.communicator': 'Multiplicador',
   'role.guest': 'Visitante',
   'role.comms_team': 'Comunicación',
-  'role.comms_leader': 'Líder de Comunicación',
   'role.comms_member': 'Miembro de Comunicación',
   'role.chapter_liaison': 'Punto Focal',
   'role.deputy_manager': 'Deputy PM',

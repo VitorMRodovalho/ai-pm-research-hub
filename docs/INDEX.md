@@ -15,8 +15,8 @@
 | Documento | Descrição |
 |-----------|-----------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Arquitetura do sistema, camadas, padrões de segurança, modelo de permissões |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Como contribuir: branch, commit, PR, checklist obrigatório |
-| [BOARD_ENGINE_SPEC.md](BOARD_ENGINE_SPEC.md) | Especificação completa do BoardEngine (Kanban, DnD, schema) |
+| [../CLAUDE.md](../CLAUDE.md) | Regras do projeto: pre-commit validation, i18n, database, MCP, deploy |
+| [adr/README.md](adr/README.md) | Architecture Decision Records (ADR-0001..0010) |
 
 ## Para operadores (GP / Deputy)
 

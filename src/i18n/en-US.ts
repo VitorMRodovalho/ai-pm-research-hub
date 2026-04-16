@@ -989,7 +989,6 @@ const enUS: Record<string, string> = {
   'role.communicator': 'Communicator',
   'role.guest': 'Guest',
   'role.comms_team': 'Communications',
-  'role.comms_leader': 'Communications Lead',
   'role.comms_member': 'Communications Member',
   'role.chapter_liaison': 'Chapter Liaison',
   'role.deputy_manager': 'Deputy PM',
