@@ -711,10 +711,13 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   const syncSecret = Deno.env.get('SYNC_COMMS_METRICS_SECRET')
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
   const bearer = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '')
   const headerSecret = req.headers.get('x-sync-secret')
 
-  if (!syncSecret || (bearer !== syncSecret && headerSecret !== syncSecret)) {
+  // Accept either SYNC_COMMS_METRICS_SECRET or service_role_key (for pg_cron)
+  const validSecrets = [syncSecret, serviceKey].filter(Boolean)
+  if (!validSecrets.length || (!validSecrets.includes(bearer ?? '') && !validSecrets.includes(headerSecret ?? ''))) {
     return unauthorizedResponse()
   }
 
