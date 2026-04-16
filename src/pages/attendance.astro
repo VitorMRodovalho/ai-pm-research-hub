@@ -768,9 +768,22 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       return;
     }
 
-    // Group by type → past/future (smart classification)
-    const groups: Record<string, { past: any[]; future: any[] }> = {};
+    // Separate initiative events from type-based events
+    const initiativeEvents: Record<string, { name: string; past: any[]; future: any[] }> = {};
+    const typeEvents: any[] = [];
     filtered.forEach((ev: any) => {
+      if (ev.initiative_id && ev.initiative_name) {
+        if (!initiativeEvents[ev.initiative_id]) initiativeEvents[ev.initiative_id] = { name: ev.initiative_name, past: [], future: [] };
+        if (isEventPast(ev)) initiativeEvents[ev.initiative_id].past.push(ev);
+        else initiativeEvents[ev.initiative_id].future.push(ev);
+      } else {
+        typeEvents.push(ev);
+      }
+    });
+
+    // Group remaining (non-initiative) events by type
+    const groups: Record<string, { past: any[]; future: any[] }> = {};
+    typeEvents.forEach((ev: any) => {
       const t = ev.type || 'other';
       if (!groups[t]) groups[t] = { past: [], future: [] };
       if (isEventPast(ev)) groups[t].past.push(ev);
@@ -780,18 +793,28 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       g.past.sort((a: any, b: any) => b.date.localeCompare(a.date));
       g.future.sort((a: any, b: any) => a.date.localeCompare(b.date));
     });
+    Object.values(initiativeEvents).forEach(g => {
+      g.past.sort((a: any, b: any) => b.date.localeCompare(a.date));
+      g.future.sort((a: any, b: any) => a.date.localeCompare(b.date));
+    });
 
     const gp = isGPLevel();
     // For section visibility: show GP-only sections if GP OR if user has events in that type
-    const participatedTypes = new Set(filtered.filter((ev: any) => ev.i_attended != null).map((ev: any) => ev.type));
-    const sections = SECTION_ORDER
+    const participatedTypes = new Set(typeEvents.filter((ev: any) => ev.i_attended != null).map((ev: any) => ev.type));
+    const sections: Array<{ type: string; icon: string; label: string; gpOnly: boolean; past: any[]; future: any[]; pastCount: number; futureCount: number }> = [];
+
+    // Add initiative sections first
+    Object.entries(initiativeEvents).forEach(([initId, g]) => {
+      sections.push({ type: `init_${initId}`, icon: '📌', label: g.name, gpOnly: false, past: g.past, future: g.future, pastCount: g.past.length, futureCount: g.future.length });
+    });
+
+    // Then type-based sections
+    SECTION_ORDER
       .filter(s => !s.gpOnly || gp || participatedTypes.has(s.type))
       .filter(s => groups[s.type])
-      .map(s => {
+      .forEach(s => {
         const g = groups[s.type];
-        const pastCount = g.past.length;
-        const futureCount = g.future.length;
-        return { ...s, past: g.past, future: g.future, pastCount, futureCount };
+        sections.push({ ...s, past: g.past, future: g.future, pastCount: g.past.length, futureCount: g.future.length });
       });
 
     // Also collect any types not in SECTION_ORDER
