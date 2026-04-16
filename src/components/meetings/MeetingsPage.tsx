@@ -10,6 +10,8 @@ interface Meeting {
   type: string;
   tribe_id: number | null;
   tribe_name: string | null;
+  initiative_id: string | null;
+  initiative_name: string | null;
   youtube_url: string | null;
   recording_url: string | null;
   has_minutes: boolean;
@@ -181,7 +183,7 @@ export default function MeetingsPage({ lang = 'pt-BR' }: Props) {
   // Group meetings by tribe
   const grouped: Record<string, Meeting[]> = {};
   for (const m of meetings) {
-    const key = m.tribe_name || l.general;
+    const key = m.tribe_name || m.initiative_name || l.general;
     if (!grouped[key]) grouped[key] = [];
     grouped[key].push(m);
   }
