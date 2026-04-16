@@ -10,6 +10,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 ---
 
 <AdminLayout title={t('admin.comms.meta', lang)} breadcrumbs={[{label:'Conteudo'},{label:'Midia Social'}]}>
+  <style>
+    @media print {
+      nav, aside, header, footer, .no-print, #admin-sections, #btn-export-csv, #btn-export-pdf { display: none !important; }
+      body { background: white !important; color: black !important; }
+      #comms-panel { padding: 0 !important; }
+      section, div { break-inside: avoid; }
+      @page { margin: 1.5cm; size: A4 portrait; }
+    }
+  </style>
   <div class="max-w-[1200px] mx-auto px-4 pb-8 space-y-6">
     <div id="comms-loading" class="text-center py-10 text-[var(--text-muted)]">{t('admin.comms.loading', lang)}</div>
 
@@ -335,65 +344,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
   document.getElementById('btn-export-csv')?.addEventListener('click', exportCSV);
 
-  // ── PDF Export ──
+  // ── PDF Export (via browser print → Save as PDF) ──
 
-  async function exportPDF() {
-    const btn = document.getElementById('btn-export-pdf') as HTMLButtonElement;
-    if (btn) { btn.disabled = true; btn.textContent = 'Gerando...'; }
-    try {
-      const { default: html2canvas } = await import('html2canvas');
-      const { jsPDF } = await import('jspdf');
-      const panel = document.getElementById('comms-panel');
-      if (!panel) return;
-
-      // Temporarily hide admin-only sections and export buttons for clean PDF
-      const adminSections = document.getElementById('admin-sections');
-      const exportBtns = document.getElementById('btn-export-csv')?.parentElement;
-      adminSections?.classList.add('hidden');
-      exportBtns?.classList.add('hidden');
-
-      const canvas = await html2canvas(panel, { scale: 1.5, useCORS: true, logging: false });
-
-      adminSections?.classList.remove('hidden');
-      exportBtns?.classList.remove('hidden');
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
-      const imgW = pageW - 20;
-      const imgH = (canvas.height * imgW) / canvas.width;
-
-      let y = 10;
-      if (imgH <= pageH - 20) {
-        pdf.addImage(imgData, 'PNG', 10, y, imgW, imgH);
-      } else {
-        // Multi-page
-        const pageImgH = pageH - 20;
-        let srcY = 0;
-        while (srcY < canvas.height) {
-          const sliceH = Math.min(pageImgH / imgW * canvas.width, canvas.height - srcY);
-          const sliceCanvas = document.createElement('canvas');
-          sliceCanvas.width = canvas.width;
-          sliceCanvas.height = sliceH;
-          sliceCanvas.getContext('2d')!.drawImage(canvas, 0, srcY, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
-          pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', 10, 10, imgW, sliceH * imgW / canvas.width);
-          srcY += sliceH;
-          if (srcY < canvas.height) pdf.addPage();
-        }
-      }
-
-      pdf.save(`social-media-report-${new Date().toISOString().slice(0, 10)}.pdf`);
-      (window as any).toast?.('PDF exportado!', 'success');
-    } catch (e) {
-      console.warn('PDF export:', e);
-      (window as any).toast?.('Erro ao gerar PDF. Instale as dependencias: npm i html2canvas jspdf', 'error');
-    } finally {
-      if (btn) { btn.disabled = false; btn.textContent = 'Exportar PDF'; }
-    }
-  }
-
-  document.getElementById('btn-export-pdf')?.addEventListener('click', exportPDF);
+  document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
+    window.print();
+  });
 
   // ── Best Time to Post (Instagram online_followers) ──
 
