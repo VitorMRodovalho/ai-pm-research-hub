@@ -15406,8 +15406,10 @@ export type Database = {
           p_duration_minutes?: number
           p_event_id: string
           p_meeting_link?: string
+          p_nature?: string
           p_new_time_start?: string
           p_notes?: string
+          p_type?: string
           p_visibility?: string
         }
         Returns: Json
