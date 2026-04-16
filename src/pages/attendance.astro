@@ -710,7 +710,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     ((window as any).__attendanceEventsById = (window as any).__attendanceEventsById || {})[ev.id] = ev;
 
     const minutesRendered = ev.minutes_text ? marked.parse(ev.minutes_text) : '';
-    const canEditThisMinutes = CAN_MANAGE || (MEMBER?.operational_role === 'researcher' && MEMBER?.tribe_id === ev.tribe_id);
+    const canEditThisMinutes = CAN_MANAGE || (MEMBER?.operational_role === 'researcher' && MEMBER?.tribe_id === ev.tribe_id) || !!ev.initiative_id;
     const editMinutesBtn = canEditThisMinutes
       ? `<button class="text-[10px] font-semibold text-navy hover:underline cursor-pointer border-0 bg-transparent px-0 mt-1" data-action="open-minutes-editor" data-event-id="${ev.id}" data-event-title="${escapeAttr(ev.title)}" data-content="${escapeAttr(ev.minutes_text || '')}">${ev.minutes_text ? '✏️ Editar ata' : '📝 Adicionar ata'}</button>`
       : '';
@@ -723,7 +723,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       <span class="text-xs">${attIcon}</span>
       <div class="flex-1 min-w-0">
         <div class="text-[13px] font-medium text-[var(--text-primary)] truncate${hasMinutes ? ' cursor-pointer hover:text-navy' : ''}" ${hasMinutes ? `data-action="toggle-minutes" data-event-id="${ev.id}"` : ''}>${ev.title}</div>
-        <div class="text-[11px] text-[var(--text-muted)]">${fmtDate(ev.date)} · ${ev.duration_minutes || 60}min${isPast ? ` · ${ev.attendee_count || 0} presentes` : ''}${linkHtml}${recHtml} ${badges}</div>
+        <div class="text-[11px] text-[var(--text-muted)]">${fmtDate(ev.date)} · ${ev.duration_minutes || 60}min${isPast ? ` · ${ev.attendee_count || 0} presentes` : ''}${ev.initiative_name ? ` · <span class="text-[10px] font-semibold text-purple">📌 ${escapeAttr(ev.initiative_name)}</span>` : ''}${linkHtml}${recHtml} ${badges}</div>
       </div>
       <div class="flex gap-1 items-center flex-shrink-0">
         ${ev.i_attended !== true ? (isInCheckinWindow(ev)
