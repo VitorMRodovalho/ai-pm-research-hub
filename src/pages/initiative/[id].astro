@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Toast from '../../components/ui/Toast.astro';
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton.astro';
 import InitiativeBoardWrapper from '../../components/initiatives/InitiativeBoardWrapper';
+import TribeGamificationTab from '../../components/tribes/TribeGamificationTab';
 import EventMinutesIsland from '../../components/events/EventMinutesIsland';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import { buildPageI18n } from '../../i18n/pageI18n';
@@ -94,7 +95,9 @@ const INIT_I18N = {
       <div id="panel-members" class="hidden"><LoadingSkeleton variant="card" count={4} /></div>
       <div id="panel-deliverables" class="hidden"><LoadingSkeleton variant="card" count={2} /></div>
       <div id="panel-attendance" class="hidden"></div>
-      <div id="panel-gamification" class="hidden"></div>
+      <div id="panel-gamification" class="hidden">
+        <TribeGamificationTab client:load initiativeId={id || ''} />
+      </div>
 
       <EventMinutesIsland client:load />
     </div>
@@ -481,58 +484,7 @@ const INIT_I18N = {
 
   // Board tab is mounted as an Astro island (InitiativeBoardWrapper) — no JS needed here
 
-  // ── Gamification tab ──
-  let gamificationLoaded = false;
-  async function loadGamificationTab() {
-    if (gamificationLoaded) return;
-    const el = document.getElementById('panel-gamification');
-    const sb = getSb();
-    if (!el || !sb) return;
-
-    const { data, error } = await sb.rpc('get_initiative_gamification', { p_initiative_id: INITIATIVE_ID });
-    gamificationLoaded = true;
-
-    if (error || !data || (!data.leaderboard?.length && !data.total_xp)) {
-      el.innerHTML = `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-6 text-center text-sm text-[var(--text-muted)]">
-        Gamificacao ainda sem dados. XP e badges serao computados conforme membros participam de eventos e entregas.
-      </div>`;
-      return;
-    }
-
-    const board = Array.isArray(data.leaderboard) ? data.leaderboard : [];
-    const summaryHtml = `<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
-        <div class="text-2xl font-extrabold text-navy">${data.total_xp || 0}</div>
-        <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">XP Total</div>
-      </div>
-      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
-        <div class="text-2xl font-extrabold text-purple">${data.avg_xp || 0}</div>
-        <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">XP Medio</div>
-      </div>
-      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
-        <div class="text-2xl font-extrabold text-[var(--color-teal)]">${data.cert_count || 0}</div>
-        <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Certificacoes</div>
-      </div>
-      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
-        <div class="text-2xl font-extrabold text-amber-600">${board.length}</div>
-        <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">No Ranking</div>
-      </div>
-    </div>`;
-
-    const rankHtml = board.length ? `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4">
-      <h4 class="text-xs font-bold text-[var(--text-secondary)] uppercase mb-2">Ranking XP</h4>
-      <div class="space-y-1.5">${board.map((m: any, i: number) => {
-        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
-        return `<div class="flex items-center gap-2">
-          <span class="text-sm w-6 text-center">${medal}</span>
-          <span class="text-[11px] font-medium text-[var(--text-primary)] flex-1 truncate">${escapeHtml(m.name?.split(' ').slice(0, 2).join(' ') || '?')}</span>
-          <span class="text-xs font-bold text-navy">${m.xp || 0} XP</span>
-        </div>`;
-      }).join('')}</div>
-    </div>` : '';
-
-    el.innerHTML = summaryHtml + rankHtml;
-  }
+  // Gamification tab: mounted as React island (TribeGamificationTab with initiativeId)
 
   // ── Deliverables tab ──
   let deliverablesLoaded = false;
@@ -604,7 +556,7 @@ const INIT_I18N = {
 
     attendanceLoaded = true;
 
-    if (error || !data || (!data.events?.length && !data.grid?.length)) {
+    if (error || !data || (!data.events?.length && !data.members?.length)) {
       el.innerHTML = `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-6 text-center text-sm text-[var(--text-muted)]">
         Nenhum registro de presenca ainda. Crie eventos e registre presenca para ver a grade.
       </div>`;
@@ -612,35 +564,72 @@ const INIT_I18N = {
     }
 
     const events = Array.isArray(data.events) ? data.events : [];
-    const grid = Array.isArray(data.grid) ? data.grid : [];
+    const members = Array.isArray(data.members) ? data.members : [];
+    const summary = data.summary || {};
 
-    // Simple attendance grid
+    // Summary stats
+    const overallRate = Math.round((summary.overall_rate || 0) * 100);
+    const rateColor = overallRate >= 75 ? '#10B981' : overallRate >= 50 ? '#D97706' : '#BE2027';
+    const perfectCount = members.filter((m: any) => m.rate != null && Math.round(m.rate * 100) === 100 && m.member_status === 'active').length;
+    const belowCount = members.filter((m: any) => m.rate != null && Math.round(m.rate * 100) < 50 && m.member_status === 'active').length;
+    const pastEvents = events.filter((e: any) => !e.is_future).length;
+
+    const summaryHtml = `<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+        <div class="text-2xl font-extrabold" style="color:${rateColor}">${overallRate}%</div>
+        <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Overall Rate</div>
+      </div>
+      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+        <div class="text-2xl font-extrabold text-emerald-600">${perfectCount}</div>
+        <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Perfect Attendance</div>
+      </div>
+      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+        <div class="text-2xl font-extrabold text-red-600">${belowCount}</div>
+        <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Below 50%</div>
+      </div>
+      <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
+        <div class="text-2xl font-extrabold text-navy">${pastEvents}</div>
+        <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Eventos Realizados</div>
+      </div>
+    </div>`;
+
+    // Legend
+    const legendHtml = `<div class="flex flex-wrap items-center gap-3 mb-3 text-xs text-[var(--text-muted)]">
+      <span>✅ Presente</span>
+      <span>❌ Ausente</span>
+      <span>🟡 Justificado</span>
+      <span>⬜ Agendado</span>
+    </div>`;
+
+    // Grid
     const headerCells = events.map((e: any) => {
       const d = new Date(e.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-      return `<th class="text-[10px] font-semibold text-[var(--text-muted)] px-2 py-1 text-center" title="${escapeHtml(e.title)}">${d}</th>`;
+      return `<th class="text-[10px] font-semibold text-[var(--text-muted)] px-2 py-1 text-center whitespace-nowrap" title="${escapeHtml(e.title)}">${d}</th>`;
     }).join('');
 
-    const rows = grid.map((m: any) => {
-      const name = m.member_name || '?';
-      const cells = (m.attendance || []).map((a: any) => {
-        const icon = a.present ? '✅' : a.excused ? '🟡' : '❌';
+    const rows = members.map((m: any) => {
+      const name = m.name || '?';
+      const att = m.attendance || {};
+      const cells = events.map((e: any) => {
+        const status = att[e.id];
+        const icon = status === 'present' ? '✅' : status === 'excused' ? '🟡' : status === 'scheduled' ? '⬜' : status === 'na' ? '—' : '❌';
         return `<td class="text-center px-2 py-1 text-xs">${icon}</td>`;
       }).join('');
-      const rate = m.attendance_rate != null ? `${m.attendance_rate}%` : '';
-      const rColor = (m.attendance_rate || 0) >= 75 ? 'text-emerald-600' : (m.attendance_rate || 0) >= 50 ? 'text-amber-600' : 'text-red-600';
-      return `<tr class="border-b border-[var(--border-subtle)]">
-        <td class="text-xs font-semibold text-[var(--text-primary)] px-3 py-2 truncate max-w-[120px]">${escapeHtml(name.split(' ').slice(0, 2).join(' '))}</td>
+      const pct = m.rate != null ? Math.round(m.rate * 100) : 0;
+      const rColor = pct >= 75 ? 'text-emerald-600' : pct >= 50 ? 'text-amber-600' : 'text-red-600';
+      return `<tr class="border-b border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">
+        <td class="text-xs font-semibold text-[var(--text-primary)] px-3 py-2 truncate max-w-[140px]">${escapeHtml(name.split(' ').slice(0, 2).join(' '))}</td>
         ${cells}
-        <td class="text-xs font-bold ${rColor} px-2 py-1 text-center">${rate}</td>
+        <td class="text-xs font-bold ${rColor} px-2 py-1 text-center">${pct}%</td>
       </tr>`;
     }).join('');
 
-    el.innerHTML = `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-x-auto">
+    el.innerHTML = summaryHtml + legendHtml + `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-x-auto">
       <table class="w-full">
         <thead><tr class="border-b border-[var(--border-default)]">
           <th class="text-[10px] font-bold text-[var(--text-secondary)] px-3 py-2 text-left">Membro</th>
           ${headerCells}
-          <th class="text-[10px] font-bold text-[var(--text-secondary)] px-2 py-1 text-center">%</th>
+          <th class="text-[10px] font-bold text-[var(--text-secondary)] px-2 py-1 text-center">Taxa ↓</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
@@ -700,7 +689,6 @@ const INIT_I18N = {
       if (tab === 'members') await loadMembersTab();
       if (tab === 'deliverables') await loadDeliverablesTab();
       if (tab === 'attendance') await loadAttendanceTab();
-      if (tab === 'gamification') await loadGamificationTab();
     });
 
     // Action handlers (delegated)

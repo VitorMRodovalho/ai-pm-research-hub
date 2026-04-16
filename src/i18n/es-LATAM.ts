@@ -595,6 +595,7 @@ const esLATAM: Record<string, string> = {
   'trail.ranking.title': 'Ranking del Equipo',
   'trail.ranking.sub': 'Progreso de los participantes activos en la ruta',
   'trail.ranking.avg': 'Promedio general',
+  'trail.ranking.allTribes': 'Todas las Tribus',
   'trail.completed': 'completados',
   'trail.inProgress': 'en progreso',
   'trail.coreUnavailable': 'Cursos core no disponibles por el momento.',

@@ -595,6 +595,7 @@ const ptBR: Record<string, string> = {
   'trail.ranking.title': 'Ranking do Time',
   'trail.ranking.sub': 'Progresso dos participantes ativos na trilha',
   'trail.ranking.avg': 'Média geral',
+  'trail.ranking.allTribes': 'Todas as Tribos',
   'trail.completed': 'concluídos',
   'trail.inProgress': 'em andamento',
   'trail.coreUnavailable': 'Cursos core indisponíveis no momento.',
