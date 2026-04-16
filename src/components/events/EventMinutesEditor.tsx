@@ -1,5 +1,19 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
+import { marked } from 'marked';
 import RichTextEditor from '../shared/RichTextEditor';
+
+// Convert legacy markdown content to HTML so tiptap renders it with formatting.
+// Heuristic: if content has no block-level HTML tags, treat as markdown.
+function normalizeContent(raw: string): string {
+  if (!raw) return '';
+  const hasBlockHtml = /<(p|h[1-6]|ul|ol|li|blockquote|pre|hr|img|strong|em|a)\b/i.test(raw);
+  if (hasBlockHtml) return raw;
+  try {
+    return marked.parse(raw, { async: false }) as string;
+  } catch {
+    return raw;
+  }
+}
 
 interface EventMinutesEditorProps {
   eventId: string;
@@ -20,7 +34,8 @@ export function EventMinutesEditor({
   onSave,
   onClose,
 }: EventMinutesEditorProps) {
-  const [content, setContent] = useState(initialContent);
+  const normalizedInitial = useMemo(() => normalizeContent(initialContent), [initialContent]);
+  const [content, setContent] = useState(normalizedInitial);
   const [url, setUrl] = useState(initialUrl);
   const [saving, setSaving] = useState(false);
 
@@ -98,8 +113,8 @@ export function EventMinutesEditor({
             content={content}
             onChange={setContent}
             placeholder={placeholder}
-            minHeight="200px"
-            toolbar="basic"
+            minHeight="260px"
+            toolbar="full"
           />
 
           {/* URL field */}
