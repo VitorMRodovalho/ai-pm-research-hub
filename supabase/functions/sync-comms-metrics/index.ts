@@ -342,36 +342,61 @@ async function fetchInstagramMetrics(cfg: ChannelConfig): Promise<NormalizedMetr
     )
 
     let followers: number | null = null
+    let mediaCount: number | null = null
     if (profileResp.ok) {
       const profileData = await profileResp.json()
       followers = parseInteger(profileData?.followers_count)
+      mediaCount = parseInteger(profileData?.media_count)
     }
 
-    // Fetch insights (reach, impressions)
-    const insightsResp = await fetchWithRetry(
-      `https://graph.facebook.com/v19.0/${igUserId}/insights?metric=reach,impressions&period=day&access_token=${token}`
-    )
-
+    // Fetch reach (period=day, returns time series)
     let reach: number | null = null
-    if (insightsResp.ok) {
-      const insightsData = await insightsResp.json()
-      for (const metric of insightsData?.data || []) {
-        if (metric.name === 'reach') {
-          const latest = metric.values?.[metric.values.length - 1]
+    const reachResp = await fetchWithRetry(
+      `https://graph.facebook.com/v19.0/${igUserId}/insights?metric=reach&period=day&access_token=${token}`
+    )
+    if (reachResp.ok) {
+      const reachData = await reachResp.json()
+      for (const m of reachData?.data || []) {
+        if (m.name === 'reach') {
+          const latest = m.values?.[m.values.length - 1]
           reach = parseInteger(latest?.value)
         }
       }
     }
+
+    // Fetch engagement metrics (metric_type=total_value)
+    let accountsEngaged: number | null = null
+    let totalInteractions: number | null = null
+    const engagementResp = await fetchWithRetry(
+      `https://graph.facebook.com/v19.0/${igUserId}/insights?metric=accounts_engaged,total_interactions&metric_type=total_value&period=day&access_token=${token}`
+    )
+    if (engagementResp.ok) {
+      const engData = await engagementResp.json()
+      for (const m of engData?.data || []) {
+        if (m.name === 'accounts_engaged') accountsEngaged = parseInteger(m.total_value?.value)
+        if (m.name === 'total_interactions') totalInteractions = parseInteger(m.total_value?.value)
+      }
+    }
+
+    // Calculate engagement rate: accounts_engaged / followers
+    const engagementRate = (accountsEngaged && followers && followers > 0)
+      ? parseEngagement(accountsEngaged / followers)
+      : null
 
     metrics.push({
       metric_date: today,
       channel: 'instagram',
       audience: followers,
       reach,
-      engagement_rate: null,
+      engagement_rate: engagementRate,
       leads: null,
       source: 'api',
-      payload: { api: 'instagram_graph' },
+      payload: {
+        api: 'instagram_graph',
+        media_count: mediaCount,
+        accounts_engaged: accountsEngaged,
+        total_interactions: totalInteractions,
+      },
     })
   } catch (e) {
     console.error('Instagram fetch error:', e)
