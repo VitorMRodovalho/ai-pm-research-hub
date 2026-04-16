@@ -108,11 +108,29 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         <div id="top-content-body" class="p-4"></div>
       </section>
 
-      <!-- S5: Metrics Table -->
-      <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+      <!-- S5: Best Time to Post (Instagram) -->
+      <section id="best-time-section" class="hidden bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div class="px-4 py-3 border-b border-[var(--border-default)]">
-          <h2 class="text-sm font-bold text-navy">Historico de Metricas</h2>
-          <p class="text-[.68rem] text-[var(--text-muted)]">Dados diarios por canal (ultimos 14 dias)</p>
+          <h2 class="text-sm font-bold text-navy">Melhor Horario para Postar</h2>
+          <p class="text-[.68rem] text-[var(--text-muted)]">Quando seus seguidores do Instagram estao online (por hora do dia)</p>
+        </div>
+        <div id="best-time-body" class="p-4">
+          <div id="best-time-chart" class="flex items-end gap-[3px] h-[140px]"></div>
+          <div id="best-time-legend" class="mt-2 text-[.65rem] text-[var(--text-muted)] text-center"></div>
+        </div>
+      </section>
+
+      <!-- S6: Metrics Table -->
+      <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-[var(--border-default)] flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h2 class="text-sm font-bold text-navy">Historico de Metricas</h2>
+            <p class="text-[.68rem] text-[var(--text-muted)]">Dados diarios por canal (ultimos 14 dias)</p>
+          </div>
+          <div class="flex gap-2">
+            <button id="btn-export-csv" class="px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-[var(--text-primary)] text-[.7rem] font-semibold hover:bg-[var(--surface-hover)]">Exportar CSV</button>
+            <button id="btn-export-pdf" class="px-3 py-1.5 rounded-lg bg-navy text-white text-[.7rem] font-semibold hover:opacity-90">Exportar PDF</button>
+          </div>
         </div>
         <div id="metrics-table-container" class="p-4 overflow-x-auto">
           <div id="metrics-table-loading" class="text-center py-6 text-[var(--text-muted)] text-sm">Carregando...</div>
@@ -217,45 +235,201 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     return desigs.includes('comms_leader');
   }
 
-  // ── S1: Executive KPIs ──
+  // ── S1: Executive KPIs with period comparison ──
+
+  function renderDelta(el: HTMLElement, current: number, previous: number, suffix = '') {
+    if (!previous || !current) { el.textContent = ''; return; }
+    const pct = ((current - previous) / previous * 100);
+    const arrow = pct >= 0 ? '\u2191' : '\u2193';
+    const color = pct >= 0 ? 'text-emerald-600' : 'text-red-500';
+    el.innerHTML = `<span class="${color} font-semibold">${arrow} ${Math.abs(pct).toFixed(1)}%</span> vs periodo anterior${suffix}`;
+  }
 
   async function loadKPIs() {
     try {
+      // Current period (7 days)
       const { data, error } = await sb.rpc('comms_metrics_latest_by_channel', { p_days: 7 });
       if (error || !data?.length) return;
 
-      // Latest entry per channel (most recent date)
+      // Previous period (8-14 days ago)
+      const { data: prevData } = await sb.rpc('comms_metrics_latest_by_channel', { p_days: 14 });
+
       const latest: Record<string, any> = {};
       for (const r of data) {
-        if (!latest[r.channel] || r.metric_date > latest[r.channel].metric_date) {
-          latest[r.channel] = r;
+        if (!latest[r.channel] || r.metric_date > latest[r.channel].metric_date) latest[r.channel] = r;
+      }
+
+      // Previous period: entries older than 7 days
+      const prevLatest: Record<string, any> = {};
+      if (prevData) {
+        const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7);
+        const cutoffStr = cutoff.toISOString().slice(0, 10);
+        for (const r of prevData) {
+          if (r.metric_date >= cutoffStr) continue;
+          if (!prevLatest[r.channel] || r.metric_date > prevLatest[r.channel].metric_date) prevLatest[r.channel] = r;
         }
       }
 
       const totalAudience = Object.values(latest).reduce((s: number, r: any) => s + (r.audience || 0), 0);
+      const prevAudience = Object.values(prevLatest).reduce((s: number, r: any) => s + (r.audience || 0), 0);
       const totalReach = data.reduce((s: number, r: any) => s + (r.reach || 0), 0);
+      const prevReach = prevData ? prevData.filter((r: any) => r.metric_date < new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)).reduce((s: number, r: any) => s + (r.reach || 0), 0) : 0;
       const engagements = Object.values(latest).filter((r: any) => r.engagement != null);
       const avgEngagement = engagements.length > 0
         ? engagements.reduce((s: number, r: any) => s + Number(r.engagement || 0), 0) / engagements.length
         : null;
+      const prevEngagements = Object.values(prevLatest).filter((r: any) => r.engagement != null);
+      const prevAvgEngagement = prevEngagements.length > 0
+        ? prevEngagements.reduce((s: number, r: any) => s + Number(r.engagement || 0), 0) / prevEngagements.length
+        : null;
 
       document.getElementById('kpi-audience')!.textContent = fmt(totalAudience);
-      document.getElementById('kpi-audience-sub')!.textContent = Object.entries(latest).map(([ch, r]: [string, any]) => `${ch}: ${fmt(r.audience)}`).join(' · ');
+      const audSub = document.getElementById('kpi-audience-sub')!;
+      if (prevAudience > 0) renderDelta(audSub, totalAudience, prevAudience);
+      else audSub.textContent = Object.entries(latest).map(([ch, r]: [string, any]) => `${ch}: ${fmt(r.audience)}`).join(' · ');
 
       document.getElementById('kpi-reach')!.textContent = fmt(totalReach);
-      document.getElementById('kpi-reach-sub')!.textContent = `Soma dos ultimos 7 dias`;
+      const reachSub = document.getElementById('kpi-reach-sub')!;
+      if (prevReach > 0) renderDelta(reachSub, totalReach, prevReach, ' (7d)');
+      else reachSub.textContent = 'Soma dos ultimos 7 dias';
 
       if (avgEngagement != null) {
         document.getElementById('kpi-engagement')!.textContent = (avgEngagement * 100).toFixed(1) + '%';
-        document.getElementById('kpi-engagement-sub')!.textContent = 'Media ponderada por canal';
+        const engSub = document.getElementById('kpi-engagement-sub')!;
+        if (prevAvgEngagement != null && prevAvgEngagement > 0) renderDelta(engSub, avgEngagement, prevAvgEngagement);
+        else engSub.textContent = 'Media ponderada por canal';
       }
 
-      // Posts: from payload
       const igPosts = latest['instagram']?.payload?.media_count || 0;
       const ytVideos = latest['youtube']?.payload?.videoCount || latest['youtube']?.payload?.video_count || 0;
       document.getElementById('kpi-posts')!.textContent = fmt(Number(igPosts) + Number(ytVideos));
       document.getElementById('kpi-posts-sub')!.textContent = `IG: ${igPosts} · YT: ${ytVideos}`;
     } catch (e) { console.warn('KPIs:', e); }
+  }
+
+  // ── CSV Export ──
+
+  let metricsDataForExport: any[] = [];
+
+  function exportCSV() {
+    if (!metricsDataForExport.length) { (window as any).toast?.('Sem dados para exportar.', 'error'); return; }
+    const headers = ['Data', 'Canal', 'Audiencia', 'Alcance', 'Engagement', 'Fonte'];
+    const rows = metricsDataForExport.map((r: any) => [
+      r.metric_date || '',
+      r.channel || '',
+      r.audience ?? '',
+      r.reach ?? '',
+      r.engagement != null ? (Number(r.engagement) * 100).toFixed(2) + '%' : '',
+      r.source || '',
+    ]);
+    const csv = [headers, ...rows].map(row => row.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `social-media-metrics-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    (window as any).toast?.('CSV exportado!', 'success');
+  }
+
+  document.getElementById('btn-export-csv')?.addEventListener('click', exportCSV);
+
+  // ── PDF Export ──
+
+  async function exportPDF() {
+    const btn = document.getElementById('btn-export-pdf') as HTMLButtonElement;
+    if (btn) { btn.disabled = true; btn.textContent = 'Gerando...'; }
+    try {
+      const { default: html2canvas } = await import('html2canvas');
+      const { jsPDF } = await import('jspdf');
+      const panel = document.getElementById('comms-panel');
+      if (!panel) return;
+
+      // Temporarily hide admin-only sections and export buttons for clean PDF
+      const adminSections = document.getElementById('admin-sections');
+      const exportBtns = document.getElementById('btn-export-csv')?.parentElement;
+      adminSections?.classList.add('hidden');
+      exportBtns?.classList.add('hidden');
+
+      const canvas = await html2canvas(panel, { scale: 1.5, useCORS: true, logging: false });
+
+      adminSections?.classList.remove('hidden');
+      exportBtns?.classList.remove('hidden');
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const imgW = pageW - 20;
+      const imgH = (canvas.height * imgW) / canvas.width;
+
+      let y = 10;
+      if (imgH <= pageH - 20) {
+        pdf.addImage(imgData, 'PNG', 10, y, imgW, imgH);
+      } else {
+        // Multi-page
+        const pageImgH = pageH - 20;
+        let srcY = 0;
+        while (srcY < canvas.height) {
+          const sliceH = Math.min(pageImgH / imgW * canvas.width, canvas.height - srcY);
+          const sliceCanvas = document.createElement('canvas');
+          sliceCanvas.width = canvas.width;
+          sliceCanvas.height = sliceH;
+          sliceCanvas.getContext('2d')!.drawImage(canvas, 0, srcY, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+          pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', 10, 10, imgW, sliceH * imgW / canvas.width);
+          srcY += sliceH;
+          if (srcY < canvas.height) pdf.addPage();
+        }
+      }
+
+      pdf.save(`social-media-report-${new Date().toISOString().slice(0, 10)}.pdf`);
+      (window as any).toast?.('PDF exportado!', 'success');
+    } catch (e) {
+      console.warn('PDF export:', e);
+      (window as any).toast?.('Erro ao gerar PDF. Instale as dependencias: npm i html2canvas jspdf', 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Exportar PDF'; }
+    }
+  }
+
+  document.getElementById('btn-export-pdf')?.addEventListener('click', exportPDF);
+
+  // ── Best Time to Post (Instagram online_followers) ──
+
+  async function loadBestTimeToPost() {
+    const section = document.getElementById('best-time-section');
+    const chart = document.getElementById('best-time-chart');
+    const legend = document.getElementById('best-time-legend');
+    if (!section || !chart || !legend) return;
+
+    try {
+      // Check if we have online_followers data in the latest IG payload
+      const { data } = await sb.rpc('comms_metrics_latest_by_channel', { p_days: 3 });
+      if (!data) return;
+      const igRow = data.find((r: any) => r.channel === 'instagram');
+      const onlineData = igRow?.payload?.online_followers;
+      if (!onlineData || typeof onlineData !== 'object') return;
+
+      // onlineData is {0: count, 1: count, ..., 23: count}
+      const hours = Array.from({ length: 24 }, (_, i) => i);
+      const values = hours.map(h => Number(onlineData[h] || onlineData[String(h)] || 0));
+      const maxVal = Math.max(...values, 1);
+      const bestHour = hours[values.indexOf(Math.max(...values))];
+
+      chart.innerHTML = hours.map(h => {
+        const pct = Math.max((values[h] / maxVal) * 100, 4);
+        const isBest = h === bestHour;
+        const color = isBest ? 'bg-pink-500' : values[h] >= maxVal * 0.7 ? 'bg-pink-300' : 'bg-gray-200';
+        return `<div class="flex-1 flex flex-col items-center gap-1">
+          <div class="${color} rounded-t-sm w-full transition-all" style="height:${pct}%" title="${values[h]} online as ${h}h"></div>
+          <span class="text-[.55rem] text-[var(--text-muted)] ${isBest ? 'font-bold text-pink-600' : ''}">${h}h</span>
+        </div>`;
+      }).join('');
+
+      legend.textContent = `Melhor horario: ${bestHour}h (${values[bestHour]} seguidores online)`;
+      section.classList.remove('hidden');
+    } catch (e) { console.warn('Best time:', e); }
   }
 
   // ── S2: Trend Chart ──
@@ -380,6 +554,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       const { data, error } = await sb.rpc('comms_metrics_latest_by_channel', { p_days: 14 });
       loading.classList.add('hidden');
       if (error || !data?.length) { empty.classList.remove('hidden'); return; }
+      metricsDataForExport = data;
       tbody.innerHTML = data.map((r: any) =>
         `<tr class="border-b border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">
           <td class="px-3 py-2">${r.metric_date || ''}</td>
@@ -394,7 +569,45 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     } catch (e: any) { loading?.classList.add('hidden'); empty?.classList.remove('hidden'); }
   }
 
-  // ── S6: Channel Admin (leader+ only) ──
+  // ── S4: Top Content ──
+
+  async function loadTopContent() {
+    const section = document.getElementById('top-content-section');
+    const body = document.getElementById('top-content-body');
+    if (!section || !body) return;
+    try {
+      const { data, error } = await sb.rpc('comms_top_media', { p_days: 30, p_limit: 6 });
+      if (error) return;
+      const items = Array.isArray(data) ? data : (typeof data === 'string' ? JSON.parse(data) : []);
+      if (!items.length) return;
+
+      body.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">${items.map((m: any) => {
+        const channelColor: Record<string, string> = { instagram: 'text-pink-600', youtube: 'text-red-600', linkedin: 'text-blue-700' };
+        const date = m.published_at ? new Date(m.published_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '';
+        return `<article class="rounded-xl border border-[var(--border-default)] overflow-hidden">
+          ${m.thumbnail_url ? `<img src="${escapeHtml(m.thumbnail_url)}" alt="" class="w-full h-32 object-cover" loading="lazy" />` : '<div class="w-full h-32 bg-gray-100 flex items-center justify-center text-[var(--text-muted)] text-2xl">' + (m.channel === 'youtube' ? '\u25B6' : '\uD83D\uDCF7') + '</div>'}
+          <div class="p-3">
+            <div class="flex items-center gap-1.5 mb-1">
+              <span class="${channelColor[m.channel] || ''} text-[.65rem] font-bold uppercase">${escapeHtml(m.channel)}</span>
+              <span class="text-[.6rem] text-[var(--text-muted)]">${date}</span>
+            </div>
+            <p class="text-[.72rem] text-[var(--text-primary)] line-clamp-2">${escapeHtml(m.caption || 'Sem legenda')}</p>
+            <div class="flex gap-3 mt-2 text-[.65rem] text-[var(--text-secondary)]">
+              ${m.likes ? `<span>\u2764 ${m.likes}</span>` : ''}
+              ${m.comments ? `<span>\uD83D\uDCAC ${m.comments}</span>` : ''}
+              ${m.saves ? `<span>\uD83D\uDD16 ${m.saves}</span>` : ''}
+              ${m.views ? `<span>\u25B6 ${fmt(m.views)}</span>` : ''}
+              ${m.reach ? `<span>\uD83D\uDC41 ${fmt(m.reach)}</span>` : ''}
+            </div>
+            ${m.permalink ? `<a href="${escapeHtml(m.permalink)}" target="_blank" rel="noopener" class="mt-2 inline-block text-[.65rem] text-teal font-semibold no-underline hover:underline">Ver post &rarr;</a>` : ''}
+          </div>
+        </article>`;
+      }).join('')}</div>`;
+      section.classList.remove('hidden');
+    } catch (e) { console.warn('Top content:', e); }
+  }
+
+  // ── Channel Admin (leader+ only) ──
 
   const STATUS_MAP: Record<string, { dot: string; label: string; cls: string }> = {
     active:        { dot: '\u{1F7E2}', label: 'Ativo',     cls: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
@@ -554,6 +767,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     loadTrendChart();
     loadChannelPerformance();
     loadMetricsTable();
+    loadBestTimeToPost();
+    loadTopContent();
 
     // Admin sections (leader+ only)
     if (canManageChannels(currentMember)) {

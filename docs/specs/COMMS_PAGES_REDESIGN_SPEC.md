@@ -282,9 +282,25 @@ Disparar `sync-comms-metrics` diariamente (ex: 06:00 UTC):
 
 ---
 
+### Fase 5: Additions from market analysis (16/Abr)
+1. [x] CSV Export — botao na tabela de metricas
+2. [x] PDF Export — html2canvas + jsPDF, captura KPIs + charts
+3. [x] Comparativo por periodo — delta (arrow + %) nos KPI cards vs periodo anterior
+4. [x] Melhor horario para postar — IG online_followers heatmap (bar chart por hora)
+5. [x] Calendario de publicacoes — board_items agrupados por semana no comms-ops
+6. [x] Top Content feed visual — grid com thumbnail, metricas, link direto
+
+### Fase 6: Blocked / Future
+1. **Hashtag analytics** — Requer `ig_hashtag_search` permission que exige Meta App Review para producao. Em dev mode funciona apenas para o proprio perfil. Preparar quando LI app review concluir (same process).
+2. **Video retention (YT)** — YouTube Analytics API requer OAuth do canal (diferente da Data API com API key). Necessita novo auth flow. ROI baixo para 43 videos / 64 subs. Reavaliar quando canal crescer.
+
+---
+
 ## 8. Metricas de Sucesso
 
 - Comms member consegue identificar top 3 posts sem sair da plataforma
-- Gestor vê tendencia de crescimento em <5 segundos
+- Gestor ve tendencia de crescimento em <5 segundos
 - Sync automatico roda diariamente sem intervencao manual
 - Zero exposure de tokens para comms_member (ja implementado)
+- CSV/PDF export disponivel para relatorios de capitulo
+- Comparativo por periodo mostra direcao do crescimento

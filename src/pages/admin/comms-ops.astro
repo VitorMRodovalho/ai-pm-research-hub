@@ -68,6 +68,15 @@ const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
         <div id="ops-webinars-body" class="p-4"></div>
       </section>
 
+      <!-- Publication Calendar -->
+      <section id="ops-calendar" class="hidden bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-[var(--border-default)]">
+          <h2 class="text-sm font-bold text-navy">Calendario de Publicacoes</h2>
+          <p class="text-[.68rem] text-[var(--text-muted)]">Itens do board com data planejada (proximos 30 dias)</p>
+        </div>
+        <div id="ops-calendar-body" class="p-4"></div>
+      </section>
+
       <!-- Board Kanban -->
       <div class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
         <BoardEngine client:load domainKey="communication" />
@@ -289,6 +298,78 @@ const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
     renderBroadcasts();
   });
 
+  // ── Publication Calendar ──
+
+  async function loadCalendar() {
+    const section = document.getElementById('ops-calendar');
+    const body = document.getElementById('ops-calendar-body');
+    if (!section || !body) return;
+    try {
+      // Fetch board items with due_date from communication boards
+      const { data: boards } = await sb.from('project_boards').select('id').eq('domain_key', 'communication').eq('is_active', true);
+      if (!boards?.length) return;
+      const boardIds = boards.map((b: any) => b.id);
+
+      const today = new Date().toISOString().slice(0, 10);
+      const thirtyDays = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+
+      const { data: items, error } = await sb
+        .from('board_items')
+        .select('id, title, status, due_date, tags, assigned_to_name')
+        .in('board_id', boardIds)
+        .not('due_date', 'is', null)
+        .gte('due_date', today)
+        .lte('due_date', thirtyDays)
+        .order('due_date', { ascending: true });
+
+      if (error || !items?.length) return;
+
+      // Group by week
+      const weeks: Record<string, any[]> = {};
+      for (const item of items) {
+        const d = new Date(item.due_date + 'T12:00:00');
+        const weekStart = new Date(d);
+        weekStart.setDate(d.getDate() - d.getDay());
+        const key = weekStart.toISOString().slice(0, 10);
+        if (!weeks[key]) weeks[key] = [];
+        weeks[key].push(item);
+      }
+
+      const statusColors: Record<string, string> = {
+        backlog: 'bg-gray-100 text-gray-600',
+        todo: 'bg-blue-50 text-blue-700',
+        in_progress: 'bg-amber-50 text-amber-700',
+        review: 'bg-purple-50 text-purple-700',
+        done: 'bg-emerald-50 text-emerald-700',
+      };
+
+      body.innerHTML = Object.entries(weeks).map(([weekKey, weekItems]) => {
+        const weekDate = new Date(weekKey + 'T12:00:00');
+        const weekEnd = new Date(weekDate); weekEnd.setDate(weekDate.getDate() + 6);
+        const label = `${weekDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} - ${weekEnd.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}`;
+        return `<div class="mb-4">
+          <div class="text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-2">${label}</div>
+          <div class="space-y-1.5">
+            ${weekItems.map((item: any) => {
+              const dueDate = new Date(item.due_date + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' });
+              const statusCls = statusColors[item.status] || statusColors.backlog;
+              const tags = (item.tags || []).slice(0, 2).map((t: string) => `<span class="px-1.5 py-0.5 rounded text-[.55rem] bg-gray-100 text-gray-500">${escapeHtml(t)}</span>`).join(' ');
+              return `<div class="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border-default)] hover:bg-[var(--surface-hover)]">
+                <span class="text-[.68rem] text-[var(--text-muted)] w-16 shrink-0">${dueDate}</span>
+                <span class="px-1.5 py-0.5 rounded text-[.55rem] font-bold ${statusCls}">${item.status || 'backlog'}</span>
+                <span class="text-[.75rem] font-medium text-[var(--text-primary)] truncate flex-1">${escapeHtml(item.title || '')}</span>
+                ${tags}
+                ${item.assigned_to_name ? `<span class="text-[.6rem] text-[var(--text-muted)]">${escapeHtml(item.assigned_to_name)}</span>` : ''}
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }).join('');
+
+      section.classList.remove('hidden');
+    } catch (e) { console.warn('Calendar:', e); }
+  }
+
   // ── Boot ──
 
   function showPanel() {
@@ -299,6 +380,7 @@ const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
     document.getElementById('commsops-panel')?.classList.remove('hidden');
     loadWebinars();
     loadBroadcasts();
+    loadCalendar();
   }
 
   function boot() {

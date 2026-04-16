@@ -378,6 +378,21 @@ async function fetchInstagramMetrics(cfg: ChannelConfig): Promise<NormalizedMetr
       }
     }
 
+    // Fetch online_followers (best time to post)
+    let onlineFollowers: Record<string, number> | null = null
+    try {
+      const onlineResp = await fetchWithRetry(
+        `https://graph.facebook.com/v19.0/${igUserId}/insights?metric=online_followers&period=lifetime&access_token=${token}`
+      )
+      if (onlineResp.ok) {
+        const onlineData = await onlineResp.json()
+        const metric = onlineData?.data?.find((m: any) => m.name === 'online_followers')
+        if (metric?.values?.[0]?.value) {
+          onlineFollowers = metric.values[0].value
+        }
+      }
+    } catch { /* online_followers may not be available */ }
+
     // Calculate engagement rate: accounts_engaged / followers
     const engagementRate = (accountsEngaged && followers && followers > 0)
       ? parseEngagement(accountsEngaged / followers)
@@ -396,6 +411,7 @@ async function fetchInstagramMetrics(cfg: ChannelConfig): Promise<NormalizedMetr
         media_count: mediaCount,
         accounts_engaged: accountsEngaged,
         total_interactions: totalInteractions,
+        ...(onlineFollowers ? { online_followers: onlineFollowers } : {}),
       },
     })
   } catch (e) {
