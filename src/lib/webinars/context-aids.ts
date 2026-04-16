@@ -47,7 +47,7 @@ export function buildWebinarCommsHref(route: AttendanceRouteLike, ev: WebinarEve
     params.set('title', String(ev.title));
   }
   if (ev.date) params.set('date', String(ev.date));
-  return `/admin/comms?${params.toString()}`;
+  return `/admin/comms-ops?${params.toString()}`;
 }
 
 export function buildAttendanceFromCommsRoute(route: CommsRouteLike): string {

@@ -303,7 +303,7 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
       return { label: 'Adicionar link da reuniao', href: '#', tone: 'bg-amber-50 text-amber-700 border-amber-200', priority: 3 };
     }
     if (w.status === 'confirmed' && future) {
-      return { label: 'Preparar divulgacao', href: `/admin/comms?context=webinar&title=${encodeURIComponent(w.title)}&stage=invite`, tone: 'bg-blue-50 text-blue-700 border-blue-200', priority: 5 };
+      return { label: 'Preparar divulgacao', href: `/admin/comms-ops?context=webinar&title=${encodeURIComponent(w.title)}&stage=invite`, tone: 'bg-blue-50 text-blue-700 border-blue-200', priority: 5 };
     }
     if (w.status === 'confirmed' && !future) {
       return { label: 'Marcar como realizado', href: '#', tone: 'bg-purple-50 text-purple-700 border-purple-200', priority: 2 };
@@ -312,7 +312,7 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
       return { label: 'Publicar replay', href: '#', tone: 'bg-amber-50 text-amber-700 border-amber-200', priority: 3 };
     }
     if (w.status === 'completed' && w.youtube_url) {
-      return { label: 'Follow-up Comms', href: `/admin/comms?context=webinar&title=${encodeURIComponent(w.title)}&stage=followup`, tone: 'bg-teal-50 text-teal-700 border-teal-200', priority: 6 };
+      return { label: 'Follow-up Comms', href: `/admin/comms-ops?context=webinar&title=${encodeURIComponent(w.title)}&stage=followup`, tone: 'bg-teal-50 text-teal-700 border-teal-200', priority: 6 };
     }
     return { label: 'Completo', href: '#', tone: 'bg-emerald-50 text-emerald-700 border-emerald-200', priority: 9 };
   }
@@ -378,7 +378,7 @@ const CHAPTERS = ['CE','DF','GO','MG','RS','ALL'];
           <div class="flex items-center gap-2 flex-wrap">
             ${canEdit() ? `<button type="button" data-edit="${w.id}" class="px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold border-0 cursor-pointer hover:opacity-90">Editar</button>` : ''}
             ${meetLink} ${replayLink}
-            <a href="/admin/comms?context=webinar&title=${encodeURIComponent(w.title)}&stage=${w.status === 'completed' ? 'followup' : 'invite'}" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.72rem] font-semibold no-underline hover:bg-[var(--surface-hover)]">Comms</a>
+            <a href="/admin/comms-ops?context=webinar&title=${encodeURIComponent(w.title)}&stage=${w.status === 'completed' ? 'followup' : 'invite'}" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.72rem] font-semibold no-underline hover:bg-[var(--surface-hover)]">Comms</a>
           </div>
         </div>
       </article>

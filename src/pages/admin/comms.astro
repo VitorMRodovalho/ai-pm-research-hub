@@ -1,7 +1,7 @@
 ---
 /**
- * admin/comms.astro — S-COM6 Dashboard Central de Mídia
- * Sections: native channel metrics, tribe impact ranking, and broadcast history.
+ * admin/comms.astro — Social Media Analytics Dashboard
+ * Sections: executive KPIs, trend chart, per-channel metrics, channel config (admin-only).
  */
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
@@ -9,13 +9,8 @@ import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 ---
 
-<AdminLayout title={t('admin.comms.meta', lang)} breadcrumbs={[{label:'Conteúdo'},{label:'Comms'}]}>
+<AdminLayout title={t('admin.comms.meta', lang)} breadcrumbs={[{label:'Conteudo'},{label:'Midia Social'}]}>
   <div class="max-w-[1200px] mx-auto px-4 pb-8 space-y-6">
-    <div class="mb-2">
-      <h1 class="text-2xl font-extrabold text-navy">{t('admin.comms.title', lang)}</h1>
-      <p class="text-sm text-[var(--text-secondary)]">{t('admin.comms.subtitle', lang)}</p>
-    </div>
-
     <div id="comms-loading" class="text-center py-10 text-[var(--text-muted)]">{t('admin.comms.loading', lang)}</div>
 
     <div id="comms-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
@@ -27,49 +22,139 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     </div>
 
     <div id="comms-panel" class="hidden space-y-6">
-      <section id="comms-context" class="hidden bg-blue-50 border border-blue-200 rounded-2xl p-5">
-        <div class="flex items-start justify-between gap-4 flex-wrap">
-          <div class="max-w-3xl">
-            <h2 class="text-sm font-bold text-navy">Handoff contextual</h2>
-            <p id="comms-context-copy" class="text-[.76rem] text-[var(--text-secondary)] mt-1"></p>
+      <!-- Header with nav to Comunicacao -->
+      <div class="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-2xl font-extrabold text-navy">Midia Social</h1>
+          <p class="text-sm text-[var(--text-secondary)]">Metricas de YouTube, Instagram e LinkedIn</p>
+        </div>
+        <a href="/admin/comms-ops" class="px-4 py-2 rounded-xl bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold no-underline hover:bg-[var(--surface-hover)] transition-all">
+          &larr; Comunicacao (Ops)
+        </a>
+      </div>
+
+      <!-- S1: Executive KPI Cards -->
+      <section id="kpi-section" class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4">
+          <div class="text-[.68rem] font-semibold uppercase text-[var(--text-muted)]">Audiencia Total</div>
+          <div id="kpi-audience" class="text-xl font-extrabold text-navy mt-1">--</div>
+          <div id="kpi-audience-sub" class="text-[.65rem] text-[var(--text-secondary)] mt-0.5"></div>
+        </div>
+        <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4">
+          <div class="text-[.68rem] font-semibold uppercase text-[var(--text-muted)]">Alcance (7d)</div>
+          <div id="kpi-reach" class="text-xl font-extrabold text-navy mt-1">--</div>
+          <div id="kpi-reach-sub" class="text-[.65rem] text-[var(--text-secondary)] mt-0.5"></div>
+        </div>
+        <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4">
+          <div class="text-[.68rem] font-semibold uppercase text-[var(--text-muted)]">Engagement Medio</div>
+          <div id="kpi-engagement" class="text-xl font-extrabold text-navy mt-1">--</div>
+          <div id="kpi-engagement-sub" class="text-[.65rem] text-[var(--text-secondary)] mt-0.5"></div>
+        </div>
+        <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4">
+          <div class="text-[.68rem] font-semibold uppercase text-[var(--text-muted)]">Posts Totais</div>
+          <div id="kpi-posts" class="text-xl font-extrabold text-navy mt-1">--</div>
+          <div id="kpi-posts-sub" class="text-[.65rem] text-[var(--text-secondary)] mt-0.5"></div>
+        </div>
+      </section>
+
+      <!-- S2: Trend Chart -->
+      <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-[var(--border-default)] flex items-center justify-between gap-3">
+          <div>
+            <h2 class="text-sm font-bold text-navy">Tendencia por Canal</h2>
+            <p class="text-[.68rem] text-[var(--text-muted)]">Audiencia e alcance ao longo do tempo</p>
           </div>
-          <div class="flex gap-2 flex-wrap">
-            <a id="comms-context-attendance" href="/attendance" class="hidden px-4 py-2 rounded-xl bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold no-underline hover:bg-[var(--surface-hover)] transition-all">
-              Abrir Attendance
-            </a>
-            <a href="/admin/webinars" class="px-4 py-2 rounded-xl bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold no-underline hover:bg-[var(--surface-hover)] transition-all">
-              Voltar para Webinars
-            </a>
+          <select id="trend-metric" class="text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1">
+            <option value="audience">Audiencia</option>
+            <option value="reach">Alcance</option>
+          </select>
+        </div>
+        <div class="p-4" style="height:260px">
+          <canvas id="trend-chart"></canvas>
+        </div>
+      </section>
+
+      <!-- S3: Per-Channel Performance -->
+      <section id="channel-perf" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div id="perf-instagram" class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4 space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="text-pink-600"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.988 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558a5.9 5.9 0 002.126-1.384 5.9 5.9 0 001.384-2.126c.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913a5.89 5.89 0 00-1.384-2.126A5.89 5.89 0 0019.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.012 15.26 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm7.846-10.405a1.44 1.44 0 11-2.88 0 1.44 1.44 0 012.88 0z"/></svg></span>
+            <span class="text-sm font-bold">Instagram</span>
           </div>
+          <div id="perf-ig-body" class="text-sm text-[var(--text-muted)]">Carregando...</div>
+        </div>
+        <div id="perf-youtube" class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4 space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="text-red-600"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></span>
+            <span class="text-sm font-bold">YouTube</span>
+          </div>
+          <div id="perf-yt-body" class="text-sm text-[var(--text-muted)]">Carregando...</div>
+        </div>
+        <div id="perf-linkedin" class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4 space-y-3">
+          <div class="flex items-center gap-2">
+            <span class="text-blue-700"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.064 2.064 0 110-4.128 2.064 2.064 0 010 4.128zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></span>
+            <span class="text-sm font-bold">LinkedIn</span>
+          </div>
+          <div id="perf-li-body" class="text-sm text-[var(--text-muted)]">Aguardando aprovacao da API</div>
         </div>
       </section>
 
-      <section id="comms-playbook" class="hidden bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl overflow-hidden">
+      <!-- S4: Top Content (populated in Phase 3) -->
+      <section id="top-content-section" class="hidden bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div class="px-4 py-3 border-b border-[var(--border-default)]">
-          <h2 class="text-sm font-bold text-navy">Playbook rapido do webinar</h2>
-          <p class="text-[.68rem] text-[var(--text-muted)]">Assunto e copy-base para acelerar a comunicação sem criar um editor paralelo aqui.</p>
+          <h2 class="text-sm font-bold text-navy">Top Content</h2>
+          <p class="text-[.68rem] text-[var(--text-muted)]">Posts com melhor performance nos ultimos 30 dias</p>
         </div>
-        <div id="comms-playbook-body" class="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
+        <div id="top-content-body" class="p-4"></div>
       </section>
 
-      <!-- Token Alerts Banner -->
-      <div id="comms-token-alerts" class="hidden space-y-2"></div>
-
-      <!-- Channel Config Section -->
-      <section id="comms-channels" class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+      <!-- S5: Metrics Table -->
+      <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
         <div class="px-4 py-3 border-b border-[var(--border-default)]">
-          <h2 class="text-sm font-bold text-navy">{t('admin.comms.channelsTitle', lang)}</h2>
-          <p class="text-[.68rem] text-[var(--text-muted)]">{t('admin.comms.channelsSubtitle', lang)}</p>
+          <h2 class="text-sm font-bold text-navy">Historico de Metricas</h2>
+          <p class="text-[.68rem] text-[var(--text-muted)]">Dados diarios por canal (ultimos 14 dias)</p>
         </div>
-        <div id="comms-channels-grid" class="p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div class="text-sm text-[var(--text-muted)]">{t('admin.comms.tableLoading', lang)}</div>
+        <div id="metrics-table-container" class="p-4 overflow-x-auto">
+          <div id="metrics-table-loading" class="text-center py-6 text-[var(--text-muted)] text-sm">Carregando...</div>
+          <div id="metrics-table-empty" class="hidden text-center py-6 text-[var(--text-secondary)] text-sm">Nenhuma metrica encontrada.</div>
+          <table id="metrics-table" class="hidden w-full text-[.72rem] border-collapse">
+            <thead>
+              <tr class="border-b border-[var(--border-default)] text-left">
+                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">Data</th>
+                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">Canal</th>
+                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)] text-right">Audiencia</th>
+                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)] text-right">Alcance</th>
+                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)] text-right">Engagement</th>
+                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">Fonte</th>
+              </tr>
+            </thead>
+            <tbody id="metrics-table-body"></tbody>
+          </table>
         </div>
       </section>
+
+      <!-- S6: Channel Admin (comms_leader+ only) -->
+      <div id="admin-sections" class="space-y-6">
+        <!-- Token Alerts -->
+        <div id="comms-token-alerts" class="hidden space-y-2"></div>
+        <div id="comms-staleness-banner" class="hidden"></div>
+
+        <!-- Channel Config -->
+        <section id="comms-channels" class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+          <div class="px-4 py-3 border-b border-[var(--border-default)]">
+            <h2 class="text-sm font-bold text-navy">Integracao de Canais</h2>
+            <p class="text-[.68rem] text-[var(--text-muted)]">Status de tokens e configuracao de API</p>
+          </div>
+          <div id="comms-channels-grid" class="p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div class="text-sm text-[var(--text-muted)]">Carregando...</div>
+          </div>
+        </section>
+      </div>
 
       <!-- Channel Config Modal -->
       <div id="channel-config-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40">
         <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] shadow-xl w-full max-w-md p-5 mx-4">
-          <h2 id="channel-modal-title" class="text-lg font-extrabold text-navy mb-4">{t('admin.comms.configChannel', lang)}</h2>
+          <h2 id="channel-modal-title" class="text-lg font-extrabold text-navy mb-4">Configurar Canal</h2>
           <input type="hidden" id="channel-modal-name" />
           <div class="space-y-3">
             <div id="channel-apikey-row">
@@ -85,211 +170,30 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
               <input id="channel-refresh" type="password" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2" />
             </div>
             <div id="channel-expires-row">
-              <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.comms.tokenExpiry', lang)}</label>
+              <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Expiracao do Token</label>
               <input id="channel-expires" type="datetime-local" class="w-full text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2" />
             </div>
             <div>
-              <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.comms.channelConfig', lang)}</label>
+              <label class="text-xs font-semibold text-[var(--text-secondary)] block mb-1">Config JSON</label>
               <textarea id="channel-config-json" rows="3" class="w-full text-xs font-mono rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-3 py-2" placeholder='{"channel_id": "..."}'></textarea>
             </div>
           </div>
           <div class="flex gap-2 justify-end mt-5">
-            <button id="btn-cancel-channel" class="px-3 py-2 rounded-lg border border-[var(--border-default)] text-[var(--text-primary)] text-xs font-semibold hover:bg-[var(--surface-hover)]">{t('common.cancel', lang)}</button>
-            <button id="btn-save-channel" class="px-3 py-2 rounded-lg bg-teal text-white text-xs font-semibold hover:opacity-90">{t('common.save', lang)}</button>
+            <button id="btn-cancel-channel" class="px-3 py-2 rounded-lg border border-[var(--border-default)] text-[var(--text-primary)] text-xs font-semibold hover:bg-[var(--surface-hover)]">Cancelar</button>
+            <button id="btn-save-channel" class="px-3 py-2 rounded-lg bg-teal text-white text-xs font-semibold hover:opacity-90">Salvar</button>
           </div>
         </div>
       </div>
-
-      <!-- Section 1: Tribe Impact Ranking -->
-      <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
-        <div class="px-4 py-3 border-b border-[var(--border-default)]">
-          <h2 class="text-sm font-bold text-navy">{t('admin.comms.rankingTitle', lang)}</h2>
-          <p class="text-[.68rem] text-[var(--text-muted)]">{t('admin.comms.rankingSubtitle', lang)}</p>
-        </div>
-        <div id="ranking-container" class="p-4 overflow-x-auto">
-          <div id="ranking-loading" class="text-center py-6 text-[var(--text-muted)] text-sm">{t('admin.comms.tableLoading', lang)}</div>
-          <div id="ranking-empty" class="hidden text-center py-6 text-[var(--text-secondary)] text-sm">{t('admin.comms.rankingEmpty', lang)}</div>
-          <table id="ranking-table" class="hidden w-full text-[.72rem] border-collapse">
-            <thead>
-              <tr class="border-b border-[var(--border-default)] text-left">
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">#</th>
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">{t('admin.comms.colTribe', lang)}</th>
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)] text-right">{t('admin.comms.colEvents', lang)}</th>
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)] text-right">{t('admin.comms.colHours', lang)}</th>
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)] text-right">{t('admin.comms.colAvgAttendance', lang)}</th>
-              </tr>
-            </thead>
-            <tbody id="ranking-body"></tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- Staleness Banner (graceful degradation) -->
-      <div id="comms-staleness-banner" class="hidden"></div>
-
-      <!-- Section 2: Channel Metrics Chart -->
-      <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
-        <div class="px-4 py-3 border-b border-[var(--border-default)]">
-          <h2 class="text-sm font-bold text-navy">{t('comms.channelMetrics', lang)}</h2>
-          <p class="text-[.68rem] text-[var(--text-muted)]">{t('comms.channelMetricsDesc', lang)}</p>
-        </div>
-        <div class="p-4" style="height:220px">
-          <canvas id="comms-bar-chart"></canvas>
-        </div>
-      </section>
-
-      <!-- Section 3: Channel Metrics Table -->
-      <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
-        <div class="px-4 py-3 border-b border-[var(--border-default)]">
-          <h2 class="text-sm font-bold text-navy">{t('admin.comms.nativeTitle', lang)}</h2>
-          <p class="text-[.68rem] text-[var(--text-muted)]">{t('admin.comms.nativeSubtitle', lang)}</p>
-        </div>
-        <div id="comms-table-container" class="p-4 overflow-x-auto">
-          <div id="comms-table-loading" class="text-center py-8 text-[var(--text-muted)] text-sm">{t('admin.comms.tableLoading', lang)}</div>
-          <div id="comms-table-empty" class="hidden text-center py-8 text-[var(--text-secondary)] text-sm">{t('admin.comms.tableEmpty', lang)}</div>
-          <table id="comms-table" class="hidden w-full text-[.72rem] border-collapse">
-            <thead>
-              <tr class="border-b border-[var(--border-default)] text-left">
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">{t('admin.comms.colDate', lang)}</th>
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">{t('admin.comms.colChannel', lang)}</th>
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">{t('admin.comms.colAudience', lang)}</th>
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">{t('admin.comms.colReach', lang)}</th>
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">{t('admin.comms.colEngagement', lang)}</th>
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">{t('admin.comms.colLeads', lang)}</th>
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">Fonte</th>
-              </tr>
-            </thead>
-            <tbody id="comms-table-body"></tbody>
-          </table>
-        </div>
-        <p class="px-4 pb-4 text-[.65rem] text-[var(--text-muted)]">{t('admin.comms.configNote', lang)}</p>
-      </section>
-
-      <!-- Manual Metrics Form (fallback) -->
-      <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
-        <div class="px-4 py-3 border-b border-[var(--border-default)] flex items-center justify-between gap-3">
-          <div>
-            <h2 class="text-sm font-bold text-navy">{t('admin.comms.manualTitle', lang)}</h2>
-            <p class="text-[.68rem] text-[var(--text-muted)]">{t('admin.comms.manualSubtitle', lang)}</p>
-          </div>
-          <button id="btn-toggle-manual-form" class="px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-[var(--text-primary)] text-[10px] font-semibold hover:bg-[var(--surface-hover)]">
-            {t('admin.comms.manualToggle', lang)}
-          </button>
-        </div>
-        <div id="manual-form-container" class="hidden p-4">
-          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            <div>
-              <label class="text-[10px] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.comms.colDate', lang)}</label>
-              <input id="manual-date" type="date" class="w-full text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" />
-            </div>
-            <div>
-              <label class="text-[10px] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.comms.colChannel', lang)}</label>
-              <select id="manual-channel" class="w-full text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5">
-                <option value="youtube">YouTube</option>
-                <option value="linkedin">LinkedIn</option>
-                <option value="instagram">Instagram</option>
-              </select>
-            </div>
-            <div>
-              <label class="text-[10px] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.comms.colAudience', lang)}</label>
-              <input id="manual-audience" type="number" class="w-full text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" placeholder="0" />
-            </div>
-            <div>
-              <label class="text-[10px] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.comms.colReach', lang)}</label>
-              <input id="manual-reach" type="number" class="w-full text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" placeholder="0" />
-            </div>
-            <div>
-              <label class="text-[10px] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.comms.colEngagement', lang)} (%)</label>
-              <input id="manual-engagement" type="number" step="0.01" class="w-full text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" placeholder="0.00" />
-            </div>
-            <div>
-              <label class="text-[10px] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.comms.colLeads', lang)}</label>
-              <input id="manual-leads" type="number" class="w-full text-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] px-2 py-1.5" placeholder="0" />
-            </div>
-          </div>
-          <button id="btn-save-manual-metric" class="mt-3 px-4 py-2 rounded-lg bg-teal text-white text-xs font-semibold hover:opacity-90">
-            {t('admin.comms.manualSave', lang)}
-          </button>
-        </div>
-      </section>
-
-      <!-- Section: Webinars pendentes de comunicacao -->
-      <section id="comms-webinars" class="hidden bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
-        <div class="px-4 py-3 border-b border-[var(--border-default)] flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <h2 class="text-sm font-bold text-navy">Webinars pendentes de campanha</h2>
-            <p class="text-[.68rem] text-[var(--text-muted)]">Webinars confirmados ou realizados que precisam de acao de comunicacao</p>
-          </div>
-          <a href="/admin/webinars" class="text-[.78rem] font-semibold text-teal no-underline hover:underline">Ver todos</a>
-        </div>
-        <div id="comms-webinars-body" class="p-4"></div>
-      </section>
-
-      <!-- Section 3: Broadcast History -->
-      <section id="broadcast-section" class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
-        <div class="px-4 py-3 border-b border-[var(--border-default)] flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <h2 class="text-sm font-bold text-navy">{t('admin.comms.broadcastTitle', lang)}</h2>
-            <p class="text-[.68rem] text-[var(--text-muted)]">{t('admin.comms.broadcastSubtitle', lang)}</p>
-          </div>
-          <input id="comms-broadcast-search" type="text"
-                 class="w-full sm:w-[280px] px-3 py-2 rounded-xl border-[1.5px] border-[var(--border-default)] text-sm bg-[var(--surface-card)] focus:outline-none focus:border-navy transition-colors"
-                 placeholder="Buscar assunto, tribo ou remetente" />
-        </div>
-        <div id="broadcast-container" class="p-4 overflow-x-auto">
-          <div id="broadcast-loading" class="text-center py-6 text-[var(--text-muted)] text-sm">{t('admin.comms.tableLoading', lang)}</div>
-          <div id="broadcast-empty" class="hidden text-center py-6 text-[var(--text-secondary)] text-sm">{t('admin.comms.broadcastEmpty', lang)}</div>
-          <table id="broadcast-table" class="hidden w-full text-[.72rem] border-collapse">
-            <thead>
-              <tr class="border-b border-[var(--border-default)] text-left">
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">{t('admin.comms.colSubject', lang)}</th>
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">{t('admin.comms.colTribe', lang)}</th>
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)] text-right">{t('admin.comms.colRecipients', lang)}</th>
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">{t('admin.comms.colSentAt', lang)}</th>
-                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">{t('admin.comms.colSentBy', lang)}</th>
-              </tr>
-            </thead>
-            <tbody id="broadcast-body"></tbody>
-          </table>
-        </div>
-      </section>
-
     </div>
   </div>
-  <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>
-  <span id="ai18n-sav" class="hidden">{t('admin.saveError', lang)}</span>
 </AdminLayout>
 
-<script is:inline define:vars={{ commsI18n: JSON.stringify({
-  token: t('comms.token', lang),
-  configured: t('comms.configured', lang),
-  pending: t('comms.pending', lang),
-  expiration: t('comms.expiration', lang),
-  lastSync: t('comms.lastSync', lang),
-  editConfig: t('comms.editConfig', lang),
-  configure: t('comms.configure', lang),
-  configureChannel: t('comms.configureChannel', lang),
-}) }}>
-  window.__COMMS_I18N = JSON.parse(commsI18n);
-</script>
-
 <script>
-  const CI18N = (window as any).__COMMS_I18N || { token:'Token', configured:'Configured', pending:'Pending', expiration:'Expiration', lastSync:'Last sync', editConfig:'Edit Config', configure:'Configure', configureChannel:'Configure' };
   import { canAccessAdminRoute } from '../../lib/admin/constants';
-  import { buildAttendanceFromCommsRoute, buildCommsPlaybookTemplates } from '../../lib/webinars/context-aids';
 
   let sb: any = null;
-  let allBroadcasts: any[] = [];
-  const COMMS_ROUTE = {
-    focus: '',
-    context: '',
-    stage: '',
-    q: '',
-    title: '',
-    date: '',
-    eventId: '',
-    broadcastScrolled: false,
-  };
+  let currentMember: any = null;
+  let trendData: any[] = [];
 
   function escapeHtml(s: string): string {
     const div = document.createElement('div');
@@ -297,71 +201,13 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     return div.innerHTML;
   }
 
-  function parseCommsRoute() {
-    const params = new URLSearchParams(window.location.search);
-    COMMS_ROUTE.focus = params.get('focus') || '';
-    COMMS_ROUTE.context = params.get('context') || '';
-    COMMS_ROUTE.stage = params.get('stage') || '';
-    COMMS_ROUTE.q = (params.get('q') || '').trim();
-    COMMS_ROUTE.title = (params.get('title') || COMMS_ROUTE.q).trim();
-    COMMS_ROUTE.date = params.get('date') || '';
-    COMMS_ROUTE.eventId = params.get('eventId') || '';
-    const searchInput = document.getElementById('comms-broadcast-search') as HTMLInputElement | null;
-    if (searchInput) searchInput.value = COMMS_ROUTE.q;
+  function fmt(n: number | null | undefined): string {
+    if (n == null) return '--';
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return String(n);
   }
 
-  function formatRouteDate(dateIso: string): string {
-    if (!dateIso) return '';
-    const date = new Date(`${dateIso}T12:00:00`);
-    if (Number.isNaN(date.getTime())) return dateIso;
-    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
-  }
-
-  function renderCommsContext() {
-    const box = document.getElementById('comms-context');
-    const copy = document.getElementById('comms-context-copy');
-    const attendanceLink = document.getElementById('comms-context-attendance') as HTMLAnchorElement | null;
-    if (!box || !copy) return;
-    const hasContext = !!(COMMS_ROUTE.context || COMMS_ROUTE.q || COMMS_ROUTE.stage);
-    if (!hasContext) {
-      box.classList.add('hidden');
-      copy.innerHTML = '';
-      if (attendanceLink) attendanceLink.classList.add('hidden');
-      return;
-    }
-    const stageLabel: Record<string, string> = {
-      invite: 'preparar convite e lembrete',
-      reminder: 'revisar lembrete operacional',
-      followup: 'organizar follow-up e divulgação posterior',
-    };
-    const pieces = [
-      COMMS_ROUTE.context === 'webinar'
-        ? `Contexto atual: ${stageLabel[COMMS_ROUTE.stage] || 'revisar a comunicação'} do webinar <strong>${escapeHtml(COMMS_ROUTE.title || 'selecionado')}</strong>.`
-        : 'Contexto atual: revisar a comunicação relacionada ao item selecionado.',
-    ];
-    if (COMMS_ROUTE.date) pieces.push(`Data de referência: ${escapeHtml(formatRouteDate(COMMS_ROUTE.date))}.`);
-    if (COMMS_ROUTE.q) pieces.push('O histórico de disparos abaixo foi filtrado automaticamente para reduzir busca manual.');
-    copy.innerHTML = pieces.join(' ');
-    if (attendanceLink && COMMS_ROUTE.context === 'webinar') {
-      attendanceLink.href = buildAttendanceFromCommsHref();
-      attendanceLink.classList.remove('hidden');
-    }
-    box.classList.remove('hidden');
-    if (COMMS_ROUTE.focus === 'broadcasts' && !COMMS_ROUTE.broadcastScrolled) {
-      COMMS_ROUTE.broadcastScrolled = true;
-      requestAnimationFrame(() => {
-        document.getElementById('broadcast-section')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-      });
-    }
-  }
-
-  function showDenied() {
-    document.getElementById('comms-loading')?.classList.add('hidden');
-    document.getElementById('comms-denied')?.classList.remove('hidden');
-    document.getElementById('comms-panel')?.classList.add('hidden');
-  }
-
-  // Check if user can manage channel config (admin/comms_leader only, NOT comms_member)
   function canManageChannels(member: any): boolean {
     if (!member) return false;
     if (member.is_superadmin) return true;
@@ -371,313 +217,184 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     return desigs.includes('comms_leader');
   }
 
-  let currentMember: any = null;
+  // ── S1: Executive KPIs ──
 
-  function showPanel() {
-    parseCommsRoute();
-    renderCommsContext();
-    renderCommsPlaybook();
-    document.getElementById('comms-loading')?.classList.add('hidden');
-    document.getElementById('comms-denied')?.classList.add('hidden');
-    document.getElementById('comms-panel')?.classList.remove('hidden');
-    loadRanking();
-    loadBroadcasts();
-    loadNativeTable();
-    loadCommsWebinars();
-    loadCommsChart();
-
-    // Sensitive sections: only for admin/comms_leader
-    const isChannelAdmin = canManageChannels(currentMember);
-    if (isChannelAdmin) {
-      loadChannelConfig();
-      loadTokenAlerts();
-      loadStalenessBanner();
-    } else {
-      // Hide sensitive sections from comms_members
-      document.getElementById('comms-channels')?.classList.add('hidden');
-      document.getElementById('comms-token-alerts')?.classList.add('hidden');
-      document.getElementById('comms-staleness-banner')?.classList.add('hidden');
-      // Hide manual metrics form (keep read-only metrics visible)
-      const manualSection = document.getElementById('btn-toggle-manual-form')?.closest('section');
-      if (manualSection) manualSection.classList.add('hidden');
-    }
-  }
-
-  async function loadCommsChart() {
+  async function loadKPIs() {
     try {
-      const { data, error } = await sb.rpc('comms_metrics_latest_by_channel', { p_days: 14 });
+      const { data, error } = await sb.rpc('comms_metrics_latest_by_channel', { p_days: 7 });
       if (error || !data?.length) return;
-      const { Chart, BarController, CategoryScale, LinearScale, BarElement, Legend, Tooltip } = await import('chart.js');
-      Chart.register(BarController, CategoryScale, LinearScale, BarElement, Legend, Tooltip);
-      const canvas = document.getElementById('comms-bar-chart') as HTMLCanvasElement;
-      if (!canvas) return;
-      // Destroy existing chart to avoid canvas reuse error
-      if ((window as any).__commsBarChart) { (window as any).__commsBarChart.destroy(); }
-      const channels = [...new Set(data.map((r: any) => r.channel))];
-      const PALETTE = ['#0d9488', '#7c3aed', '#2563eb', '#e11d48', '#ea580c'];
-      (window as any).__commsBarChart = new Chart(canvas, {
-        type: 'bar',
-        data: {
-          labels: channels,
-          datasets: [
-            { label: 'Alcance', data: channels.map(ch => data.filter((r: any) => r.channel === ch).reduce((s: number, r: any) => s + (r.reach || 0), 0)), backgroundColor: PALETTE[0], borderRadius: 4 },
-            { label: 'Audiência', data: channels.map(ch => data.filter((r: any) => r.channel === ch).reduce((s: number, r: any) => s + (r.audience || 0), 0)), backgroundColor: PALETTE[1], borderRadius: 4 },
-          ]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } }, scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } }
-      });
-    } catch (e) { console.warn('Comms chart:', e); }
-  }
 
-  async function loadCommsWebinars() {
-    const section = document.getElementById('comms-webinars');
-    const body = document.getElementById('comms-webinars-body');
-    if (!section || !body) return;
-    try {
-      const { data, error } = await sb.rpc('webinars_pending_comms');
-      if (error) throw error;
-      const webinars = Array.isArray(data) ? data : (data ? JSON.parse(data) : []);
-      if (!webinars.length) { section.classList.add('hidden'); return; }
-      section.classList.remove('hidden');
-      const actionTones: Record<string, string> = {
-        invite: 'bg-blue-50 text-blue-700 border-blue-200',
-        followup: 'bg-purple-50 text-purple-700 border-purple-200',
-        awaiting_replay: 'bg-amber-50 text-amber-700 border-amber-200',
-        replay_ready: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-        info: 'bg-gray-50 text-gray-700 border-gray-200',
-      };
-      body.innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-2 gap-3">${webinars.map((w: any) => {
-        const tone = actionTones[w.comms_action] || actionTones.info;
-        const commsHref = `/admin/comms?context=webinar&title=${encodeURIComponent(w.title)}&stage=${w.comms_action === 'followup' || w.comms_action === 'replay_ready' ? 'followup' : 'invite'}`;
-        const fmtDt = w.scheduled_at ? new Date(w.scheduled_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '—';
-        return `<article class="rounded-xl border border-[var(--border-default)] p-3">
-          <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0">
-              <div class="text-sm font-bold text-navy">${String(w.title || '').replace(/</g,'&lt;')}</div>
-              <div class="text-[.72rem] text-[var(--text-muted)] mt-0.5">${fmtDt} · ${w.chapter_code === 'ALL' ? 'Geral' : 'PMI-' + w.chapter_code}${w.tribe_name ? ' · ' + String(w.tribe_name).replace(/</g,'&lt;') : ''}</div>
-              <div class="mt-1.5 inline-flex items-center px-2 py-0.5 rounded-full border text-[.68rem] font-bold ${tone}">${String(w.comms_label || '').replace(/</g,'&lt;')}</div>
-            </div>
-            <a href="${commsHref}" class="shrink-0 px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold no-underline hover:opacity-90">Preparar</a>
-          </div>
-        </article>`;
-      }).join('')}</div>`;
-    } catch (e) { console.warn('Comms webinars:', e); section.classList.add('hidden'); }
-  }
-
-  async function loadRanking() {
-    const loading = document.getElementById('ranking-loading');
-    const empty = document.getElementById('ranking-empty');
-    const table = document.getElementById('ranking-table');
-    const tbody = document.getElementById('ranking-body');
-    if (!loading || !empty || !table || !tbody) return;
-
-    try {
-      const { data, error } = await sb.rpc('tribe_impact_ranking');
-      loading.classList.add('hidden');
-      if (error || !data?.length) {
-        empty.classList.remove('hidden');
-        return;
+      // Latest entry per channel (most recent date)
+      const latest: Record<string, any> = {};
+      for (const r of data) {
+        if (!latest[r.channel] || r.metric_date > latest[r.channel].metric_date) {
+          latest[r.channel] = r;
+        }
       }
-      const medals = ['\u{1F947} ', '\u{1F948} ', '\u{1F949} '];
-      tbody.innerHTML = data.map((r: any, i: number) => {
-        const medal = medals[i] || '';
-        return '<tr class="border-b border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">'
-          + '<td class="px-3 py-2 text-center font-bold text-[var(--text-muted)]">' + (i + 1) + '</td>'
-          + '<td class="px-3 py-2 font-medium">' + medal + escapeHtml(r.tribe_name || '\u2014') + '</td>'
-          + '<td class="px-3 py-2 text-right">' + (r.total_events ?? 0) + '</td>'
-          + '<td class="px-3 py-2 text-right font-semibold text-navy">' + Number(r.total_hours || 0).toFixed(1) + 'h</td>'
-          + '<td class="px-3 py-2 text-right">' + Number(r.avg_attendance || 0).toFixed(1) + '</td>'
-          + '</tr>';
-      }).join('');
-      table.classList.remove('hidden');
-    } catch (e: any) {
-      loading.classList.add('hidden');
-      if (empty) { empty.textContent = e?.message || 'Error'; empty.classList.remove('hidden'); }
-    }
+
+      const totalAudience = Object.values(latest).reduce((s: number, r: any) => s + (r.audience || 0), 0);
+      const totalReach = data.reduce((s: number, r: any) => s + (r.reach || 0), 0);
+      const engagements = Object.values(latest).filter((r: any) => r.engagement != null);
+      const avgEngagement = engagements.length > 0
+        ? engagements.reduce((s: number, r: any) => s + Number(r.engagement || 0), 0) / engagements.length
+        : null;
+
+      document.getElementById('kpi-audience')!.textContent = fmt(totalAudience);
+      document.getElementById('kpi-audience-sub')!.textContent = Object.entries(latest).map(([ch, r]: [string, any]) => `${ch}: ${fmt(r.audience)}`).join(' · ');
+
+      document.getElementById('kpi-reach')!.textContent = fmt(totalReach);
+      document.getElementById('kpi-reach-sub')!.textContent = `Soma dos ultimos 7 dias`;
+
+      if (avgEngagement != null) {
+        document.getElementById('kpi-engagement')!.textContent = (avgEngagement * 100).toFixed(1) + '%';
+        document.getElementById('kpi-engagement-sub')!.textContent = 'Media ponderada por canal';
+      }
+
+      // Posts: from payload
+      const igPosts = latest['instagram']?.payload?.media_count || 0;
+      const ytVideos = latest['youtube']?.payload?.videoCount || latest['youtube']?.payload?.video_count || 0;
+      document.getElementById('kpi-posts')!.textContent = fmt(Number(igPosts) + Number(ytVideos));
+      document.getElementById('kpi-posts-sub')!.textContent = `IG: ${igPosts} · YT: ${ytVideos}`;
+    } catch (e) { console.warn('KPIs:', e); }
   }
 
-  async function loadNativeTable() {
-    const loading = document.getElementById('comms-table-loading');
-    const empty = document.getElementById('comms-table-empty');
-    const table = document.getElementById('comms-table');
-    const tbody = document.getElementById('comms-table-body');
+  // ── S2: Trend Chart ──
+
+  async function loadTrendChart(metric = 'audience') {
+    try {
+      const { data, error } = await sb.rpc('comms_metrics_latest_by_channel', { p_days: 30 });
+      if (error || !data?.length) return;
+      trendData = data;
+      renderTrendChart(metric);
+    } catch (e) { console.warn('Trend:', e); }
+  }
+
+  async function renderTrendChart(metric: string) {
+    const canvas = document.getElementById('trend-chart') as HTMLCanvasElement;
+    if (!canvas || !trendData.length) return;
+
+    const { Chart, LineController, CategoryScale, LinearScale, PointElement, LineElement, Legend, Tooltip, Filler } = await import('chart.js');
+    Chart.register(LineController, CategoryScale, LinearScale, PointElement, LineElement, Legend, Tooltip, Filler);
+
+    if ((window as any).__trendChart) (window as any).__trendChart.destroy();
+
+    const channels = [...new Set(trendData.map((r: any) => r.channel))];
+    const dates = [...new Set(trendData.map((r: any) => r.metric_date))].sort();
+    const COLORS: Record<string, string> = { instagram: '#E1306C', youtube: '#FF0000', linkedin: '#0077B5', newsletter: '#6B7280' };
+
+    (window as any).__trendChart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: dates.map(d => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })),
+        datasets: channels.map(ch => ({
+          label: ch.charAt(0).toUpperCase() + ch.slice(1),
+          data: dates.map(d => {
+            const row = trendData.find((r: any) => r.channel === ch && r.metric_date === d);
+            return row ? (metric === 'reach' ? row.reach : row.audience) : null;
+          }),
+          borderColor: COLORS[ch] || '#6B7280',
+          backgroundColor: (COLORS[ch] || '#6B7280') + '15',
+          fill: false,
+          tension: 0.3,
+          pointRadius: 3,
+          borderWidth: 2,
+        })),
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } },
+        scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } },
+        interaction: { intersect: false, mode: 'index' },
+      },
+    });
+  }
+
+  document.getElementById('trend-metric')?.addEventListener('change', (e) => {
+    renderTrendChart((e.target as HTMLSelectElement).value);
+  });
+
+  // ── S3: Per-Channel Performance ──
+
+  async function loadChannelPerformance() {
+    try {
+      const { data, error } = await sb.rpc('comms_metrics_latest_by_channel', { p_days: 7 });
+      if (error || !data?.length) return;
+
+      const latest: Record<string, any> = {};
+      for (const r of data) {
+        if (!latest[r.channel] || r.metric_date > latest[r.channel].metric_date) latest[r.channel] = r;
+      }
+
+      // Instagram
+      const ig = latest['instagram'];
+      if (ig) {
+        const engaged = ig.payload?.accounts_engaged;
+        const interactions = ig.payload?.total_interactions;
+        document.getElementById('perf-ig-body')!.innerHTML = `
+          <div class="space-y-2">
+            <div class="flex justify-between"><span class="text-[var(--text-secondary)]">Seguidores</span><span class="font-bold text-navy">${fmt(ig.audience)}</span></div>
+            <div class="flex justify-between"><span class="text-[var(--text-secondary)]">Alcance (dia)</span><span class="font-bold">${fmt(ig.reach)}</span></div>
+            <div class="flex justify-between"><span class="text-[var(--text-secondary)]">Engagement</span><span class="font-bold">${ig.engagement ? (Number(ig.engagement) * 100).toFixed(1) + '%' : '--'}</span></div>
+            ${engaged != null ? `<div class="flex justify-between"><span class="text-[var(--text-secondary)]">Contas engajadas</span><span class="font-bold">${engaged}</span></div>` : ''}
+            ${interactions != null ? `<div class="flex justify-between"><span class="text-[var(--text-secondary)]">Interacoes totais</span><span class="font-bold">${interactions}</span></div>` : ''}
+            <div class="flex justify-between"><span class="text-[var(--text-secondary)]">Posts</span><span class="font-bold">${ig.payload?.media_count || '--'}</span></div>
+          </div>`;
+      } else {
+        document.getElementById('perf-ig-body')!.innerHTML = '<p class="text-[var(--text-muted)]">Sem dados recentes</p>';
+      }
+
+      // YouTube
+      const yt = latest['youtube'];
+      if (yt) {
+        document.getElementById('perf-yt-body')!.innerHTML = `
+          <div class="space-y-2">
+            <div class="flex justify-between"><span class="text-[var(--text-secondary)]">Inscritos</span><span class="font-bold text-navy">${fmt(yt.audience)}</span></div>
+            <div class="flex justify-between"><span class="text-[var(--text-secondary)]">Views totais</span><span class="font-bold">${fmt(yt.reach)}</span></div>
+            <div class="flex justify-between"><span class="text-[var(--text-secondary)]">Videos</span><span class="font-bold">${yt.payload?.videoCount || yt.payload?.video_count || '--'}</span></div>
+          </div>`;
+      }
+
+      // LinkedIn
+      const li = latest['linkedin'];
+      if (li && li.audience) {
+        document.getElementById('perf-li-body')!.innerHTML = `
+          <div class="space-y-2">
+            <div class="flex justify-between"><span class="text-[var(--text-secondary)]">Seguidores</span><span class="font-bold text-navy">${fmt(li.audience)}</span></div>
+            <div class="flex justify-between"><span class="text-[var(--text-secondary)]">Alcance</span><span class="font-bold">${fmt(li.reach)}</span></div>
+          </div>`;
+      }
+    } catch (e) { console.warn('Channel perf:', e); }
+  }
+
+  // ── S5: Metrics Table ──
+
+  async function loadMetricsTable() {
+    const loading = document.getElementById('metrics-table-loading');
+    const empty = document.getElementById('metrics-table-empty');
+    const table = document.getElementById('metrics-table');
+    const tbody = document.getElementById('metrics-table-body');
     if (!loading || !empty || !table || !tbody) return;
 
     try {
       const { data, error } = await sb.rpc('comms_metrics_latest_by_channel', { p_days: 14 });
       loading.classList.add('hidden');
-      if (error) {
-        empty.textContent = (error.message || 'Unknown error');
-        empty.classList.remove('hidden');
-        return;
-      }
-      if (!data?.length) { empty.classList.remove('hidden'); return; }
+      if (error || !data?.length) { empty.classList.remove('hidden'); return; }
       tbody.innerHTML = data.map((r: any) =>
-        '<tr class="border-b border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">'
-        + '<td class="px-3 py-2">' + (r.metric_date || '\u2014') + '</td>'
-        + '<td class="px-3 py-2 font-medium">' + escapeHtml(r.channel || '\u2014') + '</td>'
-        + '<td class="px-3 py-2 text-right">' + (r.audience ?? '\u2014') + '</td>'
-        + '<td class="px-3 py-2 text-right">' + (r.reach ?? '\u2014') + '</td>'
-        + '<td class="px-3 py-2 text-right">' + (r.engagement != null ? (Number(r.engagement) * 100).toFixed(2) + '%' : '\u2014') + '</td>'
-        + '<td class="px-3 py-2 text-right">' + (r.leads ?? '\u2014') + '</td>'
-        + '<td class="px-3 py-2"><span class="text-[10px] px-1.5 py-0.5 rounded-full font-semibold ' + (r.source === 'api' ? 'bg-teal/10 text-teal' : 'bg-gray-100 text-gray-500') + '">' + (r.source === 'api' ? 'API' : r.source || 'manual') + '</span></td>'
-        + '</tr>'
+        `<tr class="border-b border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">
+          <td class="px-3 py-2">${r.metric_date || ''}</td>
+          <td class="px-3 py-2 font-medium capitalize">${escapeHtml(r.channel || '')}</td>
+          <td class="px-3 py-2 text-right">${r.audience != null ? fmt(r.audience) : ''}</td>
+          <td class="px-3 py-2 text-right">${r.reach != null ? fmt(r.reach) : ''}</td>
+          <td class="px-3 py-2 text-right">${r.engagement != null ? (Number(r.engagement) * 100).toFixed(1) + '%' : ''}</td>
+          <td class="px-3 py-2"><span class="text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${r.source === 'api' ? 'bg-teal/10 text-teal' : 'bg-gray-100 text-gray-500'}">${r.source === 'api' ? 'API' : r.source || 'manual'}</span></td>
+        </tr>`
       ).join('');
       table.classList.remove('hidden');
-    } catch (e: any) {
-      loading.classList.add('hidden');
-      if (empty) { empty.textContent = (e?.message || 'Error loading data'); empty.classList.remove('hidden'); }
-    }
+    } catch (e: any) { loading?.classList.add('hidden'); empty?.classList.remove('hidden'); }
   }
 
-  async function loadBroadcasts() {
-    const loading = document.getElementById('broadcast-loading');
-    const empty = document.getElementById('broadcast-empty');
-    const table = document.getElementById('broadcast-table');
-    const tbody = document.getElementById('broadcast-body');
-    if (!loading || !empty || !table || !tbody) return;
-
-    try {
-      const { data, error } = await sb.rpc('broadcast_history', { p_limit: 20 });
-      loading.classList.add('hidden');
-      if (error) { empty.classList.remove('hidden'); return; }
-      allBroadcasts = data || [];
-      renderBroadcasts();
-    } catch (e: any) {
-      loading.classList.add('hidden');
-      if (empty) { empty.textContent = e?.message || 'Error'; empty.classList.remove('hidden'); }
-    }
-  }
-
-  function buildAttendanceFromCommsHref(): string {
-    return buildAttendanceFromCommsRoute(COMMS_ROUTE);
-  }
-
-  function buildCommsPlaybook(): Array<{ title: string; tone: string; subject: string; body: string }> {
-    return buildCommsPlaybookTemplates(COMMS_ROUTE, formatRouteDate);
-  }
-
-  function renderCommsPlaybook() {
-    const section = document.getElementById('comms-playbook');
-    const body = document.getElementById('comms-playbook-body');
-    if (!section || !body) return;
-    if (COMMS_ROUTE.context !== 'webinar') {
-      section.classList.add('hidden');
-      body.innerHTML = '';
-      return;
-    }
-    const templates = buildCommsPlaybook();
-    body.innerHTML = templates.map((template, index) => `
-      <article class="rounded-2xl border ${template.tone} p-4">
-        <div class="flex items-start justify-between gap-3">
-          <div>
-            <h3 class="text-sm font-bold text-navy">${escapeHtml(template.title)}</h3>
-            <p class="text-[.72rem] text-[var(--text-secondary)] mt-1">Use como base rápida e ajuste no canal/ferramenta final.</p>
-          </div>
-          <div class="flex gap-2 flex-wrap justify-end">
-            <button type="button" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.72rem] font-semibold cursor-pointer hover:bg-[var(--surface-hover)]" data-action="copy-template" data-copy-label="assunto" data-copy-value="${escapeHtml(template.subject)}">Copiar assunto</button>
-            <button type="button" class="px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold border-0 cursor-pointer hover:opacity-90" data-action="copy-template" data-copy-label="mensagem" data-copy-value="${escapeHtml(template.body)}">Copiar mensagem</button>
-          </div>
-        </div>
-        <div class="mt-3 space-y-3">
-          <div>
-            <div class="text-[.68rem] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Assunto sugerido</div>
-            <div class="mt-1 text-[.8rem] text-[var(--text-primary)]">${escapeHtml(template.subject)}</div>
-          </div>
-          <div>
-            <div class="text-[.68rem] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Mensagem base</div>
-            <pre class="mt-1 whitespace-pre-wrap text-[.76rem] text-[var(--text-primary)] font-sans">${escapeHtml(template.body)}</pre>
-          </div>
-        </div>
-      </article>
-    `).join('');
-    section.classList.remove('hidden');
-  }
-
-  async function copyTemplate(value: string, label: string) {
-    try {
-      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(value);
-      else {
-        const area = document.createElement('textarea');
-        area.value = value;
-        area.setAttribute('readonly', 'true');
-        area.style.position = 'absolute';
-        area.style.left = '-9999px';
-        document.body.appendChild(area);
-        area.select();
-        document.execCommand('copy');
-        document.body.removeChild(area);
-      }
-      (window as any).toast?.(`${label} copiado.`, 'success');
-    } catch (error) {
-      console.warn('Copy template:', error);
-      (window as any).toast?.(`Nao foi possivel copiar ${label}.`, 'error');
-    }
-  }
-
-  function renderBroadcasts() {
-    const empty = document.getElementById('broadcast-empty');
-    const table = document.getElementById('broadcast-table');
-    const tbody = document.getElementById('broadcast-body');
-    if (!empty || !table || !tbody) return;
-    if (!allBroadcasts.length) {
-      empty.classList.remove('hidden');
-      table.classList.add('hidden');
-      return;
-    }
-    const query = COMMS_ROUTE.q.toLowerCase();
-    const filtered = allBroadcasts.filter((r: any) => {
-      if (!query) return true;
-      return (r.subject || '').toLowerCase().includes(query)
-        || (r.tribe_name || '').toLowerCase().includes(query)
-        || (r.sent_by_name || '').toLowerCase().includes(query);
-    });
-    if (!filtered.length) {
-      empty.textContent = document.getElementById('ai18n-nor')?.textContent || 'No results.';
-      empty.classList.remove('hidden');
-      table.classList.add('hidden');
-      return;
-    }
-    empty.classList.add('hidden');
-    tbody.innerHTML = filtered.map((r: any) => {
-      const dt = r.sent_at ? new Date(r.sent_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '\u2014';
-      return '<tr class="border-b border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">'
-        + '<td class="px-3 py-2 font-medium">' + escapeHtml(r.subject || '\u2014') + '</td>'
-        + '<td class="px-3 py-2">' + escapeHtml(r.tribe_name || '\u2014') + '</td>'
-        + '<td class="px-3 py-2 text-right">' + (r.recipient_count ?? '\u2014') + '</td>'
-        + '<td class="px-3 py-2">' + dt + '</td>'
-        + '<td class="px-3 py-2">' + escapeHtml(r.sent_by_name || '\u2014') + '</td>'
-        + '</tr>';
-    }).join('');
-    table.classList.remove('hidden');
-  }
-
-  if (!(window as any).__commsDelegationBound) {
-    (window as any).__commsDelegationBound = true;
-    document.addEventListener('click', (e: Event) => {
-      if (!(e.target instanceof Element)) return;
-      const target = (e.target as HTMLElement).closest('[data-action="copy-template"]') as HTMLElement | null;
-      if (!target) return;
-      copyTemplate(target.dataset.copyValue || '', target.dataset.copyLabel || 'texto');
-    });
-    document.addEventListener('input', (e: Event) => {
-      const target = e.target as HTMLElement | null;
-      if (!(target instanceof HTMLInputElement)) return;
-      if (target.id === 'comms-broadcast-search') {
-        COMMS_ROUTE.q = target.value.trim();
-        renderCommsContext();
-        renderBroadcasts();
-      }
-    });
-  }
-
-  // ─── Channel Config ───
-
-  const CHANNEL_ICONS: Record<string, string> = {
-    youtube: '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>',
-    linkedin: '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>',
-    instagram: '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.988 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384.666-.667 1.079-1.335 1.384-2.126.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126C21.319 1.347 20.651.935 19.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.012 15.26 0 12 0zm0 2.16c3.203 0 3.585.016 4.85.071 1.17.055 1.805.249 2.227.415.562.217.96.477 1.382.896.419.42.679.819.896 1.381.164.422.36 1.057.413 2.227.057 1.266.07 1.646.07 4.85s-.015 3.585-.074 4.85c-.061 1.17-.256 1.805-.421 2.227-.224.562-.479.96-.899 1.382-.419.419-.824.679-1.38.896-.42.164-1.065.36-2.235.413-1.274.057-1.649.07-4.859.07-3.211 0-3.586-.015-4.859-.074-1.171-.061-1.816-.256-2.236-.421-.569-.224-.96-.479-1.379-.899-.421-.419-.69-.824-.9-1.38-.165-.42-.359-1.065-.42-2.235-.045-1.26-.061-1.649-.061-4.844 0-3.196.016-3.586.061-4.861.061-1.17.255-1.814.42-2.234.21-.57.479-.96.9-1.381.419-.419.81-.689 1.379-.898.42-.166 1.051-.361 2.221-.421 1.275-.045 1.65-.06 4.859-.06l.045.03zm0 3.678c-3.405 0-6.162 2.76-6.162 6.162 0 3.405 2.76 6.162 6.162 6.162 3.405 0 6.162-2.76 6.162-6.162 0-3.405-2.76-6.162-6.162-6.162zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm7.846-10.405c0 .795-.646 1.44-1.44 1.44-.795 0-1.44-.646-1.44-1.44 0-.794.646-1.439 1.44-1.439.793-.001 1.44.645 1.44 1.439z"/></svg>',
-  };
+  // ── S6: Channel Admin (leader+ only) ──
 
   const STATUS_MAP: Record<string, { dot: string; label: string; cls: string }> = {
     active:        { dot: '\u{1F7E2}', label: 'Ativo',     cls: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
@@ -689,122 +406,89 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     if (!iso) return 'Nunca';
     const diff = Date.now() - new Date(iso).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 60) return `${mins}min atrás`;
+    if (mins < 60) return `${mins}min atras`;
     const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs}h atrás`;
-    const days = Math.floor(hrs / 24);
-    return `${days}d atrás`;
+    if (hrs < 24) return `${hrs}h atras`;
+    return `${Math.floor(hrs / 24)}d atras`;
   }
 
   async function loadChannelConfig() {
     const grid = document.getElementById('comms-channels-grid');
     if (!grid) return;
-
     try {
       const { data, error } = await sb.rpc('comms_channel_status');
-      if (error || !data?.length) {
-        grid.innerHTML = `<p class="text-xs text-[var(--text-muted)] col-span-full">${document.getElementById('ai18n-nor')?.textContent || 'No channel.'}</p>`;
-        return;
-      }
+      if (error || !data?.length) { grid.innerHTML = '<p class="text-xs text-[var(--text-muted)] col-span-full">Nenhum canal.</p>'; return; }
 
       grid.innerHTML = (data as any[]).map((ch: any) => {
         const s = STATUS_MAP[ch.sync_status] || STATUS_MAP.error;
-        const icon = CHANNEL_ICONS[ch.channel] || '';
-        const isYoutube = ch.channel === 'youtube';
-        const hasToken = isYoutube ? ch.has_api_key : ch.has_oauth_token;
-        const expiryInfo = ch.days_until_expiry != null
+        const isYT = ch.channel === 'youtube';
+        const hasToken = isYT ? ch.has_api_key : ch.has_oauth_token;
+        const expiry = ch.days_until_expiry != null
           ? (ch.days_until_expiry < 0 ? 'Expirado' : `${ch.days_until_expiry}d restantes`)
-          : (isYoutube ? 'Sem expiração' : 'Não configurado');
-        const warningExpiry = ch.days_until_expiry != null && ch.days_until_expiry <= 7 && ch.days_until_expiry >= 0;
+          : (isYT || (ch.has_oauth_token && !ch.token_expires_at) ? 'Permanente' : 'Nao configurado');
 
         return `<article class="rounded-xl border ${s.cls} p-4">
           <div class="flex items-center gap-2 mb-3">
-            <span class="${ch.channel === 'youtube' ? 'text-red-600' : ch.channel === 'linkedin' ? 'text-blue-700' : 'text-pink-600'}">${icon}</span>
             <span class="text-sm font-bold capitalize">${ch.channel}</span>
             <span class="ml-auto text-[10px] px-2 py-0.5 rounded-full font-semibold ${s.cls}">${s.dot} ${s.label}</span>
           </div>
           <div class="space-y-1 text-[11px] text-[var(--text-secondary)]">
-            <div>${CI18N.token}: ${hasToken ? '<span class="text-emerald-600 font-semibold">' + CI18N.configured + '</span>' : '<span class="text-[var(--text-muted)]">' + CI18N.pending + '</span>'}</div>
-            <div>${CI18N.expiration}: ${warningExpiry ? '<span class="text-amber-600 font-semibold">' + expiryInfo + '</span>' : expiryInfo}</div>
-            <div>${CI18N.lastSync}: ${timeAgo(ch.last_sync_at)}</div>
+            <div>Token: ${hasToken ? '<span class="text-emerald-600 font-semibold">Configurado</span>' : '<span class="text-[var(--text-muted)]">Pendente</span>'}</div>
+            <div>Expiracao: ${expiry}</div>
+            <div>Ultimo sync: ${timeAgo(ch.last_sync_at)}</div>
           </div>
-          <button class="mt-3 w-full px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-[var(--text-primary)] text-[10px] font-semibold hover:bg-[var(--surface-hover)] transition-colors" data-action="config-channel" data-channel="${ch.channel}" data-config='${JSON.stringify(ch.config || {})}' data-has-apikey="${ch.has_api_key}" data-has-oauth="${ch.has_oauth_token}">
-            ${hasToken ? CI18N.editConfig : CI18N.configure}
+          <button class="mt-3 w-full px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-[var(--text-primary)] text-[10px] font-semibold hover:bg-[var(--surface-hover)]" data-action="config-channel" data-channel="${ch.channel}" data-config='${JSON.stringify(ch.config || {})}'>
+            ${hasToken ? 'Editar Config' : 'Configurar'}
           </button>
         </article>`;
       }).join('');
 
-      // Wire up config buttons
-      grid.querySelectorAll('[data-action="config-channel"]').forEach((btn) => {
+      grid.querySelectorAll('[data-action="config-channel"]').forEach(btn => {
         btn.addEventListener('click', () => {
-          const channel = (btn as HTMLElement).dataset.channel || '';
-          const cfgStr = (btn as HTMLElement).dataset.config || '{}';
-          openChannelModal(channel, JSON.parse(cfgStr));
+          openChannelModal((btn as HTMLElement).dataset.channel || '', JSON.parse((btn as HTMLElement).dataset.config || '{}'));
         });
       });
-    } catch (e) {
-      console.warn('Channel config load:', e);
-    }
+    } catch (e) { console.warn('Channel config:', e); }
   }
 
   function openChannelModal(channel: string, config: Record<string, unknown>) {
     const modal = document.getElementById('channel-config-modal');
-    const title = document.getElementById('channel-modal-title');
     if (!modal) return;
-
     (document.getElementById('channel-modal-name') as HTMLInputElement).value = channel;
-    if (title) title.textContent = `${CI18N.configureChannel} ${channel.charAt(0).toUpperCase() + channel.slice(1)}`;
-
-    const isYoutube = channel === 'youtube';
-    document.getElementById('channel-apikey-row')!.classList.toggle('hidden', !isYoutube);
-    document.getElementById('channel-oauth-row')!.classList.toggle('hidden', isYoutube);
-    document.getElementById('channel-refresh-row')!.classList.toggle('hidden', isYoutube);
-    document.getElementById('channel-expires-row')!.classList.toggle('hidden', isYoutube);
-
+    document.getElementById('channel-modal-title')!.textContent = `Configurar ${channel.charAt(0).toUpperCase() + channel.slice(1)}`;
+    const isYT = channel === 'youtube';
+    document.getElementById('channel-apikey-row')!.classList.toggle('hidden', !isYT);
+    document.getElementById('channel-oauth-row')!.classList.toggle('hidden', isYT);
+    document.getElementById('channel-refresh-row')!.classList.toggle('hidden', isYT);
+    document.getElementById('channel-expires-row')!.classList.toggle('hidden', isYT);
     (document.getElementById('channel-apikey') as HTMLInputElement).value = '';
     (document.getElementById('channel-oauth') as HTMLInputElement).value = '';
     (document.getElementById('channel-refresh') as HTMLInputElement).value = '';
     (document.getElementById('channel-expires') as HTMLInputElement).value = '';
     (document.getElementById('channel-config-json') as HTMLTextAreaElement).value = JSON.stringify(config, null, 2);
-
     modal.classList.remove('hidden');
   }
 
-  function closeChannelModal() {
-    document.getElementById('channel-config-modal')?.classList.add('hidden');
-  }
+  function closeChannelModal() { document.getElementById('channel-config-modal')?.classList.add('hidden'); }
 
   async function saveChannelConfig() {
     const channel = (document.getElementById('channel-modal-name') as HTMLInputElement)?.value;
     if (!channel) return;
-
-    const isYoutube = channel === 'youtube';
-    const apiKey = isYoutube ? (document.getElementById('channel-apikey') as HTMLInputElement)?.value?.trim() || null : null;
-    const oauthToken = !isYoutube ? (document.getElementById('channel-oauth') as HTMLInputElement)?.value?.trim() || null : null;
-    const refreshToken = !isYoutube ? (document.getElementById('channel-refresh') as HTMLInputElement)?.value?.trim() || null : null;
-    const expiresVal = !isYoutube ? (document.getElementById('channel-expires') as HTMLInputElement)?.value : null;
+    const isYT = channel === 'youtube';
+    const apiKey = isYT ? (document.getElementById('channel-apikey') as HTMLInputElement)?.value?.trim() || null : null;
+    const oauthToken = !isYT ? (document.getElementById('channel-oauth') as HTMLInputElement)?.value?.trim() || null : null;
+    const refreshToken = !isYT ? (document.getElementById('channel-refresh') as HTMLInputElement)?.value?.trim() || null : null;
+    const expiresVal = !isYT ? (document.getElementById('channel-expires') as HTMLInputElement)?.value : null;
     const expiresAt = expiresVal ? new Date(expiresVal).toISOString() : null;
-
     let config = {};
-    try {
-      config = JSON.parse((document.getElementById('channel-config-json') as HTMLTextAreaElement)?.value || '{}');
-    } catch { /* keep empty */ }
+    try { config = JSON.parse((document.getElementById('channel-config-json') as HTMLTextAreaElement)?.value || '{}'); } catch {}
 
     const { data, error } = await sb.rpc('admin_manage_comms_channel', {
-      p_action: 'upsert',
-      p_channel: channel,
-      p_api_key: apiKey,
-      p_oauth_token: oauthToken,
-      p_oauth_refresh_token: refreshToken,
-      p_token_expires_at: expiresAt,
-      p_config: config,
+      p_action: 'upsert', p_channel: channel, p_api_key: apiKey,
+      p_oauth_token: oauthToken, p_oauth_refresh_token: refreshToken,
+      p_token_expires_at: expiresAt, p_config: config,
     });
-
-    if (error || !data?.success) {
-      (window as any).toast?.(data?.error || document.getElementById('ai18n-sav')?.textContent || 'Error saving.', 'error');
-      return;
-    }
-
+    if (error || !data?.success) { (window as any).toast?.(data?.error || 'Erro ao salvar.', 'error'); return; }
     closeChannelModal();
     (window as any).toast?.('Canal atualizado!', 'success');
     loadChannelConfig();
@@ -813,170 +497,88 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   async function loadTokenAlerts() {
     const container = document.getElementById('comms-token-alerts');
     if (!container) return;
-
     try {
       const { data, error } = await sb.rpc('comms_check_token_expiry');
-      if (error || !data?.active_alerts?.length) {
-        container.classList.add('hidden');
-        return;
-      }
-
-      container.innerHTML = (data.active_alerts as any[]).map((alert: any) => {
-        const isUrgent = alert.alert_type === 'urgent';
-        const cls = isUrgent
-          ? 'bg-red-50 border-red-200 text-red-800'
-          : 'bg-amber-50 border-amber-200 text-amber-800';
-        const icon = isUrgent ? '\u{1F6A8}' : '\u26A0\uFE0F';
+      if (error || !data?.active_alerts?.length) { container.classList.add('hidden'); return; }
+      container.innerHTML = (data.active_alerts as any[]).map((a: any) => {
+        const cls = a.alert_type === 'urgent' ? 'bg-red-50 border-red-200 text-red-800' : 'bg-amber-50 border-amber-200 text-amber-800';
         return `<div class="rounded-xl border ${cls} px-4 py-3 flex items-center justify-between gap-3">
-          <span class="text-sm">${icon} ${escapeHtml(alert.message)}</span>
-          <button class="text-[10px] font-semibold underline opacity-70 hover:opacity-100" data-action="ack-alert" data-alert-id="${alert.id}">Dispensar</button>
+          <span class="text-sm">${a.alert_type === 'urgent' ? '\u{1F6A8}' : '\u26A0\uFE0F'} ${escapeHtml(a.message)}</span>
+          <button class="text-[10px] font-semibold underline opacity-70 hover:opacity-100" data-ack="${a.id}">Dispensar</button>
         </div>`;
       }).join('');
       container.classList.remove('hidden');
-
-      container.querySelectorAll('[data-action="ack-alert"]').forEach((btn) => {
+      container.querySelectorAll('[data-ack]').forEach(btn => {
         btn.addEventListener('click', async () => {
-          const alertId = (btn as HTMLElement).dataset.alertId;
-          if (!alertId) return;
-          await sb.rpc('comms_acknowledge_alert', { p_alert_id: alertId });
+          await sb.rpc('comms_acknowledge_alert', { p_alert_id: (btn as HTMLElement).dataset.ack });
           loadTokenAlerts();
         });
       });
-    } catch (e) {
-      console.warn('Token alerts:', e);
-    }
+    } catch (e) { console.warn('Token alerts:', e); }
   }
-
-  // ─── Staleness / Graceful Degradation Banner ───
 
   async function loadStalenessBanner() {
     const banner = document.getElementById('comms-staleness-banner');
     if (!banner) return;
-
     try {
       const { data, error } = await sb.rpc('comms_channel_status');
       if (error || !data?.length) return;
-
-      const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
       const alerts: string[] = [];
-
       for (const ch of data as any[]) {
         const lastSync = ch.last_sync_at ? new Date(ch.last_sync_at).getTime() : 0;
-        const syncAge = Date.now() - lastSync;
-        const channelName = ch.channel.charAt(0).toUpperCase() + ch.channel.slice(1);
-
+        const name = ch.channel.charAt(0).toUpperCase() + ch.channel.slice(1);
         if (ch.sync_status === 'token_expired') {
-          const lastDate = ch.last_sync_at
-            ? new Date(ch.last_sync_at).toLocaleDateString('pt-BR')
-            : 'desconhecida';
-          alerts.push(
-            `<div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800 text-sm">
-              \u{1F6A8} <strong>${channelName}</strong>: Token expirado. Última atualização: ${lastDate}.
-            </div>`
-          );
-        } else if (lastSync > 0 && syncAge > SEVEN_DAYS) {
-          const daysAgo = Math.floor(syncAge / (24 * 60 * 60 * 1000));
-          alerts.push(
-            `<div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
-              \u26A0\uFE0F <strong>${channelName}</strong>: Dados podem estar desatualizados (último sync: ${daysAgo} dias atrás).
-            </div>`
-          );
+          alerts.push(`<div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800 text-sm">\u{1F6A8} <strong>${name}</strong>: Token expirado.</div>`);
+        } else if (lastSync > 0 && Date.now() - lastSync > 7 * 86400000) {
+          alerts.push(`<div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">\u26A0\uFE0F <strong>${name}</strong>: Dados desatualizados (${Math.floor((Date.now() - lastSync) / 86400000)}d).</div>`);
         }
       }
+      if (alerts.length) { banner.innerHTML = alerts.join(''); banner.classList.remove('hidden'); }
+      else banner.classList.add('hidden');
+    } catch (e) { console.warn('Staleness:', e); }
+  }
 
-      if (alerts.length > 0) {
-        banner.innerHTML = alerts.join('');
-        banner.classList.remove('hidden');
-      } else {
-        banner.classList.add('hidden');
-      }
-    } catch (e) {
-      console.warn('Staleness banner:', e);
+  // Wire modal
+  document.getElementById('btn-cancel-channel')?.addEventListener('click', closeChannelModal);
+  document.getElementById('btn-save-channel')?.addEventListener('click', saveChannelConfig);
+  document.getElementById('channel-config-modal')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeChannelModal(); });
+
+  // ── Boot ──
+
+  function showPanel() {
+    document.getElementById('comms-loading')?.classList.add('hidden');
+    document.getElementById('comms-panel')?.classList.remove('hidden');
+
+    // Analytics (everyone)
+    loadKPIs();
+    loadTrendChart();
+    loadChannelPerformance();
+    loadMetricsTable();
+
+    // Admin sections (leader+ only)
+    if (canManageChannels(currentMember)) {
+      loadChannelConfig();
+      loadTokenAlerts();
+      loadStalenessBanner();
+    } else {
+      document.getElementById('admin-sections')?.classList.add('hidden');
     }
   }
 
-  // ─── Manual Metrics Form ───
-
-  document.getElementById('btn-toggle-manual-form')?.addEventListener('click', () => {
-    const container = document.getElementById('manual-form-container');
-    if (!container) return;
-    container.classList.toggle('hidden');
-    // Set default date to today
-    const dateInput = document.getElementById('manual-date') as HTMLInputElement;
-    if (dateInput && !dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
-  });
-
-  document.getElementById('btn-save-manual-metric')?.addEventListener('click', async () => {
-    if (!sb) return;
-    const date = (document.getElementById('manual-date') as HTMLInputElement)?.value;
-    const channel = (document.getElementById('manual-channel') as HTMLSelectElement)?.value;
-    const audience = parseInt((document.getElementById('manual-audience') as HTMLInputElement)?.value || '0', 10) || null;
-    const reach = parseInt((document.getElementById('manual-reach') as HTMLInputElement)?.value || '0', 10) || null;
-    const engagementRaw = parseFloat((document.getElementById('manual-engagement') as HTMLInputElement)?.value || '0');
-    const engagement = engagementRaw > 0 ? (engagementRaw > 1 ? engagementRaw / 100 : engagementRaw) : null;
-    const leads = parseInt((document.getElementById('manual-leads') as HTMLInputElement)?.value || '0', 10) || null;
-
-    if (!date || !channel) {
-      (window as any).toast?.('Preencha data e canal.', 'error');
-      return;
-    }
-
-    const { error } = await sb.from('comms_metrics_daily').upsert({
-      metric_date: date,
-      channel,
-      audience,
-      reach,
-      engagement_rate: engagement,
-      leads,
-      source: 'manual',
-      payload: { entered_by: 'admin_ui' },
-    }, { onConflict: 'metric_date,channel,source' });
-
-    if (error) {
-      (window as any).toast?.((document.getElementById('ai18n-sav')?.textContent || 'Error: ') + (error.message || ''), 'error');
-      return;
-    }
-
-    (window as any).toast?.('Métrica registrada!', 'success');
-    // Refresh table
-    loadNativeTable();
-    loadCommsChart();
-  });
-
-  // Wire up channel config modal buttons
-  document.getElementById('btn-cancel-channel')?.addEventListener('click', closeChannelModal);
-  document.getElementById('btn-save-channel')?.addEventListener('click', saveChannelConfig);
-  document.getElementById('channel-config-modal')?.addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) closeChannelModal();
-  });
-
-  async function boot() {
+  function boot() {
     sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(boot, 200); return; }
 
     window.addEventListener('nav:member', ((e: CustomEvent) => {
-      if (e.detail && canAccessAdminRoute(e.detail, 'admin_comms')) {
-        currentMember = e.detail;
-        showPanel();
-      } else showDenied();
+      if (e.detail && canAccessAdminRoute(e.detail, 'admin_comms')) { currentMember = e.detail; showPanel(); }
+      else { document.getElementById('comms-loading')?.classList.add('hidden'); document.getElementById('comms-denied')?.classList.remove('hidden'); }
     }) as EventListener);
 
     const m = (window as any).navGetMember?.();
     if (m) {
       if (canAccessAdminRoute(m, 'admin_comms')) { currentMember = m; showPanel(); }
-      else showDenied();
-      return;
+      else { document.getElementById('comms-loading')?.classList.add('hidden'); document.getElementById('comms-denied')?.classList.remove('hidden'); }
     }
-
-    try {
-      const { data: { session } } = await sb.auth.getSession();
-      if (session) {
-        const { data } = await sb.rpc('get_member_by_auth');
-        if (data && canAccessAdminRoute(data, 'admin_comms')) { currentMember = data; showPanel(); return; }
-      }
-    } catch (e) { console.warn('Comms boot:', e); }
-
-    showDenied();
   }
 
   boot();

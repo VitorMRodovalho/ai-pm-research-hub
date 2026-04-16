@@ -128,10 +128,12 @@ test('presentations and workspace accept deep-link query filters for webinar fol
   assert.equal(workspace.includes('syncTypeButtons();'), true);
 });
 
-test('attendance and admin comms accept contextual webinar handoff state from URL', () => {
+test('attendance and admin comms-ops accept contextual webinar handoff state from URL', () => {
   const attendance = read('src/pages/attendance.astro');
+  const commsOps = read('src/pages/admin/comms-ops.astro');
   const comms = read('src/pages/admin/comms.astro');
   const webinarHelpers = read('src/lib/webinars/context-aids.ts');
+  // Attendance keeps webinar handoff
   assert.equal(attendance.includes("new URLSearchParams(window.location.search)"), true);
   assert.equal(attendance.includes("ATTENDANCE_ROUTE.eventId = params.get('eventId') || ''"), true);
   assert.equal(attendance.includes("ATTENDANCE_ROUTE.edit = params.get('edit') === '1'"), true);
@@ -142,16 +144,17 @@ test('attendance and admin comms accept contextual webinar handoff state from UR
   assert.equal(attendance.includes('getAttendanceHandoffCopy(ATTENDANCE_ROUTE.action)'), true);
   assert.equal(attendance.includes('getAttendanceEditAssistantCopy(ATTENDANCE_ROUTE.action)'), true);
   assert.equal(attendance.includes("data-action=\"open-focused-edit\""), true);
-  assert.equal(comms.includes("new URLSearchParams(window.location.search)"), true);
-  assert.equal(comms.includes("COMMS_ROUTE.focus = params.get('focus') || ''"), true);
-  assert.equal(comms.includes("COMMS_ROUTE.context = params.get('context') || ''"), true);
-  assert.equal(comms.includes('buildAttendanceFromCommsRoute(COMMS_ROUTE)'), true);
-  assert.equal(comms.includes('buildCommsPlaybookTemplates(COMMS_ROUTE, formatRouteDate)'), true);
-  assert.equal(comms.includes("document.getElementById('comms-broadcast-search')"), true);
-  assert.equal(comms.includes("document.getElementById('broadcast-section')?.scrollIntoView"), true);
-  assert.equal(comms.includes('buildCommsPlaybook()'), true);
-  assert.equal(comms.includes('navigator.clipboard?.writeText'), true);
-  assert.equal(comms.includes('data-action="copy-template"'), true);
+  // Webinar context/playbook/broadcasts moved to comms-ops
+  assert.equal(commsOps.includes("new URLSearchParams(window.location.search)"), true);
+  assert.equal(commsOps.includes("ROUTE.context = p.get('context') || ''"), true);
+  assert.equal(commsOps.includes('buildCommsPlaybookTemplates(ROUTE, formatDate)'), true);
+  assert.equal(commsOps.includes("document.getElementById('ops-broadcast-search')"), true);
+  assert.equal(commsOps.includes('navigator.clipboard.writeText'), true);
+  // comms.astro is now analytics-only (no webinar handoff)
+  assert.equal(comms.includes("canManageChannels"), true);
+  assert.equal(comms.includes("loadKPIs"), true);
+  assert.equal(comms.includes("loadTrendChart"), true);
+  // Helpers still exported
   assert.equal(webinarHelpers.includes('export function buildWebinarCommsHref'), true);
   assert.equal(webinarHelpers.includes('export function buildAttendanceFromCommsRoute'), true);
   assert.equal(webinarHelpers.includes('export function buildCommsPlaybookTemplates'), true);
