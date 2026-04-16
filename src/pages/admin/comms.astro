@@ -361,6 +361,18 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     document.getElementById('comms-panel')?.classList.add('hidden');
   }
 
+  // Check if user can manage channel config (admin/comms_leader only, NOT comms_member)
+  function canManageChannels(member: any): boolean {
+    if (!member) return false;
+    if (member.is_superadmin) return true;
+    const role = String(member.operational_role || '');
+    if (['manager', 'deputy_manager'].includes(role)) return true;
+    const desigs: string[] = Array.isArray(member.designations) ? member.designations : [];
+    return desigs.includes('comms_leader');
+  }
+
+  let currentMember: any = null;
+
   function showPanel() {
     parseCommsRoute();
     renderCommsContext();
@@ -373,9 +385,22 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     loadNativeTable();
     loadCommsWebinars();
     loadCommsChart();
-    loadChannelConfig();
-    loadTokenAlerts();
-    loadStalenessBanner();
+
+    // Sensitive sections: only for admin/comms_leader
+    const isChannelAdmin = canManageChannels(currentMember);
+    if (isChannelAdmin) {
+      loadChannelConfig();
+      loadTokenAlerts();
+      loadStalenessBanner();
+    } else {
+      // Hide sensitive sections from comms_members
+      document.getElementById('comms-channels')?.classList.add('hidden');
+      document.getElementById('comms-token-alerts')?.classList.add('hidden');
+      document.getElementById('comms-staleness-banner')?.classList.add('hidden');
+      // Hide manual metrics form (keep read-only metrics visible)
+      const manualSection = document.getElementById('btn-toggle-manual-form')?.closest('section');
+      if (manualSection) manualSection.classList.add('hidden');
+    }
   }
 
   async function loadCommsChart() {
@@ -930,13 +955,15 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     if (!sb) { setTimeout(boot, 200); return; }
 
     window.addEventListener('nav:member', ((e: CustomEvent) => {
-      if (e.detail && canAccessAdminRoute(e.detail, 'admin_comms')) showPanel();
-      else showDenied();
+      if (e.detail && canAccessAdminRoute(e.detail, 'admin_comms')) {
+        currentMember = e.detail;
+        showPanel();
+      } else showDenied();
     }) as EventListener);
 
     const m = (window as any).navGetMember?.();
     if (m) {
-      if (canAccessAdminRoute(m, 'admin_comms')) showPanel();
+      if (canAccessAdminRoute(m, 'admin_comms')) { currentMember = m; showPanel(); }
       else showDenied();
       return;
     }
@@ -945,7 +972,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       const { data: { session } } = await sb.auth.getSession();
       if (session) {
         const { data } = await sb.rpc('get_member_by_auth');
-        if (data && canAccessAdminRoute(data, 'admin_comms')) { showPanel(); return; }
+        if (data && canAccessAdminRoute(data, 'admin_comms')) { currentMember = data; showPanel(); return; }
       }
     } catch (e) { console.warn('Comms boot:', e); }
 
