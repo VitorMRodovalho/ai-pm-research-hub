@@ -70,6 +70,7 @@ interface GridEvent {
   date: string;
   title: string;
   type: string;
+  nature: string | null;
   tribe_id: string;
   tribe_name: string;
   duration_minutes: number;
@@ -268,10 +269,9 @@ export default function AttendanceGridTab() {
   const [error, setError] = useState<string | null>(null);
   const [tribeFilter, setTribeFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+  const [natureFilter, setNatureFilter] = useState('all');
   const [detractorFilter, setDetractorFilter] = useState<DetractorFilter>('all');
   const [search, setSearch] = useState('');
-  // TODO: add nature to get_attendance_grid events output
-  // const [natureFilter, setNatureFilter] = useState('all');
   const [sorting, setSorting] = useState<SortingState>([{ id: 'rate', desc: false }]);
   const [isMobile, setIsMobile] = useState(false);
   const [expandedTribes, setExpandedTribes] = useState<Set<string>>(new Set());
@@ -474,6 +474,7 @@ export default function AttendanceGridTab() {
     return data.events.filter((ev) => {
       if (ev.date > maxDate) return false;
       if (typeFilter !== 'all' && ev.type !== typeFilter) return false;
+      if (natureFilter !== 'all' && ev.nature !== natureFilter) return false;
       if (tribeFilter !== 'all') {
         // Tribe-specific events: only show if they belong to the filtered tribe
         if (ev.tribe_id !== null && String(ev.tribe_id) !== tribeFilter) return false;
@@ -489,7 +490,7 @@ export default function AttendanceGridTab() {
       }
       return true;
     });
-  }, [data, typeFilter, tribeFilter, flatRows]);
+  }, [data, typeFilter, natureFilter, tribeFilter, flatRows]);
 
   /* Filtered rows — FIX 7: detractor status filter */
   const filteredRows = useMemo(() => {
@@ -874,6 +875,21 @@ export default function AttendanceGridTab() {
           <option value="lideranca">{t('attendance.grid.typeLideranca', 'Lideranca')}</option>
           <option value="kickoff">{t('attendance.grid.typeKickoff', 'Kickoff')}</option>
           <option value="comms">{t('attendance.grid.typeComms', 'Comms')}</option>
+        </select>
+
+        {/* Event Nature */}
+        <select
+          value={natureFilter}
+          onChange={(e) => setNatureFilter(e.target.value)}
+          className="bg-[var(--surface-base)] border border-[var(--border-default)] rounded-lg px-3 py-1.5 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-teal)]"
+          title={t('attendance.grid.allNatures', 'All Natures')}
+        >
+          <option value="all">{t('attendance.grid.allNatures', 'Todas naturezas')}</option>
+          <option value="recorrente">{t('attendance.grid.natureRecorrente', 'Recorrente')}</option>
+          <option value="avulsa">{t('attendance.grid.natureAvulsa', 'Avulsa')}</option>
+          <option value="workshop">{t('attendance.grid.natureWorkshop', 'Workshop')}</option>
+          <option value="kickoff">{t('attendance.grid.natureKickoff', 'Kickoff')}</option>
+          <option value="encerramento">{t('attendance.grid.natureEncerramento', 'Encerramento')}</option>
         </select>
 
         {/* FIX 7: Detractor Status Filter — hidden for chapter_board */}
