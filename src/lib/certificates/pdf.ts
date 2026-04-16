@@ -302,9 +302,35 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
       <div>Aguardando assinatura do Diretor do PMI Goiás</div>
     </div>`;
 
+  // Source indicator based on certificate origin
+  const certSource = (certData as any).source || 'platform';
+  const govbrPdf = (certData as any).govbr_pdf || (certData as any).signed_via === 'docusign' ? ((certData as any).govbr_pdf || '') : '';
+  const govbrSigner = (certData as any).govbr_institutional_signer || '';
+  const sourceIndicator = certSource === 'docusign_import'
+    ? `<div style="display:inline-block;background:#e8f0fe;border:1px solid #4285f4;padding:6px 12px;font-size:8px;color:#1a56db;margin:8px 0;font-family:Arial,sans-serif;border-radius:4px">
+        <div style="font-weight:bold;margin-bottom:1px">📋 Migrado do gov.br — Assinatura eletronica avancada</div>
+        ${govbrSigner ? `<div>Signatario institucional: ${govbrSigner}</div>` : ''}
+        <div>Assinatura original em ${certData.signed_at ? new Date(certData.signed_at).toLocaleDateString('pt-BR') : '—'}</div>
+       </div>`
+    : certSource === 'admin_attestation'
+    ? `<div style="display:inline-block;background:#fef3cd;border:1px solid #dca400;padding:6px 12px;font-size:8px;color:#6b4f00;margin:8px 0;font-family:Arial,sans-serif;border-radius:4px">
+        <div style="font-weight:bold;margin-bottom:1px">📝 Atestado administrativo</div>
+        <div>Vinculo original verificado pelo Gerente de Projeto</div>
+       </div>`
+    : (certData as any).govbr_pdf
+    ? `<div style="display:inline-block;background:#e8f0fe;border:1px solid #4285f4;padding:6px 12px;font-size:8px;color:#1a56db;margin:8px 0;font-family:Arial,sans-serif;border-radius:4px">
+        <div style="font-weight:bold;margin-bottom:1px">🖥️ Assinado via plataforma — Contra-assinatura gov.br verificada</div>
+        ${govbrSigner ? `<div>Signatario institucional: ${govbrSigner}</div>` : ''}
+       </div>`
+    : `<div style="display:inline-block;background:#f0fdf4;border:1px solid #86efac;padding:6px 12px;font-size:8px;color:#166534;margin:8px 0;font-family:Arial,sans-serif;border-radius:4px">
+        <div style="font-weight:bold">🖥️ Assinado digitalmente via plataforma</div>
+       </div>`;
+
   const signatureBlock = `
     <div style="margin-top:28px">
       <p style="font-size:11px;margin-bottom:16px">Goiânia/GO, ${signedDate}.</p>
+
+      ${sourceIndicator}
 
       ${digitalSignatureStamp}
 
@@ -437,7 +463,7 @@ export async function hydrateCertData(certData: CertificateData, sb: any): Promi
       if (certData.verification_code) {
         const { data: fullCert } = await sb
           .from('certificates')
-          .select('content_snapshot, signature_hash, issued_at, counter_signed_at, counter_signed_by, member_id')
+          .select('content_snapshot, signature_hash, issued_at, counter_signed_at, counter_signed_by, member_id, source')
           .eq('verification_code', certData.verification_code)
           .maybeSingle();
         if (fullCert) {
@@ -455,6 +481,10 @@ export async function hydrateCertData(certData: CertificateData, sb: any): Promi
           certData.chapter_name = certData.chapter_name || snap.chapter_name;
           certData.signed_at = certData.signed_at || snap.signed_at || fullCert.issued_at;
           certData.counter_signed_at = certData.counter_signed_at || fullCert.counter_signed_at;
+          (certData as any).source = (certData as any).source || fullCert.source;
+          (certData as any).govbr_pdf = snap.govbr_pdf || null;
+          (certData as any).govbr_institutional_signer = snap.govbr_institutional_signer || null;
+          (certData as any).signed_via = snap.signed_via || null;
 
           // Resolve counter_signer name
           if (fullCert.counter_signed_by) {
