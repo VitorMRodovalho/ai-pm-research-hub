@@ -405,6 +405,134 @@ async function fetchInstagramMetrics(cfg: ChannelConfig): Promise<NormalizedMetr
   return metrics
 }
 
+// ─── Per-post media item fetchers ───
+
+type MediaItem = {
+  channel: string
+  external_id: string
+  media_type: string | null
+  caption: string | null
+  permalink: string | null
+  thumbnail_url: string | null
+  published_at: string | null
+  likes: number
+  comments: number
+  shares: number
+  saves: number
+  reach: number | null
+  views: number | null
+  payload: Record<string, unknown>
+}
+
+async function fetchInstagramMedia(cfg: ChannelConfig): Promise<MediaItem[]> {
+  const token = cfg.oauth_token
+  const igUserId = (cfg.config as any)?.ig_user_id
+  if (!token || !igUserId) return []
+
+  const items: MediaItem[] = []
+  try {
+    // Fetch recent media list
+    const mediaResp = await fetchWithRetry(
+      `https://graph.facebook.com/v19.0/${igUserId}/media?fields=id,caption,media_type,timestamp,like_count,comments_count,permalink,thumbnail_url&limit=25&access_token=${token}`
+    )
+    if (!mediaResp.ok) return []
+    const mediaData = await mediaResp.json()
+
+    for (const m of mediaData?.data || []) {
+      const item: MediaItem = {
+        channel: 'instagram',
+        external_id: m.id,
+        media_type: m.media_type || null,
+        caption: m.caption ? m.caption.slice(0, 500) : null,
+        permalink: m.permalink || null,
+        thumbnail_url: m.thumbnail_url || null,
+        published_at: m.timestamp || null,
+        likes: parseInt(m.like_count || '0', 10),
+        comments: parseInt(m.comments_count || '0', 10),
+        shares: 0,
+        saves: 0,
+        reach: null,
+        views: null,
+        payload: {},
+      }
+
+      // Fetch per-media insights (reach, saved, shares) — may fail for some media types
+      try {
+        const insightsResp = await fetchWithRetry(
+          `https://graph.facebook.com/v19.0/${m.id}/insights?metric=reach,saved,shares&access_token=${token}`
+        )
+        if (insightsResp.ok) {
+          const insightsData = await insightsResp.json()
+          for (const metric of insightsData?.data || []) {
+            if (metric.name === 'reach') item.reach = parseInteger(metric.values?.[0]?.value) ?? null
+            if (metric.name === 'saved') item.saves = parseInt(metric.values?.[0]?.value || '0', 10)
+            if (metric.name === 'shares') item.shares = parseInt(metric.values?.[0]?.value || '0', 10)
+          }
+        }
+      } catch { /* per-media insights may fail for stories/reels */ }
+
+      items.push(item)
+    }
+  } catch (e) {
+    console.error('Instagram media fetch error:', e)
+  }
+  return items
+}
+
+async function fetchYouTubeMedia(cfg: ChannelConfig): Promise<MediaItem[]> {
+  const apiKey = cfg.api_key
+  const channelId = (cfg.config as any)?.channel_id
+  if (!apiKey || !channelId) return []
+
+  const items: MediaItem[] = []
+  try {
+    // Search for recent videos
+    const searchResp = await fetchWithRetry(
+      `https://www.googleapis.com/youtube/v3/search?part=id&channelId=${channelId}&type=video&order=date&maxResults=15&key=${apiKey}`
+    )
+    if (!searchResp.ok) return []
+    const searchData = await searchResp.json()
+    const videoIds = (searchData?.items || []).map((i: any) => i.id?.videoId).filter(Boolean)
+    if (!videoIds.length) return []
+
+    // Fetch video details + stats
+    const videosResp = await fetchWithRetry(
+      `https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet&id=${videoIds.join(',')}&key=${apiKey}`
+    )
+    if (!videosResp.ok) return []
+    const videosData = await videosResp.json()
+
+    for (const v of videosData?.items || []) {
+      const stats = v.statistics || {}
+      const snippet = v.snippet || {}
+      items.push({
+        channel: 'youtube',
+        external_id: v.id,
+        media_type: 'VIDEO',
+        caption: snippet.title ? snippet.title.slice(0, 500) : null,
+        permalink: `https://www.youtube.com/watch?v=${v.id}`,
+        thumbnail_url: snippet.thumbnails?.medium?.url || snippet.thumbnails?.default?.url || null,
+        published_at: snippet.publishedAt || null,
+        likes: parseInt(stats.likeCount || '0', 10),
+        comments: parseInt(stats.commentCount || '0', 10),
+        shares: 0,
+        saves: parseInt(stats.favoriteCount || '0', 10),
+        reach: null,
+        views: parseInt(stats.viewCount || '0', 10),
+        payload: { duration: snippet.duration },
+      })
+    }
+  } catch (e) {
+    console.error('YouTube media fetch error:', e)
+  }
+  return items
+}
+
+const MEDIA_FETCHERS: Record<string, (cfg: ChannelConfig) => Promise<MediaItem[]>> = {
+  instagram: fetchInstagramMedia,
+  youtube: fetchYouTubeMedia,
+}
+
 const CHANNEL_FETCHERS: Record<string, (cfg: ChannelConfig) => Promise<NormalizedMetric[]>> = {
   youtube: fetchYouTubeMetrics,
   linkedin: fetchLinkedInMetrics,
@@ -502,7 +630,39 @@ async function syncFromChannelConfigs(
       }).catch(() => {})
 
       totalUpserted += metrics.length
-      channelResults.push({ channel: cfg.channel, status: 'success', rows: metrics.length })
+
+      // Fetch and upsert per-post media items
+      let mediaCount = 0
+      const mediaFetcher = MEDIA_FETCHERS[cfg.channel]
+      if (mediaFetcher && !dryRun) {
+        try {
+          const mediaItems = await mediaFetcher(cfg)
+          if (mediaItems.length > 0) {
+            const { error: mediaError } = await sb
+              .from('comms_media_items')
+              .upsert(mediaItems.map(m => ({
+                channel: m.channel,
+                external_id: m.external_id,
+                media_type: m.media_type,
+                caption: m.caption,
+                permalink: m.permalink,
+                thumbnail_url: m.thumbnail_url,
+                published_at: m.published_at,
+                likes: m.likes,
+                comments: m.comments,
+                shares: m.shares,
+                saves: m.saves,
+                reach: m.reach,
+                views: m.views,
+                payload: m.payload,
+                synced_at: new Date().toISOString(),
+              })), { onConflict: 'channel,external_id' })
+            if (!mediaError) mediaCount = mediaItems.length
+          }
+        } catch (e) { console.warn(`Media fetch ${cfg.channel}:`, e) }
+      }
+
+      channelResults.push({ channel: cfg.channel, status: 'success', rows: metrics.length, media_items: mediaCount })
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Unknown error'
       await sb.from('comms_channel_config')

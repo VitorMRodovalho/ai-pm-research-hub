@@ -8,57 +8,320 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
 ---
 
-<AdminLayout title={t('nav.adminCommsOps', lang)} breadcrumbs={[{label:'Conteúdo'},{label:'Comunicação'}]}>
+<AdminLayout title={t('nav.adminCommsOps', lang)} breadcrumbs={[{label:'Conteudo'},{label:'Comunicacao'}]}>
   <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
   <div class="max-w-[1400px] mx-auto px-4 py-8 space-y-6">
     <div id="commsops-loading" class="text-[var(--text-muted)] text-sm">{t('admin.loadCommsOps', lang)}</div>
     <div id="commsops-denied" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800 text-sm">
-      Acesso restrito à gestão/comunicação.
+      Acesso restrito a gestao/comunicacao.
     </div>
 
     <section id="commsops-panel" class="hidden space-y-6">
+      <!-- Header with nav to Midia Social -->
+      <div class="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 class="text-xl font-extrabold text-navy">Comunicacao</h1>
+          <p class="text-sm text-[var(--text-secondary)]">Operacional: tarefas, webinars pendentes e historico de disparos</p>
+        </div>
+        <a href="/admin/comms" class="px-4 py-2 rounded-xl bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold no-underline hover:bg-[var(--surface-hover)] transition-all">
+          Midia Social &rarr;
+        </a>
+      </div>
+
+      <!-- Webinar Context (activated via ?context=webinar URL params) -->
+      <section id="ops-context" class="hidden bg-blue-50 border border-blue-200 rounded-2xl p-5">
+        <div class="flex items-start justify-between gap-4 flex-wrap">
+          <div class="max-w-3xl">
+            <h2 class="text-sm font-bold text-navy">Handoff contextual</h2>
+            <p id="ops-context-copy" class="text-[.76rem] text-[var(--text-secondary)] mt-1"></p>
+          </div>
+          <a href="/admin/webinars" class="px-4 py-2 rounded-xl bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.78rem] font-semibold no-underline hover:bg-[var(--surface-hover)] transition-all">
+            Voltar para Webinars
+          </a>
+        </div>
+      </section>
+
+      <!-- Webinar Playbook (activated via ?context=webinar) -->
+      <section id="ops-playbook" class="hidden bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-[var(--border-default)]">
+          <h2 class="text-sm font-bold text-navy">Playbook rapido do webinar</h2>
+          <p class="text-[.68rem] text-[var(--text-muted)]">Assunto e copy-base para acelerar a comunicacao.</p>
+        </div>
+        <div id="ops-playbook-body" class="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4"></div>
+      </section>
+
+      <!-- Dashboard KPIs + Charts -->
       <div class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
-        <h1 class="text-xl font-extrabold text-navy mb-4">Comms Ops Dashboard</h1>
+        <h2 class="text-sm font-bold text-navy mb-4">Pipeline de Conteudo</h2>
         <CommsDashboard client:load />
       </div>
 
+      <!-- Webinars pendentes de comunicacao -->
+      <section id="ops-webinars" class="hidden bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-[var(--border-default)] flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h2 class="text-sm font-bold text-navy">Webinars pendentes de campanha</h2>
+            <p class="text-[.68rem] text-[var(--text-muted)]">Webinars confirmados ou realizados que precisam de acao de comunicacao</p>
+          </div>
+          <a href="/admin/webinars" class="text-[.78rem] font-semibold text-teal no-underline hover:underline">Ver todos</a>
+        </div>
+        <div id="ops-webinars-body" class="p-4"></div>
+      </section>
+
+      <!-- Board Kanban -->
       <div class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
         <BoardEngine client:load domainKey="communication" />
       </div>
+
+      <!-- Broadcast History -->
+      <section class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
+        <div class="px-4 py-3 border-b border-[var(--border-default)] flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <h2 class="text-sm font-bold text-navy">Historico de Disparos</h2>
+            <p class="text-[.68rem] text-[var(--text-muted)]">Notificacoes enviadas por tribo</p>
+          </div>
+          <input id="ops-broadcast-search" type="text"
+                 class="w-full sm:w-[280px] px-3 py-2 rounded-xl border-[1.5px] border-[var(--border-default)] text-sm bg-[var(--surface-card)] focus:outline-none focus:border-navy transition-colors"
+                 placeholder="Buscar assunto, tribo ou remetente" />
+        </div>
+        <div id="ops-broadcast-container" class="p-4 overflow-x-auto">
+          <div id="ops-broadcast-loading" class="text-center py-6 text-[var(--text-muted)] text-sm">Carregando...</div>
+          <div id="ops-broadcast-empty" class="hidden text-center py-6 text-[var(--text-secondary)] text-sm">Nenhum disparo encontrado.</div>
+          <table id="ops-broadcast-table" class="hidden w-full text-[.72rem] border-collapse">
+            <thead>
+              <tr class="border-b border-[var(--border-default)] text-left">
+                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">Assunto</th>
+                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">Tribo</th>
+                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)] text-right">Destinatarios</th>
+                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">Enviado em</th>
+                <th class="px-3 py-2 font-semibold text-[var(--text-secondary)]">Enviado por</th>
+              </tr>
+            </thead>
+            <tbody id="ops-broadcast-body"></tbody>
+          </table>
+        </div>
+      </section>
     </section>
   </div>
 </AdminLayout>
 
-<script is:inline>
-  (function () {
-    function hasCommsOpsAccess(member) {
-      if (!member) return false;
-      if (member.is_superadmin) return true;
-      var role = String(member.operational_role || '');
-      var designations = Array.isArray(member.designations) ? member.designations : [];
-      return ['manager', 'deputy_manager'].includes(role) || ['comms_leader', 'comms_member'].some(function (d) { return designations.includes(d); });
+<script>
+  import { buildAttendanceFromCommsRoute, buildCommsPlaybookTemplates } from '../../lib/webinars/context-aids';
+
+  let sb: any = null;
+  let allBroadcasts: any[] = [];
+
+  const ROUTE = { context: '', stage: '', q: '', title: '', date: '', eventId: '' };
+
+  function escapeHtml(s: string): string {
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  function formatDate(dateIso: string): string {
+    if (!dateIso) return '';
+    const d = new Date(`${dateIso}T12:00:00`);
+    if (Number.isNaN(d.getTime())) return dateIso;
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  function hasCommsOpsAccess(member: any): boolean {
+    if (!member) return false;
+    if (member.is_superadmin) return true;
+    const role = String(member.operational_role || '');
+    const designations: string[] = Array.isArray(member.designations) ? member.designations : [];
+    return ['manager', 'deputy_manager'].includes(role)
+      || ['comms_leader', 'comms_member'].some(d => designations.includes(d));
+  }
+
+  // ── Route parsing (for webinar context handoff) ──
+
+  function parseRoute() {
+    const p = new URLSearchParams(window.location.search);
+    ROUTE.context = p.get('context') || '';
+    ROUTE.stage = p.get('stage') || '';
+    ROUTE.q = (p.get('q') || '').trim();
+    ROUTE.title = (p.get('title') || ROUTE.q).trim();
+    ROUTE.date = p.get('date') || '';
+    ROUTE.eventId = p.get('eventId') || '';
+    const searchInput = document.getElementById('ops-broadcast-search') as HTMLInputElement | null;
+    if (searchInput && ROUTE.q) searchInput.value = ROUTE.q;
+  }
+
+  function renderContext() {
+    const box = document.getElementById('ops-context');
+    const copy = document.getElementById('ops-context-copy');
+    if (!box || !copy) return;
+    if (!ROUTE.context) { box.classList.add('hidden'); return; }
+    const stageLabel: Record<string, string> = {
+      invite: 'preparar convite e lembrete',
+      reminder: 'revisar lembrete operacional',
+      followup: 'organizar follow-up e divulgacao posterior',
+    };
+    copy.innerHTML = `Contexto atual: ${stageLabel[ROUTE.stage] || 'revisar a comunicacao'} do webinar <strong>${escapeHtml(ROUTE.title || 'selecionado')}</strong>.`
+      + (ROUTE.date ? ` Data de referencia: ${escapeHtml(formatDate(ROUTE.date))}.` : '');
+    box.classList.remove('hidden');
+  }
+
+  function renderPlaybook() {
+    const section = document.getElementById('ops-playbook');
+    const body = document.getElementById('ops-playbook-body');
+    if (!section || !body || ROUTE.context !== 'webinar') {
+      section?.classList.add('hidden');
+      return;
     }
-    function bootCommsOpsPage() {
-      var loading = document.getElementById('commsops-loading');
-      var denied = document.getElementById('commsops-denied');
-      var panel = document.getElementById('commsops-panel');
-      var member = window.navGetMember && window.navGetMember();
-      var sb = window.navGetSb && window.navGetSb();
-      if (!member || !sb) {
-        window.addEventListener('nav:member', bootCommsOpsPage, { once: true });
-        return;
+    const templates = buildCommsPlaybookTemplates(ROUTE, formatDate);
+    body.innerHTML = templates.map(tpl => `
+      <article class="rounded-2xl border ${tpl.tone} p-4">
+        <div class="flex items-start justify-between gap-3">
+          <h3 class="text-sm font-bold text-navy">${escapeHtml(tpl.title)}</h3>
+          <div class="flex gap-2 flex-wrap justify-end">
+            <button type="button" class="px-3 py-1.5 rounded-lg bg-[var(--surface-card)] border border-[var(--border-default)] text-[var(--text-primary)] text-[.72rem] font-semibold cursor-pointer hover:bg-[var(--surface-hover)]" data-copy="${escapeHtml(tpl.subject)}">Copiar assunto</button>
+            <button type="button" class="px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold border-0 cursor-pointer hover:opacity-90" data-copy="${escapeHtml(tpl.body)}">Copiar mensagem</button>
+          </div>
+        </div>
+        <div class="mt-3 space-y-2">
+          <div><div class="text-[.68rem] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Assunto sugerido</div><div class="mt-1 text-[.8rem]">${escapeHtml(tpl.subject)}</div></div>
+          <div><div class="text-[.68rem] font-semibold uppercase tracking-wide text-[var(--text-secondary)]">Mensagem base</div><pre class="mt-1 whitespace-pre-wrap text-[.76rem] font-sans">${escapeHtml(tpl.body)}</pre></div>
+        </div>
+      </article>`).join('');
+    section.classList.remove('hidden');
+
+    body.querySelectorAll('[data-copy]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const text = (btn as HTMLElement).dataset.copy || '';
+        try { await navigator.clipboard.writeText(text); (window as any).toast?.('Copiado!', 'success'); }
+        catch { (window as any).toast?.('Erro ao copiar.', 'error'); }
+      });
+    });
+  }
+
+  // ── Webinars pendentes ──
+
+  async function loadWebinars() {
+    const section = document.getElementById('ops-webinars');
+    const body = document.getElementById('ops-webinars-body');
+    if (!section || !body) return;
+    try {
+      const { data, error } = await sb.rpc('webinars_pending_comms');
+      if (error) throw error;
+      const list = Array.isArray(data) ? data : (data ? JSON.parse(data) : []);
+      if (!list.length) { section.classList.add('hidden'); return; }
+      section.classList.remove('hidden');
+      const tones: Record<string, string> = {
+        invite: 'bg-blue-50 text-blue-700 border-blue-200',
+        followup: 'bg-purple-50 text-purple-700 border-purple-200',
+        awaiting_replay: 'bg-amber-50 text-amber-700 border-amber-200',
+        replay_ready: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        info: 'bg-gray-50 text-gray-700 border-gray-200',
+      };
+      body.innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-2 gap-3">${list.map((w: any) => {
+        const tone = tones[w.comms_action] || tones.info;
+        const stage = w.comms_action === 'followup' || w.comms_action === 'replay_ready' ? 'followup' : 'invite';
+        const href = `/admin/comms-ops?context=webinar&title=${encodeURIComponent(w.title)}&stage=${stage}`;
+        const fmtDt = w.scheduled_at ? new Date(w.scheduled_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '';
+        return `<article class="rounded-xl border border-[var(--border-default)] p-3">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-sm font-bold text-navy">${escapeHtml(w.title || '')}</div>
+              <div class="text-[.72rem] text-[var(--text-muted)] mt-0.5">${fmtDt}${w.tribe_name ? ' · ' + escapeHtml(w.tribe_name) : ''}</div>
+              <div class="mt-1.5 inline-flex items-center px-2 py-0.5 rounded-full border text-[.68rem] font-bold ${tone}">${escapeHtml(w.comms_label || '')}</div>
+            </div>
+            <a href="${href}" class="shrink-0 px-3 py-1.5 rounded-lg bg-navy text-white text-[.72rem] font-semibold no-underline hover:opacity-90">Preparar</a>
+          </div>
+        </article>`;
+      }).join('')}</div>`;
+    } catch (e) { console.warn('Ops webinars:', e); section.classList.add('hidden'); }
+  }
+
+  // ── Broadcast History ──
+
+  async function loadBroadcasts() {
+    const loading = document.getElementById('ops-broadcast-loading');
+    const empty = document.getElementById('ops-broadcast-empty');
+    const table = document.getElementById('ops-broadcast-table');
+    const tbody = document.getElementById('ops-broadcast-body');
+    if (!loading || !empty || !table || !tbody) return;
+    try {
+      const { data, error } = await sb.rpc('broadcast_history', { p_limit: 30 });
+      loading.classList.add('hidden');
+      if (error) { empty.classList.remove('hidden'); return; }
+      allBroadcasts = data || [];
+      renderBroadcasts();
+    } catch (e: any) { loading?.classList.add('hidden'); empty?.classList.remove('hidden'); }
+  }
+
+  function renderBroadcasts() {
+    const empty = document.getElementById('ops-broadcast-empty');
+    const table = document.getElementById('ops-broadcast-table');
+    const tbody = document.getElementById('ops-broadcast-body');
+    if (!empty || !table || !tbody) return;
+    const query = ROUTE.q.toLowerCase();
+    const filtered = allBroadcasts.filter((r: any) => {
+      if (!query) return true;
+      return (r.subject || '').toLowerCase().includes(query)
+        || (r.tribe_name || '').toLowerCase().includes(query)
+        || (r.sent_by_name || '').toLowerCase().includes(query);
+    });
+    if (!filtered.length) {
+      empty.textContent = query ? 'Nenhum resultado para essa busca.' : 'Nenhum disparo registrado.';
+      empty.classList.remove('hidden'); table.classList.add('hidden'); return;
+    }
+    empty.classList.add('hidden');
+    tbody.innerHTML = filtered.map((r: any) => {
+      const dt = r.sent_at ? new Date(r.sent_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+      return `<tr class="border-b border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">
+        <td class="px-3 py-2 font-medium">${escapeHtml(r.subject || '')}</td>
+        <td class="px-3 py-2">${escapeHtml(r.tribe_name || '')}</td>
+        <td class="px-3 py-2 text-right">${r.recipient_count ?? ''}</td>
+        <td class="px-3 py-2">${dt}</td>
+        <td class="px-3 py-2">${escapeHtml(r.sent_by_name || '')}</td>
+      </tr>`;
+    }).join('');
+    table.classList.remove('hidden');
+  }
+
+  // ── Search ──
+
+  document.getElementById('ops-broadcast-search')?.addEventListener('input', (e) => {
+    ROUTE.q = ((e.target as HTMLInputElement)?.value || '').trim();
+    renderBroadcasts();
+  });
+
+  // ── Boot ──
+
+  function showPanel() {
+    parseRoute();
+    renderContext();
+    renderPlaybook();
+    document.getElementById('commsops-loading')?.classList.add('hidden');
+    document.getElementById('commsops-panel')?.classList.remove('hidden');
+    loadWebinars();
+    loadBroadcasts();
+  }
+
+  function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail && hasCommsOpsAccess(e.detail)) showPanel();
+      else {
+        document.getElementById('commsops-loading')?.classList.add('hidden');
+        document.getElementById('commsops-denied')?.classList.remove('hidden');
       }
-      if (loading) loading.classList.add('hidden');
-      if (!hasCommsOpsAccess(member)) {
-        if (denied) denied.classList.remove('hidden');
-        return;
+    }) as EventListener);
+
+    const m = (window as any).navGetMember?.();
+    if (m) {
+      if (hasCommsOpsAccess(m)) showPanel();
+      else {
+        document.getElementById('commsops-loading')?.classList.add('hidden');
+        document.getElementById('commsops-denied')?.classList.remove('hidden');
       }
-      if (panel) panel.classList.remove('hidden');
     }
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', bootCommsOpsPage);
-    } else {
-      bootCommsOpsPage();
-    }
-  })();
+  }
+
+  boot();
 </script>
