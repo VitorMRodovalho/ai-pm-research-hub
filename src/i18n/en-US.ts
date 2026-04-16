@@ -595,6 +595,7 @@ const enUS: Record<string, string> = {
   'trail.ranking.title': 'Team Ranking',
   'trail.ranking.sub': 'Progress of active participants on the trail',
   'trail.ranking.avg': 'Overall average',
+  'trail.ranking.allTribes': 'All Tribes',
   'trail.completed': 'completed',
   'trail.inProgress': 'in progress',
   'trail.coreUnavailable': 'Core courses unavailable at the moment.',

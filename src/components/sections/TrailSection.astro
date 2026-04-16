@@ -129,7 +129,7 @@ try {
 <span id="trail-i18n-inprogress" class="hidden">{t('trail.inProgress', lang)}</span>
 
 <script>
-  const TOTAL = 6;
+  import { TOTAL_COURSES as TOTAL } from '../../data/trail';
   const trailRankingAvg = document.getElementById('trail-i18n-avg')?.textContent || 'Overall average';
   const trailCompleted = document.getElementById('trail-i18n-completed')?.textContent || 'completed';
   const trailInProgress = document.getElementById('trail-i18n-inprogress')?.textContent || 'in progress';

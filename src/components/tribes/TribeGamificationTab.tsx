@@ -4,6 +4,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { usePageI18n } from '../../i18n/usePageI18n';
+import { TOTAL_COURSES } from '../../data/trail';
 
 interface TribeGamificationTabProps {
   /** @deprecated Use initiativeId instead */
@@ -258,7 +259,7 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
                     )}
                   </td>
                   <td className="px-3 py-2.5 text-center font-medium text-[var(--text-secondary)]">
-                    {m.trail_progress}/7
+                    {m.trail_progress}/{TOTAL_COURSES}
                   </td>
                 </tr>
               ))}
