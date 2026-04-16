@@ -833,7 +833,10 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
 
       const gpBadge = s.gpOnly ? ' <span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-bold ml-1">GP</span>' : '';
 
-      const pastHtml = s.past.length ? `<div class="mb-2"><div class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">📌 Realizados</div>${s.past.map((ev: any) => renderEventCard(ev)).join('')}</div>` : '';
+      const PAST_LIMIT = 10;
+      const visiblePast = s.past.slice(0, PAST_LIMIT);
+      const hiddenPast = s.past.slice(PAST_LIMIT);
+      const pastHtml = s.past.length ? `<div class="mb-2"><div class="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">📌 Realizados</div>${visiblePast.map((ev: any) => renderEventCard(ev)).join('')}${hiddenPast.length ? `<div id="more-past-${s.type}" class="hidden">${hiddenPast.map((ev: any) => renderEventCard(ev)).join('')}</div><button class="text-xs text-navy font-semibold mt-1 cursor-pointer border-0 bg-transparent hover:underline js-show-more" data-target="more-past-${s.type}">Ver todos os ${s.pastCount} realizados ▾</button>` : ''}</div>` : '';
 
       const FUTURE_LIMIT = 3;
       const visibleFuture = s.future.slice(0, FUTURE_LIMIT);
