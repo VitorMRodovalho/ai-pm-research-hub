@@ -1653,7 +1653,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
 
     try {
       if (scope === 'future' && recurrenceGroup) {
-        // Update future events in recurrence group (shared fields only)
+        // Update future events in recurrence group (shared fields, including type/nature)
         const { data: futureData, error: futureError } = await sb.rpc('update_future_events_in_group', {
           p_event_id: id,
           p_new_time_start: timeStart,
@@ -1661,6 +1661,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
           p_meeting_link: link,
           p_notes: notes,
           p_visibility: visibility,
+          p_type: editType,
+          p_nature: nature,
         });
         if (futureError) throw futureError;
         // Also update this specific event's individual fields (title, date, type, etc.)
