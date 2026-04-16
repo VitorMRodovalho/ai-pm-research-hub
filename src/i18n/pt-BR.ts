@@ -993,7 +993,6 @@ const ptBR: Record<string, string> = {
   'role.communicator': 'Multiplicador',
   'role.guest': 'Visitante',
   'role.comms_team': 'Comunicação',
-  'role.comms_leader': 'Líder de Comunicação',
   'role.comms_member': 'Membro de Comunicação',
   'role.chapter_liaison': 'Ponto Focal',
   'role.deputy_manager': 'Deputy PM',
