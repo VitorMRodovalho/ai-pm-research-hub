@@ -16,6 +16,7 @@ Este diretório separa decisões técnicas duráveis das notas de governança ge
 - `ADR-0010-wiki-scope-narrative-knowledge-only.md` — Fronteira wiki vs SQL: wiki só para conhecimento narrativo (ADRs, governança), dados operacionais ficam em SQL.
 - `ADR-0011-v4-auth-pattern-rpcs-mcp.md` — `can()` / `can_by_member()` é a única fonte de verdade de autoridade em todas as camadas (RPC, MCP, RLS). Padrão canônico pós-V4, substitui role list hardcoded.
 - `ADR-0012-schema-consolidation-principles.md` — Single source of truth por conceito + cache columns com trigger de sync explícito. Elimina drift silencioso como o caso Wellington 16/Abr (3 colunas para o mesmo status).
+- `ADR-0013-log-table-taxonomy.md` — Taxonomia em 5 categorias (Admin Audit / Domain Lifecycle / High-Volume / Distinct Retention / External Ingestion) para decidir quando uma tabela log consolida em `admin_audit_log` vs existe separada. Fecha a questão deixada aberta por ADR-0012 P5 + B8.
 
 ## Domain Model V4 — Refatoração Arquitetural (Complete, 2026-04-13)
 
