@@ -90,7 +90,7 @@ Three distinct destinations. Each has different access, licensing, and purpose.
 
 **Access:** Private (org members only).
 **Format:** Obsidian vault (plain markdown + `.obsidian/` config). Anyone clones the repo and opens the folder as an Obsidian vault (see "Obsidian workflow" below).
-**Sync to platform:** `sync-wiki` Edge Function pulls content into `wiki_pages` table with FTS; platform UI renders domain-scoped pages per user permissions.
+**Sync to platform:** `sync-wiki` Edge Function is triggered by GitHub push webhook — syncs changed markdown files into `wiki_pages` table (with FTS) within seconds of each push. Not a cron — real-time. Platform UI renders domain-scoped pages per user permissions.
 **Content:**
 - Governance narratives (process docs, decision log detail)
 - Onboarding materials
@@ -222,13 +222,13 @@ Proposed cadence for catching drift:
 The `nucleo-ia-gp/wiki` repo IS an Obsidian vault (has `.obsidian/` folder committed). To use it:
 
 1. Install Obsidian (free): https://obsidian.md/
-2. Clone the repo: `git clone git@github.com:nucleo-ia-gp/wiki.git`
-3. Open Obsidian → "Open folder as vault" → select the cloned folder
-4. Obsidian reads the shared `.obsidian/` config (themes, plugins) so all contributors see the same vault setup
-5. Edit pages (with frontmatter per the template above), commit, push
-6. Platform `sync-wiki` Edge Function picks up changes on next cron cycle (or manual trigger)
+2. Clone the repo: `git clone git@github.com:nucleo-ia-gp/wiki.git` (suggested path: `~/Documents/nucleo-wiki/`)
+3. Open Obsidian → "Open folder as vault" → select the cloned folder, OR launch with path: `flatpak run md.obsidian.Obsidian ~/Documents/nucleo-wiki` (Linux flatpak) / equivalent on macOS/Windows
+4. Obsidian reads the shared `.obsidian/` config (themes, plugins) — including the **Obsidian Git plugin** (v2.38.2+) which auto-commits every 10min + auto-pushes on commit + auto-pulls on boot
+5. Edit pages (with frontmatter per the template above) — plugin handles git automatically. Manual fallback: `git add -A && git commit && git push` in the cloned folder.
+6. On push, GitHub fires a webhook to the `sync-wiki` Edge Function — wiki_pages table updates within seconds (real-time, not cron).
 
-**From Claude Code:** The wiki is just markdown files in a folder. If you clone the wiki locally at e.g. `~/wiki/`, Claude Code can read/write those files like any other project. Claude Code is not required to use Obsidian — the two are independent.
+**From Claude Code:** The wiki is just markdown files in a folder. If you clone the wiki locally at e.g. `~/Documents/nucleo-wiki/`, Claude Code can read/write those files like any other project. Claude Code is not required to use Obsidian — the two are independent.
 
 ## References
 
