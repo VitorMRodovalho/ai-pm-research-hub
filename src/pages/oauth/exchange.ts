@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 
-async function kvLog(endpoint: string, data: any) {
-  try { const kv = (env as any).SESSION; if (kv) await kv.put(`debug:${endpoint}:${Date.now()}`, JSON.stringify({ timestamp: new Date().toISOString(), endpoint, ...data }), { expirationTtl: 3600 }); } catch {}
+async function kvLog(_endpoint: string, _data: any) {
+  // No-op: KV debug logs disabled (free tier 1k writes/day protection).
 }
 
 /**
