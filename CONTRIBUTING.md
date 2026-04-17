@@ -40,6 +40,39 @@ npm run smoke:routes  # Smoke-test critical routes
 
 All three must pass before you open a PR.
 
+### Pre-commit hook (strongly recommended)
+
+This repo ships a pre-commit hook in `.githooks/pre-commit` that scans for:
+- `.env` files being staged accidentally
+- Opaque tokens (JWT, `sk_live_...`, `ghp_...`, AWS access keys, Supabase service role keys)
+- Private key headers
+- Real-looking member emails in non-test files
+- Large binaries (>10MB, warning)
+- New TODO/FIXME (informational — consider logging via the `session-log` skill)
+
+Enable once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+Optional: install [gitleaks](https://github.com/gitleaks/gitleaks) for a second-pass scan. If available, the hook will invoke it automatically.
+
+```bash
+# macOS
+brew install gitleaks
+# Linux (example)
+go install github.com/gitleaks/gitleaks/v8@latest
+```
+
+Bypass (emergency only, explain in commit body):
+
+```bash
+git commit --no-verify -m "..."
+```
+
+See `SECURITY.md` for what must not be committed and `GOVERNANCE.md` for the content trifold (repo / private wiki / platform SQL).
+
 ---
 
 ## Code conventions
