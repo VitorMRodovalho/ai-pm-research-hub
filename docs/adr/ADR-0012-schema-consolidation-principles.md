@@ -111,10 +111,10 @@ Migration `20260424070000_b5_b7_member_invariants.sql`:
 
 ## Próximos passos
 
-1. **ADR-0013 (futuro)**: quando decidir roadmap de deprecation de `tribes`/`tribe_id`
-2. **B8**: consolidar `member_role_changes` + `member_status_transitions` em `admin_audit_log` (sessão dedicada)
-3. **B9**: decidir destino de `volunteer_applications`
-4. **B10**: test de contract invariants (query-based) rodando em CI
+1. ~~**ADR-0013 (futuro)**: roadmap de deprecation de `tribes`/`tribe_id`~~ — reassigned: ADR-0013 foi usado para log table taxonomy (18/Abr). Tribes deprecation vira ADR novo quando atacado.
+2. **B8**: consolidar `member_role_changes` + `member_status_transitions` em `admin_audit_log` (sessão dedicada) — **DONE** migration `20260425020000` (17/Abr)
+3. **B9**: decidir destino de `volunteer_applications` — **DONE** kept as historical, RPC migrado para `selection_applications` (migration `20260426010000`)
+4. **B10**: test de contract invariants (query-based) rodando em CI — **DONE** migration `20260425010000` + workflow `.github/workflows/invariants-check.yml`
 
 ## Referências
 
