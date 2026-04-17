@@ -123,15 +123,25 @@ Data sample:
 - 2 rows com tribe_id=6 (Tribo 6)
 - 3 rows com tribe_id=NULL (artigos gerais — "ai at work 2024", "2026 02 17 nucleo ia gp ciclo3 kickoff lideranca")
 
-**Hypothesis**: `artifacts` é precursor de `publication_submissions` — mesma semântica (deliverable com URL + review flow), mas sem initiative_id. Possíveis caminhos:
+**Investigação 17/Abr (post-sweep)**:
+- **0 RPCs** referenciam a tabela (não há interface via RPC).
+- **0 triggers** referenciam a tabela.
+- **MAS 4 frontend pages fazem direct Supabase queries**:
+  - `src/pages/artifacts.astro` — CRUD principal (SELECT/INSERT/UPDATE)
+  - `src/pages/tribe/[id].astro` — lista published artifacts por tribo
+  - `src/pages/profile.astro` — lista artifacts do user
+  - `src/pages/gamification.astro` — count por member
+- Nav: `/artifacts` linkada em `workspace`, `onboarding`, `navigation.config.ts`.
 
-1. **Migrar rows para publication_submissions** com initiative_id derivado de tribe_id (via legacy_tribe_id) + drop tabela artifacts.
-2. **Adicionar initiative_id + dual-write** para alinhar com C3 pattern.
-3. **Archive tabela** (mover para z_archive) se readers zero.
+**Conclusão**: artifacts **NÃO é órfão** — é parte ativa da plataforma mas escapou do pattern V4 (sem initiative_id, sem dual-write, sem RPC interface).
 
-Readers atuais: página `/artifacts.astro` (frontend) + `enqueue_artifact_publication_card` trigger.
+**Opções de tratamento** (decisão pendente PM):
 
-**Recomendação Fase 0+**: investigar se `/artifacts.astro` ainda é linkada/acessada. Se não, archive. Se sim, migrar schema para alinhar com publication_submissions.
+1. **Acknowledge como C2 bridge-locked**: manter artifacts com tribe_id, nunca adicionar initiative_id. Racional: pequeno, estável, user flow funcional.
+2. **Alinhar com C3 pattern**: ADD COLUMN initiative_id + dual-write trigger + backfill 29 rows. Custo: 1 migration, futuro pattern.
+3. **Consolidar em publication_submissions**: migrar 29 rows + drop tabela. Mais agressivo, requer shape reconciliation. Reduz surface mas frontend precisa cutover.
+
+**Recomendação**: **Opção 2** (alinhar com C3) é a mais conservadora — preserva frontend + introduz initiative_id para readers futuros pós-Fase 1. Consolidação opt3 pode ser avaliada separadamente se for identificado uso redundante.
 
 ## Ordem recomendada para Fase 1 (menor → maior risco)
 
