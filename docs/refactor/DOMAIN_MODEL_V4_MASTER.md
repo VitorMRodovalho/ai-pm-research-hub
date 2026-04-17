@@ -237,6 +237,26 @@ Objetivo: remover código legado, consolidar V4, atualizar documentação.
 - [x] `.claude/rules/refactor-in-progress.md` → STATUS: Complete — **CONCLUÍDO 2026-04-13.**
 - [x] Remover aviso de refactor ativo do CLAUDE.md — **CONCLUÍDO 2026-04-13.** Substituído por seção resumo do V4.
 
+## Pós-V4: qualidade estrutural (Eixo A + Eixo B)
+
+Após cutover de 2026-04-13, duas frentes de qualidade estrutural foram abertas para consolidar o refactor:
+
+**Eixo A — V4 Auth Pattern consistency (ADR-0011, 2026-04-17)**
+Auditoria detectou 70+ RPCs legacy com role list hardcoded apesar do cutover V4. `can()`/`can_by_member()` é a única fonte de autoridade. Role list hardcoded é anti-pattern.
+- [x] A4.1: 3 event RPCs migradas (`drop_event_instance`, `update_event_instance`, `update_future_events_in_group`) — migration `20260424040000`
+- [x] A4.2: 6 member admin RPCs migradas — migration `20260424050000`
+- [x] A4.3: 3 PII reads migradas — migration `20260424060000`
+- [x] Contract test anti-drift (static analysis): `tests/contracts/rpc-v4-auth.test.mjs` — migrations pós-20260424 devem usar V4 auth
+- [ ] 70 RPCs legacy restantes — migrar inline quando tocar (não sweep)
+
+**Eixo B — Schema consolidation (ADR-0012, 2026-04-17 → 2026-04-18)**
+Auditoria de drift em cache columns (`operational_role`, `member_status`, `is_active`, `designations`). 11 rows de drift saneados; trigger sync_member_status_consistency instalado (coerce, não reject).
+- [x] B5: saneamento de 9 drift rows históricos — migration `20260424070000`
+- [x] B7: trigger `sync_member_status_consistency` BEFORE UPDATE em members (coerce 5 invariantes) — migration `20260424070000`
+- [x] **B10: contract invariants query-based** — migration `20260425010000_b10_schema_invariants.sql` + `tests/contracts/schema-invariants.test.mjs`. RPC `check_schema_invariants()` valida 8 invariantes contra live DB (A1-A3, B, C, D, E, F). 0 violations confirmado pós-B5/B7. Test skippa sem `SUPABASE_SERVICE_ROLE_KEY`; CI deve injetar secret.
+- [ ] B8: consolidar `member_role_changes` + `member_status_transitions` em `admin_audit_log`
+- [ ] B9: decidir destino de `volunteer_applications` (arquivar ou migrar)
+
 ## Baseline pre-v4 (capturado 2026-04-11)
 
 **Git tag:** `pre-v4-baseline` → commit `869ad1f` (docs: sync to v2.9.5 — 68 tools + LGPD complete)
