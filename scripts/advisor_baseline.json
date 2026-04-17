@@ -1,0 +1,79 @@
+{
+  "generated_at": "2026-04-17",
+  "source": "mcp__claude_ai_Supabase__get_advisors (type=security)",
+  "principle": "Each cache_key below is an accepted advisor finding with documented rationale. CI fails if new ERROR advisors appear that are NOT in this allowlist. Update this file by re-running advisor scan and adding new accepted findings with rationale.",
+  "security": {
+    "accepted_errors": [
+      {
+        "cache_key": "security_definer_view_public_active_members",
+        "rationale": "Public surface: view used by anon/authenticated for homepage stats. SECURITY DEFINER intentional to bypass member RLS while exposing only safe aggregated columns."
+      },
+      {
+        "cache_key": "security_definer_view_public_vw_exec_cert_timeline",
+        "rationale": "Exec analytics view: aggregate-only, admin-only access via GRANT. DEFINER required to read member_certifications across tribes."
+      },
+      {
+        "cache_key": "security_definer_view_public_auth_engagements",
+        "rationale": "V4 auth foundation: view joins persons/engagements/members for can()/rls_can() to work. Must run as owner to traverse identity bridge."
+      },
+      {
+        "cache_key": "security_definer_view_public_vw_exec_funnel",
+        "rationale": "Exec analytics — same pattern as vw_exec_cert_timeline."
+      },
+      {
+        "cache_key": "security_definer_view_public_impact_hours_total",
+        "rationale": "Aggregated impact data exposed to all authenticated members (gamification). DEFINER avoids per-row RLS cost."
+      },
+      {
+        "cache_key": "security_definer_view_public_vw_exec_skills_radar",
+        "rationale": "Exec analytics — same pattern as vw_exec_cert_timeline."
+      },
+      {
+        "cache_key": "security_definer_view_public_members_public_safe",
+        "rationale": "LGPD-safe member view: explicitly filters PII columns; intended public surface."
+      },
+      {
+        "cache_key": "security_definer_view_public_public_members",
+        "rationale": "Same as members_public_safe — legacy alias kept for MCP reader compat."
+      },
+      {
+        "cache_key": "security_definer_view_public_gamification_leaderboard",
+        "rationale": "Public leaderboard: aggregated XP across members, intentionally visible to all authenticated."
+      },
+      {
+        "cache_key": "security_definer_view_public_member_attendance_summary",
+        "rationale": "Member-scoped attendance stats exposed to the owner + admin; DEFINER required to cross-join attendance + events + members."
+      },
+      {
+        "cache_key": "security_definer_view_public_recurring_event_groups",
+        "rationale": "Bridge view for recurrence UI. Aggregates events without exposing non-authorized rows; DEFINER intentional."
+      },
+      {
+        "cache_key": "security_definer_view_public_impact_hours_summary",
+        "rationale": "Same as impact_hours_total — tribe/initiative-level aggregate."
+      }
+    ],
+    "accepted_warnings": [
+      {
+        "cache_key": "extension_in_public_pg_trgm",
+        "rationale": "Moving pg_trgm to extensions schema requires qualifying all usages (similarity, gin_trgm_ops). Deferred — tracked in ADR-0012 tech debt."
+      },
+      {
+        "cache_key": "extension_in_public_pg_net",
+        "rationale": "pg_net used by pg_cron HTTP hooks; same cost as pg_trgm to relocate. Deferred."
+      },
+      {
+        "cache_key": "materialized_view_in_api_public_cycle_tribe_dim",
+        "rationale": "Authenticated members need read access for /teams + /tribe/*. Converting to regular view + RLS would hurt perf."
+      },
+      {
+        "cache_key": "rls_policy_always_true_public_visitor_leads_Anyone can submit lead",
+        "rationale": "Public lead-submission form — WITH CHECK=true intentional. Rate limit opportunity tracked."
+      },
+      {
+        "cache_key": "auth_leaked_password_protection",
+        "rationale": "Toggle available in Supabase Auth dashboard (not via migration). Pending human action — low priority."
+      }
+    ]
+  }
+}

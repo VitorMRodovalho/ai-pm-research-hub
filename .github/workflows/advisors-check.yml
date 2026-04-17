@@ -1,0 +1,54 @@
+name: Supabase Advisors Drift
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'supabase/migrations/**'
+      - 'scripts/advisor_baseline.json'
+      - 'scripts/check_advisors.mjs'
+      - '.github/workflows/advisors-check.yml'
+  schedule:
+    # Weekly Monday 08:00 UTC — catches drift from dashboard-level changes
+    # (GRANTs, RLS, Auth settings) that don't come through PRs.
+    - cron: '0 8 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: advisors-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-advisors:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Check Supabase advisor drift
+        env:
+          SUPABASE_PROJECT_REF: ldrfrvwhxsmgaabwmaik
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: node scripts/check_advisors.mjs
+
+      - name: Summarize result
+        if: always()
+        run: |
+          echo "## Supabase Advisors Drift Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -z "${{ secrets.SUPABASE_ACCESS_TOKEN }}" ]; then
+            echo ":warning: Skipped — \`SUPABASE_ACCESS_TOKEN\` secret not set." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "To enable: create PAT at https://supabase.com/dashboard/account/tokens" >> $GITHUB_STEP_SUMMARY
+            echo "then repo Settings → Secrets → Actions → New secret" >> $GITHUB_STEP_SUMMARY
+            echo "- \`SUPABASE_ACCESS_TOKEN\` = (paste PAT)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo ":white_check_mark: Advisors verified against baseline." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Baseline: \`scripts/advisor_baseline.json\`. Update when intentional changes are accepted." >> $GITHUB_STEP_SUMMARY
+          fi
