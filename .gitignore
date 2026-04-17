@@ -65,3 +65,8 @@ DISCREPANCY_REPORT.md
 MIGRATION_PROPOSAL.md
 REPO_INVENTORY.md
 .pdf
+
+# Tooling installers (gh CLI, etc. — installed via .deb not committed)
+*.deb
+*.rpm
+*.AppImage
