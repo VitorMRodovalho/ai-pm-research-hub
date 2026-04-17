@@ -254,7 +254,7 @@ Auditoria de drift em cache columns (`operational_role`, `member_status`, `is_ac
 - [x] B5: saneamento de 9 drift rows históricos — migration `20260424070000`
 - [x] B7: trigger `sync_member_status_consistency` BEFORE UPDATE em members (coerce 5 invariantes) — migration `20260424070000`
 - [x] **B10: contract invariants query-based** — migration `20260425010000_b10_schema_invariants.sql` + `tests/contracts/schema-invariants.test.mjs`. RPC `check_schema_invariants()` valida 8 invariantes contra live DB (A1-A3, B, C, D, E, F). 0 violations confirmado pós-B5/B7. Test skippa sem `SUPABASE_SERVICE_ROLE_KEY`; CI deve injetar secret.
-- [ ] B8: consolidar `member_role_changes` + `member_status_transitions` em `admin_audit_log`
+- [x] **B8: audit log consolidation** — migration `20260425020000_b8_audit_log_consolidation.sql`. `member_role_changes` (13 rows) + `member_status_transitions` (21 rows) backfilled em `admin_audit_log` com `metadata._backfill_source` tag. RPCs `admin_offboard_member`, `admin_reactivate_member`, `export_audit_log_csv` reescritas. Tabelas originais em `z_archive` (reversível). 8/8 invariantes ainda clean. Eixo B **FECHADO**.
 - [ ] B9: decidir destino de `volunteer_applications` (arquivar ou migrar)
 
 ## Baseline pre-v4 (capturado 2026-04-11)
