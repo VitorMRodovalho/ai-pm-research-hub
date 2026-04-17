@@ -14,6 +14,7 @@ Este diretório separa decisões técnicas duráveis das notas de governança ge
 - `ADR-0002-role-model-v3-operational-role-and-designations.md` — Modelo v3 (substituído por ADR-0007).
 - `ADR-0003-admin-analytics-internal-readonly-surface.md` — `/admin/analytics` como leitura interna sem abrir trilhas de escrita.
 - `ADR-0010-wiki-scope-narrative-knowledge-only.md` — Fronteira wiki vs SQL: wiki só para conhecimento narrativo (ADRs, governança), dados operacionais ficam em SQL.
+- `ADR-0011-v4-auth-pattern-rpcs-mcp.md` — `can()` / `can_by_member()` é a única fonte de verdade de autoridade em todas as camadas (RPC, MCP, RLS). Padrão canônico pós-V4, substitui role list hardcoded.
 
 ## Domain Model V4 — Refatoração Arquitetural (Complete, 2026-04-13)
 
