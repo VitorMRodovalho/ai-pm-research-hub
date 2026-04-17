@@ -1,5 +1,233 @@
 # Release Log
 
+## 2026-04-17 — v3.2.1: Post-V4 Structural Quality — ADR-0011/0012/0013 + Governance Baseline + Advisor CI
+
+### Scope
+Sessão de qualidade estrutural pós-cutover V4. 24 commits em um dia cobrindo três eixos: autoridade (can_by_member em todas as camadas), consolidação de schema (invariantes, drift trigger, audit log unification), e governance tooling (SECURITY/GOVERNANCE docs, pre-commit, advisor drift CI). Sem features user-facing — puro hardening.
+
+### Delivered
+
+#### Eixo A — ADR-0011 V4 Auth Pattern
+- **ADR-0011** criado (`acbe431`) — `can()`/`can_by_member()` é única fonte de autoridade em RPC, MCP, RLS. Role list hardcoded é anti-pattern.
+- **A4.1** (`d120272`, mig `20260424040000`) — 3 event RPCs (`create_event`, `update_event`, `drop_event_instance`) usam `can_by_member('manage_event')`.
+- **A4.2** (`297e1f5`, mig `20260424050000`) — 6 member admin RPCs usam `can_by_member('manage_member'/'promote')`.
+- **A4.3** (`3fc78c9`, mig `20260424060000`) — 3 PII read RPCs usam `can_by_member('view_pii')`.
+- **Anti-drift test** (`7afbec0`) — `rpc-v4-auth.test.mjs` parseia novas migrations pós-cutover e exige `can_by_member` em RPCs com auth gate. Baseline: 17/94 RPCs V4-compliant (70 restantes são legacy, migração inline).
+
+#### Eixo B — ADR-0012 Schema Consolidation
+- **ADR-0012** criado (`5c82e42`) — 6 princípios para evitar drift entre colunas que representam o mesmo conceito (fact × dim × cache). Cache columns exigem trigger de sync (coerce, not reject).
+- **B5+B7** (`101916f`, mig `20260424070000`) — saneamento de 9 rows de drift de membro + `trg_sync_member_status_consistency` (BEFORE UPDATE coerce trigger).
+- **B8** (`2e0fe45`, mig `20260425020000`) — audit log consolidation: 34 rows backfilled de `member_role_changes` + `member_status_transitions` → `admin_audit_log`; 3 RPCs reescritas (`export_audit_log_csv`, `admin_offboard_member`, promote paths); 2 tabelas movidas para `z_archive`.
+- **B9** (`b727bda`, mig `20260425030000`) — drop `list_volunteer_applications` (não usada); `volunteer_applications` mantida como histórica frozen. `trg_audit_events` verificado em INSERT/UPDATE/DELETE.
+- **B10** (`ef84ba3`, mig `20260425010000`) — `check_schema_invariants()` RPC valida 8 invariantes (A1 alumni, A2 observer, A3 active role, B is_active↔member_status, C designations terminal, D persons.auth_id, E engagement.active, F initiatives.legacy_tribe_id). `tests/contracts/schema-invariants.test.mjs`. Live baseline: 0 violations em todos 8.
+- **Static contract** (`b19964a`) — `tests/contracts/schema-cache-columns.test.mjs`: 2 testes detectam ALTER TABLE ADD COLUMN em `members`/`engagements`/`initiatives` sem trigger de sync (cutover `20260426020000`) + reference map de 4 cache columns canônicas.
+- **P2 fix** (`8032d57`, mig `20260426010000`) — `volunteer_funnel_summary` refactor: lê `selection_applications` + `selection_cycles` (80 rows ativas) em vez de `volunteer_applications` (143 frozen 10/Mar). Auth via ADR-0011, MCP tool #62 signature `cycle: number` → `cycle_code: string`.
+
+#### ADR-0013 — Log Table Taxonomy
+- **ADR-0013** criado (`8380bd6`) — 5 categorias para classificar log tables: (A) Admin Audit → consolidar em `admin_audit_log`; (B) Domain Lifecycle Events → separada; (C) High-Volume → separada IO; (D) Distinct Retention → separada compliance; (E) External Ingestion → separada payload bruto. Default para novas tabelas: Categoria A.
+
+#### Governance Baseline
+- **`SECURITY.md`** — vuln reporting, lista de não-committar (JWTs, PII, service_role, real emails).
+- **`GOVERNANCE.md`** — decision authority matrix, ADR lifecycle, trifold de conteúdo (repo público / wiki privado / frameworks públicos / SQL operacional), archive criteria.
+- **`CONTRIBUTING.md`** atualizado — instruções de pre-commit + gitleaks.
+- **`.githooks/pre-commit`** — secret scanner (JWT/sk_/ghp_/AWS/service_role + real emails) + warnings para TODO/FIXME + large files.
+- **`.github/workflows/invariants-check.yml`** — roda `check_schema_invariants()` em push/PR/daily 07:00 UTC (requer secret `SUPABASE_SERVICE_ROLE_KEY`, já configurado).
+- **`.github/workflows/advisors-check.yml`** + `scripts/check_advisors.mjs` + `scripts/advisor_baseline.json` (commit `8c7e284`) — advisor drift CI: 17 accepted findings documentados com rationale, PR paths + weekly Monday 08:00 UTC. Requer secret `SUPABASE_ACCESS_TOKEN` (PAT).
+- **Skills/agents overhaul** (`269e30a`) — `platform-guardian` agent novo (pós-V4); skills `invariants` + `session-log` novas; `guardian` + `code-reviewer` + `audit` enhanced; `refactor-guardian` marcado legacy.
+
+#### Bug fixes entregues
+- **`drop_event_instance` two-step flow** (`86dec30`, mig `20260424010000`) — force attendance com confirm dialog + count.
+- **`trg_audit_events` em events** (`5db043d`, mig `20260424020000`) — INSERT/UPDATE/DELETE capturados em `admin_audit_log` com `changed_fields` + `source` (user/system/orphan_auth).
+- **`admin_offboard_member` consolidado** (`dee6407`, mig `20260424030000`) — fecha ghost data gap: 7 campos V4 + engagements em único pipeline atomico (Wellington case foi o sintoma).
+
+#### Docs + housekeeping
+- **CBGPL S3 materials** (`e68571c`) — `CBGPL_VIDEO_FALLBACK_3MIN.md` (teleprompter + CUEs) + `CBGPL_DRY_RUN_PLAN.md` (60min rehearsal) + `CBGPL_BLOG_POST.md`.
+- **Wiki sync flow corrigido** (`5697b9e`) — docs atualizadas: webhook (não cron) + Obsidian Git plugin.
+- **CLAUDE.md drift fix** (`ba03fae`) — test baseline 1184 → 1188 (pós rpc-v4-auth + schema-cache-columns + advisor tests).
+- **Gitignore housekeeping** (`efa5374`, `3067ed2`) — `*.deb`/`*.rpm`/`*.AppImage` + `.claude/scheduled_tasks.lock`.
+
+### Validation
+- `npm test` ✅ 1195 total / 1188 pass / 7 skipped / 0 fail
+- `npx astro build` ✅ 0 errors
+- MCP smoke ✅ HTTP 200 + serverInfo
+- `check_schema_invariants()` ✅ 8/8 em 0 violations (live DB)
+- CI 5/5 green (Schema Invariants, Deploy Workers, CodeQL, Issue Gate, CI Validate)
+- Advisor baseline ✅ 17 findings documentados (12 security_definer_view + 5 WARN, todos com rationale)
+
+### Open tech debt (não-bloqueante)
+- 70 RPCs legacy com role hardcoded — migrar inline quando tocar (não sweep)
+- Consolidação adicional em `admin_audit_log` (B8.1: `platform_settings_log`)
+- Retention policy ADR para Categoria C (`mcp_usage_log` ~6k rows/ano projetado)
+- Tribes deprecation ADR (22 tabelas com `tribe_id` legacy)
+
+### Known issues
+- `apply_migration` MCP não registra em `supabase_migrations.schema_migrations` — workaround `INSERT ON CONFLICT DO NOTHING` manual documentado no `platform-guardian` checklist.
+
+---
+
+## 2026-04-15 → 2026-04-16 — v3.2.0: Initiative Pages + Comms/Instagram + Security Hardening
+
+### Scope
+47 commits em dois dias consolidando três frentes: (1) CR-051 Initiative Pages — página própria por iniciativa com board inline, membros, eventos, attendance, gamification nativos; (2) Comms analytics — Instagram Graph API integration, redesign de páginas comms (operational × analytics split), pg_cron daily sync; (3) Security hardening pós-advisor scan — 88 findings → 17 (−81%). Meeting rito migrado para biweekly. Upgrade Claude Opus 4.7.
+
+### Delivered
+
+#### CR-051 — Initiative Pages (MVP → Parity)
+- **Data foundation + page MVP** (`d098bed`) — initiative page com tabs Visão/Membros/Eventos/Deliverables/Gamification.
+- **MCP tools + nav** (`2cb9458`) — tools CRUD para initiative + nav entry `/initiatives`.
+- **/initiatives catalog + version bump** (`00c7840`) — listagem de todas iniciativas + cards + filtros.
+- **RPC-based loading + drawer UX** (`37f5c26`) — page carrega tudo via RPCs específicas (não direct queries).
+- **Inline board + member management + status actions** (`0f0dccf`) — board Kanban inline, editar/remover membros, change status buttons.
+- **Member RPCs + roles** (`b91ad1e`, `ee7efc2`, `bbb86ca`) — search/activate via RPC, edit role/remove, role permissions legend. CPMAI dashboard fix.
+- **Events + cross-links + deliverables/attendance tabs** (`5c5be77`, `2dd1d3e`) — eventos da iniciativa + links cruzados `/cpmai`.
+- **Gamification tab** (`f5cd599`) — carrega via RPC `get_initiative_gamification` (replaces inline JS with TribeGamificationTab island).
+- **Full Parity fix** (`22b54e9`, `6d9fda7`, `5263d3f`) — 3 RPCs corrigidas: `get_initiative_attendance_grid` (CTE native, fixed buggy `SELECT tribe_id FROM tribes`), `get_initiative_stats` (native path), `get_initiative_gamification` (GamificationData shape). Iniciativas não-tribo (CPMAI, Hub Comms, Publicações) agora funcionam nativamente sem delegação a `get_tribe_*(NULL)`.
+- **Meetings/attendance initiative-aware** (`c98a2bf`, `8780d1a`, `ba215a8`) — `list_meetings_with_notes` + `get_meeting_notes_compliance` + `get_events_with_attendance` com initiative_id/initiative_name. Attendance agrupa initiative events em seções próprias.
+- **Smart roster scoping** (`ba215a8`) — initiative events → só engagement members (53→2 para CPMAI); 1on1/entrevista/parceria com attendance → só attendees (12→2); Liderança → audience_level leadership (53→17).
+- **Trail ranking inverted logic** (`12536ca`) — `/7` hardcoded → `TOTAL_COURSES` dinâmico (6). Incluir só membros ativos (tribe_id NOT NULL ou functional role leader/coordinator/manager/participant); exclui 9 governance-only (sponsors, chapter_board, liaisons, observers). Avg 29% → 35%.
+- **`update_future_events_in_group` uuid fix** (`a493327`) — `v_rec_group text` → `uuid` (estava causando 404).
+
+#### Comms Analytics + Instagram
+- **Instagram Graph API** (`5fb0613`) — permanent Page token, `ig_user_id=17841480236591775`, 212 followers. EF fix: `impressions` → `reach` + `accounts_engaged` + `total_interactions` (deprecated API handled).
+- **Comms security** (`e547bae`) — channel config hidden from `comms_member` role (LGPD).
+- **Comms pages redesign** (`4281230`) — split em `/admin/comms-ops` (operational: board, webinars, playbook, broadcasts, calendar) + `/admin/comms` (analytics: KPIs with delta, trend chart, per-channel, top content).
+- **Analytics enhancements** (`aba36e0`) — CSV export, PDF via `window.print`, period comparison, best time heatmap, publication calendar, top content.
+- **pg_cron daily sync** (`7e54443`) — job #21 (06:00 UTC), vault `sync_comms_secret`. `comms_media_items` table + `comms_top_media` + `comms_executive_kpis` RPCs. `comms_token_alerts` table criada.
+- **PDF export compat** (`f7f5167`) — `window.print` (oklch-compat fix para browsers novos) + schema reload.
+- **MCP workgroup kind** (`43c1f5a`) — tool descriptions atualizadas para workgroup initiative kind.
+
+#### Meeting Rito Change (biweekly)
+- General meetings → quinzenal
+- Leadership meetings → alternate weeks (começo 16/Abr)
+- 7 Liderança events ajustados (audience_level `all` → `leadership`)
+- WhatsApp messages enviadas (general + leadership)
+
+#### Navigation UX Overhaul
+- **Iniciativas in top bar** (`b954c7e`) — tribe dropdown links to `/initiatives`.
+- **Nav UX overhaul + curators separated** (`cb205fc`) — Comms Hub separado de curators list.
+- **R1/R3/R4/R7 + workgroup kind** (`74663c1`) — nav clusters por role archetype.
+- **Initiative parity + events isolation** (`3198ed2`) — meeting notes + events não vazam entre iniciativas.
+
+#### Security Hardening (post-advisor scan)
+- **RLS em audit tables** (`5637df3`, mig `20260423030000`) — `member_role_changes` + `selection_ranking_snapshots`.
+- **search_path hardening** (`7c49dcd`, mig `20260423040000`) — 48 funções public (CVE-2018-1058).
+- **Drop notif_insert_system** (`a0d407a`, migs `20260423050000`/`60000`) — permissive policy removida; REVOKE anon em `cycle_tribe_dim`.
+- **DROP 16 MeridianIQ ghost tables** (`0e2a574`) — cross-contamination cleanup; `database.gen.ts` stripped −622 linhas.
+- **Storage buckets hardened** (`e6230cf`, mig `20260423080000`) — `member-photos` (INSERT/UPDATE own, drop anon) + `member-signatures` (cross-user prevented). RLS `selection_membership_snapshots`.
+- **Attendance grid future + Wellington observer fix** (`6e9602b`, mig `20260423090000`) — grid futuro tratado como scheduled (não absent); Wellington observer state sincronizado (7 campos V4).
+- **Initiative-scoped events excluded from main grids** (`ef9b73e`, mig `20260423110000`) — CPMAI Kickoff não inflava mais Geral (era enrolando 51 membros).
+
+Advisor delta: **88 findings → 17** (14 ERRORS → 12, 58 WARN → 5, 16 INFO → 0).
+
+#### Certificate Integrity Audit
+- **gov.br signer backfill + IP instruments** (`099309c`, mig `20260417010000`) — `scripts/extract-govbr-signers.py` extraiu PKCS7/CMS de 92 PDFs. Institutional signer é **LORENA DE SOUZA PAULA** (89/92 docs, dir. voluntários PMI-GO), não Ivan. 26 DSGN certs corrigidos (issued_by + counter_signed_by); 6 TERM counter-signed com gov.br data. 4 variantes `pdf.ts` (gov.br migrated, attestation, platform+gov.br, platform).
+
+#### P1 UX Batch (16/Abr afternoon)
+- **Event type/nature via future scope** (`d325cb4`, mig `20260423010000`) — `update_future_events_in_group` aceita p_type/p_nature com CHECK.
+- **Past events paginated** (`a08ddbf`) — PAST_LIMIT=10 (Gerais 53 paginado).
+- **Ata editor full toolbar** (`580d492`) — tiptap toolbar="full" (H2/H3/blockquote/hr/image/code) + `normalizeContent()` via marked para legacy.
+- **Grid nature filter** (`28f8600`, mig `20260423020000`) — recorrente/avulsa/workshop/kickoff dropdown.
+
+#### Upgrades + docs
+- **Opus 4.7 upgrade** (`5357b58`) — Claude Opus 4.7 model + 18 npm packages updated.
+- **Docs drift sync** (`4dea931`) — i18n dup (3 dicts), ADR README, INDEX.md, CLAUDE.md 22 EFs.
+- **Ata Trentim + briefing liderança** (`1cdfbfd`) — ata reunião 15/Abr + briefing 16/Abr.
+
+### Validation
+- `npm test` ✅ 1184 pass / 0 fail
+- `npx astro build` ✅ 0 errors
+- MCP smoke ✅ 76 tools (61R+15W)
+- 11 migrations aplicadas (20260423010000 → 110000)
+- Supabase advisor 88 → 17 findings (−81%)
+
+### Architecture notes
+- Initiative events ficam escopados à página da iniciativa; main grids (/attendance, /meetings) excluem initiative_id. Initiative-awareness = feature, não bug.
+- Trail ranking usa lógica invertida: incluir só active (não exclude governance). Mais sustentável a longo prazo.
+- Grade future events = scheduled (não absent) — fix estrutural aplicado a `get_attendance_grid` e `get_tribe_attendance_grid`.
+
+---
+
+## 2026-04-14 — v3.1.0: Wiki Knowledge Layer + IP Policy Execution + DocuSign Integrity + Meeting Unification
+
+### Scope
+15 commits materializando quatro threads: (1) Wiki Knowledge Layer completo (Phases 2-5 do plano, culminando em ADR-0010); (2) IP Policy execução completa (E1-E5 de CR-050) — chapter_registry, adendo retificativo, cláusula 2.1-2.5, CNPJ dinâmico; (3) DocuSign cert integrity (34 certs hidratados, 26 counter-signed); (4) Meeting notes unification across 6 workstreams. MCP: 70 → 74 tools.
+
+### Delivered
+
+#### Wiki Knowledge Layer (ADR-0010)
+- **ADR-0010** (`fe1cd41`) — Wiki Scope: Narrative Knowledge Only. SQL = operational data. Refino arquitetural do plano wiki.
+- **Phase 2 — sync EF** (`74ed0e5`) — `sync-wiki` Edge Function (#22) deployed. GitHub push webhook → `wiki_pages` upsert. HMAC-SHA256 signature verification. GitHub PAT `nucleo-wiki-sync` (expires 2027-04-15). `search_wiki` enhanced com `domain` e `tag` filters.
+- **Phase 3 — content migration** — 27 → 29 wiki pages com frontmatter estruturado (title, domain, summary, tags, authors, license, ip_track). 3 governance docs (manual, ip-policy, volunteer-term), 7 tribe pages (tribo-{1,2,4,5,6,7,8}.md), partnerships/cooperation-agreements, onboarding/guide.
+- **Phase 4 — frameworks repo** — `nucleo-ia-gp/frameworks` (public, MIT + CC-BY-SA). EAA scaffold (Tribo 2: Engenharia de Agentes Autônomos, Track B). CLA eliminada (clause 2.2 do volunteer agreement serve de license direto).
+- **Phase 5 — lifecycle automation** (`30e7eff`, mig `20260419030000`) — `wiki_health_report()` RPC: staleness (>90d, >180d), PII scan (email/phone/CPF regex), metadata completeness. MCP tool 74: `get_wiki_health`. First PII finding caught and fixed (emails em cooperation-agreements).
+
+#### LGPD engagement_kinds fix
+- 4 kinds `consent` → `legitimate_interest`: guest, observer, speaker, candidate.
+- `ambassador` mantido `consent` + `requires_agreement=true`.
+- `_audit_engagement_kinds_changes` trigger bugfix (`details` → `changes` + `metadata`, `actor_id` nullable para system ops, `contract` no legal_basis whitelist).
+
+#### IP Policy Execution (CR-050 E1-E5)
+- **chapter_registry** (`8871658`, `6c76a6c`) — 5 chapters com CNPJs reais extraídos de privacy policies oficiais (GO, CE, DF, MT, RS). 3-tier fallback em `sign_volunteer_agreement()`.
+- **Draft template R3-C3-IP** — cláusula 2 com subclauses 2.1-2.5 (moral rights, license, publication, notification, industrial property). i18n 3 languages. Active template não muda — draft roda paralelo até CR-050 aprovado.
+- **IP Addendum** — template 7 artigos para 4 bilateral cooperation agreements + wiki page.
+- **4 cooperation agreements** enriquecidos com content + addendum linkado. `DocumentsList` com content expansion + status badges.
+- **sync-wiki EF fix** (`bf35b55`) — `ip_track` uppercase + YAML null handling.
+
+#### DocuSign Cert Integrity
+- **Hydrate 34 certs** (`bc174f4`) — content_snapshot, template_id, period, status→issued, chapter CNPJ. 41/41 volunteer agreement certs agora `issued` (era 7 completos).
+- **Counter-sign 26 DSGN-** (`6dcbd18`) — counter_signed_at/by preenchidos; PDF mostra seal verde (não "pending").
+- **Governance lifecycle** — RPC `update_governance_document_status()` + CHECK constraint (draft→under_review→approved→active→superseded). 4 draft docs visíveis para manager/deputy_manager/superadmin.
+
+#### Meeting Notes Unification (6 workstreams)
+- **MCP** (`1ecc857`) — `get_meeting_notes` lê `events.minutes_text` (full Markdown, não `meeting_artifacts` summaries). `create_meeting_notes` escreve via `upsert_event_minutes` RPC (audit trail).
+- **Frontend** — marked.parse em atas; EventMinutesIsland montado; edit button; /meetings em nav drawer.
+- **Permissions** — researchers podem manage own tribe events (72h edit window); leaders/GP unlimited.
+- **Edit history** — `minutes_edit_history` jsonb + `minutes_edited_at` em events.
+- Migration `20260421020000_unify_meeting_notes.sql`.
+
+#### Other fixes + releases
+- **Comms permissions** (`4e01ec5`, `a694737`) — `canEditAny` inclui comms members em global boards. Mayanna/Letícia/Maria Luiza gerenciam cards + status dropdown.
+- **#75 closed** (`318c98d`) — announcements filtradas do /blog; releases em /changelog.
+- **CBGPL one-pager** (`ecc6c37`) — 52 members, 74 tools, 7 tribes.
+- **Blog V4 SQL + IP email draft** (`101e8d0`) — material de apoio CR-050.
+
+### Validation
+- `npm test` ✅ 1184 pass / 0 fail
+- `npx astro build` ✅ 0 errors
+- MCP smoke ✅ 74 tools (60R+14W) — nucleo-mcp v2.10.0
+- 4 migrations aplicadas (20260419010000/020000/030000, 20260421010000, 20260421020000)
+- Wiki health report ✅ 0 issues em 29 pages
+- CR-050 artefatos prontos para ativação quando Ivan aprovar
+
+### Notes
+- Activation do draft template depende do CR-050 approval pelos 5 chapter presidents — Ivan validou direção por WhatsApp, aguardando reunião 16/Abr.
+- Meeting artifacts table (12 rows legacy) mantida mas bypassed — deprecation em sessão futura.
+- Phase 6 (platform transfer para nucleo-ia-gp org) questionada pelo PM e deferred — platform code = engineering artifact (Vitor's infra), wiki = institutional memory.
+
+---
+
+## 2026-04-13 (evening) — v3.0.1: Post-V4 Stabilization — LGPD v2.2 + Wiki Phase 1 + Platform Fixes
+
+### Scope
+9 commits pós-cutover v3.0.0 no mesmo dia, consolidando LGPD Art. 7 alignment com o novo engagement_kinds lifecycle, fechando Phase 1 do plano Wiki (foundation), corrigindo campaign bugs descobertos em prod, e resolvendo 2 issues do GitHub.
+
+### Delivered
+- **LGPD legal_basis alignment** (`df646d1`) — legal_basis de cada engagement_kind alinhado com LGPD Art. 7. Privacy policy atualizada.
+- **Privacy Policy v2.2** (`f5af71e`) — adiciona engagement-type retention rows. Ciclo de retenção por engagement_kind documentado (anonymize_by_engagement_kind cron).
+- **admin_send_campaign include_inactive** (`f5ae9a5`/`892adad`) — filter flag respeitado (bug: campanhas vazando para inactive members).
+- **Campaign chapter column fix** (`b296c39`) — `m.chapter` em vez de `t.chapter` (column não existe em tribes pós-V4).
+- **MCP docs sync** (`e97c477`) — mcp.md connector tools count sincronizado com 70 (v2.9.6).
+- **Blog "updated on" banner** (`8c2483d`) — post slug page mostra updated_at para edited posts.
+- **Wiki Phase 1 + IP policy + comms_leader fix + MCP v2.10.0** (`faf3e08`) — foundation do plano wiki: 15 seeded pages (9 ADRs + 6 domain READMEs), `wiki_pages` table + FTS portuguese + 3 RPCs (`search_wiki_pages`, `get_wiki_page`, `get_decision_log`), 3 MCP tools novos → 73 total (59R+14W). Migration `20260417000000_wiki_pages_sync.sql`. IP policy base em DB. `comms_leader` role fix.
+- **#76 privacy automation + #77 bot filter** (`b7590d6`) — automação notificação privacy policy changes + filtro bot opens em campaign analytics.
+
+### Validation
+- `npm test` ✅ 1184 pass / 0 fail (baseline herdado de v3.0.0)
+- `npx astro build` ✅ 0 errors
+- MCP smoke ✅ 73 tools após Wiki Phase 1
+
+---
+
 ## 2026-04-13 — v3.0.0: Domain Model V4 — Multi-Org, Initiative-Driven, Engagement-Based Authority
 
 ### Scope
