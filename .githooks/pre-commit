@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+# Pre-commit hook — secret + PII scan.
+#
+# Install once per clone:
+#   git config core.hooksPath .githooks
+#
+# What it checks (BLOCKING — refuses to commit if any match):
+#   1. .env files being staged (other than .env.example)
+#   2. Long opaque tokens in diff (JWT, sk_, pat_, ghp_, gho_, hyperdrive_, etc.)
+#   3. Private key headers
+#   4. Real-looking member emails (@pmi- or @nucleo) in non-.env files
+#
+# What it warns (non-blocking):
+#   5. Large binary files (>10MB) being added
+#   6. TODO/FIXME introduced (flag for backlog log)
+#
+# Bypass (emergency only, document WHY in commit body):
+#   git commit --no-verify
+#
+# If gitleaks is installed, runs that too as a second pass.
+
+set -u
+
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
+block=0
+warn=0
+
+# 1. .env files
+env_staged=$(git diff --cached --name-only --diff-filter=A | grep -E '(^|/)\.env(\..+)?$' | grep -v '\.env\.example$' || true)
+if [[ -n "$env_staged" ]]; then
+  echo -e "${RED}BLOCK: .env file(s) staged (secrets must not be committed):${NC}"
+  echo "$env_staged" | sed 's/^/  /'
+  block=1
+fi
+
+# 2. Long opaque tokens — scan staged diff content
+# Patterns: JWT (eyJ...), Supabase service role keys, GitHub PAT/app tokens, Stripe sk_live, Hyperdrive, Cloudflare
+token_hits=$(git diff --cached -U0 --diff-filter=ACMR | grep -E '^\+' | grep -E '(eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}|sk_live_[A-Za-z0-9]{20,}|sk_test_[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{36,}|gho_[A-Za-z0-9]{36,}|ghs_[A-Za-z0-9]{36,}|pat_[A-Za-z0-9]{32,}|AKIA[0-9A-Z]{16}|service_role[^=]*=[[:space:]]*[A-Za-z0-9_.-]{40,})' || true)
+if [[ -n "$token_hits" ]]; then
+  echo -e "${RED}BLOCK: opaque token patterns detected in diff:${NC}"
+  echo "$token_hits" | head -5 | sed 's/^/  /'
+  block=1
+fi
+
+# 3. Private key headers
+key_hits=$(git diff --cached -U0 --diff-filter=ACMR | grep -E '^\+.*BEGIN (RSA |EC |DSA |OPENSSH |ENCRYPTED |PGP )?PRIVATE KEY' || true)
+if [[ -n "$key_hits" ]]; then
+  echo -e "${RED}BLOCK: private key header in diff${NC}"
+  echo "$key_hits" | head -3 | sed 's/^/  /'
+  block=1
+fi
+
+# 4. Real member emails (heuristic: @pmi, @nucleo domains in non-test files)
+# Allow in tests/fixtures/, tests/, and .env.example
+email_hits=$(git diff --cached -U0 --diff-filter=ACMR --name-only | while read f; do
+  [[ "$f" == tests/* || "$f" == *.env.example || "$f" == *fixtures* ]] && continue
+  git diff --cached -U0 -- "$f" | grep -E '^\+' | grep -iE '[a-z0-9._%+-]+@(pmi-|pmi\.|nucleoia)' | while read line; do
+    echo "  $f: $line"
+  done
+done)
+if [[ -n "$email_hits" ]]; then
+  echo -e "${RED}BLOCK: real-looking member email in non-test file:${NC}"
+  echo "$email_hits" | head -5
+  echo -e "${YELLOW}  → use synthetic fixture emails like 'test1@example.com' instead${NC}"
+  block=1
+fi
+
+# 5. Large binaries (warn only)
+large_files=$(git diff --cached --name-only --diff-filter=A | while read f; do
+  [[ -f "$f" ]] || continue
+  size=$(stat -c%s "$f" 2>/dev/null || stat -f%z "$f" 2>/dev/null || echo 0)
+  if [[ $size -gt 10485760 ]]; then
+    echo "  $f ($(numfmt --to=iec $size 2>/dev/null || echo ${size}B))"
+  fi
+done)
+if [[ -n "$large_files" ]]; then
+  echo -e "${YELLOW}WARN: large files (>10MB) being added — use Git LFS or external storage:${NC}"
+  echo "$large_files"
+  warn=1
+fi
+
+# 6. TODO/FIXME introduced (informational — log it)
+todo_new=$(git diff --cached -U0 --diff-filter=ACMR | grep -cE '^\+.*(TODO|FIXME|XXX|HACK)' || true)
+if [[ "$todo_new" -gt 0 ]]; then
+  echo -e "${YELLOW}INFO: $todo_new new TODO/FIXME/XXX/HACK line(s) introduced.${NC}"
+  echo -e "${YELLOW}  → consider running the 'session-log' skill to add to project_issue_gap_opportunity_log.md${NC}"
+fi
+
+# 7. Optional: gitleaks (if installed, second-pass scan)
+if command -v gitleaks >/dev/null 2>&1; then
+  if ! gitleaks protect --staged --no-banner --redact >/dev/null 2>&1; then
+    echo -e "${RED}BLOCK: gitleaks detected secret(s) in staged changes.${NC}"
+    gitleaks protect --staged --no-banner --redact 2>&1 | tail -20 | sed 's/^/  /'
+    block=1
+  fi
+fi
+
+if [[ $block -ne 0 ]]; then
+  echo ""
+  echo -e "${RED}Commit blocked. Fix the issues above or use --no-verify with justification in commit body.${NC}"
+  exit 1
+fi
+
+if [[ $warn -ne 0 ]]; then
+  echo -e "${GREEN}Proceeding with warnings.${NC}"
+else
+  echo -e "${GREEN}Pre-commit checks passed.${NC}"
+fi
+
+exit 0
