@@ -14978,7 +14978,7 @@ export type Database = {
         Returns: boolean
       }
       verify_certificate: { Args: { p_code: string }; Returns: Json }
-      volunteer_funnel_summary: { Args: { p_cycle?: number }; Returns: Json }
+      volunteer_funnel_summary: { Args: { p_cycle_code?: string }; Returns: Json }
       webinars_pending_comms: { Args: never; Returns: Json }
       why_denied: {
         Args: {

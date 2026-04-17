@@ -85,7 +85,11 @@ async function run() {
           if (name === 'volunteer_funnel_summary') {
             return Promise.resolve({
               data: {
-                by_cycle: [{ cycle: 3, total_applications: 10, unique_applicants: 8, matched_members: 4, active_applications: 7 }],
+                source: 'selection_applications',
+                by_cycle: [{ cycle_code: 'cycle3-2026', cycle_title: 'Ciclo 3', cycle_status: 'closed', total_applications: 10, unique_applicants: 8, matched_members: 4, active_applications: 7, converted: 1, approved: 4 }],
+                by_status: [{ status: 'approved', cnt: 4 }],
+                certifications: [],
+                geography: [],
               },
               error: null,
             });
