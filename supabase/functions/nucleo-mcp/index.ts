@@ -1187,12 +1187,18 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL 57: drop_event_instance — Cancel a specific event occurrence
-  mcp.tool("drop_event_instance", "Cancel/delete a specific event instance (e.g. a tribe meeting that didn't happen). Requires tribe leader of that tribe, or admin/manager. Rejects if attendance exists.", { event_id: z.string().describe("UUID of the event to delete") }, async (params: any) => {
+  mcp.tool("drop_event_instance", "Cancel/delete a specific event instance (e.g. a tribe meeting that didn't happen). Requires tribe leader of that tribe, or admin/manager. By default rejects if attendance exists; pass force_delete_attendance=true to remove attendance records atomically first.", {
+    event_id: z.string().describe("UUID of the event to delete"),
+    force_delete_attendance: z.boolean().optional().describe("If true, also deletes attendance records in same transaction. Default: false")
+  }, async (params: any) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "drop_event_instance", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "drop_event_instance", false, "Unauthorized", start); return err("Unauthorized"); }
-    const { data, error } = await sb.rpc("drop_event_instance", { p_event_id: params.event_id });
+    const { data, error } = await sb.rpc("drop_event_instance", {
+      p_event_id: params.event_id,
+      p_force_delete_attendance: params.force_delete_attendance ?? false
+    });
     if (error) { await logUsage(sb, member.id, "drop_event_instance", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "drop_event_instance", true, undefined, start);
     return ok(data);
