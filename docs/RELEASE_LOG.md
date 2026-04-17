@@ -56,13 +56,17 @@ Sessão de qualidade estrutural pós-cutover V4. 24 commits em um dia cobrindo t
 
 ### Open tech debt (não-bloqueante)
 - 70 RPCs legacy com role hardcoded — migrar inline quando tocar (não sweep)
-- 5 RLS policies com `operational_role` hardcoded (board_sla_config + outras) — test orfão `rls-auth-engagements.test.mjs` detecta; fix em sessão dedicada
+- MEMBER_CHECK policies (~30) ainda dependem de `get_my_member_record()` legacy — Fase 4.2 opcional
+- `comms_member` designation (2 users) preservada inline em 2 policies — mapear para engagement role em Fase 4.2
 
 ### Addendum (17/Abr p4 — entregues na mesma data):
 - ✅ **B8.1 `platform_settings_log` consolidation** — migration `20260427020000` + fix P0 `get_audit_log` quebrada pós-B8. Ver commit `138639d`.
 - ✅ **Retention policy ADR-0014** — `docs/adr/ADR-0014-log-retention-policy.md` + migration `20260427010000` (purge_expired_logs RPC + pg_cron mensal). Ver commits `4fc574e` + `1b4e6a0`.
 - ✅ **Tribes deprecation ADR-0015** — `docs/adr/ADR-0015-tribes-bridge-consolidation.md` + Fase 0 reader audit. Fases 1-5 plan pendente. Ver commits `fe2f205` + `f96a3a9` + `5d68e4d`.
 - ✅ **KV free-tier fix** — kvLog debug writes neutered em 5 routes + `/oauth/debug-logs` removido. Deploy `0db6fee8`. Conta upgraded para Cloudflare Paid Plan $5/mo. Ver commit `7740abf`.
+
+### Addendum (17/Abr p5 — Fase 4.1 RLS sweep):
+- ✅ **RLS V4 Fase 4.1** — migration `20260427030000` reescreve 42 policies role-gating (muito além do "5" inicialmente flagged). Cobertura: admin_links (4), members (5), ingestion_* (6), release_readiness_* (2), data_quality_audit_snapshots (2), tribe_continuity_overrides, tribe_lineage, project_memberships_write, pilots, vep_opportunities_insert_admin, trello_import_log, board_item_* (3 write), event_* (3 manage), board_lifecycle_events (2), communication_templates (2), broadcast_log tribe_leader, meeting_artifacts (2), cr_approvals, curation_review_log, selection_* (2), comms_* (4, comms_member preservado inline), webinars (3), taxonomy_tags. Mapping: `rls_is_superadmin()`, `rls_can('manage_member'|'write'|'write_board'|'manage_partner')`, `rls_can_for_tribe(...)`. `rls-auth-engagements.test.mjs` habilitado + novo test `rls-v4-phase4-1.test.mjs` (52 assertions). Tests baseline: 1188 → 1290 pass.
 
 ### Known issues
 - `apply_migration` MCP não registra em `supabase_migrations.schema_migrations` — workaround `INSERT ON CONFLICT DO NOTHING` manual documentado no `platform-guardian` checklist.

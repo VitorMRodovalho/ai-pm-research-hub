@@ -35,7 +35,10 @@ test('Phase 4 Migration 6: RLS helper functions', async (t) => {
   });
 
   await t.test('rls_can is STABLE SECURITY DEFINER', () => {
-    const fnBlock = sql.substring(sql.indexOf('rls_can(p_action'), sql.indexOf('rls_is_superadmin'));
+    const start = sql.indexOf('CREATE OR REPLACE FUNCTION public.rls_can(p_action');
+    const end = sql.indexOf('CREATE OR REPLACE FUNCTION public.rls_is_superadmin');
+    assert.ok(start >= 0 && end > start, 'rls_can function definition must be found');
+    const fnBlock = sql.substring(start, end);
     assert.match(fnBlock, /STABLE/i);
     assert.match(fnBlock, /SECURITY DEFINER/i);
   });
@@ -112,9 +115,12 @@ test('Phase 4 Migration 7: RLS policy rewrite', async (t) => {
   });
 
   await t.test('meeting_action_items: consolidates 2 duplicate policies into 1', () => {
-    const drops = sql.match(/DROP POLICY.*meeting_action_items/g);
+    // Exclude rollback comment block (/* ... */) from count
+    const rollbackStart = sql.indexOf('-- ROLLBACK:');
+    const activeSql = rollbackStart > 0 ? sql.substring(0, rollbackStart) : sql;
+    const drops = activeSql.match(/DROP POLICY.*meeting_action_items/g);
     assert.ok(drops.length >= 2, 'Should drop both legacy duplicate policies');
-    const creates = sql.match(/CREATE POLICY.*meeting_action_items/g);
+    const creates = activeSql.match(/CREATE POLICY.*meeting_action_items/g);
     assert.equal(creates.length, 1, 'Should create exactly 1 consolidated policy');
   });
 
@@ -171,9 +177,11 @@ test('Phase 4 Migration 7: RLS policy rewrite', async (t) => {
     assert.match(sql, /CATEGORY 3: Tribe-scoped/);
   });
 
-  // No operational_role in new policy USING clauses
+  // No operational_role in new policy USING clauses (excludes rollback comment block)
   await t.test('no new policy references operational_role directly', () => {
-    const policyBlocks = sql.match(/CREATE POLICY[\s\S]*?;/g) || [];
+    const rollbackStart = sql.indexOf('-- ROLLBACK:');
+    const activeSql = rollbackStart > 0 ? sql.substring(0, rollbackStart) : sql;
+    const policyBlocks = activeSql.match(/CREATE POLICY[\s\S]*?;/g) || [];
     for (const block of policyBlocks) {
       assert.doesNotMatch(block, /operational_role/,
         `Policy should not reference operational_role: ${block.substring(0, 80)}`);
