@@ -215,6 +215,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   deleteConfirm: t('attendance.deleteConfirm', lang),
   deleteWarning: t('attendance.deleteWarning', lang),
   deleteSuccess: t('attendance.msg.deleteSuccess', lang),
+  deleteForcePrompt: t('attendance.deleteForcePrompt', lang),
+  deleteSuccessWithAttendance: t('attendance.msg.deleteSuccessWithAttendance', lang),
   recurrenceTitle: t('attendance.recurrence.title', lang),
   recurrenceThisOnly: t('attendance.recurrence.thisOnly', lang),
   recurrenceThisFuture: t('attendance.recurrence.thisFuture', lang),
@@ -1197,11 +1199,29 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       `${I18N.deleteConfirm || 'Tem certeza que deseja cancelar esta reunião?'}\n\n${eventTitle}\n\n${I18N.deleteWarning || 'Esta ação não pode ser desfeita.'}`
     );
     if (!confirmed) return;
+
+    const doDelete = async (force: boolean) => sb.rpc('drop_event_instance', {
+      p_event_id: eventId,
+      p_force_delete_attendance: force
+    });
+
     try {
-      const { data, error } = await sb.rpc('drop_event_instance', { p_event_id: eventId });
+      let { data, error } = await doDelete(false);
+      // Two-step flow: if attendance exists, confirm and retry with force
+      if (error && /attendance_exists:(\d+)/.test(error.message || '')) {
+        const count = Number((error.message.match(/attendance_exists:(\d+)/) || [])[1] || 0);
+        const template = (I18N.deleteForcePrompt as string) || 'Este evento tem {count} presença(s) registrada(s).\n\nConfirmar remoção das presenças E cancelamento do evento?';
+        const ok = confirm(template.replace('{count}', String(count)));
+        if (!ok) return;
+        ({ data, error } = await doDelete(true));
+      }
       if (error) throw error;
       if (data?.success) {
-        toast(I18N.deleteSuccess || 'Evento cancelado com sucesso.', 'success');
+        const attCount = Number(data.deleted_attendance_count || 0);
+        const msg = attCount > 0
+          ? ((I18N.deleteSuccessWithAttendance as string) || 'Evento cancelado. {count} presença(s) também foram removidas.').replace('{count}', String(attCount))
+          : (I18N.deleteSuccess || 'Evento cancelado com sucesso.');
+        toast(msg, 'success');
         loadEvents(); loadKPIs();
       } else {
         toast(data?.error || 'Erro ao deletar evento.', 'error');

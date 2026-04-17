@@ -13245,7 +13245,10 @@ export type Database = {
       detect_onboarding_overdue: { Args: never; Returns: Json }
       detect_operational_alerts: { Args: never; Returns: Json }
       dismiss_onboarding: { Args: never; Returns: undefined }
-      drop_event_instance: { Args: { p_event_id: string }; Returns: Json }
+      drop_event_instance: {
+        Args: { p_event_id: string; p_force_delete_attendance?: boolean }
+        Returns: Json
+      }
       duplicate_board_item: {
         Args: { p_item_id: string; p_target_board_id?: string }
         Returns: string
