@@ -90,26 +90,6 @@ async function run() {
               error: null,
             });
           }
-          if (name === 'list_volunteer_applications') {
-            return Promise.resolve({
-              data: {
-                total: 1,
-                rows: [{
-                  first_name: 'Maria',
-                  last_name: 'Teste',
-                  cycle: 3,
-                  app_status: 'Active',
-                  city: 'Goiania',
-                  state: 'GO',
-                  country: 'BR',
-                  certifications: ['PMP'],
-                  is_existing_member: true,
-                  snapshot_date: '2026-03-11',
-                }],
-              },
-              error: null,
-            });
-          }
           if (name === 'get_member_by_auth') return Promise.resolve({ data: fakeMember, error: null });
           return Promise.resolve({ data: [], error: null });
         },
