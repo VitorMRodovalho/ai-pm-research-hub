@@ -18,6 +18,7 @@ Este diretório separa decisões técnicas duráveis das notas de governança ge
 - `ADR-0012-schema-consolidation-principles.md` — Single source of truth por conceito + cache columns com trigger de sync explícito. Elimina drift silencioso como o caso Wellington 16/Abr (3 colunas para o mesmo status).
 - `ADR-0013-log-table-taxonomy.md` — Taxonomia em 5 categorias (Admin Audit / Domain Lifecycle / High-Volume / Distinct Retention / External Ingestion) para decidir quando uma tabela log consolida em `admin_audit_log` vs existe separada. Fecha a questão deixada aberta por ADR-0012 P5 + B8.
 - `ADR-0014-log-retention-policy.md` — Janelas de retenção (archive/purge) por categoria do ADR-0013: Cat A 5y→archive+7y→drop; Cat B indefinido; Cat C 90-180d drop; Cat D 5y anonymize+6y drop (LGPD Art. 37); Cat E 180d-2y drop. RPC `purge_expired_logs` + pg_cron mensal.
+- `ADR-0015-tribes-bridge-consolidation.md` — Deprecação do `tribe_id` legacy em 11 tabelas droppable (C3: events, announcements, webinars, etc.), mantendo 7 bridge-locked (C2: tribe_deliverables, member_cycle_history) + `tribes` table + `members.tribe_id` (C4 deferred). Plano em 5 fases multi-sessão.
 
 ## Domain Model V4 — Refatoração Arquitetural (Complete, 2026-04-13)
 
