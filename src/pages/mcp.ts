@@ -1,8 +1,10 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 
-async function kvLog(endpoint: string, data: any) {
-  try { const kv = (env as any).SESSION; if (kv) await kv.put(`debug:${endpoint}:${Date.now()}`, JSON.stringify({ timestamp: new Date().toISOString(), endpoint, ...data }), { expirationTtl: 3600 }); } catch {}
+async function kvLog(_endpoint: string, _data: any) {
+  // No-op: KV debug logs disabled to protect free tier write limit (1k/day).
+  // Was writing `debug:${endpoint}:${Date.now()}` on every MCP/OAuth request.
+  // Re-enable only with env.DEBUG_KV_LOGS flag if needed for specific debugging.
 }
 
 const UPSTREAM = 'https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-mcp/mcp';
