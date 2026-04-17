@@ -969,12 +969,12 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   // ===== P3 WAVE — 2 new tools (41-42) =====
 
   // TOOL 41: get_volunteer_funnel — Admin/Selection committee
-  mcp.tool("get_volunteer_funnel", "Returns volunteer selection funnel: applicants by stage, conversion rates.", { cycle: z.number().optional().describe("Selection cycle number. Default: latest.") }, async (params: { cycle?: number }) => {
+  mcp.tool("get_volunteer_funnel", "Returns selection funnel (selection_applications): by_cycle/by_status/certifications/geography.", { cycle_code: z.string().optional().describe("Selection cycle code (e.g. cycle3-2026, cycle3-2026-b2). Default: all cycles.") }, async (params: { cycle_code?: string }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_volunteer_funnel", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "get_volunteer_funnel", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
-    const { data, error } = await sb.rpc("volunteer_funnel_summary", { p_cycle: params.cycle || null });
+    const { data, error } = await sb.rpc("volunteer_funnel_summary", { p_cycle_code: params.cycle_code ?? null });
     if (error) { await logUsage(sb, member.id, "get_volunteer_funnel", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_volunteer_funnel", true, undefined, start);
     return ok(data);
