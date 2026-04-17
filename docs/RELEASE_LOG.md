@@ -56,9 +56,13 @@ Sessão de qualidade estrutural pós-cutover V4. 24 commits em um dia cobrindo t
 
 ### Open tech debt (não-bloqueante)
 - 70 RPCs legacy com role hardcoded — migrar inline quando tocar (não sweep)
-- Consolidação adicional em `admin_audit_log` (B8.1: `platform_settings_log`)
-- Retention policy ADR para Categoria C (`mcp_usage_log` ~6k rows/ano projetado)
-- Tribes deprecation ADR (22 tabelas com `tribe_id` legacy)
+- 5 RLS policies com `operational_role` hardcoded (board_sla_config + outras) — test orfão `rls-auth-engagements.test.mjs` detecta; fix em sessão dedicada
+
+### Addendum (17/Abr p4 — entregues na mesma data):
+- ✅ **B8.1 `platform_settings_log` consolidation** — migration `20260427020000` + fix P0 `get_audit_log` quebrada pós-B8. Ver commit `138639d`.
+- ✅ **Retention policy ADR-0014** — `docs/adr/ADR-0014-log-retention-policy.md` + migration `20260427010000` (purge_expired_logs RPC + pg_cron mensal). Ver commits `4fc574e` + `1b4e6a0`.
+- ✅ **Tribes deprecation ADR-0015** — `docs/adr/ADR-0015-tribes-bridge-consolidation.md` + Fase 0 reader audit. Fases 1-5 plan pendente. Ver commits `fe2f205` + `f96a3a9` + `5d68e4d`.
+- ✅ **KV free-tier fix** — kvLog debug writes neutered em 5 routes + `/oauth/debug-logs` removido. Deploy `0db6fee8`. Conta upgraded para Cloudflare Paid Plan $5/mo. Ver commit `7740abf`.
 
 ### Known issues
 - `apply_migration` MCP não registra em `supabase_migrations.schema_migrations` — workaround `INSERT ON CONFLICT DO NOTHING` manual documentado no `platform-guardian` checklist.
