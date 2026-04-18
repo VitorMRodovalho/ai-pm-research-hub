@@ -67,6 +67,12 @@ Deno.serve(async (req) => {
     const tribeMap: Record<number, any> = {}
     ;(tribes || []).forEach((t: any) => { tribeMap[t.id] = t })
 
+    const { data: initsByTribe } = await sb.from('initiatives')
+      .select('id, legacy_tribe_id')
+      .not('legacy_tribe_id', 'is', null)
+    const initiativeByTribe: Record<number, string> = {}
+    ;(initsByTribe || []).forEach((i: any) => { if (i.legacy_tribe_id) initiativeByTribe[i.legacy_tribe_id] = i.id })
+
     const { data: cycle } = await sb.from('cycles').select('cycle_label').eq('is_current', true).limit(1).single()
     const cycleName = cycle?.cycle_label || 'Ciclo 3'
 
@@ -147,7 +153,7 @@ Deno.serve(async (req) => {
       }
 
       const { error: logErr } = await sb.from('broadcast_log').insert([{
-        tribe_id: tid,
+        initiative_id: initiativeByTribe[tid] ?? null,
         sender_id: caller.id,
         subject: 'Alocacao Confirmada - ' + tribeName,
         body: 'Notificacao automatica de alocacao',

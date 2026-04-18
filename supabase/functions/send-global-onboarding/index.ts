@@ -158,6 +158,12 @@ Deno.serve(async (req) => {
     const { data: tribes } = await sb.from('tribes').select('id, name')
     if (!tribes?.length) return json({ error: 'No tribes found' }, 400)
 
+    const { data: initsByTribe } = await sb.from('initiatives')
+      .select('id, legacy_tribe_id')
+      .not('legacy_tribe_id', 'is', null)
+    const initiativeByTribe: Record<number, string> = {}
+    ;(initsByTribe || []).forEach((i: any) => { if (i.legacy_tribe_id) initiativeByTribe[i.legacy_tribe_id] = i.id })
+
     const { data: allMembers } = await sb.from('members')
       .select('id, name, email, tribe_id')
       .eq('current_cycle_active', true)
@@ -241,7 +247,7 @@ Deno.serve(async (req) => {
       }
 
       const { error: logErr } = await sb.from('broadcast_log').insert([{
-        tribe_id: Number(tribeIdStr),
+        initiative_id: initiativeByTribe[Number(tribeIdStr)] ?? null,
         sender_id: callerId,
         subject: '[' + group.name + '] ' + subject,
         body: 'Global Onboarding Email (HTML template)',

@@ -418,7 +418,7 @@ const WORKSPACE_I18N = {
     try {
       const [resourcesResp, tagsResp] = await Promise.all([
         sb.from('hub_resources')
-          .select('*')
+          .select('id, asset_type, title, description, url, initiative_id, tags, source, cycle_code, is_active, created_at, initiative:initiatives(legacy_tribe_id)')
           .eq('is_active', true)
           .order('created_at', { ascending: false }),
         sb.rpc('list_taxonomy_tags'),
@@ -426,7 +426,10 @@ const WORKSPACE_I18N = {
 
       if (resourcesResp.error) throw resourcesResp.error;
 
-      allResources = resourcesResp.data || [];
+      allResources = (resourcesResp.data || []).map((r: any) => ({
+        ...r,
+        tribe_id: r.initiative?.legacy_tribe_id ?? null,
+      }));
       allTags = tagsResp.data || [];
       await loadRuntimeTribes();
 
