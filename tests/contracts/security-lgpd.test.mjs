@@ -56,8 +56,11 @@ for (const table of RPC_ONLY_TABLES) {
 
 // ─── P0-B: SECURITY DEFINER auth fixes ───
 
+// V3 legacy pattern was 'operational_role'; updated 2026-04-17 to V4 'can_by_member'
+// after ADR-0015 writers batch B migrated create_event to V4 auth (ADR-0011).
+// Spirit preserved: create_event MUST have a role/authority-based auth check.
 const AUTH_FIXED_RPCS = [
-  { name: 'create_event', shouldCheck: ['Unauthorized', 'operational_role'] },
+  { name: 'create_event', shouldCheck: ['Unauthorized', 'can_by_member'] },
   { name: 'mark_member_present', shouldCheck: ['Not authenticated', 'v_caller_id = p_member_id'] },
   { name: 'get_member_attendance_hours', shouldCheck: ['Not authenticated', 'v_caller_id = p_member_id'] },
 ];
