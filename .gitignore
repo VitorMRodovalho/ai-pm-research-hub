@@ -71,3 +71,4 @@ REPO_INVENTORY.md
 *.deb
 *.rpm
 *.AppImage
+tmp/
