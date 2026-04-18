@@ -245,7 +245,7 @@ Total: 6 tabelas novas, 1 role novo, 1 certificate type novo, 3 triggers novos, 
 - D+0 bloqueio via `can_access_platform` flag + middleware
 - E2E smoke tests para external flow
 
-**Total revisado**: 7 sessões (antes 4-6). Target: Phase IP-1 start **pós-CBGPL**, completion até **final de Maio 2026**.
+**Total revisado**: 7 sessões (antes 4-6). Start quando PM decidir — não há gate temporal arquitetural. Completion razoável estimada em 4-6 semanas após kickoff.
 
 ---
 
@@ -267,19 +267,21 @@ Total: 6 tabelas novas, 1 role novo, 1 certificate type novo, 3 triggers novos, 
 
 ## Next Actions
 
-1. **Pós-CBGPL (semana de 29/Abr)**:
-   - Spawnear legal-counsel para review v2 docs
+Timing flexível — nenhuma ação abaixo é gated por CBGPL. Podem ocorrer antes, durante ou depois conforme capacity do PM. Não há correlação arquitetural com o demo.
+
+1. **Ativáveis a qualquer momento** (não bloqueiam um ao outro):
+   - Spawnear legal-counsel para review v2 docs (pré-requisito: pandoc conversion dos 5 .docx)
    - Spawnear accountability-advisor para audit trail spec
-   - Kickoff Phase IP-1 (foundation tables + seeds)
+   - Kickoff Phase IP-1 (foundation tables + seeds) — pode começar antes dos anteriores; Phase IP-1 cria só infra, não depende do conteúdo legal final
 
-2. **Antes de Phase IP-1**:
-   - Validar com Ivan + 2 presidentes que Opção C (external_signer magic-link) é aceitável politicamente
-   - Confirmar com Roberto que os 2 pontos dele foram ajustados nos v2 docs
+2. **Validações políticas paralelas** (não bloqueiam design):
+   - Ivan + 2 presidentes sobre Opção C (external_signer magic-link) ser aceitável
+   - Roberto sobre os 2 pontos dele ajustados nos v2 docs
 
-3. **Este documento**:
-   - É a resposta autoritativa sobre arquitetura IP daqui para frente
+3. **Sobre este documento**:
+   - Autoritativo sobre arquitetura IP daqui para frente
    - Overridable via novo PM decision (registrar em ADR se mudar)
-   - Não executar antes de Phase IP-1 kickoff
+   - Execução em fases só começa quando PM decidir — nenhum hard gate temporal
 
 ---
 
