@@ -8100,7 +8100,6 @@ export type Database = {
           is_active: boolean
           organization_id: string
           source: string
-          tribe_id: number | null
           updated_at: string
         }
         Insert: {
@@ -8116,7 +8115,6 @@ export type Database = {
           is_active?: boolean
           organization_id?: string
           source?: string
-          tribe_id?: number | null
           updated_at?: string
         }
         Update: {
@@ -8132,7 +8130,6 @@ export type Database = {
           is_active?: boolean
           organization_id?: string
           source?: string
-          tribe_id?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -8190,13 +8187,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_boards_tribe_id_fkey"
-            columns: ["tribe_id"]
-            isOneToOne: false
-            referencedRelation: "tribes"
             referencedColumns: ["id"]
           },
         ]
