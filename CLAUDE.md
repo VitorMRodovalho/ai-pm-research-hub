@@ -66,3 +66,12 @@ supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 - i18n: `.claude/rules/i18n.md`
 - MCP: `.claude/rules/mcp.md`
 - Deploy: `.claude/rules/deploy.md`
+
+## Council (multi-agent review structure)
+**Active since 2026-04-18.** 12 especialized sub-agents em `.claude/agents/` (product-leader, ux-leader, c-level-advisor, stakeholder-persona, senior-software-engineer, ai-engineer, data-architect, security-engineer, startup-advisor, vc-angel-lens, legal-counsel, accountability-advisor) operando em 3 tiers:
+
+- **Tier 1 (always)**: `platform-guardian` + `code-reviewer` em início/fim de sessão e mudanças estruturais
+- **Tier 2 (domain-triggered)**: invocar agent específico conforme domínio (ver `docs/council/README.md` tabela)
+- **Tier 3 (strategic)**: `/council-review [topic]` em milestones — output em `docs/council/`
+
+Todos são **consultivos** (não modificam código). PM/main loop decide ação. Decision log em `docs/council/decisions/`.
