@@ -71,6 +71,9 @@ Sessão de qualidade estrutural pós-cutover V4. 24 commits em um dia cobrindo t
 ### Addendum (17/Abr p6 — Fase 4.2 RLS decoupling):
 - ✅ **RLS V4 Fase 4.2** — migration `20260427040000` decoupla 23 SELECT policies do legacy `get_my_member_record()`. Novo helper `rls_is_member()` (STABLE SECURITY DEFINER, EXISTS on members.auth_id). Cobertura: 20 MEMBER_CHECK (EXISTS pattern → rls_is_member), 2 GHOST_CHECK (NOT EXISTS → NOT rls_is_member para events/webinars public view), 1 ROLE_GATE miss de Fase 4.1 (broadcast_log_read_admin → rls_is_superadmin + rls_can('manage_member')). **RLS layer agora 100% V4-native**: 0 policies referenciam operational_role, 0 referenciam get_my_member_record. Function `get_my_member_record()` mantida (70 RPC callers — out of scope). Novo contract test `rls-v4-phase4-2.test.mjs`. Tests: 1290 → 1330 pass.
 
+### Addendum (17/Abr p7 — ADR-0015 Phase 1 webinars reader cutover):
+- ✅ **ADR-0015 Phase 1 (webinars)** — migration `20260427050000` refactors 2 reader RPCs (`list_webinars_v2`, `webinars_pending_comms`) to JOIN `initiatives i` instead of `tribes t`. `tribe_name` now derived from `i.title` (initiatives column). Filter `p_tribe_id` now matches `i.legacy_tribe_id` instead of `w.tribe_id`. Output shape preserved identically (25 keys list_webinars_v2, all present). Smoke: 6/6 webinars return with `tribe_name` + `tribe_id` populated; filter by tribe_id=6 returns 2 rows correctly. Writer RPCs (`upsert_webinar`, `link_webinar_event`) unchanged — dual-write triggers still active until Phase 2. First C3 table out of 11. `tribes` table permanent; `webinars.tribe_id` column kept until Phase 3.
+
 ### Known issues
 - `apply_migration` MCP não registra em `supabase_migrations.schema_migrations` — workaround `INSERT ON CONFLICT DO NOTHING` manual documentado no `platform-guardian` checklist.
 
