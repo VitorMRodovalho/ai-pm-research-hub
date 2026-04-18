@@ -315,7 +315,7 @@ const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
 
       const { data: items, error } = await sb
         .from('board_items')
-        .select('id, title, status, due_date, tags, assigned_to_name')
+        .select('id, title, status, due_date, tags, assignee:members!assignee_id(name)')
         .in('board_id', boardIds)
         .not('due_date', 'is', null)
         .gte('due_date', today)
@@ -359,7 +359,7 @@ const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'common'], lang);
                 <span class="px-1.5 py-0.5 rounded text-[.55rem] font-bold ${statusCls}">${item.status || 'backlog'}</span>
                 <span class="text-[.75rem] font-medium text-[var(--text-primary)] truncate flex-1">${escapeHtml(item.title || '')}</span>
                 ${tags}
-                ${item.assigned_to_name ? `<span class="text-[.6rem] text-[var(--text-muted)]">${escapeHtml(item.assigned_to_name)}</span>` : ''}
+                ${item.assignee?.name ? `<span class="text-[.6rem] text-[var(--text-muted)]">${escapeHtml(item.assignee.name)}</span>` : ''}
               </div>`;
             }).join('')}
           </div>
