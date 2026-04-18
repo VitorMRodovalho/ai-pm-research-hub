@@ -36,8 +36,14 @@ function splitFunctions(sql) {
 }
 
 function hasAuthGate(body) {
-  return /RAISE\s+EXCEPTION\s+[^;]{0,60}(Unauthorized|Access\s+denied|Not\s+authenticated)/i.test(body)
-      || /RETURN[^;]{0,120}['"]?(Unauthorized|Access\s+denied)/i.test(body)
+  // Expanded 2026-04-17 to catch legacy V3 exception strings that escape the
+  // original matcher: `access_denied` (upsert_webinar, link_webinar_event,
+  // admin_manage_publication), `auth_required` (upsert/link_webinar), and
+  // `Admin only` (create_pilot, update_pilot). After ADR-0015 writer refactor,
+  // all these 5 RPCs will use `Unauthorized` prefix — matcher stays catching
+  // anything that LOOKS like an auth gate.
+  return /RAISE\s+EXCEPTION\s+[^;]{0,80}(Unauthorized|Access\s+denied|access_denied|Not\s+authenticated|auth_required|Admin\s+only)/i.test(body)
+      || /RETURN[^;]{0,120}['"]?(Unauthorized|Access\s+denied|access_denied)/i.test(body)
       || /jsonb_build_object\([^)]*['"]error['"][^)]*['"][^)]*[Uu]nauthor/i.test(body);
 }
 
@@ -61,7 +67,11 @@ test('ADR-0011: new migrations (20260424+) — every SECURITY DEFINER RPC with a
     .filter(f => f.endsWith('.sql') && f >= CUTOVER_FILENAME)
     .sort();
 
-  const violations = [];
+  // Track LATEST definition per RPC across all post-cutover migrations. Matches
+  // runtime behavior: `CREATE OR REPLACE FUNCTION` overwrites, so only the last
+  // file wins. A V3 body in an older migration that was later V4-migrated
+  // should not flag; only the current live definition counts.
+  const rpcLatest = new Map();
   for (const f of files) {
     const sql = readMigration(f);
     if (!/SECURITY\s+DEFINER/i.test(sql)) continue;
@@ -69,10 +79,15 @@ test('ADR-0011: new migrations (20260424+) — every SECURITY DEFINER RPC with a
     const fns = splitFunctions(sql);
     for (const fn of fns) {
       if (!isSecurityDefiner(sql, fn.name)) continue;
-      if (!hasAuthGate(fn.body)) continue;
-      if (!usesV4Can(fn.body)) {
-        violations.push(`${f} :: ${fn.name}(${fn.args.slice(0, 60)}…)`);
-      }
+      rpcLatest.set(fn.name, { file: f, args: fn.args, body: fn.body });
+    }
+  }
+
+  const violations = [];
+  for (const [name, { file, args, body }] of rpcLatest.entries()) {
+    if (!hasAuthGate(body)) continue;
+    if (!usesV4Can(body)) {
+      violations.push(`${file} :: ${name}(${args.slice(0, 60)}…)`);
     }
   }
 
