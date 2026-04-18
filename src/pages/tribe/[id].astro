@@ -1455,10 +1455,13 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
   async function loadBroadcastHistory() {
     if (!sb) return;
-    const { data } = await sb
-      .from('broadcast_log')
-      .select('id, subject, recipient_count, status, sent_at')
-      .eq('tribe_id', TRIBE_ID)
+    // ADR-0015: prefer initiative_id (Phase 3-safe); fallback to tribe_id
+    // only while the legacy column still exists on the table.
+    const base = sb.from('broadcast_log').select('id, subject, recipient_count, status, sent_at');
+    const scoped = INITIATIVE_ID
+      ? base.eq('initiative_id', INITIATIVE_ID)
+      : base.eq('tribe_id', TRIBE_ID);
+    const { data } = await scoped
       .order('sent_at', { ascending: false })
       .limit(20);
     const el = document.getElementById('bc-history-list');

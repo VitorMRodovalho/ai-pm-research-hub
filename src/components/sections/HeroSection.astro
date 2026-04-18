@@ -244,9 +244,13 @@ const recurringMeeting = `${t('hero.recurringMeetingPrefix', lang)} · ${recurri
     if (!sb) { setTimeout(loadHeroEvent, 300); return; }
 
     try {
+      // ADR-0015: filter cross-cutting events via initiative_id IS NULL (Phase 3-safe).
+      // Semantically narrower than tribe_id IS NULL — excludes events bound to
+      // a specific non-tribe initiative (correct: HeroSection shows chapter-wide
+      // kick-off/recurring meetings, not initiative-specific ones).
       const { data: events } = await sb.from('events')
         .select('id, date, meeting_link, youtube_url, duration_minutes, duration_actual')
-        .is('tribe_id', null)
+        .is('initiative_id', null)
         .order('date', { ascending: false })
         .limit(1);
 
