@@ -56,8 +56,10 @@ export default function BoardMembersPanel() {
   const loadBoards = useCallback(async () => {
     const sb = getSb();
     if (!sb) return;
-    const { data } = await sb.from('project_boards').select('id, board_name, board_scope, tribe_id').eq('is_active', true).order('board_name');
-    if (data) setBoards(data);
+    const { data } = await sb.from('project_boards')
+      .select('id, board_name, board_scope, initiative_id, initiative:initiatives(legacy_tribe_id)')
+      .eq('is_active', true).order('board_name');
+    if (data) setBoards(data.map((b: any) => ({ ...b, tribe_id: b.initiative?.legacy_tribe_id ?? null })));
     setLoading(false);
   }, [getSb]);
 
