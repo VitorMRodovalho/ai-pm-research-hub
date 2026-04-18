@@ -1,0 +1,238 @@
+---
+/**
+ * /admin/governance/ip-ratification — Admin panel para gestão de ratificação IP.
+ * Client-side fetch via window.navGetSb() (user JWT context, RPCs passam auth.uid()).
+ * Ações: advance_approval_gate (abrir review, ativar, retirar, superseder).
+ *
+ * Escopo: Phase IP-2 Chunk 4. ADR-0016.
+ * Auth: manage_member (RPC gate; AdminLayout role check is visual only, real gate is no DB).
+ */
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout
+  title="Ratificação de Propriedade Intelectual"
+  breadcrumbs={[
+    { label: 'Operações' },
+    { label: 'Governança' },
+    { label: 'Ratificação IP' },
+  ]}
+>
+  <div class="max-w-[1200px] mx-auto px-4 py-8 space-y-6">
+    <header class="flex items-start justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-extrabold text-navy">Ratificação de PI</h1>
+        <p class="text-sm text-[var(--text-muted)] mt-1">
+          Painel admin para gestão das cadeias de aprovação dos documentos de governança (CR-050 / IP Policy).
+          Cada chain passa por gates configurados; review → approved é automático quando thresholds são satisfeitos
+          via <code class="text-xs bg-gray-100 px-1 rounded">sign_ip_ratification</code>. Botões abaixo cobrem apenas
+          transições manuais (abrir review, ativar, retirar, substituir). ADR-0016 referência.
+        </p>
+      </div>
+      <a href="/admin/governance-v2" class="text-sm text-[var(--text-muted)] hover:text-navy no-underline">
+        ← Governança (geral)
+      </a>
+    </header>
+
+    <div id="ip-loading" class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] px-6 py-12 text-center text-sm text-[var(--text-muted)]">
+      Carregando chains…
+    </div>
+
+    <div id="ip-error" class="hidden rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800"></div>
+
+    <div id="ip-empty" class="hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] px-6 py-12 text-center text-sm text-[var(--text-muted)]">
+      Nenhuma approval_chain ativa.
+    </div>
+
+    <section id="ip-table-wrap" class="hidden rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-[var(--surface-hover)] text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
+          <tr>
+            <th class="px-4 py-3 text-left">Documento</th>
+            <th class="px-4 py-3 text-left">Versão</th>
+            <th class="px-4 py-3 text-left">Status</th>
+            <th class="px-4 py-3 text-right">Gates</th>
+            <th class="px-4 py-3 text-right">Signoffs</th>
+            <th class="px-4 py-3 text-right">Pendentes</th>
+            <th class="px-4 py-3 text-right">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="ip-tbody"></tbody>
+      </table>
+    </section>
+
+    <p class="text-xs text-[var(--text-muted)]">
+      Reminder cron (Phase IP-2b — next session): vai usar <code class="bg-gray-100 px-1 rounded">get_ratification_reminder_targets</code>
+      para notificar pendentes via email D-14/-7/-3/-1.
+    </p>
+  </div>
+
+  <script is:inline>
+    const STATUS_LABELS = {
+      draft:      { label: 'Rascunho',    cls: 'bg-gray-100 text-gray-700 border-gray-300' },
+      review:     { label: 'Em revisão',  cls: 'bg-amber-100 text-amber-800 border-amber-300' },
+      approved:   { label: 'Aprovado',    cls: 'bg-blue-100 text-blue-800 border-blue-300' },
+      active:     { label: 'Vigente',     cls: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
+      withdrawn:  { label: 'Retirado',    cls: 'bg-red-100 text-red-700 border-red-300' },
+      superseded: { label: 'Substituído', cls: 'bg-gray-200 text-gray-600 border-gray-400' },
+    };
+
+    async function waitForSb(maxRetries) {
+      maxRetries = maxRetries || 15;
+      var sb = window.navGetSb && window.navGetSb();
+      var retries = 0;
+      while (!sb && retries < maxRetries) {
+        await new Promise(function (r) { setTimeout(r, 250); });
+        sb = window.navGetSb && window.navGetSb();
+        retries++;
+      }
+      return sb;
+    }
+
+    function escapeHtml(s) {
+      return String(s || '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function actionButtons(row) {
+      var btns = [];
+      if (row.status === 'draft') {
+        btns.push('<button class="ip-advance-btn rounded bg-amber-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-amber-700" data-chain-id="' + row.chain_id + '" data-target="review">Abrir review</button>');
+      }
+      if (row.status === 'approved') {
+        btns.push('<button class="ip-advance-btn rounded bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700" data-chain-id="' + row.chain_id + '" data-target="active">Ativar</button>');
+      }
+      if (row.status === 'review' || row.status === 'approved') {
+        btns.push('<button class="ip-advance-btn rounded border border-red-300 bg-white px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-50" data-chain-id="' + row.chain_id + '" data-target="withdrawn">Retirar</button>');
+      }
+      if (row.status === 'active') {
+        btns.push('<button class="ip-advance-btn rounded border border-gray-300 bg-white px-2 py-1 text-[11px] font-semibold text-gray-700 hover:bg-gray-50" data-chain-id="' + row.chain_id + '" data-target="superseded">Substituir</button>');
+      }
+      return '<div class="flex justify-end gap-1 flex-wrap">' + btns.join('') + '</div>';
+    }
+
+    function renderRow(row) {
+      var s = STATUS_LABELS[row.status] || { label: row.status, cls: 'bg-gray-100' };
+      var pendingCell = row.pending_members > 0
+        ? '<span class="text-amber-700 font-semibold">' + row.pending_members + '</span>'
+        : '—';
+      return (
+        '<tr class="border-t border-[var(--border-default)] hover:bg-[var(--surface-hover)]">' +
+          '<td class="px-4 py-3 font-semibold text-[var(--text-primary)]">' + escapeHtml(row.document_title) + '</td>' +
+          '<td class="px-4 py-3 text-[var(--text-muted)]">' + escapeHtml(row.version_label) + '</td>' +
+          '<td class="px-4 py-3"><span class="inline-block rounded-full border px-2 py-0.5 text-[11px] font-semibold ' + s.cls + '">' + s.label + '</span></td>' +
+          '<td class="px-4 py-3 text-right tabular-nums text-[var(--text-secondary)]">' + row.gate_count + '</td>' +
+          '<td class="px-4 py-3 text-right tabular-nums text-[var(--text-secondary)]">' + row.signoff_count + '</td>' +
+          '<td class="px-4 py-3 text-right tabular-nums text-[var(--text-secondary)]">' + pendingCell + '</td>' +
+          '<td class="px-4 py-3 text-right">' + actionButtons(row) + '</td>' +
+        '</tr>'
+      );
+    }
+
+    async function loadOverview() {
+      const sb = await waitForSb();
+      if (!sb) {
+        document.getElementById('ip-loading').classList.add('hidden');
+        const err = document.getElementById('ip-error');
+        err.textContent = 'Cliente Supabase indisponível. Recarregue a página.';
+        err.classList.remove('hidden');
+        return;
+      }
+
+      const chainsRes = await sb
+        .from('approval_chains')
+        .select('id, status, gates, document_id, version_id, governance_documents!inner(id, title, doc_type), document_versions!inner(id, version_label)')
+        .in('status', ['draft', 'review', 'approved', 'active']);
+
+      if (chainsRes.error) {
+        document.getElementById('ip-loading').classList.add('hidden');
+        const err = document.getElementById('ip-error');
+        err.textContent = 'Erro: ' + chainsRes.error.message;
+        err.classList.remove('hidden');
+        return;
+      }
+
+      const chains = chainsRes.data || [];
+      const overview = [];
+
+      for (const c of chains) {
+        const sCountRes = await sb
+          .from('approval_signoffs')
+          .select('id', { count: 'exact', head: true })
+          .eq('approval_chain_id', c.id);
+        const signoff_count = sCountRes.count || 0;
+
+        let pending_members = 0;
+        if (c.status === 'review' || c.status === 'approved') {
+          const rem = await sb.rpc('get_ratification_reminder_targets', { p_document_id: c.document_id });
+          if (!rem.error && Array.isArray(rem.data)) {
+            pending_members = rem.data.filter(function (r) { return r.target_type === 'member_pending_ratification'; }).length;
+          }
+        }
+
+        const gates = Array.isArray(c.gates) ? c.gates : [];
+        overview.push({
+          chain_id: c.id,
+          document_id: c.document_id,
+          document_title: (c.governance_documents && c.governance_documents.title) || '(sem título)',
+          status: c.status,
+          gate_count: gates.length,
+          signoff_count: signoff_count,
+          pending_members: pending_members,
+          version_label: (c.document_versions && c.document_versions.version_label) || '',
+        });
+      }
+
+      overview.sort(function (a, b) { return a.document_title.localeCompare(b.document_title); });
+
+      document.getElementById('ip-loading').classList.add('hidden');
+      if (overview.length === 0) {
+        document.getElementById('ip-empty').classList.remove('hidden');
+        return;
+      }
+
+      document.getElementById('ip-tbody').innerHTML = overview.map(renderRow).join('');
+      document.getElementById('ip-table-wrap').classList.remove('hidden');
+      attachAdvanceHandlers();
+    }
+
+    function attachAdvanceHandlers() {
+      document.querySelectorAll('.ip-advance-btn').forEach(function (btn) {
+        btn.addEventListener('click', async function (ev) {
+          const b = ev.currentTarget;
+          const chainId = b.dataset.chainId;
+          const target = b.dataset.target;
+          const reason = target === 'withdrawn' || target === 'superseded'
+            ? window.prompt('Motivo (obrigatório para retirada/substituição):')
+            : null;
+          if ((target === 'withdrawn' || target === 'superseded') && !reason) return;
+
+          b.disabled = true;
+          const orig = b.textContent;
+          b.textContent = '...';
+
+          const sb = await waitForSb();
+          if (!sb) {
+            alert('Erro: cliente Supabase indisponível.');
+            b.disabled = false; b.textContent = orig;
+            return;
+          }
+          const res = await sb.rpc('advance_approval_gate', {
+            p_chain_id: chainId,
+            p_target_status: target,
+            p_reason: reason,
+          });
+          if (res.error) {
+            alert('Erro: ' + res.error.message);
+            b.disabled = false; b.textContent = orig;
+            return;
+          }
+          window.location.reload();
+        });
+      });
+    }
+
+    loadOverview();
+  </script>
+</AdminLayout>
