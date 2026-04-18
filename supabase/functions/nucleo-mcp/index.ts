@@ -1094,6 +1094,17 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL 50.1: get_pending_ratifications — All authenticated members (RPC scopes by caller eligibility)
+  mcp.tool("get_pending_ratifications", "Returns governance documents pending YOUR ratification signoff. Each row includes chain status, version label, locked date, gates config, and the list of gate_kinds you are eligible to sign (curator | leader | president_go | president_others | member_ratification | external_signer). Use sign_ip_ratification (via native UI) to actually sign.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_pending_ratifications", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_pending_ratifications");
+    if (error) { await logUsage(sb, member.id, "get_pending_ratifications", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_pending_ratifications", true, undefined, start);
+    return ok(data);
+  });
+
   // TOOL 51: get_manual_section — All authenticated members
   mcp.tool("get_manual_section", "Returns a specific section of the Governance Manual by number or keyword search.", { section: z.string().optional().describe("Section number (e.g. '3.1') or keyword to search in title"), lang: z.string().optional().describe("pt|en|es. Default: pt") }, async (params: { section?: string; lang?: string }) => {
     const start = Date.now();
