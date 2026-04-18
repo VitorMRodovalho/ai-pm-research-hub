@@ -31,18 +31,20 @@ const MIGRATIONS_DIR = resolve(process.cwd(), 'supabase/migrations');
 const CUTOVER = '20260427140000';
 
 // C3 tables that carry both tribe_id and initiative_id dual-write (Phase 1).
-// After Phase 3 (tribe_id column drop), entries here should be pruned table-by-
-// table as their tribe_id column disappears.
+// As Phase 3 drops the tribe_id column table-by-table, those entries are
+// removed from this list — after the drop, Postgres itself rejects any
+// INSERT referencing the missing column, so the static check becomes
+// redundant for the dropped tables.
+//
+// Phase 3 drop log:
+//   - 2026-04-17 (migration 20260427180000): announcements, ia_pilots, pilots
 const C3_TABLES = [
   'webinars',
   'broadcast_log',
   'meeting_artifacts',
   'publication_submissions',
   'public_publications',
-  'pilots',
-  'ia_pilots',
   'hub_resources',
-  'announcements',
   'project_boards',
   'events',
   'tribe_deliverables',
