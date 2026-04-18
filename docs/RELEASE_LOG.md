@@ -74,6 +74,9 @@ Sessão de qualidade estrutural pós-cutover V4. 24 commits em um dia cobrindo t
 ### Addendum (17/Abr p7 — ADR-0015 Phase 1 webinars reader cutover):
 - ✅ **ADR-0015 Phase 1 (webinars)** — migration `20260427050000` refactors 2 reader RPCs (`list_webinars_v2`, `webinars_pending_comms`) to JOIN `initiatives i` instead of `tribes t`. `tribe_name` now derived from `i.title` (initiatives column). Filter `p_tribe_id` now matches `i.legacy_tribe_id` instead of `w.tribe_id`. Output shape preserved identically (25 keys list_webinars_v2, all present). Smoke: 6/6 webinars return with `tribe_name` + `tribe_id` populated; filter by tribe_id=6 returns 2 rows correctly. Writer RPCs (`upsert_webinar`, `link_webinar_event`) unchanged — dual-write triggers still active until Phase 2. First C3 table out of 11. `tribes` table permanent; `webinars.tribe_id` column kept until Phase 3.
 
+### Addendum (17/Abr p8 — ADR-0015 Phase 1 publication_submissions reader cutover):
+- ✅ **ADR-0015 Phase 1 (publication_submissions)** — migration `20260427060000` refactors 3 reader RPCs (`get_publication_submissions`, `get_publication_submission_detail`, `get_publication_pipeline_summary`). LEFT JOIN tribes → initiatives; tribe_name derivado de `i.title`; filter via `i.legacy_tribe_id`; aggregation `GROUP BY initiative_id`. Dual-write integrity: 8/8 both. Smoke: `get_publication_submissions()` 8/8 rows com tribe_name; `by_tribe` summary retorna 4 tribos agregadas corretamente (3+3+1+1=8); detail retorna tribe_name "ROI & Portfólio". Writer `create_publication_submission` unchanged. 2ª C3 table done de 11.
+
 ### Known issues
 - `apply_migration` MCP não registra em `supabase_migrations.schema_migrations` — workaround `INSERT ON CONFLICT DO NOTHING` manual documentado no `platform-guardian` checklist.
 
