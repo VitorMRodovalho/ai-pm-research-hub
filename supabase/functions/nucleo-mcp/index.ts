@@ -91,8 +91,9 @@ function registerKnowledge(mcp: McpServer, sb: ReturnType<typeof createClient>) 
       const isLeader = await canV4(sb, member.id, 'write');
       const isSponsor = await canV4(sb, member.id, 'manage_partner');
       const isComms = isLeader; // comms_leader has 'write' — covered by isLeader
-      const isLiaison = isSponsor; // liaison has 'manage_partner' — covered by isSponsor
-      const isChapterBoard = isSponsor; // chapter_board/board_member has 'view_pii' — covered by manage_partner for prompt purposes
+      const isLiaison = isSponsor; // chapter_liaison/sponsor both have 'manage_partner' — covered by isSponsor
+      const hasViewPii = await canV4(sb, member.id, 'view_pii');
+      const isChapterBoard = isSponsor || hasViewPii; // board_member has 'view_pii' only (without 'manage_partner')
       const hasTribe = !!member.tribe_id;
 
       // Build personalized tool guide
@@ -391,7 +392,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
   );
 }
 
-// --- Register 68 tools (54R + 14W) ---
+// --- Register 76 tools (61R + 15W) ---
 
 function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
 
@@ -846,10 +847,11 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL 31: get_comms_dashboard — Comms team + Admin
-  mcp.tool("get_comms_dashboard", "Returns communications dashboard: publications by status/format, backlog, overdue items.", {}, async () => {
+  mcp.tool("get_comms_dashboard", "Returns communications dashboard: publications by status/format, backlog, overdue items. Requires comms_leader, admin, or manager role.", {}, async () => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_comms_dashboard", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'manage_member')) && !(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "get_comms_dashboard", false, "Unauthorized", start); return err("Unauthorized: admin/comms only."); }
     const { data, error } = await sb.rpc("get_comms_dashboard_metrics");
     if (error) { await logUsage(sb, member.id, "get_comms_dashboard", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_comms_dashboard", true, undefined, start);
@@ -1281,6 +1283,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_research_pipeline", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "get_research_pipeline", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
     const { data, error } = await sb.rpc("get_global_research_pipeline");
     if (error) { await logUsage(sb, member.id, "get_research_pipeline", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_research_pipeline", true, undefined, start);
