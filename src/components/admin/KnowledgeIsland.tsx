@@ -7,7 +7,7 @@ interface HubResource {
   title: string;
   description: string | null;
   url: string | null;
-  tribe_id: number | null;
+  initiative_id: string | null;
   is_active: boolean;
   created_at: string;
 }
@@ -37,7 +37,7 @@ export default function KnowledgeIsland() {
     if (!sb) return;
     setLoading(true);
     const { data, error } = await sb.from('hub_resources')
-      .select('id, asset_type, title, description, url, tribe_id, is_active, created_at')
+      .select('id, asset_type, title, description, url, initiative_id, is_active, created_at')
       .order('created_at', { ascending: false })
       .limit(50);
     if (!error && data) setItems(data);
@@ -71,7 +71,6 @@ export default function KnowledgeIsland() {
       title: form.title.trim(),
       description: form.description.trim() || null,
       url: form.url.trim() || null,
-      tribe_id: tribeInt,
       initiative_id: initiativeId,
       author_id: getMember()?.id || null,
     };
@@ -92,14 +91,20 @@ export default function KnowledgeIsland() {
   const handleEdit = async (id: string) => {
     const sb = getSb();
     if (!sb) return;
-    const { data } = await sb.from('hub_resources').select('*').eq('id', id).single();
+    const { data } = await sb.from('hub_resources').select('id, title, description, url, asset_type, initiative_id').eq('id', id).single();
     if (!data) return;
+    let tribeIdStr = '';
+    if (data.initiative_id) {
+      const { data: init } = await sb.from('initiatives')
+        .select('legacy_tribe_id').eq('id', data.initiative_id).limit(1).maybeSingle();
+      if (init?.legacy_tribe_id) tribeIdStr = String(init.legacy_tribe_id);
+    }
     setForm({
       title: data.title || '',
       description: data.description || '',
       url: data.url || '',
       asset_type: data.asset_type || 'course',
-      tribe_id: data.tribe_id ? String(data.tribe_id) : '',
+      tribe_id: tribeIdStr,
     });
     setEditId(id);
   };

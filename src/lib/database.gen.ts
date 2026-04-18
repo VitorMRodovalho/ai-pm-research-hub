@@ -17,7 +17,7 @@ export type Database = {
       admin_audit_log: {
         Row: {
           action: string
-          actor_id: string
+          actor_id: string | null
           changes: Json | null
           created_at: string | null
           id: string
@@ -27,7 +27,7 @@ export type Database = {
         }
         Insert: {
           action: string
-          actor_id: string
+          actor_id?: string | null
           changes?: Json | null
           created_at?: string | null
           id?: string
@@ -37,7 +37,7 @@ export type Database = {
         }
         Update: {
           action?: string
-          actor_id?: string
+          actor_id?: string | null
           changes?: Json | null
           created_at?: string | null
           id?: string
@@ -177,7 +177,6 @@ export type Database = {
           title: string
           title_en: string | null
           title_es: string | null
-          tribe_id: number | null
           type: string | null
         }
         Insert: {
@@ -197,7 +196,6 @@ export type Database = {
           title: string
           title_en?: string | null
           title_es?: string | null
-          tribe_id?: number | null
           type?: string | null
         }
         Update: {
@@ -217,7 +215,6 @@ export type Database = {
           title?: string
           title_en?: string | null
           title_es?: string | null
-          tribe_id?: number | null
           type?: string | null
         }
         Relationships: [
@@ -275,13 +272,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "announcements_tribe_id_fkey"
-            columns: ["tribe_id"]
-            isOneToOne: false
-            referencedRelation: "tribes"
             referencedColumns: ["id"]
           },
         ]
@@ -1889,7 +1879,6 @@ export type Database = {
           sent_at: string
           status: string
           subject: string
-          tribe_id: number
         }
         Insert: {
           body: string
@@ -1901,7 +1890,6 @@ export type Database = {
           sent_at?: string
           status?: string
           subject: string
-          tribe_id: number
         }
         Update: {
           body?: string
@@ -1913,7 +1901,6 @@ export type Database = {
           sent_at?: string
           status?: string
           subject?: string
-          tribe_id?: number
         }
         Relationships: [
           {
@@ -1965,17 +1952,11 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "broadcast_log_tribe_id_fkey"
-            columns: ["tribe_id"]
-            isOneToOne: false
-            referencedRelation: "tribes"
-            referencedColumns: ["id"]
-          },
         ]
       }
       campaign_recipients: {
         Row: {
+          bot_suspected: boolean | null
           bounce_type: string | null
           bounced_at: string | null
           click_count: number | null
@@ -1987,8 +1968,10 @@ export type Database = {
           error_message: string | null
           external_email: string | null
           external_name: string | null
+          first_opened_at: string | null
           id: string
           language: string | null
+          last_user_agent: string | null
           member_id: string | null
           open_count: number | null
           opened: boolean | null
@@ -2000,6 +1983,7 @@ export type Database = {
           unsubscribed: boolean | null
         }
         Insert: {
+          bot_suspected?: boolean | null
           bounce_type?: string | null
           bounced_at?: string | null
           click_count?: number | null
@@ -2011,8 +1995,10 @@ export type Database = {
           error_message?: string | null
           external_email?: string | null
           external_name?: string | null
+          first_opened_at?: string | null
           id?: string
           language?: string | null
+          last_user_agent?: string | null
           member_id?: string | null
           open_count?: number | null
           opened?: boolean | null
@@ -2024,6 +2010,7 @@ export type Database = {
           unsubscribed?: boolean | null
         }
         Update: {
+          bot_suspected?: boolean | null
           bounce_type?: string | null
           bounced_at?: string | null
           click_count?: number | null
@@ -2035,8 +2022,10 @@ export type Database = {
           error_message?: string | null
           external_email?: string | null
           external_name?: string | null
+          first_opened_at?: string | null
           id?: string
           language?: string | null
+          last_user_agent?: string | null
           member_id?: string | null
           open_count?: number | null
           opened?: boolean | null
@@ -2875,6 +2864,42 @@ export type Database = {
           },
         ]
       }
+      chapter_registry: {
+        Row: {
+          chapter_code: string
+          cnpj: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          is_contracting_chapter: boolean | null
+          legal_name: string
+          state: string
+          updated_at: string | null
+        }
+        Insert: {
+          chapter_code: string
+          cnpj?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_contracting_chapter?: boolean | null
+          legal_name: string
+          state: string
+          updated_at?: string | null
+        }
+        Update: {
+          chapter_code?: string
+          cnpj?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_contracting_chapter?: boolean | null
+          legal_name?: string
+          state?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       chapters: {
         Row: {
           code: string
@@ -2971,6 +2996,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      comms_media_items: {
+        Row: {
+          caption: string | null
+          channel: string
+          comments: number | null
+          external_id: string
+          id: string
+          likes: number | null
+          media_type: string | null
+          payload: Json | null
+          permalink: string | null
+          published_at: string | null
+          reach: number | null
+          saves: number | null
+          shares: number | null
+          synced_at: string | null
+          thumbnail_url: string | null
+          views: number | null
+        }
+        Insert: {
+          caption?: string | null
+          channel: string
+          comments?: number | null
+          external_id: string
+          id?: string
+          likes?: number | null
+          media_type?: string | null
+          payload?: Json | null
+          permalink?: string | null
+          published_at?: string | null
+          reach?: number | null
+          saves?: number | null
+          shares?: number | null
+          synced_at?: string | null
+          thumbnail_url?: string | null
+          views?: number | null
+        }
+        Update: {
+          caption?: string | null
+          channel?: string
+          comments?: number | null
+          external_id?: string
+          id?: string
+          likes?: number | null
+          media_type?: string | null
+          payload?: Json | null
+          permalink?: string | null
+          published_at?: string | null
+          reach?: number | null
+          saves?: number | null
+          shares?: number | null
+          synced_at?: string | null
+          thumbnail_url?: string | null
+          views?: number | null
+        }
+        Relationships: []
       }
       comms_metrics_daily: {
         Row: {
@@ -3070,6 +3152,47 @@ export type Database = {
           upserted_rows?: number
         }
         Relationships: []
+      }
+      comms_token_alerts: {
+        Row: {
+          acknowledged: boolean | null
+          acknowledged_by: string | null
+          alert_type: string
+          channel: string
+          created_at: string | null
+          days_until_expiry: number | null
+          id: string
+          message: string
+        }
+        Insert: {
+          acknowledged?: boolean | null
+          acknowledged_by?: string | null
+          alert_type: string
+          channel: string
+          created_at?: string | null
+          days_until_expiry?: number | null
+          id?: string
+          message: string
+        }
+        Update: {
+          acknowledged?: boolean | null
+          acknowledged_by?: string | null
+          alert_type?: string
+          channel?: string
+          created_at?: string | null
+          days_until_expiry?: number | null
+          id?: string
+          message?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comms_token_alerts_channel_fkey"
+            columns: ["channel"]
+            isOneToOne: false
+            referencedRelation: "comms_channel_config"
+            referencedColumns: ["channel"]
+          },
+        ]
       }
       communication_templates: {
         Row: {
@@ -4402,6 +4525,8 @@ export type Database = {
           invited_member_ids: string[] | null
           is_recorded: boolean | null
           meeting_link: string | null
+          minutes_edit_history: Json | null
+          minutes_edited_at: string | null
           minutes_posted_at: string | null
           minutes_posted_by: string | null
           minutes_text: string | null
@@ -4441,6 +4566,8 @@ export type Database = {
           invited_member_ids?: string[] | null
           is_recorded?: boolean | null
           meeting_link?: string | null
+          minutes_edit_history?: Json | null
+          minutes_edited_at?: string | null
           minutes_posted_at?: string | null
           minutes_posted_by?: string | null
           minutes_text?: string | null
@@ -4480,6 +4607,8 @@ export type Database = {
           invited_member_ids?: string[] | null
           is_recorded?: boolean | null
           meeting_link?: string | null
+          minutes_edit_history?: Json | null
+          minutes_edited_at?: string | null
           minutes_posted_at?: string | null
           minutes_posted_by?: string | null
           minutes_text?: string | null
@@ -4884,7 +5013,6 @@ export type Database = {
           tags: string[] | null
           title: string
           trello_card_id: string | null
-          tribe_id: number | null
           updated_at: string
           url: string | null
         }
@@ -4903,7 +5031,6 @@ export type Database = {
           tags?: string[] | null
           title: string
           trello_card_id?: string | null
-          tribe_id?: number | null
           updated_at?: string
           url?: string | null
         }
@@ -4922,7 +5049,6 @@ export type Database = {
           tags?: string[] | null
           title?: string
           trello_card_id?: string | null
-          tribe_id?: number | null
           updated_at?: string
           url?: string | null
         }
@@ -4983,13 +5109,6 @@ export type Database = {
             referencedRelation: "initiatives"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "hub_resources_tribe_id_fkey"
-            columns: ["tribe_id"]
-            isOneToOne: false
-            referencedRelation: "tribes"
-            referencedColumns: ["id"]
-          },
         ]
       }
       ia_pilots: {
@@ -5011,7 +5130,6 @@ export type Database = {
           status: string | null
           technologies: string[] | null
           title: string
-          tribe_id: number | null
           updated_at: string | null
         }
         Insert: {
@@ -5032,7 +5150,6 @@ export type Database = {
           status?: string | null
           technologies?: string[] | null
           title: string
-          tribe_id?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -5053,7 +5170,6 @@ export type Database = {
           status?: string | null
           technologies?: string[] | null
           title?: string
-          tribe_id?: number | null
           updated_at?: string | null
         }
         Relationships: [
@@ -5111,13 +5227,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ia_pilots_tribe_id_fkey"
-            columns: ["tribe_id"]
-            isOneToOne: false
-            referencedRelation: "tribes"
             referencedColumns: ["id"]
           },
         ]
@@ -6180,7 +6289,6 @@ export type Database = {
           page_data_snapshot: Json | null
           recording_url: string | null
           title: string
-          tribe_id: number | null
           updated_at: string
         }
         Insert: {
@@ -6198,7 +6306,6 @@ export type Database = {
           page_data_snapshot?: Json | null
           recording_url?: string | null
           title: string
-          tribe_id?: number | null
           updated_at?: string
         }
         Update: {
@@ -6216,7 +6323,6 @@ export type Database = {
           page_data_snapshot?: Json | null
           recording_url?: string | null
           title?: string
-          tribe_id?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -6281,13 +6387,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "meeting_artifacts_tribe_id_fkey"
-            columns: ["tribe_id"]
-            isOneToOne: false
-            referencedRelation: "tribes"
             referencedColumns: ["id"]
           },
         ]
@@ -6468,362 +6567,6 @@ export type Database = {
           },
           {
             foreignKeyName: "member_cycle_history_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "public_members"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      member_role_changes: {
-        Row: {
-          authorized_by: string | null
-          change_type: string
-          created_at: string | null
-          cycle_code: string | null
-          effective_date: string
-          executed_by: string | null
-          field_name: string
-          id: string
-          member_id: string
-          new_value: Json | null
-          notes: string | null
-          old_value: Json | null
-          reason: string | null
-          reference_doc_id: string | null
-          reference_doc_url: string | null
-        }
-        Insert: {
-          authorized_by?: string | null
-          change_type: string
-          created_at?: string | null
-          cycle_code?: string | null
-          effective_date?: string
-          executed_by?: string | null
-          field_name: string
-          id?: string
-          member_id: string
-          new_value?: Json | null
-          notes?: string | null
-          old_value?: Json | null
-          reason?: string | null
-          reference_doc_id?: string | null
-          reference_doc_url?: string | null
-        }
-        Update: {
-          authorized_by?: string | null
-          change_type?: string
-          created_at?: string | null
-          cycle_code?: string | null
-          effective_date?: string
-          executed_by?: string | null
-          field_name?: string
-          id?: string
-          member_id?: string
-          new_value?: Json | null
-          notes?: string | null
-          old_value?: Json | null
-          reason?: string | null
-          reference_doc_id?: string | null
-          reference_doc_url?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "member_role_changes_authorized_by_fkey"
-            columns: ["authorized_by"]
-            isOneToOne: false
-            referencedRelation: "active_members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_role_changes_authorized_by_fkey"
-            columns: ["authorized_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "member_role_changes_authorized_by_fkey"
-            columns: ["authorized_by"]
-            isOneToOne: false
-            referencedRelation: "member_attendance_summary"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "member_role_changes_authorized_by_fkey"
-            columns: ["authorized_by"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_role_changes_authorized_by_fkey"
-            columns: ["authorized_by"]
-            isOneToOne: false
-            referencedRelation: "members_public_safe"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_role_changes_authorized_by_fkey"
-            columns: ["authorized_by"]
-            isOneToOne: false
-            referencedRelation: "public_members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_role_changes_executed_by_fkey"
-            columns: ["executed_by"]
-            isOneToOne: false
-            referencedRelation: "active_members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_role_changes_executed_by_fkey"
-            columns: ["executed_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "member_role_changes_executed_by_fkey"
-            columns: ["executed_by"]
-            isOneToOne: false
-            referencedRelation: "member_attendance_summary"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "member_role_changes_executed_by_fkey"
-            columns: ["executed_by"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_role_changes_executed_by_fkey"
-            columns: ["executed_by"]
-            isOneToOne: false
-            referencedRelation: "members_public_safe"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_role_changes_executed_by_fkey"
-            columns: ["executed_by"]
-            isOneToOne: false
-            referencedRelation: "public_members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_role_changes_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "active_members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_role_changes_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "member_role_changes_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "member_attendance_summary"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "member_role_changes_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_role_changes_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "members_public_safe"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_role_changes_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "public_members"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      member_status_transitions: {
-        Row: {
-          actor_member_id: string | null
-          created_at: string | null
-          id: string
-          items_reassigned_to: string | null
-          member_id: string
-          new_status: string
-          new_tribe_id: number | null
-          notified_leader: boolean | null
-          notified_member: boolean | null
-          previous_status: string
-          previous_tribe_id: number | null
-          reason_category: string | null
-          reason_detail: string | null
-        }
-        Insert: {
-          actor_member_id?: string | null
-          created_at?: string | null
-          id?: string
-          items_reassigned_to?: string | null
-          member_id: string
-          new_status: string
-          new_tribe_id?: number | null
-          notified_leader?: boolean | null
-          notified_member?: boolean | null
-          previous_status: string
-          previous_tribe_id?: number | null
-          reason_category?: string | null
-          reason_detail?: string | null
-        }
-        Update: {
-          actor_member_id?: string | null
-          created_at?: string | null
-          id?: string
-          items_reassigned_to?: string | null
-          member_id?: string
-          new_status?: string
-          new_tribe_id?: number | null
-          notified_leader?: boolean | null
-          notified_member?: boolean | null
-          previous_status?: string
-          previous_tribe_id?: number | null
-          reason_category?: string | null
-          reason_detail?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "member_status_transitions_actor_member_id_fkey"
-            columns: ["actor_member_id"]
-            isOneToOne: false
-            referencedRelation: "active_members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_status_transitions_actor_member_id_fkey"
-            columns: ["actor_member_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "member_status_transitions_actor_member_id_fkey"
-            columns: ["actor_member_id"]
-            isOneToOne: false
-            referencedRelation: "member_attendance_summary"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "member_status_transitions_actor_member_id_fkey"
-            columns: ["actor_member_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_status_transitions_actor_member_id_fkey"
-            columns: ["actor_member_id"]
-            isOneToOne: false
-            referencedRelation: "members_public_safe"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_status_transitions_actor_member_id_fkey"
-            columns: ["actor_member_id"]
-            isOneToOne: false
-            referencedRelation: "public_members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_status_transitions_items_reassigned_to_fkey"
-            columns: ["items_reassigned_to"]
-            isOneToOne: false
-            referencedRelation: "active_members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_status_transitions_items_reassigned_to_fkey"
-            columns: ["items_reassigned_to"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "member_status_transitions_items_reassigned_to_fkey"
-            columns: ["items_reassigned_to"]
-            isOneToOne: false
-            referencedRelation: "member_attendance_summary"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "member_status_transitions_items_reassigned_to_fkey"
-            columns: ["items_reassigned_to"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_status_transitions_items_reassigned_to_fkey"
-            columns: ["items_reassigned_to"]
-            isOneToOne: false
-            referencedRelation: "members_public_safe"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_status_transitions_items_reassigned_to_fkey"
-            columns: ["items_reassigned_to"]
-            isOneToOne: false
-            referencedRelation: "public_members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_status_transitions_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "active_members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_status_transitions_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "member_status_transitions_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "member_attendance_summary"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "member_status_transitions_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_status_transitions_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "members_public_safe"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_status_transitions_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
             referencedRelation: "public_members"
@@ -8015,7 +7758,6 @@ export type Database = {
           success_metrics: Json | null
           team_member_ids: string[] | null
           title: string
-          tribe_id: number | null
           updated_at: string | null
         }
         Insert: {
@@ -8037,7 +7779,6 @@ export type Database = {
           success_metrics?: Json | null
           team_member_ids?: string[] | null
           title: string
-          tribe_id?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -8059,7 +7800,6 @@ export type Database = {
           success_metrics?: Json | null
           team_member_ids?: string[] | null
           title?: string
-          tribe_id?: number | null
           updated_at?: string | null
         }
         Relationships: [
@@ -8124,13 +7864,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pilots_tribe_id_fkey"
-            columns: ["tribe_id"]
-            isOneToOne: false
-            referencedRelation: "tribes"
             referencedColumns: ["id"]
           },
         ]
@@ -8199,79 +7932,6 @@ export type Database = {
           {
             foreignKeyName: "platform_settings_changed_by_fkey"
             columns: ["changed_by"]
-            isOneToOne: false
-            referencedRelation: "public_members"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      platform_settings_log: {
-        Row: {
-          actor_member_id: string | null
-          created_at: string | null
-          id: string
-          new_value: Json
-          previous_value: Json | null
-          reason: string
-          setting_key: string
-        }
-        Insert: {
-          actor_member_id?: string | null
-          created_at?: string | null
-          id?: string
-          new_value: Json
-          previous_value?: Json | null
-          reason: string
-          setting_key: string
-        }
-        Update: {
-          actor_member_id?: string | null
-          created_at?: string | null
-          id?: string
-          new_value?: Json
-          previous_value?: Json | null
-          reason?: string
-          setting_key?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "platform_settings_log_actor_member_id_fkey"
-            columns: ["actor_member_id"]
-            isOneToOne: false
-            referencedRelation: "active_members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "platform_settings_log_actor_member_id_fkey"
-            columns: ["actor_member_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "platform_settings_log_actor_member_id_fkey"
-            columns: ["actor_member_id"]
-            isOneToOne: false
-            referencedRelation: "member_attendance_summary"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "platform_settings_log_actor_member_id_fkey"
-            columns: ["actor_member_id"]
-            isOneToOne: false
-            referencedRelation: "members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "platform_settings_log_actor_member_id_fkey"
-            columns: ["actor_member_id"]
-            isOneToOne: false
-            referencedRelation: "members_public_safe"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "platform_settings_log_actor_member_id_fkey"
-            columns: ["actor_member_id"]
             isOneToOne: false
             referencedRelation: "public_members"
             referencedColumns: ["id"]
@@ -8372,6 +8032,56 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      privacy_policy_versions: {
+        Row: {
+          change_request_id: string | null
+          created_at: string | null
+          created_by: string | null
+          effective_at: string
+          id: string
+          notification_campaign_id: string | null
+          notification_created_at: string | null
+          summary_en: string | null
+          summary_es: string | null
+          summary_pt: string | null
+          version: string
+        }
+        Insert: {
+          change_request_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          effective_at?: string
+          id?: string
+          notification_campaign_id?: string | null
+          notification_created_at?: string | null
+          summary_en?: string | null
+          summary_es?: string | null
+          summary_pt?: string | null
+          version: string
+        }
+        Update: {
+          change_request_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          effective_at?: string
+          id?: string
+          notification_campaign_id?: string | null
+          notification_created_at?: string | null
+          summary_en?: string | null
+          summary_es?: string | null
+          summary_pt?: string | null
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "privacy_policy_versions_change_request_id_fkey"
+            columns: ["change_request_id"]
+            isOneToOne: false
+            referencedRelation: "change_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -8610,7 +8320,6 @@ export type Database = {
           publication_type: string
           thumbnail_url: string | null
           title: string
-          tribe_id: number | null
           updated_at: string | null
           view_count: number | null
         }
@@ -8637,7 +8346,6 @@ export type Database = {
           publication_type?: string
           thumbnail_url?: string | null
           title: string
-          tribe_id?: number | null
           updated_at?: string | null
           view_count?: number | null
         }
@@ -8664,7 +8372,6 @@ export type Database = {
           publication_type?: string
           thumbnail_url?: string | null
           title?: string
-          tribe_id?: number | null
           updated_at?: string | null
           view_count?: number | null
         }
@@ -8688,13 +8395,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "public_publications_tribe_id_fkey"
-            columns: ["tribe_id"]
-            isOneToOne: false
-            referencedRelation: "tribes"
             referencedColumns: ["id"]
           },
         ]
@@ -8893,7 +8593,6 @@ export type Database = {
           target_type: Database["public"]["Enums"]["submission_target_type"]
           target_url: string | null
           title: string
-          tribe_id: number | null
           updated_at: string | null
         }
         Insert: {
@@ -8920,7 +8619,6 @@ export type Database = {
           target_type: Database["public"]["Enums"]["submission_target_type"]
           target_url?: string | null
           title: string
-          tribe_id?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -8947,7 +8645,6 @@ export type Database = {
           target_type?: Database["public"]["Enums"]["submission_target_type"]
           target_url?: string | null
           title?: string
-          tribe_id?: number | null
           updated_at?: string | null
         }
         Relationships: [
@@ -9054,13 +8751,6 @@ export type Database = {
             columns: ["primary_author_id"]
             isOneToOne: false
             referencedRelation: "public_members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "publication_submissions_tribe_id_fkey"
-            columns: ["tribe_id"]
-            isOneToOne: false
-            referencedRelation: "tribes"
             referencedColumns: ["id"]
           },
         ]
@@ -10671,7 +10361,6 @@ export type Database = {
           organization_id: string
           status: string
           title: string
-          tribe_id: number
           updated_at: string
         }
         Insert: {
@@ -10686,7 +10375,6 @@ export type Database = {
           organization_id?: string
           status?: string
           title: string
-          tribe_id: number
           updated_at?: string
         }
         Update: {
@@ -10701,7 +10389,6 @@ export type Database = {
           organization_id?: string
           status?: string
           title?: string
-          tribe_id?: number
           updated_at?: string
         }
         Relationships: [
@@ -10773,13 +10460,6 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tribe_deliverables_tribe_id_fkey"
-            columns: ["tribe_id"]
-            isOneToOne: false
-            referencedRelation: "tribes"
             referencedColumns: ["id"]
           },
         ]
@@ -11640,7 +11320,6 @@ export type Database = {
           scheduled_at: string
           status: string
           title: string
-          tribe_id: number | null
           updated_at: string
           youtube_url: string | null
         }
@@ -11662,7 +11341,6 @@ export type Database = {
           scheduled_at: string
           status?: string
           title: string
-          tribe_id?: number | null
           updated_at?: string
           youtube_url?: string | null
         }
@@ -11684,7 +11362,6 @@ export type Database = {
           scheduled_at?: string
           status?: string
           title?: string
-          tribe_id?: number | null
           updated_at?: string
           youtube_url?: string | null
         }
@@ -11759,14 +11436,64 @@ export type Database = {
             referencedRelation: "public_members"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "webinars_tribe_id_fkey"
-            columns: ["tribe_id"]
-            isOneToOne: false
-            referencedRelation: "tribes"
-            referencedColumns: ["id"]
-          },
         ]
+      }
+      wiki_pages: {
+        Row: {
+          authors: string[] | null
+          content: string
+          created_at: string | null
+          domain: string
+          fts: unknown
+          id: string
+          ip_track: string | null
+          license: string | null
+          path: string
+          source_repo: string
+          source_sha: string | null
+          summary: string | null
+          synced_at: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          authors?: string[] | null
+          content?: string
+          created_at?: string | null
+          domain: string
+          fts?: unknown
+          id?: string
+          ip_track?: string | null
+          license?: string | null
+          path: string
+          source_repo?: string
+          source_sha?: string | null
+          summary?: string | null
+          synced_at?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          authors?: string[] | null
+          content?: string
+          created_at?: string | null
+          domain?: string
+          fts?: unknown
+          id?: string
+          ip_track?: string | null
+          license?: string | null
+          path?: string
+          source_repo?: string
+          source_sha?: string | null
+          summary?: string | null
+          synced_at?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
@@ -12130,6 +11857,7 @@ export type Database = {
           cycles: string[] | null
           designations: string[] | null
           id: string | null
+          initiative_id: string | null
           is_active: boolean | null
           linkedin_url: string | null
           member_status: string | null
@@ -12154,6 +11882,7 @@ export type Database = {
           cycles?: string[] | null
           designations?: string[] | null
           id?: string | null
+          initiative_id?: string | null
           is_active?: boolean | null
           linkedin_url?: string | null
           member_status?: string | null
@@ -12178,6 +11907,7 @@ export type Database = {
           cycles?: string[] | null
           designations?: string[] | null
           id?: string | null
+          initiative_id?: string | null
           is_active?: boolean | null
           linkedin_url?: string | null
           member_status?: string | null
@@ -12189,7 +11919,15 @@ export type Database = {
           state?: string | null
           tribe_id?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "members_initiative_id_fkey"
+            columns: ["initiative_id"]
+            isOneToOne: false
+            referencedRelation: "initiatives"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recurring_event_groups: {
         Row: {
@@ -12246,6 +11984,7 @@ export type Database = {
     Functions: {
       _can_manage_event: { Args: { p_event_id: string }; Returns: boolean }
       accept_privacy_consent: { Args: { p_version?: string }; Returns: Json }
+      activate_initiative: { Args: { p_initiative_id: string }; Returns: Json }
       add_partner_attachment: {
         Args: {
           p_description?: string
@@ -12598,12 +12337,10 @@ export type Database = {
         Args: { p_batch_id: string }
         Returns: Json
       }
-      admin_reactivate_member:
-        | { Args: { p_member_id: string }; Returns: Json }
-        | {
-            Args: { p_member_id: string; p_role?: string; p_tribe_id: number }
-            Returns: Json
-          }
+      admin_reactivate_member: {
+        Args: { p_member_id: string; p_role?: string; p_tribe_id: number }
+        Returns: Json
+      }
       admin_record_release_readiness_decision: {
         Args: { p_context_label?: string; p_mode?: string }
         Returns: Json
@@ -13007,9 +12744,20 @@ export type Database = {
         Args: { p_member_id: string }
         Returns: Json
       }
+      check_schema_invariants: {
+        Args: never
+        Returns: {
+          description: string
+          invariant_name: string
+          sample_ids: string[]
+          severity: string
+          violation_count: number
+        }[]
+      }
       comms_acknowledge_alert: { Args: { p_alert_id: string }; Returns: Json }
       comms_channel_status: { Args: never; Returns: Json }
       comms_check_token_expiry: { Args: never; Returns: Json }
+      comms_executive_kpis: { Args: never; Returns: Json }
       comms_metrics_latest_by_channel: {
         Args: { p_days?: number }
         Returns: {
@@ -13022,6 +12770,10 @@ export type Database = {
           source: string
           updated_at: string
         }[]
+      }
+      comms_top_media: {
+        Args: { p_channel?: string; p_days?: number; p_limit?: number }
+        Returns: Json
       }
       complete_checklist_item: {
         Args: { p_checklist_item_id: string; p_completed?: boolean }
@@ -13100,6 +12852,18 @@ export type Database = {
           p_title: string
         }
         Returns: string
+      }
+      create_initiative_event: {
+        Args: {
+          p_date: string
+          p_duration_minutes?: number
+          p_initiative_id: string
+          p_meeting_link?: string
+          p_time_start?: string
+          p_title: string
+          p_type?: string
+        }
+        Returns: Json
       }
       create_mirror_card: {
         Args: {
@@ -13362,9 +13126,9 @@ export type Database = {
       }
       export_audit_log_csv: {
         Args: {
-          p_actor_filter?: string
           p_category?: string
-          p_search?: string
+          p_end_date?: string
+          p_start_date?: string
         }
         Returns: string
       }
@@ -13585,6 +13349,17 @@ export type Database = {
       get_current_release: { Args: never; Returns: Json }
       get_cycle_evolution: { Args: never; Returns: Json }
       get_cycle_report: { Args: { p_cycle?: number }; Returns: Json }
+      get_decision_log: {
+        Args: { p_filter?: string }
+        Returns: {
+          id: string
+          path: string
+          summary: string
+          tags: string[]
+          title: string
+          updated_at: string
+        }[]
+      }
       get_diversity_dashboard: { Args: { p_cycle_id?: string }; Returns: Json }
       get_dropout_risk_members: {
         Args: { p_threshold?: number }
@@ -13652,8 +13427,10 @@ export type Database = {
           audience_level: string
           date: string
           duration_minutes: number
-          external_attendees: string
+          external_attendees: string[]
           id: string
+          initiative_id: string
+          initiative_name: string
           is_recorded: boolean
           meeting_link: string
           minutes_text: string
@@ -13696,6 +13473,14 @@ export type Database = {
         Args: { p_event_type?: string; p_initiative_id: string }
         Returns: Json
       }
+      get_initiative_board_summary: {
+        Args: { p_initiative_id: string }
+        Returns: Json
+      }
+      get_initiative_detail: {
+        Args: { p_initiative_id: string }
+        Returns: Json
+      }
       get_initiative_events_timeline: {
         Args: {
           p_initiative_id: string
@@ -13709,6 +13494,10 @@ export type Database = {
         Returns: Json
       }
       get_initiative_member_contacts: {
+        Args: { p_initiative_id: string }
+        Returns: Json
+      }
+      get_initiative_members: {
         Args: { p_initiative_id: string }
         Returns: Json
       }
@@ -13864,7 +13653,13 @@ export type Database = {
       }
       get_public_trail_ranking: {
         Args: never
-        Returns: Record<string, unknown>[]
+        Returns: {
+          completed: number
+          in_progress: number
+          member_name: string
+          pct: number
+          photo_url: string
+        }[]
       }
       get_publication_detail: { Args: { p_id: string }; Returns: Json }
       get_publication_pipeline_summary: { Args: never; Returns: Json }
@@ -13995,6 +13790,24 @@ export type Database = {
       get_unread_notification_count: { Args: never; Returns: number }
       get_volunteer_agreement_status: { Args: never; Returns: Json }
       get_webinar_lifecycle: { Args: { p_webinar_id: string }; Returns: Json }
+      get_wiki_page: {
+        Args: { p_path: string }
+        Returns: {
+          authors: string[]
+          content: string
+          domain: string
+          id: string
+          ip_track: string
+          license: string
+          path: string
+          source_sha: string
+          summary: string
+          synced_at: string
+          tags: string[]
+          title: string
+          updated_at: string
+        }[]
+      }
       has_min_tier: { Args: { required_rank: number }; Returns: boolean }
       import_historical_evaluations: { Args: { p_data: Json }; Returns: Json }
       import_historical_interviews: { Args: { p_data: Json }; Returns: Json }
@@ -14181,7 +13994,6 @@ export type Database = {
           organization_id: string
           status: string
           title: string
-          tribe_id: number
           updated_at: string
         }[]
         SetofOptions: {
@@ -14208,7 +14020,6 @@ export type Database = {
           page_data_snapshot: Json | null
           recording_url: string | null
           title: string
-          tribe_id: number | null
           updated_at: string
         }[]
         SetofOptions: {
@@ -14243,7 +14054,6 @@ export type Database = {
           page_data_snapshot: Json | null
           recording_url: string | null
           title: string
-          tribe_id: number | null
           updated_at: string
         }[]
         SetofOptions: {
@@ -14303,7 +14113,6 @@ export type Database = {
           organization_id: string
           status: string
           title: string
-          tribe_id: number
           updated_at: string
         }[]
         SetofOptions: {
@@ -14312,15 +14121,6 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
-      }
-      list_volunteer_applications: {
-        Args: {
-          p_cycle?: number
-          p_limit?: number
-          p_offset?: number
-          p_search?: string
-        }
-        Returns: Json
       }
       list_webinars_v2: {
         Args: { p_chapter?: string; p_status?: string; p_tribe_id?: number }
@@ -14348,6 +14148,16 @@ export type Database = {
       }
       manage_action_items: {
         Args: { p_event_id: string; p_items: Json }
+        Returns: Json
+      }
+      manage_initiative_engagement: {
+        Args: {
+          p_action?: string
+          p_initiative_id: string
+          p_kind: string
+          p_person_id: string
+          p_role?: string
+        }
         Returns: Json
       }
       manage_selection_committee: {
@@ -14405,6 +14215,10 @@ export type Database = {
         Args: { p_item_id: string; p_target_board_id: string }
         Returns: undefined
       }
+      notify_privacy_policy_change: {
+        Args: { p_version_id: string }
+        Returns: Json
+      }
       offboard_member: {
         Args: {
           p_effective_date?: string
@@ -14440,6 +14254,15 @@ export type Database = {
           published_rows: number
           source: string
           target_date: string
+        }[]
+      }
+      purge_expired_logs: {
+        Args: { p_dry_run?: boolean; p_limit?: number }
+        Returns: {
+          oldest_row_kept: string
+          purge_mode: string
+          rows_affected: number
+          table_name: string
         }[]
       }
       recalculate_cycle_rankings: {
@@ -14481,10 +14304,15 @@ export type Database = {
         Returns: Json
       }
       rls_can: { Args: { p_action: string }; Returns: boolean }
+      rls_can_for_initiative: {
+        Args: { p_action: string; p_initiative_id: string }
+        Returns: boolean
+      }
       rls_can_for_tribe: {
         Args: { p_action: string; p_tribe_id: number }
         Returns: boolean
       }
+      rls_is_member: { Args: never; Returns: boolean }
       rls_is_superadmin: { Args: never; Returns: boolean }
       save_presentation_snapshot: {
         Args: {
@@ -14541,6 +14369,26 @@ export type Database = {
           content_snippet: string
           theme_title: string
           tribe_name: string
+        }[]
+      }
+      search_wiki_pages: {
+        Args: {
+          p_domain?: string
+          p_limit?: number
+          p_query: string
+          p_tag?: string
+        }
+        Returns: {
+          domain: string
+          headline: string
+          id: string
+          ip_track: string
+          license: string
+          path: string
+          rank: number
+          summary: string
+          tags: string[]
+          title: string
         }[]
       }
       seed_pre_onboarding_steps: {
@@ -14795,6 +14643,10 @@ export type Database = {
         }
         Returns: Json
       }
+      update_governance_document_status: {
+        Args: { p_doc_id: string; p_new_status: string }
+        Returns: Json
+      }
       update_initiative: {
         Args: {
           p_description?: string
@@ -14977,8 +14829,12 @@ export type Database = {
         Args: { p_kind: string; p_metadata: Json }
         Returns: boolean
       }
+      validate_privacy_policy_consistency: { Args: never; Returns: Json }
       verify_certificate: { Args: { p_code: string }; Returns: Json }
-      volunteer_funnel_summary: { Args: { p_cycle_code?: string }; Returns: Json }
+      volunteer_funnel_summary: {
+        Args: { p_cycle_code?: string }
+        Returns: Json
+      }
       webinars_pending_comms: { Args: never; Returns: Json }
       why_denied: {
         Args: {
@@ -14988,6 +14844,16 @@ export type Database = {
           p_resource_type?: string
         }
         Returns: Json
+      }
+      wiki_health_report: {
+        Args: never
+        Returns: {
+          check_type: string
+          detail: string
+          path: string
+          severity: string
+          title: string
+        }[]
       }
     }
     Enums: {
@@ -15161,3 +15027,5 @@ export const Constants = {
     },
   },
 } as const
+A new version of Supabase CLI is available: v2.90.0 (currently installed v2.84.2)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

@@ -38,16 +38,12 @@ const CUTOVER = '20260427140000';
 //
 // Phase 3 drop log:
 //   - 2026-04-17 (migration 20260427180000): announcements, ia_pilots, pilots
+//   - 2026-04-17 (migration 20260427190000): webinars
+//   - 2026-04-17 (migration 20260427200000): meeting_artifacts, publication_submissions, public_publications, tribe_deliverables
+//   - 2026-04-18 (migration 20260428010000): broadcast_log, hub_resources (Phase 3c)
 const C3_TABLES = [
-  'webinars',
-  'broadcast_log',
-  'meeting_artifacts',
-  'publication_submissions',
-  'public_publications',
-  'hub_resources',
   'project_boards',
   'events',
-  'tribe_deliverables',
 ];
 
 // Allowlist for specific migration files whose tribe_id-only writes are

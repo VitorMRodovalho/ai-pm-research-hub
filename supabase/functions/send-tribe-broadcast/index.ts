@@ -89,6 +89,9 @@ Deno.serve(async (req) => {
     const tr = await sb.from('tribes').select('name').eq('id', tid).single()
     const tn = tr.data?.name || 'Tribo ' + tid
 
+    const ir = await sb.from('initiatives').select('id').eq('legacy_tribe_id', tid).limit(1).maybeSingle()
+    const initiativeId = ir.data?.id ?? null
+
     const { data: cycle } = await sb.from('cycles').select('cycle_label').eq('is_current', true).limit(1).single()
     const cycleName = cycle?.cycle_label || 'Ciclo 3'
 
@@ -119,12 +122,12 @@ Deno.serve(async (req) => {
     console.log('[broadcast] resend:', rr.status, rt)
 
     if (!rr.ok) {
-      const { error: logErr1 } = await sb.from('broadcast_log').insert([{ tribe_id: tid, sender_id: c.id, subject: subj, body: bd, recipient_count: allBcc.length, status: 'failed', error_detail: 'Resend ' + rr.status + ': ' + rt }])
+      const { error: logErr1 } = await sb.from('broadcast_log').insert([{ initiative_id: initiativeId, sender_id: c.id, subject: subj, body: bd, recipient_count: allBcc.length, status: 'failed', error_detail: 'Resend ' + rr.status + ': ' + rt }])
       if (logErr1) console.error('[broadcast] log err:', logErr1.message)
       return json({ success: false, error: 'Resend failed', status: rr.status, detail: rt }, 502)
     }
 
-    const { error: logErr2 } = await sb.from('broadcast_log').insert([{ tribe_id: tid, sender_id: c.id, subject: subj, body: bd, recipient_count: allBcc.length, status: 'sent', error_detail: null }])
+    const { error: logErr2 } = await sb.from('broadcast_log').insert([{ initiative_id: initiativeId, sender_id: c.id, subject: subj, body: bd, recipient_count: allBcc.length, status: 'sent', error_detail: null }])
     if (logErr2) console.error('[broadcast] log err:', logErr2.message)
 
     return json({ success: true, recipient_count: allBcc.length, tribe: tn, cc_management: ccMgmt })

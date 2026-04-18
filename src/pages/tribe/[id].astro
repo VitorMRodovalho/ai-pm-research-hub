@@ -1454,14 +1454,10 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   }
 
   async function loadBroadcastHistory() {
-    if (!sb) return;
-    // ADR-0015: prefer initiative_id (Phase 3-safe); fallback to tribe_id
-    // only while the legacy column still exists on the table.
-    const base = sb.from('broadcast_log').select('id, subject, recipient_count, status, sent_at');
-    const scoped = INITIATIVE_ID
-      ? base.eq('initiative_id', INITIATIVE_ID)
-      : base.eq('tribe_id', TRIBE_ID);
-    const { data } = await scoped
+    if (!sb || !INITIATIVE_ID) return;
+    const { data } = await sb.from('broadcast_log')
+      .select('id, subject, recipient_count, status, sent_at')
+      .eq('initiative_id', INITIATIVE_ID)
       .order('sent_at', { ascending: false })
       .limit(20);
     const el = document.getElementById('bc-history-list');
@@ -1651,7 +1647,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
           : Promise.resolve({ data: [] }),
         INITIATIVE_ID
           ? sb.from('hub_resources').select('*').eq('initiative_id', INITIATIVE_ID).eq('is_active', true).order('created_at', { ascending: false })
-          : sb.from('hub_resources').select('*').eq('tribe_id', TRIBE_ID).eq('is_active', true).order('created_at', { ascending: false }),
+          : Promise.resolve({ data: [] }),
         sb.from('artifacts').select('id, title').eq('status', 'published').order('title'),
       ]);
 

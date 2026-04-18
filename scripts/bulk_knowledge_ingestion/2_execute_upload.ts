@@ -170,12 +170,18 @@ async function main() {
 
       // 2. INSERT into hub_resources
       const tribeId = inferTribeId(entry.suggestedTags);
+      let initiativeId: string | null = null;
+      if (tribeId !== null) {
+        const { data: init } = await sb.from('initiatives')
+          .select('id').eq('legacy_tribe_id', tribeId).limit(1).maybeSingle();
+        initiativeId = init?.id ?? null;
+      }
       const { data: insertData, error: insertError } = await sb.from('hub_resources').insert({
         title: entry.title,
         asset_type: entry.assetType,
         url: publicUrl,
         description: `Imported from Drive (${entry.category}). Original: ${path.basename(entry.originalPaths[0])}`,
-        tribe_id: tribeId,
+        initiative_id: initiativeId,
         source: 'bulk-drive-import',
         curation_status: 'approved',
         tags: entry.suggestedTags,
@@ -215,7 +221,7 @@ async function main() {
   if (!dryRun && uploaded > 0) {
     try {
       await sb.from('broadcast_log').insert({
-        tribe_id: null,
+        initiative_id: null,
         sender_id: null,
         subject: 'Bulk Knowledge Ingestion — Phase 2',
         body: `${uploaded} files uploaded to Storage and inserted into hub_resources. ${failed} failures.`,
