@@ -111,6 +111,17 @@ Deno.serve(async (req) => {
       )
     }
 
+    let defaultInitiativeId: string | null = null
+    if (default_tribe_id) {
+      const { data: initRow } = await sb
+        .from('initiatives')
+        .select('id')
+        .eq('legacy_tribe_id', default_tribe_id)
+        .limit(1)
+        .maybeSingle()
+      defaultInitiativeId = (initRow as any)?.id ?? null
+    }
+
     let imported = 0
     let skipped = 0
     const details: any[] = []
@@ -131,7 +142,7 @@ Deno.serve(async (req) => {
         type: inferEventType(ev.summary),
         duration_minutes: durationMinutes(startDt, endDt || undefined),
         meeting_link: ev.location || ev.htmlLink || null,
-        tribe_id: default_tribe_id || null,
+        initiative_id: defaultInitiativeId,
         recurrence_group: ev.recurringEventId || null,
         source: 'google_calendar',
         calendar_event_id: ev.id,

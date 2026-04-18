@@ -174,12 +174,23 @@ async function main() {
 
     if (existing) { skipped++; continue; }
 
+    let initiativeId: string | null = null;
+    if (tribeId) {
+      const { data: initRow } = await sb
+        .from('initiatives')
+        .select('id')
+        .eq('legacy_tribe_id', tribeId)
+        .limit(1)
+        .maybeSingle();
+      initiativeId = (initRow as any)?.id ?? null;
+    }
+
     const { error } = await sb.from('events').insert({
       title: evt.summary,
       date: date.split('T')[0],
       type,
       duration_minutes: duration,
-      tribe_id: tribeId,
+      initiative_id: initiativeId,
       source: 'calendar_import',
       calendar_event_id: evt.uid,
       is_recorded: false,

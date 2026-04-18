@@ -42,9 +42,8 @@ const CUTOVER = '20260427140000';
 //   - 2026-04-17 (migration 20260427200000): meeting_artifacts, publication_submissions, public_publications, tribe_deliverables
 //   - 2026-04-18 (migration 20260428010000): broadcast_log, hub_resources (Phase 3c)
 //   - 2026-04-18 (migration 20260428030000+040000): project_boards (Phase 3d)
-const C3_TABLES = [
-  'events',
-];
+//   - 2026-04-18 (migration 20260428050000): events (Phase 3e — closes Phase 3, 12/12 C3 done)
+const C3_TABLES = [];
 
 // Allowlist for specific migration files whose tribe_id-only writes are
 // intentional (one-off backfill that sets initiative_id via separate pass,
