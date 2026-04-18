@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
+import { isAllowedRedirectUri } from '../../lib/oauth-security';
 
 async function kvLog(_endpoint: string, _data: any) {
   // No-op: KV debug logs disabled (free tier 1k writes/day protection).
@@ -117,6 +118,13 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
+    if (redirect_uri && !isAllowedRedirectUri(redirect_uri)) {
+      return new Response(JSON.stringify({ error: 'invalid_grant', error_description: 'redirect_uri not permitted' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     // Look up code
     const raw = await kv.get(`mcp_code:${code}`);
     await kvLog("token-kv", { codeExists: !!raw });
@@ -128,6 +136,15 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     const stored = JSON.parse(raw);
+
+    // RFC 6749 §4.1.3: if redirect_uri was used in the authorization request,
+    // the token request MUST include the same redirect_uri (binding).
+    if (stored.redirect_uri && redirect_uri && stored.redirect_uri !== redirect_uri) {
+      return new Response(JSON.stringify({ error: 'invalid_grant', error_description: 'redirect_uri mismatch' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
     // Verify PKCE
     const computedChallenge = await sha256base64url(code_verifier);

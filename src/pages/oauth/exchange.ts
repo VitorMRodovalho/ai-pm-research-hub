@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
+import { isAllowedRedirectUri } from '../../lib/oauth-security';
 
 async function kvLog(_endpoint: string, _data: any) {
   // No-op: KV debug logs disabled (free tier 1k writes/day protection).
@@ -34,11 +35,23 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
+    if (!isAllowedRedirectUri(oauthParams.redirect_uri)) {
+      return new Response(JSON.stringify({
+        error: 'invalid_grant',
+        error_description: 'redirect_uri not permitted',
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     // Generate authorization code
     const code = crypto.randomUUID();
     await kvLog("exchange-code", { code: code.substring(0, 8), redirect_uri: oauthParams.redirect_uri, state: oauthParams.state });
 
-    // Store code → access_token + code_challenge in KV
+    // Store code → access_token + code_challenge + redirect_uri in KV.
+    // redirect_uri is stored so /oauth/token can enforce RFC 6749 §4.1.3 binding
+    // (redirect_uri in token request must match the one used in the authorize step).
     // Astro v6 + @astrojs/cloudflare v13: use import { env } from 'cloudflare:workers'
     const kv = (env as any).SESSION;
     if (kv) {
@@ -48,6 +61,7 @@ export const POST: APIRoute = async ({ request }) => {
         code_challenge: oauthParams.code_challenge,
         code_challenge_method: oauthParams.code_challenge_method,
         client_id: oauthParams.client_id,
+        redirect_uri: oauthParams.redirect_uri,
       }), { expirationTtl: 600 }); // 10 min TTL (was 2 min — too short for Claude.ai flow)
     } else {
       return new Response(JSON.stringify({ error: 'KV storage unavailable' }), {
