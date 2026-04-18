@@ -77,6 +77,9 @@ Sessão de qualidade estrutural pós-cutover V4. 24 commits em um dia cobrindo t
 ### Addendum (17/Abr p8 — ADR-0015 Phase 1 publication_submissions reader cutover):
 - ✅ **ADR-0015 Phase 1 (publication_submissions)** — migration `20260427060000` refactors 3 reader RPCs (`get_publication_submissions`, `get_publication_submission_detail`, `get_publication_pipeline_summary`). LEFT JOIN tribes → initiatives; tribe_name derivado de `i.title`; filter via `i.legacy_tribe_id`; aggregation `GROUP BY initiative_id`. Dual-write integrity: 8/8 both. Smoke: `get_publication_submissions()` 8/8 rows com tribe_name; `by_tribe` summary retorna 4 tribos agregadas corretamente (3+3+1+1=8); detail retorna tribe_name "ROI & Portfólio". Writer `create_publication_submission` unchanged. 2ª C3 table done de 11.
 
+### Addendum (17/Abr p9 — ADR-0015 Phase 1 meeting_artifacts reader cutover):
+- ✅ **ADR-0015 Phase 1 (meeting_artifacts)** — migration `20260427070000` refactors 2 reader RPCs. `list_meeting_artifacts` agora filtra via `LEFT JOIN initiatives + legacy_tribe_id` em vez de `tribe_id` direto. `list_initiative_meeting_artifacts` elimina dependência de `resolve_tribe_id()` (bridge call) — agora filtra `initiative_id` nativamente. SETOF meeting_artifacts return preservado. Dual-write: 11 both + 1 neither (outlier, handled by LEFT JOIN NULL). Smoke: unfiltered 12 rows, filtered por tribe/initiative ambos retornam 9 (matching + null). Writer `save_presentation_snapshot` unchanged. 3ª C3 table done de 11. Bug bonus corrigido: `list_initiative_meeting_artifacts` para initiatives não-tribo (legacy_tribe_id=NULL) antes retornava TUDO via resolve_tribe_id=NULL + list_meeting_artifacts fallback; agora filtra corretamente pela initiative.
+
 ### Known issues
 - `apply_migration` MCP não registra em `supabase_migrations.schema_migrations` — workaround `INSERT ON CONFLICT DO NOTHING` manual documentado no `platform-guardian` checklist.
 
