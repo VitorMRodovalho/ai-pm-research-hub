@@ -59,12 +59,20 @@ export default function KnowledgeIsland() {
     const sb = getSb();
     if (!sb || !form.title.trim()) { toast(t('comp.knowledge.fillTitle', 'Preencha o título'), 'error'); return; }
     setSaving(true);
+    const tribeInt = form.tribe_id ? parseInt(form.tribe_id, 10) : null;
+    let initiativeId: string | null = null;
+    if (tribeInt !== null) {
+      const { data: init } = await sb.from('initiatives')
+        .select('id').eq('legacy_tribe_id', tribeInt).limit(1).maybeSingle();
+      initiativeId = init?.id || null;
+    }
     const payload = {
       asset_type: form.asset_type,
       title: form.title.trim(),
       description: form.description.trim() || null,
       url: form.url.trim() || null,
-      tribe_id: form.tribe_id ? parseInt(form.tribe_id, 10) : null,
+      tribe_id: tribeInt,
+      initiative_id: initiativeId,
       author_id: getMember()?.id || null,
     };
     if (editId) {

@@ -1701,7 +1701,15 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         if (notes !== undefined) updateFields.notes = notes;
         if (recordingUrl !== undefined) updateFields.recording_url = recordingUrl;
         if (externalAttendees !== undefined) updateFields.external_attendees = externalAttendees;
-        if (tribeId !== null) updateFields.tribe_id = tribeId;
+        if (tribeId !== null) {
+          updateFields.tribe_id = tribeId;
+          // ADR-0015 dual-write: derive initiative_id from legacy_tribe_id so the
+          // write does not depend on sync_initiative_from_tribe trigger (to be
+          // dropped in Phase 2).
+          const { data: initRow } = await sb.from('initiatives')
+            .select('id').eq('legacy_tribe_id', tribeId).limit(1).maybeSingle();
+          updateFields.initiative_id = initRow?.id || null;
+        }
         await sb.from('events').update(updateFields).eq('id', id);
         await assignEventTagsAndAudience(id, tagIds, audience);
         closeModal('modal-edit-event');
@@ -1723,7 +1731,14 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
           if (notes !== undefined) updateFields.notes = notes;
           if (recordingUrl !== undefined) updateFields.recording_url = recordingUrl;
           if (externalAttendees !== undefined) updateFields.external_attendees = externalAttendees;
-          if (tribeId !== null) updateFields.tribe_id = tribeId;
+          if (tribeId !== null) {
+            updateFields.tribe_id = tribeId;
+            // ADR-0015 dual-write: derive initiative_id so the write does not
+            // depend on sync_initiative_from_tribe trigger (dropped in Phase 2).
+            const { data: initRow } = await sb.from('initiatives')
+              .select('id').eq('legacy_tribe_id', tribeId).limit(1).maybeSingle();
+            updateFields.initiative_id = initRow?.id || null;
+          }
           await sb.from('events').update(updateFields).eq('id', id);
           await assignEventTagsAndAudience(id, tagIds, audience);
           closeModal('modal-edit-event');
