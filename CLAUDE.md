@@ -18,7 +18,7 @@ Refactor arquitetural completo: 6 ADRs (0004-0009), 30 migrations, 7 fases. Ver 
 ## Build & Test
 ```bash
 npx astro build          # MUST pass before commit
-npm test                 # 1330 pass, 0 fail
+npm test                 # 1332 pass, 0 fail
 npx wrangler deploy      # Deploy Worker
 supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 ```
