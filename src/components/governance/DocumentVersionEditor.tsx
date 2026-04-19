@@ -18,7 +18,6 @@ import RichTextEditor from '../shared/RichTextEditor';
 type DocMeta = {
   id: string;
   title: string;
-  slug: string;
   doc_type: string;
   current_version_id: string | null;
 };
@@ -86,6 +85,7 @@ export default function DocumentVersionEditor({ docId, draftVersionId }: Props) 
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const [gates] = useState<Gate[]>(DEFAULT_GATES);
+  const [changeNotes, setChangeNotes] = useState<string>('');
   const [modalOpen, setModalOpen] = useState(false);
   const [locking, setLocking] = useState(false);
   const [signerPreview, setSignerPreview] = useState<SignerCount[]>([]);
@@ -104,7 +104,7 @@ export default function DocumentVersionEditor({ docId, draftVersionId }: Props) 
 
     const dRes = await sb
       .from('governance_documents')
-      .select('id, title, slug, doc_type, current_version_id')
+      .select('id, title, doc_type, current_version_id')
       .eq('id', docId)
       .single();
     if (dRes.error || !dRes.data) {
@@ -262,7 +262,7 @@ export default function DocumentVersionEditor({ docId, draftVersionId }: Props) 
     setPreviewLoading(false);
   }, [versionId, isDirty, gates, getSb]);
 
-  // ── Lock + create chain ──
+  // ── Lock + create chain + optional change_notes ──
   const lock = useCallback(async () => {
     if (!versionId) return;
     const sb = getSb();
@@ -272,16 +272,28 @@ export default function DocumentVersionEditor({ docId, draftVersionId }: Props) 
       p_version_id: versionId,
       p_gates: gates,
     });
-    setLocking(false);
     if (res.error || res.data?.error) {
+      setLocking(false);
       (window as any).toast?.(res.error?.message || res.data?.error || 'Erro ao lacrar', 'error');
       return;
     }
-    (window as any).toast?.(`Versao lacrada — ${res.data?.notifications_enqueued || 0} notificacoes enviadas`, 'success');
+    // If change notes provided, register them as change_notes comment on the new chain
+    if (changeNotes.trim() && res.data?.chain_id) {
+      const cnRes = await sb.rpc('create_change_note', {
+        p_chain_id: res.data.chain_id,
+        p_body: changeNotes.trim(),
+      });
+      if (cnRes.error || cnRes.data?.error) {
+        // Non-fatal — lock succeeded. Toast warning and continue.
+        (window as any).toast?.('Versão lacrada, mas notas de alteração não salvas: ' + (cnRes.error?.message || cnRes.data?.error), 'error');
+      }
+    }
+    setLocking(false);
+    (window as any).toast?.(`Versão lacrada — ${res.data?.notifications_enqueued || 0} notificações enviadas`, 'success');
     if (res.data?.chain_id) {
       setTimeout(() => { window.location.href = `/admin/governance/documents/${res.data.chain_id}`; }, 800);
     }
-  }, [versionId, gates, getSb]);
+  }, [versionId, gates, changeNotes, getSb]);
 
   // ── Delete draft ──
   const deleteDraft = useCallback(async () => {
@@ -414,10 +426,10 @@ export default function DocumentVersionEditor({ docId, draftVersionId }: Props) 
               {/* Section 2 — Impact preview */}
               <div>
                 <p className="text-[12px] font-semibold text-[var(--text-secondary)] mb-2">
-                  Pessoas que serao notificadas por email para iniciar assinaturas:
+                  Pessoas que serão notificadas por email para iniciar assinaturas:
                 </p>
                 {previewLoading ? (
-                  <p className="text-[12px] text-[var(--text-muted)] italic">Calculando elegiveis…</p>
+                  <p className="text-[12px] text-[var(--text-muted)] italic">Calculando elegíveis…</p>
                 ) : (
                   <ul className="space-y-1">
                     {signerPreview.map(p => (
@@ -428,7 +440,7 @@ export default function DocumentVersionEditor({ docId, draftVersionId }: Props) 
                         <span className="flex-1">
                           <strong className="text-[var(--text-primary)]">{p.label}</strong>
                           <span className="text-[var(--text-muted)]">
-                            {' '}· {p.count} elegivel{p.count === 1 ? '' : 'is'}
+                            {' '}· {p.count} elegível{p.count === 1 ? '' : 'is'}
                             {p.sample.length > 0 && ` (ex: ${p.sample.slice(0, 3).join(', ')}${p.count > 3 ? '…' : ''})`}
                             {' '}· {thresholdLabel(gates.find(g => g.kind === p.gate_kind)?.threshold ?? 1)}
                           </span>
@@ -437,6 +449,22 @@ export default function DocumentVersionEditor({ docId, draftVersionId }: Props) 
                     ))}
                   </ul>
                 )}
+              </div>
+
+              {/* Section 3 — Change notes (registra no change_notes do chain) */}
+              <div>
+                <label className="block">
+                  <span className="block text-[12px] font-semibold text-[var(--text-secondary)] mb-1">
+                    Notas de alteração <span className="text-[10px] text-[var(--text-muted)] font-normal">(opcional — registradas fora do documento, visíveis a curadores, testemunhas e presidências)</span>
+                  </span>
+                  <textarea
+                    value={changeNotes}
+                    onChange={e => setChangeNotes(e.target.value)}
+                    placeholder="Resumo do que mudou em relação à versão anterior (ex: Ajustes §4.5.4 IRRF + nova Cláusula 8 AI Training…). Fica registrado como 'Notas de alteração' na chain, separado do corpo do documento."
+                    rows={3}
+                    className="w-full text-[12px] rounded border border-[var(--border-default)] bg-white px-2 py-1.5 focus:outline-none focus:border-navy resize-y"
+                  />
+                </label>
               </div>
             </div>
             <footer className="px-5 py-3 border-t border-[var(--border-default)] bg-[var(--surface-hover)] flex items-center justify-end gap-2">
