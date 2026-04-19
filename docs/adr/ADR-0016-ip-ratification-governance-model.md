@@ -203,3 +203,101 @@ Smoke tests Phase IP-1 (p30) + baseline Phase IP-2 (p32):
 - 1332 unit tests, 0 fail
 - npx astro build 0 errors
 - 11/11 invariants violations=0
+
+---
+
+## Amendment 2026-04-18 — IP-3c Workflow refinements (sessão p33)
+
+**Contexto:** durante execução de Phase IP-3c (workflow funcional de 7 gates), correções iterativas do PM expuseram lacunas no modelo original (D1–D3 acima). As decisões abaixo aditivam o ADR sem contradizer o modelo base — permanecem compatíveis com gates-as-data e can()/_can_sign_gate layering.
+
+### A1 — Novos gate_kinds: leader_awareness, submitter_acceptance, chapter_witness
+
+Expansão do enum semantic de `gate_kind` em `_can_sign_gate()`:
+
+- **`leader_awareness`**: ciência não-bloqueante de lideranças (threshold=0, informational). Eligibles: `tribe_leader`/`manager`/`deputy_manager`/`founder`. Não bloqueia gate seguinte — apenas registra leitura.
+- **`submitter_acceptance`**: aceite final do GP pós-curadoria, antes das presidências. Eligibles: apenas `chain.opened_by = member.id` (self-signoff do submitter). Threshold=1.
+- **`chapter_witness`**: pontos focais dos capítulos como testemunhas (antes de presidentes). Eligibles: `'chapter_witness' = ANY(designations)`. Threshold=5.
+
+**Rationale:** workflow realístico CBGPL = curadoria técnica → líderes cientes → GP confirma → testemunhas contrassinam apresentação local → presidentes GO+outros assinam formalmente → membros ratificam. Sem esses gates intermediários, GP tinha que notificar manualmente cada capítulo.
+
+### A2 — Novas designations: legal_signer, voluntariado_director, chapter_vice_president
+
+Refinamento de autoridade dentro de `chapter_board`:
+
+- **`legal_signer`**: marca quem no chapter_board tem poder de assinatura legal pelo capítulo. Presidentes de capítulos assinam gate `president_go`/`president_others` apenas se `legal_signer = true`.
+- **`voluntariado_director`**: exceção específica para PMI-GO Diretoria de Voluntariado (Lorena). Eligível como president_go APENAS para `doc_type = 'volunteer_term_template'`. Scope doc-aware via `_can_sign_gate` switch.
+- **`chapter_vice_president`**: preposto fallback. Em gate `chapter_witness`, se nenhum `chapter_board.legal_signer` estiver disponível, `chapter_vice_president` pode assinar como testemunha.
+
+**Rationale:** capítulos têm pluralidade de boards (président e vice, secretário, diretor financeiro, diretor de voluntariado). Nem todos têm poder legal de assinatura. Sem essa granularidade, RPC gate check dava pass para quem não deveria assinar.
+
+### A3 — Taxonomia de visibility em document_comments
+
+Expansão de `visibility CHECK`:
+
+- `public` — legacy, visible to all authenticated (mantido)
+- `curator_only` — só curator/manager/deputy_manager/tribe_leader vê (existente)
+- `submitter_only` — visível apenas ao submitter do chain (NOVO) — para feedback privado do curator pro GP
+- `change_notes` — visível a chapter_board/chapter_witness/curator (NOVO) — notas públicas de mudança entre versões
+
+RLS policy `document_comments_read_visibility` cobre todas as 4 visibilities com gates apropriados.
+
+### A4 — current_gate_index removido, gates como CONFIG-only
+
+O campo `approval_chains.current_gate_index` originalmente planejado foi **omitido**. Todo status de gate é computed via query em `approval_signoffs` + `jsonb_array_elements(gates)`. Alinha com ADR-0012 (schema consolidation — cache columns exigem trigger sync; gates jsonb não é cache, é config).
+
+---
+
+## Amendment 2026-04-19 — IP-3d Editor WYSIWYG + Pipeline de notificações (sessão p34)
+
+### B1 — RPCs de lifecycle de version
+
+Phase IP-3d entrega 5 RPCs novos:
+
+- `upsert_document_version(p_document_id, p_content_html, p_content_markdown?, p_version_label?, p_version_id?, p_notes?)` — cria ou atualiza draft (`locked_at IS NULL`). Se `p_version_id` provided → UPDATE; else → INSERT com `version_number = MAX+1`. Auth: `manage_member`.
+- `lock_document_version(p_version_id, p_gates jsonb)` — **atomic** lock + create `approval_chains(status='review')` + update `governance_documents.current_version_id` + INSERT `admin_audit_log` + enqueue notifications gate 1. Auth: `manage_member`.
+- `delete_document_version_draft(p_version_id)` — DELETE via RLS policy `document_versions_delete_drafts` (gate: `locked_at IS NULL AND manage_member`). Auth: `manage_member`.
+- `list_my_document_drafts()` — rascunhos authored_by caller (para UI "Seus rascunhos"). Auth: authenticated.
+- `get_previous_locked_version(p_version_id)` — retorna previous locked version (com content_html) para diff viewer. Retorna `{exists:false}` se v1.
+
+### B2 — Pipeline de notificações (reuso do send-notification-email)
+
+**Decisão arquitetural:** reusar infraestrutura existente de email (`notifications` table + cron `send-notification-emails` a cada 5min → EF `send-notification-email` via Resend) em vez de criar EF dedicada. Alinha com ADR-0009 (config-driven + reuso) e pattern de retry implícito via `email_sent_at IS NULL`.
+
+Novos types adicionados a `CRITICAL_TYPES` da EF:
+- `ip_ratification_gate_pending` — signer eligible deve assinar gate ativo
+- `ip_ratification_gate_advanced` — notif ao submitter quando gate avança (GP-leader RC-2 p33b)
+- `ip_ratification_chain_approved` — notif final ao submitter quando todos gates satisfied
+- `ip_ratification_awaiting_members` — broadcast para membros quando gate `member_ratification` ativo
+
+### B3 — Helper _enqueue_gate_notifications(chain_id, event, gate_kind?)
+
+Function enfileira notifications em `notifications` table baseado em 3 eventos:
+- `chain_opened` → notify gate 1 eligibles (chamado em `lock_document_version`)
+- `gate_advanced` → notify next gate eligibles + submitter (chamado pelo trigger)
+- `chain_approved` → notify submitter final (chamado pelo trigger)
+
+CTA URL resolvido por gate_kind via `_ip_ratify_cta_link`:
+- admin gates → `/admin/governance/documents/[chainId]`
+- member/external gates → `/governance/ip-agreement?chain_id=X` (rota member-facing, UX-leader spec p33b)
+
+### B4 — Trigger AFTER INSERT em approval_signoffs
+
+`trg_approval_signoff_notify_fn()` detecta se signoff recém-inserido satisfez threshold do gate (`signed_count = threshold`, não `>=`, para fire exactly once). Se sim, enfileira notifications apropriadas. Coexistente com auto-advance do `sign_ip_ratification` (que atualiza `chain.status='approved'` quando todos gates satisfied) — trigger roda AFTER INSERT mas ANTES do UPDATE de status, então check de "all satisfied" é feito via recount direto dos gates em `approval_signoffs` table.
+
+### B5 — UI Phase IP-3d
+
+- Página `/admin/governance/documents/[docId]/versions/new` + island `DocumentVersionEditor.tsx` (reuse RichTextEditor full toolbar). Auto-save 30s + save explícito + `beforeunload` guard. Modal de lock com 3 seções (consequência âmbar / preview de impacto / botão descritivo — UX-leader spec p33b, sem checkbox).
+- Seção "Seus rascunhos" em `/admin/governance/documents` (stakeholder-persona GP-leader FP-3 p33b).
+- Componente `VersionDiffViewer.tsx` com hash-based paragraph matching (evita falsos positivos de split-by-position). Desktop = split 50/50 com scroll-sync via scrollTop ratio; mobile = toggle v_prev/v_curr (UX-leader spec p33b).
+
+### B6 — Updates invariants
+
+Nenhum invariant novo. J_current_version_published continua protegido (lock_document_version atualiza `current_version_id` dentro da mesma transação).
+
+### Dívidas técnicas pós-IP-3d
+
+- [IP-4] Magic-link EF `external-signer-magic-link` para Ambassadors/parceiros não-members
+- [IP-4] PDF export signed + audit report conselho fiscal
+- [IP-4] CHECK constraint validando shape de `approval_chains.gates` jsonb
+- [futuro] Admin UI para editar o `gates` config antes de lock (hoje hardcoded no front com DEFAULT_GATES)
+- [futuro] Fix latent bug no drain cron de send-notification-email (janela de 10min silently abandons failed notifications — ai-engineer audit p34)

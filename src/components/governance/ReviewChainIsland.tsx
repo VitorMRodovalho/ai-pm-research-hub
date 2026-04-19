@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import GovernancePipelineBar from './GovernancePipelineBar';
 import ClauseCommentDrawer from './ClauseCommentDrawer';
+import VersionDiffViewer from './VersionDiffViewer';
 
 type Gate = {
   kind: string;
@@ -90,6 +91,8 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
   const [member, setMember] = useState<any>(null);
   const [detail, setDetail] = useState<WorkflowDetail | null>(null);
   const [contentHtml, setContentHtml] = useState<string>('');
+  const [prevVersion, setPrevVersion] = useState<{ version_id: string; version_label: string; content_html: string; locked_at: string | null } | null>(null);
+  const [viewMode, setViewMode] = useState<'document' | 'diff'>('document');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [signing, setSigning] = useState<string>('');
@@ -120,6 +123,17 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
 
     const vRes = await sb.from('document_versions').select('content_html').eq('id', dRes.data.version_id).single();
     setContentHtml(vRes.data?.content_html || '<p class="text-[var(--text-muted)] italic">(conteúdo indisponível)</p>');
+
+    // Load previous locked version (if any) for diff viewer (IP-3d)
+    const pRes = await sb.rpc('get_previous_locked_version', { p_version_id: dRes.data.version_id });
+    if (pRes.data && pRes.data.exists) {
+      setPrevVersion({
+        version_id: pRes.data.version_id,
+        version_label: pRes.data.version_label,
+        content_html: pRes.data.content_html,
+        locked_at: pRes.data.locked_at,
+      });
+    }
 
     setLoading(false);
   }, [chainId, getSb]);
@@ -216,8 +230,35 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4">
         <div className="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] overflow-hidden">
-          <div className="prose prose-sm max-w-none px-6 py-5 max-h-[72vh] overflow-y-auto text-[var(--text-primary)]"
-               dangerouslySetInnerHTML={{ __html: contentHtml }} />
+          {prevVersion && (
+            <div className="flex items-center gap-2 px-4 py-2 border-b border-[var(--border-default)] bg-[var(--surface-hover)]">
+              <div role="tablist" className="inline-flex rounded-lg border border-[var(--border-default)] bg-white p-0.5">
+                <button type="button" role="tab" aria-selected={viewMode === 'document'}
+                  onClick={() => setViewMode('document')}
+                  className={`text-[11px] font-bold px-3 py-1 rounded-md border-0 cursor-pointer ${viewMode === 'document' ? 'bg-navy text-white' : 'bg-transparent text-[var(--text-secondary)]'}`}
+                >
+                  Documento
+                </button>
+                <button type="button" role="tab" aria-selected={viewMode === 'diff'}
+                  onClick={() => setViewMode('diff')}
+                  className={`text-[11px] font-bold px-3 py-1 rounded-md border-0 cursor-pointer ${viewMode === 'diff' ? 'bg-navy text-white' : 'bg-transparent text-[var(--text-secondary)]'}`}
+                >
+                  Diff {prevVersion.version_label} ↔ {detail.version_label}
+                </button>
+              </div>
+            </div>
+          )}
+          {viewMode === 'diff' && prevVersion ? (
+            <div className="px-4 py-3">
+              <VersionDiffViewer
+                previous={prevVersion}
+                current={{ version_id: detail.version_id, version_label: detail.version_label, content_html: contentHtml, locked_at: detail.locked_at }}
+              />
+            </div>
+          ) : (
+            <div className="prose prose-sm max-w-none px-6 py-5 max-h-[72vh] overflow-y-auto text-[var(--text-primary)]"
+                 dangerouslySetInnerHTML={{ __html: contentHtml }} />
+          )}
         </div>
         <div className="h-[72vh]">
           <ClauseCommentDrawer
