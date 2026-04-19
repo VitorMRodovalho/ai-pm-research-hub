@@ -1,0 +1,5 @@
+---
+const { chainId } = Astro.params;
+const qs = Astro.url.search ? Astro.url.search + '&lang=es-LATAM' : '?lang=es-LATAM';
+return Astro.redirect('/admin/governance/documents/' + chainId + qs, 302);
+---

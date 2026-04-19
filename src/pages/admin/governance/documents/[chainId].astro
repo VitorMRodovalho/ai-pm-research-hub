@@ -1,0 +1,25 @@
+---
+/**
+ * /admin/governance/documents/[chainId] — Review view (React island).
+ *
+ * Full flow via ReviewChainIsland: workflow detail, pipeline, sign actions, comment drawer.
+ * Escopo: Phase IP-3c P0. ADR-0016 + correções PM 2026-04-18 p33.
+ */
+import AdminLayout from '../../../../layouts/AdminLayout.astro';
+import ReviewChainIsland from '../../../../components/governance/ReviewChainIsland';
+
+const { chainId } = Astro.params;
+---
+<AdminLayout
+  title="Revisar documento"
+  breadcrumbs={[
+    { label: 'Operações' },
+    { label: 'Governança' },
+    { label: 'Documentos', href: '/admin/governance/documents' },
+    { label: 'Revisar' },
+  ]}
+>
+  <div class="max-w-[1600px] mx-auto px-4 py-6">
+    <ReviewChainIsland client:load chainId={chainId || ''} />
+  </div>
+</AdminLayout>

@@ -29,9 +29,14 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
           transições manuais (abrir review, ativar, retirar, substituir). ADR-0016 referência.
         </p>
       </div>
-      <a href="/admin/governance-v2" class="text-sm text-[var(--text-muted)] hover:text-navy no-underline">
-        ← Governança (geral)
-      </a>
+      <div class="flex gap-2 items-center">
+        <a href="/admin/governance/documents" class="text-xs font-semibold text-white bg-navy px-3 py-1.5 rounded-lg no-underline hover:opacity-90">
+          Usar versão nova →
+        </a>
+        <a href="/admin/governance-v2" class="text-sm text-[var(--text-muted)] hover:text-navy no-underline">
+          ← Governança (geral)
+        </a>
+      </div>
     </header>
 
     <div id="ip-loading" class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] px-6 py-12 text-center text-sm text-[var(--text-muted)]">
