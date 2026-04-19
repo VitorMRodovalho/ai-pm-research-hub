@@ -1,0 +1,4 @@
+---
+const qs = Astro.url.search ? Astro.url.search + '&lang=en-US' : '?lang=en-US';
+return Astro.redirect('/admin/governance/documents' + qs, 302);
+---

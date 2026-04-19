@@ -1,0 +1,239 @@
+---
+/**
+ * /admin/governance/documents — GP Dashboard para gestão de cadeias de ratificação.
+ *
+ * Lista approval_chains em review/approved/active, renderiza pipeline visual por chain,
+ * link para review view individual (/admin/governance/documents/[chainId]).
+ * Escopo: Phase IP-3c P0. ADR-0016 + correções PM 2026-04-18 p33.
+ * Auth: manage_member (admin); pipeline é read-all authenticated.
+ */
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+---
+<AdminLayout
+  title="Governança — Documentos"
+  breadcrumbs={[
+    { label: 'Operações' },
+    { label: 'Governança' },
+    { label: 'Documentos' },
+  ]}
+>
+  <div class="max-w-[1400px] mx-auto px-4 py-8 space-y-6">
+    <header class="flex items-start justify-between gap-4 flex-wrap">
+      <div>
+        <h1 class="text-2xl font-extrabold text-navy">Documentos de Governança</h1>
+        <p class="text-sm text-[var(--text-muted)] mt-1 max-w-3xl">
+          Cadeias de aprovação ativas. Cada documento segue o workflow: curador → ciência dos líderes →
+          aceite final do GP → presidência PMI-GO → demais presidências → testemunhas → ratificação dos membros.
+          Clique em uma cadeia para revisar e comentar.
+        </p>
+      </div>
+      <div class="flex gap-2">
+        <a href="/admin/governance/ip-ratification" class="text-[11px] text-[var(--text-muted)] hover:text-navy no-underline px-3 py-1.5 rounded border border-[var(--border-default)] bg-white">
+          Admin lifecycle (legado)
+        </a>
+      </div>
+    </header>
+
+    <div id="gov-loading" class="text-center py-16 text-sm text-[var(--text-muted)]">Carregando cadeias…</div>
+    <div id="gov-error" class="hidden rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800"></div>
+    <div id="gov-empty" class="hidden rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] px-6 py-12 text-center text-sm text-[var(--text-muted)]">
+      Nenhuma cadeia em revisão no momento.
+    </div>
+
+    <section id="gov-list" class="hidden space-y-3"></section>
+
+    <p class="text-[11px] text-[var(--text-muted)] italic">
+      Editor de novas versões, diff v2.1↔v2.2 e notificações por email entrarão em Phase IP-3d.
+    </p>
+  </div>
+
+  <script is:inline>
+    const GATE_LABELS_JSON = JSON.stringify({
+      curator: 'Curador',
+      leader: 'Liderança',
+      leader_awareness: 'Ciência das lideranças',
+      submitter_acceptance: 'Aceite do GP',
+      president_go: 'Presid. PMI-GO',
+      president_others: 'Presid. capítulos',
+      chapter_witness: 'Testemunhas',
+      member_ratification: 'Ratificação de membros',
+      external_signer: 'Signatário externo',
+    });
+
+    const STATUS_LABELS = {
+      draft:      { label: 'Rascunho',    cls: 'bg-gray-100 text-gray-700 border-gray-300' },
+      review:     { label: 'Em revisão',  cls: 'bg-amber-100 text-amber-800 border-amber-300' },
+      approved:   { label: 'Aprovado',    cls: 'bg-blue-100 text-blue-800 border-blue-300' },
+      active:     { label: 'Vigente',     cls: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
+      withdrawn:  { label: 'Retirado',    cls: 'bg-red-100 text-red-700 border-red-300' },
+      superseded: { label: 'Substituído', cls: 'bg-gray-200 text-gray-600 border-gray-400' },
+    };
+
+    function esc(s) {
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function waitForSb(max) {
+      return new Promise(function (resolve) {
+        var tries = 0;
+        (function pick() {
+          var sb = window.navGetSb && window.navGetSb();
+          if (sb) return resolve(sb);
+          if (++tries > (max || 30)) return resolve(null);
+          setTimeout(pick, 200);
+        })();
+      });
+    }
+
+    function pipelineHtml(detail) {
+      var labels = JSON.parse(GATE_LABELS_JSON);
+      var gates = Array.isArray(detail.gates) ? detail.gates.slice().sort(function(a,b){return a.order - b.order;}) : [];
+      var prevOK = true;
+      var html = '<ol class="flex items-stretch gap-0 text-[11px] overflow-x-auto">';
+      gates.forEach(function(g, idx) {
+        var thresholdNum = g.threshold === 'all' ? Infinity : Number(g.threshold);
+        var satisfied = g.threshold !== 'all' && Number(g.signed_count) >= thresholdNum;
+        var informational = g.threshold === 0;
+        var state = informational ? 'info' : satisfied ? 'done' : prevOK ? 'active' : 'locked';
+        var dotCls = state === 'done' ? 'bg-emerald-500 border-emerald-500 text-white'
+                   : state === 'active' ? 'bg-amber-500 border-amber-500 text-white animate-pulse ring-2 ring-amber-200'
+                   : state === 'info' ? 'bg-blue-100 border-blue-300 text-blue-600'
+                   : 'bg-gray-100 border-gray-300 text-gray-400';
+        var labelCls = state === 'done' ? 'text-emerald-700'
+                     : state === 'active' ? 'text-amber-700 font-semibold'
+                     : state === 'info' ? 'text-blue-700'
+                     : 'text-gray-400';
+        var icon = state === 'done' ? '✓' : state === 'info' ? 'ℹ' : String(g.order);
+        var count = g.threshold === 0 ? 'ciência' : (g.threshold === 'all' ? Number(g.signed_count) + ' / —' : Number(g.signed_count) + ' / ' + g.threshold);
+
+        html += '<li class="flex items-center flex-shrink-0">';
+        html += '<div class="flex flex-col items-center gap-1 px-2 py-1" title="' + esc(state === 'active' ? 'Aguardando aprovação' : state === 'locked' ? 'Aguarda gates anteriores' : state === 'info' ? 'Informativo (não bloqueia)' : 'Satisfeito') + '">';
+        html += '<span class="inline-flex items-center justify-center w-6 h-6 rounded-full border-2 text-[11px] font-bold ' + dotCls + '">' + icon + '</span>';
+        html += '<span class="whitespace-nowrap ' + labelCls + '">' + esc(labels[g.kind] || g.kind) + '</span>';
+        html += '<span class="text-[9px] text-[var(--text-muted)] tabular-nums">' + esc(count) + '</span>';
+        html += '</div>';
+        if (idx < gates.length - 1) {
+          html += '<span class="h-0.5 w-6 ' + (state === 'done' ? 'bg-emerald-400' : 'bg-gray-200') + '"></span>';
+        }
+        html += '</li>';
+
+        if (informational) {
+          // doesn't change prevOK
+        } else if (satisfied) {
+          prevOK = true;
+        } else {
+          prevOK = false;
+        }
+      });
+      html += '</ol>';
+      return html;
+    }
+
+    function ballInCourt(detail) {
+      var labels = JSON.parse(GATE_LABELS_JSON);
+      var gates = Array.isArray(detail.gates) ? detail.gates.slice().sort(function(a,b){return a.order - b.order;}) : [];
+      var prevOK = true;
+      for (var i = 0; i < gates.length; i++) {
+        var g = gates[i];
+        if (g.threshold === 0) continue;
+        var satisfied = g.threshold !== 'all' && Number(g.signed_count) >= Number(g.threshold);
+        if (!satisfied && prevOK) {
+          var pending = Array.isArray(g.eligible_pending) ? g.eligible_pending : [];
+          var names = pending.slice(0, 3).map(function(p){return p.name;}).join(', ');
+          var extra = pending.length > 3 ? ' (+' + (pending.length - 3) + ')' : '';
+          return {
+            gate: labels[g.kind] || g.kind,
+            names: names + extra,
+            count: pending.length,
+          };
+        }
+        if (satisfied) prevOK = true;
+        else prevOK = false;
+      }
+      return null;
+    }
+
+    function daysLabel(days) {
+      if (days == null) return '—';
+      var d = Math.floor(days);
+      return d === 0 ? 'hoje' : d === 1 ? '1 dia' : d + ' dias';
+    }
+
+    function renderChainCard(detail) {
+      var s = STATUS_LABELS[detail.chain_status] || { label: detail.chain_status, cls: 'bg-gray-100' };
+      var bic = ballInCourt(detail);
+      var submitter = detail.submitter || {};
+      return (
+        '<article class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4 hover:border-navy transition-colors">' +
+          '<div class="flex items-start justify-between gap-3 flex-wrap mb-3">' +
+            '<div>' +
+              '<h2 class="text-base font-bold text-[var(--text-primary)]">' + esc(detail.document_title) + '</h2>' +
+              '<p class="text-[11px] text-[var(--text-muted)] mt-0.5">' +
+                esc(detail.version_label || '') + ' · Submetido por ' + esc(submitter.name || '—') +
+                ' · Aberto há ' + daysLabel(detail.days_open) +
+              '</p>' +
+            '</div>' +
+            '<div class="flex items-center gap-2">' +
+              '<span class="inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold ' + s.cls + '">' + s.label + '</span>' +
+              '<a href="/admin/governance/documents/' + esc(detail.chain_id) + '" class="inline-block rounded-lg bg-navy text-white text-[11px] font-bold px-3 py-1.5 no-underline hover:opacity-90">Revisar →</a>' +
+            '</div>' +
+          '</div>' +
+          '<div class="mb-3">' + pipelineHtml(detail) + '</div>' +
+          (bic
+            ? '<div class="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-[12px] text-amber-900">' +
+                '<strong>Bola em:</strong> ' + esc(bic.gate) +
+                (bic.names ? ' · aguardando ' + esc(bic.names) : '') +
+                (bic.count > 0 ? ' <span class="text-[10px] text-amber-800">(' + bic.count + ' elegíveis)</span>' : '') +
+              '</div>'
+            : '<div class="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-[12px] text-emerald-900"><strong>✓</strong> Todos os gates satisfeitos.</div>'
+          ) +
+        '</article>'
+      );
+    }
+
+    async function loadChains() {
+      var sb = await waitForSb();
+      var loading = document.getElementById('gov-loading');
+      var errBox = document.getElementById('gov-error');
+      var empty = document.getElementById('gov-empty');
+      var list = document.getElementById('gov-list');
+
+      if (!sb) {
+        loading.classList.add('hidden');
+        errBox.textContent = 'Cliente Supabase indisponível.';
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      var chainsRes = await sb
+        .from('approval_chains')
+        .select('id')
+        .in('status', ['draft','review','approved','active'])
+        .order('created_at', { ascending: false });
+
+      if (chainsRes.error) {
+        loading.classList.add('hidden');
+        errBox.textContent = 'Erro: ' + chainsRes.error.message;
+        errBox.classList.remove('hidden');
+        return;
+      }
+
+      var ids = (chainsRes.data || []).map(function(r){return r.id;});
+      loading.classList.add('hidden');
+      if (!ids.length) { empty.classList.remove('hidden'); return; }
+
+      var details = [];
+      for (var i = 0; i < ids.length; i++) {
+        var res = await sb.rpc('get_chain_workflow_detail', { p_chain_id: ids[i] });
+        if (!res.error && res.data && !res.data.error) details.push(res.data);
+      }
+      if (!details.length) { empty.classList.remove('hidden'); return; }
+
+      details.sort(function(a, b) { return String(a.document_title).localeCompare(String(b.document_title)); });
+      list.innerHTML = details.map(renderChainCard).join('');
+      list.classList.remove('hidden');
+    }
+
+    loadChains();
+  </script>
+</AdminLayout>
