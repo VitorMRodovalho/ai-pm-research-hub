@@ -13,8 +13,17 @@ const i18nBundle = buildPageI18n(['governance', 'boardMembers', 'common'], lang)
   <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
   <div class="max-w-[1100px] mx-auto px-4 py-8 space-y-6">
 
-    <!-- Cross-link to stakeholder preview -->
-    <div class="flex justify-end">
+    <!-- Cross-link to stakeholder preview + IP Ratification subtab -->
+    <div class="flex justify-between items-center gap-2 flex-wrap">
+      <nav aria-label="Governance subsections" class="flex gap-1.5 flex-wrap">
+        <span class="px-3 py-1.5 rounded-lg bg-navy text-white text-[12px] font-bold">
+          Change Requests & Boards
+        </span>
+        <a href="/admin/governance/documents"
+          class="px-3 py-1.5 rounded-lg bg-white border border-[var(--border-default)] text-[12px] font-semibold text-[var(--text-secondary)] no-underline hover:text-navy hover:border-navy transition-colors">
+          Ratificação de documentos (IP)
+        </a>
+      </nav>
       <a href="/governance?view=document" target="_blank"
         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--surface-hover)] border border-[var(--border-default)] text-[12px] font-semibold text-[var(--text-secondary)] no-underline hover:text-[var(--text-primary)] hover:border-navy transition-colors">
         👁 Preview Stakeholder

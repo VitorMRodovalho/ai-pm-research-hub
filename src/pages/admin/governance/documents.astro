@@ -13,18 +13,29 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
   title="Governança — Documentos"
   breadcrumbs={[
     { label: 'Operações' },
-    { label: 'Governança' },
-    { label: 'Documentos' },
+    { label: 'Governança', href: '/admin/governance-v2' },
+    { label: 'Ratificação de documentos' },
   ]}
 >
   <div class="max-w-[1400px] mx-auto px-4 py-8 space-y-6">
+    <!-- Subtab nav (matches /admin/governance-v2) -->
+    <nav aria-label="Governance subsections" class="flex gap-1.5 flex-wrap">
+      <a href="/admin/governance-v2"
+        class="px-3 py-1.5 rounded-lg bg-white border border-[var(--border-default)] text-[12px] font-semibold text-[var(--text-secondary)] no-underline hover:text-navy hover:border-navy transition-colors">
+        Change Requests & Boards
+      </a>
+      <span class="px-3 py-1.5 rounded-lg bg-navy text-white text-[12px] font-bold">
+        Ratificação de documentos (IP)
+      </span>
+    </nav>
+
     <header class="flex items-start justify-between gap-4 flex-wrap">
       <div>
-        <h1 class="text-2xl font-extrabold text-navy">Documentos de Governança</h1>
+        <h1 class="text-2xl font-extrabold text-navy">Ratificação de documentos (IP)</h1>
         <p class="text-sm text-[var(--text-muted)] mt-1 max-w-3xl">
-          Cadeias de aprovação ativas. Cada documento segue o workflow: curador → ciência dos líderes →
-          aceite final do GP → presidência PMI-GO → demais presidências → testemunhas → ratificação dos membros.
-          Clique em uma cadeia para revisar e comentar.
+          Cadeias de aprovação ativas para documentos de governança (Política de PI, Termo de Voluntariado, Adendos).
+          Cada documento segue o workflow: curador → ciência dos líderes → aceite final do GP →
+          presidência PMI-GO → demais presidências → testemunhas → ratificação dos membros.
         </p>
       </div>
       <div class="flex gap-2">
@@ -285,8 +296,8 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
       if (!sb) { loading.textContent = 'Cliente Supabase indisponível.'; return; }
       var res = await sb
         .from('governance_documents')
-        .select('id, title, slug, doc_type, status')
-        .in('status', ['active','draft'])
+        .select('id, title, doc_type, status')
+        .in('status', ['active','draft','under_review'])
         .order('title', { ascending: true });
       if (res.error) { loading.textContent = 'Erro: ' + res.error.message; return; }
       var docs = res.data || [];
