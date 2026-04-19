@@ -54,6 +54,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
             <th class="px-4 py-3 text-right">Gates</th>
             <th class="px-4 py-3 text-right">Signoffs</th>
             <th class="px-4 py-3 text-right">Pendentes</th>
+            <th class="px-4 py-3 text-right">Assinar</th>
             <th class="px-4 py-3 text-right">Ações</th>
           </tr>
         </thead>
@@ -112,6 +113,25 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
       return '<div class="flex justify-end gap-1 flex-wrap">' + btns.join('') + '</div>';
     }
 
+    var GATE_LABELS = {
+      curator: 'curador',
+      leader: 'liderança',
+      president_go: 'pres. GO',
+      president_others: 'pres. capítulo',
+      member_ratification: 'membro',
+      external_signer: 'signatário ext.',
+    };
+
+    function signButtons(row) {
+      var eligible = Array.isArray(row.eligible_gates) ? row.eligible_gates : [];
+      if (!eligible.length) return '<span class="text-[11px] text-[var(--text-muted)]">—</span>';
+      return '<div class="flex justify-end gap-1 flex-wrap">' + eligible.map(function (g) {
+        var label = GATE_LABELS[g] || g;
+        var href = '/governance/ip-agreement?chain_id=' + encodeURIComponent(row.chain_id) + '&gate_kind=' + encodeURIComponent(g);
+        return '<a href="' + href + '" class="rounded border border-navy bg-white px-2 py-1 text-[10px] font-semibold text-navy hover:bg-navy hover:text-white transition-colors no-underline">Assinar ' + label + '</a>';
+      }).join('') + '</div>';
+    }
+
     function renderRow(row) {
       var s = STATUS_LABELS[row.status] || { label: row.status, cls: 'bg-gray-100' };
       var pendingCell = row.pending_members > 0
@@ -125,6 +145,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
           '<td class="px-4 py-3 text-right tabular-nums text-[var(--text-secondary)]">' + row.gate_count + '</td>' +
           '<td class="px-4 py-3 text-right tabular-nums text-[var(--text-secondary)]">' + row.signoff_count + '</td>' +
           '<td class="px-4 py-3 text-right tabular-nums text-[var(--text-secondary)]">' + pendingCell + '</td>' +
+          '<td class="px-4 py-3 text-right">' + signButtons(row) + '</td>' +
           '<td class="px-4 py-3 text-right">' + actionButtons(row) + '</td>' +
         '</tr>'
       );
@@ -154,6 +175,17 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
       }
 
       const chains = chainsRes.data || [];
+
+      // Callers' eligibility map (chain_id → eligible_gates[]) for inline sign buttons
+      const eligMap = {};
+      const pendRes = await sb.rpc('get_pending_ratifications');
+      if (!pendRes.error && Array.isArray(pendRes.data)) {
+        for (var i = 0; i < pendRes.data.length; i++) {
+          var p = pendRes.data[i];
+          if (p && p.chain_id) eligMap[p.chain_id] = p.eligible_gates || [];
+        }
+      }
+
       const overview = [];
 
       for (const c of chains) {
@@ -181,6 +213,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
           signoff_count: signoff_count,
           pending_members: pending_members,
           version_label: (c.document_versions && c.document_versions.version_label) || '',
+          eligible_gates: eligMap[c.id] || [],
         });
       }
 

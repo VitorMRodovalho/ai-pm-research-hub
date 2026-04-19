@@ -1,0 +1,514 @@
+---
+/**
+ * /governance/ip-agreement — Member-facing IP ratification viewer.
+ *
+ * Fluxo: lista chains pendentes via get_pending_ratifications (SECDEF) → seleciona chain
+ * → renderiza document_versions.content_html → scroll 100% → consentimento GDPR condicional
+ * → sign_ip_ratification (SECDEF). Audit trail completo via ADR-0016.
+ *
+ * Escopo: Phase IP-3. ADR-0016 + decisões UX.Q1/Q3/Q4 (2026-04-19 council).
+ * Auth: qualquer member ativo. Admin pode assinar via gate_kind específico.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getLangFromURL, t, type Lang } from '../../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+---
+<BaseLayout title={t('ipagr.title', lang)} activePage="governance" lang={lang}>
+  <main class="max-w-[1200px] mx-auto px-4 py-6" id="ipagr-root">
+    <header class="mb-6">
+      <h1 class="text-2xl font-extrabold text-navy">{t('ipagr.title', lang)}</h1>
+      <p class="text-sm text-[var(--text-muted)] mt-1">{t('ipagr.subtitle', lang)}</p>
+    </header>
+
+    <div id="ipagr-loading" class="text-center py-16 text-[var(--text-muted)] text-sm">
+      {t('ipagr.loading', lang)}
+    </div>
+
+    <div id="ipagr-empty" class="hidden rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] px-6 py-12 text-center">
+      <div class="text-4xl mb-2">✅</div>
+      <h2 class="text-base font-bold text-[var(--text-primary)]">{t('ipagr.empty', lang)}</h2>
+      <p class="text-sm text-[var(--text-muted)] mt-2 max-w-md mx-auto">{t('ipagr.emptyHelp', lang)}</p>
+    </div>
+
+    <div id="ipagr-error" class="hidden rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800"></div>
+
+    <div id="ipagr-layout" class="hidden grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+      <aside class="lg:sticky lg:top-4 lg:self-start">
+        <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] overflow-hidden">
+          <div class="px-4 py-3 bg-[var(--surface-hover)] text-xs font-bold uppercase tracking-wide text-[var(--text-secondary)]">
+            {t('ipagr.sidebar.title', lang)}
+          </div>
+          <ul id="ipagr-chain-list" class="divide-y divide-[var(--border-default)]"></ul>
+        </div>
+      </aside>
+
+      <section id="ipagr-detail" class="min-w-0">
+        <div id="ipagr-placeholder" class="rounded-xl border border-dashed border-[var(--border-default)] bg-[var(--surface-card)] px-6 py-16 text-center text-sm text-[var(--text-muted)]">
+          {t('ipagr.select', lang)}
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script is:inline define:vars={{ lang }}>
+    window.__ipagrLang = lang;
+  </script>
+
+  <script>
+    import { getSupabase } from '../../lib/supabase';
+    import { t } from '../../i18n/utils';
+    import type { Lang } from '../../i18n/utils';
+
+    type Chain = {
+      chain_id: string;
+      document_id: string;
+      document_title: string;
+      doc_type: string;
+      version_id: string;
+      version_label: string;
+      version_locked_at: string | null;
+      gates: Array<{ kind: string; order: number; threshold: number | 'all' }>;
+      opened_at: string | null;
+      status: 'review' | 'approved';
+      eligible_gates: string[] | null;
+    };
+
+    type Signoff = { id: string; gate_kind: string; signer_id: string; signoff_type: string; signed_at: string };
+    type PriorSignature = { signed_version_id: string; signed_at: string; signed_version_label: string | null };
+
+    const UE_TITLES = new Set([
+      'Termo de Compromisso de Voluntário — Núcleo de IA & GP',
+      'Adendo Retificativo ao Termo de Compromisso de Voluntario',
+    ]);
+
+    function esc(s: any): string {
+      return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function fmtDate(d: string | null | undefined, lang: Lang): string {
+      if (!d) return '—';
+      const locale = lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-ES' : 'pt-BR';
+      return new Date(d).toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function fmtDateTime(d: string | null | undefined, lang: Lang): string {
+      if (!d) return '—';
+      const locale = lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-ES' : 'pt-BR';
+      return new Date(d).toLocaleString(locale, { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function waitForSb(): Promise<any> {
+      return new Promise((resolve) => {
+        let tries = 0;
+        const pick = () => {
+          const sb = (window as any).navGetSb?.();
+          if (sb) return resolve(sb);
+          if (++tries > 30) {
+            try { return resolve(getSupabase()); } catch { return resolve(null); }
+          }
+          setTimeout(pick, 200);
+        };
+        pick();
+      });
+    }
+
+    function waitForMember(sb: any): Promise<any> {
+      return new Promise(async (resolve) => {
+        let tries = 0;
+        while (tries < 20) {
+          const m = (window as any).navGetMember?.();
+          if (m) return resolve(m);
+          await new Promise(r => setTimeout(r, 200));
+          tries++;
+        }
+        try {
+          const { data } = await sb.rpc('get_member_by_auth');
+          if (data) return resolve(data);
+        } catch { /* noop */ }
+        resolve(null);
+      });
+    }
+
+    function gateLabel(kind: string, lang: Lang): string {
+      return t('ipagr.gate.' + kind, lang);
+    }
+
+    function statusBadge(status: string, lang: Lang): string {
+      const cls = status === 'approved'
+        ? 'bg-blue-100 text-blue-800 border-blue-300'
+        : 'bg-amber-100 text-amber-800 border-amber-300';
+      return `<span class="inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold ${cls}">${esc(t('ipagr.sidebar.chainStatus.' + status, lang))}</span>`;
+    }
+
+    function renderSidebar(chains: Chain[], selectedId: string | null, lang: Lang): string {
+      if (!chains.length) return '';
+      return chains.map(c => {
+        const active = c.chain_id === selectedId;
+        const eligible = (c.eligible_gates || []).map(g => gateLabel(g, lang)).join(' · ') || '—';
+        return `
+          <li>
+            <button class="ipagr-select-chain w-full text-left px-4 py-3 cursor-pointer border-0 bg-transparent hover:bg-[var(--surface-hover)] ${active ? 'bg-[var(--surface-hover)]' : ''}" data-chain-id="${esc(c.chain_id)}">
+              <div class="flex items-start justify-between gap-2">
+                <span class="text-[13px] font-semibold text-[var(--text-primary)] line-clamp-2">${esc(c.document_title)}</span>
+                ${statusBadge(c.status, lang)}
+              </div>
+              <div class="text-[11px] text-[var(--text-muted)] mt-1">${esc(c.version_label)}</div>
+              <div class="text-[10px] text-[var(--text-secondary)] mt-1">
+                <span class="font-semibold">${esc(t('ipagr.sidebar.eligibleAs', lang))}</span> ${esc(eligible)}
+              </div>
+            </button>
+          </li>`;
+      }).join('');
+    }
+
+    function renderSigners(signoffs: Signoff[], gates: Chain['gates'], lang: Lang): string {
+      if (!gates?.length) return '';
+      return gates.map(g => {
+        const count = signoffs.filter(s => s.gate_kind === g.kind && (s.signoff_type === 'approval' || s.signoff_type === 'acknowledge')).length;
+        const needed = g.threshold === 'all' ? '—' : String(g.threshold);
+        const satisfied = g.threshold === 'all'
+          ? false
+          : count >= Number(g.threshold);
+        const cls = satisfied ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-gray-100 text-gray-700 border-gray-300';
+        return `<li class="flex items-center justify-between gap-3 py-1.5">
+          <span class="text-[12px] text-[var(--text-primary)]">${g.order}. ${esc(gateLabel(g.kind, lang))}</span>
+          <span class="inline-block rounded-full border px-2 py-0.5 text-[10px] font-semibold ${cls}">${count} / ${needed}</span>
+        </li>`;
+      }).join('');
+    }
+
+    function renderDetail(
+      chain: Chain,
+      contentHtml: string,
+      signoffs: Signoff[],
+      prior: PriorSignature | null,
+      isEU: boolean,
+      preselectedGate: string | null,
+      lang: Lang
+    ): string {
+      const eligible = chain.eligible_gates || [];
+      const ueApplies = isEU && UE_TITLES.has(chain.document_title) && eligible.includes('member_ratification');
+      const ueClause = chain.doc_type === 'volunteer_term_template' ? 'Cláusula 14' : 'Art. 8';
+      const priorBanner = prior && prior.signed_version_id !== chain.version_id ? `
+        <div class="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[13px] text-amber-900 mb-4">
+          ${esc(t('ipagr.priorSigned', lang).replace('{priorVersion}', prior.signed_version_label || '—').replace('{priorDate}', fmtDate(prior.signed_at, lang)))}
+        </div>` : '';
+      const ueSection = ueApplies ? `
+        <div class="rounded-xl border-2 border-indigo-300 bg-indigo-50 px-4 py-3 my-4">
+          <h3 class="text-sm font-bold text-indigo-900 flex items-center gap-2">🇪🇺 ${esc(t('ipagr.ue.heading', lang))} — ${esc(ueClause)}</h3>
+          <p class="text-[12px] text-indigo-900 leading-relaxed mt-1">${esc(t('ipagr.ue.body', lang))}</p>
+          <label class="mt-3 flex items-start gap-2 cursor-pointer">
+            <input id="ipagr-ue-consent" type="checkbox" class="mt-0.5 w-4 h-4 accent-navy" />
+            <span class="text-[12px] font-semibold text-indigo-950">${esc(t('ipagr.ue.consentLabel', lang))}</span>
+          </label>
+        </div>` : '';
+
+      const signButtons = eligible.length ? eligible.map(g => {
+        const pre = preselectedGate && g === preselectedGate ? 'ring-2 ring-navy ring-offset-1' : '';
+        return `<button class="ipagr-sign-btn inline-block px-4 py-2 rounded-lg bg-navy text-white text-[13px] font-bold border-0 cursor-pointer hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity ${pre}"
+          data-gate-kind="${esc(g)}"
+          disabled>
+          ${esc(t('ipagr.sign.' + g, lang))}
+        </button>`;
+      }).join('') : `<p class="text-[13px] text-[var(--text-muted)] italic">${esc(t('ipagr.error.notEligible', lang))}</p>`;
+
+      return `
+        <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 mb-4">
+          <div class="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <h2 class="text-lg font-bold text-[var(--text-primary)]">${esc(chain.document_title)}</h2>
+              <p class="text-[12px] text-[var(--text-muted)] mt-1">
+                ${esc(t('ipagr.versionLabel', lang))} <strong>${esc(chain.version_label)}</strong>
+                · ${esc(t('ipagr.lockedAt', lang))} ${fmtDateTime(chain.version_locked_at, lang)}
+              </p>
+            </div>
+            ${statusBadge(chain.status, lang)}
+          </div>
+          ${priorBanner}
+          <div class="mt-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[11px] text-[var(--text-secondary)]">${esc(t('ipagr.scrollHint', lang))}</span>
+              <span id="ipagr-progress-text" class="text-[11px] font-semibold text-[var(--text-primary)]">${esc(t('ipagr.progress', lang).replace('{percent}', '0'))}</span>
+            </div>
+            <div class="w-full h-1.5 bg-[var(--surface-hover)] rounded-full overflow-hidden">
+              <div id="ipagr-progress-bar" class="h-full bg-navy transition-all duration-200" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-0 mb-4">
+          <div id="ipagr-doc-body" class="prose prose-sm max-w-none px-6 py-6 max-h-[60vh] overflow-y-auto text-[var(--text-primary)]">
+            ${contentHtml}
+            <div id="ipagr-scroll-sentinel" class="h-2"></div>
+            <div class="mt-4 text-center text-[11px] font-semibold text-emerald-700" id="ipagr-scroll-complete-msg" style="display:none">✓ ${esc(t('ipagr.scrollComplete', lang))}</div>
+          </div>
+        </div>
+
+        <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5">
+          <h3 class="text-xs font-bold uppercase tracking-wide text-[var(--text-muted)] mb-3">${esc(t('ipagr.sidebar.title', lang))}</h3>
+          <ul class="divide-y divide-[var(--border-subtle)]">${renderSigners(signoffs, chain.gates, lang)}</ul>
+          ${ueSection}
+          <div class="mt-5 flex flex-wrap gap-2" id="ipagr-sign-row">${signButtons}</div>
+          <p id="ipagr-sign-hint" class="text-[11px] text-[var(--text-muted)] mt-2 italic">${esc(t('ipagr.sign.locked', lang))}</p>
+          <p class="text-[10px] text-[var(--text-muted)] mt-3 text-center leading-relaxed">ⓘ ${esc(t('ipagr.legalNotice', lang))}</p>
+        </div>`;
+    }
+
+    function renderSuccess(data: any, lang: Lang): string {
+      const chainSat = data?.chain_satisfied
+        ? `<p class="text-[12px] text-emerald-700 font-semibold mt-2">✓ ${esc(t('ipagr.success.chainSatisfied', lang))}</p>`
+        : `<p class="text-[12px] text-[var(--text-muted)] mt-2">${esc(t('ipagr.success.gatesRemaining', lang).replace('{n}', String(data?.gates_remaining ?? '—')))}</p>`;
+      const code = data?.certificate_code
+        ? `<div class="flex justify-between items-center py-1"><span class="text-[var(--text-muted)]">${esc(t('ipagr.success.code', lang))}</span><code class="font-mono text-[12px] bg-[var(--surface-hover)] px-2 py-0.5 rounded">${esc(data.certificate_code)}</code></div>`
+        : '';
+      return `
+        <div class="rounded-xl border-2 border-emerald-300 bg-emerald-50 p-6 text-center">
+          <div class="text-4xl mb-2">✅</div>
+          <h2 class="text-lg font-bold text-emerald-900">${esc(t('ipagr.success.title', lang))}</h2>
+          <div class="mt-4 text-left bg-white rounded-lg border border-emerald-200 p-4 space-y-1 text-sm max-w-md mx-auto">
+            ${code}
+            <div class="flex justify-between items-center py-1"><span class="text-[var(--text-muted)]">${esc(t('ipagr.success.hash', lang))}</span><code class="font-mono text-[10px] text-[var(--text-muted)]">${esc((data?.signature_hash || '').slice(0, 24))}…</code></div>
+            ${chainSat}
+          </div>
+          <button id="ipagr-success-close" class="mt-4 px-4 py-2 rounded-lg bg-navy text-white text-[13px] font-semibold border-0 cursor-pointer hover:opacity-90">
+            ${esc(t('ipagr.success.close', lang))}
+          </button>
+        </div>`;
+    }
+
+    function parseQuery(): { chainId: string | null; gate: string | null } {
+      const p = new URLSearchParams(window.location.search);
+      return { chainId: p.get('chain_id'), gate: p.get('gate_kind') };
+    }
+
+    async function loadChainData(sb: any, chain: Chain, memberId: string) {
+      const [versionRes, signoffsRes, priorRes] = await Promise.all([
+        sb.from('document_versions').select('content_html, version_label, locked_at').eq('id', chain.version_id).single(),
+        sb.from('approval_signoffs').select('id, gate_kind, signer_id, signoff_type, signed_at').eq('approval_chain_id', chain.chain_id),
+        sb.from('member_document_signatures')
+          .select('signed_version_id, signed_at, signed_version_id, document_versions!inner(version_label)')
+          .eq('member_id', memberId).eq('document_id', chain.document_id)
+          .order('signed_at', { ascending: false }).limit(1),
+      ]);
+      const contentHtml = versionRes.data?.content_html || '<p class="text-[var(--text-muted)] italic">(conteúdo indisponível)</p>';
+      const signoffs: Signoff[] = signoffsRes.data || [];
+      const priorRow = priorRes.data?.[0];
+      const prior: PriorSignature | null = priorRow ? {
+        signed_version_id: priorRow.signed_version_id,
+        signed_at: priorRow.signed_at,
+        signed_version_label: priorRow.document_versions?.version_label || null,
+      } : null;
+      return { contentHtml, signoffs, prior };
+    }
+
+    function mountScrollTracking(lang: Lang, onComplete: () => void): () => string[] {
+      const body = document.getElementById('ipagr-doc-body');
+      const sentinel = document.getElementById('ipagr-scroll-sentinel');
+      const bar = document.getElementById('ipagr-progress-bar');
+      const txt = document.getElementById('ipagr-progress-text');
+      const doneMsg = document.getElementById('ipagr-scroll-complete-msg');
+      if (!body || !sentinel || !bar || !txt) return () => [];
+
+      const sections: { anchor: string; verified_at: string }[] = [];
+      const headings = body.querySelectorAll('h1, h2, h3');
+
+      const hObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const el = entry.target as HTMLElement;
+            const anchor = el.id || el.textContent?.slice(0, 64) || '';
+            if (!sections.find(s => s.anchor === anchor)) {
+              sections.push({ anchor, verified_at: new Date().toISOString() });
+            }
+          }
+        });
+      }, { threshold: 0.5, root: body });
+      headings.forEach(h => hObserver.observe(h));
+
+      const sObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            bar.style.width = '100%';
+            txt.textContent = t('ipagr.progress', lang).replace('{percent}', '100');
+            if (doneMsg) doneMsg.style.display = 'block';
+            onComplete();
+          }
+        });
+      }, { threshold: 1, root: body });
+      sObserver.observe(sentinel);
+
+      body.addEventListener('scroll', () => {
+        const pct = Math.min(100, Math.round(((body.scrollTop + body.clientHeight) / body.scrollHeight) * 100));
+        if (pct < 100) {
+          bar.style.width = pct + '%';
+          txt.textContent = t('ipagr.progress', lang).replace('{percent}', String(pct));
+        }
+      });
+
+      return () => sections;
+    }
+
+    (async () => {
+      const lang = ((window as any).__ipagrLang || 'pt-BR') as Lang;
+      const loading = document.getElementById('ipagr-loading');
+      const empty = document.getElementById('ipagr-empty');
+      const layout = document.getElementById('ipagr-layout');
+      const errBox = document.getElementById('ipagr-error');
+      const detail = document.getElementById('ipagr-detail');
+
+      const sb = await waitForSb();
+      if (!sb) {
+        loading!.classList.add('hidden');
+        errBox!.textContent = t('ipagr.error.generic', lang);
+        errBox!.classList.remove('hidden');
+        return;
+      }
+
+      const member = await waitForMember(sb);
+      if (!member) {
+        loading!.classList.add('hidden');
+        errBox!.textContent = t('ipagr.loginRequired', lang);
+        errBox!.classList.remove('hidden');
+        return;
+      }
+
+      const personId = member.person_id;
+      let isEU = false;
+      if (personId) {
+        try {
+          const { data } = await sb.rpc('is_eu_resident', { p_person_id: personId });
+          isEU = !!data;
+        } catch { /* noop */ }
+      }
+
+      const pendRes = await sb.rpc('get_pending_ratifications');
+      if (pendRes.error) {
+        loading!.classList.add('hidden');
+        errBox!.textContent = pendRes.error.message;
+        errBox!.classList.remove('hidden');
+        return;
+      }
+
+      const allChains: Chain[] = Array.isArray(pendRes.data) ? pendRes.data : [];
+      const chains = allChains.filter(c => Array.isArray(c.eligible_gates) && c.eligible_gates.length > 0);
+
+      loading!.classList.add('hidden');
+      if (!chains.length) {
+        empty!.classList.remove('hidden');
+        return;
+      }
+
+      layout!.classList.remove('hidden');
+      const listEl = document.getElementById('ipagr-chain-list')!;
+
+      const q = parseQuery();
+      let selectedId = q.chainId && chains.find(c => c.chain_id === q.chainId) ? q.chainId : chains[0].chain_id;
+      const preselectedGate = q.gate;
+
+      listEl.innerHTML = renderSidebar(chains, selectedId, lang);
+      listEl.addEventListener('click', async (ev) => {
+        const target = (ev.target as HTMLElement).closest('.ipagr-select-chain') as HTMLElement | null;
+        if (!target) return;
+        const cid = target.dataset.chainId;
+        if (!cid || cid === selectedId) return;
+        selectedId = cid;
+        listEl.innerHTML = renderSidebar(chains, selectedId, lang);
+        await paintDetail();
+      });
+
+      let scrollComplete = false;
+      let getSections: () => Array<{ anchor: string; verified_at: string }> = () => [];
+
+      function updateSignButtons() {
+        const buttons = detail!.querySelectorAll<HTMLButtonElement>('.ipagr-sign-btn');
+        const ueChk = document.getElementById('ipagr-ue-consent') as HTMLInputElement | null;
+        const ueOK = !ueChk || ueChk.checked;
+        const hint = document.getElementById('ipagr-sign-hint');
+        buttons.forEach(b => {
+          const ok = scrollComplete && ueOK;
+          b.disabled = !ok;
+        });
+        if (hint) {
+          if (!scrollComplete) hint.textContent = t('ipagr.sign.locked', lang);
+          else if (!ueOK) hint.textContent = t('ipagr.sign.ueLocked', lang);
+          else hint.textContent = '';
+        }
+      }
+
+      async function paintDetail() {
+        const chain = chains.find(c => c.chain_id === selectedId)!;
+        detail!.innerHTML = '<div class="text-center py-12 text-[var(--text-muted)] text-sm">' + t('ipagr.loading', lang) + '</div>';
+        const data = await loadChainData(sb, chain, member.id);
+        detail!.innerHTML = renderDetail(chain, data.contentHtml, data.signoffs, data.prior, isEU, preselectedGate, lang);
+
+        scrollComplete = false;
+        getSections = mountScrollTracking(lang, () => {
+          scrollComplete = true;
+          updateSignButtons();
+        });
+        updateSignButtons();
+
+        const ueChk = document.getElementById('ipagr-ue-consent') as HTMLInputElement | null;
+        ueChk?.addEventListener('change', updateSignButtons);
+
+        detail!.querySelectorAll<HTMLButtonElement>('.ipagr-sign-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            if (btn.disabled) return;
+            const gateKind = btn.dataset.gateKind!;
+            const ueConsent = ueChk?.checked ? true : null;
+            btn.disabled = true;
+            const original = btn.textContent;
+            btn.textContent = '...';
+            const sections = getSections();
+            const res = await sb.rpc('sign_ip_ratification', {
+              p_chain_id: chain.chain_id,
+              p_gate_kind: gateKind,
+              p_signoff_type: 'approval',
+              p_sections_verified: sections,
+              p_comment_body: null,
+              p_ue_consent_49_1_a: ueConsent,
+            });
+            if (res.error) {
+              (window as any).toast?.(res.error.message, 'error');
+              btn.disabled = false;
+              btn.textContent = original;
+              return;
+            }
+            const data = res.data as any;
+            if (data?.error === 'already_signed') {
+              (window as any).toast?.(t('ipagr.error.alreadySigned', lang), 'error');
+              btn.disabled = false;
+              btn.textContent = original;
+              return;
+            }
+            if (data?.error === 'ue_consent_required') {
+              (window as any).toast?.(t('ipagr.error.ue', lang), 'error');
+              btn.disabled = false;
+              btn.textContent = original;
+              return;
+            }
+            if (data?.error === 'access_denied') {
+              (window as any).toast?.(t('ipagr.error.notEligible', lang), 'error');
+              btn.disabled = false;
+              btn.textContent = original;
+              return;
+            }
+            if (data?.error) {
+              (window as any).toast?.(data.error, 'error');
+              btn.disabled = false;
+              btn.textContent = original;
+              return;
+            }
+            detail!.innerHTML = renderSuccess(data, lang);
+            document.getElementById('ipagr-success-close')?.addEventListener('click', () => {
+              window.location.reload();
+            });
+            (window as any).toast?.(t('ipagr.success.title', lang), 'success');
+          });
+        });
+      }
+
+      await paintDetail();
+    })();
+  </script>
+</BaseLayout>

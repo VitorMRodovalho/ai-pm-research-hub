@@ -1,0 +1,5 @@
+---
+// EN redirect → /governance/ip-agreement?lang=en-US (i18n pages share a single source)
+const qs = Astro.url.search ? Astro.url.search + '&lang=en-US' : '?lang=en-US';
+return Astro.redirect('/governance/ip-agreement' + qs, 302);
+---

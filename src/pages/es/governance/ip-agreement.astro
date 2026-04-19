@@ -1,0 +1,5 @@
+---
+// ES redirect → /governance/ip-agreement?lang=es-LATAM
+const qs = Astro.url.search ? Astro.url.search + '&lang=es-LATAM' : '?lang=es-LATAM';
+return Astro.redirect('/governance/ip-agreement' + qs, 302);
+---
