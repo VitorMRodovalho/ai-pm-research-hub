@@ -117,38 +117,57 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
       var prevOK = true;
       var html = '<ol class="flex items-stretch gap-0 text-[11px] overflow-x-auto">';
       gates.forEach(function(g, idx) {
-        var thresholdNum = g.threshold === 'all' ? Infinity : Number(g.threshold);
-        var satisfied = g.threshold !== 'all' && Number(g.signed_count) >= thresholdNum;
-        var informational = g.threshold === 0;
-        var state = informational ? 'info' : satisfied ? 'done' : prevOK ? 'active' : 'locked';
+        // threshold chega como text ("0","1","all"). Normalize defensively.
+        var tStr = String(g.threshold);
+        var isAll = tStr === 'all';
+        var isInformational = tStr === '0';
+        var tNum = isAll || isInformational ? 0 : Number(tStr);
+        var signedCount = Number(g.signed_count) || 0;
+        var eligibleCount = Array.isArray(g.eligible_pending) ? g.eligible_pending.length + signedCount : signedCount;
+        var satisfied = !isAll && !isInformational && signedCount >= tNum;
+        var state = isInformational
+          ? (signedCount > 0 ? 'ackDone' : prevOK ? 'ackPending' : 'locked')
+          : satisfied ? 'done' : prevOK ? 'active' : 'locked';
         var dotCls = state === 'done' ? 'bg-emerald-500 border-emerald-500 text-white'
+                   : state === 'ackDone' ? 'bg-blue-500 border-blue-500 text-white'
                    : state === 'active' ? 'bg-amber-500 border-amber-500 text-white animate-pulse ring-2 ring-amber-200'
-                   : state === 'info' ? 'bg-blue-100 border-blue-300 text-blue-600'
+                   : state === 'ackPending' ? 'bg-blue-100 border-blue-300 text-blue-700'
                    : 'bg-gray-100 border-gray-300 text-gray-400';
         var labelCls = state === 'done' ? 'text-emerald-700'
+                     : state === 'ackDone' ? 'text-blue-700'
                      : state === 'active' ? 'text-amber-700 font-semibold'
-                     : state === 'info' ? 'text-blue-700'
+                     : state === 'ackPending' ? 'text-blue-700'
                      : 'text-gray-400';
-        var icon = state === 'done' ? '✓' : state === 'info' ? 'ℹ' : String(g.order);
-        var count = g.threshold === 0 ? 'ciência' : (g.threshold === 'all' ? Number(g.signed_count) + ' / —' : Number(g.signed_count) + ' / ' + g.threshold);
+        var icon = state === 'done' ? '✓' : state === 'ackDone' ? 'ℹ✓' : state === 'ackPending' || state === 'locked' && isInformational ? 'ℹ' : String(g.order);
+        var count;
+        if (isInformational) {
+          count = signedCount + ' / ' + eligibleCount + ' (ciência)';
+        } else if (isAll) {
+          count = signedCount + ' / ' + eligibleCount + ' elegíveis';
+        } else {
+          count = signedCount + ' / ' + tNum + (eligibleCount !== tNum ? ' (' + eligibleCount + ' elegíveis)' : '');
+        }
+        var tip = state === 'active' ? 'Aguardando ' + tNum + ' assinatura(s)'
+                : state === 'locked' ? 'Aguarda gates anteriores'
+                : state === 'ackDone' ? 'Ciência registrada (não bloqueia)'
+                : state === 'ackPending' ? 'Ciência pendente (não bloqueia avanço)'
+                : 'Satisfeito';
 
         html += '<li class="flex items-center flex-shrink-0">';
-        html += '<div class="flex flex-col items-center gap-1 px-2 py-1" title="' + esc(state === 'active' ? 'Aguardando aprovação' : state === 'locked' ? 'Aguarda gates anteriores' : state === 'info' ? 'Informativo (não bloqueia)' : 'Satisfeito') + '">';
-        html += '<span class="inline-flex items-center justify-center w-6 h-6 rounded-full border-2 text-[11px] font-bold ' + dotCls + '">' + icon + '</span>';
+        html += '<div class="flex flex-col items-center gap-1 px-2 py-1" title="' + esc(tip) + '">';
+        html += '<span class="inline-flex items-center justify-center w-6 h-6 rounded-full border-2 text-[10px] font-bold ' + dotCls + '">' + icon + '</span>';
         html += '<span class="whitespace-nowrap ' + labelCls + '">' + esc(labels[g.kind] || g.kind) + '</span>';
         html += '<span class="text-[9px] text-[var(--text-muted)] tabular-nums">' + esc(count) + '</span>';
         html += '</div>';
         if (idx < gates.length - 1) {
-          html += '<span class="h-0.5 w-6 ' + (state === 'done' ? 'bg-emerald-400' : 'bg-gray-200') + '"></span>';
+          html += '<span class="h-0.5 w-6 ' + (state === 'done' || state === 'ackDone' ? 'bg-emerald-400' : 'bg-gray-200') + '"></span>';
         }
         html += '</li>';
 
-        if (informational) {
-          // doesn't change prevOK
-        } else if (satisfied) {
-          prevOK = true;
+        if (isInformational) {
+          // Não muda prevOK (informational não bloqueia, mas também não destrava)
         } else {
-          prevOK = false;
+          prevOK = satisfied;
         }
       });
       html += '</ol>';
@@ -161,8 +180,12 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
       var prevOK = true;
       for (var i = 0; i < gates.length; i++) {
         var g = gates[i];
-        if (g.threshold === 0) continue;
-        var satisfied = g.threshold !== 'all' && Number(g.signed_count) >= Number(g.threshold);
+        var tStr = String(g.threshold);
+        var isInformational = tStr === '0';
+        if (isInformational) continue;  // ciência não bloqueia, não conta como ball-in-court
+        var isAll = tStr === 'all';
+        var tNum = isAll ? 0 : Number(tStr);
+        var satisfied = !isAll && Number(g.signed_count) >= tNum;
         if (!satisfied && prevOK) {
           var pending = Array.isArray(g.eligible_pending) ? g.eligible_pending : [];
           var names = pending.slice(0, 3).map(function(p){return p.name;}).join(', ');
@@ -173,8 +196,7 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
             count: pending.length,
           };
         }
-        if (satisfied) prevOK = true;
-        else prevOK = false;
+        prevOK = satisfied;
       }
       return null;
     }

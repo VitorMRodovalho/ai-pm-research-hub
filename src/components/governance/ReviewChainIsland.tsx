@@ -70,9 +70,15 @@ function activeEligibleGates(detail: WorkflowDetail, memberId: string): string[]
   const eligible: string[] = [];
   let prevOK = true;
   for (const g of gates) {
-    const informational = g.threshold === 0;
-    const satisfied = g.threshold !== 'all' && g.signed_count >= Number(g.threshold);
-    if (informational) {
+    // threshold comes from RPC as text ("0", "1", "all"). Normalize defensively.
+    const tStr = String(g.threshold);
+    const isAll = tStr === 'all';
+    const isInformational = tStr === '0';
+    const tNum = isAll || isInformational ? 0 : Number(tStr);
+    const satisfied = !isAll && !isInformational && g.signed_count >= tNum;
+    if (isInformational) {
+      // Informational gate (threshold=0) só fica elegível depois que gate anterior
+      // obrigatório foi satisfeito (respeita prevOK). Não muda prevOK — não bloqueia próximo.
       if (prevOK && (g.eligible_pending || []).some(p => p.id === memberId)) {
         eligible.push(g.kind);
       }
@@ -81,8 +87,7 @@ function activeEligibleGates(detail: WorkflowDetail, memberId: string): string[]
     if (prevOK && !satisfied && (g.eligible_pending || []).some(p => p.id === memberId)) {
       eligible.push(g.kind);
     }
-    if (satisfied) prevOK = true;
-    else prevOK = false;
+    prevOK = satisfied;
   }
   return eligible;
 }
