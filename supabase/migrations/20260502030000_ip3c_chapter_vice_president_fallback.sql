@@ -2,8 +2,9 @@
 -- * PMI-GO não tem chapter_liaison registrado (Ivan-presidente se envolve direto com o Núcleo).
 -- * Regra travada: quando chapter NÃO tem chapter_liaison, vice-presidente do capítulo
 --   atua como PREPOSTO de testemunha para governance_documents.
--- * Seed Emanuela (VP PMI-GO) — email vice-presidencia@pmigo.org.br — como member ativo
---   com designation 'chapter_vice_president'. Nome placeholder até onboarding.
+-- * Seed Emanuele Melo (VP PMI-GO) — email vice-presidencia@pmigo.org.br — como member ativo
+--   com designation 'chapter_vice_president'. PII complementar (linkedin/phone/photo)
+--   via UI admin — não neste migration.
 -- * Seed engagements (chapter_board + observer) para satisfazer invariante A3.
 -- * Aplica só quando ausência verificada de chapter_liaison no mesmo chapter.
 
@@ -31,7 +32,7 @@ BEGIN
     v_member_id := v_existing_member;
   ELSE
     INSERT INTO public.persons (organization_id, name, email)
-    VALUES (v_pmigo_org, 'Emanuela — Vice-Presidência PMI-GO', 'vice-presidencia@pmigo.org.br')
+    VALUES (v_pmigo_org, 'Emanuele Melo', 'vice-presidencia@pmigo.org.br')
     RETURNING id INTO v_person_id;
 
     INSERT INTO public.members (
@@ -39,7 +40,7 @@ BEGIN
       operational_role, member_status, is_active, designations
     ) VALUES (
       v_pmigo_org, v_person_id, NULL,
-      'Emanuela — Vice-Presidência PMI-GO',
+      'Emanuele Melo',
       'vice-presidencia@pmigo.org.br',
       'PMI-GO',
       'observer',
