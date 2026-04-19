@@ -1,0 +1,33 @@
+---
+/**
+ * /admin/governance/documents/[docId]/versions/new — editor WYSIWYG de nova
+ * versao de governance_document. Phase IP-3d.
+ *
+ * Query param opcional ?draft=<versionId> — retoma rascunho existente.
+ *
+ * Auth: manage_member (RPC-enforced). Page nao faz gate; UI mostra erro se
+ * caller sem permissao.
+ */
+import AdminLayout from '../../../../../../layouts/AdminLayout.astro';
+import DocumentVersionEditor from '../../../../../../components/governance/DocumentVersionEditor';
+
+const { docId } = Astro.params;
+const draftVersionId = Astro.url.searchParams.get('draft') || undefined;
+---
+<AdminLayout
+  title="Nova versao de documento"
+  breadcrumbs={[
+    { label: 'Operacoes' },
+    { label: 'Governanca' },
+    { label: 'Documentos', href: '/admin/governance/documents' },
+    { label: 'Nova versao' },
+  ]}
+>
+  <div class="max-w-[1400px] mx-auto px-4 py-6">
+    <DocumentVersionEditor
+      client:load
+      docId={docId || ''}
+      draftVersionId={draftVersionId}
+    />
+  </div>
+</AdminLayout>

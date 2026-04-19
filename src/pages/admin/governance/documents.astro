@@ -34,6 +34,15 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
       </div>
     </header>
 
+    <!-- Seus rascunhos (IP-3d, gp-leader FP-3) -->
+    <section id="drafts-section" class="hidden rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4">
+      <h2 class="text-sm font-bold text-navy mb-2">Seus rascunhos</h2>
+      <p class="text-[11px] text-[var(--text-muted)] mb-3">
+        Versões ainda não lacradas que você criou. Retome a edição a qualquer momento.
+      </p>
+      <ul id="drafts-list" class="space-y-2"></ul>
+    </section>
+
     <div id="gov-loading" class="text-center py-16 text-sm text-[var(--text-muted)]">Carregando cadeias…</div>
     <div id="gov-error" class="hidden rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800"></div>
     <div id="gov-empty" class="hidden rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] px-6 py-12 text-center text-sm text-[var(--text-muted)]">
@@ -42,9 +51,15 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
 
     <section id="gov-list" class="hidden space-y-3"></section>
 
-    <p class="text-[11px] text-[var(--text-muted)] italic">
-      Editor de novas versões, diff v2.1↔v2.2 e notificações por email entrarão em Phase IP-3d.
-    </p>
+    <!-- New version picker (IP-3d) -->
+    <section class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4">
+      <h2 class="text-sm font-bold text-navy mb-2">Iniciar nova versão</h2>
+      <p class="text-[11px] text-[var(--text-muted)] mb-3">
+        Selecione o documento de governança para criar uma nova versão em editor WYSIWYG.
+      </p>
+      <div id="new-version-loading" class="text-[12px] text-[var(--text-muted)] italic">Carregando documentos…</div>
+      <ul id="new-version-list" class="hidden space-y-1.5"></ul>
+    </section>
   </div>
 
   <script is:inline>
@@ -234,6 +249,66 @@ import AdminLayout from '../../../layouts/AdminLayout.astro';
       list.classList.remove('hidden');
     }
 
+    function fmtRelDate(iso) {
+      if (!iso) return '—';
+      var d = new Date(iso);
+      return d.toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function loadDrafts() {
+      var sb = await waitForSb();
+      if (!sb) return;
+      var res = await sb.rpc('list_my_document_drafts');
+      var section = document.getElementById('drafts-section');
+      var ul = document.getElementById('drafts-list');
+      if (res.error) return;
+      var rows = res.data || [];
+      if (!rows.length) return;
+      section.classList.remove('hidden');
+      ul.innerHTML = rows.map(function(r) {
+        return (
+          '<li class="flex items-center justify-between gap-3 rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] px-3 py-2">' +
+            '<div class="flex-1 min-w-0">' +
+              '<strong class="text-[13px] text-[var(--text-primary)]">' + esc(r.document_title) + '</strong>' +
+              '<span class="text-[10px] text-[var(--text-muted)] ml-2">' + esc(r.version_label || '') + ' · atualizado ' + fmtRelDate(r.updated_at) + '</span>' +
+            '</div>' +
+            '<a href="/admin/governance/documents/' + esc(r.document_id) + '/versions/new?draft=' + esc(r.version_id) + '" class="rounded bg-navy text-white text-[11px] font-bold px-3 py-1 no-underline hover:opacity-90">Continuar editando</a>' +
+          '</li>'
+        );
+      }).join('');
+    }
+
+    async function loadNewVersionPicker() {
+      var sb = await waitForSb();
+      var loading = document.getElementById('new-version-loading');
+      var ul = document.getElementById('new-version-list');
+      if (!sb) { loading.textContent = 'Cliente Supabase indisponível.'; return; }
+      var res = await sb
+        .from('governance_documents')
+        .select('id, title, slug, doc_type, status')
+        .in('status', ['active','draft'])
+        .order('title', { ascending: true });
+      if (res.error) { loading.textContent = 'Erro: ' + res.error.message; return; }
+      var docs = res.data || [];
+      loading.classList.add('hidden');
+      if (!docs.length) {
+        ul.innerHTML = '<li class="text-[12px] text-[var(--text-muted)] italic">Nenhum documento cadastrado.</li>';
+        ul.classList.remove('hidden');
+        return;
+      }
+      ul.innerHTML = docs.map(function(d) {
+        return (
+          '<li class="flex items-center justify-between gap-3 py-1">' +
+            '<span class="text-[12px] text-[var(--text-primary)]"><strong>' + esc(d.title) + '</strong> <span class="text-[10px] text-[var(--text-muted)]">' + esc(d.doc_type || '') + '</span></span>' +
+            '<a href="/admin/governance/documents/' + esc(d.id) + '/versions/new" class="rounded bg-white border border-navy text-navy text-[11px] font-bold px-3 py-1 no-underline hover:bg-navy hover:text-white">+ Nova versão</a>' +
+          '</li>'
+        );
+      }).join('');
+      ul.classList.remove('hidden');
+    }
+
     loadChains();
+    loadDrafts();
+    loadNewVersionPicker();
   </script>
 </AdminLayout>
