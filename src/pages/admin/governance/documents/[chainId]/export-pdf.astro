@@ -1,0 +1,24 @@
+---
+/**
+ * /admin/governance/documents/[chainId]/export-pdf — IP-4 Chunk 2
+ * Exporta a cadeia de ratificação como PDF via @react-pdf/renderer client-side.
+ */
+import AdminLayout from '../../../../../layouts/AdminLayout.astro';
+import ChainPDFExportIsland from '../../../../../components/governance/ChainPDFExportIsland';
+
+const { chainId } = Astro.params;
+---
+<AdminLayout
+  title="Exportar PDF — cadeia de ratificação"
+  breadcrumbs={[
+    { label: 'Operações' },
+    { label: 'Governança' },
+    { label: 'Documentos', href: '/admin/governance/documents' },
+    { label: 'Revisar', href: `/admin/governance/documents/${chainId}` },
+    { label: 'Exportar PDF' },
+  ]}
+>
+  <div class="max-w-[900px] mx-auto px-4 py-6">
+    <ChainPDFExportIsland client:only="react" chainId={chainId || ''} />
+  </div>
+</AdminLayout>
