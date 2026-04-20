@@ -1,0 +1,11 @@
+-- IP-3d: upgrade Template Unificado v1.0-draft → v1.1-draft após legal-counsel audit
+-- Applied 19/04/2026 via MCP apply_migration ip3d_upgrade_template_v11_legal_audit.
+-- Source: parecer legal-counsel p34 — 3 perguntas do PM:
+--   Q1 GP signature → Opção A refinada (interveniente anuente)
+--   Q2 Manual dinâmico → Opção C robustecida (ato concludente + CC Art. 111)
+--   Q3 Template v1.1 completo → 10 cláusulas com densidade Acordo PMI-MG original
+-- Content completo em document_versions.content_html, row 16e07e92-c383-4fae-bf1b-9aad999eeada.
+-- Audit log action: ip3d.template_upgrade_v11
+-- Red Flags pendentes: RF-1 (registro notif plataforma), RF-2 (vigência política), RF-3 (chapter_witness).
+-- Rollback: reverter content_html para v1.0-draft.
+SELECT 'No-op stub. Document updated via MCP apply_migration.'::text;
