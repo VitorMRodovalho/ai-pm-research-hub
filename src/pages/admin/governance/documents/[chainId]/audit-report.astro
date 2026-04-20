@@ -1,0 +1,24 @@
+---
+/**
+ * /admin/governance/documents/[chainId]/audit-report — IP-4 Chunk 3
+ * Relatório de auditoria para Conselho Fiscal (complementa PDF oficial).
+ */
+import AdminLayout from '../../../../../layouts/AdminLayout.astro';
+import ChainAuditReportIsland from '../../../../../components/governance/ChainAuditReportIsland';
+
+const { chainId } = Astro.params;
+---
+<AdminLayout
+  title="Relatório de auditoria — Conselho Fiscal"
+  breadcrumbs={[
+    { label: 'Operações' },
+    { label: 'Governança' },
+    { label: 'Documentos', href: '/admin/governance/documents' },
+    { label: 'Revisar', href: `/admin/governance/documents/${chainId}` },
+    { label: 'Relatório auditoria' },
+  ]}
+>
+  <div class="max-w-[900px] mx-auto px-4 py-6">
+    <ChainAuditReportIsland client:only="react" chainId={chainId || ''} />
+  </div>
+</AdminLayout>

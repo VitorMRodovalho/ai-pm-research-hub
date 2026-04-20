@@ -219,6 +219,13 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
             >
               ⬇ PDF oficial
             </a>
+            <a
+              href={`/admin/governance/documents/${detail.chain_id}/audit-report`}
+              className="rounded-lg bg-white text-amber-800 text-[11px] font-semibold px-2.5 py-1 border border-amber-300 hover:bg-amber-50"
+              title="Relatório de auditoria para Conselho Fiscal (evidence trail completo)"
+            >
+              ⬇ Auditoria
+            </a>
             <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusMeta.cls}`}>{statusMeta.label}</span>
           </div>
         </div>
