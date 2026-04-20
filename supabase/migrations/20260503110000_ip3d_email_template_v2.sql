@@ -1,0 +1,21 @@
+-- IP-3d email template v2 — ux-leader audit p34 (20/04/2026)
+-- Applied via MCP apply_migration ip3d_email_template_v2_submitter_dynamic
+--                        + ip3d_email_template_v2_grammar_fix.
+--
+-- Gaps fixed:
+--   M1 — Submitter name ausente no body (flagado PM)
+--   M2 — Jargão "gate curator" substituído por linguagem user-friendly
+--   M3 — Action-scoping explícito: o que cada role faz
+--   m5 — Subject agora carrega título+versão dinâmico via notif.title
+--        (EF send-notification-email atualizada para usar notif.title
+--        quando type startswith 'ip_ratification_')
+--
+-- Template v2 example — Roberto (curator) recebe quando Vitor lacrar Política PI:
+--   Subject: "Política PI v1.0 — Curadoria solicitada por Vitor Rodovalho — Nucleo IA & GP"
+--   Body: "Vitor Rodovalho submeteu o documento 'Política PI' versão v1.0 para
+--          ratificação no Núcleo IA & GP. Como curador(a), você deve ler o
+--          documento completo e decidir se ele avança para a fase de aprovação
+--          pelas presidências de capítulo. Você pode registrar dúvidas ou
+--          pontos de ajuste como comentários antes de aprovar."
+--   CTA: /admin/governance/documents/[chainId] "Revisar e assinar"
+SELECT 'No-op stub. Function updated via MCP apply_migration.'::text;

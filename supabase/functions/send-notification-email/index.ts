@@ -116,8 +116,12 @@ Deno.serve(async (req) => {
 
       if (prefs?.muted_types?.includes(notif.type)) continue
 
-      // Send email
-      const subject = `${TYPE_SUBJECTS[notif.type] || notif.title} — Nucleo IA & GP`
+      // Send email — IP ratification types carry specific title (doc + version + action + submitter)
+      // so we use notif.title directly. Other types fall back to TYPE_SUBJECTS generic.
+      const isIpRatif = notif.type?.startsWith('ip_ratification_')
+      const subject = isIpRatif
+        ? `${notif.title} — Nucleo IA & GP`
+        : `${TYPE_SUBJECTS[notif.type] || notif.title} — Nucleo IA & GP`
       try {
         const res = await fetch('https://api.resend.com/emails', {
           method: 'POST',
