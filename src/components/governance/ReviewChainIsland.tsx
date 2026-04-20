@@ -211,7 +211,16 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
               {detail.days_open != null && ' · aberta há ' + Math.floor(detail.days_open) + ' dia(s)'}
             </p>
           </div>
-          <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusMeta.cls}`}>{statusMeta.label}</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <a
+              href={`/admin/governance/documents/${detail.chain_id}/export-pdf`}
+              className="rounded-lg bg-white text-[var(--text-secondary)] text-[11px] font-semibold px-2.5 py-1 border border-[var(--border-default)] hover:bg-[var(--surface-hover)]"
+              title="Gerar PDF oficial da cadeia com evidências"
+            >
+              ⬇ PDF oficial
+            </a>
+            <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusMeta.cls}`}>{statusMeta.label}</span>
+          </div>
         </div>
         <div className="pt-2 border-t border-[var(--border-default)]">
           <GovernancePipelineBar gates={detail.gates as any} gateLabels={GATE_LABELS} />
