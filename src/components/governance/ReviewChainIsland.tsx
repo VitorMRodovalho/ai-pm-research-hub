@@ -105,8 +105,16 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
 
   const load = useCallback(async () => {
-    const sb = getSb();
-    if (!sb) { setError('Cliente Supabase indisponível.'); setLoading(false); return; }
+    // Retry navGetSb() up to 4s — client script may not have mounted yet on fresh navigate
+    let sb = getSb();
+    if (!sb) {
+      const deadline = Date.now() + 4000;
+      while (!sb && Date.now() < deadline) {
+        await new Promise(r => setTimeout(r, 250));
+        sb = getSb();
+      }
+    }
+    if (!sb) { setError('Cliente Supabase indisponível. Recarregue a página (Ctrl+Shift+R).'); setLoading(false); return; }
 
     let m: any = (window as any).navGetMember?.();
     if (!m) {
