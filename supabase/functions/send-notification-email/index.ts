@@ -79,15 +79,18 @@ Deno.serve(async (req) => {
 
     const sb = createClient(url, srk, { auth: { autoRefreshToken: false, persistSession: false } })
 
-    // Get unprocessed critical notifications (last 10 minutes)
+    // Get unprocessed critical notifications.
+    // Fix p34 (ai-engineer audit): removida janela de 10min — ela silenciava
+    // notifications quando EF falhava + demorava >10min pra reexecutar.
+    // email_sent_at IS NULL é guard suficiente (rows já enviadas têm timestamp).
+    // Limit 20→50 para acomodar pico CR-050 (~75 notifs esperados em onda de lock).
     const { data: notifications, error: fetchErr } = await sb
       .from('notifications')
       .select('id, recipient_id, type, title, body, link, created_at')
       .in('type', CRITICAL_TYPES)
-      .gte('created_at', new Date(Date.now() - 10 * 60 * 1000).toISOString())
       .is('email_sent_at', null)
       .order('created_at', { ascending: true })
-      .limit(20)
+      .limit(50)
 
     if (fetchErr) throw fetchErr
     if (!notifications?.length) {
