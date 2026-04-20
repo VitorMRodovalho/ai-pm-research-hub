@@ -132,6 +132,31 @@ test('ADR-0012: known cache columns are maintained by live triggers (reference m
     },
   ];
 
+  // Cache columns WITHOUT trigger — registered as DEBT via COMMENT ON COLUMN
+  // (data-architect tier 3 audit p28). Fix pendente: trigger dedicated per column.
+  // This block does NOT fail the test — just documents the debt. Trigger implementation
+  // requires domain decision per column and lives in separate session.
+  const UNSYNCED_CACHE_DEBT = [
+    { key: 'members.current_cycle_active', source_hint: 'selection_cycles + member_cycle_enrollments' },
+    { key: 'members.cpmai_certified',      source_hint: 'certificates WHERE type=cpmai' },
+    { key: 'members.credly_badges',        source_hint: 'Credly API (external)' },
+    { key: 'members.cycles',               source_hint: 'selection_applications + enrollments' },
+  ];
+  // Each debt column MUST have a COMMENT ON COLUMN in migration 20260504070000
+  // documenting the drift risk explicitly. Assert file exists at minimum.
+  const debtDocPath = resolve(MIGRATIONS_DIR, '20260504070000_adr0012_document_unsynced_cache_columns.sql');
+  assert.ok(existsSync(debtDocPath),
+    `Expected ADR-0012 debt documentation migration to exist at ${debtDocPath}. ` +
+    `If you removed it, also remove the UNSYNCED_CACHE_DEBT entries from this test.`);
+  const debtDoc = readFileSync(debtDocPath, 'utf8');
+  for (const { key } of UNSYNCED_CACHE_DEBT) {
+    const [, column] = key.split('.');
+    assert.ok(
+      debtDoc.includes(column),
+      `Expected COMMENT ON COLUMN for ${key} in debt documentation migration (${debtDocPath})`,
+    );
+  }
+
   for (const { key, trigger, source, note } of KNOWN_CACHE_COLUMNS) {
     const path = resolve(MIGRATIONS_DIR, source);
     assert.ok(existsSync(path), `Expected trigger source migration ${source} to exist for ${key}`);
