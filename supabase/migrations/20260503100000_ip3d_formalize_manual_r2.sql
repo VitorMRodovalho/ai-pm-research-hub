@@ -1,0 +1,11 @@
+-- IP-3d+: Manual de Governança R2 formalizado como document_version locked.
+-- Applied 19/04/2026 p34 via MCP apply_migration ip3d_formalize_manual_r2_reference.
+-- Content: metadata + índice das 3 seções + DocuSign envelope ID
+-- (B2AFB185-4FC7-42C5-82A5-615EC7BDC98A). PDF de 22 páginas preservado
+-- fora da plataforma (backup PM).
+-- Texto integral por seção fica para Manual R3 Editor (backlog P2).
+-- Fecha Red Flag A do legal-counsel — Acordos que remetem "Manual vigente
+-- na data da assinatura" agora têm document_version locked documentada.
+-- Rollback: UPDATE governance_documents SET current_version_id=NULL +
+--   DELETE document_versions WHERE version_label='R2'.
+SELECT 'No-op stub. Document created via MCP apply_migration.'::text;
