@@ -443,8 +443,10 @@ export default function DocumentVersionEditor({ docId, draftVersionId }: Props) 
                     {signerPreview.map(p => {
                       const g = gates.find(g => g.kind === p.gate_kind);
                       const threshold = g?.threshold ?? 1;
-                      const thresholdNum = typeof threshold === 'number' ? threshold : Infinity;
-                      const insufficient = thresholdNum > p.count;
+                      // insufficient só quando threshold é número positivo maior que count.
+                      // "all" (dinâmico) e 0 (informativo) nunca são insuficientes.
+                      const thresholdNum = typeof threshold === 'number' ? threshold : 0;
+                      const insufficient = thresholdNum > 0 && thresholdNum > p.count;
                       const sampleText = p.sample.length === 0
                         ? ''
                         : p.count === 1
