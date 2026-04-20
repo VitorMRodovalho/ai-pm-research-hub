@@ -41,20 +41,13 @@ const GATE_LABELS: Record<string, string> = {
   president_go: 'Presid. PMI-GO',
   president_others: 'Presid. outros capitulos',
   chapter_witness: 'Testemunhas dos capitulos',
+  volunteers_in_role_active: 'Ratificacao voluntarios em funcao',
   member_ratification: 'Ratificacao dos membros',
   external_signer: 'Signatarios externos',
 };
 
-// Default gates template (matches IP-3c v2.2 shape, order 1..7)
-const DEFAULT_GATES: Gate[] = [
-  { kind: 'curator', order: 1, threshold: 1 },
-  { kind: 'leader_awareness', order: 2, threshold: 0 },
-  { kind: 'submitter_acceptance', order: 3, threshold: 1 },
-  { kind: 'chapter_witness', order: 4, threshold: 5 },
-  { kind: 'president_go', order: 5, threshold: 1 },
-  { kind: 'president_others', order: 6, threshold: 4 },
-  { kind: 'member_ratification', order: 7, threshold: 'all' },
-];
+// Gate template now resolved per doc_type via resolve_default_gates(doc_type) RPC.
+// ADR-0016 Amendment 2 (20260504010000). No longer a hardcoded 7-gate array.
 
 interface Props {
   docId: string;
@@ -84,7 +77,8 @@ export default function DocumentVersionEditor({ docId, draftVersionId }: Props) 
   const [saving, setSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [isDirty, setIsDirty] = useState(false);
-  const [gates] = useState<Gate[]>(DEFAULT_GATES);
+  const [gates, setGates] = useState<Gate[]>([]);
+  const [gatesUnsupported, setGatesUnsupported] = useState(false);
   const [changeNotes, setChangeNotes] = useState<string>('');
   const [modalOpen, setModalOpen] = useState(false);
   const [locking, setLocking] = useState(false);
@@ -113,6 +107,16 @@ export default function DocumentVersionEditor({ docId, draftVersionId }: Props) 
       return;
     }
     setDoc(dRes.data as DocMeta);
+
+    // Resolve gate template via RPC (ADR-0016 Amendment 2, per doc_type)
+    const gRes = await sb.rpc('resolve_default_gates', { p_doc_type: dRes.data.doc_type });
+    if (gRes.error) {
+      (window as any).toast?.('Erro ao resolver template de gates: ' + gRes.error.message, 'error');
+    } else if (gRes.data === null) {
+      setGatesUnsupported(true);
+    } else if (Array.isArray(gRes.data)) {
+      setGates(gRes.data as Gate[]);
+    }
 
     // If draft version id provided, load it as the working copy
     if (draftVersionId) {
@@ -217,10 +221,15 @@ export default function DocumentVersionEditor({ docId, draftVersionId }: Props) 
     };
   }, [isDirty, save]);
 
-  // ── Open lock modal: preload signer preview for UX-leader spec ──
+  // ── Open lock modal: preload signer preview via preview_gate_eligibles RPC ──
+  // Single round-trip using _can_sign_gate as source of truth (ADR-0016 Amendment 2).
   const openLockModal = useCallback(async () => {
     if (!versionId || isDirty) {
       (window as any).toast?.('Salve o rascunho antes de colocar em revisao.', 'error');
+      return;
+    }
+    if (!doc || gatesUnsupported || gates.length === 0) {
+      (window as any).toast?.('Este tipo de documento nao faz parte do workflow de ratificacao.', 'error');
       return;
     }
     setModalOpen(true);
@@ -228,39 +237,30 @@ export default function DocumentVersionEditor({ docId, draftVersionId }: Props) 
     setSignerPreview([]);
     const sb = getSb();
     if (!sb) { setPreviewLoading(false); return; }
-    // Count eligibles per gate by hitting members + _can_sign_gate is server-side;
-    // client-side shortcut: use static designation/role queries.
-    const previews: SignerCount[] = [];
-    for (const g of gates) {
-      if (g.kind === 'member_ratification') {
-        const r = await sb.from('members').select('id, name').eq('member_status', 'active').eq('is_active', true).limit(5);
-        const total = await sb.from('members').select('id', { count: 'exact', head: true }).eq('member_status', 'active').eq('is_active', true);
-        previews.push({
-          gate_kind: g.kind,
-          label: GATE_LABELS[g.kind] || g.kind,
-          count: total.count || 0,
-          sample: (r.data || []).map((m: any) => m.name).slice(0, 3),
-        });
-        continue;
-      }
-      let query: any = sb.from('members').select('id, name', { count: 'exact' }).eq('is_active', true);
-      if (g.kind === 'curator') query = query.contains('designations', ['curator']);
-      else if (g.kind === 'leader_awareness') query = query.in('operational_role', ['tribe_leader','manager','deputy_manager']);
-      else if (g.kind === 'submitter_acceptance') query = query.limit(1); // always 1 = submitter
-      else if (g.kind === 'president_go') query = query.eq('chapter', 'PMI-GO').contains('designations', ['chapter_board']);
-      else if (g.kind === 'president_others') query = query.in('chapter', ['PMI-CE','PMI-DF','PMI-MG','PMI-RS']).contains('designations', ['chapter_board']);
-      else if (g.kind === 'chapter_witness') query = query.contains('designations', ['chapter_witness']);
-      const r = await query;
-      previews.push({
-        gate_kind: g.kind,
-        label: GATE_LABELS[g.kind] || g.kind,
-        count: r.count || (r.data?.length || 0),
-        sample: (r.data || []).map((m: any) => m.name).slice(0, 3),
-      });
+
+    const meRes = await sb.rpc('get_my_member_record');
+    // get_my_member_record returns TABLE (array); take first row
+    const myId = Array.isArray(meRes.data) ? meRes.data[0]?.id : (meRes.data as any)?.id;
+    if (!myId) {
+      (window as any).toast?.('Nao foi possivel identificar seu usuario (meRes): ' + JSON.stringify(meRes.data), 'error');
+      setPreviewLoading(false);
+      return;
     }
+    const pRes = await sb.rpc('preview_gate_eligibles', { p_doc_type: doc.doc_type, p_submitter_id: myId });
+    if (pRes.error || pRes.data === null) {
+      (window as any).toast?.('Erro ao carregar elegiveis: ' + (pRes.error?.message || 'doc_type fora do workflow'), 'error');
+      setPreviewLoading(false);
+      return;
+    }
+    const previews: SignerCount[] = (pRes.data as any[]).map((p: any) => ({
+      gate_kind: p.gate_kind,
+      label: GATE_LABELS[p.gate_kind] || p.gate_kind,
+      count: p.count,
+      sample: p.sample || [],
+    }));
     setSignerPreview(previews);
     setPreviewLoading(false);
-  }, [versionId, isDirty, gates, getSb]);
+  }, [versionId, isDirty, doc, gates, gatesUnsupported, getSb]);
 
   // ── Lock + create chain + optional change_notes ──
   const lock = useCallback(async () => {
@@ -342,9 +342,17 @@ export default function DocumentVersionEditor({ docId, draftVersionId }: Props) 
           <button
             type="button"
             onClick={openLockModal}
-            disabled={!versionId || isDirty}
+            disabled={!versionId || isDirty || gatesUnsupported || gates.length === 0}
             className="rounded-lg bg-navy text-white text-[12px] font-bold px-3 py-1.5 border-0 cursor-pointer hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-            title={!versionId ? 'Salve o rascunho primeiro' : isDirty ? 'Ha alteracoes nao salvas' : 'Abre modal de confirmacao'}
+            title={
+              gatesUnsupported
+                ? 'Este tipo de documento nao faz parte do workflow de ratificacao'
+                : !versionId
+                ? 'Salve o rascunho primeiro'
+                : isDirty
+                ? 'Ha alteracoes nao salvas'
+                : 'Abre modal de confirmacao'
+            }
           >
             Colocar em revisao
           </button>
@@ -432,21 +440,34 @@ export default function DocumentVersionEditor({ docId, draftVersionId }: Props) 
                   <p className="text-[12px] text-[var(--text-muted)] italic">Calculando elegíveis…</p>
                 ) : (
                   <ul className="space-y-1">
-                    {signerPreview.map(p => (
-                      <li key={p.gate_kind} className="flex items-start gap-2 text-[12px]">
-                        <span className="inline-block rounded bg-[var(--surface-hover)] px-1.5 py-0.5 text-[10px] font-mono text-[var(--text-secondary)]">
-                          {gates.find(g => g.kind === p.gate_kind)?.order}
-                        </span>
-                        <span className="flex-1">
-                          <strong className="text-[var(--text-primary)]">{p.label}</strong>
-                          <span className="text-[var(--text-muted)]">
-                            {' '}· {p.count} elegível{p.count === 1 ? '' : 'is'}
-                            {p.sample.length > 0 && ` (ex: ${p.sample.slice(0, 3).join(', ')}${p.count > 3 ? '…' : ''})`}
-                            {' '}· {thresholdLabel(gates.find(g => g.kind === p.gate_kind)?.threshold ?? 1)}
+                    {signerPreview.map(p => {
+                      const g = gates.find(g => g.kind === p.gate_kind);
+                      const threshold = g?.threshold ?? 1;
+                      const thresholdNum = typeof threshold === 'number' ? threshold : Infinity;
+                      const insufficient = thresholdNum > p.count;
+                      const sampleText = p.sample.length === 0
+                        ? ''
+                        : p.count === 1
+                          ? ` · ${p.sample[0]}`
+                          : p.count <= 2
+                            ? ` · ${p.sample.join(', ')}`
+                            : ` (ex: ${p.sample.slice(0, 3).join(', ')}${p.count > 3 ? '…' : ''})`;
+                      return (
+                        <li key={p.gate_kind} className="flex items-start gap-2 text-[12px]">
+                          <span className="inline-block rounded bg-[var(--surface-hover)] px-1.5 py-0.5 text-[10px] font-mono text-[var(--text-secondary)]">
+                            {g?.order}
                           </span>
-                        </span>
-                      </li>
-                    ))}
+                          <span className="flex-1">
+                            <strong className="text-[var(--text-primary)]">{p.label}</strong>
+                            <span className={insufficient ? 'text-red-700' : 'text-[var(--text-muted)]'}>
+                              {' '}· {p.count} elegível{p.count === 1 ? '' : 'is'}{sampleText}
+                              {' '}· {thresholdLabel(threshold)}
+                              {insufficient && ' · insuficiente para gate'}
+                            </span>
+                          </span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>

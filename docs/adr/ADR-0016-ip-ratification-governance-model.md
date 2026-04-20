@@ -299,5 +299,106 @@ Nenhum invariant novo. J_current_version_published continua protegido (lock_docu
 - [IP-4] Magic-link EF `external-signer-magic-link` para Ambassadors/parceiros não-members
 - [IP-4] PDF export signed + audit report conselho fiscal
 - [IP-4] CHECK constraint validando shape de `approval_chains.gates` jsonb
-- [futuro] Admin UI para editar o `gates` config antes de lock (hoje hardcoded no front com DEFAULT_GATES)
+- [x] Admin UI para editar o `gates` config antes de lock — **RESOLVIDO Amendment 2** via `resolve_default_gates(p_doc_type)` RPC
 - [futuro] Fix latent bug no drain cron de send-notification-email (janela de 10min silently abandons failed notifications — ai-engineer audit p34)
+
+---
+
+## Amendment 2 — 2026-04-20 — Gate Matrix v2 per doc_type + preview_gate_eligibles (sessão p35)
+
+**Contexto:** durante smoke do Adendo PI aos Acordos (p35), PM identificou 4 bugs + 2 issues de design:
+- (Bug) `submitter_acceptance` preview mostrava 52 elegíveis (deveria ser só submitter): frontend usava `.limit(1)` sem filtrar por `auth.uid()`.
+- (Bug) `chapter_witness` preview mostrava 0 elegíveis: frontend filtrava por designation `chapter_witness` inexistente (RPC real usa `chapter_liaison` + fallback vice-president).
+- (Bug) `leader_awareness` notificava founders sem cadeira operacional.
+- (Bug) `member_ratification` escopo amplo (todos `is_active=true` = 52 pessoas) — inaceitável para governance.
+- (Issue) `DEFAULT_GATES` frontend fixo em 7 gates, ignorando diferenças por doc_type.
+- (Issue) doc_type `addendum` ambíguo cobrindo tanto Adendo PI aos Acordos (cooperação) quanto Adendo Retificativo (voluntariado).
+
+Council Tier 2 convocado em paralelo (product-leader + ux-leader + legal-counsel + senior-software-engineer). Decisões consolidadas abaixo.
+
+### C1 — doc_type split: `addendum` → `cooperation_addendum` + `volunteer_addendum`
+
+`addendum` genérico cobria dois casos legais distintos (adendo a acordo bilateral entre capítulos vs adendo a termo individual de voluntariado). Gate matrices divergem (coop_addendum usa chapter_witness + president_others; volunteer_addendum usa volunteers_in_role_active). Split em 2 doc_types é source of truth canônica para `_can_sign_gate` / `resolve_default_gates` despacharem por case SQL sem flag lateral. Migration: DROP CHECK + UPDATE 2 rows existentes + ADD novo CHECK.
+
+### C2 — `resolve_default_gates(p_doc_type)` — single source of truth de templates
+
+Function SQL STABLE retorna `jsonb` array `[{kind, order, threshold}]` por doc_type. Substitui `DEFAULT_GATES` const hardcoded em `DocumentVersionEditor.tsx`. Frontend chama RPC no mount do editor e renderiza dinamicamente. `executive_summary` retorna NULL (sinal claro "fora do workflow" — desabilita botão lock).
+
+Matriz final validada por PM + legal-counsel:
+
+| doc_type | curator | leader_awareness | submitter_acceptance | chapter_witness | president_go | president_others | volunteers_in_role_active |
+|---|---|---|---|---|---|---|---|
+| cooperation_agreement | all | 0 | 1 | 5 | 1 | 4 | — |
+| cooperation_addendum | all | 0 | 1 | 5 | 1 | 4 | — |
+| volunteer_term_template | all | 0 | 1 | — | 1 | — | all |
+| volunteer_addendum | all | 0 | 1 | — | 1 | — | all |
+| policy | all | 0 | 1 | — | 1 | 4 | — |
+| executive_summary | NULL (fora do workflow) |
+
+Justificativa legal-counsel (parecer p35):
+- Acordos/adendos de cooperação fecham com presidências (sem `member_ratification`) — instrumentos bilaterais entre pessoas jurídicas.
+- Termo/Adendo Retificativo não requerem `chapter_witness` nem `president_others` — são bilaterais voluntário↔PMI-GO, capítulos parceiros não são partes contratantes do vínculo individual.
+- Política aprovada pelas presidências é oficial; voluntários vinculam-se via remissão dinâmica no Termo/Adendo (não ratificação direta).
+
+### C3 — Novo gate_kind `volunteers_in_role_active`
+
+Predicado SQL via `engagements` (V4 canonical — ADR-0006), não `members.operational_role` (cache com drift risk):
+
+```sql
+WHEN 'volunteers_in_role_active' THEN
+  v_member.member_status = 'active'
+  AND EXISTS (SELECT 1 FROM public.engagements e
+    WHERE e.person_id = v_member.person_id
+      AND e.kind = 'volunteer' AND e.status = 'active'
+      AND (e.end_date IS NULL OR e.end_date >= CURRENT_DATE)
+      AND e.role IN ('researcher','leader','manager'))
+```
+
+PM rationale: "voluntário em função ativa (pesquisador, tribe_leader, initiative_lead, manager/gp)". Exclui ex-voluntários: "se não, corre risco de buscar alguém inativo que já teve volunteer role".
+
+### C4 — Threshold `"all"` dinâmico (live-query)
+
+Gates com `threshold: "all"` = signoffs aprovados >= elegíveis ativos no momento (via `_can_sign_gate`). Curator usa `"all"` em todos os 5 doc_types (PM decision p35: "documentos de governança passam por todos curadores ativos"). Volunteers_in_role_active também usa `"all"`.
+
+Semântica live-query: se novo elegível entrar durante chain aberta, conta no pool. Signoffs anteriores permanecem válidos (invariant J imutabilidade). Se um elegível sair de função durante chain, não conta mais no pool (automaticamente reduz threshold efetivo). Gate considera-se satisfeito quando `COUNT(signoffs approved) >= COUNT(_can_sign_gate eligíveis)`.
+
+Trigger `trg_approval_signoff_notify_fn` e `sign_ip_ratification.v_gates_remaining` foram fixados para tratar `threshold="all"` corretamente (antes setavam hardcoded `false` / `remaining`, chain ficaria eternamente pending).
+
+### C5 — `_can_sign_gate` dual-mode (chain lookup OR preview)
+
+Signature ampliada: `(p_member_id, p_chain_id, p_gate_kind, p_doc_type DEFAULT NULL, p_submitter_id DEFAULT NULL)`. Quando `p_chain_id IS NOT NULL` → lookup do chain para extrair `opened_by` + `doc_type` (comportamento legado). Quando `p_chain_id IS NULL` → usa `p_doc_type` + `p_submitter_id` diretamente (modo preview pré-lock).
+
+Mudança adicional: `leader_awareness` removido `OR 'founder' = ANY(designations)` — founder sem cadeira operacional não é notificado (PM decision: "não tem cadeira"). `member_ratification` retorna `false` fail-closed (deprecated, substituído por `volunteers_in_role_active`).
+
+### C6 — RPC `preview_gate_eligibles(p_doc_type, p_submitter_id)`
+
+Novo RPC retorna `jsonb` array `[{gate_kind, gate_order, threshold, count, sample[]}]`. Usado por `DocumentVersionEditor.tsx:openLockModal` em 1 round-trip (antes eram 7 queries sequenciais com lógica replicada). Elimina drift entre preview e RPC real — `_can_sign_gate` é source of truth em ambos.
+
+### C7 — Referência dinâmica à Política nos instrumentos
+
+Legal-counsel (p35) forneceu cláusula-modelo para remissão dinâmica da Política + notificação 30d para mudanças desfavoráveis + aceite tácito por ato concludente (CC Art. 111). Inserida em 3 drafts pré-lacre: Template Cooperação v1.1 (§3º), Adendo Retificativo v1.0 (Art. 5-B), Termo Voluntariado v1.0 (Cláusula 15). Mecânica idêntica à remissão dinâmica do Manual R2 já estabelecida em template v1.1. Adendo PI aos Acordos (já lacrado v1.0) mantém-se sem a cláusula; se curadores apontarem, cria-se v2.0.
+
+### C8 — Filtro de seeds no `get_previous_locked_version`
+
+RPC passou a filtrar versões sem `approval_chain.status='approved'`, ou seja, **só considera versão anterior oficialmente ratificada**. Seeds IP-1 (v2.1) placeholder técnicos com chains `withdrawn` ficam invisíveis até primeira aprovação real. Frontend VersionDiffViewer esconde tab diff automaticamente quando `exists: false`.
+
+### C9 — Backlog residual de Amendment 2
+
+- [futuro] CHECK constraint em `approval_chains.gates` jsonb shape (pattern inserido pelo PM via UI).
+- [futuro] Contract-test `preview_gate_eligibles count == _can_sign_gate live count` (invariant estrutural, evita regressão por duplicação futura).
+- [futuro] Admin UI para picker de template alternativo além do default por doc_type (edge case).
+
+### Migrations aplicadas
+
+- `20260504010000_ip3e_gate_matrix_v2` — doc_type split + `resolve_default_gates` + `_can_sign_gate` dual-mode + `_ip_ratify_cta_link` extendido
+- `20260504010001_ip3e_gate_matrix_v2_part2_enqueue` — `_enqueue_gate_notifications` labels/verbs para volunteers_in_role_active
+- `20260504010002_ip3e_gate_matrix_v2_part3_reminder_and_sign` — `get_ratification_reminder_targets` + `sign_ip_ratification` aceitam novo gate_kind
+- `20260504010003_ip3e_gate_matrix_v2_hotfix_end_date` — coluna correta `engagements.end_date` (não `ended_at`)
+- `20260504010004_ip3e_preview_gate_eligibles` — novo RPC preview single-roundtrip
+- `20260504010005_ip3e_curator_threshold_all_and_diff_filter_seeds` — curator `"all"` dinâmico + `get_previous_locked_version` filtra seeds
+- `20260504010006_ip3e_fix_sign_ip_ratification_all_threshold` — fix `v_gates_remaining` para `threshold="all"`
+- `20260504010007_ip3e_fix_trigger_signoff_all_threshold` — fix trigger notify para `threshold="all"`
+
+### Smoke end-to-end validado
+
+Adendo PI aos Acordos v1.0 lacrado 20/04 18:12, chain `47362201-23e0-4e2d-96c5-4019b936331e` (status=review). 3 notifications enfileiradas para curadores (Fabrício Costa, Roberto Macêdo, Sarah Faria Alcantara Macedo Rodovalho). Drain cron `send-notification-emails` processou em 18:15:01-02 via Resend (SPF/DKIM verified `pmigo.org.br`). Confirmação manual de entrega ao recipient (Sarah). Pipeline: lock → approval_chain → trigger enqueue → drain cron → Resend → delivery em ≤3min.
