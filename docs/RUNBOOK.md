@@ -173,17 +173,20 @@ npx supabase functions list
 
 ```bash
 npx supabase functions deploy nome-da-function
-# Para functions sem JWT (cron-triggered):
+# Para functions sem JWT (cron-triggered ou com auth própria via proxy):
 npx supabase functions deploy nome --no-verify-jwt
 ```
 
+✅ **Recomendado:** manter `supabase/config.toml` versionado com o flag por função — o CLI lê o arquivo e aplica automaticamente em qualquer deploy, eliminando o risco de esquecer `--no-verify-jwt` (essa omissão causou outage de 4min em 2026-04-21; ver issue #80).
+
 ### Functions com --no-verify-jwt
 
-- `sync-credly-all`
-- `sync-attendance-points`
-- `verify-credly`
+- `nucleo-mcp` — auth via proxy Cloudflare (OAuth 2.1), não via Supabase JWT
+- `sync-credly-all` — cron-triggered
+- `sync-attendance-points` — cron-triggered
+- `verify-credly` — cron-triggered
 
-⚠️ Estas functions são acessíveis sem autenticação. Não expor endpoints publicamente.
+⚠️ Estas functions são acessíveis sem autenticação no nível do Supabase — responsabilidade de gating fica com o código da própria função (OAuth/API key/etc.). Não expor endpoints publicamente sem esse gate.
 
 ---
 
