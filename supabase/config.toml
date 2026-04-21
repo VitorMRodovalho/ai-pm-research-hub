@@ -1,0 +1,33 @@
+# Supabase project config — pinned per-function flags to prevent deploy regressions.
+# Docs: https://supabase.com/docs/guides/cli/config
+#
+# Why this file exists: on 2026-04-21 a `supabase functions deploy nucleo-mcp`
+# ran with default `verify_jwt=true` and broke the MCP proxy for 4 minutes
+# (see issue #80). Pinning the flag here makes every subsequent deploy safe,
+# regardless of whether the operator remembers to pass `--no-verify-jwt`.
+
+project_id = "ldrfrvwhxsmgaabwmaik"
+
+# ────────────────────────────────────────────────────────────────────────────
+# Functions that MUST deploy with verify_jwt=false
+#
+# Each has its own auth layer:
+#   - nucleo-mcp          → OAuth 2.1 via Cloudflare proxy (nucleoia.vitormr.dev)
+#   - sync-credly-all     → cron trigger, service_role on writes
+#   - sync-attendance-points → cron trigger, service_role on writes
+#   - verify-credly       → cron trigger, service_role on writes
+#
+# See docs/RUNBOOK.md §5 "Functions com --no-verify-jwt" for more.
+# ────────────────────────────────────────────────────────────────────────────
+
+[functions.nucleo-mcp]
+verify_jwt = false
+
+[functions.sync-credly-all]
+verify_jwt = false
+
+[functions.sync-attendance-points]
+verify_jwt = false
+
+[functions.verify-credly]
+verify_jwt = false
