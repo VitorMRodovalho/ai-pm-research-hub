@@ -419,7 +419,10 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (!boardId) {
       const tribeId = params.tribe_id || member.tribe_id;
       if (!tribeId) { await logUsage(sb, member.id, "get_my_board_status", false, "No tribe", start); return err(NO_TRIBE_HINT); }
-      const { data: b } = await sb.from("project_boards").select("id").eq("tribe_id", tribeId).limit(1).single();
+      const initiativeId = await resolveInitiativeId(sb, tribeId);
+      if (!initiativeId) { await logUsage(sb, member.id, "get_my_board_status", false, "Initiative not found", start); return err("Initiative not found for tribe " + tribeId); }
+      const { data: b, error: bErr } = await sb.from("project_boards").select("id").eq("initiative_id", initiativeId).limit(1).maybeSingle();
+      if (bErr) { await logUsage(sb, member.id, "get_my_board_status", false, bErr.message, start); return err(bErr.message); }
       boardId = b?.id;
     }
     if (!boardId) { await logUsage(sb, member.id, "get_my_board_status", false, "No board", start); return err("No board found for this tribe. Use list_boards to see available boards."); }
@@ -464,10 +467,11 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const member = await getMember(sb);
     const today = new Date().toISOString().split("T")[0];
     const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0];
-    const { data, error } = await sb.from("events").select("id, title, date, type, tribe_id, duration_minutes, meeting_link").gte("date", today).lte("date", nextWeek).order("date");
+    const { data, error } = await sb.from("events").select("id, title, date, type, initiative:initiatives(legacy_tribe_id), duration_minutes, meeting_link").gte("date", today).lte("date", nextWeek).order("date");
     if (error) { await logUsage(sb, member?.id, "get_upcoming_events", false, error.message, start); return err(error.message); }
+    const flattened = (data || []).map((ev: any) => ({ ...ev, tribe_id: ev.initiative?.legacy_tribe_id ?? null, initiative: undefined }));
     await logUsage(sb, member?.id, "get_upcoming_events", true, undefined, start);
-    return ok(data);
+    return ok(flattened);
   });
 
   // TOOL 6: get_my_xp_and_ranking
@@ -488,9 +492,11 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (!member) { await logUsage(sb, null, "get_meeting_notes", false, "Not authenticated", start); return err("Not authenticated"); }
     const tribeId = params.tribe_id || member.tribe_id;
     if (!tribeId) { await logUsage(sb, member.id, "get_meeting_notes", false, "No tribe", start); return err(NO_TRIBE_HINT); }
+    const initiativeId = await resolveInitiativeId(sb, tribeId);
+    if (!initiativeId) { await logUsage(sb, member.id, "get_meeting_notes", false, "Initiative not found", start); return err("Initiative not found for tribe " + tribeId); }
     const { data, error } = await sb.from("events")
-      .select("id, title, date, type, tribe_id, minutes_text, minutes_posted_at, minutes_posted_by, minutes_edited_at, agenda_text, youtube_url, duration_minutes")
-      .eq("tribe_id", tribeId)
+      .select("id, title, date, type, initiative_id, minutes_text, minutes_posted_at, minutes_posted_by, minutes_edited_at, agenda_text, youtube_url, duration_minutes")
+      .eq("initiative_id", initiativeId)
       .not("minutes_text", "is", null)
       .order("date", { ascending: false })
       .limit(params.limit || 5);
@@ -503,7 +509,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
         posted_by_name = m?.name || null;
       }
       const { count } = await sb.from("attendance").select("id", { count: "exact", head: true }).eq("event_id", ev.id);
-      return { ...ev, minutes_posted_by_name: posted_by_name, attendee_count: count || 0 };
+      return { ...ev, tribe_id: tribeId, minutes_posted_by_name: posted_by_name, attendee_count: count || 0 };
     }));
     await logUsage(sb, member.id, "get_meeting_notes", true, undefined, start);
     return ok(enriched);
@@ -556,12 +562,13 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (boardId && !isUUID(boardId)) { await logUsage(sb, member.id, "create_board_card", false, "Invalid board_id", start); return err("board_id must be a UUID. Use list_boards to find board UUIDs."); }
     if (!boardId) {
       if (!member.tribe_id) { await logUsage(sb, member.id, "create_board_card", false, "No board", start); return err("No tribe assigned. Pass board_id explicitly. Use list_boards to find board UUIDs."); }
-      const { data: board } = await sb.from("project_boards").select("id").eq("tribe_id", member.tribe_id).limit(1).single();
+      const initiativeId = await resolveInitiativeId(sb, member.tribe_id);
+      if (!initiativeId) { await logUsage(sb, member.id, "create_board_card", false, "Initiative not found", start); return err("Initiative not found for your tribe."); }
+      const { data: board, error: boardErr } = await sb.from("project_boards").select("id").eq("initiative_id", initiativeId).limit(1).maybeSingle();
+      if (boardErr) { await logUsage(sb, member.id, "create_board_card", false, boardErr.message, start); return err(boardErr.message); }
       if (!board) { await logUsage(sb, member.id, "create_board_card", false, "No board", start); return err("No board found for your tribe."); }
       boardId = board.id;
     }
-    // Resolve board's tribe_id for permission check
-    const { data: boardData } = await sb.from("project_boards").select("tribe_id").eq("id", boardId).limit(1).single();
     if (!(await canV4(sb, member.id, 'write_board'))) { await logUsage(sb, member.id, "create_board_card", false, "Unauthorized", start); return err("Unauthorized — researchers can only create cards on their own tribe's board."); }
     const tags = params.tags ? String(params.tags).split(",").map((t: string) => t.trim()) : [];
     if (params.priority && params.priority !== "medium") tags.push(`priority:${params.priority}`);
@@ -576,9 +583,6 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "update_card_status", false, "Not authenticated", start); return err("Not authenticated"); }
-    // Resolve card's board tribe_id for permission check
-    const { data: cardBoard } = await sb.from("board_items").select("board_id, project_boards!inner(tribe_id)").eq("id", params.card_id).limit(1).single();
-    const cardTribeId = (cardBoard as any)?.project_boards?.tribe_id;
     if (!(await canV4(sb, member.id, 'write_board'))) { await logUsage(sb, member.id, "update_card_status", false, "Unauthorized", start); return err("Unauthorized — researchers can only move cards on their own tribe's board."); }
     const { error } = await sb.rpc("move_board_item", { p_item_id: params.card_id, p_new_status: params.status });
     if (error) { await logUsage(sb, member.id, "update_card_status", false, error.message, start); return err(error.message); }
@@ -1075,10 +1079,13 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "list_boards", false, "Not authenticated", start); return err("Not authenticated"); }
-    const { data, error } = await sb.from("project_boards").select("id, board_name, board_scope, tribe_id, domain_key").eq("is_active", true).order("tribe_id", { ascending: true, nullsFirst: false });
+    const { data, error } = await sb.from("project_boards").select("id, board_name, board_scope, domain_key, initiative:initiatives(legacy_tribe_id)").eq("is_active", true).order("board_scope", { ascending: true });
     if (error) { await logUsage(sb, member.id, "list_boards", false, error.message, start); return err(error.message); }
+    const flattened = (data || [])
+      .map((b: any) => ({ id: b.id, board_name: b.board_name, board_scope: b.board_scope, domain_key: b.domain_key, tribe_id: b.initiative?.legacy_tribe_id ?? null }))
+      .sort((a: any, b: any) => (a.tribe_id ?? 999) - (b.tribe_id ?? 999));
     await logUsage(sb, member.id, "list_boards", true, undefined, start);
-    return ok(data);
+    return ok(flattened);
   });
 
   // TOOL 50: get_governance_docs — All authenticated members
