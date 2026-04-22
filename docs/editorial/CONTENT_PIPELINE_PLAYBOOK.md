@@ -183,18 +183,19 @@ Matriz sugerida inicial:
 > **Spec técnico:** `docs/specs/SPEC_FRONTIERS_NEWSLETTER_LAUNCH.md` — SQL prep para Gate 1.
 > **ADR governance:** `docs/adr/ADR-0021-newsletter-frontiers-governance.md` (Proposed).
 
-| Campo | Valor (a confirmar) |
-|---|---|
-| Nome final | `__TBD_FRONTIERS_NAME__` (default: "Frontiers in AI & Project Mgmt"; alternativas em ADR-0021 F7) |
-| Slug `publication_series` | `__TBD_SLUG__` (default: `frontiers-newsletter`) |
-| Cadência | Mensal |
-| Idioma | `__TBD_LANGUAGE_POLICY__` (recomendação ADR-0021 F2: bilíngue nativo EN+PT, EN como fonte oficial) |
-| Voice editorial | Profissional, neutro, institucional |
-| Audiência | PM profissional internacional + academia PM+IA |
-| Hero tribe | NULL (transversal) |
-| Licensing default | `__TBD_CC_LICENSE__` (recomendação ADR-0021 F3: CC BY-SA 4.0) |
-| Termo aplicável | `__TBD_TERM_REF__` (default: Termo R3-C4 v1.0) |
-| Política de PI | CR-050 v2.2 (precisa estar ratificada antes do launch) |
+| Campo | Valor | Status |
+|---|---|---|
+| Nome | Frontiers in AI & Project Mgmt | ✅ Locked (GP 2026-04-21) — "manter por enquanto" |
+| Slug | `frontiers-newsletter` | ✅ Locked |
+| **Cadência** | **Biweekly** (a cada 2 semanas) | ✅ Locked (GP 2026-04-21 — upgrade vs monthly) |
+| **Idioma** | **Trilíngue nativo EN+PT+ES** (paridade, não waterfall) | ✅ Locked (GP 2026-04-21 — upgrade vs bilíngue) |
+| Voice | Profissional, neutro, institucional | ✅ Locked |
+| Audiência | PM profissional BR+LATAM+internacional + academia PM+IA | ✅ Locked |
+| Hero tribe | NULL (transversal) | ✅ Locked |
+| Licensing default | CC BY-SA 4.0 (recomendação Claude) | 🟡 Aguarda confirmação GP via tabela comparativa #96 |
+| Termo aplicável | R3-C4 v1.0 (provisório) | 🟡 Time Claude resolve quinta 2026-04-23 |
+| Política de PI | CR-050 v2.2 | 🔴 precisa estar ratificada antes do launch |
+| Busca marca formal | NÃO pre-launch (GP 2026-04-21) | ✅ Desescalada — monitoramento passivo suficiente |
 
 ### 7 tipos de conteúdo do Guia §5 (mapeamento aprovado)
 
