@@ -1496,6 +1496,146 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "manage_initiative_engagement", true, undefined, start);
     return ok(data);
   });
+
+  // ===== OFFBOARDING (issue #91 quick wins) =====
+
+  // TOOL: offboard_member
+  mcp.tool("offboard_member", "Transition a member to alumni / observer / inactive with structured reason. Admin only. Use 'alumni' for 'open door' departures (member can return via new selection), 'observer' for temporary pause, 'inactive' for terminal.", {
+    member_id: z.string().describe("UUID of member"),
+    new_status: z.enum(["alumni","observer","inactive"]).describe("Target status"),
+    reason_category: z.enum(["personal_workload","personal_agenda","academic_conflict","health","relocation","end_of_cycle","external_priority","lack_of_fit","policy_violation","other"]).describe("Reason taxonomy — see offboard_reason_categories table"),
+    reason_detail: z.string().describe("Free-text context (1-3 sentences)"),
+    reassign_cards_to: z.string().optional().describe("Optional UUID to reassign open cards to")
+  }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "offboard_member", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "offboard_member", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    const { data, error } = await sb.rpc("admin_offboard_member", {
+      p_member_id: params.member_id,
+      p_new_status: params.new_status,
+      p_reason_category: params.reason_category,
+      p_reason_detail: params.reason_detail,
+      p_reassign_to: params.reassign_cards_to || null
+    });
+    if (error) { await logUsage(sb, member.id, "offboard_member", false, error.message, start); return err(error.message); }
+    if (data?.error) { await logUsage(sb, member.id, "offboard_member", false, data.error, start); return err(data.error); }
+    await logUsage(sb, member.id, "offboard_member", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_role_transitions
+  mcp.tool("get_role_transitions", "Returns cycle-over-cycle analytics on member role transitions (offboards, promotions, demotions). Admin/Sponsor only.", {
+    cycle_code: z.string().optional().describe("Cycle code, e.g. 'cycle3-2026'. Default: current"),
+    tribe_id: z.number().optional().describe("Filter by tribe 1-8"),
+    chapter: z.string().optional().describe("Filter by chapter code (PMI-GO etc.)")
+  }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_role_transitions", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'manage_member')) && !(await canV4(sb, member.id, 'manage_partner'))) { await logUsage(sb, member.id, "get_role_transitions", false, "Unauthorized", start); return err("Unauthorized: admin or sponsor only."); }
+    const { data, error } = await sb.rpc("exec_role_transitions", {
+      p_cycle_code: params.cycle_code || null,
+      p_tribe_id: params.tribe_id || null,
+      p_chapter: params.chapter || null
+    });
+    if (error) { await logUsage(sb, member.id, "get_role_transitions", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_role_transitions", true, undefined, start);
+    return ok(data);
+  });
+
+  // ===== ONBOARDING (issue #86 — persona "new member" unblock) =====
+
+  // TOOL: get_my_onboarding
+  mcp.tool("get_my_onboarding", "Returns your onboarding progress — step list with status (pending/in_progress/completed) and next action.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_my_onboarding", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_my_onboarding");
+    if (error) { await logUsage(sb, member.id, "get_my_onboarding", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_my_onboarding", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: complete_onboarding_step
+  mcp.tool("complete_onboarding_step", "Marks an onboarding step as completed. Optionally attach metadata (evidence URL, notes).", {
+    step_id: z.string().describe("Step ID (e.g. 'sign_volunteer_agreement', 'complete_profile', 'first_meeting')"),
+    metadata: z.any().optional().describe("Optional JSON metadata (evidence_url, notes, etc.)")
+  }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "complete_onboarding_step", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("complete_onboarding_step", {
+      p_step_id: params.step_id,
+      p_metadata: params.metadata || null
+    });
+    if (error) { await logUsage(sb, member.id, "complete_onboarding_step", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "complete_onboarding_step", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: dismiss_onboarding
+  mcp.tool("dismiss_onboarding", "Dismisses remaining onboarding prompts for experienced members who don't need guided flow.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "dismiss_onboarding", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("dismiss_onboarding");
+    if (error) { await logUsage(sb, member.id, "dismiss_onboarding", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "dismiss_onboarding", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_onboarding_dashboard
+  mcp.tool("get_onboarding_dashboard", "Returns admin dashboard: how many members are at each onboarding step, who is overdue. Admin only.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_onboarding_dashboard", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "get_onboarding_dashboard", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    const { data, error } = await sb.rpc("get_onboarding_dashboard");
+    if (error) { await logUsage(sb, member.id, "get_onboarding_dashboard", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_onboarding_dashboard", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_candidate_onboarding_progress
+  mcp.tool("get_candidate_onboarding_progress", "Tribe leader or admin: follow up a specific new member's onboarding progress.", {
+    member_id: z.string().describe("UUID of the member to inspect")
+  }, async (params: { member_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_candidate_onboarding_progress", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'write')) && !(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "get_candidate_onboarding_progress", false, "Unauthorized", start); return err("Unauthorized: tribe leader or admin only."); }
+    const { data, error } = await sb.rpc("get_candidate_onboarding_progress", { p_member_id: params.member_id });
+    if (error) { await logUsage(sb, member.id, "get_candidate_onboarding_progress", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_candidate_onboarding_progress", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: detect_onboarding_overdue
+  mcp.tool("detect_onboarding_overdue", "Detects members whose onboarding steps passed SLA. Admin only. Returns list for follow-up action.", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "detect_onboarding_overdue", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "detect_onboarding_overdue", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    const { data, error } = await sb.rpc("detect_onboarding_overdue");
+    if (error) { await logUsage(sb, member.id, "detect_onboarding_overdue", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "detect_onboarding_overdue", true, undefined, start);
+    return ok(data);
+  });
+
+  // ===== CERTIFICATES PUBLIC (issue #86 — external verification) =====
+
+  // TOOL: verify_certificate (public — no auth required by design)
+  mcp.tool("verify_certificate", "Publicly verify a certificate authenticity by its verification code. Returns issuance details, issuer, recipient name, issue date. Use cases: HR validation, external auditors. Does NOT require authentication — intended for third-party verification.", {
+    verification_code: z.string().describe("Unique verification code printed on the certificate PDF")
+  }, async (params: { verification_code: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    const { data, error } = await sb.rpc("verify_certificate", { p_code: params.verification_code });
+    if (error) { await logUsage(sb, member?.id || null, "verify_certificate", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member?.id || null, "verify_certificate", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -1506,7 +1646,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.11.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.12.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -1526,6 +1666,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.11.0", tools: 76, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.12.0", tools: 85, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
