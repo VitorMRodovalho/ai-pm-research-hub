@@ -1,8 +1,9 @@
 # ADR-0021: Newsletter Frontiers Governance — addendum operacional ao Pipeline (ADR-0020)
 
-- Status: Proposed (depende de Gate 0 da issue #96)
+- Status: Partially Accepted (2026-04-21 pós-decisões GP) / Pending Termo R3 (quinta 2026-04-23)
 - Data: 2026-04-21
-- Autor: Claude (debug session 9908f3) — aguarda aprovação PM Vitor + Fabrício
+- Revisão: 2026-04-21 24h — GP decidiu F1, F2 (trilíngue upgrade), F7 (busca formal desescalada), cadência biweekly. Pendente D3 (licensing comparativo apresentado), D4 (termo — quinta)
+- Autor: Claude (debug session 9908f3) — aguarda aprovação Fabrício + ratificação CR-050 + Termo R3-C4
 - Escopo: Formaliza decisões editoriais e operacionais específicas da Newsletter "Frontiers in AI & Project Mgmt" (proposta por Fabrício em docx 2026-04-21) dentro do framework do Publication Pipeline (ADR-0020). Resolve 4 conflitos identificados em análise dual (Claude A jurídico/PI + Claude B operacional/editorial), consolidados em [issue #96](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/96).
 
 ## Contexto
@@ -29,25 +30,32 @@ ADR-0020 não trata licensing, AI disclosure, employer consent, declarações de
 
 > Todas as decisões deste ADR ficam em estado **Proposed** até as 6 perguntas pendentes da issue #96 serem respondidas pelo GP+Fabrício. Defaults sugeridos abaixo são recomendações do Claude B, não vinculantes.
 
-### F1 — Frontiers como 6ª `publication_series`
+### F1 — Frontiers como 6ª `publication_series` (confirmado GP 2026-04-21)
 
-Ao invés de criar pipeline paralelo, Frontiers **vira instância** de `publication_series`. Herda toda a infra (`publication_ideas`, `blog_posts.series_id`, MCP tools futuras, webhook de cadência). Slug provisório `frontiers-newsletter`; renomear conforme decisão de marca.
+**Decisão GP Vitor:** "fica dentro do pipeline".
+
+Frontiers **vira instância** de `publication_series`, não pipeline paralelo. Herda toda a infra (`publication_ideas`, `blog_posts.series_id`, MCP tools futuras, webhook de cadência, check_idea_originality #95). Slug definido: `frontiers-newsletter`. **Cadência: biweekly** (a cada 2 semanas — decisão GP 2026-04-21, upgrade vs monthly original do Guia).
 
 **SQL:** ver SPEC_FRONTIERS_NEWSLETTER_LAUNCH.md SQL Block 3.
 
-### F2 — Política de idioma: bilíngue nativo (recomendado)
+### F2 — Política de idioma: **trilíngue nativo EN+PT+ES** (decidido 2026-04-21)
 
-3 opções avaliadas:
+**Decisão GP Vitor (2026-04-21):** trilíngue nativo (upgrade vs bilíngue original).
 
-| Opção | Prós | Contras |
-|---|---|---|
-| (a) EN-only + tradução LLM | Cumpre Guia, low effort | ~40% voluntários PT-monolíngues marginalizados |
-| **(b) Bilíngue nativo** | Cumpre Guia + Playbook, máxima reach | Custo: ~30min review humano por post (PT é tradução editorial) |
-| (c) EN-only sem tradução | Pure Guia compliance | Conflita com Playbook, exclui audiência interna |
+**Justificativa do GP:** "a plataforma é trilíngue, ser o editorial também mantém a consistência". Blog posts, wiki pages, e UI já suportam jsonb i18n com 3 locales — Frontiers cai no mesmo padrão.
 
-**Decisão proposta:** (b) com disclaimer "PT é tradução editorial, não fonte oficial — em caso de divergência, EN prevalece".
+**Implicação operacional:**
+- Todas as issues publicadas em EN + PT + ES **simultaneamente** (paridade, não waterfall)
+- EN continua sendo fonte canônica (ancorada no Guia Editorial §6)
+- PT e ES são **versões nativas**, não traduções automáticas — tradução editorial cuidadosa com review humano
+- Custo estimado por issue: ~60-90min de translation+review humano (3 idiomas × ~20-30min cada)
 
-**Operacionalização:** `publication_ideas.target_languages = ARRAY['en-US','pt-BR']` mandatório para `series_id = frontiers-newsletter`.
+**Opções rejeitadas (registro):**
+- ~~(a) EN-only + tradução LLM — conflita com Playbook Núcleo que exige PT-BR~~
+- ~~(b) Bilíngue EN+PT — subestimava mercado LATAM espanholófono + ambassadors PMI LATAM~~
+- ~~(c) EN-only sem tradução — exclui ~70% da audiência Núcleo não-fluente em EN~~
+
+**Operacionalização:** `publication_ideas.target_languages = ARRAY['en-US','pt-BR','es-LATAM']` mandatório para `series_id = 'frontiers-newsletter'`. App-level check + `blog_posts.title/excerpt/body_html` jsonb exige 3 chaves populadas antes de `published`.
 
 ### F3 — Licensing default: CC BY-SA 4.0 (recomendado)
 
@@ -88,16 +96,41 @@ Para séries com claim de alcance internacional (Frontiers, futuras), `check_ide
 
 **Operacionalização:** depende de #95 W1-W4 entregues. Se não estiver pronto até Gate 2, fallback: skip check + adicionar nota manual no template.
 
-### F7 — Marca "Frontiers"
+### F7 — Marca "Frontiers": busca formal DESESCALADA (decidido 2026-04-21)
 
-ADR não decide nome — apenas registra que decisão depende de:
-1. Busca USPTO + INPI documentada
-2. Consulta com Mario Trentim (PMI Board) sobre uso de "Frontiers" + marcas PMI
-3. Decisão GP+Fabrício após (1) e (2)
+**Decisão GP Vitor (2026-04-21):** manter "Frontiers in AI & Project Mgmt" por enquanto, **sem busca formal USPTO/INPI pre-launch**.
 
-**Alternativas a considerar (registro):** *AI×PM Research Hub Quarterly*, *PMI Latin America AI Intelligence Brief*, *The AI PM Compass* (⚠️ Tribo 5 prior art), *Frontline AI for PMs*, *Augmented PM Review*.
+**Racional:**
+- Newsletter de nicho PM BR/LATAM em estágio inicial (cadência biweekly, audiência específica)
+- Frontiers Media SA (editora científica suíça, 100+ journals "Frontiers in X") opera em mercado distinto (biomédico/científico)— risco real de cease-and-desist é **baixo** neste estágio
+- Custo busca formal: R$ 3-8k + 3-6 meses → desproporcional vs risco atual
+- Custo-benefício: monitoramento passivo tem 90% do valor por 5% do custo
 
-**Decisão técnica:** se nome mudar pós-Gate 0, ajustar slug em SQL Block 3 do SPEC. Migration aplicada após decisão final.
+**Mitigações ativas (pre-launch, custo quase zero):**
+1. **Google Alerts** para: `"Frontiers in AI & Project Mgmt"`, `"Frontiers AI project management"` (5min setup)
+2. **Busca livre de trademarks existentes** (informativa, não protetiva):
+   - INPI Brasil: https://busca.inpi.gov.br/pePI/ (10min — confirmar que não há registro ATIVO conflitante)
+   - USPTO EUA: https://www.uspto.gov/trademarks/search (10min)
+3. **Disclaimer defensivo no masthead** da newsletter:
+   > *"Published by Núcleo IA & GP, an independent community hub affiliated with PMI Brasil. Not affiliated with Frontiers Media SA or its journals."*
+4. **Review trimestral** dos gatilhos de escalação (ver abaixo)
+
+**Gatilhos que DESTRAVAM decisão de busca/registro formal:**
+- 🚨 **10+ issues** publicadas OU **1000+ subscribers** — atingiu massa crítica
+- 🚨 **Primeiro contato comercial/sponsorship** — há dinheiro em jogo
+- 🚨 **Qualquer menção/cease-and-desist** recebido de Frontiers Media SA ou terceiros
+- 🚨 **Expansão para mercado EUA/Europa** — exposição a jurisdições mais litigiosas
+- 🚨 **Publicação em journals formais com peer review** — entra no território da Frontiers Media
+
+Quando qualquer gatilho disparar, revisitar F7 com busca formal + consulta jurídica + consideração de alternativas:
+- *AI×PM Research Hub Quarterly*
+- *PMI Latin America AI Intelligence Brief*
+- *Frontline AI for PMs*
+- *Augmented PM Review*
+
+**Decisão técnica:** slug `frontiers-newsletter` mantido no SPEC SQL Block 3. Se gatilho futuro forçar rename, migration ALTER UPDATE vira possível (1 INSERT + UPDATE de URLs antigas).
+
+**Anti-risco adicional:** não fazer claim de "journal" ou "peer review formal" no masthead — fica claro que é newsletter de comunidade, não publicação científica. Reduz confusão com Frontiers Media.
 
 ## Consequências
 

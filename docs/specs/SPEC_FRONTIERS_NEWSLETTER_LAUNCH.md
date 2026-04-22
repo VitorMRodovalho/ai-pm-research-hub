@@ -12,28 +12,31 @@
 
 Não executar nada deste documento sem confirmar:
 
-- [ ] **CR-050 v2.2** ratificada no portal `https://nucleoia.vitormr.dev/admin/governance/documents` (sair de `under_review`)
-- [ ] **Termo R3-C4** (novo) ou aditivo R3-C3.1 publicado e aceito por autores piloto
-- [ ] **Busca USPTO + INPI** concluída para o nome final (default = "Frontiers in AI & Project Mgmt", alternativa = preencher após decisão 1)
-- [ ] **Consulta Mario Trentim** sobre uso da palavra "Frontiers" + marcas PMI documentada
-- [ ] **Decisão 1 (GP+Fabrício):** nome final → preencher `__FRONTIERS_NAME__` abaixo
-- [ ] **Decisão 2 (GP+Fabrício):** idioma → preencher `__LANGUAGE_POLICY__`
-- [ ] **Decisão 3 (GP+Fabrício):** licensing default → preencher `__CC_LICENSE__`
-- [ ] **Decisão 4 (GP+Fabrício):** nome do termo aditivo → preencher `__TERM_REF__`
-- [ ] **Decisão 6 (GP+Fabrício):** Frontiers como série da plataforma? Se NÃO, pular SQL Block 3 deste spec
+- [ ] **CR-050 v2.2** ratificada no portal `https://nucleoia.vitormr.dev/admin/governance/documents` (sair de `under_review`) — bloqueador jurídico formal
+- [ ] **Termo R3-C4** (novo) ou aditivo R3-C3.1 publicado — time Claude endereça 2026-04-23 (quinta)
+- [x] **Decisão 1** nome: `Frontiers in AI & Project Mgmt` ✅
+- [x] **Decisão 2** idioma: **trilíngue EN+PT+ES** ✅
+- [x] **Decisão 6** série da plataforma: sim ✅
+- [x] **Cadência**: biweekly ✅
+- [ ] **Decisão 3** licensing: escolher via comparativo (recomendação CC BY-SA 4.0)
+- [ ] **Decisão 4** nome termo aditivo: aguarda quinta-feira (time Claude)
+- [~] **Busca marca formal USPTO/INPI:** **DESESCALADA** por decisão GP — monitoramento passivo (Google Alerts + busca livre INPI/USPTO 30min + disclaimer) é suficiente pre-launch. Revisitar quando atingir 10+ issues OU 1000+ subscribers OU primeiro contato comercial.
 - [ ] (Decisão 5 = autor piloto issue #1 não bloqueia Gate 1, é Gate 2)
 
-## Variáveis a substituir antes de executar
+## Variáveis — estado das decisões pós-2026-04-21 (GP Vitor)
 
-| Placeholder | Default sugerido | Decisão # | Status |
+| Placeholder | Valor | Decisão # | Status |
 |---|---|---|---|
-| `__FRONTIERS_NAME_EN__` | `Frontiers in AI & Project Mgmt` | 1 | TBD |
-| `__FRONTIERS_NAME_PT__` | `Frontiers em IA & Gestão de Projetos` | 1 | TBD |
-| `__FRONTIERS_NAME_ES__` | `Frontiers en IA y Gestión de Proyectos` | 1 | TBD |
-| `__SLUG__` | `frontiers-newsletter` | 1 | TBD (renomear se nome mudar) |
-| `__LANGUAGE_POLICY__` | `bilíngue nativo EN+PT (recomendado pelo Claude B)` | 2 | TBD |
-| `__CC_LICENSE__` | `CC BY-SA 4.0` (recomendado para newsletter profissional) | 3 | TBD |
-| `__TERM_REF__` | `Termo R3-C4 v1.0` | 4 | TBD |
+| `__FRONTIERS_NAME_EN__` | `Frontiers in AI & Project Mgmt` | 1 | ✅ **Locked** — manter por enquanto |
+| `__FRONTIERS_NAME_PT__` | `Frontiers em IA & Gestão de Projetos` | 1 | ✅ **Locked** |
+| `__FRONTIERS_NAME_ES__` | `Frontiers en IA y Gestión de Proyectos` | 1 | ✅ **Locked** |
+| `__SLUG__` | `frontiers-newsletter` | 1 | ✅ **Locked** |
+| `__LANGUAGE_POLICY__` | **Trilíngue nativo EN+PT+ES** (alinhado com plataforma i18n) | 2 | ✅ **Locked** — upgrade vs bilíngue original |
+| `__CADENCE__` | `biweekly` (a cada 2 semanas) | cadence | ✅ **Locked** — upgrade vs monthly do Guia |
+| `__CC_LICENSE__` | `CC BY-SA 4.0` (recomendado) | 3 | 🟡 Aguarda GP confirmar via comparativo |
+| `__TERM_REF__` | `Termo R3-C4 v1.0` (provisório) | 4 | 🟡 Time Claude resolve quinta-feira 2026-04-23 |
+| Autor piloto issue #1 | TBD (Gate 2, não bloqueia Gate 1) | 5 | 🟡 Não-bloqueante |
+| Busca marca formal | **Não necessária pre-launch** — monitoramento passivo suficiente | F7 | ✅ **Downgraded** do plano original |
 
 ---
 
@@ -264,23 +267,23 @@ INSERT INTO public.publication_series (
   hero_initiative_id,
   is_active
 ) VALUES (
-  '__SLUG__',  -- ex: 'frontiers-newsletter' (ajustar após decisão 1 de nome)
+  'frontiers-newsletter',
   jsonb_build_object(
-    'en', '__FRONTIERS_NAME_EN__',
-    'pt', '__FRONTIERS_NAME_PT__',
-    'es', '__FRONTIERS_NAME_ES__'
+    'en', 'Frontiers in AI & Project Mgmt',
+    'pt', 'Frontiers em IA & Gestão de Projetos',
+    'es', 'Frontiers en IA y Gestión de Proyectos'
   ),
   jsonb_build_object(
-    'en', 'Monthly newsletter on the frontiers of AI applied to project management. Editorial voice: professional, neutral, institutional. Language policy: __LANGUAGE_POLICY__. Default license: __CC_LICENSE__. Governed by __TERM_REF__.',
-    'pt', 'Newsletter mensal sobre as fronteiras da IA aplicada à gestão de projetos. Voz editorial: profissional, neutra, institucional. Política de idioma: __LANGUAGE_POLICY__. Licença default: __CC_LICENSE__. Regida por __TERM_REF__.',
-    'es', 'Newsletter mensual sobre las fronteras de la IA aplicada a la gestión de proyectos.'
+    'en', 'Biweekly trilingual newsletter on the frontiers of AI applied to project management. Published natively in English, Portuguese, and Spanish (parity, not translation layer). Editorial voice: professional, neutral, institutional. Default license: CC BY-SA 4.0 (aguardando confirmação D3). Governed by __TERM_REF__ (aguardando quinta-feira).',
+    'pt', 'Newsletter trilíngue quinzenal sobre as fronteiras da IA aplicada à gestão de projetos. Publicada nativamente em inglês, português e espanhol (paridade, não camada de tradução). Voz editorial: profissional, neutra, institucional. Licença default: CC BY-SA 4.0 (aguardando confirmação D3). Regida por __TERM_REF__ (aguardando quinta-feira).',
+    'es', 'Newsletter trilingüe quincenal sobre las fronteras de la IA aplicada a la gestión de proyectos. Publicada nativamente en inglés, portugués y español (paridad, no capa de traducción). Voz editorial: profesional, neutra, institucional. Licencia predeterminada: CC BY-SA 4.0 (pendiente confirmación D3). Regida por __TERM_REF__ (pendiente jueves).'
   ),
-  'monthly',
+  'biweekly',
   'newsletter',
-  'Profissional, neutro, institucional',
-  'PM profissional internacional + academia PM+IA',
-  NULL,  -- transversal a todas as tribos
-  NULL   -- sem initiative específica
+  'Profissional, neutro, institucional (trilíngue nativo)',
+  'PM profissional BR+LATAM+internacional + academia PM+IA',
+  NULL,
+  NULL
 )
 ON CONFLICT (slug) DO NOTHING;
 
