@@ -176,9 +176,122 @@ Matriz sugerida inicial:
 - Engineering blogs (Uber/Netflix/Stripe/LinkedIn) — dev-written + author profile
 - [Dev.to](https://dev.to/) — syndication model
 
+## Newsletter "Frontiers in AI & Project Mgmt" — TBD pending Gate 0
+
+> **Status:** Pre-launch. Aguarda fechamento de [issue #96 Gate 0](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/96) (CR-050 ratificada + Termo R3-C4 + decisão de marca + decisões 1-6 do GP+Fabrício). Esta seção é placeholder editorial — atualizar valores `__TBD__` quando decisões caírem.
+>
+> **Spec técnico:** `docs/specs/SPEC_FRONTIERS_NEWSLETTER_LAUNCH.md` — SQL prep para Gate 1.
+> **ADR governance:** `docs/adr/ADR-0021-newsletter-frontiers-governance.md` (Proposed).
+
+| Campo | Valor (a confirmar) |
+|---|---|
+| Nome final | `__TBD_FRONTIERS_NAME__` (default: "Frontiers in AI & Project Mgmt"; alternativas em ADR-0021 F7) |
+| Slug `publication_series` | `__TBD_SLUG__` (default: `frontiers-newsletter`) |
+| Cadência | Mensal |
+| Idioma | `__TBD_LANGUAGE_POLICY__` (recomendação ADR-0021 F2: bilíngue nativo EN+PT, EN como fonte oficial) |
+| Voice editorial | Profissional, neutro, institucional |
+| Audiência | PM profissional internacional + academia PM+IA |
+| Hero tribe | NULL (transversal) |
+| Licensing default | `__TBD_CC_LICENSE__` (recomendação ADR-0021 F3: CC BY-SA 4.0) |
+| Termo aplicável | `__TBD_TERM_REF__` (default: Termo R3-C4 v1.0) |
+| Política de PI | CR-050 v2.2 (precisa estar ratificada antes do launch) |
+
+### 7 tipos de conteúdo do Guia §5 (mapeamento aprovado)
+
+| Tipo Guia | `blog_posts.category` | Status |
+|---|---|---|
+| Lead Article | `deep-dive` ou `research-findings` | ✅ Existe |
+| Supporting Insight | `opinion` | ✅ Existe |
+| Framework / Model | `framework-model` | 🟡 Adicionar via SPEC SQL Block 1 |
+| Case Study / Use Case | `case-study` | ✅ Existe |
+| Webinar & Event Recap | `webinar-recap` | 🟡 Adicionar via SPEC SQL Block 1 |
+| Expert Interview | `expert-interview` | 🟡 Adicionar via SPEC SQL Block 1 |
+| Research Stream Insight | `weekly-radar` (ou `research-stream-tribe-*` se Block 4 aplicado) | ✅ Existe |
+
+### 7 etapas do Guia §9 (mapeamento aprovado)
+
+`draft → proposed → researching → writing → tribe_review → leader_review → curation → approved → published`
+
+(implementado via `publication_ideas.stage` — ver SPEC SQL Block 2)
+
+### 3 declarações obrigatórias antes de `tribe_review`
+
+Toda submissão Frontiers DEVE preencher em `publication_ideas.metadata jsonb`:
+
+1. `ai_usage_declaration` — escopo de uso de IA generativa (CR-050 v2.2 §4)
+2. `employer_consent_confirmed` — autorização empregador para material proprietário
+3. `conflicts_of_interest` — afiliações, certificações PMI, sponsors, vendor relationships
+
+Trigger SQL bloqueia stage transition se ausentes (ver SPEC SQL Block 2).
+
+### Originality check (issue #95) obrigatório
+
+Transição `draft → proposed` chama `check_idea_originality(title, summary)`. Se cluster de 3+ fontes externas convergentes existe, marca `originality_warning=true` em metadata. Curador pode aprovar mesmo assim, mas fica audit trail.
+
+### Fluxo end-to-end pós-Gate-0
+
+```
+AUTOR (voluntário ou comms team)
+  │
+  ├─ Cria publication_idea: title + summary + series_id=frontiers-newsletter
+  ├─ Preenche 3 declarações em metadata
+  └─ stage='draft'
+        │
+        ▼ (manual ou MCP tool)
+  CURADOR (Fabrício ou comms_leader)
+  │
+  ├─ Roda check_idea_originality (#95)
+  ├─ Decide: avança para 'proposed' ou rejeita
+  └─ Se 'proposed': comms_leader designa autor formal + tribo de revisão
+        │
+        ▼
+  AUTOR
+  │
+  ├─ stage='researching' → researcher path + sources
+  ├─ stage='writing' → drafts EN (e PT se bilíngue)
+  └─ Submete: stage='tribe_review'
+        │
+        ▼
+  TRIBO DO AUTOR
+  │
+  ├─ Comments + suggestions
+  └─ Aprova: stage='leader_review'
+        │
+        ▼
+  LÍDER DE TRIBO (ou comms_leader se autor não tem tribo)
+  │
+  ├─ Review final
+  └─ Aprova: stage='curation'
+        │
+        ▼
+  CURADOR EDITORIAL FRONTIERS
+  │
+  ├─ Edição final + cover + framing
+  ├─ Verificação PI/CC compliance pelo superadmin
+  └─ stage='approved' → agenda publicação
+        │
+        ▼
+  PUBLICAÇÃO MULTI-CANAL
+  │
+  ├─ blog_post criado com source_idea_id
+  ├─ campaign_send agendado (newsletter)
+  ├─ public_publication se canal externo (PM.com mirror)
+  └─ stage='published' → published_at preenchido
+```
+
+### Métricas de saúde Frontiers
+
+Após 6 meses:
+- ≥ 3 issues publicadas (cadência mensal)
+- 0 incidentes jurídicos
+- ≥ 80% submissões aprovadas com 3 declarações
+- ≥ 1 issue com `originality_warning=true` (proxy: check funciona)
+- 0 reclamações PT-only sobre exclusão
+
 ## Histórico
 
 - 2026-04-21 — Playbook criado (draft local) após sessão debug 9908f3 — análise comparativa com Akita e 10 cases de mercado. ADR-0020 em aprovação. 5 séries seed criadas.
+- 2026-04-21 (24h) — Seção Newsletter Frontiers adicionada como pre-launch placeholder. ADR-0021 (Proposed) + SPEC_FRONTIERS_NEWSLETTER_LAUNCH.md criados como Gate 1 prep. Aguarda fechamento Gate 0 da issue #96.
 
 ## Para publicar no wiki
 
