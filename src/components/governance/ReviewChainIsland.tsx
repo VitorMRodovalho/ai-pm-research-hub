@@ -297,6 +297,7 @@ export default function ReviewChainIsland({ chainId }: { chainId: string }) {
             isSubmitter={isSubmitter}
             isCurator={isCurator}
             chainStatus={detail.chain_status}
+            documentHtml={contentHtml}
           />
         </div>
       </div>
