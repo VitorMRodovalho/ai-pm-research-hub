@@ -214,11 +214,13 @@ const PROFILE_I18N = {
   const PROFILE_I18N = (typeof window !== 'undefined' && (window as any).__PROFILE_I18N) || {};
   const OPROLE_LABELS: Record<string, string> = {
     manager: PROFILE_I18N.oproleManager, deputy_manager: PROFILE_I18N.oproleDeputyManager, tribe_leader: PROFILE_I18N.oproleTribeLeader, comms_leader: PROFILE_I18N.oproleCommsLeader || 'Líder de Comunicação', researcher: PROFILE_I18N.oproleResearcher,
-    facilitator: PROFILE_I18N.oproleFacilitator, communicator: PROFILE_I18N.oproleCommunicator, none: PROFILE_I18N.oproleNone, guest: PROFILE_I18N.oproleGuest
+    facilitator: PROFILE_I18N.oproleFacilitator, communicator: PROFILE_I18N.oproleCommunicator, none: PROFILE_I18N.oproleNone, guest: PROFILE_I18N.oproleGuest,
+    alumni: PROFILE_I18N.oproleAlumni || 'Alumni', observer: PROFILE_I18N.oproleObserver || 'Observador'
   };
   const OPROLE_COLORS: Record<string, string> = {
     manager: '#FF610F', deputy_manager: '#FF610F', tribe_leader: '#4F17A8', comms_leader: '#06B6D4', researcher: '#EC4899',
-    facilitator: '#06B6D4', communicator: '#8B5CF6', none: '#94A3B8', guest: '#94A3B8'
+    facilitator: '#06B6D4', communicator: '#8B5CF6', none: '#94A3B8', guest: '#94A3B8',
+    alumni: '#6B7280', observer: '#64748B'
   };
   const DESIG_LABELS: Record<string, string> = {
     sponsor: PROFILE_I18N.desigSponsor, chapter_liaison: PROFILE_I18N.desigChapterLiaison, ambassador: PROFILE_I18N.desigAmbassador, founder: PROFILE_I18N.desigFounder, curator: PROFILE_I18N.desigCurator, comms_team: PROFILE_I18N.desigCommsTeam, comms_leader: PROFILE_I18N.desigCommsLeader || 'Comms Leader', comms_member: PROFILE_I18N.desigCommsMember || 'Comms Member', co_gp: PROFILE_I18N.desigCoGp, tribe_leader: PROFILE_I18N.desigTribeLeader

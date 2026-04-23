@@ -57,6 +57,9 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const [attachments, setAttachments] = useState(safeArray(item.attachments));
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [linkUrl, setLinkUrl] = useState('');
+  const [linkName, setLinkName] = useState('');
+  const [showLinkInput, setShowLinkInput] = useState(false);
   const [curationHistory, setCurationHistory] = useState<CurationHistory | null>(null);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewScores, setReviewScores] = useState<Record<string, number>>({ clarity: 3, originality: 3, adherence: 3, relevance: 3, ethics: 3 });
@@ -175,6 +178,47 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
     await onUpdate({ attachments: updated });
     (window as any).toast?.('Anexo removido');
   }, [attachments, onUpdate]);
+
+  // Link attachments (YouTube / Drive / Vimeo / Loom / generic) — no storage footprint.
+  const detectEmbed = useCallback((url: string): 'youtube' | 'vimeo' | 'drive' | 'loom' | 'generic' => {
+    const u = url.toLowerCase();
+    if (u.includes('youtube.com') || u.includes('youtu.be')) return 'youtube';
+    if (u.includes('vimeo.com')) return 'vimeo';
+    if (u.includes('drive.google.com') || u.includes('docs.google.com')) return 'drive';
+    if (u.includes('loom.com')) return 'loom';
+    return 'generic';
+  }, []);
+
+  const handleAddLink = useCallback(async () => {
+    const raw = linkUrl.trim();
+    if (!raw) return;
+    let parsed: URL;
+    try {
+      parsed = new URL(raw.startsWith('http') ? raw : `https://${raw}`);
+    } catch {
+      (window as any).toast?.('URL inválida', 'error');
+      return;
+    }
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      (window as any).toast?.('URL deve usar http ou https', 'error');
+      return;
+    }
+    const embed = detectEmbed(parsed.href);
+    const label = linkName.trim() || parsed.hostname.replace(/^www\./, '') + parsed.pathname.slice(0, 40);
+    const newAttachment: any = { name: label, url: parsed.href, kind: 'link', embed };
+    const updated = [...attachments, newAttachment];
+    setAttachments(updated);
+    try {
+      await onUpdate({ attachments: updated });
+      setLinkUrl('');
+      setLinkName('');
+      setShowLinkInput(false);
+      (window as any).toast?.('Link adicionado', 'success');
+    } catch (err: any) {
+      setAttachments(attachments);
+      (window as any).toast?.(`Erro: ${err.message || 'não foi possível salvar'}`, 'error');
+    }
+  }, [linkUrl, linkName, attachments, onUpdate, detectEmbed]);
 
   // Fetch timeline + members on mount
   useEffect(() => {
@@ -566,17 +610,26 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                 <div className="space-y-1.5 mb-2">
                   {attachments.map((att, idx) => {
                     const isImage = att.name?.match(/\.(png|jpg|jpeg|gif|webp)$/i);
+                    const isLink = (att as any).kind === 'link';
+                    const embed = (att as any).embed as string | undefined;
+                    const embedIcon = embed === 'youtube' ? '▶️' : embed === 'vimeo' ? '🎬' : embed === 'drive' ? '📁' : embed === 'loom' ? '🎥' : '🔗';
+                    const embedLabel = embed === 'youtube' ? 'YouTube' : embed === 'vimeo' ? 'Vimeo' : embed === 'drive' ? 'Drive' : embed === 'loom' ? 'Loom' : null;
                     return (
                       <div key={idx} className="flex items-center gap-2 group">
                         <a href={att.url} target="_blank" rel="noopener noreferrer"
                           className="flex-1 flex items-center gap-2 px-3 py-2 bg-[var(--surface-base)] rounded-lg hover:bg-[var(--surface-hover)]
                             no-underline transition-colors min-w-0">
-                          {isImage ? (
+                          {isLink ? (
+                            <span className="text-[14px] flex-shrink-0" title={embedLabel || 'Link externo'}>{embedIcon}</span>
+                          ) : isImage ? (
                             <img src={att.url} alt={att.name} className="w-8 h-8 rounded object-cover flex-shrink-0" />
                           ) : (
                             <span className="text-[12px] flex-shrink-0">📄</span>
                           )}
                           <span className="text-[11px] text-blue-600 truncate">{att.name || att.url}</span>
+                          {embedLabel && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-bold flex-shrink-0">{embedLabel}</span>
+                          )}
                         </a>
                         {canEdit && (
                           <button type="button" onClick={() => handleRemoveAttachment(idx)}
@@ -594,15 +647,50 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                   <input ref={fileInputRef} type="file" className="hidden"
                     accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.pptx"
                     onChange={handleFileUpload} />
-                  <button type="button" onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="text-[11px] font-semibold text-teal hover:text-[var(--color-teal-deep)]
-                      border border-dashed border-[var(--border-default)] rounded-lg px-3 py-2 w-full
-                      bg-transparent cursor-pointer hover:bg-[var(--surface-hover)] transition-colors
-                      disabled:opacity-50 disabled:cursor-wait">
-                    {uploading ? 'Enviando...' : '+ Anexar arquivo'}
-                  </button>
-                  <p className="text-[9px] text-[var(--text-muted)] mt-1">PDF, PNG, JPG, DOCX, XLSX, PPTX — máx 5MB</p>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="flex-1 text-[11px] font-semibold text-teal hover:text-[var(--color-teal-deep)]
+                        border border-dashed border-[var(--border-default)] rounded-lg px-3 py-2
+                        bg-transparent cursor-pointer hover:bg-[var(--surface-hover)] transition-colors
+                        disabled:opacity-50 disabled:cursor-wait">
+                      {uploading ? 'Enviando...' : '+ Anexar arquivo'}
+                    </button>
+                    <button type="button" onClick={() => setShowLinkInput((v) => !v)}
+                      className="text-[11px] font-semibold text-blue-600 hover:text-blue-800
+                        border border-dashed border-blue-300 rounded-lg px-3 py-2
+                        bg-transparent cursor-pointer hover:bg-blue-50 transition-colors">
+                      🔗 Colar link
+                    </button>
+                  </div>
+                  <p className="text-[9px] text-[var(--text-muted)] mt-1">PDF, PNG, JPG, DOCX, XLSX, PPTX — máx 5MB · ou cole link (YouTube / Drive / Vimeo / Loom)</p>
+                  {showLinkInput && (
+                    <div className="mt-2 p-2 bg-[var(--surface-base)] rounded-lg border border-blue-200 space-y-1.5">
+                      <input type="url" value={linkUrl}
+                        onChange={(e) => setLinkUrl(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddLink(); } }}
+                        placeholder="https://youtube.com/... ou drive.google.com/..."
+                        className="w-full rounded-md border border-[var(--border-default)] px-2 py-1.5 text-[11px]
+                          outline-none focus:border-blue-400 bg-[var(--surface-card)]" />
+                      <input type="text" value={linkName}
+                        onChange={(e) => setLinkName(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddLink(); } }}
+                        placeholder="Rótulo do link (opcional)"
+                        className="w-full rounded-md border border-[var(--border-default)] px-2 py-1.5 text-[11px]
+                          outline-none focus:border-blue-400 bg-[var(--surface-card)]" />
+                      <div className="flex gap-1.5">
+                        <button type="button" onClick={handleAddLink}
+                          disabled={!linkUrl.trim()}
+                          className="flex-1 px-2 py-1 rounded bg-blue-600 text-white text-[11px] font-bold cursor-pointer border-0 hover:bg-blue-700 disabled:opacity-50">
+                          Adicionar
+                        </button>
+                        <button type="button" onClick={() => { setShowLinkInput(false); setLinkUrl(''); setLinkName(''); }}
+                          className="px-2 py-1 rounded border border-[var(--border-default)] text-[var(--text-secondary)] text-[11px] font-semibold cursor-pointer bg-transparent hover:bg-[var(--surface-hover)]">
+                          {i18n.cancel || 'Cancelar'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -876,6 +964,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                     onChange={(id) => { setAssigneeId(id); setDirty(true); }}
                     placeholder={i18n.noAssignee}
                     disabled={!permissions.canAssign}
+                    i18n={i18n}
                   />
                 </div>
                 <div>
@@ -886,6 +975,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                     onChange={(id) => { setReviewerId(id); setDirty(true); }}
                     placeholder={i18n.noReviewer}
                     disabled={!permissions.canAssign}
+                    i18n={i18n}
                   />
                 </div>
               </>
