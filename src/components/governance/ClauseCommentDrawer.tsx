@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 
 type Comment = {
   id: string;
@@ -22,8 +22,39 @@ type Props = {
   isSubmitter: boolean;
   isCurator: boolean;
   chainStatus: string;
+  documentHtml?: string;
   locale?: string;
 };
+
+type Anchor = { value: string; label: string };
+
+// Matches: "§ 3", "§ 4.5.1", "1.", "2.3", "2.3.4", "Art. 5", "Cláusula 2"
+const CLAUSE_REGEX = /^\s*(§\s*[\d]+(?:\.\d+)*[a-z]?|\d+(?:\.\d+)+|\d+\.(?!\d)|Art\.?\s*\d+|Cláusula\s*[\d.]+)/i;
+
+function extractAnchors(html: string): Anchor[] {
+  if (!html || typeof DOMParser === 'undefined') return [];
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const anchors = new Map<string, string>();
+
+  doc.querySelectorAll('h2, h3').forEach(el => {
+    const text = (el.textContent || '').trim();
+    if (!text) return;
+    const m = text.match(CLAUSE_REGEX);
+    const value = (m ? m[1].replace(/\s+/g, ' ') : text).replace(/\.$/, '').trim();
+    if (value && !anchors.has(value)) anchors.set(value, text);
+  });
+
+  // Strong-tag fallback: only include entries that match clause numbering
+  doc.querySelectorAll('strong').forEach(el => {
+    const text = (el.textContent || '').trim();
+    const m = text.match(CLAUSE_REGEX);
+    if (!m) return;
+    const value = m[1].replace(/\s+/g, ' ').replace(/\.$/, '').trim();
+    if (value && !anchors.has(value)) anchors.set(value, text);
+  });
+
+  return Array.from(anchors.entries()).map(([value, label]) => ({ value, label }));
+}
 
 function fmt(d: string): string {
   return new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
@@ -40,14 +71,17 @@ function visibilityCls(v: Comment['visibility']): string {
     : 'bg-gray-100 text-gray-700 border-gray-300';
 }
 
-export default function ClauseCommentDrawer({ versionId, chainId, canComment, isSubmitter, isCurator, chainStatus }: Props) {
+export default function ClauseCommentDrawer({ versionId, chainId, canComment, isSubmitter, isCurator, chainStatus, documentHtml }: Props) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [includeResolved, setIncludeResolved] = useState(false);
   const [draftBody, setDraftBody] = useState('');
-  const [draftAnchor, setDraftAnchor] = useState('');
+  const [draftAnchorSel, setDraftAnchorSel] = useState('');
+  const [draftAnchorCustom, setDraftAnchorCustom] = useState('');
   const [draftVisibility, setDraftVisibility] = useState<Comment['visibility']>('curator_only');
   const [submitting, setSubmitting] = useState(false);
+
+  const anchors = useMemo(() => extractAnchors(documentHtml || ''), [documentHtml]);
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
 
@@ -65,6 +99,12 @@ export default function ClauseCommentDrawer({ versionId, chainId, canComment, is
 
   useEffect(() => { load(); }, [load]);
 
+  // If anchors were parsed (select shown), honor the select value; '__custom__' → use custom input.
+  // If no anchors (fallback input only), use custom directly.
+  const resolvedAnchor = anchors.length === 0
+    ? draftAnchorCustom.trim()
+    : draftAnchorSel === '__custom__' ? draftAnchorCustom.trim() : draftAnchorSel;
+
   async function submitComment() {
     if (!draftBody.trim()) return;
     const sb = getSb();
@@ -75,7 +115,7 @@ export default function ClauseCommentDrawer({ versionId, chainId, canComment, is
       ? { p_chain_id: chainId, p_body: draftBody }
       : {
           p_version_id: versionId,
-          p_clause_anchor: draftAnchor || null,
+          p_clause_anchor: resolvedAnchor || null,
           p_body: draftBody,
           p_visibility: draftVisibility,
           p_parent_id: null,
@@ -86,7 +126,7 @@ export default function ClauseCommentDrawer({ versionId, chainId, canComment, is
       (window as any).toast?.(error?.message || data?.error || 'Erro ao salvar comentário', 'error');
       return;
     }
-    setDraftBody(''); setDraftAnchor('');
+    setDraftBody(''); setDraftAnchorSel(''); setDraftAnchorCustom('');
     (window as any).toast?.('Comentário registrado', 'success');
     load();
   }
@@ -111,6 +151,17 @@ export default function ClauseCommentDrawer({ versionId, chainId, canComment, is
   const openCount = comments.filter(c => !c.resolved_at).length;
   const changeNotes = comments.filter(c => c.visibility === 'change_notes');
   const reviewComments = comments.filter(c => c.visibility !== 'change_notes');
+
+  // Count open comments per anchor for the select badge hint
+  const anchorCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const c of reviewComments) {
+      if (c.resolved_at) continue;
+      const k = c.clause_anchor || '';
+      counts[k] = (counts[k] || 0) + 1;
+    }
+    return counts;
+  }, [reviewComments]);
 
   // Group review comments by clause_anchor
   const grouped = reviewComments.reduce<Record<string, Comment[]>>((acc, c) => {
@@ -188,14 +239,47 @@ export default function ClauseCommentDrawer({ versionId, chainId, canComment, is
 
       {canComment && (
         <footer className="border-t border-[var(--border-default)] bg-[var(--surface-hover)] p-3 space-y-2">
-          {isCurator && (
-            <input
-              type="text"
-              value={draftAnchor}
-              onChange={e => setDraftAnchor(e.target.value)}
-              placeholder="Cláusula (ex: 4.5.4)"
-              className="w-full text-[12px] rounded border border-[var(--border-default)] bg-white px-2 py-1 focus:outline-none focus:border-navy"
-            />
+          {isCurator && draftVisibility !== 'change_notes' && (
+            anchors.length > 0 ? (
+              <div className="space-y-1.5">
+                <select
+                  value={draftAnchorSel}
+                  onChange={e => setDraftAnchorSel(e.target.value)}
+                  className="w-full text-[12px] rounded border border-[var(--border-default)] bg-white px-2 py-1 focus:outline-none focus:border-navy"
+                  aria-label="Âncora da cláusula"
+                >
+                  <option value="">(geral — sem cláusula específica)</option>
+                  {anchors.map(a => {
+                    const n = anchorCounts[a.value] || 0;
+                    const suffix = n > 0 ? ` · ${n} aberto${n > 1 ? 's' : ''}` : '';
+                    return (
+                      <option key={a.value} value={a.value} title={a.label}>
+                        {a.value}{a.label.length > a.value.length + 2 ? ` — ${a.label.slice(0, 60)}${a.label.length > 60 ? '…' : ''}` : ''}{suffix}
+                      </option>
+                    );
+                  })}
+                  <option value="__custom__">Outro…</option>
+                </select>
+                {draftAnchorSel === '__custom__' && (
+                  <input
+                    type="text"
+                    value={draftAnchorCustom}
+                    onChange={e => setDraftAnchorCustom(e.target.value)}
+                    placeholder="Cláusula custom (ex: 4.5.4)"
+                    className="w-full text-[12px] rounded border border-[var(--border-default)] bg-white px-2 py-1 focus:outline-none focus:border-navy"
+                    autoFocus
+                  />
+                )}
+              </div>
+            ) : (
+              <input
+                type="text"
+                value={draftAnchorCustom}
+                onChange={e => setDraftAnchorCustom(e.target.value)}
+                placeholder="Cláusula (ex: 4.5.4)"
+                className="w-full text-[12px] rounded border border-[var(--border-default)] bg-white px-2 py-1 focus:outline-none focus:border-navy"
+              />
+            )
           )}
           <textarea
             value={draftBody}
