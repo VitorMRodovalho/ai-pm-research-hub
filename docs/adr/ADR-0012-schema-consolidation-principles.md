@@ -122,4 +122,24 @@ Migration `20260424070000_b5_b7_member_invariants.sql`:
 - ADR-0006 — Person + Engagement (fonte da separação identidade × status)
 - ADR-0007 — Authority as engagement grant (fonte de `operational_role` como cache)
 - ADR-0011 — V4 auth pattern (complementa: source of truth de autoridade)
+
+## Amendment A — artifacts archival closure (23/Abr 2026)
+
+**Status**: closed — schema 100% limpo de artifacts.
+
+Ciclo completo Parts 1-4 aplicou os Princípios 1-4 desta ADR à tabela legacy `public.artifacts` (29 rows congelados pré-V4) que convivia como pseudo-fonte paralela a `publication_submissions`:
+
+- **Part 1** (`20260504080000`, 20/Abr p35 commit `6c58204`): migrou 29 rows legacy → `publication_submissions` com marker `'[Legacy artifact migrated%'` em `reviewer_feedback`. BEFORE INSERT trigger bloqueia novas writes na tabela congelada. `I_artifacts_frozen` invariant instalado.
+- **Part 2** (`20260504080001`, 20/Abr p35 commit `6c58204`): 8 readers remapped para `publication_submissions` (`exec_funnel_summary`, `exec_skills_radar`, `get_executive_kpis`, `sync_attendance_points`, `platform_activity_summary`, `list_curation_board`, `list_pending_curation`, `enqueue_artifact_publication_card` marcado deprecated). Semântica preservada (`get_executive_kpis` continua retornando 6 published).
+- **Part 3** (`20260507010000`, 23/Abr p37 commit `70bd67f`): `DROP TABLE public.artifacts CASCADE` após janela 48h+ shadow. `I_artifacts_frozen` removido do `check_schema_invariants()` (substituído estruturalmente pela ausência da tabela). Durante smoke pós-DROP descobriu-se 4 frontend surfaces ainda com `sb.from('artifacts')` — mitigado com compat VIEW read-only como backstop temporário.
+- **Part 4** (`20260507020000`, 23/Abr p38 commit `a55d67d`): fechou o ciclo. `DROP VIEW public.artifacts` + `DROP FUNCTION reject_artifacts_insert()` (trigger fn órfã) + `DROP FUNCTION enqueue_artifact_publication_card(uuid, uuid)` (deprecated em Part 2) + `REPLACE curate_item` sem branch `'artifacts'` (fazia `UPDATE public.artifacts` em VIEW, que teria falhado — Part 2 COMMENT prometia a excisão mas não executou). 4 frontend surfaces migradas para `publication_submissions` via `primary_author_id`. `/artifacts` virou redirect 301 → `/publications` preservando `?lang=X`.
+
+**Estado final do schema**: zero dependents de `public.artifacts` em qualquer layer. 29 rows legacy continuam consultáveis via `publication_submissions.reviewer_feedback LIKE '[Legacy artifact migrated%'` (backstop histórico read-only).
+
+**Lessons**:
+- DROP VIEW requer sweep combinado: `grep sb.from()` frontend + `pg_proc` funções que leem a VIEW. Part 3 smoke pegou só frontend; Part 4 adicionou pg_proc search e encontrou 2 funções stale.
+- `CREATE OR REPLACE` herda grants — validado via `has_function_privilege('authenticated', ...)` antes do DROP. `GRANT EXECUTE` defensivo ainda adicionado à migration para runs limpos em novos ambientes.
+- Invariantes estruturais podem ser substituídos por ausência física da entidade (Part 3 removeu `I_artifacts_frozen` porque DROP TABLE torna o invariante trivialmente satisfeito).
+
+**Sessões**: p35 (20/Abr, Part 1+2), p37 (23/Abr, Part 3), p38 (23/Abr, Part 4). Council: data-architect (Option B Part 1 + 6 decisões B1-B6 em Part 4) + ux-leader (Opção C Fase 1 em Part 4) + code-reviewer (post-Part 4 findings) + platform-guardian (CONDITIONAL SAFE TO CLOSE).
 - Migration `20260424070000` — saneamento + trigger de invariants
