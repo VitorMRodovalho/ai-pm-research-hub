@@ -1648,7 +1648,9 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         INITIATIVE_ID
           ? sb.from('hub_resources').select('*').eq('initiative_id', INITIATIVE_ID).eq('is_active', true).order('created_at', { ascending: false })
           : Promise.resolve({ data: [] }),
-        sb.from('artifacts').select('id, title').eq('status', 'published').order('title'),
+        INITIATIVE_ID
+          ? sb.from('publication_submissions').select('id, title').eq('status', 'published').eq('initiative_id', INITIATIVE_ID).order('title')
+          : sb.from('publication_submissions').select('id, title').eq('status', 'published').order('title'),
       ]);
 
       publishedArtifacts = artifactsRes.data || [];

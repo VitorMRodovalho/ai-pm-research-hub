@@ -997,7 +997,7 @@ const SCORING_I18N = {
       if (coursesError) throw coursesError;
 
       const { data: artifacts, error: artifactsError } = await withTimeout(
-        sb.from('artifacts').select('status').eq('member_id', MEMBER.id),
+        sb.from('publication_submissions').select('status').eq('primary_author_id', MEMBER.id),
       );
       if (artifactsError) throw artifactsError;
 

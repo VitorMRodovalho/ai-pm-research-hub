@@ -295,7 +295,9 @@ test('tribe catalog supports dynamic runtime entries and explicit active status'
   assert.equal(nav.includes("select('id, name, whatsapp_url, quadrant, quadrant_name, is_active") && nav.includes('workstream_type'), true);
   assert.equal(tribe.includes('id="tribe-context-switch"'), true);
   assert.equal(workspace.includes("sb.from('tribes').select('id, name, name_i18n, is_active').order('id')"), true);
-  assert.equal(artifacts.includes("sb.from('tribes').select('id, name, is_active').order('id')"), true);
+  // ADR-0012 Part 4 (2026-04-23): artifacts.astro virou redirect 301 → /publications.
+  // Query tribes que existia aqui foi eliminada junto com o CRUD legacy.
+  assert.equal(artifacts.includes("Astro.redirect") && artifacts.includes("/publications"), true);
   assert.equal(gamification.includes("sb.from('tribes').select('id, name, name_i18n, quadrant').eq('is_active', true).order('id')"), true);
   assert.equal(hero.includes(".eq('is_active', true)"), true);
   assert.equal(tribesSection.includes(".select('id, name, name_i18n, notes, whatsapp_url, is_active')"), true);

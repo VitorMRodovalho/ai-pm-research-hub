@@ -363,10 +363,10 @@ const PROFILE_I18N = {
         }
       } catch (_) { attendanceHoursData = null; }
 
-      // Artifacts
-      const { data: artifacts } = await sb.from('artifacts')
+      // Publications (ex-artifacts, post ADR-0012 Part 3)
+      const { data: artifacts } = await sb.from('publication_submissions')
         .select('status')
-        .eq('member_id', currentMember.id);
+        .eq('primary_author_id', currentMember.id);
 
       const totalPoints = (points || []).reduce((s: number, p: any) => s + (p.points || 0), 0);
       const completedCourses = (courses || []).filter((c: any) => c.status === 'completed').length;
@@ -394,7 +394,7 @@ const PROFILE_I18N = {
         artifacts: {
           total: (artifacts || []).length,
           published: (artifacts || []).filter((a: any) => a.status === 'published').length,
-          review: (artifacts || []).filter((a: any) => a.status === 'review').length,
+          review: (artifacts || []).filter((a: any) => ['under_review', 'submitted'].includes(a.status)).length,
           draft: (artifacts || []).filter((a: any) => a.status === 'draft').length,
         }
       };
