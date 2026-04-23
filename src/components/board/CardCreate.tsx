@@ -107,6 +107,7 @@ export default function CardCreate({ boardId, columns, i18n, onClose, onCreate }
                 value={assigneeId}
                 onChange={setAssigneeId}
                 placeholder={i18n.noAssignee}
+                i18n={i18n}
               />
             </div>
 

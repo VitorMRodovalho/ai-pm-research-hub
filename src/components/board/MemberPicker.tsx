@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Command } from 'cmdk';
-import type { BoardMember } from '../../types/board';
+import type { BoardMember, BoardI18n } from '../../types/board';
 
 interface Props {
   members: BoardMember[];
@@ -8,9 +8,10 @@ interface Props {
   onChange: (id: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  i18n?: BoardI18n;
 }
 
-export default function MemberPicker({ members, value, onChange, placeholder = 'Selecionar...', disabled = false }: Props) {
+export default function MemberPicker({ members, value, onChange, placeholder = 'Selecionar...', disabled = false, i18n }: Props) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -55,7 +56,7 @@ export default function MemberPicker({ members, value, onChange, placeholder = '
               <Command.Input
                 value={search}
                 onValueChange={setSearch}
-                placeholder={i18n.searchMember || "Search member..."}
+                placeholder={i18n?.searchMember || "Buscar membro..."}
                 className="w-full rounded-md border border-[var(--border-default)] bg-[var(--surface-input)] px-2 py-1.5 text-[12px] text-[var(--text-primary)]
                   outline-none focus:border-blue-400 placeholder:text-[var(--text-muted)]"
                 autoFocus
@@ -92,7 +93,7 @@ export default function MemberPicker({ members, value, onChange, placeholder = '
                 </Command.Item>
               ))}
               {members.filter((m) => !search || m.name.toLowerCase().includes(search.toLowerCase())).length === 0 && (
-                <div className="px-2 py-3 text-center text-[11px] text-[var(--text-muted)]">{i18n.noMemberFound || 'No member found'}</div>
+                <div className="px-2 py-3 text-center text-[11px] text-[var(--text-muted)]">{i18n?.noMemberFound || 'Nenhum membro encontrado'}</div>
               )}
             </Command.List>
           </Command>

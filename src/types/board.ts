@@ -77,6 +77,13 @@ export interface Label {
 export interface Attachment {
   name: string;
   url: string;
+  /**
+   * Type of attachment. Defaults to 'file' when omitted (backwards compatibility with pre-link anchors).
+   * 'file' = uploaded to storage bucket; 'link' = external URL (YouTube, Drive, Vimeo, etc.) — no storage footprint.
+   */
+  kind?: 'file' | 'link';
+  /** For kind='link': embed provider detected from URL (for rich preview). */
+  embed?: 'youtube' | 'vimeo' | 'drive' | 'loom' | 'generic';
 }
 
 export interface ChecklistItem {
@@ -293,6 +300,9 @@ export interface BoardI18n {
   // Multi-assignee
   assignees?: string;
   addMember?: string;
+  searchMember?: string;
+  noMemberFound?: string;
+  claimCard?: string;
   roleAuthor?: string;
   roleReviewer?: string;
   roleContributor?: string;
@@ -358,6 +368,9 @@ export const DEFAULT_I18N: BoardI18n = {
   overdue: 'Vencido',
   assignees: 'Participantes',
   addMember: 'Adicionar membro',
+  searchMember: 'Buscar membro...',
+  noMemberFound: 'Nenhum membro encontrado',
+  claimCard: 'Pegar para mim',
   roleAuthor: 'Autor',
   roleReviewer: 'Revisor',
   roleContributor: 'Contribuidor',
