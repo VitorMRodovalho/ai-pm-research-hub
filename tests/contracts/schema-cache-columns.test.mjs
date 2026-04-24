@@ -37,8 +37,9 @@ const PROTECTED_TABLES = ['members', 'engagements', 'initiatives'];
 // Each entry: 'table.column' → short reason. Keeps reviewers honest about the
 // derivability trade-off instead of letting it slip silently.
 const STORAGE_ONLY_ALLOWLIST = new Map([
-  // Example (remove if unused):
-  // ['members.linkedin_url', 'URL set by user via profile form; no derivation'],
+  // Pure user preference — opt-in/out flag for weekly card digest (issue #98, p39).
+  // Set only via /settings/notifications toggle; not derivable from any other state.
+  ['members.notify_weekly_digest', 'User opt-out flag for weekly card digest; no derivation source'],
 ]);
 
 function parseAddColumns(sql) {
