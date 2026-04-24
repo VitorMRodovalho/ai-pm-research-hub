@@ -527,7 +527,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL 9: search_board_cards
-  mcp.tool("search_board_cards", "Full-text search across board cards. Specify tribe_id or searches your tribe.", { query: z.string().describe("Search term"), tribe_id: z.number().optional().describe("Tribe ID (1-8). If omitted, uses your assigned tribe.") }, async (params: { query: string; tribe_id?: number }) => {
+  mcp.tool("search_board_cards", "Searches board cards by keyword (full-text). Specify tribe_id or uses your tribe.", { query: z.string().describe("Search term"), tribe_id: z.number().optional().describe("Tribe ID (1-8). If omitted, uses your assigned tribe.") }, async (params: { query: string; tribe_id?: number }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "search_board_cards", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -1627,7 +1627,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   // ===== CERTIFICATES PUBLIC (issue #86 — external verification) =====
 
   // TOOL: verify_certificate (public — no auth required by design)
-  mcp.tool("verify_certificate", "Publicly verify a certificate authenticity by its verification code. Returns issuance details, issuer, recipient name, issue date. Use cases: HR validation, external auditors. Does NOT require authentication — intended for third-party verification.", {
+  mcp.tool("verify_certificate", "Verifies certificate authenticity by its verification code. Returns issuance details, issuer, recipient name, issue date. Public endpoint — no authentication required. Use cases: HR validation, external auditors, third-party verification.", {
     verification_code: z.string().describe("Unique verification code printed on the certificate PDF")
   }, async (params: { verification_code: string }) => {
     const start = Date.now();
@@ -1799,7 +1799,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL: delete_checklist_item — new RPC
-  mcp.tool("delete_checklist_item", "Permanently delete a checklist item. Optional reason is recorded in the card timeline.", {
+  mcp.tool("delete_checklist_item", "Deletes a checklist item permanently. Optional reason is recorded in the card timeline.", {
     checklist_item_id: z.string().describe("UUID of the checklist item"),
     reason: z.string().optional().describe("Optional reason for deletion (audit)")
   }, async (params: any) => {
@@ -1845,7 +1845,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // TOOL: delete_card — wrap delete_board_item. Reason is required (audit).
-  mcp.tool("delete_card", "Permanently delete a card and its checklist/assignments. Reason is required for audit. Prefer archive_card (future) for soft-delete.", {
+  mcp.tool("delete_card", "Deletes a card and its checklist/assignments permanently. Reason is required for audit. Prefer archive_card for non-destructive soft-delete.", {
     card_id: z.string().describe("UUID of the card to delete"),
     reason: z.string().describe("Required reason — recorded in audit log.")
   }, async (params: { card_id: string; reason: string }) => {
@@ -1971,7 +1971,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   // (admin_*, portfolio forecast edits typically require Leader/GP or higher).
 
   // TOOL: archive_card — wrap admin_archive_board_item. Soft-delete with audit.
-  mcp.tool("archive_card", "Soft-archive a card (status='archived') with audit reason. Preserves the row — use delete_card for permanent deletion. RPC performs the admin/leader authority check.", {
+  mcp.tool("archive_card", "Archives a card (soft delete, status='archived') with audit reason. Preserves the row — use delete_card for permanent deletion. RPC performs the admin/leader authority check.", {
     card_id: z.string().describe("UUID of the card to archive"),
     reason: z.string().optional().describe("Optional audit reason (recommended)")
   }, async (params: { card_id: string; reason?: string }) => {
@@ -2111,7 +2111,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // get_my_pii_access_log — LGPD Art. 18 direct-subject access to who read their PII
-  mcp.tool("get_my_pii_access_log", "LGPD Art. 18 — returns a log of who accessed YOUR personally-identifiable data (name/email/phone/etc.), with accessor name/role, fields accessed, context, and timestamp.", {
+  mcp.tool("get_my_pii_access_log", "Returns a log of who accessed YOUR personally-identifiable data (name/email/phone/etc.), with accessor name/role, fields accessed, context, and timestamp. LGPD Art. 18 compliance surface.", {
     limit: z.number().optional().describe("Max rows to return. Default 50, max 500")
   }, async (params: { limit?: number }) => {
     const start = Date.now();
@@ -2446,7 +2446,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // get_partner_followups — upcoming/overdue follow-ups across all partnerships
-  mcp.tool("get_partner_followups", "Upcoming + overdue follow-ups across all partner entities (from partner_interactions.follow_up_date). Useful for 'what partner calls are due this week?'", {}, async () => {
+  mcp.tool("get_partner_followups", "Lists upcoming and overdue follow-ups across all partner entities (from partner_interactions.follow_up_date). Useful for 'what partner calls are due this week?'.", {}, async () => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_partner_followups", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -2457,7 +2457,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // list_my_signatures — LGPD Art. 18 self-service signature history
-  mcp.tool("list_my_signatures", "LGPD Art. 18 — returns YOUR signature history (approval chain gates + document ratifications). Includes document title, version, chain status, signed timestamp, certificate id.", {
+  mcp.tool("list_my_signatures", "Returns YOUR signature history (approval chain gates + document ratifications). Includes document title, version, chain status, signed timestamp, certificate id. LGPD Art. 18 compliance surface.", {
     include_superseded: z.boolean().optional().describe("If true, include ratifications that were superseded by a later version. Default false (current only).")
   }, async (params: { include_superseded?: boolean }) => {
     const start = Date.now();
@@ -2731,7 +2731,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.23.3" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.23.4" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -2751,6 +2751,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.23.3", tools: 138, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.23.4", tools: 138, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
