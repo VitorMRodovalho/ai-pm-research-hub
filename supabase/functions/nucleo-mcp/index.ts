@@ -2384,6 +2384,77 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "list_change_requests", true, undefined, start);
     return ok(data);
   });
+
+  // ───────────────────────────────────────────────────────────────
+  // PARTNERSHIP LIFECYCLE TOOLS — #85 Onda B bundle 3
+  // ───────────────────────────────────────────────────────────────
+
+  // log_partner_interaction — record a meeting/call/email with a partner entity
+  mcp.tool("log_partner_interaction", "Log an interaction (meeting/call/email/doc) with a partner entity. Optional outcome + next_action + follow_up_date for pipeline tracking.", {
+    partner_id: z.string().describe("UUID of partner_entities row"),
+    interaction_type: z.string().describe("'meeting' | 'call' | 'email' | 'document' | 'whatsapp' | 'other'"),
+    summary: z.string().describe("Short summary of the interaction"),
+    details: z.string().optional().describe("Long-form notes"),
+    outcome: z.string().optional().describe("Outcome or decision"),
+    next_action: z.string().optional().describe("Planned next step"),
+    follow_up_date: z.string().optional().describe("Follow-up date YYYY-MM-DD")
+  }, async (params: { partner_id: string; interaction_type: string; summary: string; details?: string; outcome?: string; next_action?: string; follow_up_date?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "log_partner_interaction", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.partner_id)) { await logUsage(sb, member.id, "log_partner_interaction", false, "Invalid partner_id", start); return err("partner_id must be a UUID"); }
+    const { data, error } = await sb.rpc("add_partner_interaction", {
+      p_partner_id: params.partner_id,
+      p_interaction_type: params.interaction_type,
+      p_summary: params.summary,
+      p_details: params.details ?? null,
+      p_outcome: params.outcome ?? null,
+      p_next_action: params.next_action ?? null,
+      p_follow_up_date: params.follow_up_date ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "log_partner_interaction", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "log_partner_interaction", true, undefined, start);
+    return ok(data);
+  });
+
+  // list_partner_interactions — chronological feed of a partner's interactions
+  mcp.tool("list_partner_interactions", "List all interactions for a partner entity, newest first.", {
+    partner_id: z.string().describe("UUID of partner_entities row")
+  }, async (params: { partner_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_partner_interactions", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.partner_id)) { await logUsage(sb, member.id, "list_partner_interactions", false, "Invalid partner_id", start); return err("partner_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_partner_interactions", { p_partner_id: params.partner_id });
+    if (error) { await logUsage(sb, member.id, "list_partner_interactions", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_partner_interactions", true, undefined, start);
+    return ok(data);
+  });
+
+  // list_partner_attachments — attachments linked to a partner entity
+  mcp.tool("list_partner_attachments", "List attachments (proposals, MoUs, draft contracts, meeting notes) filed against a partner entity.", {
+    partner_id: z.string().describe("UUID of partner_entities row")
+  }, async (params: { partner_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_partner_attachments", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.partner_id)) { await logUsage(sb, member.id, "list_partner_attachments", false, "Invalid partner_id", start); return err("partner_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_partner_entity_attachments", { p_entity_id: params.partner_id });
+    if (error) { await logUsage(sb, member.id, "list_partner_attachments", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_partner_attachments", true, undefined, start);
+    return ok(data);
+  });
+
+  // get_partner_followups — upcoming/overdue follow-ups across all partnerships
+  mcp.tool("get_partner_followups", "Upcoming + overdue follow-ups across all partner entities (from partner_interactions.follow_up_date). Useful for 'what partner calls are due this week?'", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_partner_followups", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_partner_followups");
+    if (error) { await logUsage(sb, member.id, "get_partner_followups", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_partner_followups", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -2394,7 +2465,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.17.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.18.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -2414,6 +2485,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.17.0", tools: 120, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.18.0", tools: 124, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
