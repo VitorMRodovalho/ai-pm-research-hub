@@ -1,8 +1,8 @@
 # ADR-0019: Portfolio as Projection Principle — sem workflow separado de escalação
 
-- Status: Proposed
+- Status: Accepted (2026-04-24 p43) — D1/D3/D6 verificados em prod (enforcement em `update_board_item`, 6 event types em `board_lifecycle_events`, tools expostas); D5 reminder cron + D7 coluna opcional explicitamente opt-in
 - Data: 2026-04-21
-- Autor: Claude (debug session 9908f3, issue #89) — aguardando aprovação PM
+- Autor: Claude (debug session 9908f3, issue #89)
 - Escopo: Formaliza que o **portfólio executivo** é uma *view* agregada sobre `board_items` com `is_portfolio_item=true`, NÃO uma entidade separada com lifecycle próprio. Define quem pode escalar, como é auditado, e por que não existe (nem deve existir) workflow formal de "portfolio request / approval".
 
 ## Contexto
@@ -159,4 +159,9 @@ Se métricas falham:
 
 ## Aprovação
 
-Aguarda revisão PM Vitor antes de status `Accepted`.
+**Accepted 2026-04-24 (p43)** — evidência em prod:
+- D1 enforcement canônico presente em `update_board_item` (RPC verifica `is_portfolio_item` field change contra `v_is_gp OR v_is_leader OR v_is_board_admin`)
+- D3 audit: 6 event types (`portfolio_flag_changed`, `baseline_set`, `baseline_locked`, `baseline_changed`, `forecast_update`, `forecast_changed`) todos ativos em `board_lifecycle_events`
+- D6 MCP tools `get_portfolio_overview` + `get_portfolio_health` expostas em `nucleo-mcp` v2.23.3
+
+Itens não-blocking preservados como opt-in: D5 reminder cron (60d stale) e D7 `portfolio_kpi_refs` column.

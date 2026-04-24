@@ -1,8 +1,8 @@
 # ADR-0017: Schema↔Code Contract Audit Methodology (pre-DROP COLUMN checklist)
 
-- Status: Proposed
+- Status: Accepted (ratified 2026-04-24 p43 — metodologia seguida em sessões p40-p43 sem regressão do tipo #79/#80; processo virou prática padrão)
 - Data: 2026-04-21
-- Autor: Claude (debug session 9908f3, follow-up #79 #80 #81) — aguardando aprovação PM
+- Autor: Claude (debug session 9908f3, follow-up #79 #80 #81)
 - Escopo: Formaliza o processo de auditoria obrigatório antes de executar `ALTER TABLE ... DROP COLUMN` em qualquer tabela com refs distribuídas por funções, views, policies, triggers, edge functions e frontend. Padroniza dimensões de busca para evitar falsos-negativos do tipo que causaram as issues #79 e #80.
 
 ## Contexto

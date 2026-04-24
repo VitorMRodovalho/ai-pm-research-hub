@@ -1,8 +1,8 @@
 # ADR-0018: MCP Threat Model — análise de risco e mitigações canônicas
 
-- Status: Proposed
+- Status: Partially Accepted (2026-04-24 p43) — D1-D5 análise + convenções aceitas; W1/W2/W3 mitigações pendentes de implementação
 - Data: 2026-04-21
-- Autor: Claude (debug session 9908f3, issue #89 Frente 6) — aguardando aprovação PM
+- Autor: Claude (debug session 9908f3, issue #89 Frente 6)
 - Escopo: Formaliza análise de risco do `nucleo-mcp` (Supabase Edge Function exposto via proxy Cloudflare em `https://nucleoia.vitormr.dev/mcp`), identifica vetores aplicáveis e não-aplicáveis da vulnerabilidade MCP reportada em abril/2026, e define mitigações canônicas.
 
 ## Contexto
@@ -152,4 +152,16 @@ Enviar link para este ADR quando publicado (status = Accepted). Fecha loop comun
 
 ## Aprovação
 
-Aguarda revisão PM Vitor. Após aprovado, enviar link formal para Ana Carla.
+**Partially Accepted 2026-04-24 (p43)** — evidência em prod:
+
+**Aceito (em vigor):**
+- D1-D4 análise de risco (doc)
+- D3.1 `mcp_usage_log`: 299 eventos registrados em 48 tools distintas (23 dias de telemetria) — base sólida para detection
+- D5 convenções canônicas: tool descriptions hard-coded (zero refs a user input), canV4 gate em todos writes, `mcp_usage_log` emit universal, OAuth 2.1 obrigatório, `verify_jwt` pinado em `supabase/config.toml`
+
+**Pendente implementação (W1/W2/W3):**
+- W1 — confirmation step em 7 tools destrutivas (grep por `confirm.*z.boolean` → 0 matches)
+- W2 — rate limit em Cloudflare Worker KV counters
+- W3 — MCP anomaly detection cron (issue #81 item 5)
+
+Resposta formal à Ana Carla pode ser enviada com ressalva "Partially Accepted + W1/W2 em backlog."
