@@ -10,7 +10,7 @@ Refactor arquitetural completo: 6 ADRs (0004-0009), 30 migrations, 7 fases. Ver 
 ## Platform
 - **URL:** https://nucleoia.vitormr.dev
 - **Supabase:** ldrfrvwhxsmgaabwmaik (sa-east-1)
-- **Version:** v3.2.1 (Structural Quality) | 106 MCP tools (73R+33W) | 23 Edge Functions | 1318 unit + 40 e2e tests (22 pre-existing fails em exec_tribe_dashboard/curation usam delimiter `$function$` vs regex `$$` — drift não-blocker)
+- **Version:** v3.2.1 (Structural Quality) | 106 MCP tools (73R+33W) | 23 Edge Functions | 1339 unit + 40 e2e tests (1 pre-existing fail: exec_tribe_dashboard.events.tribe_id V4 drift — delimiter drift fix em p41 restaurou +21 passes)
 - **AI Model:** Claude Opus 4.7 (`claude-opus-4-7`) — released 2026-04-16. xhigh effort level available. Updated tokenizer (1.0-1.35x token mapping). /ultrareview for code review.
 - **Wiki:** GitHub org `nucleo-ia-gp` — repos `wiki` (private, Obsidian vault) + `frameworks` (public, CC-BY-SA/MIT). Synced to `wiki_pages` table via FTS. Scope: narrative knowledge only (ADR-0010) — operational data stays in SQL.
 - **LGPD:** Art. 18 cycle complete (consent gate + export + delete + anonymize cron 5y)
@@ -18,7 +18,7 @@ Refactor arquitetural completo: 6 ADRs (0004-0009), 30 migrations, 7 fases. Ver 
 ## Build & Test
 ```bash
 npx astro build          # MUST pass before commit
-npm test                 # 1313 pass / 22 fail pre-existing (delimiter drift)
+npm test                 # 1339 pass / 1 fail pre-existing (V4 drift: exec_tribe_dashboard.events.tribe_id dropped em ADR-0015 Phase 3)
 npx wrangler deploy      # Deploy Worker
 supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 ```
