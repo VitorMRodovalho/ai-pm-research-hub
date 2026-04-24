@@ -2455,6 +2455,21 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "get_partner_followups", true, undefined, start);
     return ok(data);
   });
+
+  // list_my_signatures — LGPD Art. 18 self-service signature history
+  mcp.tool("list_my_signatures", "LGPD Art. 18 — returns YOUR signature history (approval chain gates + document ratifications). Includes document title, version, chain status, signed timestamp, certificate id.", {
+    include_superseded: z.boolean().optional().describe("If true, include ratifications that were superseded by a later version. Default false (current only).")
+  }, async (params: { include_superseded?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_my_signatures", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_my_signatures", {
+      p_include_superseded: params.include_superseded ?? false,
+    });
+    if (error) { await logUsage(sb, member.id, "list_my_signatures", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_my_signatures", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -2465,7 +2480,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.18.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.19.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -2485,6 +2500,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.18.0", tools: 124, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.19.0", tools: 125, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);

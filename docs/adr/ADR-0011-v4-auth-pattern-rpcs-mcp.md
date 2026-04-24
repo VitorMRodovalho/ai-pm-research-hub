@@ -126,3 +126,48 @@ Migrations `20260424040000`, `20260424050000`, `20260424060000`:
 - `DOMAIN_MODEL_V4_MASTER.md` — histórico completo do refactor
 - `engagement_kind_permissions` — matriz seeded de `kind × role × action × scope`
 - Migrations `20260424040000` → `20260424060000` — refactor das 12 RPCs
+
+---
+
+## Amendment A — Fast-path stakeholder fan-out (2026-04-24)
+
+- Status: Accepted
+- Aprovado por: Vitor (PM) em 2026-04-24
+- Escopo: Carve-out formal para funções `SECURITY DEFINER` que precisam enumerar N stakeholders em um loop síncrono (triggers de notificação, cron de varredura).
+
+### Contexto
+
+Durante a sessão p41 (24/Abr/2026) foram introduzidas três funções que enumeram stakeholders para fan-out de notificações / alertas:
+
+| Função | Propósito | Contexto |
+|---|---|---|
+| `public.notify_offboard_cascade()` | Fan-out de notif a GPs/DMs + líderes da tribo quando membro offboarda | AFTER UPDATE trigger em `members.member_status` |
+| `public.detect_orphan_assignees_from_offboards(uuid?)` | Varre board_items assignados a membros inativos, emite `board_taxonomy_alerts` | RPC chamada pelo trigger acima + pg_cron diário |
+| `public.notify_offboard_cascade()` (re-extendida em 20260509050000) | Idem + invoca detector de orphans | Continuação do mesmo trigger |
+
+O padrão canônico desta ADR manda usar `public.can_by_member(member_id, action)` para gate. Mas para fan-out de N stakeholders (onde N pode chegar a 30-50 membros ativos), chamar `can_by_member` em loop seria O(N) com custo prohibitive — cada chamada faz consulta em `auth_engagements × engagement_kind_permissions`.
+
+Guardian (p41 end-of-session) flagged este pattern como ADVISORY (não blocker): as três funções usam `operational_role IN ('manager','deputy_manager')` e `operational_role IN ('tribe_leader','co_leader')` direto, sem delegar a `can()`. 
+
+### Decisão
+
+**Funções SECURITY DEFINER que enumeram stakeholders para fan-out (notificações, alertas, reports) podem consultar `members.operational_role` diretamente como fast-path, desde que cumpram TODOS os critérios abaixo:**
+
+1. **Cache authoritative**: a coluna `members.operational_role` é mantida pelo trigger `sync_operational_role_cache` (ADR-0012), que refresca com base em `auth_engagements`. Portanto o valor reflete a mesma fonte que `can()` consumiria — não há risco de divergência estrutural.
+2. **Sem escrita autorizativa**: a função **não** grava decisão autorizativa (não é gate de `write`, `write_board`, `manage_member`). Apenas enumera quem RECEBE uma notificação ou aparece em um report.
+3. **Sem PII cross-member**: a função não retorna email/phone/pmi_id de outros membros. Apenas `member_id` + nome + role (dados já não-sensíveis).
+4. **Documentada em comentário**: o header da função OU uma linha `COMMENT ON FUNCTION` declara explicitamente "fast-path stakeholder fan-out per ADR-0011 Amendment A".
+
+### Não-exceções (continuam obrigadas a `can_by_member`)
+
+- Gates de escrita: `write`, `write_board`, `manage_member`, `manage_event`, `manage_partner`, `promote`
+- Gates de PII read: `view_pii`
+- Funções que decidem se o caller pode executar uma ação (o próprio caller é verificado)
+
+### Aplicabilidade retroativa
+
+As três funções listadas acima são formalmente aprovadas como conformes à Amendment A a partir de 2026-04-24, sem necessidade de refactor. Próxima sessão que tocar essas funções por outro motivo deve adicionar o comentário referente à Amendment A.
+
+### Critério de revisão
+
+Se o número de funções usando fast-path exceder 10, ou se surgir incidente onde a cache `operational_role` divergiu de `auth_engagements` (invariant A3 violation), esta Amendment é revisada. Amendment B pode introduzir helper batch `can_batch(member_ids, action)` que mantém a semântica canônica com custo amortizado.
