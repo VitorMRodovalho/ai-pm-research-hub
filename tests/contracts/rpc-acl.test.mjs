@@ -25,17 +25,17 @@ const migrations = loadAllMigrations();
 const allSQL = migrations.map(m => m.content).join('\n');
 
 // Helper: find the SQL body of a function definition
+// Supports any dollar-quoted tag: $$, $function$, $BODY$, $func$, etc.
 function findFunctionBody(funcName) {
-  // Match CREATE OR REPLACE FUNCTION public.funcName(...) ... $$ body $$;
   const escaped = funcName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const regex = new RegExp(
-    `CREATE\\s+OR\\s+REPLACE\\s+FUNCTION\\s+(?:public\\.)?${escaped}\\s*\\([^)]*\\)[\\s\\S]*?\\$\\$([\\s\\S]*?)\\$\\$`,
+    `CREATE\\s+OR\\s+REPLACE\\s+FUNCTION\\s+(?:public\\.)?${escaped}\\s*\\([^)]*\\)[\\s\\S]*?AS\\s+\\$(\\w*)\\$([\\s\\S]*?)\\$\\1\\$`,
     'gi'
   );
   const matches = [...allSQL.matchAll(regex)];
   if (matches.length === 0) return null;
-  // Return the last definition (most recent CREATE OR REPLACE)
-  return matches[matches.length - 1][1];
+  // matches[...][1] = tag (may be empty for $$); [2] = body
+  return matches[matches.length - 1][2];
 }
 
 // ─── LGPD-sensitive RPCs must have tier checks ───
@@ -59,11 +59,14 @@ for (const rpcName of LGPD_RPCS) {
     const body = findFunctionBody(rpcName);
     assert.ok(body, `RPC ${rpcName} not found`);
 
-    // Must check is_superadmin or operational_role
-    const checksAdmin = /is_superadmin\s*=\s*true/i.test(body) || /operational_role\s+IN\s*\(/i.test(body);
-    assert.ok(checksAdmin, `RPC ${rpcName} must check admin tier (is_superadmin or operational_role)`);
+    // Must check admin tier via legacy direct pattern OR V4 can_by_member() gate (ADR-0011).
+    const checksAdmin =
+      /is_superadmin\s*=\s*true/i.test(body) ||
+      /operational_role\s+IN\s*\(/i.test(body) ||
+      /can_by_member\s*\([^)]*,\s*'view_pii'/i.test(body);
+    assert.ok(checksAdmin,
+      `RPC ${rpcName} must check admin tier (is_superadmin / operational_role / can_by_member 'view_pii')`);
 
-    // Must raise exception on unauthorized access
     const raisesException = /RAISE\s+EXCEPTION/i.test(body);
     assert.ok(raisesException, `RPC ${rpcName} must RAISE EXCEPTION on unauthorized access`);
   });
@@ -72,9 +75,12 @@ for (const rpcName of LGPD_RPCS) {
     const body = findFunctionBody(rpcName);
     assert.ok(body);
 
-    // Must have a pattern like: IF NOT (...admin check...) THEN RAISE EXCEPTION
-    const hasGate = /IF\s+NOT\s*\(/i.test(body) && /RAISE\s+EXCEPTION\s+'Access denied/i.test(body);
-    assert.ok(hasGate, `RPC ${rpcName} must have explicit IF NOT (admin) THEN RAISE EXCEPTION gate`);
+    // Accept either legacy `IF NOT ( ... OR ... )` boolean gate or V4 `IF NOT can_by_member(...)` form.
+    const hasLegacyGate = /IF\s+NOT\s*\(/i.test(body);
+    const hasV4Gate = /IF\s+NOT\s+(?:public\.)?can_by_member\s*\(/i.test(body);
+    const hasRaise = /RAISE\s+EXCEPTION\s+'Access denied/i.test(body);
+    assert.ok((hasLegacyGate || hasV4Gate) && hasRaise,
+      `RPC ${rpcName} must have IF NOT (admin) or IF NOT can_by_member(...) gate + RAISE EXCEPTION 'Access denied`);
   });
 }
 
