@@ -5,10 +5,6 @@
   "security": {
     "accepted_errors": [
       {
-        "cache_key": "security_definer_view_public_vw_exec_funnel",
-        "rationale": "Exec analytics — admin-only consumer. Onda 2/3 candidate if still present (not in live advisor as of 2026-04-23)."
-      },
-      {
         "cache_key": "security_definer_view_public_members_public_safe",
         "rationale": "LGPD-safe member view. Onda 2: remove is_superadmin column, then flip security_invoker (issue #82)."
       },
@@ -18,11 +14,7 @@
       },
       {
         "cache_key": "security_definer_view_public_gamification_leaderboard",
-        "rationale": "Public leaderboard. Onda 3: convert to get_public_leaderboard() SECDEF RPC pattern (issue #82)."
-      },
-      {
-        "cache_key": "security_definer_view_public_member_attendance_summary",
-        "rationale": "Member-scoped attendance stats. Onda 3: convert to SECDEF RPC pattern (issue #82)."
+        "rationale": "Public leaderboard. Onda 3: either extend get_public_leaderboard() to cover all 20+ columns OR flip invoker after verifying authenticated RLS permits the full breakdown (issue #82)."
       },
       {
         "cache_key": "security_definer_view_public_recurring_event_groups",
@@ -52,16 +44,28 @@
       }
     ]
   },
-  "closed_in_onda_1_2026_04_23": {
-    "commit_ref": "p40 security sweep Onda 1",
-    "closed_cache_keys": [
-      "security_definer_view_public_active_members",
-      "security_definer_view_public_vw_exec_cert_timeline",
-      "security_definer_view_public_auth_engagements",
-      "security_definer_view_public_impact_hours_total",
-      "security_definer_view_public_vw_exec_skills_radar",
-      "security_definer_view_public_impact_hours_summary"
-    ],
-    "action": "ALTER VIEW ... SET (security_invoker = true) + selective REVOKE. Migration 20260508030000. Verified 6/11 ERROR closed by live advisor rerun."
+  "closed_history": {
+    "onda_1_2026_04_23": {
+      "commit_ref": "f5fb688",
+      "closed_cache_keys": [
+        "security_definer_view_public_active_members",
+        "security_definer_view_public_vw_exec_cert_timeline",
+        "security_definer_view_public_auth_engagements",
+        "security_definer_view_public_impact_hours_total",
+        "security_definer_view_public_vw_exec_skills_radar",
+        "security_definer_view_public_impact_hours_summary"
+      ],
+      "action": "ALTER VIEW ... SET (security_invoker = true) + selective REVOKE. Migration 20260508030000."
+    },
+    "onda_1_5_2026_04_23": {
+      "commit_ref": "p40 mini-sweep",
+      "closed_cache_keys": [
+        "security_definer_view_public_member_attendance_summary"
+      ],
+      "action": "Flip invoker + revoke anon on dead view (zero callers verified). Migration 20260508040000."
+    },
+    "pre_session_cleanup": {
+      "note": "security_definer_view_public_vw_exec_funnel removed from baseline: not in live advisor output as of 2026-04-23 — view was already cleaned up in a prior session, baseline entry was stale."
+    }
   }
 }
