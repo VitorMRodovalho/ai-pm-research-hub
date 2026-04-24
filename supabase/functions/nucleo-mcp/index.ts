@@ -2077,6 +2077,129 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "update_card_forecast", true, undefined, start);
     return ok({ action: "update_card_forecast", status: "updated", card_id: params.card_id, new_forecast_date: params.new_forecast_date });
   });
+
+  // ───────────────────────────────────────────────────────────────
+  // LGPD + AUDIT + ORPHAN TRIAGE TOOLS (p41 Onda B + G7 surface)
+  // ───────────────────────────────────────────────────────────────
+
+  // get_audit_log — unified admin audit reader (members + boards + settings + partnerships)
+  // Gate: RPC internal (is_superadmin OR can_by_member('manage_platform'))
+  mcp.tool("get_audit_log", "Unified audit log: member status/role transitions, board lifecycle, platform settings, partnership interactions. Admin only (manage_platform). Supports filters by actor, target, action keyword, date range.", {
+    actor_id: z.string().optional().describe("UUID of actor to filter by"),
+    target_id: z.string().optional().describe("UUID of target to filter by"),
+    action: z.string().optional().describe("Substring match on action/category/name"),
+    date_from: z.string().optional().describe("ISO timestamp — include entries after this"),
+    date_to: z.string().optional().describe("ISO timestamp — include entries before this"),
+    limit: z.number().optional().describe("Max rows to return. Default 50, max 500"),
+    offset: z.number().optional().describe("Pagination offset. Default 0")
+  }, async (params: { actor_id?: string; target_id?: string; action?: string; date_from?: string; date_to?: string; limit?: number; offset?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_audit_log", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_audit_log", {
+      p_actor_id: params.actor_id ?? null,
+      p_target_id: params.target_id ?? null,
+      p_action: params.action ?? null,
+      p_date_from: params.date_from ?? null,
+      p_date_to: params.date_to ?? null,
+      p_limit: Math.min(params.limit ?? 50, 500),
+      p_offset: params.offset ?? 0,
+    });
+    if (error) { await logUsage(sb, member.id, "get_audit_log", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_audit_log", true, undefined, start);
+    return ok(data);
+  });
+
+  // get_my_pii_access_log — LGPD Art. 18 direct-subject access to who read their PII
+  mcp.tool("get_my_pii_access_log", "LGPD Art. 18 — returns a log of who accessed YOUR personally-identifiable data (name/email/phone/etc.), with accessor name/role, fields accessed, context, and timestamp.", {
+    limit: z.number().optional().describe("Max rows to return. Default 50, max 500")
+  }, async (params: { limit?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_my_pii_access_log", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_my_pii_access_log", {
+      p_limit: Math.min(params.limit ?? 50, 500),
+    });
+    if (error) { await logUsage(sb, member.id, "get_my_pii_access_log", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_my_pii_access_log", true, undefined, start);
+    return ok(data);
+  });
+
+  // get_pii_access_log_admin — DPO/manager-level PII access reader
+  // Gate: RPC internal (is_superadmin OR manager OR deputy_manager)
+  mcp.tool("get_pii_access_log_admin", "DPO view: PII access log across the platform with accessor/target/fields. Admin only. Filters by target_member_id, accessor_id, days window.", {
+    target_member_id: z.string().optional().describe("Filter by specific member whose PII was accessed"),
+    accessor_id: z.string().optional().describe("Filter by specific accessor"),
+    days: z.number().optional().describe("Lookback window in days. Default 30"),
+    limit: z.number().optional().describe("Max rows. Default 500, capped at 2000")
+  }, async (params: { target_member_id?: string; accessor_id?: string; days?: number; limit?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_pii_access_log_admin", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_pii_access_log_admin", {
+      p_target_member_id: params.target_member_id ?? null,
+      p_accessor_id: params.accessor_id ?? null,
+      p_days: params.days ?? 30,
+      p_limit: Math.min(params.limit ?? 500, 2000),
+    });
+    if (error) { await logUsage(sb, member.id, "get_pii_access_log_admin", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_pii_access_log_admin", true, undefined, start);
+    return ok(data);
+  });
+
+  // export_audit_log_csv — DPO-facing CSV export for compliance audits
+  // Gate: RPC internal
+  mcp.tool("export_audit_log_csv", "DPO compliance export: audit log entries as CSV text. Filters by category (all/members/boards/settings/partnerships) and date range.", {
+    category: z.string().optional().describe("Category filter: 'all' | 'members' | 'boards' | 'settings' | 'partnerships'. Default 'all'"),
+    start_date: z.string().optional().describe("Start date YYYY-MM-DD"),
+    end_date: z.string().optional().describe("End date YYYY-MM-DD")
+  }, async (params: { category?: string; start_date?: string; end_date?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "export_audit_log_csv", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("export_audit_log_csv", {
+      p_category: params.category ?? 'all',
+      p_start_date: params.start_date ?? null,
+      p_end_date: params.end_date ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "export_audit_log_csv", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "export_audit_log_csv", true, undefined, start);
+    return ok(data);
+  });
+
+  // get_chain_audit_report — governance approval chain audit trail (ADR-0016)
+  mcp.tool("get_chain_audit_report", "Returns the full audit trail for an IP ratification / cooperation agreement approval chain: signoff timeline + integrity summary. For governance review.", {
+    chain_id: z.string().describe("UUID of the approval_chains row")
+  }, async (params: { chain_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_chain_audit_report", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.chain_id)) { await logUsage(sb, member.id, "get_chain_audit_report", false, "Invalid chain_id", start); return err("chain_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_chain_audit_report", { p_chain_id: params.chain_id });
+    if (error) { await logUsage(sb, member.id, "get_chain_audit_report", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_chain_audit_report", true, undefined, start);
+    return ok(data);
+  });
+
+  // list_orphan_card_assignments — #91 G7 surface: board_taxonomy_alerts of offboard orphans
+  // Gate: RPC internal (can_by_member 'manage_member')
+  mcp.tool("list_orphan_card_assignments", "Lists unresolved board cards still assigned to offboarded/inactive/observer members. Admin triage for reassignment. Filters by chapter or tribe_id.", {
+    tribe_id: z.number().optional().describe("Filter by tribe ID"),
+    chapter: z.string().optional().describe("Filter by chapter code (e.g. 'PMI-GO')"),
+    limit: z.number().optional().describe("Max cards to return. Default 100, max 500")
+  }, async (params: { tribe_id?: number; chapter?: string; limit?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_orphan_card_assignments", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("list_orphan_card_assignments", {
+      p_tribe_id: params.tribe_id ?? null,
+      p_chapter: params.chapter ?? null,
+      p_limit: Math.min(params.limit ?? 100, 500),
+    });
+    if (error) { await logUsage(sb, member.id, "list_orphan_card_assignments", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_orphan_card_assignments", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -2087,7 +2210,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.15.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.16.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -2107,6 +2230,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.15.0", tools: 106, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.16.0", tools: 112, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
