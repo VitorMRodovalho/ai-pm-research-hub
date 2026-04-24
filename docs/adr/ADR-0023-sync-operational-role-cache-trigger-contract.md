@@ -181,3 +181,60 @@ Funções que hoje leem `operational_role` em fast-path (não via can_by_member)
 - (futures) stakeholder fan-out, digest builders, leaderboard readers
 
 Todas devem renovar sua suposição a cada ciclo ("o cache ainda reflete a ladder correta?") — garantido por este ADR + invariant A3.
+
+## Appendix D — Coverage audit (2026-04-25)
+
+Audit feita após contract test de parity (Track I, commit `d2e0b86`) para detectar engagement kinds existentes mas não cobertos pela ladder. Risco: pessoa com ONLY uncovered engagement cairia em `ELSE 'guest'` — correto sintaticamente mas semanticamente duvidoso.
+
+### Kinds × Roles observados em prod (is_authoritative=true, 2026-04-25)
+
+**Cobertos explicitamente pela ladder:**
+| Kind | Role | Clause | Result | People |
+|---|---|---|---|---|
+| chapter_board | board_member | 11 | chapter_liaison | 9 |
+| chapter_board | liaison | 11 | chapter_liaison | 3 |
+| observer | curator | 8 | observer | 1 |
+| observer | observer | 8 | observer | 5 |
+| observer | reviewer | 8 | observer | 2 |
+| sponsor | sponsor | 10 | sponsor | 5 |
+| volunteer | co_gp | 4 | manager | 1 |
+| volunteer | leader | 3 | tribe_leader | 7 |
+| volunteer | manager | 1 | manager | 1 |
+| volunteer | researcher | 6 | researcher | 27 |
+
+**Não cobertos (fall to `ELSE 'guest'`):**
+| Kind | Role | People |
+|---|---|---|
+| committee_coordinator | coordinator | 2 |
+| committee_coordinator | leader | 1 |
+| committee_member | coordinator | 2 |
+| committee_member | leader | 1 |
+| speaker | co_presenter | 1 |
+| speaker | lead_presenter | 1 |
+| workgroup_member | coordinator | 2 |
+| workgroup_member | leader | 1 |
+| workgroup_member | researcher | 6 |
+
+### Finding
+
+**Zero pessoas afetadas em prod** — todas as 17 pessoas com engagement uncovered TAMBÉM têm uma engagement covered (tipicamente `volunteer` kind) que match clause anterior na ladder. Como o cálculo usa `bool_or`, o primeiro clause covered wins. Example verified: 6 members com `workgroup_member/researcher` também têm `volunteer/leader` → cache correto `tribe_leader` (clause 3), não `guest`.
+
+### Policy (deste ADR)
+
+**Latent gaps aceitos** porque:
+1. Committee/workgroup/speaker engagements tipicamente são **secondary** no Núcleo (pessoa faz o grueling trabalho na tribo via `volunteer` kind; comittee/workgroup é overlay organizacional).
+2. `ELSE 'guest'` é semanticamente neutro — não implica falta de autoridade, só falta de label operational.
+3. Autoridade real (permission to write/manage/etc) continua passando por `can_by_member` → `engagement_kind_permissions`, imune à ladder.
+
+**Trigger para reconciliação**: se aparecer alguém com **ONLY** committee/workgroup/speaker engagements (sem volunteer), e essa situação não for intencional, adicionar clause específica na ladder (e em invariant A3 — parity rule obriga).
+
+### Near-future additions expected
+
+Kinds defined em `engagement_kinds` que ainda não geraram dados:
+- `ambassador` (embaixador)
+- `guest` (convidado)
+- `partner_contact` (contato parceiro)
+- `study_group_owner` / `study_group_participant`
+- `workgroup_coordinator` (defined mas não observed; tem 0 people em `auth_engagements`)
+
+Quando esses kinds entrarem em operação, revisitar este Appendix + possivelmente adicionar clauses.
