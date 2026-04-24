@@ -2470,6 +2470,142 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "list_my_signatures", true, undefined, start);
     return ok(data);
   });
+
+  // list_document_versions — full version history of a governance document
+  mcp.tool("list_document_versions", "Returns version history of a governance document (newest first). Each row has version_number, label, authored_by, locked_at, is_current, content_html_length, comments_total + comments_unresolved. Use for review UX and version diff setup.", {
+    document_id: z.string().describe("UUID of governance_documents row")
+  }, async (params: { document_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_document_versions", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.document_id)) { await logUsage(sb, member.id, "list_document_versions", false, "Invalid document_id", start); return err("document_id must be a UUID"); }
+    const { data, error } = await sb.rpc("list_document_versions", { p_document_id: params.document_id });
+    if (error) { await logUsage(sb, member.id, "list_document_versions", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_document_versions", true, undefined, start);
+    return ok(data);
+  });
+
+  // get_version_diff — side-by-side content pair for two versions of the same document
+  mcp.tool("get_version_diff", "Returns content_html + content_markdown for two document versions (a and b). Use to compute diff client-side. Validates both versions belong to same document. Returns both_exist + same_document flags + newer_version_id/older_version_id helpers.", {
+    version_a: z.string().describe("UUID of first document_versions row"),
+    version_b: z.string().describe("UUID of second document_versions row")
+  }, async (params: { version_a: string; version_b: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_version_diff", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.version_a) || !isUUID(params.version_b)) { await logUsage(sb, member.id, "get_version_diff", false, "Invalid version id", start); return err("both version ids must be UUIDs"); }
+    const { data, error } = await sb.rpc("get_version_diff", { p_version_a: params.version_a, p_version_b: params.version_b });
+    if (error) { await logUsage(sb, member.id, "get_version_diff", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_version_diff", true, undefined, start);
+    return ok(data);
+  });
+
+  // get_document_detail — composite read (doc + current version + active chain + signoffs + comments)
+  mcp.tool("get_document_detail", "Composite read: governance_document + current_version summary + active approval_chain (with signed_gates and pending_gates_for_me) + draft_versions list + comments_total/unresolved. Single round-trip for review UX. Use to pull everything about a document.", {
+    document_id: z.string().describe("UUID of governance_documents row")
+  }, async (params: { document_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_document_detail", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.document_id)) { await logUsage(sb, member.id, "get_document_detail", false, "Invalid document_id", start); return err("document_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_document_detail", { p_document_id: params.document_id });
+    if (error) { await logUsage(sb, member.id, "get_document_detail", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_document_detail", true, undefined, start);
+    return ok(data);
+  });
+
+  // propose_new_version — create a new draft version of a governance document
+  mcp.tool("propose_new_version", "Create a new DRAFT version of a governance document. version_number auto-incremented. Requires manage_member authority. Returns version_id + version_number + version_label. Does NOT start approval chain — use lock_document_version after content is final.", {
+    document_id: z.string().describe("UUID of governance_documents row"),
+    content_html: z.string().describe("Full version content in HTML (required, non-empty)"),
+    content_markdown: z.string().optional().describe("Optional Markdown source"),
+    version_label: z.string().optional().describe("Optional label (e.g., 'v2.2'). Default: auto-generated 'Rascunho vN'"),
+    notes: z.string().optional().describe("Optional change notes / rationale for this version")
+  }, async (params: { document_id: string; content_html: string; content_markdown?: string; version_label?: string; notes?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "propose_new_version", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.document_id)) { await logUsage(sb, member.id, "propose_new_version", false, "Invalid document_id", start); return err("document_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "propose_new_version", false, "Unauthorized", start); return err("Unauthorized — manage_member authority required"); }
+    const { data, error } = await sb.rpc("upsert_document_version", {
+      p_document_id: params.document_id,
+      p_content_html: params.content_html,
+      p_content_markdown: params.content_markdown ?? null,
+      p_version_label: params.version_label ?? null,
+      p_version_id: null,
+      p_notes: params.notes ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "propose_new_version", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "propose_new_version", true, undefined, start);
+    return ok(data);
+  });
+
+  // edit_document_version_draft — update content of an unlocked draft
+  mcp.tool("edit_document_version_draft", "Update content of an EXISTING unlocked draft version. Fails if version is locked (immutability). Preserves version_number; optionally updates label/markdown/notes. Requires manage_member authority.", {
+    version_id: z.string().describe("UUID of document_versions row to update"),
+    content_html: z.string().describe("Updated HTML content (required, non-empty)"),
+    content_markdown: z.string().optional().describe("Optional updated Markdown source"),
+    version_label: z.string().optional().describe("Optional new label"),
+    notes: z.string().optional().describe("Optional change notes")
+  }, async (params: { version_id: string; content_html: string; content_markdown?: string; version_label?: string; notes?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "edit_document_version_draft", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.version_id)) { await logUsage(sb, member.id, "edit_document_version_draft", false, "Invalid version_id", start); return err("version_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "edit_document_version_draft", false, "Unauthorized", start); return err("Unauthorized — manage_member authority required"); }
+    const { data: existing, error: lookupErr } = await sb.from("document_versions").select("document_id").eq("id", params.version_id).single();
+    if (lookupErr || !existing) { await logUsage(sb, member.id, "edit_document_version_draft", false, "Version not found", start); return err("document_version not found"); }
+    const { data, error } = await sb.rpc("upsert_document_version", {
+      p_document_id: existing.document_id,
+      p_content_html: params.content_html,
+      p_content_markdown: params.content_markdown ?? null,
+      p_version_label: params.version_label ?? null,
+      p_version_id: params.version_id,
+      p_notes: params.notes ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "edit_document_version_draft", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "edit_document_version_draft", true, undefined, start);
+    return ok(data);
+  });
+
+  // lock_document_version — freeze a draft + open approval chain
+  mcp.tool("lock_document_version", "LOCK a draft version (becomes immutable) + open an approval_chain with the provided gates. Sets governance_documents.current_version_id. Fails if version is already locked or if a chain exists. Enqueues gate notifications. Requires manage_member authority.", {
+    version_id: z.string().describe("UUID of document_versions row to lock"),
+    gates: z.array(z.object({
+      kind: z.string().describe("gate kind: curator | leader_awareness | submitter_acceptance | chapter_witness | president_go | president_others | member_ratification | external_signer"),
+      order: z.number().describe("Gate order in chain (1-indexed)"),
+      threshold: z.union([z.string(), z.number()]).describe("'all' or integer N (minimum signatures required)")
+    })).describe("Ordered gate sequence for this approval chain")
+  }, async (params: { version_id: string; gates: Array<{ kind: string; order: number; threshold: string | number }> }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "lock_document_version", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.version_id)) { await logUsage(sb, member.id, "lock_document_version", false, "Invalid version_id", start); return err("version_id must be a UUID"); }
+    if (!Array.isArray(params.gates) || params.gates.length === 0) { await logUsage(sb, member.id, "lock_document_version", false, "Invalid gates", start); return err("gates must be a non-empty array"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "lock_document_version", false, "Unauthorized", start); return err("Unauthorized — manage_member authority required"); }
+    const { data, error } = await sb.rpc("lock_document_version", {
+      p_version_id: params.version_id,
+      p_gates: params.gates,
+    });
+    if (error) { await logUsage(sb, member.id, "lock_document_version", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "lock_document_version", true, undefined, start);
+    return ok(data);
+  });
+
+  // delete_document_version_draft — remove an unlocked draft (emits audit log)
+  mcp.tool("delete_document_version_draft", "DELETE an unlocked draft version permanently. Fails if the version is locked (locked versions are immutable). Records the deletion in admin_audit_log. Requires manage_member authority.", {
+    version_id: z.string().describe("UUID of document_versions row to delete")
+  }, async (params: { version_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "delete_document_version_draft", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.version_id)) { await logUsage(sb, member.id, "delete_document_version_draft", false, "Invalid version_id", start); return err("version_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "delete_document_version_draft", false, "Unauthorized", start); return err("Unauthorized — manage_member authority required"); }
+    const { data, error } = await sb.rpc("delete_document_version_draft", { p_version_id: params.version_id });
+    if (error) { await logUsage(sb, member.id, "delete_document_version_draft", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "delete_document_version_draft", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -2480,7 +2616,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.19.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.20.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -2500,6 +2636,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.19.0", tools: 125, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.20.0", tools: 132, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
