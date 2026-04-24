@@ -1,6 +1,6 @@
 # ADR-0018: MCP Threat Model — análise de risco e mitigações canônicas
 
-- Status: Partially Accepted (2026-04-24 p44+T) — D1-D5 análise + convenções aceitas; **W1 confirmation step shipped (MCP v2.24.0, 2026-04-24 p44)**; **W3 prerequisite `result_kind` coluna shipped (MCP v2.24.1 + migration `20260511010000`, 2026-04-24 p44 Track T)**; W2 rate limit + W3 cron ainda pendentes
+- Status: Partially Accepted (2026-04-24 p44+T+W3) — D1-D5 análise + convenções aceitas; **W1 confirmation step shipped (MCP v2.24.0, 2026-04-24 p44 Track R)**; **W3 anomaly detection cron shipped (migration `20260511020000`, pg_cron `mcp-anomaly-detection-15min`, 2026-04-24 p44 Track W3)**; W2 rate limit (Cloudflare Worker KV) ainda pendente
 - Data: 2026-04-21
 - Autor: Claude (debug session 9908f3, issue #89 Frente 6)
 - Escopo: Formaliza análise de risco do `nucleo-mcp` (Supabase Edge Function exposto via proxy Cloudflare em `https://nucleoia.vitormr.dev/mcp`), identifica vetores aplicáveis e não-aplicáveis da vulnerabilidade MCP reportada em abril/2026, e define mitigações canônicas.
@@ -81,12 +81,29 @@ Implementação: KV counters com TTL. Token já é cached no KV (30d refresh).
 
 Tabela `mcp_usage_log` grava todas as chamadas (success/fail + error_message + member_id + tool_name + execution_ms + created_at + **result_kind**). Permite:
 
-- Detection de padrões anômalos (mesmo tool chamado 50x em 1 min)
+- Detection de padrões anômalos (mesmo tool chamado 50x em 1 min) — **implementado W3**
 - Audit trail post-incident
 - Analytics de adoption
-- **Distinção preview-vs-execute** (coluna `result_kind` adicionada em 2026-04-24 p44 Track T, migration `20260511010000`; valores `'preview'` ou `'execute'`, default `'execute'`) — W3 anomaly cron pode filtrar `WHERE result_kind = 'execute'` para contar apenas mutations reais, ou olhar razão preview/execute para detectar cross-MCP injection (muitos previews sem confirm podem indicar injection rejeitada pelo humano).
+- **Distinção preview-vs-execute** (coluna `result_kind` adicionada em 2026-04-24 p44 Track T, migration `20260511010000`; valores `'preview'` ou `'execute'`, default `'execute'`) — W3 anomaly cron filtra `WHERE result_kind = 'execute'` para contar apenas mutations reais, e detecta `preview_without_execute` (injection rejeitada pelo humano).
 
-Issue #81 item #5 propõe cron de anomaly detection — agora destravado pela coluna `result_kind`. Deve ser priorizado para completar este threat model.
+#### D3.2 — W3 anomaly detection cron (shipped 2026-04-24 p44 Track W3)
+
+Migration `20260511020000` + pg_cron job `mcp-anomaly-detection-15min` (a cada 15 min). Função `detect_mcp_anomalies()` SECURITY DEFINER varre `mcp_usage_log` em 4 padrões:
+
+| Pattern | Janela | Threshold | Severity | Hipótese |
+|---|---|---|---|---|
+| `burst_execute` | 10 min | 50+ execs do MESMO tool | medium | script runaway ou abuso |
+| `canv4_enumeration` | 10 min | 5+ `Unauthorized*` failures | high | enumeração de permissões |
+| `destructive_burst` | 15 min | 10+ execs em qualquer destructive tool | high | exfil / sabotage |
+| `preview_without_execute` | 15 min | 5+ previews sem execute seguido | medium | cross-MCP injection rejeitada |
+
+Output: INSERT em `admin_audit_log` com `action='mcp_anomaly_detected'`, `target_type='mcp_usage'`, `target_id=member_id`, `metadata jsonb` com pattern + tool + count + severity + threshold + detected_at. Admin lê via RLS SELECT superadmin-only.
+
+Dedup: função checa se mesma `(target_id, pattern, tool_name)` foi inserida nos últimos 30 min antes de inserir — previne alert fatigue quando padrão é sustentado.
+
+Smoke test (transação com ROLLBACK) confirmou detection + alert insertion. Baseline atual (30 dias) peak é 28 execs/tool (bem abaixo de 50), 1 Unauthorized (bem abaixo de 5), 0 destructive burst — zero falsos positivos esperados.
+
+Issue #81 item #5 fechado.
 
 #### D3.2 — OAuth refresh + KV 30d (já em produção)
 
@@ -102,10 +119,10 @@ Token JWT expira 1h. Refresh token no KV 30d. Se member perde acesso (offboarded
 | SSRF via tool URL param | N/A | ❌ Não aplica | — | ✅ |
 | Data exfiltration | Baixo | ❌ RLS + canV4 já gated | — | ✅ |
 | Cross-MCP prompt injection (destructive) | Médio | 🟡 Parcial | Confirmation step W1 | ✅ Shipped 2026-04-24 (v2.24.0) |
-| Token theft (XSS, phishing) | Médio | 🟡 Comum a todo HTTP | OAuth + audit + offboard | ✅ parcial |
+| Token theft (XSS, phishing) | Médio | 🟡 Comum a todo HTTP | OAuth + audit + offboard + **anomaly cron W3** | ✅ mitigado em vários layers |
 | Rate limiting / brute force | Médio | 🟡 Aplica a qualquer API | Cloudflare KV counters W2 | ⏳ |
 | Tool description poisoning | Baixo | 🟢 Não aplica hoje | Manter hard-coded (D5) | ✅ convenção |
-| Enumeration de permissions | Baixo | 🟡 Possível via canV4 failures | Alert W2 | ⏳ |
+| Enumeration de permissions | Baixo | 🟡 Possível via canV4 failures | Anomaly cron W3 (`canv4_enumeration` pattern) | ✅ Shipped 2026-04-24 (W3) |
 
 ### D5 — Convenções permanentes
 
@@ -120,9 +137,10 @@ Token JWT expira 1h. Refresh token no KV 30d. Se member perde acesso (offboarded
 
 | Item | Esforço | Prioridade | Status |
 |---|---|---|---|
-| W1 — Confirmation step 5 destructive tools | 3-4h | 🟡 | ✅ Shipped 2026-04-24 (MCP v2.24.0) |
+| W1 — Confirmation step 5 destructive tools | 3-4h | 🟡 | ✅ Shipped 2026-04-24 p44 (MCP v2.24.0) |
+| W3-prereq — `mcp_usage_log.result_kind` | 30min | 🟡 | ✅ Shipped 2026-04-24 p44 Track T (MCP v2.24.1, migration `20260511010000`) |
+| W3 — MCP anomaly detection cron (issue #81) | 2h | 🟡 | ✅ Shipped 2026-04-24 p44 Track W3 (migration `20260511020000`) |
 | W2 — Cloudflare rate limit (KV counters) | 1 dia | 🟡 | ⏳ Pending |
-| W3 — MCP anomaly detection cron (issue #81) | 2h | 🟡 | ⏳ Pending |
 
 ### D7 — Resposta formal à Ana Carla
 
@@ -167,9 +185,8 @@ Enviar link para este ADR quando publicado (status = Accepted). Fecha loop comun
 - D3.1 `mcp_usage_log`: 299 eventos registrados em 48 tools distintas (23 dias de telemetria) — base sólida para detection
 - D5 convenções canônicas: tool descriptions hard-coded (zero refs a user input), canV4 gate em todos writes, `mcp_usage_log` emit universal, OAuth 2.1 obrigatório, `verify_jwt` pinado em `supabase/config.toml`
 
-**Pendente implementação (W2/W3):**
-- W2 — rate limit em Cloudflare Worker KV counters
-- W3 — MCP anomaly detection cron (issue #81 item 5) — destravado pela coluna `result_kind` (Track T, 2026-04-24 p44)
+**Pendente implementação (W2):**
+- W2 — rate limit em Cloudflare Worker KV counters (toca proxy Cloudflare `src/pages/mcp.ts`, não Supabase EF)
 
 **Shipped (2026-04-24 p44) — W1 confirmation step:**
 - 5 destructive tools gated em MCP v2.24.0: `drop_event_instance`, `delete_card`, `archive_card`, `manage_initiative_engagement` (action='remove'), `offboard_member`
@@ -184,4 +201,13 @@ Enviar link para este ADR quando publicado (status = Accepted). Fecha loop comun
 - MCP v2.24.0 → v2.24.1 (patch — observability, não comportamento)
 - Desbloqueia W3 anomaly cron: contagem de mutations reais separada de previews abandonadas (útil para detectar cross-MCP injection onde humano rejeitou confirm)
 
-Resposta formal à Ana Carla pode ser enviada agora com ressalva "Partially Accepted — W1 shipped; W2/W3 em backlog."
+**Shipped (2026-04-24 p44 Track W3) — MCP anomaly detection cron:**
+- Migration `20260511020000` cria `detect_mcp_anomalies()` SECURITY DEFINER function + registra pg_cron job `mcp-anomaly-detection-15min` (schedule `*/15 * * * *`)
+- 4 patterns detectados: `burst_execute` (50+/10min), `canv4_enumeration` (5+/10min `Unauthorized*`), `destructive_burst` (10+/15min), `preview_without_execute` (5+/15min sem follow-up)
+- Output: INSERT em `admin_audit_log` com `action='mcp_anomaly_detected'` + metadata jsonb
+- Dedup: 30min window em admin_audit_log previne alert fatigue
+- Smoke test (transação + ROLLBACK): 6 fake Unauthorized → `canv4_enumeration` pattern fired com count=6, severity=high, alert INSERTed em admin_audit_log, rollback limpou 100%
+- Baseline (30 dias): peak 28 execs/tool, 1 Unauthorized total, 0 destructive burst — zero falsos positivos esperados
+- Issue #81 item #5 fechado
+
+Resposta formal à Ana Carla pode ser enviada agora com ressalva "Partially Accepted — W1 + W3 shipped; W2 rate limit em backlog."
