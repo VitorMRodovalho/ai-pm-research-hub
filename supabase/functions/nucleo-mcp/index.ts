@@ -2623,6 +2623,62 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "get_governance_change_log", true, undefined, start);
     return ok(data);
   });
+
+  // link_partner_to_card — UPSERT link between partner_entity and board_item
+  mcp.tool("link_partner_to_card", "Link a partner entity to a board card (UPSERT — updates link_role+notes if link already exists). link_role must be one of: general | pipeline | deliverable | follow_up | contract | onboarding. Requires manage_partner authority.", {
+    partner_entity_id: z.string().describe("UUID of partner_entities row"),
+    board_item_id: z.string().describe("UUID of board_items row"),
+    link_role: z.string().optional().describe("general | pipeline | deliverable | follow_up | contract | onboarding. Default 'general'"),
+    notes: z.string().optional().describe("Optional link context/notes")
+  }, async (params: { partner_entity_id: string; board_item_id: string; link_role?: string; notes?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "link_partner_to_card", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.partner_entity_id) || !isUUID(params.board_item_id)) { await logUsage(sb, member.id, "link_partner_to_card", false, "Invalid UUID", start); return err("partner_entity_id and board_item_id must be UUIDs"); }
+    if (!(await canV4(sb, member.id, 'manage_partner'))) { await logUsage(sb, member.id, "link_partner_to_card", false, "Unauthorized", start); return err("Unauthorized — manage_partner authority required"); }
+    const { data, error } = await sb.rpc("link_partner_to_card", {
+      p_partner_entity_id: params.partner_entity_id,
+      p_board_item_id: params.board_item_id,
+      p_link_role: params.link_role ?? 'general',
+      p_notes: params.notes ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "link_partner_to_card", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "link_partner_to_card", true, undefined, start);
+    return ok(data);
+  });
+
+  // unlink_partner_from_card — remove link
+  mcp.tool("unlink_partner_from_card", "Remove a partner↔card link. Idempotent (returns success=false if no row matched). Requires manage_partner authority.", {
+    partner_entity_id: z.string().describe("UUID of partner_entities row"),
+    board_item_id: z.string().describe("UUID of board_items row")
+  }, async (params: { partner_entity_id: string; board_item_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "unlink_partner_from_card", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.partner_entity_id) || !isUUID(params.board_item_id)) { await logUsage(sb, member.id, "unlink_partner_from_card", false, "Invalid UUID", start); return err("both ids must be UUIDs"); }
+    if (!(await canV4(sb, member.id, 'manage_partner'))) { await logUsage(sb, member.id, "unlink_partner_from_card", false, "Unauthorized", start); return err("Unauthorized — manage_partner authority required"); }
+    const { data, error } = await sb.rpc("unlink_partner_from_card", {
+      p_partner_entity_id: params.partner_entity_id,
+      p_board_item_id: params.board_item_id,
+    });
+    if (error) { await logUsage(sb, member.id, "unlink_partner_from_card", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "unlink_partner_from_card", true, undefined, start);
+    return ok(data);
+  });
+
+  // list_partner_cards — board cards linked to a partner
+  mcp.tool("list_partner_cards", "List all board cards linked to a partner entity. Returns link_role, board_item (title, status, due_date, assignee_name), board_name, partner_name, linked_by_name. Use to answer 'which cards is PMI-CE driving?' or 'what's the backlog for Partner X?'.", {
+    partner_entity_id: z.string().describe("UUID of partner_entities row")
+  }, async (params: { partner_entity_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_partner_cards", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.partner_entity_id)) { await logUsage(sb, member.id, "list_partner_cards", false, "Invalid partner_entity_id", start); return err("partner_entity_id must be a UUID"); }
+    const { data, error } = await sb.rpc("list_partner_cards", { p_partner_entity_id: params.partner_entity_id });
+    if (error) { await logUsage(sb, member.id, "list_partner_cards", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_partner_cards", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -2633,7 +2689,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.21.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.22.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -2653,6 +2709,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.21.0", tools: 133, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.22.0", tools: 136, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
