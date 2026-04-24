@@ -1963,6 +1963,120 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
       tags: tagsRes.data,
     });
   });
+
+  // ===== BOARD/CARD CRUD (issue #83 P2) =====
+  // 5 wrappers of existing SECURITY DEFINER RPCs — admin + portfolio operations.
+  // archive_card / restore_card / advance_card_curation / create_mirror_card / update_card_forecast.
+  // Tool layer gates with write_board (baseline); each RPC enforces stricter authority internally
+  // (admin_*, portfolio forecast edits typically require Leader/GP or higher).
+
+  // TOOL: archive_card — wrap admin_archive_board_item. Soft-delete with audit.
+  mcp.tool("archive_card", "Soft-archive a card (status='archived') with audit reason. Preserves the row — use delete_card for permanent deletion. RPC performs the admin/leader authority check.", {
+    card_id: z.string().describe("UUID of the card to archive"),
+    reason: z.string().optional().describe("Optional audit reason (recommended)")
+  }, async (params: { card_id: string; reason?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "archive_card", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.card_id)) { await logUsage(sb, member.id, "archive_card", false, "Invalid card_id", start); return err("card_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'write_board'))) { await logUsage(sb, member.id, "archive_card", false, "Unauthorized", start); return err("Unauthorized — write_board required."); }
+    const { data, error } = await sb.rpc("admin_archive_board_item", {
+      p_item_id: params.card_id,
+      p_reason: params.reason || null,
+    });
+    if (error) { await logUsage(sb, member.id, "archive_card", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "archive_card", true, undefined, start);
+    return ok({ action: "archive_card", status: "archived", card_id: params.card_id, result: data });
+  });
+
+  // TOOL: restore_card — wrap admin_restore_board_item. Reverse of archive.
+  mcp.tool("restore_card", "Restore an archived card back to an active column. Default target status is 'backlog'. RPC performs the admin/leader authority check.", {
+    card_id: z.string().describe("UUID of the archived card"),
+    restore_status: z.string().optional().describe("Target status column (default: 'backlog'). Use any valid board column: backlog|in_progress|review|done."),
+    reason: z.string().optional().describe("Optional audit reason")
+  }, async (params: { card_id: string; restore_status?: string; reason?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "restore_card", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.card_id)) { await logUsage(sb, member.id, "restore_card", false, "Invalid card_id", start); return err("card_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'write_board'))) { await logUsage(sb, member.id, "restore_card", false, "Unauthorized", start); return err("Unauthorized — write_board required."); }
+    const { data, error } = await sb.rpc("admin_restore_board_item", {
+      p_item_id: params.card_id,
+      p_restore_status: params.restore_status || 'backlog',
+      p_reason: params.reason || null,
+    });
+    if (error) { await logUsage(sb, member.id, "restore_card", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "restore_card", true, undefined, start);
+    return ok({ action: "restore_card", status: "restored", card_id: params.card_id, restored_to: params.restore_status || 'backlog', result: data });
+  });
+
+  // TOOL: advance_card_curation — wrap advance_board_item_curation. Review pipeline step.
+  mcp.tool("advance_card_curation", "Move a card through its curation review pipeline: assign/approve/reject/request_changes. RPC enforces curator authority and current stage rules.", {
+    card_id: z.string().describe("UUID of the card under curation"),
+    action: z.string().describe("Curation action (e.g., assign|approve|reject|request_changes) — exact vocabulary is enforced by the RPC"),
+    reviewer_id: z.string().optional().describe("Optional UUID of the reviewer (member) to assign for the next step")
+  }, async (params: { card_id: string; action: string; reviewer_id?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "advance_card_curation", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.card_id)) { await logUsage(sb, member.id, "advance_card_curation", false, "Invalid card_id", start); return err("card_id must be a UUID"); }
+    if (params.reviewer_id && !isUUID(params.reviewer_id)) { await logUsage(sb, member.id, "advance_card_curation", false, "Invalid reviewer_id", start); return err("reviewer_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'write_board'))) { await logUsage(sb, member.id, "advance_card_curation", false, "Unauthorized", start); return err("Unauthorized — write_board required."); }
+    const { error } = await sb.rpc("advance_board_item_curation", {
+      p_item_id: params.card_id,
+      p_action: params.action,
+      p_reviewer_id: params.reviewer_id || null,
+    });
+    if (error) { await logUsage(sb, member.id, "advance_card_curation", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "advance_card_curation", true, undefined, start);
+    return ok({ action: "advance_card_curation", status: "advanced", card_id: params.card_id, curation_action: params.action });
+  });
+
+  // TOOL: create_mirror_card — wrap create_mirror_card. Cross-board visibility copy.
+  mcp.tool("create_mirror_card", "Create a mirror of a card on a different board. The mirror is a linked copy for cross-board visibility (e.g., portfolio mirror of a tribe card). RPC enforces write access to the target board.", {
+    source_card_id: z.string().describe("UUID of the source card"),
+    target_board_id: z.string().describe("UUID of the board to mirror into"),
+    target_status: z.string().optional().describe("Initial status of the mirror card (default: 'backlog')"),
+    notes: z.string().optional().describe("Optional notes to attach to the mirror copy")
+  }, async (params: { source_card_id: string; target_board_id: string; target_status?: string; notes?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "create_mirror_card", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.source_card_id)) { await logUsage(sb, member.id, "create_mirror_card", false, "Invalid source_card_id", start); return err("source_card_id must be a UUID"); }
+    if (!isUUID(params.target_board_id)) { await logUsage(sb, member.id, "create_mirror_card", false, "Invalid target_board_id", start); return err("target_board_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'write_board'))) { await logUsage(sb, member.id, "create_mirror_card", false, "Unauthorized", start); return err("Unauthorized — write_board required."); }
+    const { data, error } = await sb.rpc("create_mirror_card", {
+      p_source_item_id: params.source_card_id,
+      p_target_board_id: params.target_board_id,
+      p_target_status: params.target_status || 'backlog',
+      p_notes: params.notes || null,
+    });
+    if (error) { await logUsage(sb, member.id, "create_mirror_card", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "create_mirror_card", true, undefined, start);
+    return ok({ action: "create_mirror_card", status: "mirrored", source_card_id: params.source_card_id, mirror_card_id: data });
+  });
+
+  // TOOL: update_card_forecast — wrap update_card_forecast. Portfolio forecast edit with justification.
+  mcp.tool("update_card_forecast", "Update the forecast_date of a card with a mandatory justification. Used to renegotiate a portfolio-tracked deadline. RPC typically requires Leader/GP authority and records the justification in the timeline.", {
+    card_id: z.string().describe("UUID of the card (board_items)"),
+    new_forecast_date: z.string().describe("New forecast date in YYYY-MM-DD format"),
+    justification: z.string().describe("Required justification — recorded in card timeline")
+  }, async (params: { card_id: string; new_forecast_date: string; justification: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "update_card_forecast", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.card_id)) { await logUsage(sb, member.id, "update_card_forecast", false, "Invalid card_id", start); return err("card_id must be a UUID"); }
+    if (!params.justification || !params.justification.trim()) { await logUsage(sb, member.id, "update_card_forecast", false, "Missing justification", start); return err("justification is required for update_card_forecast"); }
+    if (!(await canV4(sb, member.id, 'write_board'))) { await logUsage(sb, member.id, "update_card_forecast", false, "Unauthorized", start); return err("Unauthorized — write_board required."); }
+    const { error } = await sb.rpc("update_card_forecast", {
+      p_board_item_id: params.card_id,
+      p_new_forecast: params.new_forecast_date,
+      p_justification: params.justification,
+    });
+    if (error) { await logUsage(sb, member.id, "update_card_forecast", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "update_card_forecast", true, undefined, start);
+    return ok({ action: "update_card_forecast", status: "updated", card_id: params.card_id, new_forecast_date: params.new_forecast_date });
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -1973,7 +2087,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.14.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.15.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -1993,6 +2107,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.14.0", tools: 101, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.15.0", tools: 106, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
