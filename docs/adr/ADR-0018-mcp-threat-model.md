@@ -1,6 +1,6 @@
 # ADR-0018: MCP Threat Model — análise de risco e mitigações canônicas
 
-- Status: Partially Accepted (2026-04-24 p43) — D1-D5 análise + convenções aceitas; W1/W2/W3 mitigações pendentes de implementação
+- Status: Partially Accepted (2026-04-24 p44) — D1-D5 análise + convenções aceitas; **W1 confirmation step shipped (MCP v2.24.0, 2026-04-24 p44)**; W2 rate limit + W3 anomaly detection ainda pendentes
 - Data: 2026-04-21
 - Autor: Claude (debug session 9908f3, issue #89 Frente 6)
 - Escopo: Formaliza análise de risco do `nucleo-mcp` (Supabase Edge Function exposto via proxy Cloudflare em `https://nucleoia.vitormr.dev/mcp`), identifica vetores aplicáveis e não-aplicáveis da vulnerabilidade MCP reportada em abril/2026, e define mitigações canônicas.
@@ -37,16 +37,23 @@ Este ADR documenta (D1-D7):
 
 **Mitigação atual:** limitada ao gate `canV4` (LLM só consegue escrever se member tem permission).
 
-**Mitigação adicional (W1):** confirmation step para tools destrutivas. Lista:
+**Mitigação adicional (W1):** confirmation step para tools destrutivas. Lista implementada (MCP v2.24.0, 2026-04-24 p44):
 
-- `drop_event_instance`
-- `delete_card` (quando implementado)
-- `manage_initiative_engagement` com `action='remove'`
-- `admin_archive_board_item`, `admin_archive_project_board`
-- `offboard_member`
-- `revoke_engagement` (futuro)
+| Tool | Escopo de confirm | Target info no preview |
+|---|---|---|
+| `drop_event_instance` | sempre | event title, type, date, time_start, initiative_id |
+| `delete_card` | sempre | card title, status, board_id + reason echoed |
+| `archive_card` | sempre (soft-delete reversível) | card title, status, board_id + restore_card hint |
+| `manage_initiative_engagement` | só quando `action='remove'` | initiative title/kind, person name, engagement kind+role |
+| `offboard_member` | sempre | member name, current status, active engagements count, open cards count, proposed change |
 
-Implementação: tool accepts param `confirm: true` obrigatório. Se ausente, retorna payload de preview + instruction `"Pass confirm=true in a follow-up call to execute"`. Atacante cross-MCP precisaria forjar 2 calls em sequência, aumentando a barreira.
+**Fora do escopo W1 por ausência de tool MCP hoje:**
+- `admin_archive_project_board` — RPC existe mas sem wrapper MCP expondo-o
+- `revoke_engagement` — futuro
+
+**Implementação:** cada tool aceita `confirm: z.boolean().optional()`. Se ausente ou `false`, tool retorna payload `{ action, preview: true, target, warning, next_call }` com os campos específicos listados acima. Se `confirm: true`, executa o RPC subjacente. canV4 gate roda ANTES do preview para evitar que preview vire canal de recon. Preview calls são logados em `mcp_usage_log` como `success=true` (chamada válida que não executou mutation).
+
+Atacante cross-MCP precisa forjar 2 calls em sequência (preview + confirm=true), aumentando a barreira e dando ao humano review um checkpoint explícito com contexto do alvo. Mudança de comportamento **breaking**: callers programáticos que executavam destructive actions sem `confirm` agora só recebem preview.
 
 #### D2.2 — Rate limiting ausente (severidade: média)
 
@@ -93,7 +100,7 @@ Token JWT expira 1h. Refresh token no KV 30d. Se member perde acesso (offboarded
 | File write outside scope | N/A | ❌ Não aplica | — | ✅ |
 | SSRF via tool URL param | N/A | ❌ Não aplica | — | ✅ |
 | Data exfiltration | Baixo | ❌ RLS + canV4 já gated | — | ✅ |
-| Cross-MCP prompt injection (destructive) | Médio | 🟡 Parcial | Confirmation step W1 | ⏳ |
+| Cross-MCP prompt injection (destructive) | Médio | 🟡 Parcial | Confirmation step W1 | ✅ Shipped 2026-04-24 (v2.24.0) |
 | Token theft (XSS, phishing) | Médio | 🟡 Comum a todo HTTP | OAuth + audit + offboard | ✅ parcial |
 | Rate limiting / brute force | Médio | 🟡 Aplica a qualquer API | Cloudflare KV counters W2 | ⏳ |
 | Tool description poisoning | Baixo | 🟢 Não aplica hoje | Manter hard-coded (D5) | ✅ convenção |
@@ -110,11 +117,11 @@ Token JWT expira 1h. Refresh token no KV 30d. Se member perde acesso (offboarded
 
 ### D6 — Esforço de implementação
 
-| Item | Esforço | Prioridade |
-|---|---|---|
-| W1 — Confirmation step 7 destructive tools | 3-4h | 🟡 |
-| W2 — Cloudflare rate limit (KV counters) | 1 dia | 🟡 |
-| (bonus) — MCP anomaly detection cron (do #81) | 2h | 🟡 |
+| Item | Esforço | Prioridade | Status |
+|---|---|---|---|
+| W1 — Confirmation step 5 destructive tools | 3-4h | 🟡 | ✅ Shipped 2026-04-24 (MCP v2.24.0) |
+| W2 — Cloudflare rate limit (KV counters) | 1 dia | 🟡 | ⏳ Pending |
+| W3 — MCP anomaly detection cron (issue #81) | 2h | 🟡 | ⏳ Pending |
 
 ### D7 — Resposta formal à Ana Carla
 
@@ -159,9 +166,14 @@ Enviar link para este ADR quando publicado (status = Accepted). Fecha loop comun
 - D3.1 `mcp_usage_log`: 299 eventos registrados em 48 tools distintas (23 dias de telemetria) — base sólida para detection
 - D5 convenções canônicas: tool descriptions hard-coded (zero refs a user input), canV4 gate em todos writes, `mcp_usage_log` emit universal, OAuth 2.1 obrigatório, `verify_jwt` pinado em `supabase/config.toml`
 
-**Pendente implementação (W1/W2/W3):**
-- W1 — confirmation step em 7 tools destrutivas (grep por `confirm.*z.boolean` → 0 matches)
+**Pendente implementação (W2/W3):**
 - W2 — rate limit em Cloudflare Worker KV counters
 - W3 — MCP anomaly detection cron (issue #81 item 5)
 
-Resposta formal à Ana Carla pode ser enviada com ressalva "Partially Accepted + W1/W2 em backlog."
+**Shipped (2026-04-24 p44) — W1 confirmation step:**
+- 5 destructive tools gated em MCP v2.24.0: `drop_event_instance`, `delete_card`, `archive_card`, `manage_initiative_engagement` (action='remove'), `offboard_member`
+- Deploy: `supabase/functions/nucleo-mcp/index.ts` v2.24.0, commit na sessão p44
+- Preview default; `confirm: true` executa. canV4 gate corre antes do preview (evita recon via preview).
+- `admin_archive_project_board` e `revoke_engagement` ficam fora por ausência de wrapper MCP hoje; quando criados, seguem mesmo padrão.
+
+Resposta formal à Ana Carla pode ser enviada agora com ressalva "Partially Accepted — W1 shipped; W2/W3 em backlog."
