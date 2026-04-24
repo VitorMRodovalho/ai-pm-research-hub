@@ -1346,7 +1346,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_application_score_breakdown", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "get_application_score_breakdown", false, "Unauthorized", start); return err("Unauthorized: admin/GP only."); }
-    if (!isUUID(params.application_id)) { return err("application_id must be a UUID"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "get_application_score_breakdown", false, "Invalid application_id", start); return err("application_id must be a UUID"); }
     const { data, error } = await sb.rpc("get_application_score_breakdown", { p_application_id: params.application_id });
     if (error) { await logUsage(sb, member.id, "get_application_score_breakdown", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_application_score_breakdown", true, undefined, start);
@@ -1362,7 +1362,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "promote_to_leader_track", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!(await canV4(sb, member.id, 'promote'))) { await logUsage(sb, member.id, "promote_to_leader_track", false, "canV4 denied", start); return err("Unauthorized: only manager/deputy/superadmin"); }
-    if (!isUUID(params.application_id)) { return err("application_id must be a UUID"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "promote_to_leader_track", false, "Invalid application_id", start); return err("application_id must be a UUID"); }
     const { data, error } = await sb.rpc("promote_to_leader_track", {
       p_application_id: params.application_id,
       p_create_leader_app: params.create_leader_app ?? true
@@ -1381,7 +1381,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (!member) { await logUsage(sb, null, "get_person", false, "Not authenticated", start); return err("Not authenticated"); }
     const rpcParams: any = {};
     if (params.person_id) {
-      if (!isUUID(params.person_id)) { return err("person_id must be a UUID"); }
+      if (!isUUID(params.person_id)) { await logUsage(sb, member.id, "get_person", false, "Invalid person_id", start); return err("person_id must be a UUID"); }
       rpcParams.p_person_id = params.person_id;
     }
     const { data, error } = await sb.rpc("get_person", rpcParams);
@@ -1398,7 +1398,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (!member) { await logUsage(sb, null, "get_active_engagements", false, "Not authenticated", start); return err("Not authenticated"); }
     const rpcParams: any = {};
     if (params.person_id) {
-      if (!isUUID(params.person_id)) { return err("person_id must be a UUID"); }
+      if (!isUUID(params.person_id)) { await logUsage(sb, member.id, "get_active_engagements", false, "Invalid person_id", start); return err("person_id must be a UUID"); }
       rpcParams.p_person_id = params.person_id;
     }
     const { data, error } = await sb.rpc("get_active_engagements", rpcParams);
@@ -2729,7 +2729,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.23.1" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.23.2" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -2749,6 +2749,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.23.1", tools: 138, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.23.2", tools: 138, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
