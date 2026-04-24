@@ -71,6 +71,7 @@ COMMENT ON TABLE public.member_offboarding_records IS
 CREATE OR REPLACE FUNCTION public._offboarding_records_set_updated_at()
 RETURNS trigger
 LANGUAGE plpgsql
+SET search_path = 'public', 'pg_temp'
 AS $$
 BEGIN
   NEW.updated_at := now();
