@@ -14,11 +14,13 @@ function readFile(relPath) {
 }
 
 function findFunctionBody(sql, funcName) {
+  const escaped = funcName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const regex = new RegExp(
-    `CREATE OR REPLACE FUNCTION[^(]*${funcName}\\b[\\s\\S]*?\\$\\$([\\s\\S]*?)\\$\\$`, 'i'
+    `CREATE\\s+OR\\s+REPLACE\\s+FUNCTION\\s+(?:public\\.)?${escaped}\\s*\\([^)]*\\)[\\s\\S]*?AS\\s+\\$(\\w*)\\$([\\s\\S]*?)\\$\\1\\$`,
+    'i'
   );
   const match = sql.match(regex);
-  return match ? match[1] : '';
+  return match ? match[2] : '';
 }
 
 // ═══════════════════════════════════════════════════

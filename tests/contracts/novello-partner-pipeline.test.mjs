@@ -24,12 +24,12 @@ const allSQL = migrations.map(m => m.content).join('\n');
 function findFunctionBody(funcName) {
   const escaped = funcName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const regex = new RegExp(
-    `CREATE\\s+OR\\s+REPLACE\\s+FUNCTION\\s+(?:public\\.)?${escaped}\\s*\\([^)]*\\)[\\s\\S]*?\\$\\$([\\s\\S]*?)\\$\\$`,
+    `CREATE\\s+OR\\s+REPLACE\\s+FUNCTION\\s+(?:public\\.)?${escaped}\\s*\\([^)]*\\)[\\s\\S]*?AS\\s+\\$(\\w*)\\$([\\s\\S]*?)\\$\\1\\$`,
     'gi'
   );
   const matches = [...allSQL.matchAll(regex)];
   if (matches.length === 0) return null;
-  return matches[matches.length - 1][1];
+  return matches[matches.length - 1][2];
 }
 
 // ═══════════════════════════════════════════════════
