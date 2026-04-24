@@ -1,56 +1,32 @@
 {
-  "generated_at": "2026-04-17",
+  "generated_at": "2026-04-23",
   "source": "mcp__claude_ai_Supabase__get_advisors (type=security)",
   "principle": "Each cache_key below is an accepted advisor finding with documented rationale. CI fails if new ERROR advisors appear that are NOT in this allowlist. Update this file by re-running advisor scan and adding new accepted findings with rationale.",
   "security": {
     "accepted_errors": [
       {
-        "cache_key": "security_definer_view_public_active_members",
-        "rationale": "Public surface: view used by anon/authenticated for homepage stats. SECURITY DEFINER intentional to bypass member RLS while exposing only safe aggregated columns."
-      },
-      {
-        "cache_key": "security_definer_view_public_vw_exec_cert_timeline",
-        "rationale": "Exec analytics view: aggregate-only, admin-only access via GRANT. DEFINER required to read member_certifications across tribes."
-      },
-      {
-        "cache_key": "security_definer_view_public_auth_engagements",
-        "rationale": "V4 auth foundation: view joins persons/engagements/members for can()/rls_can() to work. Must run as owner to traverse identity bridge."
-      },
-      {
         "cache_key": "security_definer_view_public_vw_exec_funnel",
-        "rationale": "Exec analytics — same pattern as vw_exec_cert_timeline."
-      },
-      {
-        "cache_key": "security_definer_view_public_impact_hours_total",
-        "rationale": "Aggregated impact data exposed to all authenticated members (gamification). DEFINER avoids per-row RLS cost."
-      },
-      {
-        "cache_key": "security_definer_view_public_vw_exec_skills_radar",
-        "rationale": "Exec analytics — same pattern as vw_exec_cert_timeline."
+        "rationale": "Exec analytics — admin-only consumer. Onda 2/3 candidate if still present (not in live advisor as of 2026-04-23)."
       },
       {
         "cache_key": "security_definer_view_public_members_public_safe",
-        "rationale": "LGPD-safe member view: explicitly filters PII columns; intended public surface."
+        "rationale": "LGPD-safe member view. Onda 2: remove is_superadmin column, then flip security_invoker (issue #82)."
       },
       {
         "cache_key": "security_definer_view_public_public_members",
-        "rationale": "Same as members_public_safe — legacy alias kept for MCP reader compat."
+        "rationale": "Legacy alias of members_public_safe. Onda 2: dedupe or convert to RPC (issue #82)."
       },
       {
         "cache_key": "security_definer_view_public_gamification_leaderboard",
-        "rationale": "Public leaderboard: aggregated XP across members, intentionally visible to all authenticated."
+        "rationale": "Public leaderboard. Onda 3: convert to get_public_leaderboard() SECDEF RPC pattern (issue #82)."
       },
       {
         "cache_key": "security_definer_view_public_member_attendance_summary",
-        "rationale": "Member-scoped attendance stats exposed to the owner + admin; DEFINER required to cross-join attendance + events + members."
+        "rationale": "Member-scoped attendance stats. Onda 3: convert to SECDEF RPC pattern (issue #82)."
       },
       {
         "cache_key": "security_definer_view_public_recurring_event_groups",
-        "rationale": "Bridge view for recurrence UI. Aggregates events without exposing non-authorized rows; DEFINER intentional."
-      },
-      {
-        "cache_key": "security_definer_view_public_impact_hours_summary",
-        "rationale": "Same as impact_hours_total — tribe/initiative-level aggregate."
+        "rationale": "Recurrence UI bridge. Onda 2: revisit meeting_link exposure then flip invoker (issue #82)."
       }
     ],
     "accepted_warnings": [
@@ -75,5 +51,17 @@
         "rationale": "Toggle available in Supabase Auth dashboard (not via migration). Pending human action — low priority."
       }
     ]
+  },
+  "closed_in_onda_1_2026_04_23": {
+    "commit_ref": "p40 security sweep Onda 1",
+    "closed_cache_keys": [
+      "security_definer_view_public_active_members",
+      "security_definer_view_public_vw_exec_cert_timeline",
+      "security_definer_view_public_auth_engagements",
+      "security_definer_view_public_impact_hours_total",
+      "security_definer_view_public_vw_exec_skills_radar",
+      "security_definer_view_public_impact_hours_summary"
+    ],
+    "action": "ALTER VIEW ... SET (security_invoker = true) + selective REVOKE. Migration 20260508030000. Verified 6/11 ERROR closed by live advisor rerun."
   }
 }
