@@ -1,6 +1,8 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.13.0 — 94 tools (70R + 24W) + 1 prompt + 1 resource + usage logging
-// v2.13.0: +8 card/checklist CRUD tools (issue #83 P0 — Fabrício T6 leader feedback)
+// MCP server v2.24.0 — 138 tools (92R + 46W) + 1 prompt + 1 resource + usage logging
+// v2.24.0: +confirm param on 5 destructive tools (ADR-0018 W1): drop_event_instance,
+//   manage_initiative_engagement (action='remove' only), offboard_member, delete_card, archive_card.
+//   Default returns preview; confirm=true executes. Breaking behavior change.
 // V4 Cutover: canWrite/canWriteBoard → canV4 (ADR-0007, engagement-derived authority)
 // Transport: SDK 1.29.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
@@ -1207,15 +1209,28 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // TOOL 57: drop_event_instance — Cancel a specific event occurrence
-  mcp.tool("drop_event_instance", "Cancel/delete a specific event instance (e.g. a tribe meeting that didn't happen). Requires tribe leader of that tribe, or admin/manager. By default rejects if attendance exists; pass force_delete_attendance=true to remove attendance records atomically first.", {
+  // TOOL 57: drop_event_instance — Cancel a specific event occurrence (ADR-0018 W1: confirm=true required to execute)
+  mcp.tool("drop_event_instance", "Cancels a specific event instance (e.g. a tribe meeting that did not happen). Requires tribe leader of that tribe, or admin/manager. By default rejects if attendance exists; pass force_delete_attendance=true to remove attendance records atomically first. Destructive — returns a preview payload unless confirm=true is passed (ADR-0018 W1).", {
     event_id: z.string().describe("UUID of the event to delete"),
-    force_delete_attendance: z.boolean().optional().describe("If true, also deletes attendance records in same transaction. Default: false")
+    force_delete_attendance: z.boolean().optional().describe("If true, also deletes attendance records in same transaction. Default: false"),
+    confirm: z.boolean().optional().describe("Pass confirm=true to execute. When omitted/false, returns a preview payload with target info (ADR-0018 W1 cross-MCP injection mitigation).")
   }, async (params: any) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "drop_event_instance", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.event_id)) { await logUsage(sb, member.id, "drop_event_instance", false, "Invalid event_id", start); return err("event_id must be a UUID"); }
     if (!(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "drop_event_instance", false, "Unauthorized", start); return err("Unauthorized"); }
+    if (params.confirm !== true) {
+      const { data: target } = await sb.from("events").select("id, title, type, date, time_start, initiative_id").eq("id", params.event_id).maybeSingle();
+      await logUsage(sb, member.id, "drop_event_instance", true, undefined, start);
+      return ok({
+        action: "drop_event_instance",
+        preview: true,
+        target: target || { id: params.event_id, note: "event not found or inaccessible via RLS" },
+        warning: "Destructive action — will permanently delete this event instance. Pass confirm=true in a follow-up call to execute.",
+        next_call: { event_id: params.event_id, force_delete_attendance: params.force_delete_attendance ?? false, confirm: true }
+      });
+    }
     const { data, error } = await sb.rpc("drop_event_instance", {
       p_event_id: params.event_id,
       p_force_delete_attendance: params.force_delete_attendance ?? false
@@ -1473,18 +1488,41 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // TOOL 76: manage_initiative_engagement — add/remove/update members (write, canV4 manage_member)
-  mcp.tool("manage_initiative_engagement", "Add, remove, or update role of a member in an initiative. Requires manage_member permission for the initiative.", {
+  // TOOL 76: manage_initiative_engagement — add/remove/update members (write, canV4 manage_member; ADR-0018 W1: confirm required for action='remove')
+  mcp.tool("manage_initiative_engagement", "Adds, removes, or updates the role of a member in an initiative. Requires manage_member permission for the initiative. When action='remove', returns a preview payload unless confirm=true is passed (ADR-0018 W1).", {
     initiative_id: z.string().describe("Initiative UUID"),
     person_id: z.string().describe("Person UUID to add/remove/update"),
     kind: z.string().describe("Engagement kind (e.g. 'workgroup_member', 'workgroup_coordinator', 'committee_member', 'volunteer')"),
     role: z.string().optional().describe("Role within engagement (e.g. 'leader', 'participant', 'coordinator'). Default: participant"),
-    action: z.string().describe("Action: 'add', 'remove', or 'update_role'")
-  }, async (params: { initiative_id: string; person_id: string; kind: string; role?: string; action: string }) => {
+    action: z.string().describe("Action: 'add', 'remove', or 'update_role'"),
+    confirm: z.boolean().optional().describe("Required for action='remove'. Pass confirm=true to execute the removal; when omitted/false the tool returns a preview payload (ADR-0018 W1 cross-MCP injection mitigation). Ignored for 'add' and 'update_role'.")
+  }, async (params: { initiative_id: string; person_id: string; kind: string; role?: string; action: string; confirm?: boolean }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "manage_initiative_engagement", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.initiative_id)) { await logUsage(sb, member.id, "manage_initiative_engagement", false, "Invalid initiative_id", start); return err("initiative_id must be a UUID"); }
+    if (!isUUID(params.person_id)) { await logUsage(sb, member.id, "manage_initiative_engagement", false, "Invalid person_id", start); return err("person_id must be a UUID"); }
     if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "manage_initiative_engagement", false, "Unauthorized", start); return err("Unauthorized: requires manage_member permission."); }
+    if (params.action === 'remove' && params.confirm !== true) {
+      const [initRes, personRes] = await Promise.all([
+        sb.from("initiatives").select("id, title, kind, status").eq("id", params.initiative_id).maybeSingle(),
+        sb.from("persons").select("id, name").eq("id", params.person_id).maybeSingle(),
+      ]);
+      await logUsage(sb, member.id, "manage_initiative_engagement", true, undefined, start);
+      return ok({
+        action: "manage_initiative_engagement",
+        preview: true,
+        subaction: "remove",
+        target: {
+          initiative: initRes.data || { id: params.initiative_id, note: "not found or inaccessible" },
+          person: personRes.data || { id: params.person_id, note: "not found or inaccessible" },
+          kind: params.kind,
+          role: params.role || 'participant'
+        },
+        warning: "Destructive action — will remove the engagement row for this person in this initiative. Pass confirm=true in a follow-up call to execute.",
+        next_call: { initiative_id: params.initiative_id, person_id: params.person_id, kind: params.kind, role: params.role || 'participant', action: 'remove', confirm: true }
+      });
+    }
     const { data, error } = await sb.rpc("manage_initiative_engagement", {
       p_initiative_id: params.initiative_id,
       p_person_id: params.person_id,
@@ -1500,18 +1538,44 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
 
   // ===== OFFBOARDING (issue #91 quick wins) =====
 
-  // TOOL: offboard_member
-  mcp.tool("offboard_member", "Transition a member to alumni / observer / inactive with structured reason. Admin only. Use 'alumni' for 'open door' departures (member can return via new selection), 'observer' for temporary pause, 'inactive' for terminal.", {
+  // TOOL: offboard_member (ADR-0018 W1: confirm=true required to execute)
+  mcp.tool("offboard_member", "Transitions a member to alumni / observer / inactive with structured reason. Admin only. Use 'alumni' for 'open door' departures (member can return via new selection), 'observer' for temporary pause, 'inactive' for terminal. Destructive — returns a preview payload unless confirm=true is passed (ADR-0018 W1).", {
     member_id: z.string().describe("UUID of member"),
     new_status: z.enum(["alumni","observer","inactive"]).describe("Target status"),
     reason_category: z.enum(["personal_workload","personal_agenda","academic_conflict","health","relocation","end_of_cycle","external_priority","lack_of_fit","policy_violation","other"]).describe("Reason taxonomy — see offboard_reason_categories table"),
     reason_detail: z.string().describe("Free-text context (1-3 sentences)"),
-    reassign_cards_to: z.string().optional().describe("Optional UUID to reassign open cards to")
+    reassign_cards_to: z.string().optional().describe("Optional UUID to reassign open cards to"),
+    confirm: z.boolean().optional().describe("Pass confirm=true to execute. When omitted/false, returns a preview payload with the target member's current status + active engagements/cards counts (ADR-0018 W1 cross-MCP injection mitigation).")
   }, async (params: any) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "offboard_member", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.member_id)) { await logUsage(sb, member.id, "offboard_member", false, "Invalid member_id", start); return err("member_id must be a UUID"); }
     if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "offboard_member", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    if (params.confirm !== true) {
+      const memberRes = await sb.from("members").select("id, name, member_status, operational_role, person_id").eq("id", params.member_id).maybeSingle();
+      const personId = memberRes.data?.person_id || null;
+      const [engagementsRes, cardsRes] = await Promise.all([
+        personId
+          ? sb.from("engagements").select("id", { count: "exact", head: true }).eq("person_id", personId).eq("status", "active")
+          : Promise.resolve({ count: null as number | null }),
+        sb.from("board_items").select("id", { count: "exact", head: true }).eq("assignee_id", params.member_id).in("status", ["backlog","in_progress","review"]),
+      ]);
+      await logUsage(sb, member.id, "offboard_member", true, undefined, start);
+      return ok({
+        action: "offboard_member",
+        preview: true,
+        target: memberRes.data || { id: params.member_id, note: "member not found or inaccessible" },
+        impact: {
+          active_engagements: engagementsRes.count ?? null,
+          open_cards_assigned: cardsRes.count ?? null,
+          cards_will_be_reassigned_to: params.reassign_cards_to || null,
+        },
+        proposed_change: { new_status: params.new_status, reason_category: params.reason_category, reason_detail: params.reason_detail },
+        warning: "Destructive action — will change member_status and cascade-close engagements. Pass confirm=true in a follow-up call to execute.",
+        next_call: { member_id: params.member_id, new_status: params.new_status, reason_category: params.reason_category, reason_detail: params.reason_detail, reassign_cards_to: params.reassign_cards_to || null, confirm: true }
+      });
+    }
     const { data, error } = await sb.rpc("admin_offboard_member", {
       p_member_id: params.member_id,
       p_new_status: params.new_status,
@@ -1844,17 +1908,30 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok({ action: "move_card", status: "moved", card_id: params.card_id, new_status: params.new_status, new_position: params.new_position ?? 0 });
   });
 
-  // TOOL: delete_card — wrap delete_board_item. Reason is required (audit).
-  mcp.tool("delete_card", "Deletes a card and its checklist/assignments permanently. Reason is required for audit. Prefer archive_card for non-destructive soft-delete.", {
+  // TOOL: delete_card — wrap delete_board_item. Reason required (audit). ADR-0018 W1: confirm=true required to execute.
+  mcp.tool("delete_card", "Deletes a card and its checklist/assignments permanently. Reason is required for audit. Prefer archive_card for non-destructive soft-delete. Destructive — returns a preview payload unless confirm=true is passed (ADR-0018 W1).", {
     card_id: z.string().describe("UUID of the card to delete"),
-    reason: z.string().describe("Required reason — recorded in audit log.")
-  }, async (params: { card_id: string; reason: string }) => {
+    reason: z.string().describe("Required reason — recorded in audit log."),
+    confirm: z.boolean().optional().describe("Pass confirm=true to execute. When omitted/false, returns a preview payload with card title + board context (ADR-0018 W1 cross-MCP injection mitigation).")
+  }, async (params: { card_id: string; reason: string; confirm?: boolean }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "delete_card", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!isUUID(params.card_id)) { await logUsage(sb, member.id, "delete_card", false, "Invalid card_id", start); return err("card_id must be a UUID"); }
     if (!params.reason || !params.reason.trim()) { await logUsage(sb, member.id, "delete_card", false, "Missing reason", start); return err("reason is required for delete_card"); }
     if (!(await canV4(sb, member.id, 'write_board'))) { await logUsage(sb, member.id, "delete_card", false, "Unauthorized", start); return err("Unauthorized — write_board required."); }
+    if (params.confirm !== true) {
+      const { data: target } = await sb.from("board_items").select("id, title, status, board_id").eq("id", params.card_id).maybeSingle();
+      await logUsage(sb, member.id, "delete_card", true, undefined, start);
+      return ok({
+        action: "delete_card",
+        preview: true,
+        target: target || { id: params.card_id, note: "card not found or inaccessible via RLS" },
+        reason_provided: params.reason,
+        warning: "Destructive action — will permanently delete this card and its checklist/assignments. Prefer archive_card for reversible soft-delete. Pass confirm=true in a follow-up call to execute.",
+        next_call: { card_id: params.card_id, reason: params.reason, confirm: true }
+      });
+    }
     const { error } = await sb.rpc("delete_board_item", {
       p_item_id: params.card_id,
       p_reason: params.reason,
@@ -1970,16 +2047,29 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   // Tool layer gates with write_board (baseline); each RPC enforces stricter authority internally
   // (admin_*, portfolio forecast edits typically require Leader/GP or higher).
 
-  // TOOL: archive_card — wrap admin_archive_board_item. Soft-delete with audit.
-  mcp.tool("archive_card", "Archives a card (soft delete, status='archived') with audit reason. Preserves the row — use delete_card for permanent deletion. RPC performs the admin/leader authority check.", {
+  // TOOL: archive_card — wrap admin_archive_board_item. Soft-delete with audit. ADR-0018 W1: confirm=true required to execute.
+  mcp.tool("archive_card", "Archives a card (soft delete, status='archived') with audit reason. Preserves the row — use delete_card for permanent deletion. RPC performs the admin/leader authority check. Returns a preview payload unless confirm=true is passed (ADR-0018 W1).", {
     card_id: z.string().describe("UUID of the card to archive"),
-    reason: z.string().optional().describe("Optional audit reason (recommended)")
-  }, async (params: { card_id: string; reason?: string }) => {
+    reason: z.string().optional().describe("Optional audit reason (recommended)"),
+    confirm: z.boolean().optional().describe("Pass confirm=true to execute. When omitted/false, returns a preview payload with card title + board context (ADR-0018 W1 cross-MCP injection mitigation). Use restore_card to reverse the archive.")
+  }, async (params: { card_id: string; reason?: string; confirm?: boolean }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "archive_card", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!isUUID(params.card_id)) { await logUsage(sb, member.id, "archive_card", false, "Invalid card_id", start); return err("card_id must be a UUID"); }
     if (!(await canV4(sb, member.id, 'write_board'))) { await logUsage(sb, member.id, "archive_card", false, "Unauthorized", start); return err("Unauthorized — write_board required."); }
+    if (params.confirm !== true) {
+      const { data: target } = await sb.from("board_items").select("id, title, status, board_id").eq("id", params.card_id).maybeSingle();
+      await logUsage(sb, member.id, "archive_card", true, undefined, start);
+      return ok({
+        action: "archive_card",
+        preview: true,
+        target: target || { id: params.card_id, note: "card not found or inaccessible via RLS" },
+        reason_provided: params.reason || null,
+        warning: "Soft-delete action — sets status='archived'. Reversible via restore_card. Pass confirm=true in a follow-up call to execute.",
+        next_call: { card_id: params.card_id, reason: params.reason || null, confirm: true }
+      });
+    }
     const { data, error } = await sb.rpc("admin_archive_board_item", {
       p_item_id: params.card_id,
       p_reason: params.reason || null,
@@ -2731,7 +2821,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.23.4" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.24.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -2751,6 +2841,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.23.4", tools: 138, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.24.0", tools: 138, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
