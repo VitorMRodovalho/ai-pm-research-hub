@@ -2606,6 +2606,23 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "delete_document_version_draft", true, undefined, start);
     return ok(data);
   });
+
+  // get_governance_change_log — unified compliance timeline
+  mcp.tool("get_governance_change_log", "Unified chronological feed across 6 governance sources (change_requests, document_versions, approval_chains, approval_signoffs, pii_access_log, admin_audit_log). Privileged callers (view_pii) see all events; non-privileged see only their own actor/target scope. Use for LGPD Art. 37 audit and compliance reviews.", {
+    since: z.string().optional().describe("ISO-8601 timestamp cutoff. Default: 90 days ago"),
+    limit: z.number().optional().describe("Max rows. Default 200, cap 1000")
+  }, async (params: { since?: string; limit?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_governance_change_log", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_governance_change_log", {
+      p_since: params.since ?? null,
+      p_limit: params.limit ?? 200,
+    });
+    if (error) { await logUsage(sb, member.id, "get_governance_change_log", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_governance_change_log", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -2616,7 +2633,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.20.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.21.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -2636,6 +2653,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.20.0", tools: 132, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.21.0", tools: 133, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
