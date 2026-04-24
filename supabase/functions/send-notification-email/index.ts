@@ -15,6 +15,7 @@ const CRITICAL_TYPES = [
   'ip_ratification_gate_advanced',
   'ip_ratification_chain_approved',
   'ip_ratification_awaiting_members',
+  'weekly_card_digest_member',
 ]
 
 const TYPE_SUBJECTS: Record<string, string> = {
@@ -31,6 +32,33 @@ const TYPE_SUBJECTS: Record<string, string> = {
   ip_ratification_gate_advanced: 'Gate satisfeito — cadeia avancou',
   ip_ratification_chain_approved: 'Cadeia de aprovacao concluida',
   ip_ratification_awaiting_members: 'Aguardando sua ratificacao',
+  weekly_card_digest_member: 'Seu resumo semanal de atividades',
+}
+
+// Digest types render body as multi-line text (preserve \n as <br>) without CTA deadline block.
+const DIGEST_TYPES = new Set([
+  'weekly_card_digest_member',
+])
+
+// Escape HTML-significant characters. Applied to title/body on all notification types
+// to prevent XSS via user-influenced content (doc names, submitter names, card titles).
+function escapeHtml(s: string | null | undefined): string {
+  if (!s) return ''
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+// Convert plain-text body (with \n linebreaks) to HTML preserving paragraph/line structure.
+// Used for digest-style notifications where body is markdown-like output from the RPC.
+function formatDigestBody(body: string): string {
+  if (!body) return ''
+  const escaped = escapeHtml(body)
+  // \n\n → paragraph break, \n → line break
+  return escaped.split(/\n\n+/).map(p => p.replace(/\n/g, '<br>')).map(p => `<p style="color: #495057; font-size: 14px; line-height: 1.6; margin: 0 0 12px 0;">${p}</p>`).join('')
 }
 
 // Governance types get a gentle deadline nudge inline (15 dias suggested)
@@ -41,13 +69,22 @@ const GOVERNANCE_TYPES = new Set([
 
 function buildHtml(notification: any): string {
   const isGovernance = GOVERNANCE_TYPES.has(notification.type)
-  const ctaLabel = isGovernance ? 'Revisar e assinar' : 'Ver na plataforma'
+  const isDigest = DIGEST_TYPES.has(notification.type)
+  const ctaLabel = isDigest ? 'Abrir meu workspace' : isGovernance ? 'Revisar e assinar' : 'Ver na plataforma'
   const deadlineBlock = isGovernance
     ? `<div style="background: #fff8e1; border-left: 4px solid #ffc107; padding: 10px 14px; margin: 0 0 16px 0; border-radius: 4px;">
          <p style="color: #6b4e00; font-size: 12px; margin: 0; line-height: 1.5;">
            <strong>Prazo sugerido:</strong> 15 dias corridos. Este e um processo de governanca com peso legal; sua assinatura confirma ciencia ou aprovacao conforme o gate.
          </p>
        </div>`
+    : ''
+  const bodyHtml = isDigest
+    ? formatDigestBody(notification.body || '')
+    : `<p style="color: #495057; font-size: 14px; line-height: 1.6; margin: 0 0 16px 0;">${escapeHtml(notification.body)}</p>`
+  const optOutBlock = isDigest
+    ? `<p style="color: #adb5bd; font-size: 11px; margin: 16px 0 0 0; line-height: 1.4;">
+         Deseja parar de receber este resumo? Ajuste em <a href="https://nucleoia.vitormr.dev/profile" style="color: #6c757d;">preferencias de notificacao</a>.
+       </p>`
     : ''
 
   return `
@@ -56,10 +93,11 @@ function buildHtml(notification: any): string {
         <h1 style="color: white; font-size: 18px; margin: 0;">Nucleo IA &amp; GP</h1>
       </div>
       <div style="padding: 24px; background: #f8f9fa; border: 1px solid #e9ecef;">
-        <h2 style="color: #003B5C; font-size: 16px; margin: 0 0 12px 0;">${notification.title || ''}</h2>
-        <p style="color: #495057; font-size: 14px; line-height: 1.6; margin: 0 0 16px 0;">${notification.body || ''}</p>
+        <h2 style="color: #003B5C; font-size: 16px; margin: 0 0 12px 0;">${escapeHtml(notification.title)}</h2>
+        ${bodyHtml}
         ${deadlineBlock}
         ${notification.link ? `<a href="https://nucleoia.vitormr.dev${notification.link}" style="display: inline-block; background: #003B5C; color: white; padding: 10px 20px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">${ctaLabel}</a>` : ''}
+        ${optOutBlock}
       </div>
       <div style="padding: 16px; text-align: center; font-size: 11px; color: #868e96;">
         <p>Nucleo de Estudos e Pesquisa em IA &amp; GP</p>
@@ -126,9 +164,14 @@ Deno.serve(async (req) => {
         ? `${notif.title} — Nucleo IA & GP`
         : `${TYPE_SUBJECTS[notif.type] || notif.title} — Nucleo IA & GP`
       try {
+        // Resend: Idempotency-Key prevents duplicate sends if this EF is retried after a successful API call.
         const res = await fetch('https://api.resend.com/emails', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${rkey}`, 'Content-Type': 'application/json' },
+          headers: {
+            'Authorization': `Bearer ${rkey}`,
+            'Content-Type': 'application/json',
+            'Idempotency-Key': `critical-notification/${notif.id}`,
+          },
           body: JSON.stringify({
             from: `Nucleo IA e GP <${from}>`,
             to: [member.email],
