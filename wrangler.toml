@@ -3,6 +3,9 @@ main = "@astrojs/cloudflare/entrypoints/server"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
+[observability]
+enabled = true
+
 [assets]
 directory = "./dist/client/"
 
