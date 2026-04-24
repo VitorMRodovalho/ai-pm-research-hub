@@ -2679,6 +2679,41 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "list_partner_cards", true, undefined, start);
     return ok(data);
   });
+
+  // list_card_partners — inverse: partners linked to a card
+  mcp.tool("list_card_partners", "Inverse of list_partner_cards. Returns all partners linked to a given board card — useful for opening a card and understanding which partners are stakeholders. Returns link_role, partner_name, chapter, entity_type, status, contact_name, linked_by_name.", {
+    board_item_id: z.string().describe("UUID of board_items row")
+  }, async (params: { board_item_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_card_partners", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.board_item_id)) { await logUsage(sb, member.id, "list_card_partners", false, "Invalid board_item_id", start); return err("board_item_id must be a UUID"); }
+    const { data, error } = await sb.rpc("list_card_partners", { p_board_item_id: params.board_item_id });
+    if (error) { await logUsage(sb, member.id, "list_card_partners", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_card_partners", true, undefined, start);
+    return ok(data);
+  });
+
+  // search_partner_cards — cross-partner admin view with filters
+  mcp.tool("search_partner_cards", "Cross-partner search of partner↔card links with optional filters. Use for queries like 'all deliverable cards across partners' or 'contract cards for PMI-CE chapter'. Returns full join: partner + card + board + assignee + linker.", {
+    link_role: z.string().optional().describe("Filter by link_role: general | pipeline | deliverable | follow_up | contract | onboarding"),
+    card_status: z.string().optional().describe("Filter by board_item status"),
+    chapter: z.string().optional().describe("Filter by partner.chapter (e.g., 'PMI-CE')"),
+    limit: z.number().optional().describe("Max rows. Default 100, cap 500")
+  }, async (params: { link_role?: string; card_status?: string; chapter?: string; limit?: number }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "search_partner_cards", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("search_partner_cards", {
+      p_link_role: params.link_role ?? null,
+      p_card_status: params.card_status ?? null,
+      p_chapter: params.chapter ?? null,
+      p_limit: params.limit ?? 100,
+    });
+    if (error) { await logUsage(sb, member.id, "search_partner_cards", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "search_partner_cards", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -2689,7 +2724,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.22.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.23.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -2709,6 +2744,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.22.0", tools: 136, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.23.0", tools: 138, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
