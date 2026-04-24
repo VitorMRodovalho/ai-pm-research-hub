@@ -1,5 +1,6 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.11.0 — 76 tools (61R + 15W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.13.0 — 94 tools (70R + 24W) + 1 prompt + 1 resource + usage logging
+// v2.13.0: +8 card/checklist CRUD tools (issue #83 P0 — Fabrício T6 leader feedback)
 // V4 Cutover: canWrite/canWriteBoard → canV4 (ADR-0007, engagement-derived authority)
 // Transport: SDK 1.29.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
@@ -392,7 +393,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
   );
 }
 
-// --- Register 76 tools (61R + 15W) ---
+// --- Register 94 tools (70R + 24W) ---
 
 function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
 
@@ -1636,6 +1637,185 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member?.id || null, "verify_certificate", true, undefined, start);
     return ok(data);
   });
+
+  // ===== BOARD/CARD/CHECKLIST CRUD (issue #83 P0 — Fabrício feedback, T6 leader) =====
+  // Fecha gap MCP coverage <40% → ~95% em Card/Checklist operations.
+  // 4 new RPCs (get_card_detail, add/update/delete_checklist_item) + 4 wraps existentes.
+
+  // TOOL: get_card_detail — rich payload (card + checklist + assignments + timeline)
+  mcp.tool("get_card_detail", "Returns rich card detail: card fields + checklist items + multi-assignees + last 10 timeline events. Single call instead of multiple — use for card investigation/LLM context.", {
+    card_id: z.string().describe("UUID of the board_items card")
+  }, async (params: { card_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_card_detail", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.card_id)) { await logUsage(sb, member.id, "get_card_detail", false, "Invalid card_id", start); return err("card_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_card_detail", { p_card_id: params.card_id });
+    if (error) { await logUsage(sb, member.id, "get_card_detail", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_card_detail", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: list_card_checklist — flat list (MCP tool uses direct SELECT — RLS allows any authenticated member)
+  mcp.tool("list_card_checklist", "Returns the checklist (activities) for a card, ordered by position. Lightweight read — for full card context use get_card_detail.", {
+    card_id: z.string().describe("UUID of the board_items card")
+  }, async (params: { card_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_card_checklist", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.card_id)) { await logUsage(sb, member.id, "list_card_checklist", false, "Invalid card_id", start); return err("card_id must be a UUID"); }
+    const { data, error } = await sb.from("board_item_checklists")
+      .select("id, text, is_completed, position, assigned_to, target_date, completed_at, completed_by, assigned_at, assigned_by, created_at")
+      .eq("board_item_id", params.card_id)
+      .order("position", { ascending: true });
+    if (error) { await logUsage(sb, member.id, "list_card_checklist", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_card_checklist", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: update_card_fields — partial update via RPC update_board_item(jsonb)
+  mcp.tool("update_card_fields", "Update one or more card fields partially: title, description, assignee_id, due_date, tags (array), labels (jsonb), reviewer_id, baseline_date, forecast_date, is_portfolio_item. RPC checks field-level permissions (e.g., only Leader/GP can change assignee).", {
+    card_id: z.string().describe("UUID of the card"),
+    title: z.string().optional().describe("New title"),
+    description: z.string().optional().describe("New description"),
+    assignee_id: z.string().optional().describe("Member UUID to assign (null/empty string to unassign)"),
+    reviewer_id: z.string().optional().describe("Member UUID of reviewer"),
+    due_date: z.string().optional().describe("YYYY-MM-DD or empty to clear"),
+    tags: z.string().optional().describe("Comma-separated tags (replaces existing)"),
+    baseline_date: z.string().optional().describe("YYYY-MM-DD — Leader/GP only"),
+    forecast_date: z.string().optional().describe("YYYY-MM-DD"),
+    is_portfolio_item: z.boolean().optional().describe("Mark as portfolio deliverable — Leader/GP only"),
+    reason: z.string().optional().describe("Required when changing a locked baseline")
+  }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "update_card_fields", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.card_id)) { await logUsage(sb, member.id, "update_card_fields", false, "Invalid card_id", start); return err("card_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'write_board'))) { await logUsage(sb, member.id, "update_card_fields", false, "Unauthorized", start); return err("Unauthorized — write_board required."); }
+    const fields: Record<string, unknown> = {};
+    if (params.title !== undefined) fields.title = params.title;
+    if (params.description !== undefined) fields.description = params.description;
+    if (params.assignee_id !== undefined) fields.assignee_id = params.assignee_id || null;
+    if (params.reviewer_id !== undefined) fields.reviewer_id = params.reviewer_id || null;
+    if (params.due_date !== undefined) fields.due_date = params.due_date || null;
+    if (params.tags !== undefined) fields.tags = String(params.tags).split(",").map((t: string) => t.trim()).filter(Boolean);
+    if (params.baseline_date !== undefined) fields.baseline_date = params.baseline_date || null;
+    if (params.forecast_date !== undefined) fields.forecast_date = params.forecast_date || null;
+    if (params.is_portfolio_item !== undefined) fields.is_portfolio_item = params.is_portfolio_item;
+    if (params.reason !== undefined) fields.reason = params.reason;
+    if (Object.keys(fields).length === 0) { await logUsage(sb, member.id, "update_card_fields", false, "No fields", start); return err("At least one field must be provided"); }
+    const { error } = await sb.rpc("update_board_item", { p_item_id: params.card_id, p_fields: fields });
+    if (error) { await logUsage(sb, member.id, "update_card_fields", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "update_card_fields", true, undefined, start);
+    return ok({ action: "update_card_fields", status: "updated", card_id: params.card_id, fields_changed: Object.keys(fields) });
+  });
+
+  // TOOL: add_checklist_item — new RPC
+  mcp.tool("add_checklist_item", "Add a checklist activity to a card. Optionally assign it to a member with target date. Auto-assigns position (end of list) if omitted.", {
+    card_id: z.string().describe("UUID of the parent card (board_items)"),
+    text: z.string().describe("Activity description"),
+    position: z.number().optional().describe("Optional position (defaults to end of list)"),
+    assigned_to: z.string().optional().describe("Member UUID to assign"),
+    target_date: z.string().optional().describe("YYYY-MM-DD target date")
+  }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "add_checklist_item", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.card_id)) { await logUsage(sb, member.id, "add_checklist_item", false, "Invalid card_id", start); return err("card_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'write_board'))) { await logUsage(sb, member.id, "add_checklist_item", false, "Unauthorized", start); return err("Unauthorized — write_board required."); }
+    const { data, error } = await sb.rpc("add_checklist_item", {
+      p_board_item_id: params.card_id,
+      p_text: params.text,
+      p_position: params.position ?? null,
+      p_assigned_to: params.assigned_to || null,
+      p_target_date: params.target_date || null,
+    });
+    if (error) { await logUsage(sb, member.id, "add_checklist_item", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "add_checklist_item", true, undefined, start);
+    return ok({ action: "add_checklist_item", status: "created", checklist_item_id: data });
+  });
+
+  // TOOL: update_checklist_item — new RPC
+  mcp.tool("update_checklist_item", "Update a checklist item: text, position, target_date. Use assign_checklist_item to change assignee or complete_checklist_item to toggle done.", {
+    checklist_item_id: z.string().describe("UUID of the checklist item"),
+    text: z.string().optional().describe("New activity description"),
+    position: z.number().optional().describe("New position (reorder)"),
+    target_date: z.string().optional().describe("YYYY-MM-DD")
+  }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "update_checklist_item", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.checklist_item_id)) { await logUsage(sb, member.id, "update_checklist_item", false, "Invalid id", start); return err("checklist_item_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'write_board'))) { await logUsage(sb, member.id, "update_checklist_item", false, "Unauthorized", start); return err("Unauthorized — write_board required."); }
+    const { error } = await sb.rpc("update_checklist_item", {
+      p_checklist_item_id: params.checklist_item_id,
+      p_text: params.text ?? null,
+      p_position: params.position ?? null,
+      p_target_date: params.target_date || null,
+    });
+    if (error) { await logUsage(sb, member.id, "update_checklist_item", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "update_checklist_item", true, undefined, start);
+    return ok({ action: "update_checklist_item", status: "updated", checklist_item_id: params.checklist_item_id });
+  });
+
+  // TOOL: assign_checklist_item — wrap existing RPC
+  mcp.tool("assign_checklist_item", "Assign a checklist activity to a member with an optional target date. Wraps RPC that already validates leader/GP/card-owner authority.", {
+    checklist_item_id: z.string().describe("UUID of the checklist item"),
+    assigned_to: z.string().describe("Member UUID to assign"),
+    target_date: z.string().optional().describe("YYYY-MM-DD")
+  }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "assign_checklist_item", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.checklist_item_id)) { await logUsage(sb, member.id, "assign_checklist_item", false, "Invalid id", start); return err("checklist_item_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'write_board'))) { await logUsage(sb, member.id, "assign_checklist_item", false, "Unauthorized", start); return err("Unauthorized — write_board required."); }
+    const { error } = await sb.rpc("assign_checklist_item", {
+      p_checklist_item_id: params.checklist_item_id,
+      p_assigned_to: params.assigned_to,
+      p_target_date: params.target_date || null,
+    });
+    if (error) { await logUsage(sb, member.id, "assign_checklist_item", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "assign_checklist_item", true, undefined, start);
+    return ok({ action: "assign_checklist_item", status: "assigned", checklist_item_id: params.checklist_item_id });
+  });
+
+  // TOOL: complete_checklist_item — wrap existing RPC
+  mcp.tool("complete_checklist_item", "Toggle a checklist activity as completed (or reopen). RPC allows the activity owner (assigned_to) and also leader/GP/card owner.", {
+    checklist_item_id: z.string().describe("UUID of the checklist item"),
+    completed: z.boolean().optional().describe("True to mark done (default), false to reopen")
+  }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "complete_checklist_item", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.checklist_item_id)) { await logUsage(sb, member.id, "complete_checklist_item", false, "Invalid id", start); return err("checklist_item_id must be a UUID"); }
+    // Note: RPC does own authority check (activity owner can complete own). Do NOT gate via canV4 here.
+    const { error } = await sb.rpc("complete_checklist_item", {
+      p_checklist_item_id: params.checklist_item_id,
+      p_completed: params.completed ?? true,
+    });
+    if (error) { await logUsage(sb, member.id, "complete_checklist_item", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "complete_checklist_item", true, undefined, start);
+    return ok({ action: "complete_checklist_item", status: params.completed === false ? "reopened" : "completed", checklist_item_id: params.checklist_item_id });
+  });
+
+  // TOOL: delete_checklist_item — new RPC
+  mcp.tool("delete_checklist_item", "Permanently delete a checklist item. Optional reason is recorded in the card timeline.", {
+    checklist_item_id: z.string().describe("UUID of the checklist item"),
+    reason: z.string().optional().describe("Optional reason for deletion (audit)")
+  }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "delete_checklist_item", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.checklist_item_id)) { await logUsage(sb, member.id, "delete_checklist_item", false, "Invalid id", start); return err("checklist_item_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'write_board'))) { await logUsage(sb, member.id, "delete_checklist_item", false, "Unauthorized", start); return err("Unauthorized — write_board required."); }
+    const { error } = await sb.rpc("delete_checklist_item", {
+      p_checklist_item_id: params.checklist_item_id,
+      p_reason: params.reason || null,
+    });
+    if (error) { await logUsage(sb, member.id, "delete_checklist_item", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "delete_checklist_item", true, undefined, start);
+    return ok({ action: "delete_checklist_item", status: "deleted", checklist_item_id: params.checklist_item_id });
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -1646,7 +1826,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.12.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.13.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -1666,6 +1846,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.12.0", tools: 85, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.13.0", tools: 94, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
