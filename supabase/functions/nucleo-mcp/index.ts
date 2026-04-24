@@ -1,5 +1,8 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.24.1 — 138 tools (92R + 46W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.24.2 — 138 tools (92R + 46W) + 1 prompt + 1 resource + usage logging
+// v2.24.2: extend ADR-0018 W1 confirm gate on manage_initiative_engagement to also
+//   cover action='add' (not just 'remove'). Closes P3 GAP filed by security-engineer
+//   audit (p44). update_role unchanged (non-destructive).
 // v2.24.1: preview calls now log mcp_usage_log.result_kind='preview' (ADR-0018 W3 prereq, Track T).
 // v2.24.0: +confirm param on 5 destructive tools (ADR-0018 W1): drop_event_instance,
 //   manage_initiative_engagement (action='remove' only), offboard_member, delete_card, archive_card.
@@ -1489,39 +1492,43 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
-  // TOOL 76: manage_initiative_engagement — add/remove/update members (write, canV4 manage_member; ADR-0018 W1: confirm required for action='remove')
-  mcp.tool("manage_initiative_engagement", "Adds, removes, or updates the role of a member in an initiative. Requires manage_member permission for the initiative. When action='remove', returns a preview payload unless confirm=true is passed (ADR-0018 W1).", {
+  // TOOL 76: manage_initiative_engagement — add/remove/update members (write, canV4 manage_member; ADR-0018 W1: confirm required for state-changing subactions 'add' and 'remove')
+  mcp.tool("manage_initiative_engagement", "Adds, removes, or updates the role of a member in an initiative. Requires manage_member permission for the initiative. When action='add' or action='remove', returns a preview payload unless confirm=true is passed (ADR-0018 W1 + 2026-04-24 p44 extension). 'update_role' does not require confirm — it only mutates the role field on an existing engagement.", {
     initiative_id: z.string().describe("Initiative UUID"),
     person_id: z.string().describe("Person UUID to add/remove/update"),
     kind: z.string().describe("Engagement kind (e.g. 'workgroup_member', 'workgroup_coordinator', 'committee_member', 'volunteer')"),
     role: z.string().optional().describe("Role within engagement (e.g. 'leader', 'participant', 'coordinator'). Default: participant"),
     action: z.string().describe("Action: 'add', 'remove', or 'update_role'"),
-    confirm: z.boolean().optional().describe("Required for action='remove'. Pass confirm=true to execute the removal; when omitted/false the tool returns a preview payload (ADR-0018 W1 cross-MCP injection mitigation). Ignored for 'add' and 'update_role'.")
+    confirm: z.boolean().optional().describe("Required for action='add' or action='remove'. Pass confirm=true to execute; when omitted/false the tool returns a preview payload with target info (ADR-0018 W1 cross-MCP injection mitigation). Ignored for 'update_role' (non-destructive field edit).")
   }, async (params: { initiative_id: string; person_id: string; kind: string; role?: string; action: string; confirm?: boolean }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "manage_initiative_engagement", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!isUUID(params.initiative_id)) { await logUsage(sb, member.id, "manage_initiative_engagement", false, "Invalid initiative_id", start); return err("initiative_id must be a UUID"); }
-    if (!isUUID(params.person_id)) { await logUsage(sb, member.id, "manage_initiative_engagement", false, "Invalid person_id", start); return err("person_id must be a UUID"); }
+    if (!isUUID(params.initiative_id)) { await logUsage(sb, member.id, "manage_initiative_engagement", false, "Invalid initiative_id", start); return err("manage_initiative_engagement: initiative_id must be a UUID"); }
+    if (!isUUID(params.person_id)) { await logUsage(sb, member.id, "manage_initiative_engagement", false, "Invalid person_id", start); return err("manage_initiative_engagement: person_id must be a UUID"); }
     if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "manage_initiative_engagement", false, "Unauthorized", start); return err("Unauthorized: requires manage_member permission."); }
-    if (params.action === 'remove' && params.confirm !== true) {
+    const confirmRequired = params.action === 'remove' || params.action === 'add';
+    if (confirmRequired && params.confirm !== true) {
       const [initRes, personRes] = await Promise.all([
         sb.from("initiatives").select("id, title, kind, status").eq("id", params.initiative_id).maybeSingle(),
         sb.from("persons").select("id, name").eq("id", params.person_id).maybeSingle(),
       ]);
       await logUsage(sb, member.id, "manage_initiative_engagement", true, undefined, start, "preview");
+      const effectDescription = params.action === 'remove'
+        ? "will remove the engagement row for this person in this initiative"
+        : "will create an engagement linking this person to this initiative with the given kind/role";
       return ok({
         action: "manage_initiative_engagement",
         preview: true,
-        subaction: "remove",
+        subaction: params.action,
         target: {
           initiative: initRes.data || { id: params.initiative_id, note: "not found or inaccessible" },
           person: personRes.data || { id: params.person_id, note: "not found or inaccessible" },
           kind: params.kind,
           role: params.role || 'participant'
         },
-        warning: "Destructive action — will remove the engagement row for this person in this initiative. Pass confirm=true in a follow-up call to execute.",
-        next_call: { initiative_id: params.initiative_id, person_id: params.person_id, kind: params.kind, role: params.role || 'participant', action: 'remove', confirm: true }
+        warning: `State-changing action — ${effectDescription}. Pass confirm=true in a follow-up call to execute.`,
+        next_call: { initiative_id: params.initiative_id, person_id: params.person_id, kind: params.kind, role: params.role || 'participant', action: params.action, confirm: true }
       });
     }
     const { data, error } = await sb.rpc("manage_initiative_engagement", {
@@ -2822,7 +2829,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.24.1" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.24.2" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -2842,6 +2849,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.24.1", tools: 138, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.24.2", tools: 138, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
