@@ -1617,6 +1617,89 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL: record_offboarding_interview (#91 G3 — admin enriches stub with rich exit interview content)
+  mcp.tool("record_offboarding_interview", "Updates the rich exit interview content for an offboarded member's record (member_offboarding_records). Pass any subset of fields — NULL preserves existing values. Admin only (manage_member). Logs to admin_audit_log.", {
+    member_id: z.string().describe("UUID of the offboarded member"),
+    exit_interview_full_text: z.string().optional().describe("Full transcript / paraphrase of exit conversation"),
+    exit_interview_source: z.enum(["whatsapp","email","verbal","google_form","other"]).optional().describe("Where the interview content came from"),
+    return_interest: z.boolean().optional().describe("True if member expressed interest in returning"),
+    return_window_suggestion: z.string().optional().describe("Free-text suggestion (e.g., 'após junho', 'próximo ciclo')"),
+    lessons_learned: z.string().optional().describe("Retrospective feedback about the Núcleo experience"),
+    recommendation_for_future: z.string().optional().describe("What we could have done better"),
+    referred_by_tribe_leader: z.boolean().optional().describe("True if leader initiated the offboarding conversation"),
+    attachment_urls: z.array(z.string()).optional().describe("URLs of supporting docs (audio refs, screenshots, etc.)"),
+    reason_category_code: z.enum(["personal_workload","personal_agenda","academic_conflict","health","relocation","end_of_cycle","external_priority","lack_of_fit","policy_violation","other"]).optional().describe("Override or set the category if it was inferred incorrectly")
+  }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "record_offboarding_interview", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.member_id)) { await logUsage(sb, member.id, "record_offboarding_interview", false, "Invalid member_id", start); return err("member_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "record_offboarding_interview", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    const { data, error } = await sb.rpc("record_offboarding_interview", {
+      p_member_id: params.member_id,
+      p_exit_interview_full_text: params.exit_interview_full_text ?? null,
+      p_exit_interview_source: params.exit_interview_source ?? null,
+      p_return_interest: params.return_interest ?? null,
+      p_return_window_suggestion: params.return_window_suggestion ?? null,
+      p_lessons_learned: params.lessons_learned ?? null,
+      p_recommendation_for_future: params.recommendation_for_future ?? null,
+      p_referred_by_tribe_leader: params.referred_by_tribe_leader ?? null,
+      p_attachment_urls: params.attachment_urls ?? null,
+      p_reason_category_code: params.reason_category_code ?? null
+    });
+    if (error) { await logUsage(sb, member.id, "record_offboarding_interview", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "record_offboarding_interview", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_member_offboarding_record (#91 G3 — single record + member context)
+  mcp.tool("get_member_offboarding_record", "Returns the full offboarding record for a member (rich exit interview content + denormalized snapshots). Privacy-tiered: superadmin OR self OR offboarded_by OR manage_member.", {
+    member_id: z.string().describe("UUID of the offboarded member")
+  }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_member_offboarding_record", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.member_id)) { await logUsage(sb, member.id, "get_member_offboarding_record", false, "Invalid member_id", start); return err("member_id must be a UUID"); }
+    const { data, error } = await sb.rpc("get_member_offboarding_record", { p_member_id: params.member_id });
+    if (error) { await logUsage(sb, member.id, "get_member_offboarding_record", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_member_offboarding_record", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: list_offboarding_records (#91 G3 — admin scan)
+  mcp.tool("list_offboarding_records", "Returns offboarding records filtered by category and date range. Excludes free-text fields (use get_member_offboarding_record for detail). Admin only (manage_member). Default limit: 50, max: 500.", {
+    reason_category: z.enum(["personal_workload","personal_agenda","academic_conflict","health","relocation","end_of_cycle","external_priority","lack_of_fit","policy_violation","other"]).optional().describe("Filter by reason category"),
+    since: z.string().optional().describe("ISO timestamp — offboarded_at >= since"),
+    until: z.string().optional().describe("ISO timestamp — offboarded_at <= until"),
+    limit: z.number().optional().describe("Default: 50, max: 500")
+  }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_offboarding_records", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "list_offboarding_records", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    const { data, error } = await sb.rpc("list_offboarding_records", {
+      p_reason_category: params.reason_category ?? null,
+      p_since: params.since ?? null,
+      p_until: params.until ?? null,
+      p_limit: params.limit ?? 50
+    });
+    if (error) { await logUsage(sb, member.id, "list_offboarding_records", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_offboarding_records", true, undefined, start);
+    return ok(data);
+  });
+
+  // TOOL: get_offboarding_dashboard (#91 G3 — admin/DPO analytics)
+  mcp.tool("get_offboarding_dashboard", "Returns offboarding analytics: totals, interview completion rate, breakdowns by reason/chapter/cycle, and recent 90d. Admin only (manage_member).", {}, async () => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_offboarding_dashboard", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "get_offboarding_dashboard", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    const { data, error } = await sb.rpc("get_offboarding_dashboard");
+    if (error) { await logUsage(sb, member.id, "get_offboarding_dashboard", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_offboarding_dashboard", true, undefined, start);
+    return ok(data);
+  });
+
   // ===== ONBOARDING (issue #86 — persona "new member" unblock) =====
 
   // TOOL: get_my_onboarding
@@ -2829,7 +2912,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.24.2" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.25.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -2849,6 +2932,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.24.2", tools: 138, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.25.0", tools: 142, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
