@@ -2200,6 +2200,190 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     await logUsage(sb, member.id, "list_orphan_card_assignments", true, undefined, start);
     return ok(data);
   });
+
+  // ───────────────────────────────────────────────────────────────
+  // GOVERNANCE WORKFLOW TOOLS — #85 Onda B bundle 2
+  // Document comments, IP ratification signing, change requests
+  // ───────────────────────────────────────────────────────────────
+
+  // sign_ratification_gate — sign a gate on an IP ratification / cooperation approval chain
+  // Gate: RPC internal (validates gate_kind role eligibility + UE consent when required)
+  mcp.tool("sign_ratification_gate", "Sign a gate on an IP ratification or cooperation agreement approval chain (ADR-0016). signoff_type can be 'approval' or 'rejection'. Optional sections_verified jsonb and comment. UE consent flag required for external_signer gates.", {
+    chain_id: z.string().describe("UUID of approval_chains row"),
+    gate_kind: z.string().describe("Gate kind (e.g. 'curator', 'leader_awareness', 'submitter_acceptance', 'chapter_witness', 'president_go', 'member_ratification')"),
+    signoff_type: z.string().optional().describe("'approval' (default) or 'rejection'"),
+    sections_verified: z.string().optional().describe("JSON string listing which sections the signer verified"),
+    comment_body: z.string().optional().describe("Optional comment posted alongside the signoff"),
+    ue_consent_49_1_a: z.boolean().optional().describe("GDPR/LGPD Art. 49.1.a explicit consent (required for external_signer gates)")
+  }, async (params: { chain_id: string; gate_kind: string; signoff_type?: string; sections_verified?: string; comment_body?: string; ue_consent_49_1_a?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "sign_ratification_gate", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.chain_id)) { await logUsage(sb, member.id, "sign_ratification_gate", false, "Invalid chain_id", start); return err("chain_id must be a UUID"); }
+    let sections: any = null;
+    if (params.sections_verified) {
+      try { sections = JSON.parse(params.sections_verified); }
+      catch { await logUsage(sb, member.id, "sign_ratification_gate", false, "Invalid sections JSON", start); return err("sections_verified must be valid JSON"); }
+    }
+    const { data, error } = await sb.rpc("sign_ip_ratification", {
+      p_chain_id: params.chain_id,
+      p_gate_kind: params.gate_kind,
+      p_signoff_type: params.signoff_type ?? 'approval',
+      p_sections_verified: sections,
+      p_comment_body: params.comment_body ?? null,
+      p_ue_consent_49_1_a: params.ue_consent_49_1_a ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "sign_ratification_gate", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "sign_ratification_gate", true, undefined, start);
+    return ok(data);
+  });
+
+  // add_document_comment — post a clause-anchored comment on a document version
+  mcp.tool("add_document_comment", "Post a comment on a document version. Anchor to a clause identifier (e.g. '§2.5', 'Art. 4'). Visibility: 'public' (all viewers) | 'signers_only' (approval_chain roles) | 'private' (author only). Optional parent_id for threaded replies.", {
+    version_id: z.string().describe("UUID of document_versions row"),
+    clause_anchor: z.string().describe("Clause/section anchor (e.g. '§2.5', 'Art. 4', 'preamble')"),
+    body: z.string().describe("Comment body text"),
+    visibility: z.string().describe("'public' | 'signers_only' | 'private'"),
+    parent_id: z.string().optional().describe("UUID of parent comment for threaded reply")
+  }, async (params: { version_id: string; clause_anchor: string; body: string; visibility: string; parent_id?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "add_document_comment", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.version_id)) { await logUsage(sb, member.id, "add_document_comment", false, "Invalid version_id", start); return err("version_id must be a UUID"); }
+    if (params.parent_id && !isUUID(params.parent_id)) { await logUsage(sb, member.id, "add_document_comment", false, "Invalid parent_id", start); return err("parent_id must be a UUID"); }
+    const { data, error } = await sb.rpc("create_document_comment", {
+      p_version_id: params.version_id,
+      p_clause_anchor: params.clause_anchor,
+      p_body: params.body,
+      p_visibility: params.visibility,
+      p_parent_id: params.parent_id ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "add_document_comment", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "add_document_comment", true, undefined, start);
+    return ok(data);
+  });
+
+  // list_document_comments — read thread of comments on a document version
+  mcp.tool("list_document_comments", "List comments on a document version. Returns threaded structure with clause_anchor + body + author + resolution state. By default excludes resolved comments.", {
+    version_id: z.string().describe("UUID of document_versions row"),
+    include_resolved: z.boolean().optional().describe("If true, also return resolved comments. Default false")
+  }, async (params: { version_id: string; include_resolved?: boolean }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_document_comments", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.version_id)) { await logUsage(sb, member.id, "list_document_comments", false, "Invalid version_id", start); return err("version_id must be a UUID"); }
+    const { data, error } = await sb.rpc("list_document_comments", {
+      p_version_id: params.version_id,
+      p_include_resolved: params.include_resolved ?? false,
+    });
+    if (error) { await logUsage(sb, member.id, "list_document_comments", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_document_comments", true, undefined, start);
+    return ok(data);
+  });
+
+  // resolve_document_comment — mark a comment (and descendants) as resolved
+  mcp.tool("resolve_document_comment", "Mark a document comment as resolved, with optional resolution note. Permission: original commenter OR document curator OR approval chain signer.", {
+    comment_id: z.string().describe("UUID of document_comments row"),
+    resolution_note: z.string().optional().describe("Optional note explaining how the comment was addressed")
+  }, async (params: { comment_id: string; resolution_note?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "resolve_document_comment", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.comment_id)) { await logUsage(sb, member.id, "resolve_document_comment", false, "Invalid comment_id", start); return err("comment_id must be a UUID"); }
+    const { data, error } = await sb.rpc("resolve_document_comment", {
+      p_comment_id: params.comment_id,
+      p_resolution_note: params.resolution_note ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "resolve_document_comment", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "resolve_document_comment", true, undefined, start);
+    return ok(data);
+  });
+
+  // submit_change_request — create a new change_request (CR) targeting Manual sections / GCs
+  mcp.tool("submit_change_request", "Submit a change request (CR) proposing edits to Manual sections or GC overrides. cr_type: 'manual_edit' | 'gc_override' | 'policy_update'. impact_level: 'low' | 'medium' | 'high' | 'critical'. Routes to review queue per type.", {
+    title: z.string().describe("Short title"),
+    description: z.string().describe("Detailed description of the change"),
+    cr_type: z.string().describe("'manual_edit' | 'gc_override' | 'policy_update'"),
+    manual_section_ids: z.array(z.string()).optional().describe("UUIDs of affected manual_sections (for manual_edit type)"),
+    gc_references: z.array(z.string()).optional().describe("GC identifiers affected (e.g. ['GC-097','GC-162'])"),
+    impact_level: z.string().optional().describe("'low' (default 'medium') | 'medium' | 'high' | 'critical'"),
+    impact_description: z.string().optional().describe("Describe who/what is affected"),
+    justification: z.string().optional().describe("Why this change is necessary")
+  }, async (params: { title: string; description: string; cr_type: string; manual_section_ids?: string[]; gc_references?: string[]; impact_level?: string; impact_description?: string; justification?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "submit_change_request", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("submit_change_request", {
+      p_title: params.title,
+      p_description: params.description,
+      p_cr_type: params.cr_type,
+      p_manual_section_ids: params.manual_section_ids ?? null,
+      p_gc_references: params.gc_references ?? null,
+      p_impact_level: params.impact_level ?? 'medium',
+      p_impact_description: params.impact_description ?? null,
+      p_justification: params.justification ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "submit_change_request", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "submit_change_request", true, undefined, start);
+    return ok(data);
+  });
+
+  // approve_change_request — signoff on a CR (approval or rejection), recorded with signature hash
+  mcp.tool("approve_change_request", "Record your signoff on a change request. action: 'approve' | 'reject' | 'abstain'. Signature hash + timestamp captured for audit. Permissions: CR approver role assigned to the CR.", {
+    cr_id: z.string().describe("UUID of change_requests row"),
+    action: z.string().describe("'approve' | 'reject' | 'abstain'"),
+    comment: z.string().optional().describe("Optional comment posted with the signoff")
+  }, async (params: { cr_id: string; action: string; comment?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "approve_change_request", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.cr_id)) { await logUsage(sb, member.id, "approve_change_request", false, "Invalid cr_id", start); return err("cr_id must be a UUID"); }
+    const { data, error } = await sb.rpc("approve_change_request", {
+      p_cr_id: params.cr_id,
+      p_action: params.action,
+      p_comment: params.comment ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "approve_change_request", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "approve_change_request", true, undefined, start);
+    return ok(data);
+  });
+
+  // review_change_request — intermediate review step (distinct from final approve)
+  mcp.tool("review_change_request", "Post a review on a CR — intermediate step before final approval. action: 'request_changes' | 'ready_for_approval' | 'comment'.", {
+    cr_id: z.string().describe("UUID of change_requests row"),
+    action: z.string().describe("'request_changes' | 'ready_for_approval' | 'comment'"),
+    notes: z.string().describe("Review notes body")
+  }, async (params: { cr_id: string; action: string; notes: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "review_change_request", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.cr_id)) { await logUsage(sb, member.id, "review_change_request", false, "Invalid cr_id", start); return err("cr_id must be a UUID"); }
+    const { data, error } = await sb.rpc("review_change_request", {
+      p_cr_id: params.cr_id,
+      p_action: params.action,
+      p_notes: params.notes,
+    });
+    if (error) { await logUsage(sb, member.id, "review_change_request", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "review_change_request", true, undefined, start);
+    return ok(data);
+  });
+
+  // list_change_requests — list CRs filterable by status / type
+  mcp.tool("list_change_requests", "List change requests with optional status/type filters. Status: 'draft' | 'under_review' | 'approved' | 'rejected' | 'withdrawn'.", {
+    status: z.string().optional().describe("Filter by status"),
+    cr_type: z.string().optional().describe("Filter by CR type")
+  }, async (params: { status?: string; cr_type?: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "list_change_requests", false, "Not authenticated", start); return err("Not authenticated"); }
+    const { data, error } = await sb.rpc("get_change_requests", {
+      p_status: params.status ?? null,
+      p_cr_type: params.cr_type ?? null,
+    });
+    if (error) { await logUsage(sb, member.id, "list_change_requests", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "list_change_requests", true, undefined, start);
+    return ok(data);
+  });
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
@@ -2210,7 +2394,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.16.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.17.0" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -2230,6 +2414,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.16.0", tools: 112, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.17.0", tools: 120, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
