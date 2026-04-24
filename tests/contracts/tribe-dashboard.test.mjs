@@ -31,13 +31,14 @@ const migrations = loadAllMigrations();
 const allSQL = migrations.map(m => m.content).join('\n');
 
 function findFunctionBody(funcName) {
+  // Supports any dollar-quoted tag: $$, $function$, $BODY$, $func$, etc.
   const escaped = funcName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const regex = new RegExp(
-    `CREATE\\s+OR\\s+REPLACE\\s+FUNCTION\\s+(?:public\\.)?${escaped}\\s*\\([^)]*\\)[\\s\\S]*?\\$\\$([\\s\\S]*?)\\$\\$`,
+    `CREATE\\s+OR\\s+REPLACE\\s+FUNCTION\\s+(?:public\\.)?${escaped}\\s*\\([^)]*\\)[\\s\\S]*?AS\\s+\\$(\\w*)\\$([\\s\\S]*?)\\$\\1\\$`,
     'gi'
   );
   const matches = [...allSQL.matchAll(regex)];
-  return matches.length > 0 ? matches[matches.length - 1][1] : null;
+  return matches.length > 0 ? matches[matches.length - 1][2] : null;
 }
 
 // ─── RPC existence + SECURITY DEFINER ───
