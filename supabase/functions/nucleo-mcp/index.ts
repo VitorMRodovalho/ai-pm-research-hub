@@ -1,5 +1,6 @@
 // supabase/functions/nucleo-mcp/index.ts
-// MCP server v2.24.0 — 138 tools (92R + 46W) + 1 prompt + 1 resource + usage logging
+// MCP server v2.24.1 — 138 tools (92R + 46W) + 1 prompt + 1 resource + usage logging
+// v2.24.1: preview calls now log mcp_usage_log.result_kind='preview' (ADR-0018 W3 prereq, Track T).
 // v2.24.0: +confirm param on 5 destructive tools (ADR-0018 W1): drop_event_instance,
 //   manage_initiative_engagement (action='remove' only), offboard_member, delete_card, archive_card.
 //   Default returns preview; confirm=true executes. Breaking behavior change.
@@ -64,10 +65,10 @@ async function resolveInitiativeId(sb: ReturnType<typeof createClient>, tribeId:
   return data?.id || null;
 }
 
-async function logUsage(sb: ReturnType<typeof createClient>, memberId: string | null, toolName: string, success: boolean, errorMsg?: string, startTime?: number) {
+async function logUsage(sb: ReturnType<typeof createClient>, memberId: string | null, toolName: string, success: boolean, errorMsg?: string, startTime?: number, resultKind?: "preview" | "execute") {
   try {
     const execMs = startTime ? Date.now() - startTime : null;
-    await sb.rpc("log_mcp_usage", { p_auth_user_id: null, p_member_id: memberId, p_tool_name: toolName, p_success: success, p_error_message: errorMsg || null, p_execution_ms: execMs });
+    await sb.rpc("log_mcp_usage", { p_auth_user_id: null, p_member_id: memberId, p_tool_name: toolName, p_success: success, p_error_message: errorMsg || null, p_execution_ms: execMs, p_result_kind: resultKind || "execute" });
   } catch (_) { /* never break tool execution */ }
 }
 
@@ -1222,7 +1223,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (!(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "drop_event_instance", false, "Unauthorized", start); return err("Unauthorized"); }
     if (params.confirm !== true) {
       const { data: target } = await sb.from("events").select("id, title, type, date, time_start, initiative_id").eq("id", params.event_id).maybeSingle();
-      await logUsage(sb, member.id, "drop_event_instance", true, undefined, start);
+      await logUsage(sb, member.id, "drop_event_instance", true, undefined, start, "preview");
       return ok({
         action: "drop_event_instance",
         preview: true,
@@ -1508,7 +1509,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
         sb.from("initiatives").select("id, title, kind, status").eq("id", params.initiative_id).maybeSingle(),
         sb.from("persons").select("id, name").eq("id", params.person_id).maybeSingle(),
       ]);
-      await logUsage(sb, member.id, "manage_initiative_engagement", true, undefined, start);
+      await logUsage(sb, member.id, "manage_initiative_engagement", true, undefined, start, "preview");
       return ok({
         action: "manage_initiative_engagement",
         preview: true,
@@ -1561,7 +1562,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
           : Promise.resolve({ count: null as number | null }),
         sb.from("board_items").select("id", { count: "exact", head: true }).eq("assignee_id", params.member_id).in("status", ["backlog","in_progress","review"]),
       ]);
-      await logUsage(sb, member.id, "offboard_member", true, undefined, start);
+      await logUsage(sb, member.id, "offboard_member", true, undefined, start, "preview");
       return ok({
         action: "offboard_member",
         preview: true,
@@ -1922,7 +1923,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (!(await canV4(sb, member.id, 'write_board'))) { await logUsage(sb, member.id, "delete_card", false, "Unauthorized", start); return err("Unauthorized — write_board required."); }
     if (params.confirm !== true) {
       const { data: target } = await sb.from("board_items").select("id, title, status, board_id").eq("id", params.card_id).maybeSingle();
-      await logUsage(sb, member.id, "delete_card", true, undefined, start);
+      await logUsage(sb, member.id, "delete_card", true, undefined, start, "preview");
       return ok({
         action: "delete_card",
         preview: true,
@@ -2060,7 +2061,7 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     if (!(await canV4(sb, member.id, 'write_board'))) { await logUsage(sb, member.id, "archive_card", false, "Unauthorized", start); return err("Unauthorized — write_board required."); }
     if (params.confirm !== true) {
       const { data: target } = await sb.from("board_items").select("id, title, status, board_id").eq("id", params.card_id).maybeSingle();
-      await logUsage(sb, member.id, "archive_card", true, undefined, start);
+      await logUsage(sb, member.id, "archive_card", true, undefined, start, "preview");
       return ok({
         action: "archive_card",
         preview: true,
@@ -2821,7 +2822,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.24.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.24.1" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -2841,6 +2842,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.24.0", tools: 138, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.24.1", tools: 138, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);

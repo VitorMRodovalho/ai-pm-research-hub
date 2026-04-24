@@ -6632,6 +6632,7 @@ export type Database = {
           execution_ms: number | null
           id: string
           member_id: string | null
+          result_kind: string
           success: boolean | null
           tool_name: string
         }
@@ -6642,6 +6643,7 @@ export type Database = {
           execution_ms?: number | null
           id?: string
           member_id?: string | null
+          result_kind?: string
           success?: boolean | null
           tool_name: string
         }
@@ -6652,6 +6654,7 @@ export type Database = {
           execution_ms?: number | null
           id?: string
           member_id?: string | null
+          result_kind?: string
           success?: boolean | null
           tool_name?: string
         }
@@ -7307,6 +7310,7 @@ export type Database = {
           linkedin_url: string | null
           member_status: string | null
           name: string
+          notify_weekly_digest: boolean
           offboarded_at: string | null
           offboarded_by: string | null
           onboarding_dismissed_at: string | null
@@ -7366,6 +7370,7 @@ export type Database = {
           linkedin_url?: string | null
           member_status?: string | null
           name: string
+          notify_weekly_digest?: boolean
           offboarded_at?: string | null
           offboarded_by?: string | null
           onboarding_dismissed_at?: string | null
@@ -7425,6 +7430,7 @@ export type Database = {
           linkedin_url?: string | null
           member_status?: string | null
           name?: string
+          notify_weekly_digest?: boolean
           offboarded_at?: string | null
           offboarded_by?: string | null
           onboarding_dismissed_at?: string | null
@@ -8071,6 +8077,96 @@ export type Database = {
             columns: ["uploaded_by"]
             isOneToOne: false
             referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_cards: {
+        Row: {
+          board_item_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          link_role: string
+          notes: string | null
+          partner_entity_id: string
+          updated_at: string
+        }
+        Insert: {
+          board_item_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          link_role?: string
+          notes?: string | null
+          partner_entity_id: string
+          updated_at?: string
+        }
+        Update: {
+          board_item_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          link_role?: string
+          notes?: string | null
+          partner_entity_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_cards_board_item_id_fkey"
+            columns: ["board_item_id"]
+            isOneToOne: false
+            referencedRelation: "board_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_cards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_cards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "gamification_leaderboard"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "partner_cards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "partner_cards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_cards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_cards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_cards_partner_entity_id_fkey"
+            columns: ["partner_entity_id"]
+            isOneToOne: false
+            referencedRelation: "partner_entities"
             referencedColumns: ["id"]
           },
         ]
@@ -12606,7 +12702,6 @@ export type Database = {
           designations: string[] | null
           id: string | null
           is_active: boolean | null
-          is_superadmin: boolean | null
           linkedin_url: string | null
           member_status: string | null
           name: string | null
@@ -12623,7 +12718,6 @@ export type Database = {
           designations?: string[] | null
           id?: string | null
           is_active?: boolean | null
-          is_superadmin?: boolean | null
           linkedin_url?: string | null
           member_status?: string | null
           name?: string | null
@@ -12640,7 +12734,6 @@ export type Database = {
           designations?: string[] | null
           id?: string | null
           is_active?: boolean | null
-          is_superadmin?: boolean | null
           linkedin_url?: string | null
           member_status?: string | null
           name?: string | null
@@ -12797,6 +12890,16 @@ export type Database = {
       _validate_gates_shape: { Args: { p_gates: Json }; Returns: boolean }
       accept_privacy_consent: { Args: { p_version?: string }; Returns: Json }
       activate_initiative: { Args: { p_initiative_id: string }; Returns: Json }
+      add_checklist_item: {
+        Args: {
+          p_assigned_to?: string
+          p_board_item_id: string
+          p_position?: number
+          p_target_date?: string
+          p_text: string
+        }
+        Returns: string
+      }
       add_partner_attachment: {
         Args: {
           p_description?: string
@@ -13565,6 +13668,8 @@ export type Database = {
         Returns: {
           description: string
           invariant_name: string
+          sample_ids: string[]
+          severity: string
           violation_count: number
         }[]
       }
@@ -13829,6 +13934,10 @@ export type Database = {
         Args: { p_item_id: string; p_reason?: string }
         Returns: undefined
       }
+      delete_checklist_item: {
+        Args: { p_checklist_item_id: string; p_reason?: string }
+        Returns: undefined
+      }
       delete_cost_entry: { Args: { p_id: string }; Returns: undefined }
       delete_document_version_draft: {
         Args: { p_version_id: string }
@@ -13850,6 +13959,10 @@ export type Database = {
       detect_and_notify_detractors_cron: { Args: never; Returns: Json }
       detect_onboarding_overdue: { Args: never; Returns: Json }
       detect_operational_alerts: { Args: never; Returns: Json }
+      detect_orphan_assignees_from_offboards: {
+        Args: { p_member_id?: string }
+        Returns: number
+      }
       dismiss_onboarding: { Args: never; Returns: undefined }
       drop_event_instance: {
         Args: { p_event_id: string; p_force_delete_attendance?: boolean }
@@ -13980,6 +14093,14 @@ export type Database = {
         Args: { p_notes?: string; p_version_label: string }
         Returns: Json
       }
+      generate_weekly_card_digest_cron: {
+        Args: never
+        Returns: {
+          member_id: string
+          notified: boolean
+          reason: string
+        }[]
+      }
       get_active_engagements: { Args: { p_person_id?: string }; Returns: Json }
       get_admin_dashboard: { Args: never; Returns: Json }
       get_adoption_dashboard: { Args: never; Returns: Json }
@@ -14106,6 +14227,7 @@ export type Database = {
         Args: { p_member_id?: string }
         Returns: Json
       }
+      get_card_detail: { Args: { p_card_id: string }; Returns: Json }
       get_card_timeline: {
         Args: { p_item_id: string }
         Returns: {
@@ -14202,6 +14324,7 @@ export type Database = {
         }[]
       }
       get_diversity_dashboard: { Args: { p_cycle_id?: string }; Returns: Json }
+      get_document_detail: { Args: { p_document_id: string }; Returns: Json }
       get_dropout_risk_members: {
         Args: { p_threshold?: number }
         Returns: {
@@ -14302,6 +14425,24 @@ export type Database = {
         }[]
       }
       get_global_research_pipeline: { Args: never; Returns: Json }
+      get_governance_change_log: {
+        Args: {
+          p_include_payload?: boolean
+          p_limit?: number
+          p_since?: string
+        }
+        Returns: {
+          actor_id: string
+          actor_name: string
+          event_kind: string
+          event_source: string
+          event_time: string
+          payload: Json
+          target_id: string
+          target_label: string
+          target_type: string
+        }[]
+      }
       get_governance_dashboard: { Args: never; Returns: Json }
       get_governance_documents: { Args: { p_doc_type?: string }; Returns: Json }
       get_governance_preview: { Args: never; Returns: Json }
@@ -14412,6 +14553,10 @@ export type Database = {
       get_my_onboarding: { Args: never; Returns: Json }
       get_my_pii_access_log: { Args: { p_limit?: number }; Returns: Json }
       get_my_selection_result: { Args: never; Returns: Json }
+      get_my_signatures: {
+        Args: { p_include_superseded?: boolean }
+        Returns: Json
+      }
       get_my_tasks: {
         Args: { p_period_filter?: string; p_status_filter?: string }
         Returns: Json
@@ -14664,8 +14809,17 @@ export type Database = {
       get_tribe_member_contacts: { Args: { p_tribe_id: number }; Returns: Json }
       get_tribe_stats: { Args: { p_tribe_id: number }; Returns: Json }
       get_unread_notification_count: { Args: never; Returns: number }
+      get_version_diff: {
+        Args: {
+          p_include_content?: boolean
+          p_version_a: string
+          p_version_b: string
+        }
+        Returns: Json
+      }
       get_volunteer_agreement_status: { Args: never; Returns: Json }
       get_webinar_lifecycle: { Args: { p_webinar_id: string }; Returns: Json }
+      get_weekly_card_digest: { Args: { p_member_id: string }; Returns: Json }
       get_wiki_page: {
         Args: { p_path: string }
         Returns: {
@@ -14793,6 +14947,15 @@ export type Database = {
         }
         Returns: Json
       }
+      link_partner_to_card: {
+        Args: {
+          p_board_item_id: string
+          p_link_role?: string
+          p_notes?: string
+          p_partner_entity_id: string
+        }
+        Returns: Json
+      }
       link_webinar_event: {
         Args: { p_event_id?: string; p_webinar_id: string }
         Returns: Json
@@ -14850,6 +15013,22 @@ export type Database = {
         Args: { p_board_id: string; p_status?: string }
         Returns: Json[]
       }
+      list_card_partners: {
+        Args: { p_board_item_id: string }
+        Returns: {
+          link_id: string
+          link_notes: string
+          link_role: string
+          linked_at: string
+          linked_by_name: string
+          partner_chapter: string
+          partner_contact_name: string
+          partner_entity_id: string
+          partner_entity_type: string
+          partner_name: string
+          partner_status: string
+        }[]
+      }
       list_curation_board: { Args: { p_status?: string }; Returns: Json[] }
       list_curation_pending_board_items: { Args: never; Returns: Json[] }
       list_cycles: { Args: never; Returns: Json }
@@ -14868,6 +15047,26 @@ export type Database = {
           resolved_at: string
           resolved_by_name: string
           visibility: string
+        }[]
+      }
+      list_document_versions: {
+        Args: { p_document_id: string }
+        Returns: {
+          authored_at: string
+          authored_by: string
+          authored_by_name: string
+          comments_total: number
+          comments_unresolved: number
+          content_html_length: number
+          has_markdown: boolean
+          is_current: boolean
+          locked_at: string
+          locked_by_name: string
+          notes: string
+          published_at: string
+          version_id: string
+          version_label: string
+          version_number: number
         }[]
       }
       list_initiative_boards: {
@@ -14982,6 +15181,29 @@ export type Database = {
           version_number: number
         }[]
       }
+      list_orphan_card_assignments: {
+        Args: { p_chapter?: string; p_limit?: number; p_tribe_id?: number }
+        Returns: Json
+      }
+      list_partner_cards: {
+        Args: { p_partner_entity_id: string }
+        Returns: {
+          board_id: string
+          board_item_assignee_name: string
+          board_item_due_date: string
+          board_item_id: string
+          board_item_status: string
+          board_item_title: string
+          board_name: string
+          link_id: string
+          link_notes: string
+          link_role: string
+          linked_at: string
+          linked_by_name: string
+          partner_entity_id: string
+          partner_name: string
+        }[]
+      }
       list_pending_curation: { Args: { p_table?: string }; Returns: Json }
       list_project_boards: { Args: { p_tribe_id?: number }; Returns: Json[] }
       list_radar_global: {
@@ -15044,6 +15266,7 @@ export type Database = {
           p_error_message?: string
           p_execution_ms?: number
           p_member_id: string
+          p_result_kind?: string
           p_success?: boolean
           p_tool_name: string
         }
@@ -15057,6 +15280,15 @@ export type Database = {
           p_target_member_id: string
         }
         Returns: undefined
+      }
+      log_pii_access_batch: {
+        Args: {
+          p_context: string
+          p_fields: string[]
+          p_reason?: string
+          p_target_member_ids: string[]
+        }
+        Returns: number
       }
       manage_action_items: {
         Args: { p_event_id: string; p_items: Json }
@@ -15292,6 +15524,32 @@ export type Database = {
           tribe_name: string
         }[]
       }
+      search_partner_cards: {
+        Args: {
+          p_card_status?: string
+          p_chapter?: string
+          p_limit?: number
+          p_link_role?: string
+        }
+        Returns: {
+          board_id: string
+          board_item_assignee_name: string
+          board_item_due_date: string
+          board_item_id: string
+          board_item_status: string
+          board_item_title: string
+          board_name: string
+          link_id: string
+          link_notes: string
+          link_role: string
+          linked_at: string
+          linked_by_name: string
+          partner_chapter: string
+          partner_entity_id: string
+          partner_name: string
+          partner_status: string
+        }[]
+      }
       search_wiki_pages: {
         Args: {
           p_domain?: string
@@ -15456,6 +15714,7 @@ export type Database = {
           linkedin_url: string | null
           member_status: string | null
           name: string
+          notify_weekly_digest: boolean
           offboarded_at: string | null
           offboarded_by: string | null
           onboarding_dismissed_at: string | null
@@ -15495,6 +15754,10 @@ export type Database = {
         Args: { p_item_id: string; p_member_id: string; p_role: string }
         Returns: undefined
       }
+      unlink_partner_from_card: {
+        Args: { p_board_item_id: string; p_partner_entity_id: string }
+        Returns: Json
+      }
       update_application_contact: {
         Args: {
           p_application_id: string
@@ -15518,6 +15781,15 @@ export type Database = {
       update_certificate: {
         Args: { p_cert_id: string; p_updates: Json }
         Returns: Json
+      }
+      update_checklist_item: {
+        Args: {
+          p_checklist_item_id: string
+          p_position?: number
+          p_target_date?: string
+          p_text?: string
+        }
+        Returns: undefined
       }
       update_cpmai_progress: {
         Args: { p_module_id: string; p_status: string }

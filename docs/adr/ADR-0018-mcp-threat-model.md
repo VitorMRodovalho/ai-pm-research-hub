@@ -1,6 +1,6 @@
 # ADR-0018: MCP Threat Model — análise de risco e mitigações canônicas
 
-- Status: Partially Accepted (2026-04-24 p44) — D1-D5 análise + convenções aceitas; **W1 confirmation step shipped (MCP v2.24.0, 2026-04-24 p44)**; W2 rate limit + W3 anomaly detection ainda pendentes
+- Status: Partially Accepted (2026-04-24 p44+T) — D1-D5 análise + convenções aceitas; **W1 confirmation step shipped (MCP v2.24.0, 2026-04-24 p44)**; **W3 prerequisite `result_kind` coluna shipped (MCP v2.24.1 + migration `20260511010000`, 2026-04-24 p44 Track T)**; W2 rate limit + W3 cron ainda pendentes
 - Data: 2026-04-21
 - Autor: Claude (debug session 9908f3, issue #89 Frente 6)
 - Escopo: Formaliza análise de risco do `nucleo-mcp` (Supabase Edge Function exposto via proxy Cloudflare em `https://nucleoia.vitormr.dev/mcp`), identifica vetores aplicáveis e não-aplicáveis da vulnerabilidade MCP reportada em abril/2026, e define mitigações canônicas.
@@ -51,7 +51,7 @@ Este ADR documenta (D1-D7):
 - `admin_archive_project_board` — RPC existe mas sem wrapper MCP expondo-o
 - `revoke_engagement` — futuro
 
-**Implementação:** cada tool aceita `confirm: z.boolean().optional()`. Se ausente ou `false`, tool retorna payload `{ action, preview: true, target, warning, next_call }` com os campos específicos listados acima. Se `confirm: true`, executa o RPC subjacente. canV4 gate roda ANTES do preview para evitar que preview vire canal de recon. Preview calls são logados em `mcp_usage_log` como `success=true` (chamada válida que não executou mutation).
+**Implementação:** cada tool aceita `confirm: z.boolean().optional()`. Se ausente ou `false`, tool retorna payload `{ action, preview: true, target, warning, next_call }` com os campos específicos listados acima. Se `confirm: true`, executa o RPC subjacente. canV4 gate roda ANTES do preview para evitar que preview vire canal de recon. Preview calls são logados em `mcp_usage_log` com `success=true` + `result_kind='preview'` (coluna adicionada em 2026-04-24 p44 Track T, migration `20260511010000`); execute calls carry `result_kind='execute'` (default). Isso permite W3 anomaly cron distinguir mutations reais de previews abandonadas.
 
 Atacante cross-MCP precisa forjar 2 calls em sequência (preview + confirm=true), aumentando a barreira e dando ao humano review um checkpoint explícito com contexto do alvo. Mudança de comportamento **breaking**: callers programáticos que executavam destructive actions sem `confirm` agora só recebem preview.
 
@@ -79,13 +79,14 @@ Implementação: KV counters com TTL. Token já é cached no KV (30d refresh).
 
 #### D3.1 — mcp_usage_log como base de detection
 
-Tabela `mcp_usage_log` já grava todas as chamadas (success/fail + error_message + member_id + tool_name + execution_ms + created_at). Permite:
+Tabela `mcp_usage_log` grava todas as chamadas (success/fail + error_message + member_id + tool_name + execution_ms + created_at + **result_kind**). Permite:
 
 - Detection de padrões anômalos (mesmo tool chamado 50x em 1 min)
 - Audit trail post-incident
 - Analytics de adoption
+- **Distinção preview-vs-execute** (coluna `result_kind` adicionada em 2026-04-24 p44 Track T, migration `20260511010000`; valores `'preview'` ou `'execute'`, default `'execute'`) — W3 anomaly cron pode filtrar `WHERE result_kind = 'execute'` para contar apenas mutations reais, ou olhar razão preview/execute para detectar cross-MCP injection (muitos previews sem confirm podem indicar injection rejeitada pelo humano).
 
-Issue #81 item #5 propõe cron de anomaly detection — deveria ser priorizado para completar este threat model.
+Issue #81 item #5 propõe cron de anomaly detection — agora destravado pela coluna `result_kind`. Deve ser priorizado para completar este threat model.
 
 #### D3.2 — OAuth refresh + KV 30d (já em produção)
 
@@ -168,12 +169,19 @@ Enviar link para este ADR quando publicado (status = Accepted). Fecha loop comun
 
 **Pendente implementação (W2/W3):**
 - W2 — rate limit em Cloudflare Worker KV counters
-- W3 — MCP anomaly detection cron (issue #81 item 5)
+- W3 — MCP anomaly detection cron (issue #81 item 5) — destravado pela coluna `result_kind` (Track T, 2026-04-24 p44)
 
 **Shipped (2026-04-24 p44) — W1 confirmation step:**
 - 5 destructive tools gated em MCP v2.24.0: `drop_event_instance`, `delete_card`, `archive_card`, `manage_initiative_engagement` (action='remove'), `offboard_member`
-- Deploy: `supabase/functions/nucleo-mcp/index.ts` v2.24.0, commit na sessão p44
+- Deploy: `supabase/functions/nucleo-mcp/index.ts` v2.24.0, commit `09e16bf`
 - Preview default; `confirm: true` executa. canV4 gate corre antes do preview (evita recon via preview).
 - `admin_archive_project_board` e `revoke_engagement` ficam fora por ausência de wrapper MCP hoje; quando criados, seguem mesmo padrão.
+
+**Shipped (2026-04-24 p44 Track T) — W3 prerequisite:**
+- `mcp_usage_log.result_kind` coluna adicionada (`'preview'` | `'execute'`, default `'execute'`) via migration `20260511010000`
+- `log_mcp_usage()` RPC agora aceita `p_result_kind text DEFAULT 'execute'` (DROP + CREATE, 7 params)
+- 5 preview branches na EF passam `"preview"` via helper `logUsage(..., resultKind)`; execute paths usam default `'execute'`
+- MCP v2.24.0 → v2.24.1 (patch — observability, não comportamento)
+- Desbloqueia W3 anomaly cron: contagem de mutations reais separada de previews abandonadas (útil para detectar cross-MCP injection onde humano rejeitou confirm)
 
 Resposta formal à Ana Carla pode ser enviada agora com ressalva "Partially Accepted — W1 shipped; W2/W3 em backlog."
