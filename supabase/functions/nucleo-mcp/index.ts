@@ -2486,15 +2486,20 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
   });
 
   // get_version_diff — side-by-side content pair for two versions of the same document
-  mcp.tool("get_version_diff", "Returns content_html + content_markdown for two document versions (a and b). Use to compute diff client-side. Validates both versions belong to same document. Returns both_exist + same_document flags + newer_version_id/older_version_id helpers.", {
+  mcp.tool("get_version_diff", "Compare two document versions. Returns pre_computed_diff (chars_delta, lines_added/removed — auto-populated via trigger), version metadata, and optionally full content. Set include_content=false for lightweight response (~5% of full size) when you only need stats. Validates both versions belong to same document.", {
     version_a: z.string().describe("UUID of first document_versions row"),
-    version_b: z.string().describe("UUID of second document_versions row")
-  }, async (params: { version_a: string; version_b: string }) => {
+    version_b: z.string().describe("UUID of second document_versions row"),
+    include_content: z.boolean().optional().describe("If true (default), include content_html + content_markdown in response. Set false for stats-only (~95% smaller payload for large docs).")
+  }, async (params: { version_a: string; version_b: string; include_content?: boolean }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_version_diff", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!isUUID(params.version_a) || !isUUID(params.version_b)) { await logUsage(sb, member.id, "get_version_diff", false, "Invalid version id", start); return err("both version ids must be UUIDs"); }
-    const { data, error } = await sb.rpc("get_version_diff", { p_version_a: params.version_a, p_version_b: params.version_b });
+    const { data, error } = await sb.rpc("get_version_diff", {
+      p_version_a: params.version_a,
+      p_version_b: params.version_b,
+      p_include_content: params.include_content ?? true,
+    });
     if (error) { await logUsage(sb, member.id, "get_version_diff", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_version_diff", true, undefined, start);
     return ok(data);
@@ -2724,7 +2729,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.23.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.23.1" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -2744,6 +2749,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.23.0", tools: 138, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.23.1", tools: 138, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
