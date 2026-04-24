@@ -1,5 +1,11 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
+import {
+  checkRateLimit,
+  extractToolName,
+  GENERAL_LIMIT_PER_MIN,
+  DESTRUCTIVE_LIMIT_PER_MIN,
+} from '../lib/mcp-rate-limit';
 
 async function kvLog(_endpoint: string, _data: any) {
   // No-op: KV debug logs disabled to protect free tier write limit (1k/day).
@@ -93,22 +99,47 @@ export const ALL: APIRoute = async ({ request }) => {
   // ── Auto-refresh: check if JWT is expired and refresh transparently ──
   let activeToken = authHeader.replace(/^Bearer\s+/i, '');
   const kv = (env as any).SESSION;
+  const payload = decodeJwtPayload(activeToken);
 
-  if (kv) {
-    const payload = decodeJwtPayload(activeToken);
-    if (payload?.sub && payload?.exp) {
-      const now = Math.floor(Date.now() / 1000);
-      // Refresh if expired or will expire within 5 minutes
-      if (payload.exp - 300 < now) {
-        await kvLog("mcp-auto-refresh-attempt", { sub: payload.sub, exp: payload.exp, now });
-        const newToken = await tryAutoRefresh(payload.sub, kv);
-        if (newToken) {
-          activeToken = newToken;
-          await kvLog("mcp-auto-refresh-ok", { sub: payload.sub });
-        } else {
-          await kvLog("mcp-auto-refresh-fail", { sub: payload.sub });
-        }
+  if (kv && payload?.sub && payload?.exp) {
+    const now = Math.floor(Date.now() / 1000);
+    // Refresh if expired or will expire within 5 minutes
+    if (payload.exp - 300 < now) {
+      await kvLog("mcp-auto-refresh-attempt", { sub: payload.sub, exp: payload.exp, now });
+      const newToken = await tryAutoRefresh(payload.sub, kv);
+      if (newToken) {
+        activeToken = newToken;
+        await kvLog("mcp-auto-refresh-ok", { sub: payload.sub });
+      } else {
+        await kvLog("mcp-auto-refresh-fail", { sub: payload.sub });
       }
+    }
+  }
+
+  // ── ADR-0018 W2: rate limit per-member (100/min general + 10/min destructive) ──
+  // Fail-open on KV errors; the RPC layer canV4 gate remains the authority guard.
+  if (kv && payload?.sub) {
+    const toolName = extractToolName(reqBody);
+    const rl = await checkRateLimit(kv, payload.sub, toolName);
+    if (!rl.allowed) {
+      return new Response(JSON.stringify({
+        jsonrpc: "2.0",
+        error: {
+          code: -32029,
+          message: rl.reason || "Rate limit exceeded",
+          data: { limitKind: rl.limitKind, retryAfter: rl.retryAfter ?? 60 },
+        },
+        id: null,
+      }), {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          "Retry-After": String(rl.retryAfter ?? 60),
+          "X-RateLimit-Limit": String(rl.limitKind === "destructive" ? DESTRUCTIVE_LIMIT_PER_MIN : GENERAL_LIMIT_PER_MIN),
+          "X-RateLimit-Remaining": "0",
+          ...CORS_HEADERS,
+        },
+      });
     }
   }
 
