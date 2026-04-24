@@ -5,20 +5,12 @@
   "security": {
     "accepted_errors": [
       {
-        "cache_key": "security_definer_view_public_members_public_safe",
-        "rationale": "LGPD-safe member view. Onda 2: remove is_superadmin column, then flip security_invoker (issue #82)."
-      },
-      {
         "cache_key": "security_definer_view_public_public_members",
-        "rationale": "Legacy alias of members_public_safe. Onda 2: dedupe or convert to RPC (issue #82)."
+        "rationale": "Active view — 5 runtime callsites (pdf.ts cert generation for issuer + counter-signer signature_url, Nav, TribeKanban). Flipping invoker needs verification that PDF EF path (service_role) and frontend authenticated path (RLS-scoped) both work post-flip. Deferred to Onda 2 (issue #82)."
       },
       {
         "cache_key": "security_definer_view_public_gamification_leaderboard",
-        "rationale": "Public leaderboard. Onda 3: either extend get_public_leaderboard() to cover all 20+ columns OR flip invoker after verifying authenticated RLS permits the full breakdown (issue #82)."
-      },
-      {
-        "cache_key": "security_definer_view_public_recurring_event_groups",
-        "rationale": "Recurrence UI bridge. Onda 2: revisit meeting_link exposure then flip invoker (issue #82)."
+        "rationale": "Public leaderboard — 3 callsites in /gamification.astro consume 20+ columns (cycle_*, category breakdowns). get_public_leaderboard() RPC returns subset; either extend RPC OR verify RLS permits full breakdown after invoker flip. Onda 3 product+UX decision (issue #82)."
       }
     ],
     "accepted_warnings": [
@@ -58,11 +50,19 @@
       "action": "ALTER VIEW ... SET (security_invoker = true) + selective REVOKE. Migration 20260508030000."
     },
     "onda_1_5_2026_04_23": {
-      "commit_ref": "p40 mini-sweep",
+      "commit_ref": "025450a",
       "closed_cache_keys": [
         "security_definer_view_public_member_attendance_summary"
       ],
       "action": "Flip invoker + revoke anon on dead view (zero callers verified). Migration 20260508040000."
+    },
+    "onda_1_6_2026_04_23": {
+      "commit_ref": "p40 extended sweep",
+      "closed_cache_keys": [
+        "security_definer_view_public_members_public_safe",
+        "security_definer_view_public_recurring_event_groups"
+      ],
+      "action": "members_public_safe: DROP + RECREATE without is_superadmin column + WITH (security_invoker=true), authenticated+service_role grants only. recurring_event_groups: flip invoker + revoke anon. Migration 20260508050000."
     },
     "pre_session_cleanup": {
       "note": "security_definer_view_public_vw_exec_funnel removed from baseline: not in live advisor output as of 2026-04-23 — view was already cleaned up in a prior session, baseline entry was stale."
