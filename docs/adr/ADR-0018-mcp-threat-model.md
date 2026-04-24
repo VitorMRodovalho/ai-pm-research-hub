@@ -44,7 +44,7 @@ Este ADR documenta (D1-D7):
 | `drop_event_instance` | sempre | event title, type, date, time_start, initiative_id |
 | `delete_card` | sempre | card title, status, board_id + reason echoed |
 | `archive_card` | sempre (soft-delete reversível) | card title, status, board_id + restore_card hint |
-| `manage_initiative_engagement` | só quando `action='remove'` | initiative title/kind, person name, engagement kind+role |
+| `manage_initiative_engagement` | quando `action='add'` ou `action='remove'` (extended 2026-04-24 p44 pós-commit d0ab69d) | initiative title/kind, person name, engagement kind+role |
 | `offboard_member` | sempre | member name, current status, active engagements count, open cards count, proposed change |
 
 **Fora do escopo W1 por ausência de tool MCP hoje:**
