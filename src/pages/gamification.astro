@@ -845,7 +845,7 @@ const SCORING_I18N = {
         return;
       }
 
-      const { data, error } = await sb.from('gamification_leaderboard').select('*');
+      const { data, error } = await sb.rpc('get_gamification_leaderboard');
       if (error) throw error;
       const { data: courseRows, error: courseRowsError } = await sb.from('course_progress')
         .select('member_id, course_id, status');
@@ -888,7 +888,7 @@ const SCORING_I18N = {
       if (leadersError) throw leadersError;
 
       if (!leaderboardData.length) {
-        const { data, error } = await withTimeout(sb.from('gamification_leaderboard').select('*'));
+        const { data, error } = await withTimeout(sb.rpc('get_gamification_leaderboard'));
         if (error) throw error;
         leaderboardData = data || [];
       }
@@ -979,7 +979,7 @@ const SCORING_I18N = {
 
     try {
       if (!leaderboardData.length) {
-        const { data: lbRows, error: lbError } = await withTimeout(sb.from('gamification_leaderboard').select('*'));
+        const { data: lbRows, error: lbError } = await withTimeout(sb.rpc('get_gamification_leaderboard'));
         if (lbError) throw lbError;
         leaderboardData = lbRows || [];
       }

@@ -1,4 +1,4 @@
-Initialising login role...
+npm warn exec The following package was not found and will be installed: supabase@2.95.2
 export type Json =
   | string
   | number
@@ -12,31 +12,6 @@ export type Database = {
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.4"
-  }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
   }
   public: {
     Tables: {
@@ -78,13 +53,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "admin_audit_log_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "admin_audit_log_actor_id_fkey"
@@ -250,13 +218,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "announcements_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "announcements_created_by_fkey"
@@ -437,13 +398,6 @@ export type Database = {
             foreignKeyName: "approval_chains_closed_by_fkey"
             columns: ["closed_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "approval_chains_closed_by_fkey"
-            columns: ["closed_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -481,13 +435,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "approval_chains_opened_by_fkey"
-            columns: ["opened_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "approval_chains_opened_by_fkey"
@@ -601,13 +548,6 @@ export type Database = {
             foreignKeyName: "approval_signoffs_signer_id_fkey"
             columns: ["signer_id"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "approval_signoffs_signer_id_fkey"
-            columns: ["signer_id"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -701,13 +641,6 @@ export type Database = {
             foreignKeyName: "attendance_corrected_by_fkey"
             columns: ["corrected_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "attendance_corrected_by_fkey"
-            columns: ["corrected_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -738,13 +671,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "attendance_edited_by_fkey"
-            columns: ["edited_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "attendance_edited_by_fkey"
@@ -792,13 +718,6 @@ export type Database = {
             foreignKeyName: "attendance_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "attendance_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -836,13 +755,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "attendance_registered_by_fkey"
-            columns: ["registered_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "attendance_registered_by_fkey"
@@ -900,13 +812,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "blog_likes_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "blog_likes_member_id_fkey"
@@ -1024,13 +929,6 @@ export type Database = {
             foreignKeyName: "blog_posts_author_member_id_fkey"
             columns: ["author_member_id"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "blog_posts_author_member_id_fkey"
-            columns: ["author_member_id"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -1108,13 +1006,6 @@ export type Database = {
             foreignKeyName: "board_item_assignments_assigned_by_fkey"
             columns: ["assigned_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "board_item_assignments_assigned_by_fkey"
-            columns: ["assigned_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -1152,13 +1043,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "board_item_assignments_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "board_item_assignments_member_id_fkey"
@@ -1245,13 +1129,6 @@ export type Database = {
             foreignKeyName: "board_item_checklists_assigned_by_fkey"
             columns: ["assigned_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "board_item_checklists_assigned_by_fkey"
-            columns: ["assigned_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -1282,13 +1159,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "board_item_checklists_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "board_item_checklists_assigned_to_fkey"
@@ -1331,13 +1201,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "board_item_checklists_completed_by_fkey"
-            columns: ["completed_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "board_item_checklists_completed_by_fkey"
@@ -1514,13 +1377,6 @@ export type Database = {
             foreignKeyName: "board_items_assignee_id_fkey"
             columns: ["assignee_id"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "board_items_assignee_id_fkey"
-            columns: ["assignee_id"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -1558,13 +1414,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "board_items_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "board_items_created_by_fkey"
@@ -1621,13 +1470,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "board_items_reviewer_id_fkey"
-            columns: ["reviewer_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "board_items_reviewer_id_fkey"
@@ -1712,13 +1554,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "board_lifecycle_events_actor_member_id_fkey"
-            columns: ["actor_member_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "board_lifecycle_events_actor_member_id_fkey"
@@ -1815,13 +1650,6 @@ export type Database = {
             foreignKeyName: "board_members_granted_by_fkey"
             columns: ["granted_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "board_members_granted_by_fkey"
-            columns: ["granted_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -1852,13 +1680,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "board_members_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "board_members_member_id_fkey"
@@ -2067,13 +1888,6 @@ export type Database = {
             foreignKeyName: "broadcast_log_sender_id_fkey"
             columns: ["sender_id"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "broadcast_log_sender_id_fkey"
-            columns: ["sender_id"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -2194,13 +2008,6 @@ export type Database = {
             foreignKeyName: "campaign_recipients_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "campaign_recipients_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -2295,13 +2102,6 @@ export type Database = {
             foreignKeyName: "campaign_sends_approved_by_fkey"
             columns: ["approved_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "campaign_sends_approved_by_fkey"
-            columns: ["approved_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -2332,13 +2132,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "campaign_sends_sent_by_fkey"
-            columns: ["sent_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "campaign_sends_sent_by_fkey"
@@ -2427,13 +2220,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "campaign_templates_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "campaign_templates_created_by_fkey"
@@ -2568,13 +2354,6 @@ export type Database = {
             foreignKeyName: "certificates_counter_signed_by_fkey"
             columns: ["counter_signed_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "certificates_counter_signed_by_fkey"
-            columns: ["counter_signed_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -2610,13 +2389,6 @@ export type Database = {
             foreignKeyName: "certificates_issued_by_fkey"
             columns: ["issued_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "certificates_issued_by_fkey"
-            columns: ["issued_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -2647,13 +2419,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "certificates_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "certificates_member_id_fkey"
@@ -2797,13 +2562,6 @@ export type Database = {
             foreignKeyName: "change_requests_implemented_by_fkey"
             columns: ["implemented_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "change_requests_implemented_by_fkey"
-            columns: ["implemented_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -2846,13 +2604,6 @@ export type Database = {
             foreignKeyName: "change_requests_requested_by_fkey"
             columns: ["requested_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "change_requests_requested_by_fkey"
-            columns: ["requested_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -2883,13 +2634,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "change_requests_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "change_requests_reviewed_by_fkey"
@@ -2972,13 +2716,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chapter_needs_submitted_by_fkey"
-            columns: ["submitted_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "chapter_needs_submitted_by_fkey"
@@ -3492,13 +3229,6 @@ export type Database = {
             foreignKeyName: "cost_entries_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "cost_entries_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -3578,13 +3308,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "course_progress_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "course_progress_member_id_fkey"
@@ -3716,13 +3439,6 @@ export type Database = {
             foreignKeyName: "cr_approvals_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "cr_approvals_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -3803,13 +3519,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "curation_review_log_curator_id_fkey"
-            columns: ["curator_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "curation_review_log_curator_id_fkey"
@@ -3947,13 +3656,6 @@ export type Database = {
             foreignKeyName: "data_anomaly_log_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "data_anomaly_log_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -4021,13 +3723,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "data_quality_audit_snapshots_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "data_quality_audit_snapshots_created_by_fkey"
@@ -4136,13 +3831,6 @@ export type Database = {
             foreignKeyName: "document_comment_edits_edited_by_fkey"
             columns: ["edited_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "document_comment_edits_edited_by_fkey"
-            columns: ["edited_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -4224,13 +3912,6 @@ export type Database = {
             foreignKeyName: "document_comments_author_id_fkey"
             columns: ["author_id"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "document_comments_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -4275,13 +3956,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "document_comments_resolved_by_fkey"
-            columns: ["resolved_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "document_comments_resolved_by_fkey"
@@ -4380,13 +4054,6 @@ export type Database = {
             foreignKeyName: "document_versions_authored_by_fkey"
             columns: ["authored_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "document_versions_authored_by_fkey"
-            columns: ["authored_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -4429,13 +4096,6 @@ export type Database = {
             foreignKeyName: "document_versions_locked_by_fkey"
             columns: ["locked_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "document_versions_locked_by_fkey"
-            columns: ["locked_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -4466,13 +4126,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "document_versions_published_by_fkey"
-            columns: ["published_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "document_versions_published_by_fkey"
@@ -4859,13 +4512,6 @@ export type Database = {
             foreignKeyName: "event_invited_members_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "event_invited_members_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -4948,13 +4594,6 @@ export type Database = {
             foreignKeyName: "event_showcases_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "event_showcases_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -4992,13 +4631,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "event_showcases_registered_by_fkey"
-            columns: ["registered_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "event_showcases_registered_by_fkey"
@@ -5199,13 +4831,6 @@ export type Database = {
             foreignKeyName: "events_agenda_posted_by_fkey"
             columns: ["agenda_posted_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "events_agenda_posted_by_fkey"
-            columns: ["agenda_posted_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -5243,13 +4868,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "events_minutes_posted_by_fkey"
-            columns: ["minutes_posted_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "events_minutes_posted_by_fkey"
@@ -5353,13 +4971,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "gamification_points_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "gamification_points_member_id_fkey"
@@ -5632,13 +5243,6 @@ export type Database = {
             foreignKeyName: "hub_resources_author_id_fkey"
             columns: ["author_id"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "hub_resources_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -5759,13 +5363,6 @@ export type Database = {
             foreignKeyName: "ia_pilots_lead_member_id_fkey"
             columns: ["lead_member_id"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "ia_pilots_lead_member_id_fkey"
-            columns: ["lead_member_id"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -5839,13 +5436,6 @@ export type Database = {
             foreignKeyName: "ingestion_remediation_escalation_matrix_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "ingestion_remediation_escalation_matrix_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -5904,13 +5494,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ingestion_source_controls_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "ingestion_source_controls_updated_by_fkey"
@@ -5977,13 +5560,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "ingestion_source_sla_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "ingestion_source_sla_updated_by_fkey"
@@ -6269,13 +5845,6 @@ export type Database = {
             foreignKeyName: "knowledge_assets_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "knowledge_assets_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -6481,13 +6050,6 @@ export type Database = {
             foreignKeyName: "knowledge_insights_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "knowledge_insights_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -6670,13 +6232,6 @@ export type Database = {
             foreignKeyName: "mcp_usage_log_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "mcp_usage_log_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -6755,13 +6310,6 @@ export type Database = {
             foreignKeyName: "meeting_action_items_assignee_id_fkey"
             columns: ["assignee_id"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "meeting_action_items_assignee_id_fkey"
-            columns: ["assignee_id"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -6799,13 +6347,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "meeting_action_items_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "meeting_action_items_created_by_fkey"
@@ -6908,13 +6449,6 @@ export type Database = {
             foreignKeyName: "meeting_artifacts_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "meeting_artifacts_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -7003,13 +6537,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_activity_sessions_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "member_activity_sessions_member_id_fkey"
@@ -7107,13 +6634,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "member_cycle_history_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "member_cycle_history_member_id_fkey"
@@ -7224,13 +6744,6 @@ export type Database = {
             foreignKeyName: "member_document_signatures_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "member_document_signatures_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -7275,6 +6788,150 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "document_versions"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_offboarding_records: {
+        Row: {
+          attachment_urls: string[] | null
+          chapter_at_offboard: string | null
+          created_at: string
+          cycle_code_at_offboard: string | null
+          exit_interview_full_text: string | null
+          exit_interview_source: string | null
+          id: string
+          lessons_learned: string | null
+          member_id: string
+          offboarded_at: string
+          offboarded_by: string | null
+          reason_category_code: string | null
+          reason_detail: string | null
+          recommendation_for_future: string | null
+          referred_by_tribe_leader: boolean | null
+          return_interest: boolean | null
+          return_window_suggestion: string | null
+          tribe_id_at_offboard: number | null
+          updated_at: string
+        }
+        Insert: {
+          attachment_urls?: string[] | null
+          chapter_at_offboard?: string | null
+          created_at?: string
+          cycle_code_at_offboard?: string | null
+          exit_interview_full_text?: string | null
+          exit_interview_source?: string | null
+          id?: string
+          lessons_learned?: string | null
+          member_id: string
+          offboarded_at: string
+          offboarded_by?: string | null
+          reason_category_code?: string | null
+          reason_detail?: string | null
+          recommendation_for_future?: string | null
+          referred_by_tribe_leader?: boolean | null
+          return_interest?: boolean | null
+          return_window_suggestion?: string | null
+          tribe_id_at_offboard?: number | null
+          updated_at?: string
+        }
+        Update: {
+          attachment_urls?: string[] | null
+          chapter_at_offboard?: string | null
+          created_at?: string
+          cycle_code_at_offboard?: string | null
+          exit_interview_full_text?: string | null
+          exit_interview_source?: string | null
+          id?: string
+          lessons_learned?: string | null
+          member_id?: string
+          offboarded_at?: string
+          offboarded_by?: string | null
+          reason_category_code?: string | null
+          reason_detail?: string | null
+          recommendation_for_future?: string | null
+          referred_by_tribe_leader?: boolean | null
+          return_interest?: boolean | null
+          return_window_suggestion?: string | null
+          tribe_id_at_offboard?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_offboarding_records_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_offboarding_records_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_offboarding_records_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_offboarding_records_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_offboarding_records_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_offboarding_records_offboarded_by_fkey"
+            columns: ["offboarded_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_offboarding_records_offboarded_by_fkey"
+            columns: ["offboarded_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_offboarding_records_offboarded_by_fkey"
+            columns: ["offboarded_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_offboarding_records_offboarded_by_fkey"
+            columns: ["offboarded_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_offboarding_records_offboarded_by_fkey"
+            columns: ["offboarded_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_offboarding_records_reason_category_code_fkey"
+            columns: ["reason_category_code"]
+            isOneToOne: false
+            referencedRelation: "offboard_reason_categories"
+            referencedColumns: ["code"]
           },
         ]
       }
@@ -7471,13 +7128,6 @@ export type Database = {
             foreignKeyName: "members_anonymized_by_fkey"
             columns: ["anonymized_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "members_anonymized_by_fkey"
-            columns: ["anonymized_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -7515,13 +7165,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "members_offboarded_by_fkey"
-            columns: ["offboarded_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "members_offboarded_by_fkey"
@@ -7602,13 +7245,6 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notification_preferences_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: true
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "notification_preferences_member_id_fkey"
@@ -7698,13 +7334,6 @@ export type Database = {
             foreignKeyName: "notifications_actor_id_fkey"
             columns: ["actor_id"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "notifications_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -7735,13 +7364,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_recipient_id_fkey"
-            columns: ["recipient_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "notifications_recipient_id_fkey"
@@ -7869,13 +7491,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "onboarding_progress_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "onboarding_progress_member_id_fkey"
@@ -8048,13 +7663,6 @@ export type Database = {
             foreignKeyName: "partner_attachments_uploaded_by_fkey"
             columns: ["uploaded_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "partner_attachments_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -8126,13 +7734,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "partner_cards_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "partner_cards_created_by_fkey"
@@ -8318,13 +7919,6 @@ export type Database = {
             foreignKeyName: "partner_interactions_actor_member_id_fkey"
             columns: ["actor_member_id"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "partner_interactions_actor_member_id_fkey"
-            columns: ["actor_member_id"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -8499,13 +8093,6 @@ export type Database = {
             foreignKeyName: "pii_access_log_accessor_id_fkey"
             columns: ["accessor_id"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "pii_access_log_accessor_id_fkey"
-            columns: ["accessor_id"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -8536,13 +8123,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pii_access_log_target_member_id_fkey"
-            columns: ["target_member_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "pii_access_log_target_member_id_fkey"
@@ -8657,13 +8237,6 @@ export type Database = {
             foreignKeyName: "pilots_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "pilots_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -8736,13 +8309,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "platform_settings_changed_by_fkey"
-            columns: ["changed_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "platform_settings_changed_by_fkey"
@@ -8980,13 +8546,6 @@ export type Database = {
             foreignKeyName: "project_boards_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "project_boards_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -9077,13 +8636,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_memberships_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "project_memberships_member_id_fkey"
@@ -9292,13 +8844,6 @@ export type Database = {
             foreignKeyName: "publication_series_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "publication_series_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -9371,13 +8916,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "publication_submission_authors_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "publication_submission_authors_member_id_fkey"
@@ -9470,13 +9008,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "publication_submission_events_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "publication_submission_events_updated_by_fkey"
@@ -9606,13 +9137,6 @@ export type Database = {
             foreignKeyName: "publication_submissions_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "publication_submissions_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -9657,13 +9181,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "publication_submissions_primary_author_id_fkey"
-            columns: ["primary_author_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "publication_submissions_primary_author_id_fkey"
@@ -9836,13 +9353,6 @@ export type Database = {
             foreignKeyName: "release_readiness_policies_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "release_readiness_policies_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -9922,13 +9432,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "releases_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "releases_created_by_fkey"
@@ -10038,13 +9541,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "revenue_entries_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "revenue_entries_created_by_fkey"
@@ -10320,13 +9816,6 @@ export type Database = {
             foreignKeyName: "selection_applications_track_decided_by_fkey"
             columns: ["track_decided_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "selection_applications_track_decided_by_fkey"
-            columns: ["track_decided_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -10395,13 +9884,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "selection_committee_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "selection_committee_member_id_fkey"
@@ -10517,13 +9999,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "selection_cycles_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "selection_cycles_created_by_fkey"
@@ -10658,13 +10133,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "selection_evaluations_evaluator_id_fkey"
-            columns: ["evaluator_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "selection_evaluations_evaluator_id_fkey"
@@ -10854,13 +10322,6 @@ export type Database = {
             foreignKeyName: "selection_ranking_snapshots_triggered_by_fkey"
             columns: ["triggered_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "selection_ranking_snapshots_triggered_by_fkey"
-            columns: ["triggered_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -10913,13 +10374,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "site_config_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "site_config_updated_by_fkey"
@@ -11043,13 +10497,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tags_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "tags_created_by_fkey"
@@ -11255,13 +10702,6 @@ export type Database = {
             foreignKeyName: "tribe_continuity_overrides_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "tribe_continuity_overrides_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -11338,13 +10778,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tribe_deliverables_assigned_member_id_fkey"
-            columns: ["assigned_member_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "tribe_deliverables_assigned_member_id_fkey"
@@ -11452,13 +10885,6 @@ export type Database = {
             foreignKeyName: "tribe_lineage_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "tribe_lineage_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -11503,13 +10929,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tribe_lineage_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "tribe_lineage_updated_by_fkey"
@@ -11608,13 +11027,6 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tribe_selections_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: true
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "tribe_selections_member_id_fkey"
@@ -11737,13 +11149,6 @@ export type Database = {
             foreignKeyName: "tribes_leader_member_id_fkey"
             columns: ["leader_member_id"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "tribes_leader_member_id_fkey"
-            columns: ["leader_member_id"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -11788,13 +11193,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tribes_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "tribes_updated_by_fkey"
@@ -11974,13 +11372,6 @@ export type Database = {
             foreignKeyName: "visitor_leads_contacted_by_fkey"
             columns: ["contacted_by"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "visitor_leads_contacted_by_fkey"
-            columns: ["contacted_by"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -12111,13 +11502,6 @@ export type Database = {
             foreignKeyName: "volunteer_applications_member_id_fkey"
             columns: ["member_id"]
             isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
-          },
-          {
-            foreignKeyName: "volunteer_applications_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
             referencedRelation: "member_attendance_summary"
             referencedColumns: ["member_id"]
           },
@@ -12189,13 +11573,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "webinar_lifecycle_events_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "webinar_lifecycle_events_actor_id_fkey"
@@ -12333,13 +11710,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "active_members"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "webinars_organizer_id_fkey"
-            columns: ["organizer_id"]
-            isOneToOne: false
-            referencedRelation: "gamification_leaderboard"
-            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "webinars_organizer_id_fkey"
@@ -12626,35 +11996,6 @@ export type Database = {
           tribe_name: string | null
           tribe_number: number | null
           tribe_type: string | null
-        }
-        Relationships: []
-      }
-      gamification_leaderboard: {
-        Row: {
-          artifact_points: number | null
-          attendance_points: number | null
-          badge_points: number | null
-          bonus_points: number | null
-          cert_points: number | null
-          chapter: string | null
-          course_points: number | null
-          cycle_artifact_points: number | null
-          cycle_attendance_points: number | null
-          cycle_badge_points: number | null
-          cycle_bonus_points: number | null
-          cycle_cert_points: number | null
-          cycle_course_points: number | null
-          cycle_learning_points: number | null
-          cycle_points: number | null
-          cycle_showcase_points: number | null
-          designations: string[] | null
-          learning_points: number | null
-          member_id: string | null
-          name: string | null
-          operational_role: string | null
-          photo_url: string | null
-          showcase_points: number | null
-          total_points: number | null
         }
         Relationships: []
       }
@@ -13957,6 +13298,16 @@ export type Database = {
       deselect_tribe: { Args: never; Returns: Json }
       detect_and_notify_detractors: { Args: never; Returns: Json }
       detect_and_notify_detractors_cron: { Args: never; Returns: Json }
+      detect_mcp_anomalies: {
+        Args: never
+        Returns: {
+          count: number
+          inserted: boolean
+          member_id: string
+          pattern: string
+          tool_name: string
+        }[]
+      }
       detect_onboarding_overdue: { Args: never; Returns: Json }
       detect_operational_alerts: { Args: never; Returns: Json }
       detect_orphan_assignees_from_offboards: {
@@ -14123,6 +13474,10 @@ export type Database = {
       get_application_onboarding_pct: {
         Args: { p_application_id: string }
         Returns: number
+      }
+      get_application_returning_context: {
+        Args: { p_application_id: string }
+        Returns: Json
       }
       get_application_score_breakdown: {
         Args: { p_application_id: string }
@@ -14413,6 +13768,35 @@ export type Database = {
         }[]
       }
       get_executive_kpis: { Args: never; Returns: Json }
+      get_gamification_leaderboard: {
+        Args: never
+        Returns: {
+          artifact_points: number
+          attendance_points: number
+          badge_points: number
+          bonus_points: number
+          cert_points: number
+          chapter: string
+          course_points: number
+          cycle_artifact_points: number
+          cycle_attendance_points: number
+          cycle_badge_points: number
+          cycle_bonus_points: number
+          cycle_cert_points: number
+          cycle_course_points: number
+          cycle_learning_points: number
+          cycle_points: number
+          cycle_showcase_points: number
+          designations: string[]
+          learning_points: number
+          member_id: string
+          name: string
+          operational_role: string
+          photo_url: string
+          showcase_points: number
+          total_points: number
+        }[]
+      }
       get_ghost_visitors: {
         Args: never
         Returns: {
@@ -14507,6 +13891,10 @@ export type Database = {
       get_member_by_auth: { Args: never; Returns: Json }
       get_member_cycle_xp: { Args: { p_member_id: string }; Returns: Json }
       get_member_detail: { Args: { p_member_id: string }; Returns: Json }
+      get_member_offboarding_record: {
+        Args: { p_member_id: string }
+        Returns: Json
+      }
       get_member_transitions: { Args: { p_member_id: string }; Returns: Json }
       get_member_tribe: { Args: { p_member_id: string }; Returns: number }
       get_mirror_target_boards: {
@@ -14573,6 +13961,7 @@ export type Database = {
         }[]
       }
       get_notification_count: { Args: never; Returns: number }
+      get_offboarding_dashboard: { Args: never; Returns: Json }
       get_onboarding_dashboard: { Args: never; Returns: Json }
       get_onboarding_status: {
         Args: { p_application_id: string }
@@ -15181,6 +14570,29 @@ export type Database = {
           version_number: number
         }[]
       }
+      list_offboarding_records: {
+        Args: {
+          p_limit?: number
+          p_reason_category?: string
+          p_since?: string
+          p_until?: string
+        }
+        Returns: {
+          cycle_code_at_offboard: string
+          has_full_interview: boolean
+          member_chapter: string
+          member_id: string
+          member_name: string
+          member_status: string
+          offboarded_at: string
+          offboarded_by: string
+          reason_category_code: string
+          reason_category_label_pt: string
+          record_id: string
+          return_interest: boolean
+          tribe_id_at_offboard: number
+        }[]
+      }
       list_orphan_card_assignments: {
         Args: { p_chapter?: string; p_limit?: number; p_tribe_id?: number }
         Returns: Json
@@ -15418,6 +14830,21 @@ export type Database = {
         Returns: Json
       }
       record_member_activity: { Args: { p_page?: string }; Returns: undefined }
+      record_offboarding_interview: {
+        Args: {
+          p_attachment_urls?: string[]
+          p_exit_interview_full_text?: string
+          p_exit_interview_source?: string
+          p_lessons_learned?: string
+          p_member_id: string
+          p_reason_category_code?: string
+          p_recommendation_for_future?: string
+          p_referred_by_tribe_leader?: boolean
+          p_return_interest?: boolean
+          p_return_window_suggestion?: string
+        }
+        Returns: Json
+      }
       refresh_cycle_tribe_dim: { Args: never; Returns: undefined }
       register_attendance_batch: {
         Args: {
@@ -16216,9 +15643,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       submission_status: [
