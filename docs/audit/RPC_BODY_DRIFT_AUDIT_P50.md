@@ -411,3 +411,43 @@ Migrated:
 Privilege expansion: zero in current production (no active deputy_manager
 or co_gp engagements). Co_gp is reserved for co-General Project leaders
 whose admin authority is consistent with these functions.
+
+#### Batch 2 closure (p53, `20260425230700`)
+
+Migrated:
+- `get_governance_stats` → `manage_platform`
+- `get_member_transitions` → `manage_platform` (self-read branch preserved)
+- `get_cron_status` → `manage_platform`
+- `get_platform_usage` → `manage_platform`
+- `get_cpmai_admin_dashboard` → `manage_platform`
+
+Privilege expansion: zero (same safety check as batch 1, legacy_count=2,
+v4_count=2, would_gain=null, would_lose=null).
+
+Phase B'' candidate (NOT migrated):
+- `get_application_score_breakdown` — has curator branch
+  (`designations && ARRAY['curator']`). `manage_platform` does not include
+  curator role; migrating would TIGHTEN authority. Either need a new V4
+  action that includes curator OR keep V3 with skip filter.
+
+#### Phase B' running tally (post batch 2)
+
+- 7/~50 captured V3-gated functions migrated to V4.
+- All migrations: zero authorization change in current production.
+- Pattern proven scalable: same gate template + same V4 action +
+  same safety check workflow.
+
+#### Open Phase B'' / new V4 action candidates
+
+Functions whose legacy gate doesn't map cleanly to existing V4 actions:
+- `get_application_score_breakdown` — needs `manage_platform OR curator`
+  semantics. Either a new V4 action (e.g., `view_selection_scores` with
+  ladder = manage_platform + write_board curator) OR keep V3.
+- Partner subsystem (5 fns) — `manage_partner` ladder expands
+  cross-chapter to sponsor/chapter_liaison; preserved in V3 by p53
+  drift signal #5 #6 work. Phase B'' could introduce
+  `manage_partner_global` (manager+deputy+co_gp only) for cross-chapter
+  reads.
+- Functions with `tribe_leader` in legacy gate — no V4 action covers
+  tribe_leader. Wait for ADR-0015 Phase 5 (tribe_id deprecation) which
+  will likely introduce a `manage_tribe` action.
