@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ADR-0022-notification-types-catalog",
+  "title": "ADR-0022 Notification Types Catalog (W1)",
+  "description": "Source of truth for notifications.type → delivery_mode mapping. Producers and the SQL helper public._delivery_mode_for(text) reference this catalog. Contract test tests/contracts/adr-0022-delivery-mode.test.mjs ensures the SQL helper stays in sync. New types added to notifications must be added here in the same migration.",
+  "version": "W1.1",
+  "updated_at": "2026-04-26",
+  "delivery_modes": {
+    "transactional_immediate": "Sent within ~5 min via send-transactional-emails EF cron. Use for time-critical / high-priority notifications.",
+    "digest_weekly": "Bundled into weekly digest sent Saturday 12:00 UTC via send-weekly-member-digest EF. Default for most types.",
+    "suppress": "In-app only. Never emailed. Use for low-priority / per-cycle aggregated noise."
+  },
+  "types": {
+    "volunteer_agreement_signed": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "Confirmation that volunteer signed the term — receipt is timely + carries verification code."
+    },
+    "ip_ratification_gate_pending": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "Workflow gate awaiting member action — bundling would slow IP ratification chain."
+    },
+    "system_alert": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "Operational alert (cron failure, capacity issue, etc.) — must page admins now."
+    },
+    "certificate_ready": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "Counter-signed certificate ready for download — recipient expects within minutes."
+    },
+    "member_offboarded": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "Stakeholder fan-out on offboard — leadership awareness is time-sensitive."
+    },
+    "attendance_detractor": {
+      "delivery_mode": "suppress",
+      "rationale": "Per-cycle detractor pattern — surfaced in admin dashboards. Email-spamming would amplify noise."
+    },
+    "info": {
+      "delivery_mode": "suppress",
+      "rationale": "Catch-all info bucket. Treat as in-app only until specific types are split out."
+    },
+    "system": {
+      "delivery_mode": "suppress",
+      "rationale": "Internal system events. In-app only."
+    },
+    "attendance_reminder": {
+      "delivery_mode": "digest_weekly",
+      "conditional": true,
+      "rationale": "Default to digest. Producers may set 'transactional_immediate' for events <48h away (W2 §3.2)."
+    },
+    "governance_vote_reminder": {
+      "delivery_mode": "digest_weekly",
+      "conditional": true,
+      "rationale": "Default to digest. Producers may set 'transactional_immediate' for deadlines <7 days (W2 §3.2)."
+    },
+    "tribe_broadcast": {
+      "delivery_mode": "digest_weekly",
+      "conditional": true,
+      "rationale": "Default to digest. Leader can pass urgent=true to set 'transactional_immediate' (W2 §3.2). W3 may add 1/week rate limit."
+    },
+    "assignment_new": {
+      "delivery_mode": "digest_weekly",
+      "rationale": "Card assigned — bundle in weekly digest unless assignee preferences override."
+    },
+    "card_assigned": {
+      "delivery_mode": "digest_weekly",
+      "rationale": "Synonym for assignment_new (legacy type)."
+    },
+    "card_status_changed": {
+      "delivery_mode": "digest_weekly",
+      "rationale": "Card moved between columns — low-urgency status update."
+    },
+    "webinar_status_confirmed": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "Webinar published/confirmed — preserved EF V1 behavior. Revisit in W2 to bundle if confirmation lead time is short."
+    },
+    "publication": {
+      "delivery_mode": "digest_weekly",
+      "rationale": "New publication — community announcement."
+    },
+    "certificate_issued": {
+      "delivery_mode": "digest_weekly",
+      "rationale": "Issued ≠ ready (pre-counter-sign). Member sees in-app + bundled email."
+    },
+    "ip_ratification_chain_approved": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "Chain fully approved — submitter expects timely confirmation. Preserved EF V1 behavior; revisit in W2 if community-wide bundling is preferred."
+    },
+    "ip_ratification_gate_advanced": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "Gate advanced — recipient may need to act on next gate. Preserved EF V1 behavior."
+    },
+    "ip_ratification_awaiting_members": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "Members ratification gate — eligibility window is time-bounded. Preserved EF V1 behavior."
+    },
+    "webinar_status_completed": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "Webinar happened — recipient may want to access recording immediately."
+    },
+    "webinar_status_cancelled": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "Webinar cancelled — must inform registered attendees promptly."
+    },
+    "weekly_card_digest_member": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "Already a pre-aggregated digest output (generated by generate_weekly_card_digest_cron Saturday 12 UTC). Routes via transactional EF for prompt delivery; not raw notification data."
+    },
+    "governance_cr_new": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "New Change Request — voters need awareness window for review."
+    },
+    "governance_cr_vote": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "Vote cast — submitter expects real-time confirmation."
+    },
+    "governance_cr_approved": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "CR reached quorum — implementer needs to know now."
+    }
+  },
+  "implementation": {
+    "sql_helper": "public._delivery_mode_for(p_type text) → text",
+    "column_check": "notifications.delivery_mode CHECK (delivery_mode IN ('transactional_immediate','digest_weekly','suppress'))",
+    "column_default": "'digest_weekly'",
+    "partial_index": "idx_notifications_digest_pending ON (recipient_id, created_at) WHERE delivery_mode = 'digest_weekly' AND digest_delivered_at IS NULL"
+  },
+  "ef_routing": {
+    "transactional_immediate": "send-transactional-emails (cron */5 min) — picks rows where delivery_mode = 'transactional_immediate' AND email_sent_at IS NULL",
+    "digest_weekly": "send-weekly-member-digest (cron Saturday 12:00 UTC) — aggregates rows per recipient where delivery_mode = 'digest_weekly' AND digest_delivered_at IS NULL AND created_at < last_saturday_12h",
+    "suppress": "Never picked by either EF — in-app only"
+  },
+  "next_waves": {
+    "W2": "Implement get_weekly_member_digest() RPC + Saturday digest content. Add settings UI for 4-mode opt-out.",
+    "W3": "Leader digest, smart-skip empty digest, broadcast rate-limit (1/week)."
+  }
+}

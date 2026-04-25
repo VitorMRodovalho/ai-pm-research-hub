@@ -1,22 +1,13 @@
 /// <reference types="https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts" />
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const CRITICAL_TYPES = [
-  'governance_cr_approved',
-  'governance_cr_vote',
-  'governance_cr_new',
-  'volunteer_agreement_signed',
-  'certificate_ready',
-  'attendance_detractor',
-  'webinar_status_confirmed',
-  'webinar_status_completed',
-  'webinar_status_cancelled',
-  'ip_ratification_gate_pending',
-  'ip_ratification_gate_advanced',
-  'ip_ratification_chain_approved',
-  'ip_ratification_awaiting_members',
-  'weekly_card_digest_member',
-]
+// ADR-0022 W1 (2026-04-26): filter migrated from hardcoded CRITICAL_TYPES list to
+// notifications.delivery_mode. The catalog at docs/adr/ADR-0022-notification-types-catalog.json
+// is the single source of truth for type → delivery_mode mapping; producers set
+// delivery_mode explicitly via public._delivery_mode_for(p_type) at INSERT time.
+// Catalog says `transactional_immediate` ⇒ this EF; `digest_weekly` ⇒ send-weekly-member-digest;
+// `suppress` ⇒ never emailed (in-app only).
+const TRANSACTIONAL_DELIVERY_MODE = 'transactional_immediate'
 
 const TYPE_SUBJECTS: Record<string, string> = {
   governance_cr_approved: 'CR aprovado por quorum',
@@ -117,15 +108,14 @@ Deno.serve(async (req) => {
 
     const sb = createClient(url, srk, { auth: { autoRefreshToken: false, persistSession: false } })
 
-    // Get unprocessed critical notifications.
-    // Fix p34 (ai-engineer audit): removida janela de 10min — ela silenciava
-    // notifications quando EF falhava + demorava >10min pra reexecutar.
-    // email_sent_at IS NULL é guard suficiente (rows já enviadas têm timestamp).
-    // Limit 20→50 para acomodar pico CR-050 (~75 notifs esperados em onda de lock).
+    // ADR-0022 W1: filter by delivery_mode = 'transactional_immediate' instead of
+    // type IN CRITICAL_TYPES. Catalog drives routing; EF stays type-agnostic.
+    // Fix p34 (ai-engineer audit): no time window — email_sent_at IS NULL is guard.
+    // Limit 50 accommodates CR-050 pico (~75 notifs in lock onda).
     const { data: notifications, error: fetchErr } = await sb
       .from('notifications')
       .select('id, recipient_id, type, title, body, link, created_at')
-      .in('type', CRITICAL_TYPES)
+      .eq('delivery_mode', TRANSACTIONAL_DELIVERY_MODE)
       .is('email_sent_at', null)
       .order('created_at', { ascending: true })
       .limit(50)

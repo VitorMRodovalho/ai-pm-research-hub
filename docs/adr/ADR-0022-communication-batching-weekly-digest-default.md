@@ -1,7 +1,7 @@
 # ADR-0022: Communication Batching — Weekly Digest como Default, Transactional como Exceção
 
-- Status: Proposed (2026-04-22 p35, sessão `d211ff`)
-- Data: 2026-04-22
+- Status: Accepted (2026-04-26 p48 — W1 substrate shipped)
+- Data: 2026-04-22 (proposta) / 2026-04-26 (aceitação após W1 deploy)
 - Autor: Claude (parallel tracking com PM Vitor Rodovalho)
 - Escopo: Estabelece princípio arquitetural para toda comunicação email da plataforma aos members. Governa integrações futuras incluindo issue [#97 G7](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/97) (engagement welcome), [#98](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/98) (weekly card digest), [#88](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/88) (invitation flow), [#91](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/91) (offboarding cascade), e qualquer nova feature que envolva notificação.
 
@@ -159,12 +159,16 @@ GP tem hoje workflow manual de weekly broadcast. Com ADR-0022 executado:
 - [x] Renomear SPEC_WEEKLY_CARD_DIGEST.md → SPEC_WEEKLY_MEMBER_DIGEST.md com escopo expandido
 - [ ] Team dev review ADR em sprint planning
 
-### W1 (schema aditivo + EF split, ~1 sprint)
+### W1 (schema aditivo + EF split, ~1 sprint) — **SHIPPED 2026-04-26 p48**
 
-- Migration: `notifications.delivery_mode` + `digest_delivered_at` + `digest_batch_id` + index
-- Backfill: mapear `type` → `delivery_mode` conforme catálogo acima (pode ficar em migration separada para evitar lock longo)
-- Split EF: `send-notification-emails` (a cada 5min, filtrar `WHERE delivery_mode='transactional_immediate' AND sent_at IS NULL`) + nova `send-weekly-member-digest` (sábado 12:00 UTC via cron)
-- Contract test: toda migration futura que adicionar novo type em notifications deve declarar `delivery_mode`
+- [x] Migration: `notifications.delivery_mode` + `digest_delivered_at` + `digest_batch_id` + partial index (`20260513060000`)
+- [x] Backfill: 5 mandatory-immediate types + 3 suppress types em migration inicial; expansão para 15 transactional_immediate em `20260513080000` para preservar V1 EF behavior
+- [x] Split EF: `send-notification-email` agora filtra `WHERE delivery_mode='transactional_immediate' AND email_sent_at IS NULL` (catalog-driven em vez de hardcoded CRITICAL_TYPES); `send-weekly-member-digest` deployed como W1 stub (não envia email — apenas conta pending; W2 implementa conteúdo)
+- [x] Producer updates: helper `public._delivery_mode_for(p_type)` central + 3 overloads de `create_notification` + 3 producers diretos (`notify_offboard_cascade`, `sign_volunteer_agreement`, `counter_sign_certificate`) setam delivery_mode no INSERT
+- [x] Contract test: `tests/contracts/adr-0022-delivery-mode.test.mjs` (7 tests) — catalog parity + CHECK constraint + index existência + helper function shape
+- [x] Catalog: `docs/adr/ADR-0022-notification-types-catalog.json` — 19 types mapeados com rationale
+- [x] Cron entry: `send-weekly-member-digest` Saturday 12:00 UTC (jobid 26); `send-notification-email` cron 5min preserved (jobid 9)
+- [x] Behavior change accepted: `attendance_detractor` movido de "EF emailed" para `suppress` per ADR-0022 §Pendências (PM accepted)
 
 ### W2 (digest content + UX, ~1 sprint)
 
@@ -190,8 +194,9 @@ GP tem hoje workflow manual de weekly broadcast. Com ADR-0022 executado:
 
 ## Pendências
 
-- [ ] Validar com PM os opt-outs: weekly-only é o default correto? Ou 4 modos (immediate_all / weekly_digest / suppress_all / custom_per_type)?
-- [ ] Dev team decide: 1 EF polivalente ou 2 EFs split (send-transactional vs send-digest)
-- [ ] Dev team confirma nomes de colunas (`delivery_mode` ok?)
-- [ ] Validar com Roberto+Ivan+Fabricio+Sarah+curadoria se algum kind de notification deles é sensível a latência (ex: review gate pending)
-- [ ] Revisão pré-CBGPL: se ADR vai a CR-051 (formal) ou fica Proposed até implementação
+- [x] **W1 PM defaults aplicados (2026-04-26)**: digest_weekly como default único (UI 4-mode deferred to W2); EF split = Option A (2 EFs); column name = `delivery_mode`; 5 mandatory-immediate producers updated em W1 (12 outros opportunistic em W2/W3); attendance_detractor → suppress; tribe_broadcast urgent rate-limit deferred to W3.
+- [ ] W2 dev team review: settings UI para opt-out (4 modos: immediate_all / weekly_digest / suppress_all / custom_per_type)
+- [ ] W2: implementar `get_weekly_member_digest` RPC + send-weekly-member-digest EF body (atual = stub)
+- [ ] W3: leader digest, smart-skip empty digest, rate-limit tribe_broadcast urgent (1/week/leader)
+- [ ] Stakeholder review: validar com Roberto+Ivan+Fabricio+Sarah+curadoria se algum kind de notification é sensível a latência (ex: review gate pending) — review window pós-W2
+- [ ] CR-051 (formal): converter ADR-0022 para CR formal de ratificação ainda? Ou ADR-0022 Accepted suficiente até CBGPL?
