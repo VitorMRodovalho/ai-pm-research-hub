@@ -1700,6 +1700,21 @@ function registerTools(mcp: McpServer, sb: ReturnType<typeof createClient>) {
     return ok(data);
   });
 
+  // TOOL: get_application_returning_context (#91 G4 — bridges offboarding history to selection review)
+  mcp.tool("get_application_returning_context", "Returns offboarding context for a returning candidate's selection application. Surfaces return_interest, return_window_suggestion, lessons_learned, recommendation_for_future from the candidate's prior member_offboarding_records (if any). Used by selection committee to inform re-application decisions. Admin only (manage_member).", {
+    application_id: z.string().describe("UUID of the selection_applications row")
+  }, async (params: any) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "get_application_returning_context", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.application_id)) { await logUsage(sb, member.id, "get_application_returning_context", false, "Invalid application_id", start); return err("application_id must be a UUID"); }
+    if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "get_application_returning_context", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    const { data, error } = await sb.rpc("get_application_returning_context", { p_application_id: params.application_id });
+    if (error) { await logUsage(sb, member.id, "get_application_returning_context", false, error.message, start); return err(error.message); }
+    await logUsage(sb, member.id, "get_application_returning_context", true, undefined, start);
+    return ok(data);
+  });
+
   // ===== ONBOARDING (issue #86 — persona "new member" unblock) =====
 
   // TOOL: get_my_onboarding
@@ -2912,7 +2927,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.25.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.25.1" });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -2932,6 +2947,6 @@ app.all("/mcp", async (c) => {
 });
 
 // Health check
-app.get("/health", (c) => c.json({ status: "ok", version: "2.25.0", tools: 142, transport: "native-streamable-http", sdk: "1.29.0" }));
+app.get("/health", (c) => c.json({ status: "ok", version: "2.25.1", tools: 143, transport: "native-streamable-http", sdk: "1.29.0" }));
 
 Deno.serve(app.fetch);
