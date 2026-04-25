@@ -40,7 +40,7 @@ const ORPHAN_ALLOWLIST_PATH = resolve(
   ROOT,
   'docs/audit/RPC_BODY_DRIFT_AUDIT_P50_ORPHAN_LIST.txt'
 );
-const ALLOWLIST_BASELINE_SIZE = 92;
+const ALLOWLIST_BASELINE_SIZE = 0;
 
 function loadAllMigrationsConcat() {
   const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql')).sort();
@@ -134,13 +134,14 @@ test(
   }
 );
 
-test('Track Q-C: allowlist file size matches p50 baseline', () => {
+test('Track Q-C: allowlist file size matches p52 baseline (empty after Q-A)', () => {
   const allowlist = loadAllowlist();
   assert.equal(
     allowlist.size,
     ALLOWLIST_BASELINE_SIZE,
     `Allowlist size drifted from ${ALLOWLIST_BASELINE_SIZE} to ${allowlist.size}. ` +
-      `When ratcheting cleanup forward, decrement ALLOWLIST_BASELINE_SIZE in ` +
-      `this file and update docs/audit/RPC_BODY_DRIFT_AUDIT_P50.md in the same PR.`
+      `Q-A drove the allowlist to 0 in p52. Any new orphan must either be ` +
+      `captured by a migration (preferred) or added back to the allowlist with ` +
+      `a justification AND a corresponding bump of ALLOWLIST_BASELINE_SIZE.`
   );
 });
