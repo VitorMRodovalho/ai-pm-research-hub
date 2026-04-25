@@ -74,33 +74,29 @@ test('exec_tribe_dashboard checks auth via auth.uid()', () => {
   assert.ok(/auth\.uid\(\)/i.test(body), 'Must use auth.uid()');
 });
 
-// ─── Permission checks ───
+// ─── Permission checks (V4 — ADR-0011 cleanup 2026-04-26) ───
+// Original V3 contract enforced specific role-list strings (tribe_leader, manager,
+// deputy_manager, sponsor, chapter_liaison, is_superadmin) inside the function
+// body. After the V4 migration (20260513020000), authority is checked via
+// `can_by_member(v_caller_id, 'manage_platform')` and a same-tribe self-view
+// carve-out, so the V3 role-string assertions no longer apply. Behavior change:
+// non-superadmin sponsor/chapter_liaison lose blanket cross-tribe access (PM
+// accepted 2026-04-24); they retain self-tribe access via the carve-out if
+// `get_member_tribe(caller)` matches `p_tribe_id`.
 
-test('exec_tribe_dashboard allows tribe_leader for own tribe', () => {
+test('exec_tribe_dashboard self-tribe view requires no special permission', () => {
   const body = findFunctionBody('exec_tribe_dashboard');
-  assert.ok(/tribe_leader/i.test(body), 'Must check tribe_leader role');
-  assert.ok(/v_caller.*tribe_id\s*=\s*p_tribe_id/i.test(body), 'Must verify tribe_id match');
+  assert.ok(/v_caller_tribe_id\s+IS\s+DISTINCT\s+FROM\s+p_tribe_id/i.test(body),
+    'Must use IS DISTINCT FROM caller tribe to allow self-tribe view');
 });
 
-test('exec_tribe_dashboard allows manager and deputy_manager', () => {
+test('exec_tribe_dashboard cross-tribe view gated by can_by_member(manage_platform)', () => {
   const body = findFunctionBody('exec_tribe_dashboard');
-  assert.ok(/manager/i.test(body), 'Must allow manager');
-  assert.ok(/deputy_manager/i.test(body), 'Must allow deputy_manager');
+  assert.ok(/can_by_member\s*\([^)]*['"]manage_platform['"]/i.test(body),
+    'Must call can_by_member with manage_platform for cross-tribe authority');
 });
 
-test('exec_tribe_dashboard allows superadmin', () => {
-  const body = findFunctionBody('exec_tribe_dashboard');
-  assert.ok(/is_superadmin/i.test(body), 'Must check is_superadmin');
-});
-
-test('exec_tribe_dashboard allows sponsor/chapter_liaison for chapter tribes', () => {
-  const body = findFunctionBody('exec_tribe_dashboard');
-  assert.ok(/sponsor/i.test(body), 'Must check sponsor');
-  assert.ok(/chapter_liaison/i.test(body), 'Must check chapter_liaison');
-  assert.ok(/designations/i.test(body), 'Must check designations array');
-});
-
-test('exec_tribe_dashboard raises exception for unauthorized access', () => {
+test('exec_tribe_dashboard raises exception for unauthorized cross-tribe access', () => {
   const body = findFunctionBody('exec_tribe_dashboard');
   assert.ok(/RAISE\s+EXCEPTION\s+.*Unauthorized/i.test(body), 'Must raise Unauthorized exception');
 });
@@ -167,10 +163,14 @@ test('exec_tribe_dashboard returns engagement section', () => {
 });
 
 test('exec_tribe_dashboard calculates attendance from events and attendance tables', () => {
+  // events.tribe_id was dropped in ADR-0015 phase 3e (2026-04-18); function now
+  // resolves the tribe via JOIN initiatives i ON i.id = e.initiative_id and
+  // filters on i.legacy_tribe_id = p_tribe_id.
   const body = findFunctionBody('exec_tribe_dashboard');
   assert.ok(/attendance\s+a/i.test(body), 'Must query attendance table');
   assert.ok(/events\s+e/i.test(body), 'Must query events table');
-  assert.ok(/e\.tribe_id\s*=\s*p_tribe_id/i.test(body), 'Must filter by tribe_id');
+  assert.ok(/i\.legacy_tribe_id\s*=\s*p_tribe_id/i.test(body),
+    'Must filter by initiative.legacy_tribe_id (post-ADR-0015 phase 3e)');
   assert.ok(/a\.present\s*=\s*true/i.test(body), 'Must check present = true');
 });
 
@@ -217,11 +217,14 @@ test('exec_tribe_dashboard trends group by month', () => {
 
 // ─── exec_all_tribes_summary ───
 
-test('exec_all_tribes_summary requires GP/DM/superadmin', () => {
+test('exec_all_tribes_summary gated via can_by_member(manage_platform)', () => {
+  // V4 (ADR-0011 cleanup 2026-04-26): replaces V3 role-list assertion.
+  // can_by_member() respects is_superadmin and grants manage_platform to
+  // volunteer × {manager, deputy_manager, co_gp} — original V3 audience.
   const body = findFunctionBody('exec_all_tribes_summary');
-  assert.ok(/is_superadmin/i.test(body), 'Must check is_superadmin');
-  assert.ok(/manager/i.test(body), 'Must check manager');
-  assert.ok(/deputy_manager/i.test(body), 'Must check deputy_manager');
+  assert.ok(/can_by_member\s*\([^)]*['"]manage_platform['"]/i.test(body),
+    'Must call can_by_member with manage_platform action');
+  assert.ok(/RAISE\s+EXCEPTION/i.test(body), 'Must RAISE EXCEPTION on unauthorized');
 });
 
 test('exec_all_tribes_summary returns tribe summary array', () => {

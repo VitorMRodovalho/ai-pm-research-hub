@@ -170,4 +170,81 @@ As três funções listadas acima são formalmente aprovadas como conformes à A
 
 ### Critério de revisão
 
-Se o número de funções usando fast-path exceder 10, ou se surgir incidente onde a cache `operational_role` divergiu de `auth_engagements` (invariant A3 violation), esta Amendment é revisada. Amendment B pode introduzir helper batch `can_batch(member_ids, action)` que mantém a semântica canônica com custo amortizado.
+Se o número de funções usando fast-path exceder 10, ou se surgir incidente onde a cache `operational_role` divergiu de `auth_engagements` (invariant A3 violation), esta Amendment é revisada. Próxima Amendment pode introduzir helper batch `can_batch(member_ids, action)` que mantém a semântica canônica com custo amortizado.
+
+---
+
+## Amendment B — V3→V4 cleanup batch 1+2 (2026-04-26)
+
+- Status: Accepted
+- Aprovado por: Vitor (PM) em 2026-04-24
+- Escopo: 22 RPCs SECURITY DEFINER pós-cutover (20260424+) que mantinham gate V3 (`operational_role IN (...)`) e haviam escapado do parser do contract test `tests/contracts/rpc-v4-auth.test.mjs` por uso de delimitador tagged (`$function$` / `$fn$`) — o parser original assumia `$$` apenas.
+
+### Contexto
+
+A sessão p48 (2026-04-26) tightening o parser de `rpc-v4-auth.test.mjs` (back-reference `\$(\w*)\$...\$\1\$` em vez de `\$\$...\$\$`, plus `usesV3RoleAuthority()` matcher distinguindo authority context de data filter) surfaced **22 RPCs latent V3** distribuídas em 9 migrations entre 20260428 e 20260510. Triagem inicial reportou 29 candidatos, dos quais:
+
+- **22 = true V3 violations** (pure role-list gate, sem `can*`) — migradas nesta amendment
+- **3 = false positives** já V4 (`create_initiative_event`, `manage_initiative_engagement`, `sign_ip_ratification`) — parser refinado para reconhecer `can(arg, 'action')` e helpers `_can_*`
+- **4 = baseline-auth-only** (`get_tribe_events_timeline`, `search_board_items`, `get_version_diff`, `get_document_detail`) — pure "is member" gate, sem role authority — não são violações ADR-0011
+
+### RPCs migrados (22)
+
+Aplicados em 2 migrations atomic:
+
+#### Batch 1 — `20260513010000_adr0011_v3_to_v4_admin_readers_batch1.sql` (10 RPCs → `manage_platform`)
+
+| RPC | Origem |
+|---|---|
+| `detect_and_notify_detractors` | 20260428050000 |
+| `detect_operational_alerts` | 20260428050000 |
+| `send_attendance_reminders` | 20260428050000 |
+| `exec_all_tribes_summary` | 20260428050000 |
+| `get_cross_tribe_comparison` | 20260428050000 |
+| `exec_cycle_report` | 20260428100000 |
+| `get_admin_dashboard` | 20260428130000 |
+| `exec_cross_tribe_comparison` | 20260428140000 |
+| `get_adoption_dashboard` | 20260428140000 |
+| `get_campaign_analytics` | 20260428140000 |
+
+#### Batch 2 — `20260513020000_adr0011_v3_to_v4_writers_batch2.sql` (12 RPCs)
+
+**Sub-grupo 2a — `manage_event` + scope refinement** (5):
+- `bulk_mark_excused`, `update_event`, `generate_agenda_template`, `get_tribe_event_roster`, `get_event_detail` (mixed: `gp_only` → `manage_platform`; `leadership` → `manage_event`)
+
+**Sub-grupo 2b — `write_board` + scope refinement** (5):
+- `assign_checklist_item`, `complete_checklist_item`, `create_board_item`, `move_board_item`, `update_board_item`
+
+**Sub-grupo 2c — special cases** (2):
+- `exec_tribe_dashboard`: own-tribe carve-out (qualquer membro vê própria tribo) + cross-tribe gate via `manage_platform`
+- `get_member_attendance_hours`: self carve-out + `view_pii`
+
+### Behavior change documented
+
+A migração tightens authority for **non-superadmin sponsor (5 users) e chapter_liaison (2 users)** que tinham acesso V3 a admin dashboards via role-list gate. Em V4, `manage_platform` não inclui esses operational_roles (volunteer × {manager, deputy_manager, co_gp} apenas). Total impactado: 7 usuários, todos retêm self-tribe view via `exec_tribe_dashboard` carve-out. PM aceitou em 2026-04-24 como tightening alinhado com ADR-0007.
+
+Se PM decidir restaurar acesso, basta seed em `engagement_kind_permissions`:
+```sql
+INSERT INTO engagement_kind_permissions (kind, role, action, scope) VALUES
+  ('sponsor', 'sponsor', 'manage_platform', 'organization'),
+  ('chapter_advisory', 'liaison', 'manage_platform', 'organization');
+```
+
+### Parser tightening (lockstep)
+
+`tests/contracts/rpc-v4-auth.test.mjs` foi refinado para:
+
+1. **Tagged delimiter support**: regex `\$(\w*)\$...\$\1\$` (back-reference) em vez de `\$\$...\$\$`. Captura `$function$`, `$fn$`, `$body$`, `$$`.
+2. **`usesV3RoleAuthority()`**: distinguir authority context (IF/THEN block + caller-lookup WHERE) de data filter (`m.operational_role NOT IN ('sponsor', ...)` em count subquery). Tracks local var aliases (`v_is_admin := is_superadmin OR ...`) e SELECT INTO bindings para detectar V3 indireto.
+3. **`usesV4Can()`**: reconhece `can(arg, 'action', ...)` e helpers `public._can_*` além de `public.can()` / `public.can_by_member()` / `rls_can()`.
+4. **IF block boundary anchor**: regex ancorado a `(?:^|[;\n])\s*IF` para evitar matching `IF` final de `END IF;`.
+
+### Critério de revisão
+
+Esta amendment é considerada a "varredura final" do drift V3→V4 em RPCs pós-cutover. Próximas migrations devem usar `can_by_member` direto. Se o parser surfacear nova batch (drift por delimitador novo, helper indireto não reconhecido, etc.), nova amendment.
+
+### Tests baseline pós-amendment
+
+- `npm test`: 1361/1/23 → **1360/0/23** (net -1 test count: 6 V3 contract tests substituídos por 5 V4 equivalents; 1 pre-existing `events.tribe_id` fail consertado para usar `i.legacy_tribe_id` post-ADR-0015 phase 3e)
+- `tests/contracts/rpc-v4-auth.test.mjs`: 0 violations
+- Invariants 11/11 = 0 violations
