@@ -132,12 +132,16 @@ test('exec_cross_tribe_comparison RPC exists', () => {
   assert.ok(body, 'exec_cross_tribe_comparison not found');
 });
 
-test('exec_cross_tribe_comparison requires GP/DM/superadmin', () => {
+test('exec_cross_tribe_comparison gated via can_by_member(manage_platform)', () => {
+  // V4 (ADR-0011 cleanup 2026-04-26): replaces V3 role-list assertion.
+  // can_by_member() respects is_superadmin and grants manage_platform to
+  // volunteer × {manager, deputy_manager, co_gp} — original V3 audience.
   const body = findFunctionBody('exec_cross_tribe_comparison');
   assert.ok(body);
   assert.ok(/auth\.uid\(\)/i.test(body), 'Must check auth.uid()');
   assert.ok(/RAISE\s+EXCEPTION/i.test(body), 'Must RAISE EXCEPTION on unauthorized');
-  assert.ok(/manager|deputy_manager|is_superadmin/i.test(body), 'Must check GP/DM/superadmin role');
+  assert.ok(/can_by_member\s*\([^)]*['"]manage_platform['"]/i.test(body),
+    'Must call can_by_member with manage_platform action');
 });
 
 test('exec_cross_tribe_comparison returns tribe metrics', () => {

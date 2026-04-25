@@ -25,18 +25,16 @@ function readMigration(filename) {
 }
 
 function splitFunctions(sql) {
-  // Split on CREATE [OR REPLACE] FUNCTION boundaries.
-  // KNOWN LIMITATION: regex assumes $$ delimiter. Functions using $function$ or
-  // other tagged delimiters are silently skipped or have their body swapped with
-  // the next function's $$ body. Tracked as backlog item — fixing the regex to
-  // \$(\w*)\$...\$\1\$ unmasks ~30 pre-existing ADR-0011 violations across
-  // 20260428* migrations (ADR-0015 phase3+phase5 readers). Schedule a dedicated
-  // ADR-0011 cleanup session before tightening the parser.
-  const regex = /CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+([a-z_.]+)\s*\(([\s\S]*?)\)\s*RETURNS[\s\S]*?\$\$([\s\S]*?)\$\$/gi;
+  // Split on CREATE [OR REPLACE] FUNCTION boundaries. Captures any tagged
+  // dollar-quote delimiter via back-reference: $$, $function$, $fn$, $body$, etc.
+  // The header group (m[3]) covers RETURNS / LANGUAGE / SECURITY DEFINER / SET
+  // search_path so callers can inspect SECURITY DEFINER inline without a
+  // secondary scan that may match the wrong slice.
+  const regex = /CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+([a-z_.]+)\s*\(([\s\S]*?)\)\s*RETURNS\s+([\s\S]*?)\s+AS\s+\$(\w*)\$([\s\S]*?)\$\4\$/gi;
   const out = [];
   let m;
   while ((m = regex.exec(sql)) !== null) {
-    out.push({ name: m[1], args: m[2].trim(), body: m[3] });
+    out.push({ name: m[1], args: m[2].trim(), header: m[3], body: m[5] });
   }
   return out;
 }
@@ -62,18 +60,76 @@ function hasAuthGate(body) {
 }
 
 function usesV4Can(body) {
-  return /\bpublic\.can\(/i.test(body)
-      || /\bpublic\.can_by_member\(/i.test(body)
-      || /\bcan_by_member\(/i.test(body)
-      || /\brls_can\(/i.test(body)
-      || /[^\w]can\(\s*auth\.uid/i.test(body);
+  return /\bpublic\.can\s*\(/i.test(body)
+      || /\bpublic\.can_by_member\s*\(/i.test(body)
+      || /\bcan_by_member\s*\(/i.test(body)
+      || /\brls_can\s*\(/i.test(body)
+      || /[^\w]can\s*\(\s*auth\.uid/i.test(body)
+      || /[^\w]can\s*\(\s*\w+\s*,\s*['"]/i.test(body)  // can(person_id_var, 'action', ...)
+      || /\bpublic\._can_\w+\s*\(/i.test(body)  // V4 helpers (e.g., _can_sign_gate)
+      || /[^\w]_can_\w+\s*\(/i.test(body);
 }
 
-function isSecurityDefiner(sql, fnName) {
-  const idx = sql.indexOf(fnName);
-  if (idx < 0) return false;
-  const slice = sql.slice(idx, idx + 800);
-  return /SECURITY\s+DEFINER/i.test(slice);
+// V3 hardcoded role-based authority — what ADR-0011 forbids in new RPCs.
+// A function violates ADR-0011 when it gates auth using role-list logic
+// (operational_role / is_superadmin / designations) in an IF/THEN authority
+// branch or in a caller-lookup WHERE clause, regardless of whether the role
+// reference goes through a local var alias (v_role, v_is_admin) or directly.
+// Pure data filters (`m.operational_role NOT IN (...)` inside a SELECT used
+// for aggregation) are not flagged.
+const HARDCODED_ROLE_NAMES_RE =
+  /['"](?:manager|deputy_manager|tribe_leader|sponsor|chapter_liaison|co_gp|chapter_board|curator|external_signer|alumni|observer|chapter_president|chapter_vice_president|chapter_secretary|chapter_treasurer)['"]/i;
+function usesV3RoleAuthority(body) {
+  // Collect local var aliases assigned from role expressions:
+  //   v_is_gp := v_caller.is_superadmin OR v_caller.operational_role IN ('manager', ...)
+  //   v_role := operational_role
+  // Any IF block referencing such an alias is treated as a role-authority gate.
+  const roleAliases = new Set();
+  const assignmentRegex = /\b(v_[a-z_]+)\s*(?::=)\s*([^;]{1,800})/gi;
+  let am;
+  while ((am = assignmentRegex.exec(body)) !== null) {
+    const expr = am[2];
+    if (/\boperational_role\b/i.test(expr)
+        || /\bdesignations\s*&&/i.test(expr)
+        || /\bis_superadmin\b/i.test(expr)
+        || HARDCODED_ROLE_NAMES_RE.test(expr)) {
+      roleAliases.add(am[1]);
+    }
+  }
+  // SELECT INTO local var bindings of role columns:
+  //   SELECT id, operational_role, is_superadmin INTO v_id, v_role, v_admin
+  const intoRegex = /SELECT[\s\S]{0,400}?\bINTO\b\s+([^;]+?)(?:\s+FROM\b|;)/gi;
+  let im;
+  while ((im = intoRegex.exec(body)) !== null) {
+    const before = body.slice(Math.max(0, im.index), im.index + im[0].length);
+    if (/\boperational_role\b/i.test(before) || /\bis_superadmin\b/i.test(before)) {
+      const targets = im[1].split(/\s*,\s*/).map(s => s.trim()).filter(s => /^v_[a-z_]+$/i.test(s));
+      for (const t of targets) roleAliases.add(t);
+    }
+  }
+
+  // (1) IF ... THEN authority blocks — anchored to statement boundary so the
+  // closing `IF` of `END IF;` does not match as a new block opening.
+  const ifThenBlocks = body.match(/(?:^|[;\n])\s*IF\b[\s\S]{0,1500}?\bTHEN\b/gi) || [];
+  for (const block of ifThenBlocks) {
+    if (/\boperational_role\s+(?:NOT\s+)?(?:IN|=)\s*[\(\x27]/i.test(block)) return true;
+    if (/\bdesignations\s*&&\s*ARRAY/i.test(block)) return true;
+    if (/\bis_superadmin\b/i.test(block)) return true;
+    if (HARDCODED_ROLE_NAMES_RE.test(block) && /\b(?:IN|=|<>|!=)\s*[\(\x27]/i.test(block)) return true;
+    for (const alias of roleAliases) {
+      if (new RegExp(`\\b${alias}\\b`).test(block)) return true;
+    }
+  }
+  // (2) caller-lookup WHERE clauses with embedded role check (single statement
+  // — must not cross `;`, otherwise unrelated SELECT counts get false-flagged)
+  if (/WHERE[^;]{0,200}auth_id\s*=\s*auth\.uid\(\)[^;]{0,400}(is_superadmin|operational_role\s+(?:NOT\s+)?IN|designations\s*&&)/i.test(body)) {
+    return true;
+  }
+  return false;
+}
+
+function isSecurityDefiner(header) {
+  return /SECURITY\s+DEFINER/i.test(header);
 }
 
 test('ADR-0011: new migrations (20260424+) — every SECURITY DEFINER RPC with auth gate calls can*', () => {
@@ -92,7 +148,7 @@ test('ADR-0011: new migrations (20260424+) — every SECURITY DEFINER RPC with a
 
     const fns = splitFunctions(sql);
     for (const fn of fns) {
-      if (!isSecurityDefiner(sql, fn.name)) continue;
+      if (!isSecurityDefiner(fn.header)) continue;
       rpcLatest.set(fn.name, { file: f, args: fn.args, body: fn.body });
     }
   }
@@ -101,6 +157,7 @@ test('ADR-0011: new migrations (20260424+) — every SECURITY DEFINER RPC with a
   for (const [name, { file, args, body }] of rpcLatest.entries()) {
     if (!hasAuthGate(body)) continue;
     if (V4_AUTH_INFRASTRUCTURE_ALLOWLIST.has(name)) continue;
+    if (!usesV3RoleAuthority(body)) continue;  // baseline-auth-only RPCs are not violations
     if (!usesV4Can(body)) {
       violations.push(`${file} :: ${name}(${args.slice(0, 60)}…)`);
     }
