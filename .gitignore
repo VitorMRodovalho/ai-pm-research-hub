@@ -28,6 +28,7 @@ fix_tribes_deliverables.sh
 hash_menu_debug.sh
 nav_section_inspect.sh
 supabase/migrations.skip/
+supabase/.temp/
 *.bak
 *.skip
 
