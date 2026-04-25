@@ -320,7 +320,7 @@ opportunity. The 2-touch bucket prediction is genuinely uncertain — if
 it follows the older-fns-drift-more theory, it could have a high rate
 similar to 3-touch.
 
-### Phase B' — V4 auth migration of captures (NOT done)
+### Phase B' — V4 auth migration of captures (in progress p53)
 
 Many captured functions (Q-A + Q-B) use legacy V3 authority gates
 (operational_role IN, is_superadmin, designations) without a
@@ -329,4 +329,85 @@ exempts these from `tests/contracts/rpc-v4-auth.test.mjs` because they
 are capture-only (verbatim production state). The cleanup work is
 Phase B' — migrate each to V4 authority.
 
-Estimate: ~6-10h to migrate the ~50+ flagged captures.
+**Status (p53)**: 2/~50 migrated in batch 1 (`20260425224208`,
+`phase_bp_admin_governance_v4_auth_batch1`). Estimate remaining:
+~5-9h for the remaining captures.
+
+#### V4 action ladders (canonical reference, verified 2026-04-25)
+
+Each action's authorized (kind, role) pairs from
+`engagement_kind_permissions`. `is_superadmin = true` is a global
+fast-path always honored by `can_by_member()` regardless of action.
+
+| Action | Authorized (kind:role) ladder |
+|---|---|
+| `manage_platform` | volunteer:manager + volunteer:deputy_manager + volunteer:co_gp |
+| `promote` | volunteer:manager + volunteer:deputy_manager + volunteer:co_gp |
+| `manage_partner` | volunteer:manager + volunteer:deputy_manager + volunteer:co_gp + sponsor:sponsor + chapter_board:liaison |
+| `manage_member` | volunteer:manager + volunteer:deputy_manager + volunteer:co_gp + workgroup_member:leader + study_group_owner:leader + study_group_owner:owner + committee_member:leader |
+| `manage_event` | volunteer:manager + volunteer:deputy_manager + volunteer:co_gp + volunteer:leader + volunteer:comms_leader + workgroup_member:leader + study_group_owner:leader + study_group_owner:owner + committee_member:leader |
+| `view_pii` | volunteer:manager + volunteer:deputy_manager + volunteer:co_gp + volunteer:leader + workgroup_member:leader + study_group_owner:leader + study_group_owner:owner + committee_member:leader + workgroup_coordinator:coordinator + committee_coordinator:coordinator + chapter_board:board_member |
+| `write` | manage_member ladder + volunteer:leader + volunteer:comms_leader + workgroup_coordinator:coordinator + committee_coordinator:coordinator |
+| `write_board` | broadest — adds curator/communicator/facilitator/researcher/board participants |
+
+#### Mapping rules from V3 patterns
+
+For each captured function, classify the legacy gate pattern then
+choose the narrowest V4 action whose ladder is a SUPERSET of the
+legacy authorized roles.
+
+| Legacy V3 pattern | Recommended V4 action | Net expansion (today) |
+|---|---|---|
+| `is_superadmin OR operational_role IN ('manager','deputy_manager')` | `manage_platform` | +co_gp (no active engagements 2026-04-25 — zero impact) |
+| Above + `'co_gp' = ANY(designations)` | `manage_platform` | none — already includes co_gp |
+| Above + `tribe_leader` | needs new V4 action OR keep V3 | tribe_leader not in any V4 ladder; expansion to volunteer:leader (manage_event/view_pii) is broader |
+| `manage_partner` legacy roles (chapter_liaison, sponsor) | `manage_partner` | matches |
+| Pure `is_superadmin = true` | keep V3 + add `can_by_member(_, 'manage_platform')` as additional gate (NEVER replace SA-only with V4 — would expand) | — |
+| `'curator' = ANY(designations)` (board curation) | `write_board` (closest) — but check kind:role ladder match | varies, audit per-function |
+
+#### Privilege expansion safety check (mandatory before each migration)
+
+Before applying a Phase B' migration:
+
+```sql
+-- Replace LEGACY_GATE_EXPR and TARGET_V4_ACTION
+WITH legacy AS (
+  SELECT m.id, m.name FROM members m
+  WHERE m.is_active = true AND (LEGACY_GATE_EXPR)
+),
+v4 AS (
+  SELECT m.id, m.name FROM members m
+  WHERE m.is_active = true AND can_by_member(m.id, 'TARGET_V4_ACTION')
+)
+SELECT
+  (SELECT array_agg(name ORDER BY name) FROM legacy) AS legacy_authorized,
+  (SELECT array_agg(name ORDER BY name) FROM v4) AS v4_authorized,
+  (SELECT array_agg(name ORDER BY name) FROM v4 WHERE id NOT IN (SELECT id FROM legacy)) AS would_gain;
+```
+
+Rule: if `would_gain` is non-empty AND any of those gains expose
+cross-chapter visibility OR PII OR sensitive operations → DO NOT
+migrate; create a narrower V4 action OR keep V3 with skip filter.
+
+#### Autonomous-safe migration criteria
+
+A captured function is safe for autonomous Phase B' migration if all hold:
+1. Legacy gate matches a V4 action ladder cleanly (per mapping table).
+2. `would_gain` from safety check returns empty array OR only roles
+   whose authority semantics align with the function's purpose.
+3. Function does NOT expose PII or cross-chapter data when called by
+   a `would_gain` role (manual code review).
+4. Function has no callers that depend on the legacy V3 behavior
+   (e.g., expecting `is_superadmin = true` specifically).
+
+If any criterion fails → escalate to PM-supervised batch.
+
+#### Batch 1 closure (p53, `20260425224208`)
+
+Migrated:
+- `admin_generate_volunteer_term` → `manage_platform`
+- `admin_manage_board_member` → `manage_platform`
+
+Privilege expansion: zero in current production (no active deputy_manager
+or co_gp engagements). Co_gp is reserved for co-General Project leaders
+whose admin authority is consistent with these functions.
