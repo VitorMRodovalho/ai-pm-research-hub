@@ -430,9 +430,24 @@ Phase B'' candidate (NOT migrated):
   curator role; migrating would TIGHTEN authority. Either need a new V4
   action that includes curator OR keep V3 with skip filter.
 
-#### Phase B' running tally (post batch 2)
+#### Batch 3 closure (p53, `20260425233231`)
 
-- 7/~50 captured V3-gated functions migrated to V4.
+Migrated:
+- `get_pii_access_log_admin` → `manage_platform`
+- `recalculate_cycle_rankings` → `manage_platform`
+
+Privilege expansion: zero (same safety check pattern).
+
+Phase B'' candidates discovered while filtering batch 3:
+- `publish_comms_metrics_batch` — uses `can_manage_comms_metrics()`
+  helper. Helper itself is V3-style. Migration requires also refactoring
+  the helper or replacing helper call with `can_by_member()`. Phase B''.
+- `mark_member_excused` — has tribe_leader path with members.tribe_id.
+  Phase 5 ADR-0015 territory (drift signal #2).
+
+#### Phase B' running tally (post batch 3)
+
+- 9/~50 captured V3-gated functions migrated to V4.
 - All migrations: zero authorization change in current production.
 - Pattern proven scalable: same gate template + same V4 action +
   same safety check workflow.
