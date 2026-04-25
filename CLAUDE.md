@@ -10,7 +10,7 @@ Refactor arquitetural completo: 6 ADRs (0004-0009), 30 migrations, 7 fases. Ver 
 ## Platform
 - **URL:** https://nucleoia.vitormr.dev
 - **Supabase:** ldrfrvwhxsmgaabwmaik (sa-east-1)
-- **Version:** v3.2.1 (Structural Quality) | 143 MCP tools (96R+47W) | 23 Edge Functions | 1360 unit + 40 e2e tests (0 fails — p48 ADR-0011 Amendment B migrated 22 V3 RPCs to V4 + fixed pre-existing exec_tribe_dashboard.events.tribe_id drift via i.legacy_tribe_id post-ADR-0015 phase 3e)
+- **Version:** v3.2.1 (Structural Quality) | 143 MCP tools (96R+47W) | 24 Edge Functions | 1367 unit + 40 e2e tests (0 fails — p48 ADR-0011 Amendment B migrated 22 V3 RPCs to V4 + ADR-0022 Accepted W1 shipped: notifications.delivery_mode column + EF split + send-weekly-member-digest stub)
 - **AI Model:** Claude Opus 4.7 (`claude-opus-4-7`) — released 2026-04-16. xhigh effort level available. Updated tokenizer (1.0-1.35x token mapping). /ultrareview for code review.
 - **Wiki:** GitHub org `nucleo-ia-gp` — repos `wiki` (private, Obsidian vault) + `frameworks` (public, CC-BY-SA/MIT). Synced to `wiki_pages` table via FTS. Scope: narrative knowledge only (ADR-0010) — operational data stays in SQL.
 - **LGPD:** Art. 18 cycle complete (consent gate + export + delete + anonymize cron 5y)
