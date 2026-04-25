@@ -19,10 +19,12 @@ compute_application_scores
 compute_legacy_role
 compute_legacy_roles
 current_member_tier_rank
+decrypt_sensitive
 delete_cost_entry
 delete_my_personal_data
 delete_partner_attachment
 delete_revenue_entry
+encrypt_sensitive
 enrich_applications_from_csv
 enroll_in_cpmai_course
 exec_cert_timeline
