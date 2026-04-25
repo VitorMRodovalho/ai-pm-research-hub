@@ -186,5 +186,100 @@ should reconcile (NOT in Q-A scope — captured verbatim):
   `ALLOWLIST_BASELINE_SIZE` reduced from 92 to 0; test name updated to
   reference "p52 baseline (empty after Q-A)".
 - `tests/contracts/rpc-v4-auth.test.mjs`: added
-  `QA_ORPHAN_RECOVERY_FILE_RE` filter so capture-only migrations don't
+  `Q_AUDIT_CAPTURE_FILE_RE` filter (matches both `qa_orphan_recovery_*`
+  and `qb_drift_correction_*`) so capture-only migrations don't
   double-flag against ADR-0011.
+
+## Phase B — in progress (p52, 2026-04-25, 3 of 4 batches done)
+
+Methodology applied per bucket:
+1. Enumerate functions per migration-touch count via Python regex over
+   `supabase/migrations/*.sql`.
+2. Pull live `pg_proc.prosrc` normalized-MD5 hash (collapse whitespace +
+   strip).
+3. Extract latest CREATE FUNCTION block from migration files; compute
+   same hash over the inner body.
+4. Diff hashes → drift candidates.
+5. Pull live `pg_get_functiondef` for drifted functions.
+6. Single drift-correction migration with all drifted CREATE OR REPLACE
+   blocks, `$$`-quoted (re-quoted from `pg_get_functiondef`'s default
+   `$function$` to keep `kpi-portfolio-health.test.mjs` regex happy).
+7. Apply via MCP `apply_migration` → write local file at the same
+   auto-timestamp.
+
+### Batch 1 — top 15 high-touch (5+ migrations)
+
+Migration: `supabase/migrations/20260425153438_qb_drift_correction_top6_high_touch.sql`
+Commit: `931691a`
+
+Drifted: `_can_sign_gate`, `check_schema_invariants`, `curate_item`,
+`exec_portfolio_health` (already known from p50), `get_attendance_grid`,
+`get_member_attendance_hours`. **6/15 = 40%**.
+
+Clean: `admin_anonymize_member`, `create_event`, `detect_operational_alerts`,
+`exec_tribe_dashboard`, `get_admin_dashboard`, `get_board`,
+`get_events_with_attendance`, `move_board_item`, `sign_volunteer_agreement`.
+
+### Batch 2 — 4-touch (34 fns)
+
+Migration: `supabase/migrations/20260425184504_qb_drift_correction_4touch_batch2.sql`
+Commit: `c7bed3c`
+
+Drifted: `create_pilot`, `drop_event_instance`, `get_member_cycle_xp`,
+`list_meeting_artifacts`, `list_tribe_deliverables`, `sign_ip_ratification`,
+`sync_operational_role_cache`, `upsert_publication_submission_event`,
+`upsert_tribe_deliverable`. **9/34 = 26.5%**.
+
+### Batch 3 — 3-touch (53 fns)
+
+Migration: `supabase/migrations/20260425193350_qb_drift_correction_3touch_batch3.sql`
+Commit: `504036b`
+
+Drifted (single-sig 17): `admin_change_tribe_leader`,
+`admin_deactivate_member`, `admin_offboard_member`, `exec_funnel_summary`,
+`export_audit_log_csv`, `export_my_data`, `get_board_members`,
+`get_card_timeline`, `get_evaluation_form`,
+`get_initiative_attendance_grid`, `get_pending_countersign`,
+`get_pilots_summary`, `list_initiative_meeting_artifacts`,
+`mark_member_present`, `notify_webinar_status_change`,
+`process_email_webhook`, `update_event_instance`. **17/53 = 32%**.
+
+Plus 3 `create_notification` overloads (name-based hash diff can't
+differentiate; all 3 captured verbatim).
+
+### Batch 4 — 2-touch sample (95 fns)
+
+**Pending.** Will declare Phase B done if cumulative rate drops below
+~10% in 2-touch.
+
+### Cumulative drift state (batches 1+2+3)
+
+| Bucket | Count | Drift | Drift rate |
+|---|---|---|---|
+| 5+ migrations | 15 | 6 | 40.0% |
+| 4 migrations | 34 | 9 | 26.5% |
+| 3 migrations | 53 | 17 | 32.1% |
+| 2 migrations (pending) | 95 | — | — |
+| **Cumulative** | **102** | **32** | **31.4%** |
+
+### Drift rate non-monotonicity
+
+Expected drift rate to monotonically decrease with touch count (more
+touches = more divergence opportunity). Observed: 40% → 26.5% → 32%
+(inversion at 3-touch). Likely 3-touch's bias toward older functions
+that absorbed more semantic changes during V4 / ADR-0015 refactors,
+while 4-touch may be skewed by recent additions with less drift
+opportunity. The 2-touch bucket prediction is genuinely uncertain — if
+it follows the older-fns-drift-more theory, it could have a high rate
+similar to 3-touch.
+
+### Phase B' — V4 auth migration of captures (NOT done)
+
+Many captured functions (Q-A + Q-B) use legacy V3 authority gates
+(operational_role IN, is_superadmin, designations) without a
+`can_by_member()` call. The `Q_AUDIT_CAPTURE_FILE_RE` skip filter
+exempts these from `tests/contracts/rpc-v4-auth.test.mjs` because they
+are capture-only (verbatim production state). The cleanup work is
+Phase B' — migrate each to V4 authority.
+
+Estimate: ~6-10h to migrate the ~50+ flagged captures.
