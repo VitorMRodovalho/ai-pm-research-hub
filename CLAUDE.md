@@ -18,7 +18,7 @@ Refactor arquitetural completo: 6 ADRs (0004-0009), 30 migrations, 7 fases. Ver 
 ## Build & Test
 ```bash
 npx astro build          # MUST pass before commit
-npm test                 # 1339 pass / 1 fail pre-existing (V4 drift: exec_tribe_dashboard.events.tribe_id dropped em ADR-0015 Phase 3)
+npm test                 # 1361 pass / 1 fail pre-existing (V4 drift: exec_tribe_dashboard.events.tribe_id dropped em ADR-0015 Phase 3)
 npx wrangler deploy      # Deploy Worker
 supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 ```
