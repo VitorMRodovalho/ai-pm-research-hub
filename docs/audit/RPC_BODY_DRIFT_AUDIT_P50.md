@@ -124,3 +124,67 @@ None in production. This is a discovery-only session. Audit data lives in:
 - `/tmp/p50_func_list.txt` (605 project function names — ephemeral)
 - `/tmp/p50_coverage.tsv` (per-function migration count — ephemeral)
 - `/tmp/p50_orphans.txt` (90 orphan names — ephemeral)
+
+## Phase A — completed in p52 (2026-04-25)
+
+All 92 documented orphans were captured via 13 thematic recovery migrations
+(`20260425142341..20260425143839`):
+
+| Batch | Migration | Count | Theme |
+|---|---|---|---|
+| A | `20260425142341_qa_orphan_recovery_trigger_helpers.sql` | 5 | trigger/utility helpers |
+| B | `20260425142413_qa_orphan_recovery_blog_endpoints.sql` | 4 | blog public endpoints |
+| C | `20260425142422_qa_orphan_recovery_pii_crypto.sql` | 3 | PII crypto helpers |
+| D | `20260425142603_qa_orphan_recovery_privacy_gates.sql` | 8 | privacy gates / my-* |
+| E | `20260425142641_qa_orphan_recovery_knowledge_surface.sql` | 6 | knowledge search/insights |
+| F | `20260425142756_qa_orphan_recovery_partner_crud.sql` | 7 | partner CRUD |
+| G | `20260425142917_qa_orphan_recovery_sustainability_finance.sql` | 8 | finance/KPI |
+| H | `20260425143237_qa_orphan_recovery_selection_application.sql` | 14 | selection/application |
+| I | `20260425143411_qa_orphan_recovery_cpmai_certificates.sql` | 7 | CPMAI + certificates |
+| J | `20260425143511_qa_orphan_recovery_triggers_legacy_compute.sql` | 9 | triggers + legacy compute |
+| K | `20260425143634_qa_orphan_recovery_admin_governance.sql` | 8 | admin governance |
+| L | `20260425143803_qa_orphan_recovery_misc_readers.sql` | 10 | misc readers |
+| M | `20260425143839_qa_orphan_recovery_publication_submissions.sql` | 3 | publication submissions |
+| **Total** | **13 migrations** | **92** | |
+
+Bodies captured verbatim from `pg_get_functiondef`. CREATE OR REPLACE made the
+operations idempotent on existing definitions; live `pg_proc` is unchanged.
+The Q-C contract test allowlist is now empty
+(`docs/audit/RPC_BODY_DRIFT_AUDIT_P50_ORPHAN_LIST.txt`) and
+`ALLOWLIST_BASELINE_SIZE = 0` in
+`tests/contracts/rpc-migration-coverage.test.mjs`.
+
+### Phase B drift signals surfaced during Phase A capture
+
+The capture process surfaced several pre-existing drift signals that Phase B
+should reconcile (NOT in Q-A scope — captured verbatim):
+
+1. **`admin_force_tribe_selection` + `admin_remove_tribe_selection`** still
+   gate on `members.role` (legacy column) instead of `operational_role`. Likely
+   broken in production; fix needed.
+2. **`admin_get_tribe_allocations` + `mark_member_excused`** reference
+   `members.tribe_id` (post-ADR-0015 the canonical path is engagements).
+3. **Double PERT path** — `compute_application_scores` uses simple AVG over
+   `weighted_subtotal`, while `import_historical_evaluations` /
+   `import_leader_evaluations` use the PERT formula
+   `(2*min + 4*avg + 2*max)/8`. Pick one and reconcile.
+4. **One-shot importers hardcode** the cycle code `cycle3-2026` AND two
+   evaluator UUIDs (Vitor + Fabricio). Phase B: archive vs parameterize.
+5. **`partner_interactions` column drift** — `partner_id` (used by writers)
+   vs `partner_entity_id` (used by attachment join). FK naming inconsistency.
+6. **`get_partner_followups` 'stale' bucket** filter excludes both terminal
+   AND active statuses — likely a logic bug masked as scope.
+7. **V3 authority gates** — many captured functions use legacy
+   `operational_role IN (...)` / `is_superadmin` / `designations` checks
+   instead of V4 `can_by_member()`. Tracked separately in ADR-0011 backlog.
+   These are explicitly skipped by `tests/contracts/rpc-v4-auth.test.mjs` via
+   the `qa_orphan_recovery_` filename pattern (drift cleanup deferred).
+
+### Q-C ratchet adjustments
+
+- `tests/contracts/rpc-migration-coverage.test.mjs`:
+  `ALLOWLIST_BASELINE_SIZE` reduced from 92 to 0; test name updated to
+  reference "p52 baseline (empty after Q-A)".
+- `tests/contracts/rpc-v4-auth.test.mjs`: added
+  `QA_ORPHAN_RECOVERY_FILE_RE` filter so capture-only migrations don't
+  double-flag against ADR-0011.
