@@ -132,15 +132,23 @@ function isSecurityDefiner(header) {
   return /SECURITY\s+DEFINER/i.test(header);
 }
 
-// Track Q-A orphan-recovery + Q-B drift-correction migrations (p52, 2026-04-25)
-// — these capture the LIVE body of functions that previously had no migration
-// (Q-A orphans) or whose live body diverged from the latest migration capture
-// (Q-B drift). By design both preserve the existing legacy V3 authority gates
-// verbatim (rule: capture-only, no behavior change). The drift-to-V4 work
-// for these functions is Phase B' of the audit. Skip them here so they don't
-// get double-flagged — the violations are already documented in their
+// Track Q-A orphan-recovery + Q-B drift-correction + drift-signal V3-preserving
+// bug fix migrations (p52+, 2026-04-25+). These capture the LIVE body of
+// functions that previously had no migration (Q-A orphans), whose live body
+// diverged from the latest migration capture (Q-B drift), or that fix
+// pre-existing bugs without touching the auth gate (drift-signals_*). By
+// design they preserve the existing legacy V3 authority gates verbatim
+// (rule: capture-only or surgical-fix, no auth behavior change). The
+// drift-to-V4 work for these functions is Phase B' of the audit. Skip them
+// here so they don't double-flag — violations are documented in their
 // migration headers and in docs/audit/RPC_BODY_DRIFT_AUDIT_P50.md.
-const Q_AUDIT_CAPTURE_FILE_RE = /qa_orphan_recovery_|qb_drift_correction_/;
+//
+// `drift_signal[s]?_` matches files like
+// `drift_signals_5_6_partner_subsystem_bugfixes.sql` (V3-preserving fix). The
+// negative lookahead `(?!.*_v4_auth)` excludes files like
+// `drift_signal_1_admin_tribe_selection_v4_auth.sql` which DO migrate to V4
+// and SHOULD be tested.
+const Q_AUDIT_CAPTURE_FILE_RE = /qa_orphan_recovery_|qb_drift_correction_|drift_signals?_(?!.*_v4_auth)/;
 
 test('ADR-0011: new migrations (20260424+) — every SECURITY DEFINER RPC with auth gate calls can*', () => {
   const files = readdirSync(MIGRATIONS_DIR)

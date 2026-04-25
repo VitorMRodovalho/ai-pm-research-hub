@@ -159,21 +159,41 @@ The Q-C contract test allowlist is now empty
 The capture process surfaced several pre-existing drift signals that Phase B
 should reconcile (NOT in Q-A scope — captured verbatim):
 
-1. **`admin_force_tribe_selection` + `admin_remove_tribe_selection`** still
-   gate on `members.role` (legacy column) instead of `operational_role`. Likely
-   broken in production; fix needed.
+1. ✅ **FIXED p52 (`7079c98`, migration `20260425205543`)** —
+   **`admin_force_tribe_selection` + `admin_remove_tribe_selection`** gated on
+   `members.role` (legacy column that no longer exists; column listing
+   confirms only `operational_role`). Were broken in production; both dead
+   code (no frontend / EF callsites; only typed in `database.gen.ts`).
+   Migrated to V4 `can_by_member('manage_member')`.
 2. **`admin_get_tribe_allocations` + `mark_member_excused`** reference
    `members.tribe_id` (post-ADR-0015 the canonical path is engagements).
+   `members.tribe_id` column STILL EXISTS — not broken, but architectural
+   debt waiting on ADR-0015 Phase 5 (deferred pós-CBGPL). Recommend defer
+   until Phase 5 resumes — fixing in isolation duplicates work.
 3. **Double PERT path** — `compute_application_scores` uses simple AVG over
    `weighted_subtotal`, while `import_historical_evaluations` /
    `import_leader_evaluations` use the PERT formula
-   `(2*min + 4*avg + 2*max)/8`. Pick one and reconcile.
+   `(2*min + 4*avg + 2*max)/8`. Pick one and reconcile. NEEDS PM CALL on
+   which is canonical.
 4. **One-shot importers hardcode** the cycle code `cycle3-2026` AND two
    evaluator UUIDs (Vitor + Fabricio). Phase B: archive vs parameterize.
-5. **`partner_interactions` column drift** — `partner_id` (used by writers)
-   vs `partner_entity_id` (used by attachment join). FK naming inconsistency.
-6. **`get_partner_followups` 'stale' bucket** filter excludes both terminal
-   AND active statuses — likely a logic bug masked as scope.
+   NEEDS PM CALL — cycle3-2026 is closed; archival likely safe, but
+   parameterization preserves importer for future cycles.
+5. ✅ **FIXED p53 (migration `20260425214708`)** —
+   **`get_partner_interaction_attachments`** dereferenced
+   `v_interaction.partner_entity_id` but `partner_interactions` has no such
+   column (only `partner_id` FK → partner_entities.id). Function would
+   error at runtime with `record v_interaction has no field
+   partner_entity_id`. Currently dead code (no MCP tool, no frontend
+   callsite, only `database.gen.ts` types). Fixed to use
+   `v_interaction.partner_id`.
+6. ✅ **FIXED p53 (migration `20260425214708`)** —
+   **`get_partner_followups` 'stale' bucket** filter `NOT IN ('inactive',
+   'churned', 'active')` defeated the bucket's purpose. Live data: 14
+   stale-eligible partners total, 5 active recovered (was 9 visible).
+   Aligned with overdue/upcoming buckets to `NOT IN ('inactive',
+   'churned')`. Function exposed as MCP tool; Claude callers now see the
+   complete stale set.
 7. **V3 authority gates** — many captured functions use legacy
    `operational_role IN (...)` / `is_superadmin` / `designations` checks
    instead of V4 `can_by_member()`. Tracked separately in ADR-0011 backlog.
