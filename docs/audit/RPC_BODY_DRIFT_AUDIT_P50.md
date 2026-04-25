@@ -170,11 +170,25 @@ should reconcile (NOT in Q-A scope — captured verbatim):
    `members.tribe_id` column STILL EXISTS — not broken, but architectural
    debt waiting on ADR-0015 Phase 5 (deferred pós-CBGPL). Recommend defer
    until Phase 5 resumes — fixing in isolation duplicates work.
-3. **Double PERT path** — `compute_application_scores` uses simple AVG over
-   `weighted_subtotal`, while `import_historical_evaluations` /
-   `import_leader_evaluations` use the PERT formula
-   `(2*min + 4*avg + 2*max)/8`. Pick one and reconcile. NEEDS PM CALL on
-   which is canonical.
+3. **Double aggregation path for `interview` eval type** (verified p53) —
+   - `submit_interview_scores` (live): when all evaluators submit, computes
+     PERT `(2*min + 4*avg + 2*max)/8` over the array of evaluator
+     weighted_subtotals; stores the PERT score in
+     `selection_applications.interview_score` and `final_score`.
+   - `compute_application_scores` (backfill): AVGs weighted_subtotals per
+     eval_type; uses that as `v_int_avg`; sets `research_score = obj_avg +
+     int_avg`; does NOT touch `interview_score` column.
+   - `import_historical_evaluations` / `import_leader_evaluations` apply
+     PERT inline before storing weighted_subtotal in selection_evaluations
+     (so weighted_subtotal IS PERT-consolidated for those backfill paths).
+   - `compute_application_scores`'s comment claims weighted_subtotal is
+     "already PERT-consolidated" — true for the historical importers, but
+     `submit_interview_scores` stores the per-evaluator raw weighted sum
+     (not PERT). This means in the live path, AVG of weighted_subtotals
+     ≠ PERT of weighted_subtotals.
+   - Currently disjoint cycles (live = current cycle, backfill = history),
+     so no live bug — but the formula divergence is real. NEEDS PM CALL:
+     canonize PERT or AVG, then reconcile the unused branch.
 4. **One-shot importers hardcode** the cycle code `cycle3-2026` AND two
    evaluator UUIDs (Vitor + Fabricio). Phase B: archive vs parameterize.
    NEEDS PM CALL — cycle3-2026 is closed; archival likely safe, but
