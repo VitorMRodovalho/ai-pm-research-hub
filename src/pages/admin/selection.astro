@@ -692,6 +692,7 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
               <div><span class="text-[var(--text-muted)] text-[11px]">Rank (Geral)</span><br><strong>${row.rank_overall != null ? '#' + row.rank_overall : '—'}</strong></div>
             </div>
             ${row.tags?.length ? `<div class="flex gap-1 flex-wrap">${row.tags.map((t: string) => `<span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-semibold">${esc(t)}</span>`).join('')}</div>` : ''}
+            ${row.is_returning_member ? `<div id="returning-context-panel" data-app-id="${esc(row.id)}" class="border border-blue-100 bg-blue-50/40 rounded-xl p-3"><p class="text-[12px] text-blue-700">Carregando histórico de saída anterior...</p></div>` : ''}
           </div>
           <div class="space-y-4">
             <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">Alterar Status</h4>
@@ -748,6 +749,11 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
         </div>
       </div>
     `;
+
+    // #91 G4: lazy-load returning candidate offboarding context
+    if (row.is_returning_member) {
+      loadReturningContext(row.id);
+    }
 
     // Modal tab switching
     body.querySelectorAll('.modal-tab-btn').forEach(btn => {
@@ -830,6 +836,77 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
     });
 
     modal.classList.remove('hidden');
+  }
+
+  /* ── #91 G4: returning candidate offboarding context ─────────────── */
+  async function loadReturningContext(applicationId: string) {
+    const panel = document.getElementById('returning-context-panel');
+    if (!panel) return;
+    try {
+      const { data, error } = await sb.rpc('get_application_returning_context', {
+        p_application_id: applicationId,
+      });
+      if (error) throw error;
+      if (!data || !data.found) {
+        panel.innerHTML = '<p class="text-[11px] text-[var(--text-muted)]">Sem histórico recuperável.</p>';
+        return;
+      }
+
+      const ctx = data.offboarding_context;
+      const member = data.matched_member;
+
+      if (!member) {
+        panel.innerHTML = `<div class="space-y-1">
+          <h4 class="text-[12px] font-bold text-blue-700">Candidato Retornante</h4>
+          <p class="text-[11px] text-[var(--text-secondary)]">Membro anterior não localizado por email; flag baseada em ${data.application_count || 1} aplicação(ões) prévia(s).</p>
+        </div>`;
+        return;
+      }
+
+      if (!ctx) {
+        panel.innerHTML = `<div class="space-y-1">
+          <h4 class="text-[12px] font-bold text-blue-700">Candidato Retornante</h4>
+          <p class="text-[11px] text-[var(--text-secondary)]">Membro encontrado (${esc(member.name || '')}, ${esc(member.member_status || '')}), mas sem registro estruturado de saída.</p>
+        </div>`;
+        return;
+      }
+
+      const offboardDate = ctx.offboarded_at ? new Date(ctx.offboarded_at).toLocaleDateString('pt-BR') : '—';
+      const returnInterestBadge = ctx.return_interest === true
+        ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">Quer voltar</span>'
+        : ctx.return_interest === false
+          ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700">Não declarou retorno</span>'
+          : '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">Interesse não registrado</span>';
+      const eligibilityBadge = ctx.preserves_return_eligibility === false
+        ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-800" title="Categoria de saída sinaliza ineligibilidade (ex.: violação de política)">Atenção: ineligível</span>'
+        : '';
+      const faultBadge = ctx.is_volunteer_fault === true
+        ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">Falta atribuída ao voluntário</span>'
+        : '';
+
+      panel.innerHTML = `
+        <div class="space-y-2">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h4 class="text-[12px] font-bold text-blue-700">Histórico de Saída Anterior</h4>
+            ${returnInterestBadge}
+            ${eligibilityBadge}
+            ${faultBadge}
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-[11px]">
+            <div><span class="text-[var(--text-muted)]">Saída em</span><br><strong>${esc(offboardDate)}</strong></div>
+            <div><span class="text-[var(--text-muted)]">Categoria</span><br><strong>${esc(ctx.reason_category_label_pt || ctx.reason_category_code || '—')}</strong></div>
+            ${ctx.tribe_id_at_offboard ? `<div><span class="text-[var(--text-muted)]">Tribo na época</span><br><strong>Tribo ${ctx.tribe_id_at_offboard}</strong></div>` : ''}
+            ${ctx.cycle_code_at_offboard ? `<div><span class="text-[var(--text-muted)]">Ciclo</span><br><strong>${esc(ctx.cycle_code_at_offboard)}</strong></div>` : ''}
+          </div>
+          ${ctx.return_window_suggestion ? `<div><span class="text-[var(--text-muted)] text-[10px]">Janela de retorno sugerida</span><br><span class="text-[12px] text-[var(--text-primary)]">${esc(ctx.return_window_suggestion)}</span></div>` : ''}
+          ${ctx.lessons_learned ? `<details class="text-[11px]"><summary class="cursor-pointer font-semibold text-blue-700 hover:underline">Lições aprendidas</summary><p class="mt-1 text-[var(--text-secondary)] whitespace-pre-wrap bg-white/60 rounded p-2">${esc(ctx.lessons_learned)}</p></details>` : ''}
+          ${ctx.recommendation_for_future ? `<details class="text-[11px]"><summary class="cursor-pointer font-semibold text-blue-700 hover:underline">Recomendação retrospectiva</summary><p class="mt-1 text-[var(--text-secondary)] whitespace-pre-wrap bg-white/60 rounded p-2">${esc(ctx.recommendation_for_future)}</p></details>` : ''}
+          ${ctx.has_full_interview ? `<p class="text-[10px] text-[var(--text-muted)] italic">Há transcrição completa de exit interview registrada (use get_member_offboarding_record para detalhe completo).</p>` : ''}
+        </div>
+      `;
+    } catch (e: any) {
+      panel.innerHTML = `<p class="text-[11px] text-rose-700">Erro ao carregar histórico: ${esc(e.message || 'desconhecido')}</p>`;
+    }
   }
 
   /* ── evaluation form ──────────────────────────────── */
