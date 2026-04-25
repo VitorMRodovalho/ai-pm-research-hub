@@ -190,9 +190,22 @@ should reconcile (NOT in Q-A scope — captured verbatim):
      so no live bug — but the formula divergence is real. NEEDS PM CALL:
      canonize PERT or AVG, then reconcile the unused branch.
 4. **One-shot importers hardcode** the cycle code `cycle3-2026` AND two
-   evaluator UUIDs (Vitor + Fabricio). Phase B: archive vs parameterize.
-   NEEDS PM CALL — cycle3-2026 is closed; archival likely safe, but
-   parameterization preserves importer for future cycles.
+   evaluator UUIDs (Vitor + Fabricio). Verified p53 — picture more nuanced
+   than the "archive vs parameterize" framing suggested:
+   - There IS a currently open cycle (`cycle3-2026-b2`, closes 2026-05-31).
+   - But the importers are FORMAT-COUPLED: they expect specific keys in the
+     input jsonb (`fabricio_scores_conv`, `vitor_scores_conv`,
+     `interview_scores_conv`), and the structure assumes exactly 2
+     objective evaluators + 1 interview lead.
+   - Parameterizing cycle_code alone is trivial; parameterizing evaluator
+     UUIDs is also tractable. But the structural coupling to "Fabricio +
+     Vitor are the evaluators" means these importers won't generalize to
+     a cycle with different evaluators or different input format.
+   - Realistic options: (a) leave as-is (cycle3-2026 done, cycle3-2026-b2
+     uses live `submit_*_scores` flow not import), (b) parameterize cycle
+     + evaluator UUIDs but accept format coupling, (c) refactor to a
+     generic eval-import shape (≥3-4h work). NEEDS PM CALL on which path
+     to take.
 5. ✅ **FIXED p53 (migration `20260425214708`)** —
    **`get_partner_interaction_attachments`** dereferenced
    `v_interaction.partner_entity_id` but `partner_interactions` has no such
