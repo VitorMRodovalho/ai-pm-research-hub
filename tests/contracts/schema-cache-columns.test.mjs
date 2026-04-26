@@ -40,6 +40,10 @@ const STORAGE_ONLY_ALLOWLIST = new Map([
   // Pure user preference — opt-in/out flag for weekly card digest (issue #98, p39).
   // Set only via /settings/notifications toggle; not derivable from any other state.
   ['members.notify_weekly_digest', 'User opt-out flag for weekly card digest; no derivation source'],
+  // Pure user preference — 4-mode delivery (immediate_all/weekly_digest/suppress_all/custom_per_type)
+  // for ADR-0022 W2 communication batching (p61). Set only via /settings/notifications RPC
+  // set_my_notification_prefs(); not derivable from any other state. CHECK constraint enforces enum.
+  ['members.notify_delivery_mode_pref', 'User-chosen email delivery mode (ADR-0022 W2); no derivation source'],
 ]);
 
 function parseAddColumns(sql) {

@@ -4,26 +4,25 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 /**
  * Edge Function: send-weekly-member-digest
  *
- * ADR-0022 W1 STUB (2026-04-26): infrastructure-only EF. Pickup target is
- * `notifications` rows where `delivery_mode = 'digest_weekly'` AND
- * `digest_delivered_at IS NULL` AND `created_at` is older than the last
- * Saturday 12:00 UTC.
+ * ADR-0022 W2 (2026-04-26): orchestrator caller. Invokes
+ * `generate_weekly_member_digest_cron()` which:
+ *   - Iterates active members opted into weekly digest
+ *   - For each: builds 7-section digest via get_weekly_member_digest()
+ *   - If has_content: inserts a `weekly_member_digest` notification with
+ *     delivery_mode='transactional_immediate' (so the existing
+ *     `send-notification-email` cron picks it up within 5min for actual
+ *     Resend delivery), AND marks consumed digest_weekly notifications as
+ *     digest_delivered_at + digest_batch_id (preventing redelivery).
  *
- * W1 behavior: counts pending rows per recipient and returns the count.
- * Does NOT mark rows as delivered. Does NOT send any email. The actual
- * aggregation + email shaping ships in W2 (SPEC_WEEKLY_MEMBER_DIGEST).
+ * Architecture: this EF is the orchestration trigger. The actual email
+ * sending happens in `send-notification-email` (which now has a
+ * `weekly_member_digest` template renderer parsing the JSON body).
  *
- * Why a stub now: ADR-0022 acceptance criterion §11 requires the EF to be
- * deployed + cron entry active in W1 so subsequent waves can iterate without
- * deploying new EFs. Marking rows as delivered prematurely would consume the
- * pending queue before W2 fills in actual content — so we deliberately skip.
+ * Cron: pg_cron entry runs Saturday 12:00 UTC (jobid switched in W2 migration
+ * `20260426193225`/`20260426193357`). Manual invocation also OK for testing.
  *
- * Cron: pg_cron entry runs Saturday 12:00 UTC. Manual invocation also OK.
- *
- * Migration path:
- *   - W2: replace this body with actual aggregation (call get_weekly_member_digest
- *     RPC), build email HTML, send via Resend, set digest_delivered_at + digest_batch_id.
- *   - W3: smart-skip empty digest, leader digest variant.
+ * W3 backlog: smart-skip empty digest (already done — orchestrator skips
+ * recipients with 0 content), leader digest variant, configurable cadence.
  */
 Deno.serve(async (req) => {
   const cors = {
@@ -42,50 +41,21 @@ Deno.serve(async (req) => {
 
     const sb = createClient(url, srk, { auth: { autoRefreshToken: false, persistSession: false } })
 
-    // Last Saturday 12:00 UTC (cron fires Saturday 12 UTC; this function may
-    // run later — we always look back at the most recent past Saturday window).
-    const lastSaturdayCutoff = lastSaturdayAtNoonUTC(new Date())
+    const { data, error } = await sb.rpc('generate_weekly_member_digest_cron')
+    if (error) return json({ error: 'orchestrator_failed', detail: error.message }, 500)
 
-    const { data: pending, error } = await sb
-      .from('notifications')
-      .select('recipient_id, id, type, created_at')
-      .eq('delivery_mode', 'digest_weekly')
-      .is('digest_delivered_at', null)
-      .lt('created_at', lastSaturdayCutoff.toISOString())
-      .limit(5000)
-
-    if (error) return json({ error: 'db query failed', detail: error.message }, 500)
-
-    const byRecipient: Record<string, number> = {}
-    for (const row of pending ?? []) {
-      byRecipient[row.recipient_id] = (byRecipient[row.recipient_id] ?? 0) + 1
-    }
+    const rows = (data ?? []) as Array<{ member_id: string; notified: boolean; reason: string; batch_id: string | null }>
+    const sent = rows.filter(r => r.notified).length
+    const skipped = rows.filter(r => !r.notified).length
 
     return json({
-      stage: 'W1_stub',
-      cutoff: lastSaturdayCutoff.toISOString(),
-      total_pending_rows: pending?.length ?? 0,
-      recipients_with_pending: Object.keys(byRecipient).length,
-      message: 'Digest content is implemented in W2 — this stub does not send emails or mark rows as delivered.',
+      stage: 'W2',
+      total_members_checked: rows.length,
+      digests_inserted: sent,
+      skipped_no_content: skipped,
+      message: 'Digest notifications inserted with delivery_mode=transactional_immediate. send-notification-email cron (every 5min) will deliver them via Resend.',
     })
   } catch (e) {
     return json({ error: String(e) }, 500)
   }
 })
-
-/**
- * Returns the most recent past Saturday at 12:00 UTC (inclusive of "today
- * if it is Saturday and current UTC hour ≥ 12"). Used to bound the digest
- * batch — rows created before this cutoff are eligible for the current batch.
- */
-function lastSaturdayAtNoonUTC(now: Date): Date {
-  const dayOfWeek = now.getUTCDay() // 0 = Sun, 6 = Sat
-  let daysBack = dayOfWeek - 6
-  if (daysBack < 0) daysBack += 7
-  // If today is Saturday but before 12 UTC, use the previous Saturday.
-  if (daysBack === 0 && now.getUTCHours() < 12) daysBack = 7
-  const target = new Date(now)
-  target.setUTCDate(now.getUTCDate() - daysBack)
-  target.setUTCHours(12, 0, 0, 0)
-  return target
-}

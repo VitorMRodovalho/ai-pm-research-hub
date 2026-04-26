@@ -1,0 +1,123 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+// ADR-0022 W2: notification preferences page (4-mode + weekly digest opt-out).
+// Auth: client-side via getSupabase() factory.
+// RPC: set_my_notification_prefs(p_notify_weekly_digest, p_notify_delivery_mode_pref)
+---
+<BaseLayout title="Preferências de Notificação — Núcleo IA">
+  <main style="max-width: 720px; margin: 32px auto; padding: 0 16px;">
+    <h1 style="font-size: 22px; color: #003B5C; margin-bottom: 8px;">Preferências de Notificação</h1>
+    <p style="color: #6c757d; font-size: 14px; margin-bottom: 24px;">
+      Controle como você recebe comunicações da plataforma.
+      Por padrão, agrupamos tudo num resumo semanal aos sábados (12:00 UTC / 09:00 BRT).
+    </p>
+
+    <div id="loading" style="padding: 40px; text-align: center; color: #6c757d;">Carregando preferências…</div>
+
+    <div id="form" style="display: none;">
+      <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+        <h2 style="font-size: 16px; color: #003B5C; margin: 0 0 12px 0;">Modo de entrega</h2>
+        <p style="color: #6c757d; font-size: 13px; margin: 0 0 16px 0;">Escolha como receber emails de notificação:</p>
+
+        <label style="display: block; margin-bottom: 12px; padding: 12px; border: 1px solid #e9ecef; border-radius: 6px; cursor: pointer;">
+          <input type="radio" name="delivery_mode" value="weekly_digest" />
+          <strong style="color: #003B5C;">Resumo semanal</strong>
+          <span style="display: block; color: #6c757d; font-size: 12px; margin-top: 4px; margin-left: 22px;">
+            (Padrão) Receba 1 email consolidado aos sábados com cards, eventos, publicações e governança da semana.
+          </span>
+        </label>
+
+        <label style="display: block; margin-bottom: 12px; padding: 12px; border: 1px solid #e9ecef; border-radius: 6px; cursor: pointer;">
+          <input type="radio" name="delivery_mode" value="immediate_all" />
+          <strong style="color: #003B5C;">Receber tudo imediato</strong>
+          <span style="display: block; color: #6c757d; font-size: 12px; margin-top: 4px; margin-left: 22px;">
+            Cada notificação vira um email separado (alta frequência — 5-10 emails/semana típico).
+          </span>
+        </label>
+
+        <label style="display: block; margin-bottom: 12px; padding: 12px; border: 1px solid #e9ecef; border-radius: 6px; cursor: pointer;">
+          <input type="radio" name="delivery_mode" value="suppress_all" />
+          <strong style="color: #003B5C;">Apenas in-app (sem emails)</strong>
+          <span style="display: block; color: #6c757d; font-size: 12px; margin-top: 4px; margin-left: 22px;">
+            Não receba nenhum email. Notificações ficam só na plataforma.
+          </span>
+        </label>
+
+        <label style="display: block; padding: 12px; border: 1px solid #e9ecef; border-radius: 6px; cursor: pointer; opacity: 0.6;">
+          <input type="radio" name="delivery_mode" value="custom_per_type" disabled />
+          <strong style="color: #003B5C;">Personalizado por tipo</strong>
+          <span style="display: block; color: #6c757d; font-size: 12px; margin-top: 4px; margin-left: 22px;">
+            (Em breve — W3) Configure cada tipo de notificação separadamente.
+          </span>
+        </label>
+      </div>
+
+      <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+        <h2 style="font-size: 16px; color: #003B5C; margin: 0 0 12px 0;">Resumo semanal</h2>
+        <label style="display: flex; align-items: center; cursor: pointer;">
+          <input type="checkbox" id="notify_weekly_digest" style="margin-right: 10px; width: 18px; height: 18px;" />
+          <span style="color: #495057; font-size: 14px;">Receber resumo semanal aos sábados</span>
+        </label>
+        <p style="color: #6c757d; font-size: 12px; margin: 8px 0 0 28px;">
+          Desmarcar pula o resumo mesmo no modo "Resumo semanal". Útil se você não quer receber NADA por email mas mantém o modo padrão para quando reativar.
+        </p>
+      </div>
+
+      <button id="save" style="background: #003B5C; color: white; padding: 12px 24px; border: 0; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">Salvar preferências</button>
+      <span id="status" style="margin-left: 12px; color: #388e3c; font-size: 13px;"></span>
+    </div>
+  </main>
+
+  <script>
+    import { getSupabase } from '../../lib/supabase';
+
+    async function load() {
+      const loading = document.getElementById('loading')!;
+      const form = document.getElementById('form')!;
+      const status = document.getElementById('status')!;
+      const saveBtn = document.getElementById('save')!;
+      const weeklyToggle = document.getElementById('notify_weekly_digest') as HTMLInputElement;
+
+      const sb = getSupabase();
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session?.user) {
+        loading.textContent = 'Você precisa estar autenticado para gerenciar preferências.';
+        return;
+      }
+      const { data: member, error: memberErr } = await sb.from('members')
+        .select('notify_weekly_digest, notify_delivery_mode_pref')
+        .eq('auth_id', session.user.id).single();
+      if (memberErr || !member) {
+        loading.textContent = 'Membro não encontrado.';
+        return;
+      }
+      weeklyToggle.checked = (member as any).notify_weekly_digest ?? true;
+      const mode = (member as any).notify_delivery_mode_pref || 'weekly_digest';
+      const radio = document.querySelector(`input[name="delivery_mode"][value="${mode}"]`) as HTMLInputElement;
+      if (radio) radio.checked = true;
+      loading.style.display = 'none';
+      form.style.display = 'block';
+
+      saveBtn.addEventListener('click', async () => {
+        status.textContent = 'Salvando…';
+        status.style.color = '#6c757d';
+        const checked = document.querySelector('input[name="delivery_mode"]:checked') as HTMLInputElement;
+        const newMode = checked?.value;
+        const newWeekly = weeklyToggle.checked;
+        const { error } = await sb.rpc('set_my_notification_prefs', {
+          p_notify_weekly_digest: newWeekly,
+          p_notify_delivery_mode_pref: newMode,
+        });
+        if (error) {
+          status.textContent = `Erro: ${error.message}`;
+          status.style.color = '#d32f2f';
+        } else {
+          status.textContent = 'Preferências salvas ✓';
+          status.style.color = '#388e3c';
+        }
+      });
+    }
+    load();
+  </script>
+</BaseLayout>
