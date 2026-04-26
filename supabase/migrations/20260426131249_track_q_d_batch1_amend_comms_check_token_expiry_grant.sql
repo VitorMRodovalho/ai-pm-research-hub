@@ -1,0 +1,48 @@
+-- Track Q-D — Batch 1 amendment: restore comms_check_token_expiry authenticated grant
+--
+-- Regression surface (p58 batch 3a.5 closure):
+-- comms_check_token_expiry() was REVOKE'd in Q-D batch 1 (p55,
+-- 20260426001848) under "cron-only" classification (9 fns).
+-- However src/pages/admin/comms.astro:669 calls
+-- sb.rpc('comms_check_token_expiry') via the loadTokenAlerts() flow
+-- to fetch active token expiry alerts for display in the admin
+-- comms dashboard. Per-fn callsite verification in p55 missed this
+-- admin frontend caller. Post-batch-1, the call fails silently
+-- (try/catch wrapped, console.warn — degraded UX, not crash).
+--
+-- Body inspection (p58):
+-- The function is hybrid (writer + reader):
+-- 1. Loops through comms_channel_config rows. For each non-YouTube
+--    channel with OAuth token + expiry:
+--    - Expired token → INSERT urgent alert (idempotent: only if no
+--      urgent alert in last 1 day)
+--    - Expiring ≤7 days → INSERT warning alert (same idempotency)
+--    - Updates sync_status='token_expired' if not already set
+-- 2. Returns { alerts_created, active_alerts } — current unacknowledged
+--    alerts list.
+--
+-- Original "cron-only" assumption (p55) was wrong. The right
+-- classification per Q-D matrix: "cron + admin reader" pattern.
+-- Treatment: REVOKE-from-anon (already done by batch 1) + restore
+-- authenticated grant for admin/comms.astro flow.
+--
+-- PM picked Option 1a (handoff p59): restore authenticated grant,
+-- preserve page-level admin tier gate as the primary defense.
+-- Page admin/comms.astro is admin-tier; non-admin authenticated
+-- members calling directly via PostgREST trigger detection logic
+-- (already idempotent — no spam) and read alerts (channel names
+-- + expiry status, no PII). Acceptable risk per batch 3a.3b/3a.4
+-- pattern (REVOKE-from-anon, page-level gate is primary).
+--
+-- This migration restores the missing GRANT. Audit doc batch 1
+-- closure section + batch 3a.5 closure regression note are
+-- amended in this commit to record the reclassification and
+-- resolution.
+--
+-- Risk: zero. Restores admin page functionality. Function side
+-- effects are idempotent. Cron behavior unchanged (postgres role
+-- already has access).
+
+GRANT EXECUTE ON FUNCTION public.comms_check_token_expiry() TO authenticated;
+
+NOTIFY pgrst, 'reload schema';
