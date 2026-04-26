@@ -660,17 +660,48 @@ No other test changes needed; presence-checks in
 contain the original `create or replace function public.admin_X(`
 strings (DROP+CREATE in NEW migrations doesn't break those checks).
 
-**Phase B'' running tally post-p60 (Pacote D + Pacote E)**:
+**Pacote F (p60) — migration `20260426174923`** — 3 admin member-ops fns
+(all → `manage_member`, V3 was tighter superadmin-only):
+- `admin_change_tribe_leader`
+- `admin_deactivate_member`
+- `admin_move_member_tribe`
+
+Discovered post-Pacote-E by querying for `admin_*` SECDEF fns still
+using `get_my_member_record()` V3 gate without service_role bypass and
+without `can_by_member`. 7 fns surfaced; 3 here are clean conversions
+(V3 superadmin-only ≡ V4 manage_member set = 2). Privilege expansion
+check: would_gain=[]/would_lose=[].
+
+**4 deferred from same surface (PM ratify needed)**:
+- `admin_archive_project_board(uuid, text, boolean)` — V3 includes
+  4th clause `tribe_leader AND tribe_id = v_board_tribe_id`. Converting
+  to `manage_platform` would REMOVE tribe_leader's ability to archive
+  their own board. Needs V4 `scope='tribe'` permission OR per-tribe
+  delegation strategy decision.
+- `admin_restore_project_board(uuid, text)` — Same V3 pattern as
+  archive. Same defer reason.
+- `admin_list_tribes(boolean)` — V3 includes `tribe_leader` in addition
+  to superadmin/manager/co_gp. Tribe leaders read all tribes for cross-
+  tribe coordination. Converting to `manage_platform` would CONTRACT
+  privileges (contraction = drift correction or regression?). Needs PM
+  read-tier classification — possibly new `view_tribes_admin` action OR
+  promote to public read since "tribe basic info" is non-sensitive.
+- `admin_list_tribe_lineage(boolean)` — Same V3 pattern as
+  admin_list_tribes. Same defer reason.
+
+**Phase B'' running tally post-p60 (Pacote D + Pacote E + Pacote F)**:
 - Phase B' (p52-p54): 13 V3→V4 conversions (clean case, no new action)
 - Phase B'' p59 ADRs 0025/0026/0027: 8 fns (3 new V4 actions)
 - Phase B'' p59 Pacote D easy-convert: 5 fns (no new action)
-- **Phase B'' p60 Pacote E easy-convert: 12 fns (no new action)**
-- **Cumulative: 38 of 246 fns (~15.4%)** — up from p59 21/246 (9%)
-- Easy-convert backlog: 0 known remaining clean cases
-  (`admin_*` simple-V3 with identical V4 grant set). Future Phase B''
-  work requires either (a) per-fn ADR per new V4 action, or (b)
-  service-role-bypass adapter pattern for the 29 `admin_*` fns that
-  use `service_role OR superadmin OR ...` style.
+- Phase B'' p60 Pacote E easy-convert: 12 fns (no new action)
+- **Phase B'' p60 Pacote F easy-convert: 3 fns (no new action)**
+- **Cumulative: 41 of 246 fns (~16.7%)** — up from p59 21/246 (9%)
+- Easy-convert backlog (true zero-expansion): 0 known clean cases —
+  exhaustive query verified post-Pacote-F. The 4 deferred above are
+  scope/privilege-shape decisions for PM, not "easy converts".
+- Future Phase B'' work requires either (a) per-fn ADR per new V4
+  action OR scope, or (b) service-role-bypass adapter pattern for the
+  29 `admin_*` fns that use `service_role OR superadmin OR ...` style.
 
 ## Phase Q-D — SECDEF security hardening sweep (started p55, 2026-04-25)
 
