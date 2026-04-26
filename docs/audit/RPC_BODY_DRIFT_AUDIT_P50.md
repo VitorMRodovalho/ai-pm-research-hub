@@ -739,17 +739,83 @@ treatment.
 `log_pii_access` to support application-id targets, then retrofit
 gates with audit calls. Tracked as Phase Q-D enhancement backlog item.
 
-### Phase Q-D running tally (post batches 1+2+3a.1)
+### Batch 3a.3a closure — initiative/board readers, dead+internal REVOKE-only (p58, `20260426120532`)
 
-- 24 functions hardened (21 batch 1 REVOKE + 3 batch 3a.1).
+Migration: `track_q_d_initiative_board_readers_batch3a3a.sql`. Atomic
+REVOKE-only treatment for 4 fns identified as dead (zero callers anywhere
+in `src/`, `supabase/functions/`, `tests/`) or internal-only (called only
+from another SECDEF fn via SECDEF chain).
+
+**Discovery surfaced reshape**: audit doc estimated "13 fns" for the
+initiative/board readers bucket; per-fn pg_proc enumeration found 23
+candidates (matching `get_board_*`, `get_initiative_*`, `list_board_*`,
+`list_initiative_*`, `list_meeting_artifacts`, `list_tribe_deliverables`,
+`search_*board_items`). Per-fn body review + callsite grep classified:
+
+- **3a.3a (this commit)**: 4 fns — 3 dead + 1 internal-only.
+- **3a.3b (next batch, awaiting PM ratify)**: 18 fns are member-tier
+  readers (initiative pages, board components, profile, presentations).
+  Treatment proposal: REVOKE FROM PUBLIC + anon, KEEP authenticated.
+  Per-page tier verification needed before applying (see "Open Phase
+  Q-D batches" section).
+- **Excluded from Q-D entirely**: `get_initiative_member_contacts`
+  is **already V4-compliant** — body has
+  `can(person_id, 'view_pii', 'initiative', initiative_id)` gate +
+  `log_pii_access_batch` call. Discovered during 3a.3 triage by
+  body review (the candidate-detection regex looked for
+  `can_by_member` / `public.can(` / `is_superadmin` patterns;
+  `can(...)` without `public.` prefix wasn't initially flagged as
+  V4-gated). Documented as reference compliant pattern: when a
+  reader RPC uses `can(person_id, action, scope, resource_id)` it
+  IS V4 — we don't need to migrate it.
+
+**Migrated** (4 of 4):
+
+(a) Dead-code REVOKE-only (3 fns):
+- `get_board_timeline(uuid)` — board timeline reader. Body uses
+  `members.tribe_id` (legacy column path; ADR-0015 Phase 5 backlog).
+  Currently live in pg_proc but unreachable from any caller (no
+  `.rpc('get_board_timeline'...)` anywhere; only typed in
+  `src/lib/database.gen.ts` which is auto-generated from `pg_proc`).
+- `get_initiative_board_summary(uuid)` — count-by-status summary for
+  initiative's board. Zero callers.
+- `list_initiative_meeting_artifacts(integer, uuid)` — meeting
+  artifacts filtered by initiative. Zero callers (initiative pages
+  use `list_meeting_artifacts` which is initiative-id-aware via
+  `resolve_tribe_id`; this fn was redundant from day 1).
+
+(b) Internal helper REVOKE-only (1 fn):
+- `search_board_items(text, integer)` — board search. Only callsite
+  is `public.search_initiative_board_items` (also SECDEF, postgres-
+  owned). REVOKE from PUBLIC/anon/authenticated; SECDEF chain
+  preserves access via postgres role
+  (`search_initiative_board_items` runs as definer when called by
+  authenticated user → can call REVOKE'd fn through superuser
+  implicit privileges).
+
+Verified post-REVOKE: each fn now shows only `postgres + service_role`
+ACL.
+
+**Risk: zero**. No frontend or EF callsite is broken. Static analysis
+contract test (`tests/contracts/initiative-primitive.test.mjs`)
+verifies the original GRANT in v4_phase2 migration file — REVOKE in
+this NEW file is independent and doesn't affect the static migration
+content check.
+
+### Phase Q-D running tally (post batches 1+2+3a.1+3a.3a)
+
+- **28 functions hardened** (21 batch 1 REVOKE + 3 batch 3a.1 + 4 batch 3a.3a).
 - 13 functions verified public-safe (batch 2 docs-only).
+- 1 function discovered already-V4-compliant (excluded:
+  `get_initiative_member_contacts`).
 - 3 functions deferred for PM tier clarification (batch 3a.1).
-- ~72 remaining orphan-no-gate fns + 27 internal helpers + 3 deferred
-  = ~102 still in backlog. Net: 37/109 triaged.
+- ~68 remaining orphan-no-gate fns + 27 internal helpers + 3 deferred
+  = ~98 still in backlog. **Net: 41/109 triaged**.
 - Pattern proven: REVOKE-only migration is non-disruptive when
   callsites are verified; REVOKE-from-public + internal gate works
   for admin frontend callers; docs-only verification works for
-  public-safe fns.
+  public-safe fns; per-fn body review surfaces false positives
+  (already-V4-gated readers).
 
 ### Open Phase Q-D batches (TBD)
 
@@ -773,10 +839,40 @@ Reader fns to triage for PII/sensitivity:
   `increment_blog_view`, `list_active_boards`, `get_homepage_stats`,
   `get_changelog`, `get_current_release`, `list_taxonomy_tags`,
   `get_help_journeys`. See "Phase Q-D batch 2 closure" section below.
-- Initiative/board readers: `get_initiative_*` (3 fns),
-  `get_board_*` (3 fns), `list_initiative_*` (3 fns),
-  `list_board_items`, `list_meeting_artifacts`,
-  `list_tribe_deliverables`.
+- ✅ **Initiative/board readers — partial closure (p58)**:
+  - **3a.3a closed (4 fns REVOKE-only)**: see "Batch 3a.3a closure"
+    section below — `get_board_timeline`,
+    `get_initiative_board_summary`, `list_initiative_meeting_artifacts`,
+    `search_board_items`.
+  - **3a.3b proposal (18 fns, AWAITING PM RATIFY)**: member-tier
+    readers used by initiative pages, board components, profile,
+    presentations. Treatment proposal: REVOKE FROM PUBLIC + anon,
+    KEEP authenticated.
+    - **Get-readers (13)**: `get_board(uuid)`,
+      `get_board_activities(uuid, integer)` overload 1,
+      `get_board_activities(uuid, uuid, text, text)` overload 2,
+      `get_board_by_domain(text, integer, uuid)`,
+      `get_board_tags(uuid)`, `get_initiative_attendance_grid(uuid, text)`,
+      `get_initiative_detail(uuid)`,
+      `get_initiative_events_timeline(uuid, integer, integer)`,
+      `get_initiative_gamification(uuid)`,
+      `get_initiative_members(uuid)`,
+      `get_initiative_stats(uuid)`,
+      `list_initiative_boards(uuid)`,
+      `list_initiative_deliverables(uuid, text)`.
+    - **List/search-readers (5)**: `list_board_items(uuid, text)`,
+      `list_initiatives(text, text)`,
+      `list_meeting_artifacts(integer, integer)`,
+      `list_project_boards(integer)`,
+      `list_tribe_deliverables(integer, text)`,
+      `search_initiative_board_items(text, uuid)`.
+    - **Per-page tier verification still needed** for some pages
+      before bulk REVOKE (e.g., `presentations.astro` should
+      verify member-tier, not public-tier display flow).
+  - **Excluded (already V4-compliant)**:
+    `get_initiative_member_contacts(uuid)` — body has
+    `can(person_id, 'view_pii', 'initiative', initiative_id)`
+    gate + `log_pii_access_batch` call. Reference compliant pattern.
 - Knowledge / wiki readers: `knowledge_*` (5 fns), `wiki_health_report`.
 - Comms readers: `comms_*` (5 fns), `webinars_pending_comms`.
 - Curation / governance readers: `get_chain_workflow_detail`,
