@@ -541,3 +541,127 @@ Functions whose legacy gate doesn't map cleanly to existing V4 actions:
 - Functions with `tribe_leader` in legacy gate — no V4 action covers
   tribe_leader. Wait for ADR-0015 Phase 5 (tribe_id deprecation) which
   will likely introduce a `manage_tribe` action.
+
+## Phase Q-D — SECDEF security hardening sweep (started p55, 2026-04-25)
+
+Phase B' fixes V3 → V4 conversions. Phase Q-D is the orthogonal track:
+SECDEF functions with NO auth gate at all + PUBLIC EXECUTE granted by
+default. This is the same pattern that surfaced drift signals #7 #8 in
+p54 (admin_inactivate_member, import_vep_applications) — except that
+those two were addressed by ADDING a V4 gate. Phase Q-D uses the
+REVOKE pattern instead, which is appropriate for functions that should
+never be reachable from PostgREST in the first place.
+
+### Discovery summary (p55)
+
+Of 566 SECDEF functions in `public` schema (extension-owned excluded):
+- 106 (18.7%) have V4 gate (`can_by_member` or `can()`)
+- 194 (34.3%) have V3-only gate (Phase B' backlog)
+- 88 (15.5%) reference `auth.uid()` w/o `can_*()` (custom auth — needs per-fn audit)
+- 21 (3.7%) are triggers (legitimately no auth)
+- **157 (27.7%) suspicious "no gate at all"**
+
+Of those 157, classified by intended caller:
+- 27 internal helpers (called by other gated fns; lower urgency)
+- 21 triggers (legitimately no gate)
+- 109 orphan-no-gate external-callable (highest priority)
+
+### Batch 1 closure (p55, `20260426001848`)
+
+Migration: `track_q_d_secdef_public_revoke_batch1.sql`. Pattern: REVOKE
+EXECUTE FROM PUBLIC, anon, authenticated. Postgres + service_role
+preserved (cron + EF still work).
+
+21 functions hardened by category:
+
+(a) PII crypto (CRITICAL):
+- `encrypt_sensitive(text)` — pgp_sym_encrypt wrapper
+- `decrypt_sensitive(bytea)` — pgp_sym_decrypt wrapper. Public exposure
+  meant any authenticated caller could decrypt arbitrary PII bytea.
+
+(b) EF webhook receiver:
+- `process_email_webhook(text, text, jsonb)` — Resend webhook handler.
+
+(c) Cron-only (9 fns):
+- `auto_archive_done_cards`, `auto_detect_onboarding_completions`,
+  `comms_check_token_expiry`, `detect_mcp_anomalies`,
+  `generate_weekly_card_digest_cron`, `send_attendance_reminders_cron`,
+  `v4_expire_engagements`, `v4_expire_engagements_shadow`,
+  `v4_notify_expiring_engagements`.
+
+(d) Dead-code admin writers (8 fns):
+- `compute_application_scores`, `create_initiative`, `update_initiative`,
+  `seed_pre_onboarding_steps`, `enrich_applications_from_csv`,
+  `import_historical_evaluations`, `import_historical_interviews`,
+  `import_leader_evaluations`. Last three are the cycle3-2026 importers
+  that drift signal #4 covered (PM-blocked on archive vs parameterize;
+  REVOKE non-controversial since no app callers).
+
+(e) Admin metadata helper:
+- `_audit_list_public_functions()` — created in p51 Q-C as contract-test
+  helper; should be service_role-only.
+
+Verified post-REVOKE: each fn now shows only `postgres + service_role`
+ACL.
+
+### Phase Q-D running tally (post batch 1)
+
+- 21 functions hardened.
+- ~80 remaining orphan-no-gate fns (mostly readers) needing per-fn
+  triage for PII exposure.
+- 27 internal helpers: lower urgency since callers are gated, but
+  defense-in-depth REVOKE warranted in future batch.
+- Pattern proven: REVOKE-only migration is non-disruptive when
+  callsites are verified.
+
+### Open Phase Q-D batches (TBD)
+
+Reader fns to triage for PII/sensitivity:
+- Selection readers (admin-shape): `get_application_interviews`,
+  `get_application_onboarding_pct`, `get_attendance_panel`,
+  `get_diversity_dashboard` (already V3-gated → Phase B''),
+  `get_meeting_notes_compliance`, `get_executive_kpis`, etc.
+- Public-by-design readers (need to verify LGPD compliance):
+  `get_public_*` (5 fns), `verify_certificate`, `increment_blog_view`,
+  `list_active_boards`, `get_homepage_stats`, `get_changelog`,
+  `get_current_release`, `list_taxonomy_tags`.
+- Initiative/board readers: `get_initiative_*` (3 fns),
+  `get_board_*` (3 fns), `list_initiative_*` (3 fns),
+  `list_board_items`, `list_meeting_artifacts`,
+  `list_tribe_deliverables`.
+- Knowledge / wiki readers: `knowledge_*` (5 fns), `wiki_health_report`.
+- Comms readers: `comms_*` (5 fns), `webinars_pending_comms`.
+- Curation / governance readers: `get_chain_workflow_detail`,
+  `get_curation_cross_board`, `list_curation_board`,
+  `list_pending_curation`, `get_cr_approval_status`,
+  `get_governance_preview`, `get_decision_log`.
+- Sustainability / KPI readers: `get_sustainability_dashboard`,
+  `get_sustainability_projections`, `get_cycle_evolution`,
+  `get_cycle_report`, `get_portfolio_dashboard`, `get_pilot_metrics`,
+  `get_pilots_summary`.
+- Legacy/utility readers: `get_changelog`, `get_gp_whatsapp`,
+  `get_help_journeys`, `list_admin_links`, `list_radar_global`,
+  `tribe_impact_ranking`, `count_tribe_slots`, `broadcast_history`,
+  `get_recent_events`, `get_event_audience`, `get_event_tags*`,
+  `get_events_with_attendance`, `get_global_research_pipeline`,
+  `get_card_timeline`, `get_publication_*` (4 fns), `get_section_change_history`,
+  `get_webinar_lifecycle`, `get_wiki_page`, `get_revenue_entries`,
+  `get_cost_entries`, `get_communication_template`, `get_item_*` (2 fns),
+  `get_manual_*` (2 fns), `get_member_cycle_xp`, `get_mirror_target_boards`,
+  `get_near_events`, `get_platform_setting`, `get_previous_locked_version`,
+  `search_*` (3 fns), `list_cycles`, `get_tags`, `list_initiative_meeting_artifacts`,
+  `list_initiative_deliverables`, `list_webinars_v2`.
+- Misc utility: `verify_certificate`, `why_denied`, `log_mcp_usage`.
+
+Action plan: per-fn triage checking (1) caller surface (frontend/EF/MCP),
+(2) data sensitivity (PII / member identity / cycle data), (3) public
+intent. Each batch ~10-20 fns w/ verification.
+
+### Phase Q-D vs Phase B' — when to use which
+
+| Pattern | Symptom | Treatment | Track |
+|---|---|---|---|
+| V3 gate present, V4 missing | `is_superadmin OR operational_role IN (...)` | Replace gate with `can_by_member()` | Phase B' |
+| No gate at all + intended for human admin | SECDEF + zero auth check, called from admin UI | Add `can_by_member()` gate | Drift signal pattern (#7 #8) |
+| No gate at all + intended for cron/EF/dead | SECDEF + zero auth check, no human caller | REVOKE FROM anon, authenticated | Phase Q-D |
+| Custom path-aware gate (interviewer-id, committee-membership, chain helper) | RPC-specific auth that doesn't map to V4 actions | Leave V3 + skip filter, escalate to Phase B'' if expanding | Phase B'' |
