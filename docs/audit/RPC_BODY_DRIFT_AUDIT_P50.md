@@ -1407,3 +1407,107 @@ closed.** Residual work:
 | No gate at all + intended for human admin | SECDEF + zero auth check, called from admin UI | Add `can_by_member()` gate | Drift signal pattern (#7 #8) |
 | No gate at all + intended for cron/EF/dead | SECDEF + zero auth check, no human caller | REVOKE FROM anon, authenticated | Phase Q-D |
 | Custom path-aware gate (interviewer-id, committee-membership, chain helper) | RPC-specific auth that doesn't map to V4 actions | Leave V3 + skip filter, escalate to Phase B'' if expanding | Phase B'' |
+| Anon SELECT grant on table where RLS denies anon reads | pg_graphql exposes schema + unused attack surface | REVOKE SELECT FROM anon | Track R |
+| Anon SELECT grant + RLS policy permits anon reads | Verify policy is correctly scoped (no PII leak) | Either tighten policy OR document intent | Track R Phase R2 |
+
+---
+
+## Track R — pg_graphql anon table exposure
+
+### Trigger (p59)
+
+Supabase advisor `pg_graphql_anon_table_exposed` lint surfaced 165
+WARN entries in p59 (advisor count went from 1 ERROR + 5 WARN p58
+baseline to 1 ERROR + 171 WARN p59). The lint warns that pg_graphql
+extension is installed and the `anon` role has SELECT on a specific
+table. Schema metadata (column names, types, comments) is exposed
+via the GraphQL endpoint regardless of RLS row-level access.
+
+### Methodology
+
+1. **Discovery**: `pg_class.relacl` parsed for explicit `anon=` SELECT
+   grants across `public.*` and `z_archive.*`. Cross-referenced with
+   `pg_class.relrowsecurity` and `pg_policy.polroles` to determine
+   whether the table also has an RLS policy permitting anon reads.
+
+2. **Caller inventory**: tight `.from('<table>')` regex grep across
+   `src/` to identify anon-tier callers. Tables with non-zero anon-
+   tier callers must retain SELECT grant or homepage breaks.
+
+3. **Categorization**:
+   - `has_anon_select_policy=false` AND 0 anon-tier .from() callers
+     → REVOKE-safe (defense-in-depth, no behavior change).
+   - `has_anon_select_policy=true` (RLS permits anon reads) → Phase
+     R2 per-policy review needed.
+   - z_archive.* → all REVOKE-safe (archived, 0 callers).
+
+### Batch 1 closure (p59, `20260426152751`)
+
+Migration: `track_r_pg_graphql_anon_revoke_batch1.sql`. 102 objects
+REVOKE'd:
+- **25 z_archive.* tables**: archived legacy, 0 callers.
+- **70 public.* tables**: RLS already blocks anon reads + 0 anon-tier
+  .from() callers. Categories include admin/audit, LGPD/PII, V4
+  authority, notifications, initiatives, board, comms, curation,
+  knowledge, sustainability, selection, partner, publication,
+  member-tier, misc.
+- **7 views**: 0 anon-tier .from() callers.
+
+**PRESERVED** (anon-tier .from() readers — REVOKE would break homepage):
+- `public.hub_resources` (ResourcesSection.astro, library.astro)
+- `public.site_config` (ChaptersSection, WeeklyScheduleSection,
+  ReportPage)
+
+**PRESERVED** (intentional public per ADR-0024 / ADR-0010):
+- `public.public_members` (advisor ERROR — accepted risk per ADR-0024)
+- `public.members_public_safe` (intentional public view)
+
+**PRESERVED** (RLS policies permit anon reads — Phase R2 backlog,
+70 tables): tables that already have selective anon RLS policies.
+Each requires per-table policy review to confirm intent (public-by-
+design vs accidental over-grant). Examples include `members`,
+`attendance`, `gamification_points`, `board_*`, `blog_*`, `events`,
+`webinars`, `chapters`, `cycles`, `pilots`, `releases`, etc.
+
+**Verification**:
+- `pg_class.relacl` post-state confirmed `anon=awdDxtm` (no SELECT)
+  for all 102 objects.
+- authenticated + service_role grants retained throughout (admin
+  pages + EFs unaffected).
+
+**Advisor reduction**:
+- Before: 1 ERROR + 171 WARN
+- After:  1 ERROR + **75 WARN**  (-96 / -56% reduction)
+- pg_graphql_anon_table_exposed: 165 → 70 (-95 / -58%)
+
+### Phase R2 — backlog (next session)
+
+70 tables retain anon SELECT grant via RLS policy. Per-table review
+needed to:
+1. Verify the RLS policy is correctly scoped (no PII leak).
+2. For tables intended public-by-design: document intent inline (e.g.,
+   `COMMENT ON TABLE public.cycles IS 'Public reference data — anon
+   SELECT intentional via cycles_public_select policy'`).
+3. For tables with overly permissive policies: tighten the policy
+   (e.g., column-level filter, row-level filter on `is_public=true`).
+4. Cross-reference with anon-tier .from() callers in src/components/
+   sections/ + public Astro pages to confirm necessity.
+
+Examples needing Phase R2 review:
+- `members` (anon RLS likely scopes to public-safe columns; verify)
+- `attendance`, `gamification_points` (member-tier — should not be
+  anon-readable; tighten or REVOKE)
+- `board_items`, `board_lifecycle_events` (member-tier; anon policy
+  surprising — investigate)
+- `blog_posts`, `blog_likes`, `cycles`, `chapters` (likely public-
+  by-design — document)
+- 21 z_archive.* tables with anon policies (likely no longer needed —
+  REVOKE-safe in Phase R2)
+
+### Track R closure path
+
+After Phase R2 closes the remaining 70 (or documents why they keep
+grant), the `pg_graphql_anon_table_exposed` advisor count should
+drop to ≤ N (where N = intentional public tables documented per
+ADR-0024 pattern). Estimated final count: ~10-15 tables (homepage
+data sources + public reference data + ADR-0024 view).
