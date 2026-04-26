@@ -802,20 +802,95 @@ verifies the original GRANT in v4_phase2 migration file — REVOKE in
 this NEW file is independent and doesn't affect the static migration
 content check.
 
-### Phase Q-D running tally (post batches 1+2+3a.1+3a.3a)
+### Batch 3a.3b closure — initiative/board member-tier readers REVOKE-from-anon (p58, `20260426123542`)
 
-- **28 functions hardened** (21 batch 1 REVOKE + 3 batch 3a.1 + 4 batch 3a.3a).
-- 13 functions verified public-safe (batch 2 docs-only).
+Migration: `track_q_d_initiative_board_readers_batch3a3b.sql`. Atomic
+treatment for 18 member-tier readers via REVOKE EXECUTE FROM PUBLIC, anon
+(KEEP authenticated, postgres, service_role).
+
+**Per-page tier verification** (this commit, all caller files audited):
+- `initiative/[id].astro`, `tribe/[id].astro`, `profile.astro` —
+  `currentMember = navGetMember()` pattern, member-tier.
+- `initiatives.astro` — `if (!sb || !member) return;`, member-tier.
+- `admin/portfolio.astro` — `if (!member) return false;`, admin-tier
+  (still member-required).
+- `PresentationLayer.astro` — `if (!member) return;`, member-tier.
+- `TribeKanbanIsland.tsx`, `PublicationsBoardIsland.tsx` —
+  `if (!member) return false;`, member-tier.
+- `TribeAttendanceTab.tsx`, `TribeGamificationTab.tsx` — use
+  `navGetMember()` for context, member-tier.
+- React island components (`BoardActivitiesView`, `CardDetail`,
+  `InitiativeBoardWrapper`) only render when parent page has loaded
+  a member; effectively member-tier.
+- `search_initiative_board_items` only callsite is MCP tool (runs as
+  authenticated user via OAuth2.1 → JWT → PostgREST authenticated role).
+
+**Migrated** (18 fns):
+
+(a) Get-readers (11 entries, 12 fns counting both `get_board_activities`
+overloads):
+- `get_board(uuid)`
+- `get_board_activities(uuid, integer)` overload 1
+- `get_board_activities(uuid, uuid, text, text)` overload 2
+- `get_board_by_domain(text, integer, uuid)`
+- `get_board_tags(uuid)`
+- `get_initiative_attendance_grid(uuid, text)`
+- `get_initiative_detail(uuid)`
+- `get_initiative_events_timeline(uuid, integer, integer)`
+- `get_initiative_gamification(uuid)`
+- `get_initiative_members(uuid)`
+- `get_initiative_stats(uuid)`
+
+(b) List/search-readers (6 fns):
+- `list_board_items(uuid, text)`
+- `list_initiative_boards(uuid)`
+- `list_initiative_deliverables(uuid, text)`
+- `list_initiatives(text, text)`
+- `list_project_boards(integer)`
+- `list_tribe_deliverables(integer, text)`
+- `search_initiative_board_items(text, uuid)`
+
+(c) Excluded — verified public-by-design (kept unchanged):
+- `list_meeting_artifacts(integer, integer)` — published meeting
+  recordings/artifacts. Caller `presentations.astro` only checks
+  `!sb` (NOT `!member`), matching the public showcase pattern of
+  `/presentations` URL. Returns `ma.*` from `meeting_artifacts`
+  table filtered by `is_published=true`. Columns audited (this
+  commit): id, event_id, title, meeting_date, recording_url,
+  agenda_items, page_data_snapshot, cycle_code, created_by,
+  is_published, deliberations, organization_id, initiative_id.
+  No PII columns (no email/phone/auth_id leaks). Documented as
+  verified public-by-design (Q-D batch 2 verified-public pattern
+  extended).
+
+Verified post-REVOKE: each of 18 fns now shows ACL =
+`postgres + authenticated + service_role`. Anon explicitly removed.
+`list_meeting_artifacts` ACL preserved (`anon + authenticated +
+service_role + postgres + PUBLIC`).
+
+**Risk: low**. Frontend pages do client-side member checks BEFORE
+calling these RPCs, so legitimate auth flow unaffected. Direct
+anon-key PostgREST callers will hit permission denied — this is the
+security improvement (closes the gap that Q-D was chartered to address).
+
+### Phase Q-D running tally (post batches 1+2+3a.1+3a.3a+3a.3b)
+
+- **46 functions hardened** (21 batch 1 REVOKE + 3 batch 3a.1 +
+  4 batch 3a.3a + 18 batch 3a.3b).
+- **14 functions verified public-safe** (13 batch 2 + 1 batch 3a.3b
+  excluded — `list_meeting_artifacts`).
 - 1 function discovered already-V4-compliant (excluded:
   `get_initiative_member_contacts`).
 - 3 functions deferred for PM tier clarification (batch 3a.1).
-- ~68 remaining orphan-no-gate fns + 27 internal helpers + 3 deferred
-  = ~98 still in backlog. **Net: 41/109 triaged**.
+- ~50 remaining orphan-no-gate fns + 27 internal helpers + 3 deferred
+  = ~80 still in backlog. **Net: 64/109 triaged (59%)**.
 - Pattern proven: REVOKE-only migration is non-disruptive when
   callsites are verified; REVOKE-from-public + internal gate works
-  for admin frontend callers; docs-only verification works for
-  public-safe fns; per-fn body review surfaces false positives
-  (already-V4-gated readers).
+  for admin frontend callers; REVOKE-from-anon (keep authenticated)
+  works for member-tier readers with verified bail-on-no-member
+  client guards; docs-only verification works for public-safe fns;
+  per-fn body review surfaces false positives (already-V4-gated
+  readers).
 
 ### Open Phase Q-D batches (TBD)
 
@@ -839,15 +914,14 @@ Reader fns to triage for PII/sensitivity:
   `increment_blog_view`, `list_active_boards`, `get_homepage_stats`,
   `get_changelog`, `get_current_release`, `list_taxonomy_tags`,
   `get_help_journeys`. See "Phase Q-D batch 2 closure" section below.
-- ✅ **Initiative/board readers — partial closure (p58)**:
+- ✅ **Initiative/board readers — closure complete (p58)**:
   - **3a.3a closed (4 fns REVOKE-only)**: see "Batch 3a.3a closure"
     section below — `get_board_timeline`,
     `get_initiative_board_summary`, `list_initiative_meeting_artifacts`,
     `search_board_items`.
-  - **3a.3b proposal (18 fns, AWAITING PM RATIFY)**: member-tier
-    readers used by initiative pages, board components, profile,
-    presentations. Treatment proposal: REVOKE FROM PUBLIC + anon,
-    KEEP authenticated.
+  - **3a.3b closed (18 fns REVOKE-from-anon)**: see "Batch 3a.3b
+    closure" section below. Member-tier readers; per-page tier
+    verification confirmed all callers bail on `!member` client-side.
     - **Get-readers (13)**: `get_board(uuid)`,
       `get_board_activities(uuid, integer)` overload 1,
       `get_board_activities(uuid, uuid, text, text)` overload 2,
