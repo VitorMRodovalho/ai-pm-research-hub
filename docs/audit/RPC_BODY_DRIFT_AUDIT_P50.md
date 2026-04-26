@@ -873,24 +873,72 @@ calling these RPCs, so legitimate auth flow unaffected. Direct
 anon-key PostgREST callers will hit permission denied — this is the
 security improvement (closes the gap that Q-D was chartered to address).
 
-### Phase Q-D running tally (post batches 1+2+3a.1+3a.3a+3a.3b)
+### Batch 3a.4 closure — knowledge/wiki readers (p58, `20260426124716`)
 
-- **46 functions hardened** (21 batch 1 REVOKE + 3 batch 3a.1 +
-  4 batch 3a.3a + 18 batch 3a.3b).
+Migration: `track_q_d_knowledge_wiki_readers_batch3a4.sql`. 9 SECDEF
+readers in knowledge/wiki bucket triaged via per-fn callsite analysis:
+
+**Live with authenticated callers — REVOKE-from-anon (4 fns)**:
+- `get_wiki_page(text)` — wiki page reader. Caller: MCP tool
+  `get_wiki_page` (nucleo-mcp/index.ts:1444). MCP runs authenticated
+  via OAuth2.1 → JWT. Returns wiki_pages.* including content (which
+  per `wiki_health_report` PII scanning — confirms members may paste
+  email/phone/CPF into wiki content). Closing anon access prevents
+  direct PostgREST exfiltration.
+- `search_knowledge(text)` — Global Search RPC. Caller:
+  `src/pages/api/search.ts:46` (W90 command palette). API route
+  requires `Authorization Bearer` + valid session (returns 401 if
+  absent). REVOKE FROM anon enforces the API tier at DB layer.
+- `search_wiki_pages(text, integer, text, text)` — wiki FTS search.
+  Caller: MCP tool `search_wiki` (nucleo-mcp/index.ts:1433).
+- `wiki_health_report()` — health check report (stale pages, PII
+  warnings, missing metadata). Caller: MCP tool `wiki_health_report`
+  (nucleo-mcp/index.ts:1471).
+
+**Dead — REVOKE-only full lock-down (5 fns)**:
+- `knowledge_assets_latest(text, integer)` — 0 callers.
+- `knowledge_search(vector, integer, text)` — vector embedding
+  semantic search. 0 callers (likely future MCP integration —
+  re-grant when wired).
+- `knowledge_insights_backlog_candidates(text, integer)` — 0 callers.
+  Already anon-clean pre-migration; tightened authenticated also for
+  Q-D dead-matrix consistency.
+- `knowledge_insights_overview(text, integer)` — 0 callers. Same
+  pre-state as backlog_candidates.
+- `knowledge_search_text(text, text, integer)` — 0 callers. Same
+  pre-state.
+
+Verified post-REVOKE (this commit):
+- 4 REVOKE-from-anon fns: ACL = `postgres + authenticated +
+  service_role`.
+- 5 dead fns: ACL = `postgres + service_role` (full lock-down).
+
+**Risk: zero**. No frontend, EF, scripts, or test callsite broken.
+Test references to `knowledge_*` strings are unrelated (gamification
+`knowledge_ai_pm` badge category, `knowledge_insights_ingestion_log`
+table in log-retention test). MCP authenticated callers retain access
+for the 4 live fns. Dead fns become un-callable externally; postgres
++ service_role retained for cron/EF future use if any.
+
+### Phase Q-D running tally (post batches 1+2+3a.1+3a.3a+3a.3b+3a.4)
+
+- **55 functions hardened** (21 batch 1 + 3 batch 3a.1 + 4 batch 3a.3a
+  + 18 batch 3a.3b + 9 batch 3a.4).
 - **14 functions verified public-safe** (13 batch 2 + 1 batch 3a.3b
   excluded — `list_meeting_artifacts`).
 - 1 function discovered already-V4-compliant (excluded:
   `get_initiative_member_contacts`).
 - 3 functions deferred for PM tier clarification (batch 3a.1).
-- ~50 remaining orphan-no-gate fns + 27 internal helpers + 3 deferred
-  = ~80 still in backlog. **Net: 64/109 triaged (59%)**.
+- ~41 remaining orphan-no-gate fns + 27 internal helpers + 3 deferred
+  = ~71 still in backlog. **Net: 73/109 triaged (67%)**.
 - Pattern proven: REVOKE-only migration is non-disruptive when
   callsites are verified; REVOKE-from-public + internal gate works
   for admin frontend callers; REVOKE-from-anon (keep authenticated)
   works for member-tier readers with verified bail-on-no-member
   client guards; docs-only verification works for public-safe fns;
   per-fn body review surfaces false positives (already-V4-gated
-  readers).
+  readers); dead-matrix uniformly applies full lock-down regardless
+  of pre-existing partial revocations.
 
 ### Open Phase Q-D batches (TBD)
 
@@ -947,7 +995,10 @@ Reader fns to triage for PII/sensitivity:
     `get_initiative_member_contacts(uuid)` — body has
     `can(person_id, 'view_pii', 'initiative', initiative_id)`
     gate + `log_pii_access_batch` call. Reference compliant pattern.
-- Knowledge / wiki readers: `knowledge_*` (5 fns), `wiki_health_report`.
+- ✅ **Knowledge / wiki readers — closure complete (p58 batch 3a.4)**:
+  9 fns triaged via per-fn callsite analysis (4 live REVOKE-from-anon
+  + 5 dead REVOKE-only full lock-down). See "Batch 3a.4 closure"
+  section below.
 - Comms readers: `comms_*` (5 fns), `webinars_pending_comms`.
 - Curation / governance readers: `get_chain_workflow_detail`,
   `get_curation_cross_board`, `list_curation_board`,
