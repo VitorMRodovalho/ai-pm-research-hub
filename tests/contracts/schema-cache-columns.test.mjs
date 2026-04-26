@@ -46,6 +46,8 @@ const STORAGE_ONLY_ALLOWLIST = new Map([
   ['members.notify_delivery_mode_pref', 'User-chosen email delivery mode (ADR-0022 W2); no derivation source'],
 ]);
 
+// ADR-0011 contract reuses this allowlist — keep it sorted for review.
+
 function parseAddColumns(sql) {
   // Matches: ALTER TABLE [public.]table ADD COLUMN [IF NOT EXISTS] column_name ...
   // Skips: ADD CONSTRAINT, ADD CHECK, ADD FOREIGN KEY, etc.
