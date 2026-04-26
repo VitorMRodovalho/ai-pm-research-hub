@@ -604,15 +604,46 @@ preserved (cron + EF still work).
 Verified post-REVOKE: each fn now shows only `postgres + service_role`
 ACL.
 
-### Phase Q-D running tally (post batch 1)
+### Batch 2 closure — public-by-design readers verification (p56, docs-only)
 
-- 21 functions hardened.
-- ~80 remaining orphan-no-gate fns (mostly readers) needing per-fn
-  triage for PII exposure.
+13 SECDEF readers verified as legitimately public. No REVOKE, no gate,
+no migration needed. Per-fn audit findings:
+
+| Function | Returns | PII verdict |
+|---|---|---|
+| `list_taxonomy_tags()` | active taxonomy_tags rows | Reference data — none |
+| `increment_blog_view(text)` | UPDATE only (no read-back) | None — idempotent counter |
+| `get_current_release()` | release version/title/date | Public — release info |
+| `get_changelog()` | full release history + multilingual items | Public — release notes |
+| `get_help_journeys()` | persona-keyed help nav (filtered by `is_visible_to_visitors`) | Public — onboarding nav |
+| `get_homepage_stats()` | aggregate counts (members, tribes, chapters, hours) | Aggregates only |
+| `get_public_platform_stats()` | aggregate counts incl. retention rate | Aggregates only |
+| `get_public_impact_data()` | aggregates + tribe leader names + chapter sponsors + recognitions + timeline | Intentional public exposure of leadership roles + impact metrics |
+| `list_active_boards()` | board id/name/scope + item counts | Board metadata only (no card content) |
+| `get_public_publications(...)` | published article metadata + authors | Authors are public-by-definition (publication credit) |
+| `get_public_leaderboard(int)` | rank + member name + chapter + tribe + XP + level | Intentional gamified ranking (per ADR-0024 accepted risk on `gamification_leaderboard` view; same pattern) |
+| `get_public_trail_ranking()` | name + photo + course completion stats | Intentional public trail ranking |
+| `verify_certificate(text)` | cert details + member name + signers (gated by `verification_code`) | Verification by security token = intentional PII linkage; standard cert verification flow |
+
+All 13 have `search_path` configured (`public, pg_temp` or `public`).
+ACLs preserved: anon + authenticated grant intentional.
+
+**Conclusion**: no batch 2 migration produced. Phase Q-D batch 2 is
+closed as docs-only verification. The 13 fns are formally documented
+as "verified public-safe" in this audit, providing a reference for
+future audits.
+
+### Phase Q-D running tally (post batches 1+2)
+
+- 21 functions hardened (batch 1 REVOKE).
+- 13 functions verified public-safe (batch 2 docs-only).
+- ~75 remaining orphan-no-gate fns (mostly admin-shape readers + a
+  few writers) needing per-fn triage.
 - 27 internal helpers: lower urgency since callers are gated, but
   defense-in-depth REVOKE warranted in future batch.
 - Pattern proven: REVOKE-only migration is non-disruptive when
-  callsites are verified.
+  callsites are verified; docs-only verification works for clearly
+  public-safe fns.
 
 ### Open Phase Q-D batches (TBD)
 
@@ -621,10 +652,21 @@ Reader fns to triage for PII/sensitivity:
   `get_application_onboarding_pct`, `get_attendance_panel`,
   `get_diversity_dashboard` (already V3-gated → Phase B''),
   `get_meeting_notes_compliance`, `get_executive_kpis`, etc.
-- Public-by-design readers (need to verify LGPD compliance):
-  `get_public_*` (5 fns), `verify_certificate`, `increment_blog_view`,
-  `list_active_boards`, `get_homepage_stats`, `get_changelog`,
-  `get_current_release`, `list_taxonomy_tags`.
+- ✅ **Public-by-design readers (verified p56, no migration needed)**:
+  13 fns audited via per-fn body review. All return either aggregate
+  counts, public publication metadata, gamified leaderboards (member
+  name + chapter + tribe + XP — intentional public exposure per
+  ADR-0024), public release notes, navigation help, taxonomy
+  reference data, or certificate verification (PII linkage by
+  verification_code is intentional — code is a security token printed
+  on the cert document). All have `search_path` set. ACLs preserved
+  (intentional anon + authenticated grant). Verified clean:
+  `get_public_impact_data`, `get_public_leaderboard`,
+  `get_public_platform_stats`, `get_public_publications`,
+  `get_public_trail_ranking`, `verify_certificate`,
+  `increment_blog_view`, `list_active_boards`, `get_homepage_stats`,
+  `get_changelog`, `get_current_release`, `list_taxonomy_tags`,
+  `get_help_journeys`. See "Phase Q-D batch 2 closure" section below.
 - Initiative/board readers: `get_initiative_*` (3 fns),
   `get_board_*` (3 fns), `list_initiative_*` (3 fns),
   `list_board_items`, `list_meeting_artifacts`,
