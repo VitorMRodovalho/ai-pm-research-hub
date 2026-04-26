@@ -1,9 +1,15 @@
 # ADR-0025: New V4 Action `manage_finance` — Phase B'' Conversion
 
-- Status: **Proposed** (PM ratify required)
+- Status: **Accepted** (2026-04-26 p59 — PM rubber-stamp ratify of all Q1-Q4)
 - Data: 2026-04-26 (p59)
 - Autor: PM (Vitor) + Claude (proposal autônomo)
 - Escopo: Phase B'' V3→V4 conversion track (1 of N) — closes 4 V3-gated functions
+- Ratify decisions:
+  - Q1 sponsors com manage_finance: **SIM**
+  - Q2 chapter_liaison scope: **NÃO agora** (adiar)
+  - Q3 view_finance separada: **NÃO** (YAGNI)
+  - Q4 timing: **p59** (executado 2026-04-26)
+- Implementation: migration `20260426165847_adr_0025_manage_finance_v4_conversion`
 
 ---
 
