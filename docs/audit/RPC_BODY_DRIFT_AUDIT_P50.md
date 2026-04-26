@@ -1009,21 +1009,74 @@ Verified post-REVOKE (this commit):
 preserved on the 9 live fns. Dead fns become un-callable
 externally; postgres + service_role retained.
 
-### Phase Q-D running tally (post batches 1+2+3a.1+3a.3a+3a.3b+3a.4+3a.5)
+### Batch 3a.6 closure — curation/governance readers (p58, `20260426132442`)
 
-- **66 functions hardened** (21 batch 1 + 3 batch 3a.1 + 4 batch 3a.3a
-  + 18 batch 3a.3b + 9 batch 3a.4 + 11 batch 3a.5).
+Migration: `track_q_d_curation_governance_readers_batch3a6.sql`. 22
+SECDEF readers/helpers in curation/governance bucket triaged via
+per-fn body + callsite analysis:
+
+**Live with authenticated callers — REVOKE-from-anon (9 fns)**:
+- `get_chain_workflow_detail(uuid)` — approval chain workflow detail.
+  Caller: ReviewChainIsland.tsx + admin/governance/documents.astro.
+- `get_cr_approval_status(uuid)` — CR approval status + sponsor list.
+  Caller: GovernanceApprovalTab.tsx.
+- `get_decision_log(text)` — wiki ADR catalog reader. Caller: MCP.
+- `get_document_detail(uuid)` — full governance document detail.
+  Caller: MCP. Hard auth check (RAISE EXCEPTION).
+- `get_pending_ratifications()` — IP-2 ratification queue. Caller:
+  governance/ip-agreement.astro + admin + MCP. Soft auth.
+- `get_version_diff(uuid, uuid, boolean)` — version diff. Caller: MCP.
+  Hard auth check.
+- `list_curation_board(text)` — hub_resources curation board. Caller:
+  CuratorshipBoardIsland.tsx.
+- `list_document_comments(uuid, boolean)` — version comments with
+  visibility filter. Caller: ClauseCommentDrawer.tsx + MCP. Soft
+  auth + curator/manager designation filter.
+- `list_document_versions(uuid)` — version list. Caller: MCP. Soft
+  auth.
+
+**Dead — REVOKE-only full lock-down (2 fns)**:
+- `get_curation_cross_board()` — cross-board curation aggregator.
+  0 callers.
+- `get_governance_preview()` — change_requests aggregates +
+  manual_structure preview. 0 callers (likely superseded by
+  get_governance_dashboard).
+
+**Out-of-scope — Phase B'' V3 admin gate candidates (3 fns)**:
+- `get_change_requests(text, text)` — V3 gate (is_sa + op_role +
+  designations).
+- `get_governance_dashboard()` — V3 gate.
+- `get_governance_documents(text)` — V3 gate.
+
+**Excluded — already V4-compliant via `can_by_member` (8 fns)**:
+- `get_chain_audit_report(uuid)`, `get_chain_for_pdf(uuid)`,
+  `get_curation_dashboard()`, `get_governance_change_log(...)`,
+  `get_governance_stats()`, `get_ratification_reminder_targets(uuid)`,
+  `list_curation_pending_board_items()`, `list_pending_curation(text)`.
+
+Verified post-REVOKE (this commit):
+- 9 REVOKE-from-anon fns: ACL = `postgres + authenticated +
+  service_role`.
+- 2 dead fns: ACL = `postgres + service_role` (full lock-down).
+
+**Risk: low**. Authenticated callers via admin pages, member
+components, and MCP preserved. Dead fns become un-callable externally;
+postgres + service_role retained.
+
+### Phase Q-D running tally (post batches 1+2+3a.1+3a.3a+3a.3b+3a.4+3a.5+3a.6 + batch 1 amendment)
+
+- **75 functions hardened** (21 batch 1 + 3 batch 3a.1 + 4 batch 3a.3a
+  + 18 batch 3a.3b + 9 batch 3a.4 + 11 batch 3a.5 + 9 batch 3a.6 +
+  amendment-only 1 (`comms_check_token_expiry`)).
 - **14 functions verified public-safe** (13 batch 2 + 1 batch 3a.3b
   excluded — `list_meeting_artifacts`).
-- 1 function discovered already-V4-compliant (excluded:
-  `get_initiative_member_contacts`).
+- **9 functions already V4-compliant** (1 batch 3a.3 +
+  8 batch 3a.6 excluded).
 - 3 functions deferred for PM tier clarification (batch 3a.1).
-- 4 functions documented as out-of-scope in batch 3a.5
-  (`admin_manage_comms_channel`, `auto_comms_card_on_publish`,
-  `can_manage_comms_metrics` → batch 3b/Phase B''; plus
-  `comms_check_token_expiry` regression note).
-- ~30 remaining orphan-no-gate fns + 24 internal helpers + 3 deferred
-  = ~57 still in backlog. **Net: 84/109 triaged (77%)**.
+- 7 functions documented as out-of-scope (3 V3 batch 3a.5 helpers
+  + 3 V3 batch 3a.6 admin fns + 1 trigger from 3a.5).
+- ~21 remaining orphan-no-gate fns + 24 internal helpers + 3 deferred
+  = ~48 still in backlog. **Net: 95/109 triaged (87%)**.
 - Pattern proven: REVOKE-only migration is non-disruptive when
   callsites are verified; REVOKE-from-public + internal gate works
   for admin frontend callers; REVOKE-from-anon (keep authenticated)
@@ -1097,12 +1150,12 @@ Reader fns to triage for PII/sensitivity:
 - ✅ **Comms readers — closure complete (p58 batch 3a.5)**:
   11 fns triaged (9 live REVOKE-from-anon + 2 dead REVOKE-only).
   4 fns out-of-scope (1 V3 admin writer → Phase B'', 2 internal
-  helpers → batch 3b, 1 batch 1 regression note for PM follow-up).
-  See "Batch 3a.5 closure" section below.
-- Curation / governance readers: `get_chain_workflow_detail`,
-  `get_curation_cross_board`, `list_curation_board`,
-  `list_pending_curation`, `get_cr_approval_status`,
-  `get_governance_preview`, `get_decision_log`.
+  helpers → batch 3b, 1 batch 1 regression note → RESOLVED p58 via
+  amendment migration). See "Batch 3a.5 closure" section below.
+- ✅ **Curation / governance readers — closure complete (p58 batch 3a.6)**:
+  22 fns triaged (9 live REVOKE-from-anon + 2 dead REVOKE-only +
+  3 V3 → Phase B'' + 8 already-V4-compliant excluded). See "Batch
+  3a.6 closure" section below.
 - Sustainability / KPI readers: `get_sustainability_dashboard`,
   `get_sustainability_projections`, `get_cycle_evolution`,
   `get_cycle_report`, `get_portfolio_dashboard`, `get_pilot_metrics`,
