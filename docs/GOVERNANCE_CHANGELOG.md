@@ -1550,4 +1550,30 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
+### GC-141 — Ingestion/Release-Readiness/Governance-Bundle Subsystem Retroactive Retirement
+**Data:** 2026-04-26 · **Autor:** Vitor Maia Rodovalho (GP) + Claude (P4 council investigation) · **Status:** Implementado (Pacote M, sessao p64)
+
+**Decisao:** Retirada formal e retroativa do subsystem ingestion/release-readiness/governance-bundle (14 substrate tables + 32 dead-code SECDEF functions). Conversao paralela de 5 funcoes OK adjacentes para padrao V4 adapter (ADR-0028). Documentado em ADR-0029.
+
+**Justificativa:** Phase 1 audit de ADR-0028 (precondition do Pacote M) descobriu que 32 das 37 funcoes alvo referenciavam tables que NAO EXISTEM no banco vivo. Investigacao P4 (security-engineer + accountability-advisor agents do council) confirmou DDL drift acidental — substrate dropado historicamente via Supabase Dashboard SQL editor ou execute_sql MCP, fora da disciplina apply_migration documentada em GC-097. Zero ADRs documentavam retirement, zero entries no GOVERNANCE_CHANGELOG, zero registros em admin_audit_log. Telemetria confirma zero uso operacional (0 chamadas mcp_usage_log 90 dias, 0 cron jobs, 0 EF references).
+
+Opção P3 ratificada (5 convert + 32 drop) com precondition: ADR-0029 retirement record + esta GC entry escritos ANTES da migration. Padrão de governance maduro: documentar retroativamente para fechar gap, nao mascarar.
+
+**Acknowledgment governance gap:** Drops historicos foram executados fora da disciplina migration. ADR-0029 registra explicitamente para closing the loop honesto. Compromisso forward: nunca usar execute_sql ou Dashboard SQL editor para DDL — apenas apply_migration. Track Q-D internal-helper REVOKE charter ja foi corrigido (post-incident hotfix dos GRANTs auth_org + can_by_member que tinham quebrado prod por padrão similar de análise rasa).
+
+**Impacto tecnico:**
+- 32 SECDEF functions DROPped (todas referenciavam tables ausentes)
+- 5 SECDEF functions convertidas para V4 adapter pattern conforme ADR-0028 (admin_capture_data_quality_snapshot, admin_check_ingestion_source_timeout, admin_set_ingestion_source_sla, admin_set_release_readiness_policy, admin_get_ingestion_source_policy)
+- ADR-0028 scope amended de "37 fns" para "5 fns" + appendix referenciando ADR-0029
+- `tests/contracts/rpc-migration-coverage.test.mjs` extended para detectar table-level DDL drift (catch the bug class p50 missed)
+- Phase B'' true progress: 61/246 → 66/214 (~30.8%) com denominador honesto post-drop
+
+**LGPD assessment:** Funcoes inspecionadas — nenhuma referencia PII direta (email/phone/pmi_id/auth_id). Art. 14 nao aplicavel (zero evidence de data subject data nas tables dropadas). Art. 18 cycle nao afetado. Art. 37 documenta uncertainty window de 6 semanas (mar/14 → abr/2026) onde substrate existiu sem telemetria — probabilidade baixa de processamento real, registrada honestamente.
+
+**Sponsor awareness:** Subsystem nunca foi comunicado a PMI-GO/CE/DF/MG/RS — era scaffolding interno abandonado antes de uso. Nenhuma notificacao a chapter sponsors necessaria (zero data processada, zero export entregue).
+
+**Forensic preservation:** Migration files originais (20260308–20260314 series) e function bodies preservados em `git log` — restoration via `db reset` recriaria o substrate caso necessário no futuro.
+
+---
+
 *Para adicionar uma nova entrada, use o formato acima. Cada decisao deve ter Data, Autor, Status, Decisao, Justificativa, e Impacto tecnico quando aplicavel. Propostas pendentes requerem aprovacao da Lideranca dos Capitulos conforme Secao 7 do Manual R2.*
