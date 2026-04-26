@@ -796,7 +796,31 @@ non-admin_*/exec_*/trg_*/_audit_* prefix.
   - K4 `detect_and_notify_detractors_cron` — cron-only op; user-facing
     gate is dead code. Can convert to `manage_platform` directly OR
     DROP user-facing gate.
-- L+ (PM ratify): A4 (7) → per-domain ADRs (curator, founder, etc.)
+- **L (audit done p64 — split into 2 sub-pacotes)**: A4 (7 fns) all
+  involve `curator` designation; 4 with curator-only, 3 with curator+co_gp:
+  - L1 `manage_partner_attachment` (4 fns: add_partner_attachment,
+    delete_partner_attachment, assign_member_to_item, get_board_members) —
+    curator visibility on partner data + board members. No PII.
+  - L2 `manage_curation` (3 fns: assign_curation_reviewer,
+    publish_board_item_from_curation, submit_curation_review) — curation
+    workflow. No PII.
+
+**C helpers caller graph (p64 partial audit)**:
+- `can_manage_comms_metrics` → 1 caller in pg_proc (`publish_comms_metrics_batch`)
+- `has_min_tier` → 1 caller in pg_proc (`exec_cert_timeline`)
+- `can_manage_knowledge` → 0 callers in pg_proc (likely RLS policies or
+  frontend/EF — needs grep beyond pg_proc)
+- `rls_is_superadmin` → 0 callers in pg_proc (used by RLS policies)
+
+**Verdict C**: pg_proc-only scan incomplete. Needs RLS policy + frontend
+grep before touching. **DEFER** until full caller surface mapped.
+
+**Security finding (p64): detect_and_notify_detractors_cron** was
+misclassified A2 (regex matched body line `m.operational_role NOT IN
+('sponsor', 'chapter_liaison')` — exclusion filter, not designation
+grant). Per-fn audit revealed no top-level auth gate AND PUBLIC EXECUTE
+grant. Fixed via REVOKE PUBLIC + anon (migration `20260426214032`).
+Full V4 gate deferred to service-role-bypass adapter pattern ADR.
 
 **C helpers** require caller graph audit — they're called by many
 other fns, so converting them changes downstream behavior platform-wide:
