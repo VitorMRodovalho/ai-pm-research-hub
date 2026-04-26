@@ -1,9 +1,15 @@
 # ADR-0027: Governance Readers V4 Conversion — Phase B'' (3 fns)
 
-- Status: **Proposed** (PM ratify required)
+- Status: **Accepted** (2026-04-26 p59 — PM rubber-stamp ratify of all Q1-Q4)
 - Data: 2026-04-26 (p59)
 - Autor: PM (Vitor) + Claude (proposal autônomo)
 - Escopo: Phase B'' V3→V4 conversion track (3 of N) — closes 3 V3-gated functions
+- Ratify decisions:
+  - Q1 Opção A/B/C: **B** (reuse rls_is_member + manage_platform — zero new actions)
+  - Q2 preserve observers acesso: **NÃO** (aceitar drift correction)
+  - Q3 ratify_governance action separada: **NÃO agora**
+  - Q4 timing: **p59** (executado 2026-04-26)
+- Implementation: migration `20260426170149_adr_0027_governance_readers_v4_conversion`
 
 ---
 

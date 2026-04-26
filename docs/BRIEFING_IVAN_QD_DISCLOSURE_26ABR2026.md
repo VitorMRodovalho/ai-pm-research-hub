@@ -358,10 +358,12 @@ informativo, não solicita ação.
 | Marco | Estado | Responsável |
 |---|---|---|
 | Q-D 8/8 buckets fechadas | ✅ DONE p59 | PM (autonomous) |
-| Track R 152 REVOKEs cumulativos | ✅ DONE p59 | PM (autonomous) |
+| Track R 152 REVOKEs cumulativos + Phase R3 COMMENT inline docs | ✅ DONE p59 | PM (autonomous) |
+| **Phase B'' V4 actions** — 8/11 fns convertidas (ADRs 0025/0026/0027 Accepted) | ✅ DONE p59 | PM ratify + autonomous impl |
 | Q-D batch 3a.2 (3 PM-deferred fns) | ⏳ Aguarda tier-input PM | PM input needed |
-| Phase B'' V4 actions ratify (11 fns) | 📝 Documentadas, aguarda ADR ratify | PM ratify por ADR |
-| Track R Phase R3 (COMMENT inline docs) | 🔜 Polish opcional ~1h | PM autonomous |
+| Phase B'' V4 actions remaining (3 edge cases) | 🔜 Investigar p60+ | PM (autonomous) |
+| LGPD ROPA mapping doc (25 surfaces) | ✅ DONE p59 | PM (autonomous) |
+| Q-D detection regex strengthening + contract test | ✅ DONE p59 | PM (autonomous) |
 | Sponsor touchpoint formal (esta conversa) | 📅 **Segunda-feira (call agendada)** | Ivan + Vitor |
 | Quarterly cadence sustainable | ✅ Estabelecida nesta call | PM iniciado |
 

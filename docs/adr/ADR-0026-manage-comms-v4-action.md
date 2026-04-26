@@ -1,9 +1,17 @@
 # ADR-0026: New V4 Action `manage_comms` — Phase B'' Conversion
 
-- Status: **Proposed** (PM ratify required)
+- Status: **Accepted** (2026-04-26 p59 — PM rubber-stamp ratify of all Q1-Q4)
 - Data: 2026-04-26 (p59)
 - Autor: PM (Vitor) + Claude (proposal autônomo)
 - Escopo: Phase B'' V3→V4 conversion track (2 of N) — closes 1 V3-gated function
+- Ratify decisions:
+  - Q1 sponsors com manage_comms: **NÃO**
+  - Q2 chapter_board × liaison scope: **NÃO agora**
+  - Q3 migrar admin_send_campaign + comms_check_token_expiry: **NÃO**
+  - Q4 timing: **p59** (executado 2026-04-26)
+- Implementation: migration `20260426170038_adr_0026_manage_comms_v4_conversion`
+- Drift surfaced: Mayanna Duarte perdeu access (V3 designation comms_leader sem
+  V4 engagement). Documentado para PM decidir se cria engagement post-fact.
 
 ---
 

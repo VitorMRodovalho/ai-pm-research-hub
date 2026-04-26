@@ -530,6 +530,9 @@ Already V4 (no work needed):
 #### Open Phase B'' / new V4 action candidates
 
 Functions whose legacy gate doesn't map cleanly to existing V4 actions:
+- ✅ **CLOSED p59**: 8 of 11 documented V3-gated fns converted via 3 ADRs
+  (ADR-0025 manage_finance + ADR-0026 manage_comms + ADR-0027 governance
+  readers Opção B reuse). See "Phase B'' p59 closure" section below.
 - `get_application_score_breakdown` — needs `manage_platform OR curator`
   semantics. Either a new V4 action (e.g., `view_selection_scores` with
   ladder = manage_platform + write_board curator) OR keep V3.
@@ -541,6 +544,46 @@ Functions whose legacy gate doesn't map cleanly to existing V4 actions:
 - Functions with `tribe_leader` in legacy gate — no V4 action covers
   tribe_leader. Wait for ADR-0015 Phase 5 (tribe_id deprecation) which
   will likely introduce a `manage_tribe` action.
+
+### Phase B'' p59 closure — 8 fns converted via 3 ADRs
+
+**ADR-0025 manage_finance (4 fns)** — migration `20260426165847`:
+- `delete_cost_entry`, `delete_revenue_entry`, `update_kpi_target`,
+  `update_sustainability_kpi`
+- New action `manage_finance` granted to: volunteer × {co_gp, manager,
+  deputy_manager} + sponsor × sponsor (Q1 ratify SIM)
+- Privilege expansion: 5 sponsors gained access (intentional per Q1)
+- Zero would_lose
+
+**ADR-0026 manage_comms (1 fn)** — migration `20260426170038`:
+- `admin_manage_comms_channel`
+- New action `manage_comms` granted to: volunteer × {co_gp, manager,
+  deputy_manager, comms_leader}
+- Privilege drift surfaced: Mayanna Duarte lost access (V3 designation
+  comms_leader sem V4 engagement volunteer×comms_leader). Documented
+  per ADR Q1 — drift correction, not regression. PM may create
+  engagement post-fact if she's a real comms operator.
+
+**ADR-0027 governance readers (3 fns) — Opção B reuse**:
+- migration `20260426170149`
+- `get_change_requests`, `get_governance_dashboard`,
+  `get_governance_documents`
+- Pattern: outer `rls_is_member()` + inner `can_by_member('manage_platform')`
+  for admin-shape filtering
+- Zero new actions added (Opção B reuse — most economical option)
+- Behavior change: V3 observers lost access (V4 observers no longer
+  have authoritative engagement). Per ADR Q2 ratify: accepted as drift
+  correction (observers don't use governance UI in practice).
+
+**Phase B'' running tally post-p59**:
+- Total V3-gated fns documented: 11
+- Closed via ADRs 0025+0026+0027: 8 fns
+- Remaining 3: TBD (likely edge cases — investigate p60+)
+- New V4 actions added: 2 (`manage_finance`, `manage_comms`)
+- Existing V4 actions reused: 1 (`manage_platform` for governance readers)
+- Members impacted (gained): 5 sponsors (manage_finance)
+- Members impacted (drift correction): 2 (Mayanna comms, observers
+  governance) — accepted per PM ratify
 
 ## Phase Q-D — SECDEF security hardening sweep (started p55, 2026-04-25)
 
