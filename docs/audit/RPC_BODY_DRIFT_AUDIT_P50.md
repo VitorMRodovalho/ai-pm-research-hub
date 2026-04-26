@@ -769,11 +769,34 @@ non-admin_*/exec_*/trg_*/_audit_* prefix.
 | D_member_tier_role | 26 | `is_superadmin` w/o mgr/dmr clause | mostly NOT admin gates; many are member-self ops misclassified by regex |
 | F_other | 34 | mixed patterns | per-fn audit needed; many are member-tier writers |
 
-**Pacote I-J pipeline**:
+**Pacote I-J-K pipeline**:
 - I (done p63): A0 clean = 6 fns (5 names + 1 overload)
-- J (autonomous-feasible after A5 inspection): up to 5 fns from
-  `tribe_leader_no_scope` if intentional broad
-- K+ (PM ratify): A2 (8) → `manage_partner` ADR; A4 (7) → per-domain ADRs
+- **J (audit done p64 — ALL 5 DEFERRED)**:
+  - `create_tag(semantic tier)` — broad INTENTIONAL (tags são globais);
+    conversion would CONTRACT semantic tag privilege to non-leaders.
+    Needs separate `create_semantic_tag` action OR keep V3.
+  - `register_attendance_batch`, `submit_for_curation`,
+    `unassign_member_from_item`, `update_event_duration` — broad
+    LIKELY missing scope (tribe_leader should be scoped to own tribe's
+    events/items). Conversion would CONTRACT. Needs V4 `scope='tribe'`
+    permission OR validation refactor.
+- **K (audit done p64 — split into 4 sub-pacotes)**: A2 (8 fns)
+  identified post-audit as needing 4 distinct V4 actions, not 1:
+  - K1 `view_chapter_admin_data` (3 fns: get_chapter_dashboard,
+    get_chapter_needs, get_member_detail) — chapter visibility for
+    sponsor/chapter_liaison. **1 of 3 has PII** (get_member_detail
+    returns email).
+  - K2 `view_partner_data` (3 fns: get_partner_entity_attachments,
+    get_partner_interaction_attachments, get_partner_pipeline) —
+    partner ops visibility. **1 of 3 has PII** (get_partner_pipeline
+    returns contact info).
+  - K3 `view_volunteer_agreement_admin` (1 fn:
+    get_volunteer_agreement_status) — admin volunteer audit.
+    **HAS PII** (returns email).
+  - K4 `detect_and_notify_detractors_cron` — cron-only op; user-facing
+    gate is dead code. Can convert to `manage_platform` directly OR
+    DROP user-facing gate.
+- L+ (PM ratify): A4 (7) → per-domain ADRs (curator, founder, etc.)
 
 **C helpers** require caller graph audit — they're called by many
 other fns, so converting them changes downstream behavior platform-wide:
