@@ -29,12 +29,12 @@ Expected: HTTP 200 + serverInfo. If 500 with "already registered": rename the du
 
 ## SDK Compatibility
 - **SDK 1.29.0**: Latest stable. Works on Deno with native `WebStandardStreamableHTTPServerTransport`. Tool params MUST use Zod schemas.
-- **Zod import**: `import { z } from "npm:zod@^4.0";` — SDK 1.29.0 supports `zod ^3.25 || ^4.0`. We use Zod 4.
+- **Zod import**: `import { z } from "npm:zod@4.3.6";` — pinned to exact version (was `^4.0`, pinned 2026-04-26 for reproducibility — MCP is critical infra; minor zod bumps could change validation behavior silently). SDK 1.29.0 supports `zod ^3.25 || ^4.0`. Update consciously when reading release notes.
 - **History**: SDK 1.27.1 worked but required manual SSE wrapping (85 lines). SDK 1.29.0 initially failed on Deno due to non-Zod schemas + old dep versions. After converting tools to Zod and upgrading all deps, 1.28.0 native transport works.
 
 ## Tool Pattern
 ```typescript
-import { z } from "npm:zod@^4.0";
+import { z } from "npm:zod@4.3.6";
 
 // Tools with parameters — MUST use Zod schemas
 mcp.tool("tool_name", "Description.", {
