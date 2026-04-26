@@ -221,7 +221,22 @@ should reconcile (NOT in Q-A scope — captured verbatim):
    Aligned with overdue/upcoming buckets to `NOT IN ('inactive',
    'churned')`. Function exposed as MCP tool; Claude callers now see the
    complete stale set.
-7. **V3 authority gates** — many captured functions use legacy
+7. ✅ **FIXED p54 (migration `20260426000422`)** —
+   **`admin_inactivate_member`** is SECDEF but had NO caller authorization
+   gate at all. The function deactivates an arbitrary member by id;
+   exposure was implicit via the `/admin/member/[id].astro` UI gate, but
+   any authenticated PostgREST caller could invoke the RPC directly.
+   Surfaced during Phase B' batch 4 triage (looking at admin writers'
+   gates for V3→V4 mapping). Added `can_by_member('manage_member')`.
+   This is the first documented case in the audit of a SECDEF capture
+   with zero auth — should expect more from the same era.
+8. ✅ **FIXED p54 (migration `20260426000422`)** —
+   **`import_vep_applications`** is SECDEF but had NO caller authorization
+   gate. The function bulk-inserts selection applications from VEP CSV.
+   Exposure was implicit via the `/admin/selection.astro` UI gate, but
+   any authenticated PostgREST caller could invoke it directly. Adding
+   `can_by_member('manage_platform')` matches the page-level intent.
+9. **V3 authority gates** — many captured functions use legacy
    `operational_role IN (...)` / `is_superadmin` / `designations` checks
    instead of V4 `can_by_member()`. Tracked separately in ADR-0011 backlog.
    These are explicitly skipped by `tests/contracts/rpc-v4-auth.test.mjs` via
@@ -445,12 +460,72 @@ Phase B'' candidates discovered while filtering batch 3:
 - `mark_member_excused` — has tribe_leader path with members.tribe_id.
   Phase 5 ADR-0015 territory (drift signal #2).
 
-#### Phase B' running tally (post batch 3)
+#### Batch 4 closure (p54, `20260426000422`)
 
-- 9/~50 captured V3-gated functions migrated to V4.
-- All migrations: zero authorization change in current production.
+Mixed scope: 2 V3→V4 conversions + 2 security hole fixes (drift signals
+#7 and #8 surfaced during triage).
+
+V3→V4 migrated:
+- `get_ghost_visitors` → `manage_platform` (ghost visitor admin reader,
+  V3 pattern was `is_superadmin OR manager OR deputy_manager`).
+- `admin_send_campaign` → `manage_platform` (campaign sender with
+  rate limits preserved; V3 pattern was same).
+
+Security hole fixes (NEW V4 gate where there was NONE):
+- `admin_inactivate_member` → `manage_member` (was wide-open SECDEF;
+  drift signal #7).
+- `import_vep_applications` → `manage_platform` (was wide-open SECDEF;
+  drift signal #8).
+
+Privilege expansion (V3→V4 candidates): zero (same safety check pattern
+as batches 1-3). For security hole fixes the migration TIGHTENS authority
+from "any authenticated caller" to manage_member/manage_platform ladder.
+
+Phase B'' candidates discovered while filtering batch 4 (NOT migrated):
+- `admin_change_tribe_leader`, `admin_deactivate_member` — SA-only by
+  design. Migrating to manage_platform would EXPAND to deputy_manager
+  + co_gp; intentional SA-only scoping should be preserved.
+- `admin_list_members`, `get_diversity_dashboard`, `get_member_detail`
+  — gate includes sponsor + chapter_liaison (cross-chapter PII
+  visibility). Need new V4 action like `view_chapter_roster` or keep V3.
+- `get_selection_dashboard`, `get_selection_rankings`,
+  `get_application_score_breakdown` — curator branch (same root cause
+  as batch 2 deferral). Need `view_selection_scores` action.
+- `submit_curation_review`, `issue_certificate` — manager + deputy_manager
+  + curator. Same curator branch problem.
+- `upsert_publication_submission_event` — manager + deputy_manager +
+  communicator (operational_role) + curator + co_gp + comms_leader +
+  comms_member (designations). Wide multi-role; needs Phase B''.
+- `submit_interview_scores` — interviewer-id-based gate (custom). Not
+  generic V4 fit.
+- `mark_member_present`, `register_own_presence` — tribe_leader path;
+  Phase 5 territory.
+- `finalize_decisions`, `get_evaluation_form`, `get_pending_countersign`
+  — committee-membership / chapter_board designation paths. Custom V4
+  needed.
+
+Triggers / utilities passed over (no auth gate by design):
+- `auto_comms_card_on_publish`, `notify_webinar_status_change`,
+  `log_webinar_created`, `set_curation_due_date`,
+  `sync_operational_role_cache` — triggers running on row change events.
+- `compute_legacy_role`, `current_member_tier_rank`, `try_auto_link_ghost`,
+  `broadcast_count_today`, `calc_trail_completion_pct` — internal helpers.
+
+Already V4 (no work needed):
+- `admin_link_communication_boards`, `admin_update_member_audited`,
+  `manage_initiative_engagement`.
+
+#### Phase B' running tally (post batch 4)
+
+- 13/~50 captured V3-gated functions migrated to V4 (batches 1-4).
+- 2 security holes (NO auth → V4 auth) fixed in batch 4 — newly tracked
+  as drift signals #7 + #8.
+- All V3→V4 migrations: zero authorization change in current production.
 - Pattern proven scalable: same gate template + same V4 action +
   same safety check workflow.
+- Phase B' clean-case backlog effectively exhausted for the
+  qa_orphan_recovery + qb_drift_correction captures (most remaining
+  candidates need new V4 actions = Phase B'').
 
 #### Open Phase B'' / new V4 action candidates
 
