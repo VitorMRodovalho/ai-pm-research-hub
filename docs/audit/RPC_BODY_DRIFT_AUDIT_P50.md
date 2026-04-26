@@ -1063,20 +1063,81 @@ Verified post-REVOKE (this commit):
 components, and MCP preserved. Dead fns become un-callable externally;
 postgres + service_role retained.
 
-### Phase Q-D running tally (post batches 1+2+3a.1+3a.3a+3a.3b+3a.4+3a.5+3a.6 + batch 1 amendment)
+### Batch 3a.7 closure — sustainability/KPI readers (p58, `20260426133716`)
 
-- **75 functions hardened** (21 batch 1 + 3 batch 3a.1 + 4 batch 3a.3a
+Migration: `track_q_d_sustainability_kpi_readers_batch3a7.sql`. 17
+SECDEF readers/writers in sustainability/KPI bucket triaged via
+per-fn body + callsite analysis:
+
+**Live with authenticated callers — REVOKE-from-anon (12 fns)**:
+- `exec_portfolio_board_summary(boolean)` — caller admin/portfolio.astro.
+- `get_annual_kpis(integer, integer)` — annual KPI dashboard. Caller
+  admin/portfolio.astro + MCP. Body uses operational_role for
+  member filtering (display, not gate).
+- `get_cost_entries(...)` — caller admin/sustainability.astro.
+- `get_cycle_evolution()` — caller admin/cycle-report.astro.
+- `get_cycle_report(integer)` — caller ReportPage.tsx. Body uses
+  operational_role for by_role aggregation (display, not gate).
+- `get_kpi_dashboard(date, date)` — caller workspace/KpiDashboard.tsx.
+- `get_pilot_metrics(uuid)` — caller usePilots.ts + admin/pilots.astro.
+- `get_pilots_summary()` — caller usePilots.ts + admin/pilots.astro.
+- `get_portfolio_dashboard(integer)` — caller usePortfolio.ts + MCP.
+- `get_revenue_entries(...)` — caller admin/sustainability.astro.
+- `get_sustainability_dashboard(integer)` — caller
+  admin/sustainability.astro.
+- `get_sustainability_projections(integer)` — caller
+  admin/sustainability.astro.
+
+**Verified public-by-design — no change (1 fn)**:
+- `exec_portfolio_health(text)` — annual KPI portfolio health metrics
+  (chapters_participating, partner_entities, certification_trail %,
+  cpmai_certified, articles_published, webinars_completed,
+  ia_pilots, meeting_hours, impact_hours + quarter targets).
+  Body returns aggregate counts/percentages/sums only — NO PII.
+  Callers: `src/components/sections/TrailSection.astro:214` +
+  `src/components/sections/KpiSection.astro:84`. Both sections
+  imported by `src/pages/index.astro` (and en/, es/) — homepage
+  public pages. Both call via `getSupabase()` (anon key) without
+  any `!member` bail check. Documented as verified public-by-design
+  (Q-D batch 2 pattern extended).
+
+**Out-of-scope — Phase B'' V3 admin writers (4 fns documented)**:
+- `delete_cost_entry(uuid)` — V3 gate (is_sa + op_role).
+- `delete_revenue_entry(uuid)` — V3 gate.
+- `update_kpi_target(...)` — V3 gate.
+- `update_sustainability_kpi(...)` — V3 gate.
+
+Verified post-REVOKE (this commit):
+- 12 REVOKE-from-anon fns: ACL = `postgres + authenticated +
+  service_role`.
+- `exec_portfolio_health` ACL preserved (5-grantee public).
+
+**Risk: low**. Authenticated callers via admin pages and MCP
+preserved. exec_portfolio_health stays public-by-design (homepage
+hydration). Postgres + service_role retained.
+
+### Phase Q-D running tally (post batches 1+2+3a.1+3a.3a+3a.3b+3a.4+3a.5+3a.6+3a.7 + batch 1 amendment)
+
+- **87 functions hardened** (21 batch 1 + 3 batch 3a.1 + 4 batch 3a.3a
   + 18 batch 3a.3b + 9 batch 3a.4 + 11 batch 3a.5 + 9 batch 3a.6 +
-  amendment-only 1 (`comms_check_token_expiry`)).
-- **14 functions verified public-safe** (13 batch 2 + 1 batch 3a.3b
-  excluded — `list_meeting_artifacts`).
-- **9 functions already V4-compliant** (1 batch 3a.3 +
-  8 batch 3a.6 excluded).
+  12 batch 3a.7 + amendment-only 1 (`comms_check_token_expiry`)).
+- **15 functions verified public-safe** (13 batch 2 + 1 batch 3a.3b
+  excluded — `list_meeting_artifacts` + 1 batch 3a.7 excluded —
+  `exec_portfolio_health`).
+- **9 functions already V4-compliant** (1 batch 3a.3 + 8 batch 3a.6
+  excluded).
 - 3 functions deferred for PM tier clarification (batch 3a.1).
-- 7 functions documented as out-of-scope (3 V3 batch 3a.5 helpers
-  + 3 V3 batch 3a.6 admin fns + 1 trigger from 3a.5).
-- ~21 remaining orphan-no-gate fns + 24 internal helpers + 3 deferred
-  = ~48 still in backlog. **Net: 95/109 triaged (87%)**.
+- 11 functions documented as out-of-scope (3 V3 batch 3a.5 helpers
+  + 3 V3 batch 3a.6 admin fns + 4 V3 batch 3a.7 writers + 1 trigger).
+- ≈9 remaining orphan-no-gate readers in legacy/utility bucket (3a.8)
+  + ≈24 internal helpers (3b) + 3 PM-deferred = ~36 still in pipeline.
+- **Net: 114 fns triaged total** vs original p55 estimate of 109.
+  The +5 surplus reflects V4 fns hidden by p55 detection regex
+  (which matched `can_by_member` but missed `can(person_id, ...)`
+  without `public.` prefix); per-fn body review in batches 3a.3 +
+  3a.6 surfaced 9 such fns. **Effectively: scope p55 = 100%
+  triaged; sweep continues into legacy/utility (3a.8) + internal
+  helpers (3b) buckets which were not in the original 109.**
 - Pattern proven: REVOKE-only migration is non-disruptive when
   callsites are verified; REVOKE-from-public + internal gate works
   for admin frontend callers; REVOKE-from-anon (keep authenticated)
@@ -1156,10 +1217,10 @@ Reader fns to triage for PII/sensitivity:
   22 fns triaged (9 live REVOKE-from-anon + 2 dead REVOKE-only +
   3 V3 → Phase B'' + 8 already-V4-compliant excluded). See "Batch
   3a.6 closure" section below.
-- Sustainability / KPI readers: `get_sustainability_dashboard`,
-  `get_sustainability_projections`, `get_cycle_evolution`,
-  `get_cycle_report`, `get_portfolio_dashboard`, `get_pilot_metrics`,
-  `get_pilots_summary`.
+- ✅ **Sustainability / KPI readers — closure complete (p58 batch 3a.7)**:
+  17 fns triaged (12 live REVOKE-from-anon + 1 verified public-by-design
+  `exec_portfolio_health` + 4 V3 → Phase B''). See "Batch 3a.7 closure"
+  section below.
 - Legacy/utility readers: `get_changelog`, `get_gp_whatsapp`,
   `get_help_journeys`, `list_admin_links`, `list_radar_global`,
   `tribe_impact_ranking`, `count_tribe_slots`, `broadcast_history`,
