@@ -148,7 +148,12 @@ function isSecurityDefiner(header) {
 // negative lookahead `(?!.*_v4_auth)` excludes files like
 // `drift_signal_1_admin_tribe_selection_v4_auth.sql` which DO migrate to V4
 // and SHOULD be tested.
-const Q_AUDIT_CAPTURE_FILE_RE = /qa_orphan_recovery_|qb_drift_correction_|drift_signals?_(?!.*_v4_auth)/;
+//
+// `pacote_._revert_` (added p63 ext) matches Pacote corrective revert
+// migrations that explicitly restore V3 gate due to test body drift OR
+// other compatibility reason. These are intentional V3-preservation,
+// documented in migration header.
+const Q_AUDIT_CAPTURE_FILE_RE = /qa_orphan_recovery_|qb_drift_correction_|drift_signals?_(?!.*_v4_auth)|pacote_._revert_/;
 
 test('ADR-0011: new migrations (20260424+) — every SECURITY DEFINER RPC with auth gate calls can*', () => {
   const files = readdirSync(MIGRATIONS_DIR)
