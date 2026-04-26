@@ -646,6 +646,26 @@ preserved (cron + EF still work).
   `v4_expire_engagements`, `v4_expire_engagements_shadow`,
   `v4_notify_expiring_engagements`.
 
+> **⚠ Amendment p58 (`20260426131249`)** — `comms_check_token_expiry`
+> was misclassified as "cron-only" in p55. Per-fn callsite verification
+> in p55 missed the admin frontend caller
+> `src/pages/admin/comms.astro:669` (`loadTokenAlerts()` flow). The
+> function is hybrid (writer side effect + reader): it INSERTs alerts
+> idempotently AND returns active unacknowledged alerts. After p55
+> REVOKE, the admin call failed silently (try/catch wrapped, console
+> warn).
+>
+> Per Q-D matrix correct classification: **"cron + admin reader"**
+> pattern. Treatment: REVOKE-from-anon (already done by batch 1) +
+> restore `authenticated` GRANT (this amendment). Page admin tier
+> gate is the primary defense; non-admin authenticated direct
+> callers can trigger idempotent detection logic + read alerts
+> (channel names + expiry status, no PII) — acceptable risk per
+> 3a.3b/3a.4 pattern.
+>
+> Post-amendment ACL: `postgres + authenticated + service_role`.
+> Surfaced and resolved in p58 batch 3a.5 regression note.
+
 (d) Dead-code admin writers (8 fns):
 - `compute_application_scores`, `create_initiative`, `update_initiative`,
   `seed_pre_onboarding_steps`, `enrich_applications_from_csv`,
@@ -963,23 +983,22 @@ in comms bucket triaged via per-fn callsite analysis:
   helper batch 3b.
 - `can_manage_comms_metrics` — V3 helper fn used by
   publish_comms_metrics_batch. Internal helper batch 3b.
-- **`comms_check_token_expiry`** — already locked down in Q-D
-  batch 1 (`postgres + service_role` only). **⚠ REGRESSION NOTE
-  (p58)**: `src/pages/admin/comms.astro:669` still calls
-  `sb.rpc('comms_check_token_expiry')` wrapped in try/catch
-  (silent failure with console.warn). Per-fn callsite verification
-  in p55 batch 1 missed this admin frontend caller. **Follow-up
-  options for PM**:
-  - **Option 1**: restore `authenticated` grant on
-    `comms_check_token_expiry` and re-classify as
-    "cron + admin reader" pattern. Audit doc batch 1 closure
-    section needs amendment.
-  - **Option 2**: refactor `admin/comms.astro` `loadTokenAlerts`
-    to call a different read-only RPC (e.g., new
-    `list_comms_token_alerts()` reader without trigger logic).
-  - **Option 3**: leave as-is (silent failure in browser console
-    is degraded UX but not broken — admins still see channel
-    status without token alerts).
+- **`comms_check_token_expiry`** — REGRESSION ✅ **RESOLVED p58**
+  via Option 1a: restored `authenticated` GRANT
+  (`20260426131249_track_q_d_batch1_amend_comms_check_token_expiry_grant`).
+  Reclassified from "cron-only" → "cron + admin reader" pattern in
+  batch 1 closure section above. Post-amendment ACL: `postgres +
+  authenticated + service_role`. Admin/comms.astro:669
+  `loadTokenAlerts()` flow restored. Page-level admin tier gate
+  remains primary defense; non-admin authenticated direct callers
+  trigger idempotent detection + read alerts (channel names +
+  expiry status, no PII) — acceptable per 3a.3b/3a.4 pattern.
+  *Original regression discovery context preserved below for
+  audit trail*:
+  > Per-fn callsite verification in p55 batch 1 missed this admin
+  > frontend caller; post-batch-1 the call failed silently
+  > (try/catch wrapped, console.warn). Reclassification + GRANT
+  > restoration applied p58.
 
 Verified post-REVOKE (this commit):
 - 9 REVOKE-from-anon fns: ACL = `postgres + authenticated +
