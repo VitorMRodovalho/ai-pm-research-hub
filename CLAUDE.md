@@ -10,7 +10,7 @@ Refactor arquitetural completo: 6 ADRs (0004-0009), 30 migrations, 7 fases. Ver 
 ## Platform
 - **URL:** https://nucleoia.vitormr.dev
 - **Supabase:** ldrfrvwhxsmgaabwmaik (sa-east-1)
-- **Version:** v3.2.1 (Structural Quality) | 143 MCP tools (96R+47W) | 24 Edge Functions | 1372 unit (1374 with DB env) + 40 e2e tests (0 fails — p50 Track Q-C drift prevention contract + p49 #91 G4 returning-match predicate tightened to offboarding records + p48 ADR-0011 Amendment B migrated 22 V3 RPCs to V4 + ADR-0022 Accepted W1 shipped)
+- **Version:** v3.2.1 (Structural Quality) | 143 MCP tools (96R+47W) | 24 Edge Functions | **1397** unit (**1374** with DB env) + 40 e2e tests (0 fails — p55 Track Q-D SECDEF security hardening sweep started + p54 Phase B' batch 4 migrated 4 V3-gated/no-gate fns to V4 incl drift signals #7 #8 + p53 Phase B' batches 1-3 migrated 9 V3-gated fns to V4 manage_platform + p52 Track Q Phase A+B captured 159 orphans/drifted fn bodies via 13 recovery + 4 drift correction migrations)
 - **AI Model:** Claude Opus 4.7 (`claude-opus-4-7`) — released 2026-04-16. xhigh effort level available. Updated tokenizer (1.0-1.35x token mapping). /ultrareview for code review.
 - **Wiki:** GitHub org `nucleo-ia-gp` — repos `wiki` (private, Obsidian vault) + `frameworks` (public, CC-BY-SA/MIT). Synced to `wiki_pages` table via FTS. Scope: narrative knowledge only (ADR-0010) — operational data stays in SQL.
 - **LGPD:** Art. 18 cycle complete (consent gate + export + delete + anonymize cron 5y)

@@ -544,13 +544,70 @@ Functions whose legacy gate doesn't map cleanly to existing V4 actions:
 
 ## Phase Q-D — SECDEF security hardening sweep (started p55, 2026-04-25)
 
+### Track charter
+
+**Scope**: All SECDEF functions in `public` schema that lack an
+authorization gate AND grant EXECUTE to PUBLIC / anon / authenticated
+by default. Discovery (p55) identified 566 SECDEF total; 109 fall in
+this "orphan-no-gate external-callable" bucket.
+
+**Authorization**: Implementation of existing policy (no new ADR).
+Track Q-D enforces:
+- ADR-0011 (V4 authority) — `can_by_member()` is the canonical gate.
+- ADR-0007 (`can()` as source of truth) — engagement-derived authority.
+- LGPD Art. 5/6/46 (data minimization + adequate technical measures).
+- `database.md` GC-162 — RLS + SECDEF discipline.
+
+PMI accountability rationale: SECDEF functions executing as definer
+bypass RLS; without explicit auth gate, any PostgREST caller (anon
+key + JWT) reaches the function body. Closing this gap is required
+for CBGPL audit-readiness (data stewardship standards).
+
+**Treatment matrix** (mirrors decision matrix at end of doc):
+
+| Caller surface | Treatment | Gate |
+|---|---|---|
+| No callers in `src/` or `supabase/functions/` (dead) | REVOKE FROM PUBLIC, anon, authenticated | None needed |
+| pg_cron only (postgres role) | REVOKE FROM PUBLIC, anon, authenticated | None needed |
+| EF only (service_role) | REVOKE FROM PUBLIC, anon, authenticated | None needed |
+| Admin frontend caller (PII output) | REVOKE FROM PUBLIC, anon (keep `authenticated`) + ADD `can_by_member()` gate inside body | manage_platform / manage_member as fits |
+| Mixed-tier frontend caller (homepage / member view) | DEFER for PM tier clarification | TBD |
+| Public-by-design reader verified | No change (docs-only) | None — intentional public exposure |
+
+**Methodology** (per batch):
+1. Pull body via `pg_proc.prosrc` to confirm what's returned.
+2. Pull ACL via `pg_proc.proacl` to confirm exposure.
+3. Grep `src/` + `supabase/functions/` for callsites.
+4. Classify per matrix above.
+5. Run privilege expansion safety check if adding gate.
+6. Apply migration (REVOKE + optional gate). If only verification
+   needed, docs-only commit.
+7. Verify post-state via ACL + body recheck.
+
+**Batch plan**:
+- Batch 1 (p55, done): 21 fns hardened (PII crypto + cron + EF webhook + dead admin).
+- Batch 2 (p56, done): 13 public-by-design readers verified safe (docs-only).
+- Batch 3a (in progress p57+): admin-shape readers, 30-40 fns total. Sub-batches of 6-10.
+- Batch 3b (TBD): 27 internal helpers REVOKE (defense-in-depth).
+
+**Audit trail**: Every Q-D commit references this doc; this doc
+references every Q-D migration. Single source of truth for the
+remediation track. PMI sponsor (Ivan Lourenço) to be notified at
+next quarterly touchpoint that Q-D is in progress and closing this
+sprint (per accountability-advisor 2026-04-25 governance memo).
+
+---
+
+### Original framing (preserved for context)
+
 Phase B' fixes V3 → V4 conversions. Phase Q-D is the orthogonal track:
 SECDEF functions with NO auth gate at all + PUBLIC EXECUTE granted by
 default. This is the same pattern that surfaced drift signals #7 #8 in
 p54 (admin_inactivate_member, import_vep_applications) — except that
 those two were addressed by ADDING a V4 gate. Phase Q-D uses the
-REVOKE pattern instead, which is appropriate for functions that should
-never be reachable from PostgREST in the first place.
+REVOKE pattern instead (when no auth gate is needed) or REVOKE +
+internal `can_by_member()` gate (when the function has legitimate
+authenticated callers but should restrict to admin tier).
 
 ### Discovery summary (p55)
 
@@ -633,16 +690,65 @@ closed as docs-only verification. The 13 fns are formally documented
 as "verified public-safe" in this audit, providing a reference for
 future audits.
 
-### Phase Q-D running tally (post batches 1+2)
+### Batch 3a.1 closure — admin selection readers (p57, `20260426005822`)
 
-- 21 functions hardened (batch 1 REVOKE).
+Council-validated reshape from original 6-fn proposal. After
+platform-guardian + security-engineer callsite review (2026-04-25):
+
+**Migrated** (3 of 6):
+
+(a) Dead-code REVOKE-only:
+- `get_executive_kpis()` → REVOKE FROM PUBLIC, anon, authenticated.
+  No callers in src/ or supabase/functions/. Aggregate-only output
+  (active members, retention %, multi-cycle counts, etc.) but
+  admin-shape per security-engineer (not public-by-design per
+  ADR-0024).
+
+(b) PII gate + REVOKE-from-public (keep `authenticated` for admin UI):
+- `get_application_interviews(uuid)` → ADD internal
+  `can_by_member('manage_platform')` gate + REVOKE FROM PUBLIC, anon.
+  CRITICAL per security-engineer: returns interview notes +
+  interviewer_ids per applicant (LGPD Art. 5/6 PII). Caller:
+  `/admin/selection.astro:1553`.
+- `get_application_onboarding_pct(uuid)` → ADD internal
+  `can_by_member('manage_platform')` gate + REVOKE FROM PUBLIC, anon.
+  Returns onboarding completion % per application. Caller:
+  `/admin/selection.astro:443`. Converted from SQL to PL/pgSQL to
+  accommodate gate.
+
+Privilege expansion safety check: legacy_count=2 (Vitor SA, Fabricio SA),
+v4_count=2, would_gain=null. Zero authorization change in production.
+
+**Deferred** (3 of 6 — PM tier clarification needed):
+- `get_attendance_panel(date, date)` — called from
+  `HomepageHero.astro:298` (homepage, mixed-tier),
+  `AttendanceDashboard.tsx:73`, `attendance.astro:2020`,
+  MCP tool `index.ts:790`. Tier question: any-member or admin-only?
+  Homepage caller forces decision.
+- `get_meeting_notes_compliance()` — called from `MeetingsPage.tsx:155`.
+  Tier question: any-member meetings page or admin compliance audit?
+- `count_tribe_slots()` — called from `TribesSection.astro:291`. Tier
+  question: public homepage tribe section or member-only?
+
+Documented as open in audit doc; PM should specify tier per fn before
+treatment.
+
+**log_pii_access integration deferred**: `log_pii_access` expects
+`p_target_member_id` but `selection_applications.id` ≠ `members.id`
+(applicants are pre-member). Future improvement: extend
+`log_pii_access` to support application-id targets, then retrofit
+gates with audit calls. Tracked as Phase Q-D enhancement backlog item.
+
+### Phase Q-D running tally (post batches 1+2+3a.1)
+
+- 24 functions hardened (21 batch 1 REVOKE + 3 batch 3a.1).
 - 13 functions verified public-safe (batch 2 docs-only).
-- ~75 remaining orphan-no-gate fns (mostly admin-shape readers + a
-  few writers) needing per-fn triage.
-- 27 internal helpers: lower urgency since callers are gated, but
-  defense-in-depth REVOKE warranted in future batch.
+- 3 functions deferred for PM tier clarification (batch 3a.1).
+- ~72 remaining orphan-no-gate fns + 27 internal helpers + 3 deferred
+  = ~102 still in backlog. Net: 37/109 triaged.
 - Pattern proven: REVOKE-only migration is non-disruptive when
-  callsites are verified; docs-only verification works for clearly
+  callsites are verified; REVOKE-from-public + internal gate works
+  for admin frontend callers; docs-only verification works for
   public-safe fns.
 
 ### Open Phase Q-D batches (TBD)
