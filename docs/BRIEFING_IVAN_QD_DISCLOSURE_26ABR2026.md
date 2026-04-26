@@ -43,6 +43,16 @@ ADR-0024 views).
 - ✅ **Próximas ações documentadas**: 3 fns aguardam tier-input PM
   (3a.2), 11 fns documentadas para Phase B'' (V3→V4 ratify por ADR)
 
+**Authorization basis**: Esta auditoria + remediação foram executadas
+sob autoridade técnica padrão do General Project Manager, consistente
+com obrigações de medidas técnicas adequadas (LGPD Art. 46), com
+gatilho de governança no memo do accountability-advisor (2026-04-25)
+recomendando comunicação proativa ao sponsor sobre escopo, status
+e padrão de fechamento. A natureza defensiva (REVOKE, COMMENT, sem
+alteração funcional) e o trail completo no GitHub permitem
+auditoria reproduzível por qualquer parte interessada (PMI Brasil,
+PMI Latam, auditoria externa contratada).
+
 ---
 
 ## 2. Contexto Técnico (para alinhamento)
@@ -86,7 +96,13 @@ o conjunto SECDEF e separar legítimo (verified-public) de exposto
 
 ---
 
-## 3. Status — Q-D 8/8 Buckets Fechadas (100%)
+## 3. Status — Q-D 8/8 Buckets de Funções de Banco Fechadas (100%)
+
+> *Contexto técnico: cada "bucket" agrupa funções com privilégios
+> elevados de banco (`SECURITY DEFINER`) que executam queries em
+> nome do criador, bypassando regras de segurança por linha. Para
+> uso seguro, exigem ou um gate interno de autorização (`can()`)
+> ou ACL restritiva (apenas roles autorizadas podem chamar).*
 
 | Bucket | Função-tipo | Status | Migration | Commit |
 |---|---|---|---|---|
@@ -96,8 +112,8 @@ o conjunto SECDEF e separar legítimo (verified-public) de exposto
 | **Curation/governance readers** | Cadeias de aprovação, CRs, ratificação IP-2 | ✅ CLOSED | `20260426132442` | `c4ec1c2` |
 | **Sustainability/KPI readers** | KPIs anuais, sustentabilidade financeira, pilotos | ✅ CLOSED | `20260426133716` | `3d57d05` |
 | **Selection admin readers** | Seleção/entrevistas | ⏳ Parcial (3a.1) — 3 fns aguardam PM tier input | `20260426005822` | `296c66d` |
-| **Legacy/utility readers (3a.8)** | Misc — get_card_timeline, get_publication_*, etc. | ✅ CLOSED p59 (32 fns triadas) | `20260426143952` | `6ed46d7` |
-| **Internal helpers (3b)** | Defense-in-depth — `can`, `can_by_member`, etc. | ✅ CLOSED p59 (20 fns) | `20260426145632` | `69adad5` |
+| **Legacy/utility readers (3a.8)** | Misc — leitores de cards, publicações, eventos, etc. | ✅ CLOSED p59 (32 fns triadas) | `20260426143952` | `6ed46d7` |
+| **Internal helpers (3b)** | Defense-in-depth — funções de autoridade chamadas internamente | ✅ CLOSED p59 (20 fns) | `20260426145632` | `69adad5` |
 
 **Plus**: 1 regressão da batch 1 (`comms_check_token_expiry` —
 admin caller perdido no triagem inicial) **identificada e
