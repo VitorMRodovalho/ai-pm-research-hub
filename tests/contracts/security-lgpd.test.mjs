@@ -199,7 +199,15 @@ test('admin_run_retention_cleanup RPC exists', () => {
 test('admin_run_retention_cleanup requires admin', () => {
   const body = findFunctionBody('admin_run_retention_cleanup');
   assert.ok(body);
-  assert.ok(/is_superadmin\s*=\s*true/i.test(body) || /operational_role/i.test(body), 'Must check admin role');
+  // V3 legacy pattern was 'is_superadmin'/'operational_role'; updated p60 Pacote E
+  // to V4 'can_by_member(..., manage_platform)' (Phase B'' easy-convert).
+  // Spirit preserved: must gate on admin authority.
+  assert.ok(
+    /is_superadmin\s*=\s*true/i.test(body)
+      || /operational_role/i.test(body)
+      || /can_by_member\s*\([^)]*manage_platform/i.test(body),
+    'Must check admin role (V3 is_superadmin/operational_role OR V4 can_by_member manage_platform)'
+  );
   assert.ok(/RAISE\s+EXCEPTION/i.test(body), 'Must RAISE EXCEPTION on unauthorized');
 });
 

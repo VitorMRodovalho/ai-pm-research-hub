@@ -617,6 +617,61 @@ Members impacted by p59 ADR conversions:
 - **Drift correction**: V3 observers lost governance reader access (not
   actually used by observers per usage analysis)
 
+### Phase B'' Pacote D + Pacote E easy-convert (p59 + p60)
+
+Two batches of "easy-convert" admin_* fns where:
+1. Existing V3 gate is `is_superadmin OR manager/deputy_manager [OR co_gp]`
+2. Existing V4 `manage_platform` action grant set is **identical** (no
+   new action needed; reuses existing engagement_kind_permissions rows)
+3. Privilege expansion check returns `would_gain=[]` and `would_lose=[]`
+
+These are pure modernization conversions — body unchanged, V3 top-gate
+swapped for `can_by_member(v_caller_id, 'manage_platform')`, search_path
+hardened from `'public, pg_temp'` → `''` (already-qualified bodies),
+PUBLIC + anon EXECUTE REVOKE'd.
+
+**Pacote D (p59) — migration `20260426172305`** — 5 admin_* fns:
+- `admin_bulk_allocate_tribe`, `admin_bulk_set_status` → `manage_member`
+- `admin_get_tribe_allocations` → `manage_platform` (TODO future view_pii)
+- `admin_set_tribe_active`, `admin_deactivate_tribe` → `manage_platform`
+
+**Pacote E (p60) — migration `20260426173951`** — 12 admin_* fns
+(all → `manage_platform`):
+- `admin_ensure_communication_tribe`
+- `admin_finalize_ingestion_batch`
+- `admin_link_board_to_legacy_tribe`
+- `admin_link_member_to_legacy_tribe`
+- `admin_map_notion_item_to_board`
+- `admin_run_retention_cleanup` (V3 was tighter — no co_gp; V4 grant set
+  still equals 2; zero gain)
+- `admin_set_ingestion_source_policy`
+- `admin_start_ingestion_batch`
+- `admin_upsert_legacy_tribe`
+- `admin_upsert_tribe`
+- `admin_upsert_tribe_continuity_override`
+- `admin_upsert_tribe_lineage`
+
+**Test impact (p60)**: `tests/contracts/security-lgpd.test.mjs:199`
+(`admin_run_retention_cleanup requires admin`) updated to accept V4
+`can_by_member(..., manage_platform)` in addition to V3 patterns
+(same fix style as `create_event` AUTH_FIXED_RPCS update 2026-04-17).
+No other test changes needed; presence-checks in
+`tests/ui-stabilization.test.mjs` read OLD migration files which still
+contain the original `create or replace function public.admin_X(`
+strings (DROP+CREATE in NEW migrations doesn't break those checks).
+
+**Phase B'' running tally post-p60 (Pacote D + Pacote E)**:
+- Phase B' (p52-p54): 13 V3→V4 conversions (clean case, no new action)
+- Phase B'' p59 ADRs 0025/0026/0027: 8 fns (3 new V4 actions)
+- Phase B'' p59 Pacote D easy-convert: 5 fns (no new action)
+- **Phase B'' p60 Pacote E easy-convert: 12 fns (no new action)**
+- **Cumulative: 38 of 246 fns (~15.4%)** — up from p59 21/246 (9%)
+- Easy-convert backlog: 0 known remaining clean cases
+  (`admin_*` simple-V3 with identical V4 grant set). Future Phase B''
+  work requires either (a) per-fn ADR per new V4 action, or (b)
+  service-role-bypass adapter pattern for the 29 `admin_*` fns that
+  use `service_role OR superadmin OR ...` style.
+
 ## Phase Q-D — SECDEF security hardening sweep (started p55, 2026-04-25)
 
 ### Track charter
