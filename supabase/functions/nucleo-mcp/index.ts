@@ -15,7 +15,7 @@ import { Hono } from "jsr:@hono/hono@4.12.9";
 import { McpServer } from "npm:@modelcontextprotocol/sdk@1.29.0/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "npm:@modelcontextprotocol/sdk@1.29.0/server/webStandardStreamableHttp.js";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { z } from "npm:zod@^4.0";
+import { z } from "npm:zod@4.3.6";
 
 const app = new Hono().basePath("/nucleo-mcp");
 
