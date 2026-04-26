@@ -920,17 +920,91 @@ table in log-retention test). MCP authenticated callers retain access
 for the 4 live fns. Dead fns become un-callable externally; postgres
 + service_role retained for cron/EF future use if any.
 
-### Phase Q-D running tally (post batches 1+2+3a.1+3a.3a+3a.3b+3a.4)
+### Batch 3a.5 closure — comms readers (p58, `20260426130254`)
 
-- **55 functions hardened** (21 batch 1 + 3 batch 3a.1 + 4 batch 3a.3a
-  + 18 batch 3a.3b + 9 batch 3a.4).
+Migration: `track_q_d_comms_readers_batch3a5.sql`. 11 SECDEF readers
+in comms bucket triaged via per-fn callsite analysis:
+
+**Live with authenticated callers — REVOKE-from-anon (9 fns)**:
+- `broadcast_history(integer, integer)` — caller `admin/comms-ops.astro:256`.
+- `comms_acknowledge_alert(uuid)` — caller `admin/comms.astro:681`.
+  Uses `auth.uid()` but no V4 gate (admin-shape; surfaced as
+  Phase B'' candidate for `manage_comms` action).
+- `comms_channel_status()` — caller `admin/comms.astro:587, 692`.
+- `comms_metrics_latest_by_channel(integer)` — caller
+  `admin/comms.astro` (multiple) + MCP. Pre-state already lacked
+  PUBLIC.
+- `comms_top_media(text, integer, integer)` — caller
+  `admin/comms.astro:534`.
+- `get_comms_dashboard_metrics()` — caller
+  `CommsDashboard.tsx:49` + MCP.
+- `get_webinar_lifecycle(uuid)` — caller `admin/webinars.astro:604`
+  + presence verified in `tests/ui-stabilization.test.mjs:101`.
+- `list_webinars_v2(text, text, integer)` — caller `webinars.astro:19`
+  (member tier, navGetMember bail), `admin/webinars.astro:691`
+  (admin), MCP.
+- `webinars_pending_comms()` — caller `admin/comms-ops.astro:216`
+  + MCP.
+
+**Dead — REVOKE-only full lock-down (2 fns)**:
+- `comms_executive_kpis()` — executive aggregate metrics
+  (audience, reach, engagement, growth %). 0 callers.
+- `publish_comms_metrics_batch(text, date)` — writer (UPDATE
+  comms_metrics_daily); has internal V3 gate
+  (`can_manage_comms_metrics`) but 0 external callers. Pre-state
+  ACL had anon grant. Treatment per Q-D dead-matrix consistency:
+  full lock-down (V3 gate becomes moot but preserved in body).
+
+**Out-of-scope (4 fns documented for follow-up)**:
+- `admin_manage_comms_channel` — V3-gated admin writer
+  (is_superadmin + operational_role + designations). Phase B''
+  candidate.
+- `auto_comms_card_on_publish` — trigger function. Internal
+  helper batch 3b.
+- `can_manage_comms_metrics` — V3 helper fn used by
+  publish_comms_metrics_batch. Internal helper batch 3b.
+- **`comms_check_token_expiry`** — already locked down in Q-D
+  batch 1 (`postgres + service_role` only). **⚠ REGRESSION NOTE
+  (p58)**: `src/pages/admin/comms.astro:669` still calls
+  `sb.rpc('comms_check_token_expiry')` wrapped in try/catch
+  (silent failure with console.warn). Per-fn callsite verification
+  in p55 batch 1 missed this admin frontend caller. **Follow-up
+  options for PM**:
+  - **Option 1**: restore `authenticated` grant on
+    `comms_check_token_expiry` and re-classify as
+    "cron + admin reader" pattern. Audit doc batch 1 closure
+    section needs amendment.
+  - **Option 2**: refactor `admin/comms.astro` `loadTokenAlerts`
+    to call a different read-only RPC (e.g., new
+    `list_comms_token_alerts()` reader without trigger logic).
+  - **Option 3**: leave as-is (silent failure in browser console
+    is degraded UX but not broken — admins still see channel
+    status without token alerts).
+
+Verified post-REVOKE (this commit):
+- 9 REVOKE-from-anon fns: ACL = `postgres + authenticated +
+  service_role`.
+- 2 dead fns: ACL = `postgres + service_role` (full lock-down).
+
+**Risk: low**. Authenticated callers via admin pages and MCP
+preserved on the 9 live fns. Dead fns become un-callable
+externally; postgres + service_role retained.
+
+### Phase Q-D running tally (post batches 1+2+3a.1+3a.3a+3a.3b+3a.4+3a.5)
+
+- **66 functions hardened** (21 batch 1 + 3 batch 3a.1 + 4 batch 3a.3a
+  + 18 batch 3a.3b + 9 batch 3a.4 + 11 batch 3a.5).
 - **14 functions verified public-safe** (13 batch 2 + 1 batch 3a.3b
   excluded — `list_meeting_artifacts`).
 - 1 function discovered already-V4-compliant (excluded:
   `get_initiative_member_contacts`).
 - 3 functions deferred for PM tier clarification (batch 3a.1).
-- ~41 remaining orphan-no-gate fns + 27 internal helpers + 3 deferred
-  = ~71 still in backlog. **Net: 73/109 triaged (67%)**.
+- 4 functions documented as out-of-scope in batch 3a.5
+  (`admin_manage_comms_channel`, `auto_comms_card_on_publish`,
+  `can_manage_comms_metrics` → batch 3b/Phase B''; plus
+  `comms_check_token_expiry` regression note).
+- ~30 remaining orphan-no-gate fns + 24 internal helpers + 3 deferred
+  = ~57 still in backlog. **Net: 84/109 triaged (77%)**.
 - Pattern proven: REVOKE-only migration is non-disruptive when
   callsites are verified; REVOKE-from-public + internal gate works
   for admin frontend callers; REVOKE-from-anon (keep authenticated)
@@ -938,7 +1012,9 @@ for the 4 live fns. Dead fns become un-callable externally; postgres
   client guards; docs-only verification works for public-safe fns;
   per-fn body review surfaces false positives (already-V4-gated
   readers); dead-matrix uniformly applies full lock-down regardless
-  of pre-existing partial revocations.
+  of pre-existing partial revocations; **per-fn callsite verification
+  catches batch 1 regressions** (p58 surfaced
+  `comms_check_token_expiry` admin caller missed in p55).
 
 ### Open Phase Q-D batches (TBD)
 
@@ -999,7 +1075,11 @@ Reader fns to triage for PII/sensitivity:
   9 fns triaged via per-fn callsite analysis (4 live REVOKE-from-anon
   + 5 dead REVOKE-only full lock-down). See "Batch 3a.4 closure"
   section below.
-- Comms readers: `comms_*` (5 fns), `webinars_pending_comms`.
+- ✅ **Comms readers — closure complete (p58 batch 3a.5)**:
+  11 fns triaged (9 live REVOKE-from-anon + 2 dead REVOKE-only).
+  4 fns out-of-scope (1 V3 admin writer → Phase B'', 2 internal
+  helpers → batch 3b, 1 batch 1 regression note for PM follow-up).
+  See "Batch 3a.5 closure" section below.
 - Curation / governance readers: `get_chain_workflow_detail`,
   `get_curation_cross_board`, `list_curation_board`,
   `list_pending_curation`, `get_cr_approval_status`,
