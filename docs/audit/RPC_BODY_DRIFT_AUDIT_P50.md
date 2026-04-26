@@ -737,28 +737,93 @@ refactor to keep this batch scope tight; documented per-fn in COMMENT.
 - `exec_chapter_dashboard(text)` — V3 has chapter-self scope (any
   member of own chapter can view); needs V4 scope='chapter' permission.
 
-**Phase B'' running tally post-p60 (Pacote D + E + F + G + H)**:
+**Pacote I (p63) — migration `20260426212845`** — 6 misc admin fns
+(5 names + 1 overload, all → `manage_platform`):
+- `delete_pilot(uuid)`, `delete_tag(uuid)` (V3 tight)
+- `get_site_config()`, `platform_activity_summary()` (V3 broad incl co_gp)
+- `set_site_config(text, text)` (V3 tight) + `set_site_config(text, jsonb)`
+  overload (was V3 superadmin-only — drift fix; both overloads now
+  consistent at `manage_platform`)
+
+Discovered post-Pacote-H by 75-fn surface audit. Sub-categorization
+of `A_admin_broad` (25 non-admin/exec fns) identified 5 sub-types;
+A0 (clean — no extra designations, no scope clause) = 5 fns + 1
+overload. All zero-expansion verified (V3 tight = V3 broad = V3
+superadmin = V4 manage_platform = 2).
+
+### 75-fn misc surface audit (p63 — full categorization)
+
+Surface mapped: 90 fns total (estimate p60 was 75; refined here).
+SECDEF + is_superadmin pattern + no can_by_member + no service_role +
+non-admin_*/exec_*/trg_*/_audit_* prefix.
+
+| Category | Count | Pattern | Pacote candidate |
+|---|---|---|---|
+| **A_admin_broad** | 25 | `is_superadmin OR mgr/dmr [OR co_gp]` | sub-divided below |
+|   ↳ A0 clean | 5+1 ovrl | No extra designations or scope | ✅ **Pacote I** (p63 — done) |
+|   ↳ A2 partner_designations | 8 | sponsor + chapter_liaison | needs `manage_partner` ADR |
+|   ↳ A4 other_designations | 7 | curator/founder/ambassador/etc | needs new V4 actions per domain |
+|   ↳ A5 tribe_leader_no_scope | 5 | tribe_leader without scope clause | per-fn inspection (likely Pacote J after audit) |
+| B_caller_target | 1 | self-ownership (caller=target) | leave-as-is (`mark_member_present` — caller is member acting on self) |
+| C_helper_bool | 4 | `boolean` helper called by other fns | careful — used by many; needs caller graph audit |
+| D_member_tier_role | 26 | `is_superadmin` w/o mgr/dmr clause | mostly NOT admin gates; many are member-self ops misclassified by regex |
+| F_other | 34 | mixed patterns | per-fn audit needed; many are member-tier writers |
+
+**Pacote I-J pipeline**:
+- I (done p63): A0 clean = 6 fns (5 names + 1 overload)
+- J (autonomous-feasible after A5 inspection): up to 5 fns from
+  `tribe_leader_no_scope` if intentional broad
+- K+ (PM ratify): A2 (8) → `manage_partner` ADR; A4 (7) → per-domain ADRs
+
+**C helpers** require caller graph audit — they're called by many
+other fns, so converting them changes downstream behavior platform-wide:
+- `can_manage_comms_metrics()` — referenced in metrics RPCs
+- `can_manage_knowledge()` — referenced in wiki/docs RPCs
+- `has_min_tier(int)` — tier rank ladder, used by ~10 fns
+- `rls_is_superadmin()` — RLS policy helper, hot path
+
+**D + F (60 fns total)** mostly NOT admin gates. Initial regex
+classification mislabeled them. Spot check:
+- `get_my_member_record()` — D, but trivially returns own record (auth context)
+- `select_tribe(int)` — F, member self-action (caller=target)
+- `register_own_presence(uuid)` — F, member self-action
+- `sign_volunteer_agreement(text)` — F, member self-action
+- `submit_change_request(...)` — F, any-member writer
+- `mark_interview_status(...)` — D, but interviewer-targeted
+
+These are NOT in scope for "Phase B'' V3→V4 modernization" — they're
+already correctly gated to caller=target or specific role; just don't
+use `can_by_member()` because action mapping doesn't apply (member-self
+operations don't need an action — they need ownership check).
+
+**Effective Phase B'' addressable surface (post-p63 audit)**: ~25
+remaining easy-convert candidates after Pacote J + K (A5 + A2 + A4).
+The 60 D/F fns are mostly "leave-as-is, not admin gates".
+
+**Phase B'' running tally post-p63 (Pacote D + E + F + G + H + I)**:
 - Phase B' (p52-p54): 13 V3→V4 conversions (clean case, no new action)
 - Phase B'' p59 ADRs 0025/0026/0027: 8 fns (3 new V4 actions)
-- Phase B'' p59 Pacote D easy-convert: 5 fns (no new action)
-- Phase B'' p60 Pacote E easy-convert: 12 fns (no new action)
-- Phase B'' p60 Pacote F easy-convert: 3 fns (no new action)
-- Phase B'' p60 Pacote G easy-convert: 1 fn (no new action)
-- **Phase B'' p60 Pacote H easy-convert: 8 fns (no new action)**
-- **Cumulative: 50 of 246 fns (~20.3%)** — up from p59 21/246 (9%)
-- Easy-convert backlog (true zero-expansion clean cases for `admin_*`
-  and `exec_*` prefixes): **0 known** — exhaustive categorization
-  verified post-Pacote-H.
-- Remaining V3 surface (~196 fns) split:
-  - **9 deferred** (Pacote F + H discovery): V4 scope/new-action ADRs needed
-  - **~75 misc** (member-tier writers using V3 tier checks): each needs
-    case-by-case audit; many are member-self ops (e.g., `select_tribe`,
-    `register_own_presence`, `submit_change_request`) with V3 caller=target
-    pattern that's NOT an admin gate
-  - **29 service-role-bypass `admin_*`**: need adapter pattern preserving
-    EF callers
-  - **~83 other** (helpers, partner ops, curation, finance, certificates):
-    per-domain audit needed
+- Phase B'' p59 Pacote D easy-convert: 5 fns
+- Phase B'' p60 Pacote E easy-convert: 12 fns
+- Phase B'' p60 Pacote F easy-convert: 3 fns
+- Phase B'' p60 Pacote G easy-convert: 1 fn
+- Phase B'' p60 Pacote H easy-convert: 8 fns
+- **Phase B'' p63 Pacote I easy-convert: 6 fns (5 names + 1 overload)**
+- **Cumulative: 56 of 246 fns (~22.8%)** — up from p60 50/246 (20.3%)
+- Easy-convert backlog (true zero-expansion clean cases for any
+  prefix): **0 known after Pacote I** — exhaustive 90-fn surface audit
+  exhausted clean candidates with admin-broad gate.
+- Remaining V3 surface (~190 fns) split per p63 categorization:
+  - **5 A5 candidates** (tribe_leader_no_scope) — Pacote J after per-fn
+    inspection; if intentional broad, ~5 more easy-converts
+  - **15 A2+A4** (partner/curator/etc designations) — needs ADRs:
+    `manage_partner` (8) + per-domain (7)
+  - **9 deferred** from Pacote F+H (board scope + extra designations)
+  - **4 helpers** (C_helper_bool) — caller graph audit needed
+  - **60 D+F** — mostly member-self ops, NOT admin gates (leave-as-is
+    likely correct verdict; case-by-case audit confirms)
+  - **29 service-role-bypass `admin_*`** — adapter pattern needed
+  - **~75 other** (curation, finance, certificates, etc.) — per-domain
 
 ## Phase Q-D — SECDEF security hardening sweep (started p55, 2026-04-25)
 
