@@ -80,19 +80,25 @@ mexer em finanças?" sem confundir com "quem é superadmin de plataforma".
 
 ### 1. Adicionar nova V4 action `manage_finance`
 
+> **Correção p59 pós-discovery**: kinds reais em
+> `engagement_kind_permissions` são `volunteer` + `sponsor` +
+> `chapter_board` + `committee_member` + `committee_coordinator` +
+> `study_group_*` + `workgroup_*`. NÃO existe kind `committee`.
+> A primeira versão deste ADR usou `committee` por engano; revisado
+> para usar kinds reais.
+
 ```sql
 -- Migration target: 20260427xxxxxx_add_v4_action_manage_finance.sql
 
 INSERT INTO public.engagement_kind_permissions (kind, role, action, scope)
 VALUES
-  -- GP and management positions get manage_finance
-  ('committee', 'co_gp',          'manage_finance', 'organization'),
-  ('committee', 'manager',        'manage_finance', 'organization'),
-  ('committee', 'deputy_manager', 'manage_finance', 'organization'),
+  -- GP and management positions (kind=volunteer per real schema)
+  ('volunteer', 'co_gp',          'manage_finance', 'organization'),
+  ('volunteer', 'manager',        'manage_finance', 'organization'),
+  ('volunteer', 'deputy_manager', 'manage_finance', 'organization'),
   -- Sponsors get read+manage on finance for accountability
-  ('committee', 'sponsor',        'manage_finance', 'organization'),
-  -- Superadmin path (organizational role 'superadmin') already covered
-  -- via is_superadmin check inside can() body (existing V4 pattern)
+  -- (sponsor é seu próprio kind, role único 'sponsor')
+  ('sponsor',   'sponsor',        'manage_finance', 'organization')
   ON CONFLICT (kind, role, action) DO NOTHING;
 ```
 
