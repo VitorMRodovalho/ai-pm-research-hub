@@ -689,19 +689,76 @@ check: would_gain=[]/would_lose=[].
 - `admin_list_tribe_lineage(boolean)` — Same V3 pattern as
   admin_list_tribes. Same defer reason.
 
-**Phase B'' running tally post-p60 (Pacote D + Pacote E + Pacote F)**:
+**Pacote G (p60) — migration `20260426190314`** — 1 read-only fn:
+- `exec_skills_radar()` → `manage_platform`
+- Discovered post-Pacote-F by querying non-`admin_*` SECDEF fns
+- Special semantic preserved: returns empty JSON ('{}') on unauthorized
+  (NOT raise exception — fail-safe silent pattern)
+
+**Pacote H (p60) — migration `20260426190940`** — 8 admin/exec fns:
+- `admin_detect_board_taxonomy_drift()` → `manage_platform` (search_path hardened)
+- `admin_detect_data_anomalies(boolean)` → `manage_platform` (search_path hardened)
+- `admin_get_anomaly_report()` → `manage_platform` (search_path KEPT — body has
+  unqualified refs; full-qualify refactor out of scope)
+- `admin_resolve_anomaly(uuid, text)` → `manage_platform` (search_path hardened)
+- `admin_run_portfolio_data_sanity()` → `manage_platform` (search_path hardened)
+- `admin_update_application(uuid, jsonb)` → `manage_platform` (search_path KEPT)
+- `admin_manage_cycle(...)` → `manage_platform` (search_path hardened)
+- `exec_chapter_comparison()` → `manage_platform` (search_path KEPT)
+
+Discovered post-Pacote-G by categorizing the 105-fn wider V3 surface.
+17 admin/exec candidates surfaced; 8 clean (this batch) + 9 deferred
+(extra designations like comms_team/sponsor/chapter_liaison, OR
+tribe_leader scope clauses needing V4 scope='tribe'). Privilege
+expansion check: would_gain=[]/would_lose=[] for all 8 (V3 broad/tight
+admin set = V4 manage_platform = 2).
+
+**search_path partial hardening pattern sedimented p60**: 5/8 fns
+hardened to `''` (bodies fully-qualified pre-existing); 3/8 kept as
+`'public, pg_temp'` (bodies have unqualified refs OR call unqualified
+helpers like `check_pre_onboarding_auto_steps`). Deferring full-qualify
+refactor to keep this batch scope tight; documented per-fn in COMMENT.
+
+**9 deferred from Pacote H discovery (PM ratify needed)**:
+- `admin_get_campaign_stats(uuid)` + `admin_preview_campaign(...)` —
+  V3 includes `comms_team` designation; needs `manage_comms` action
+  extension OR new view-tier action.
+- `admin_manage_partner_entity(...)` + `admin_update_partner_status(...)`
+  — V3 includes `sponsor`/`chapter_liaison` designations; needs new
+  `manage_partner` action with multi-grant.
+- `admin_list_members(...)` — V3 includes `sponsor`/`chapter_liaison`
+  read access AND returns PII (email). Needs `view_members` action
+  + log_pii_access decision.
+- `admin_list_archived_board_items(...)` — V3 includes `co_gp`
+  designation broadly; needs broader audit (truncated body).
+- `admin_update_board_columns(...)` + `admin_bulk_mark_attendance(...)`
+  — V3 has tribe_leader scope clause; needs V4 `scope='tribe'`
+  permission OR delegation pattern.
+- `exec_chapter_dashboard(text)` — V3 has chapter-self scope (any
+  member of own chapter can view); needs V4 scope='chapter' permission.
+
+**Phase B'' running tally post-p60 (Pacote D + E + F + G + H)**:
 - Phase B' (p52-p54): 13 V3→V4 conversions (clean case, no new action)
 - Phase B'' p59 ADRs 0025/0026/0027: 8 fns (3 new V4 actions)
 - Phase B'' p59 Pacote D easy-convert: 5 fns (no new action)
 - Phase B'' p60 Pacote E easy-convert: 12 fns (no new action)
-- **Phase B'' p60 Pacote F easy-convert: 3 fns (no new action)**
-- **Cumulative: 41 of 246 fns (~16.7%)** — up from p59 21/246 (9%)
-- Easy-convert backlog (true zero-expansion): 0 known clean cases —
-  exhaustive query verified post-Pacote-F. The 4 deferred above are
-  scope/privilege-shape decisions for PM, not "easy converts".
-- Future Phase B'' work requires either (a) per-fn ADR per new V4
-  action OR scope, or (b) service-role-bypass adapter pattern for the
-  29 `admin_*` fns that use `service_role OR superadmin OR ...` style.
+- Phase B'' p60 Pacote F easy-convert: 3 fns (no new action)
+- Phase B'' p60 Pacote G easy-convert: 1 fn (no new action)
+- **Phase B'' p60 Pacote H easy-convert: 8 fns (no new action)**
+- **Cumulative: 50 of 246 fns (~20.3%)** — up from p59 21/246 (9%)
+- Easy-convert backlog (true zero-expansion clean cases for `admin_*`
+  and `exec_*` prefixes): **0 known** — exhaustive categorization
+  verified post-Pacote-H.
+- Remaining V3 surface (~196 fns) split:
+  - **9 deferred** (Pacote F + H discovery): V4 scope/new-action ADRs needed
+  - **~75 misc** (member-tier writers using V3 tier checks): each needs
+    case-by-case audit; many are member-self ops (e.g., `select_tribe`,
+    `register_own_presence`, `submit_change_request`) with V3 caller=target
+    pattern that's NOT an admin gate
+  - **29 service-role-bypass `admin_*`**: need adapter pattern preserving
+    EF callers
+  - **~83 other** (helpers, partner ops, curation, finance, certificates):
+    per-domain audit needed
 
 ## Phase Q-D — SECDEF security hardening sweep (started p55, 2026-04-25)
 
